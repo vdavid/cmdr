@@ -10,9 +10,9 @@
 //!
 //! ## The UI states and where they live
 //!
-//! The UX surfaces five colors; four are `Freshness` variants — gray is the
-//! *absence* of a running index, mirroring the registry's "disabled = no key"
-//! model (see `lifecycle/state.rs`):
+//! The UX surfaces five colors. Gray is the *absence* of a running index,
+//! mirroring the registry's "disabled = no key" model (see `lifecycle/state.rs`);
+//! the other four come from the five `Freshness` variants, two of them red:
 //!
 //! - **Gray (disabled / not-indexed)**: no `IndexInstance` for the volume, OR a
 //!   scan was interrupted and its partial discarded (D-interrupted). Not a
@@ -26,6 +26,11 @@
 //!   watcher event; the index is torn down and the only way out is a
 //!   rebuild-from-scratch rescan. See `lifecycle/state.rs`'s `IndexPhase::Failed` and
 //!   `lifecycle/failure.rs`.
+//! - **Red (paused for disk space)** → [`Freshness::Paused`]: the disk the index
+//!   lives on is full or nearly, so indexing stopped writing. Unlike `Failed` the
+//!   database is fine and still browsable (its last-known sizes keep serving, as
+//!   stale), and the volume comes back by itself once there's room. See
+//!   `lifecycle/state/space_pause.rs`.
 //!
 //! ## The transition table (this module is the single source of truth)
 //!
@@ -72,6 +77,15 @@ pub enum Freshness {
     /// downgrade a dead index back to Stale/Fresh. See [`IndexFailure`](crate::indexing::store::IndexFailure)
     /// for the typed reason carried alongside on the `Failed` phase.
     Failed,
+    /// Indexing is PAUSED because the disk the index databases live on is full or
+    /// below the low-disk-space threshold (`state/space_pause.rs`). The database is
+    /// intact and its last-known sizes keep serving, as stale; nothing writes, and
+    /// nothing watches. The volume restarts by itself once there's room, into a
+    /// fresh freshness value (journaled: a replay to `Fresh`; anything else:
+    /// `Stale`, rescan from the badge). Red, like `Failed`, and sticky the same way:
+    /// only `ScanStarted` leaves it, so a scan-completion handler or a watcher
+    /// event unwinding as the writer stops can't move it.
+    Paused,
 }
 
 /// Inputs that drive a volume's freshness transitions.
@@ -128,6 +142,10 @@ pub enum FreshnessEvent {
     /// path. Distinct from `ScanFailed` (a scan/reconcile that failed but left a
     /// browsable, self-healing Stale index): here the storage itself is unusable.
     StorageFailed,
+    /// The index stopped writing because the disk it lives on is out of room. ⇒
+    /// `Paused`. Fired ONCE by the space pause (`state::space_pause`) after the
+    /// writer stopped, never from the scan path. A dead index stays `Failed`.
+    SpacePaused,
 }
 
 impl Freshness {
@@ -148,6 +166,13 @@ impl Freshness {
         // dead index back to Stale/Fresh.
         if self == Freshness::Failed && event != FreshnessEvent::ScanStarted {
             return Freshness::Failed;
+        }
+        // `Paused` is sticky the same way: the writer stopped, so a scan-completion
+        // or watcher event landing as it unwinds says nothing about the volume any
+        // more. Only a scan that starts (the user's rescan) leaves it; the restart
+        // once there's room builds a fresh value rather than transitioning this one.
+        if self == Freshness::Paused && event != FreshnessEvent::ScanStarted {
+            return Freshness::Paused;
         }
         match event {
             // A scan (re)starts from anywhere: Fresh/Stale rescan, a fresh initial
@@ -170,6 +195,8 @@ impl Freshness {
             // The storage itself died: stop and fail, distinct from a browsable
             // Stale. Terminal (see the guard above).
             FreshnessEvent::StorageFailed => Freshness::Failed,
+            // Out of room: stopped writing, still browsable. Sticky (the guard above).
+            FreshnessEvent::SpacePaused => Freshness::Paused,
         }
     }
 
@@ -214,7 +241,13 @@ mod tests {
 
     #[test]
     fn scan_started_always_goes_to_scanning() {
-        for from in [Freshness::Scanning, Freshness::Fresh, Freshness::Stale] {
+        for from in [
+            Freshness::Scanning,
+            Freshness::Fresh,
+            Freshness::Stale,
+            Freshness::Paused,
+            Freshness::Failed,
+        ] {
             assert_eq!(
                 from.on(FreshnessEvent::ScanStarted),
                 Freshness::Scanning,
@@ -277,6 +310,45 @@ mod tests {
         assert!(!Freshness::Stale.is_authoritative());
         assert!(!Freshness::Scanning.is_authoritative());
         assert!(!Freshness::Failed.is_authoritative());
+        assert!(!Freshness::Paused.is_authoritative());
+    }
+
+    #[test]
+    fn a_space_pause_goes_to_paused_from_any_live_state() {
+        for from in [Freshness::Scanning, Freshness::Fresh, Freshness::Stale] {
+            assert_eq!(
+                from.on(FreshnessEvent::SpacePaused),
+                Freshness::Paused,
+                "a space pause from {from:?} must land Paused"
+            );
+        }
+        assert_eq!(
+            Freshness::Failed.on(FreshnessEvent::SpacePaused),
+            Freshness::Failed,
+            "a dead index stays dead"
+        );
+    }
+
+    #[test]
+    fn paused_is_sticky_except_an_explicit_rescan() {
+        // The writer stopped: a completion handler or a watcher event unwinding as
+        // it goes must not paint the badge Fresh or Stale over a paused index.
+        for event in [
+            FreshnessEvent::ScanCompleted,
+            FreshnessEvent::ScanCompletedUnwatched,
+            FreshnessEvent::WatcherDied,
+            FreshnessEvent::OverflowUnrecoverable,
+            FreshnessEvent::ScanFailed,
+            FreshnessEvent::StorageFailed,
+            FreshnessEvent::SpacePaused,
+        ] {
+            assert_eq!(
+                Freshness::Paused.on(event),
+                Freshness::Paused,
+                "Paused must stay Paused under {event:?}"
+            );
+        }
+        assert_eq!(Freshness::Paused.on(FreshnessEvent::ScanStarted), Freshness::Scanning);
     }
 
     #[test]
@@ -318,6 +390,7 @@ mod tests {
             FreshnessEvent::OverflowUnrecoverable,
             FreshnessEvent::ScanFailed,
             FreshnessEvent::StorageFailed,
+            FreshnessEvent::SpacePaused,
         ] {
             assert_eq!(
                 Freshness::Failed.on(event),

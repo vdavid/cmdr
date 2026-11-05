@@ -17,7 +17,7 @@ use super::{
 };
 use crate::indexing::events::IndexEvent;
 use crate::indexing::lifecycle::freshness::{Freshness, FreshnessEvent};
-use crate::indexing::lifecycle::manager::IndexManager;
+use crate::indexing::lifecycle::manager::{IndexManager, StartCause};
 use crate::indexing::lifecycle::signals::apply_freshness_event_on;
 use crate::indexing::lifecycle::{freshness, lifecycle_bus, master};
 use crate::indexing::read::enrichment::ReadPool;
@@ -63,6 +63,11 @@ pub(crate) struct StartRequest {
     inodes_trustworthy: bool,
     /// Index the volume, or stand its writer up for a search walk and stop there.
     activation: Activation,
+    /// Why this start runs. Only the start that carries it out reads it: the
+    /// instance records the request as [`StartCause::Ordinary`], so a later
+    /// restart built from `started_as` (a rename, the next pause) doesn't inherit
+    /// a pause's answer.
+    cause: StartCause,
 }
 
 impl StartRequest {
@@ -75,13 +80,29 @@ impl StartRequest {
     /// start recorded before the switch went off must not slip past it on the way
     /// back.
     pub(in crate::indexing::lifecycle) fn start(self, volume_id: &str) -> Result<(), String> {
-        start_indexing_for(
-            volume_id,
-            self.volume_root,
-            self.kind,
-            self.inodes_trustworthy,
-            self.activation,
-        )
+        start_the_volume(volume_id, self)
+    }
+
+    /// The same start, as the space pause's restart ([`StartCause::SpacePauseEnded`]).
+    pub(super) fn after_space_pause(self) -> Self {
+        Self {
+            cause: StartCause::SpacePauseEnded,
+            ..self
+        }
+    }
+
+    /// The same start as an instance records it: [`StartCause::Ordinary`], since
+    /// the cause is the start's own business, not the volume's.
+    pub(super) fn into_recorded(self) -> Self {
+        Self {
+            cause: StartCause::Ordinary,
+            ..self
+        }
+    }
+
+    /// Why this start runs.
+    pub(super) fn cause(&self) -> StartCause {
+        self.cause
     }
 
     /// The shape a bare registry reservation asks for in a test: index this kind of
@@ -94,6 +115,7 @@ impl StartRequest {
             kind,
             inodes_trustworthy: true,
             activation: Activation::IndexTheVolume,
+            cause: StartCause::Ordinary,
         }
     }
 
@@ -198,6 +220,26 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     inodes_trustworthy: bool,
     activation: Activation,
 ) -> Result<(), String> {
+    start_the_volume(
+        volume_id,
+        StartRequest {
+            volume_root,
+            kind,
+            inodes_trustworthy,
+            activation,
+            cause: StartCause::Ordinary,
+        },
+    )
+}
+
+/// [`start_indexing_for`] with the whole request, its cause included. The body
+/// every start runs, recorded ones too.
+fn start_the_volume(volume_id: &str, request: StartRequest) -> Result<(), String> {
+    let volume_root = request.volume_root.clone();
+    let kind = request.kind;
+    let inodes_trustworthy = request.inodes_trustworthy;
+    let activation = request.activation;
+    let cause = request.cause;
     // The master switch is a HARD gate on BACKGROUND indexing, at the one choke
     // point every transport funnels through, so no start or autonomous resume path
     // can slip past it (an SMB reconnect used to, and re-indexed a whole NAS the
@@ -233,12 +275,6 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
             log::warn!("start_indexing: clearing the failed index for '{volume_id}' failed: {e}");
         }
     }
-    let request = StartRequest {
-        volume_root: volume_root.clone(),
-        kind,
-        inodes_trustworthy,
-        activation,
-    };
     // The sink the host installed at startup. Everything below this line reports
     // through the trait, so no indexing code names Tauri to say something.
     let events = crate::indexing::host::events::current();
@@ -387,7 +423,7 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     };
 
     let scan_result = match activation {
-        Activation::IndexTheVolume => manager.resume_or_scan(),
+        Activation::IndexTheVolume => manager.resume_or_scan(cause),
         // Nothing to resume and nothing to scan: the walk that asked for this
         // writer is the only thing that will write through it.
         Activation::WriterOnly => Ok(()),

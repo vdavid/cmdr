@@ -1419,7 +1419,7 @@
               "operation_complete",
               "operations_idle"
             ],
-            "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value), index_status (volumeId's indexing freshness equals value: fresh / scanning / stale), operation_complete (the operation whose id is value settled — completed / cancelled / failed, reported in the result), operations_idle (no operation is running or queued; takes no value)"
+            "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value), index_status (volumeId's indexing freshness equals value: fresh / scanning / stale / paused), operation_complete (the operation whose id is value settled — completed / cancelled / failed, reported in the result), operations_idle (no operation is running or queued; takes no value)"
           },
           "volumeId": {
             "type": "string",
@@ -1427,7 +1427,7 @@
           },
           "value": {
             "type": "string",
-            "description": "Value for the condition (item name, count, path, substring, an index_status status fresh / scanning / stale, or for operation_complete the operationId). Not used by operations_idle."
+            "description": "Value for the condition (item name, count, path, substring, an index_status status fresh / scanning / stale / paused, or for operation_complete the operationId). Not used by operations_idle."
           },
           "timeoutSeconds": {
             "type": "integer",

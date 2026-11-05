@@ -263,6 +263,7 @@ impl<'a> DetachedManager<'a> {
             IndexPhase::ShuttingDown {
                 restart: None,
                 then_clear: None,
+                paused_for: None,
             },
         ) {
             IndexPhase::Running(mgr) => {
@@ -276,7 +277,8 @@ impl<'a> DetachedManager<'a> {
                 })
             }
             other => {
-                // Not running (Initializing / ShuttingDown / Detached / Failed):
+                // Not running (Initializing / ShuttingDown / Detached / Failed /
+                // Paused):
                 // nothing to work with. Put the phase back and report
                 // not-initialized.
                 instance.phase = other;
@@ -359,6 +361,10 @@ fn hand_the_manager_back(volume_id: &str, mgr: Box<IndexManager>, start_phases: 
                         instance.phase = IndexPhase::ShuttingDown {
                             restart: claimed.restart,
                             then_clear: None,
+                            paused_for: match claimed.claim {
+                                super::TeardownClaim::Paused(why) => Some(why),
+                                _ => None,
+                            },
                         };
                         Next::Claimed(
                             claimed.claim,
@@ -532,6 +538,7 @@ mod tests {
             vec![
                 "lifecycle/state/relocation.rs".to_string(),
                 "lifecycle/state/scan_control.rs".to_string(),
+                "lifecycle/state/space_pause.rs".to_string(),
                 "lifecycle/state/supervisor.rs".to_string(),
                 "lifecycle/state/teardown.rs".to_string(),
             ],

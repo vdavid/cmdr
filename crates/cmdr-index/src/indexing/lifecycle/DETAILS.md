@@ -136,6 +136,9 @@ first. For everything the local guarded walker reads, in the order the function 
   covered in phases can take it. Its phased counterpart is `ensure_branch_watch`'s conditional epoch bump: a resume that
   can't replay the gap keeps the rows and says they're stale (`a_relaunch_with_no_replayable_journal_bumps_the_epoch`).
 - **journal replayable** ⇒ `start_replay`. An install that already finished its first index loses nothing.
+- **`scan_completed_at` set, and the start is a disk-space pause ending on a volume with no event journal**
+  (`walk_declined`) ⇒ `KeepTheRows`: no walk, no watcher, `Stale` until the user rescans. Nothing can replay what the
+  pause missed, and a full walk would spend the room that just came back. A journaled volume replays as usual.
 - **`scan_completed_at` set** ⇒ `start_scan("rescan of existing index")`, which reconciles in place. ⚠️ This is the path
   a `LocalExternal` drive takes at EVERY mount (`has_event_journal()` is `Local`-only) and the Linux boot disk's normal
   launch. ❌ The phased answers must never swallow it, or a finished external drive is treated as one nobody indexed.
@@ -261,10 +264,10 @@ per volume id, keyed independently so two volumes can't corrupt each other: sing
 reservation, drop-guard-before-drain, reads-via-`ReadPool`-never-under-the-lifecycle-lock.
 
 **Disabled is the absence of a key.** There is no `IndexPhase::Disabled`. An `IndexInstance` only ever exists in
-`Initializing` / `Running` / `Detached` / `ShuttingDown` / `Failed`; a stopped or never-started volume has no entry.
-`get_status`/ `is_active` treat an absent key as disabled, and `stop_indexing`/`clear_index` `remove()` the instance
-after the drain. This is why IPC `get_index_status` for a stopped volume returns the same "not initialized" response a
-never-started one does.
+`Initializing` / `Running` / `Detached` / `ShuttingDown` / `Failed` / `Paused`; a stopped or never-started volume has no
+entry. `get_status`/ `is_active` treat an absent key as disabled, and `stop_indexing`/`clear_index` `remove()` the
+instance after the drain. This is why IPC `get_index_status` for a stopped volume returns the same "not initialized"
+response a never-started one does.
 
 **Why one bundled instance** (vs. parallel `HashMap`s or a `DashMap`): keeping `{phase, kind, signals}` in one struct
 keyed by volume id means a volume's phase and the handles its manager fires through are taken and dropped together. One
@@ -299,7 +302,9 @@ callback parameter or any other reach-out to `../read/handles.rs` — that's wha
 pool BEFORE the drain and before any DB file is deleted. Withdrawal is what makes reads skip: after it returns, the
 volume routes `None`, so no reader can still be holding — or can still open — a connection to a file that's about to go.
 This is also why the `Failed` phase needs no read-path special case: a `Failed` instance stays registered for the badge,
-but `fail_index` withdrew its handles before flipping the phase, so reads already skip.
+but `fail_index` withdrew its handles before flipping the phase, so reads already skip. `Paused` is the one phase that
+KEEPS them (§ "Pausing for disk space"): its database is fine and nothing deletes it, so every teardown of a paused
+volume withdraws them first like any other, and a start swaps them for its own inside the reservation.
 
 The withdrawal also retires the connections threads have already cached to the volume's databases
 (`volume_files::retire_read_connections`), so a stopped share stops being held open by every blocking thread that read
@@ -370,10 +375,11 @@ captured up front cancels correctly in that case.
 ## The `IndexPhase` machine (and where the pipeline-phase EVENT lives)
 
 `IndexPhase` (state.rs) is the LIFECYCLE state: `Initializing { store }` → `Running` →
-`ShuttingDown { restart, then_clear }` (transient) → absent, plus the terminal `Failed { reason, db_path }` and the
-transient `Detached { writer, teardown }` a scan start publishes (§ "The detached window").
+`ShuttingDown { restart, then_clear, paused_for }` (transient) → absent, plus the terminal `Failed { reason, db_path }`,
+`Paused { db_path, why }` (§ "Pausing for disk space"), and the transient `Detached { writer, teardown }` a scan start
+publishes (§ "The detached window").
 
-Five phases, and what each one does with a request that arrives while it holds the volume's key:
+Six phases, and what each one does with a request that arrives while it holds the volume's key:
 
 - **`Initializing { store }`** — a start is already in flight and will land `Running`. A START is refused, and rightly:
   the volume the caller wants is on its way. A TEARDOWN cancels the volume's stop signal, then removes the instance; the
@@ -388,6 +394,8 @@ Five phases, and what each one does with a request that arrives while it holds t
   out by the drain; a further teardown DROPS the recorded start, and a CLEAR is recorded too (`then_clear`).
 - **`Failed { reason, db_path }`** — the database died, § "The Failed state". A start CLEARS it and rebuilds, at the
   choke point, before it ever reserves.
+- **`Paused { db_path, why }`** — out of disk space, read handles kept, § "Pausing for disk space". A start TAKES THE
+  SLOT OVER in the reservation; a teardown removes it with no drain (a clear deletes the database).
 
 This is distinct from the pipeline-phase (`ActivityPhase`: Replaying/Scanning/Aggregating/Reconciling/Live/Idle) that
 drives the FE step checklist — that lives in `../events/CLAUDE.md` as the `index-phase-changed` event. Fire every
@@ -423,7 +431,8 @@ volume in different places. Two claims in one window resolve by `TeardownClaim::
 out, `Drop` included, so a `?` or a panic in the work restores the volume instead of stranding it. It is the only
 constructor of the phase, and `off_the_registry` is the only production caller;
 `state::tests::every_manager_extraction_says_what_a_teardown_in_the_window_does` scans the sources to keep both true.
-The three teardown files may extract too, and each is checked for a `claim_the_teardown` call.
+The teardown files (`teardown.rs`, `supervisor.rs`, `relocation.rs`, `space_pause.rs`) may extract too, and each is
+checked for a `claim_the_teardown` call.
 
 ⚠️ **The sticky per-drive veto travels ON the claim** (`PersistDisable`), ❌ never written where the request lands.
 `IndexStore::set_drive_index_intent` opens its own short-lived write connection, and the volume's writer thread is live
@@ -836,7 +845,8 @@ Local disk gets freshness free from FSEvents' journal (replay from `last_event_i
 have NO journal — events arrive only while connected and watching, and any gap loses them irrecoverably — so freshness
 is binary: continuously-watched-since-scan ⇒ Fresh, any break ⇒ Stale. UI colors: **gray** = no registered instance (the
 "disabled = no key" model, NOT a `Freshness` variant); **blue** = `Scanning`; **green** = `Fresh`; **yellow** = `Stale`;
-**red** = `Failed`.
+**red** = `Failed`, or `Paused` (out of disk space, sizes still serving). Both are sticky in `Freshness::on`: only
+`ScanStarted` leaves them, so a completion or watcher event unwinding as the writer stops can't repaint the badge.
 
 `Freshness::on(event)` is the single, total transition table (pure, exhaustively tested in `freshness::tests`). It lives
 on the `IndexInstance` as `Arc<Mutex<Option<Freshness>>>` so scan-transition tasks and the watcher layer can flip it
@@ -961,30 +971,50 @@ about the user's own environment. Two triggers, one path:
 
 - **`SQLITE_FULL`** (`store::IndexStoreError::is_disk_full`, its own class, out of `is_fatal_storage_error`).
 - **The host's low-disk-space answer** (`HostPolicy::index_storage_low`), asked by every writer about once a second
-  while it writes (`../writer/space_guard.rs`). App side it's the boot volume's reading against the user's
-  low-disk-space threshold, with the warning's 1-point re-arm margin as hysteresis (`space_poller::index_storage_low`).
-  The databases live in the cache dir on the boot volume, so that's the disk that matters for every volume. This one
-  stops the index before it takes the last free space rather than after.
+  while it writes (`../writer/space_guard.rs`). App side it's the boot volume's free space against a threshold
+  (`space_poller`). The databases live in the cache dir on the boot volume, so that's the disk that matters for every
+  volume, which is why `VolumeIndexStatus::holds_index_storage` exists: the badge words a paused external drive
+  differently from a paused boot disk. This one stops the index before it takes the last free space rather than after.
 
 Either trips the writer's `IndexFailureSignal` as `IndexStop::OutOfSpace`: the writer exits (an open explicit chunk
 rolls back with the connection), the live loop stops on `is_tripped`, the replay stops at its next drain, and the signal
-logs ONE warn and emits ❌ no `IndexEvent::Error`. The supervisor then calls `pause_for_space` instead of `fail_index`:
-a non-sticky `stop_indexing` (per-drive intent untouched, database kept) plus a waiter that rechecks every 30 s and
-restarts the volume through `StartRequest::start` (so the master switch still gates it) once the host says there's room.
-The restart is an ordinary start: a journaled volume replays from its last committed chunk (`../watch/DETAILS.md` § "A
-replay commits in chunks"); anything else resumes the way it would after a crash.
+logs ONE warn and emits ❌ no `IndexEvent::Error`. The supervisor then calls `pause_for_space` instead of `fail_index`.
 
-- **Whatever happened meanwhile wins over the restart** (`decide`): started again, cleared or forgotten (database gone),
-  turned off (`user_disabled`), or a memory-watchdog stop since the pause (`memory_watchdog::stop_generation` moved) all
-  end the wait. Nothing restarts indexing after a watchdog stop but the user, so the pause doesn't either.
+**The pause is a drain that KEEPS the reads.** `pause_for_space` takes the manager out under a transient
+`ShuttingDown { paused_for: Some(why) }` (or CLAIMS a `Detached` volume with `TeardownClaim::Paused`, finished at the
+handback: the signal is one-shot), and `finish_pausing` drains it off the lock and installs `IndexPhase::Paused`. It
+drops the pending-sizes tracker (nothing will ever drain the queue that clears it, so an hourglass would stick), the
+remembered rescan, and the branch set, but ❌ not the read pool: `mgr.shutdown()` never touches it, so listings keep
+their last-known sizes, served as stale. Then `set_phase_for(Idle)` and `FreshnessEvent::SpacePaused` (red badge).
+`get_status` reads a paused volume's last-scan facts off the file (`StoredIndex`, off the lock), so the tooltip and menu
+still work. Per-drive intent is untouched.
+
+- **Somebody else's word outranks the pause.** A stop or clear that lands in the pause's drain publishes a fresh marker
+  without `paused_for`, and a start records a `restart` on it; `finish_pausing` then ends the volume exactly where
+  `finish_stopping` would have (`teardown::retire_after_the_drain`). A teardown of a `Paused` volume removes it with no
+  drain (read handles withdrawn first, as always); a relocation retargets its `started_as`.
+- **A start takes the slot over** (`reservation.rs`), in the same critical section that installs the new read pool, so
+  the volume never routes no reads. It emits the new seed as `FreshnessChanged`, since a seeded value fires no
+  transition and the badge would otherwise stay red.
+- **The waiter** rechecks every 30 s and restarts through `StartRequest::after_space_pause`
+  (`StartCause::SpacePauseEnded`) once the host says there's room. Whatever happened meanwhile wins (`decide`): no
+  longer `Paused` (started, stopped, cleared, the master switch), database gone, turned off (`user_disabled`), or a
+  memory-watchdog stop since the pause (`memory_watchdog::stop_generation` moved). A pause's restart that finds the key
+  gone in the reservation refuses, so a stop landing after the waiter's last look still stands. The master switch still
+  gates it (`start_indexing_for`).
+- **What the restart does, by capability** (`IndexVolumeKind::has_event_journal`, ❌ never by id): a journaled volume
+  replays from its last committed chunk (`../watch/DETAILS.md` § "A replay commits in chunks"), falling back to the walk
+  the launch table gives a journal it can't serve; a volume with no journal and a completed index takes `KeepTheRows`
+  (`Stale`, no walk, no watcher, the user rescans from the badge). A trait-scanned volume already loads `Stale` with no
+  walk (`resume_or_scan_network`); a first index still in phases carries on, add-only. Pinned by
+  `cover::cold_drive_tests::space`.
 - **A volume that fills the disk straight back up backs off**: each pause within an hour doubles the first wait, capped
   at 30 minutes, so a threshold set lower than one chunk needs can't churn a replay every 30 s.
 - **Why a stop and not a writer that waits in place**: a parked writer backs its bounded channel up into every sender; a
   blocked replay or live loop stops draining FSEvents, whose unbounded queue then grows into the RAM guard's forced full
   scan.
-- ⚠️ Known limits: while paused the volume reads as stopped (its read handles are withdrawn, so listings show `<dir>`
-  and the badge goes gray, not "paused"), and with the host's reading stale or absent only `SQLITE_FULL` catches a full
-  disk. Follow-up: cmdr#1002 (serve sizes while paused, a paused UI state, the threshold's 1–50% range).
+- ⚠️ Known limit: with the host's reading stale or absent, only `SQLITE_FULL` catches a full disk. A "Rescan now" on a
+  `Paused` volume finds no running manager (`force_scan` answers not initialized); the restart is what brings it back.
 
 ## What a cover walk asks of the lifecycle
 

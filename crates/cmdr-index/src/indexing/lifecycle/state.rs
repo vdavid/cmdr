@@ -15,7 +15,8 @@
 //! - [`scan_control`]: force a rescan, stop one, trigger verification.
 //! - [`queries`]: the read-only question surface.
 //! - [`freshness_bridge`]: registry ↔ `lifecycle/freshness.rs` wiring + epoch bumps.
-//! - [`supervisor`]: the fatal-storage-error watch that flips a volume to `Failed`.
+//! - [`supervisor`]: the writer-stop watch that flips a volume to `Failed`, or
+//!   hands it to [`space_pause`], which holds it `Paused` until there's room.
 //!
 //! ## Registry shape
 //!
@@ -39,6 +40,7 @@ use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, LazyLock};
 
+use super::failure::SpaceStop;
 use super::manager::{BranchWatchStart, IndexManager};
 use super::signals::VolumeSignals;
 use crate::indexing::hold::VolumeWork;
@@ -77,6 +79,8 @@ pub(in crate::indexing::lifecycle) use scan_control::{Handover, off_the_registry
 pub use scan_control::{force_scan, stop_scan, trigger_verification};
 #[cfg(test)]
 pub(crate) use scan_control::{rescan_with_phases_owed_for_test, set_ground_in_flux_for_test, while_detached_for_test};
+#[cfg(test)]
+pub(crate) use space_pause::pause_for_space;
 pub(crate) use startup::record_drive_index_enabled;
 pub use startup::start_indexing;
 pub(in crate::indexing::lifecycle) use startup::start_indexing_for;
@@ -159,6 +163,12 @@ pub(crate) enum IndexPhase {
         /// teardown that publishes a fresh marker over the drain carries it over
         /// (it drops the recorded START, the user's last word being off).
         then_clear: Option<crate::volume_files::Removal>,
+        /// Set only by the space pause's own drain (`space_pause.rs`): the volume
+        /// is on its way to [`Paused`](IndexPhase::Paused), not out. Any other
+        /// teardown that lands in the drain publishes a fresh marker without it,
+        /// which is how the drain's far side learns that somebody's stop or clear
+        /// outranks the pause.
+        paused_for: Option<SpaceStop>,
     },
     /// The index DB died with a FATAL storage error (`SQLITE_IOERR`, corruption, a
     /// full or read-only disk, …), so indexing STOPPED for this volume. Unlike
@@ -174,6 +184,23 @@ pub(crate) enum IndexPhase {
     /// deletes the DB, then a fresh `start_indexing` scans. See `fail_index` and
     /// DETAILS § "The Failed state".
     Failed { reason: IndexFailure, db_path: PathBuf },
+    /// Indexing is PAUSED because the disk the index databases live on is full or
+    /// below the low-disk-space threshold (`space_pause.rs`). The manager, writer,
+    /// and watcher are drained and gone, but ⚠️ the read handles STAY INSTALLED:
+    /// the database is fine, so listings keep their last-known sizes (as stale)
+    /// while nothing writes. That's the one difference from a stop, and why this
+    /// is a phase and not the absence of a key.
+    ///
+    /// Every teardown removes it (withdrawing the read handles, no drain); a start
+    /// takes its slot over in the reservation's own critical section, so the old
+    /// read pool is swapped for the new one with no gap (`reservation.rs`). Reads
+    /// as not active everywhere.
+    Paused {
+        /// The database the read pool serves, for a clear to reclaim.
+        db_path: PathBuf,
+        /// What said the disk is out of room, for the logs.
+        why: SpaceStop,
+    },
 }
 
 /// What a teardown asked for while a volume's manager was detached, for whoever
@@ -195,6 +222,9 @@ pub(crate) enum TeardownClaim {
     /// to say, carried here so a clear that lands at the handback takes exactly
     /// what an immediate one would have.
     Cleared(crate::volume_files::Removal),
+    /// The writer stopped because the disk is out of room: drain, then register
+    /// [`Paused`](IndexPhase::Paused) with the read handles kept.
+    Paused(SpaceStop),
 }
 
 impl TeardownClaim {
@@ -211,7 +241,8 @@ impl TeardownClaim {
     fn reach(self) -> u8 {
         use crate::volume_files::Removal;
         match self {
-            TeardownClaim::Failed(_) => 0,
+            // Both come from the writer's one-shot signal, so they never meet.
+            TeardownClaim::Failed(_) | TeardownClaim::Paused(_) => 0,
             TeardownClaim::Stopped(_) => 1,
             TeardownClaim::Cleared(Removal::IndexRebuild) => 2,
             TeardownClaim::Cleared(Removal::Forgotten | Removal::Unreachable) => 3,
@@ -298,7 +329,12 @@ impl IndexPhase {
                 }
                 true
             }
-            IndexPhase::Initializing { .. } | IndexPhase::Running(_) | IndexPhase::Failed { .. } => false,
+            // `Paused` isn't on its way anywhere: the reservation takes its slot
+            // over directly (`reservation.rs`).
+            IndexPhase::Initializing { .. }
+            | IndexPhase::Running(_)
+            | IndexPhase::Failed { .. }
+            | IndexPhase::Paused { .. } => false,
         }
     }
 }
@@ -599,6 +635,8 @@ fn with_running_manager(volume_id: &str, f: impl FnOnce(&mut IndexManager)) {
     }
 }
 
+#[cfg(test)]
+mod pause_tests;
 #[cfg(test)]
 mod poison_tests;
 #[cfg(test)]

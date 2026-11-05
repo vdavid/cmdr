@@ -4,7 +4,7 @@
 use crate::events::index_mapping::StepsAheadMs;
 use crate::tools::resources::indexing::{
     VolumeIndexingDebug, VolumeIndexingSnapshot, build_indexing_text, build_volume_debug_text, format_duration_human,
-    format_number, freshness_token,
+    format_number, freshness_token, status_token,
 };
 use cmdr_index::ActivityPhase;
 use cmdr_index::Freshness;
@@ -35,7 +35,18 @@ fn test_freshness_token_mapping() {
     assert_eq!(freshness_token(Some(Freshness::Fresh)), "fresh");
     assert_eq!(freshness_token(Some(Freshness::Scanning)), "scanning");
     assert_eq!(freshness_token(Some(Freshness::Stale)), "stale");
+    assert_eq!(freshness_token(Some(Freshness::Failed)), "failed");
+    assert_eq!(freshness_token(Some(Freshness::Paused)), "paused");
     assert_eq!(freshness_token(None), "off");
+}
+
+/// A paused index isn't active, but its sizes still serve, so it reads `paused`
+/// rather than `off`.
+#[test]
+fn a_paused_volume_reads_paused_not_off() {
+    assert_eq!(status_token(false, Some(Freshness::Paused)), "paused");
+    assert_eq!(status_token(false, Some(Freshness::Stale)), "off");
+    assert_eq!(status_token(true, Some(Freshness::Stale)), "stale");
 }
 
 /// A registered volume with sensible defaults; individual tests override fields.

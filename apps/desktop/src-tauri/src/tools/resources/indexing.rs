@@ -119,7 +119,7 @@ fn phase_step_index(phase: &ActivityPhase) -> usize {
 }
 
 /// The freshness token an agent matches on: `fresh` / `scanning` / `stale` /
-/// `failed`, or `off` when no index is registered. This is the single mapping the
+/// `failed` / `paused`, or `off` when no index is registered. This is the single mapping the
 /// resource and the `await index_status` condition share.
 pub(crate) fn freshness_token(freshness: Option<Freshness>) -> &'static str {
     match freshness {
@@ -128,6 +128,9 @@ pub(crate) fn freshness_token(freshness: Option<Freshness>) -> &'static str {
         Some(Freshness::Stale) => "stale",
         // The DB died with a fatal storage error; indexing stopped until rebuilt.
         Some(Freshness::Failed) => "failed",
+        // The disk the index lives on is nearly full: nothing writes, the last-known
+        // sizes keep serving (as stale), and it resumes by itself once there's room.
+        Some(Freshness::Paused) => "paused",
         None => "off",
     }
 }
@@ -137,8 +140,15 @@ pub(crate) fn freshness_token(freshness: Option<Freshness>) -> &'static str {
 /// `freshness` collapse into a single agent-facing word, shared by the
 /// `cmdr://indexing` summary and the `cmdr://state` volumes `indexStatus` field
 /// so the two can never disagree.
+///
+/// A paused index isn't active, yet it's no more "off" than a running one: its
+/// sizes still serve. So `paused` shows through whatever `enabled` says.
 pub(crate) fn status_token(enabled: bool, freshness: Option<Freshness>) -> &'static str {
-    if enabled { freshness_token(freshness) } else { "off" }
+    match freshness {
+        Some(Freshness::Paused) => freshness_token(freshness),
+        _ if enabled => freshness_token(freshness),
+        _ => "off",
+    }
 }
 
 /// Format a duration in milliseconds as a human-readable string.

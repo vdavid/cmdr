@@ -35,7 +35,7 @@ pub(crate) fn spawn_failure_supervisor(
             // volume and bring it back once there's room, ❌ never `Failed`, whose
             // recovery throws the index away.
             Some(IndexStop::OutOfSpace(why)) => {
-                // `stop_indexing` blocks on the drain; keep it off the async worker.
+                // The pause drains the manager; keep it off the async worker.
                 let _ = crate::indexing::host::runtime::spawn_blocking(move || {
                     super::space_pause::pause_for_space(&volume_id, why);
                 })
@@ -107,6 +107,7 @@ fn fail_index(events: &dyn crate::EventSink, volume_id: &str, reason: IndexFailu
             IndexPhase::ShuttingDown {
                 restart: None,
                 then_clear: None,
+                paused_for: None,
             },
         ) {
             IndexPhase::Running(mgr) => mgr,
@@ -157,7 +158,9 @@ pub(super) fn finish_failing(
         match reg.get_mut(volume_id) {
             Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown { .. }) => {
                 match std::mem::replace(&mut instance.phase, IndexPhase::Failed { reason, db_path }) {
-                    IndexPhase::ShuttingDown { restart, then_clear } => (restart, then_clear),
+                    IndexPhase::ShuttingDown {
+                        restart, then_clear, ..
+                    } => (restart, then_clear),
                     _ => (None, None),
                 }
             }

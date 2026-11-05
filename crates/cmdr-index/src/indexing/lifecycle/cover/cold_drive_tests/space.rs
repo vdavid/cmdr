@@ -5,6 +5,7 @@
 use super::toggles::an_indexed_drive;
 use super::*;
 use crate::indexing::host::policy::{FakeHostPolicy, HostPolicy, install_for_test};
+use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::lifecycle::state;
 use crate::indexing::writer::WriteMessage;
 
@@ -22,9 +23,113 @@ fn pause_for_low_disk(drive: &ColdDrive, host: &FakeHostPolicy) {
                     value: "x".to_string(),
                 });
             }
-            !state::is_active(drive.volume_id)
+            state::get_freshness(drive.volume_id) == Some(Freshness::Paused)
         },
     );
+}
+
+/// The headline of #1002: while paused, the drive's database keeps answering (its
+/// sizes serve as they were, stale), the badge reads `paused` with its last-scan
+/// facts intact, and once there's room it comes back. A drive with no event
+/// journal (this one, a `LocalExternal`) comes back `Stale` with NO walk: nothing
+/// can replay what it missed, and a full walk would spend the room that just came
+/// back, so the user rescans from the badge.
+#[test]
+fn a_paused_drive_keeps_serving_its_sizes_and_comes_back_stale_without_a_walk() {
+    let drive = an_indexed_drive("cover-space-pause-reads-test");
+    assert_eq!(
+        state::volume_kind(drive.volume_id),
+        Some(IndexVolumeKind::LocalExternal)
+    );
+    let host = FakeHostPolicy::shared();
+    let _host = install_for_test(Arc::clone(&host) as Arc<dyn HostPolicy>);
+    let scans_before = drive.scans_started();
+    pause_for_low_disk(&drive, &host);
+
+    assert!(!state::is_active(drive.volume_id), "paused is not active");
+    let status = drive.index.volume_status(drive.volume_id);
+    assert_eq!(status.freshness, Some(Freshness::Paused), "the badge says paused");
+    assert!(status.scan_completed_at.is_some(), "with its last-scan facts intact");
+    assert!(
+        !status.holds_index_storage,
+        "an external drive isn't where the index lives"
+    );
+    assert!(
+        drive.index.read_pool(drive.volume_id).is_some(),
+        "the read pool stays installed while nothing writes"
+    );
+    assert!(
+        drive
+            .index
+            .dir_stats(drive.volume_id, &drive.path("scope"))
+            .expect("a read")
+            .is_some(),
+        "and listings keep their last-known sizes"
+    );
+    assert!(
+        drive.events.events().iter().any(|event| matches!(
+            event,
+            crate::IndexEvent::FreshnessChanged {
+                freshness: Freshness::Paused,
+                ..
+            }
+        )),
+        "the badge was told"
+    );
+
+    host.note_index_storage_low(false);
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(20),
+        "the drive to come back once there's room",
+        || state::is_active(drive.volume_id) && state::get_freshness(drive.volume_id) == Some(Freshness::Stale),
+    );
+    assert!(
+        drive
+            .index
+            .dir_stats(drive.volume_id, &drive.path("scope"))
+            .expect("a read")
+            .is_some(),
+        "the restart serves the same sizes"
+    );
+    assert_eq!(
+        drive.scans_started(),
+        scans_before,
+        "no walk: the user rescans from the badge"
+    );
+    assert!(
+        drive.events.events().iter().any(|event| matches!(
+            event,
+            crate::IndexEvent::FreshnessChanged {
+                freshness: Freshness::Stale,
+                ..
+            }
+        )),
+        "the badge was told it's back, Stale"
+    );
+}
+
+/// A user's stop on a paused drive is the last word: the paused instance goes
+/// (gray), its reads with it, and room coming back doesn't restart it.
+#[test]
+fn stopping_a_paused_drive_keeps_it_stopped_when_space_returns() {
+    let drive = an_indexed_drive("cover-space-pause-stop-test");
+    let host = FakeHostPolicy::shared();
+    let _host = install_for_test(Arc::clone(&host) as Arc<dyn HostPolicy>);
+    pause_for_low_disk(&drive, &host);
+
+    drive.index.disable_volume(drive.volume_id).expect("the drive stops");
+    assert_eq!(drive.index.volume_status(drive.volume_id).freshness, None, "gray");
+    assert!(drive.index.read_pool(drive.volume_id).is_none(), "reads skip");
+
+    host.note_index_storage_low(false);
+    // allowed-test-sleep: proves an ABSENCE (no restart) across several of the test
+    // build's 50 ms rechecks (`space_pause::RECHECK_EVERY`).
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    assert!(
+        !state::is_active(drive.volume_id),
+        "the stop wins over the pause's restart"
+    );
+    assert_eq!(drive.index.volume_status(drive.volume_id).freshness, None);
 }
 
 /// The memory watchdog stops ALL indexing and nothing restarts it but the user. A
@@ -88,5 +193,36 @@ fn a_drive_pauses_while_the_disk_is_low_and_resumes_when_there_is_room() {
             .expect("readable")
             .is_some(),
         "the same database file: a `Failed`-style rebuild would have deleted it"
+    );
+}
+
+/// A trip that lands while a scan start has the manager out (`Detached`) is
+/// CLAIMED, and the handback finishes the pause: the signal is one-shot, so a
+/// bounced trip would leave the volume running over a writer that already exited.
+#[test]
+fn a_pause_landing_mid_scan_start_still_ends_paused() {
+    let drive = an_indexed_drive("cover-space-pause-detached-test");
+    let host = FakeHostPolicy::shared();
+    let _host = install_for_test(Arc::clone(&host) as Arc<dyn HostPolicy>);
+    host.note_index_storage_low(true);
+
+    state::while_detached_for_test(drive.volume_id, || {
+        state::pause_for_space(
+            drive.volume_id,
+            crate::indexing::lifecycle::failure::SpaceStop::DiskFull,
+        );
+    });
+    assert_eq!(
+        state::get_freshness(drive.volume_id),
+        Some(Freshness::Paused),
+        "the handback carried the pause out"
+    );
+    assert!(drive.index.read_pool(drive.volume_id).is_some(), "reads kept");
+
+    host.note_index_storage_low(false);
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(20),
+        "the drive to come back once there's room",
+        || state::is_active(drive.volume_id),
     );
 }

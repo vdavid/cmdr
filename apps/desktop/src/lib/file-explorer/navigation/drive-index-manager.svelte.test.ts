@@ -75,6 +75,7 @@ function status(volumeId: string, freshness: VolumeIndexStatus['freshness']): Vo
     unreadableSettled: true,
     nextSweepDueAt: null,
     liveWatch: true,
+    holdsIndexStorage: false,
   }
 }
 

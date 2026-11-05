@@ -209,9 +209,9 @@ fn index_status_params(params: &Value) -> Result<(String, String), ToolError> {
         .get("value")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ToolError::invalid_params("Missing 'value' parameter"))?;
-    if !matches!(value, "fresh" | "scanning" | "stale") {
+    if !matches!(value, "fresh" | "scanning" | "stale" | "paused") {
         return Err(ToolError::invalid_params(
-            "index_status value must be 'fresh', 'scanning', or 'stale'",
+            "index_status value must be 'fresh', 'scanning', 'stale', or 'paused'",
         ));
     }
     Ok((volume_id.to_string(), value.to_string()))
@@ -658,6 +658,13 @@ mod index_status_tests {
         let (volume_id, status) = index_status_params(&params).expect("valid params");
         assert_eq!(volume_id, "mtp-AA:BB:CC:65537");
         assert_eq!(status, "fresh");
+    }
+
+    #[test]
+    fn waits_for_a_drive_to_pause_for_disk_space() {
+        let params = json!({ "volumeId": "root", "value": "paused" });
+        let (_, status) = index_status_params(&params).expect("paused is a status an agent can wait for");
+        assert!(index_status_matches(Some(Freshness::Paused), &status));
     }
 
     #[test]

@@ -1139,7 +1139,8 @@ fn a_start_answers_every_phase_it_can_meet() {
     assert_eq!(
         reserve_over(IndexPhase::ShuttingDown {
             restart: None,
-            then_clear: None
+            then_clear: None,
+            paused_for: None,
         }),
         (true, true),
         "a start meeting a drain has to be recorded, never bounced",
@@ -1159,5 +1160,17 @@ fn a_start_answers_every_phase_it_can_meet() {
         }),
         (true, false),
         "a dead index is cleared by the choke point, not recorded against",
+    );
+
+    // PAUSED: nothing runs on it, and the database is fine. The start TAKES the
+    // slot over (no refusal, nothing recorded), so the volume's reads swap pools in
+    // one step instead of going dark between a teardown and a reservation.
+    assert_eq!(
+        reserve_over(IndexPhase::Paused {
+            db_path: dir.path().join("paused.db"),
+            why: SpaceStop::BelowThreshold,
+        }),
+        (false, false),
+        "a start takes a paused slot over",
     );
 }

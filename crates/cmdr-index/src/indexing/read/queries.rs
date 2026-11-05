@@ -98,6 +98,7 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
         unreadable_retried: unreadable.retried,
         unreadable_settled,
         live_watch: volume_kind(volume_id).is_none_or(IndexVolumeKind::has_live_watch),
+        holds_index_storage: volume_id == ROOT_VOLUME_ID,
     }
 }
 
@@ -227,10 +228,18 @@ fn disabled_status_response() -> IndexStatusResponse {
     }
 }
 
-/// Get the current indexing status for a volume.
+/// Get the current indexing status for a volume. A paused one's last-scan facts are read off its file, off the lock.
 pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
     let reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
     match reg.get(volume_id).map(|i| &i.phase) {
+        Some(IndexPhase::Paused { db_path, .. }) => {
+            let db_path = db_path.clone();
+            drop(reg);
+            Ok(IndexStatusResponse {
+                index_status: StoredIndex::open(&db_path).and_then(|stored| stored.last_scan()).ok(),
+                ..disabled_status_response()
+            })
+        }
         // A `Failed` volume reports the same not-scanning shape as disabled — its
         // distinct state rides `freshness: Failed` + `failure` on
         // `VolumeIndexStatus`, not this scan-progress response.
@@ -277,7 +286,13 @@ pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
 pub fn get_debug_status(volume_id: &str) -> Result<IndexDebugStatusResponse, String> {
     let reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
     match reg.get(volume_id).map(|i| &i.phase) {
-        None | Some(IndexPhase::ShuttingDown { .. } | IndexPhase::Failed { .. } | IndexPhase::Detached { .. }) => {
+        None
+        | Some(
+            IndexPhase::ShuttingDown { .. }
+            | IndexPhase::Failed { .. }
+            | IndexPhase::Detached { .. }
+            | IndexPhase::Paused { .. },
+        ) => {
             // `Detached` reports the same shape as `get_status` gives it: a scan
             // starting, with none of the manager-held debug counters available.
             let base = if matches!(reg.get(volume_id).map(|i| &i.phase), Some(IndexPhase::Detached { .. })) {

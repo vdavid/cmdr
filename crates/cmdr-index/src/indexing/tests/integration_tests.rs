@@ -1077,7 +1077,8 @@ fn is_initializing_phase_matches_only_initializing_variant() {
     // ShuttingDown classified as not-initializing.
     assert!(!is_initializing_phase(&IndexPhase::ShuttingDown {
         restart: None,
-        then_clear: None
+        then_clear: None,
+        paused_for: None,
     }));
     // Initializing classified as initializing.
     assert!(is_initializing_phase(&IndexPhase::Initializing { store }));
@@ -1135,6 +1136,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
                 phase: IndexPhase::ShuttingDown {
                     restart: None,
                     then_clear: None,
+                    paused_for: None,
                 },
                 started_as: StartRequest::for_test(IndexVolumeKind::Local),
                 signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),
@@ -1268,6 +1270,7 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
                 phase: IndexPhase::ShuttingDown {
                     restart: None,
                     then_clear: None,
+                    paused_for: None,
                 },
                 started_as: StartRequest::for_test(IndexVolumeKind::Local),
                 signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), NoopEventSink::shared()),

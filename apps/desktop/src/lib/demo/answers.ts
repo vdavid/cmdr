@@ -178,6 +178,7 @@ export const appAnswers: AnswerTable = {
     unreadableSettled: false,
     nextSweepDueAt: null,
     liveWatch: false,
+    holdsIndexStorage: false,
   }),
 
   // Search (⌘F) is the WASM engine's (`crates/cmdr-listing-wasm/src/search.rs`); no cloud AI, so

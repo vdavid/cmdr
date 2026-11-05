@@ -30,6 +30,21 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 
 // ── IndexManager ─────────────────────────────────────────────────────
 
+/// Why a start runs, for the two places that answer a pause's restart differently.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum StartCause {
+    /// Every start but one: a launch, a user's enable, a reconnect, a recorded
+    /// start, a relocation.
+    Ordinary,
+    /// The space pause's own restart once there's room (`state/space_pause.rs`). Two
+    /// differences, both about the pause being nobody's request: the reservation
+    /// refuses it when the paused key is gone (a stop landed after the waiter's
+    /// last look), and a volume with no event journal keeps its rows without a
+    /// walk (`LaunchRoute::KeepTheRows`), so it comes back `Stale` for the user
+    /// to rescan rather than spending the space it just got back on a full walk.
+    SpacePauseEnded,
+}
+
 /// Central coordinator for the drive indexing system.
 ///
 /// Owns the SQLite store (reads), the writer thread (writes), and the scanner handle.
@@ -344,7 +359,10 @@ impl IndexManager {
     /// arm needs (the sweep-window seed, the ledger-heal latch), and its PLACEMENT
     /// is constrained: it sits below the `is_trait_scanned` early return, or a
     /// share and a phone get routed into a local phase machine.
-    pub fn resume_or_scan(&mut self) -> Result<(), String> {
+    ///
+    /// `cause` is why the start runs: a space pause's restart on a volume with no
+    /// event journal keeps its rows without a walk (`LaunchRoute::KeepTheRows`).
+    pub fn resume_or_scan(&mut self, cause: StartCause) -> Result<(), String> {
         // SMB and MTP volumes have no event journal, so there's nothing to
         // replay: a persisted index loaded Stale on launch (already seeded by
         // `start_indexing_for`) and stays browsable until the user rescans; a
@@ -442,6 +460,7 @@ impl IndexManager {
             needs_rebuild: deletes::marker_reads_as_set(IndexStore::index_needs_rebuild(read_conn), &self.volume_id),
             predates_exclusion_policy: has_rows
                 && scanner::index_predates_exclusion_policy(read_conn, self.path_space().exclusion_scope().tier()),
+            walk_declined: cause == StartCause::SpacePauseEnded && !self.kind.has_event_journal(),
         });
 
         match route {
@@ -479,6 +498,18 @@ impl IndexManager {
                 };
                 log::info!("Startup: walking '{}' whole ({trigger})", self.volume_id);
                 self.start_scan(trigger).map_err(|e| e.to_string())
+            }
+            launch_route::LaunchRoute::KeepTheRows => {
+                // A space pause ended on a volume nothing can replay. Its rows are
+                // the last-known state, served as Stale (seeded at reservation), and
+                // nothing watches it until the user rescans from the badge: a full
+                // walk here would spend the room that just came back.
+                log::info!(
+                    "Startup: '{}' is back from a disk-space pause with no journal to replay; keeping its rows as Stale, \
+                     no walk until a rescan",
+                    self.volume_id
+                );
+                Ok(())
             }
             launch_route::LaunchRoute::CoverInPhases | launch_route::LaunchRoute::RebuildThenCoverInPhases => {
                 // Nothing has ever completed here, so the phase machine builds it:

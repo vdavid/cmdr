@@ -163,6 +163,7 @@ describe('DriveIndexBadge a11y', () => {
       unreadableSettled: true,
       nextSweepDueAt: null,
       liveWatch: true,
+      holdsIndexStorage: false,
     }
   }
 

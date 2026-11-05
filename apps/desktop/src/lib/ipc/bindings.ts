@@ -1207,6 +1207,26 @@ export const commands = {
        *  diagnostic, for the technical details only.
        */
       | { type: 'reply_signature_refused'; path: string; message: string }
+      /**
+       *  "Always require SMB encryption" is on, and a share this transfer reads or writes can't
+       *  encrypt its connection, so Cmdr sent nothing over it (`VolumeError::EncryptionRequired`,
+       *  SMB-only). Its own variant so the stopped state names the setting: the same server gives
+       *  the same answer until it or the setting changes, so it's ❌ never a blip to retry.
+       */
+      | { type: 'smb_encryption_required'; path: string }
+      /**
+       *  A share this transfer touches: its server didn't confirm the security settings it agreed
+       *  on, so the backend closed the connection (`VolumeError::NegotiationInvalid`, SMB-only). A
+       *  misbehaving server or tampering; its own variant so the stopped state says so and offers
+       *  ❌ no Retry. `message` is the backend's diagnostic, for the technical details only.
+       */
+      | { type: 'smb_negotiation_invalid'; path: string; message: string }
+      /**
+       *  A share this transfer touches only accepts encrypted connections, and the connection agreed
+       *  on no way to encrypt (`VolumeError::EncryptionUnavailable`, SMB-only). The server's own
+       *  setting, so ❌ no Retry.
+       */
+      | { type: 'smb_encryption_unavailable'; path: string }
       // Couldn't read from the source.
       | { type: 'read_error'; path: string; message: string }
       // Couldn't write to the destination.
@@ -2716,6 +2736,9 @@ export const commands = {
   // Updates the low-disk-space warning config at runtime (from settings).
   setLowDiskSpaceConfig: (enabled: boolean, thresholdPercent: number) =>
     __TAURI_INVOKE<void>('set_low_disk_space_config', { enabled, thresholdPercent }),
+  // Updates the free-space percent below which the drive index pauses (from settings).
+  setIndexPauseFreeSpacePercent: (percent: number) =>
+    __TAURI_INVOKE<void>('set_index_pause_free_space_percent', { percent }),
   /**
    *  Records a frontend-originated feature event. Returns immediately, and the underlying
    *  [`capture`](crate::analytics::events::capture) is gated (consent + dev/CI suppression), so this
@@ -10215,6 +10238,17 @@ export type Freshness =
    *  for the typed reason carried alongside on the `Failed` phase.
    */
   | 'failed'
+  /**
+   *  Indexing is PAUSED because the disk the index databases live on is full or
+   *  below the low-disk-space threshold (`state/space_pause.rs`). The database is
+   *  intact and its last-known sizes keep serving, as stale; nothing writes, and
+   *  nothing watches. The volume restarts by itself once there's room, into a
+   *  fresh freshness value (journaled: a replay to `Fresh`; anything else:
+   *  `Stale`, rescan from the badge). Red, like `Failed`, and sticky the same way:
+   *  only `ScanStarted` leaves it, so a scan-completion handler or a watcher
+   *  event unwinding as the writer stops can't move it.
+   */
+  | 'paused'
 
 /**
  *  A classified git failure: the [`FriendlyGitErrorKind`], the path it was
@@ -21867,10 +21901,13 @@ export type VolumeIndexStatus = {
   enabled: boolean
   /**
    *  The volume's freshness (gray = `None`/disabled; blue = `scanning`; green
-   *  = `fresh`; yellow = `stale`; red = `failed`). `Some(Failed)` for a dead
-   *  index even though `enabled` is `false` (the instance stays registered in
-   *  the `Failed` phase so the badge is honest), and `None` on a registered
-   *  volume nothing has scanned, which is what a walk-built index looks like.
+   *  = `fresh`; yellow = `stale`; red = `failed` or `paused`). `Some(Failed)`
+   *  for a dead index even though `enabled` is `false` (the instance stays
+   *  registered in the `Failed` phase so the badge is honest), likewise
+   *  `Some(Paused)` for one paused for disk space (its last-scan facts below stay
+   *  filled in, and its sizes keep serving, as stale), and `None` on a
+   *  registered volume nothing has scanned, which is what a walk-built index
+   *  looks like.
    */
   freshness: Freshness | null
   /**
@@ -21944,6 +21981,16 @@ export type VolumeIndexStatus = {
    *  volume with no registered index, where "stale" means what it always has.
    */
   liveWatch: boolean
+  /**
+   *  Whether this volume is the drive the index databases live on: the boot
+   *  volume (`ROOT_VOLUME_ID`), whose cache dir holds every volume's index. A
+   *  pause for disk space reads the BOOT volume's free space whichever volume it
+   *  pauses (`lifecycle/state/space_pause.rs`), so a paused external drive or
+   *  share is paused because a different disk is full. The badge picks between
+   *  "this disk is nearly full" and "the disk Cmdr keeps its index on is nearly
+   *  full" on this.
+   */
+  holdsIndexStorage: boolean
 }
 
 /**

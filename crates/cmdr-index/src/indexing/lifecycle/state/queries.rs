@@ -201,6 +201,9 @@ pub(crate) fn is_initializing_for_test(volume_id: &str) -> bool {
 /// badge, and a volume that reads inactive for the length of a rescan renders
 /// `enabled: false` next to a live freshness color — a shape the badge's own doc
 /// comment says can't occur.
+///
+/// A `Paused` volume does NOT count: nothing runs on it, and its badge reads off
+/// `Freshness::Paused` rather than `enabled`.
 pub fn is_active(volume_id: &str) -> bool {
     matches!(
         INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| &i.phase),
@@ -221,7 +224,9 @@ pub(crate) fn is_active_and_staying(volume_id: &str) -> bool {
     match INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| &i.phase) {
         Some(IndexPhase::Initializing { .. } | IndexPhase::Running(_)) => true,
         Some(IndexPhase::Detached { teardown, .. }) => teardown.is_none(),
-        Some(IndexPhase::ShuttingDown { .. } | IndexPhase::Failed { .. }) | None => false,
+        // A paused volume's start takes its slot over (`reservation.rs`), so it
+        // isn't staying: a start must go ahead.
+        Some(IndexPhase::ShuttingDown { .. } | IndexPhase::Failed { .. } | IndexPhase::Paused { .. }) | None => false,
     }
 }
 
@@ -240,7 +245,13 @@ pub(crate) fn is_being_torn_down(volume_id: &str) -> bool {
     match INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| &i.phase) {
         Some(IndexPhase::ShuttingDown { .. }) => true,
         Some(IndexPhase::Detached { teardown, .. }) => teardown.is_some(),
-        Some(IndexPhase::Initializing { .. } | IndexPhase::Running(_) | IndexPhase::Failed { .. }) | None => false,
+        Some(
+            IndexPhase::Initializing { .. }
+            | IndexPhase::Running(_)
+            | IndexPhase::Failed { .. }
+            | IndexPhase::Paused { .. },
+        )
+        | None => false,
     }
 }
 

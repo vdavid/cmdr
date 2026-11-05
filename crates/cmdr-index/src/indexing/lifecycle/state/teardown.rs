@@ -42,11 +42,22 @@ use crate::volume_files::{self, Removal, StoreDirs};
 /// scan start still holding the manager can register a rescan of its own before it
 /// hands back. Every call is idempotent (a second withdraw finds nothing).
 pub(super) fn withdraw_from_the_read_path(volume_id: &str) {
-    verifier::invalidate();
     if let Some(pool) = uninstall_read_pool(volume_id) {
         pool.invalidate();
         volume_files::retire_read_connections(&StoreDirs::around_index_db(pool.db_path()), volume_id);
     }
+    drop_what_a_stopped_writer_is_owed(volume_id);
+}
+
+/// Everything [`withdraw_from_the_read_path`] does but the read pool: what a
+/// volume whose writer stopped is no longer owed, whether or not its reads keep
+/// serving. The space pause (`space_pause.rs`) calls this alone, since its
+/// database stays readable.
+///
+/// The pending-sizes tracker goes because nothing will ever drain the queue that
+/// would clear it: an hourglass left installed would stick for the whole pause.
+pub(super) fn drop_what_a_stopped_writer_is_owed(volume_id: &str) {
+    verifier::invalidate();
     uninstall_pending_sizes(volume_id);
     // The branch set goes with the instance that watched it. A cleared index
     // deletes the database, so the persisted copy goes too; a stopped one keeps
@@ -75,6 +86,7 @@ pub(super) fn finish_the_claimed_teardown(
 ) {
     match claim {
         TeardownClaim::Failed(reason) => super::supervisor::finish_failing(events, volume_id, mgr, reason),
+        TeardownClaim::Paused(why) => super::space_pause::finish_pausing(volume_id, mgr, why),
         TeardownClaim::Stopped(persist) => finish_stopping(volume_id, mgr, persist),
         TeardownClaim::Cleared(why) => {
             if let Err(e) = finish_clearing(volume_id, mgr, why) {
@@ -251,6 +263,7 @@ fn stop_the_volume(volume_id: &str, persist: PersistDisable) -> Result<(), Strin
                 IndexPhase::ShuttingDown {
                     restart: None,
                     then_clear: None,
+                    paused_for: None,
                 },
             ) {
                 IndexPhase::Running(mgr) => StopTarget::Drain(mgr),
@@ -279,6 +292,14 @@ fn stop_the_volume(volume_id: &str, persist: PersistDisable) -> Result<(), Strin
                     log::info!("Indexing disabled for a failed volume '{volume_id}'");
                     StopTarget::NothingToDrain
                 }
+                IndexPhase::Paused { why, .. } => {
+                    // Nothing is running (the pause drained it), and the read
+                    // handles were withdrawn above: this IS the stop. The waiter
+                    // sees the volume isn't paused any more and leaves it be.
+                    reg.remove(volume_id);
+                    log::info!("Indexing stopped for '{volume_id}' while it was paused for disk space ({why:?})");
+                    StopTarget::NothingToDrain
+                }
                 IndexPhase::ShuttingDown { then_clear, .. } => {
                     // Another teardown is draining this volume and frees the slot
                     // when it's done. ❌ Don't put its phase back: the fresh marker
@@ -286,9 +307,11 @@ fn stop_the_volume(volume_id: &str, persist: PersistDisable) -> Result<(), Strin
                     // one brought the drive back up over this stop. ⚠️ A clear it
                     // carries stays, though: dropping it is what left a forgotten
                     // drive's index on disk.
+                    // Drops a pause's `paused_for` too: the stop outranks it.
                     instance.phase = IndexPhase::ShuttingDown {
                         restart: None,
                         then_clear,
+                        paused_for: None,
                     };
                     if then_clear.is_some() {
                         StopTarget::BeingCleared
@@ -322,11 +345,20 @@ pub(super) fn finish_stopping(volume_id: &str, mut mgr: Box<IndexManager>, persi
     // The manager carries a share of the volume's hold: dropped ahead of a recorded
     // clear's wait, or the clear would wait on itself.
     drop(mgr);
+    retire_after_the_drain(volume_id, &db_path, persist);
+}
+
+/// The far side of a stop's drain, once the manager is shut down and dropped:
+/// free the slot, then carry out the clear and the start that met the drain, or
+/// record the veto. Shared with a space pause whose drain somebody else's stop
+/// or clear landed in (`space_pause::finish_pausing`), so that pause ends the
+/// volume exactly where the stop would have.
+pub(super) fn retire_after_the_drain(volume_id: &str, db_path: &std::path::Path, persist: PersistDisable) {
     let Retired { restart, then_clear } = retire_the_instance(volume_id);
     if let Some(why) = then_clear {
         // A forget met this drain. It deletes now, and a start that came after it
         // still runs (`finish_clearing` says why it runs even if the files stay).
-        match remove_once_let_go(volume_id, &db_path, why) {
+        match remove_once_let_go(volume_id, db_path, why) {
             Ok(()) => log::info!("Indexing stopped for '{volume_id}' and its index cleared, as asked mid-stop"),
             Err(e) => log::warn!("Drive index clear for '{volume_id}' after its stop finished with: {e}"),
         }
@@ -366,7 +398,9 @@ fn retire_the_instance(volume_id: &str) -> Retired {
         .lock_ignore_poison()
         .remove(volume_id)
         .map_or_else(Retired::default, |instance| match instance.phase {
-            IndexPhase::ShuttingDown { restart, then_clear } => Retired { restart, then_clear },
+            IndexPhase::ShuttingDown {
+                restart, then_clear, ..
+            } => Retired { restart, then_clear },
             _ => Retired::default(),
         })
 }
@@ -403,6 +437,7 @@ pub(crate) fn while_stopping_for_test(volume_id: &str, f: impl FnOnce()) {
             IndexPhase::ShuttingDown {
                 restart: None,
                 then_clear: None,
+                paused_for: None,
             },
         ) {
             IndexPhase::Running(mgr) => mgr,
@@ -572,6 +607,7 @@ pub(crate) fn clear_index(volume_id: &str, why: Removal) -> Result<(), String> {
             IndexPhase::ShuttingDown {
                 restart: None,
                 then_clear: None,
+                paused_for: None,
             },
         ) {
             IndexPhase::Running(mgr) => ClearTarget::Running { mgr },
@@ -594,6 +630,12 @@ pub(crate) fn clear_index(volume_id: &str, why: Removal) -> Result<(), String> {
                 reg.remove(volume_id);
                 ClearTarget::NoWriter { db_path }
             }
+            IndexPhase::Paused { db_path, .. } => {
+                // Drained already; its read handles were withdrawn above, so
+                // nothing reads the file the clear is about to delete.
+                reg.remove(volume_id);
+                ClearTarget::NoWriter { db_path }
+            }
             IndexPhase::ShuttingDown { then_clear, .. } => {
                 // Another teardown is already draining this volume, and that may be
                 // a STOP, which keeps the database. So the clear is RECORDED on the
@@ -604,6 +646,7 @@ pub(crate) fn clear_index(volume_id: &str, why: Removal) -> Result<(), String> {
                 instance.phase = IndexPhase::ShuttingDown {
                     restart: None,
                     then_clear: Some(then_clear.map_or(why, |recorded| recorded.wider(why))),
+                    paused_for: None,
                 };
                 log::info!("Drive index clear for '{volume_id}' lands as the drain already running ends");
                 return Ok(());

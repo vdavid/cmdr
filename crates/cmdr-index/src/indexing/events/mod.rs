@@ -210,10 +210,13 @@ pub struct VolumeIndexStatus {
     /// consult BOTH — the first-connect prompt does.
     pub enabled: bool,
     /// The volume's freshness (gray = `None`/disabled; blue = `scanning`; green
-    /// = `fresh`; yellow = `stale`; red = `failed`). `Some(Failed)` for a dead
-    /// index even though `enabled` is `false` (the instance stays registered in
-    /// the `Failed` phase so the badge is honest), and `None` on a registered
-    /// volume nothing has scanned, which is what a walk-built index looks like.
+    /// = `fresh`; yellow = `stale`; red = `failed` or `paused`). `Some(Failed)`
+    /// for a dead index even though `enabled` is `false` (the instance stays
+    /// registered in the `Failed` phase so the badge is honest), likewise
+    /// `Some(Paused)` for one paused for disk space (its last-scan facts below stay
+    /// filled in, and its sizes keep serving, as stale), and `None` on a
+    /// registered volume nothing has scanned, which is what a walk-built index
+    /// looks like.
     pub freshness: Option<super::lifecycle::freshness::Freshness>,
     /// The typed fatal-storage reason, present ONLY when `freshness == Failed`.
     /// Carries the SQLite result codes so logs and any future detailed tooltip can
@@ -268,6 +271,14 @@ pub struct VolumeIndexStatus {
     /// plugged in, so the stale copy there can't blame a disconnect. `true` for a
     /// volume with no registered index, where "stale" means what it always has.
     pub live_watch: bool,
+    /// Whether this volume is the drive the index databases live on: the boot
+    /// volume (`ROOT_VOLUME_ID`), whose cache dir holds every volume's index. A
+    /// pause for disk space reads the BOOT volume's free space whichever volume it
+    /// pauses (`lifecycle/state/space_pause.rs`), so a paused external drive or
+    /// share is paused because a different disk is full. The badge picks between
+    /// "this disk is nearly full" and "the disk Cmdr keeps its index on is nearly
+    /// full" on this.
+    pub holds_index_storage: bool,
 }
 
 /// Extended debug status for the debug window. Includes live DB counts

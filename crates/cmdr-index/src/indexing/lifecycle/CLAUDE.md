@@ -34,8 +34,8 @@ the first index, each with its own `CLAUDE.md`. Other leaves are one job each (`
   stops WRITING (`rescan_request::run_if_owed`).
 - **Fire a pipeline-phase transition through `events::set_phase_for`**; the `IndexPhase` swaps here are a different
   machine. Freshness has ONE total table (`Freshness::on`), and `..._on` vs `apply_freshness_event` is LOCK DISCIPLINE.
-- **A fatal storage error FAILS the index** (recovery is a rebuild); a full or low disk PAUSES it and resumes on its
-  own, ❌ never `Failed`. `DETAILS.md` § "Pausing for disk space".
+- **A fatal storage error FAILS the index** (a rebuild); a full or low disk PAUSES it (`IndexPhase::Paused`: reads kept,
+  no writer), ❌ never `Failed`. `DETAILS.md` § "Pausing for disk space".
 - **The `[4]` `module-cycles` tangle is ACCEPTED** (ownership down, liveness back up via the registry). ❌ Don't hide it
   by moving `context_for_walk` into `state`. `DETAILS.md` § The accepted `[4]` module tangle.
 - **Two switches gate BACKGROUND work only, master first.** `indexing.enabled` hard-gates `Activation::IndexTheVolume`;

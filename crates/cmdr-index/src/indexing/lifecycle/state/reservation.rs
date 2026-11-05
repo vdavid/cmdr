@@ -13,6 +13,7 @@ use super::{INDEX_REGISTRY, IndexInstance, IndexPhase, Registry, StartRequest, V
 use crate::indexing::hold::VolumeWork;
 #[cfg(any(test, feature = "testing"))]
 use crate::indexing::lifecycle::freshness::Freshness;
+use crate::indexing::lifecycle::manager::StartCause;
 use crate::indexing::read::enrichment::{ReadPool, install_read_pool};
 use crate::indexing::read::pending_sizes::{PendingSizes, install_pending_sizes};
 use crate::indexing::store::IndexStore;
@@ -65,6 +66,13 @@ pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
 /// not "construct manager then maybe shut down" (which leaks a live writer
 /// thread while `resume_or_scan` runs). Keyed per volume, two starts for the
 /// *same* volume still can't race, while two *different* volumes start freely.
+///
+/// A volume [`Paused`](IndexPhase::Paused) for disk space is the one held key a
+/// start takes over rather than refuses: nothing runs on it, and swapping its read
+/// handles for the new ones here, in one critical section, is what keeps its
+/// listings serving sizes across the restart. A pause's own restart
+/// ([`StartCause::SpacePauseEnded`]) that finds the key gone refuses instead: a
+/// stop or clear landed after its last check.
 ///
 /// On success, and STILL UNDER THE REGISTRY LOCK, publishes the volume's
 /// `read_pool`/`pending_sizes` into the read-side tables, so a volume is never
@@ -119,14 +127,33 @@ pub(super) fn try_reserve_initializing_phase_on(
         None
     };
     let mut reg = registry.lock_ignore_poison();
-    if let Some(instance) = reg.get_mut(volume_id) {
-        if instance.phase.claim_the_restart(request) {
-            log::info!("start_indexing: '{volume_id}' is on its way out; this start runs as that finishes");
-        } else {
-            log::info!("start_indexing: '{volume_id}' is already initializing or running, no-op");
+    let took_over_a_pause = match reg.get_mut(volume_id) {
+        // A volume paused for disk space holds its key and its read handles, and
+        // nothing is running on it: this start takes the slot over, in this one
+        // critical section, so the new read pool replaces the old one with no
+        // moment where the volume routes no reads (and no competing start can take
+        // a slot freed in between). The insert below displaces the paused instance.
+        Some(instance) if matches!(instance.phase, IndexPhase::Paused { .. }) => true,
+        Some(instance) => {
+            if instance.phase.claim_the_restart(request) {
+                log::info!("start_indexing: '{volume_id}' is on its way out; this start runs as that finishes");
+            } else {
+                log::info!("start_indexing: '{volume_id}' is already initializing or running, no-op");
+            }
+            return Err(Box::new(store));
         }
-        return Err(Box::new(store));
-    }
+        // A pause's restart found the volume gone: somebody stopped or cleared it
+        // meanwhile, and their word stands.
+        None if request.cause() == StartCause::SpacePauseEnded => {
+            log::info!("start_indexing: '{volume_id}' isn't paused any more; its pause's restart has nothing to do");
+            return Err(Box::new(store));
+        }
+        None => false,
+    };
+    let seeded = *signals.freshness.lock_ignore_poison();
+    let events = Arc::clone(&signals.events);
+    // `install` displaces the paused volume's pool and tracker, if it had them.
+    let displaced_pool = crate::indexing::read::enrichment::get_read_pool_for(volume_id);
     install_read_pool(volume_id, read_pool);
     install_pending_sizes(volume_id, pending_sizes);
     let work = VolumeWork::take(volume_id, mount_identity);
@@ -134,11 +161,27 @@ pub(super) fn try_reserve_initializing_phase_on(
         volume_id.to_string(),
         IndexInstance {
             phase: IndexPhase::Initializing { store },
-            started_as: request,
+            started_as: request.into_recorded(),
             signals,
             work: work.clone(),
         },
     );
+    drop(reg);
+    if took_over_a_pause {
+        if let Some(pool) = displaced_pool {
+            pool.invalidate();
+        }
+        // The badge says paused, and nothing else would tell it otherwise: a seeded
+        // value fires no transition. (A `None` seed announces `Scanning` itself,
+        // `startup.rs`.)
+        if let Some(freshness) = seeded {
+            events.emit(crate::IndexEvent::FreshnessChanged {
+                volume_id: volume_id.to_string(),
+                freshness,
+            });
+        }
+        log::info!("start_indexing: '{volume_id}' takes over its paused index");
+    }
     Ok(work)
 }
 

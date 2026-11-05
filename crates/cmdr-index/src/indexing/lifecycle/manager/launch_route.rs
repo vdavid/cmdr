@@ -24,6 +24,10 @@ pub(super) enum LaunchRoute {
     /// nothing can say which ground they cover, so resuming into them would serve
     /// them as current with nothing watching them.
     RebuildThenCoverInPhases,
+    /// Keep the completed index as it is, walk nothing, watch nothing: it serves
+    /// as Stale until the user rescans. Only a disk-space pause's restart on a
+    /// volume with no event journal lands here.
+    KeepTheRows,
 }
 
 /// The facts a launch reads off a volume's own database before it decides.
@@ -59,6 +63,11 @@ pub(super) struct IndexOnDisk {
     /// longer applies (`scanner::index_predates_exclusion_policy`). Nothing in it
     /// counts as covered, and rows the current policy cuts may still sit in it.
     pub predates_exclusion_policy: bool,
+    /// This start is a disk-space pause ending on a volume with no event journal
+    /// (`StartCause::SpacePauseEnded`, `IndexVolumeKind::has_event_journal`), so a
+    /// completed index is not walked again: nothing can replay what the pause
+    /// missed, and a full walk would spend the room that just came back.
+    pub walk_declined: bool,
 }
 
 /// Route one launch. The table, top to bottom:
@@ -78,6 +87,8 @@ pub(super) struct IndexOnDisk {
 ///   alone is NOT this row: the id counter is machine-wide, and the replay
 ///   bounds its own cost (`watch/DETAILS.md` § "Replay cost, not event count");
 /// - a replayable journal ⇒ replay;
+/// - a completed index a disk-space pause's restart declines to walk ⇒ keep the
+///   rows, Stale, for the user to rescan;
 /// - a completed index with no journal to replay ⇒ walk it whole, which
 ///   reconciles in place (the path a `LocalExternal` drive takes at every mount,
 ///   and the boot disk on Linux) — ❌ the phased answers must never swallow this,
@@ -103,6 +114,9 @@ pub(super) fn launch_route(index: &IndexOnDisk) -> LaunchRoute {
         } else {
             LaunchRoute::ReplayTheJournal
         };
+    }
+    if index.scan_completed && index.walk_declined {
+        return LaunchRoute::KeepTheRows;
     }
     if index.scan_completed || !index.phased_first_index {
         return LaunchRoute::ScanTheVolume;
@@ -144,6 +158,7 @@ mod tests {
         phased_first_index: true,
         needs_rebuild: false,
         predates_exclusion_policy: false,
+        walk_declined: false,
     };
 
     /// A volume the phase machine covered part of and never finished: rows, no
@@ -357,6 +372,35 @@ mod tests {
                 ..FRESH
             }),
             LaunchRoute::CoverInPhases
+        );
+    }
+
+    /// A disk-space pause ending on a volume with no journal keeps its completed
+    /// rows and walks nothing: they serve as Stale until the user rescans. Only a
+    /// COMPLETED index: a partial one carries on in phases (add-only, never a full
+    /// walk), and a marked one still rebuilds.
+    #[test]
+    fn a_pause_ending_with_no_journal_keeps_the_rows_without_a_walk() {
+        let declined = IndexOnDisk {
+            walk_declined: true,
+            ..COMPLETED_UNJOURNALED
+        };
+        assert_eq!(launch_route(&declined), LaunchRoute::KeepTheRows);
+        assert_eq!(
+            launch_route(&IndexOnDisk {
+                walk_declined: true,
+                ..PHASED_PARTIAL
+            }),
+            LaunchRoute::CoverInPhases,
+            "a first index still in phases carries on"
+        );
+        assert_eq!(
+            launch_route(&IndexOnDisk {
+                needs_rebuild: true,
+                ..declined
+            }),
+            LaunchRoute::RebuildThenCoverInPhases,
+            "an index with holes in it is rebuilt whatever ended the pause"
         );
     }
 

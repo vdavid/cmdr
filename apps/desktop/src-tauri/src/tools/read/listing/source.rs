@@ -83,6 +83,10 @@ pub(super) fn coverage(enabled: bool, freshness: Option<Freshness>, indexed: boo
     } else if !authoritative {
         Some(match freshness {
             Some(Freshness::Scanning) => "The index is still scanning, so this may be incomplete.".to_string(),
+            Some(Freshness::Paused) => {
+                "Indexing is paused because the disk the index lives on is nearly full, so this may be out of date."
+                    .to_string()
+            }
             _ => "The index may have drifted since the last full scan, so treat this as best-effort.".to_string(),
         })
     } else {

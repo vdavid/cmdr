@@ -62,6 +62,7 @@ impl TestInstanceGuard {
                 phase: IndexPhase::ShuttingDown {
                     restart: None,
                     then_clear: None,
+                    paused_for: None,
                 },
                 started_as: crate::indexing::lifecycle::state::StartRequest::for_test(kind),
                 signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), crate::NoopEventSink::shared()),

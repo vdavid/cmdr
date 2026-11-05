@@ -38,6 +38,8 @@ enum Next {
     /// A transient phase recorded the restart, and whoever ends that window
     /// carries it out.
     Recorded,
+    /// A paused volume now names its new root, and its restart starts it there.
+    Followed,
 }
 
 /// Restart `volume_id`'s index at `new_root`, where its drive is mounted now.
@@ -70,6 +72,7 @@ pub(crate) fn follow_the_move(volume_id: &str, new_root: PathBuf) -> bool {
             IndexPhase::ShuttingDown {
                 restart: Some(moved.clone()),
                 then_clear: None,
+                paused_for: None,
             },
         ) {
             IndexPhase::Running(mgr) => Next::Drain(mgr),
@@ -85,6 +88,14 @@ pub(crate) fn follow_the_move(volume_id: &str, new_root: PathBuf) -> bool {
                 let next = record_the_move(&mut transient, moved);
                 instance.phase = transient;
                 next
+            }
+            paused @ IndexPhase::Paused { .. } => {
+                // Nothing is running to move, and its rows are mount-relative. The
+                // start that ends the pause reads `started_as`, so pointing that at
+                // the new root is the whole job.
+                instance.phase = paused;
+                instance.started_as = moved;
+                Next::Followed
             }
             failed @ IndexPhase::Failed { .. } => {
                 // A failed index has nothing running to move, and the start that
@@ -113,6 +124,13 @@ pub(crate) fn follow_the_move(volume_id: &str, new_root: PathBuf) -> bool {
             if let Err(e) = request.start(volume_id) {
                 log::warn!("Starting '{volume_id}' at its new root failed: {e}");
             }
+            true
+        }
+        Next::Followed => {
+            log::info!(
+                "'{volume_id}' moved to {} while paused for disk space; it starts there once there's room",
+                LogPrivate::dir_path(&new_root)
+            );
             true
         }
         Next::Recorded => {
@@ -153,6 +171,9 @@ fn record_the_move(phase: &mut IndexPhase, moved: StartRequest) -> Next {
             phase.claim_the_restart(moved);
             Next::Recorded
         }
-        IndexPhase::Running(_) | IndexPhase::Initializing { .. } | IndexPhase::Failed { .. } => Next::Nothing,
+        IndexPhase::Running(_)
+        | IndexPhase::Initializing { .. }
+        | IndexPhase::Failed { .. }
+        | IndexPhase::Paused { .. } => Next::Nothing,
     }
 }
