@@ -769,17 +769,17 @@
   "@askCmdr.limit.wallTime": {
     "sourceHash": "fc47e07"
   },
-  "askCmdr.limit.repeatedCall.answered": "Tato odpověď pořád opakovala stejné vyhledávání, takže jí Cmdr zastavil hledání a odpověděla z toho, co našla.",
+  "askCmdr.limit.repeatedCall.answered": "Tato odpověď pořád opakovala stejné vyhledávání, takže jí Cmdr zastavil hledání a nechal ji odpovědět z toho, co našla.",
   "@askCmdr.limit.repeatedCall.answered": {
-    "sourceHash": "884a9ae"
+    "sourceHash": "c603b8c"
   },
   "askCmdr.limit.repeatedCall.unfinished": "Tato odpověď pořád opakovala stejné vyhledávání, takže ji Cmdr zastavil dřív, než ji šlo dokončit.",
   "@askCmdr.limit.repeatedCall.unfinished": {
     "sourceHash": "c21dbe9"
   },
-  "askCmdr.limit.noProgress.answered": "V {max, plural, one {posledním {maxText} kole} few {posledních {maxText} kolech} many {posledních {maxText} kola} other {posledních {maxText} kolech}} vyhledávání tato odpověď nenašla nic nového, takže jí Cmdr zastavil hledání a odpověděla z toho, co našla.",
+  "askCmdr.limit.noProgress.answered": "V {max, plural, one {posledním {maxText} kole} few {posledních {maxText} kolech} many {posledních {maxText} kola} other {posledních {maxText} kolech}} vyhledávání tato odpověď nenašla nic nového, takže jí Cmdr zastavil hledání a nechal ji odpovědět z toho, co našla.",
   "@askCmdr.limit.noProgress.answered": {
-    "sourceHash": "6dc1bc0"
+    "sourceHash": "574fe02"
   },
   "askCmdr.limit.noProgress.unfinished": "V {max, plural, one {posledním {maxText} kole} few {posledních {maxText} kolech} many {posledních {maxText} kola} other {posledních {maxText} kolech}} vyhledávání tato odpověď nenašla nic nového, takže ji Cmdr zastavil dřív, než ji šlo dokončit.",
   "@askCmdr.limit.noProgress.unfinished": {
@@ -917,9 +917,9 @@
   "@askCmdr.sessions.renameLabel": {
     "sourceHash": "17a3048"
   },
-  "askCmdr.sessions.archive": "Archivovat",
+  "askCmdr.sessions.archive": "Archivovat chat",
   "@askCmdr.sessions.archive": {
-    "sourceHash": "66f4804"
+    "sourceHash": "9bd687c"
   },
   "askCmdr.sessions.unarchive": "Obnovit z archivu",
   "@askCmdr.sessions.unarchive": {
@@ -1225,17 +1225,17 @@
   "@askCmdr.renameReview.stopChecking": {
     "sourceHash": "4373037"
   },
-  "askCmdr.renameReview.checkUnfinished": "Cmdr ještě nedokončil kontrolu {count, plural, one {# souboru} few {# souborů} many {# souboru} other {# souborů}}, takže zatím nemůže přejmenovávat.",
+  "askCmdr.renameReview.checkUnfinished": "{count, plural, one {# soubor ještě není zkontrolovaný} few {# soubory ještě nejsou zkontrolované} many {# souboru ještě není zkontrolováno} other {# souborů ještě není zkontrolováno}}, takže Cmdr zatím nemůže přejmenovávat.",
   "@askCmdr.renameReview.checkUnfinished": {
-    "sourceHash": "c3c05ce"
+    "sourceHash": "1160511"
   },
   "askCmdr.renameReview.checkAgain": "Zkontrolovat znovu",
   "@askCmdr.renameReview.checkAgain": {
     "sourceHash": "fb7099a"
   },
-  "askCmdr.renameReview.needsAnotherLook": "Od chvíle, kdy Cmdr tyto názvy zkontroloval, se něco změnilo, takže nic nepřejmenoval. Podívejte se na ně znovu a zkuste to ještě jednou.",
+  "askCmdr.renameReview.needsAnotherLook": "Od chvíle, kdy Cmdr tyto názvy zkontroloval, se něco změnilo, takže nic nepřejmenoval. Zkontrolujte názvy a zkuste to znovu.",
   "@askCmdr.renameReview.needsAnotherLook": {
-    "sourceHash": "36c6050"
+    "sourceHash": "5e7d2da"
   },
   "askCmdr.renameReview.couldntStart": "Cmdr toto přejmenování nedokázal spustit a nic se nezměnilo. Zkuste to za chvíli znovu.",
   "@askCmdr.renameReview.couldntStart": {
@@ -1257,9 +1257,9 @@
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
   },
-  "askCmdr.renameUndo.swapsSkipped": "{count, plural, one {Přeskočeno {countText} přejmenování, které prohazuje názvy} few {Přeskočena {countText} přejmenování, která prohazují názvy} many {Přeskočeno {countText} přejmenování, která prohazují názvy} other {Přeskočeno {countText} přejmenování, která prohazují názvy}}. Přejmenujte ty soubory po jednom.",
+  "askCmdr.renameUndo.swapsSkipped": "{count, plural, one {Přeskočeno {countText} přejmenování, které prohazuje názvy} few {Přeskočena {countText} přejmenování, která prohazují názvy} many {Přeskočeno {countText} přejmenování, která prohazují názvy} other {Přeskočeno {countText} přejmenování, která prohazují názvy}}. Přejmenujte tyto položky po jedné.",
   "@askCmdr.renameUndo.swapsSkipped": {
-    "sourceHash": "90e8dfc"
+    "sourceHash": "bb3ee75"
   },
   "askCmdr.renameUndo.notRecorded": "Historie operací je vypnutá, takže tuto akci nelze odvolat.",
   "@askCmdr.renameUndo.notRecorded": {
@@ -1301,9 +1301,9 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "Cmdr nechal {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}} beze změny: od přejmenování se změnily.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: od přejmenování se změnily.",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "217d1e8"
+    "sourceHash": "dbeb782"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "Položka „{name}“ nebyla nalezena: od přejmenování byla přesunuta nebo smazána.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
@@ -1317,17 +1317,17 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Cmdr nechal {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}} beze změny: jejich původní názvy jsou znovu obsazené.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: jejich původní názvy jsou znovu obsazené.",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "2fd2e7a"
+    "sourceHash": "409140a"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "Cmdr nechal položku „{name}“ beze změny: nemohl ověřit, jestli se změnila.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Cmdr nechal {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}} beze změny: nemohl ověřit, jestli se změnily.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: nemohl ověřit, jestli se změnily.",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "5964166"
+    "sourceHash": "25fe620"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Cmdr nechal složku „{name}“ beze změny: teď v ní něco je.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
@@ -1341,9 +1341,9 @@
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "Cmdr nechal {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}} beze změny: původní názvy se nepodařilo vrátit zpět.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: původní názvy se nepodařilo vrátit zpět.",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "f13c021"
+    "sourceHash": "cf38d62"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr nemohl odvolat {countText} {count, plural, one {dávku} few {dávky} many {dávky} other {dávek}}. Podrobnosti najdete v historii operací.",
   "@askCmdr.renameUndo.refusedBatches": {

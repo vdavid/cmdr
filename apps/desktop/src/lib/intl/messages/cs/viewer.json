@@ -47,9 +47,9 @@
   "@viewer.error.coldStorage": {
     "sourceHash": "236cd1b"
   },
-  "viewer.error.linkTargetUnreachable": "Tento soubor je za odkazem na jiný server a ten server je teď pro Cmdr nedostupný. Zkontrolujte, že server běží, a zkuste to znovu.",
+  "viewer.error.linkTargetUnreachable": "Cesta k tomuto souboru vede přes odkaz na jiný server a ten server je teď pro Cmdr nedostupný. Zkontrolujte, že server běží, a zkuste to znovu.",
   "@viewer.error.linkTargetUnreachable": {
-    "sourceHash": "8dcb736"
+    "sourceHash": "0540c9a"
   },
   "viewer.error.retry": "Zkusit znovu",
   "@viewer.error.retry": {

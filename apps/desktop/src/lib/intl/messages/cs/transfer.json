@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "Tento server neumí uložit {classes}, takže zůstaly jen u originálů.",
+  "transfer.metadataLeftBehind": "Tento cíl neumí uložit některé podrobnosti o souborech, takže se nepřenesly: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, one {{countText} zamčená položka zůstala na místě.} few {{countText} zamčené položky zůstaly na místě.} many {{countText} zamčené položky zůstalo na místě.} other {{countText} zamčených položek zůstalo na místě.}}",
   "@transfer.lockedSkipped": {

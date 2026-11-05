@@ -164,9 +164,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Střídavé stínování řádků, aby se řádky snáz sledovaly očima. Platí pro zobrazení Seznam i Podrobnosti.",
+  "settings.listing.stripedRows.description": "Střídavé stínování řádků, aby se řádky snáz sledovaly očima. Platí pro zobrazení Podrobnosti i Seznam.",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "pruhy, pruhované, zebra, střídavé, řádky, stínování, zpřístupnění, čitelnost",
   "@settings.listing.stripedRows.keywords": {
@@ -820,9 +820,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Vždy indexovat fotky na disku {name}",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Vždy indexovat tento disk: {name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "Pozastaveno, pokračuje, až se disk znovu připojí",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -940,9 +940,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Smazat zbývající zaindexované záznamy",
+  "settings.mediaIndex.reclaim.confirmTitle": "Smazat zbývající zaindexované záznamy?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "Smazat {doomed, plural, one {{doomedText} zaindexovaný záznam} few {{doomedText} zaindexované záznamy} many {{doomedText} zaindexovaného záznamu} other {{doomedText} zaindexovaných záznamů}} a uvolnit asi {size}? Tyto obrázky můžete později zaindexovat znovu, ale jejich opětovné načtení zabere čas.",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1089,9 +1089,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Potlačit dotaz ke zkratce pro poslední stažený soubor",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Už se neptát na zkratku pro poslední stažený soubor",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Když poprvé stisknete zkratku, kterou z jakékoli aplikace přejdete na poslední stažený soubor, Cmdr se zeptá, jestli ji chcete nechat zapnutou. Změna zkratky tuto volbu vypne, takže se Cmdr zeptá i na novou kombinaci kláves. Vypněte tuto volbu a dotaz se zobrazí ještě jednou.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1238,9 +1238,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "Jak dlouho model přemýšlí, než odpoví. Víc úsilí pomáhá u složitých úloh, ale odpovědi přicházejí pomaleji a přemýšlení se účtuje jako výstup.",
+  "settings.ai.reasoningEfforts.description": "Jak dlouho model přemýšlí, než odpoví. Delší přemýšlení pomáhá u složitých úloh, ale odpovědi přicházejí pomaleji a přemýšlení se účtuje jako výstup.",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "úsilí, uvažování, přemýšlení, myšlení, rychlost, cena, kvalita, náročnost",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1460,7 +1460,7 @@
   },
   "settings.fileExplorer.git.showStatusColumn.description": "V zobrazení Podrobnosti přidá sloupec se stavem gitu u každého souboru (změněný, nesledovaný atd.).",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "stav, sloupec, změněno, nesledováno, ignorováno, přidáno, smazáno",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1759,13 +1759,13 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "sourceHash": "ad9377a"
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Upozornit, když smazaná položka už neexistovala",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Zobrazit oznámení, když smazaná položka už neexistovala",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Když smažete něco, co už jiná aplikace přesunula nebo smazala, Cmdr to bere jako hotové a zobrazí o tom krátkou poznámku. Vypnutím této volby (nebo kliknutím na „Už nezobrazovat“ v poznámce) poznámku přeskočíte.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "Když smažete něco, co už jiná aplikace přesunula nebo smazala, Cmdr to bere jako hotové a zobrazí o tom krátké oznámení. Vypněte tuto volbu (nebo v oznámení klikněte na „Už nezobrazovat“) a tato oznámení se přestanou zobrazovat.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "chybějící, zmizelé, přesunuté, smazané, upozornění, oznámení, hláška",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2426,9 +2426,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr používá vaši službu cloudové AI. Pokud chcete začít chatovat, povolte cloudovou AI v nastavení AI.",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr používá vaši službu cloudové AI. Pokud chcete začít chatovat, zapněte v nastavení AI „Povolit cloudovou AI“.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "Otevřít nastavení AI",
   "@settings.askCmdr.openAiSettings": {
@@ -2940,23 +2940,23 @@
   },
   "settings.appearance.formatHelpMonth": "Dvoumístný měsíc (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
   "settings.appearance.formatHelpDay": "Dvoumístný den (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
   "settings.appearance.formatHelpHour": "Dvoumístná hodina (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
   "settings.appearance.formatHelpMinute": "Dvoumístná minuta (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
   "settings.appearance.formatHelpSecond": "Dvoumístná sekunda (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "Přidá panelům jemný barevný nádech pozadí, takže typy svazků rozeznáte na první pohled.",
   "@settings.appearance.tintGroupDescription": {
@@ -3163,9 +3163,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Zkratku změníte v části Klávesové zkratky → Přejít na poslední stažený soubor (globální).",
+  "settings.fileSystemWatching.globalShortcutHint": "Zkratku změníte v části „Klávesové zkratky → Přejít na poslední stažený soubor“.",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "Oprávnění „{localNetwork}“",
   "@settings.network.localNetworkAccessLabel": {

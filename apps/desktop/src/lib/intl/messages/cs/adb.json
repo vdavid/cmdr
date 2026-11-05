@@ -77,7 +77,7 @@
   },
   "adb.disconnectBusyTooltip": "Cmdr ještě pracuje se soubory na tomto zařízení. Odpojíte ho, až bude hotovo.",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "73c355e"
+    "sourceHash": "7a49436"
   },
   "adb.disconnectingDeviceAriaLabel": "Odpojování zařízení {name}…",
   "@adb.disconnectingDeviceAriaLabel": {

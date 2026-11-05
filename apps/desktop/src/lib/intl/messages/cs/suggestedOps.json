@@ -9,7 +9,7 @@
   },
   "suggestedOps.approvalNoticeDismiss": "Už nezobrazovat",
   "@suggestedOps.approvalNoticeDismiss": {
-    "sourceHash": "2c23c21"
+    "sourceHash": "f6f62e0"
   },
   "suggestedOps.sweepWhen.justNow": "Navrženo právě teď",
   "@suggestedOps.sweepWhen.justNow": {
@@ -85,7 +85,8 @@
   },
   "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
   "@suggestedOps.groupTitle": {
-    "sourceHash": "201c1fc"
+    "sourceHash": "201c1fc",
+    "sameAsSourceJustification": "Only tags and placeholders: Czech puts the verb first like English (Přesunout Staré instalátory), so the order and the plain space stay."
   },
   "suggestedOps.approve.move": "Přesunout {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
   "@suggestedOps.approve.move": {
@@ -267,11 +268,11 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
-  "suggestedOps.factUnknownSize": "Unknown",
+  "suggestedOps.factUnknownSize": "Neznámá",
   "@suggestedOps.factUnknownSize": {
     "sourceHash": "b764cdc"
   },
-  "suggestedOps.factUnknownDate": "Unknown",
+  "suggestedOps.factUnknownDate": "Neznámé",
   "@suggestedOps.factUnknownDate": {
     "sourceHash": "b764cdc"
   },

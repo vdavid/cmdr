@@ -83,9 +83,9 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
-  "fileExplorer.archivedFile.label": "Archivováno",
+  "fileExplorer.archivedFile.label": "V archivním úložišti",
   "@fileExplorer.archivedFile.label": {
-    "sourceHash": "bdb8650"
+    "sourceHash": "78bf854"
   },
   "fileExplorer.archivedFile.tooltip": "Soubor je v archivním úložišti. Než ho otevřete nebo zkopírujete, obnovte ho v konzoli svého poskytovatele úložiště.",
   "@fileExplorer.archivedFile.tooltip": {
@@ -312,9 +312,9 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
-  "fileExplorer.open.didNotOpen": "Soubor {fileName} se neotevřel. macOS nenašel tento soubor ani aplikaci, která by ho otevřela.",
+  "fileExplorer.open.didNotOpen": "Soubor {fileName} se neotevřel. macOS soubor nenašel nebo ho žádná aplikace neotevře.",
   "@fileExplorer.open.didNotOpen": {
-    "sourceHash": "c8362d8"
+    "sourceHash": "cd95423"
   },
   "fileExplorer.openingToast.noApp": "Otevírá se {fileName}…",
   "@fileExplorer.openingToast.noApp": {
@@ -1706,13 +1706,13 @@
   "@fileExplorer.navigation.favoriteShortcutPrompt": {
     "sourceHash": "51f3d7d"
   },
-  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Zkratka pro oblíbenou položku {name}. Stiskněte A–Z, nebo zkratku vymažte klávesou Delete.",
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Klávesová zkratka pro oblíbenou položku {name}. Stiskněte A–Z, nebo ji vymažte klávesou Delete.",
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
-    "sourceHash": "31515c1"
+    "sourceHash": "0c5db95"
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Tuto zkratku se nepodařilo uložit. Zkusíte to znovu?",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Tuto klávesovou zkratku se nepodařilo uložit. Zkusíte to znovu?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "38e7225"
+    "sourceHash": "de62c34"
   },
   "fileExplorer.navigation.removeFavoriteFailed": "Tuto oblíbenou položku se nepodařilo odstranit. Zkusíte to znovu?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
@@ -1726,9 +1726,9 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
   },
-  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favorite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
+  "fileExplorer.navigation.favoriteStatus.connects": "Nepřipojeno. Při otevření této oblíbené položky se Cmdr připojí {kind, select, share {ke sdílené složce „{place}“} server {k serveru „{place}“} phone {k telefonu „{place}“} other {k umístění „{place}“}}.",
   "@fileExplorer.navigation.favoriteStatus.connects": {
-    "sourceHash": "a30b8cd"
+    "sourceHash": "0ed263f"
   },
   "fileExplorer.navigation.favoriteStatus.notFound": "Tato složka už neexistuje.",
   "@fileExplorer.navigation.favoriteStatus.notFound": {
@@ -1738,9 +1738,9 @@
   "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
     "sourceHash": "00f7bf0"
   },
-  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Úložiště, na kterém tato složka byla, teď v zařízení {device} není k dispozici.",
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Úložiště, na kterém tato složka byla, teď v zařízení „{device}“ není k dispozici.",
   "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
-    "sourceHash": "a06d5ae"
+    "sourceHash": "ef526cd"
   },
   "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "Disk „{drive}“ není připojený. Připojte ho a zkuste to znovu.",
   "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
@@ -1754,9 +1754,9 @@
   "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
     "sourceHash": "4fba610"
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} anymore. Connect to it again from Servers, and this favorite works again.",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr už neví, jak se připojit {kind, select, share {ke sdílené složce „{place}“} server {k serveru „{place}“} phone {k telefonu „{place}“} other {k umístění „{place}“}}. Připojte se znovu přes Servery a tato oblíbená položka zase začne fungovat.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
-    "sourceHash": "842858c"
+    "sourceHash": "59f7041"
   },
   "fileExplorer.navigation.favoriteUnreachable.notFound": "Složka „{name}“ už na cestě {path} není.",
   "@fileExplorer.navigation.favoriteUnreachable.notFound": {
@@ -1864,7 +1864,7 @@
   },
   "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr ještě pracuje se soubory na tomto serveru. Odpojíte ho, až bude hotovo.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "bd52d60"
+    "sourceHash": "760edfd"
   },
   "fileExplorer.navigation.serverPinnedToast": "Server {name} je teď ve vašem přepínači svazků.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1890,7 +1890,7 @@
   "@fileExplorer.navigation.forgetConfirmButton": {
     "sourceHash": "a6bd489"
   },
-  "fileExplorer.navigation.forgetPasswordConfirmButton": "Forget",
+  "fileExplorer.navigation.forgetPasswordConfirmButton": "Zapomenout",
   "@fileExplorer.navigation.forgetPasswordConfirmButton": {
     "sourceHash": "a6bd489"
   },
@@ -1936,7 +1936,7 @@
   },
   "fileExplorer.navigation.ejectBusyTooltip": "Cmdr ještě pracuje se soubory na tomto zařízení. Vysunete ho, až bude hotovo.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "3da6312"
+    "sourceHash": "b298e2f"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Vysouvání svazku {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -2112,9 +2112,9 @@
   "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
     "sourceHash": "4ef8487"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Indexování disků je v Nastavení vypnuté, takže disk {name} zůstává neindexovaný. Zapněte ho v části Indexování > Indexování disků.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Indexování disků je v Nastavení vypnuté, takže disk {name} zůstává neindexovaný. Zapněte ho v části „Indexování > Indexování disků“.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
-    "sourceHash": "ce0d45c"
+    "sourceHash": "0253edd"
   },
   "fileExplorer.navigation.driveIndex.driveLeaving": "Disk {name} se odpojuje, takže Cmdr nechal index tohoto disku beze změny. Pokud disk zůstane připojený, zkuste to za chvíli znovu.",
   "@fileExplorer.navigation.driveIndex.driveLeaving": {
@@ -2124,9 +2124,9 @@
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Indexování disků je v Nastavení vypnuté. Zapněte ho v části Indexování > Indexování disků a tento disk naváže tam, kde skončil.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Indexování disků je v Nastavení vypnuté. Zapněte ho v části „Indexování > Indexování disků“ a tento disk naváže tam, kde skončil.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
-    "sourceHash": "e045664"
+    "sourceHash": "26e250c"
   },
   "fileExplorer.dragOut.failed": "{count, plural, =1 {Položku „{name}“ se nepodařilo zkopírovat.} one {{countText} položku se nepodařilo zkopírovat.} few {{countText} položky se nepodařilo zkopírovat.} many {{countText} položky se nepodařilo zkopírovat.} other {{countText} položek se nepodařilo zkopírovat.}}",
   "@fileExplorer.dragOut.failed": {
@@ -2148,9 +2148,9 @@
   "@fileExplorer.typeToJump.modeJump": {
     "sourceHash": "292fdf5"
   },
-  "fileExplorer.typeToJump.clear": "Vymazat skok",
+  "fileExplorer.typeToJump.clear": "Vymazat napsaný text",
   "@fileExplorer.typeToJump.clear": {
-    "sourceHash": "42ec82f"
+    "sourceHash": "61920c5"
   },
   "fileExplorer.quickFilter.clear": "Vymazat filtr",
   "@fileExplorer.quickFilter.clear": {
@@ -2208,13 +2208,13 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
-  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "Server „{server}“ nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl, takže Cmdr dál používá systémové připojení. Může to způsobit server, který nefunguje správně, ale také někdo, kdo zasahuje do připojení.",
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "Server „{server}“ nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl, takže tato sdílená složka dál používá systémové připojení. Může to způsobit server, který nefunguje správně, ale také někdo, kdo zasahuje do připojení.",
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
-    "sourceHash": "7ea7c4f"
+    "sourceHash": "9b3a6ae"
   },
-  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "Server „{server}“ přijímá jen šifrovaná připojení a nedohodl se s Cmdrem na způsobu, jak připojení zašifrovat, takže Cmdr dál používá systémové připojení.",
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "Server „{server}“ přijímá jen šifrovaná připojení a nedohodl se s Cmdrem na způsobu, jak připojení zašifrovat, takže tato sdílená složka dál používá systémové připojení.",
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
-    "sourceHash": "a731300"
+    "sourceHash": "4df31b6"
   },
   "fileExplorer.pane.directConnectionEncryptionRequiredToast": "Server „{server}“ připojení zašifrovat nedokáže a v Cmdru je zapnutá volba „Vždy vyžadovat šifrování SMB“, takže se Cmdr nepřipojil přímo.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {

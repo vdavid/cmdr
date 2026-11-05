@@ -634,10 +634,6 @@
     "sources": "macOS Finder/AppKit (Soubor); Total Commander; Double Commander; MS terminology (soubor)",
     "exceptions": {
       "fileExplorer.summary.fileNoun": "Genitive after the z connector of the selection summary (3 z 10 souborů, z 1 souboru); the nominative counting noun of fileOperations.*.scanFile cannot follow z. Split recorded in the term-consistency allowlist.",
-      "multiRename.reason.duplicate": "The row can be a file or a folder (the @key asks for a neutral word where soubor excludes folders), so the reason says položka.",
-      "multiRename.reason.missing": "The row can be a file or a folder (the @key asks for a neutral word where soubor excludes folders), so the reason says položka.",
-      "multiRename.reason.noValue": "The row can be a file or a folder (the @key asks for a neutral word where soubor excludes folders), so the reason says položka.",
-      "multiRename.reason.targetExists": "The row can be a file or a folder (the @key asks for a neutral word where soubor excludes folders), so the reason says položka.",
       "multiRename.reason.unreadable": "The row can be a file or a folder (the @key asks for a neutral word where soubor excludes folders), so the reason says položka."
     }
   },
@@ -1566,12 +1562,7 @@
     "confidence": "high",
     "sources": "Total Commander (menu Vybrat, Vybrat skupinu, Vybrat všechny); macOS Finder/AppKit (Vybrat vše); MS terminology (vybrat, Vybrat vše)",
     "note": "Choosing an option is also vybrat in Czech (macOS); where both meanings meet in one string, use zvolit for the option.",
-    "decision": "Selection words",
-    "exceptions": {
-      "commands.navUp.label": "moves the cursor, marks nothing: Přejít na předchozí soubor",
-      "commands.navDown.label": "moves the cursor, marks nothing: Přejít na další soubor",
-      "ui.select.placeholder": "Dropdown placeholder Vybrat…, the verb as menu.bar.select; onboarding.stepAi.table.rowSelect is a feature-name row beside Hledání and Hromadné přejmenování, so it takes the noun Výběr."
-    }
+    "decision": "Selection words"
   },
   "send": {
     "chosen": "odeslat",
@@ -1718,7 +1709,8 @@
     "confidence": "high",
     "sources": "macOS Finder (Stop → Zastavit, Zastavit komprimování); Nautilus; MS; TC (Zastavit načítání)",
     "exceptions": {
-      "ui.startedElsewhere.keysWait": "\"stop typing\" is the person pausing (přestat psát), not the Stop command"
+      "ui.startedElsewhere.keysWait": "\"stop typing\" is the person pausing (přestat psát), not the Stop command",
+      "settings.fileOperations.showAlreadyGoneToast.description": "\"stop these notices\" means they no longer appear (přestanou se zobrazovat), not the Stop command"
     }
   },
   "storage": {
@@ -4529,5 +4521,33 @@
     "forms": "n. pl.: gen. dat, loc. datech; your data → vaše data; browser data → data prohlížečů; Cmdr's own data → vlastní data Cmdru",
     "confidence": "high",
     "sources": "macOS Finder (Smazat data a nastavení…); MS terminology data → data; catalog (Kam vaše data putují, ai.cloudConsent.whereItGoes)"
+  },
+  "ai-lookup": {
+    "chosen": "vyhledávání",
+    "accept": ["vyhledáv"],
+    "forms": "n.: the same lookup → stejné vyhledávání; rounds of lookups → kola vyhledávání",
+    "confidence": "tentative",
+    "sources": "catalog: every askCmdr.limit.* key says vyhledávání; the pile has no AI tool-call term. Kept apart from search (hledat, hledání) by the vy- verb; review-queue asks a native reader."
+  },
+  "guide": {
+    "chosen": "průvodce",
+    "accept": ["průvod", "příručk"],
+    "forms": "m.: Accessibility guide (commands.helpAccessibility.label) → Průvodce zpřístupněním; the guide to X → průvodce funkcemi X",
+    "confidence": "tentative",
+    "sources": "catalog label commands.helpAccessibility.label; macOS says příručka for a User Guide (Uživatelská příručka pro Mac), queued in review-queue.md"
+  },
+  "signature": {
+    "chosen": "podpis",
+    "accept": ["podpis"],
+    "forms": "m.: no valid signature → neměla platný podpis",
+    "confidence": "high",
+    "sources": "MS terminology (signature → podpis; certifikát podpisu, čas podpisu)"
+  },
+  "focus": {
+    "chosen": "fokus",
+    "accept": ["fokus", "zaměřen", "aktivn"],
+    "forms": "m.: move focus to → přesunout fokus na; keyboard focus → fokus klávesnice; the focused pane → aktivní panel (pane ruling)",
+    "confidence": "tentative",
+    "sources": "catalog labels commands.paneFocusControls.label, commands.appFocusNotifications.label (Přesunout fokus na…); macOS SystemSettings says zaměření klávesnice, queued in review-queue.md"
   }
 }

@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "V místní nabídce serveru vyberte „Odepnout z přepínače svazků“, nebo v paletě příkazů použijte „{command}“. Server zůstane v seznamu Servery.",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "Rozumím",
   "@servers.pinHint.gotIt": {
@@ -63,9 +63,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "Nikdy",
+  "servers.hub.neverUsed": "Nikdy nepoužitý",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "jako {username}",
   "@servers.hub.shareAccount": {
@@ -381,7 +381,7 @@
   },
   "servers.sheet.addAnywayHelp": "Cmdr tento server nedokázal zkontrolovat, takže „Přesto přidat“ ho uloží přesně tak, jak je napsaný.",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "Vysunout a uložit",
   "@servers.sheet.ejectAndSave": {
@@ -528,9 +528,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS přenese nejvýš 16 dalších skupin a v seznamu jich je {count}.",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS odešle nejvýš 16 dalších skupin a tento seznam {count, plural, one {má # skupinu} few {má # skupiny} many {má # skupiny} other {má # skupin}}.",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "Server podle těchto čísel rozhoduje, co můžete otevřít. NFS se na heslo neptá.",
   "@servers.sheet.nfsIdentityHelp": {
@@ -930,9 +930,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Zatím zastavit pokusy. Připojení zůstane k dispozici. Když se sem přepnete zpět, zkusí se to znovu.",
+  "servers.paneState.cancelCycleTooltip": "Zatím zastavit pokusy. Připojení zůstane k dispozici; dalším otevřením serveru to zkusíte znovu.",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "Zastavit pokusy a odpojit se od serveru.",
   "@servers.paneState.disconnectCycleTooltip": {

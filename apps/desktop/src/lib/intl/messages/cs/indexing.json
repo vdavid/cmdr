@@ -249,9 +249,9 @@
   "@indexing.enrich.label": {
     "sourceHash": "442068b"
   },
-  "indexing.enrich.progress": "{total, plural, one {{doneText} of {totalText} image} other {{doneText} of {totalText} images}}",
+  "indexing.enrich.progress": "{total, plural, one {{doneText} z {totalText} obrázku} few {{doneText} z {totalText} obrázků} many {{doneText} z {totalText} obrázku} other {{doneText} z {totalText} obrázků}}",
   "@indexing.enrich.progress": {
-    "sourceHash": "b307416"
+    "sourceHash": "7cf480d"
   },
   "indexing.enrich.rate": "{rateText}/min",
   "@indexing.enrich.rate": {

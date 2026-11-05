@@ -26,7 +26,7 @@
   },
   "ui.select.placeholder": "Vybrat…",
   "@ui.select.placeholder": {
-    "sourceHash": "731fe04"
+    "sourceHash": "7ca4161"
   },
   "ui.combobox.emptyText": "Žádné shody. Pokračujte v psaní a použije se vaše vlastní hodnota.",
   "@ui.combobox.emptyText": {

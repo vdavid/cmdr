@@ -447,9 +447,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "af30f30"
   },
-  "errors.listing.couldntReadUnknown.explanation": "Při čtení z cesty `{path}` narazil Cmdr na neočekávaný problém. Konkrétní systémový kód zjistíte níže v technických podrobnostech; může pomoct při hledání příčiny.",
+  "errors.listing.couldntReadUnknown.explanation": "Při čtení z cesty `{path}` narazil Cmdr na neočekávaný problém. Konkrétní systémový kód zjistíte níže v části „Technické podrobnosti“; může pomoct při hledání příčiny.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád připojené\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, otevřete aplikaci **Disková utilita** a spusťte pro tento svazek nástroj **Záchrana**",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -591,9 +591,9 @@
   "@errors.listing.linkTargetUnreachable.title": {
     "sourceHash": "8aee94c"
   },
-  "errors.listing.linkTargetUnreachable.explanation": "`{path}` je za odkazem na jiný server a ten server je teď pro Cmdr nedostupný. Zbytek této sdílené složky je v pořádku a nic se nesmazalo.",
+  "errors.listing.linkTargetUnreachable.explanation": "`{path}` vede přes odkaz na jiný server a ten server je teď pro Cmdr nedostupný. Zbytek této sdílené složky je v pořádku a nic se nesmazalo.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že druhý server běží a že je z vaší sítě dostupný\n- Zkuste sem přejít znovu",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1485,9 +1485,9 @@
   "@errors.write.replySignatureRefused.title": {
     "sourceHash": "829a591"
   },
-  "errors.write.replySignatureRefused.message": "Odpověď serveru neměla platný podpis, takže se Cmdr zastavil.",
+  "errors.write.replySignatureRefused.message": "Odpověď serveru neměla platný podpis, takže Cmdr operaci v tu chvíli zastavil.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "Může to způsobit nespolehlivé síťové zařízení, ale také někdo, kdo zasahuje do provozu mezi vámi a serverem. Znovu připojte sdílenou složku, a pokud se to zopakuje, zkontrolujte svou síť.",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1889,9 +1889,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "Cílové zařízení",
+  "errors.write.readOnlyDevice.destination.fallbackName": "Cíl",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "Soubor je zamčený",
   "@errors.write.fileLocked.title": {
@@ -2221,9 +2221,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "Tato položka je za odkazem na jiný server a ten server je teď pro Cmdr nedostupný.",
+  "errors.volume.linkTargetUnreachable": "Tato cesta vede přes odkaz na jiný server a ten server je teď pro Cmdr nedostupný.",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "Zařízení restartovalo připojení. Dejte mu pár sekund a zkuste to znovu.",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "Připojení neodpovědělo včas.",
+  "errors.volume.connectionTimeout": "Odpověď ze serveru nebo zařízení nepřišla včas.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "Cmdr to na vaši žádost zastavil.",
   "@errors.volume.cancelled": {
@@ -2289,9 +2289,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.signatureInvalid": "Odpověď serveru neměla platný podpis, takže se Cmdr zastavil.",
+  "errors.volume.signatureInvalid": "Odpověď serveru neměla platný podpis, takže Cmdr operaci v tu chvíli zastavil.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "Svazku se to nepodařilo dokončit.",
   "@errors.volume.ioError": {
@@ -2369,13 +2369,13 @@
   "@errors.eject.unmountRefused": {
     "sourceHash": "f855a33"
   },
-  "errors.eject.unmountRefusedByApp": "{app} tam pořád něco používá. Zavřete to a zkuste to znovu.",
+  "errors.eject.unmountRefusedByApp": "{app} tam pořád něco používá. Zavřete tuto aplikaci a zkuste to znovu.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
-  "errors.eject.unmountRefusedByApps": "{apps} tam pořád něco používají. Zavřete je a zkuste to znovu.",
+  "errors.eject.unmountRefusedByApps": "{apps} tam pořád něco používají. Zavřete tyto aplikace a zkuste to znovu.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "další aplikace",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "Část výběru je uvnitř zobrazení",
+  "errors.write.sourcesSpanVolumes.title": "Část výběru je uvnitř zálohy, archivu nebo historie gitu",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "Položka {path} je uvnitř snímků zálohy, archivu nebo historie repozitáře a zbytek výběru ne, takže je Cmdr nemůže číst společně. Nic se nezměnilo.",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "Rozdělte to na dva kroky: nejdřív samotné položky uvnitř zobrazení, pak zbytek.",
+  "errors.write.sourcesSpanVolumes.suggestion": "Rozdělte to na dva kroky: nejdřív zvlášť tyto položky, pak zbytek.",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "Přesuňte je po jedné, nebo jednu z nich nejdřív přejmenujte.",
   "@errors.write.duplicateSourceNames.suggestion.move": {

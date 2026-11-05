@@ -87,9 +87,9 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, když chatujete nebo když sám zahájí konverzaci:",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, když chatujete nebo když Cmdr sám zahájí konverzaci:",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Vaše zprávy, včetně každého hesla, které tam napíšete k odemknutí archivu nebo zálohy",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Pokud v nastavení Pokročilé zapnete protokolování volání LLM, Cmdr navíc ukládá každý požadavek a odpověď do složky na vašem Macu. Tyto protokoly volání zůstávají místně a nikdy se nikam neodesílají.",
+  "ai.cloudConsent.logsNote": "Pokud v nastavení Pokročilé zapnete „Protokolovat volání modelu AI“, Cmdr navíc ukládá každý požadavek a odpověď do složky na vašem Macu. Tyto protokoly volání zůstávají místně a nikdy se nikam neodesílají.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Vypnout to můžete kdykoli a Cmdr okamžitě zastaví odesílání. Vaše služba, klíč i chaty zůstanou tak, jak jsou.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Váš model na to možná potřebuje větší limit. Zkuste rychlejší model, třeba gpt-4.1-mini, v Nastavení > AI.",
+  "ai.translateError.emptyResponse.body": "Váš model možná vyčerpal limit tokenů dřív, než odpověděl. Zkuste rychlejší model, třeba gpt-4.1-mini, v Nastavení > AI.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "Váš poskytovatel AI narazil na problém",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "Server neodpověděl včas. Zkuste to za chvíli znovu.",
+  "ai.cloud.timedOut": "Služba neodpověděla včas. Zkuste to za chvíli znovu.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Tahle adresa nevypadá správně. Zadejte celou webovou adresu, která začíná https://.",
   "@ai.cloud.invalidEndpoint": {

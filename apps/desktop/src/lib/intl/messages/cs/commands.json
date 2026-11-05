@@ -19,17 +19,17 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
-  "commands.appAcknowledgements.label": "Poděkování…",
+  "commands.appAcknowledgements.label": "Poděkování",
   "@commands.appAcknowledgements.label": {
-    "sourceHash": "7d0e506"
+    "sourceHash": "c9015d5"
   },
   "commands.appLicenseKey.seeDetails.label": "Zobrazit podrobnosti licence",
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
   },
-  "commands.appLicenseKey.enterKey.label": "Zadat licenční klíč",
+  "commands.appLicenseKey.enterKey.label": "Zadat licenční klíč…",
   "@commands.appLicenseKey.enterKey.label": {
-    "sourceHash": "357d05e"
+    "sourceHash": "24a8d77"
   },
   "commands.appCommandPalette.label": "Otevřít paletu příkazů",
   "@commands.appCommandPalette.label": {
@@ -45,7 +45,7 @@
   },
   "commands.appCheckForUpdates.description": "Zjistí, jestli je k dispozici novější verze aplikace Cmdr, a pokud ano, stáhne ji",
   "@commands.appCheckForUpdates.description": {
-    "sourceHash": "c53dab0"
+    "sourceHash": "90523c6"
   },
   "commands.cmdrOpenOnboarding.label": "Úvodní průvodce…",
   "@commands.cmdrOpenOnboarding.label": {
@@ -53,7 +53,7 @@
   },
   "commands.cmdrOpenOnboarding.description": "Znovu otevře úvodního průvodce, kde si můžete projít nebo změnit možnosti nastavené při prvním spuštění",
   "@commands.cmdrOpenOnboarding.description": {
-    "sourceHash": "a45c542"
+    "sourceHash": "fc0a198"
   },
   "commands.appToggleCliCommand.install.label": "Nainstalovat příkaz „cmdr“",
   "@commands.appToggleCliCommand.install.label": {
@@ -67,9 +67,9 @@
   "@commands.appToggleCliCommand.homebrew.label": {
     "sourceHash": "cc4c0fd"
   },
-  "commands.appToggleCliCommand.description": "Zadejte v terminálu cmdr a cestu a soubor nebo složka se otevře v Cmdru",
+  "commands.appToggleCliCommand.description": "Umožní vám zadat v terminálu cmdr a cestu a otevřít tak soubor nebo složku v Cmdru",
   "@commands.appToggleCliCommand.description": {
-    "sourceHash": "ce7efbd"
+    "sourceHash": "73b4f32"
   },
   "commands.helpOpenShortcuts.label": "Klávesové zkratky",
   "@commands.helpOpenShortcuts.label": {
@@ -77,15 +77,15 @@
   },
   "commands.helpOpenShortcuts.description": "Otevře okno jen ke čtení se seznamem všech klávesových zkratek, průběžně synchronizované s vašimi úpravami",
   "@commands.helpOpenShortcuts.description": {
-    "sourceHash": "a9a1e0d"
+    "sourceHash": "caa15c9"
   },
   "commands.helpAccessibility.label": "Průvodce zpřístupněním",
   "@commands.helpAccessibility.label": {
     "sourceHash": "eee67fa"
   },
-  "commands.helpAccessibility.description": "Otevřít průvodce funkcemi zpřístupnění Cmdru na getcmdr.com",
+  "commands.helpAccessibility.description": "Otevře průvodce funkcemi zpřístupnění Cmdru na getcmdr.com",
   "@commands.helpAccessibility.description": {
-    "sourceHash": "2ece797"
+    "sourceHash": "7104ee3"
   },
   "commands.helpSendErrorReport.label": "Odeslat zprávu o chybě…",
   "@commands.helpSendErrorReport.label": {
@@ -93,7 +93,7 @@
   },
   "commands.helpSendErrorReport.description": "Odešle týmu protokoly aplikace Cmdr, které pomohou opravit, co se pokazilo",
   "@commands.helpSendErrorReport.description": {
-    "sourceHash": "021d333"
+    "sourceHash": "7615640"
   },
   "commands.queueShow.label": "Fronta operací",
   "@commands.queueShow.label": {
@@ -101,7 +101,7 @@
   },
   "commands.queueShow.description": "Otevře okno se všemi běžícími a čekajícími operacemi, kde je můžete pozastavit, pokračovat v nich nebo je zrušit",
   "@commands.queueShow.description": {
-    "sourceHash": "37b616a"
+    "sourceHash": "4511b63"
   },
   "commands.helpWhatsNew.label": "Co je nového",
   "@commands.helpWhatsNew.label": {
@@ -109,7 +109,7 @@
   },
   "commands.helpWhatsNew.description": "Zobrazí, co se změnilo v posledních verzích aplikace Cmdr",
   "@commands.helpWhatsNew.description": {
-    "sourceHash": "f8ad411"
+    "sourceHash": "4e04cc8"
   },
   "commands.logOperationLog.label": "Historie operací",
   "@commands.logOperationLog.label": {
@@ -117,16 +117,16 @@
   },
   "commands.logOperationLog.description": "Zobrazí historii vašich operací se soubory a umožní je vrátit zpět",
   "@commands.logOperationLog.description": {
-    "sourceHash": "ea2d082"
+    "sourceHash": "70b7bcd"
   },
   "commands.askCmdrToggle.label": "Ask Cmdr",
   "@commands.askCmdrToggle.label": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name, kept verbatim in every language (ask-cmdr ruling, cs terms.json)."
   },
-  "commands.askCmdrToggle.description": "Zobrazí nebo skryje chat s AI o vašich souborech, discích a historii",
+  "commands.askCmdrToggle.description": "Otevře chat s AI o vašich souborech, discích a historii",
   "@commands.askCmdrToggle.description": {
-    "sourceHash": "c520468"
+    "sourceHash": "a25a7a4"
   },
   "commands.askCmdrNewChat.label": "Nový chat v Ask Cmdr",
   "@commands.askCmdrNewChat.label": {
@@ -134,7 +134,7 @@
   },
   "commands.askCmdrNewChat.description": "Začne nový chat v Ask Cmdr, a pokud je panel zavřený, otevře ho",
   "@commands.askCmdrNewChat.description": {
-    "sourceHash": "957741b"
+    "sourceHash": "aa3c28c"
   },
   "commands.askCmdrFind.label": "Hledat v chatu",
   "@commands.askCmdrFind.label": {
@@ -152,9 +152,9 @@
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Napište tvůrci aplikace Cmdr, co si myslíte: nápady, přání, cokoli",
+  "commands.feedbackSend.description": "Umožní vám napsat tvůrci aplikace Cmdr, co si myslíte: nápady, přání, cokoli",
   "@commands.feedbackSend.description": {
-    "sourceHash": "89d08a8"
+    "sourceHash": "30c0620"
   },
   "commands.searchOpen.label": "Hledat soubory",
   "@commands.searchOpen.label": {
@@ -166,7 +166,7 @@
   },
   "commands.navGoToPath.description": "Přejde v aktivním panelu na napsanou, vloženou nebo nedávno použitou cestu.",
   "@commands.navGoToPath.description": {
-    "sourceHash": "fc6a00c"
+    "sourceHash": "0b91354"
   },
   "commands.favoritesAdd.label": "Přidat do oblíbených",
   "@commands.favoritesAdd.label": {
@@ -174,15 +174,15 @@
   },
   "commands.favoritesAdd.description": "Přidá aktuální složku aktivního panelu do oblíbených, takže se do ní vrátíte z nabídky oblíbených.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "999aa52"
+    "sourceHash": "43043e8"
   },
   "commands.favoritesOpen.label": "Zobrazit oblíbené",
   "@commands.favoritesOpen.label": {
     "sourceHash": "f4dfe9b"
   },
-  "commands.favoritesOpen.description": "Otevře nabídku oblíbených v aktivním panelu; stiskem čísla pak přejdete na oblíbenou položku s tímto číslem.",
+  "commands.favoritesOpen.description": "Otevře nabídku oblíbených v aktivním panelu, kde číselnou klávesou přejdete na příslušnou oblíbenou položku.",
   "@commands.favoritesOpen.description": {
-    "sourceHash": "d188872"
+    "sourceHash": "5fcfcee"
   },
   "commands.favoritesOpenByNumber.label": "Otevřít oblíbenou položku s tímto číslem",
   "@commands.favoritesOpenByNumber.label": {
@@ -194,7 +194,7 @@
   },
   "commands.downloadsGoToLatest.description": "Otevře ~/Downloads a vybere naposledy stažený soubor.",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "42a26a2"
+    "sourceHash": "6b3fe83"
   },
   "commands.viewShowHidden.label": "Zobrazit nebo skrýt skryté soubory",
   "@commands.viewShowHidden.label": {
@@ -298,23 +298,23 @@
   },
   "commands.paneClone.description": "Otevře složku tohoto panelu i v druhém panelu.",
   "@commands.paneClone.description": {
-    "sourceHash": "8a13dc9"
+    "sourceHash": "fcbddd9"
   },
   "commands.paneFocusControls.label": "Přesunout fokus na ovládací prvky panelu",
   "@commands.paneFocusControls.label": {
     "sourceHash": "b71f4ad"
   },
-  "commands.paneFocusControls.description": "Z klávesnice se dostanete k záložkám, řádku umístění a tlačítkům řazení aktivního panelu. Šipkami se mezi nimi pohybujete a Escape vás vrátí zpět k souborům.",
+  "commands.paneFocusControls.description": "Přesune fokus klávesnice na záložky, řádek umístění a tlačítka řazení aktivního panelu. Šipkami se mezi nimi pohybujete a Escape vás vrátí zpět k souborům.",
   "@commands.paneFocusControls.description": {
-    "sourceHash": "e5828ae"
+    "sourceHash": "ffce489"
   },
   "commands.appFocusNotifications.label": "Přesunout fokus na oznámení",
   "@commands.appFocusNotifications.label": {
     "sourceHash": "628f0e5"
   },
-  "commands.appFocusNotifications.description": "Z klávesnice se dostanete k oznámením a jejich tlačítkům, třeba Odvolat. Šipkami se mezi nimi pohybujete a Escape vás vrátí zpět.",
+  "commands.appFocusNotifications.description": "Přesune fokus klávesnice na oznámení a jejich tlačítka, třeba Odvolat. Šipkami se mezi nimi pohybujete a Escape vás vrátí zpět.",
   "@commands.appFocusNotifications.description": {
-    "sourceHash": "87886a4"
+    "sourceHash": "8157823"
   },
   "commands.editUndoTrash.label": "Odvolat přesunutí do koše",
   "@commands.editUndoTrash.label": {
@@ -328,9 +328,9 @@
   "@commands.editUndoTrash.many": {
     "sourceHash": "69c4966"
   },
-  "commands.editUndoTrash.description": "Vrátit zpět soubory naposledy přesunuté do koše",
+  "commands.editUndoTrash.description": "Vrátí zpět soubory naposledy přesunuté do koše",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "3aa756f"
+    "sourceHash": "dca1b63"
   },
   "commands.paneLeftVolumeChooser.label": "Otevřít levý přepínač svazků",
   "@commands.paneLeftVolumeChooser.label": {
@@ -346,7 +346,7 @@
   },
   "commands.paneCopyPathLeftToRight.description": "Otevře umístění levého panelu vpravo. Když je aktivní levý panel a kurzor stojí na složce, otevře se vpravo místo toho tato složka.",
   "@commands.paneCopyPathLeftToRight.description": {
-    "sourceHash": "07ac6a1"
+    "sourceHash": "d866ae5"
   },
   "commands.paneCopyPathRightToLeft.label": "Kopírovat cestu z pravého do levého panelu",
   "@commands.paneCopyPathRightToLeft.label": {
@@ -354,7 +354,7 @@
   },
   "commands.paneCopyPathRightToLeft.description": "Otevře umístění pravého panelu vlevo. Když je aktivní pravý panel a kurzor stojí na složce, otevře se vlevo místo toho tato složka.",
   "@commands.paneCopyPathRightToLeft.description": {
-    "sourceHash": "95c566f"
+    "sourceHash": "052c7cd"
   },
   "commands.paneRefresh.label": "Znovu načíst panel",
   "@commands.paneRefresh.label": {
@@ -416,13 +416,13 @@
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },
-  "commands.navUp.label": "Přejít na předchozí soubor",
+  "commands.navUp.label": "Přesunout kurzor na předchozí položku",
   "@commands.navUp.label": {
-    "sourceHash": "40dca00"
+    "sourceHash": "6197d1a"
   },
-  "commands.navDown.label": "Přejít na další soubor",
+  "commands.navDown.label": "Přesunout kurzor na další položku",
   "@commands.navDown.label": {
-    "sourceHash": "61e81ee"
+    "sourceHash": "8b5b37b"
   },
   "commands.navOpen.label": "Otevřít soubor nebo složku",
   "@commands.navOpen.label": {
@@ -504,9 +504,9 @@
   "@commands.paneQuickFilter.label": {
     "sourceHash": "e731882"
   },
-  "commands.paneQuickFilter.description": "Otevře odznak filtru s aktuálním vzorem. Dalším stisknutím přepnete mezi režimy Filtr a Skok",
+  "commands.paneQuickFilter.description": "Otevře odznak s tím, co jste zatím napsali. Dalším stisknutím přepnete mezi režimy Filtr a Skok",
   "@commands.paneQuickFilter.description": {
-    "sourceHash": "2778526"
+    "sourceHash": "e531430"
   },
   "commands.fileMultiRename.label": "Hromadné přejmenování",
   "@commands.fileMultiRename.label": {
@@ -726,7 +726,7 @@
   },
   "commands.fileDuplicate.description": "Vytvoří kopii vybraných souborů ve stejné složce",
   "@commands.fileDuplicate.description": {
-    "sourceHash": "2c038a2"
+    "sourceHash": "5c02b66"
   },
   "commands.fileCompress.label": "Komprimovat",
   "@commands.fileCompress.label": {
@@ -738,7 +738,7 @@
   },
   "commands.editCopy.description": "Zkopíruje vybrané soubory do schránky, odkud je můžete vložit",
   "@commands.editCopy.description": {
-    "sourceHash": "5c769a7"
+    "sourceHash": "3ded30a"
   },
   "commands.editCut.label": "Vyjmout do schránky",
   "@commands.editCut.label": {
@@ -746,7 +746,7 @@
   },
   "commands.editCut.description": "Vyjme vybrané soubory (vložením se přesunou)",
   "@commands.editCut.description": {
-    "sourceHash": "5bc3870"
+    "sourceHash": "1e03b84"
   },
   "commands.editPaste.label": "Vložit",
   "@commands.editPaste.label": {
@@ -754,7 +754,7 @@
   },
   "commands.editPaste.description": "Vloží soubory ze schránky do aktuální složky",
   "@commands.editPaste.description": {
-    "sourceHash": "32545d7"
+    "sourceHash": "9eca6d3"
   },
   "commands.editPasteAsMove.label": "Přesunout sem",
   "@commands.editPasteAsMove.label": {
@@ -762,7 +762,7 @@
   },
   "commands.editPasteAsMove.description": "Vloží soubory ze schránky jako přesun",
   "@commands.editPasteAsMove.description": {
-    "sourceHash": "961316d"
+    "sourceHash": "41e9245"
   },
   "commands.fileNewFolder.label": "Nová složka",
   "@commands.fileNewFolder.label": {
@@ -786,7 +786,7 @@
   },
   "commands.fileGoToTrash.description": "Otevře koš na disku, který právě procházíte",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "73eae92"
+    "sourceHash": "6496c25"
   },
   "commands.dialogConfirm.label": "Potvrdit zobrazené dialogové okno",
   "@commands.dialogConfirm.label": {
@@ -806,7 +806,7 @@
   },
   "commands.fileOpenTerminalHere.description": "Otevře vaši terminálovou aplikaci ve složce, kterou právě prohlížíte",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "ac0ddb8"
+    "sourceHash": "f03d961"
   },
   "commands.fileCopyPath.label": "Zkopírovat cestu do schránky",
   "@commands.fileCopyPath.label": {
@@ -1280,9 +1280,9 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "1a1f5b9"
   },
-  "commands.suggestedOpsShow.description": "Zobrazí operace se soubory navržené AI k posouzení a nechá vás rozhodnout, co se spustí",
+  "commands.suggestedOpsShow.description": "Zobrazí operace se soubory navržené AI, abyste mohli rozhodnout, co se spustí",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "7efe8c9"
+    "sourceHash": "5468fcf"
   },
   "commands.helpViewDebugLog.label": "Zobrazit ladicí protokol",
   "@commands.helpViewDebugLog.label": {
@@ -1290,7 +1290,7 @@
   },
   "commands.helpViewDebugLog.description": "Zobrazí v prohlížeči souborů ladicí protokol aplikace Cmdr, který se průběžně aktualizuje",
   "@commands.helpViewDebugLog.description": {
-    "sourceHash": "a937e6e"
+    "sourceHash": "06f49ab"
   },
   "commands.handler.viewDebugLog.disabled": "Ukládání protokolů je vypnuté. Chcete-li zobrazit ladicí protokol, nastavte v Nastavení > Pokročilé limit místa na disku větší než 0 a restartujte Cmdr.",
   "@commands.handler.viewDebugLog.disabled": {

@@ -171,9 +171,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "Máte {max, number} předvoleb, což je nejvíc, kolik jich Cmdr uchová. Pokud chcete uložit tuto, jednu smažte.",
+  "multiRename.presets.listFull": "Máte {max, plural, one {# předvolbu} few {# předvolby} many {# předvolby} other {# předvoleb}}, což je nejvíc, kolik jich Cmdr uchová. Pokud chcete uložit tuto, jednu smažte.",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "Nahradit",
   "@multiRename.presets.replace": {
@@ -223,13 +223,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "Stejný název jako jiný soubor",
+  "multiRename.status.duplicate": "Stejný název jako jiná položka",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
-  "multiRename.status.targetExists": "Název je obsazený",
+  "multiRename.status.targetExists": "Název je už obsazený",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "Neplatný název",
   "@multiRename.status.invalidName": {
@@ -385,15 +385,15 @@
   },
   "multiRename.reason.duplicate": "Jiná položka v této dávce dostane stejný nový název, takže se nepřejmenuje ani jedna.",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
   "multiRename.reason.targetExists": "Tento název už má položka, která v této složce zůstává, takže si tahle ponechá svůj název.",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
   "multiRename.reason.missing": "Tato položka byla po otevření Hromadného přejmenování přesunuta nebo smazána, takže se vynechá.",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "Čte se…",
   "@multiRename.status.reading": {
@@ -405,11 +405,11 @@
   },
   "multiRename.reason.noValue": "Tato položka nemá hodnotu „{field}“, takže si ponechá svůj název.",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "Tato položka nemá hodnotu „{field}“, takže si ponechá svůj název. Editor zástupného symbolu může místo toho použít datum poslední změny souboru.",
+  "multiRename.reason.noDate": "Tato položka nemá hodnotu „{field}“, takže si ponechá svůj název. Editor zástupného symbolu může místo toho použít datum poslední změny položky.",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "Nelze přečíst tagy",
   "@multiRename.status.unreadable": {
@@ -633,9 +633,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "{count, plural, one {Přeskočeno # přejmenování, které prohazuje názvy} few {Přeskočena # přejmenování, která prohazují názvy} many {Přeskočeno # přejmenování, která prohazují názvy} other {Přeskočeno # přejmenování, která prohazují názvy}}. Přejmenujte je po jednom.",
+  "multiRename.swapsSkipped": "{count, plural, one {Přeskočeno # přejmenování, které prohazuje názvy} few {Přeskočena # přejmenování, která prohazují názvy} many {Přeskočeno # přejmenování, která prohazují názvy} other {Přeskočeno # přejmenování, která prohazují názvy}}. Přejmenujte tyto položky po jedné.",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "Hromadné přejmenování uvnitř archivů nefunguje",
   "@multiRename.archiveTitle": {

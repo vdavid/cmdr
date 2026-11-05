@@ -29,3 +29,11 @@ Awaiting a native read, from the unified AI tools:
   image in a consent text; confirm it reads as "never leaves your Mac" to a native reader.
 - `askCmdr.tool.navToPath.done`, `askCmdr.tool.navBack.done`, `askCmdr.tool.await.done`: Přešlo se… and Čekalo se… avoid
   a gendered subject; check they read as finished status lines, not as narration.
+
+Awaiting a native read, from the #739 batch:
+
+- `commands.paneFocusControls.*`, `commands.appFocusNotifications.*`: catalog says „fokus“, macOS says „zaměření
+  klávesnice“; switch the labels and descriptions together if macOS wins.
+- `commands.helpAccessibility.*`: „průvodce“ vs macOS „příručka“ (Uživatelská příručka); switch label and description
+  together.
+- `askCmdr.limit.*`: confirm „vyhledávání“ for a lookup reads distinct from ⌘F „hledání“.
