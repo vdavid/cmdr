@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "O servidor não confirmou os ajustes de segurança que combinou com o Cmdr, então o Cmdr fechou a conexão.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Este compartilhamento só aceita conexões criptografadas, e o servidor não combinou com o Cmdr uma forma de criptografá-las.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "Conexão não criptografada",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Inicie a sessão com uma conta em vez de entrar como convidado, ou ative a criptografia SMB no servidor. Você também pode desativar “Sempre exigir criptografia SMB” nos Ajustes.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "O servidor não confirmou esta conexão",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "O servidor não confirmou os ajustes de segurança que combinou com o Cmdr, então o Cmdr fechou a conexão e não abriu `{path}`. Um servidor que não funciona direito pode causar isso, e também alguém adulterando a conexão.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Verifique sua rede e os ajustes do servidor e depois reconecte-se.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Este compartilhamento só aceita conexões criptografadas",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "O compartilhamento só aceita conexões criptografadas, e o servidor não combinou com o Cmdr uma forma de criptografá-las, então o Cmdr não abriu `{path}`.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Verifique os ajustes de criptografia SMB do servidor.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "Conexão não confirmada",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "O servidor não confirmou os ajustes de segurança que combinou com o Cmdr, então o Cmdr fechou a conexão e interrompeu a operação. Um servidor que não funciona direito pode causar isso, e também alguém adulterando a conexão.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Verifique sua rede e os ajustes do servidor e depois reconecte-se.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "O compartilhamento exige criptografia",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "O compartilhamento só aceita conexões criptografadas, e o servidor não combinou com o Cmdr uma forma de criptografá-las, então o Cmdr interrompeu a operação.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Verifique os ajustes de criptografia SMB do servidor.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Esta pasta está em outro servidor",
   "@errors.listing.linkNeedsConsent.title": {

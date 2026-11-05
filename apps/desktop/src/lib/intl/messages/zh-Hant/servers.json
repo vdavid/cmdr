@@ -892,6 +892,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "Cmdr 沒有重新連線：伺服器沒有確認和 Cmdr 協商好的安全性設定。伺服器運作不正常可能造成這種情況，有人竄改連線也可能。請檢查你的網路和伺服器的設定。",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr 沒有重新連線：這個共享資料夾只接受加密的連線，而伺服器沒有和 Cmdr 協商出加密的方式。請檢查伺服器的 SMB 加密設定。",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "你要求用自己的帳號登入，但伺服器卻改用訪客身分連線。這通常表示密碼不對。少數情況下，則表示有人正在竄改連線。",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

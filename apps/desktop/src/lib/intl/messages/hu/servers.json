@@ -893,6 +893,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "A Cmdr nem csatlakozott újra: a szerver nem erősítette meg a Cmdrrel egyeztetett biztonsági beállításokat. Ezt okozhatja egy rosszul működő szerver, de az is, ha valaki beavatkozik a kapcsolatba. Ellenőrizd a hálózatodat és a szerver beállításait.",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "A Cmdr nem csatlakozott újra: a megosztás csak titkosított kapcsolatot fogad el, és a szerver nem egyezett meg a Cmdrrel a titkosítás módjáról. Ellenőrizd a szerver SMB-titkosítási beállításait.",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "A fiókoddal kérted a bejelentkezést, de a szerver helyette vendégmunkamenetet ajánlott fel. Ez általában azt jelenti, hogy a jelszó nem volt jó. Ritkán pedig azt, hogy valaki beavatkozik a kapcsolatba.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

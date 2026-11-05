@@ -894,6 +894,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "O Cmdr não se reconectou: o servidor não confirmou os ajustes de segurança que combinou com o Cmdr. Um servidor que não funciona direito pode causar isso, e também alguém adulterando a conexão. Verifique sua rede e os ajustes do servidor.",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "O Cmdr não se reconectou: o compartilhamento só aceita conexões criptografadas, e o servidor não combinou com o Cmdr uma forma de criptografá-las. Verifique os ajustes de criptografia SMB do servidor.",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "Você pediu para iniciar a sessão com sua conta, mas o servidor ofereceu uma sessão de convidado. Em geral isso significa que a senha estava errada. Em casos raros, significa que alguém está adulterando a conexão.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

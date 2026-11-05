@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "伺服器沒有確認和 Cmdr 協商好的安全性設定，所以 Cmdr 關閉了連線。",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "這個共享資料夾只接受加密的連線，而伺服器沒有和 Cmdr 協商出加密的方式。",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "連線沒有加密",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "請用帳號登入，而不是以訪客身分連線，或在伺服器上啟用 SMB 加密。你也可以在「設定」中關閉「一律要求 SMB 加密」。",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "伺服器沒有確認這個連線",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "伺服器沒有確認和 Cmdr 協商好的安全性設定，所以 Cmdr 關閉了連線，沒有開啟 `{path}`。伺服器運作不正常可能造成這種情況，有人竄改連線也可能。",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "請檢查你的網路和伺服器的設定，然後重新連線。",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "這個共享資料夾只接受加密的連線",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "這個共享資料夾只接受加密的連線，而伺服器沒有和 Cmdr 協商出加密的方式，所以 Cmdr 沒有開啟 `{path}`。",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "請檢查伺服器的 SMB 加密設定。",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "連線未經確認",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "伺服器沒有確認和 Cmdr 協商好的安全性設定，所以 Cmdr 關閉了連線，並停了下來。伺服器運作不正常可能造成這種情況，有人竄改連線也可能。",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "請檢查你的網路和伺服器的設定，然後重新連線。",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "共享資料夾要求加密",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "這個共享資料夾只接受加密的連線，而伺服器沒有和 Cmdr 協商出加密的方式，所以 Cmdr 停下來了。",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "請檢查伺服器的 SMB 加密設定。",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "這個資料夾在另一個伺服器上",
   "@errors.listing.linkNeedsConsent.title": {

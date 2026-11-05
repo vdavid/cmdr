@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "Máy chủ không xác nhận các thiết lập bảo mật đã thống nhất với Cmdr, nên Cmdr đã đóng kết nối.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Mục chia sẻ này chỉ chấp nhận kết nối được mã hóa và máy chủ không thống nhất được với Cmdr cách mã hóa kết nối.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "Kết nối không được mã hóa",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Hãy đăng nhập bằng một tài khoản thay vì với tư cách khách, hoặc bật mã hóa SMB trên máy chủ. Bạn cũng có thể tắt “Luôn yêu cầu mã hóa SMB” trong Cài đặt.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "Máy chủ không xác nhận kết nối này",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "Máy chủ không xác nhận các thiết lập bảo mật đã thống nhất với Cmdr, nên Cmdr đã đóng kết nối và không mở `{path}`. Một máy chủ hoạt động không bình thường có thể gây ra chuyện này, và ai đó can thiệp vào kết nối cũng vậy.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Hãy kiểm tra mạng của bạn và cài đặt của máy chủ, rồi kết nối lại.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Mục chia sẻ này chỉ chấp nhận kết nối được mã hóa",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "Mục chia sẻ chỉ chấp nhận kết nối được mã hóa và máy chủ không thống nhất được với Cmdr cách mã hóa kết nối, nên Cmdr không mở `{path}`.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Hãy kiểm tra cài đặt mã hóa SMB của máy chủ.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "Kết nối chưa được xác nhận",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "Máy chủ không xác nhận các thiết lập bảo mật đã thống nhất với Cmdr, nên Cmdr đã đóng kết nối và dừng lại. Một máy chủ hoạt động không bình thường có thể gây ra chuyện này, và ai đó can thiệp vào kết nối cũng vậy.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Hãy kiểm tra mạng của bạn và cài đặt của máy chủ, rồi kết nối lại.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "Mục chia sẻ yêu cầu mã hóa",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "Mục chia sẻ chỉ chấp nhận kết nối được mã hóa và máy chủ không thống nhất được với Cmdr cách mã hóa kết nối, nên Cmdr đã dừng.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Hãy kiểm tra cài đặt mã hóa SMB của máy chủ.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Thư mục này nằm trên máy chủ khác",
   "@errors.listing.linkNeedsConsent.title": {

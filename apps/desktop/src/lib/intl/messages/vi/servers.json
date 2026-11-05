@@ -892,6 +892,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "Cmdr không kết nối lại: máy chủ không xác nhận các thiết lập bảo mật đã thống nhất với Cmdr. Một máy chủ hoạt động không bình thường có thể gây ra chuyện này, và ai đó can thiệp vào kết nối cũng vậy. Hãy kiểm tra mạng của bạn và cài đặt của máy chủ.",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr không kết nối lại: mục chia sẻ chỉ chấp nhận kết nối được mã hóa và máy chủ không thống nhất được với Cmdr cách mã hóa kết nối. Hãy kiểm tra cài đặt mã hóa SMB của máy chủ.",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "Bạn đã yêu cầu đăng nhập bằng tài khoản của bạn, nhưng máy chủ lại cho vào với tư cách khách. Thường thì điều đó có nghĩa là mật khẩu không đúng. Trong một số ít trường hợp, đó là dấu hiệu có ai đó đang can thiệp vào kết nối.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

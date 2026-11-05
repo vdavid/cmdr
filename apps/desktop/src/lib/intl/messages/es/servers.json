@@ -893,6 +893,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "Cmdr no se ha reconectado: el servidor no ha confirmado los ajustes de seguridad que acordó con Cmdr. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión. Comprueba tu red y los ajustes del servidor.",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr no se ha reconectado: el recurso compartido solo acepta conexiones cifradas y el servidor no ha acordado con Cmdr una forma de cifrarlas. Comprueba los ajustes de cifrado SMB del servidor.",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "Has pedido iniciar sesión con tu cuenta, pero el servidor te ha ofrecido una sesión como invitado. Normalmente eso significa que la contraseña no era correcta. Rara vez se debe a que alguien esté manipulando la conexión.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

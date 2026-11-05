@@ -892,6 +892,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "Cmdr 没有重新连接：服务器没有确认和 Cmdr 商定好的安全设置。服务器运行不正常可能导致这种情况，有人篡改连接也可能导致。请检查你的网络和服务器的设置。",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr 没有重新连接：该共享只接受加密连接，而服务器没有和 Cmdr 商定加密方式。请检查服务器的 SMB 加密设置。",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "你要求用自己的账户登录，但服务器给的是客人会话。这通常说明密码不对。在极少数情况下，这说明有人在篡改连接。",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

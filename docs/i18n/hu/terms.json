@@ -3090,9 +3090,10 @@
       "csatlakoztasd újra",
       "csatlakoztass újra",
       "csatlakozott újra",
+      "csatlakozz újra",
       "újra nem csatlakoz"
     ],
-    "forms": "Reconnecting to {name}… → Újracsatlakozás ide: {name}…; Reconnect automatically → Automatikus újracsatlakozás; negated, the prefix splits off: nem csatlakozott újra, amíg újra nem csatlakoznak",
+    "forms": "Reconnecting to {name}… → Újracsatlakozás ide: {name}…; Reconnect automatically → Automatikus újracsatlakozás; negated, the prefix splits off: nem csatlakozott újra, amíg újra nem csatlakoznak; the te imperative splits too: majd csatlakozz újra",
     "avoid": [
       {
         "form": "újrakapcsolódás",

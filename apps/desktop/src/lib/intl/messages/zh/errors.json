@@ -2628,6 +2628,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "服务器没有确认和 Cmdr 商定好的安全设置，所以 Cmdr 关闭了连接。",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "这个共享只接受加密连接，而服务器没有和 Cmdr 商定加密方式。",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "连接没有加密",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2639,6 +2647,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "请用账户登录，不要以客人身份连接，或者在服务器上开启 SMB 加密。你也可以在“设置”中关闭“始终要求 SMB 加密”。",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "服务器没有确认这个连接",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "服务器没有确认和 Cmdr 商定好的安全设置，所以 Cmdr 关闭了连接，没有打开 `{path}`。服务器运行不正常可能导致这种情况，有人篡改连接也可能导致。",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "请检查你的网络和服务器的设置，然后重新连接。",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "这个共享只接受加密连接",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "该共享只接受加密连接，而服务器没有和 Cmdr 商定加密方式，所以 Cmdr 没有打开 `{path}`。",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "请检查服务器的 SMB 加密设置。",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "连接未经确认",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "服务器没有确认和 Cmdr 商定好的安全设置，所以 Cmdr 关闭了连接，并停止了这项操作。服务器运行不正常可能导致这种情况，有人篡改连接也可能导致。",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "请检查你的网络和服务器的设置，然后重新连接。",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "共享要求加密",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "该共享只接受加密连接，而服务器没有和 Cmdr 商定加密方式，所以 Cmdr 停止了这项操作。",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "请检查服务器的 SMB 加密设置。",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "这个文件夹在另一台服务器上",
   "@errors.listing.linkNeedsConsent.title": {

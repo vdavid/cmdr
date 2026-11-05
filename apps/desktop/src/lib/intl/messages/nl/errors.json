@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "De server bevestigde de beveiligingsinstellingen die met Cmdr waren afgesproken niet, dus Cmdr verbrak de verbinding.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Deze gedeelde map accepteert alleen versleutelde verbindingen en de server kon met Cmdr geen manier afspreken om de verbinding te versleutelen.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "Verbinding niet versleuteld",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Log in met een account in plaats van als gast, of zet SMB-versleuteling aan op de server. Je kunt ‘Altijd SMB-versleuteling vereisen’ ook uitzetten in Instellingen.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "De server bevestigde deze verbinding niet",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "De server bevestigde de beveiligingsinstellingen die met Cmdr waren afgesproken niet, dus Cmdr verbrak de verbinding en opende `{path}` niet. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Controleer je netwerk en de instellingen van de server, en maak dan opnieuw verbinding.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Deze gedeelde map accepteert alleen versleutelde verbindingen",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "De gedeelde map accepteert alleen versleutelde verbindingen en de server kon met Cmdr geen manier afspreken om de verbinding te versleutelen, dus Cmdr opende `{path}` niet.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Controleer de SMB-versleutelingsinstellingen van de server.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "Verbinding niet bevestigd",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "De server bevestigde de beveiligingsinstellingen die met Cmdr waren afgesproken niet, dus Cmdr verbrak de verbinding en stopte de bewerking. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Controleer je netwerk en de instellingen van de server, en maak dan opnieuw verbinding.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "Gedeelde map vereist versleuteling",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "De gedeelde map accepteert alleen versleutelde verbindingen en de server kon met Cmdr geen manier afspreken om de verbinding te versleutelen, dus Cmdr heeft de bewerking gestopt.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Controleer de SMB-versleutelingsinstellingen van de server.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Deze map staat op een andere server",
   "@errors.listing.linkNeedsConsent.title": {

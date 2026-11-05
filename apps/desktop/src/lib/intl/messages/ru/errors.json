@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "Сервер не подтвердил параметры безопасности, согласованные с Cmdr, поэтому Cmdr закрыл соединение.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Эта общая папка принимает только зашифрованные подключения, а сервер не смог договориться с Cmdr о способе шифрования.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "Подключение не зашифровано",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Войдите с учетной записью, а не как гость, или включите шифрование SMB на сервере. Параметр «Всегда требовать шифрование SMB» также можно выключить в настройках.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "Сервер не подтвердил это соединение",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "Сервер не подтвердил параметры безопасности, согласованные с Cmdr, поэтому Cmdr закрыл соединение и не стал открывать папку `{path}`. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Проверьте сеть и настройки сервера, а затем подключитесь снова.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Эта общая папка принимает только зашифрованные подключения",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "Общая папка принимает только зашифрованные подключения, а сервер не смог договориться с Cmdr о способе шифрования, поэтому Cmdr не стал открывать папку `{path}`.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Проверьте настройки шифрования SMB на сервере.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "Соединение не подтверждено",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "Сервер не подтвердил параметры безопасности, согласованные с Cmdr, поэтому Cmdr закрыл соединение и остановил операцию. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Проверьте сеть и настройки сервера, а затем подключитесь снова.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "Общая папка требует шифрования",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "Общая папка принимает только зашифрованные подключения, а сервер не смог договориться с Cmdr о способе шифрования, поэтому Cmdr остановил операцию.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Проверьте настройки шифрования SMB на сервере.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Эта папка находится на другом сервере",
   "@errors.listing.linkNeedsConsent.title": {

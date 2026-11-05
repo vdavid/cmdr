@@ -4169,7 +4169,7 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.smbNegotiationInvalid.suggestion": "Check your network and the server’s settings, then connect again.",
+  "errors.listing.smbNegotiationInvalid.suggestion": "Check your network and the server’s settings, then reconnect.",
   "@errors.listing.smbNegotiationInvalid.suggestion": {
     "description": "Recovery suggestion for that case: look at the network (a device in between could be interfering) and the server's settings, then reconnect. Markdown, one sentence.",
     "screenshot": "error-message-example.png",

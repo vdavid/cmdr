@@ -898,6 +898,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "Cmdr hat die Verbindung nicht wiederhergestellt: Der Server hat die Sicherheitseinstellungen, die mit Cmdr vereinbart waren, nicht bestätigt. Das kann an einem Server liegen, der nicht richtig arbeitet, aber auch daran, dass jemand die Verbindung manipuliert. Prüfe dein Netzwerk und die Einstellungen des Servers.",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr hat die Verbindung nicht wiederhergestellt: Die Freigabe akzeptiert nur verschlüsselte Verbindungen und der Server konnte sich mit Cmdr auf keine Verschlüsselung einigen. Prüfe die SMB-Verschlüsselungseinstellungen des Servers.",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "Du wolltest dich mit deinem Konto anmelden, aber der Server hat stattdessen eine Gastsitzung angeboten. Meist heißt das, dass das Passwort falsch war. Selten heißt es, dass jemand die Verbindung manipuliert.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

@@ -918,5 +918,33 @@
   "errors.write.homeFolder.suggestion.holdsHome": "Si quieres liberar espacio, elige algo más concreto. Si quieres deshacerte de todo lo que hay en esta computadora, restablece el sistema de fábrica.",
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "0842b3c"
+  },
+  "errors.volume.negotiationInvalid": "El servidor no confirmó la configuración de seguridad que acordó con Cmdr, así que Cmdr cerró la conexión.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "b259e98"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "El servidor no confirmó la configuración de seguridad que acordó con Cmdr, así que Cmdr cerró la conexión y no abrió `{path}`. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "1226c8a"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Comprueba tu red y la configuración del servidor, y vuelve a conectarte.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "24be238"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Comprueba la configuración de cifrado SMB del servidor.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "099b329"
+  },
+  "errors.write.smbNegotiationInvalid.message": "El servidor no confirmó la configuración de seguridad que acordó con Cmdr, así que Cmdr cerró la conexión y detuvo la operación. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3b6aaf8"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Comprueba tu red y la configuración del servidor, y vuelve a conectarte.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "24be238"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Comprueba la configuración de cifrado SMB del servidor.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "099b329"
   }
 }

@@ -896,6 +896,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "Cmdr återanslöt inte: servern bekräftade inte de säkerhetsinställningar som hade avtalats med Cmdr. Det kan bero på en server som krånglar, men också på att någon manipulerar anslutningen. Kontrollera ditt nätverk och serverns inställningar.",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr återanslöt inte: den delade mappen tar bara emot krypterade anslutningar och servern kom inte överens med Cmdr om något sätt att kryptera dem. Kontrollera serverns inställningar för SMB-kryptering.",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "Du ville logga in med ditt konto, men servern erbjöd en gästsession i stället. Oftast betyder det att lösenordet inte stämde. I sällsynta fall betyder det att någon manipulerar anslutningen.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

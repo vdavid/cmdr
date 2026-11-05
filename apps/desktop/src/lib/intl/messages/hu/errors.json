@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "A szerver nem erősítette meg a Cmdrrel egyeztetett biztonsági beállításokat, ezért a Cmdr lezárta a kapcsolatot.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Ez a megosztás csak titkosított kapcsolatot fogad el, és a szerver nem egyezett meg a Cmdrrel a titkosítás módjáról.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "A kapcsolat nem titkosított",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Jelentkezz be egy fiókkal vendég helyett, vagy kapcsold be az SMB-titkosítást a szerveren. A „Mindig kötelező SMB-titkosítás” beállítást is kikapcsolhatod a Beállításokban.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "A szerver nem erősítette meg ezt a kapcsolatot",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "A szerver nem erősítette meg a Cmdrrel egyeztetett biztonsági beállításokat, ezért a Cmdr lezárta a kapcsolatot, és nem nyitotta meg ezt a mappát: `{path}`. Ezt okozhatja egy rosszul működő szerver, de az is, ha valaki beavatkozik a kapcsolatba.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Ellenőrizd a hálózatodat és a szerver beállításait, majd csatlakozz újra.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Ez a megosztás csak titkosított kapcsolatot fogad el",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "A megosztás csak titkosított kapcsolatot fogad el, és a szerver nem egyezett meg a Cmdrrel a titkosítás módjáról, ezért a Cmdr nem nyitotta meg ezt a mappát: `{path}`.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Ellenőrizd a szerver SMB-titkosítási beállításait.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "A kapcsolat nincs megerősítve",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "A szerver nem erősítette meg a Cmdrrel egyeztetett biztonsági beállításokat, ezért a Cmdr lezárta a kapcsolatot, és leállt. Ezt okozhatja egy rosszul működő szerver, de az is, ha valaki beavatkozik a kapcsolatba.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Ellenőrizd a hálózatodat és a szerver beállításait, majd csatlakozz újra.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "A megosztás titkosítást igényel",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "A megosztás csak titkosított kapcsolatot fogad el, és a szerver nem egyezett meg a Cmdrrel a titkosítás módjáról, ezért a Cmdr leállt.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Ellenőrizd a szerver SMB-titkosítási beállításait.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Ez a mappa egy másik szerveren van",
   "@errors.listing.linkNeedsConsent.title": {

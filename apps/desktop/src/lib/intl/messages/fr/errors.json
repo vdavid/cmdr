@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "Le serveur n’a pas confirmé les réglages de sécurité convenus avec Cmdr, donc Cmdr a fermé la connexion.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Ce partage n’accepte que les connexions chiffrées et le serveur n’a convenu avec Cmdr d’aucune façon de chiffrer la connexion.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "Connexion non chiffrée",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Identifiez-vous avec un compte plutôt qu’en tant qu’invité, ou activez le chiffrement SMB sur le serveur. Vous pouvez aussi désactiver « Toujours exiger le chiffrement SMB » dans les Réglages.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "Le serveur n’a pas confirmé cette connexion",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "Le serveur n’a pas confirmé les réglages de sécurité convenus avec Cmdr, donc Cmdr a fermé la connexion et n’a pas ouvert `{path}`. Un serveur qui fonctionne mal peut en être la cause, tout comme quelqu’un qui trafique la connexion.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Vérifiez votre réseau et les réglages du serveur, puis reconnectez-vous.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Ce partage n’accepte que les connexions chiffrées",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "Le partage n’accepte que les connexions chiffrées et le serveur n’a convenu avec Cmdr d’aucune façon de chiffrer la connexion, donc Cmdr n’a pas ouvert `{path}`.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Vérifiez les réglages de chiffrement SMB du serveur.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "Connexion non confirmée",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "Le serveur n’a pas confirmé les réglages de sécurité convenus avec Cmdr, donc Cmdr a fermé la connexion et arrêté l’opération. Un serveur qui fonctionne mal peut en être la cause, tout comme quelqu’un qui trafique la connexion.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Vérifiez votre réseau et les réglages du serveur, puis reconnectez-vous.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "Le partage exige le chiffrement",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "Le partage n’accepte que les connexions chiffrées et le serveur n’a convenu avec Cmdr d’aucune façon de chiffrer la connexion, donc Cmdr a arrêté l’opération.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Vérifiez les réglages de chiffrement SMB du serveur.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Ce dossier se trouve sur un autre serveur",
   "@errors.listing.linkNeedsConsent.title": {

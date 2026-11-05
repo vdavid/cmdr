@@ -898,6 +898,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "Cmdr heeft niet opnieuw verbinding gemaakt: de server bevestigde de beveiligingsinstellingen die met Cmdr waren afgesproken niet. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit. Controleer je netwerk en de instellingen van de server.",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr heeft niet opnieuw verbinding gemaakt: de gedeelde map accepteert alleen versleutelde verbindingen en de server kon met Cmdr geen manier afspreken om de verbinding te versleutelen. Controleer de SMB-versleutelingsinstellingen van de server.",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "Je vroeg om in te loggen met je account, maar de server bood in plaats daarvan een gastsessie aan. Meestal komt dat doordat het wachtwoord niet klopte. In zeldzame gevallen knoeit er iemand met de verbinding.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

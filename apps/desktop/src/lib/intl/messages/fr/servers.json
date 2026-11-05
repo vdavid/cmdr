@@ -893,6 +893,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "Cmdr ne s’est pas reconnecté : le serveur n’a pas confirmé les réglages de sécurité convenus avec Cmdr. Un serveur qui fonctionne mal peut en être la cause, tout comme quelqu’un qui trafique la connexion. Vérifiez votre réseau et les réglages du serveur.",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr ne s’est pas reconnecté : le partage n’accepte que les connexions chiffrées et le serveur n’a convenu avec Cmdr d’aucune façon de chiffrer la connexion. Vérifiez les réglages de chiffrement SMB du serveur.",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "Vous avez demandé à vous identifier avec votre compte, mais le serveur a proposé une session d’invité à la place. En général, cela signifie que le mot de passe n’était pas le bon. Plus rarement, cela signifie que quelqu’un trafique la connexion.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "Server nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl, takže Cmdr připojení ukončil.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Tato sdílená složka přijímá jen šifrovaná připojení a server se s Cmdrem nedohodl na způsobu, jak připojení zašifrovat.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "Připojení není šifrované",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Přihlaste se pomocí účtu místo připojení jako host, nebo zapněte šifrování SMB na serveru. Volbu „Vždy vyžadovat šifrování SMB“ můžete také vypnout v Nastavení.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "Server toto připojení nepotvrdil",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "Server nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl, takže Cmdr připojení ukončil a složku `{path}` neotevřel. Může to způsobit server, který nefunguje správně, ale také někdo, kdo zasahuje do připojení.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Zkontrolujte svou síť a nastavení serveru a pak se znovu připojte.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Tato sdílená složka přijímá jen šifrovaná připojení",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "Sdílená složka přijímá jen šifrovaná připojení a server se s Cmdrem nedohodl na způsobu, jak připojení zašifrovat, takže Cmdr složku `{path}` neotevřel.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Zkontrolujte nastavení šifrování SMB na serveru.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "Připojení není potvrzené",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "Server nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl, takže Cmdr připojení ukončil a přenos zastavil. Může to způsobit server, který nefunguje správně, ale také někdo, kdo zasahuje do připojení.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Zkontrolujte svou síť a nastavení serveru a pak se znovu připojte.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "Sdílená složka vyžaduje šifrování",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "Sdílená složka přijímá jen šifrovaná připojení a server se s Cmdrem nedohodl na způsobu, jak připojení zašifrovat, takže Cmdr přenos zastavil.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Zkontrolujte nastavení šifrování SMB na serveru.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Tato složka je na jiném serveru",
   "@errors.listing.linkNeedsConsent.title": {

@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "Der Server hat die Sicherheitseinstellungen, die mit Cmdr vereinbart waren, nicht bestätigt, deshalb hat Cmdr die Verbindung getrennt.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Diese Freigabe akzeptiert nur verschlüsselte Verbindungen und der Server konnte sich mit Cmdr auf keine Verschlüsselung einigen.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "Verbindung nicht verschlüsselt",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Melde dich mit einem Konto statt als Gast an oder schalte die SMB-Verschlüsselung auf dem Server ein. Du kannst „SMB-Verschlüsselung immer verlangen“ auch in den Einstellungen ausschalten.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "Der Server hat diese Verbindung nicht bestätigt",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "Der Server hat die Sicherheitseinstellungen, die mit Cmdr vereinbart waren, nicht bestätigt, deshalb hat Cmdr die Verbindung getrennt und `{path}` nicht geöffnet. Das kann an einem Server liegen, der nicht richtig arbeitet, aber auch daran, dass jemand die Verbindung manipuliert.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Prüfe dein Netzwerk und die Einstellungen des Servers und stelle dann die Verbindung wieder her.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Diese Freigabe akzeptiert nur verschlüsselte Verbindungen",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "Die Freigabe akzeptiert nur verschlüsselte Verbindungen und der Server konnte sich mit Cmdr auf keine Verschlüsselung einigen, daher hat Cmdr `{path}` nicht geöffnet.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Prüfe die SMB-Verschlüsselungseinstellungen des Servers.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "Verbindung nicht bestätigt",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "Der Server hat die Sicherheitseinstellungen, die mit Cmdr vereinbart waren, nicht bestätigt, deshalb hat Cmdr die Verbindung getrennt und den Vorgang gestoppt. Das kann an einem Server liegen, der nicht richtig arbeitet, aber auch daran, dass jemand die Verbindung manipuliert.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Prüfe dein Netzwerk und die Einstellungen des Servers und stelle dann die Verbindung wieder her.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "Freigabe verlangt Verschlüsselung",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "Die Freigabe akzeptiert nur verschlüsselte Verbindungen und der Server konnte sich mit Cmdr auf keine Verschlüsselung einigen, daher hat Cmdr den Vorgang gestoppt.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Prüfe die SMB-Verschlüsselungseinstellungen des Servers.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Dieser Ordner liegt auf einem anderen Server",
   "@errors.listing.linkNeedsConsent.title": {

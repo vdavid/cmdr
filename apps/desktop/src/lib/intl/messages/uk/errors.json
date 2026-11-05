@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "Сервер не підтвердив параметри безпеки, узгоджені з Cmdr, тож Cmdr закрив підʼєднання.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Ця спільна папка приймає лише зашифровані підʼєднання, а сервер не домовився з Cmdr про спосіб шифрування.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "Підʼєднання не зашифроване",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Увійдіть з обліковим записом, а не як гість, або ввімкніть шифрування SMB на сервері. Також можна вимкнути «Завжди вимагати шифрування SMB» в Параметрах.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "Сервер не підтвердив це підʼєднання",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "Сервер не підтвердив параметри безпеки, узгоджені з Cmdr, тож Cmdr закрив підʼєднання й не відкрив папку `{path}`. Причиною може бути сервер, що працює зі збоями, а може й хтось, хто втручається в підʼєднання.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Перевірте свою мережу й параметри сервера, а тоді підʼєднайтеся ще раз.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Ця спільна папка приймає лише зашифровані підʼєднання",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "Спільна папка приймає лише зашифровані підʼєднання, а сервер не домовився з Cmdr про спосіб шифрування, тому Cmdr не відкрив папку `{path}`.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Перевірте параметри шифрування SMB на сервері.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "Підʼєднання не підтверджене",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "Сервер не підтвердив параметри безпеки, узгоджені з Cmdr, тож Cmdr закрив підʼєднання й зупинив операцію. Причиною може бути сервер, що працює зі збоями, а може й хтось, хто втручається в підʼєднання.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Перевірте свою мережу й параметри сервера, а тоді підʼєднайтеся ще раз.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "Спільна папка вимагає шифрування",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "Спільна папка приймає лише зашифровані підʼєднання, а сервер не домовився з Cmdr про спосіб шифрування, тому Cmdr зупинив операцію.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Перевірте параметри шифрування SMB на сервері.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Ця папка на іншому сервері",
   "@errors.listing.linkNeedsConsent.title": {

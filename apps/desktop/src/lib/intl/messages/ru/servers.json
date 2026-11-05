@@ -892,6 +892,14 @@
   "@servers.paneState.encryptionRequired": {
     "sourceHash": "f04a96a"
   },
+  "servers.paneState.negotiationInvalid": "Cmdr не стал подключаться снова: сервер не подтвердил параметры безопасности, согласованные с Cmdr. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение. Проверьте сеть и настройки сервера.",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "8a4a845"
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr не стал подключаться снова: общая папка принимает только зашифрованные подключения, а сервер не смог договориться с Cmdr о способе шифрования. Проверьте настройки шифрования SMB на сервере.",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "d64e081"
+  },
   "servers.paneState.guestSessionRefusedHint": "Вы хотели войти под своей учетной записью, но сервер вместо этого предложил гостевой сеанс. Обычно это значит, что пароль не подошел. В редких случаях это значит, что кто-то вмешивается в соединение.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

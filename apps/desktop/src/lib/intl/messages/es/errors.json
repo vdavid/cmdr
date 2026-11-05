@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "El servidor no ha confirmado los ajustes de seguridad que acordó con Cmdr, así que Cmdr ha cerrado la conexión.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Este recurso compartido solo acepta conexiones cifradas y el servidor no ha acordado con Cmdr una forma de cifrarlas.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "Conexión sin cifrar",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Inicia sesión con una cuenta en vez de como invitado, o activa el cifrado SMB en el servidor. También puedes desactivar “Requerir siempre cifrado SMB” en Ajustes.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "El servidor no ha confirmado esta conexión",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "El servidor no ha confirmado los ajustes de seguridad que acordó con Cmdr, así que Cmdr ha cerrado la conexión y no ha abierto `{path}`. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Comprueba tu red y los ajustes del servidor, y vuelve a conectarte.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Este recurso compartido solo acepta conexiones cifradas",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "El recurso compartido solo acepta conexiones cifradas y el servidor no ha acordado con Cmdr una forma de cifrarlas, así que Cmdr no ha abierto `{path}`.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Comprueba los ajustes de cifrado SMB del servidor.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "Conexión sin confirmar",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "El servidor no ha confirmado los ajustes de seguridad que acordó con Cmdr, así que Cmdr ha cerrado la conexión y ha detenido la operación. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Comprueba tu red y los ajustes del servidor, y vuelve a conectarte.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "El recurso compartido requiere cifrado",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "El recurso compartido solo acepta conexiones cifradas y el servidor no ha acordado con Cmdr una forma de cifrarlas, así que Cmdr ha detenido la operación.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Comprueba los ajustes de cifrado SMB del servidor.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Esta carpeta está en otro servidor",
   "@errors.listing.linkNeedsConsent.title": {

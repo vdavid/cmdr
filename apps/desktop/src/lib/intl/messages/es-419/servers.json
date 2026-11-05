@@ -194,5 +194,13 @@
   "servers.sheet.nfsExportsUnreachable": "Cmdr no pudo acceder a {host} para ver la lista de exportaciones. Aun así, puedes escribir una.",
   "@servers.sheet.nfsExportsUnreachable": {
     "sourceHash": "ad0aba8"
+  },
+  "servers.paneState.negotiationInvalid": "Cmdr no se reconectó: el servidor no confirmó la configuración de seguridad que acordó con Cmdr. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión. Comprueba tu red y la configuración del servidor.",
+  "@servers.paneState.negotiationInvalid": {
+    "sourceHash": "d6175f5"
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr no se reconectó: el recurso compartido solo acepta conexiones cifradas y el servidor no acordó con Cmdr una forma de cifrarlas. Comprueba la configuración de cifrado SMB del servidor.",
+  "@servers.paneState.encryptionUnavailable": {
+    "sourceHash": "8d6a570"
   }
 }

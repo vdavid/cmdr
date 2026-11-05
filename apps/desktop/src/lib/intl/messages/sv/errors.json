@@ -2629,6 +2629,14 @@
   "@errors.volume.encryptionRequired": {
     "sourceHash": "9db2055"
   },
+  "errors.volume.negotiationInvalid": "Servern bekräftade inte de säkerhetsinställningar som hade avtalats med Cmdr, så Cmdr stängde anslutningen.",
+  "@errors.volume.negotiationInvalid": {
+    "sourceHash": "4ac2873"
+  },
+  "errors.volume.encryptionUnavailable": "Den här delade mappen tar bara emot krypterade anslutningar och servern kom inte överens med Cmdr om något sätt att kryptera dem.",
+  "@errors.volume.encryptionUnavailable": {
+    "sourceHash": "f20d547"
+  },
   "errors.write.smbEncryptionRequired.title": "Okrypterad anslutning",
   "@errors.write.smbEncryptionRequired.title": {
     "sourceHash": "2b4d731"
@@ -2640,6 +2648,54 @@
   "errors.write.smbEncryptionRequired.suggestion": "Logga in med ett konto i stället för som gäst, eller slå på SMB-kryptering på servern. Du kan också stänga av ”Kräv alltid SMB-kryptering” i Inställningar.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "20a90d4"
+  },
+  "errors.listing.smbNegotiationInvalid.title": "Servern bekräftade inte den här anslutningen",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "sourceHash": "ab3a914"
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "Servern bekräftade inte de säkerhetsinställningar som hade avtalats med Cmdr, så Cmdr stängde anslutningen och öppnade inte `{path}`. Det kan bero på en server som krånglar, men också på att någon manipulerar anslutningen.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "sourceHash": "44135d7"
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Kontrollera ditt nätverk och serverns inställningar och anslut sedan igen.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "Den här delade mappen tar bara emot krypterade anslutningar",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "sourceHash": "1e50748"
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "Den delade mappen tar bara emot krypterade anslutningar och servern kom inte överens med Cmdr om något sätt att kryptera dem, så Cmdr öppnade inte `{path}`.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "sourceHash": "60d4768"
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Kontrollera serverns inställningar för SMB-kryptering.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
+  },
+  "errors.write.smbNegotiationInvalid.title": "Obekräftad anslutning",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "sourceHash": "a4a73e3"
+  },
+  "errors.write.smbNegotiationInvalid.message": "Servern bekräftade inte de säkerhetsinställningar som hade avtalats med Cmdr, så Cmdr stängde anslutningen och stoppade åtgärden. Det kan bero på en server som krånglar, men också på att någon manipulerar anslutningen.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "sourceHash": "3e9802e"
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Kontrollera ditt nätverk och serverns inställningar och anslut sedan igen.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "sourceHash": "a84a62d"
+  },
+  "errors.write.smbEncryptionUnavailable.title": "Den delade mappen kräver kryptering",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "sourceHash": "9986cc3"
+  },
+  "errors.write.smbEncryptionUnavailable.message": "Den delade mappen tar bara emot krypterade anslutningar och servern kom inte överens med Cmdr om något sätt att kryptera dem, så Cmdr stoppade åtgärden.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "sourceHash": "fafa49f"
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Kontrollera serverns inställningar för SMB-kryptering.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "sourceHash": "f522ddb"
   },
   "errors.listing.linkNeedsConsent.title": "Den här mappen finns på en annan server",
   "@errors.listing.linkNeedsConsent.title": {
