@@ -32,11 +32,11 @@ Over «Про програму Cmdr»: the same English must stay byte-identical
 CLDR `one` also covers 21, 31…, so singular wording («Пропустити», «зайвий запис», «файлу») lives in `=1`; `one` takes
 the plural/"all" wording. Count-only pronouns become a noun («елемент(и)», «назва(и)»).
 
-### Counts without a plural param use a counted-label colon (`errors.write.*`, `errors.eject.unmountRefusedByProcesses`, `fileOperations.validation.*TooLong`, `queue.chip.ariaLabel`, `menu.edit.undoTrashMany`, `indexing.enrich.progress`)
+### Counts without a plural param use a counted-label colon (`errors.write.*`, `errors.eject.unmountRefusedByProcesses`, `queue.chip.ariaLabel`, `menu.edit.undoTrashMany`)
 
-«(кількість: {count})», «Файлів, …: {count}», «(байтів: {byteCount}/{maxBytes})», «відсоток виконання: {percentText}»
-over a numeral + noun, which can't agree (21, 22, 25 each need a different ending). Where English has a count but no
-plural (`licensing.dialog.pendingHint`, `retryExhausted`), add an ICU plural.
+«(кількість: {count})», «Файлів, …: {count}», «відсоток виконання: {percentText}» over a numeral + noun, which can't
+agree (21, 22, 25 each need a different ending). With a plural param, decline the noun in it
+(`indexing.enrich.progress`: genitive after «з», `few` too).
 
 ### Inserts that can't decline take a type noun, quotes, or a colon (`errors.mount.*`, `errors.shareList.*`, `errors.write.*`, `fileExplorer.navigation.forget*`, `driveIndex.*`, `queue.row.itemsInFolder`, `downloads.toast.inSubdir`)
 
@@ -203,7 +203,7 @@ nominative.
 
 ### Date presets (`queryUi.date.preset.*`)
 
-Intl gives nominative month and weekday names, so frames keep them nominative («{month}, 1-ше число»); `yearStart`
+Intl month and weekday names stay nominative; a `{date}` arrives declined («1 травня»), so «{date}, {time}»; `yearStart`
 writes «1 січня».
 
 ### Drop hint (`askCmdr.composer.dropHint`)

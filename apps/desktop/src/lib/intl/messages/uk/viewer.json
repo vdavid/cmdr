@@ -49,7 +49,7 @@
   },
   "viewer.error.linkTargetUnreachable": "Шлях до цього файлу веде через посилання на інший сервер, і Cmdr зараз не вдається звʼязатися з цим сервером. Перевірте, чи сервер працює, а тоді спробуйте ще раз.",
   "@viewer.error.linkTargetUnreachable": {
-    "sourceHash": "8dcb736"
+    "sourceHash": "0540c9a"
   },
   "viewer.error.retry": "Спробувати ще раз",
   "@viewer.error.retry": {

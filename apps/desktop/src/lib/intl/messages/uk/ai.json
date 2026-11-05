@@ -89,7 +89,7 @@
   },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, коли ви пишете в чат або коли Cmdr сам починає розмову:",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Ваші повідомлення, зокрема будь-який пароль, який ви там вводите, щоб відімкнути архів чи резервну копію",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Якщо ввімкнути журналювання викликів LLM у Параметрах > Експертні, Cmdr також зберігатиме кожен запит і відповідь у папці на вашому Mac. Ці журнали викликів залишаються локальними й нікуди не надсилаються.",
+  "ai.cloudConsent.logsNote": "Якщо в Параметрах > Експертні ввімкнути «Записувати виклики моделі ШІ в журнал», Cmdr також зберігатиме кожен запит і відповідь у папці на вашому Mac. Ці журнали викликів залишаються локальними й нікуди не надсилаються.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Вимкніть це будь-коли, і Cmdr одразу зупинить надсилання. Ваш сервіс, ключ і чати залишаться без змін.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Можливо, вашій моделі для цього потрібен більший ліміт. Спробуйте швидшу модель, як-от gpt-4.1-mini, у Параметрах > ШІ.",
+  "ai.translateError.emptyResponse.body": "Можливо, ваша модель вичерпала свій ліміт токенів, перш ніж відповісти. Спробуйте швидшу модель, як-от gpt-4.1-mini, у Параметрах > ШІ.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "Ваш постачальник ШІ натрапив на проблему",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "Сервер не відповів вчасно. Спробуйте ще раз за мить.",
+  "ai.cloud.timedOut": "Сервіс не відповів вчасно. Спробуйте ще раз за мить.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Ця адреса виглядає неправильно. Введіть повну веб-адресу, що починається з https://.",
   "@ai.cloud.invalidEndpoint": {

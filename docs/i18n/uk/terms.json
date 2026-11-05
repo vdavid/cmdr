@@ -905,10 +905,7 @@
         "why": "MS/Windows wording; macOS says підʼєднатися"
       }
     ],
-    "note": "«підʼєдну» covers the present tense «підʼєднується» / «підʼєднуйте», which the old stems missed.",
-    "exceptions": {
-      "errors.volume.connectionTimeout": "English «The connection didn’t answer in time» names the connection only as what stayed silent; Ukrainian says «Відповідь не надійшла вчасно» (no reply arrived in time), since «підʼєднання не відповіло» reads as a calque."
-    }
+    "note": "«підʼєдну» covers the present tense «підʼєднується» / «підʼєднуйте», which the old stems missed."
   },
   "context-menu": {
     "chosen": "контекстне меню",
@@ -1176,10 +1173,7 @@
     "chosen": "пристрій",
     "accept": ["пристро", "пристрій"],
     "confidence": "high",
-    "sources": "macOS live CoreTypes (Device → Пристрій), SafetyMonitorMessages (Devices → Пристрої); Finder PreferencesWindow AWm (iOS Device → Пристрій iOS); MS; Nautilus, Thunar",
-    "exceptions": {
-      "errors.write.readOnlyDevice.destination.fallbackName": "The @key description asks for a neutral word, since the real destination can be a drive, a phone, an archive, or a repo's `.git` history: «Місце призначення» (the destination ruling), mirroring the source twin «Джерело». «пристрій» would be wrong for an archive or `.git`."
-    }
+    "sources": "macOS live CoreTypes (Device → Пристрій), SafetyMonitorMessages (Devices → Пристрої); Finder PreferencesWindow AWm (iOS Device → Пристрій iOS); MS; Nautilus, Thunar"
   },
   "diacritics": {
     "chosen": "діакритичні знаки",
@@ -1572,10 +1566,6 @@
     "sources": "macOS AppKit MenuCommands (File → Файл), Finder MenuBar 300764 (Файл); MS (file → файл); every file manager",
     "forms": "Plural: 1 файл, 2 файли, 5 файлів, 1,5 файлу.",
     "exceptions": {
-      "multiRename.reason.duplicate": "the preview row can be a file or a folder (the @key asks for a neutral word), so it says елемент",
-      "multiRename.reason.missing": "the preview row can be a file or a folder (the @key asks for a neutral word), so it says елемент",
-      "multiRename.reason.noValue": "the preview row can be a file or a folder (the @key asks for a neutral word), so it says елемент",
-      "multiRename.reason.targetExists": "the preview row can be a file or a folder (the @key asks for a neutral word), so it says елемент",
       "multiRename.reason.unreadable": "the preview row can be a file or a folder (the @key asks for a neutral word), so it says елемент",
       "onboarding.stepAi.table.selectWith": "The quoted example request names images, not files, which is how a person would phrase it."
     }
@@ -2788,9 +2778,6 @@
     "chosen": "нотатка",
     "accept": ["нотат", "примітк"],
     "confidence": "high",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "This “note” is the short toast Cmdr shows, not text the user writes: «сповіщення»."
-    },
     "sources": "macOS live Preview (Note → Нотатка), Resources Schema (note → нотатка); MS (note → нотатка)"
   },
   "notification": {
@@ -3817,11 +3804,7 @@
         "why": "Nautilus's word"
       }
     ],
-    "note": "macOS also uses «вибрати» for choose; where a sentence needs both, phrase choose with «обрати» or a noun. Added «вибир» (b15): the imperfective present «вибирає» (a key that selects) is the natural form and the old accept list rejected it.",
-    "exceptions": {
-      "commands.navDown.label": "Only moves the cursor; \"select\" here never marks a file, so «Перейти до наступного файлу».",
-      "commands.navUp.label": "Only moves the cursor; \"select\" here never marks a file, so «Перейти до попереднього файлу»."
-    }
+    "note": "macOS also uses «вибрати» for choose; where a sentence needs both, phrase choose with «обрати» or a noun. Added «вибир» (b15): the imperfective present «вибирає» (a key that selects) is the natural form and the old accept list rejected it."
   },
   "send": {
     "chosen": "Надіслати",
@@ -3928,7 +3911,9 @@
       }
     ],
     "exceptions": {
-      "menu.volume.editFavoriteShortcut": "captures a single A–Z key for a favorite, not a key combination; «Призначити клавішу…» names exactly that"
+      "menu.volume.editFavoriteShortcut": "captures a single A–Z key for a favorite, not a key combination; «Призначити клавішу…» names exactly that",
+      "fileExplorer.navigation.favoriteShortcutAriaLabel": "The @key asks for the same words as menu.volume.editFavoriteShortcut («Призначити клавішу…»): one A–Z key, not a combination, so «Клавіша для «{name}»».",
+      "fileExplorer.navigation.favoriteShortcutSaveFailed": "Same single-key sense as menu.volume.editFavoriteShortcut, per the @key: «Не вдалося зберегти цю клавішу»."
     }
   },
   "show": {
@@ -4048,9 +4033,6 @@
     "accept": ["пропус", "пропущ"],
     "forms": "result «Пропущено»; «Пропустити всі»",
     "confidence": "high",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "“Skip the note” means not seeing a toast, not leaving an item out of an operation: «щоб не бачити цього сповіщення»."
-    },
     "sources": "macOS Finder Skip → «Пропустити»; Finder some items had to be skipped → «довелося пропустити деякі елементи»"
   },
   "slideshow": {
@@ -4214,7 +4196,8 @@
     "sources": "macOS Finder Stop → «Зупинити»; AppKit stop → «зупинити»; live PrintKit Stopped → «Зупинено»",
     "exceptions": {
       "multiRename.error.timedOut": "\"stopped waiting\" is giving up a wait («перестав чекати»), not the Stop command",
-      "ui.startedElsewhere.keysWait": "\"stop typing\" is the person pausing («припините вводити»), not the Stop command"
+      "ui.startedElsewhere.keysWait": "\"stop typing\" is the person pausing («припините вводити»), not the Stop command",
+      "settings.fileOperations.showAlreadyGoneToast.description": "“Stop these notices” means not seeing them any more, not halting an operation: «щоб більше не бачити таких сповіщень»."
     }
   },
   "storage": {

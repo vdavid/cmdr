@@ -83,9 +83,9 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
-  "fileExplorer.archivedFile.label": "Заархівовано",
+  "fileExplorer.archivedFile.label": "В архівному сховищі",
   "@fileExplorer.archivedFile.label": {
-    "sourceHash": "bdb8650"
+    "sourceHash": "78bf854"
   },
   "fileExplorer.archivedFile.tooltip": "Файл в архівному сховищі. Щоб відкрити чи скопіювати його, спершу відновіть його в консолі свого постачальника сховища.",
   "@fileExplorer.archivedFile.tooltip": {
@@ -312,9 +312,9 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
-  "fileExplorer.open.didNotOpen": "Файл {fileName} не відкрився. macOS не знайшла цей файл або програму, яка його відкриває.",
+  "fileExplorer.open.didNotOpen": "Файл {fileName} не відкрився. macOS не знайшла цей файл, або жодна програма його не відкриває.",
   "@fileExplorer.open.didNotOpen": {
-    "sourceHash": "c8362d8"
+    "sourceHash": "cd95423"
   },
   "fileExplorer.openingToast.noApp": "Відкриття «{fileName}»…",
   "@fileExplorer.openingToast.noApp": {
@@ -1703,13 +1703,13 @@
   "@fileExplorer.navigation.favoriteShortcutPrompt": {
     "sourceHash": "51f3d7d"
   },
-  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Скорочення для «{name}». Натисніть A–Z або Delete, щоб очистити.",
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Клавіша для «{name}». Натисніть A–Z або Delete, щоб очистити.",
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
-    "sourceHash": "31515c1"
+    "sourceHash": "0c5db95"
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Не вдалося зберегти це скорочення. Спробуйте ще раз.",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Не вдалося зберегти цю клавішу. Спробуйте ще раз.",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "38e7225"
+    "sourceHash": "de62c34"
   },
   "fileExplorer.navigation.removeFavoriteFailed": "Не вдалося вилучити цю папку з улюблених. Спробуйте ще раз.",
   "@fileExplorer.navigation.removeFavoriteFailed": {
@@ -1723,9 +1723,9 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
   },
-  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favorite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
+  "fileExplorer.navigation.favoriteStatus.connects": "Не підʼєднано. Якщо відкрити цю улюблену папку, Cmdr підʼєднається до {kind, select, share {спільної папки «{place}»} server {сервера «{place}»} phone {телефону «{place}»} other {«{place}»}}.",
   "@fileExplorer.navigation.favoriteStatus.connects": {
-    "sourceHash": "a30b8cd"
+    "sourceHash": "0ed263f"
   },
   "fileExplorer.navigation.favoriteStatus.notFound": "Цієї папки тут більше немає.",
   "@fileExplorer.navigation.favoriteStatus.notFound": {
@@ -1737,7 +1737,7 @@
   },
   "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Сховище, на якому була ця папка, зараз недоступне на телефоні «{device}».",
   "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
-    "sourceHash": "a06d5ae"
+    "sourceHash": "ef526cd"
   },
   "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "Диск «{drive}» не підʼєднано. Підʼєднайте його, а потім спробуйте ще раз.",
   "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
@@ -1751,9 +1751,9 @@
   "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
     "sourceHash": "4fba610"
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} anymore. Connect to it again from Servers, and this favorite works again.",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr більше не знає, як звʼязатися з {kind, select, share {спільною папкою «{place}»} server {сервером «{place}»} phone {телефоном «{place}»} other {«{place}»}}. Підʼєднайтеся знову зі списку «Сервери», і ця улюблена папка знову запрацює.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
-    "sourceHash": "842858c"
+    "sourceHash": "59f7041"
   },
   "fileExplorer.navigation.favoriteUnreachable.notFound": "Папки «{name}» більше немає за шляхом {path}.",
   "@fileExplorer.navigation.favoriteUnreachable.notFound": {
@@ -1859,9 +1859,9 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr ще працює з файлами на цьому сервері. Його можна буде відʼєднати, коли все буде готово.",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr ще працює з файлами на цьому сервері. Відʼєднатися можна буде, коли все буде готово.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "bd52d60"
+    "sourceHash": "760edfd"
   },
   "fileExplorer.navigation.serverPinnedToast": "Сервер «{name}» тепер є в перемикачі томів.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1887,7 +1887,7 @@
   "@fileExplorer.navigation.forgetConfirmButton": {
     "sourceHash": "a6bd489"
   },
-  "fileExplorer.navigation.forgetPasswordConfirmButton": "Forget",
+  "fileExplorer.navigation.forgetPasswordConfirmButton": "Забути",
   "@fileExplorer.navigation.forgetPasswordConfirmButton": {
     "sourceHash": "a6bd489"
   },
@@ -1933,7 +1933,7 @@
   },
   "fileExplorer.navigation.ejectBusyTooltip": "Cmdr ще працює з файлами на цьому пристрої. Його можна буде вийняти, коли все буде готово.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "3da6312"
+    "sourceHash": "b298e2f"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Виймання «{name}»…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -2109,7 +2109,7 @@
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Індексування дисків вимкнено в Параметрах, тому «{name}» не індексується. Увімкніть його в розділі «Індексування > Індексування дисків».",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
-    "sourceHash": "ce0d45c"
+    "sourceHash": "0253edd"
   },
   "fileExplorer.navigation.driveIndex.driveLeaving": "«{name}» відʼєднується, тож Cmdr не змінював індекс. Якщо диск залишиться підʼєднаним, спробуйте ще раз за мить.",
   "@fileExplorer.navigation.driveIndex.driveLeaving": {
@@ -2121,7 +2121,7 @@
   },
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Індексування дисків вимкнено в Параметрах. Увімкніть його в розділі «Індексування > Індексування дисків», і цей диск продовжить із того місця, де зупинився.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
-    "sourceHash": "e045664"
+    "sourceHash": "26e250c"
   },
   "fileExplorer.dragOut.failed": "{count, plural, =1 {Не вдалося скопіювати «{name}».} one {Не вдалося скопіювати {countText} елемент.} few {Не вдалося скопіювати {countText} елементи.} many {Не вдалося скопіювати {countText} елементів.} other {Не вдалося скопіювати {countText} елемента.}}",
   "@fileExplorer.dragOut.failed": {
@@ -2143,9 +2143,9 @@
   "@fileExplorer.typeToJump.modeJump": {
     "sourceHash": "292fdf5"
   },
-  "fileExplorer.typeToJump.clear": "Очистити «Перехід»",
+  "fileExplorer.typeToJump.clear": "Очистити введений текст",
   "@fileExplorer.typeToJump.clear": {
-    "sourceHash": "42ec82f"
+    "sourceHash": "61920c5"
   },
   "fileExplorer.quickFilter.clear": "Очистити фільтр",
   "@fileExplorer.quickFilter.clear": {
@@ -2203,13 +2203,13 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
-  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "Сервер «{server}» не підтвердив параметри безпеки, узгоджені з Cmdr, тому Cmdr залишається на системному підʼєднанні. Причиною може бути сервер, що працює зі збоями, а може й хтось, хто втручається в підʼєднання.",
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "Сервер «{server}» не підтвердив параметри безпеки, узгоджені з Cmdr, тому ця спільна папка залишається на системному підʼєднанні. Причиною може бути сервер, що працює зі збоями, а може й хтось, хто втручається в підʼєднання.",
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
-    "sourceHash": "7ea7c4f"
+    "sourceHash": "9b3a6ae"
   },
-  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "Сервер «{server}» приймає лише зашифровані підʼєднання й не домовився з Cmdr про спосіб шифрування, тому Cmdr залишається на системному підʼєднанні.",
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "Сервер «{server}» приймає лише зашифровані підʼєднання й не домовився з Cmdr про спосіб шифрування, тому ця спільна папка залишається на системному підʼєднанні.",
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
-    "sourceHash": "a731300"
+    "sourceHash": "4df31b6"
   },
   "fileExplorer.pane.directConnectionEncryptionRequiredToast": "Сервер «{server}» не може зашифрувати підʼєднання, а в Cmdr увімкнено «Завжди вимагати шифрування SMB», тому Cmdr не підʼєднався напряму.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {

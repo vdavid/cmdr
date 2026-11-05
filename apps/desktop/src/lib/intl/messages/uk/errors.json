@@ -449,7 +449,7 @@
   },
   "errors.listing.couldntReadUnknown.explanation": "Cmdr натрапив на неочікувану проблему під час читання шляху `{path}`. Перевірте розділ «Технічні деталі» нижче: там є конкретний системний код, який може допомогти зʼясувати причину.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "Що можна спробувати:\n- Перевірте, чи диск або пристрій досі підʼєднано\n- Знову перейдіть сюди, щоб спробувати ще раз\n- Якщо це повторюється, відкрийте програму **Дискова утиліта**, виберіть цей том і натисніть **Швидка допомога**",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -593,7 +593,7 @@
   },
   "errors.listing.linkTargetUnreachable.explanation": "Шлях `{path}` веде через посилання на інший сервер, і Cmdr зараз не вдається звʼязатися з цим сервером. З рештою цієї спільної папки все гаразд, і нічого не видалено.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "Що можна спробувати:\n- Перевірте, чи інший сервер працює і чи доступний він із вашої мережі\n- Знову перейдіть сюди, щоб спробувати ще раз",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1485,9 +1485,9 @@
   "@errors.write.replySignatureRefused.title": {
     "sourceHash": "829a591"
   },
-  "errors.write.replySignatureRefused.message": "У відповіді сервера не було дійсного підпису, тож Cmdr зупинився.",
+  "errors.write.replySignatureRefused.message": "У відповіді сервера не було дійсного підпису, тож Cmdr на цьому зупинився.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "Причиною може бути ненадійний мережевий пристрій, а може й хтось, хто втручається в трафік між вами та сервером. Підʼєднайтеся ще раз, а якщо це повториться, перевірте мережу.",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1891,7 +1891,7 @@
   },
   "errors.write.readOnlyDevice.destination.fallbackName": "Місце призначення",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "Файл замкнено",
   "@errors.write.fileLocked.title": {
@@ -2223,7 +2223,7 @@
   },
   "errors.volume.linkTargetUnreachable": "Цей шлях веде через посилання на інший сервер, і Cmdr зараз не вдається звʼязатися з цим сервером.",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "Пристрій перезапустив підʼєднання. Зачекайте кілька секунд і спробуйте ще раз.",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "Відповідь не надійшла вчасно.",
+  "errors.volume.connectionTimeout": "Сервер або пристрій не відповів вчасно.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "Cmdr зупинив це на ваш запит.",
   "@errors.volume.cancelled": {
@@ -2289,9 +2289,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.signatureInvalid": "У відповіді сервера не було дійсного підпису, тож Cmdr зупинився.",
+  "errors.volume.signatureInvalid": "У відповіді сервера не було дійсного підпису, тож Cmdr на цьому зупинився.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "На томі не вдалося завершити цю дію.",
   "@errors.volume.ioError": {
@@ -2371,11 +2371,11 @@
   },
   "errors.eject.unmountRefusedByApp": "{app} досі щось там використовує. Закрийте цю програму, а тоді спробуйте ще раз.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
   "errors.eject.unmountRefusedByApps": "{apps} досі щось там використовують. Закрийте ці програми, а тоді спробуйте ще раз.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "інші програми",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "Частина вибраного міститься у віртуальній папці",
+  "errors.write.sourcesSpanVolumes.title": "Частина вибраного міститься в резервній копії, архіві або історії git",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "Елемент {path} лежить у знімках резервної копії, в архіві чи в історії репозиторію, а решта вибраного лежить поза ними, тож Cmdr не може прочитати все це разом. Нічого не змінено.",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "Зробіть це у два кроки: спершу окремо елементи з віртуальної папки, потім решту.",
+  "errors.write.sourcesSpanVolumes.suggestion": "Зробіть це у два кроки: спершу окремо ці елементи, потім решту.",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "Перемістіть їх по одному або спершу перейменуйте один із них.",
   "@errors.write.duplicateSourceNames.suggestion.move": {

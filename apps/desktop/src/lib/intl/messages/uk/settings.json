@@ -164,9 +164,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Рядки чергують відтінок, щоб легше було стежити за рядком. Діє в обох режимах перегляду: «Докладний вигляд» і «Короткий вигляд».",
+  "settings.listing.stripedRows.description": "Рядки чергують відтінок, щоб легше було стежити за рядком. Діє в обох режимах: «Докладний вигляд» і «Короткий вигляд».",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "смуги, смужки, зебра, чергування, рядки, фон, читабельність, доступність",
   "@settings.listing.stripedRows.keywords": {
@@ -820,9 +820,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Завжди індексувати фото на диску «{name}»",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Завжди індексувати цей диск: «{name}»",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "Призупинено, поновиться, коли цей диск знову підʼєднається",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -942,7 +942,7 @@
   },
   "settings.mediaIndex.reclaim.confirmTitle": "Видалити зайві проіндексовані записи?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "Видалити {doomed, plural, one {{doomedText} проіндексований запис} few {{doomedText} проіндексовані записи} many {{doomedText} проіндексованих записів} other {{doomedText} проіндексованого запису}}, щоб звільнити приблизно {size}? Ці зображення можна буде проіндексувати знову пізніше, але повторне читання займе час.",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1089,9 +1089,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Не показувати запитання про скорочення для останнього викачаного файлу",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Більше не запитувати про скорочення для останнього викачаного файлу",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Коли ви вперше натискаєте скорочення, що дає змогу з будь-якої програми перейти до останнього викачаного файлу, Cmdr питає, чи залишити його ввімкненим. Якщо змінити скорочення, цей параметр вимкнеться, тож Cmdr спитає й про нову комбінацію клавіш. Вимкніть цей параметр, щоб побачити запитання ще раз.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1238,9 +1238,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "Як довго модель думає, перш ніж відповісти. Більше зусиль допомагає зі складними завданнями, але відповіді надходять повільніше, а роздуми оплачуються як вихідні дані.",
+  "settings.ai.reasoningEfforts.description": "Як довго модель думає, перш ніж відповісти. Коли модель думає довше, вона краще дає раду складним завданням, але відповіді надходять повільніше, а за обдумування стягують плату як за вихідні дані.",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "міркування, роздуми, мислення, думати, швидкість, вартість, якість, зусилля",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1460,7 +1460,7 @@
   },
   "settings.fileExplorer.git.showStatusColumn.description": "Додати стовпець, що показує стан git кожного файлу (змінений, невідстежуваний тощо), у режимі «Докладний вигляд».",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "стан, стовпець, змінені, нові, ігноровані, додані, видалені",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1758,13 +1758,13 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "sourceHash": "ad9377a"
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Повідомляти, якщо видаленого елемента вже не було",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Показувати сповіщення, якщо видаленого елемента вже не було",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Коли ви видаляєте щось, що інша програма вже перемістила або видалила, Cmdr вважає, що все виконано, і показує коротке сповіщення про це. Вимкніть цей параметр (або клацніть «Більше не показувати» у сповіщенні), щоб не бачити цього сповіщення.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "Коли ви видаляєте щось, що інша програма вже перемістила або видалила, Cmdr вважає, що все виконано, і показує коротке сповіщення про це. Вимкніть цей параметр (або клацніть «Більше не показувати» у сповіщенні), щоб більше не бачити таких сповіщень.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "зник, зниклий, відсутній, пропав, немає, сповіщення, повідомлення, спливне",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2424,9 +2424,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr використовує ваш хмарний сервіс ШІ. Дозвольте хмарний ШІ в параметрах ШІ, щоб почати чат.",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr використовує ваш хмарний сервіс ШІ. Увімкніть «Дозволити хмарний ШІ» в параметрах ШІ, щоб почати чат.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "Перейти до параметрів ШІ",
   "@settings.askCmdr.openAiSettings": {
@@ -2937,23 +2937,23 @@
   },
   "settings.appearance.formatHelpMonth": "Двоцифровий місяць (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
   "settings.appearance.formatHelpDay": "Двоцифровий день (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
   "settings.appearance.formatHelpHour": "Двоцифрова година (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
   "settings.appearance.formatHelpMinute": "Двоцифрова хвилина (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
   "settings.appearance.formatHelpSecond": "Двоцифрова секунда (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "Додає панелям ледь помітний фоновий відтінок, щоб з першого погляду розрізняти типи томів.",
   "@settings.appearance.tintGroupDescription": {
@@ -3160,9 +3160,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Змінити скорочення можна в розділі «Клавіатурні скорочення» → «Перейти до останнього викачаного файлу (глобально)».",
+  "settings.fileSystemWatching.globalShortcutHint": "Змінити скорочення можна в розділі «Клавіатурні скорочення → Перейти до останнього викачаного файлу».",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "Доступ до «{localNetwork}»",
   "@settings.network.localNetworkAccessLabel": {

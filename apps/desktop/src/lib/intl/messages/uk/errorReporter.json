@@ -146,7 +146,7 @@
   },
   "errorReporter.sentToast.message": "Звіт про помилку надіслано. ID вашого звіту:",
   "@errorReporter.sentToast.message": {
-    "sourceHash": "75be6ba"
+    "sourceHash": "d1e9bfc"
   },
   "errorReporter.sentToast.dismiss": "Закрити",
   "@errorReporter.sentToast.dismiss": {
@@ -162,7 +162,7 @@
   },
   "errorReporter.amendedToast.message": "Нотатку додано до звіту. ID вашого звіту:",
   "@errorReporter.amendedToast.message": {
-    "sourceHash": "5471d7f"
+    "sourceHash": "fc7535b"
   },
   "errorReporter.bundleSavedToast.message": "Пакет збережено на диск",
   "@errorReporter.bundleSavedToast.message": {

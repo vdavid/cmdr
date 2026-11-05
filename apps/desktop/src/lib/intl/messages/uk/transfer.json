@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "Цей сервер не може зберігати {classes}, тож їх не перенесено.",
+  "transfer.metadataLeftBehind": "Це місце призначення не може зберігати деякі деталі, тож їх не перенесено: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, one {{countText} замкнений елемент залишився там, де був.} few {{countText} замкнені елементи залишилися там, де були.} many {{countText} замкнених елементів залишилися там, де були.} other {{countText} замкненого елемента залишилися там, де були.}}",
   "@transfer.lockedSkipped": {

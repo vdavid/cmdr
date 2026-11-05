@@ -230,7 +230,7 @@
   },
   "licensing.dialog.pendingHint": "Ми автоматично перевіримо ліцензію на сервері протягом {days, plural, one {# дня} few {# днів} many {# днів} other {# дня}}.",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "b4bbb38"
+    "sourceHash": "4ecbc26"
   },
   "licensing.dialog.useDifferentKey": "Використати інший ключ",
   "@licensing.dialog.useDifferentKey": {
@@ -262,7 +262,7 @@
   },
   "licensing.dialog.retryExhausted": "Ми спробували {count, plural, one {# раз} few {# рази} many {# разів} other {# раза}}, але нічого не вийшло. Вибачте за незручності. Напишіть нам на е‑пошту <supportEmail>{email}</supportEmail>, і ми все владнаємо.",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "d2aa21a"
+    "sourceHash": "9dc812f"
   },
   "licensing.dialog.serverInvalidHelp": "Якщо вважаєте, що це непорозуміння, напишіть нам на е‑пошту <supportEmail>{email}</supportEmail>, і ми все владнаємо.",
   "@licensing.dialog.serverInvalidHelp": {

@@ -171,9 +171,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "У вас уже найбільша кількість наборів параметрів, яку зберігає Cmdr ({max, number}). Видаліть один, щоб зберегти цей.",
+  "multiRename.presets.listFull": "У вас {max, plural, one {# набір параметрів} few {# набори параметрів} many {# наборів параметрів} other {# набору параметрів}}: це найбільше, що зберігає Cmdr. Видаліть один, щоб зберегти цей.",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "Замінити",
   "@multiRename.presets.replace": {
@@ -223,13 +223,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "Така сама назва, як в іншого файлу",
+  "multiRename.status.duplicate": "Така сама назва, як в іншого елемента",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
   "multiRename.status.targetExists": "Назву вже зайнято",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "Неприпустима назва",
   "@multiRename.status.invalidName": {
@@ -385,15 +385,15 @@
   },
   "multiRename.reason.duplicate": "Інший елемент у цьому пакеті перейменувань отримає таку саму нову назву, тож жоден із них не буде перейменовано.",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
   "multiRename.reason.targetExists": "Елемент, який лишається в цій папці, уже має таку назву, тож цей зберігає свою назву.",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
   "multiRename.reason.missing": "Цей елемент перемістили або видалили після відкриття групового перейменування, тож його пропущено.",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "Читання…",
   "@multiRename.status.reading": {
@@ -405,11 +405,11 @@
   },
   "multiRename.reason.noValue": "У цього елемента немає значення «{field}», тож він зберігає свою назву.",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "У цього елемента немає значення «{field}», тож він зберігає свою назву. Редактор заповнювача може натомість використати дату останньої зміни файлу.",
+  "multiRename.reason.noDate": "У цього елемента немає значення «{field}», тож він зберігає свою назву. Редактор заповнювача може натомість використати дату останньої зміни елемента.",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "Не вдається прочитати теги",
   "@multiRename.status.unreadable": {
@@ -632,9 +632,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "{count, plural, one {Пропущено # перейменування, яке міняє назви місцями} few {Пропущено # перейменування, які міняють назви місцями} many {Пропущено # перейменувань, які міняють назви місцями} other {Пропущено # перейменування, які міняють назви місцями}}. Перейменуйте їх по одному.",
+  "multiRename.swapsSkipped": "{count, plural, one {Пропущено # перейменування, яке міняє назви місцями} few {Пропущено # перейменування, які міняють назви місцями} many {Пропущено # перейменувань, які міняють назви місцями} other {Пропущено # перейменування, які міняють назви місцями}}. Перейменуйте ці елементи по одному.",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "«Групове перейменування» не працює всередині архівів",
   "@multiRename.archiveTitle": {

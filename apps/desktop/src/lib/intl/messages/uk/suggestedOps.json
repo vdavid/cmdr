@@ -9,7 +9,7 @@
   },
   "suggestedOps.approvalNoticeDismiss": "Більше не показувати",
   "@suggestedOps.approvalNoticeDismiss": {
-    "sourceHash": "2c23c21"
+    "sourceHash": "f6f62e0"
   },
   "suggestedOps.sweepWhen.justNow": "Запропоновано щойно",
   "@suggestedOps.sweepWhen.justNow": {
@@ -85,7 +85,8 @@
   },
   "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
   "@suggestedOps.groupTitle": {
-    "sourceHash": "201c1fc"
+    "sourceHash": "201c1fc",
+    "sameAsSourceJustification": "Tags and placeholders only: Ukrainian puts the action verb first, like English («Перемістити Old installers»), with a plain space between."
   },
   "suggestedOps.approve.move": "Перемістити {countText} {count, plural, one {файл} few {файли} many {файлів} other {файлу}}",
   "@suggestedOps.approve.move": {
@@ -267,11 +268,11 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
-  "suggestedOps.factUnknownSize": "Unknown",
+  "suggestedOps.factUnknownSize": "Невідомий",
   "@suggestedOps.factUnknownSize": {
     "sourceHash": "b764cdc"
   },
-  "suggestedOps.factUnknownDate": "Unknown",
+  "suggestedOps.factUnknownDate": "Невідома",
   "@suggestedOps.factUnknownDate": {
     "sourceHash": "b764cdc"
   },

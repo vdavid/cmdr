@@ -619,13 +619,14 @@
   "@queryUi.date.preset.lastWeek": {
     "sourceHash": "1e4419c"
   },
-  "queryUi.date.preset.thisMonth": "{date} {time}",
+  "queryUi.date.preset.thisMonth": "{date}, {time}",
   "@queryUi.date.preset.thisMonth": {
-    "sourceHash": "030ee23"
+    "sourceHash": "ed860a4"
   },
   "queryUi.date.preset.lastMonth": "{date}, {time}",
   "@queryUi.date.preset.lastMonth": {
-    "sourceHash": "0838509"
+    "sourceHash": "1a88956",
+    "sameAsSourceJustification": "Placeholders only: Intl words the date in Ukrainian («1 квітня 2026 р.»), and a comma before the time reads naturally (docs/i18n/uk/decisions.md § Date presets)."
   },
   "queryUi.date.preset.yearStart": "1 січня {year}, {time}",
   "@queryUi.date.preset.yearStart": {

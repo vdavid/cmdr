@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Клацніть сервер правою кнопкою й виберіть «Відкріпити з перемикача» або скористайтеся командою «{command}» у палітрі команд. Сервер залишиться у списку «Сервери».",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "Зрозуміло",
   "@servers.pinHint.gotIt": {
@@ -63,9 +63,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "Ніколи",
+  "servers.hub.neverUsed": "Ніколи не використовувався",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "як {username}",
   "@servers.hub.shareAccount": {
@@ -381,7 +381,7 @@
   },
   "servers.sheet.addAnywayHelp": "Cmdr не вдалося перевірити цей сервер, тож «Усе одно додати» збереже його так, як ви його ввели.",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "Вийняти й зберегти",
   "@servers.sheet.ejectAndSave": {
@@ -527,9 +527,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS передає щонайбільше 16 інших груп, а в цьому списку їх {count}.",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS надсилає щонайбільше 16 інших груп, а в цьому списку {count, plural, one {# група} few {# групи} many {# груп} other {# групи}}.",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "За цими числами сервер вирішує, що ви можете відкрити. NFS не запитує пароль.",
   "@servers.sheet.nfsIdentityHelp": {
@@ -928,9 +928,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Поки що зупинити спроби. Зʼєднання залишиться доступним. Поверніться сюди, щоб спробувати ще раз.",
+  "servers.paneState.cancelCycleTooltip": "Поки що зупинити спроби. Зʼєднання залишиться доступним; відкрийте сервер знову, щоб спробувати ще раз.",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "Зупинити спроби й відʼєднатися від сервера.",
   "@servers.paneState.disconnectCycleTooltip": {

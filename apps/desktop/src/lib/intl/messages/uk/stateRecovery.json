@@ -33,7 +33,7 @@
   },
   "stateRecovery.operationLog.title": "Cmdr не вдалося прочитати ваш журнал операцій, тож журнал почнеться з нуля",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "0bfa904"
+    "sourceHash": "e4e9fb0"
   },
   "stateRecovery.chatHistory.title": "Cmdr не вдалося прочитати ваші чати Ask Cmdr, тож список чатів порожній",
   "@stateRecovery.chatHistory.title": {
