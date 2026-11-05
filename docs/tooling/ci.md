@@ -87,9 +87,11 @@ job that `needs` every other job of a multi-job lane (Svelte, website), so one g
 On a pull request, `desktop-rust`, `desktop-rust-fixtures`, and `desktop-rust-macos` run the `rust-test-scope` action
 after building the check tool: it measures the change against the merge commit's first parent (the checkout fetches two
 commits) and exports `CMDR_RUST_TEST_SCOPE`, so the suite runs only the crates the change can affect plus their
-dependents. A push, a dispatch, and `run_all` never set it and test everything. Every uncertainty widens to `all`. How
-the scope is computed and why it's safe: `scripts/check/checks/DETAILS.md` § "The Rust test scope". Its tests keep the
-Rust lane filters and the scope's rule table in step (every path the scope says a test reads starts a Rust lane).
+dependents (a `cmdr-update-trust` edit ran 5,918 of 13,932 tests, the Linux test step 259 s → 127 s; the fixtures lane
+barely moved, since `cmdr` is in nearly every scope and its build dominates; PR #969, 2026-11-05). A push, a dispatch,
+and `run_all` never set it and test everything. Every uncertainty widens to `all`. How the scope is computed and why
+it's safe: `scripts/check/checks/DETAILS.md` § "The Rust test scope". Its tests keep the Rust lane filters and the
+scope's rule table in step (every path the scope says a test reads starts a Rust lane).
 
 ## The registry ↔ CI contract (`ci-coverage`)
 
