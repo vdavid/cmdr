@@ -257,26 +257,28 @@ answered 403 after CI was green, and that land was lost. So:
 ## Decision: merge a green PR onto a moved `main`
 
 Decision: `land` rebases onto `origin/main` once, before the first push. When `main` moves while CI runs, it doesn't
-rebase and wait again: `nextLandPath` picks `gh pr merge <n> --admin --merge --match-head-commit <green sha>`, GitHub
-merges the PR into the current `main` with a merge commit, and `main`'s push run recognizes the merge of a green head
-and skips the suite (`docs/tooling/ci.md` § Landing doesn't re-run the suite). It prints that it did, with a link to
-`main`'s CI runs, and doesn't wait for them. Why a merge commit and never GitHub's rebase merge: § Decision: every
-commit on `main` is signed.
+rebase and wait again: `nextLandPath` picks GitHub's REST merge (`mergeOnGitHub`, `merge.go`:
+`PUT repos/{repo}/pulls/{n}/merge` with `merge_method=merge` and `sha=<green sha>`), GitHub merges the PR into the
+current `main` with a merge commit, and `main`'s push run recognizes the merge of a green head and skips the suite
+(`docs/tooling/ci.md` § Landing doesn't re-run the suite). It prints that it did, with a link to `main`'s CI runs, and
+doesn't wait for them. Why a merge commit and never GitHub's rebase merge: § Decision: every commit on `main` is signed.
 
 Why: with many sessions landing at once, each land that saw `main` move rebased and re-ran the whole CI, which moved
 nobody forward. On 2026-10-20 eight-plus PRs went green two or three times each and none landed. Big teams accept the
 same trade: patches that passed CI on a slightly older base. A rare semantic clash between two such PRs surfaces on the
 next PR's run (it tests the PR merged with the current `main`) and on the release gate's full run, not on `main`'s own.
-The guarantee that stays: `--admin` only bypasses the approval ruleset, the CI ruleset has no bypass and `strict` is
-off, so GitHub still demands `CI OK` green on the PR's head SHA, and `--match-head-commit` pins that head.
+The guarantee that stays: the admin's bypass (`bypass_mode: always`, which covers API merges) only passes the approval
+ruleset, the CI ruleset has no bypass and `strict` is off, so GitHub still demands `CI OK` green on the PR's head SHA,
+and `sha` pins that head (a newer head answers 409).
 
 - **A conflict falls back to a rebase here**: GitHub's `mergeable` on `repos/{repo}/pulls/{n}` (null for a few seconds
   while GitHub works it out, so `prMergeable` waits up to 15 s, then tries anyway). False, or a refused merge that reads
   false afterwards, returns `errGitHubConflict` (`conflictError`); `land` rebases here and waits for CI again, up to
   `maxCIRuns` (8) runs, so a `main` that keeps clashing can't spin a land all day. The decision reads that typed field,
   never gh's stderr.
-- **A refused merge re-reads the PR**: `gh` waits out a spent API budget and repeats the call, so a merge that went
-  through the first time reads `merged` and counts as landed.
+- **Any failed merge call re-reads the PR first**: a call that went through before it failed reads `merged` and counts
+  as landed, so a retry never acts twice; `mergeable` false is the conflict above. What follows: § Gotcha: GitHub's own
+  failures.
 - **A re-run after a GitHub merge finishes**: the branch's head is an ancestor of `origin/main`, so `readState` reports
   it landed (`TestLandedAfterAGitHubMergeCommit`). It also counts a branch whose every patch is on `main` under other
   SHAs (`git cherry origin/main HEAD` lists only `-` lines): a cherry-pick, or an older land through GitHub's rebase
@@ -291,6 +293,40 @@ never rebased, by `land` or by GitHub, since a plain rebase flattens the merge. 
 branch; only a conflict, which would need a rebase here, makes `land` stop and name the manual fix. A contributor PR's
 record never rides a branch (§ Decision: record a contributor PR in its own land). A tagged commit isn't rebased either
 (§ Decision: `-merge` keeps a release commit's SHA).
+
+## Gotcha: GitHub's own failures
+
+Gotcha: on PR #1004 (2026-11-06), `gh pr merge --admin --merge --match-head-commit` failed three ways that were all
+GitHub's side (a `502 Bad Gateway` HTML body, a bare `EOF`, a GraphQL
+`Something went wrong ... Please include <request id>`), and `land` printed its refusal message, sending the reader to
+repo settings that were fine. The same day a branch push failed with `remote: fatal error in commit_refs` /
+`[remote rejected] (failure)`. `gh pr merge` exits 1 for all of them, so only its wording told them apart, which the
+repo's hard rule bans. So:
+
+- **The merge goes through the REST API** (`runner.mergePR`, `gh api --include -X PUT`), whose HTTP status is typed
+  (`classifyMerge`): no HTTP response, a 5xx, a spent budget, a `Retry-After`, or a 429 is GitHub failing
+  (`mergeGitHubFailing`); any other 4xx is a refusal (`mergeRefused`).
+- **GitHub failing backs off and retries** with `ghbudget.go`'s plumbing (`afterGHFailure`, no answer counted as a 5xx):
+  1, 2, 4, and 8 min, 15 min in all, or a spent budget's reset. Each retry follows a PR read (§ Decision: merge a green
+  PR onto a moved `main`), so a merge that went through is never repeated. Still failing, it ends with
+  `errGitHubFailing`: GitHub's side, nothing landed, re-run `pnpm land` later, plus `X-GitHub-Request-Id` when there is
+  one. gh's own error shows only with no answer at all (a 5xx body is an HTML page).
+- **A refusal stops at once** with GitHub's JSON `message` (`errMergeRefused`). Only a 405 (GitHub's "not mergeable",
+  which a disallowed merge method gets) carries the settings advice (§ Decision: `-merge` keeps a release commit's SHA);
+  a 409 says the head moved off the green SHA.
+- **The branch push reads `git push --porcelain`** (`remoteRejection`): the ref's line has flag `!` and a summary that
+  opens with one of git-push(1)'s fixed status tokens, `[remote rejected]` or `[remote failure]` from origin's side, or
+  `[rejected]` (lease, non-fast-forward) from ours; a push the pre-push hook stopped prints no ref line. A token of a
+  documented machine format, never the wording: the reason in parentheses is origin's own and is only shown. Shapes
+  pinned in `TestRemoteRejection` (git 2.56.0 against a bare origin with a failing `pre-receive`, 2026-11-06).
+- **An origin-side push rejection gets two short retries** (`transientRetries`, 10 s each): the ref didn't move, so the
+  same push is safe again. A feature branch has no rulesets, so on GitHub that's GitHub failing, except push protection
+  (a secret) or a workflow file the token can't write; those fail the same way twice in 20 s, and `errRemoteRejected`
+  shows the reason, so the reader tells which.
+- Tested with a fake (`merge_test.go`: retries, a merge that went through, a lasting outage, a refusal, a conflict) and
+  a bare origin whose `pre-receive` fails (`push_test.go`). The REST merge under the admin bypass is unverified until
+  the next real land onto a moved `main`; `gh pr merge --admin` sent GraphQL's `mergePullRequest` with no bypass field
+  either, so the bypass comes from the actor alone in both.
 
 ## Decision: every commit on `main` is signed
 

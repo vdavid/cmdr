@@ -703,3 +703,78 @@ func TestCancelWaitHoldsACancelledRunThroughTheGrace(t *testing.T) {
 		t.Errorf("a later cancel restarts the grace: got %d, want pending", got)
 	}
 }
+
+// Regression: PR #1004 (2026-11-06), where `gh pr merge` failed on a 502, a bare EOF, and a GraphQL
+// "Something went wrong", and land sent the reader to repo settings that were fine. The REST
+// merge's HTTP status tells GitHub's side failing from GitHub saying no.
+func TestClassifyMerge(t *testing.T) {
+	cases := []struct {
+		name     string
+		resp     apiResponse
+		answered bool
+		want     mergeOutcome
+	}{
+		{"merged", apiResponse{status: 200}, true, mergeDone},
+		{"no answer (EOF, a dropped connection)", apiResponse{}, false, mergeGitHubFailing},
+		{"502 Bad Gateway", apiResponse{status: 502, budget: apiBudget{serverError: true}}, true, mergeGitHubFailing},
+		{"a spent budget", apiResponse{status: 403, budget: apiBudget{spent: true}}, true, mergeGitHubFailing},
+		{"a secondary limit", apiResponse{status: 429, budget: apiBudget{limited: true}}, true, mergeGitHubFailing},
+		{"not mergeable", apiResponse{status: 405}, true, mergeRefused},
+		{"head moved", apiResponse{status: 409}, true, mergeRefused},
+		{"invalid", apiResponse{status: 422}, true, mergeRefused},
+		{"forbidden", apiResponse{status: 403}, true, mergeRefused},
+	}
+	for _, c := range cases {
+		if got := classifyMerge(c.resp, c.answered); got != c.want {
+			t.Errorf("%s: got %d, want %d", c.name, got, c.want)
+		}
+	}
+}
+
+// The settings advice is for a real refusal only; GitHub failing says so, with its request ID.
+func TestMergeFailureMessages(t *testing.T) {
+	head := "0123456789abcdef"
+	failing := mergeFailure(mergeGitHubFailing, apiResponse{status: 502, requestID: "C0FE:1234", body: "<html>502</html>"}, true, head, "pnpm land", errors.New("gh: HTTP 502"))
+	if msg := failing.Error(); !strings.Contains(msg, "GitHub's side") || !strings.Contains(msg, "C0FE:1234") ||
+		!strings.Contains(msg, "nothing landed") || strings.Contains(msg, "allowed merge methods") || strings.Contains(msg, "<html>") {
+		t.Errorf("GitHub failing:\n%s", msg)
+	}
+	eof := mergeFailure(mergeGitHubFailing, apiResponse{}, false, head, "pnpm land", errors.New("gh: EOF"))
+	if msg := eof.Error(); !strings.Contains(msg, "GitHub's side") || !strings.Contains(msg, "EOF") {
+		t.Errorf("no answer keeps gh's own words:\n%s", msg)
+	}
+	refused := mergeFailure(mergeRefused, apiResponse{status: 405, body: `{"message":"Merge commits are not allowed on this repository."}`}, true, head, "pnpm land", nil)
+	if msg := refused.Error(); !strings.Contains(msg, "allowed merge methods") || !strings.Contains(msg, "Merge commits are not allowed") || strings.Contains(msg, "GitHub's side") {
+		t.Errorf("a refusal:\n%s", msg)
+	}
+	moved := mergeFailure(mergeRefused, apiResponse{status: 409, body: `{"message":"Head branch was modified."}`}, true, head, "pnpm land", nil)
+	if msg := moved.Error(); !strings.Contains(msg, head[:12]) || strings.Contains(msg, "allowed merge methods") {
+		t.Errorf("head moved:\n%s", msg)
+	}
+}
+
+// `git push --porcelain` reports each ref as `<flag>\t<from>:<to>\t<summary>`, its summary opening
+// with a fixed token from git-push(1)'s OUTPUT section. Shapes captured from git 2.56.0 against a
+// bare origin, plus GitHub's own from PR #1004's day.
+func TestRemoteRejection(t *testing.T) {
+	ref := "refs/heads/feat"
+	cases := []struct {
+		name       string
+		out        string
+		want       bool
+		wantReason string
+	}{
+		{"GitHub's own failure", "To github.com:o/r.git\n!\tHEAD:refs/heads/feat\t[remote rejected] (failure)\nDone\n", true, "failure"},
+		{"a remote failure", "To o\n!\tHEAD:refs/heads/feat\t[remote failure] (remote failed to report status)\nDone\n", true, "remote failed to report status"},
+		{"a stale lease is ours to fix", "To o\n!\tHEAD:refs/heads/feat\t[rejected] (stale info)\nDone\n", false, ""},
+		{"the pre-push hook stopped it: no ref line", "", false, ""},
+		{"another ref's rejection", "To o\n!\tHEAD:refs/heads/other\t[remote rejected] (failure)\nDone\n", false, ""},
+		{"pushed", "To o\n*\tHEAD:refs/heads/feat\t[new branch]\nDone\n", false, ""},
+	}
+	for _, c := range cases {
+		reason, got := remoteRejection(c.out, ref)
+		if got != c.want || reason != c.wantReason {
+			t.Errorf("%s: got %v %q, want %v %q", c.name, got, reason, c.want, c.wantReason)
+		}
+	}
+}

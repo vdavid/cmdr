@@ -687,6 +687,30 @@ func prNumber(url string) (int, bool) {
 	return n, err == nil && n > 0
 }
 
+// remoteRejection reads `git push --porcelain` for ref: whether origin's side turned it away, and
+// the reason it gave. Each ref's line is `<flag>\t<from>:<to>\t<summary>`, flag `!` for a ref that
+// didn't go through, and the summary opens with one of git-push(1)'s fixed status tokens:
+// `[remote rejected]` and `[remote failure]` come from origin, `[rejected]` (a lease or a
+// non-fast-forward) from this side. A push the pre-push hook stopped prints no ref line at all.
+// The reason in parentheses is origin's own wording, shown and never matched.
+func remoteRejection(porcelain, ref string) (reason string, rejected bool) {
+	for line := range strings.SplitSeq(porcelain, "\n") {
+		fields := strings.SplitN(line, "\t", 3)
+		if len(fields) != 3 || fields[0] != "!" {
+			continue
+		}
+		if _, to, _ := strings.Cut(fields[1], ":"); to != ref {
+			continue
+		}
+		for _, token := range []string{"[remote rejected]", "[remote failure]"} {
+			if rest, ok := strings.CutPrefix(fields[2], token); ok {
+				return strings.Trim(strings.TrimSpace(rest), "()"), true
+			}
+		}
+	}
+	return "", false
+}
+
 // worktree is one entry of `git worktree list --porcelain`.
 type worktree struct {
 	path   string

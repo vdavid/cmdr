@@ -71,12 +71,13 @@ func afterGHFailure(b *apiBudget, retriesLeft, backedOff int, now time.Time) (gh
 }
 
 // apiResponse is what `gh api --include` printed: the status, the budget headers, the ETag a
-// later poll can send back, and the body.
+// later poll can send back, GitHub's request ID (what its support asks for), and the body.
 type apiResponse struct {
-	status int
-	budget apiBudget
-	etag   string
-	body   string
+	status    int
+	budget    apiBudget
+	etag      string
+	requestID string
+	body      string
 }
 
 // parseAPIResponse splits `gh api --include` output into its parts. ok is false when there's no
@@ -92,7 +93,7 @@ func parseAPIResponse(out string) (apiResponse, bool) {
 	if err != nil {
 		return apiResponse{}, false
 	}
-	r := apiResponse{status: resp.StatusCode, etag: resp.Header.Get("Etag"), body: string(raw)}
+	r := apiResponse{status: resp.StatusCode, etag: resp.Header.Get("Etag"), requestID: resp.Header.Get("X-Github-Request-Id"), body: string(raw)}
 	h := resp.Header
 	if remaining, err := strconv.Atoi(h.Get("X-RateLimit-Remaining")); err == nil && remaining == 0 {
 		r.budget.spent = true

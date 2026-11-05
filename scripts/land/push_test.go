@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -113,7 +114,7 @@ func TestPushToOriginRefusesAFetchedButUnintegratedTip(t *testing.T) {
 	if _, err := a.fetchBranch("feat"); err != nil {
 		t.Fatal(err)
 	}
-	if err := pushToOrigin(a, "feat"); err == nil {
+	if _, err := pushToOrigin(a, "feat"); err == nil {
 		t.Error("the push went through")
 	}
 	if got := originSHA(t, a, "feat"); got != theirs {
@@ -244,6 +245,66 @@ func TestPushBranchRetriesWithTheHooksCommit(t *testing.T) {
 	}
 	if head := mustGit(t, a, "rev-parse", "HEAD"); pushed != head || originSHA(t, a, "feat") != head {
 		t.Errorf("pushed %s, origin has %s, want the hook's commit %s", pushed, originSHA(t, a, "feat"), head)
+	}
+}
+
+// rejectOnOrigin makes origin's pre-receive hook turn pushes away the way GitHub did on 2026-11-06
+// (`remote: fatal error in commit_refs`, `[remote rejected] (failure)`): `times` pushes, or every
+// push when times is 0.
+func rejectOnOrigin(t *testing.T, origin string, times int) {
+	t.Helper()
+	script := "#!/bin/sh\necho 'fatal error in commit_refs' >&2\nexit 1\n"
+	if times > 0 {
+		script = fmt.Sprintf("#!/bin/sh\nn=$(cat count 2>/dev/null || echo 0)\n[ \"$n\" -ge %d ] && exit 0\necho $((n + 1)) > count\necho 'fatal error in commit_refs' >&2\nexit 1\n", times)
+	}
+	if err := os.WriteFile(filepath.Join(origin, "hooks", "pre-receive"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPushBranchRetriesGitHubsOwnFailure(t *testing.T) {
+	waits := noPause(t)
+	origin := testOrigin(t)
+	a := testClone(t, origin, "feat")
+	rejectOnOrigin(t, origin, 1)
+	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: new")
+	head := mustGit(t, a, "rev-parse", "HEAD")
+	if _, err := pushBranch(a, "feat", head); err != nil {
+		t.Fatal(err)
+	}
+	if got := originSHA(t, a, "feat"); got != head || len(*waits) != 1 {
+		t.Errorf("origin/feat is %q after %d waits, want %s after one", got, len(*waits), head)
+	}
+}
+
+func TestPushBranchGivesUpOnALastingRemoteFailure(t *testing.T) {
+	waits := noPause(t)
+	origin := testOrigin(t)
+	a := testClone(t, origin, "feat")
+	rejectOnOrigin(t, origin, 0)
+	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: new")
+	_, err := pushBranch(a, "feat", mustGit(t, a, "rev-parse", "HEAD"))
+	var rejected *errRemoteRejected
+	if !errors.As(err, &rejected) || rejected.reason != "pre-receive hook declined" {
+		t.Fatalf("got %v, want errRemoteRejected", err)
+	}
+	if len(*waits) != transientRetries {
+		t.Errorf("%d waits, want %d", len(*waits), transientRetries)
+	}
+}
+
+// A refusal on this side (here the pre-push hook, failing without a commit) isn't retried.
+func TestPushBranchDoesntRetryALocalRefusal(t *testing.T) {
+	waits := noPause(t)
+	a := testClone(t, testOrigin(t), "feat")
+	if err := os.WriteFile(filepath.Join(a.dir, ".git", "hooks", "pre-push"), []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: new")
+	_, err := pushBranch(a, "feat", mustGit(t, a, "rev-parse", "HEAD"))
+	var rejected *errRemoteRejected
+	if err == nil || errors.As(err, &rejected) || len(*waits) != 0 {
+		t.Errorf("got %v after %d waits, want a plain failure and no retry", err, len(*waits))
 	}
 }
 

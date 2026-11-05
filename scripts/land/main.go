@@ -13,7 +13,7 @@
 //     red names the failed jobs, why each failed (from its log), and the re-run command;
 //  5. lands the green head: with `git push origin <sha>:main` while it still descends from
 //     `origin/main` (the SHAs stay the same, and GitHub marks the PR merged), else with
-//     `gh pr merge --admin --merge`, a merge commit GitHub makes (and signs) onto the `main` that
+//     GitHub's REST merge (`merge.go`), a merge commit GitHub makes (and signs) onto the `main` that
 //     moved under it, leaving the clash check to CI on `main`. Either way every commit on `main`
 //     is signed, the CI ruleset demands `CI OK` green on the head, and the admin only bypasses the
 //     approval ruleset;
@@ -372,29 +372,56 @@ func pushBranch(r runner, branch, head string) (string, error) {
 	if remote != "" && remote != head && !r.isAncestor(remote, head) && !r.inReflog(branch, remote) {
 		return "", fmt.Errorf("%w (pushed from another machine, or by GitHub's \"Update branch\"), so I didn't overwrite them. Bring them in, then land again:\n  git pull --rebase origin %s\n  or take origin's version: git reset --hard origin/%s", errOriginAhead, branch, branch)
 	}
-	for attempt := 0; remote != head; attempt++ {
+	hookRetried, remoteRetries := false, 0
+	for remote != head {
 		say("Pushing %s...", branch)
-		err = pushToOrigin(r, branch)
+		porcelain, err := pushToOrigin(r, branch)
 		if err == nil {
 			return head, nil
 		}
+		// Origin's side turned it away (GitHub's `fatal error in commit_refs`, 2026-11-06): the ref
+		// didn't move, so pushing the same thing again is safe. A few short retries, then say so.
+		if reason, rejected := remoteRejection(porcelain, "refs/heads/"+branch); rejected {
+			next, wait := afterGHFailure(nil, transientRetries-remoteRetries, 0, time.Now())
+			if next != ghRetryTransient {
+				return "", &errRemoteRejected{reason: reason, cause: err}
+			}
+			remoteRetries++
+			say("Origin turned the push away on its side (%s), so trying again in %s.", reason, wait.Round(time.Second))
+			pause(wait + jitter(wait/10))
+			continue
+		}
 		newHead, headErr := r.git("rev-parse", "HEAD")
-		if headErr != nil || newHead == head || attempt > 0 {
+		if headErr != nil || newHead == head || hookRetried {
 			return "", fmt.Errorf("the branch push didn't go through; fix what it says, then land again: pnpm land\n%w", err)
 		}
 		say("The pre-push hook added a commit, so pushing again with it.")
-		head = newHead
+		head, hookRetried = newHead, true
 	}
 	return head, nil
 }
 
-// pushToOrigin pushes HEAD to origin's branch. The bare lease checks origin against the
-// remote-tracking ref `fetchBranch` just updated, and `--force-if-includes` refuses when that ref's
-// tip isn't in the local branch's history: the backstop for a push that lands between
-// `fetchBranch` and here. (An explicit lease value would make git ignore `--force-if-includes`.)
-func pushToOrigin(r runner, branch string) error {
-	_, err := r.git("push", "--quiet", "--force-with-lease=refs/heads/"+branch, "--force-if-includes", "origin", "HEAD:refs/heads/"+branch)
-	return err
+// errRemoteRejected: origin kept turning the branch push away on its side. On GitHub a feature
+// branch has no rulesets, so that's GitHub failing, unless the reason names a rule of its own
+// (secret scanning's push protection, a workflow file the token can't write).
+type errRemoteRejected struct {
+	reason string
+	cause  error
+}
+
+func (e *errRemoteRejected) Error() string {
+	return fmt.Sprintf("origin kept turning the branch push away on its side (%s), so nothing changed. When the reason is GitHub's own (like \"failure\"), GitHub is having trouble: run pnpm land again in a few minutes. When it names a rule, fix that first.\n%v", e.reason, e.cause)
+}
+
+func (e *errRemoteRejected) Unwrap() error { return e.cause }
+
+// pushToOrigin pushes HEAD to origin's branch and returns git's `--porcelain` report. The bare
+// lease checks origin against the remote-tracking ref `fetchBranch` just updated, and
+// `--force-if-includes` refuses when that ref's tip isn't in the local branch's history: the
+// backstop for a push that lands between `fetchBranch` and here. (An explicit lease value would
+// make git ignore `--force-if-includes`.)
+func pushToOrigin(r runner, branch string) (string, error) {
+	return r.git("push", "--porcelain", "--force-with-lease=refs/heads/"+branch, "--force-if-includes", "origin", "HEAD:refs/heads/"+branch)
 }
 
 // findOpenPR finds the branch's open PR, with its labels.
@@ -695,32 +722,6 @@ func prMergeable(r runner, number int) (*bool, error) {
 		}
 		time.Sleep(3 * time.Second)
 	}
-}
-
-// mergeOnGitHub has GitHub merge the green PR into the `main` that moved under it with a merge
-// commit, and CI on `main` checks the result. The branch's commits keep their SHAs and signatures
-// (and a release its tag on `main`'s history); GitHub signs the merge commit itself. `--admin`
-// passes the approval ruleset; the CI one has no bypass, so GitHub still demands `CI OK` green on
-// the head, and `--match-head-commit` pins that head.
-func mergeOnGitHub(r runner, pr pullRequest, head string, hasMerges, merge bool) error {
-	again := config{merge: merge}.command()
-	_, err := r.gh("pr", "merge", fmt.Sprint(pr.Number), "-R", repo, "--admin", "--merge", "--match-head-commit", head)
-	if err != nil {
-		// The call may have gone through before it failed, or GitHub found the merge conflicts.
-		var pull pullDetails
-		if readErr := r.ghAPI(&pull, fmt.Sprintf("repos/%s/pulls/%d", repo, pr.Number)); readErr != nil {
-			return fmt.Errorf("GitHub refused the merge, so nothing landed. Fix what it says, then land again: %s\n%w", again, err)
-		}
-		switch {
-		case pull.Merged:
-		case pull.Mergeable != nil && !*pull.Mergeable:
-			return conflictError(head, hasMerges, merge)
-		default:
-			return fmt.Errorf("GitHub refused the merge, so nothing landed. It takes merge commits on main (the repo setting and the ruleset's allowed merge methods, scripts/land/DETAILS.md). Fix what it says, then land again: %s\n%w", again, err)
-		}
-	}
-	say("main moved while CI ran, so GitHub merged the green PR into it with a merge commit: %s\nCI on main checks the result: https://github.com/%s/actions/workflows/%s?query=branch%%3Amain", pr.URL, repo, ciWorkflow)
-	return nil
 }
 
 // errMergeConflict says how to merge by hand what GitHub can't.

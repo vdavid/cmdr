@@ -169,3 +169,11 @@ func TestParseAPIResponseMarksAServerError(t *testing.T) {
 		t.Fatalf("a 404 isn't a server error")
 	}
 }
+
+// GitHub's support asks for the request ID of a failing call; the merge failure shows it.
+func TestParseAPIResponseReadsTheRequestID(t *testing.T) {
+	resp, ok := parseAPIResponse("HTTP/2.0 502 Bad Gateway\r\nX-Github-Request-Id: C0FE:1234:5678\r\n\r\n<html>bad gateway</html>")
+	if !ok || resp.requestID != "C0FE:1234:5678" {
+		t.Fatalf("got ok=%v requestID=%q", ok, resp.requestID)
+	}
+}
