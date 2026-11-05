@@ -355,8 +355,8 @@ async function d1Reconcile(from, to, marks, apply) {
   // Every other difference is reported.
   const stamped = {}
   for (const [t, cols] of Object.entries(MUTABLE_COLUMNS)) {
-    const sel = `SELECT id, ${cols.join(', ')} FROM ${t} WHERE id <= ? ORDER BY id`
-    const [a, b] = await Promise.all([from.prepare(sel).bind(marks[t]).all(), to.prepare(sel).bind(marks[t]).all()])
+    const sel = `SELECT id, ${cols.join(', ')} FROM ${t} ORDER BY id`
+    const [a, b] = await Promise.all([from.prepare(sel).all(), to.prepare(sel).all()])
     const byId = new Map(b.results.map((r) => [r.id, r]))
     const stamps = STAMP_COLUMNS[t] ?? []
     const updates = []

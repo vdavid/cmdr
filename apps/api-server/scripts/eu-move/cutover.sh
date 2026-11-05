@@ -7,7 +7,7 @@
 #                                so nothing is written), to compare before and after.
 #   cutover.sh prepare <dir>     export the old database, import it into the empty EU one, save the
 #                                marks, bump the EU sequences. Refuses unless the branch head has a
-#                                green `CI OK` (so `pnpm land` lands at once) and the EU database is
+#                                green `CI OK` (so `pnpm land -merge` lands at once) and the EU database is
 #                                empty.
 #   cutover.sh finish <dir>      once production binds the EU database: wait for the old one to go
 #                                quiet, reconcile the window's rows, compare, copy the window's R2
@@ -96,6 +96,11 @@ land_gate() {
     --jq '.check_runs | sort_by(.id) | last | .conclusion // "none"')
   [[ $conclusion == success ]] ||
     die "HEAD $sha has no green \`CI OK\` (latest: $conclusion). Add the land label and wait for a land run."
+  # `pnpm land` rebases a branch `main` has moved past, and the new head needs a fresh 25–35-minute run
+  # inside the write window. `pnpm land -merge` lands this green head as a merge commit instead.
+  git -C "$server_dir" fetch -q origin main
+  git -C "$server_dir" merge-base --is-ancestor origin/main HEAD ||
+    say "note: origin/main has moved past this branch, so land with \`pnpm land -merge\` (never a plain \`pnpm land\`)"
 }
 
 deploy_gate() {
@@ -111,26 +116,36 @@ prepare() {
   mkdir -p "$dir"
   land_gate
   [[ -s $dir/before.json ]] || die "take the snapshot first: $0 snapshot $dir/before.json"
-  [[ ! -e $dir/marks.json ]] || die "$dir/marks.json exists: this phase ran already"
+  [[ ! -e $dir/bump.json ]] || die "$dir/bump.json exists: this phase finished already"
 
-  say "checking $eu_db_name is empty"
-  local tables
-  tables=$(wrangler d1 execute "$eu_db_name" --remote --json \
-    --command "SELECT count(*) AS n FROM sqlite_master WHERE type = 'table' AND name NOT LIKE '_cf_%'" |
-    jq '.[0].results[0].n')
-  [[ $tables == 0 ]] || die "$eu_db_name already has $tables tables"
+  # Resumable: once the import succeeded (the `imported` marker), a rerun skips to the checks, the
+  # marks, and the bump. Nothing writes the EU database before the deploy, so marks taken late are
+  # still the export's.
+  if [[ ! -e $dir/imported ]]; then
+    say "checking $eu_db_name is empty"
+    local tables
+    tables=$(wrangler d1 execute "$eu_db_name" --remote --json \
+      --command "SELECT count(*) AS n FROM sqlite_master WHERE type = 'table' AND name NOT LIKE '_cf_%'" |
+      jq '.[0].results[0].n')
+    [[ $tables == 0 ]] || die "$eu_db_name already has $tables tables (and $dir has no record of importing them)"
 
-  say "exporting $old_db_name (it answers nothing for about 10 seconds)"
-  local attempt
-  for attempt in 1 2 3; do
-    if wrangler d1 export "$old_db_name" --remote --output "$dir/prod.sql"; then break; fi
-    [[ $attempt == 3 ]] && die "the export failed three times"
-    sleep 5
-  done
+    say "exporting $old_db_name (it answers nothing for about 10 seconds)"
+    local attempt
+    for attempt in 1 2 3; do
+      if wrangler d1 export "$old_db_name" --remote --output "$dir/prod.sql"; then break; fi
+      [[ $attempt == 3 ]] && die "the export failed three times"
+      sleep 5
+    done
 
-  say "importing into $eu_db_name"
-  wrangler d1 execute "$eu_db_name" --remote -y --file "$dir/prod.sql" >"$dir/import.log" 2>&1 ||
-    { cat "$dir/import.log" >&2; die "the import failed: $eu_db_name may be half-filled, see the runbook"; }
+    say "importing into $eu_db_name"
+    if ! wrangler d1 execute "$eu_db_name" --remote -y --file "$dir/prod.sql" >"$dir/import.log" 2>&1; then
+      rm -f "$dir/prod.sql"
+      cat "$dir/import.log" >&2
+      die "the import failed: $eu_db_name may be half-filled, see the runbook"
+    fi
+    rm -f "$dir/prod.sql" # buyer emails
+    touch "$dir/imported"
+  fi
 
   start_tool
   say "checking the import"
@@ -142,14 +157,15 @@ prepare() {
   [[ $migrations_eu == "$migrations_old" && $migrations_eu -gt 0 ]] ||
     die "migrations: EU $migrations_eu, old $migrations_old"
 
-  tool '/d1/marks?db=eu' >"$dir/marks.json"
+  [[ -s $dir/marks.json ]] || tool '/d1/marks?db=eu' >"$dir/marks.json"
   say "marks (the max ids at the export):"
   jq -c . "$dir/marks.json" >&2
 
-  tool "/d1/bump?db=eu&by=$bump_by" >"$dir/bump.json"
-  jq -e '.ok' "$dir/bump.json" >/dev/null || die "the bump left sequences short: $(jq -c .short "$dir/bump.json")"
-  rm -f "$dir/prod.sql"
-  say "prepared. Now: pnpm land (it lands at once), then after the deploy: $0 finish $dir"
+  local bump
+  bump=$(tool "/d1/bump?db=eu&by=$bump_by")
+  jq -e '.ok' >/dev/null <<<"$bump" || die "the bump left sequences short: $(jq -c .short <<<"$bump")"
+  printf '%s\n' "$bump" >"$dir/bump.json"
+  say "prepared. Now: pnpm land -merge (it lands this green head at once), then after the deploy: $0 finish $dir"
 }
 
 finish() {
@@ -159,16 +175,16 @@ finish() {
   start_tool
 
   say "waiting for the old database to go quiet"
-  local a b
+  local a b quiet=0
   a=$(tool '/d1/stats?db=old' | jq -c '[.tables[] | .maxId]')
   for _ in $(seq 1 15); do
-    [[ ${REHEARSAL:-} == 1 ]] && { b=$a; break; }
+    [[ ${REHEARSAL:-} == 1 ]] && { quiet=1; break; }
     sleep 60
     b=$(tool '/d1/stats?db=old' | jq -c '[.tables[] | .maxId]')
-    [[ $a == "$b" ]] && break
+    [[ $a == "$b" ]] && { quiet=1; break; }
     a=$b
   done
-  [[ $a == "$b" ]] || die "the old database is still being written after 15 minutes: is production on the EU one?"
+  [[ $quiet == 1 ]] || die "the old database is still being written after 15 minutes: is production on the EU one?"
   tool '/d1/stats?db=old' >"$dir/stats-old-final.json"
 
   local marks
@@ -192,18 +208,28 @@ finish() {
 
   say "comparing /validate answers"
   snapshot "$dir/after.json"
-  if diff <(jq -S . "$dir/before.json") <(jq -S . "$dir/after.json") >&2; then
-    say "/validate: identical"
+  # Only the licenses `before.json` knows: one sold in the window is new, not a regression.
+  local changed
+  changed=$(jq -n --slurpfile b "$dir/before.json" --slurpfile a "$dir/after.json" \
+    '($a[0] | map({key: .id, value: .}) | from_entries) as $after
+     | [$b[0][] | select($after[.id] != .) | {id, before: ., after: $after[.id]}]')
+  jq -r --slurpfile b "$dir/before.json" '[.[].id] - [$b[0][].id] | .[] | "new license since the snapshot: \(.)"' \
+    "$dir/after.json" >&2
+  if [[ $(jq length <<<"$changed") == 0 ]]; then
+    say "/validate: every license answers as before"
   else
-    die "/validate answers changed (diff above): consider the rollback"
+    jq . <<<"$changed" >&2
+    die "/validate answers changed (above): consider the rollback"
   fi
 
+  # UNIQUE duplicates on the deduplicated tables, and the cron's own bookkeeping rows, are expected.
   local left
-  left=$(jq '[.ignored[]?] + [.differing[] | length] | add // 0' "$dir/reconcile.json")
+  left=$(jq '[(.ignored | del(.update_checks, .analytics_event, .daily_active_users, .downloads_daily_unique))[]]
+    + [(.differing | del(.cron_job_streaks, .db_size_samples))[] | length] | add // 0' "$dir/reconcile.json")
   if [[ $left != 0 ]]; then
     say "done, with $left row(s) for a human: see .ignored and .differing in $dir/reconcile.json"
   else
-    say "done: nothing left to settle"
+    say "done: nothing left to settle (expected duplicates and cron bookkeeping are in $dir/reconcile.json)"
   fi
 }
 

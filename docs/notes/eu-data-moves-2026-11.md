@@ -131,30 +131,38 @@ command answers `200` (the triage token; the presign one can't be checked from h
 `curl -s -o /dev/null -w '%{http_code}\n' --aws-sigv4 aws:amz:auto:s3 --user "$(secret TRIAGE_R2_ACCESS_KEY_ID):$(secret TRIAGE_R2_SECRET_ACCESS_KEY)" "https://6a4433bf11c3cf86feda057f76f47991.eu.r2.cloudflarestorage.com/cmdr-error-reports-eu?list-type=2&max-keys=1"`.
 No other api-server land until step 6 is done.
 
-1. From the worktree: `pnpm land -no-wait`, then `gh pr edit --add-label land` and wait for that run's `CI OK` (25–35
-   min). Nothing has moved yet.
+1. From the worktree: `pnpm land -no-wait`, then `gh pr edit --add-label land` and wait for that land run's `CI OK`
+   (25–35 min). Nothing has moved yet. (Rebase first if `main` has moved far, so the merge in step 4 stays trivial.)
 2. `D=<scratch>/cutover; apps/api-server/scripts/eu-move/cutover.sh snapshot $D/before.json`.
 3. Not within 15 minutes before a cron tick (`0 */3` UTC, plus 04:30 and 05:30), so no EU tick runs before step 5:
    `apps/api-server/scripts/eu-move/cutover.sh prepare $D` (about a minute; production's database is unavailable for
-   about 10 s of it).
-4. `pnpm land` (in the background): the head is green, so it lands at once, and `deploy-api-server.yml` deploys in about
-   five minutes. The website deploys the public text from the same push.
+   about 10 s of it). It's resumable: if it stops after the import, rerun it (the `imported` marker skips to the marks
+   and the bump). If the import itself failed, `cmdr-telemetry-eu` may be half-filled: stop, nothing has switched, and
+   ask for a fresh EU database (its id goes into the switch commit).
+4. `pnpm land -merge` (in the background): it lands the green head at once, as a merge commit if `main` has moved. ❌
+   Never a plain `pnpm land` here: it rebases onto a moved `main`, and the new head needs a fresh 25–35-minute CI run
+   inside the window. `deploy-api-server.yml` deploys about five minutes later, and the website deploys the public text
+   from the same push.
 5. `apps/api-server/scripts/eu-move/cutover.sh finish $D`: waits for the deploy (the Worker's `TELEMETRY_DB` binding),
-   then for the old database to go quiet, reconciles, copies the window's R2 objects, and compares `/validate`.
-   `ignored` rows on `update_checks`, `analytics_event`, `daily_active_users`, and `downloads_daily_unique` are UNIQUE
-   duplicates the EU side already counted, so expected. Anything under `differing` is a human's call.
+   then for the old database to go quiet, reconciles, copies the window's R2 objects, and compares `/validate` for every
+   license in the snapshot (a license sold in the window is listed as new). It counts only what needs a human: `ignored`
+   rows on `update_checks`, `analytics_event`, `daily_active_users`, and `downloads_daily_unique` are UNIQUE duplicates
+   the EU side already counted, and `cron_job_streaks` / `db_size_samples` rows are the cron's own bookkeeping.
 6. Verify: the next cron tick is clean (healthchecks.io, no `cron-failure` ops event), the next digest's bundle link
    opens, and re-install the triage box (`m1mbp/ansible`, `--tags report_triage`, from the laptop's updated checkout).
    Delete `$D` (it holds license ids).
 7. If the land happens after 2026-11-05, fix the date of the Cloudflare line in `subprocessorChanges` (`trust.ts`).
 
-Write window: from the export in step 3 to the deploy in step 4, about 6–8 minutes. Nothing pauses: writes in it land in
-the old database and step 5 carries them over.
+Write window: from the export in step 3 to the deploy in step 4, about 6–8 minutes (the second review caught that a
+plain `pnpm land` would stretch it past 30). Nothing pauses: writes in it land in the old database and step 5 carries
+them over.
 
 Rollback: revert the switch commit and land. Then, with the tool, `/d1/reconcile?from=eu&to=old&marks=<$D/marks.json>`
 (dry, then `apply=1`): rows the EU side wrote sit above the marks (the bump), the window rows the old side already has
-are skipped, and keyed rows and stamps carry over as in step 5. Then `/r2/copy?from=eu&to=old`. The old database and
-bucket stay untouched for at least seven days after the switch; deleting them is David's call (not before 2026-11-12).
+are skipped, and keyed rows and stamps carry over as in step 5 (the stamp pass reads whole tables, so the EU cron's
+stamps on window rows go back too, and the old cron doesn't re-file those cards). Then `/r2/copy?from=eu&to=old`. The
+old database and bucket stay untouched for at least seven days after the switch; deleting them is David's call (not
+before 2026-11-12).
 
 ## Lifecycle recipe
 
