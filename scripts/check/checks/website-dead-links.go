@@ -200,7 +200,10 @@ func websiteIsDemoPath(urlPath string) bool {
 // websiteHasDemo reports whether this build published the browser demo.
 func websiteHasDemo(distDir string) bool {
 	info, err := os.Stat(filepath.Join(distDir, websiteDemoDir, "index.html"))
-	return err == nil && !info.IsDir()
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
 }
 
 // websiteVersionedExtensions mirrors `VERSIONED_EXTENSIONS` in `apps/website/src/plugins/asset-versions.ts`:
