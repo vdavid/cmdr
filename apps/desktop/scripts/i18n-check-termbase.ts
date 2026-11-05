@@ -36,6 +36,7 @@ import { EXIT_CLEAN, EXIT_ERROR, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
 import {
   CONFIDENCES,
   compileConcepts,
+  notMatchKey,
   conceptsPath,
   decisionsPath,
   duplicateKeyErrors,
@@ -98,21 +99,39 @@ const isStringList = (value: unknown): value is string[] =>
  * @param alsoKnown IDs `distinct` may name besides this file's own (the shared registry, for a proposal file)
  * @returns one line per problem
  */
-export function validateConcepts(raw: unknown, label: string, alsoKnown: ReadonlySet<string> = new Set()): string[] {
+export function validateConcepts(
+  raw: unknown,
+  label: string,
+  { alsoKnown = new Set(), enKeys }: { alsoKnown?: ReadonlySet<string>; enKeys?: ReadonlySet<string> } = {},
+): string[] {
   if (!isRecord(raw)) return [`${label}: must be an object of concept ID → concept`]
   const known = new Set([...Object.keys(raw), ...alsoKnown])
-  return Object.entries(raw).flatMap(([id, concept]) => conceptErrors(`${label}: ${id}`, id, concept, known))
+  return Object.entries(raw).flatMap(([id, concept]) =>
+    conceptErrors({ at: `${label}: ${id}`, id, concept, known, enKeys }),
+  )
 }
 
 /** Problems with one concept entry, each prefixed with `at`. */
-function conceptErrors(at: string, id: string, concept: unknown, known: ReadonlySet<string>): string[] {
+function conceptErrors({
+  at,
+  id,
+  concept,
+  known,
+  enKeys,
+}: {
+  at: string
+  id: string
+  concept: unknown
+  known: ReadonlySet<string>
+  enKeys: ReadonlySet<string> | undefined
+}): string[] {
   const errors = CONCEPT_ID.test(id) ? [] : [`${at}: the ID must be lowercase kebab-case`]
   if (!isRecord(concept)) return [...errors, `${at}: must be an object`]
   errors.push(...unknownFieldErrors(at, concept, CONCEPT_FIELDS))
   if (!isNonEmptyString(concept.en)) errors.push(`${at}: missing "en"`)
   if (!isNonEmptyString(concept.sense)) errors.push(`${at}: missing "sense"`)
   errors.push(...matchErrors(at, concept.match), ...distinctErrors(at, id, concept.distinct, known))
-  if (concept.notMatch !== undefined) errors.push(...formErrors(at, 'notMatch', concept.notMatch))
+  if (concept.notMatch !== undefined) errors.push(...notMatchErrors(at, concept.notMatch, enKeys))
   if (concept.note !== undefined && typeof concept.note !== 'string') errors.push(`${at}: "note" must be a string`)
   return errors
 }
@@ -138,6 +157,30 @@ function formErrors(at: string, field: 'match' | 'notMatch', forms: unknown): st
     ...(form.replace(/^=/, '').trim().length === 0 ? [`${at}: ${field} has an empty form`] : []),
   ])
 }
+
+/**
+ * `notMatch`: forms held to the `match` rules, plus key-scoped `{ key, why }`
+ * entries naming a real English key (checked when `enKeys` is known) with a reason.
+ */
+function notMatchErrors(at: string, notMatch: unknown, enKeys: ReadonlySet<string> | undefined): string[] {
+  if (!Array.isArray(notMatch)) return [`${at}: "notMatch" must be a list of strings`]
+  const forms = notMatch.filter((entry): entry is string => typeof entry === 'string')
+  const errors = formErrors(at, 'notMatch', forms)
+  for (const entry of notMatch) {
+    if (typeof entry === 'string') continue
+    const key = notMatchKey(entry)
+    if (!isRecord(entry) || key === undefined) {
+      errors.push(`${at}: "notMatch" entries must be strings or { key, why } objects`)
+      continue
+    }
+    errors.push(...unknownFieldErrors(`${at}: notMatch key "${key}"`, entry, NOT_MATCH_KEY_FIELDS))
+    if (enKeys && !enKeys.has(key)) errors.push(`${at}: notMatch names "${key}", which isn't an English key`)
+    if (!isNonEmptyString(entry.why)) errors.push(`${at}: notMatch key "${key}" needs a reason`)
+  }
+  return errors
+}
+
+const NOT_MATCH_KEY_FIELDS = new Set(['key', 'why'])
 
 /** `distinct` must name other, known concepts. */
 function distinctErrors(at: string, id: string, distinct: unknown, known: ReadonlySet<string>): string[] {
@@ -273,7 +316,7 @@ export function findDrift({ tag, terms, concepts, en, locale }: FindDriftArgs): 
     if (!(key in locale) || isSearchKeywordsKey(key)) continue
     const text = englishMatchText(key, en[key])
     for (const [id, hits] of matchers) {
-      if (!hits(text)) continue
+      if (!hits(text, key)) continue
       const term = terms[id]
       if (term.exceptions && key in term.exceptions) continue
       // The schema half reports a missing `chosen`; drift can't be judged without one.
@@ -325,7 +368,7 @@ function staleExceptionErrors(tag: string, terms: Termbase, concepts: Concepts, 
     const exceptions: unknown = term.exceptions
     if (!hits || !isRecord(exceptions)) continue
     for (const key of Object.keys(exceptions)) {
-      if (!(key in en) || hits(englishMatchText(key, en[key]))) continue
+      if (!(key in en) || hits(englishMatchText(key, en[key]), key)) continue
       errors.push(
         `${tag}/terms.json: ${id}: exception "${key}" is stale: its English no longer matches the concept, so drop it`,
       )
@@ -339,11 +382,23 @@ function staleExceptionErrors(tag: string, terms: Termbase, concepts: Concepts, 
  * `concepts-proposed.json` (the parallel-migration staging file), whose schema
  * problems and clashes with a shared ID land in `schemaErrors`.
  */
-function localeConcepts(tag: string, shared: Concepts, docsRoot: string | undefined, schemaErrors: string[]): Concepts {
+function localeConcepts({
+  tag,
+  shared,
+  docsRoot,
+  enKeys,
+  schemaErrors,
+}: {
+  tag: string
+  shared: Concepts
+  docsRoot: string | undefined
+  enKeys: ReadonlySet<string>
+  schemaErrors: string[]
+}): Concepts {
   const proposed = readJsonIfPresent(proposedConceptsPath(tag, docsRoot))
   if (proposed === undefined) return shared
   const label = `${tag}/concepts-proposed.json`
-  schemaErrors.push(...validateConcepts(proposed, label, new Set(Object.keys(shared))))
+  schemaErrors.push(...validateConcepts(proposed, label, { alsoKnown: new Set(Object.keys(shared)), enKeys }))
   if (!isRecord(proposed)) return shared
   for (const id of Object.keys(proposed)) {
     if (id in shared) schemaErrors.push(`${label}: ${id}: already in concepts.json (propose a new ID)`)
@@ -373,13 +428,13 @@ export function inspectTermbase({
     if (text !== undefined) schemaErrors.push(...duplicateKeyErrors(text, label))
   }
   duplicates(conceptsPath(docsRoot), 'concepts.json')
+  const en = loadCatalog(BASE_LOCALE, messagesRoot)
+  const enKeys = new Set(Object.keys(en.messages))
   const sharedRaw = readJsonIfPresent(conceptsPath(docsRoot)) ?? {}
-  schemaErrors.push(...validateConcepts(sharedRaw, 'concepts.json'))
+  schemaErrors.push(...validateConcepts(sharedRaw, 'concepts.json', { enKeys }))
   const shared = (isRecord(sharedRaw) ? sharedRaw : {}) as Concepts
 
   const available = listLocales(messagesRoot)
-  const en = loadCatalog(BASE_LOCALE, messagesRoot)
-  const enKeys = new Set(Object.keys(en.messages))
   const locales: LocaleOutcome[] = []
   for (const tag of available) {
     if (tag === BASE_LOCALE || resolveLocaleSource(tag, available).isOverlay) continue
@@ -388,7 +443,7 @@ export function inspectTermbase({
     duplicates(termsPath(tag, docsRoot), `${tag}/terms.json`)
     duplicates(proposedConceptsPath(tag, docsRoot), `${tag}/concepts-proposed.json`)
 
-    const concepts = localeConcepts(tag, shared, docsRoot, schemaErrors)
+    const concepts = localeConcepts({ tag, shared, docsRoot, enKeys, schemaErrors })
     schemaErrors.push(
       ...validateTerms({
         tag,

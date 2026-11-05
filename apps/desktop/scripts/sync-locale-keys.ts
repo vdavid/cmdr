@@ -46,14 +46,24 @@
  * `--restamp` does reach an overlay (`restampOverlay`): a fork's hash is the hash
  * of the value it overrides (`es` for `es-419`), which nobody should compute by hand.
  *
+ * ## Termbase exceptions follow deleted keys out
+ *
+ * A locale's `docs/i18n/<tag>/terms.json` `exceptions` name catalog keys, and the
+ * termbase check fails on one `en` no longer has. So a sync also drops each
+ * exception naming a deleted key (`pruneTermbaseExceptions`), then runs oxfmt on
+ * the termbases it rewrote. A retired key otherwise failed every locale that had
+ * ruled on it.
+ *
  * Run: node scripts/sync-locale-keys.ts <tag> [<tag> …]   (omit tags = every non-en locale)
  * Pass `--messages-root <dir>` to point at a fixture, `--restamp <key>` to refresh
  * one key's stored hash across the synced locales and the overlays' forks. A tag
  * that isn't a locale dir is refused.
  */
 
+import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import {
   BASE_LOCALE,
@@ -66,6 +76,7 @@ import {
   resolveMessagesRoot,
   sourceHash,
 } from './i18n-catalog-lib.ts'
+import { termsPath } from './i18n-termbase-lib.ts'
 
 /**
  * `@key` fields that vouch for one specific English value and so can't outlive it:
@@ -194,6 +205,38 @@ export function syncLocale(tag: string, opts: SyncLocaleOptions = {}): SyncLocal
     }
   }
   return { added, kept, dropped, restamped: restampedKeys.size, restampedKeys: [...restampedKeys].sort(), files }
+}
+
+/**
+ * Drops every `exceptions` entry in a locale's termbase that names a key `en` no
+ * longer has, and an `exceptions` map left empty. Rewrites the file only when
+ * something went, so an untouched termbase keeps its formatting byte for byte.
+ * `dropped` lists `concept: key` pairs, sorted.
+ */
+export function pruneTermbaseExceptions(
+  tag: string,
+  opts: { messagesRoot?: string; docsRoot?: string } = {},
+): { dropped: string[]; changed: boolean } {
+  const path = termsPath(tag, opts.docsRoot)
+  if (!existsSync(path)) return { dropped: [], changed: false }
+  const english = loadCatalog(BASE_LOCALE, resolveMessagesRoot(opts.messagesRoot)).messages
+  const termbase = JSON.parse(readFileSync(path, 'utf8')) as Record<string, Record<string, unknown>>
+  const dropped: string[] = []
+  for (const [id, term] of Object.entries(termbase)) {
+    const exceptions = term.exceptions
+    if (typeof exceptions !== 'object' || exceptions === null) continue
+    const kept = Object.entries(exceptions as Record<string, unknown>).filter(([key]) => {
+      if (key in english) return true
+      dropped.push(`${id}: ${key}`)
+      return false
+    })
+    if (kept.length === Object.keys(exceptions).length) continue
+    if (kept.length > 0) term.exceptions = Object.fromEntries(kept)
+    else delete term.exceptions
+  }
+  if (dropped.length === 0) return { dropped, changed: false }
+  writeFileSync(path, JSON.stringify(termbase, null, 2) + '\n', 'utf8')
+  return { dropped: dropped.sort(), changed: true }
 }
 
 /** The parsed CLI arguments. */
@@ -336,6 +379,20 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log(
       `Synced ${tag}/: +${String(added)} new (English, to translate), ${String(kept)} kept, -${String(dropped)} dropped${restampNote}, across ${String(files)} files.`,
     )
+  }
+  const rewrittenTermbases: string[] = []
+  // A fixture `--messages-root` would judge the real termbases against a fixture `en`.
+  for (const tag of messagesRoot === undefined ? tags : []) {
+    const { dropped, changed } = pruneTermbaseExceptions(tag)
+    if (!changed) continue
+    rewrittenTermbases.push(termsPath(tag))
+    console.log(`Dropped ${tag} termbase exceptions naming deleted keys: ${dropped.join(', ')}.`)
+  }
+  if (rewrittenTermbases.length > 0) {
+    // JSON.stringify expands what oxfmt keeps inline; restore the house shape.
+    const desktopDir = join(dirname(fileURLToPath(import.meta.url)), '..')
+    const fmt = spawnSync('pnpm', ['exec', 'oxfmt', ...rewrittenTermbases], { cwd: desktopDir, stdio: 'inherit' })
+    if (fmt.status !== 0) console.warn('  warning: oxfmt did not exit cleanly; run `pnpm exec oxfmt` on the termbases.')
   }
   for (const key of restampKeys) {
     if (!restampedAnywhere.has(key)) {

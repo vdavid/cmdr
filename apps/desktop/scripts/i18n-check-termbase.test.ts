@@ -62,6 +62,36 @@ describe('validateConcepts', () => {
     expect(text).toMatch(/a: notMatch form "Upper" must be lowercase/)
     expect(text).toMatch(/b: "notMatch" must be a list of strings/)
   })
+  it('accepts a key-scoped notMatch entry naming a real English key, with a reason', () => {
+    const scoped = {
+      a: { en: 'a', match: ['a'], notMatch: ['a b', { key: 'q.zipKind', why: 'the zip noun' }], sense: 's' },
+    }
+    expect(validateConcepts(scoped, 'c.json', { enKeys: new Set(['q.zipKind']) })).toEqual([])
+    const text = validateConcepts(
+      {
+        a: {
+          en: 'a',
+          match: ['a'],
+          notMatch: [{ key: 'q.gone', why: 'w' }, { key: 'q.zipKind' }, { form: 'x' }],
+          sense: 's',
+        },
+      },
+      'c.json',
+      { enKeys: new Set(['q.zipKind']) },
+    ).join('\n')
+    expect(text).toMatch(/a: notMatch names "q\.gone", which isn't an English key/)
+    expect(text).toMatch(/a: notMatch key "q\.zipKind" needs a reason/)
+    expect(text).toMatch(/a: "notMatch" entries must be strings or \{ key, why \} objects/)
+  })
+  it('keeps the key a key-scoped notMatch names out of drift, and only that key', () => {
+    const en = { 'q.chat': 'Archive', 'q.zip': 'Archive' }
+    const nl = { 'q.chat': 'Zip', 'q.zip': 'Zip' }
+    const terms = { 'archive-chat': { chosen: 'archiveren', confidence: 'high' as const, sources: 's' } }
+    const scoped: Concepts = {
+      'archive-chat': { en: 'archive', match: ['archive'], notMatch: [{ key: 'q.zip', why: 'zip' }], sense: 's' },
+    }
+    expect(findDrift({ tag: 'nl', terms, concepts: scoped, en, locale: nl }).map((f) => f.key)).toEqual(['q.chat'])
+  })
   it('keeps a notMatch key out of drift in every locale', () => {
     const en = { 'q.a': 'Undo the operation', 'q.m': 'A math operation' }
     const nl = { 'q.a': 'Maak de actie ongedaan', 'q.m': 'Een wiskundige handeling' }

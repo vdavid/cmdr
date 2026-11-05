@@ -16,7 +16,13 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { parseSyncArgs, restampOverlay, syncLocale, syncableLocales } from './sync-locale-keys.ts'
+import {
+  parseSyncArgs,
+  pruneTermbaseExceptions,
+  restampOverlay,
+  syncLocale,
+  syncableLocales,
+} from './sync-locale-keys.ts'
 import { sourceHash } from './i18n-catalog-lib.ts'
 
 const AREA = 'fixture.json'
@@ -303,5 +309,54 @@ describe('restampOverlay', () => {
     restampOverlay('es-419', { messagesRoot: root, restampKeys: ['a.label'] })
 
     expect(read('es-419')['@a.label']).toEqual({ sourceHash: sourceHash('Add') })
+  })
+})
+
+describe('pruneTermbaseExceptions', () => {
+  let root: string
+  let messagesRoot: string
+  let docsRoot: string
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-prune-'))
+    messagesRoot = join(root, 'messages')
+    docsRoot = join(root, 'docs')
+    mkdirSync(join(messagesRoot, 'en'), { recursive: true })
+    mkdirSync(join(docsRoot, 'de'), { recursive: true })
+    writeFileSync(join(messagesRoot, 'en', AREA), JSON.stringify({ 'a.kept': 'Undo', 'b.kept': 'Archive' }), 'utf8')
+  })
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  const termsFile = () => join(docsRoot, 'de', 'terms.json')
+
+  it('drops exceptions naming keys deleted from en, and an emptied exceptions map with them', () => {
+    writeFileSync(
+      termsFile(),
+      JSON.stringify({
+        undo: { chosen: 'rückgängig', exceptions: { 'a.kept': 'why', 'a.gone': 'retired pill' } },
+        archive: { chosen: 'Archiv', exceptions: { 'b.gone': 'retired' } },
+      }),
+      'utf8',
+    )
+
+    const { dropped, changed } = pruneTermbaseExceptions('de', { messagesRoot, docsRoot })
+
+    expect(changed).toBe(true)
+    expect(dropped).toEqual(['archive: b.gone', 'undo: a.gone'])
+    const terms = JSON.parse(readFileSync(termsFile(), 'utf8')) as Record<string, Record<string, unknown>>
+    expect(terms.undo.exceptions).toEqual({ 'a.kept': 'why' })
+    expect(terms.archive).toEqual({ chosen: 'Archiv' })
+  })
+
+  it('leaves a termbase whose exceptions all exist byte-identical, and tolerates a locale without one', () => {
+    const text = '{\n  "undo": { "chosen": "rückgängig", "exceptions": { "a.kept": "why" } }\n}\n'
+    writeFileSync(termsFile(), text, 'utf8')
+
+    expect(pruneTermbaseExceptions('de', { messagesRoot, docsRoot })).toEqual({ dropped: [], changed: false })
+    expect(readFileSync(termsFile(), 'utf8')).toBe(text)
+    expect(pruneTermbaseExceptions('fr', { messagesRoot, docsRoot })).toEqual({ dropped: [], changed: false })
   })
 })

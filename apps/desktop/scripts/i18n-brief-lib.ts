@@ -193,6 +193,16 @@ function placeholderNotes(key: string, value: string, metadata: Record<string, u
   return notes
 }
 
+/**
+ * The pile folder a language mines when it isn't the bare tag: Cmdr's `pt` ships
+ * Brazilian, and the bare `pt/` pile is European (`docs/i18n/pt/style.md`).
+ */
+const PILE_TAGS: Readonly<Record<string, string>> = { pt: 'pt-BR' }
+
+function pileTag(tag: string): string {
+  return PILE_TAGS[tag] ?? tag
+}
+
 function headerSection(ctx: BriefContext): BriefSection {
   const { opts } = ctx
   const docsRoot = resolveDocsRoot(opts.docsRoot)
@@ -204,13 +214,17 @@ function headerSection(ctx: BriefContext): BriefSection {
   ]
   if (ctx.multi) {
     lines.push(`- Style: each language's digest is below; its full \`<tag>/style.md\` is the elaboration.`)
-    lines.push(`- Reference pile: \`${join(opts.pileRoot, '<tag>')}/\`, mined only for terms marked "no ruling".`)
+    const remapped = opts.langs.filter((tag) => pileTag(tag) !== tag)
+    const except = remapped.map((tag) => `${tag}: \`${join(opts.pileRoot, pileTag(tag))}/\``).join(', ')
+    lines.push(
+      `- Reference pile: \`${join(opts.pileRoot, '<tag>')}/\`${except ? ` (${except})` : ''}, mined only for terms marked "no ruling".`,
+    )
   } else {
     const tag = opts.langs[0]
     lines.push(
       `- Style: the digest below summarizes \`${shown(stylePath(tag, docsRoot), opts.repoRoot)}\`; read it in full too.`,
     )
-    lines.push(`- Reference pile: \`${join(opts.pileRoot, tag)}/\`, mined only for terms marked "no ruling".`)
+    lines.push(`- Reference pile: \`${join(opts.pileRoot, pileTag(tag))}/\`, mined only for terms marked "no ruling".`)
   }
   lines.push(`- Mining recipes: \`${shown(join(docsRoot, 'reference-pile', 'how-to-mine.md'), opts.repoRoot)}\`.`)
   if (opts.excludeTargetValues)
@@ -426,7 +440,7 @@ function conceptsInPlay(ctx: BriefContext): ConceptsInPlay {
   for (const key of ruledKeys) {
     const text = englishMatchText(key, ctx.en.messages[key])
     for (const [id, hit] of matchers) {
-      if (hit(text)) hitsBy.set(id, [...(hitsBy.get(id) ?? []), key])
+      if (hit(text, key)) hitsBy.set(id, [...(hitsBy.get(id) ?? []), key])
     }
   }
   const batchText = ruledKeys
@@ -504,6 +518,11 @@ function termsSection(ctx: BriefContext): BriefSection {
  * its hash is the hash of that base value, which `sync-locale-keys.ts --restamp`
  * computes. Empty when no target language has an overlay.
  */
+/** The overlays with a drift test that sweeps the base for the forms they replace. */
+const OVERLAY_GUARDS: Readonly<Record<string, { forms: string; test: string }>> = {
+  'es-419': { forms: 'Spain-only form (`Ajustes`, `papelera`, `añadir`, …)', test: 'i18n-es-overlay.test.ts' },
+}
+
 function overlaysSection(ctx: BriefContext): BriefSection {
   if (ctx.overlays.size === 0) return { name: 'overlays', text: '' }
   const lines = ['## Regional overlays']
@@ -522,8 +541,11 @@ function overlaysSection(ctx: BriefContext): BriefSection {
         lines.push(`  - \`${key}\`${ctx.opts.excludeTargetValues ? '' : `: ${JSON.stringify(messages[key])}`}`)
       }
     }
+    const guard = OVERLAY_GUARDS[tag]
     lines.push(
-      `- A new or changed \`${base}\` value that uses a form \`${tag}\` replaces needs a fork there too (docs/i18n/${tag}/style.md lists the forms).`,
+      guard
+        ? `- A new or changed \`${base}\` value that uses a ${guard.forms} needs a \`${tag}\` fork, or \`scripts/${guard.test}\` fails (docs/i18n/${tag}/style.md lists the forms).`
+        : `- A new or changed \`${base}\` value that uses a form \`${tag}\` replaces needs a fork there too (docs/i18n/${tag}/style.md lists the forms).`,
       `- Stamp every fork you write or update with \`node scripts/sync-locale-keys.ts ${tag} --restamp <key>\` (in apps/desktop): it records the hash of the \`${base}\` value the fork overrides.`,
     )
   }

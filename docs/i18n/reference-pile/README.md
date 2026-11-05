@@ -9,11 +9,11 @@ provenance, layout rules, and open items: `inventory.md`. Process and confidence
 ## Must-knows
 
 - **Language-first: one folder per locale gathers every source.** To research a language, point a translator at
-  `_ignored/i18n/<tag>/` (e.g. `i18n/fr/`); inside are up to eight sources: `macOS/`, `microsoft-terminology/`,
+  `_ignored/i18n/<tag>/` (e.g. `i18n/fr/`); inside are up to nine sources: `macOS/`, `microsoft-terminology/`,
   `microsoft-style-guides/`, `gnome-nautilus/`, `xfce-thunar/`, `total-commander/`, `double-commander/`, `kde-dolphin/`,
-  present only where that source has the language. The first five cover most languages; the three file managers vary
-  (`kde-dolphin/` 92 languages, `total-commander/` 48, `double-commander/` 30 — so e.g. `sv` has TC + Dolphin but no DC,
-  `hu` and `fr` have all three). Check with `ls <tag>/`.
+  `git/`, present only where that source has the language. The first five cover most languages; the three file managers
+  vary (`kde-dolphin/` 92 languages, `total-commander/` 48, `double-commander/` 30 — so e.g. `sv` has TC + Dolphin but
+  no DC, `hu` and `fr` have all three). Check with `ls <tag>/`.
 - **Mining recipes per source** (tested greps, jq, `msggrep`, `pdftotext`): `how-to-mine.md`. Use them; don't reinvent
   the search per term.
 - **Reference for picking terms, never strings to copy.** Apple's and Microsoft's strings are copyrighted; the
@@ -32,7 +32,8 @@ provenance, layout rules, and open items: `inventory.md`. Process and confidence
   cross-language parity, and the only sources that name two-pane concepts Finder lacks), 4 = native human review (the
   only thing that makes a term "confirmed"; out of budget for now). Within Tier 3, split by UI family: lean on the
   orthodox pair (TC, DC) for two-pane-specific terms (pane, file list, command line) where the OS vendors are silent,
-  and on the explorer trio for general file operations.
+  and on the explorer trio for general file operations. git's own `po/<lang>.po` (`<tag>/git/git.po`, 22 languages) is
+  the Tier-3 git-domain source: the only one that names detached, unborn, ahead/behind, or uncommitted changes.
 
 ## Structure
 
@@ -41,5 +42,6 @@ provenance, layout rules, and open items: `inventory.md`. Process and confidence
 _extract/macos-extract/      reproducible macOS extractor — emits the <tag>/macOS/… layout (go run main.go)
 _extract/reorg/              one-shot source-first → language-first restructure (already run; kept for reference)
 _extract/competitor-fetch/   re-runnable fetch of KDE Dolphin + Total Commander + Double Commander (fetch.sh)
+_extract/git-po-fetch/       re-runnable fetch of git's po/ at a release tag (fetch.sh [tag])
 _downloads/                  raw MS Terminology zip + TC installer, kept for re-extraction
 ```

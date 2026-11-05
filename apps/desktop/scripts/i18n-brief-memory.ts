@@ -38,7 +38,9 @@ const GENERIC_WORDS = new Set(
     'might moment need needs never next nothing often once otherwise part place please point possible probably ' +
     'quite rather ready really right says second see seems still sure take takes taken talks tell thing things think time ' +
     'times took turned under until usually want way ways well whether whole within without work working yet ' +
-    'called got leaving longer others reach sitting usual'
+    'called got leaving longer others reach sitting usual ' +
+    'agree agreed anybody anyone cause caused causes direct directly misbehave misbehaving security somebody ' +
+    'someone stay stayed stays'
   ).split(' '),
 )
 

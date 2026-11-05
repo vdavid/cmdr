@@ -272,6 +272,18 @@ msggrep --msgid -e 'file list' -i hu/double-commander/doublecmd.po              
 msggrep --msgid -e 'Move to Trash' -i hu/kde-dolphin/dolphin.po                             # general op, broad coverage
 ```
 
+## git (Tier 3, git domain): `<tag>/git/git.po`
+
+git's own gettext catalog, so the `msggrep` recipes above apply. Mine it only for git concepts (Cmdr's branch pill, the
+`.git` portal, git errors); it's silent on file operations. Messages often carry a `TRANSLATORS:` comment saying what to
+keep English.
+
+```sh
+msggrep --msgid -e 'detached HEAD' sv/git/git.po | grep -E '^msg(id|str) '     # detached → "frånkopplad HEAD"
+msggrep --msgid -e 'unborn' -i de/git/git.po                                     # an unborn branch
+msggrep --msgid -e 'ahead' -i fr/git/git.po | grep -E '^msg(id|str) ' | head     # ahead/behind counts
+```
+
 ## Total Commander (Tier 3, orthodox file manager): `<tag>/total-commander/WCMD.LNG.utf8`
 
 INI-style `ID="value"` lines (numeric string IDs). The IDs aren't self-describing, so mine by the translated VALUE

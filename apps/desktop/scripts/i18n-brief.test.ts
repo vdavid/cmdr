@@ -89,7 +89,10 @@ describe('contentWords', () => {
     expect(words).toEqual(['worked', 'move', 'see'])
   })
   it('counts everyday English as generic, never as a missing concept', () => {
-    for (const word of ['got', 'sitting', 'longer', 'called', 'others', 'reach', 'usual', 'leaving']) {
+    const everyday = ['got', 'sitting', 'longer', 'called', 'others', 'reach', 'usual', 'leaving']
+    // Words the SMB negotiation toasts listed as missing concepts, with nothing to mine.
+    const smbToasts = ['security', 'agreed', 'misbehaving', 'cause', 'someone', 'stays', 'directly']
+    for (const word of [...everyday, ...smbToasts]) {
       expect(isGenericWord(word), word).toBe(true)
     }
   })
@@ -180,6 +183,8 @@ describe('buildBrief (fixture tree)', () => {
       'queue.undo': 'Maak de bewerking ongedaan',
     })
     write(join(messagesRoot, 'nl-BE', 'queue.json'), { 'queue.title': 'Wachtrij van bewerkingen' })
+    write(join(messagesRoot, 'es', 'queue.json'), { 'queue.empty': 'Nada en la cola' })
+    write(join(messagesRoot, 'es-419', 'queue.json'), {})
     write(join(messagesRoot, 'de', 'queue.json'), {
       'queue.empty': 'Nichts in der Warteschlange',
       'queue.undo': 'Vorgang rückgängig machen',
@@ -379,6 +384,19 @@ describe('buildBrief (fixture tree)', () => {
     expect(overlays).toContain('sync-locale-keys.ts nl-BE --restamp')
     const de = buildBrief({ ...opts, langs: ['de'] }).sections.map((section) => section.name)
     expect(de).not.toContain('overlays')
+  })
+
+  it('warns that an `es` value with a Spain-only form needs an `es-419` fork, even when the batch forks none', () => {
+    const overlays = buildBrief({ ...opts, langs: ['es'] }).sections.find((section) => section.name === 'overlays')
+    expect(overlays?.text).toContain('It forks none of this batch yet.')
+    expect(overlays?.text).toMatch(/Spain-only form.*`Ajustes`.*`es-419` fork.*i18n-es-overlay\.test\.ts.*fails/s)
+  })
+
+  it('points Portuguese at the Brazilian pile, which its style guide requires', () => {
+    const single = buildBrief({ ...opts, langs: ['pt'] }).sections.find((section) => section.name === 'header')
+    expect(single?.text).toContain('/pile/pt-BR/')
+    const multi = buildBrief({ ...opts, langs: ['nl', 'pt'] }).sections.find((section) => section.name === 'header')
+    expect(multi?.text).toMatch(/pt: `\/pile\/pt-BR\/`/)
   })
 
   it('names the other keys stale in the target locales, so an English edit outside the batch is not missed', () => {

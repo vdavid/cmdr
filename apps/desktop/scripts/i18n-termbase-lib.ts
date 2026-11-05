@@ -22,12 +22,22 @@ import { isRawKey, visibleLiterals } from './i18n-catalog-lib.ts'
 export interface Concept {
   en: string
   match: string[]
-  /** same syntax as `match`; a text it hits doesn't count for the concept (another English sense) */
-  notMatch?: string[]
+  /**
+   * a text a string form hits doesn't count for the concept (another English sense,
+   * same syntax as `match`); a `{ key, why }` entry excludes that one message key
+   */
+  notMatch?: NotMatchEntry[]
   sense: string
   distinct?: string[]
   note?: string
 }
+
+/**
+ * One `notMatch` exclusion: a form over the English (`"math operation"`), or one
+ * message key whose English reads the same but means another sense (`Archive`, the
+ * zip noun, vs archiving a chat), where no phrase in the text tells them apart.
+ */
+export type NotMatchEntry = string | { key: string; why: string }
 
 /** `concepts.json` (or a locale's `concepts-proposed.json`): concept ID → concept. */
 export type Concepts = Record<string, Concept>
@@ -309,30 +319,44 @@ function stripRawIdentifiers(value: string): string {
   return text.replace(/\]\([^)\s]*\)/g, ']')
 }
 
-/** Compiled matchers, one per concept, reused across a run. */
-export type ConceptMatchers = Map<string, (text: string) => boolean>
+/**
+ * Compiled matchers, one per concept, reused across a run. Pass the message `key`
+ * the text came from so a key-scoped `notMatch` can exclude it; without one, only
+ * the form exclusions apply.
+ */
+export type ConceptMatchers = Map<string, (text: string, key?: string) => boolean>
 
 /**
  * Compiles every concept's matcher once: its `match` hits AND its `notMatch`
  * doesn't. `notMatch` carries the English-sense exclusions ("come back" is not the
  * Back button) once for every locale, rather than as the same `exceptions` entry
- * repeated in each `terms.json`.
+ * repeated in each `terms.json`. A `{ key }` entry does the same for one key whose
+ * English no phrase can tell apart.
  */
 export function compileConcepts(concepts: Concepts): ConceptMatchers {
   const matchers: ConceptMatchers = new Map()
   for (const [id, concept] of Object.entries(concepts)) {
+    const entries: unknown[] = Array.isArray(concept.notMatch) ? concept.notMatch : []
     const hits = compileMatch(Array.isArray(concept.match) ? concept.match : [])
-    const excluded = compileMatch(Array.isArray(concept.notMatch) ? concept.notMatch : [])
-    matchers.set(id, (text) => hits(text) && !excluded(text))
+    const excluded = compileMatch(entries.filter((entry): entry is string => typeof entry === 'string'))
+    const excludedKeys = new Set(entries.flatMap((entry) => notMatchKey(entry) ?? []))
+    matchers.set(id, (text, key) => hits(text) && !excluded(text) && !(key !== undefined && excludedKeys.has(key)))
   }
   return matchers
 }
 
-/** Every concept ID whose `match` hits `text`, sorted. */
-export function conceptsInText(concepts: Concepts | ConceptMatchers, text: string): string[] {
+/** The key a key-scoped `notMatch` entry names, or `undefined` for a form (or a malformed entry). */
+export function notMatchKey(entry: unknown): string | undefined {
+  if (typeof entry !== 'object' || entry === null) return undefined
+  const key: unknown = (entry as Record<string, unknown>).key
+  return typeof key === 'string' ? key : undefined
+}
+
+/** Every concept ID whose `match` hits `text` (from message `key`, when given), sorted. */
+export function conceptsInText(concepts: Concepts | ConceptMatchers, text: string, key?: string): string[] {
   const matchers = concepts instanceof Map ? concepts : compileConcepts(concepts)
   const hits: string[] = []
-  for (const [id, hit] of matchers) if (hit(text)) hits.push(id)
+  for (const [id, hit] of matchers) if (hit(text, key)) hits.push(id)
   return hits.sort()
 }
 

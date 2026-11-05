@@ -7,9 +7,9 @@ map: `README.md`.
 
 The pile is language-first: `_ignored/i18n/<tag>/<source>/…`, 207 locale folders. Inside each `<tag>` the sources are
 subdirs (`macOS/`, `microsoft-terminology/`, `microsoft-style-guides/`, `gnome-nautilus/`, `xfce-thunar/`,
-`total-commander/`, `double-commander/`, `kde-dolphin/`), present only where that source has the language. A few folders
-exist for a single source only: `ksh`/Kölsch (Total Commander), and `se`, `csb`, `hne`, `hsb`, `sr-Latn-ije` (KDE
-Dolphin).
+`total-commander/`, `double-commander/`, `kde-dolphin/`, `git/`), present only where that source has the language. A few
+folders exist for a single source only: `ksh`/Kölsch (Total Commander), and `se`, `csb`, `hne`, `hsb`, `sr-Latn-ije`
+(KDE Dolphin).
 
 `<tag>` is a BCP-47 locale, derived losslessly from each source's native code — punctuation and script-modifier
 normalization only, never region↔script remapping:
@@ -27,6 +27,8 @@ normalization only, never region↔script remapping:
 - **kde-dolphin**: KDE's `po/<lang>/` dir codes, same `_`→`-` and `@mod`→`-Subtag` normalization (`en_GB`→`en-GB`,
   `ca@valencia`→`ca-valencia`, `uz@cyrillic`→`uz-Cyrl`, `be@latin`→`be-Latn`). Serbian ijekavian aligns to existing
   siblings: `sr@ijekavian`→`sr-ije`, `sr@ijekavianlatin`→`sr-Latn-ije`.
+- **git**: gettext `.po` filename codes, same normalization (`pt_BR`→`pt-BR`, `pt_PT`→`pt-PT`, `zh_CN`→`zh-CN`,
+  `zh_TW`→`zh-TW`).
 - **total-commander**: TC's own 3-letter codes (installer-bundled: `HUN`→`hu`, `DEU`→`de`, `CHN`→`zh-CN`, `SK`→`sk`
   Slovak, `SVN`→`sl` Slovene, `NOR`→`nb`, …) and the additional-language zip slugs (`wcmd_ptg`→`pt-BR`, `wcmd_tw`→
   `zh-TW`, `wcmd_loc_srb`→`sr-Cyrl`, `wcmd_loc_srl`→`sr-Latn`, `wcmd_esa`→`es-419`, `wcmd_koe`→`ksh`, …), name-matched
@@ -152,6 +154,18 @@ them after a pile rebuild:
     `https://www.ghisler.com/languages.htm`), downloaded 2026-06-20.
   - Re-download the installer / zips to refresh against a newer TC version.
 
+### git (Tier 3, git domain)
+
+- **What**: git's own translation catalogs (`.po`), the authoritative wording for git concepts in each language
+  (detached HEAD, unborn branch, ahead/behind, uncommitted changes, stash, worktree). Use it for Cmdr's git surfaces
+  (the branch pill, the `.git` portal, git errors); it says nothing about general file operations.
+- **Layout**: `<tag>/git/git.po`.
+- **Coverage**: 22 languages (`af`, `bg`, `ca`, `de`, `el`, `es`, `fr`, `ga`, `id`, `is`, `it`, `ko`, `pl`, `pt-BR`,
+  `pt-PT`, `ru`, `sv`, `tr`, `uk`, `vi`, `zh-CN`, `zh-TW`), ~16 MB. No `hu`, `nl`, `cs`, or `ja`.
+- **License**: GPL-2.0 (reference use; don't copy strings verbatim).
+- **Provenance**: `po/*.po` from `https://github.com/git/git` at tag `v2.56.0` (`a018953688`), raw fetch 2026-11-05 by
+  `_extract/git-po-fetch/fetch.sh`. Re-run it with a newer release tag to refresh.
+
 ## Decisions made / open items
 
 - **Orthodox file managers added as a domain source (2026-06-20).** Total Commander + Double Commander joined the pile
@@ -170,6 +184,10 @@ them after a pile rebuild:
   `KDE/dolphin` carries a populated `po/<lang>/dolphin.po` (scripty l10n sync), so it fetches as cleanly as Nautilus,
   Thunar, and Double Commander — no SVN, no per-language l10n clone. At 92 languages it's now the broadest file-manager
   cross-language source. Single-pane explorer family, so it complements Nautilus/Thunar, not the orthodox TC/DC pair.
+
+- **git (Tier 3, git domain) — collected 2026-11-05.** No other tier named git's vocabulary, so translators mined git's
+  `po/` live for the branch pill (sv for `git-detached`, `git-unborn`, `git-dirty`). It's the git project's own
+  translation, community-made like the file-manager corpora, so it sits at Tier 3, scoped to git concepts.
 
 ## Notes
 

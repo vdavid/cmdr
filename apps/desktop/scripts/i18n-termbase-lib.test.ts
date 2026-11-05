@@ -107,6 +107,19 @@ describe('conceptsInText', () => {
     expect(conceptsInText(withNot, 'A math operation failed')).toEqual([])
     expect(conceptsInText(withNot, 'Operation')).toEqual([])
   })
+  it('drops a concept for the one key a key-scoped notMatch names, and nowhere else', () => {
+    const scoped: Concepts = {
+      'archive-chat': {
+        en: 'archive',
+        match: ['archive'],
+        notMatch: [{ key: 'list.rowKind.archive', why: 'the zip noun' }],
+        sense: 's',
+      },
+    }
+    expect(conceptsInText(scoped, 'Archive', 'list.rowKind.archive')).toEqual([])
+    expect(conceptsInText(scoped, 'Archive', 'chat.archive')).toEqual(['archive-chat'])
+    expect(conceptsInText(scoped, 'Archive')).toEqual(['archive-chat'])
+  })
   it('returns nothing on a miss', () => {
     expect(conceptsInText(concepts, 'Nothing here')).toEqual([])
   })

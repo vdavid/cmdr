@@ -312,14 +312,16 @@ The routine maintenance loop, run for every change that adds or edits user-facin
 
 1. **Add or edit the `en` key** with a `@key.description` that meets the bar (`messages/DETAILS.md` § `@key` metadata
    schema, noting the fragment-key and pass-through-placeholder requirements). Run `pnpm intl:keys` to regenerate the
-   key union.
+   key union. An English edit also updates that key's description and every other description or string that quotes it,
+   in the same change: a stale quote sends translators after wording that no longer exists.
 2. **Propagate the keys to every locale**: run `node apps/desktop/scripts/sync-locale-keys.ts` (all locales) — it adds
-   each new `en` key as an English skeleton with the correct `@key.sourceHash`, drops keys you removed, and preserves
-   existing translations. It moves KEYS only: a kept key's `@key` block, `sourceHash` included, is never rewritten, so
-   syncing can't clear a staleness warning that nobody has answered. Then hand each locale's new/changed keys to a
-   translator agent with a brief: `pnpm i18n:brief --lang <tag> --changed-since <ref>` (or `--keys` for the feature's
-   namespace). The coverage check lists exactly what's still English. A string that quotes a button or other label goes
-   in the same batch as that label's own key, so the translator quotes a label that exists instead of inventing one.
+   each new `en` key as an English skeleton with the correct `@key.sourceHash`, drops keys you removed (and every
+   termbase `exceptions` entry naming one, in `docs/i18n/<tag>/terms.json`), and preserves existing translations. It
+   moves KEYS only: a kept key's `@key` block, `sourceHash` included, is never rewritten, so syncing can't clear a
+   staleness warning that nobody has answered. Then hand each locale's new/changed keys to a translator agent with a
+   brief: `pnpm i18n:brief --lang <tag> --changed-since <ref>` (or `--keys` for the feature's namespace). The coverage
+   check lists exactly what's still English. A string that quotes a button or other label goes in the same batch as that
+   label's own key, so the translator quotes a label that exists instead of inventing one.
 3. **Run the checks** (same set as step 5 above). `desktop-i18n-stale` is the safety net here: editing an `en` value
    changes its hash, so EVERY locale's translation of that key reads as stale until re-translated and re-hashed. You
    can't silently leave a locale behind on a copy edit: the stale warning lists exactly which keys each locale owes.
