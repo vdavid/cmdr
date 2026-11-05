@@ -39,6 +39,18 @@
   "@securityNotices.smbSignatureRefused.disconnect": {
     "sourceHash": "acfc5be"
   },
+  "securityNotices.smbDirectSignatureRefused.title": "Cmdr 沒有直接連線到 {name}",
+  "@securityNotices.smbDirectSignatureRefused.title": {
+    "sourceHash": "63cc0e2"
+  },
+  "securityNotices.smbDirectSignatureRefused.titleUnnamed": "Cmdr 沒有直接連線到某個共享資料夾",
+  "@securityNotices.smbDirectSignatureRefused.titleUnnamed": {
+    "sourceHash": "653ae47"
+  },
+  "securityNotices.smbDirectSignatureRefused.body": "這個登入回覆沒有伺服器的簽章，所以 Cmdr 不信任它。網路裝置不穩定可能造成這種情況，有人竄改你和伺服器之間傳輸的資料也可能。這個共享資料夾會繼續使用系統連線。如果一直發生，請檢查你的網路。",
+  "@securityNotices.smbDirectSignatureRefused.body": {
+    "sourceHash": "78631bd"
+  },
   "securityNotices.updateNotGenuine.title": "Cmdr 沒有安裝這次更新：它不是正版的 Cmdr 版本",
   "@securityNotices.updateNotGenuine.title": {
     "sourceHash": "be55b39"

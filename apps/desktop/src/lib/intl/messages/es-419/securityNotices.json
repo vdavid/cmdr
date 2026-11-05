@@ -23,6 +23,18 @@
   "@securityNotices.smbSignatureRefused.body": {
     "sourceHash": "1d0191d"
   },
+  "securityNotices.smbDirectSignatureRefused.title": "Cmdr no se conectó directamente a {name}",
+  "@securityNotices.smbDirectSignatureRefused.title": {
+    "sourceHash": "be86350"
+  },
+  "securityNotices.smbDirectSignatureRefused.titleUnnamed": "Cmdr no se conectó directamente a un recurso compartido",
+  "@securityNotices.smbDirectSignatureRefused.titleUnnamed": {
+    "sourceHash": "c85123b"
+  },
+  "securityNotices.smbDirectSignatureRefused.body": "La respuesta al inicio de sesión no llevaba la firma del servidor, así que Cmdr no confió en ella. Puede deberse a un dispositivo de red inestable o a que alguien esté manipulando el tráfico entre tú y el servidor. El recurso compartido sigue usando la conexión del sistema. Si sigue pasando, comprueba tu red.",
+  "@securityNotices.smbDirectSignatureRefused.body": {
+    "sourceHash": "8265e81"
+  },
   "securityNotices.updateNotGenuine.title": "Cmdr no instaló esta actualización: no es una versión auténtica de Cmdr",
   "@securityNotices.updateNotGenuine.title": {
     "sourceHash": "25d4814"

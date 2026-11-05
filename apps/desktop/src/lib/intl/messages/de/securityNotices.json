@@ -39,6 +39,18 @@
   "@securityNotices.smbSignatureRefused.disconnect": {
     "sourceHash": "acfc5be"
   },
+  "securityNotices.smbDirectSignatureRefused.title": "Cmdr hat sich nicht direkt mit {name} verbunden",
+  "@securityNotices.smbDirectSignatureRefused.title": {
+    "sourceHash": "63cc0e2"
+  },
+  "securityNotices.smbDirectSignatureRefused.titleUnnamed": "Cmdr hat sich nicht direkt mit einer Freigabe verbunden",
+  "@securityNotices.smbDirectSignatureRefused.titleUnnamed": {
+    "sourceHash": "653ae47"
+  },
+  "securityNotices.smbDirectSignatureRefused.body": "Die Antwort auf die Anmeldung war nicht vom Server signiert, deshalb hat Cmdr ihr nicht vertraut. Das kann an einem unzuverlässigen Netzwerkgerät liegen, aber auch daran, dass jemand den Datenverkehr zwischen dir und dem Server manipuliert. Die Freigabe bleibt bei der Systemverbindung. Wenn das immer wieder passiert, prüfe dein Netzwerk.",
+  "@securityNotices.smbDirectSignatureRefused.body": {
+    "sourceHash": "78631bd"
+  },
   "securityNotices.updateNotGenuine.title": "Cmdr hat dieses Update nicht installiert: Es ist keine echte Version von Cmdr",
   "@securityNotices.updateNotGenuine.title": {
     "sourceHash": "be55b39"
