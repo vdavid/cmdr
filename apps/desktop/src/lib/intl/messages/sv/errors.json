@@ -2613,6 +2613,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "Anslutningen till den här delade mappen är inte krypterad",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "Inställningen ”Kräv alltid SMB-kryptering” är aktiverad i Cmdr och anslutningen till `{path}` kan inte krypteras, så Cmdr öppnade inte mappen. Inget skickades över den anslutningen.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Så här kan du prova:\n- Logga in med ett konto: gästanslutningar kan inte krypteras\n- Slå på SMB-kryptering på servern\n- Stäng av ”Kräv alltid SMB-kryptering” i Inställningar, om du inte behöver inställningen",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "Anslutningen till den här delade mappen kan inte krypteras och inställningen ”Kräv alltid SMB-kryptering” är aktiverad i Cmdr.",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "Okrypterad anslutning",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "Anslutningen till den delade mappen kan inte krypteras och inställningen ”Kräv alltid SMB-kryptering” är aktiverad i Cmdr, så Cmdr stoppade åtgärden.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Logga in med ett konto i stället för som gäst, eller slå på SMB-kryptering på servern. Du kan också stänga av ”Kräv alltid SMB-kryptering” i Inställningar.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "Den här mappen finns på en annan server",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

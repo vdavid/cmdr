@@ -2613,6 +2613,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "Підʼєднання до цієї спільної папки не зашифроване",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "У Cmdr увімкнено «Завжди вимагати шифрування SMB», а підʼєднання до папки `{path}` не можна зашифрувати, тому Cmdr не відкрив цю папку. Через це підʼєднання нічого не передавалося.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Що можна спробувати:\n- Увійдіть з обліковим записом: гостьові підʼєднання не можна зашифрувати\n- Увімкніть шифрування SMB на сервері\n- Вимкніть «Завжди вимагати шифрування SMB» в Параметрах, якщо вам це не потрібно",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "Підʼєднання до цієї спільної папки не можна зашифрувати, а в Cmdr увімкнено «Завжди вимагати шифрування SMB».",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "Підʼєднання не зашифроване",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "Підʼєднання до спільної папки не можна зашифрувати, а в Cmdr увімкнено «Завжди вимагати шифрування SMB», тому Cmdr зупинив операцію.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Увійдіть з обліковим записом, а не як гість, або ввімкніть шифрування SMB на сервері. Також можна вимкнути «Завжди вимагати шифрування SMB» в Параметрах.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "Ця папка на іншому сервері",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

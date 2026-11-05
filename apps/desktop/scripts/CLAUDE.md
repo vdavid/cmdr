@@ -19,7 +19,8 @@ launch boundary, the llama-server fetch, and the type-drift check.
 - **`gen-boot-guard-lib.ts`**: the old-WebKit block screen's strings, spliced in by `vite.config.js` (nothing
   committed). `src/lib/utils/DETAILS.md` § Old-WebKit boot guard
 - **`vite-webkit-floor.ts`**: fails a build Safari 15.4 can't run (regex, API: `vite-webkit-*-floor.ts`)
-- **`precompress-demo.ts`**: the demo's `.br` files (`apps/website/DETAILS.md` § Browser demo)
+- **`precompress-demo.ts`**: the demo's `.br` files; **`demo-sample-docs/`**: its sample PDFs' sources
+  (`src/lib/demo/DETAILS.md`)
 - **`i18n-*.ts`**: catalog lib, locale checks, generators, key sync, `pnpm i18n:brief`, and the termbase/mechanics
   checks (`docs/i18n/termbase.md`)
 - **`gen-analytics-defaults.ts`** (+ `-lib.ts`): the per-version settings-defaults manifest the dashboard resolves

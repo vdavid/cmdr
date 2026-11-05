@@ -95,9 +95,9 @@ slow lane, and its own job in `slow-checks.yml`). The scope, adding a module, an
 
 `#[test] fn shuttle_*` cells run a crate's real concurrent code under Shuttle's PCT scheduler, which picks who runs next
 at every lock and send, so a race the machine rarely produces shows up within a few hundred schedules and replays from
-the schedule it prints. The crate's `shuttle` feature swaps its primitives for Shuttle's; `pnpm check shuttle` (slow, CI
-every six days) builds and runs them in a target dir of their own. Today: the in-flight ledger and the pause gate
-(`crates/cmdr-operations/DETAILS.md` § "Thread interleavings (Shuttle)"). How it's wired and adding a crate:
+the schedule it prints. The crate's `shuttle` feature swaps its primitives for Shuttle's; `pnpm check shuttle` (slow; in
+CI, a job of the Rust lane) builds and runs them in a target dir of their own. Today: the in-flight ledger and the pause
+gate (`crates/cmdr-operations/DETAILS.md` § "Thread interleavings (Shuttle)"). How it's wired and adding a crate:
 `scripts/check/checks/DETAILS.md` § "Interleaving tests (Shuttle)".
 
 ### Kani proofs (every input up to a bound)
@@ -107,9 +107,10 @@ decision that guards user data or blocks a path escape it proves what proptest a
 `#[kani::proof]` fns in a `#[cfg(kani)] mod proofs;` beside the code (`crates/cmdr-archive/src/read/name/proofs.rs`,
 `crates/cmdr-operation-log/src/rollback/proofs.rs`), so they reach private items and never compile in a normal build
 (`cfg(kani)` is registered in the root `Cargo.toml`'s lints). Kani isn't a dependency: `cargo kani` injects its `kani`
-crate, so the shipped graph and `cargo deny` never see it. `pnpm check kani` (slow, CI-only, its own `slow-checks.yml`
-job) installs the pinned Kani (`desktop-rust-kani.go`), which brings its own nightly and CBMC, and runs each crate's
-proofs into `target/kani/`. One proof by hand: `cargo kani -p <crate> --lib --harness <path> --exact`.
+crate, so the shipped graph and `cargo deny` never see it. `pnpm check kani` (slow; in CI, a job of the Rust lane, so a
+stale proof blocks the land) installs the pinned Kani (`desktop-rust-kani.go`), which brings its own nightly and CBMC,
+and runs each crate's proofs into `target/kani/`. One proof by hand:
+`cargo kani -p <crate> --lib --harness <path> --exact`.
 
 - **Each proof states its bound and assumptions** in its module docs, and has a failing mutant on record (§ "Property
   mutants" below; its property is `kani:<crate>/<module path>::<fn>`).
@@ -127,10 +128,9 @@ proofs into `target/kani/`. One proof by hand: `cargo kani -p <crate> --lib --ha
 
 Each property (a fuzz target's assertion, a Kani proof, or a Shuttle interleaving test) carries a recorded one-line
 change that must turn it red, in a `*.mutants.json` beside it. `pnpm check mutant-records` (in `--fast`) checks every
-record still applies; `pnpm check property-mutants` (minutes, CI every six days) applies each in a mirror of the tree
-and runs its catcher. Unlike `cargo-mutants`, which samples mutants for coverage triage, these are hand-picked and
-permanent: one per assertion, kept true as the code moves. Format and how-to: `scripts/check/checks/DETAILS.md` §
-"Property mutants".
+record still applies; `pnpm check property-mutants` (minutes, CI nightly) applies each in a mirror of the tree and runs
+its catcher. Unlike `cargo-mutants`, which samples mutants for coverage triage, these are hand-picked and permanent: one
+per assertion, kept true as the code moves. Format and how-to: `scripts/check/checks/DETAILS.md` § "Property mutants".
 
 ### `cargo-mutants` (mutation testing)
 

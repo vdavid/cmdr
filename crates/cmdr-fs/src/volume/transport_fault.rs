@@ -80,6 +80,7 @@ impl VolumeError {
             | Self::AmbiguousName(_) // two stored names fit; asking again asks the same question
             | Self::DuplicateName(_) // two siblings share the name until someone renames one
             | Self::SignatureInvalid(_) // a refused reply, and a possible sign of tampering
+            | Self::EncryptionRequired(_) // the same server can't encrypt until it or the setting changes
             | Self::IoError { raw_os_error: None, .. } // nothing to classify on
             | Self::NeedsPassword { .. }
             | Self::FriendlyGit(_) => None,

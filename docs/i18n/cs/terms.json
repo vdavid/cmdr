@@ -1411,7 +1411,7 @@
   },
   "reconnect": {
     "chosen": "znovu připojit",
-    "accept": ["znovu připoj", "opětovn", "obnovit připojení", "znovu se připoj"],
+    "accept": ["znovu připoj", "opětovn", "obnovit připojení", "znovu se připoj", "znovu nepřipoj"],
     "forms": "button → Znovu připojit; progress → Znovu se připojuje…",
     "confidence": "high",
     "sources": "macOS SystemSettings (Automaticky znovu připojovat, budete muset znovu připojit)",
@@ -2861,7 +2861,8 @@
       "připojit přímo",
       "připojit se přímo",
       "připojeno přímo",
-      "připojí přímo"
+      "připojí přímo",
+      "připojil přímo"
     ],
     "forms": "n.: connect directly → připojit se přímo; Try connecting directly → Zkusit se připojit přímo; Connected directly → Připojeno přímo; its opposite, the system connection → systémové připojení",
     "confidence": "high",

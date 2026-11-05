@@ -36,7 +36,7 @@ Both stores are reached with the Cloudflare API token already on this machine:
 
 Cloudflare account id: `6a4433bf11c3cf86feda057f76f47991` (also printed by `wrangler whoami`; not a secret).
 
-## Feedback (D1 table `feedback` in `cmdr-telemetry`)
+## Feedback (D1 table `feedback` in `cmdr-telemetry-eu`)
 
 One row per submission, written by `POST /feedback`. Columns (see `apps/api-server/migrations/0007_feedback.sql`):
 `id, created_at, feedback, email, app_version, os_version, build_mode, error_report_id`. `email` is the optional
@@ -68,7 +68,7 @@ message that arrived since the last one (none arrived, no email), each entry lin
 `FEEDBACK_NOTIFICATION_EMAIL`, falling back to `CRASH_NOTIFICATION_EMAIL`. Rendering, the reply-to rule, and why the job
 stamps `notified_at` after the send rather than before: `apps/api-server/DETAILS.md` § Cron handler.
 
-## Error reports (R2 bucket `cmdr-error-reports`)
+## Error reports (R2 bucket `cmdr-error-reports-eu`)
 
 Bundles are keyed `error-reports/{prod|dev}/YYYY-MM-DD/{ERR-XXXXX}-{uuid}.zip`. Default to the `prod` prefix only; `dev`
 is mostly E2E/test noise. 90-day lifecycle TTL on the bucket.
@@ -99,7 +99,7 @@ TOKEN=$(secret CLOUDFLARE_API_TOKEN)
 for i in $(seq 0 90); do
   d=$(date -v-${i}d +%Y-%m-%d)   # GNU date: date -d "-$i day" +%Y-%m-%d
   hit=$(timeout 15 curl -s --max-time 12 </dev/null \
-    "https://api.cloudflare.com/client/v4/accounts/$ACC/r2/buckets/cmdr-error-reports/objects?prefix=error-reports/prod/$d&per_page=100" \
+    "https://api.cloudflare.com/client/v4/accounts/$ACC/r2/buckets/cmdr-error-reports-eu/objects?prefix=error-reports/prod/$d&per_page=100" -H "cf-r2-jurisdiction: eu" \
     -H "Authorization: Bearer $TOKEN" | jq -r '.result[]?.key' | grep ERR-ABXW4)
   [ -n "$hit" ] && { echo "$hit"; break; }
 done
@@ -120,7 +120,7 @@ the window without downloading anything:
 
 ```bash
 ACC=6a4433bf11c3cf86feda057f76f47991
-curl -s --max-time 25 "https://api.cloudflare.com/client/v4/accounts/$ACC/r2/buckets/cmdr-error-reports/objects?prefix=error-reports/prod/2026-05-30&per_page=100" \
+curl -s --max-time 25 "https://api.cloudflare.com/client/v4/accounts/$ACC/r2/buckets/cmdr-error-reports-eu/objects?prefix=error-reports/prod/2026-05-30&per_page=100" -H "cf-r2-jurisdiction: eu" \
   -H "Authorization: Bearer $TOKEN" \
   | jq -r '.result[]? | [.custom_metadata.id, .custom_metadata.kind, .custom_metadata.appVersion, .custom_metadata.osVersion, .last_modified] | @tsv'
 ```
@@ -137,7 +137,7 @@ Download a bundle by URL-encoding the slashes in its key:
 
 ```bash
 enc=$(printf '%s' "$key" | sed 's|/|%2F|g')
-curl -s --max-time 60 -o "$id.zip" "https://api.cloudflare.com/client/v4/accounts/$ACC/r2/buckets/cmdr-error-reports/objects/$enc" \
+curl -s --max-time 60 -o "$id.zip" "https://api.cloudflare.com/client/v4/accounts/$ACC/r2/buckets/cmdr-error-reports-eu/objects/$enc" -H "cf-r2-jurisdiction: eu" \
   -H "Authorization: Bearer $TOKEN"
 ```
 

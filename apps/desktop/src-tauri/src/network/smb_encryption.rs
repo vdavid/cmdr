@@ -38,7 +38,8 @@ pub fn on_policy_applied(new: &ManagedPolicy) {
 
 fn apply(policy: &ManagedPolicy) {
     let required = effective(USER_CHOICE.load(Ordering::Acquire), policy);
-    if required != cmdr_smb::SmbEncryption::is_required() {
+    let changed = required != cmdr_smb::SmbEncryption::is_required();
+    if changed {
         log::info!(
             target: "network::smb_encryption",
             "SMB encryption is {} for sessions built from now on",
@@ -46,6 +47,12 @@ fn apply(policy: &ManagedPolicy) {
         );
     }
     cmdr_smb::SmbEncryption::set_required(required);
+    // The kernel mounts follow at once: they're where the requirement would otherwise
+    // have a hole (`smb_mount_gate`). Off the caller, since it probes mounts and swaps
+    // registry entries.
+    if changed {
+        tauri::async_runtime::spawn(crate::network::smb_mount_gate::follow_requirement());
+    }
 }
 
 #[cfg(test)]

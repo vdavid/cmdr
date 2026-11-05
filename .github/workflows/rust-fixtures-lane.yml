@@ -94,7 +94,8 @@ jobs:
           df -h /
           docker system df
 
-      # Last, with no `if:` (see `rust-lane.yml`). ❌ Nothing after it.
+      # Last, with no `if:`, so it runs only when every step above passed: it records that this
+      # lane's exact inputs passed (`scripts/lane-markers/DETAILS.md`). ❌ Nothing after it.
       - name: Save the lane marker
         uses: ./.github/actions/lane-marker
         with:

@@ -22,6 +22,7 @@ import { connectPlace } from '#lib/servers/connect-flow.js'
 import { openSignInForPlace } from '#lib/servers/open-sign-in.js'
 import { isServerVolumeId } from '#lib/servers/server-path-utils.js'
 import { reconnectCycleLines, smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
+import { openSettingsToSmbEncryption } from '../network/smb-encryption-setting'
 import { hasReconnectLoop } from '../navigation/connection-state'
 import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
@@ -132,6 +133,15 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
         // "Try another password" is the signed-out banner's own Sign in, and Disconnect the
         // cycle's: the share is SMB, so it unmounts rather than dropping a place.
         return { kind: 'guest_session_refused', signIn: handleSignIn, disconnect: handleSmbReconnectDisconnect }
+      case 'encryption-required':
+        // The server can't encrypt and the setting requires it: no retry (the answer can't change
+        // on its own), the way to the setting, and Disconnect (#966).
+        return {
+          kind: 'refused',
+          refusal: tString('servers.paneState.encryptionRequired'),
+          openSettings: () => void openSettingsToSmbEncryption(),
+          disconnect: handleSmbReconnectDisconnect,
+        }
       case 'gave-up':
         return null
     }

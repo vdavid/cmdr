@@ -1300,9 +1300,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "A Cmdr az SMB-megosztásokhoz nyitott saját kapcsolatait akkor is titkosítja, ha a szerver nem kéri, és nem csatlakozik olyan szerverhez, amely nem tud titkosítani. A vendégkapcsolatok nem titkosíthatók, ezért be kell jelentkezned. Az új kapcsolatokra vonatkozik.",
+  "settings.network.requireSmbEncryption.description": "A Cmdr akkor is titkosítja az SMB-megosztásokhoz nyitott kapcsolatait, ha a szerver nem kéri, és nem nyit meg olyan megosztást, amelynek a kapcsolata nem titkosítható, azt sem, amelyhez a Mac-ed titkosítás nélkül csatlakozott. A vendégkapcsolatok nem titkosíthatók, ezért be kell jelentkezned. A Cmdr már megnyitott kapcsolatai változatlanok maradnak, amíg újra nem csatlakoznak.",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "4b8d40b"
+    "sourceHash": "8c27a6c"
   },
   "settings.network.requireSmbEncryption.keywords": "titkosít, titkosított, rejtjelezés, biztonság, biztonságos, adatvédelem, védelem",
   "@settings.network.requireSmbEncryption.keywords": {

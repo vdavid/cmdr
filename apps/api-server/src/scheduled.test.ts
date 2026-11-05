@@ -248,19 +248,19 @@ describe('handleDbSizeCheck', () => {
   }
 
   it('alerts on the day the size crosses a step of the cap, with the row counts', async () => {
-    const { d1 } = sizedDb(210, [['2026-10-22', 195]])
+    const { d1 } = sizedDb(4300, [['2026-10-22', 4000]])
 
     await handleDbSizeCheck(createBaseEnv({ TELEMETRY_DB: d1 }) as never, today)
 
     expect(mockSend).toHaveBeenCalledOnce()
     const emailCall = lastEmailCall()
-    expect(emailCall.subject).toBe("Cmdr: telemetry DB is 210 MB, 42% of D1's 500 MB cap")
+    expect(emailCall.subject).toBe("Cmdr: telemetry DB is 4300 MB, 42% of D1's 10240 MB cap")
     expect(emailCall.html).toContain('crash_reports')
   })
 
   // The regression: past the line, the old check mailed the same warning every single day.
   it('stays quiet the day after, while the size sits between steps', async () => {
-    const { d1 } = sizedDb(215, [['2026-10-22', 210]])
+    const { d1 } = sizedDb(4400, [['2026-10-22', 4300]])
 
     await handleDbSizeCheck(createBaseEnv({ TELEMETRY_DB: d1 }) as never, today)
 
@@ -279,7 +279,7 @@ describe('handleDbSizeCheck', () => {
   })
 
   it('alerts once with no earlier sample when the size is already past a step', async () => {
-    const { d1 } = sizedDb(310)
+    const { d1 } = sizedDb(6200)
 
     await handleDbSizeCheck(createBaseEnv({ TELEMETRY_DB: d1 }) as never, today)
 
@@ -287,15 +287,15 @@ describe('handleDbSizeCheck', () => {
   })
 
   it('says how fast it grows and when the cap arrives at that pace', async () => {
-    const { d1 } = sizedDb(210, [
-      ['2026-09-23', 150],
-      ['2026-10-22', 198],
+    const { d1 } = sizedDb(4300, [
+      ['2026-09-23', 3100],
+      ['2026-10-22', 4000],
     ])
 
     await handleDbSizeCheck(createBaseEnv({ TELEMETRY_DB: d1 }) as never, today)
 
     const { html } = lastEmailCall()
-    expect(html).toContain('about 60 MB a month')
+    expect(html).toContain('about 1200 MB a month')
     expect(html).toContain('about five months')
   })
 

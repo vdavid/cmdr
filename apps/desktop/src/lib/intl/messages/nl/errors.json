@@ -2613,6 +2613,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "De verbinding met deze gedeelde map is niet versleuteld",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "In Cmdr staat ‘Altijd SMB-versleuteling vereisen’ aan en de verbinding met `{path}` kan niet worden versleuteld, dus Cmdr heeft deze map niet geopend. Er is niets via die verbinding verstuurd.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Dit kun je proberen:\n- Log in met een account: gastverbindingen kunnen niet worden versleuteld\n- Zet SMB-versleuteling aan op de server\n- Zet ‘Altijd SMB-versleuteling vereisen’ uit in Instellingen, als je het niet nodig hebt",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "De verbinding met deze gedeelde map kan niet worden versleuteld en in Cmdr staat ‘Altijd SMB-versleuteling vereisen’ aan.",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "Verbinding niet versleuteld",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "De verbinding met de gedeelde map kan niet worden versleuteld en in Cmdr staat ‘Altijd SMB-versleuteling vereisen’ aan, dus Cmdr heeft de bewerking gestopt.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Log in met een account in plaats van als gast, of zet SMB-versleuteling aan op de server. Je kunt ‘Altijd SMB-versleuteling vereisen’ ook uitzetten in Instellingen.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "Deze map staat op een andere server",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

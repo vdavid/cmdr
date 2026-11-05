@@ -254,9 +254,33 @@ What changes in this module while it's on:
   `ShareListError::EncryptionRequired` with its own words (`errors.shareList.encryptionRequired`).
 - **A direct connection refused for it is `UpgradeFailure::EncryptionRequired`**, a stuck reason with its own sentence
   and no retry button (§ "Telling the user about a kernel-mount fallback").
-- **The kernel mount isn't covered.** macOS (or GVFS) negotiates it, and a share whose direct connection is refused
-  stays on it. Pinned by `smb_client_test.rs::smb_integration_required_encryption_sends_a_guest_listing_to_sign_in`
-  against the `guest` and `auth` fixtures (verified on smb2 0.41.0, 2026-11-05).
+  Pinned by `smb_client_test.rs::smb_integration_required_encryption_sends_a_guest_listing_to_sign_in` against the
+  `guest` and `auth` fixtures (verified on smb2 0.41.0, 2026-11-05).
+- **The kernel mount is browsed only once it proves encrypted** (`smb_mount_gate.rs`, #966). macOS (or GVFS)
+  negotiates the mount on its own terms, and against a server that only offers encryption it runs in the clear, so a
+  share whose direct connection is refused, switched off, or not up yet would otherwise be browsed unencrypted.
+  - **Decision**: refuse, ❌ never browse with a warning. The setting promises Cmdr doesn't use an unencrypted SMB
+    connection, and `RequireSMBEncryption` makes the same promise to an organization. Not hostile in practice: Samba
+    and most NAS boxes offer a cipher, so an account's direct session encrypts and replaces the mount within seconds.
+  - **How**: under the requirement, `mount_volume` / `os_mount_volume` register an SMB kernel mount as an
+    `UnverifiedSmbMount`, which answers `VolumeError::EncryptionRequired` (the pane's "This share's connection isn't
+    encrypted" with "Open SMB settings"; a transfer's own stopped state). A background probe reads
+    `smbutil statshares -m <root>` (`SMB_CURR_ENCRYPT_ALGORITHM`: `OFF`, or the cipher, like `AES-128-GCM`) and hands
+    an encrypted mount to the plain `LocalPosixVolume`. A listing or stat waits for that same probe, so a pane opened
+    meanwhile lists normally. ❗ Fail closed: a probe that can't tell (no row, a hung mount, Linux's GVFS, which says
+    nothing about encryption) keeps the share refused (verified on macOS 27.0.1 against the `auth` fixture, a copy of it
+    with `smb encrypt = required`, and a QNAP, 2026-11-05; snapshots in `smb_mount_gate_test.rs`).
+  - **Every SMB kernel-mount volume is built there**: `mount_registration` (sweep, mount watcher, adoption),
+    `file_system::register_discovered_volumes`, Linux's mount watcher, and `smb_upgrade::return_to_os_mount`.
+  - **A flip applies at once** (`smb_encryption::apply` → `follow_requirement`): each SMB kernel mount swaps between
+    the plain mount and the gate through `register_replacing_predecessor`, so work running on it finishes and open
+    panes re-list. Unlike a direct session, the mount's own session can't be rebuilt by Cmdr, so waiting for "the next
+    session" would never come. The gate also reads the switch per call, so a lifted requirement lists at once.
+  - **The pane heals when the direct session lands**: live retry starts a new spell on `os_mount` → `direct`
+    (`apps/desktop/src/lib/file-explorer/pane/live-retry.svelte.ts`).
+  - **No slow-connection notice for a refused mount**: `register_smb_volume` skips it when the direct connection was
+    refused for encryption and `smb_mount_gate::refuses` the mount, since "you're still connected through macOS" would
+    be untrue; the pane's refusal says why. An encrypted mount still gets the notice.
 
 ### A listing names each share once
 

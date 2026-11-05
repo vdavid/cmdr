@@ -106,6 +106,11 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       message: 'signature verification failed for READ (message id 412): mismatch',
     },
   },
+  smb_encryption_required: {
+    operationType: 'copy',
+    // "Always require SMB encryption" on, and a guest share that can't encrypt.
+    error: { type: 'smb_encryption_required', path: '/Volumes/public/photos/2026/DSC09241.arw' },
+  },
   destination_full: {
     operationType: 'copy',
     // A USB stick that filled up partway: the write refused, nothing measured.

@@ -45,6 +45,7 @@ const VOLUME_CASES: VolumeError[] = [
   { type: 'duplicateName', data: '/DCIM/IMG_0001.JPG' },
   { type: 'staleDestinationHandle', data: '/DCIM/Camera' },
   { type: 'signatureInvalid', data: 'the server READ response (message 7) has a signature that doesn’t match' },
+  { type: 'encryptionRequired', data: '/Volumes/public' },
   { type: 'ioError', data: { message: 'input/output error', rawOsError: 5 } },
   { type: 'needsPassword', data: { container: 'archive', wrongAttempt: false } },
   { type: 'needsPassword', data: { container: 'archive', wrongAttempt: true } },

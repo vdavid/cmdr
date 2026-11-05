@@ -2613,6 +2613,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "La connexion à ce partage n’est pas chiffrée",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "L’option « Toujours exiger le chiffrement SMB » est activée dans Cmdr et la connexion à `{path}` ne peut pas être chiffrée, donc Cmdr n’a pas ouvert ce dossier. Rien n’est passé par cette connexion.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Voici ce que vous pouvez essayer :\n- Identifiez-vous avec un compte : les connexions en tant qu’invité ne peuvent pas être chiffrées\n- Activez le chiffrement SMB sur le serveur\n- Désactivez « Toujours exiger le chiffrement SMB » dans les Réglages, si vous n’en avez pas besoin",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "La connexion à ce partage ne peut pas être chiffrée et l’option « Toujours exiger le chiffrement SMB » est activée dans Cmdr.",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "Connexion non chiffrée",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "La connexion au partage ne peut pas être chiffrée et l’option « Toujours exiger le chiffrement SMB » est activée dans Cmdr, donc Cmdr a arrêté l’opération.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Identifiez-vous avec un compte plutôt qu’en tant qu’invité, ou activez le chiffrement SMB sur le serveur. Vous pouvez aussi désactiver « Toujours exiger le chiffrement SMB » dans les Réglages.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "Ce dossier se trouve sur un autre serveur",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

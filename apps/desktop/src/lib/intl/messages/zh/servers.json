@@ -888,6 +888,10 @@
   "@servers.paneState.guestSessionRefused": {
     "sourceHash": "36ad371"
   },
+  "servers.paneState.encryptionRequired": "Cmdr 没有重新连接：服务器无法加密连接，而 Cmdr 已开启“始终要求 SMB 加密”。",
+  "@servers.paneState.encryptionRequired": {
+    "sourceHash": "f04a96a"
+  },
   "servers.paneState.guestSessionRefusedHint": "你要求用自己的账户登录，但服务器给的是客人会话。这通常说明密码不对。在极少数情况下，这说明有人在篡改连接。",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

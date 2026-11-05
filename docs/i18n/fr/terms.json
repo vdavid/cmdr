@@ -836,7 +836,7 @@
   },
   "direct-connection": {
     "chosen": "connexion directe",
-    "accept": ["se connecter directement", "connectez-vous directement"],
+    "accept": ["se connecter directement", "connectez-vous directement", "connecté directement"],
     "confidence": "high",
     "forms": "Asking for a direct connection to a share → Demande de connexion directe à un partage",
     "sources": "catalog (fileExplorer.pane.connectedDirectlyToast, settings.network.directSmbConnection.description)"
@@ -2682,7 +2682,7 @@
     "sources": "catalog (settings.operationLog.intro enregistre, settings.search.recentSearches.maxCount.description enregistrée); macOS has no data-recording sense (AppKit's only Record strings are media start/stop recording)"
   },
   "reconnect": {
-    "accept": ["reconnecte", "reconnexion"],
+    "accept": ["reconnecte", "reconnexion", "reconnecté"],
     "chosen": "se reconnecter",
     "confidence": "high",
     "decision": "Le hub des serveurs : la table",

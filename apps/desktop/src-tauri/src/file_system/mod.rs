@@ -166,12 +166,11 @@ fn register_discovered_volumes() {
         log::debug!("Registering {} attached volume(s)", attached.len());
         for location in attached {
             let mount = index_provider::mount_class_at(std::path::Path::new(&location.path));
-            let volume = Arc::new(LocalPosixVolume::on_mount(
+            let volume = crate::network::smb_mount_gate::mount_volume(
                 &location.name,
-                &location.path,
+                std::path::Path::new(&location.path),
                 mount,
-                crate::volume_host::host(),
-            ));
+            );
             get_volume_manager().register(&location.id, volume);
             log::debug!(
                 "  Registered attached volume: {} -> {}",
@@ -208,12 +207,11 @@ fn register_discovered_volumes() {
         log::debug!("Registering {} volume(s)", non_fav.len());
         for location in non_fav {
             let mount = index_provider::mount_class_at(std::path::Path::new(&location.path));
-            let volume = Arc::new(LocalPosixVolume::on_mount(
+            let volume = crate::network::smb_mount_gate::mount_volume(
                 &location.name,
-                &location.path,
+                std::path::Path::new(&location.path),
                 mount,
-                crate::volume_host::host(),
-            ));
+            );
             get_volume_manager().register(&location.id, volume);
             log::debug!(
                 "  Registered volume: {} -> {}",

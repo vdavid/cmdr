@@ -1,0 +1,99 @@
+/* Shared look of the demo's sample PDFs (`sample-*.html`): one A4 page, a FAKE watermark, a "sample" footer. */
+@page {
+  size: A4;
+  margin: 0;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  color: #1f2328;
+}
+.page {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  padding: 22mm 20mm;
+  overflow: hidden;
+}
+.watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-32deg);
+  padding: 0 24pt;
+  border: 10pt solid rgba(214, 48, 49, 0.13);
+  border-radius: 18pt;
+  font-size: 190pt;
+  font-weight: 800;
+  letter-spacing: 12pt;
+  color: rgba(214, 48, 49, 0.13);
+  white-space: nowrap;
+}
+.kicker {
+  font-size: 8pt;
+  font-weight: 700;
+  letter-spacing: 0.8pt;
+  text-transform: uppercase;
+  color: #8c959f;
+}
+h1 {
+  margin: 4pt 0 0;
+  font-size: 24pt;
+  font-weight: 600;
+  letter-spacing: -0.3pt;
+}
+h2 {
+  margin: 12mm 0 3mm;
+  font-size: 12pt;
+  color: #0969da;
+}
+p {
+  margin: 0 0 3mm;
+}
+.muted {
+  color: #57606a;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6mm 12mm;
+  margin-top: 10mm;
+}
+.box {
+  padding: 6mm;
+  border: 0.75pt solid #d0d7de;
+  border-radius: 4pt;
+}
+.big {
+  font-size: 20pt;
+  font-weight: 700;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10pt;
+}
+td {
+  padding: 6pt 0;
+  border-bottom: 0.75pt solid #d0d7de;
+}
+td:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+footer {
+  position: absolute;
+  right: 20mm;
+  bottom: 16mm;
+  left: 20mm;
+  padding-top: 6pt;
+  border-top: 0.75pt solid #d0d7de;
+  font-size: 8.5pt;
+  text-align: center;
+  color: #8c959f;
+}

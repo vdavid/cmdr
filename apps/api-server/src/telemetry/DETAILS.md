@@ -334,8 +334,8 @@ Three layers keep the bucket bounded:
    the LOW watermark, and re-runs `tryEvict`.
 3. **R2 lifecycle rule**: `expire-error-reports-90-days` expires objects under the `error-reports/` prefix after 90
    days, applied by `../../scripts/setup-cf-infra.sh` (live since 2026-10-05; verified with
-   `wrangler r2 bucket lifecycle list cmdr-error-reports`). ❗ It's prefix-scoped on purpose: the same bucket holds the
-   license backups under `backups/licenses/`, which an unscoped rule would delete. The bucket's other rule is
+   `wrangler r2 bucket lifecycle list cmdr-error-reports-eu -J eu`). ❗ It's prefix-scoped on purpose: the same bucket
+   holds the license backups under `backups/licenses/`, which an unscoped rule would delete. The bucket's other rule is
    Cloudflare's default 7-day abort of incomplete multipart uploads.
 
 **Amendment sidecars are never candidates in their own right.** `tryEvict` filters `.amend.json` objects out of the

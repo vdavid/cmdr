@@ -15,6 +15,7 @@
     import { getAppLogger } from '#lib/logging/logger.js'
     import { offersErrorReport } from '#lib/error-messages/listing-error.js'
     import ReportOffer from '#lib/error-reporter/ReportOffer.svelte'
+    import { openSettingsToSmbEncryption } from '../network/smb-encryption-setting'
 
     const log = getAppLogger('errorPane')
 
@@ -113,6 +114,7 @@
     }
 
     const isPermissionDenied = $derived(friendly.actionKind === 'open_privacy_settings')
+    const offersSmbEncryptionSetting = $derived(friendly.actionKind === 'open_smb_encryption_setting')
 
     // `retryHint` alone decides this: it IS the backend's "retrying might help"
     // signal, and it's deliberately set on Serious errnos (`friendly_error/errno.rs`'s
@@ -188,6 +190,12 @@
                     >{tString('fileExplorer.errorPane.openSystemSettings', {
                         systemSettings: systemStrings.systemSettings,
                     })}</Button
+                >
+            {/if}
+
+            {#if offersSmbEncryptionSetting}
+                <Button onclick={() => void openSettingsToSmbEncryption()}
+                    >{tString('fileExplorer.errorPane.openSmbEncryptionSetting')}</Button
                 >
             {/if}
 

@@ -41,8 +41,9 @@ Here, because the answer is yes:
   `ShareListError::NegotiationInvalid`) and a server requiring encryption the connection has no cipher for
   (`Error::EncryptionUnavailable`, by variant: `ShareListError::EncryptionUnavailable`), and Cmdr's own requirement the
   connection can't meet (`Error::EncryptionRequired`, by variant: `ShareListError::EncryptionRequired`, § "Requiring
-  encryption"). All three are connect-time answers; on a volume they arrive only through a rebuilt session, as an
-  `IoError` the reconnect backoff retries.
+  encryption"). All three are connect-time answers; on a volume they arrive only through a rebuilt session. The first
+  two still map to an `IoError` the reconnect backoff retries; `EncryptionRequired` maps to its own
+  `VolumeError::EncryptionRequired` and stops it (§ "Requiring encryption").
 - Every smb2 error on the main session passes ONE funnel, `SmbVolumeInner::note_smb_error` (called by
   `handle_smb_result`, the streaming-read producer, the random reader, and the copy scan's stat pipeline), which calls
   `session::report_security_refusal` to tell the host's `security_refusal` seam about a refused signature. A refused
@@ -884,9 +885,19 @@ The app's `network::smb_encryption` sets it to the setting OR the policy; nothin
 - **No CLI fallback under the requirement**: `smbutil` / `smbclient` don't know about it, so the app's listing skips
   them while it's on, and a guest listing refused for it asks for an account
   (`apps/desktop/src-tauri/src/network/DETAILS.md` § "Requiring SMB encryption").
+- **The kernel mount isn't this crate's**: the app gates it (`apps/desktop/src-tauri/src/network/DETAILS.md` §
+  "Requiring SMB encryption", `smb_mount_gate.rs`) and refuses an SMB mount that doesn't prove encrypted with the same
+  `VolumeError::EncryptionRequired`.
+- **A reconnect that can't encrypt is typed and final** (#966). `map_smb_error` reads `Error::EncryptionRequired` by
+  variant (smb2 files it under `ErrorKind::Unsupported`) into `VolumeError::EncryptionRequired`, and
+  `do_attempt_reconnect` emits `VolumeConnection::EncryptionRequired` before returning it, so the frontend's backoff
+  stops and the pane offers the setting. The watcher-death loop (`reconnect_backoff_should_give_up`) and a transfer's
+  outage wait (`cmdr-operations`'s `volume_outage.rs`, `Attempt::Hopeless`) stop on it too: the same server answers the
+  same until it or the setting changes. Why: as a generic `IoError` it read as a blip and was retried for minutes.
 - Pinned by `src/volume/encryption_integration_test.rs` against the `auth` fixture (encrypts) and a guest session on the
-  `guest` fixture (can't), off and on (verified on smb2 0.41.0, Samba on Alpine, 2026-11-05). No fixture negotiates
-  below SMB 3.0, so "no cipher" rests on smb2's own unit tests.
+  `guest` fixture (can't), off and on, including a guest volume that reconnects after the switch turned on
+  (`smb_integration_a_reconnect_that_cant_encrypt_says_so_and_stops`) (verified on smb2 0.41.0, Samba on Alpine,
+  2026-11-05). No fixture negotiates below SMB 3.0, so "no cipher" rests on smb2's own unit tests.
 
 ## Re-rooting a share
 

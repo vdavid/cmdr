@@ -14,13 +14,6 @@ import { deleteComment, listExpiredPersonalComments, resolveIssueTarget } from '
 
 const MB = 1024 * 1024
 
-/**
- * D1's per-database cap on the plan this account is on: Workers Free, 500 MB (verified on the
- * D1 limits page and the account's $0.00 monthly invoices, 2026-10-23). Workers Paid raises it to
- * 10 GB; switch this when the plan changes, or the alerts land at the wrong sizes.
- */
-const d1MaxDbBytes = 500 * MB
-
 /** Shares of the cap that each alert once, on the day the size first passes them. */
 const dbSizeAlertSteps = [0.4, 0.6, 0.8, 0.9]
 
@@ -310,17 +303,15 @@ function daysBetween(fromDay: string, toDay: string): number {
 }
 
 /** The step of the cap that `sizeBytes` passed since `previousBytes`, the highest if several. */
-function crossedStep(previousBytes: number, sizeBytes: number): number | null {
-  const crossed = dbSizeAlertSteps.filter(
-    (step) => previousBytes < step * d1MaxDbBytes && sizeBytes >= step * d1MaxDbBytes,
-  )
+function crossedStep(capBytes: number, previousBytes: number, sizeBytes: number): number | null {
+  const crossed = dbSizeAlertSteps.filter((step) => previousBytes < step * capBytes && sizeBytes >= step * capBytes)
   return crossed.at(-1) ?? null
 }
 
-/** Where the next alert lands after `step`, or null past the last one. */
-function nextStepMb(step: number): number | null {
+/** Where the next alert lands after `step`, in MB of a `capMb` cap, or null past the last one. */
+function nextStepMb(capMb: number, step: number): number | null {
   const next = dbSizeAlertSteps.find((candidate) => candidate > step)
-  return next === undefined ? null : (next * d1MaxDbBytes) / MB
+  return next === undefined ? null : next * capMb
 }
 
 /**
@@ -376,7 +367,8 @@ async function handleDbSizeCheck(env: Bindings, now: Date = new Date()): Promise
   const pruneBefore = utcDay(new Date(now.getTime() - dbSizeSampleRetentionDays * 24 * 60 * 60 * 1000))
   await db.prepare(`DELETE FROM db_size_samples WHERE day < ?`).bind(pruneBefore).run()
 
-  const step = crossedStep(previous?.size_bytes ?? 0, sizeBytes)
+  const capMb = env.D1_MAX_DB_MB
+  const step = crossedStep(capMb * MB, previous?.size_bytes ?? 0, sizeBytes)
   if (step === null) return
 
   const growth = await growthRate(db, today, sizeBytes)
@@ -391,8 +383,8 @@ async function handleDbSizeCheck(env: Bindings, now: Date = new Date()): Promise
 
   await sendDbSizeAlert({
     sizeMb: sizeBytes / MB,
-    capMb: d1MaxDbBytes / MB,
-    nextStepMb: nextStepMb(step),
+    capMb,
+    nextStepMb: nextStepMb(capMb, step),
     growth,
     tableCounts,
     to: env.CRASH_NOTIFICATION_EMAIL,

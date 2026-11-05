@@ -1298,9 +1298,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr mã hóa các kết nối của chính mình tới mục chia sẻ SMB, kể cả khi máy chủ không đòi hỏi, và không kết nối tới máy chủ không mã hóa được. Kết nối với tư cách khách không mã hóa được, nên bạn cần đăng nhập. Áp dụng cho các kết nối mới.",
+  "settings.network.requireSmbEncryption.description": "Cmdr mã hóa các kết nối của mình tới mục chia sẻ SMB, kể cả khi máy chủ không đòi hỏi, và không mở mục chia sẻ nào có kết nối không mã hóa được, kể cả mục mà máy Mac của bạn đã kết nối mà không mã hóa. Kết nối với tư cách khách không mã hóa được, nên bạn cần đăng nhập. Các kết nối Cmdr đang mở vẫn giữ nguyên cho tới khi kết nối lại.",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "4b8d40b"
+    "sourceHash": "8c27a6c"
   },
   "settings.network.requireSmbEncryption.keywords": "bảo mật, an toàn, riêng tư, quyền riêng tư, bảo vệ, an ninh, mật mã",
   "@settings.network.requireSmbEncryption.keywords": {

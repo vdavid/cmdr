@@ -136,6 +136,9 @@ impl Volume for OutageVolume {
                     raw_os_error: None,
                 });
             }
+            if self.encryption_refused.load(Ordering::SeqCst) {
+                return Err(VolumeError::EncryptionRequired("/".to_owned()));
+            }
             if self.reachable.load(Ordering::SeqCst) {
                 self.bring_the_session_back();
                 Ok(())

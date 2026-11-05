@@ -1,8 +1,8 @@
 -- Deterministic seed for QA of GET /admin/funnel against a LOCAL D1.
 -- Dates are relative to `now`, so the data always lands in the funnel window.
 -- Apply to a LOCAL D1 only (after migrations):
---   wrangler d1 migrations apply cmdr-telemetry --local
---   wrangler d1 execute cmdr-telemetry --local --file=scripts/seed-funnel-local.sql
+--   wrangler d1 migrations apply TELEMETRY_DB --local
+--   wrangler d1 execute TELEMETRY_DB --local --file=scripts/seed-funnel-local.sql
 --
 -- Hand-computed expectations (with today = D0, all UTC):
 --

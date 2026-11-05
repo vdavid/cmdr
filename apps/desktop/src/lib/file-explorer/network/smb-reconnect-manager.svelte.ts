@@ -57,7 +57,22 @@ export const TOTAL_DURATION_MS = RECONNECT_DELAYS_MS.reduce((a, b) => a + b, 0)
 /** Number of attempts in a full cycle. */
 export const TOTAL_ATTEMPTS = RECONNECT_DELAYS_MS.length
 
-export type ReconnectStatus = 'waiting' | 'attempting' | 'gave-up' | 'needs-auth' | 'needs-host-key' | 'guest-refused'
+export type ReconnectStatus =
+  | 'waiting'
+  | 'attempting'
+  | 'gave-up'
+  | 'needs-auth'
+  | 'needs-host-key'
+  | 'guest-refused'
+  | 'encryption-required'
+
+/** The statuses only a person (or the server's admin) can move on from: the backoff stops at them. */
+const STOPPED_STATUSES: ReadonlySet<ReconnectStatus> = new Set([
+  'needs-auth',
+  'needs-host-key',
+  'guest-refused',
+  'encryption-required',
+])
 
 export interface ReconnectState {
   status: ReconnectStatus
@@ -144,6 +159,11 @@ class SmbReconnectManager {
           // ❗ Its own status rather than `needs-auth`: the pane names what Cmdr refused (a
           // guest session offered for a named login), which a bare sign-in prompt doesn't.
           this.handleGuestRefused(volumeId)
+          break
+        case 'encryption_required':
+          // "Always require SMB encryption" is on and the server can't encrypt: the same server
+          // answers the same until it or the setting changes, so the backoff stops (#966).
+          this.handleEncryptionRequired(volumeId)
           break
       }
     })
@@ -369,6 +389,21 @@ class SmbReconnectManager {
     })
   }
 
+  /**
+   * "Always require SMB encryption" is on, and the server can't encrypt, so the backend refused
+   * the session. Ends the backoff (the server answers the same until it or the setting changes)
+   * and flips to `encryption-required`, which the pane renders with the way to the setting.
+   */
+  private handleEncryptionRequired(volumeId: string): void {
+    untrack(() => {
+      const entry = this.map.get(volumeId)
+      if (!entry) return // No subscribers; the next nav re-enters the flow.
+      if (entry.timerId) clearTimeout(entry.timerId)
+      entry.timerId = null
+      entry.state = { ...entry.state, status: 'encryption-required' }
+    })
+  }
+
   private handleConnected(volumeId: string): void {
     untrack(() => {
       const entry = this.map.get(volumeId)
@@ -446,12 +481,12 @@ class SmbReconnectManager {
       if (!e2 || e2.cycle !== cycle) return
       // The backend may have emitted `needs_credentials` during this attempt (stale password).
       // `handleNeedsAuth` already stopped the cycle; don't schedule another doomed retry.
-      if (
-        e2.state.status === 'needs-auth' ||
-        e2.state.status === 'needs-host-key' ||
-        e2.state.status === 'guest-refused'
-      )
+      if (STOPPED_STATUSES.has(e2.state.status)) return
+      // The refusal's own type says it too, so the cycle stops even if the event hasn't landed yet.
+      if (refusal?.type === 'volume' && refusal.error.type === 'encryptionRequired') {
+        e2.state = { ...e2.state, status: 'encryption-required' }
         return
+      }
       const next = attemptIndex + 1
       if (next >= TOTAL_ATTEMPTS) {
         e2.state = { ...e2.state, status: 'gave-up' }

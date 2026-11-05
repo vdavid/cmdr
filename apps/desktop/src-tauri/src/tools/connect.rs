@@ -118,6 +118,9 @@ pub(crate) enum Settled {
     NeedsApproval,
     /// The server offered a guest session for a named login, and Cmdr refused it.
     Refused,
+    /// "Always require SMB encryption" is on, and the server can't encrypt, so Cmdr refused the
+    /// session.
+    EncryptionRequired,
     StillReconnecting,
 }
 
@@ -204,6 +207,10 @@ async fn connect(ports: &impl ConnectPorts, asked: &str) -> ConnectAnswer {
                 Settled::NeedsApproval => ConnectAnswer::of(ConnectOutcome::NeedsApproval),
                 Settled::Refused => ConnectAnswer {
                     reason: Some("guest_session_refused"),
+                    ..ConnectAnswer::of(ConnectOutcome::Rejected)
+                },
+                Settled::EncryptionRequired => ConnectAnswer {
+                    reason: Some("encryption_required"),
                     ..ConnectAnswer::of(ConnectOutcome::Rejected)
                 },
                 Settled::StillReconnecting => ConnectAnswer::of(ConnectOutcome::StillReconnecting),
@@ -342,6 +349,7 @@ pub(crate) async fn settle(
                     VolumeConnection::NeedsCredentials => return Settled::NeedsCredentials,
                     VolumeConnection::NeedsHostKeyApproval => return Settled::NeedsApproval,
                     VolumeConnection::GuestSessionRefused => return Settled::Refused,
+                    VolumeConnection::EncryptionRequired => return Settled::EncryptionRequired,
                     // An attempt that didn't land; the cycle tries again.
                     VolumeConnection::Disconnected => {}
                 },

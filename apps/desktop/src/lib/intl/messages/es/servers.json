@@ -889,6 +889,10 @@
   "@servers.paneState.guestSessionRefused": {
     "sourceHash": "36ad371"
   },
+  "servers.paneState.encryptionRequired": "Cmdr no se ha reconectado: el servidor no puede cifrar la conexión y Cmdr tiene activado “Requerir siempre cifrado SMB”.",
+  "@servers.paneState.encryptionRequired": {
+    "sourceHash": "f04a96a"
+  },
   "servers.paneState.guestSessionRefusedHint": "Has pedido iniciar sesión con tu cuenta, pero el servidor te ha ofrecido una sesión como invitado. Normalmente eso significa que la contraseña no era correcta. Rara vez se debe a que alguien esté manipulando la conexión.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

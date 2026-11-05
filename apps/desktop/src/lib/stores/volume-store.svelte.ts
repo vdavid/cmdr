@@ -235,6 +235,10 @@ export function toConnectionState(state: VolumeConnection): ConnectionState {
     // another password is what brings it back.
     case 'guest_session_refused':
       return 'needs_sign_in'
+    // The reconnect was refused because the server can't encrypt: the session is down, and
+    // nothing short of the server or the setting changing brings it back. The pane says why.
+    case 'encryption_required':
+      return 'disconnected'
   }
 }
 

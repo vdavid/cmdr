@@ -1302,9 +1302,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr krypterar sina egna anslutningar till SMB-resurser, även när servern inte ber om det, och ansluter inte till en server som inte kan kryptera. Gästanslutningar kan inte krypteras, så du behöver logga in. Gäller nya anslutningar.",
+  "settings.network.requireSmbEncryption.description": "Cmdr krypterar sina anslutningar till SMB-resurser, även när servern inte ber om det, och öppnar inte en delad mapp vars anslutning inte kan krypteras, inte heller en som din Mac har anslutit till utan kryptering. Gästanslutningar kan inte krypteras, så du behöver logga in. Anslutningar som Cmdr redan har öppna förblir som de är tills de återansluts.",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "4b8d40b"
+    "sourceHash": "8c27a6c"
   },
   "settings.network.requireSmbEncryption.keywords": "kryptera, krypterad, chiffrera, säkerhet, säker, integritet, skydd, skyddad anslutning",
   "@settings.network.requireSmbEncryption.keywords": {

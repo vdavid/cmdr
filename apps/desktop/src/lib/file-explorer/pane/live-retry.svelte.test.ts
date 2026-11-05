@@ -81,6 +81,19 @@ describe('createLiveRetry', () => {
     expect(retry, 'a new live spell tries again').toHaveBeenCalledTimes(2)
   })
 
+  it('tries again when a share on the macOS mount gets its direct session (#966)', () => {
+    // Under "Always require SMB encryption" the unencrypted mount is refused, and the direct,
+    // encrypted session landing is what can serve the folder.
+    info = share('os_mount')
+    failed = true
+    const retry = create()
+    expect(retry, 'the os_mount spell tries once').toHaveBeenCalledOnce()
+
+    info = share('direct')
+    flushSync()
+    expect(retry, 'the direct spell is a new one').toHaveBeenCalledTimes(2)
+  })
+
   it('leaves a local volume and a pane with no error alone', () => {
     info = { ...share(null), connectionState: null }
     failed = true

@@ -115,6 +115,7 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'notConnected', path: PATH },
   { reason: 'linkTargetUnreachable', path: PATH },
   { reason: 'linkNeedsConsent', path: PATH, server: 'nas.local', target: 'fs01.local' },
+  { reason: 'smbEncryptionRequired', path: PATH },
   { reason: 'readOnly' },
   { reason: 'storageFull' },
   { reason: 'connectionTimedOut' },

@@ -584,10 +584,15 @@ async fn attempt_once(
         Ok(()) => Attempt::Reconnected,
         // No reconnect story at all, or the server refused the saved
         // credentials (the backend already asked the pane to offer Sign in, and
-        // dialing again risks locking the account).
-        Err(VolumeError::NotSupported | VolumeError::PermissionDenied { .. } | VolumeError::NeedsPassword { .. }) => {
-            Attempt::Hopeless
-        }
+        // dialing again risks locking the account), or the server can't encrypt
+        // while "Always require SMB encryption" is on (the same answer until the
+        // server or the setting changes).
+        Err(
+            VolumeError::NotSupported
+            | VolumeError::PermissionDenied { .. }
+            | VolumeError::NeedsPassword { .. }
+            | VolumeError::EncryptionRequired(_),
+        ) => Attempt::Hopeless,
         Err(error) => {
             log::debug!(target: "copy", "volume outage: reconnect attempt failed: {error}", error = LogError(&error));
             Attempt::Failed

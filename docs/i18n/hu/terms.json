@@ -3084,8 +3084,15 @@
   },
   "reconnect": {
     "chosen": "újracsatlakozás",
-    "accept": ["újracsatlakoz", "újra csatlakoz", "csatlakoztasd újra", "csatlakoztass újra"],
-    "forms": "Reconnecting to {name}… → Újracsatlakozás ide: {name}…; Reconnect automatically → Automatikus újracsatlakozás",
+    "accept": [
+      "újracsatlakoz",
+      "újra csatlakoz",
+      "csatlakoztasd újra",
+      "csatlakoztass újra",
+      "csatlakozott újra",
+      "újra nem csatlakoz"
+    ],
+    "forms": "Reconnecting to {name}… → Újracsatlakozás ide: {name}…; Reconnect automatically → Automatikus újracsatlakozás; negated, the prefix splits off: nem csatlakozott újra, amíg újra nem csatlakoznak",
     "avoid": [
       {
         "form": "újrakapcsolódás",

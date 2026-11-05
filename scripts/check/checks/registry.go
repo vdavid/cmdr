@@ -49,7 +49,7 @@ var AllChecks = []CheckDefinition{
 		// A pre-release gate: it guards a build nobody ships today, in a build
 		// directory of its own, and hasn't failed since 2026-07, so neither a plain
 		// `pnpm check` nor every push should pay its ~120 s. `slow-checks.yml`
-		// runs the lane on macOS every six days, since the readers it lints are
+		// runs the lane on macOS nightly, since the readers it lints are
 		// macOS-only.
 		IsPreRelease: true,
 		DependsOn:    []string{"desktop-rust-clippy"},
@@ -127,7 +127,7 @@ var AllChecks = []CheckDefinition{
 	// Miri over the modules whose `unsafe` is pure Rust (`miriTargets`), on the pinned
 	// nightly. About a minute warm, deterministic, and macOS-only, so it's slow-lane:
 	// `--include-slow` runs it locally, and its own macOS job in `slow-checks.yml` runs it
-	// every six days. It builds into `target/miri/`, so it holds no lock on the shared
+	// nightly. It builds into `target/miri/`, so it holds no lock on the shared
 	// build directory.
 	{
 		ID:          "desktop-rust-miri",
@@ -141,8 +141,8 @@ var AllChecks = []CheckDefinition{
 		Run:         RunMiri,
 	},
 	// The Kani proofs (`#[kani::proof]`), each crate's in one `cargo kani` on
-	// Kani's own pinned nightly. Minutes per run, so slow and CI-only like the
-	// fuzz run, with its own job in `slow-checks.yml`. Builds into
+	// Kani's own pinned nightly. Minutes per run, so slow; in CI a job of the
+	// Rust lane (`rust-lane.yml`), so a stale proof blocks the land. Builds into
 	// `target/kani/`, so no lock on the shared build dir.
 	{
 		ID:          "desktop-rust-kani",
@@ -190,7 +190,7 @@ var AllChecks = []CheckDefinition{
 	// Thread interleavings explored with Shuttle (`desktop-rust-shuttle.go`). The
 	// tests run in about two seconds; the build of its own (one crate with its
 	// `shuttle` feature, in a private target dir) is what costs, ~2 min warm-ish,
-	// so it runs in `slow-checks.yml` and when named.
+	// so it's slow: a job of the Rust lane in CI (`rust-lane.yml`), and run when named.
 	{
 		ID:          "desktop-rust-shuttle",
 		CpuWeight:   4,

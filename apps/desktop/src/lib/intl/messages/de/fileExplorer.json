@@ -216,6 +216,10 @@
   "@fileExplorer.errorPane.tryAgain": {
     "sourceHash": "d8b8392"
   },
+  "fileExplorer.errorPane.openSmbEncryptionSetting": "SMB-Einstellungen öffnen",
+  "@fileExplorer.errorPane.openSmbEncryptionSetting": {
+    "sourceHash": "f428144"
+  },
   "fileExplorer.errorPane.openSystemSettings": "{systemSettings} öffnen",
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c"
@@ -2196,9 +2200,9 @@
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "sourceHash": "a731300"
   },
-  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} kann die Verbindung nicht verschlüsseln und in Cmdr ist „SMB-Verschlüsselung immer verlangen“ eingeschaltet, daher bleibt Cmdr bei der Systemverbindung.",
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} kann die Verbindung nicht verschlüsseln und in Cmdr ist „SMB-Verschlüsselung immer verlangen“ eingeschaltet, daher hat sich Cmdr nicht direkt verbunden.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
-    "sourceHash": "e4af63d"
+    "sourceHash": "fe17565"
   },
   "fileExplorer.network.osMountFallback.encryptionRequired": "Die direkte Verbindung zu <shareName>{share}</shareName> kam nicht zustande, weil der Server die Verbindung nicht verschlüsseln kann und in Cmdr „SMB-Verschlüsselung immer verlangen“ eingeschaltet ist. Du bist weiterhin über die eigene SMB-Netzwerkverbindung von macOS verbunden, die deutlich langsamer ist.",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {

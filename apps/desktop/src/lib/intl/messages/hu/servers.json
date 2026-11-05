@@ -889,6 +889,10 @@
   "@servers.paneState.guestSessionRefused": {
     "sourceHash": "36ad371"
   },
+  "servers.paneState.encryptionRequired": "A Cmdr nem csatlakozott újra: a szerver nem tudja titkosítani a kapcsolatot, a Cmdrben pedig be van kapcsolva a „Mindig kötelező SMB-titkosítás” beállítás.",
+  "@servers.paneState.encryptionRequired": {
+    "sourceHash": "f04a96a"
+  },
   "servers.paneState.guestSessionRefusedHint": "A fiókoddal kérted a bejelentkezést, de a szerver helyette vendégmunkamenetet ajánlott fel. Ez általában azt jelenti, hogy a jelszó nem volt jó. Ritkán pedig azt, hogy valaki beavatkozik a kapcsolatba.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

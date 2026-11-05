@@ -9,7 +9,7 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | ----------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `ci.yml`                | PRs, pushes to main, nightly, manual    | Main suite: change detection, one `uses:` job per lane (§ Lane files), the deploy, and `CI OK`      |
 | `<lane>-lane.yml`       | Called by `ci.yml`                      | One lane's steps each: `rust`, `rust-fixtures`, `macos`, `svelte`, `e2e-linux`, `website`, `light`  |
-| `slow-checks.yml`       | Every 6 days (3 AM UTC), manual         | osv-scanner, cargo-deny/udeps, govulncheck, website Docker build, 30-min SMB soak                   |
+| `slow-checks.yml`       | Nightly (3 AM UTC), manual              | osv-scanner, cargo-deny/udeps, govulncheck, website Docker build, 30-min SMB soak                   |
 | `advisories.yml`        | Daily (4:17 AM UTC), manual             | osv-scanner (every lockfile) and cargo-deny (no compile): new advisories surface in a day           |
 | `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                      |
 | `deploy-dashboard.yml`  | Push to main touching the dashboard     | Builds and deploys the analytics dashboard to Cloudflare Pages.                                     |
@@ -20,9 +20,10 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | `gradle-wrapper.yml`    | Push to main, wrapper PRs, weekly       | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard |
 
 `slow-checks.yml` also runs the long fuzz job (20 minutes per target, findings uploaded as `fuzz-artifacts`;
-`fuzz/DETAILS.md` § "Running and reproducing"). `ci.yml`'s `Full run (run_all)` job runs only on a `run_all` dispatch:
-the release's CI gate matches it by name to prove a run was full, so renaming it breaks releases
-(`docs/guides/releasing.md` § The CI gate).
+`fuzz/DETAILS.md` § "Running and reproducing"), Miri, property mutants, and the pre-release gates. Kani and Shuttle run
+on the landing path instead, as jobs of the Rust lane (§ Slow checks cadence). `ci.yml`'s `Full run (run_all)` job runs
+only on a `run_all` dispatch: the release's CI gate matches it by name to prove a run was full, so renaming it breaks
+releases (`docs/guides/releasing.md` § The CI gate).
 
 The website deploy is a job inside `ci.yml` (gated on the website checks passing), NOT a standalone workflow. There used
 to be a standalone `deploy-website.yml` on the same path filters; it deployed a second time per push and didn't wait for
@@ -82,7 +83,7 @@ The six path-filtered lanes are wired (`desktop-rust`, `desktop-rust-fixtures`, 
 (`lanes` output), each lane's `if:` adds `!fromJSON(needs.changes.outputs.lanes)['<id>'].verified` and passes its `.key`
 as `marker-key`, `e2e-base-image` follows the E2E lane's verdict, and `CI OK` runs `lane-markers verify` after its jq
 gate. In each lane file, the `lane-marker` action saves the key: as the last step of a one-job lane, or in a `marker`
-job that `needs` every other job of a multi-job lane (Svelte, website), so one green job can't vouch for another.
+job that `needs` every other job of a multi-job lane (Rust, Svelte, website), so one green job can't vouch for another.
 
 A PR run hashes `refs/pull/N/merge`, the PR merged with the current `main`. So a follow-up push skips a lane only while
 `main` hasn't moved any of that lane's inputs since the run that passed; a land that touched them makes a new tree and
@@ -104,7 +105,7 @@ scope's rule table in step (every path the scope says a test reads starts a Rust
 
 CI runs checks by explicit name (`--check <id>`), which means two failure modes are silent: a check added to the
 registry but never wired into a workflow simply never runs in CI, and a check renamed in the registry breaks the
-workflow that still invokes the old name — but only when that workflow next runs (for `slow-checks.yml`, up to a week
+workflow that still invokes the old name — but only when that workflow next runs (for `slow-checks.yml`, up to a day
 later). Both happened before this guard existed: a dozen checks ran nowhere, and the `eslint-typecheck` split left
 `slow-checks.yml` invoking a name the tool rejects.
 
@@ -366,22 +367,33 @@ push's failure to its pusher. A schedule rather than a dispatch from another wor
 
 ## Slow checks cadence
 
-Every 6 days (`0 3 */6 * *`), reduced from nightly → weekly → every-6-days in June 2026. The 6-day cadence is deliberate
-and load-bearing, **not** an approximation of weekly: GitHub evicts an Actions cache after 7 days unused, and this job
-owns a multi-GB rust-cache (cargo-udeps's nightly `target/`). A 6-day gap keeps that cache warm run to run; a weekly
-schedule would let it go cold every time, defeating the cache. `*/6` on day-of-month fires on the
-1st/7th/13th/19th/25th/31st, so the gap is always ≤6 days, including across month boundaries (e.g. a 30-day month's 25th
-→ next 1st is 6 days). Don't "tidy" it back to a `* * 1` weekly form. Gotchas:
+Nightly (`0 3 * * *`). The repo is public, so runner minutes are free, and a red run then points at one day's commits.
+On the every-six-days cadence it ran before, a new break landed before the last one's fix, and the workflow stayed red
+from 2026-10-13 to 2026-11-05 with a different job failing almost every run (fuzz smoke, osv, the OpenAI smoke, a fuzz
+crash, then a Kani proof that a new `OpKind` arm made stale). Two things keep it green now:
+
+- **The quick Linux slow-tier checks run before landing**, with the Rust lane: `desktop-rust-kani` (~4 min) and
+  `desktop-rust-shuttle` (~10 min) as parallel jobs in `rust-lane.yml`. Each is shorter than the lane's main job, so
+  they add no wall-clock time, and the lane's `marker` job waits on all three. They carry no build cache (the 10 GB
+  ceiling below). What stays nightly takes too long for the landing path (the long fuzz, ~3.5 h; property mutants, ~30
+  min, a build per mutant; cargo-udeps; the real-API smokes; the macOS pre-release gates) or would cost a second macOS
+  job per land run, which queues (§ macOS lane): Miri, ~4 min, whose pure-Rust `unsafe` modules rarely change.
+- **A red run files an issue.** The `report` job opens one `slow-checks` issue (labels `bug`, `claude-created`) on a red
+  run on `main`, comments on it while it stays open, and closes it on the next fully green run. The board's "Auto-add to
+  project" workflow puts it on the backlog board; set its fields when you pick it up. A cancelled run and a branch
+  dispatch leave it alone.
+
+Gotchas:
 
 - **A manual disable in GitHub's UI survives file edits.** If scheduled runs stop appearing, check
   `gh workflow list --all` for `disabled_manually` and re-enable with `gh workflow enable "Slow checks"`. The workflow
   was disabled this way for ~3 months once, which silently paused all security scanning.
 - GitHub also auto-disables schedules after 60 days without repo activity (not a risk while development is active).
-- **Cache size, not just age.** The 6-day cron defeats _time_ eviction; it does nothing against _size_ (LRU) eviction.
-  With three multi-GB Rust caches in the repo (per-push `desktop-rust`, the e2e Docker cache, and this every-6-days
-  nightly one), the total can cross GitHub's 10 GB ceiling and LRU-evict the least-used — which is this one. If this job
-  starts compiling cold again despite the cron, check `gh cache list` and consider dropping this cache (the per-push one
-  is far more valuable).
+- **Cache size, not just age.** The nightly cron defeats _time_ eviction (7 days unused); it does nothing against _size_
+  (LRU) eviction. With three multi-GB Rust caches in the repo (per-push `desktop-rust`, the e2e Docker cache, and this
+  job's udeps one on the nightly toolchain), the total can cross GitHub's 10 GB ceiling and LRU-evict the least-used —
+  which is this one. If this job starts compiling cold again despite the cron, check `gh cache list` and consider
+  dropping this cache (the per-push one is far more valuable).
 
 ## macOS lane (`desktop-rust-macos`)
 

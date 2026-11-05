@@ -36,6 +36,8 @@ const server = createTestHarness({
         CRASH_NOTIFICATION_EMAIL: crashRecipient,
         PADDLE_API_KEY_LIVE: paddleApiKey,
       },
+      // A small cap, so the size alert's ballast stays at 200 MB rather than the plan's gigabytes.
+      vars: { D1_MAX_DB_MB: 400 },
     },
   ],
 })
@@ -276,12 +278,10 @@ describe('mailing the device count alert from the Worker runtime', () => {
 
 /**
  * Last, and deliberately so: the only way to the DB size alert is a telemetry DB actually past
- * the first alert step (200 MB, 40% of the Free cap), and the harness's D1 keeps that weight for
- * the rest of the run. Writing it takes a few seconds and lives in the harness's temp directory,
- * which goes away with `server.close()`. The migrations give it an empty `db_size_samples`, so the
- * first tick counts as crossing the step.
- * There is no seam to reach this job with a smaller database, and production code doesn't get one
- * just to be testable.
+ * the first alert step (200 MB is 50% of the harness's 400 MB `D1_MAX_DB_MB`), and the harness's D1
+ * keeps that weight for the rest of the run. Writing it takes a few seconds and lives in the
+ * harness's temp directory, which goes away with `server.close()`. The migrations give it an empty
+ * `db_size_samples`, so the first tick counts as crossing the step.
  */
 describe('mailing the DB size alert from the Worker runtime', () => {
   it('alerts with the per-table row counts that say where the size went', async () => {

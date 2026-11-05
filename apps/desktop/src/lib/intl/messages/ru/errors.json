@@ -2613,6 +2613,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "Подключение к этой общей папке не зашифровано",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "В Cmdr включен параметр «Всегда требовать шифрование SMB», а подключение к папке `{path}` зашифровать нельзя, поэтому Cmdr не стал ее открывать. Через это подключение ничего не передавалось.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Что можно сделать:\n- Войдите с учетной записью: гостевые подключения зашифровать нельзя\n- Включите шифрование SMB на сервере\n- Если параметр «Всегда требовать шифрование SMB» вам не нужен, выключите его в настройках",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "Подключение к этой общей папке нельзя зашифровать, а в Cmdr включен параметр «Всегда требовать шифрование SMB».",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "Подключение не зашифровано",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "Подключение к общей папке нельзя зашифровать, а в Cmdr включен параметр «Всегда требовать шифрование SMB», поэтому Cmdr остановил операцию.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Войдите с учетной записью, а не как гость, или включите шифрование SMB на сервере. Параметр «Всегда требовать шифрование SMB» также можно выключить в настройках.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "Эта папка находится на другом сервере",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

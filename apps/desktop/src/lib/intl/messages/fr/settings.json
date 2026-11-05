@@ -1304,9 +1304,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr chiffre ses propres connexions aux partages SMB, même quand le serveur ne l’exige pas, et ne se connecte pas à un serveur qui ne peut pas chiffrer. Les connexions en tant qu’invité ne peuvent pas être chiffrées, vous devrez donc vous identifier. S’applique aux nouvelles connexions.",
+  "settings.network.requireSmbEncryption.description": "Cmdr chiffre ses connexions aux partages SMB, même quand le serveur ne l’exige pas, et n’ouvre pas un partage dont la connexion ne peut pas être chiffrée, y compris un partage auquel votre Mac s’est connecté sans chiffrement. Les connexions en tant qu’invité ne peuvent pas être chiffrées, vous devrez donc vous identifier. Les connexions que Cmdr a déjà ouvertes restent telles quelles jusqu’à leur prochaine reconnexion.",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "4b8d40b"
+    "sourceHash": "8c27a6c"
   },
   "settings.network.requireSmbEncryption.keywords": "chiffrer, chiffré, crypter, cryptage, sécurité, sécurisé, confidentialité, protection",
   "@settings.network.requireSmbEncryption.keywords": {

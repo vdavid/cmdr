@@ -55,6 +55,9 @@ pub use volume_error::{
 pub enum ErrorActionKind {
     /// User should grant Full Disk Access in macOS System Settings → Privacy & Security.
     OpenPrivacySettings,
+    /// User can turn "Always require SMB encryption" off in Cmdr's own Settings > File systems >
+    /// SMB/Network shares, or fix the server's encryption.
+    OpenSmbEncryptionSetting,
 }
 
 /// How serious a failure is, and therefore how the frontend styles it.
@@ -299,6 +302,13 @@ pub enum ListingErrorReason {
         server: String,
         /// The other server the link leads to.
         target: String,
+    },
+    /// `VolumeError::EncryptionRequired`: "Always require SMB encryption" is on, and the share's
+    /// connection can't encrypt (an unencrypted macOS mount, or a server that can't), so Cmdr
+    /// didn't open it.
+    SmbEncryptionRequired {
+        /// The path the failure was about.
+        path: String,
     },
     /// The volume or device is read-only.
     ReadOnly,

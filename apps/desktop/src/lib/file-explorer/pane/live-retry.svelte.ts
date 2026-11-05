@@ -12,6 +12,12 @@
  * ❗ Once per live spell: a listing that fails again while the volume stays live is a
  * real error, and retrying it on every refresh would be a loop. A spell ends when the
  * volume stops being live, and the next one may try again.
+ *
+ * A live volume that changes HOW it's live starts a new spell too: a share on the
+ * macOS mount (`os_mount`) whose direct session lands (`direct`). Under "Always require
+ * SMB encryption" the mount itself can be refused (#966), and the direct, encrypted
+ * session is what can serve the folder the refusal blocked, so the pane heals the
+ * moment it's up instead of waiting for a click.
  */
 
 import type { VolumeInfo } from '../types'
@@ -37,7 +43,7 @@ export function createLiveRetry(deps: LiveRetryDeps): void {
       return
     }
     if (!deps.hasListingError()) return
-    const spell = `${info.id}:${info.path}`
+    const spell = `${info.id}:${info.path}:${info.connectionState ?? ''}`
     if (retriedIn === spell) return
     retriedIn = spell
     deps.retry()

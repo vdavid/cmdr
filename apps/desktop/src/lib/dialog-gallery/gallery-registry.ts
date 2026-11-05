@@ -266,6 +266,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'insufficient_space', label: 'Not enough space' },
       { id: 'destination_full', label: 'Destination full' },
       { id: 'reply_signature_refused', label: 'Server reply refused' },
+      { id: 'smb_encryption_required', label: 'SMB connection not encrypted' },
       { id: 'destination_inside_source', label: 'Destination inside source' },
       { id: 'duplicate_source_names', label: 'Two sources share a name' },
       { id: 'named_leaves_refused', label: 'Per-item names refused' },

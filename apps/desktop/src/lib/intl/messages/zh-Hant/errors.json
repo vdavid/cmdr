@@ -2613,6 +2613,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "這個共享資料夾的連線沒有加密",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "Cmdr 已啟用「一律要求 SMB 加密」，而連到 `{path}` 的連線無法加密，所以 Cmdr 沒有開啟它。這個連線上沒有傳送任何內容。",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "可以這樣試試：\n- 用帳號登入：以訪客身分連線時無法加密\n- 在伺服器上啟用 SMB 加密\n- 如果用不到，在「設定」中關閉「一律要求 SMB 加密」",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "這個共享資料夾的連線無法加密，而 Cmdr 已啟用「一律要求 SMB 加密」。",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "連線沒有加密",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "這個共享資料夾的連線無法加密，而 Cmdr 已啟用「一律要求 SMB 加密」，所以 Cmdr 停下來了。",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "請用帳號登入，而不是以訪客身分連線，或在伺服器上啟用 SMB 加密。你也可以在「設定」中關閉「一律要求 SMB 加密」。",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "這個資料夾在另一個伺服器上",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

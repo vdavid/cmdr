@@ -67,6 +67,48 @@ async fn smb_integration_required_encryption_refuses_a_guest_volume_session() {
     }
 }
 
+/// A volume that came up before the switch turned on, and whose server can't encrypt, reconnects
+/// to a typed refusal (#966): `VolumeError::EncryptionRequired`, and the host hears
+/// `VolumeConnection::EncryptionRequired`, so the frontend's backoff stops instead of retrying a
+/// generic I/O error that can't change on its own.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_reconnect_that_cant_encrypt_says_so_and_stops() {
+    use cmdr_fs::volume::VolumeError;
+    use cmdr_fs::volume::host::events::{RecordingVolumeEvents, VolumeConnection};
+
+    let switch = RequiredForTest::set(false);
+    let events = Arc::new(RecordingVolumeEvents::new());
+    let host = VolumeHost::builder().events(events.clone()).build();
+    let params = guest();
+    let volume_id = cmdr_fs::volume::smb_volume_id(&params.server, params.port, &params.share_name);
+    let vol = connect_smb_volume(
+        "public",
+        MountAnchor::at_share_root("/Volumes/public"),
+        &volume_id,
+        params,
+        host,
+    )
+    .await
+    .expect("a guest session comes up while encryption isn't required");
+    drop(switch);
+
+    let _switch = RequiredForTest::set(true);
+    vol.inner.transition_to_disconnected(vol.inner.state.generation());
+    let result = vol.inner.do_attempt_reconnect().await;
+    assert!(
+        matches!(&result, Err(VolumeError::EncryptionRequired(_))),
+        "got {result:?}"
+    );
+    assert!(
+        events
+            .transitions()
+            .contains(&(volume_id.clone(), VolumeConnection::EncryptionRequired)),
+        "the host must hear why, got {:?}",
+        events.transitions()
+    );
+}
+
 /// The share listing and the open-share probe build their own sessions; both
 /// follow the switch too, and the listing's answer classifies as its own kind.
 #[tokio::test]

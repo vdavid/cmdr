@@ -216,6 +216,10 @@
   "@fileExplorer.errorPane.tryAgain": {
     "sourceHash": "d8b8392"
   },
+  "fileExplorer.errorPane.openSmbEncryptionSetting": "Відкрити параметри SMB",
+  "@fileExplorer.errorPane.openSmbEncryptionSetting": {
+    "sourceHash": "f428144"
+  },
   "fileExplorer.errorPane.openSystemSettings": "Відкрити {systemSettings}",
   "@fileExplorer.errorPane.openSystemSettings": {
     "sourceHash": "f735c5c"
@@ -2187,9 +2191,9 @@
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "sourceHash": "a731300"
   },
-  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "Сервер «{server}» не може зашифрувати підʼєднання, а в Cmdr увімкнено «Завжди вимагати шифрування SMB», тому Cmdr залишається на системному підʼєднанні.",
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "Сервер «{server}» не може зашифрувати підʼєднання, а в Cmdr увімкнено «Завжди вимагати шифрування SMB», тому Cmdr не підʼєднався напряму.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
-    "sourceHash": "e4af63d"
+    "sourceHash": "fe17565"
   },
   "fileExplorer.network.osMountFallback.encryptionRequired": "Не вдалося підʼєднатися напряму до спільної папки <shareName>{share}</shareName>: сервер не може зашифрувати підʼєднання, а в Cmdr увімкнено «Завжди вимагати шифрування SMB». Ви й далі підʼєднані через системне мережеве SMB-підʼєднання macOS, а воно значно повільніше.",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {

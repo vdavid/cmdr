@@ -894,6 +894,10 @@
   "@servers.paneState.guestSessionRefused": {
     "sourceHash": "36ad371"
   },
+  "servers.paneState.encryptionRequired": "Cmdr heeft niet opnieuw verbinding gemaakt: de server kan de verbinding niet versleutelen en in Cmdr staat ‘Altijd SMB-versleuteling vereisen’ aan.",
+  "@servers.paneState.encryptionRequired": {
+    "sourceHash": "f04a96a"
+  },
   "servers.paneState.guestSessionRefusedHint": "Je vroeg om in te loggen met je account, maar de server bood in plaats daarvan een gastsessie aan. Meestal komt dat doordat het wachtwoord niet klopte. In zeldzame gevallen knoeit er iemand met de verbinding.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

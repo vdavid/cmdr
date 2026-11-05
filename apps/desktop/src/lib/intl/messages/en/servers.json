@@ -1258,6 +1258,12 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
+  "servers.paneState.encryptionRequired": "Cmdr didn’t reconnect: the server can’t encrypt the connection, and Cmdr is set to always require SMB encryption.",
+  "@servers.paneState.encryptionRequired": {
+    "description": "Shown inside a file pane on a network share (SMB) whose connection dropped, when Cmdr tried to reconnect and the server can't encrypt the connection while Cmdr's own \"Always require SMB encryption\" setting is on (set by the person, or forced on by their organization). Not temporary, so no \"try again\" wording. An \"Open Settings\" button (adb.connect.openSettings) and a Disconnect button (servers.paneState.disconnect) sit right below it. \"Always require SMB encryption\" names the setting (settings.network.requireSmbEncryption.label). Plain text, no markdown. \"SMB\" is a name; keep it.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
+  },
   "servers.paneState.guestSessionRefusedHint": "You asked to sign in with your account, but the server offered a guest session instead. Usually that means the password was wrong. Rarely, it means someone is tampering with the connection.",
   "@servers.paneState.guestSessionRefusedHint": {
     "description": "The lines under that heading: what happened, the usual innocent cause (a wrong password), and the rare serious one (tampering). Calm, not alarming. A “Try another password…” button (servers.paneState.tryAnotherPassword) and a Disconnect button sit right below it. Plain text, no markdown.",

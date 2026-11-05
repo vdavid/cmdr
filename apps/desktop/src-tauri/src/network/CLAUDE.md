@@ -37,6 +37,9 @@ PLACE for S3 and NFS, a `*_volume_wiring.rs` that dials and registers), and thei
   `lock_volume_upgrade`, right before connecting. ❗ Every auto upgrade dials through `register_smb_volume`, or the
   switch does nothing (`DETAILS.md` § "The per-share direct-connection switch"), and passes a `FallbackNotice`:
   `Announce` only when someone is watching the share.
+- **Build every SMB kernel-mount volume through `smb_mount_gate::{mount_volume, os_mount_volume}`**, ❌ never a bare
+  `LocalPosixVolume::on_mount(.., SmbShare, ..)`: under "Always require SMB encryption" that bypass browses an
+  unencrypted mount (`DETAILS.md` § "Requiring SMB encryption").
 - **A mount's volume ID and anchor come off ONE `statfs` row** (`identity_from_statfs`), ❌ never derived apart. Every
   mount read on an async path is bounded (`MOUNT_READ_LIMIT`).
 - **Every SMB subprocess takes a deadline** via `crate::subprocess::output_within`, ❌ not a `timeout` around

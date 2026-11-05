@@ -668,6 +668,24 @@ fn remote_permission_denied_offers_no_privacy_settings_action() {
 
 // ── action_kind tests ────────────────────────────────────────────────
 
+/// A share Cmdr won't open because its connection can't encrypt points at Cmdr's own setting,
+/// ❌ never System Settings, and keeps its path for the pane (#966).
+#[test]
+fn encryption_required_points_at_the_smb_encryption_setting() {
+    let path = Path::new("/Volumes/naspi/photos");
+    let listing = listing_error_from_volume_error(&VolumeError::EncryptionRequired("/Volumes/naspi".into()), path);
+    assert_eq!(listing.category, ErrorCategory::NeedsAction);
+    assert_eq!(listing.action_kind, Some(ErrorActionKind::OpenSmbEncryptionSetting));
+    assert!(
+        listing.retry_hint,
+        "a retry works once the encrypted direct connection is up or the setting is off"
+    );
+    assert!(matches!(
+        listing.reason,
+        ListingErrorReason::SmbEncryptionRequired { path } if path == "/Volumes/naspi/photos"
+    ));
+}
+
 #[test]
 fn permission_denied_volume_error_has_open_privacy_settings() {
     let path = Path::new("/test/path");

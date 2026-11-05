@@ -2613,6 +2613,34 @@
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
   },
+  "errors.listing.smbEncryptionRequired.title": "Připojení k této sdílené složce není šifrované",
+  "@errors.listing.smbEncryptionRequired.title": {
+    "sourceHash": "c1b612e"
+  },
+  "errors.listing.smbEncryptionRequired.explanation": "V Cmdru je zapnutá volba „Vždy vyžadovat šifrování SMB“ a připojení ke složce `{path}` zašifrovat nejde, takže Cmdr složku neotevřel. Přes toto připojení se nic neposlalo.",
+  "@errors.listing.smbEncryptionRequired.explanation": {
+    "sourceHash": "5eeef51"
+  },
+  "errors.listing.smbEncryptionRequired.suggestion": "Co můžete zkusit:\n- Přihlaste se pomocí účtu: připojení jako host zašifrovat nejde\n- Zapněte šifrování SMB na serveru\n- Pokud volbu „Vždy vyžadovat šifrování SMB“ nepotřebujete, vypněte ji v Nastavení",
+  "@errors.listing.smbEncryptionRequired.suggestion": {
+    "sourceHash": "f16274b"
+  },
+  "errors.volume.encryptionRequired": "Připojení k této sdílené složce zašifrovat nejde a v Cmdru je zapnutá volba „Vždy vyžadovat šifrování SMB“.",
+  "@errors.volume.encryptionRequired": {
+    "sourceHash": "9db2055"
+  },
+  "errors.write.smbEncryptionRequired.title": "Připojení není šifrované",
+  "@errors.write.smbEncryptionRequired.title": {
+    "sourceHash": "2b4d731"
+  },
+  "errors.write.smbEncryptionRequired.message": "Připojení ke sdílené složce zašifrovat nejde a v Cmdru je zapnutá volba „Vždy vyžadovat šifrování SMB“, takže Cmdr přenos zastavil.",
+  "@errors.write.smbEncryptionRequired.message": {
+    "sourceHash": "ec53744"
+  },
+  "errors.write.smbEncryptionRequired.suggestion": "Přihlaste se pomocí účtu místo připojení jako host, nebo zapněte šifrování SMB na serveru. Volbu „Vždy vyžadovat šifrování SMB“ můžete také vypnout v Nastavení.",
+  "@errors.write.smbEncryptionRequired.suggestion": {
+    "sourceHash": "20a90d4"
+  },
   "errors.listing.linkNeedsConsent.title": "Tato složka je na jiném serveru",
   "@errors.listing.linkNeedsConsent.title": {
     "sourceHash": "c37d453"

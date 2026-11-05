@@ -4,7 +4,7 @@
     "failIfUnavailable": true,
     "allowUnsandboxedCommands": false,
     "network": {
-      "allowedDomains": ["api.github.com", "6a4433bf11c3cf86feda057f76f47991.r2.cloudflarestorage.com"]
+      "allowedDomains": ["api.github.com", "6a4433bf11c3cf86feda057f76f47991.eu.r2.cloudflarestorage.com"]
     },
     "filesystem": {
       "denyRead": ["~/"],

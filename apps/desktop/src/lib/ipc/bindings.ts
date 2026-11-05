@@ -9565,7 +9565,12 @@ export type EntryType = 'file' | 'dir'
  */
 export type ErrorActionKind =
   // User should grant Full Disk Access in macOS System Settings → Privacy & Security.
-  'open_privacy_settings'
+  | 'open_privacy_settings'
+  /**
+   *  User can turn "Always require SMB encryption" off in Cmdr's own Settings > File systems >
+   *  SMB/Network shares, or fix the server's encryption.
+   */
+  | 'open_smb_encryption_setting'
 
 // How serious a failure is, and therefore how the frontend styles it.
 export type ErrorCategory =
@@ -12061,6 +12066,16 @@ export type ListingErrorReason =
       server: string
       // The other server the link leads to.
       target: string
+    }
+  /**
+   *  `VolumeError::EncryptionRequired`: "Always require SMB encryption" is on, and the share's
+   *  connection can't encrypt (an unencrypted macOS mount, or a server that can't), so Cmdr
+   *  didn't open it.
+   */
+  | {
+      reason: 'smbEncryptionRequired'
+      // The path the failure was about.
+      path: string
     }
   // The volume or device is read-only.
   | { reason: 'readOnly' }
@@ -21349,6 +21364,12 @@ export type VolumeConnection =
    *  happened: usually a wrong password, rarely something tampering with the connection.
    */
   | 'guest_session_refused'
+  /**
+   *  SMB: "Always require SMB encryption" is on and a reconnect's session can't encrypt, so
+   *  the backend refused it. The reconnect manager stops its backoff (the server answers the
+   *  same until it or the setting changes), and the pane says why and offers the setting.
+   */
+  | 'encryption_required'
 
 /**
  *  Typed `volume-connection-changed` Tauri event. The frontend reconnect manager
@@ -21690,6 +21711,17 @@ export type VolumeError =
    *  it's never retried and the host records it (`SecurityRefusal`). SMB-only today.
    */
   | { type: 'signatureInvalid'; data: string }
+  /**
+   *  "Always require SMB encryption" is on, and the connection this path would ride can't
+   *  encrypt, so nothing went over it. Carries the path.
+   *
+   *  Two sources: a rebuilt smb2 session the server can't encrypt (`smb2::Error::EncryptionRequired`),
+   *  and a macOS or GVFS kernel mount that isn't encrypted, which the app refuses to browse while
+   *  the requirement is on. Typed rather than an [`IoError`](Self::IoError): the same server
+   *  gives the same answer until it or the setting changes, so it's ❌ never retried, and the
+   *  person is pointed at the setting. SMB-only.
+   */
+  | { type: 'encryptionRequired'; data: string }
   /**
    *  Anything the backend couldn't classify further. The classifier
    *  re-dispatches on `raw_os_error` when one is present.
@@ -22769,6 +22801,13 @@ export type WriteOperationError =
    *  diagnostic, for the technical details only.
    */
   | { type: 'reply_signature_refused'; path: string; message: string }
+  /**
+   *  "Always require SMB encryption" is on, and a share this transfer reads or writes can't
+   *  encrypt its connection, so Cmdr sent nothing over it (`VolumeError::EncryptionRequired`,
+   *  SMB-only). Its own variant so the stopped state names the setting: the same server gives
+   *  the same answer until it or the setting changes, so it's ❌ never a blip to retry.
+   */
+  | { type: 'smb_encryption_required'; path: string }
   // Couldn't read from the source.
   | { type: 'read_error'; path: string; message: string }
   // Couldn't write to the destination.

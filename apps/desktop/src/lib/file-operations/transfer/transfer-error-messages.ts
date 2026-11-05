@@ -130,6 +130,12 @@ const simpleMessageFactories: Partial<
     message: w('replySignatureRefused.message'),
     suggestion: w('replySignatureRefused.suggestion'),
   }),
+  // "Always require SMB encryption" is on, and a share this transfer touches can't encrypt (#966).
+  smb_encryption_required: () => ({
+    title: w('smbEncryptionRequired.title'),
+    message: w('smbEncryptionRequired.message'),
+    suggestion: w('smbEncryptionRequired.suggestion'),
+  }),
   // The destination refused a write for lack of room or quota. Nothing measured
   // it, so the copy names no sizes (a measured refusal is `insufficient_space`).
   destination_full: () => ({
@@ -234,6 +240,8 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // No Retry: the same reply would be refused again, and the backend never retries it either.
   // The way out is reconnecting, which the suggestion says.
   reply_signature_refused: { category: 'needs_action', retryHint: false },
+  // No Retry: the server answers the same until it or the setting changes (#966).
+  smb_encryption_required: { category: 'needs_action', retryHint: false },
   destination_inside_source: { category: 'needs_action', retryHint: false },
   // No Retry: the same selection can only be refused again. The way out is
   // picking one of the two, or transferring them one at a time.

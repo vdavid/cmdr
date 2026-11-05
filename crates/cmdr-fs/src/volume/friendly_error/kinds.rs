@@ -244,6 +244,22 @@ pub(super) fn link_needs_consent(path_display: &str, server: &str, target: &str,
     }
 }
 
+/// "Always require SMB encryption" is on, and the share's connection can't encrypt, so Cmdr
+/// didn't open it. The way out is the setting (or the server), hence the action. A retry is
+/// offered: it works once the direct, encrypted connection is up or the setting is off.
+pub(super) fn smb_encryption_required(path_display: &str, raw_detail: String) -> ListingError {
+    ListingError {
+        category: ErrorCategory::NeedsAction,
+        reason: ListingErrorReason::SmbEncryptionRequired {
+            path: path_display.to_string(),
+        },
+        provider: None,
+        action_kind: Some(ErrorActionKind::OpenSmbEncryptionSetting),
+        retry_hint: true,
+        raw_detail,
+    }
+}
+
 pub(super) fn connection_timeout(raw_detail: String) -> ListingError {
     ListingError {
         category: ErrorCategory::Transient,

@@ -309,9 +309,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <p>
         Page-level website analytics (Umami), our newsletter system (Listmonk), and our email inbox (mailcow) are
         self-hosted on our own server at Hetzner in Helsinki, Finland. Our license, telemetry, and report server runs on
-        Cloudflare Workers on a global CDN, so each request is handled at the Cloudflare data center nearest you. Its
-        database and error report storage are placed in Eastern Europe, and the files <code>download.getcmdr.com</code>
-        serves are stored in Cloudflare's EU jurisdiction. PostHog and Paddle are GDPR-compliant and have appropriate
+        Cloudflare Workers on a global CDN, so each request is handled at the Cloudflare data center nearest you, and so
+        are license activation codes, which its key-value store keeps. Its database, its error report storage, and the
+        files <code>download.getcmdr.com</code> serves are stored in Cloudflare's EU jurisdiction. PostHog and Paddle are GDPR-compliant and have appropriate
         data processing agreements in place.
     </p>
     <p>

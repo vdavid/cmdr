@@ -890,6 +890,10 @@
   "@servers.paneState.guestSessionRefused": {
     "sourceHash": "36ad371"
   },
+  "servers.paneState.encryptionRequired": "O Cmdr não se reconectou: o servidor não consegue criptografar a conexão, e o ajuste “Sempre exigir criptografia SMB” está ativado no Cmdr.",
+  "@servers.paneState.encryptionRequired": {
+    "sourceHash": "f04a96a"
+  },
   "servers.paneState.guestSessionRefusedHint": "Você pediu para iniciar a sessão com sua conta, mas o servidor ofereceu uma sessão de convidado. Em geral isso significa que a senha estava errada. Em casos raros, significa que alguém está adulterando a conexão.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

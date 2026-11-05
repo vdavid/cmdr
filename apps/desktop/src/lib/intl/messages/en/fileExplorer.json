@@ -327,6 +327,10 @@
   "@fileExplorer.errorPane.tryAgain": {
     "description": "Button on the error screen shown in place of a file list when a folder could not be opened. Retries opening it."
   },
+  "fileExplorer.errorPane.openSmbEncryptionSetting": "Open SMB settings",
+  "@fileExplorer.errorPane.openSmbEncryptionSetting": {
+    "description": "Button on the folder error screen shown when Cmdr's own \"Always require SMB encryption\" setting kept it from opening a network share whose connection isn't encrypted. Opens Cmdr's own Settings window at File systems > SMB/Network shares, where that setting lives. VERB phrase, imperative. \"SMB\" is a name; keep it. \"Settings\" is the app's own Settings window."
+  },
   "fileExplorer.errorPane.openSystemSettings": "Open {systemSettings}",
   "@fileExplorer.errorPane.openSystemSettings": {
     "description": "Button on the folder error screen that opens the macOS System Settings app (so the user can grant access). {systemSettings} is the OS name for that app.",
@@ -3252,9 +3256,9 @@
       "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
   },
-  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} can’t encrypt the connection, and Cmdr is set to always require SMB encryption, so Cmdr stays on the system connection.",
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} can’t encrypt the connection, and Cmdr is set to always require SMB encryption, so Cmdr didn’t connect directly.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
-    "description": "Toast shown when connecting a network share directly found that the server can't encrypt the connection while Cmdr's own \"Always require SMB encryption\" setting is on (set by the person, or forced on by their organization), so Cmdr didn't connect directly and the share stays on the slower macOS connection. Not temporary, so avoid wording like \"try again\". Plain text, no markdown. \"SMB\" is a name; keep it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Toast shown when connecting a network share directly found that the server can't encrypt the connection while Cmdr's own \"Always require SMB encryption\" setting is on (set by the person, or forced on by their organization), so Cmdr didn't connect directly. Whether the share stays usable through the macOS connection depends on that connection being encrypted, so the sentence doesn't promise it. Not temporary, so avoid wording like \"try again\". Plain text, no markdown. \"SMB\" is a name; keep it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
       "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
     }

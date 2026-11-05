@@ -888,6 +888,10 @@
   "@servers.paneState.guestSessionRefused": {
     "sourceHash": "36ad371"
   },
+  "servers.paneState.encryptionRequired": "Cmdr не підʼєднався знову: сервер не може зашифрувати підʼєднання, а в Cmdr увімкнено «Завжди вимагати шифрування SMB».",
+  "@servers.paneState.encryptionRequired": {
+    "sourceHash": "f04a96a"
+  },
   "servers.paneState.guestSessionRefusedHint": "Ви хотіли ввійти зі своїм обліковим записом, але сервер натомість запропонував гостьовий сеанс. Зазвичай це означає, що пароль був неправильний. Зрідка це означає, що хтось втручається в зʼєднання.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"

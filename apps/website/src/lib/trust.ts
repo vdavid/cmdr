@@ -185,7 +185,7 @@ export const dataLocations: DataLocation[] = [
     name: 'Cloudflare (Workers, D1, R2, KV, Analytics Engine)',
     what: 'The API server. Its database holds download records, update checks, usage stats, crash reports, feedback, error-report notes and reply-to addresses, and the list of issued licenses. Its file storage holds error-report zips, a daily backup of the license list, and the release files that <code>download.getcmdr.com</code> serves. Its key-value store holds license keys, the hashed device ids each license was checked from, and blog like counts. Analytics Engine counts devices per license.',
     where:
-      "US company. The release files are stored in Cloudflare's EU jurisdiction. The database and the error-report storage are placed in Eastern Europe, but not locked to the EU yet. The API code and the KV key-value store run on Cloudflare's global network, so each request is handled at the Cloudflare data center nearest the user, which can be outside the EU. The transfer relies on the EU-US Data Privacy Framework, with the Standard Contractual Clauses in Cloudflare's data processing agreement as a backup.",
+      "US company. The database, the error-report storage, and the release files are stored in Cloudflare's EU jurisdiction. The API code and the KV key-value store (license activation codes) run on Cloudflare's global network, so each request is handled at the Cloudflare data center nearest the user, which can be outside the EU. The transfer relies on the EU-US Data Privacy Framework, with the Standard Contractual Clauses in Cloudflare's data processing agreement as a backup.",
     inEu: 'partly',
   },
   {
@@ -236,6 +236,11 @@ export interface SubprocessorChange {
  * effect. A removal or a pure contact change still gets an entry, with no notice period.
  */
 export const subprocessorChanges: SubprocessorChange[] = [
+  {
+    date: '2026-11-05',
+    change:
+      "<strong>Cloudflare</strong>, already a subprocessor, now stores the API server's database and the error reports in its EU jurisdiction. Before, they were placed in Eastern Europe, with no guarantee that they stay in the EU.",
+  },
   {
     date: '2026-11-05',
     change:
@@ -301,7 +306,7 @@ export const serverRetention: RetentionRule[] = [
 export const knownLimitations: string[] = [
   '<strong>No update channels or staged rollout</strong>: every install gets a release at the same time. IT can turn updates off or hold Cmdr at a version (<a href="#mdm">central management</a>), though the updater never installs an older release.',
   '<strong>Four connections have no managed off switch</strong>: license checks, S3 prices, the image-search model download, and web images in a Markdown file the user chose to load, each for a stated reason (<a href="#mdm-not-covered">why each one stays</a>).',
-  '<strong>Some data leaves the EU</strong> (<a href="#eu">details</a>), and Cloudflare\'s database and error-report storage aren\'t locked to the EU jurisdiction yet.',
+  '<strong>Some data leaves the EU</strong> (<a href="#eu">details</a>).',
   '<strong>Error-report cleaning has one known gap</strong>: Cmdr marks every name and path it logs itself, but a file name inside a message from macOS, a server, or a library, with no path on the same line, can get through.',
   "<strong>The local AI model download is checked by size only</strong>, not by a fixed hash, and comes from the model's main branch on Hugging Face. The image-search model has a fixed SHA-256 hash.",
   '<strong>No reproducible builds.</strong> Instead, each release publishes SHA-256 checksums, signed build provenance, and signed SBOMs, and its tag is signed.',

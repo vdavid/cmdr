@@ -27,8 +27,8 @@ re-check these two settings if Cloudflare ships another default flip.
 
 ## Telemetry (D1)
 
-Downloads, update checks, and crash reports are stored in D1 (database: `cmdr-telemetry`). The only remaining Analytics
-Engine dataset is `DEVICE_COUNTS` for fair-use device monitoring.
+Downloads, update checks, and crash reports are stored in D1 (database: `cmdr-telemetry-eu`, `eu` jurisdiction). The
+only remaining Analytics Engine dataset is `DEVICE_COUNTS` for fair-use device monitoring.
 
 **Query via admin endpoints** (authenticated with `ADMIN_API_TOKEN`):
 

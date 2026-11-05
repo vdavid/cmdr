@@ -53,9 +53,9 @@
   `cargo +<nightly> fuzz run -O -a <target> corpus/<target> seeds/<target> -- -max_total_time=120 -timeout=20`, plus
   `target/large-seeds/<target>` and the target's `-max_len` where it has them (the lane unpacks the first and passes the
   second). `./scripts/check/check --print-nightly` prints the nightly.
-- **CI's long run** (`slow-checks.yml`, every six days): 20 minutes per target, about 200 minutes in all, under a
-  300-minute job timeout. The grown corpus is cached run to run; a target's corpus past 32 MiB (`fuzzCorpusBudget`) is
-  minimized with `cargo fuzz cmin` after its run, so the cache stays far below GitHub's 10 GB ceiling.
+- **CI's long run** (`slow-checks.yml`, nightly): 20 minutes per target, about 200 minutes in all, under a 300-minute
+  job timeout. The grown corpus is cached run to run; a target's corpus past 32 MiB (`fuzzCorpusBudget`) is minimized
+  with `cargo fuzz cmin` after its run, so the cache stays far below GitHub's 10 GB ceiling.
 - A finding lands in `artifacts/<target>/` (CI uploads it as `fuzz-artifacts`). Reproduce with
   `cargo +<nightly> fuzz run -O -a <target> artifacts/<target>/<file>`; minimize with `fuzz tmin`.
 - Then: a regression test in the owning crate, red first, then the fix. Copy the input into `seeds/<target>/` once it

@@ -193,9 +193,9 @@ is broken — verify against the main clone first, where the answer is not clone
 5. If the check grows an allowlist or an opt-out comment, wire staleness detection from day one (see § Allowlist
    shrink-wrap): dead entries must auto-remove or fail, and orphaned opt-out comments must fail. Reuse
    `directiveTracker` / `writeJSONAllowlist`.
-6. **Wire it into CI**: add a workflow step in `.github/workflows/ci.yml` (or `slow-checks.yml` for slow/weekly checks),
-   or set a `NotInCI` reason on the definition. The `ci-coverage` check fails the suite until you do one or the other —
-   there's no third option of "registered but runs nowhere".
+6. **Wire it into CI**: add a workflow step in `.github/workflows/ci.yml` (or `slow-checks.yml` for slow/nightly
+   checks), or set a `NotInCI` reason on the definition. The `ci-coverage` check fails the suite until you do one or the
+   other — there's no third option of "registered but runs nowhere".
 7. Run `pnpm check go-vet staticcheck` to verify (staticcheck is strict about idiomatic Go).
 8. Update the "Apps and check counts" table below.
 
@@ -1087,19 +1087,19 @@ verdict.
 **Cost and lane** (measured on the M1 Max with nine records, `pnpm check`, 2026-11-03): the fast half takes
 milliseconds; the slow half took 10m56s with a cold mirror and 4m15s warm, about 25 s per mutant, nearly all of it
 rebuilding the mutated crate under the sanitizer. So the fast half runs in `--fast`, and the slow half runs where the
-fuzz run does: CI-only and slow, its own job in `slow-checks.yml` every six days. That job builds cold, deliberately
-uncached: the Rust caches already press GitHub's 10 GB ceiling. Each record adds roughly a rebuild of its crate. A Kani
-record runs its proof twice (clean, then mutated) after a ~16 s build of its crate under Kani: rollback's six took 17 s
+fuzz run does: CI-only and slow, its own job in `slow-checks.yml` nightly. That job builds cold, deliberately uncached:
+the Rust caches already press GitHub's 10 GB ceiling. Each record adds roughly a rebuild of its crate. A Kani record
+runs its proof twice (clean, then mutated) after a ~16 s build of its crate under Kani: rollback's six took 17 s
 together, the sanitizer's four about 6.5 min (M1 Max, warm mirror, 2026-11-03).
 
 ## Interleaving tests (Shuttle)
 
-`desktop-rust-shuttle` (slow; `slow-checks.yml` every six days) runs the `#[test] fn shuttle_*` cells: a crate's real
-concurrent code under [Shuttle](https://github.com/awslabs/shuttle)'s scheduler, which picks who runs next at every lock
-and send and prints the schedule of any failure. Each crate in `shuttleCrates` carries a `shuttle` feature that swaps
-its primitives for Shuttle's, so the lane builds `-p <crate> --features shuttle --lib` in `target/shuttle`, a build dir
-of its own (the flip would otherwise rebuild the shared lanes' artifacts), runs clippy over it (no other lane compiles
-that code), then the tests. Only `cmdr-operations` has them today (its in-flight ledger and pause gate,
+`desktop-rust-shuttle` (slow; in CI, a job of the Rust lane, `rust-lane.yml`) runs the `#[test] fn shuttle_*` cells: a
+crate's real concurrent code under [Shuttle](https://github.com/awslabs/shuttle)'s scheduler, which picks who runs next
+at every lock and send and prints the schedule of any failure. Each crate in `shuttleCrates` carries a `shuttle` feature
+that swaps its primitives for Shuttle's, so the lane builds `-p <crate> --features shuttle --lib` in `target/shuttle`, a
+build dir of its own (the flip would otherwise rebuild the shared lanes' artifacts), runs clippy over it (no other lane
+compiles that code), then the tests. Only `cmdr-operations` has them today (its in-flight ledger and pause gate,
 `crates/cmdr-operations/DETAILS.md` § "Thread interleavings (Shuttle)").
 
 - **Cost** (M1 Max, 2026-11-03): the five cells run 300 PCT schedules each in ~1.2 s; the lane took 1m55s with a cold
@@ -2253,31 +2253,31 @@ Checks by app and tech:
 - **Desktop / Rust**: tools-module-boundary (`mcp` imports no `agent`, `tools` imports no `mcp`, and `tools` imports
   only the `agent` modules on its list), rustfmt, clippy, finder-extension-compile (macOS only: both slices of the Swift
   Finder extension through `build.sh compile`, in the macOS lane), clippy-mimalloc (pre-release lane, macOS only, CI
-  every six days; clippy with `cmdr/mimalloc` in a private target dir, so the global-allocator path macOS doesn't ship
-  can't rot), rustdoc (`cargo doc --all-features --document-private-items` over every first-party member, with every doc
-  lint in `rustdocDeniedLints` denied and any leftover warning failing the check too; the vendored fork is skipped
-  because `--all-features` turns on two mutually exclusive arms there), cargo-deny, cargo-machete, cargo-udeps
-  (CI-only), fuzz (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a
-  target loosens its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding, and
-  takes inputs past its seeds' size only through `fuzzTargetMaxLen`), kani (CI-only and slow: every `#[kani::proof]`,
-  one `cargo kani` per crate on the pinned Kani; `docs/tooling/testing.md` § "Kani proofs"), miri (slow, macOS only, CI
-  every six days: the modules whose `unsafe` is pure Rust, under Miri; § "Miri"), mutant-records and property-mutants
-  (every property has a recorded one-line change that makes it fail: the fast half checks the records still apply, the
-  slow CI-only half applies each in a mirror and runs its catcher; § "Property mutants"), shuttle (slow: the `shuttle_*`
-  thread-interleaving tests, each crate with its `shuttle` feature in a private target dir; § "Interleaving tests
-  (Shuttle)"), jscpd (the clone list, on a per-file-pair ratchet), log-error-macro, macos-availability (no call to a
-  selector newer than the bundle's `minimumSystemVersion`; § "macOS availability"), macos-framework-floor (no framework
-  in the BUILT binary's load commands newer than that same floor, which is the half no runtime gate can save; § "macOS
-  framework floor"), sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
-  shared page cache is always installed before SQLite initializes), error-string-match, lock-poison (two lanes: an
-  error-level one for an acquisition that records no poison-handling choice, and a warn-only one for a failure that's
-  silently discarded, on a per-file ratchet), log-private-values (an unmarked path, name, or identity in a log macro,
-  strict with no allowlist, and a marked value made into a `String`; § "The log-private-values check"), test-sleep
-  (flags a fixed `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt
-  out a genuine sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture
-  built on `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each
-  other's live fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is
-  load bearing opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
+  nightly; clippy with `cmdr/mimalloc` in a private target dir, so the global-allocator path macOS doesn't ship can't
+  rot), rustdoc (`cargo doc --all-features --document-private-items` over every first-party member, with every doc lint
+  in `rustdocDeniedLints` denied and any leftover warning failing the check too; the vendored fork is skipped because
+  `--all-features` turns on two mutually exclusive arms there), cargo-deny, cargo-machete, cargo-udeps (CI-only), fuzz
+  (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a target loosens
+  its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding, and takes inputs past
+  its seeds' size only through `fuzzTargetMaxLen`), kani (CI-only and slow: every `#[kani::proof]`, one `cargo kani` per
+  crate on the pinned Kani; `docs/tooling/testing.md` § "Kani proofs"), miri (slow, macOS only, CI nightly: the modules
+  whose `unsafe` is pure Rust, under Miri; § "Miri"), mutant-records and property-mutants (every property has a recorded
+  one-line change that makes it fail: the fast half checks the records still apply, the slow CI-only half applies each
+  in a mirror and runs its catcher; § "Property mutants"), shuttle (slow: the `shuttle_*` thread-interleaving tests,
+  each crate with its `shuttle` feature in a private target dir; § "Interleaving tests (Shuttle)"), jscpd (the clone
+  list, on a per-file-pair ratchet), log-error-macro, macos-availability (no call to a selector newer than the bundle's
+  `minimumSystemVersion`; § "macOS availability"), macos-framework-floor (no framework in the BUILT binary's load
+  commands newer than that same floor, which is the half no runtime gate can save; § "macOS framework floor"),
+  sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide shared page cache
+  is always installed before SQLite initializes), error-string-match, lock-poison (two lanes: an error-level one for an
+  acquisition that records no poison-handling choice, and a warn-only one for a failure that's silently discarded, on a
+  per-file ratchet), log-private-values (an unmarked path, name, or identity in a log macro, strict with no allowlist,
+  and a marked value made into a `String`; § "The log-private-values check"), test-sleep (flags a fixed `thread::sleep`
+  / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a genuine
+  sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on
+  `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's live
+  fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing
+  opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
   `CachedScanResult` / `SourceHint` / `VolumePreflight` / `WrittenFile` in test code, so a fixture can only be one of
   the shapes a named constructor actually builds; it ships with ZERO findings on purpose and is a regression fence
   rather than a finder — the shapes are already clean, and the point is that the next test author can't undo that by

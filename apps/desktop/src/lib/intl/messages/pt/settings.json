@@ -1301,9 +1301,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "O Cmdr criptografa as próprias conexões com compartilhamentos SMB, mesmo quando o servidor não pede, e não se conecta a um servidor que não consegue criptografar. Conexões de convidado não podem ser criptografadas, então você precisa iniciar a sessão. Vale para novas conexões.",
+  "settings.network.requireSmbEncryption.description": "O Cmdr criptografa as conexões que faz com compartilhamentos SMB, mesmo quando o servidor não pede, e não abre um compartilhamento cuja conexão não pode ser criptografada, inclusive um ao qual o seu Mac se conectou sem criptografia. Conexões de convidado não podem ser criptografadas, então você precisa iniciar a sessão. As conexões que o Cmdr já tem abertas continuam como estão até se reconectarem.",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "4b8d40b"
+    "sourceHash": "8c27a6c"
   },
   "settings.network.requireSmbEncryption.keywords": "criptografar, criptografado, encriptação, cifrar, segurança, seguro, privacidade, proteção",
   "@settings.network.requireSmbEncryption.keywords": {

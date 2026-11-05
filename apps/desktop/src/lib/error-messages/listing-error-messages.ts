@@ -113,6 +113,7 @@ export type ListingErrorReason =
   | { reason: 'notConnected'; path: string }
   | { reason: 'linkTargetUnreachable'; path: string }
   | { reason: 'linkNeedsConsent'; path: string; server: string; target: string }
+  | { reason: 'smbEncryptionRequired'; path: string }
   | { reason: 'readOnly' }
   | { reason: 'storageFull' }
   | { reason: 'connectionTimedOut' }

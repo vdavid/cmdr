@@ -1304,9 +1304,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr versleutelt zijn eigen verbindingen met SMB-shares, ook als de server daar niet om vraagt, en maakt geen verbinding met een server die niet kan versleutelen. Gastverbindingen kunnen niet worden versleuteld, dus je moet inloggen. Dit geldt voor nieuwe verbindingen.",
+  "settings.network.requireSmbEncryption.description": "Cmdr versleutelt zijn verbindingen met SMB-shares, ook als de server daar niet om vraagt, en opent geen gedeelde map waarvan de verbinding niet kan worden versleuteld, ook niet als je Mac er zonder versleuteling mee verbonden is. Gastverbindingen kunnen niet worden versleuteld, dus je moet inloggen. Verbindingen die Cmdr al open heeft, blijven zoals ze zijn tot ze opnieuw verbinding maken.",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "4b8d40b"
+    "sourceHash": "8c27a6c"
   },
   "settings.network.requireSmbEncryption.keywords": "versleutelen, versleuteld, encryptie, codering, beveiliging, veilig, privacy, afschermen",
   "@settings.network.requireSmbEncryption.keywords": {

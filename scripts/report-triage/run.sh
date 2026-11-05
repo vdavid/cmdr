@@ -6,7 +6,7 @@
 # two scoped credentials and nothing else from the box's environment. No board token, on purpose: the agent writes its
 # rating as the last line of its triage comment and the API server's cron applies it (scripts/report-triage/DETAILS.md).
 #   TRIAGE_GH_TOKEN           fine-grained PAT: vdavid/cmdr-reports ONLY, Issues read+write, Metadata read
-#   TRIAGE_R2_ACCESS_KEY_ID   R2 API token: Object Read on the cmdr-error-reports bucket ONLY
+#   TRIAGE_R2_ACCESS_KEY_ID   R2 API token: Object Read on the cmdr-error-reports-eu bucket ONLY
 #   TRIAGE_R2_SECRET_ACCESS_KEY
 set -euo pipefail
 
