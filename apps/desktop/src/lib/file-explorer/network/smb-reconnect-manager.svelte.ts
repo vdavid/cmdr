@@ -65,7 +65,7 @@ export const RECONNECT_DELAYS_MS = [0, 2000, 4000, 8000, 16000, 30000] as const
 export const QUIET_ATTEMPT_GRACE_MS = 1000
 
 /** Sum of `RECONNECT_DELAYS_MS`. Cached once because it's constant. */
-export const TOTAL_DURATION_MS = RECONNECT_DELAYS_MS.reduce((a, b) => a + b, 0)
+export const TOTAL_DURATION_MS = RECONNECT_DELAYS_MS.reduce<number>((a, b) => a + b, 0)
 
 /** Number of attempts in a full cycle. */
 export const TOTAL_ATTEMPTS = RECONNECT_DELAYS_MS.length

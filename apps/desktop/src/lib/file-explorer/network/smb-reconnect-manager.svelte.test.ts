@@ -83,7 +83,7 @@ describe('smbReconnectManager', () => {
     await smbReconnectManager.init()
     emit('vol-no-subs', 'disconnected')
     // Advance past every backoff delay; nothing should have fired.
-    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS.reduce((a, b) => a + b, 0) + 100)
+    await vi.advanceTimersByTimeAsync(TOTAL_DURATION_MS + 100)
     expect(mockReconnect).not.toHaveBeenCalled()
     expect(smbReconnectManager.getState('vol-no-subs')).toBeNull()
   })
@@ -426,7 +426,7 @@ describe('smbReconnectManager', () => {
     expect(smbReconnectManager.getState('vol-cancel')).toBeNull()
 
     // Even after waiting through every delay, no attempt fires.
-    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS.reduce((a, b) => a + b, 0) + 100)
+    await vi.advanceTimersByTimeAsync(TOTAL_DURATION_MS + 100)
     expect(mockReconnect).not.toHaveBeenCalled()
 
     unsub()
