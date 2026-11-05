@@ -390,6 +390,12 @@ self-drag identity, and the real transfer dialog on the in-browser write engine.
 - `demo-tree.ts`: the home folder. Today a generic `/Users/you` with documents, downloads, a 1,200-photo folder to feel
   scrolling and sorting, dotfiles to try hidden files, and a fixed "now" (2026-10-01) so dates read the same for every
   visitor.
+- **Sample PDF** (`assets/sample-invoice.pdf`, every `.pdf` in the tree opens to it, one shared buffer): a made-up
+  invoice with a "FAKE" watermark, printed by Chrome from `assets/sample-invoice.html`, its source. After editing the
+  HTML, regenerate from `apps/website` (which has Playwright):
+  `node -e "const {chromium}=require('@playwright/test');(async()=>{const b=await chromium.launch(),p=await b.newPage();await p.goto('file://'+require('path').resolve('../desktop/src/lib/demo/assets/sample-invoice.html'));await p.pdf({path:'../desktop/src/lib/demo/assets/sample-invoice.pdf',format:'A4',printBackground:true});await b.close()})()"`.
+  The viewer shows it as a `blob:` `<embed>`, which the demo's CSP allows in both `object-src` and `frame-src`
+  (`apps/website/nginx-demo-security-headers.conf` says why).
 - `browser-shortcuts.ts`: the browser-safe shortcut map. The browser takes ⌘T, ⌘W, ⌘⇧T, ⌘N, and ⌘1–⌘9 before the page
   sees them, so those commands move to ⌃. Seeded into `shortcuts.json` as `shortcut:<commandId>` keys, the same delta
   the Settings editor writes, so every hint in menus, the palette, and the function bar shows the remapped combo with no
