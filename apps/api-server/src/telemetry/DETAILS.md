@@ -38,7 +38,7 @@ Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over)
 
 Feedback: POST /feedback → rate-limit by IP (FEEDBACK_LIMITER, 429 if over) → validate shape (required feedback text ≤ 100k code points + appVersion/osVersion, optional email/buildMode/errorReportId) → AWAITED D1 write to `feedback` (failure → soft 502 so the app offers a retry) → 204 → the 3-hourly cron files its card and mails it in the report digest (`../../DETAILS.md` § Cron handler)
 
-Download redirect: GET /download/:version/:arch → write to D1 (fire-and-forget) → 302 to GitHub Releases
+Download redirect: GET /download/:version/:arch → write to D1 (fire-and-forget) → 302 to the EU mirror (`download.getcmdr.com`) for 0.59.0 and later, else GitHub Releases
 
 Update check proxy: GET /update-check/:version → hash IP with daily salt → INSERT OR IGNORE into D1 (fire-and-forget) → 302 to latest.json
 ```
@@ -153,6 +153,11 @@ D1 table `downloads`. One row per download event with `app_version`, `arch`, `co
   download burst costs one origin fetch. D1 stores the RESOLVED version, never `latest`. When neither source answers,
   the handler 302s to the GitHub releases page and writes NO row. `getcmdr.com/download/latest/<arch>` is the public
   face of this, an nginx redirect in `apps/website/nginx.conf`.
+- **Where it redirects: the EU mirror from 0.59.0 on, GitHub before.** `releaseFileUrl` sends a version at or past
+  `firstMirroredVersion` (0.59.0, backfilled 2026-11-05) to `download.getcmdr.com/v<version>/<file>`, and anything older
+  to its GitHub release, which keeps every version. No lookup: the release pipeline mirrors every release before it goes
+  Latest, so the boundary is a constant. Lower it only after backfilling the older releases with
+  `scripts/release-mirror.sh`. `docs/guides/releasing.md` § Where downloads are served from.
 - **`/download/:version/checksums` is a sibling redirect, not an architecture.** It resolves `latest` through the same
   `resolveLatestVersion` and 302s to the release's `checksums.txt`, which the website links as `SHA-256 checksums` in
   the download card so a person who took a DMG from the site can verify it (the Homebrew cask and the updater already

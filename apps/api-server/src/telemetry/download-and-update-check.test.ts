@@ -44,7 +44,7 @@ describe('GET /download/:version/checksums', () => {
     const res = await app.request('/download/1.2.3/checksums', { headers: browserUa }, bindings)
 
     expect(res.status).toBe(302)
-    expect(res.headers.get('location')).toBe('https://github.com/vdavid/cmdr/releases/download/v1.2.3/checksums.txt')
+    expect(res.headers.get('location')).toBe('https://download.getcmdr.com/v1.2.3/checksums.txt')
   })
 
   it('wins over the :arch route rather than being read as an architecture', async () => {
@@ -72,15 +72,39 @@ describe('GET /download/:version/checksums', () => {
   })
 })
 
+// The EU mirror (`download.getcmdr.com`) holds 0.59.0 (backfilled) and every release after it;
+// GitHub Releases keeps every version, so anything older still goes there.
+describe('GET /download: EU mirror or GitHub', () => {
+  it.each([
+    ['0.59.0', 'universal', 'https://download.getcmdr.com/v0.59.0/Cmdr_0.59.0_universal.dmg'],
+    ['0.60.0', 'x86_64', 'https://download.getcmdr.com/v0.60.0/Cmdr_0.60.0_x64.dmg'],
+    ['0.100.0', 'aarch64', 'https://download.getcmdr.com/v0.100.0/Cmdr_0.100.0_aarch64.dmg'],
+    ['0.58.0', 'universal', 'https://github.com/vdavid/cmdr/releases/download/v0.58.0/Cmdr_0.58.0_universal.dmg'],
+    ['0.9.0', 'aarch64', 'https://github.com/vdavid/cmdr/releases/download/v0.9.0/Cmdr_0.9.0_aarch64.dmg'],
+  ])('sends %s %s to %s', async (version, arch, location) => {
+    const res = await app.request(`/download/${version}/${arch}`, { headers: browserUa }, createBindings())
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe(location)
+  })
+
+  it.each([
+    ['0.59.0', 'https://download.getcmdr.com/v0.59.0/checksums.txt'],
+    ['0.58.0', 'https://github.com/vdavid/cmdr/releases/download/v0.58.0/checksums.txt'],
+  ])('sends the checksums of %s to %s', async (version, location) => {
+    const res = await app.request(`/download/${version}/checksums`, { headers: browserUa }, createBindings())
+
+    expect(res.headers.get('location')).toBe(location)
+  })
+})
+
 describe('GET /download/:version/:arch', () => {
   it('redirects aarch64 to the matching DMG', async () => {
     const bindings = createBindings()
     const res = await app.request('/download/1.2.3/aarch64', { headers: browserUa }, bindings)
 
     expect(res.status).toBe(302)
-    expect(res.headers.get('location')).toBe(
-      'https://github.com/vdavid/cmdr/releases/download/v1.2.3/Cmdr_1.2.3_aarch64.dmg',
-    )
+    expect(res.headers.get('location')).toBe('https://download.getcmdr.com/v1.2.3/Cmdr_1.2.3_aarch64.dmg')
   })
 
   it('redirects x86_64 to the x64-named DMG (tauri-action filename quirk)', async () => {
@@ -88,9 +112,7 @@ describe('GET /download/:version/:arch', () => {
     const res = await app.request('/download/1.2.3/x86_64', { headers: browserUa }, bindings)
 
     expect(res.status).toBe(302)
-    expect(res.headers.get('location')).toBe(
-      'https://github.com/vdavid/cmdr/releases/download/v1.2.3/Cmdr_1.2.3_x64.dmg',
-    )
+    expect(res.headers.get('location')).toBe('https://download.getcmdr.com/v1.2.3/Cmdr_1.2.3_x64.dmg')
   })
 
   it('redirects universal to the matching DMG', async () => {
@@ -98,9 +120,7 @@ describe('GET /download/:version/:arch', () => {
     const res = await app.request('/download/1.2.3/universal', { headers: browserUa }, bindings)
 
     expect(res.status).toBe(302)
-    expect(res.headers.get('location')).toBe(
-      'https://github.com/vdavid/cmdr/releases/download/v1.2.3/Cmdr_1.2.3_universal.dmg',
-    )
+    expect(res.headers.get('location')).toBe('https://download.getcmdr.com/v1.2.3/Cmdr_1.2.3_universal.dmg')
   })
 
   it('still records x86_64 (not x64) in D1 (filename mapping is purely cosmetic)', async () => {

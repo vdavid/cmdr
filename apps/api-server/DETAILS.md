@@ -114,7 +114,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 | GET     | `/admin/feedback`              | Bearer token  | In-app feedback rows from D1 (full text, reply-to email, `answeredAt`), newest first               |
 | PUT     | `/admin/feedback/:id/answered` | Bearer token  | Mark one feedback row answered (`{ answered: true }`) or back to awaiting a reply (`false`)        |
 | GET     | `/admin/error-reports`         | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first  |
-| GET     | `/download/:version/:arch`     | none          | Log download to D1 (bots skipped, source + `ref` tagged), 302 → GitHub; `:version` takes `latest`  |
+| GET     | `/download/:version/:arch`     | none          | Log to D1 (bots skipped, source + `ref`), 302 → EU mirror (GitHub below 0.59.0); takes `latest`    |
 | POST    | `/crash-report`                | IP rate-limit | Ingest crash report to D1                                                                          |
 | POST    | `/heartbeat`                   | IP rate-limit | Usage heartbeat + relayed feature events (anonymous `anal_id`) to D1                               |
 | POST    | `/error-report`                | IP rate-limit | Multipart upload (zip + meta) → R2 + an outbox row. Also gated by the global intake budget         |
