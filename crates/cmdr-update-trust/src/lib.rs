@@ -20,3 +20,5 @@ mod fixtures;
 pub use archive::{ArchiveRefusal, bundle_version, extract_tarball, vet_update_archive};
 #[cfg(target_os = "macos")]
 pub use code_signature::{CodeSignatureRefusal, verify_release_bundle};
+
+// THROWAWAY probe: a one-crate change for the Rust test scope (never merge).
