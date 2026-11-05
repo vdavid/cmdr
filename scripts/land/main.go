@@ -196,7 +196,7 @@ func land(r runner, cfg config) error {
 }
 
 func landOnce(r runner, cfg config) error {
-	state, err := readState(r)
+	state, err := readState(r, cfg.squash)
 	if err != nil {
 		return err
 	}
@@ -282,7 +282,7 @@ func start(r runner, state branchState, merge bool) (bool, error) {
 	return true, nil
 }
 
-func readState(r runner) (branchState, error) {
+func readState(r runner, squash bool) (branchState, error) {
 	branch, err := r.git("branch", "--show-current")
 	if err != nil {
 		return branchState{}, err
@@ -300,14 +300,35 @@ func readState(r runner) (branchState, error) {
 	if err != nil {
 		return branchState{}, err
 	}
+	based := r.isAncestor("origin/main", "HEAD")
 	return branchState{
-		branch:    branch,
-		dirty:     status != "",
-		landed:    r.isAncestor("HEAD", "origin/main") || r.allUpstream(),
-		based:     r.isAncestor("origin/main", "HEAD"),
-		hasMerges: merges != "",
-		tagged:    r.tagged("origin/main..HEAD"),
+		branch:          branch,
+		dirty:           status != "",
+		landed:          r.isAncestor("HEAD", "origin/main") || r.allUpstream(),
+		based:           based,
+		hasMerges:       merges != "",
+		tagged:          r.tagged("origin/main..HEAD"),
+		pushedMergeable: !based && !squash && branch != "" && pushedAndMergeable(r, branch),
 	}, nil
+}
+
+// pushedAndMergeable reports whether HEAD is already origin's branch and GitHub can merge the
+// branch's open PR into `main`. Any error, or GitHub still working it out, reads as false: the
+// land then rebases, as it would without this.
+func pushedAndMergeable(r runner, branch string) bool {
+	head, err := r.git("rev-parse", "HEAD")
+	if err != nil {
+		return false
+	}
+	if remote, err := r.remoteSHA(branch); err != nil || remote != head {
+		return false
+	}
+	pr, ok, err := findOpenPR(r, branch)
+	if err != nil || !ok {
+		return false
+	}
+	mergeable, err := prMergeable(r, pr.Number)
+	return err == nil && mergeable != nil && *mergeable
 }
 
 func squash(r runner, commits []commit, message string) error {
