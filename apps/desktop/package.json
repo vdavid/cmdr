@@ -88,6 +88,7 @@
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tauri-apps/cli": "^2.12.4",
     "@testing-library/svelte": "^5.4.2",
+    "@types/css-tree": "3.2.0",
     "@types/estree": "1.0.9",
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.0.5",
