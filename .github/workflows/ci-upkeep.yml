@@ -86,7 +86,7 @@ jobs:
             echo "warm=true" >>"$GITHUB_OUTPUT"
           fi
 
-      # From here on, the same cache steps as the lane's `tests` job (see its comments).
+      # From here on, the same cache steps as the lane's `build` job (see its comments).
       - name: Prepare Docker cache dirs
         if: steps.decide.outputs.warm == 'true'
         run: |

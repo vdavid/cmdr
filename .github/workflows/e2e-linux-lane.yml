@@ -1,15 +1,19 @@
 name: Linux E2E lane
 
-# The Playwright E2E lane on Linux, called by `ci.yml` (`desktop-e2e-linux`): the suite in
-# Docker. Its own file so an edit here reruns this lane alone (the `desktop` filter in `ci.yml`
-# lists it). The base image job it waits for stays in `ci.yml` (`e2e-base-image`): OpenSSF
-# Scorecard waives a job's `packages: write` only in a workflow it recognizes as packaging, which
-# `ci.yml` is and this file isn't. `docs/tooling/ci.md` § Lane files and § Build caching.
+# The Playwright E2E lane on Linux, called by `ci.yml` (`desktop-e2e-linux`): one job builds the
+# app in Docker and hands the binary over as an artifact, then three jobs each run a third of the
+# suite against it in their own container (`e2e-linux.sh --build-app-only`, then `--test-only
+# --shard i/3`). Built once, so the ~5.5 min `e2e`-profile build isn't paid three times; split,
+# so the ~8.5 min of tests on one worker run as three ~3 min slices. Its own file so an edit here
+# reruns this lane alone (the `desktop` filter in `ci.yml` lists it). The base image job it waits
+# for stays in `ci.yml` (`e2e-base-image`): OpenSSF Scorecard waives a job's `packages: write`
+# only in a workflow it recognizes as packaging, which `ci.yml` is and this file isn't.
+# `docs/tooling/ci.md` § Lane files and § Build caching.
 on:
   workflow_call:
     inputs:
       marker-key:
-        description: The lane's marker key from `ci.yml`'s lane plan, saved by the last step once every step passed
+        description: The lane's marker key from `ci.yml`'s lane plan, saved by the `marker` job once every job passed
         type: string
         required: true
 
@@ -22,25 +26,25 @@ env:
   SAVE_RUST_CACHE: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
-  tests:
-    name: Playwright tests
+  # The lane is gated ONLY on change detection (in `ci.yml`), not on the Rust or Svelte lanes:
+  # - Rust: independent. A Rust unit-test failure shouldn't skip e2e (and vice versa).
+  #   Gating them together hid a 4-day red-main streak in May 2026 where a flaky
+  #   accent-color unit test blocked e2e on PRs that touched neither path.
+  # - Svelte: dropped (June 2026) to cut the critical path. e2e's Docker build runs its OWN
+  #   frontend build (beforeBuildCommand), so it never consumed the Svelte lane's artifacts;
+  #   the gate was only a "don't spend e2e compute if svelte's quality checks are red"
+  #   optimization, and it forced e2e to wait ~4 min before starting. Now e2e starts at
+  #   t=0, the single biggest wall-clock win on the per-push path. Trade: e2e runs even
+  #   when svelte-check / eslint / svelte tests fail (rare); a genuine frontend BUILD error
+  #   still fails e2e's own build.
+  # `ci.yml`'s `e2e-base-image` is ~20 s when the registry has the image, so it barely moves
+  # the start.
+  build:
+    name: Build the E2E app
     runs-on: ubuntu-latest
-    # ~12 min warm build + ~8.5 min for 455 tests on a green run (a cold build is ~21
-    # min), so 40 leaves room for a slow runner while still cutting a runaway short.
+    # ~5.5 min warm (run 42116859486, 2026-11-05), ~21 min cold, so 40 leaves room for a slow
+    # runner while still cutting a runaway short.
     timeout-minutes: 40
-    # The lane is gated ONLY on change detection (in `ci.yml`), not on the Rust or Svelte lanes:
-    # - Rust: independent. A Rust unit-test failure shouldn't skip e2e (and vice versa).
-    #   Gating them together hid a 4-day red-main streak in May 2026 where a flaky
-    #   accent-color unit test blocked e2e on PRs that touched neither path.
-    # - Svelte: dropped (June 2026) to cut the critical path. e2e's Docker build runs its OWN
-    #   frontend build (beforeBuildCommand), so it never consumed the Svelte lane's artifacts;
-    #   the gate was only a "don't spend e2e compute if svelte's quality checks are red"
-    #   optimization, and it forced e2e to wait ~4 min before starting. Now e2e starts at
-    #   t=0, the single biggest wall-clock win on the per-push path. Trade: e2e runs even
-    #   when svelte-check / eslint / svelte tests fail (rare); a genuine frontend BUILD error
-    #   still fails e2e's own build.
-    # `ci.yml`'s `e2e-base-image` is ~20 s when the registry has the image, so it barely moves
-    # the start.
     permissions:
       contents: read # check out the code
       packages: read # pull the E2E base image
@@ -53,9 +57,8 @@ jobs:
       # need. The runner's root disk is 145 GB, and every one of 109 runs
       # (2026-10-12 to 2026-10-19, #557) showed 107–108 GB free AFTER the reclaim,
       # which only ever removed preinstalled SDKs (tens of GB at most). This job
-      # peaks at roughly 15 GB: the base image, the cargo/target caches, and the
-      # fixture images. The `df` keeps the headroom visible in the log; if it
-      # ever runs tight, bring the reclaim back.
+      # peaks at roughly 15 GB: the base image and the cargo/target caches. The `df`
+      # keeps the headroom visible in the log; if it ever runs tight, bring the reclaim back.
       - name: Prepare Docker cache dirs
         run: |
           mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target
@@ -85,8 +88,8 @@ jobs:
           TOKEN: ${{ github.token }}
         run: docker login ghcr.io --username "$ACTOR" --password-stdin <<<"$TOKEN"
 
-      - name: Run E2E tests in Docker
-        run: ./scripts/e2e-linux.sh
+      - name: Build the E2E app in Docker
+        run: ./scripts/e2e-linux.sh --build-app-only
         working-directory: ./apps/desktop
         env:
           # Point Docker volumes at host paths so actions/cache can persist them
@@ -99,8 +102,8 @@ jobs:
       # `tar` can't read root-owned files — so the save failed (warning only,
       # never fatal) on EVERY run since this cache was added, and the next run
       # always restored nothing → a fully cold ~10-min Tauri build every time.
-      # Hand ownership back so the post-step can pack the cache. `always()` so
-      # the build cache still saves when a test fails (the build succeeded).
+      # Hand ownership back so the save step (and the artifact upload) can read
+      # them. `always()` so a half-built cache still saves on `main`.
       - name: Reclaim cache dir ownership for the save step
         if: always()
         run: sudo chown -R "$(id -u):$(id -g)" /tmp/cmdr-docker-cache
@@ -117,6 +120,71 @@ jobs:
             /tmp/cmdr-docker-cache/target
           key: ${{ steps.e2e-target-cache.outputs.cache-primary-key }}
 
+      # The binary and the triple marker `e2e-linux.sh --test-only` reads, at the same paths
+      # under the test jobs' target dir. `--no-bundle` leaves nothing else the app needs beside
+      # it (the frontend is embedded). An artifact keeps the file mode, so it stays executable.
+      - name: Collect the app binary
+        run: |
+          triple=$(cat /tmp/cmdr-docker-cache/target/.linux-target)
+          mkdir -p "$RUNNER_TEMP/e2e-app/$triple/e2e"
+          cp /tmp/cmdr-docker-cache/target/.linux-target "$RUNNER_TEMP/e2e-app/"
+          cp "/tmp/cmdr-docker-cache/target/$triple/e2e/Cmdr" "$RUNNER_TEMP/e2e-app/$triple/e2e/"
+          ls -la "$RUNNER_TEMP/e2e-app/$triple/e2e"
+
+      - name: Upload the app binary
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: e2e-linux-app
+          path: ${{ runner.temp }}/e2e-app/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  # A third of the suite each (Playwright `--shard`, by spec file), in its own container on its
+  # own runner, against the build job's binary. ~3 min of tests plus ~2 min of setup (the base
+  # image pull, the in-container `pnpm install`, Chromium, the fixture stacks).
+  tests:
+    name: Playwright tests (${{ matrix.shard }}/3)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read # check out the code
+      packages: read # pull the E2E base image
+    strategy:
+      # Every slice runs to the end, so a red run names every failing spec, not one slice's.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Download the app binary
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: e2e-linux-app
+          path: /tmp/cmdr-docker-cache/target
+
+      # The artifact round trip doesn't promise the mode bit everywhere; the script refuses a
+      # binary it can't run, so set it rather than learn that from a red slice.
+      - name: Make the app binary executable
+        run: chmod +x /tmp/cmdr-docker-cache/target/*/e2e/Cmdr
+
+      - name: Log in to the container registry
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ github.token }}
+        run: docker login ghcr.io --username "$ACTOR" --password-stdin <<<"$TOKEN"
+
+      - name: Run this slice of the E2E tests in Docker
+        run: ./scripts/e2e-linux.sh --test-only --shard "${{ matrix.shard }}/3"
+        working-directory: ./apps/desktop
+        env:
+          TARGET_VOLUME: /tmp/cmdr-docker-cache/target
+          E2E_BASE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+
       # ❗ The path is the Playwright `outputDir`, which for THIS lane is
       # `./test-results` resolved against the config's own directory
       # (`playwright.config.ts`), NOT the app root. Only the macOS lane overrides
@@ -130,7 +198,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
-          name: e2e-screenshots
+          name: e2e-screenshots-${{ matrix.shard }}
           path: apps/desktop/test/e2e-playwright/test-results/
           if-no-files-found: error
           retention-days: 7
@@ -147,12 +215,24 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
-          name: e2e-app-stacks
+          name: e2e-app-stacks-${{ matrix.shard }}
           path: /tmp/cmdr-e2e-stacks/
           if-no-files-found: warn
           retention-days: 7
 
-      # Last, with no `if:` (see `rust-lane.yml`). ❌ Nothing after it.
+  # The lane's marker, once the build and every slice passed (a job's `needs` without `if:`
+  # runs only then; a matrix job passes only when every slice did), so one green job can't
+  # vouch for another (`scripts/lane-markers/DETAILS.md`).
+  marker:
+    name: Lane marker
+    needs: [build, tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Save the lane marker
         uses: ./.github/actions/lane-marker
         with:

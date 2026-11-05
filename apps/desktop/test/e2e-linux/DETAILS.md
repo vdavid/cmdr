@@ -3,13 +3,25 @@
 `CLAUDE.md` holds the must-knows. This file holds the build-caching mechanics, the SMB networking detail, the full
 webkit2gtk caret investigation, the Playwright-on-26.04 workaround detail, and the Ubuntu test VM playbook.
 
-## Scope: single shard, no per-instance fixture isolation
+## Scope: one app per container, no per-instance fixture isolation
 
-Linux Docker runs a single shard, so the per-instance fixture isolation built for parallel macOS shards
-(`/tmp/cmdr-e2e-fixtures-<instance>-<ts>/` plus a hardlink cache at `/tmp/cmdr-e2e-fixtures-cache/`) is out of scope.
-`e2e-linux.sh` calls `createFixtures()` without an instance ID, falling back to the legacy shared `/tmp/cmdr-e2e-<ts>/`
-root with no cache. The 170 MB regen cost is paid once per run and is dominated by container startup; the bookkeeping
-for one shard isn't worth it.
+Each container runs one app and one Playwright worker, so the per-instance fixture isolation built for parallel macOS
+shards (`/tmp/cmdr-e2e-fixtures-<instance>-<ts>/` plus a hardlink cache at `/tmp/cmdr-e2e-fixtures-cache/`) is out of
+scope. `e2e-linux.sh` calls `createFixtures()` without an instance ID, falling back to the legacy shared
+`/tmp/cmdr-e2e-<ts>/` root with no cache. The 170 MB regen cost is paid once per run and is dominated by container
+startup; the bookkeeping for one app isn't worth it. CI's three slices (§ CI: build once, test in three slices) each run
+in a container of their own on a runner of their own, so they share nothing either (the MTP fixture root included).
+
+## CI: build once, test in three slices
+
+`e2e-linux-lane.yml` splits the script's two phases across jobs. `build` runs `--build-app-only` (images plus the
+`e2e`-profile binary, with the Cargo + target cache) and uploads the binary and its `.linux-target` marker as the
+`e2e-linux-app` artifact. Three `tests` jobs download it into their target dir and run `--test-only --shard i/3`:
+`--test-only` skips the cargo build and refuses to start without an executable `<triple>/e2e/Cmdr` there, and `--shard`
+passes Playwright's `--shard` (by spec file, since the config isn't `fullyParallel`). `--no-bundle` leaves nothing else
+the app needs beside the binary; the frontend is embedded. Each slice pays the base image pull, an in-container
+`pnpm install`, Chromium, and the fixture stacks (~2 min) for about a third of the ~8.5 min of tests (run 42116859486,
+2026-11-05: 465 tests on one worker).
 
 ## Architecture
 
@@ -63,12 +75,14 @@ local run sets neither, so it behaves as above:
 
 - `E2E_BASE_REGISTRY` (`ghcr.io/<owner>`): when the local tag is missing, pull it from there before building. A failed
   pull falls back to a local build with a warning.
-- `E2E_BASE_PUSH=true`: push a freshly built base there.
+- `E2E_BASE_PUSH=true`: push a freshly built base there. `--base-only` always publishes what it built, and with
+  `E2E_BASE_PUSH_REF_FILE` set it writes the ref there for the caller to push instead.
 
-`ci.yml`'s `e2e-base-image` job runs `--base-only`: a manifest lookup (a few KB), and a build plus push only when the
-registry lacks the tag. `desktop-e2e-linux` needs it, so the test job only ever pulls. The owner comes from
-`github.repository_owner`, so a repo move needs no edit: the first run under the new owner builds and pushes there. The
-old owner's package then needs a manual delete.
+`ci.yml`'s `e2e-base-image` job runs `--base-only`: a manifest lookup (a few KB), and a build only when the registry
+lacks the tag, after which its own next step runs the `docker push` (in `ci.yml`, so OpenSSF Scorecard reads the
+workflow as packaging and waives the job's `packages: write`). `desktop-e2e-linux` needs it, so the lane only ever
+pulls. The owner comes from `github.repository_owner`, so a repo move needs no edit: the first run under the new owner
+builds and pushes there. The old owner's package then needs a manual delete.
 
 - **Why a registry**: the image used to be a `docker save` tar in the Actions cache. That cache evicts its least
   recently used entries above the repo's 10 GB budget, and on a miss the test job rebuilt the base inside its own 40-min

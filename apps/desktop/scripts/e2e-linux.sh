@@ -8,7 +8,8 @@
 #   ./scripts/e2e-linux.sh               # Run tests
 #   ./scripts/e2e-linux.sh --build       # Force rebuild Docker images (base with --no-cache)
 #   ./scripts/e2e-linux.sh --build-only  # Build Docker images, then exit (no tests)
-#   ./scripts/e2e-linux.sh --build-app-only  # Build images + the Tauri binary, then exit (CI cache warm)
+#   ./scripts/e2e-linux.sh --build-app-only  # Build images + the Tauri binary, then exit (CI's build job)
+#   ./scripts/e2e-linux.sh --test-only --shard 2/3  # Test the binary already in the target volume (CI)
 #   ./scripts/e2e-linux.sh --base-only  # Make sure the registry has the base image, then exit (CI)
 #   ./scripts/e2e-linux.sh --shell       # Start interactive shell in container
 #   ./scripts/e2e-linux.sh --vnc         # Interactive VNC mode with hot reload
@@ -180,6 +181,8 @@ log_error() {
 FORCE_BUILD=false
 BUILD_ONLY=false
 BUILD_APP_ONLY=false
+TEST_ONLY=false
+SHARD=""
 BASE_ONLY=false
 INTERACTIVE=false
 VNC_MODE=false
@@ -200,6 +203,14 @@ while [[ $# -gt 0 ]]; do
         --build-app-only)
             BUILD_APP_ONLY=true
             shift
+            ;;
+        --test-only)
+            TEST_ONLY=true
+            shift
+            ;;
+        --shard)
+            SHARD="$2"
+            shift 2
             ;;
         --base-only)
             BASE_ONLY=true
@@ -233,7 +244,10 @@ while [[ $# -gt 0 ]]; do
             echo "                    needed — the base auto-rebuilds when Dockerfile.base changes)"
             echo "  --build-only      Build Docker images, then exit without running tests"
             echo "  --build-app-only  Build Docker images and the Tauri binary, then exit without"
-            echo "                    running tests (CI's main-branch cache warm uses this)"
+            echo "                    running tests (CI's build job and main-branch cache warm)"
+            echo "  --test-only       Skip the app build and test the binary already in the target"
+            echo "                    volume (CI's test jobs, after the build job's artifact)"
+            echo "  --shard <i/n>     Run one slice of the suite (Playwright --shard)"
             echo "  --base-only       Make sure E2E_BASE_REGISTRY holds the base image: build and push"
             echo "                    it when missing, then exit (CI's base-image job uses this)"
             echo "  --shell           Start interactive shell in container"
@@ -287,9 +301,9 @@ label_cache_volumes
 #     refreshing stale apt content).
 #   - In CI, the base lives in a container registry (E2E_BASE_REGISTRY, for
 #     example ghcr.io/vdavid) under the same content-hash tag. ci.yml's
-#     `e2e-base-image` job runs --base-only, which builds and pushes it only
-#     when the registry lacks that tag (E2E_BASE_PUSH=true), and every other
-#     run pulls it. A registry, because the Actions cache it used to live in
+#     `e2e-base-image` job runs --base-only, which builds it only when the
+#     registry lacks that tag and hands the job the ref to push
+#     (E2E_BASE_PUSH_REF_FILE), and every other run pulls it. A registry, because the Actions cache it used to live in
 #     evicts under size pressure, and rebuilding inside the test job then ran
 #     it past its time cap (2026-10-22).
 #   - Final image (Dockerfile): FROM base + entrypoint.sh. Cheap (~1 s), so
@@ -303,6 +317,21 @@ if [[ -n "${E2E_BASE_REGISTRY:-}" ]]; then
     REMOTE_BASE_IMAGE="$(echo "$E2E_BASE_REGISTRY" | tr '[:upper:]' '[:lower:]')/$BASE_IMAGE_REPO:$BASE_HASH"
 fi
 
+# Tags the local base for the registry and pushes it, or, with E2E_BASE_PUSH_REF_FILE set, writes
+# the ref there for the caller to push. CI does the latter, so the `docker push` sits in
+# `ci.yml` itself: OpenSSF Scorecard waives the job's `packages: write` only in a workflow whose
+# own steps publish (docs/tooling/ci.md § Lane files).
+publish_base_image() {
+    docker tag "$BASE_IMAGE" "$REMOTE_BASE_IMAGE"
+    if [[ -n "${E2E_BASE_PUSH_REF_FILE:-}" ]]; then
+        log_info "Built $REMOTE_BASE_IMAGE; the caller pushes it"
+        echo "$REMOTE_BASE_IMAGE" > "$E2E_BASE_PUSH_REF_FILE"
+    else
+        log_info "Pushing E2E base image: $REMOTE_BASE_IMAGE"
+        docker push "$REMOTE_BASE_IMAGE"
+    fi
+}
+
 if $BASE_ONLY; then
     if [[ -z "$REMOTE_BASE_IMAGE" ]]; then
         log_error "--base-only needs E2E_BASE_REGISTRY"
@@ -315,8 +344,7 @@ if $BASE_ONLY; then
     fi
     # Missing there but built here already (a local run), so push without rebuilding.
     if ! $FORCE_BUILD && docker image inspect "$BASE_IMAGE" &> /dev/null; then
-        docker tag "$BASE_IMAGE" "$REMOTE_BASE_IMAGE"
-        docker push "$REMOTE_BASE_IMAGE"
+        publish_base_image
         exit 0
     fi
 fi
@@ -347,10 +375,8 @@ if $FORCE_BUILD || ! docker image inspect "$BASE_IMAGE" &> /dev/null; then
     docker build $NO_CACHE_ARG -t "$BASE_IMAGE" -t "$BASE_IMAGE_REPO:latest" \
         ${LABEL_ARGS[@]+"${LABEL_ARGS[@]}"} \
         -f "$DOCKER_DIR/Dockerfile.base" "$DOCKER_DIR"
-    if [[ "${E2E_BASE_PUSH:-}" == "true" && -n "$REMOTE_BASE_IMAGE" ]]; then
-        log_info "Pushing E2E base image: $REMOTE_BASE_IMAGE"
-        docker tag "$BASE_IMAGE" "$REMOTE_BASE_IMAGE"
-        docker push "$REMOTE_BASE_IMAGE"
+    if [[ -n "$REMOTE_BASE_IMAGE" ]] && { [[ "${E2E_BASE_PUSH:-}" == "true" ]] || $BASE_ONLY; }; then
+        publish_base_image
     fi
     # Prune older base tags (each holds ~3.5 GB of layers). Best-effort: a tag
     # backed by a running container just stays until the next prune.
@@ -430,76 +456,91 @@ if $VNC_MODE; then
     exit 0
 fi
 
-# Always build: cargo handles incrementality (fast when nothing changed, correct when
-# something did). Skipping based on binary existence caused stale-binary bugs.
-log_info "Building Linux Tauri binary inside Docker..."
+if $TEST_ONLY && $BUILD_APP_ONLY; then
+    log_error "--test-only and --build-app-only are the two halves of one run; pass one"
+    exit 1
+fi
 
-docker run --rm \
-    -v "$REPO_ROOT:/app" \
-    -v "$CARGO_VOLUME:/root/.cargo/registry" \
-    -v "$TARGET_VOLUME:/target" \
-    -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
-    -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
-        -v "$DESKTOP_SVELTEKIT_VOLUME:/app/apps/desktop/.svelte-kit" \
-    -w /app/apps/desktop \
-    -e CI=true \
-    -e CARGO_TARGET_DIR=/target \
-    -e CMDR_FRONTEND_BUILD_DIR=.svelte-kit/linux-build \
-    "$IMAGE_NAME" \
-    bash -c '
-        set -e
+# The build phase. Always build, unless the caller put a binary in the target volume itself
+# (--test-only, CI's sharded test jobs, which take the build job's artifact): cargo handles
+# incrementality (fast when nothing changed, correct when something did), and skipping based
+# on binary existence caused stale-binary bugs.
+if $TEST_ONLY; then
+    log_info "Skipping the app build (--test-only); testing the binary in $TARGET_VOLUME"
+else
+    log_info "Building Linux Tauri binary inside Docker..."
 
-        # Detect architecture inside the container
-        ARCH=$(uname -m)
-        if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-            LINUX_TARGET="aarch64-unknown-linux-gnu"
-        else
-            LINUX_TARGET="x86_64-unknown-linux-gnu"
-        fi
-        echo "Detected architecture: $ARCH -> $LINUX_TARGET"
+    docker run --rm \
+        -v "$REPO_ROOT:/app" \
+        -v "$CARGO_VOLUME:/root/.cargo/registry" \
+        -v "$TARGET_VOLUME:/target" \
+        -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
+        -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
+            -v "$DESKTOP_SVELTEKIT_VOLUME:/app/apps/desktop/.svelte-kit" \
+        -w /app/apps/desktop \
+        -e CI=true \
+        -e CARGO_TARGET_DIR=/target \
+        -e CMDR_FRONTEND_BUILD_DIR=.svelte-kit/linux-build \
+        "$IMAGE_NAME" \
+        bash -c '
+            set -e
 
-        # Tauri build dependencies (dev packages + patchelf) are baked into the
-        # base image (Dockerfile.base) -- no per-run apt-get here.
+            # Detect architecture inside the container
+            ARCH=$(uname -m)
+            if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+                LINUX_TARGET="aarch64-unknown-linux-gnu"
+            else
+                LINUX_TARGET="x86_64-unknown-linux-gnu"
+            fi
+            echo "Detected architecture: $ARCH -> $LINUX_TARGET"
 
-        # Temporarily clear .cargo/config.toml if present -- it is a gitignored dev
-        # override that patches mtp-rs to a local path which does not exist in Docker.
-        # Uses trap to guarantee restore even if the build fails.
-        CARGO_CONFIG="/app/apps/desktop/src-tauri/.cargo/config.toml"
-        if [ -f "$CARGO_CONFIG" ]; then
-            cp "$CARGO_CONFIG" "${CARGO_CONFIG}.docker-bak"
-            > "$CARGO_CONFIG"
-            trap "mv ${CARGO_CONFIG}.docker-bak $CARGO_CONFIG 2>/dev/null || true" EXIT
-        fi
+            # Tauri build dependencies (dev packages + patchelf) are baked into the
+            # base image (Dockerfile.base) -- no per-run apt-get here.
 
-        # Install dependencies if needed (node_modules is a Docker volume)
-        # Compare lockfile hash to detect changes since last install
-        LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | cut -c1-32)
-        if [ ! -f "/app/node_modules/.linux-installed" ] || [ "$(cat /app/node_modules/.linux-installed)" != "$LOCK_HASH" ]; then
-            echo "Installing Linux node_modules..."
-            pnpm install --frozen-lockfile
-            echo "$LOCK_HASH" > /app/node_modules/.linux-installed
-        fi
+            # Temporarily clear .cargo/config.toml if present -- it is a gitignored dev
+            # override that patches mtp-rs to a local path which does not exist in Docker.
+            # Uses trap to guarantee restore even if the build fails.
+            CARGO_CONFIG="/app/apps/desktop/src-tauri/.cargo/config.toml"
+            if [ -f "$CARGO_CONFIG" ]; then
+                cp "$CARGO_CONFIG" "${CARGO_CONFIG}.docker-bak"
+                > "$CARGO_CONFIG"
+                trap "mv ${CARGO_CONFIG}.docker-bak $CARGO_CONFIG 2>/dev/null || true" EXIT
+            fi
 
-        echo "Building Tauri app for target: $LINUX_TARGET"
-        # --no-bundle to skip creating .deb/.rpm/.appimage (not needed for E2E tests)
-        # --config: point frontendDist at the container-private adapter output
-        # (CMDR_FRONTEND_BUILD_DIR above; see the volume comment at the top) so the
-        # embed reads the dir THIS build wrote, not the bind-mounted host build/.
-        # CMDR_E2E_BUILD=1 bakes in the dialog gallery (the `__CMDR_E2E_BUILD__`
-        # Vite define) that `dialog-inset.spec.ts` drives; without it that spec skips
-        # and this lane silently stops covering dialog layout.
-        # --profile e2e: release without thin LTO, which cut minutes off the build that
-        # gates every land. See the profile comment in the root Cargo.toml. The binary
-        # lands under /target/<triple>/e2e/, read back below.
-        CMDR_E2E_BUILD=1 pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle --config "{\"build\":{\"frontendDist\":\"../.svelte-kit/linux-build\"}}" -- --profile e2e --features playwright-e2e,virtual-mtp,smb-e2e
+            # Install dependencies if needed (node_modules is a Docker volume)
+            # Compare lockfile hash to detect changes since last install
+            LOCK_HASH=$(md5sum /app/pnpm-lock.yaml | cut -c1-32)
+            if [ ! -f "/app/node_modules/.linux-installed" ] || [ "$(cat /app/node_modules/.linux-installed)" != "$LOCK_HASH" ]; then
+                echo "Installing Linux node_modules..."
+                pnpm install --frozen-lockfile
+                echo "$LOCK_HASH" > /app/node_modules/.linux-installed
+            fi
 
-        # Write the target triple so the host script can find the binary
-        echo "$LINUX_TARGET" > /target/.linux-target
-    '
+            echo "Building Tauri app for target: $LINUX_TARGET"
+            # --no-bundle to skip creating .deb/.rpm/.appimage (not needed for E2E tests)
+            # --config: point frontendDist at the container-private adapter output
+            # (CMDR_FRONTEND_BUILD_DIR above; see the volume comment at the top) so the
+            # embed reads the dir THIS build wrote, not the bind-mounted host build/.
+            # CMDR_E2E_BUILD=1 bakes in the dialog gallery (the `__CMDR_E2E_BUILD__`
+            # Vite define) that `dialog-inset.spec.ts` drives; without it that spec skips
+            # and this lane silently stops covering dialog layout.
+            # --profile e2e: release without thin LTO, which cut minutes off the build that
+            # gates every land. See the profile comment in the root Cargo.toml. The binary
+            # lands under /target/<triple>/e2e/, read back below.
+            CMDR_E2E_BUILD=1 pnpm tauri build --ci --target "$LINUX_TARGET" --no-bundle --config "{\"build\":{\"frontendDist\":\"../.svelte-kit/linux-build\"}}" -- --profile e2e --features playwright-e2e,virtual-mtp,smb-e2e
+
+            # Write the target triple so the host script can find the binary
+            echo "$LINUX_TARGET" > /target/.linux-target
+        '
+fi
 
 LINUX_TARGET=$(docker run --rm --entrypoint cat -v "$TARGET_VOLUME:/target" "$IMAGE_NAME" /target/.linux-target 2>/dev/null)
 if [ -z "$LINUX_TARGET" ]; then
-    log_error "Build completed but target marker not found"
+    log_error "No target marker (.linux-target) in $TARGET_VOLUME: the build didn't run or didn't finish"
+    exit 1
+fi
+if ! docker run --rm --entrypoint test -v "$TARGET_VOLUME:/target" "$IMAGE_NAME" -x "/target/$LINUX_TARGET/e2e/Cmdr"; then
+    log_error "No executable app binary at $LINUX_TARGET/e2e/Cmdr in $TARGET_VOLUME"
     exit 1
 fi
 
@@ -612,6 +653,7 @@ else
         -e TAURI_BINARY="$DOCKER_TAURI_BINARY" \
         -e CI=true \
         -e "E2E_REPEAT_EACH=${REPEAT_EACH:-}" \
+        -e "E2E_SHARD=${SHARD:-}" \
         -e "E2E_GREP=${GREP_FILTER:-}" \
         -e "CMDR_E2E_JSON_REPORT=$CONTAINER_E2E_JSON_REPORT" \
         -e "RUST_LOG=${RUST_LOG:-info,cmdr_lib::mtp=debug,stall_probe::reconciler=debug}" \
@@ -764,11 +806,13 @@ else
                     --config test/e2e-playwright/playwright.config.ts \
                     --project tauri \
                     --grep "$E2E_GREP" ${E2E_REPEAT_EACH:+--repeat-each "$E2E_REPEAT_EACH"} \
+                    ${E2E_SHARD:+--shard "$E2E_SHARD"} \
                     2>&1 | tee "$PLAYWRIGHT_PROGRESS"
             else
                 npx playwright test \
                     --config test/e2e-playwright/playwright.config.ts \
                     --project tauri ${E2E_REPEAT_EACH:+--repeat-each "$E2E_REPEAT_EACH"} \
+                    ${E2E_SHARD:+--shard "$E2E_SHARD"} \
                     2>&1 | tee "$PLAYWRIGHT_PROGRESS"
             fi
             playwright_status=${PIPESTATUS[0]}
