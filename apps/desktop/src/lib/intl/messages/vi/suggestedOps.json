@@ -7,9 +7,9 @@
   "@suggestedOps.description": {
     "sourceHash": "4d98280"
   },
-  "suggestedOps.approvalNoticeDismiss": "Không hiển thị ghi chú này nữa",
+  "suggestedOps.approvalNoticeDismiss": "Không hiển thị lại",
   "@suggestedOps.approvalNoticeDismiss": {
-    "sourceHash": "2c23c21"
+    "sourceHash": "f6f62e0"
   },
   "suggestedOps.sweepWhen.justNow": "Đề xuất vừa xong",
   "@suggestedOps.sweepWhen.justNow": {
@@ -85,7 +85,8 @@
   },
   "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
   "@suggestedOps.groupTitle": {
-    "sourceHash": "201c1fc"
+    "sourceHash": "201c1fc",
+    "sameAsSourceJustification": "Tags and placeholders only: Vietnamese puts the verb first, so the action label precedes the AI-written title with a plain space, as in English."
   },
   "suggestedOps.approve.move": "Di chuyển {countText} {count, plural, other {tệp}}",
   "@suggestedOps.approve.move": {
@@ -267,11 +268,11 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
-  "suggestedOps.factUnknownSize": "Unknown",
+  "suggestedOps.factUnknownSize": "Không xác định",
   "@suggestedOps.factUnknownSize": {
     "sourceHash": "b764cdc"
   },
-  "suggestedOps.factUnknownDate": "Unknown",
+  "suggestedOps.factUnknownDate": "Không xác định",
   "@suggestedOps.factUnknownDate": {
     "sourceHash": "b764cdc"
   },

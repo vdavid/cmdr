@@ -704,7 +704,7 @@
   "link": {
     "chosen": "liên kết",
     "confidence": "high",
-    "forms": "web link → liên kết web; sits behind a DFS link → nằm sau một liên kết, as the catalog's nằm sau tường lửa; errors.volume.linkTargetUnreachable opens Vị trí này because a new folder isn't a mục yet",
+    "forms": "web link → liên kết web; leads through a DFS link → dẫn qua một liên kết (`{path}` / Đường dẫn này / Đường dẫn của tệp này dẫn qua …)",
     "sources": "catalog (share-link and Google Drive link commands, viewer.markdown.link.*); MS terminology"
   },
   "mcp-server": {
@@ -2135,9 +2135,6 @@
     "accept": ["lời nhắn", "ghi-chu"],
     "chosen": "ghi chú",
     "confidence": "high",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "This “note” is the short toast Cmdr shows, not text the user writes: thông báo."
-    },
     "forms": "a feedback message → lời nhắn; sample filename ghi-chu.txt (ASCII-folded)",
     "sources": "MS terminology"
   },
@@ -3001,7 +2998,7 @@
     "chosen": "lưu trữ",
     "confidence": "high",
     "forms": "S3 storage → kho lưu trữ S3; cold storage → kho lưu trữ lạnh; storage provider → nhà cung cấp dịch vụ lưu trữ; free space on a drive or iCloud → dung lượng; a phone's storage → bộ nhớ; storing logs → lưu trữ nhật ký (catalog settings.applier.logStorageRestart)",
-    "note": "The cold-storage \"Archived\" (S3 Glacier, `*coldStorage*`, `fileExplorer.archivedFile.*`) is `kho lưu trữ lạnh`, label `Lưu trữ lạnh`, over the chat's `Đã lưu trữ` (`archive-chat`): every file is stored, so the bare word says nothing.",
+    "note": "The cold-storage label (S3 Glacier, `*coldStorage*`, `fileExplorer.archivedFile.*`) is `kho lưu trữ lạnh` (label `Ở kho lưu trữ lạnh`), apart from the chat's `Đã lưu trữ` (`archive-chat`): every file is stored, so the bare word says nothing.",
     "sources": "MS terminology (Storage → Lưu trữ, cloud storage → kho lưu trữ đám mây); catalog (dung lượng, bộ nhớ)"
   },
   "store": {
@@ -3262,7 +3259,7 @@
     "accept": ["gõ-để-nhảy"],
     "chosen": "Nhảy tới",
     "confidence": "tentative",
-    "forms": "the mode and badge → Nhảy tới (Nhảy tới: …), quoted inside a sentence (Chuyển sang “Nhảy tới”); Clear jump → Xóa nội dung “Nhảy tới” over Xóa nhảy tới, since the button removes the typed text; the buffer setting → gõ-để-nhảy",
+    "forms": "the mode and badge → Nhảy tới (Nhảy tới: …), quoted inside a sentence (Chuyển sang “Nhảy tới”); the × that clears the typed text → Xóa nội dung đã gõ (names the text, not the mode); the buffer setting → gõ-để-nhảy",
     "sources": "catalog (settings.fileExplorer.typeToJump.mode.opt.jump, fileExplorer.typeToJump.prefix); TC has only Tìm nhanh for its own quick search, a different feature"
   },
   "typo": {
@@ -3728,5 +3725,31 @@
     "confidence": "high",
     "forms": "the greyed menu marker: the base label word for word, then (đang bận)",
     "sources": "catalog (menu.volume.ejectBusy, disconnectBusy, forgetServerBusy, forgetSavedPasswordBusy)"
+  },
+  "cold-storage": {
+    "chosen": "kho lưu trữ lạnh",
+    "confidence": "high",
+    "forms": "In cold storage (the row label) → Ở kho lưu trữ lạnh; is archived → đang ở kho lưu trữ lạnh",
+    "avoid": [
+      {
+        "form": "đã lưu trữ",
+        "why": "the archive-chat state; says nothing about a file that must be restored"
+      }
+    ],
+    "sources": "catalog (errors.listing.coldStorage.*, errors.volume.coldStorage, fileExplorer.archivedFile.tooltip); MS terminology (cloud storage → kho lưu trữ đám mây); no macOS string in the pile"
+  },
+  "focus": {
+    "accept": ["đang chọn", "đang hoạt động", "đang được chọn"],
+    "chosen": "tiêu điểm",
+    "confidence": "high",
+    "forms": "keyboard focus → tiêu điểm bàn phím; move focus to X → chuyển tiêu điểm bàn phím tới X; the focused pane → khung đang chọn (see pane)",
+    "sources": "macOS Finder MenuBar (Đặt tiêu điểm vào trường tìm kiếm); catalog (commands.paneFocusControls.description, commands.appFocusNotifications.description)"
+  },
+  "grant": {
+    "accept": ["cấp"],
+    "chosen": "cấp quyền",
+    "confidence": "high",
+    "forms": "granted full disk access → cấp quyền truy cập toàn bộ đĩa (prose); turned it off → đã tắt quyền này",
+    "sources": "macOS Finder (Không thể cấp quyền vào “%@”…); catalog (onboarding.stepFda.*)"
   }
 }

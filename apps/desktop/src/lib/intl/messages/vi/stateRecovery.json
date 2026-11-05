@@ -33,7 +33,7 @@
   },
   "stateRecovery.operationLog.title": "Cmdr không đọc được nhật ký thao tác của bạn, nên nhật ký bắt đầu lại từ đầu",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "0bfa904"
+    "sourceHash": "e4e9fb0"
   },
   "stateRecovery.chatHistory.title": "Cmdr không đọc được các cuộc trò chuyện Ask Cmdr của bạn, nên danh sách trò chuyện đang trống",
   "@stateRecovery.chatHistory.title": {

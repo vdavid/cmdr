@@ -75,9 +75,9 @@
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "Có vẻ bạn từng cấp quyền truy cập toàn bộ đĩa nhưng sau đó đã thu hồi.",
+  "onboarding.stepFda.revoked.intro": "Có vẻ bạn từng cấp quyền truy cập toàn bộ đĩa nhưng sau đó đã tắt quyền này.",
   "@onboarding.stepFda.revoked.intro": {
-    "sourceHash": "9087914"
+    "sourceHash": "6759357"
   },
   "onboarding.stepFda.revoked.noAccess": "Ứng dụng hiện không có quyền truy cập toàn bộ đĩa.",
   "@onboarding.stepFda.revoked.noAccess": {
@@ -239,9 +239,9 @@
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "5cc5e7f"
   },
-  "onboarding.stepAi.table.renameWithout": "Bạn tự đặt mẫu đổi tên trong công cụ Đổi tên hàng loạt, rồi xem lại và áp dụng.",
+  "onboarding.stepAi.table.renameWithout": "Bạn tự đặt mẫu đổi tên trong công cụ Đổi tên hàng loạt, rồi xem lại và áp dụng mẫu đó.",
   "@onboarding.stepAi.table.renameWithout": {
-    "sourceHash": "e7531dc"
+    "sourceHash": "1b85bf6"
   },
   "onboarding.stepAi.table.renameWith": "Bạn nói “thêm tiền tố ngày kiểu ISO”, tác nhân đặt mẫu đổi tên cho bạn, bạn xem lại rồi áp dụng tùy ý.",
   "@onboarding.stepAi.table.renameWith": {

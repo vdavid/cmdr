@@ -87,9 +87,9 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, khi bạn trò chuyện hoặc khi nó tự bắt đầu một cuộc trò chuyện:",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, khi bạn trò chuyện hoặc khi Cmdr tự bắt đầu một cuộc trò chuyện:",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Tin nhắn của bạn, kể cả mọi mật khẩu bạn nhập ở đó để mở khóa một tệp nén hoặc một bản sao lưu",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Nếu bạn bật tính năng ghi nhật ký lệnh gọi LLM trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên máy Mac của bạn. Các nhật ký lệnh gọi đó chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.",
+  "ai.cloudConsent.logsNote": "Nếu bạn bật “Ghi nhật ký lệnh gọi mô hình AI” trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên máy Mac của bạn. Các nhật ký lệnh gọi đó chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Tắt mục này bất cứ lúc nào và Cmdr sẽ ngừng gửi ngay lập tức. Dịch vụ, khóa và các cuộc trò chuyện của bạn vẫn giữ nguyên.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Mô hình của bạn có thể cần ngân sách lớn hơn cho việc này. Hãy thử một mô hình nhanh hơn như gpt-4.1-mini trong Cài đặt > AI.",
+  "ai.translateError.emptyResponse.body": "Có thể mô hình của bạn đã dùng hết ngân sách token trước khi kịp trả lời. Hãy thử một mô hình nhanh hơn như gpt-4.1-mini trong Cài đặt > AI.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "Nhà cung cấp AI của bạn gặp trục trặc",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "Máy chủ đã không phản hồi kịp thời. Hãy thử lại sau giây lát.",
+  "ai.cloud.timedOut": "Dịch vụ đã không phản hồi kịp thời. Hãy thử lại sau giây lát.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Địa chỉ đó có vẻ không đúng. Hãy dùng một địa chỉ web đầy đủ bắt đầu bằng https://.",
   "@ai.cloud.invalidEndpoint": {

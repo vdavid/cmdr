@@ -164,9 +164,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Tô bóng hàng xen kẽ để dễ dõi theo từng dòng. Áp dụng cho cả chế độ xem Đầy đủ và Rút gọn.",
+  "settings.listing.stripedRows.description": "Tô bóng hàng xen kẽ để dễ dõi theo từng dòng. Áp dụng cho cả Dạng xem đầy đủ và Dạng xem rút gọn.",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "sọc, sọc ngựa vằn, xen kẽ, hàng, dòng, tô nền, trợ năng",
   "@settings.listing.stripedRows.keywords": {
@@ -820,9 +820,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Luôn lập chỉ mục ảnh trên {name}",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Luôn lập chỉ mục ổ đĩa này: {name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "Đã tạm dừng, sẽ tiếp tục khi ổ đĩa này kết nối lại",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -940,9 +940,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Xóa các mục đã lập chỉ mục bổ sung",
+  "settings.mediaIndex.reclaim.confirmTitle": "Xóa các mục đã lập chỉ mục bổ sung?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "Xóa {doomed, plural, other {{doomedText} mục đã lập chỉ mục}} để giải phóng khoảng {size}? Bạn có thể lập chỉ mục lại các ảnh này sau, nhưng việc đọc lại chúng mất thời gian.",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1089,9 +1089,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Ẩn câu hỏi về phím tắt bản tải về mới nhất",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Không hỏi lại về phím tắt đi tới bản tải về mới nhất",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Lần đầu bạn nhấn phím tắt đi tới bản tải về mới nhất từ bất kỳ ứng dụng nào, Cmdr sẽ hỏi bạn có muốn giữ phím tắt đó bật không. Khi bạn đổi phím tắt, mục này sẽ tự tắt để Cmdr hỏi lại về tổ hợp phím mới. Tắt mục này để xem lại câu hỏi một lần nữa.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1238,9 +1238,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "Thời gian mô hình suy nghĩ trước khi trả lời. Nỗ lực nhiều hơn giúp ích với các tác vụ khó, nhưng câu trả lời đến chậm hơn và phần suy nghĩ được tính phí như đầu ra.",
+  "settings.ai.reasoningEfforts.description": "Thời gian mô hình suy nghĩ trước khi trả lời. Suy nghĩ nhiều hơn giúp ích với các tác vụ khó, nhưng câu trả lời đến chậm hơn và phần suy nghĩ được tính phí như đầu ra.",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "nỗ lực suy luận, nỗ lực, lập luận, suy luận, suy nghĩ, độ sâu, tốc độ, chi phí, chất lượng",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1458,9 +1458,9 @@
   "@settings.fileExplorer.git.showStatusColumn.label": {
     "sourceHash": "0f6a836"
   },
-  "settings.fileExplorer.git.showStatusColumn.description": "Thêm cột hiển thị trạng thái git theo từng tệp (đã sửa, chưa theo dõi, v.v.) ở chế độ Đầy đủ.",
+  "settings.fileExplorer.git.showStatusColumn.description": "Thêm cột hiển thị trạng thái git theo từng tệp (đã sửa, chưa theo dõi, v.v.) ở Dạng xem đầy đủ.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "trạng thái, cột, đã sửa đổi, chưa theo dõi, bị bỏ qua, đã thêm, đã xóa",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1758,13 +1758,13 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "sourceHash": "ad9377a"
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Báo khi mục cần xóa đã không còn từ trước",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Hiển thị thông báo khi mục cần xóa đã không còn từ trước",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Khi bạn xóa thứ gì đó mà một ứng dụng khác đã di chuyển hoặc xóa trước, Cmdr coi như đã xong và hiển thị một thông báo ngắn cho bạn biết. Hãy tắt tùy chọn này (hoặc bấm “Không hiển thị lại nữa” trong thông báo) để bỏ qua thông báo đó.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "Khi bạn xóa thứ gì đó mà một ứng dụng khác đã di chuyển hoặc xóa trước, Cmdr coi như đã xong và hiển thị một thông báo ngắn cho bạn biết. Hãy tắt tùy chọn này (hoặc bấm “Không hiển thị lại nữa” trong thông báo) để ngừng hiển thị các thông báo này.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "biến mất, không còn, mất tích, đã chuyển, thông báo, nhắc, cảnh báo",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2426,9 +2426,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr dùng dịch vụ AI đám mây của bạn. Hãy cho phép AI đám mây trong cài đặt AI để bắt đầu trò chuyện.",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr dùng dịch vụ AI đám mây của bạn. Hãy bật “Cho phép AI đám mây” trong cài đặt AI để bắt đầu trò chuyện.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "Mở cài đặt AI",
   "@settings.askCmdr.openAiSettings": {
@@ -2938,25 +2938,25 @@
   "@settings.appearance.formatHelpYear": {
     "sourceHash": "467ff57"
   },
-  "settings.appearance.formatHelpMonth": "tháng 2 chữ số (01-12)",
+  "settings.appearance.formatHelpMonth": "tháng 2 chữ số (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
-  "settings.appearance.formatHelpDay": "ngày 2 chữ số (01-31)",
+  "settings.appearance.formatHelpDay": "ngày 2 chữ số (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
-  "settings.appearance.formatHelpHour": "giờ 2 chữ số (00-23)",
+  "settings.appearance.formatHelpHour": "giờ 2 chữ số (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
-  "settings.appearance.formatHelpMinute": "phút 2 chữ số (00-59)",
+  "settings.appearance.formatHelpMinute": "phút 2 chữ số (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
-  "settings.appearance.formatHelpSecond": "giây 2 chữ số (00-59)",
+  "settings.appearance.formatHelpSecond": "giây 2 chữ số (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "Thêm chút màu nền mờ vào các khung để bạn phân biệt loại ổ đĩa ngay trong nháy mắt.",
   "@settings.appearance.tintGroupDescription": {
@@ -3163,9 +3163,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Đổi phím tắt trong Phím tắt → Đến tệp tải về mới nhất (toàn cục).",
+  "settings.fileSystemWatching.globalShortcutHint": "Đổi phím tắt trong “Phím tắt → Đi tới bản tải về mới nhất”.",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "Truy cập {localNetwork}",
   "@settings.network.localNetworkAccessLabel": {

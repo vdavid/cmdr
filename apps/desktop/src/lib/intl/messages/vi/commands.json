@@ -19,17 +19,17 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
-  "commands.appAcknowledgements.label": "Lời cảm ơn…",
+  "commands.appAcknowledgements.label": "Lời cảm ơn",
   "@commands.appAcknowledgements.label": {
-    "sourceHash": "7d0e506"
+    "sourceHash": "c9015d5"
   },
   "commands.appLicenseKey.seeDetails.label": "Xem chi tiết giấy phép",
   "@commands.appLicenseKey.seeDetails.label": {
     "sourceHash": "0e660e8"
   },
-  "commands.appLicenseKey.enterKey.label": "Nhập khóa giấy phép",
+  "commands.appLicenseKey.enterKey.label": "Nhập khóa giấy phép…",
   "@commands.appLicenseKey.enterKey.label": {
-    "sourceHash": "357d05e"
+    "sourceHash": "24a8d77"
   },
   "commands.appCommandPalette.label": "Mở bảng lệnh",
   "@commands.appCommandPalette.label": {
@@ -45,7 +45,7 @@
   },
   "commands.appCheckForUpdates.description": "Kiểm tra xem có phiên bản Cmdr mới hơn không, và tải về nếu có",
   "@commands.appCheckForUpdates.description": {
-    "sourceHash": "c53dab0"
+    "sourceHash": "90523c6"
   },
   "commands.cmdrOpenOnboarding.label": "Thiết lập ban đầu…",
   "@commands.cmdrOpenOnboarding.label": {
@@ -53,7 +53,7 @@
   },
   "commands.cmdrOpenOnboarding.description": "Mở lại trình thiết lập ban đầu để xem lại hoặc thay đổi các tùy chọn thiết lập lần đầu",
   "@commands.cmdrOpenOnboarding.description": {
-    "sourceHash": "a45c542"
+    "sourceHash": "fc0a198"
   },
   "commands.appToggleCliCommand.install.label": "Cài đặt lệnh “cmdr”",
   "@commands.appToggleCliCommand.install.label": {
@@ -67,9 +67,9 @@
   "@commands.appToggleCliCommand.homebrew.label": {
     "sourceHash": "cc4c0fd"
   },
-  "commands.appToggleCliCommand.description": "Gõ cmdr kèm một đường dẫn trong terminal để mở tệp hoặc thư mục đó trong Cmdr",
+  "commands.appToggleCliCommand.description": "Cho phép bạn gõ cmdr kèm một đường dẫn trong terminal để mở tệp hoặc thư mục đó trong Cmdr",
   "@commands.appToggleCliCommand.description": {
-    "sourceHash": "ce7efbd"
+    "sourceHash": "73b4f32"
   },
   "commands.helpOpenShortcuts.label": "Phím tắt",
   "@commands.helpOpenShortcuts.label": {
@@ -77,7 +77,7 @@
   },
   "commands.helpOpenShortcuts.description": "Mở một cửa sổ chỉ đọc liệt kê mọi phím tắt, đồng bộ trực tiếp với các tùy chỉnh của bạn",
   "@commands.helpOpenShortcuts.description": {
-    "sourceHash": "a9a1e0d"
+    "sourceHash": "caa15c9"
   },
   "commands.helpAccessibility.label": "Hướng dẫn trợ năng",
   "@commands.helpAccessibility.label": {
@@ -85,7 +85,7 @@
   },
   "commands.helpAccessibility.description": "Mở hướng dẫn về các tính năng trợ năng của Cmdr trên getcmdr.com",
   "@commands.helpAccessibility.description": {
-    "sourceHash": "2ece797"
+    "sourceHash": "7104ee3"
   },
   "commands.helpSendErrorReport.label": "Gửi báo cáo trục trặc…",
   "@commands.helpSendErrorReport.label": {
@@ -93,40 +93,40 @@
   },
   "commands.helpSendErrorReport.description": "Gửi nhật ký Cmdr cho nhóm để giúp khắc phục sự cố",
   "@commands.helpSendErrorReport.description": {
-    "sourceHash": "021d333"
+    "sourceHash": "7615640"
   },
   "commands.queueShow.label": "Hàng đợi thao tác",
   "@commands.queueShow.label": {
     "sourceHash": "fa91417"
   },
-  "commands.queueShow.description": "Mở cửa sổ liệt kê mọi thao tác đang chạy và đang chờ, nơi bạn có thể tạm dừng, tiếp tục, hoặc hủy chúng",
+  "commands.queueShow.description": "Mở cửa sổ liệt kê mọi thao tác đang chạy và đang chờ, nơi bạn có thể tạm dừng, tiếp tục hoặc hủy chúng",
   "@commands.queueShow.description": {
-    "sourceHash": "37b616a"
+    "sourceHash": "4511b63"
   },
   "commands.helpWhatsNew.label": "Có gì mới",
   "@commands.helpWhatsNew.label": {
     "sourceHash": "37e6112"
   },
-  "commands.helpWhatsNew.description": "Xem những thay đổi trong các bản phát hành Cmdr mới nhất",
+  "commands.helpWhatsNew.description": "Hiển thị những thay đổi trong các bản phát hành Cmdr mới nhất",
   "@commands.helpWhatsNew.description": {
-    "sourceHash": "f8ad411"
+    "sourceHash": "4e04cc8"
   },
   "commands.logOperationLog.label": "Nhật ký thao tác",
   "@commands.logOperationLog.label": {
     "sourceHash": "2c97965"
   },
-  "commands.logOperationLog.description": "Xem lịch sử thao tác tệp của bạn và hoàn tác chúng",
+  "commands.logOperationLog.description": "Hiển thị lịch sử thao tác tệp của bạn và cho phép hoàn tác chúng",
   "@commands.logOperationLog.description": {
-    "sourceHash": "ea2d082"
+    "sourceHash": "70b7bcd"
   },
   "commands.askCmdrToggle.label": "Ask Cmdr",
   "@commands.askCmdrToggle.label": {
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (Ask Cmdr); kept verbatim in every locale per the do-not-translate rule."
   },
-  "commands.askCmdrToggle.description": "Trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn",
+  "commands.askCmdrToggle.description": "Mở cuộc trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn",
   "@commands.askCmdrToggle.description": {
-    "sourceHash": "c520468"
+    "sourceHash": "a25a7a4"
   },
   "commands.askCmdrNewChat.label": "Trò chuyện mới trong Ask Cmdr",
   "@commands.askCmdrNewChat.label": {
@@ -134,7 +134,7 @@
   },
   "commands.askCmdrNewChat.description": "Bắt đầu trò chuyện mới trong Ask Cmdr và mở Ask Cmdr nếu đang đóng",
   "@commands.askCmdrNewChat.description": {
-    "sourceHash": "957741b"
+    "sourceHash": "aa3c28c"
   },
   "commands.askCmdrFind.label": "Tìm trong trò chuyện",
   "@commands.askCmdrFind.label": {
@@ -152,9 +152,9 @@
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Cho người làm ra Cmdr biết bạn nghĩ gì: ý tưởng, mong muốn, bất cứ điều gì",
+  "commands.feedbackSend.description": "Để bạn cho người làm ra Cmdr biết bạn nghĩ gì: ý tưởng, mong muốn, bất cứ điều gì",
   "@commands.feedbackSend.description": {
-    "sourceHash": "89d08a8"
+    "sourceHash": "30c0620"
   },
   "commands.searchOpen.label": "Tìm kiếm tệp",
   "@commands.searchOpen.label": {
@@ -166,7 +166,7 @@
   },
   "commands.navGoToPath.description": "Đưa khung đang chọn đến một đường dẫn được gõ, dán, hoặc gần đây.",
   "@commands.navGoToPath.description": {
-    "sourceHash": "fc6a00c"
+    "sourceHash": "0b91354"
   },
   "commands.favoritesAdd.label": "Thêm vào mục ưa thích",
   "@commands.favoritesAdd.label": {
@@ -174,15 +174,15 @@
   },
   "commands.favoritesAdd.description": "Thêm thư mục hiện tại của khung đang chọn vào mục ưa thích, để sau này quay lại đó từ menu mục ưa thích.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "999aa52"
+    "sourceHash": "43043e8"
   },
   "commands.favoritesOpen.label": "Hiển thị mục ưa thích",
   "@commands.favoritesOpen.label": {
     "sourceHash": "f4dfe9b"
   },
-  "commands.favoritesOpen.description": "Mở menu mục ưa thích trên khung đang chọn, rồi nhấn một con số để đi tới thư mục đó.",
+  "commands.favoritesOpen.description": "Mở menu mục ưa thích trên khung đang chọn, nơi nhấn một phím số sẽ đi tới thư mục ứng với số đó.",
   "@commands.favoritesOpen.description": {
-    "sourceHash": "d188872"
+    "sourceHash": "5fcfcee"
   },
   "commands.favoritesOpenByNumber.label": "Mở mục ưa thích có số đó",
   "@commands.favoritesOpenByNumber.label": {
@@ -194,7 +194,7 @@
   },
   "commands.downloadsGoToLatest.description": "Mở ~/Downloads và chọn tệp gần đây nhất.",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "42a26a2"
+    "sourceHash": "6b3fe83"
   },
   "commands.viewShowHidden.label": "Bật/tắt tệp ẩn",
   "@commands.viewShowHidden.label": {
@@ -298,23 +298,23 @@
   },
   "commands.paneClone.description": "Mở thư mục của khung này ở cả khung còn lại.",
   "@commands.paneClone.description": {
-    "sourceHash": "8a13dc9"
+    "sourceHash": "fcbddd9"
   },
   "commands.paneFocusControls.label": "Di chuyển tiêu điểm tới các điều khiển của khung",
   "@commands.paneFocusControls.label": {
     "sourceHash": "b71f4ad"
   },
-  "commands.paneFocusControls.description": "Dùng bàn phím để tới các tab, thanh vị trí và nút sắp xếp của khung đang chọn. Phím mũi tên di chuyển tiêu điểm giữa các mục này, còn phím Escape đưa bạn quay lại danh sách tệp.",
+  "commands.paneFocusControls.description": "Chuyển tiêu điểm bàn phím tới các tab, thanh vị trí và nút sắp xếp của khung đang chọn. Phím mũi tên di chuyển giữa các mục này, còn phím Escape đưa bạn quay lại danh sách tệp.",
   "@commands.paneFocusControls.description": {
-    "sourceHash": "e5828ae"
+    "sourceHash": "ffce489"
   },
   "commands.appFocusNotifications.label": "Di chuyển tiêu điểm tới các thông báo",
   "@commands.appFocusNotifications.label": {
     "sourceHash": "628f0e5"
   },
-  "commands.appFocusNotifications.description": "Dùng bàn phím để tới các thông báo và nút trên đó, như nút Hoàn tác. Phím mũi tên di chuyển tiêu điểm giữa các thông báo, còn phím Escape đưa bạn quay lại.",
+  "commands.appFocusNotifications.description": "Chuyển tiêu điểm bàn phím tới các thông báo và nút trên đó, như nút Hoàn tác. Phím mũi tên di chuyển giữa các mục này, còn phím Escape đưa bạn quay lại.",
   "@commands.appFocusNotifications.description": {
-    "sourceHash": "87886a4"
+    "sourceHash": "8157823"
   },
   "commands.editUndoTrash.label": "Hoàn tác thao tác chuyển vào thùng rác",
   "@commands.editUndoTrash.label": {
@@ -330,7 +330,7 @@
   },
   "commands.editUndoTrash.description": "Đưa trở lại các tệp bạn đã chuyển vào thùng rác lần gần nhất",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "3aa756f"
+    "sourceHash": "dca1b63"
   },
   "commands.paneLeftVolumeChooser.label": "Mở bộ chọn ổ đĩa bên trái",
   "@commands.paneLeftVolumeChooser.label": {
@@ -346,7 +346,7 @@
   },
   "commands.paneCopyPathLeftToRight.description": "Mở vị trí của khung trái ở bên phải. Khi khung trái đang được chọn và con trỏ đang ở trên một thư mục, thư mục đó sẽ mở ở bên phải.",
   "@commands.paneCopyPathLeftToRight.description": {
-    "sourceHash": "07ac6a1"
+    "sourceHash": "d866ae5"
   },
   "commands.paneCopyPathRightToLeft.label": "Sao chép đường dẫn từ khung phải sang trái",
   "@commands.paneCopyPathRightToLeft.label": {
@@ -354,7 +354,7 @@
   },
   "commands.paneCopyPathRightToLeft.description": "Mở vị trí của khung phải ở bên trái. Khi khung phải đang được chọn và con trỏ đang ở trên một thư mục, thư mục đó sẽ mở ở bên trái.",
   "@commands.paneCopyPathRightToLeft.description": {
-    "sourceHash": "95c566f"
+    "sourceHash": "052c7cd"
   },
   "commands.paneRefresh.label": "Làm mới khung",
   "@commands.paneRefresh.label": {
@@ -416,13 +416,13 @@
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },
-  "commands.navUp.label": "Chọn tệp trước đó",
+  "commands.navUp.label": "Chuyển con trỏ tới mục trước đó",
   "@commands.navUp.label": {
-    "sourceHash": "40dca00"
+    "sourceHash": "6197d1a"
   },
-  "commands.navDown.label": "Chọn tệp tiếp theo",
+  "commands.navDown.label": "Chuyển con trỏ tới mục tiếp theo",
   "@commands.navDown.label": {
-    "sourceHash": "61e81ee"
+    "sourceHash": "8b5b37b"
   },
   "commands.navOpen.label": "Mở tệp hoặc thư mục",
   "@commands.navOpen.label": {
@@ -504,9 +504,9 @@
   "@commands.paneQuickFilter.label": {
     "sourceHash": "e731882"
   },
-  "commands.paneQuickFilter.description": "Mở huy hiệu bộ lọc với mẫu hiện tại. Nhấn lần nữa để chuyển giữa “Lọc” và “Nhảy tới”",
+  "commands.paneQuickFilter.description": "Mở huy hiệu với những gì bạn đã gõ. Nhấn lần nữa để chuyển giữa “Lọc” và “Nhảy tới”",
   "@commands.paneQuickFilter.description": {
-    "sourceHash": "2778526"
+    "sourceHash": "e531430"
   },
   "commands.fileMultiRename.label": "Đổi tên hàng loạt",
   "@commands.fileMultiRename.label": {
@@ -726,7 +726,7 @@
   },
   "commands.fileDuplicate.description": "Tạo bản sao của các tệp đã chọn trong cùng thư mục",
   "@commands.fileDuplicate.description": {
-    "sourceHash": "2c038a2"
+    "sourceHash": "5c02b66"
   },
   "commands.fileCompress.label": "Nén",
   "@commands.fileCompress.label": {
@@ -738,7 +738,7 @@
   },
   "commands.editCopy.description": "Sao chép các tệp đã chọn vào bảng nhớ tạm để dán",
   "@commands.editCopy.description": {
-    "sourceHash": "5c769a7"
+    "sourceHash": "3ded30a"
   },
   "commands.editCut.label": "Cắt vào bảng nhớ tạm",
   "@commands.editCut.label": {
@@ -746,7 +746,7 @@
   },
   "commands.editCut.description": "Cắt các tệp đã chọn (dán sẽ di chuyển chúng)",
   "@commands.editCut.description": {
-    "sourceHash": "5bc3870"
+    "sourceHash": "1e03b84"
   },
   "commands.editPaste.label": "Dán",
   "@commands.editPaste.label": {
@@ -754,7 +754,7 @@
   },
   "commands.editPaste.description": "Dán các tệp từ bảng nhớ tạm vào thư mục hiện tại",
   "@commands.editPaste.description": {
-    "sourceHash": "32545d7"
+    "sourceHash": "9eca6d3"
   },
   "commands.editPasteAsMove.label": "Di chuyển vào đây",
   "@commands.editPasteAsMove.label": {
@@ -762,7 +762,7 @@
   },
   "commands.editPasteAsMove.description": "Dán các tệp từ bảng nhớ tạm dưới dạng di chuyển",
   "@commands.editPasteAsMove.description": {
-    "sourceHash": "961316d"
+    "sourceHash": "41e9245"
   },
   "commands.fileNewFolder.label": "Thư mục mới",
   "@commands.fileNewFolder.label": {
@@ -786,7 +786,7 @@
   },
   "commands.fileGoToTrash.description": "Mở thùng rác của ổ đĩa bạn đang duyệt",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "73eae92"
+    "sourceHash": "6496c25"
   },
   "commands.dialogConfirm.label": "Xác nhận hộp thoại trên màn hình",
   "@commands.dialogConfirm.label": {
@@ -806,7 +806,7 @@
   },
   "commands.fileOpenTerminalHere.description": "Mở ứng dụng terminal của bạn trong thư mục bạn đang xem",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "ac0ddb8"
+    "sourceHash": "f03d961"
   },
   "commands.fileCopyPath.label": "Sao chép đường dẫn vào bảng nhớ tạm",
   "@commands.fileCopyPath.label": {
@@ -1280,17 +1280,17 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "1a1f5b9"
   },
-  "commands.suggestedOpsShow.description": "Xem lại các thao tác tệp mà AI đề xuất và quyết định điều gì sẽ chạy",
+  "commands.suggestedOpsShow.description": "Hiển thị các thao tác tệp mà AI đề xuất, để bạn quyết định thao tác nào sẽ chạy",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "7efe8c9"
+    "sourceHash": "5468fcf"
   },
   "commands.helpViewDebugLog.label": "Xem nhật ký gỡ lỗi",
   "@commands.helpViewDebugLog.label": {
     "sourceHash": "007c98d"
   },
-  "commands.helpViewDebugLog.description": "Theo dõi trực tiếp nhật ký gỡ lỗi của Cmdr trong trình xem tệp",
+  "commands.helpViewDebugLog.description": "Hiển thị trực tiếp nhật ký gỡ lỗi của Cmdr trong trình xem tệp",
   "@commands.helpViewDebugLog.description": {
-    "sourceHash": "a937e6e"
+    "sourceHash": "06f49ab"
   },
   "commands.handler.viewDebugLog.disabled": "Lưu nhật ký đang tắt. Đặt giới hạn dung lượng đĩa lớn hơn 0 trong Cài đặt > Nâng cao, rồi khởi động lại Cmdr để xem nhật ký gỡ lỗi.",
   "@commands.handler.viewDebugLog.disabled": {

@@ -627,11 +627,13 @@
   },
   "queryUi.date.preset.thisMonth": "{date} {time}",
   "@queryUi.date.preset.thisMonth": {
-    "sourceHash": "030ee23"
+    "sourceHash": "ed860a4",
+    "sameAsSourceJustification": "Placeholders only: {date} arrives already worded by the vi date formatter, and Vietnamese writes a date before a time with a plain space, as English does."
   },
   "queryUi.date.preset.lastMonth": "{date}, {time}",
   "@queryUi.date.preset.lastMonth": {
-    "sourceHash": "0838509"
+    "sourceHash": "1a88956",
+    "sameAsSourceJustification": "Placeholders only: {date} arrives already worded by the vi date formatter (year included); the comma before {time} reads naturally in Vietnamese too."
   },
   "queryUi.date.preset.yearStart": "ngày 1 tháng 1, {year}, {time}",
   "@queryUi.date.preset.yearStart": {

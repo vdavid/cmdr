@@ -7,9 +7,9 @@
   "@servers.pinHint.title": {
     "sourceHash": "0cf001a"
   },
-  "servers.pinHint.body": "Bấm chuột phải vào một máy chủ rồi chọn Bỏ ghim khỏi bộ chọn ổ đĩa, hoặc dùng “{command}” trong bảng lệnh. Máy chủ vẫn nằm trong danh sách Máy chủ.",
+  "servers.pinHint.body": "Bấm chuột phải vào một máy chủ rồi chọn “Bỏ ghim khỏi bộ chọn ổ đĩa”, hoặc dùng “{command}” trong bảng lệnh. Máy chủ vẫn nằm trong danh sách Máy chủ.",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "Đã hiểu",
   "@servers.pinHint.gotIt": {
@@ -63,9 +63,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "Chưa từng",
+  "servers.hub.neverUsed": "Chưa từng dùng",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "với tư cách {username}",
   "@servers.hub.shareAccount": {
@@ -379,9 +379,9 @@
   "@servers.sheet.addAnyway": {
     "sourceHash": "d0652ad"
   },
-  "servers.sheet.addAnywayHelp": "Cmdr không kiểm tra được máy chủ này, nên nút “Vẫn thêm” sẽ lưu máy chủ đúng như bạn đã nhập.",
+  "servers.sheet.addAnywayHelp": "Cmdr không kiểm tra được máy chủ này, nên “Vẫn thêm” sẽ lưu máy chủ đúng như bạn đã nhập.",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "Tháo và lưu",
   "@servers.sheet.ejectAndSave": {
@@ -527,9 +527,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS gửi được tối đa 16 nhóm khác, còn danh sách này có {count} nhóm.",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS gửi được tối đa 16 nhóm khác, còn danh sách này có {count, plural, other {# nhóm}}.",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "Máy chủ dựa vào các số này để quyết định bạn được mở những gì. NFS không hỏi mật khẩu.",
   "@servers.sheet.nfsIdentityHelp": {
@@ -928,9 +928,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Tạm ngừng thử. Kết nối vẫn khả dụng. Chuyển lại để thử lại.",
+  "servers.paneState.cancelCycleTooltip": "Tạm ngừng thử. Kết nối vẫn khả dụng; hãy mở lại máy chủ để thử lại.",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "Ngừng thử và ngắt kết nối khỏi máy chủ.",
   "@servers.paneState.disconnectCycleTooltip": {

@@ -229,9 +229,9 @@
   "@licensing.dialog.validityExpiredOn": {
     "sourceHash": "f8383a3"
   },
-  "licensing.dialog.pendingHint": "Chúng tôi sẽ tự động xác minh với máy chủ trong vòng {days} ngày.",
+  "licensing.dialog.pendingHint": "Chúng tôi sẽ tự động xác minh với máy chủ trong vòng {days, plural, other {# ngày}}.",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "b4bbb38"
+    "sourceHash": "4ecbc26"
   },
   "licensing.dialog.useDifferentKey": "Dùng khóa khác",
   "@licensing.dialog.useDifferentKey": {
@@ -261,9 +261,9 @@
   "@licensing.dialog.inputPlaceholder": {
     "sourceHash": "3fb5cf9"
   },
-  "licensing.dialog.retryExhausted": "Chúng tôi đã thử {count} lần mà vẫn chưa được. Rất tiếc vì sự bất tiện này. Hãy nhắn cho chúng tôi tại <supportEmail>{email}</supportEmail> và chúng tôi sẽ xử lý.",
+  "licensing.dialog.retryExhausted": "Chúng tôi đã thử {count, plural, other {# lần}} mà vẫn chưa được. Rất tiếc vì sự bất tiện này. Hãy nhắn cho chúng tôi tại <supportEmail>{email}</supportEmail> và chúng tôi sẽ xử lý.",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "d2aa21a"
+    "sourceHash": "9dc812f"
   },
   "licensing.dialog.serverInvalidHelp": "Nếu bạn nghĩ đây là nhầm lẫn, hãy gửi email cho chúng tôi tại <supportEmail>{email}</supportEmail> và chúng tôi sẽ xử lý.",
   "@licensing.dialog.serverInvalidHelp": {

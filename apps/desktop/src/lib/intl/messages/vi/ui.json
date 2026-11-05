@@ -26,7 +26,7 @@
   },
   "ui.select.placeholder": "Chọn…",
   "@ui.select.placeholder": {
-    "sourceHash": "731fe04"
+    "sourceHash": "7ca4161"
   },
   "ui.combobox.emptyText": "Không có kết quả khớp. Cứ tiếp tục gõ để dùng giá trị của riêng bạn.",
   "@ui.combobox.emptyText": {

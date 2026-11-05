@@ -234,7 +234,7 @@ GNOME / Thunar / Dolphin / Total Commander; catalog consistency over a pile-idea
 ## Thêm ghi chú vào báo cáo đã gửi (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`)
 
 - get your notes to the team → `Để nhóm nhận được …` over `chuyển` (Move) and a doubled `gửi … gửi`. "What was sent"
-  twins `errorReporter.dialog.detailsToggle` (`sắp` → `đã`). `ID tham chiếu của bạn là` matches
+  twins `errorReporter.dialog.detailsToggle` (`sắp` → `đã`). `ID tham chiếu của bạn:` matches
   `errorReporter.sentToast.message`.
 
 ## Chọn và bỏ chọn: hộp thoại Select / Deselect (`selection.*`)

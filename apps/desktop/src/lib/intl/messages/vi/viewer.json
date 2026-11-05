@@ -47,9 +47,9 @@
   "@viewer.error.coldStorage": {
     "sourceHash": "236cd1b"
   },
-  "viewer.error.linkTargetUnreachable": "Tệp này nằm sau một liên kết tới máy chủ khác, và hiện Cmdr không kết nối được tới máy chủ đó. Hãy kiểm tra xem máy chủ có đang chạy không, rồi thử lại.",
+  "viewer.error.linkTargetUnreachable": "Đường dẫn của tệp này dẫn qua một liên kết tới máy chủ khác, và hiện Cmdr không kết nối được tới máy chủ đó. Hãy kiểm tra xem máy chủ có đang chạy không, rồi thử lại.",
   "@viewer.error.linkTargetUnreachable": {
-    "sourceHash": "8dcb736"
+    "sourceHash": "0540c9a"
   },
   "viewer.error.retry": "Thử lại",
   "@viewer.error.retry": {

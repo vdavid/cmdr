@@ -769,17 +769,17 @@
   "@askCmdr.limit.wallTime": {
     "sourceHash": "fc47e07"
   },
-  "askCmdr.limit.repeatedCall.answered": "Câu trả lời này cứ lặp lại cùng một lần tra cứu, nên Cmdr đã dừng việc tìm kiếm và để nó trả lời bằng những gì tìm được.",
+  "askCmdr.limit.repeatedCall.answered": "Câu trả lời này cứ lặp lại cùng một lần tra cứu, nên Cmdr đã cho nó ngừng tra cứu và trả lời bằng những gì đã tìm được.",
   "@askCmdr.limit.repeatedCall.answered": {
-    "sourceHash": "884a9ae"
+    "sourceHash": "c603b8c"
   },
   "askCmdr.limit.repeatedCall.unfinished": "Câu trả lời này cứ lặp lại cùng một lần tra cứu, nên Cmdr đã dừng nó trước khi kịp hoàn tất.",
   "@askCmdr.limit.repeatedCall.unfinished": {
     "sourceHash": "c21dbe9"
   },
-  "askCmdr.limit.noProgress.answered": "{maxText} {max, plural, other {vòng tra cứu}} gần nhất của câu trả lời này không tìm thấy gì mới, nên Cmdr đã dừng việc tìm kiếm và để nó trả lời bằng những gì tìm được.",
+  "askCmdr.limit.noProgress.answered": "{maxText} {max, plural, other {vòng tra cứu}} gần nhất của câu trả lời này không tìm thấy gì mới, nên Cmdr đã cho nó ngừng tra cứu và trả lời bằng những gì đã tìm được.",
   "@askCmdr.limit.noProgress.answered": {
-    "sourceHash": "6dc1bc0"
+    "sourceHash": "574fe02"
   },
   "askCmdr.limit.noProgress.unfinished": "{maxText} {max, plural, other {vòng tra cứu}} gần nhất của câu trả lời này không tìm thấy gì mới, nên Cmdr đã dừng nó trước khi kịp hoàn tất.",
   "@askCmdr.limit.noProgress.unfinished": {
@@ -917,9 +917,9 @@
   "@askCmdr.sessions.renameLabel": {
     "sourceHash": "17a3048"
   },
-  "askCmdr.sessions.archive": "Lưu trữ",
+  "askCmdr.sessions.archive": "Lưu trữ cuộc trò chuyện",
   "@askCmdr.sessions.archive": {
-    "sourceHash": "66f4804"
+    "sourceHash": "9bd687c"
   },
   "askCmdr.sessions.unarchive": "Bỏ lưu trữ",
   "@askCmdr.sessions.unarchive": {
@@ -1226,17 +1226,17 @@
   "@askCmdr.renameReview.stopChecking": {
     "sourceHash": "4373037"
   },
-  "askCmdr.renameReview.checkUnfinished": "Cmdr chưa kiểm tra xong {count, plural, other {# tệp}}, nên chưa thể đổi tên.",
+  "askCmdr.renameReview.checkUnfinished": "Còn {count, plural, other {# tệp}} chưa được kiểm tra, nên Cmdr chưa thể đổi tên.",
   "@askCmdr.renameReview.checkUnfinished": {
-    "sourceHash": "c3c05ce"
+    "sourceHash": "1160511"
   },
   "askCmdr.renameReview.checkAgain": "Kiểm tra lại",
   "@askCmdr.renameReview.checkAgain": {
     "sourceHash": "fb7099a"
   },
-  "askCmdr.renameReview.needsAnotherLook": "Có gì đó đã thay đổi kể từ lúc Cmdr kiểm tra các tên này, nên Cmdr chưa đổi tên tệp nào. Hãy xem lại rồi thử lại.",
+  "askCmdr.renameReview.needsAnotherLook": "Có gì đó đã thay đổi kể từ lúc Cmdr kiểm tra các tên này, nên Cmdr chưa đổi tên mục nào. Hãy kiểm tra các tên rồi thử lại.",
   "@askCmdr.renameReview.needsAnotherLook": {
-    "sourceHash": "36c6050"
+    "sourceHash": "5e7d2da"
   },
   "askCmdr.renameReview.couldntStart": "Cmdr không bắt đầu được lần đổi tên này, nên chưa có gì thay đổi. Hãy thử lại sau giây lát.",
   "@askCmdr.renameReview.couldntStart": {
@@ -1258,9 +1258,9 @@
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
   },
-  "askCmdr.renameUndo.swapsSkipped": "Đã bỏ qua {countText} {count, plural, other {lần đổi tên}} hoán đổi tên cho nhau. Hãy đổi tên từng tệp một.",
+  "askCmdr.renameUndo.swapsSkipped": "Đã bỏ qua {countText} {count, plural, other {lần đổi tên}} hoán đổi tên cho nhau. Hãy đổi tên lần lượt từng mục đó.",
   "@askCmdr.renameUndo.swapsSkipped": {
-    "sourceHash": "90e8dfc"
+    "sourceHash": "bb3ee75"
   },
   "askCmdr.renameUndo.notRecorded": "Nhật ký thao tác đang tắt, nên không thể hoàn tác việc này.",
   "@askCmdr.renameUndo.notRecorded": {
@@ -1302,9 +1302,9 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "Giữ nguyên {countText} {count, plural, other {tệp}}: chúng đã thay đổi sau khi đổi tên.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: chúng đã thay đổi sau khi đổi tên.",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "217d1e8"
+    "sourceHash": "dbeb782"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "Không tìm thấy {name}: tệp đã bị di chuyển hoặc xóa sau khi đổi tên.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
@@ -1318,17 +1318,17 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Giữ nguyên {countText} {count, plural, other {tệp}}: tên cũ của chúng đã có thứ khác dùng.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: tên cũ của chúng đã có thứ khác dùng.",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "2fd2e7a"
+    "sourceHash": "409140a"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "Giữ nguyên {name}: Cmdr không kiểm tra được liệu có gì thay đổi hay không.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Giữ nguyên {countText} {count, plural, other {tệp}}: Cmdr không kiểm tra được chúng có thay đổi hay không.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: Cmdr không kiểm tra được chúng có thay đổi hay không.",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "5964166"
+    "sourceHash": "25fe620"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Giữ nguyên thư mục {name}: bây giờ trong đó đã có thứ gì.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
@@ -1342,9 +1342,9 @@
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "Giữ nguyên {countText} {count, plural, other {tệp}}: Cmdr không đặt lại được tên cũ của chúng.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: Cmdr không đặt lại được tên cũ của chúng.",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "f13c021"
+    "sourceHash": "cf38d62"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr không hoàn tác được {countText} {count, plural, other {lô}}. Chi tiết nằm trong nhật ký thao tác.",
   "@askCmdr.renameUndo.refusedBatches": {

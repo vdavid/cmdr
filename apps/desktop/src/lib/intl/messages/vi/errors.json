@@ -447,9 +447,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "af30f30"
   },
-  "errors.listing.couldntReadUnknown.explanation": "Cmdr gặp một trục trặc bất ngờ khi đọc `{path}`. Hãy xem chi tiết kỹ thuật bên dưới để biết mã hệ thống cụ thể, điều này có thể giúp khắc phục sự cố.",
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr gặp một trục trặc bất ngờ khi đọc `{path}`. Hãy xem “Chi tiết kỹ thuật” bên dưới để biết mã hệ thống cụ thể, mã này có thể giúp khắc phục sự cố.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Tiện ích ổ đĩa** và chạy **Sửa nhanh** trên ổ đĩa này",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -591,9 +591,9 @@
   "@errors.listing.linkTargetUnreachable.title": {
     "sourceHash": "8aee94c"
   },
-  "errors.listing.linkTargetUnreachable.explanation": "`{path}` nằm sau một liên kết tới máy chủ khác, và hiện Cmdr không kết nối được tới máy chủ đó. Phần còn lại của mục chia sẻ này vẫn ổn và không có gì bị xóa.",
+  "errors.listing.linkTargetUnreachable.explanation": "`{path}` dẫn qua một liên kết tới máy chủ khác, và hiện Cmdr không kết nối được tới máy chủ đó. Phần còn lại của mục chia sẻ này vẫn ổn và không có gì bị xóa.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "Bạn có thể thử:\n- Kiểm tra xem máy chủ kia có đang chạy không và mạng của bạn có kết nối được tới máy chủ đó không\n- Mở lại nơi này để thử lại",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1485,9 +1485,9 @@
   "@errors.write.replySignatureRefused.title": {
     "sourceHash": "829a591"
   },
-  "errors.write.replySignatureRefused.message": "Phản hồi của máy chủ không có chữ ký hợp lệ, nên Cmdr đã dừng.",
+  "errors.write.replySignatureRefused.message": "Phản hồi của máy chủ không có chữ ký hợp lệ, nên Cmdr đã dừng thao tác tại đó.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "Một thiết bị mạng chập chờn có thể gây ra chuyện này, và ai đó can thiệp vào dữ liệu truyền giữa bạn và máy chủ cũng vậy. Hãy kết nối lại, và nếu việc này xảy ra lần nữa, hãy kiểm tra mạng của bạn.",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1889,9 +1889,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "Thiết bị đích",
+  "errors.write.readOnlyDevice.destination.fallbackName": "Đích",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "Tệp đang bị khóa",
   "@errors.write.fileLocked.title": {
@@ -2221,9 +2221,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "Vị trí này nằm sau một liên kết tới máy chủ khác, và hiện Cmdr không kết nối được tới máy chủ đó.",
+  "errors.volume.linkTargetUnreachable": "Đường dẫn này dẫn qua một liên kết tới máy chủ khác, và hiện Cmdr không kết nối được tới máy chủ đó.",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "Thiết bị đã khởi động lại kết nối. Hãy đợi vài giây rồi thử lại.",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "Kết nối không phản hồi kịp.",
+  "errors.volume.connectionTimeout": "Máy chủ hoặc thiết bị đã không phản hồi kịp.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "Cmdr đã dừng việc này theo yêu cầu của bạn.",
   "@errors.volume.cancelled": {
@@ -2289,9 +2289,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.signatureInvalid": "Phản hồi của máy chủ không có chữ ký hợp lệ, nên Cmdr đã dừng.",
+  "errors.volume.signatureInvalid": "Phản hồi của máy chủ không có chữ ký hợp lệ, nên Cmdr đã dừng thao tác tại đó.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "Ổ đĩa chưa hoàn tất được việc đó.",
   "@errors.volume.ioError": {
@@ -2369,13 +2369,13 @@
   "@errors.eject.unmountRefused": {
     "sourceHash": "f855a33"
   },
-  "errors.eject.unmountRefusedByApp": "{app} vẫn đang dùng thứ gì đó ở đó. Hãy đóng ứng dụng này, rồi thử lại.",
+  "errors.eject.unmountRefusedByApp": "{app} vẫn đang dùng thứ gì đó ở đó. Hãy đóng ứng dụng đó, rồi thử lại.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
-  "errors.eject.unmountRefusedByApps": "{apps} vẫn đang dùng thứ gì đó ở đó. Hãy đóng các ứng dụng này, rồi thử lại.",
+  "errors.eject.unmountRefusedByApps": "{apps} vẫn đang dùng thứ gì đó ở đó. Hãy đóng các ứng dụng đó, rồi thử lại.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "các ứng dụng khác",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "Một phần lựa chọn của bạn nằm trong khu vực chỉ để xem",
+  "errors.write.sourcesSpanVolumes.title": "Một phần lựa chọn của bạn nằm trong bản sao lưu, tệp nén hoặc lịch sử git",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "{path} nằm trong ảnh chụp nhanh của một bản sao lưu, một tệp nén hoặc lịch sử của một repo, còn những mục khác bạn chọn thì không, nên Cmdr không thể đọc chúng cùng lúc. Không có gì bị thay đổi.",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "Hãy làm thành hai bước: trước tiên là riêng các mục trong khu vực chỉ để xem, sau đó là phần còn lại.",
+  "errors.write.sourcesSpanVolumes.suggestion": "Hãy làm thành hai bước: trước tiên là riêng các mục đó, sau đó là phần còn lại.",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "Hãy di chuyển từng mục một, hoặc đổi tên một mục trước.",
   "@errors.write.duplicateSourceNames.suggestion.move": {

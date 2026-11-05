@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "Máy chủ này không thể lưu {classes}, nên những thông tin đó không được chuyển theo.",
+  "transfer.metadataLeftBehind": "Đích này không lưu được một số thông tin, nên chúng không được chuyển theo: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, other {{countText} mục bị khóa vẫn nằm nguyên chỗ cũ.}}",
   "@transfer.lockedSkipped": {
