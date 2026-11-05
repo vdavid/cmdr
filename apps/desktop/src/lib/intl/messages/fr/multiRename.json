@@ -172,9 +172,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "Vous avez {max, number} présélections, le maximum que Cmdr conserve. Supprimez-en une pour enregistrer celle-ci.",
+  "multiRename.presets.listFull": "Vous avez {max, plural, one {# présélection} many {# présélections} other {# présélections}}, le maximum que Cmdr conserve. Supprimez-en une pour enregistrer celle-ci.",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "Remplacer",
   "@multiRename.presets.replace": {
@@ -224,13 +224,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "Même nom qu’un autre fichier",
+  "multiRename.status.duplicate": "Même nom qu’un autre élément",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
   "multiRename.status.targetExists": "Ce nom est déjà pris",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "Nom non valide",
   "@multiRename.status.invalidName": {
@@ -384,17 +384,17 @@
   "@multiRename.status.ready": {
     "sourceHash": "f032574"
   },
-  "multiRename.reason.duplicate": "Un autre fichier de ce lot reçoit le même nouveau nom, donc aucun des deux n’est renommé.",
+  "multiRename.reason.duplicate": "Un autre élément de ce lot reçoit le même nouveau nom, donc aucun des deux n’est renommé.",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
-  "multiRename.reason.targetExists": "Un fichier qui reste dans ce dossier porte déjà ce nom, donc celui-ci garde le sien.",
+  "multiRename.reason.targetExists": "Un élément qui reste dans ce dossier porte déjà ce nom, donc celui-ci garde le sien.",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
-  "multiRename.reason.missing": "Ce fichier a été déplacé ou supprimé après l’ouverture de « Renommer par lot », il est donc laissé de côté.",
+  "multiRename.reason.missing": "Cet élément a été déplacé ou supprimé après l’ouverture de « Renommer par lot », il est donc laissé de côté.",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "Lecture…",
   "@multiRename.status.reading": {
@@ -404,13 +404,13 @@
   "@multiRename.status.noValue": {
     "sourceHash": "619464f"
   },
-  "multiRename.reason.noValue": "Ce fichier n’a pas de valeur « {field} », il garde donc son nom.",
+  "multiRename.reason.noValue": "Cet élément n’a pas de valeur « {field} », il garde donc son nom.",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "Ce fichier n’a pas de valeur « {field} », il garde donc son nom. L’éditeur du marqueur peut utiliser à la place la date de dernière modification du fichier.",
+  "multiRename.reason.noDate": "Cet élément n’a pas de valeur « {field} », il garde donc son nom. L’éditeur du marqueur peut utiliser à la place la date de dernière modification de l’élément.",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "Lecture des tags impossible",
   "@multiRename.status.unreadable": {
@@ -639,9 +639,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "{count, plural, one {# renommage ignoré, car il permute des noms} many {# renommages ignorés, car ils permutent des noms} other {# renommages ignorés, car ils permutent des noms}}. Renommez ces fichiers un par un.",
+  "multiRename.swapsSkipped": "{count, plural, one {# renommage ignoré, car il permute des noms} many {# renommages ignorés, car ils permutent des noms} other {# renommages ignorés, car ils permutent des noms}}. Renommez ces éléments un par un.",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "« Renommer par lot » ne fonctionne pas dans les archives",
   "@multiRename.archiveTitle": {

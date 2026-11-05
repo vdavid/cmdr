@@ -447,9 +447,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "af30f30"
   },
-  "errors.listing.couldntReadUnknown.explanation": "Cmdr a rencontré un problème inattendu en lisant `{path}`. Consultez les détails techniques ci-dessous pour le code système précis, qui peut aider au dépannage.",
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr a rencontré un problème inattendu en lisant `{path}`. Consultez « Détails techniques » ci-dessous pour le code système précis, qui peut aider au dépannage.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "Voici ce que vous pouvez essayer :\n- Vérifiez que le disque ou l’appareil est toujours connecté\n- Revenez ici pour réessayer\n- Si cela continue, ouvrez **Utilitaire de disque** et lancez **S.O.S** sur ce volume",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -591,9 +591,9 @@
   "@errors.listing.linkTargetUnreachable.title": {
     "sourceHash": "8aee94c"
   },
-  "errors.listing.linkTargetUnreachable.explanation": "`{path}` se trouve derrière un lien vers un autre serveur, et Cmdr ne peut pas joindre ce serveur pour le moment. Le reste de ce partage fonctionne normalement, et rien n’a été supprimé.",
+  "errors.listing.linkTargetUnreachable.explanation": "`{path}` passe par un lien vers un autre serveur, et Cmdr ne peut pas joindre ce serveur pour le moment. Le reste de ce partage fonctionne normalement, et rien n’a été supprimé.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "Voici ce que vous pouvez essayer :\n- Vérifiez que l’autre serveur est en marche et que votre réseau peut le joindre\n- Revenez ici pour réessayer",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1485,9 +1485,9 @@
   "@errors.write.replySignatureRefused.title": {
     "sourceHash": "829a591"
   },
-  "errors.write.replySignatureRefused.message": "La réponse du serveur ne portait pas de signature valide, donc Cmdr s’est arrêté.",
+  "errors.write.replySignatureRefused.message": "La réponse du serveur ne portait pas de signature valide, donc Cmdr a arrêté l’opération.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "Un appareil réseau capricieux peut en être la cause, tout comme quelqu’un qui trafique les échanges entre vous et le serveur. Reconnectez-vous, et si cela se reproduit, vérifiez votre réseau.",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1889,9 +1889,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "L’appareil cible",
+  "errors.write.readOnlyDevice.destination.fallbackName": "La destination",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "Le fichier est verrouillé",
   "@errors.write.fileLocked.title": {
@@ -2221,9 +2221,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "Cet emplacement se trouve derrière un lien vers un autre serveur, et Cmdr ne peut pas joindre ce serveur pour le moment.",
+  "errors.volume.linkTargetUnreachable": "Ce chemin passe par un lien vers un autre serveur, et Cmdr ne peut pas joindre ce serveur pour le moment.",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "L’appareil a redémarré sa connexion. Patientez quelques secondes, puis réessayez.",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "La connexion n’a pas répondu à temps.",
+  "errors.volume.connectionTimeout": "Le serveur ou l’appareil n’a pas répondu à temps.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "Cmdr a arrêté l’opération à votre demande.",
   "@errors.volume.cancelled": {
@@ -2289,9 +2289,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.signatureInvalid": "La réponse du serveur ne portait pas de signature valide, donc Cmdr s’est arrêté.",
+  "errors.volume.signatureInvalid": "La réponse du serveur ne portait pas de signature valide, donc Cmdr a arrêté l’opération.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "Le volume n’a pas pu terminer cette opération.",
   "@errors.volume.ioError": {
@@ -2371,11 +2371,11 @@
   },
   "errors.eject.unmountRefusedByApp": "{app} y utilise encore quelque chose. Fermez cette app, puis réessayez.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
   "errors.eject.unmountRefusedByApps": "{apps} y utilisent encore quelque chose. Fermez ces apps, puis réessayez.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "d’autres apps",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "Une partie de votre sélection se trouve dans une vue",
+  "errors.write.sourcesSpanVolumes.title": "Une partie de votre sélection se trouve dans une sauvegarde, une archive ou un historique git",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "{path} se trouve dans les instantanés d’une sauvegarde, dans une archive ou dans l’historique d’un dépôt, contrairement au reste de votre sélection : Cmdr ne peut donc pas lire les deux ensemble. Rien n’a été modifié.",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "Procédez en deux étapes : d’abord les éléments qui se trouvent dans la vue, puis le reste.",
+  "errors.write.sourcesSpanVolumes.suggestion": "Procédez en deux étapes : d’abord ces éléments seuls, puis le reste.",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "Déplacez-les l’un après l’autre, ou renommez-en un d’abord.",
   "@errors.write.duplicateSourceNames.suggestion.move": {

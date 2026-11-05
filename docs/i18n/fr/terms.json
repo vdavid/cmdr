@@ -699,6 +699,13 @@
     "forms": "cloud folders → dossiers cloud",
     "sources": "catalog"
   },
+  "cold-storage": {
+    "accept": ["archivé"],
+    "chosen": "stockage froid",
+    "confidence": "high",
+    "forms": "the file-row label → En stockage froid; the tooltip keeps Archivé en stockage froid",
+    "sources": "MS terminology FRA (cold storage → stockage froid); catalog fileExplorer.archivedFile.tooltip"
+  },
   "column": {
     "chosen": "colonne",
     "confidence": "high",
@@ -1463,6 +1470,19 @@
     "decision": "Le hub des serveurs : la feuille",
     "forms": "feminine; Key fingerprint → Empreinte de la clé; certificate → Empreinte du certificat (SHA-256)",
     "sources": "macOS Security Certificate.loctable (Fingerprints → Empreintes); Safari (empreinte numérique)"
+  },
+  "focus": {
+    "accept": ["actif", "active"],
+    "avoid": [
+      {
+        "form": "focus",
+        "why": "MS loanword; the shipped Move focus labels already say cible"
+      }
+    ],
+    "chosen": "cible",
+    "confidence": "tentative",
+    "forms": "Move focus to → Déplacer la cible sur; keyboard focus in prose → la cible du clavier; the focused pane → le panneau actif (Total Commander’s Panneau actif)",
+    "sources": "catalog commands.paneFocusControls.label and commands.appFocusNotifications.label; Total Commander FR; no macOS pile hit"
   },
   "folder": {
     "accept": ["répertoire", "rép."],
@@ -2581,7 +2601,7 @@
     "sources": "AddPrinter IP.loctable; System Profiler (Protocole)"
   },
   "put-back": {
-    "accept": ["remis en place", "remettre"],
+    "accept": ["remis en place", "remettre", "remet en place"],
     "avoid": [
       {
         "form": "restaurer",
@@ -3227,9 +3247,6 @@
     "accept": ["ignoré", "laisse de côté", "ignore"],
     "chosen": "Ignorer",
     "confidence": "high",
-    "exceptions": {
-      "settings.fileOperations.showAlreadyGoneToast.description": "English-sense: “skip the note” means not seeing a toast again, not leaving an item out of an operation (pour ne plus voir cette note)"
-    },
     "forms": "skip all → Tout ignorer; outcome Ignoré",
     "sources": "macOS Finder/AppKit (Ignorer); Nautilus"
   },

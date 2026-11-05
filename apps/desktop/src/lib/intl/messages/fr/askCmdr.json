@@ -773,7 +773,7 @@
   },
   "askCmdr.limit.repeatedCall.answered": "Cette réponse répétait sans cesse la même consultation. Cmdr lui a donc fait arrêter de chercher et répondre avec ce qu’elle avait trouvé.",
   "@askCmdr.limit.repeatedCall.answered": {
-    "sourceHash": "884a9ae"
+    "sourceHash": "c603b8c"
   },
   "askCmdr.limit.repeatedCall.unfinished": "Cette réponse répétait sans cesse la même consultation. Cmdr l’a donc arrêtée avant qu’elle puisse se terminer.",
   "@askCmdr.limit.repeatedCall.unfinished": {
@@ -781,7 +781,7 @@
   },
   "askCmdr.limit.noProgress.answered": "Au cours de {max, plural, one {sa dernière série} many {ses {maxText} dernières séries} other {ses {maxText} dernières séries}} de consultations, cette réponse n’a rien trouvé de nouveau. Cmdr lui a donc fait arrêter de chercher et répondre avec ce qu’elle avait trouvé.",
   "@askCmdr.limit.noProgress.answered": {
-    "sourceHash": "6dc1bc0"
+    "sourceHash": "574fe02"
   },
   "askCmdr.limit.noProgress.unfinished": "Au cours de {max, plural, one {sa dernière série} many {ses {maxText} dernières séries} other {ses {maxText} dernières séries}} de consultations, cette réponse n’a rien trouvé de nouveau. Cmdr l’a donc arrêtée avant qu’elle puisse se terminer.",
   "@askCmdr.limit.noProgress.unfinished": {
@@ -919,9 +919,9 @@
   "@askCmdr.sessions.renameLabel": {
     "sourceHash": "17a3048"
   },
-  "askCmdr.sessions.archive": "Archiver",
+  "askCmdr.sessions.archive": "Archiver la conversation",
   "@askCmdr.sessions.archive": {
-    "sourceHash": "66f4804"
+    "sourceHash": "9bd687c"
   },
   "askCmdr.sessions.unarchive": "Désarchiver",
   "@askCmdr.sessions.unarchive": {
@@ -1229,17 +1229,17 @@
   "@askCmdr.renameReview.stopChecking": {
     "sourceHash": "4373037"
   },
-  "askCmdr.renameReview.checkUnfinished": "Cmdr n’a pas fini de vérifier {count, plural, one {# fichier} many {# fichiers} other {# fichiers}}, donc le renommage ne peut pas encore démarrer.",
+  "askCmdr.renameReview.checkUnfinished": "{count, plural, one {# fichier n’est toujours pas vérifié} many {# fichiers ne sont toujours pas vérifiés} other {# fichiers ne sont toujours pas vérifiés}}, donc Cmdr ne peut pas encore renommer.",
   "@askCmdr.renameReview.checkUnfinished": {
-    "sourceHash": "c3c05ce"
+    "sourceHash": "1160511"
   },
   "askCmdr.renameReview.checkAgain": "Vérifier à nouveau",
   "@askCmdr.renameReview.checkAgain": {
     "sourceHash": "fb7099a"
   },
-  "askCmdr.renameReview.needsAnotherLook": "Quelque chose a changé depuis que Cmdr a vérifié ces noms, donc Cmdr n’a rien renommé. Relisez-les, puis réessayez.",
+  "askCmdr.renameReview.needsAnotherLook": "Quelque chose a changé depuis que Cmdr a vérifié ces noms, donc Cmdr n’a rien renommé. Vérifiez les noms, puis réessayez.",
   "@askCmdr.renameReview.needsAnotherLook": {
-    "sourceHash": "36c6050"
+    "sourceHash": "5e7d2da"
   },
   "askCmdr.renameReview.couldntStart": "Cmdr n’a pas pu lancer ce renommage, et rien n’a changé. Réessayez dans un instant.",
   "@askCmdr.renameReview.couldntStart": {
@@ -1261,9 +1261,9 @@
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
   },
-  "askCmdr.renameUndo.swapsSkipped": "{countText} {count, plural, one {renommage ignoré, car il permute des noms} many {renommages ignorés, car ils permutent des noms} other {renommages ignorés, car ils permutent des noms}}. Renommez ces fichiers un par un.",
+  "askCmdr.renameUndo.swapsSkipped": "{countText} {count, plural, one {renommage ignoré, car il permute des noms} many {renommages ignorés, car ils permutent des noms} other {renommages ignorés, car ils permutent des noms}}. Renommez ces éléments un par un.",
   "@askCmdr.renameUndo.swapsSkipped": {
-    "sourceHash": "90e8dfc"
+    "sourceHash": "bb3ee75"
   },
   "askCmdr.renameUndo.notRecorded": "L’historique des opérations est désactivé : les anciens noms ne peuvent donc pas être restaurés.",
   "@askCmdr.renameUndo.notRecorded": {
@@ -1305,9 +1305,9 @@
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : ils ont changé depuis le renommage.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : ils ont changé depuis le renommage.",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
-    "sourceHash": "217d1e8"
+    "sourceHash": "dbeb782"
   },
   "askCmdr.renameUndo.skipReason.vanished.named": "{name} introuvable : le fichier a été déplacé ou supprimé depuis le renommage.",
   "@askCmdr.renameUndo.skipReason.vanished.named": {
@@ -1321,17 +1321,17 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : leurs anciens noms sont de nouveau pris.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : leurs anciens noms sont de nouveau pris.",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
-    "sourceHash": "2fd2e7a"
+    "sourceHash": "409140a"
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} laissé tel quel : Cmdr n’a pas pu vérifier s’il avait changé.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
-    "sourceHash": "5964166"
+    "sourceHash": "25fe620"
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Dossier {name} laissé tel quel : il contient maintenant quelque chose.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
@@ -1345,9 +1345,9 @@
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tels quels : Cmdr n’a pas pu leur rendre leurs anciens noms.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : Cmdr n’a pas pu leur rendre leurs anciens noms.",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
-    "sourceHash": "f13c021"
+    "sourceHash": "cf38d62"
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr n’a pas pu annuler {countText} {count, plural, one {lot} many {lots} other {lots}}. L’historique des opérations donne les détails.",
   "@askCmdr.renameUndo.refusedBatches": {

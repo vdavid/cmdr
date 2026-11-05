@@ -166,9 +166,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Alterne l’ombrage des lignes pour suivre plus facilement. S’applique aux modes Complet et Bref.",
+  "settings.listing.stripedRows.description": "Alterne l’ombrage des lignes pour suivre plus facilement. S’applique à la présentation complète et à la présentation brève.",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "rayures, zébrures, zèbre, alterner, lignes alternées, ombrage, accessibilité",
   "@settings.listing.stripedRows.keywords": {
@@ -824,9 +824,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Toujours indexer les photos sur {name}",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Toujours indexer ce disque : {name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "En pause, reprend quand ce disque se reconnecte",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -944,9 +944,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Supprimer les entrées indexées supplémentaires",
+  "settings.mediaIndex.reclaim.confirmTitle": "Supprimer les entrées indexées supplémentaires ?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "Supprimer {doomed, plural, one {{doomedText} entrée indexée} other {{doomedText} entrées indexées} many {{doomedText} entrées indexées}} pour libérer environ {size} ? Vous pourrez réindexer ces images plus tard, mais les relire prend du temps.",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1093,9 +1093,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Masquer la question sur le raccourci du dernier téléchargement",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Ne plus poser la question du raccourci du dernier téléchargement",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "La première fois que vous appuyez sur le raccourci pour aller à votre dernier téléchargement depuis n’importe quelle app, Cmdr vous demande s’il faut le garder activé. Changer de raccourci désactive cette option, pour que la question se pose aussi pour la nouvelle combinaison. Désactivez cette option pour revoir la question.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1244,9 +1244,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "Durée pendant laquelle le modèle réfléchit avant de répondre. Plus d’effort aide pour les tâches délicates, mais les réponses arrivent plus lentement et la réflexion est facturée comme sortie.",
+  "settings.ai.reasoningEfforts.description": "Durée pendant laquelle le modèle réfléchit avant de répondre. Réfléchir davantage aide pour les tâches délicates, mais les réponses arrivent plus lentement et la réflexion est facturée comme sortie.",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "effort de raisonnement, effort, raisonnement, réfléchir, réflexion, profondeur, vitesse, coût, qualité",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1466,9 +1466,9 @@
   "@settings.fileExplorer.git.showStatusColumn.label": {
     "sourceHash": "0f6a836"
   },
-  "settings.fileExplorer.git.showStatusColumn.description": "Ajoute une colonne montrant l’état git par fichier (modifié, non suivi, etc.) en mode Complet.",
+  "settings.fileExplorer.git.showStatusColumn.description": "Ajoute une colonne montrant l’état git de chaque fichier (modifié, non suivi, etc.) en présentation complète.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "état, statut, colonne, modifié, non suivi, ignoré, ajouté, supprimé",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1767,13 +1767,13 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "sourceHash": "ad9377a"
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Signaler quand un élément supprimé avait déjà disparu",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Afficher un avis quand un élément supprimé avait déjà disparu",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Quand vous supprimez quelque chose qu’une autre app a déjà déplacé ou supprimé, Cmdr considère la suppression comme terminée et affiche une courte note pour le signaler. Désactivez cette option (ou cliquez sur « Ne plus afficher » dans la note) pour ne plus voir cette note.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "Quand vous supprimez quelque chose qu’une autre app a déjà déplacé ou supprimé, Cmdr considère la suppression comme terminée et affiche un court avis pour le signaler. Désactivez cette option (ou cliquez sur « Ne plus afficher » dans l’avis) pour que Cmdr arrête d’afficher ces avis.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "manquant, disparu, introuvable, déplacé, effacé, notification, avis, message, alerte",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2440,9 +2440,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr utilise votre service d’IA dans le cloud. Autorisez l’IA dans le cloud dans les réglages d’IA pour commencer à discuter.",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr utilise votre service d’IA dans le cloud. Activez « Autoriser l’IA dans le cloud » dans les réglages d’IA pour commencer à discuter.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "Ouvrir les réglages d’IA",
   "@settings.askCmdr.openAiSettings": {
@@ -2951,25 +2951,25 @@
   "@settings.appearance.formatHelpYear": {
     "sourceHash": "467ff57"
   },
-  "settings.appearance.formatHelpMonth": "mois à 2 chiffres (01-12)",
+  "settings.appearance.formatHelpMonth": "mois à 2 chiffres (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
-  "settings.appearance.formatHelpDay": "jour à 2 chiffres (01-31)",
+  "settings.appearance.formatHelpDay": "jour à 2 chiffres (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
-  "settings.appearance.formatHelpHour": "heure à 2 chiffres (00-23)",
+  "settings.appearance.formatHelpHour": "heure à 2 chiffres (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
-  "settings.appearance.formatHelpMinute": "minute à 2 chiffres (00-59)",
+  "settings.appearance.formatHelpMinute": "minute à 2 chiffres (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
-  "settings.appearance.formatHelpSecond": "seconde à 2 chiffres (00-59)",
+  "settings.appearance.formatHelpSecond": "seconde à 2 chiffres (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "Ajoute une légère teinte de fond aux panneaux pour distinguer les types de volumes d’un coup d’œil.",
   "@settings.appearance.tintGroupDescription": {
@@ -3177,9 +3177,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Modifiez le raccourci sous Raccourcis clavier → Aller au dernier téléchargement (global).",
+  "settings.fileSystemWatching.globalShortcutHint": "Modifiez le raccourci sous « Raccourcis clavier → Aller au dernier téléchargement ».",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "Accès {localNetwork}",
   "@settings.network.localNetworkAccessLabel": {

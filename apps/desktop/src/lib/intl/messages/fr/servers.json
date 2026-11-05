@@ -7,9 +7,9 @@
   "@servers.pinHint.title": {
     "sourceHash": "0cf001a"
   },
-  "servers.pinHint.body": "Faites un clic droit sur un serveur et choisissez Désépingler du sélecteur, ou utilisez « {command} » dans la palette de commandes. Le serveur reste dans la liste Serveurs.",
+  "servers.pinHint.body": "Faites un clic droit sur un serveur et choisissez « Désépingler du sélecteur », ou utilisez « {command} » dans la palette de commandes. Le serveur reste dans la liste Serveurs.",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "D’accord",
   "@servers.pinHint.gotIt": {
@@ -64,9 +64,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "Jamais",
+  "servers.hub.neverUsed": "Jamais utilisé",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "en tant que « {username} »",
   "@servers.hub.shareAccount": {
@@ -382,7 +382,7 @@
   },
   "servers.sheet.addAnywayHelp": "Cmdr n’a pas pu vérifier ce serveur, donc « Ajouter quand même » l’enregistre tel que vous l’avez saisi.",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "Éjecter et enregistrer",
   "@servers.sheet.ejectAndSave": {
@@ -528,9 +528,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "NFS transmet jusqu’à 16 autres groupes, et cette liste en compte {count}.",
+  "servers.sheet.nfsOtherGidsTooMany": "NFS envoie jusqu’à 16 autres groupes, et cette liste contient {count, plural, one {# groupe} many {# groupes} other {# groupes}}.",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "Le serveur décide de ce que vous pouvez ouvrir selon ces numéros. NFS ne demande pas de mot de passe.",
   "@servers.sheet.nfsIdentityHelp": {
@@ -929,9 +929,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Arrêter d’essayer pour l’instant. La connexion reste disponible. Revenez pour réessayer.",
+  "servers.paneState.cancelCycleTooltip": "Arrêter d’essayer pour l’instant. La connexion reste disponible ; ouvrez de nouveau le serveur pour réessayer.",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "Arrêter d’essayer et se déconnecter du serveur.",
   "@servers.paneState.disconnectCycleTooltip": {

@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "Ce serveur ne peut pas stocker {classes}, ces informations n’ont donc pas suivi.",
+  "transfer.metadataLeftBehind": "Cette destination ne peut pas stocker certains détails, qui n’ont donc pas suivi : {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, one {{countText} élément verrouillé est resté à sa place.} many {{countText} éléments verrouillés sont restés à leur place.} other {{countText} éléments verrouillés sont restés à leur place.}}",
   "@transfer.lockedSkipped": {

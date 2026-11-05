@@ -9,7 +9,7 @@
   },
   "suggestedOps.approvalNoticeDismiss": "Ne plus afficher",
   "@suggestedOps.approvalNoticeDismiss": {
-    "sourceHash": "2c23c21"
+    "sourceHash": "f6f62e0"
   },
   "suggestedOps.sweepWhen.justNow": "Suggéré à l’instant",
   "@suggestedOps.sweepWhen.justNow": {
@@ -85,7 +85,8 @@
   },
   "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
   "@suggestedOps.groupTitle": {
-    "sourceHash": "201c1fc"
+    "sourceHash": "201c1fc",
+    "sameAsSourceJustification": "Tags and placeholders only: French puts the verb first like English (“Déplacer Old installers”), with a plain space between."
   },
   "suggestedOps.approve.move": "Déplacer {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}",
   "@suggestedOps.approve.move": {
@@ -268,11 +269,11 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
-  "suggestedOps.factUnknownSize": "Unknown",
+  "suggestedOps.factUnknownSize": "Inconnue",
   "@suggestedOps.factUnknownSize": {
     "sourceHash": "b764cdc"
   },
-  "suggestedOps.factUnknownDate": "Unknown",
+  "suggestedOps.factUnknownDate": "Inconnue",
   "@suggestedOps.factUnknownDate": {
     "sourceHash": "b764cdc"
   },

@@ -205,8 +205,8 @@ and the top traps live in `style.md`; don't repeat them here.
   folder itself seems deleted.
 - Confirm: carries on → `continuera` (`reprendre` is resume); `Conserver les fichiers`; `Arrêter et …`, never `Annuler`.
   `Arrêter et remettre en place tous les fichiers déplacés jusqu’à présent` (undoing a move deletes nothing).
-- Interrupted: `reason.*` reuse `askCmdr.renameUndo.skipReason.*` (`{name} laissé tel quel : …`); `élément` here,
-  `fichier` in the rename twins. Totality → `tout` and the count after a colon
+- Interrupted: `reason.*` reuse `askCmdr.renameUndo.skipReason.*` (`{name} laissé tel quel : …`); `élément` in both
+  families. Totality → `tout` and the count after a colon
   (`Cmdr a supprimé tout ce qu’il avait écrit : {countText} éléments.`). `Retour en arrière arrêté après …` over
   `Cmdr s’est arrêté` (quitting); `donc voici ce qui n’a pas bougé :` (`en place` means put back);
   `Cmdr n’a pas pu revenir en arrière sur {name}.`; `réessaiera la prochaine fois qu’il se connectera à cet endroit`.
@@ -302,7 +302,8 @@ and the top traps live in `style.md`; don't repeat them here.
 ## Le hub des serveurs : la table et le panneau (`servers.hub.*`, `servers.paneState.*`, `servers.refusal.*`, `servers.pinHint.*`, `settings.servers.*`, `settings.section.servers`, `commands.servers*`, `navigation.groupNetwork`, `navigation.forget*`, `navigation.disconnect*`, `menu.network.*`, `shortcuts.scope.servers`, `shortcuts.scope.places`, `settings.appearance.tintSmb.*`)
 
 - Row `Serveurs` in group `Réseau`; Places → `Emplacements` (Finder's sidebar), broader than `Partages`. Columns `Nom`,
-  `Type` (Finder's Kind), `Adresse`, `État`, `Dernière utilisation`; never → `Jamais`. Empty → `Pas encore de serveur`.
+  `Type` (Finder's Kind), `Adresse`, `État`, `Dernière utilisation`; never used → `Jamais utilisé`. Empty →
+  `Pas encore de serveur`.
 - States: `Connecté`, `Enregistré` (never `Inactif` / `Hors ligne`: verdicts), `Découvert à proximité`,
   `En attente de votre vérification de la clé` (`examiner` is looking at a key).
 - `Épingler ou désépingler le serveur`. `Épingler au sélecteur` shortens `sélecteur de volume` where English says

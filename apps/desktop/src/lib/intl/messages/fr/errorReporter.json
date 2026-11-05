@@ -144,9 +144,9 @@
   "@errorReporter.amend.addFailedToast": {
     "sourceHash": "02f82ce"
   },
-  "errorReporter.sentToast.message": "Rapport d’incident envoyé. Votre identifiant de référence est",
+  "errorReporter.sentToast.message": "Rapport d’incident envoyé. Votre identifiant de référence :",
   "@errorReporter.sentToast.message": {
-    "sourceHash": "75be6ba"
+    "sourceHash": "d1e9bfc"
   },
   "errorReporter.sentToast.dismiss": "Ignorer",
   "@errorReporter.sentToast.dismiss": {
@@ -160,9 +160,9 @@
   "@errorReporter.sentToast.copied": {
     "sourceHash": "8d525e5"
   },
-  "errorReporter.amendedToast.message": "Note ajoutée à votre rapport. Votre identifiant de référence est",
+  "errorReporter.amendedToast.message": "Note ajoutée à votre rapport. Votre identifiant de référence :",
   "@errorReporter.amendedToast.message": {
-    "sourceHash": "5471d7f"
+    "sourceHash": "fc7535b"
   },
   "errorReporter.bundleSavedToast.message": "Lot enregistré sur le disque",
   "@errorReporter.bundleSavedToast.message": {

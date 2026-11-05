@@ -75,9 +75,9 @@
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "On dirait que vous aviez accepté l’accès complet au disque, puis que vous l’avez révoqué.",
+  "onboarding.stepFda.revoked.intro": "On dirait que vous aviez accordé l’accès complet au disque, puis que vous l’avez désactivé.",
   "@onboarding.stepFda.revoked.intro": {
-    "sourceHash": "9087914"
+    "sourceHash": "6759357"
   },
   "onboarding.stepFda.revoked.noAccess": "L’app ne dispose actuellement d’aucun accès complet au disque.",
   "@onboarding.stepFda.revoked.noAccess": {
@@ -239,9 +239,9 @@
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "5cc5e7f"
   },
-  "onboarding.stepAi.table.renameWithout": "Vous définissez un modèle de renommage à la main dans « Renommer par lot », puis vous le vérifiez et l’appliquez.",
+  "onboarding.stepAi.table.renameWithout": "Vous définissez un modèle de renommage à la main dans « Renommer par lot », puis vous vérifiez et appliquez ce modèle.",
   "@onboarding.stepAi.table.renameWithout": {
-    "sourceHash": "e7531dc"
+    "sourceHash": "1b85bf6"
   },
   "onboarding.stepAi.table.renameWith": "Vous dites « ajouter un préfixe de date ISO », l’agent règle votre modèle de renommage, vous vérifiez et appliquez à votre guise.",
   "@onboarding.stepAi.table.renameWith": {

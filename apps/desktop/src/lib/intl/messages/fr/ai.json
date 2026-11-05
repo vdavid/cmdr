@@ -87,9 +87,9 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, quand vous discutez ou quand il lance une conversation de sa propre initiative :",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, quand vous discutez ou quand Cmdr lance une conversation de sa propre initiative :",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Vos messages, y compris tout mot de passe que vous y tapez pour déverrouiller une archive ou une sauvegarde",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Si vous activez la journalisation des appels au modèle d’IA dans les réglages avancés, Cmdr enregistre aussi chaque requête et réponse dans un dossier sur votre Mac. Ces journaux d’appels restent en local, jamais envoyés nulle part.",
+  "ai.cloudConsent.logsNote": "Si vous activez « Journaliser les appels au modèle d’IA » dans les réglages avancés, Cmdr enregistre aussi chaque requête et réponse dans un dossier sur votre Mac. Ces journaux d’appels restent en local et ne sont jamais envoyés nulle part.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Désactivez cette option à tout moment et Cmdr cesse aussitôt d’envoyer. Votre service, votre clé et vos conversations restent tels quels.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Votre modèle a peut-être besoin d’un budget plus élevé pour cela. Essayez un modèle plus rapide comme gpt-4.1-mini dans Réglages > IA.",
+  "ai.translateError.emptyResponse.body": "Votre modèle a peut-être épuisé son budget de jetons avant de répondre. Essayez un modèle plus rapide comme gpt-4.1-mini dans Réglages > IA.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "Votre fournisseur d’IA a rencontré un souci",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "Le serveur n’a pas répondu à temps. Réessayez dans un instant.",
+  "ai.cloud.timedOut": "Le service n’a pas répondu à temps. Réessayez dans un instant.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Cette adresse ne semble pas correcte. Utilisez une adresse web complète commençant par https://.",
   "@ai.cloud.invalidEndpoint": {

@@ -229,9 +229,9 @@
   "@licensing.dialog.validityExpiredOn": {
     "sourceHash": "f8383a3"
   },
-  "licensing.dialog.pendingHint": "Nous vérifierons automatiquement auprès du serveur sous {days} jours.",
+  "licensing.dialog.pendingHint": "Nous vérifierons automatiquement auprès du serveur sous {days, plural, one {# jour} many {# jours} other {# jours}}.",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "b4bbb38"
+    "sourceHash": "4ecbc26"
   },
   "licensing.dialog.useDifferentKey": "Utiliser une autre clé",
   "@licensing.dialog.useDifferentKey": {
@@ -261,9 +261,9 @@
   "@licensing.dialog.inputPlaceholder": {
     "sourceHash": "3fb5cf9"
   },
-  "licensing.dialog.retryExhausted": "Nous avons essayé {count} fois et ça n’a pas marché. Désolés pour la gêne. Écrivez-nous à <supportEmail>{email}</supportEmail> et nous réglerons ça.",
+  "licensing.dialog.retryExhausted": "Nous avons essayé {count, plural, one {# fois} many {# fois} other {# fois}} et ça n’a pas marché. Toutes nos excuses pour la gêne. Écrivez-nous à <supportEmail>{email}</supportEmail> et nous réglerons ça.",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "d2aa21a"
+    "sourceHash": "9dc812f"
   },
   "licensing.dialog.serverInvalidHelp": "Si vous pensez qu’il s’agit d’une erreur, écrivez-nous à <supportEmail>{email}</supportEmail> et nous réglerons ça.",
   "@licensing.dialog.serverInvalidHelp": {

@@ -626,11 +626,13 @@
   },
   "queryUi.date.preset.thisMonth": "{date} {time}",
   "@queryUi.date.preset.thisMonth": {
-    "sourceHash": "030ee23"
+    "sourceHash": "ed860a4",
+    "sameAsSourceJustification": "Placeholder-only string: the date formatter already writes “1 mai” in French, and a space before the time is French order too."
   },
   "queryUi.date.preset.lastMonth": "{date}, {time}",
   "@queryUi.date.preset.lastMonth": {
-    "sourceHash": "0838509"
+    "sourceHash": "1a88956",
+    "sameAsSourceJustification": "Placeholder-only string: the date formatter already writes “1 avril 2026” in French, and French keeps the comma before the time like the sibling yearStart."
   },
   "queryUi.date.preset.yearStart": "1er janvier {year}, {time}",
   "@queryUi.date.preset.yearStart": {
