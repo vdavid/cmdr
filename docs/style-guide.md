@@ -53,6 +53,13 @@ Comments: Only add docs that actually add info. No tautologies.
 - ❌ DO NOT repeat TypeScript/Rust/Go types in the docs (like `@param`/`@returns`).
 - ✅ USE comments to mark caveats, tricky/unusual solutions, formats (`YYYY-MM-DD`), and constraints (`must end with /`)
 
+### TypeScript
+
+- No enums, value namespaces, or constructor parameter properties: the desktop `tsconfig.json` sets
+  `erasableSyntaxOnly`, so Node can run `scripts/*.ts` by stripping types, and ESLint skips `no-unsafe-enum-assignment`
+  (~17 s per Svelte lint pass). For a closed set of values, use an `as const` object and derive the type:
+  `type MatchQuality = (typeof MatchQuality)[keyof typeof MatchQuality]`.
+
 ### Rust
 
 - Max 120 char lines, 4-space indent, cognitive complexity threshold: 15, enforced by clippy.

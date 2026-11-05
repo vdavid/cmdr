@@ -133,6 +133,13 @@ less WebContent footprint once settled, against loading all 15; one more catalog
   runtime loads and before every test, since Vitest keeps localStorage across files. A test using `vi.resetModules()`
   gets a fresh runtime holding only English, like a new window, and must await (or `vi.waitFor`) a switch.
   `lazy-catalogs.svelte.test.ts` covers this section, with `_setCatalogLoaderForTests` to control when a catalog lands.
+- **The logger and the settings writer come in through `installMessageRuntimeHooks`**, called by the root
+  `routes/+layout.ts` (the real ones) and `test-setup.ts` (no-op doubles). Warnings raised before that call wait in a
+  queue. **Why**: `test-setup.ts` loads this runtime, and Vitest's `related` mode runs the WHOLE suite when a changed
+  file is reachable from a setup file. Importing the logger or `#lib/settings` here, even lazily, pulled 173 modules
+  (`ipc/bindings.ts`, all of `tauri-commands/`) into that closure, so three `svelte-tests-related` runs in four were the
+  full suite. `apps/desktop/src/test-setup-closure.test.ts` keeps the closure out of those hubs
+  (`docs/notes/performance/local-check-lanes-2026-11-05.md`).
 
 ### Adding a regional overlay: the plumbing checklist
 

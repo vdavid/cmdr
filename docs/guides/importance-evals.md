@@ -38,11 +38,12 @@ pnpm check desktop-rust-tests
 To run only the eval tests while iterating:
 
 ```bash
-cd apps/desktop/src-tauri && cargo test --lib importance::evals
+cargo nextest run -p cmdr-index importance::evals
 ```
 
 You'll see the hard-constraint test, the floor test, the per-scenario floor test, and the constraint-arithmetic and
 anonymization unit tests. All green means the default weights still clear every hard constraint and the soft floor.
+These runs score only the committed synthetic scenarios; your own corpus has its own opt-in run (step 3 below).
 
 ## How to read the score
 
@@ -127,13 +128,23 @@ The anonymized paths are placeholders, so finding your folders takes a little de
 
 ### 3. Run, adjust, re-pin
 
-With the corpus in place, the eval suite auto-loads any labeled scenarios it finds and folds your labels into the soft
-score. A dump only participates once it has labels: an unlabeled dump measures nothing, so the suite skips it without
-even parsing it (which keeps things fast, since a real dump can be hundreds of megabytes). Run the suite (see above) and
-read the aggregate. Then the tuning cycle is:
+Your corpus has its own opt-in test, so everyday test runs stay fast and match what CI sees. It scores the synthetic
+scenarios plus every labeled dump in the corpus, against the same hard constraints and soft floor:
+
+```bash
+cargo nextest run -p cmdr-index --run-ignored only importance::evals::tests::local_corpus
+```
+
+It reads `apps/desktop/src-tauri/tests/importance-corpus` in the clone you run it from. The corpus is gitignored, so a
+worktree doesn't have it: point the test at your corpus with `CMDR_IMPORTANCE_CORPUS=/path/to/importance-corpus`. A dump
+only participates once it has labels: an unlabeled dump measures nothing, so the loader skips it without even parsing
+it. With no labeled dump found, the test fails and says where it looked, so it never passes by measuring nothing. Expect
+a few seconds per dump (a 768,912-folder home, 261 MB, took 5.3 s on an M-series Mac, 2026-11-05).
+
+Then the tuning cycle is:
 
 1. Turn a weight knob in `scorer/weights.rs`.
-2. Run the eval suite.
+2. Run the corpus test.
 3. Read the aggregate soft score. Did it go up?
 4. When you're satisfied a change is a real improvement, raise `SOFT_SCORE_FLOOR` to the new level so the gain is locked
    in and can't silently regress.
@@ -164,5 +175,5 @@ What a dump keeps beyond names: the folder structure and depth, per-folder exten
 modification times, and the hidden and system flags. What it never keeps: file contents, and any name that could carry
 personal information. The result scores identically to your real tree while holding nothing personal.
 
-Corpus dumps are never committed. The corpus directory is gitignored, and the eval suite is green with zero corpus files
-present (which is what CI sees). Your dumps and labels are yours to keep locally.
+Corpus dumps are never committed. The corpus directory is gitignored, and the default eval suite never reads it, so it's
+green with zero corpus files present (which is what CI sees). Your dumps and labels are yours to keep locally.

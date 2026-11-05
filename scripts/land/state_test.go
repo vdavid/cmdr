@@ -648,3 +648,19 @@ func TestFailedRequiredJobs(t *testing.T) {
 		}
 	}
 }
+
+// Regression: on 2026-11-05 a re-run of `pnpm land` (after a poll error) found `main` moved and
+// rebased the batch PR #992, though its land run was already going. A head that's already origin's
+// branch, with a PR GitHub can merge, keeps that CI; the land then makes a merge commit.
+func TestNextStartStepKeepsAPushedMergeableHead(t *testing.T) {
+	pushed := branchState{branch: "worktree-x", pushedMergeable: true}
+	if got := nextStartStep(pushed, false); got != stepProceed {
+		t.Errorf("a pushed, mergeable head: got %d, want %d", got, stepProceed)
+	}
+	if got := nextStartStep(branchState{branch: "worktree-x"}, false); got != stepRebase {
+		t.Errorf("not pushed, or not mergeable: got %d, want %d", got, stepRebase)
+	}
+	if got := nextStartStep(branchState{branch: "worktree-x", pushedMergeable: true, dirty: true}, false); got != stepRefuseDirty {
+		t.Errorf("a dirty tree still refuses: got %d, want %d", got, stepRefuseDirty)
+	}
+}

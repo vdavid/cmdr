@@ -164,6 +164,8 @@ func TestRunnerCoreCoversWhatTheExecutorReaches(t *testing.T) {
 	offTheRunPath := map[string]string{
 		"NightlyToolchain":    "printed by `--print-nightly` for CI's toolchain install; no check run touches it",
 		"CargoModulesVersion": "printed by `--print-cargo-modules-version` for CI's cargo-modules install; no check run touches it",
+		// The nextest lanes read it through `EnsureCargoNextest`, in the same file.
+		"NextestVersion": "printed by `--print-nextest-version` for CI's cache warmer; no check run touches it",
 		// The lanes read the value it prints through `rustTestScopeFromEnv`, in the same file, so
 		// every lane that honors the scope already fingerprints it.
 		"ComputeRustTestScope": "printed by `--print-rust-test-scope` for CI to hand the Rust test lanes; no check run calls it",

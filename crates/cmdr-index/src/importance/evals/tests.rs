@@ -1,6 +1,6 @@
 //! The eval suite proper: hard constraints as CI-failing `#[test]`s, the pinned
-//! soft-score floor, scenario-integrity guards, and the corpus round-trip +
-//! auto-load. The constraint arithmetic and the anonymization contract are pinned
+//! soft-score floor, scenario-integrity guards, the corpus round-trip + loader,
+//! and the opt-in run over the local corpus. The constraint arithmetic and the anonymization contract are pinned
 //! in their own sibling modules (`constraints/tests.rs`, `corpus/tests.rs`).
 
 use super::*;
@@ -15,22 +15,58 @@ use crate::importance::scorer::Weights;
 /// floating-point noise.
 pub const SOFT_SCORE_FLOOR: f64 = 0.95;
 
-/// Every scenario the harness scores: the committed synthetic ones plus any
-/// labeled corpus scenarios found in the local gitignored corpus dir. With no
-/// corpus present (CI, a fresh clone) this is exactly the synthetic set, so the
-/// suite is fully green without any corpus files.
-fn all_scenarios() -> Vec<Scenario> {
-    let mut scenarios = scenarios::all();
-    // The corpus dir is relative to the repo root; from this crate's manifest dir
-    // (`apps/desktop/src-tauri`) the root is three levels up.
-    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .ancestors()
-        .nth(3)
-        .map(std::path::Path::to_path_buf);
-    if let Some(root) = repo_root {
-        scenarios.extend(corpus::load_corpus_scenarios(&corpus::corpus_dir(&root)));
+/// Names a corpus dir to score instead of the repo's own. The corpus is gitignored,
+/// so it exists only in the clone it was snapshotted into; a worktree points here.
+const CORPUS_DIR_ENV: &str = "CMDR_IMPORTANCE_CORPUS";
+
+/// The repo root, two levels above this crate's manifest dir (`crates/cmdr-index`).
+fn repo_root() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .expect("the crate sits two levels under the repo root")
+}
+
+/// The local corpus dir: `$CMDR_IMPORTANCE_CORPUS`, else `CORPUS_DIR_REL` under the repo root.
+fn local_corpus_dir() -> std::path::PathBuf {
+    std::env::var_os(CORPUS_DIR_ENV)
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| corpus::corpus_dir(&repo_root()))
+}
+
+/// Every hard-constraint violation across `scenarios` under `weights`, one line each.
+fn hard_failures(scenarios: &[Scenario], weights: &Weights) -> Vec<String> {
+    let mut failures = Vec::new();
+    for scenario in scenarios {
+        let ranking = rank_scenario(scenario, weights);
+        for constraint in &scenario.hard {
+            match constraint.evaluate(&ranking) {
+                ConstraintOutcome::Satisfied => {}
+                ConstraintOutcome::Violated(why) | ConstraintOutcome::Unknown(why) => {
+                    failures.push(format!("[{}] {why}", scenario.name));
+                }
+            }
+        }
     }
-    scenarios
+    failures
+}
+
+/// Regression: when this file moved from `apps/desktop/src-tauri` to `crates/cmdr-index`,
+/// the root kept popping three levels and landed one folder above the checkout, so the
+/// corpus never loaded (#979). Also pins that the corpus dir stays gitignored: real dumps
+/// are derived from David's own drive.
+#[test]
+fn repo_root_is_the_workspace_root_and_the_corpus_is_gitignored() {
+    let root = repo_root();
+    assert!(root.join("Cargo.lock").is_file(), "{root:?} isn't the workspace root");
+    let gitignore = std::fs::read_to_string(root.join(".gitignore")).expect("read the root .gitignore");
+    assert!(
+        gitignore
+            .lines()
+            .any(|line| line.trim().trim_end_matches('/') == corpus::CORPUS_DIR_REL),
+        "the root .gitignore must list `{}`",
+        corpus::CORPUS_DIR_REL
+    );
 }
 
 // ── Hard constraints: a violation fails CI ────────────────────────────────────
@@ -42,19 +78,7 @@ fn all_scenarios() -> Vec<Scenario> {
 /// why it broke.
 #[test]
 fn all_hard_constraints_hold_under_default_weights() {
-    let weights = Weights::default();
-    let mut failures = Vec::new();
-    for scenario in all_scenarios() {
-        let ranking = rank_scenario(&scenario, &weights);
-        for constraint in &scenario.hard {
-            match constraint.evaluate(&ranking) {
-                ConstraintOutcome::Satisfied => {}
-                ConstraintOutcome::Violated(why) | ConstraintOutcome::Unknown(why) => {
-                    failures.push(format!("[{}] {why}", scenario.name));
-                }
-            }
-        }
-    }
+    let failures = hard_failures(&scenarios::all(), &Weights::default());
     assert!(
         failures.is_empty(),
         "hard constraints violated:\n  {}",
@@ -70,13 +94,46 @@ fn all_hard_constraints_hold_under_default_weights() {
 /// IMPROVES the aggregate, raise [`SOFT_SCORE_FLOOR`] to lock the gain in.
 #[test]
 fn soft_score_clears_the_pinned_floor() {
-    let weights = Weights::default();
-    let scenarios = all_scenarios();
-    let aggregate = aggregate_score(&scenarios, &weights);
+    let aggregate = aggregate_score(&scenarios::all(), &Weights::default());
     assert!(
         aggregate >= SOFT_SCORE_FLOOR,
         "aggregate soft score {aggregate:.4} dropped below the pinned floor {SOFT_SCORE_FLOOR:.4} — either a weight \
          change regressed ranking quality (fix it), or the scenarios changed (re-pin the floor consciously)"
+    );
+}
+
+// ── The local corpus: opt-in ───────────────────────────────────────────────────
+
+/// The same two gates over the synthetic scenarios PLUS every labeled dump in the
+/// local corpus. Opt-in (`#[ignore]`): a real dump is hundreds of MB that takes
+/// seconds to parse, and it's David's personal ground truth, which CI and a fresh
+/// worktree don't have, so a red here can't be reproduced anywhere else. Run it with
+/// `cargo nextest run -p cmdr-index --run-ignored only importance::evals::tests::local_corpus`.
+/// An empty corpus FAILS rather than passing vacuously: that silent no-op is #979.
+#[test]
+#[ignore = "opt-in: needs a local, labeled importance corpus (docs/guides/importance-evals.md)"]
+fn local_corpus_clears_hard_constraints_and_the_floor() {
+    let dir = local_corpus_dir();
+    let corpus = corpus::load_corpus_scenarios(&dir);
+    assert!(
+        !corpus.is_empty(),
+        "no labeled corpus scenario in {dir:?}; snapshot one and label it (docs/guides/importance-evals.md), or set \
+         {CORPUS_DIR_ENV}"
+    );
+    let weights = Weights::default();
+    let mut scenarios = scenarios::all();
+    scenarios.extend(corpus);
+
+    let failures = hard_failures(&scenarios, &weights);
+    assert!(
+        failures.is_empty(),
+        "hard constraints violated:\n  {}",
+        failures.join("\n  ")
+    );
+    let aggregate = aggregate_score(&scenarios, &weights);
+    assert!(
+        aggregate >= SOFT_SCORE_FLOOR,
+        "aggregate soft score {aggregate:.4} with the local corpus is below the pinned floor {SOFT_SCORE_FLOOR:.4}"
     );
 }
 
@@ -169,7 +226,7 @@ fn score_scenario_is_deterministic() {
     }
 }
 
-// ── Corpus format round-trip + labeled auto-load ──────────────────────────────
+// ── Corpus format round-trip + labeled loader ─────────────────────────────────
 
 /// A scenario survives a JSON round-trip unchanged — the committed + dumped file
 /// format. Pins that the serde shape (including the `#[serde(tag = "kind")]`
@@ -183,7 +240,7 @@ fn scenario_json_roundtrips() {
     }
 }
 
-/// The labeled corpus auto-load turns a dump + labels into a scenario with
+/// The labeled corpus loader turns a dump + labels into a scenario with
 /// personalized soft constraints, over a temp dir (no real corpus needed). This is
 /// the end-to-end proof of the "snapshot → label → the harness scores your ground
 /// truth" loop the guide describes.

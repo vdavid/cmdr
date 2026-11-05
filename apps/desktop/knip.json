@@ -6,7 +6,7 @@
   "ignoreUnresolved": ["~icons/.+"],
   "ignoreDependencies": ["oxlint", "@testing-library/svelte", "@iconify-json/lucide", "cldr-core"],
   "ignoreExportsUsedInFile": true,
-  "project": ["src/**/*.{ts,svelte}", "scripts/vite-*.ts"],
+  "project": ["src/**/*.{ts,svelte}", "scripts/vite-*.ts", "eslint-plugins/*.js"],
   "svelte": {
     "entry": ["src/routes/**/+page.svelte", "src/routes/**/+layout.svelte"]
   }

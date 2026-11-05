@@ -64,10 +64,18 @@ than characters however GitHub counts them, so the fallback is never one charact
 
 Each run reads the branch and GitHub and picks up from there (`nextStartStep`, `ciVerdict`): an already-pushed branch
 isn't pushed again, an open PR is reused, a `-squash` re-run on one commit is a no-op (a fresh SHA would restart CI),
-and a branch already on `origin/main` skips to syncing `main` and deleting the remote branch. The pre-push hook may
-commit a formatting fix and stop that push; `pushBranch` then pushes once more with the fix on top. Untracked files
-don't count as dirty: they can't change what lands, and the main clone, where `release.sh` lands its release commit
-from, often has some.
+and a branch already on `origin/main` skips to syncing `main` and deleting the remote branch. A re-run whose HEAD is
+already origin's branch skips the rebase while GitHub can merge its PR (`pushedAndMergeable`): rebasing would push a new
+head and throw away a land run already going (PR #992, 2026-11-05). The land then makes a merge commit; `-squash` always
+rebases, since its soft reset onto a moved `main` would revert `main`'s new commits. The pre-push hook may commit a
+formatting fix and stop that push; `pushBranch` then pushes once more with the fix on top. Untracked files don't count
+as dirty: they can't change what lands, and the main clone, where `release.sh` lands its release commit from, often has
+some.
+
+The remote branch goes once `origin/main` holds all of it (`deleteLandedBranch`), whether it landed by fast-forward or
+as a merge commit's parent. It asks `main`, never the local HEAD: an agent that keeps committing in its worktree while
+CI runs has a newer HEAD than what landed, and comparing against that left landed branches on origin. A remote branch
+with commits `main` lacks (pushed from another machine) stays.
 
 `scripts/release.sh` depends on this interface: `pnpm land -merge` from the main clone on the release branch, exit 0
 only when the release commit is on `origin/main`'s history, and local `main` synced by `fetch origin main:main`. Change
@@ -225,8 +233,9 @@ answered 403 after CI was green, and that land was lost. So:
   budget's reset, or a secondary limit's `Retry-After`. A 403 or 429 with budget left and no `Retry-After` is a
   secondary limit too: GitHub's docs say to wait at least a minute, then longer each time, so it backs off 1, 2, 4, and
   8 min (15 min in all) before giving up. That costs a real permission 403 the same 15 min, which no polled path
-  answers. Reads otherwise get two short retries; writes (`gh pr create`, ruleset apply) get none, since they may have
-  gone through.
+  answers. A 5xx on a polled read (`ghAPI`) backs off the same way: on 2026-11-05 one HTTP 500 from the check-runs poll
+  outlasted the two 10 s retries and ended a land whose CI was still running. Reads otherwise get two short retries;
+  writes (`gh pr create`, ruleset apply) get none, since they may have gone through.
 - **Gotcha: a PR that conflicts with `main` gets no CI run at all.** GitHub runs no `pull_request` workflow while the PR
   has a merge conflict (GitHub docs, "Events that trigger workflows" § `pull_request`), so the wait sees nothing and
   stops at `appearWithin`, and the message asks about a conflict first. It has cost us time hunting for a CI problem

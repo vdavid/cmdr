@@ -211,7 +211,11 @@ func (r runner) ghRetrying(retries int, call func() (string, *apiBudget, error))
 			say("GitHub's API budget for this account is spent (many lands polling at once?), so waiting %s for it to refill.", wait.Round(time.Second))
 		case ghBackOff:
 			backedOff++
-			say("GitHub's short-term rate limit turned a call away without saying for how long, so waiting %s before trying again.", wait.Round(time.Second))
+			if budget != nil && budget.serverError {
+				say("GitHub answered with a server error (an outage?), so waiting %s before trying again.", wait.Round(time.Second))
+			} else {
+				say("GitHub's short-term rate limit turned a call away without saying for how long, so waiting %s before trying again.", wait.Round(time.Second))
+			}
 		case ghRetryTransient:
 			retries--
 		}

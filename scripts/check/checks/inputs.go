@@ -324,6 +324,7 @@ var svelteInputs = inputs(treeGlobs(frontendSourceRoots...), []string{
 	"apps/desktop/vitest.config.ts",
 	"apps/desktop/eslint.config.js",
 	"apps/desktop/tsconfig.json",
+	"apps/desktop/tsconfig.lint-svelte.json",
 	"apps/desktop/knip.json",
 	"apps/desktop/.stylelintrc.mjs",
 	"pnpm-lock.yaml",

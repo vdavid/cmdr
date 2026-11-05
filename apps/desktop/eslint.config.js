@@ -52,6 +52,7 @@ import noArbitrarySleepInE2E from './eslint-plugins/no-arbitrary-sleep-in-e2e.js
 import noRawWaitBudget from './eslint-plugins/no-raw-wait-budget.js'
 import noUnrenderedLogFields from './eslint-plugins/no-unrendered-log-fields.js'
 import noStringifiedLogValues from './eslint-plugins/no-stringified-log-values.js'
+import webkitFloorDom from './eslint-plugins/webkit-floor-dom.js'
 
 /* global process */
 const noTypecheck = process.env.ESLINT_NO_TYPECHECK === '1'
@@ -142,6 +143,16 @@ function buildTsRules() {
 // projectService config: only enabled when type checking is needed.
 const projectServiceConfig = noTypecheck ? {} : { projectService: true, tsconfigRootDir: import.meta.dirname }
 
+// The `.svelte` pass's type-aware program: `tsconfig.lint-svelte.json`, which leaves out the tests
+// and `scripts/`. svelte-eslint-parser hands typescript-eslint a virtual TS file per component,
+// so EVERY component rebuilds a type checker over the whole program, and half of `tsconfig.json`'s
+// program is tests no component imports. Legacy `project` because `projectService` can't take a
+// tsconfig per block. Measured −40% on the pass, same findings:
+// `docs/notes/performance/local-check-lanes-2026-11-05.md`.
+const svelteProgramConfig = noTypecheck
+  ? {}
+  : { project: './tsconfig.lint-svelte.json', tsconfigRootDir: import.meta.dirname }
+
 export default tseslint.config(
   // The fast check skips type-aware rules, so eslint-disable comments targeting
   // those rules look "unused." Suppress that: the full (slow) run catches stale comments.
@@ -173,6 +184,13 @@ export default tseslint.config(
     files: ['**/*.{ts,tsx,svelte.ts,svelte}'],
   })),
   ...svelte.configs['flat/recommended'],
+  {
+    // Off: it guards enums, and `tsconfig.json`'s `erasableSyntaxOnly` bans them, so it had
+    // nothing to check yet cost 62% of the Svelte pass's rule time (~19 s, the pass −17%).
+    // `docs/notes/performance/local-check-lanes-2026-11-05.md`.
+    files: ['**/*.{ts,tsx,svelte.ts,svelte}'],
+    rules: { '@typescript-eslint/no-unsafe-enum-assignment': 'off' },
+  },
   {
     files: ['**/*.{ts,tsx,svelte.ts}'],
     plugins: {
@@ -236,7 +254,7 @@ export default tseslint.config(
       parser: svelteParser,
       parserOptions: {
         parser: tseslint.parser,
-        ...projectServiceConfig,
+        ...svelteProgramConfig,
         extraFileExtensions: ['.svelte'],
       },
     },
@@ -331,6 +349,7 @@ export default tseslint.config(
           'no-root-relative-asset': noRootRelativeAsset,
           'no-unrendered-log-fields': noUnrenderedLogFields,
           'no-stringified-log-values': noStringifiedLogValues,
+          'webkit-floor-dom': webkitFloorDom,
         },
       },
     },
@@ -460,6 +479,16 @@ export default tseslint.config(
       // chain and a TypedFailure's payload, where `String(x)` gives `[object Object]` for
       // a plain object. ERR-VEZUB's dialog crash reached its report as exactly that.
       'cmdr/no-stringified-log-values': 'error',
+    },
+  },
+  {
+    // A DOM call newer than Safari 15.4 (the WebKit a fully patched Catalina Mac runs Cmdr on)
+    // throws there, so it needs a feature check. Type-aware: a no-op in the fast pass. Tests are
+    // out: they run in Node and jsdom, never in WebKit.
+    files: ['src/**/*.{ts,svelte}'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.test.svelte.ts', 'src/lib/test-*.ts', 'src/test-setup.ts'],
+    rules: {
+      'cmdr/webkit-floor-dom': 'error',
     },
   },
   {

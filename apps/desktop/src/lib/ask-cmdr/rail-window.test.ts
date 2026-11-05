@@ -29,16 +29,20 @@ vi.mock('#lib/app-mode.js', () => ({
 vi.mock('@tauri-apps/api/window', () => ({ getCurrentWindow: () => win }))
 vi.mock('@tauri-apps/api/dpi', () => ({
   LogicalSize: class {
-    constructor(
-      public width: number,
-      public height: number,
-    ) {}
+    width: number
+    height: number
+    constructor(width: number, height: number) {
+      this.width = width
+      this.height = height
+    }
   },
   LogicalPosition: class {
-    constructor(
-      public x: number,
-      public y: number,
-    ) {}
+    x: number
+    y: number
+    constructor(x: number, y: number) {
+      this.x = x
+      this.y = y
+    }
   },
 }))
 vi.mock('#lib/window-positioning.js', () => ({ readMonitors: () => readMonitorsMock() }))

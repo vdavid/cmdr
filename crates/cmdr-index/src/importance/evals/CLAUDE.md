@@ -22,6 +22,8 @@ The weight-tuning instrument: `scenario.rs` (the serde `Scenario` format), `scen
   dot-prefixed names, home-child path-class anchors, project markers); everything else becomes a stable `dir-<hash>`.
   Real dumps land in a GITIGNORED corpus dir and are NEVER committed, and the suite must stay green with ZERO corpus
   files present (CI has none). `corpus/tests.rs` pins the privacy rules.
+- **The local corpus is OPT-IN**: only the `#[ignore]`d `local_corpus_*` test reads it (seconds per dump, personal
+  ground truth CI can't reproduce). ❌ Don't fold it back into a default test. `DETAILS.md` § "The opt-in corpus run".
 
 The constraint catalog, the scenario format, the snapshot/label/tune loop, and the `importance-snapshot` bin:
 `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

@@ -246,8 +246,10 @@ export function createMainWindowLights(): TrafficLights {
       ? {
           zoom: () => {
             const done = document.fullscreenElement
-              ? document.exitFullscreen()
-              : document.documentElement.requestFullscreen()
+              ? // eslint-disable-next-line cmdr/webkit-floor-dom -- only wired when `canFullScreen()` found `requestFullscreen`, which ships with `exitFullscreen`
+                document.exitFullscreen()
+              : // eslint-disable-next-line cmdr/webkit-floor-dom -- only wired when `canFullScreen()` found it
+                document.documentElement.requestFullscreen()
             done.catch(() => undefined)
           },
         }

@@ -30,6 +30,10 @@ type branchState struct {
 	// tagged: a tag points at one of the branch's commits (a release commit), so a rebase would
 	// leave the tag off `main`'s history. `-merge` lands it as it is.
 	tagged bool
+	// pushedMergeable: `main` moved, but HEAD is already origin's branch and GitHub can merge its
+	// open PR, so a re-run keeps that PR's CI (and lands with a merge commit) rather than
+	// rebasing, which would push a new head and restart CI. Never set under `-squash`.
+	pushedMergeable bool
 }
 
 type startStep int
@@ -60,7 +64,7 @@ func nextStartStep(s branchState, merge bool) startStep {
 		return stepRefuseDirty
 	case s.landed:
 		return stepFinish
-	case merge || s.based:
+	case merge || s.based || s.pushedMergeable:
 		return stepProceed
 	case s.tagged:
 		return stepRefuseTaggedRebase

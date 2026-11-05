@@ -24,8 +24,12 @@ beforeEach(() => {
 // catalog here, kept for the whole file, keeps it synchronous in tests, so a test can
 // `setLocale('de')` and assert on `t()` on the next line. `lazy-catalogs.svelte.test.ts`
 // covers the on-demand behavior itself.
-const { _loadAllCatalogsForTests } = await import('#lib/intl/messages.svelte.js')
+const { _loadAllCatalogsForTests, installMessageRuntimeHooks } = await import('#lib/intl/messages.svelte.js')
 await _loadAllCatalogsForTests()
+// Test doubles for what the app's boot code (`routes/+layout.ts`) wires in. ❌ Never import
+// the real logger or settings store into this file: every module this file reaches selects
+// the WHOLE suite in `svelte-tests-related` (`test-setup-closure.test.ts`).
+installMessageRuntimeHooks({ warn: () => {}, setTextSize: () => {} })
 
 // Every component a test mounts is unmounted once that test ends, whether or not the
 // test does it. A component left mounted keeps its timers, effects, and frame loops
@@ -143,10 +147,13 @@ HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string) => {
 // hits a null context and throws on `ctx.font = …`. Route it to the same
 // synthetic 2D context as the DOM canvas above.
 class OffscreenCanvasMock {
-  constructor(
-    public width: number,
-    public height: number,
-  ) {}
+  width: number
+  height: number
+
+  constructor(width: number, height: number) {
+    this.width = width
+    this.height = height
+  }
 
   getContext(contextId: string): CanvasRenderingContext2D | null {
     return contextId === '2d' ? createMockCanvas2DContext() : null

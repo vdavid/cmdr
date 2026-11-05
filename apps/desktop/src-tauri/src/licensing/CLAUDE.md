@@ -16,7 +16,7 @@ counterpart: `src/lib/licensing/CLAUDE.md`.
   way.
 - **`validation_client.rs`**: `POST /validate` (with a nonce) and `POST /activate`; debug → `localhost:8787`, release →
   `api.getcmdr.com`, E2E → no request. Returns `ValidationOutcome`.
-- **`device_id.rs`**: hashed `IOPlatformUUID` for fair-use tracking.
+- **`device_id.rs`**: hashed `IOPlatformUUID` (macOS) or `/etc/machine-id` (Linux) for fair-use tracking.
 - **`key_storage.rs`**: the key in the secret store (Keychain), the `license.json` marker, the launch-time
   migration out of the plaintext file, and the one-probe marker restore after a `license.json` recovery.
 

@@ -6,7 +6,8 @@ only way commits reach `main`: nobody, admin included, lands a SHA without a gre
 ## Module map
 
 - `main.go`: the flow (push, PR, wait, land, sync), each step skipped when done. `record.go`: the `-record N` phase.
-- `state.go`: the pure decisions (start step, CI verdict, messages, worktree parsing), tested in `state_test.go`.
+  `finish.go`: the tidy-up.
+- `state.go`: the pure decisions (start step, CI verdict, messages, worktree parsing).
 - `exec.go`: git and gh plumbing; pushes are tested against bare origins (`push_test.go`, `record_test.go`).
   `ghbudget.go`: rate-limit waits and the ETag cache. `joblog.go`: why a red job failed, from its log. `rulesets.go`:
   `pnpm land rulesets [-apply]`.

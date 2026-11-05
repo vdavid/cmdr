@@ -1,7 +1,7 @@
 name: Keep only the pinned Rust toolchain
 description: >-
-  Installs the toolchain `rust-toolchain.toml` pins and uninstalls every other one the runner image ships. Run it right
-  before `Swatinem/rust-cache`.
+  Installs the toolchain `rust-toolchain.toml` pins and uninstalls every other one the runner image ships, and keys
+  rust-cache on the workspace's build profiles. Run it right before `Swatinem/rust-cache`.
 
 # Why: rust-cache hashes the rustc version of EVERY installed toolchain into its key, and the
 # runner image preinstalls a `stable` of its own. While GitHub rolls a new image out, which takes
@@ -24,3 +24,15 @@ runs:
           rustup toolchain uninstall "$toolchain"
         done
         rustup toolchain list
+
+    # rust-cache hashes member manifests and `Cargo.lock`, never the virtual root `Cargo.toml`, so
+    # a `[profile.*]` edit there changes no key. A hit on an entry built under the old profile then
+    # recompiles every dependency and saves nothing (an exact hit never saves), run after run, until
+    # `Cargo.lock` changes. rust-cache does hash `CARGO*` env, so this exports a hash of the root
+    # manifest's profile tables: a profile edit gets fresh keys, and any other root edit doesn't.
+    - name: Key rust-cache on the workspace's build profiles
+      shell: bash
+      run: |
+        hash=$(awk '/^\[/ { p = /^\[profile/ } p' Cargo.toml | shasum -a 256 | cut -c1-16)
+        echo "CARGO_CI_PROFILES_HASH=$hash" >>"$GITHUB_ENV"
+        echo "Profile tables hash: $hash"

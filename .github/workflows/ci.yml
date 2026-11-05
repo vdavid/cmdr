@@ -58,16 +58,8 @@ concurrency:
 # The E2E lane's Cargo + target cache follows the same switch (`warm-e2e-linux-cache`).
 # Named so it doesn't start with `RUST` or `CARGO`: rust-cache hashes env vars with those
 # prefixes into its key. The lane files restate it (a called workflow doesn't inherit `env`).
-#
-# `LIGHT_LANE_RUNNER` is the light lane's runner, the one switch between the self-hosted
-# `cmdr-light` runner (on David's Hetzner box) and `ubuntu-latest`. Hosted is the default: the box
-# runs one job at a time on 1.5 cores, so under several agents' PRs it would queue every light job
-# behind the others (`docs/tooling/ci.md` § The light lane). Set it to `cmdr-light` and only trusted
-# runs get it: the `changes` job's runner step hands everything else `ubuntu-latest` (a
-# self-hosted runner keeps state between jobs, so it must never run code from outside the repo).
 env:
   SAVE_RUST_CACHE: ${{ github.ref == 'refs/heads/main' }}
-  LIGHT_LANE_RUNNER: ubuntu-latest
 
 jobs:
   # ===========================================
@@ -135,7 +127,6 @@ jobs:
         steps.scorecard-scan.outputs.hit == 'true' || github.event_name != 'pull_request') && 'true' || 'false' }}
       website-changed: ${{ steps.filter.outputs.website }}
       playwright-image: ${{ steps.playwright-image.outputs.image }}
-      light-runner: ${{ steps.light-runner.outputs.runner }}
       # A full run: a `run_all` dispatch (the release gate) or the nightly schedule. Every lane
       # runs, markers and the Rust test scope are ignored, and `CI OK` reds any skipped lane.
       full: ${{ inputs.run_all == true || github.event_name == 'schedule' }}
@@ -144,6 +135,10 @@ jobs:
       # (`scripts/lane-markers/DETAILS.md`). Not gated on `steps.verified`: a verified run's lane
       # outputs already read `false`, and the lanes' `if:` reads both.
       lanes: ${{ steps.lanes.outputs.lanes }}
+      # The macOS lane's runner, as JSON for `runs-on`: an idle slot of David's M1 for a trusted
+      # run while one is free, else GitHub's hosted `macos-26` (`macos-runner` step).
+      macos-runs-on: ${{ steps.macos-runner.outputs.runs-on }}
+      macos-self-hosted: ${{ steps.macos-runner.outputs.self-hosted }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -301,34 +296,6 @@ jobs:
             echo "The PR changes the tree ($base_tree to $head_tree), so hygiene runs."
           fi
 
-      # The light lane's runner: `LIGHT_LANE_RUNNER` (top of file) for trusted runs only, and
-      # `ubuntu-latest` for everything else. A self-hosted runner keeps state between jobs (its
-      # tool caches), so code from outside the repo must never reach it. An allowlist, so a new
-      # trigger (`pull_request_target`, `merge_group`, ...) lands on `ubuntu-latest` by default:
-      # - a push (only `main`) or a dispatch: the repo's own branches, which only collaborators write;
-      # - a pull request whose head is in this repo and whose author isn't a bot (Renovate and
-      #   Dependabot PRs bring third-party code a test run executes).
-      # This keeps OUR workflow from routing a fork's code there; a fork that edits this file is
-      # stopped by the repo's approval rule for every outside contributor's run
-      # (`docs/tooling/ci.md` § The light lane).
-      - name: Pick the light lane's runner
-        id: light-runner
-        env:
-          WANT: ${{ env.LIGHT_LANE_RUNNER }}
-          TRUSTED:
-            ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name ==
-            'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
-            github.event.pull_request.user.type != 'Bot') }}
-        run: |
-          if [[ "$TRUSTED" == true ]]; then
-            runner="$WANT"
-          else
-            runner=ubuntu-latest
-            echo "Not a trusted run (a fork or bot PR, or another trigger), so the light lane runs on ubuntu-latest."
-          fi
-          echo "runner=$runner" >>"$GITHUB_OUTPUT"
-          echo "Light lane runner: $runner"
-
       # Filter design rules (`ci-coverage` validates the non-glob paths exist and enforces the
       # lane-file and gated-check rules below; `docs/tooling/ci.md` § Change detection):
       # - A filter must cover every path its job's checks read, not just the obvious app dir.
@@ -483,6 +450,7 @@ jobs:
               - 'apps/desktop/vitest.config.ts'
               - 'apps/desktop/eslint.config.js'
               - 'apps/desktop/tsconfig.json'
+              - 'apps/desktop/tsconfig.lint-svelte.json'
               - 'pnpm-lock.yaml'
               - 'scripts/check.sh'
               - 'scripts/check/**'
@@ -832,6 +800,60 @@ jobs:
           echo "image=mcr.microsoft.com/playwright:v$version-noble" >>"$GITHUB_OUTPUT"
           echo "Website renderer: mcr.microsoft.com/playwright:v$version-noble"
 
+      # The macOS lane runs on one of the four `cmdr-m1` slots on David's M1 when this is a trusted
+      # run and a slot is online and idle right now; otherwise on GitHub's hosted `macos-26`. The
+      # slots keep their `target/` between jobs (that's the speedup), so code from outside the repo
+      # must never reach them. Trusted is an allowlist, like the light lane's: a push (only `main`),
+      # a dispatch, or a pull request whose head is in this repo and whose author isn't a bot.
+      # Hosted too: a full run (the release gate's `run_all` and the nightly), so a release is
+      # tested on the release builder's own image. (The Finder extension compiles in a hosted job
+      # of the lane's own either way.) A missing token (a fork's run gets no secrets, and the secret
+      # may not exist yet) and any failed lookup go hosted, so the worst case is the old behavior.
+      # Listing a repo's runners needs
+      # Administration: read, which `GITHUB_TOKEN` can't have, hence the fine-grained
+      # `RUNNER_STATUS_TOKEN`. Two runs can see the same idle slot; the loser queues for the next
+      # free slot. `docs/tooling/ci.md` § The M1 runner.
+      - name: Pick the macOS lane's runner
+        id: macos-runner
+        env:
+          GH_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+          REPO: ${{ github.repository }}
+          TRUSTED:
+            ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name ==
+            'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
+            github.event.pull_request.user.type != 'Bot') }}
+          FULL: ${{ inputs.run_all == true || github.event_name == 'schedule' }}
+        run: |
+          pick() {
+            echo "runs-on=$1" >>"$GITHUB_OUTPUT"
+            echo "self-hosted=$2" >>"$GITHUB_OUTPUT"
+            echo "macOS lane runner: $1. $3"
+          }
+          hosted='"macos-26"'
+          if [[ "$TRUSTED" != "true" ]]; then
+            pick "$hosted" false "Not a trusted run (a fork or bot PR, or another trigger)."
+            exit 0
+          fi
+          if [[ "$FULL" == "true" ]]; then
+            pick "$hosted" false "A full run, which tests on the release builder's image."
+            exit 0
+          fi
+          if [[ -z "$GH_TOKEN" ]]; then
+            pick "$hosted" false "No RUNNER_STATUS_TOKEN secret here, so the M1's slots can't be seen."
+            exit 0
+          fi
+          if ! idle=$(gh api "repos/$REPO/actions/runners?per_page=100" --jq \
+            '[.runners[] | select(.status == "online" and (.busy | not) and any(.labels[]; .name == "cmdr-m1"))] | length'); then
+            echo "::warning::Couldn't list the self-hosted runners; the macOS lane goes hosted."
+            pick "$hosted" false "The runner lookup failed."
+            exit 0
+          fi
+          if [[ "$idle" -gt 0 ]]; then
+            pick '["self-hosted","cmdr-m1"]' true "$idle of the M1's slots are online and idle."
+          else
+            pick "$hosted" false "No M1 slot is online and idle."
+          fi
+
   # ===========================================
   # The lanes
   # ===========================================
@@ -893,6 +915,9 @@ jobs:
   # superset of the one before it and a burst of lands used to queue a ~40 min macOS run each.
   # `ci-ok` counts that replaced (cancelled) job as covered. PRs and dispatches (the release
   # gate's `run_all`) keep a group of their own (the run ID), so this never cancels them.
+  #
+  # The runner comes from `changes` (`macos-runner` step): an idle slot on David's M1 for a
+  # trusted run, else hosted `macos-26`.
   desktop-rust-macos:
     name: Desktop (Rust, macOS)
     needs: changes
@@ -907,6 +932,8 @@ jobs:
       compile-finder-extension:
         ${{ needs.changes.outputs.full == 'true' || needs.changes.outputs.finder-extension == 'true' }}
       marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['desktop-rust-macos'].key }}
+      runs-on: ${{ needs.changes.outputs.macos-runs-on }}
+      self-hosted: ${{ needs.changes.outputs.macos-self-hosted == 'true' }}
 
   # The desktop frontend: the Svelte checks, i18n, and Vitest, plus the type-aware ESLint passes
   # in a parallel job.
@@ -996,8 +1023,7 @@ jobs:
   # Everything without Rust or a browser, on one runner: repo hygiene on every change (no path
   # gate), and the Go checks, the API server, the dashboard, and the three slow hygiene checks per
   # filter. It skips only on an already-verified push or PR and on a PR that changes no file (a
-  # record-only commit; see `changes`). The runner comes from `changes` (`LIGHT_LANE_RUNNER`,
-  # never self-hosted for a fork PR). `docs/tooling/ci.md` § The light lane.
+  # record-only commit; see `changes`). `docs/tooling/ci.md` § The light lane.
   light:
     name: Light lane (hygiene, Go, API server, dashboard)
     needs: changes
@@ -1006,7 +1032,6 @@ jobs:
       contents: read # check out the code
     uses: ./.github/workflows/light-lane.yml
     with:
-      runs-on: ${{ needs.changes.outputs.light-runner }}
       full: ${{ needs.changes.outputs.full == 'true' }}
       scripts: ${{ needs.changes.outputs.scripts == 'true' }}
       api-server: ${{ needs.changes.outputs.api-server == 'true' }}
@@ -1075,6 +1100,10 @@ jobs:
           mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target
           df -h /
 
+      # No `restore-keys`, unlike the lane: this job runs only when the key has no entry, and
+      # building on an older entry carries every stale artifact in its `target/` and registry into
+      # the new save (nothing prunes them; the Linux Rust entry grew the same way, #981). Starting
+      # empty costs a cold build (~22 min) post-land, once per `Cargo.lock` change.
       - name: Cache Cargo + target (via host bind mounts into Docker)
         if: steps.decide.outputs.warm == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -1083,8 +1112,6 @@ jobs:
             /tmp/cmdr-docker-cache/cargo
             /tmp/cmdr-docker-cache/target
           key: ${{ runner.os }}-docker-e2e-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-docker-e2e-
 
       - name: Log in to the container registry
         if: steps.decide.outputs.warm == 'true'
@@ -1118,7 +1145,8 @@ jobs:
   #   before it (rust-cache hashes the rustc version and `CARGO*`/`RUST*` env into the key). On
   #   an exact hit (`cache-hit`) every build step skips and the post-step saves nothing, ~1 min.
   # - On a miss it runs the lane's compiling checks, so the save holds what the lane needs,
-  #   including the tools they install into `~/.cargo/bin`.
+  #   including the tools they install into `~/.cargo/bin`. The Linux one builds from a clean
+  #   `target/` then (its step says why).
   warm-rust-cache:
     name: Warm Rust build cache (Linux)
     runs-on: ubuntu-latest
@@ -1153,6 +1181,15 @@ jobs:
           shared-key: desktop-rust
           cache-on-failure: true
           save-if: ${{ env.SAVE_RUST_CACHE }}
+
+      # On a miss rust-cache restores the newest older entry, and its pre-save cleanup keeps every
+      # artifact of a dependency it still lists, whatever version or feature set built it. Building
+      # on top carried old builds into each new save: the entry reached 2.7 GB (12 GB unpacked, with
+      # three copies of some crates; measured 2026-11-05, #981). A clean `target/` saves only what
+      # this commit builds, for a slower post-land build on the pushes that change the key.
+      - name: Start the new entry from a clean target
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: rm -rf target
 
       # Even on a Rust cache hit: a PR reads only its own and `main`'s caches, so this is what
       # keeps a `main` entry of the action's `.deb` cache current for every PR's first run.
@@ -1190,15 +1227,19 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: ./scripts/check/check --check nextest-filter-coverage --ci
 
-  # The `desktop-rust-macos` entry; see `warm-rust-cache`.
+  # The `desktop-rust-macos` entry, which the hosted macOS lane restores: the cargo registry,
+  # `~/.cargo/bin` (cargo-nextest, cargo-modules), and the dependencies' build. Its one writer: the
+  # lane only restores it, so this runs on every `main` push (the M1 path touches no Rust cache).
+  # On an exact hit it only looks (~1 min); on a miss it builds what the lane compiles from a clean
+  # `target/`, like `warm-rust-cache`, so a hosted fallback starts warm. A miss comes with each
+  # `Cargo.lock`, profile, or toolchain change, and a cold hosted build is ~60 min.
   warm-rust-macos-cache:
     name: Warm Rust build cache (macOS)
     runs-on: macos-26
     timeout-minutes: 90
     needs: changes
     if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success' &&
-      needs.changes.outputs.rust-macos != 'true'
+      github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success'
 
     steps:
       - name: Checkout code
@@ -1214,13 +1255,18 @@ jobs:
       - name: Keep only the pinned Rust toolchain
         uses: ./.github/actions/pinned-rust-toolchain
 
-      - name: Cache Rust build
+      - name: Cache the dependency build
         id: cache
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           shared-key: desktop-rust-macos
-          cache-on-failure: true
           save-if: ${{ env.SAVE_RUST_CACHE }}
+
+      # As in `warm-rust-cache`: a miss restored the newest older entry, and building on it would
+      # carry its stale artifacts into the new save.
+      - name: Start the new entry from a clean target
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: rm -rf target
 
       - name: Build check tool
         if: steps.cache.outputs.cache-hit != 'true'
@@ -1235,6 +1281,7 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: ./scripts/check/check --check desktop-rust-rustdoc --ci
 
+      # `rust-lane.yml` says why (an unused ~200 MB, and rust-cache's ENOENT on its `tests` dirs).
       - name: Drop rustdoc HTML before it reaches the cache
         if: always() && steps.cache.outputs.cache-hit != 'true'
         run: rm -rf target/doc
@@ -1244,34 +1291,37 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: ./scripts/check/check --check nextest-filter-coverage --ci
 
-      - name: Install cargo-modules (pinned)
+      # The checks own the pins and print them here.
+      - name: Install cargo-nextest and cargo-modules (pinned)
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          version="$(./scripts/check/check --print-cargo-modules-version)"
-          if [ "$(cargo-modules --version 2>/dev/null)" != "cargo-modules $version" ]; then
-            cargo install cargo-modules --version "$version" --locked
+          nextest="$(./scripts/check/check --print-nextest-version)"
+          if [ "$(cargo nextest --version 2>/dev/null | head -1 | cut -d' ' -f2)" != "$nextest" ]; then
+            cargo install cargo-nextest --version "$nextest" --locked --force
+          fi
+          modules="$(./scripts/check/check --print-cargo-modules-version)"
+          if [ "$(cargo-modules --version 2>/dev/null)" != "cargo-modules $modules" ]; then
+            cargo install cargo-modules --version "$modules" --locked
           fi
 
   # ===========================================
   # Keep the light lane's caches warm on main
   # ===========================================
-  # The light lane saves its caches (`node_modules`, the check tool, the Go caches) from `main`
-  # only, from a hosted runner only, and a verified `main` push skips it, so this job fills
-  # `main`'s entries for every hosted run to restore: fork and bot PRs' light lane, the `hosted-go`
-  # job, and the host-side pnpm store the Svelte lane and the deploys restore. Same shape as
-  # `warm-rust-cache`: post-land, exempt from `ci-ok` (`ciOKGateExempt`), skipped when the lane
-  # ran on a hosted runner on this push (it saved the same keys). On exact hits it only looks
-  # (~30 s); on a miss it does what the lane would: installs, builds the check tool, and runs the
-  # checks that `go install` their tools and fill the Go build cache. Same keys and paths as the
-  # lane, through the same `light-cache` action.
+  # The one writer of the light lane's caches (`node_modules`, the check tool, the Go caches, the
+  # scorecard binary) and of the host-side pnpm store, on every `main` push: the lane only restores.
+  # PRs' light lane, the `go-tools` job, the Svelte lane, and the deploys read what it saves. Same
+  # shape as `warm-rust-cache`: post-land, exempt from `ci-ok` (`ciOKGateExempt`). On exact hits it
+  # only looks (~30 s); on a miss it does what the lane would: installs, builds the check tool, and
+  # runs the checks that `go install` their tools and fill the Go build cache. Same keys and paths
+  # as the lane, through the same `light-cache` action. Its Go restore has no `fallback`, so a new
+  # key's entry holds only what this commit's checks used (the action says why).
   warm-light-cache:
     name: Warm light lane caches
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: changes
     if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success' &&
-      (needs.changes.outputs.verified == 'true' || needs.changes.outputs.light-runner != 'ubuntu-latest')
+      github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success'
     env:
       GOFLAGS: -count=1 # as in the lane, so the Go build cache it saves holds no test results
 
@@ -1291,6 +1341,7 @@ jobs:
         with:
           phase: restore
           go: 'true'
+          fallback: 'false'
           scorecard: 'true'
 
       - name: Restore the pnpm store
@@ -1328,9 +1379,15 @@ jobs:
         run: |
           ./scripts/check/check --ci --check scripts-go-vet,scripts-go-staticcheck,scripts-go-ineffassign,scripts-go-misspell,scripts-go-gocyclo,scripts-go-nilaway,scripts-go-deadcode
 
+      # In Go caches of its own, thrown away after: its `go install` pulls ~3 GB of modules and
+      # ~1 GB of build cache, which `light-go` would otherwise save (only its binary is worth keeping,
+      # in `light-scorecard`).
       - name: Install scorecard
         if: steps.cache.outputs.scorecard-hit != 'true'
         continue-on-error: true
+        env:
+          GOMODCACHE: ${{ runner.temp }}/scorecard-gomod
+          GOCACHE: ${{ runner.temp }}/scorecard-gocache
         run: ./scripts/check/check --check scorecard-local --ci
 
       - name: Save the light lane caches
@@ -1358,7 +1415,8 @@ jobs:
   # after the live entry). A family is the key minus its trailing hash parts, for example
   # `v0-rust-desktop-rust-Linux-x64`. A PR whose lockfile is older still restores the kept
   # entry through its restore-keys prefix. The light lane's `light-*` entries (a new lockfile
-  # or Go sum makes a new key each) are families too.
+  # or Go sum makes a new key each) are families too, and so are mise's (~0.1–0.3 GB each; a
+  # `.mise.toml` edit makes a new key for every OS and variant).
   # Post-land, so exempt from `ci-ok` (`ciOKGateExempt`): a failure only leaves the old
   # entries to age out.
   prune-superseded-caches:
@@ -1384,7 +1442,7 @@ jobs:
       actions: write # delete caches
 
     steps:
-      - name: Keep the most recently used main entry of each Rust, E2E, light lane, and pnpm store cache family
+      - name: Keep the most recently used main entry of each Rust, E2E, light lane, pnpm store, and mise cache family
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -1394,10 +1452,13 @@ jobs:
             --json id,key --jq '.[] | "\(.id) \(.key)"' >caches.txt
           while read -r id key; do
             case "$key" in
-              v0-rust-* | *-docker-e2e-* | light-* | pnpm-store-*) ;;
+              v0-rust-* | *-docker-e2e-* | light-* | pnpm-store-*)
+                family=$(sed -E 's/(-[0-9a-f]{8,})+$//' <<<"$key") ;;
+              # mise-action's key ends in the config hash, after an optional `install_args` hash that
+              # names a variant of its own (the Go-only one), so only the last hash goes.
+              mise-v1-*) family=$(sed -E 's/-[0-9a-f]{8,}$//' <<<"$key") ;;
               *) continue ;;
             esac
-            family=$(sed -E 's/(-[0-9a-f]{8,})+$//' <<<"$key")
             if [[ -n "${kept[$family]:-}" ]]; then
               echo "Deleting $key (superseded by ${kept[$family]})"
               gh cache delete "$id" --repo "$REPO"

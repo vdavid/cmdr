@@ -18,8 +18,10 @@ const m = vi.hoisted(() => ({
 
 /** Stands in for `OpenPathFailure`: a thrown value carrying the typed reason. */
 class Refused extends Error {
-  constructor(readonly failure: OpenPathError) {
+  readonly failure: OpenPathError
+  constructor(failure: OpenPathError) {
     super(failure.type)
+    this.failure = failure
   }
 }
 

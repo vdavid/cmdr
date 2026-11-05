@@ -83,7 +83,9 @@ The six path-filtered lanes are wired (`desktop-rust`, `desktop-rust-fixtures`, 
 (`lanes` output), each lane's `if:` adds `!fromJSON(needs.changes.outputs.lanes)['<id>'].verified` and passes its `.key`
 as `marker-key`, `e2e-base-image` follows the E2E lane's verdict, and `CI OK` runs `lane-markers verify` after its jq
 gate. In each lane file, the `lane-marker` action saves the key: as the last step of a one-job lane, or in a `marker`
-job that `needs` every other job of a multi-job lane (Rust, Svelte, website), so one green job can't vouch for another.
+job that `needs` every other job of a multi-job lane (Rust, Svelte, website, macOS), so one green job can't vouch for
+another. macOS's `finder-extension` job runs only on demand, so its `marker` takes a skip only when the compile wasn't
+asked for.
 
 A PR run hashes `refs/pull/N/merge`, the PR merged with the current `main`. So a follow-up push skips a lane only while
 `main` hasn't moved any of that lane's inputs since the run that passed; a land that touched them makes a new tree and
@@ -172,17 +174,14 @@ itself still reruns all.
 
 ## The light lane
 
-`light-lane.yml`, one job: everything that needs no Rust and no browser, so a narrow PR (docs, Go, API server,
-dashboard, CI config) pays setup once and takes one runner. It runs on every unverified PR and push (§ Landing doesn't
-re-run the suite), except a PR that changes no file. Every check step runs once setup is done, even after another
-failed, so a red run lists every failure, like the four separate jobs it replaced did.
+`light-lane.yml`, one job on `ubuntu-latest`: everything that needs no Rust and no browser, so a narrow PR (docs, Go,
+API server, dashboard, CI config) pays setup once and takes one runner. It runs on every unverified PR and push (§
+Landing doesn't re-run the suite), except a PR that changes no file. Every check step runs once setup is done, even
+after another failed, so a red run lists every failure, like the four separate jobs it replaced did.
 
-**It runs on `ubuntu-latest` by default, and the self-hosted `cmdr-light` runner is a one-line flip** (§ the runner
-bullets below). Hosted wins because the box runs one job at a time on 1.5 cores: measured there (throwaway PRs
-#971–#973, 2026-11-05), a docs-only PR's light job took 61 s (63 s on hosted the same day, PR #974), a Go-only PR's 174
-s, and an API-server-only PR's 145 s, and three PRs pushed together queued behind each other (the Go probe waited 110 s,
-the API one ~4 min). So it's no faster per job, and with several agents' PRs in flight it serializes every light job,
-the opposite of what the box was for. It would only win while hosted runners queue, which these runs didn't measure.
+**No self-hosted runner.** A capped one on David's Hetzner box ran this lane briefly and was removed (2026-11-05): a
+docs-only light job took 61 s there against 63 s hosted (throwaway PRs #971–#974), and the box ran one job at a time, so
+three PRs pushed together queued behind each other. Hosted runners run them in parallel.
 
 - **Repo hygiene, on every change**: the checks whose inputs no per-app filter can cover. `oxfmt` formats the whole
   monorepo (before hygiene ran on every change, a docs-only commit ran zero CI, so unformatted markdown could land on
@@ -192,16 +191,13 @@ the opposite of what the box was for. It would only win while hosted runners que
   territory). Grouped a few per step: one invocation runs its checks in parallel.
 - **Per filter**: the Go checks (`scripts`, one invocation, so they overlap), the API server (`api-server`), and the
   dashboard (`dashboard`).
-- **nilaway and Scorecard run in `hosted-go`, a second job on `ubuntu-latest`**, gated on `scripts` (nilaway),
-  `scorecard` (Scorecard), or a full run, so the self-hosted runner keeps only the fast checks: there nilaway passed 2.5
-  GB and kept growing against a 1.5 GB job budget, and Scorecard's cold `go install` pulled ~2.3 GB of Go modules and
-  filled its disk (run 41949695576, 2026-11-05). Beside the light job, it also takes both off that job's critical path.
-  It restores the check tool, the Go caches (nilaway's binary among them), and the scorecard binary, and saves nothing.
-  nilaway fans out two modules at a time (`scripts/check/checks/DETAILS.md`).
+- **nilaway and Scorecard run in `go-tools`, a second job**, gated on `scripts` (nilaway), `scorecard` (Scorecard), or a
+  full run, which takes the two slowest Go tools off the light job's critical path. It restores the check tool, the Go
+  caches (nilaway's binary among them), and the scorecard binary, and saves nothing. nilaway fans out two modules at a
+  time (`scripts/check/checks/DETAILS.md`).
 - **Two slow hygiene checks, per filter** (each filter carries the check's fingerprint, `ci-coverage` rule 7):
   `desktop-i18n-termbase` (~40 s) on `termbase`; `changelog-commit-links` on `changelog`, which alone needs history, so
-  the lane fetches it (`git fetch --unshallow`) only then. `scorecard-local` on `scorecard` is the third, in
-  `hosted-go`.
+  the lane fetches it (`git fetch --unshallow`) only then. `scorecard-local` on `scorecard` is the third, in `go-tools`.
 - **Scorecard's trigger has two halves**, both decided in `changes`. Its file checks read workflows, Dockerfiles, the
   Renovate config, the license, security policy, and fuzz harness: the `scorecard` filter. But Binary-Artifacts and
   Pinned-Dependencies' shell half read EVERY file, by content (read in ossf/scorecard v5.5.0's source, 2026-11-05: its
@@ -210,29 +206,6 @@ the opposite of what the box was for. It would only win while hosted runners que
   Scorecard when a file, a deleted one or a rename's old path included, has a binary or shell extension, a Dockerfile or
   `.github/` path, a shebang, or a NUL in its first 1,024 bytes. 3,000+ files (the API's cap) or a failed lookup runs
   it. A push or dispatch always runs it.
-- **The runner is an input** (`runs-on`, default `ubuntu-latest`). `ci.yml`'s top-level `LIGHT_LANE_RUNNER` is the one
-  switch, set to `ubuntu-latest` (above says why). `cmdr-light` is the self-hosted runner on David's Hetzner box (labels
-  `self-hosted, Linux, X64, cmdr-light`; its budget, containment, and how to pause it live with the `gha-runner` Ansible
-  role in David's private infra repo); set the switch to it to move trusted runs there. ❗ Precondition: only same-repo,
-  human-authored code may run there, and that includes an outside contributor's commit cherry-picked onto David's branch
-  per `docs/guides/handling-prs.md` (its PR is same-repo and human-authored, so the allowlist below would send it
-  there). The box shares mise's tools, pnpm's store, and the Go module cache (writable, `-modcacherw`) across jobs, so
-  one job's code can change what every later job on the box runs against, `main`'s included, in a way no tree hash or
-  filter sees. Before flipping the switch, route those PRs to hosted, or make the runner ephemeral.
-- **Only trusted runs reach that runner**, since it keeps state (its tool caches) between jobs. `changes`' runner step
-  is an allowlist: a push (only `main`), a dispatch (only collaborators can), or a pull request whose head is in this
-  repo and whose author isn't a bot gets `LIGHT_LANE_RUNNER`; everything else gets `ubuntu-latest`. So a fork PR, a
-  Renovate or Dependabot PR (third-party code a test run executes), and any trigger added later (`pull_request_target`,
-  which no workflow uses and `workflows-hardening` refuses, or `merge_group`) stay hosted. That guards against our own
-  workflow routing outside code there; a fork PR that edits `ci.yml` to name the label itself is stopped by the repo's
-  approval rule, which holds every outside contributor's run until David approves it (`fork-pr-contributor-approval` is
-  `all_external_contributors`, read with `gh api` on 2026-11-05).
-- **What changes on that runner** (`HOSTED` in `light-lane.yml`): `jdx/mise-action` gets `cache: false` and the
-  `node_modules` and Go cache restores skip, because the box keeps mise's tools, pnpm's store, and the Go caches between
-  jobs, pre-warmed from `main`; `pnpm install` links from the warm store. The check tool (small, per checkout) still
-  restores, and nothing saves from there (it restored only part of the set), so `warm-light-cache` runs after every
-  `main` push whose light lane ran on the box. `GOFLAGS` adds `-modcacherw`, so the box's disk cleanup can delete the
-  module cache.
 
 **A PR whose head tree equals its base branch's skips it** (`changes`' `same-tree` step, pull requests only). That's a
 `pnpm land -record N` record (`docs/guides/handling-prs.md`): an `ours` merge that changes no file, only ancestry, so
@@ -251,9 +224,18 @@ lanes, and the record lands in about a minute instead of waiting out a busy queu
 built check tool (keyed on its non-test Go sources and the Go version), the Go caches (module and build caches plus the
 Go checks' `go install`ed tools; restored only when the Go checks run), and the scorecard binary (its ~2 min
 `go install`, an entry of its own: in a shared one, a Go-only run's save, which held no scorecard, hit exactly on every
-later run, so scorecard was never cached; seen on the probe PR #964, 2026-11-05). They save from `main` only, like the
-Rust caches, and `warm-light-cache` fills them after a verified land. `GOFLAGS=-count=1` keeps test results out of the
-Go build cache, so `go test` always runs for real.
+later run, so scorecard was never cached; seen on the probe PR #964, 2026-11-05). The lane only restores them;
+`warm-light-cache` is their one writer, on every `main` push. `GOFLAGS=-count=1` keeps test results out of the Go build
+cache, so `go test` always runs for real. Two things keep `light-go` small (it reached 1.6 GB, 4.5 GB unpacked, on
+2026-11-05, measured by restoring it in a throwaway run):
+
+- **The writer restores it without `fallback`**, so a new key's entry holds only what that commit's Go checks used. A
+  prefix restore carried every older entry's modules and build cache forward into each new save.
+- **Scorecard installs into Go caches of its own**, thrown away after: its `go install` pulled ~3 GB of modules and ~1.3
+  GB of build cache into `light-go`, of which only the binary (in `light-scorecard`) is worth keeping.
+
+A fresh `light-go` weighs ~0.23 GB (the Go checks run cold with empty caches, then tar+zstd like actions/cache: build
+cache 92 MB, modules 106 MB, tools 35 MB; measured locally, 2026-11-05).
 
 **The pnpm store** (`.github/actions/pnpm-store`): the Svelte lane, the website lane, the demo build, the deploys, and
 `slow-checks` restore pnpm's store before `pnpm install`, at the path `pnpm store path` reports (pnpm 12 keeps it under
@@ -279,22 +261,41 @@ silent** (a warning, not a red job):
   every 5 s, PR #593, 2026-10-20) and an unconditional reclaim cost ~1.5 min for nothing. But the `ubuntu-latest` fleet
   isn't uniform: a runner with a 72 GB disk (`/dev/nvme0n1p1`, image 20261101.64.1) ran `cargo test --no-run` out of
   space mid-link (run 41839837176, 2026-11-04). Both jobs end on `df -h /`.
+- **The `desktop-rust` entry stays lean two ways**, measured with cold builds of the cached set (clippy, rustdoc, test
+  binaries) in a throwaway run, tar+zstd after dropping workspace artifacts as rust-cache does (runs 42024754473 and
+  42028774426, 2026-11-05). The live entry was 2.7 GB (12 GB unpacked); a fresh one is ~1.7 GB, and ~1.1 GB without
+  dependency debuginfo:
+  - **Dependencies build without debuginfo**, for everyone: `[profile.dev.package."*"] debug = false` in the root
+    `Cargo.toml`, so every lane and local build use the same profile. Dependency `.debug_*` sections were ~0.9 GB
+    unpacked, mostly in proc-macro and cdylib `.so`s. Workspace crates keep their line tables, so a test's backtrace
+    still names our files and lines. Locally, a cold `cargo build -p cmdr` went 12 GB -> 9.9 GB of `target/` and 440 s
+    -> 366 s, and a warm rebuild after touching `cmdr-listing` 43 s -> 31 s (median of three; macOS arm64, a busy
+    laptop, so the times are rough; 2026-11-05).
+  - **`warm-rust-cache` builds a new key from a clean `target/`.** On a miss rust-cache restores the newest older entry,
+    and its pre-save cleanup keeps every artifact of a dependency it still lists, whatever version or feature set built
+    it, so stale builds rode along into each new save (three copies of `tauri-plugin-mcp-bridge`'s 338 MB staticlib, for
+    one). The lane itself still builds on the older entry when it runs on `main`, which a landed PR's verified push
+    skips.
 - **The Rust caches save from `main` only** (`desktop-rust` and `desktop-rust-macos`; `SAVE_RUST_CACHE` at the top of
   `ci.yml` and restated in each lane file that saves one, which also gates the E2E target cache below). PR runs restore
   `main`'s entry and save nothing. When every PR saved its own ~1.7 GB entry, the repo sat at ~12 GB, LRU evicted
   entries within minutes, and nearly every PR run built cold (PR #593, 2026-10-20). **Load-bearing companion: the
   `warm-rust-*` jobs.** A verified `main` push skips the Rust lanes, so nothing else would write `main`'s entries.
   Post-land on `main`, one job per entry restores it with the lane's exact rust-cache inputs; on an exact hit it skips
-  every build step (~1 min), on a miss it runs the lane's compiling checks and saves. They skip when the Rust lanes ran
-  on that push, and they're exempt from `ci-ok` (`ciOKGateExempt`). Their rust-cache inputs and the steps before them
-  must match the lane's: rust-cache hashes the rustc version and `CARGO*`/ `RUST*` env into the key, which is also why
-  the switch is named `SAVE_RUST_CACHE`.
+  every build step (~1 min), on a miss it runs the lane's compiling checks and saves. The Linux one skips when its lane
+  ran on that push; the macOS one is its entry's only writer, so it runs on every push (§ The M1 runner). Both are
+  exempt from `ci-ok` (`ciOKGateExempt`). Their rust-cache inputs and the steps before them must match the lane's:
+  rust-cache hashes the rustc version and `CARGO*`/ `RUST*` env into the key, which is also why the switch is named
+  `SAVE_RUST_CACHE`.
 - **Every rust-cache step follows the `pinned-rust-toolchain` action** (`.github/actions/`). rust-cache hashes the rustc
   version of EVERY installed toolchain, and the runner image preinstalls its own `stable`. While GitHub rolls out a new
   image (days, after each Rust release), runners differ, so one job wrote two keys run by run: `e3a6d410` with the old
   stable next to the pin, `770ca156` without it (2026-10-22). Each flip restored a partial match, recompiled ~20 min,
   and saved another ~1.8 GB entry. The action installs the pin and uninstalls every other toolchain, so the key depends
-  on `rust-toolchain.toml` alone. A new rust-cache step needs it too.
+  on `rust-toolchain.toml` alone. A new rust-cache step needs it too. ❗ The action also exports
+  `CARGO_CI_PROFILES_HASH`, a hash of the root `Cargo.toml`'s `[profile*]` tables: rust-cache hashes member manifests
+  and `Cargo.lock` but never the virtual root manifest, so without it a profile edit keeps every key, each hit rebuilds
+  every dependency, and an exact hit never saves the fix.
 - **`desktop-e2e-linux`**: caches the Docker-side cargo + `target/` via host bind mounts (`/tmp/cmdr-docker-cache/*`),
   keyed on Cargo.lock with a restore-keys fallback. Separate from `desktop-rust` because the e2e binary builds a
   different feature set (`playwright-e2e,virtual-mtp,smb-e2e`). Split into `actions/cache/restore` and a save step that
@@ -307,7 +308,9 @@ silent** (a warning, not a red job):
   `warm-e2e-linux-cache` job.** A PR restores only its own or `main`'s caches, and a verified `main` push skips the
   lane, so without it no main-scoped entry exists and every new PR's first run builds cold (4 of 9 PR runs on
   2026-10-19, #557). It runs post-land on `main`, rebuilds the E2E target cache only when the current key has no entry,
-  and is exempt from `ci-ok` (`ciOKGateExempt`). Its cache `path`s and key must stay identical to the lane's.
+  and is exempt from `ci-ok` (`ciOKGateExempt`). Its cache `path`s and key must stay identical to the lane's. It has no
+  `restore-keys`, so a new key's entry starts empty: nothing prunes `target/` or the registry, so building on the older
+  entry carried every stale artifact forward.
 - **The E2E base image is not an Actions cache.** It lives in GitHub's container registry, tagged by the hash of
   `Dockerfile.base`: the `e2e-base-image` job builds and pushes it only when the tag is missing, and `desktop-e2e-linux`
   (which needs that job) pulls it. As a cache entry it was the LRU victim whenever the repo went over budget, and the
@@ -327,20 +330,27 @@ silent** (a warning, not a red job):
   - apt's own 30-s connection timeout and retries.
 - **`slow-checks` dependency-checks**: rust-cache for cargo-udeps's nightly `target/`, plus the same "Free disk space"
   step. Kept alive by the 6-day cron (below).
+- **mise's tool cache saves from `main` only** (`cache_save` on every mise-action a PR reaches). Its key holds the
+  runner image (`ImageOS`) and the config hash, plus an `install_args` hash for the Go-only install in
+  `lane-markers-tool`, so one run touches up to four entries of ~0.1–0.3 GB each; a container job (the website lane's)
+  has no `ImageOS`, so mise files it under `self-hosted`. When PRs saved their own, PR #982 alone held 0.4 GB of mise
+  (2026-11-05). `prune-superseded-caches` keeps one `main` entry per variant.
 
 rust-cache keys per-job, so these are independent caches and each prunes itself. The shared risk is GitHub's **10 GB
-per-repo ceiling**. With the Rust and E2E target caches saved from `main` only, the steady state is about 6.4 GB
-(`gh cache list`, 2026-10-20, macOS entry from its last single-job save): `desktop-rust` ~1.7, `desktop-rust-macos`
-~1.4, `docker-e2e` ~1.15, the `slow-checks` udeps cache ~1.7 (estimate; it was evicted when measured), mise ~0.2 per OS,
-plus small scorecard and CodeQL entries. Per-PR saves are only mise (~0.17 GB each on macOS). Before this, every PR also
-saved ~1.7 GB of Rust and ~1.2 GB of E2E target, the repo sat at ~12 GB, and LRU evicted entries within minutes.
+per-repo ceiling**, and lane markers are the first LRU victims, since nothing ever restores one (#981). On 2026-11-05
+the repo sat at ~9.5 GB (`gh api repos/vdavid/cmdr/actions/caches`): `desktop-rust-macos` 3.6, `desktop-rust` 2.7,
+`light-go` 1.6, `docker-e2e` ~1.2, four mise entries ~0.9 between `main` and one PR, `light-*` `node_modules` 0.27, and
+the pnpm store 0.2. The fixes above put `desktop-rust` at ~1.1, `light-go` at ~0.23, and `light-node-modules` at ~0.19,
+`desktop-rust-macos` at ~1.3 (estimated; § The M1 runner), and PRs no longer add mise. Every PR saves only its markers
+and the lane-markers tool (~2 MB). Before the Rust caches went main-only, every PR also saved ~1.7 GB of Rust and ~1.2
+GB of E2E target, the repo sat at ~12 GB, and LRU evicted entries within minutes.
 
 **Load-bearing companion: the `prune-superseded-caches` job.** A new `Cargo.lock` gives each big entry a new key, and
 the old one lingers until 7 unused days pass, so two generations put the repo at ~11.5 GB (2026-10-22). Post-land on
 `main`, after every job that saves one, it keeps the most recently used `main` entry per family (`v0-rust-*`,
-`*-docker-e2e-*`, the light lane's `light-*`, and `pnpm-store-*`, the key minus its trailing hash parts) and deletes the
-rest. It's exempt from `ci-ok`. Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop
-under pressure.
+`*-docker-e2e-*`, the light lane's `light-*`, and `pnpm-store-*`, the key minus its trailing hash parts; for
+`mise-v1-*`, minus only the last one, since an `install_args` hash before it names a variant) and deletes the rest. It's
+exempt from `ci-ok`. Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop under pressure.
 
 **Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
 detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E is usually that floor. Measured
@@ -398,20 +408,24 @@ Gotchas:
 ## macOS lane (`desktop-rust-macos`)
 
 Every other `ci.yml` job runs on ubuntu, so code under `cfg(target_os = "macos")` used to be compiled only on whichever
-Mac last ran `pnpm check`. This job runs on `macos-26` (the release builder's image, so it lints against the shipping
-SDK; free for a public repo) and asks the three questions Linux can't answer for that code: `desktop-rust-clippy`,
-`desktop-rust-rustdoc`, and `desktop-rust-tests`, in that order. The other platform-blind scanners stay in
-`desktop-rust` alone. Gated on the `rust-macos` filter (the Rust lanes' shared inputs plus its own lane file), so it
-runs in parallel with `desktop-rust`.
+Mac last ran `pnpm check`. This job runs on an idle slot of David's M1 when it can (§ The M1 runner), else on hosted
+`macos-26` (the release builder's image, so it lints against the shipping SDK; free for a public repo), and asks the
+three questions Linux can't answer for that code: `desktop-rust-clippy`, `desktop-rust-rustdoc`, and
+`desktop-rust-tests`, in that order. The other platform-blind scanners stay in `desktop-rust` alone. Gated on the
+`rust-macos` filter (the Rust lanes' shared inputs plus its own lane file), so it runs in parallel with `desktop-rust`.
 
 Its steps live in the reusable `macos-lane.yml`, called by `ci.yml`'s `desktop-rust-macos` (§ Lane files).
 
-First, before clippy, it runs `desktop-finder-extension-compile`: both slices of the Swift Finder extension,
-cross-compiled by `swiftc` on the one runner. Nothing else compiles it before a release build, which is where `Logger`
-(macOS 11) broke the 10.15 x86_64 slice (`v0.58.1-pipelinetest.1`, 2026-11-03). It took 65 s on a cold runner (mostly
-`swiftc` loading the macOS frameworks; 4 s on a warm Mac, 2026-11-03), so the step runs only when the `finder-extension`
-filter matches (the extension, its check, or `macos-lane.yml`) or on `run_all`, which the release gate always is. The
-`rust` filter carries `apps/desktop/finder-extension/**` too, so a Swift-only change starts the lane at all.
+Beside it, in a job of its own on hosted `macos-26` (`finder-extension`), it runs `desktop-finder-extension-compile`:
+both slices of the Swift Finder extension, cross-compiled by `swiftc`. Nothing else compiles it before a release build,
+which is where `Logger` (macOS 11) broke the 10.15 x86_64 slice (`v0.58.1-pipelinetest.1`, 2026-11-03). It took 65 s on
+a cold runner (mostly `swiftc` loading the macOS frameworks; 4 s on a warm Mac, 2026-11-03), so the job runs only when
+the `finder-extension` filter matches (the extension, its check, the lane file, `ci.yml`, or `.mise.toml`) or on
+`run_all`, which the release gate always is. It's always hosted because the M1 has only the Command Line Tools, whose
+Swift runtime has no x86_64 slice, so the 10.15 slice fails to link there (`swiftCompatibility*` undefined, 2026-11-05).
+The lane file's `marker` job saves the lane marker once the main job passed and this one passed or wasn't asked for, so
+neither can vouch for the other. The `rust` filter carries `apps/desktop/finder-extension/**` too, so a Swift-only
+change starts the lane at all.
 
 Gotcha for any second gate on a commit (a dispatched run, a merge queue): GitHub's ruleset reads only the newest run of
 a workflow on a commit. A `ci.yml` dispatch's green `CI OK` was shadowed by that commit's PR run, which started three
@@ -432,8 +446,7 @@ the account's five-job cap. PRs and dispatches (the release gate's `run_all`) ge
 nothing replaces them. The replaced job reads `cancelled`, which `ci-ok` counts as covered (§ Branch protection). The
 group is job-level because the workflow-level one must stay per-run (§ Triggers and concurrency), and GitHub allows
 `concurrency` on a job that calls a reusable workflow (docs: "Supported keywords for jobs that call a reusable
-workflow", checked 2026-10-21). `warm-rust-macos-cache` stays out of the group: it runs only when the lane skipped, and
-mostly hits the cache and exits.
+workflow", checked 2026-10-21). `warm-rust-macos-cache` stays out of the group: it mostly hits the cache and exits.
 
 - **Required.** It's in `ci-ok`'s `needs`, so a red macOS job fails the run, `ci-ok`, and the release's CI gate. Its
   first run (2026-10-06) failed on two tests that assumed David's Mac (a malloc zone macOS 26 doesn't register, a tight
@@ -441,9 +454,57 @@ mostly hits the cache and exits.
 - **Left out on purpose**: `macos-availability` (the committed selector list records the newest SDK it was built on, and
   an older runner SDK that knows a different selector set fails by design), `disk-images` (a candidate once the job has
   a track record), and the Docker fixture lanes (no Docker on GitHub's macOS runners).
-- **Cache**: one rust-cache entry covering the clippy, rustdoc, and test builds plus `~/.cargo/bin`, saved only from
-  `main` and kept current by `warm-rust-macos-cache`, which builds all three on a miss (§ Build caching). If the job
-  starts building cold, check `gh cache list`.
+- **Cache**: on the M1, none (each slot's `target/` persists). Hosted, one slim rust-cache entry the lane only restores:
+  the cargo registry, `~/.cargo/bin` (cargo-nextest, cargo-modules), and the dependencies' build. Its one writer is
+  `warm-rust-macos-cache`, on every `main` push. Why and what it costs: § The M1 runner.
+
+### The M1 runner
+
+**The lane runs on David's M1 when a slot is free, and on hosted `macos-26` otherwise.** The M1 (M1 Max, 10 cores, 64
+GB, the box his agent loops run on) carries four self-hosted runner slots, `m1-cmdr-1` to `-4`, labels
+`self-hosted, macOS, ARM64, cmdr-m1`. Each slot keeps its own warm `CARGO_TARGET_DIR` outside the job workspace (one
+shared dir would serialize them on cargo's build-directory lock), so a run there compiles only what changed. The lane's
+checks took 6.4 min there after an edit to the `cmdr` crate (clippy 41 s, rustdoc 27 s, tests 147 s, module cycles 165
+s) and 11 min cold, at nice 10 (2026-11-05, timed step by step on the box). The first real job on a warm slot took 9 min
+end to end, 70 s of it a one-off cargo-modules install (run 42046885435, slot `m1-cmdr-1`: clippy 59 s, rustdoc 28 s,
+tests 154 s, module cycles 174 s). Hosted, the same lane took 29–50 min, median ~38, over the 24 green runs of
+2026-11-04 and 11-05 (tests alone 17–32 min). The first job on a fresh slot builds cold, so a slot pays ~11 min once.
+
+- **Routing** (`changes`' `macos-runner` step, the last one, output `macos-runs-on` as JSON for `runs-on`): a trusted
+  run gets the M1 when the repo's runners API lists a `cmdr-m1` runner that's online and not busy; else hosted. Trusted
+  is an allowlist like the light lane's: a push (only `main`), a dispatch, or a PR whose head is in this repo and whose
+  author isn't a bot. Listing runners needs Administration: read, which `GITHUB_TOKEN` can't get, so it reads the
+  `RUNNER_STATUS_TOKEN` secret (a fine-grained PAT on `vdavid/cmdr` only, Administration read-only). No secret (a fork's
+  run gets none) or a failed lookup routes hosted, so the worst case is the old behavior.
+- **Always hosted**: a full run (the release gate's `run_all`, the nightly), so a release is gated on the release
+  builder's own image and SDK, and the Finder extension compile (its own job, § above). The M1 runs a newer macOS than
+  `macos-26`, so a test that depends on the OS version can pass on one and fail on the other; the nightly and the
+  release gate catch the hosted side.
+- **What the M1 path changes** (`self-hosted` input): no rust-cache and no mise Actions cache (the box keeps both); the
+  pinned toolchain installs under a `shlock` (four slots share one rustup home, and rustup has no lock of its own);
+  `timeout-minutes` is 30 instead of 90, so a box dying mid-job fails the run instead of hanging it.
+- **The race**: two runs can see the same idle slot; the loser queues for the next free one. A box that goes offline
+  between `changes` and the lane's start leaves the job queued until it's back (GitHub doesn't time out a queued job for
+  24 h); cancel and re-run, and it routes hosted.
+- **Trust**: the slots keep state between jobs (the target dirs, `~/.cargo`, mise's tools), so one job's build script
+  could change what a later job builds against, `main`'s included, in a way no tree hash or marker sees. That's why only
+  trusted runs reach them, and the same caveat as the light lane's applies: an outside contributor's commit
+  cherry-picked onto David's branch (`docs/guides/handling-prs.md`) rides a trusted run. The box itself is protected
+  regardless: the jobs run as a separate non-admin user that can't read David's home, and pf blocks that user from the
+  LAN and the tailnet.
+- **The box side** (the user, the slots, pf, the job hooks, the runner-down email, how to pause it) lives in David's
+  private infra repo: the `ci_runner` Ansible role of its M1 host, and that host's CLAUDE.md § CI runner.
+
+**The hosted fallback's slim `target/` entry** (#981): with the M1 taking trusted runs, the hosted lane runs only on
+full runs (the release gate, the nightly), bot and fork PRs, overflow, and an M1 outage. Without a `target/` entry it
+measured 73.7 min fully cold (run 42029203873, 2026-11-05: clippy 13 min, rustdoc 4, tests 43, cargo-modules install 6,
+module cycles 6), against ~38 warm with the old entry, and the release gate waits on it, so David chose to keep one
+(2026-11-05), estimated to bring a hosted run to ~47 min. It stays slim three ways, like `desktop-rust`'s (§ Build
+caching): dependency debuginfo is off, rust-cache drops workspace crates, and `warm-rust-macos-cache` is the only
+writer, building from a clean `target/` on a miss, so stale builds never ride along (the old entry, saved by the lane on
+top of older ones, reached 3.8 GB, `gh cache list`, 2026-11-05). Expected size ~1.3 GB (estimated from Linux's ~1.1 GB;
+not yet measured). The price: that ~1.3 GB of budget, plus a ~60-min hosted rebuild post-land on each `Cargo.lock`,
+profile, or toolchain change.
 
 The CI failure history that motivated it: `docs/notes/ci-health-2026-10.md`.
 

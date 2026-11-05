@@ -197,7 +197,7 @@ func land(r runner, cfg config) error {
 }
 
 func landOnce(r runner, cfg config) error {
-	state, err := readState(r)
+	state, err := readState(r, cfg.squash)
 	if err != nil {
 		return err
 	}
@@ -283,7 +283,7 @@ func start(r runner, state branchState, merge bool) (bool, error) {
 	return true, nil
 }
 
-func readState(r runner) (branchState, error) {
+func readState(r runner, squash bool) (branchState, error) {
 	branch, err := r.git("branch", "--show-current")
 	if err != nil {
 		return branchState{}, err
@@ -301,14 +301,35 @@ func readState(r runner) (branchState, error) {
 	if err != nil {
 		return branchState{}, err
 	}
+	based := r.isAncestor("origin/main", "HEAD")
 	return branchState{
-		branch:    branch,
-		dirty:     status != "",
-		landed:    r.isAncestor("HEAD", "origin/main") || r.allUpstream(),
-		based:     r.isAncestor("origin/main", "HEAD"),
-		hasMerges: merges != "",
-		tagged:    r.tagged("origin/main..HEAD"),
+		branch:          branch,
+		dirty:           status != "",
+		landed:          r.isAncestor("HEAD", "origin/main") || r.allUpstream(),
+		based:           based,
+		hasMerges:       merges != "",
+		tagged:          r.tagged("origin/main..HEAD"),
+		pushedMergeable: !based && !squash && branch != "" && pushedAndMergeable(r, branch),
 	}, nil
+}
+
+// pushedAndMergeable reports whether HEAD is already origin's branch and GitHub can merge the
+// branch's open PR into `main`. Any error, or GitHub still working it out, reads as false: the
+// land then rebases, as it would without this.
+func pushedAndMergeable(r runner, branch string) bool {
+	head, err := r.git("rev-parse", "HEAD")
+	if err != nil {
+		return false
+	}
+	if remote, err := r.remoteSHA(branch); err != nil || remote != head {
+		return false
+	}
+	pr, ok, err := findOpenPR(r, branch)
+	if err != nil || !ok {
+		return false
+	}
+	mergeable, err := prMergeable(r, pr.Number)
+	return err == nil && mergeable != nil && *mergeable
 }
 
 func squash(r runner, commits []commit, message string) error {
@@ -682,84 +703,6 @@ func mergeOnGitHub(r runner, pr pullRequest, head string, hasMerges, merge bool)
 // errMergeConflict says how to merge by hand what GitHub can't.
 func errMergeConflict(head string) error {
 	return fmt.Errorf("GitHub can't merge %s into main cleanly. Merge it by hand in a worktree off main (`git merge --no-ff %s`, resolving per docs/guides/releasing.md), then land that branch with `pnpm land`", head[:12], head[:12])
-}
-
-// finish syncs local `main` with origin's and deletes the landed remote branch. Both are
-// best-effort: the land already happened, so trouble here is a message, not a failure.
-func finish(r runner, branch string) error {
-	syncMain(r)
-	head, err := r.git("rev-parse", "HEAD")
-	if err != nil {
-		return err
-	}
-	remote, err := r.remoteSHA(branch)
-	if err != nil {
-		return err
-	}
-	switch {
-	case remote == "":
-	case remote == head:
-		if _, err := r.git("push", "--quiet", "--no-verify", "origin", "--delete", branch); err != nil {
-			say("Couldn't delete origin/%s: %v", branch, err)
-		}
-	default:
-		say("Left origin/%s alone: it points at %s, which isn't what landed.", branch, remote[:12])
-	}
-	stopLeftoverRuns(r, branch)
-	return nil
-}
-
-// stopLeftoverRuns cancels the landed branch's unfinished runs (`leftoverRuns`): an older push's
-// CI, CodeQL, a land run. Best-effort, like the rest of `finish`.
-func stopLeftoverRuns(r runner, branch string) {
-	var runs struct {
-		WorkflowRuns []workflowRun `json:"workflow_runs"`
-	}
-	if err := r.ghAPI(&runs, fmt.Sprintf("repos/%s/actions/runs?branch=%s&per_page=100", repo, url.QueryEscape(branch))); err != nil {
-		say("Couldn't list %s's runs to stop the leftovers: %v", branch, err)
-		return
-	}
-	for _, run := range leftoverRuns(runs.WorkflowRuns, repo) {
-		// A run can finish between the list and the cancel, so a refusal is only a note.
-		if _, err := r.gh("api", "-X", "POST", fmt.Sprintf("repos/%s/actions/runs/%d/cancel", repo, run.ID), "--silent"); err != nil {
-			say("Couldn't stop leftover run %d (it may have just finished): %v", run.ID, err)
-			continue
-		}
-		say("Stopped leftover run https://github.com/%s/actions/runs/%d, which nothing waits on now.", repo, run.ID)
-	}
-}
-
-// syncMain fast-forwards local `main` to `origin/main`, never checking it out here: wherever it's
-// checked out, that worktree moves only when it's clean.
-func syncMain(r runner) {
-	if _, err := r.git("fetch", "--quiet", "origin", "main"); err != nil {
-		say("Couldn't fetch origin/main: %v", err)
-		return
-	}
-	list, err := r.git("worktree", "list", "--porcelain")
-	if err != nil {
-		say("Couldn't list worktrees: %v", err)
-		return
-	}
-	wt, checkedOut := worktreeOf(parseWorktrees(list), "main")
-	if !checkedOut {
-		if _, err := r.git("fetch", "--quiet", "origin", "main:main"); err != nil {
-			say("Local main didn't fast-forward; see what it has that origin lacks: git log origin/main..main\n%v", err)
-			return
-		}
-		say("Local main is at origin/main.")
-		return
-	}
-	at := runner{dir: wt.path}
-	if status, err := at.git("status", "--porcelain"); err != nil || status != "" {
-		say("main is checked out at %s with uncommitted changes, so I left it. Fast-forward it when it's clean:\n  git -C %s merge --ff-only origin/main", wt.path, wt.path)
-		return
-	}
-	if _, err := at.git("merge", "--quiet", "--ff-only", "origin/main"); err != nil {
-		say("main at %s didn't fast-forward; see what it has that origin lacks: git -C %s log origin/main..main\n%v", wt.path, wt.path, err)
-		return
-	}
-	say("Local main (%s) is at origin/main.", wt.path)
 }
 
 func say(format string, args ...any) {

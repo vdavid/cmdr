@@ -23,6 +23,9 @@ type apiBudget struct {
 	// come back, which is a secondary limit with budget left. Its docs say to wait at least a
 	// minute, then back off further each time.
 	limited bool
+	// serverError: GitHub answered 5xx. Outages last minutes, longer than the short retries, so a
+	// read backs off like a secondary limit rather than failing a land whose CI is still running.
+	serverError bool
 }
 
 type ghRetry int
@@ -56,9 +59,9 @@ func afterGHFailure(b *apiBudget, retriesLeft, backedOff int, now time.Time) (gh
 		return ghWaitForReset, b.retryAfter + resetSlack
 	case b != nil && b.spent:
 		return ghWaitForReset, max(b.reset.Sub(now), 0) + resetSlack
-	case b != nil && b.limited && backedOff < secondaryBackoffs:
+	case b != nil && (b.limited || b.serverError) && backedOff < secondaryBackoffs:
 		return ghBackOff, secondaryBackoff << backedOff
-	case b != nil && b.limited:
+	case b != nil && (b.limited || b.serverError):
 		return ghGiveUp, 0
 	case retriesLeft > 0:
 		return ghRetryTransient, transientWait
@@ -102,6 +105,7 @@ func parseAPIResponse(out string) (apiResponse, bool) {
 	}
 	limitedStatus := r.status == http.StatusForbidden || r.status == http.StatusTooManyRequests
 	r.budget.limited = limitedStatus && !r.budget.spent && r.budget.retryAfter == 0
+	r.budget.serverError = r.status >= http.StatusInternalServerError
 	return r, true
 }
 

@@ -95,9 +95,11 @@ while the window is still hidden) but deliberately never shows it.
 runs after the show, where the window is visible and rAF isn't throttled, so its answer means something. If no frame
 lands within 1 s we re-show, because `makeKeyAndOrderFront:` re-invalidates the view. Then it keeps waiting up to 10 s
 in total: a frame landing in that stretch is LATE, not stuck, and logs the real time to first frame at info; only no
-frame at all warns. Slow Macs make the late case routine: the 2015 MacBook Air on Catalina misses the 1 s deadline on
-every launch while both panes mount, then paints (0.59.0, 10.15.8, four of four launches, 2026-11-04), and a warning on
-every launch would hide a genuinely stuck window.
+frame at all warns, so a slow Mac busy mounting both panes logs a number instead of a false alarm.
+
+A window on no screen never gets a frame, so it warns after the full 10 s: WebKit draws nothing for it. That's what the
+Catalina test Mac reports with its lid closed (`AppleClamshellState = Yes`, display off), on every launch (0.59.0,
+10.15.8, `ssh air` launches, 2026-11-05). Open the lid before reading a time-to-first-frame there.
 
 The risk it guards is real but unreproduced: `show()` can land before the compositor presents a frame, and if nothing
 invalidates the view afterward the window sits blank until the user resizes it (observed once on a cold prod launch

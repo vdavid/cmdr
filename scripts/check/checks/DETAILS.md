@@ -1885,9 +1885,9 @@ version reports.
 CI runs it on `ci.yml`'s `desktop-rust-macos` job only, last, after the Rust tests. The baseline is a **macOS** module
 graph, and an ubuntu runner analyzes a different set of cfg-gated modules (`drag_image_detection` and `drag_image_swap`
 are macOS-only and don't exist there), so its numbers would disagree for reasons that have nothing to do with coupling.
-The job installs the pin it reads from `--print-cargo-modules-version`, and rust-cache carries `~/.cargo/bin`, so the
-multi-minute install runs only on a cold cache or a bump. That job gates `ci-ok` and both release gates, so a tangle
-blocks a release until it's cut or David accepts it.
+The job installs the pin it reads from `--print-cargo-modules-version`, and both runners keep `~/.cargo/bin` (the M1's
+slots on disk, hosted through rust-cache), so the multi-minute install runs only on a cold cache or a bump. That job
+gates `ci-ok` and both release gates, so a tangle blocks a release until it's cut or David accepts it.
 
 ### The six traps
 
@@ -2881,11 +2881,22 @@ stray cwd can't make `pnpm check` mean this one narrow pass instead of the root 
 projectService can never strip directives again. `apps/desktop` also has `"prepare": "svelte-kit sync"` so plain
 installs and IDE flows generate the file.
 
+**Decision**: the `.svelte` pass builds its type-aware program from `apps/desktop/tsconfig.lint-svelte.json` (`src` TS
+and components, no tests, no `scripts/`) through legacy `parserOptions.project`; the TS pass keeps `projectService` over
+`tsconfig.json`. **Why**: svelte-eslint-parser hands typescript-eslint a virtual TS file per component, which differs
+from disk, so every component rebuilds a type checker over the whole program, and half of `tsconfig.json`'s program is
+tests no component imports. `projectService` can't take a tsconfig per block. A planted cross-file
+`no-floating-promises` in a component is caught either way, and the whole tree's findings match
+(`docs/notes/performance/local-check-lanes-2026-11-05.md`). The cost: legacy `project` mode, which typescript-eslint
+still supports but no longer recommends. A `.svelte` file outside `src/` or `test/fixtures/` must join that `include`,
+or the pass fails on it.
+
 **Decision**: Clippy runs the enforcing pass (`-D warnings`) first, and only invokes `cargo clippy --fix` if that fails
 (and we're not in CI). **Why**: Running `--fix` speculatively before every check doubled wall time on the happy path (no
 warnings = no fix to apply). The enforcing pass is the one that actually decides pass/fail anyway, and `--fix` ignores
 `-D warnings` so it can't be combined into a single invocation. The trade is one extra re-check on the rare warning
-path; cuts ~50% off clippy in the common clean case.
+path; cuts ~50% off clippy in the common clean case. A red verdict only reaches `--fix` when it holds a
+machine-applicable suggestion: § "Clippy's fix pass runs only on a machine-fixable finding".
 
 **Decision**: `bindings-fresh` is hash-cached. **Why**: A naive `pnpm bindings:regen` on every invocation takes ~2 min
 for a test-mode compile of the full crate just to confirm the output didn't change. Instead, we hash every `.rs` file
@@ -3027,3 +3038,32 @@ toolchain, then execs the x86 nextest binary and OrbStack crashes with
 whose output is captured whole and shown only when the build fails, so there's no denylist treadmill (every Debian
 version adds new dpkg verbs, and multi-line apt prompts have no stable shape). `trimBuildNoise` only cuts everything
 before the last `Compiling …` line; when no such line exists, the output is returned verbatim.
+
+## Clippy's fix pass runs only on a machine-fixable finding
+
+`desktop-rust-clippy` runs its `-D warnings` verdict with `--message-format=json`, and `parseClippyJSON`
+(`desktop-rust-clippy-json.go`) turns the output back into rendered diagnostics plus cargo's own lines, noting whether
+any diagnostic (or child) carries a `MachineApplicable` suggestion, the only kind `cargo fix` applies. Locally, a red
+verdict enters the `--fix` → touch every crate root → re-verdict branch only then; otherwise it reports at once ("no
+automatic fix").
+
+**Decision**: gate on cargo's typed `suggestion_applicability` field. **Why**: nearly every red run was a compile error
+or a lint with no machine fix, yet each paid `--fix` (167 s: cargo fix re-lints every member through its own wrapper), a
+forced re-verdict (61 s), and full-workspace rebuilds in the next Rust lanes (the touched crate roots).
+`docs/notes/performance/local-check-lanes-2026-11-05.md`. The message format isn't part of cargo's fingerprint, so the
+JSON verdict shares the warm cache with a plain one.
+
+## What `svelte-tests-related` selects
+
+The lane passes the branch's changed frontend files to `vitest related`, which walks Vite's module graph. Two edges of
+that graph decide most of its cost:
+
+- **A setup file's closure selects the whole suite.** Vitest runs every spec when a changed file is reachable from
+  `setupFiles`, so `src/test-setup.ts` must stay a near-leaf: `apps/desktop/src/test-setup-closure.test.ts` guards it,
+  and `apps/desktop/src/lib/intl/DETAILS.md` § Tests says how the message runtime stays out of the logger and settings.
+  A config dependency (anything `vitest.config.ts` imports, like `scripts/vite-locale-catalogs.ts`) also selects all.
+- **A catalog JSON is invisible to the walk**: catalogs reach the runtime through the `virtual:cmdr-catalog` plugin. So
+  when a file under `apps/desktop/src/lib/intl/messages/` changes, `catalogReaderTargets` adds the test files that read
+  catalogs: every test under `src/lib/intl/`, plus any test whose source names the catalog dir, the plugin's virtual
+  modules, or the two catalog loaders (46 spec files today). ❌ Never pass a loader itself: it's a config dependency. A
+  component test asserting English copy isn't selected; CI's full suite covers it.

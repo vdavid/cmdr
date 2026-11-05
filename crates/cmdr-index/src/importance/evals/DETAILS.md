@@ -100,8 +100,28 @@ construction. `corpus/tests.rs` pins the rules.
 
 **Never committed.** `snapshot_index_to_scenario` writes a `.scenario.json` plus a `.labels.json` template into the
 GITIGNORED corpus dir (`CORPUS_DIR_REL` = `apps/desktop/src-tauri/tests/importance-corpus`). `load_corpus_scenarios`
-returns an empty vec when the dir is absent, and `tests.rs` auto-includes whatever it finds, so the committed suite is
+returns an empty vec when the dir is absent. The default suite never reads the corpus (§ The opt-in corpus run), so it's
 fully green with zero corpus files present (which is CI's situation).
+
+## The opt-in corpus run
+
+`tests.rs`'s `local_corpus_clears_hard_constraints_and_the_floor` is `#[ignore]`d. It loads every labeled dump from the
+corpus dir (`$CMDR_IMPORTANCE_CORPUS`, else `CORPUS_DIR_REL` under the repo root) and holds synthetic + corpus to the
+same hard constraints and `SOFT_SCORE_FLOOR` as the default tests. With no labeled dump found it FAILS, naming the dir.
+Run: `cargo nextest run -p cmdr-index --run-ignored only importance::evals::tests::local_corpus`.
+
+**Decision**: opt-in, not auto-included in the default hard and floor tests. **Why**: a real dump is big (David's home:
+768,912 folders, 261 MB JSON, 5.3 s to parse and score in the debug test profile; verified on an M-series Mac with a
+placeholder-labeled snapshot of `index-root.db`, 2026-11-05), and the default tests would each have paid that on every
+`cargo nextest` and `pnpm check`. Worse, the labels are David's personal ground truth that CI and every worktree lack
+(the dir is gitignored, so it lives only in the clone that took the snapshot), so a red would be local-only and
+unreproducible. The env var exists for that worktree case.
+
+**Gotcha** (#979): the repo root was once resolved by popping three levels from `CARGO_MANIFEST_DIR`, a leftover from
+when this lived in `apps/desktop/src-tauri`. From `crates/cmdr-index` that's one folder above the checkout, so the
+auto-load silently found nothing and the corpus was never scored.
+`repo_root_is_the_workspace_root_and_the_corpus_is_gitignored` pins the root (and that the corpus dir stays gitignored);
+the empty-corpus failure stops the opt-in run from passing vacuously.
 
 ## The `importance-snapshot` bin
 

@@ -272,6 +272,13 @@ Mission Control, and the Window menu saying "Personal use only" for the rest of 
 licence (reported by a beta user, 2026-09-17). Sitting in the writers means a new activation or expiry path can't
 forget it; `setup` calls the same function, so there's one way to set this title.
 
+**Decision**: the fair-use device id hashes `IOPlatformUUID` on macOS and `/etc/machine-id` on Linux (falling back to
+`/var/lib/dbus/machine-id`; empty or `uninitialized` means none), through the same `cmdr:` salt and `v1:` SHA-256.
+**Why**: the server tracks devices per seat without caring about the OS (`apps/api-server/src/licensing/DETAILS.md` §
+Device tracking), so one hash shape keeps the fair-use alert platform-blind. A machine id changes on reinstall and is
+shared by cloned VMs, so Linux may count devices a bit differently than macOS; David accepted that (2026-11-05, #980).
+Windows (`MachineGuid`) has no arm yet: `docs/specs/windows-port-plan.md` task 38.
+
 ## Gotchas
 
 **Gotcha**: `should_show_commercial_reminder` initializes the timer on first call rather than showing immediately.
