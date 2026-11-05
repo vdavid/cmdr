@@ -274,10 +274,8 @@ var rustTestScopeRules = []rustScopeRule{
 	// is seeded too.
 	{Glob: "apps/desktop/src-tauri/src/**", Effect: scopeReaders, Readers: []string{"cmdr-operations"},
 		Why: "`cmdr-operations`' compression-estimate test measures the app's source tree (`compress_estimate.rs`)"},
-	{Glob: "crates/cmdr-menu/src/bar.rs", Effect: scopeReaders, Readers: []string{"cmdr"},
-		Why: "the app's menu tests embed the menu bar's definition (`menu/menu_items_test.rs`)"},
-	{Glob: "crates/cmdr-menu/src/ids.rs", Effect: scopeReaders, Readers: []string{"cmdr"},
-		Why: "the app's menu code embeds the menu ids (`menu/macos_appkit.rs`, `menu/context_menu_icons_test.rs`)"},
+	{Glob: "crates/cmdr-menu/src/**", Effect: scopeReaders, Readers: []string{"cmdr"},
+		Why: "the app embeds the menu bar's definition and ids (`menu/menu_items_test.rs`, `menu/macos_appkit.rs`, `menu/context_menu_icons_test.rs`), and the native-strings test walks the whole crate's sources for message keys (`intl/native_strings.rs`)"},
 
 	// Paths outside every member that a member's tests or build read.
 	{Glob: "CHANGELOG.md", Effect: scopeReaders, Readers: []string{"cmdr"},
