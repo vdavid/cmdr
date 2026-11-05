@@ -1709,7 +1709,7 @@ var AllChecks = []CheckDefinition{
 	},
 	{
 		ID:          "scripts-go-nilaway",
-		CpuWeight:   7,
+		CpuWeight:   10,
 		Nickname:    "nilaway",
 		DisplayName: "nilaway",
 		App:         AppScripts,
