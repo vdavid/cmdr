@@ -15,10 +15,16 @@ var formerRepos = []string{"vdavid/cmdr"}
 
 var releaseURLRepoRE = regexp.MustCompile(`^https://github\.com/([A-Za-z0-9-]+/[A-Za-z0-9._-]+)/releases/download/`)
 
+// mirrorHost is where the EU mirror serves release files (`scripts/release-mirror`). Every
+// release from the mirror on names it in `latest.json`; earlier ones name GitHub.
+const mirrorHost = "https://download.getcmdr.com/"
+
 // builtInRepo is the repo that built a release, read from the `latest.json` on its own GitHub
-// release: the pipeline writes `github.repository` into every URL there, and only our pipeline
-// and maintainers upload to our releases. It must be the current name or a former one, so a
-// lookalike repo can never become the one an attestation is checked against.
+// release: up to the EU mirror the pipeline wrote `github.repository` into every URL there, and
+// only our pipeline and maintainers upload to our releases. It must be the current name or a
+// former one, so a lookalike repo can never become the one an attestation is checked against.
+// A mirror URL carries no repo name, so it reads as the current repo: right until the repo
+// moves (#476), and evidence is collected right after each release, before any move.
 func builtInRepo(manifest []byte, version, current string) (string, error) {
 	var m struct {
 		Version   string `json:"version"`
@@ -34,9 +40,13 @@ func builtInRepo(manifest []byte, version, current string) (string, error) {
 	}
 	var repos []string
 	for _, p := range m.Platforms {
+		if strings.HasPrefix(p.URL, mirrorHost) {
+			repos = append(repos, current)
+			continue
+		}
 		match := releaseURLRepoRE.FindStringSubmatch(p.URL)
 		if match == nil {
-			return "", fmt.Errorf("the release's latest.json has a URL outside GitHub releases: %s", p.URL)
+			return "", fmt.Errorf("the release's latest.json has a URL outside GitHub releases and the EU mirror: %s", p.URL)
 		}
 		repos = append(repos, match[1])
 	}

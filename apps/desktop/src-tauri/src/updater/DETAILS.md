@@ -64,6 +64,11 @@ The manifest URL (`https://api.getcmdr.com/update-check/{version}?arch={arch}`) 
 compile-time version and arch; the API server logs the check to D1 for active-user counting, then 302-redirects to
 `https://getcmdr.com/latest.json`.
 
+**The archive URL is whatever the manifest names, on any HTTPS host.** No host allowlist, here or in any shipped
+version: trust rests on the minisign signature and the Developer ID check, so the manifest can move downloads (to
+`download.getcmdr.com`, the EU mirror, since #805) without an app change. ❌ Don't add a host check: every installed copy
+would then be stuck on that host for good. `docs/guides/releasing.md` § Where downloads are served from.
+
 ## Managed policy (MDM)
 
 The organization's `DisableUpdates`, `DisableAutomaticUpdateChecks`, and `MaxUpdateVersion` (key catalog:

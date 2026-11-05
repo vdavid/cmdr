@@ -77,7 +77,9 @@ func checkAssets(assets []releaseAsset, version string, withPkg bool) error {
 }
 
 // checkManifest reads `latest.json` and returns its update archive URLs, requiring the version,
-// all three platforms, and each URL naming this release's archive for its arch.
+// all three platforms, and each URL naming this release's archive for its arch, on the EU mirror
+// or (releases from before it) on GitHub. The release pipeline itself refuses a new manifest
+// off the mirror (`scripts/release-mirror`); this only checks what's live answers.
 func checkManifest(body []byte, version, repo string) ([]string, error) {
 	var m struct {
 		Version   string `json:"version"`
@@ -97,9 +99,11 @@ func checkManifest(body []byte, version, repo string) ([]string, error) {
 		if !ok {
 			return nil, fmt.Errorf("latest.json has no %s platform", platform)
 		}
-		want := fmt.Sprintf("https://github.com/%s/releases/download/v%s/Cmdr_%s_%s.app.tar.gz", repo, version, version, archByPlatform[platform])
-		if p.URL != want {
-			return nil, fmt.Errorf("latest.json's %s URL is %s, not %s", platform, p.URL, want)
+		file := fmt.Sprintf("Cmdr_%s_%s.app.tar.gz", version, archByPlatform[platform])
+		mirrored := fmt.Sprintf("%sv%s/%s", mirrorHost, version, file)
+		github := fmt.Sprintf("https://github.com/%s/releases/download/v%s/%s", repo, version, file)
+		if p.URL != mirrored && p.URL != github {
+			return nil, fmt.Errorf("latest.json's %s URL is %s, not %s", platform, p.URL, mirrored)
 		}
 		urls = append(urls, p.URL)
 	}

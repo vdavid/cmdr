@@ -162,8 +162,8 @@ the variable alone.
 4. **The dispatched run** finishes it: `guard` (it also refuses a dispatch on a branch), `ci-gate` (the CI gate once
    more, server-side), `vet-update-archives` (§ The release gate), then `publish`, which needs both, verifies every
    archive's `.sig` against the app's trusted keys (main or backup), publishes the draft, and then runs exactly the `ci`
-   mode steps (`latest.json` from the `.sig` assets, checksums, release notes, marking the release Latest, the website
-   deploy), then `attest` and `bump-tap`. `draft`, `compile`, `sign`, and `sbom` skip.
+   mode steps (`latest.json` from the `.sig` assets, checksums, release notes, the EU mirror, marking the release
+   Latest, the website deploy), then `attest` and `bump-tap`. `draft`, `compile`, `sign`, and `sbom` skip.
 5. **Back into `main`**: `./scripts/release.sh X.Y.Z` again, once the release is published (§ Merging the release back
    into `main`).
 
@@ -374,10 +374,11 @@ check.
       that shipped without the pkg on purpose (§ The installer package) takes `-no-pkg`.
     - **`getcmdr.com/latest.json` still on the old version** after its two-minute wait: the deploy webhook may have
       failed silently. Tell the user (the fix is re-triggering the website-deploy workflow via `workflow_dispatch`), but
-      don't block release success on it, since the GitHub release is what users download.
-    - **An updater archive URL that doesn't name this release's file or doesn't answer 200**: the workflow spells these
-      `.app.tar.gz` names out by hand in two places (the `sign` job's upload and `publish`), so a naming drift between
-      them surfaces here and nowhere else until installs stop updating.
+      don't block release success on it, since the GitHub release and the EU mirror already carry the new files.
+    - **An updater archive URL that doesn't name this release's file on `download.getcmdr.com` (or GitHub, for 0.59.0
+      and older) or doesn't answer 200**: the workflow spells these `.app.tar.gz` names out by hand in two places (the
+      `sign` job's upload and `publish`), so a naming drift between them surfaces here and nowhere else until installs
+      stop updating.
     - **A red `attest` job** (in `local` mode it checks both the tag push's run and the finishing run) **or a failed
       `gh attestation verify`** on the Apple Silicon DMG (both commands in § Provenance and SBOM attestations, pinned to
       the tag's commit). Neither blocks release success: see § "The attest or sbom job failed".
@@ -961,12 +962,55 @@ Two naming details are load-bearing:
 - **Every bundle name carries the app version, `.app.tar.gz[.sig]` included.** The bundler writes `Cmdr.app.tar.gz`, and
   the `sign` job's upload step renames it. Releases up to 0.41.0 carry unversioned `Cmdr_<arch>.app.tar.gz` instead.
 
-**The publish job owns `latest.json`**, with `https://github.com/<repo>/releases/download/<tag>/<file>` URLs. ❌ Never
-API asset URLs (`api.github.com/repos/.../releases/assets/<id>`): those hand back the binary only to a caller sending
-`Accept: application/octet-stream`, and Cmdr's updater does a plain `reqwest` GET (`download_update` in
-`apps/desktop/src-tauri/src/updater/mod.rs`), so it would read JSON metadata and fail signature verification. Before
-uploading the manifest, the job asserts that every URL in it names an asset actually on the release: a name that drifts
-from what `sign` uploaded would strand every install in the field, with no fallback in the app to recover.
+**The publish job owns `latest.json`**, with `https://download.getcmdr.com/<tag>/<file>` URLs on the EU mirror (§ Where
+downloads are served from; releases up to 0.59.0 name `https://github.com/<repo>/releases/download/<tag>/<file>`). The
+updater does a plain `reqwest` GET of that URL (`download_update` in `apps/desktop/src-tauri/src/updater/mod.rs`), so ❌
+never GitHub API asset URLs (`api.github.com/repos/.../releases/assets/<id>`), which hand back JSON to a caller that
+doesn't send `Accept: application/octet-stream`. Before uploading the manifest, the job asserts that every URL in it
+names an asset actually on the release, and before marking the release Latest, the mirror step proves each URL serves
+that asset's bytes: a name that drifts from what `sign` uploaded would strand every install in the field, with no
+fallback in the app to recover.
+
+## Where downloads are served from
+
+Every update and website download comes from `download.getcmdr.com`, a public custom domain on the R2 bucket
+`cmdr-releases-eu` (jurisdiction `eu`, so the files are stored in the EU), cached at Cloudflare's edge. GitHub Releases
+stays the public mirror of every release and the only home of the SBOMs, the `.intoto.jsonl`, and the attestations.
+Decided by David on 2026-11-04 in #805: switch directly, no waiting period.
+
+- **What the bucket holds**: `v<version>/<file>` for each release's three `.app.tar.gz`, their `.sig`, the three DMGs,
+  the pkg when there is one, and `checksums.txt`; plus `preflight/last-check.txt`, overwritten by every release run.
+  Each object is `Cache-Control: public, max-age=31536000, immutable`, safe because a key names one version's one file
+  and nothing rewrites it after the release. Cloudflare's default rules edge-cache the `.dmg` and `.gz` files (`HIT` on
+  the second request); the `.sig`, `.txt`, and `.pkg` files come from the bucket every time, which is cheap. The bucket
+  lists nothing (`/` is a 404). Not in it: `latest.json`, which `getcmdr.com` serves.
+- **Who writes it**: `scripts/release-mirror.sh <version>` (`scripts/release-mirror/main.go`). It reads the release's
+  assets with `gh`, downloads the mirrored set, checks each file against GitHub's own digest and the DMGs and pkg
+  against `checksums.txt`, uploads each through Cloudflare's R2 REST API (the endpoint `wrangler r2 object put` uses, so
+  the release job runs no third-party code beside its credentials), reads each back through `download.getcmdr.com`
+  comparing SHA-256, and with `-manifest` checks that `latest.json` names only mirrored archives. It never deletes. By
+  hand it backfills a release, with `CLOUDFLARE_API_TOKEN` (the sops one) and `CLOUDFLARE_ACCOUNT_ID` set.
+- **In the pipeline**: the `guard` job runs `release-mirror.sh -preflight` (one small write), so a token that can't
+  write the bucket fails in seconds, before the hour-long build. `publish` writes `latest.json` with mirror URLs, and
+  its "Mirror the downloads to the EU bucket" step runs after the checksums and before "Mark the release Latest". If it
+  fails, the release stays un-Latest, so the website keeps the old manifest; "Re-run failed jobs" retries it. Both use
+  the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, which need R2 write on the bucket.
+- **The download redirect** (`api.getcmdr.com/download/<version>/<arch>` and `/checksums`) sends 0.59.0 and later to the
+  mirror and anything older to GitHub (`releaseFileUrl` in `apps/api-server/src/telemetry/telemetry.ts`). The website's
+  direct links (blog download dropdowns, dev builds) go to the mirror.
+- **Why shipped versions follow it**: no updater Cmdr ever shipped checks the download host. The custom macOS updater
+  fetches whatever HTTPS URL the manifest names, from its first version (`reqwest::get(&url)` in `190a637767`,
+  2026-03-13) to today's `fetch_verified_tarball` through `server_request::send`, whose only gate is the managed policy,
+  never a host. Before it, the Tauri updater plugin did the same, and the app's CSP doesn't apply (the download runs in
+  Rust, not the webview). Trust rests on the minisign signature and the Developer ID check, neither tied to GitHub
+  (verified by reading every updater version in git history, 2026-11-05).
+- **The switch rides the next release**: the live manifest is the Latest release's own `latest.json`, so 0.59.0's keeps
+  naming GitHub until a release built with this pipeline replaces it. `/trust` names both hosts until then.
+- **Rollback** (the mirror is broken and installs can't update): upload a `latest.json` naming the same release's GitHub
+  URLs to that release (`gh release upload vX.Y.Z latest.json --clobber`, built from the live one with the host swapped)
+  and re-run the website deploy (`workflow_dispatch`); then revert the `BASE_URL` line in `publish` before the next
+  release. A rollback to 0.59.0 or older (§ The tag guard, and rolling back) republishes a GitHub-URL manifest by
+  itself.
 
 ## Provenance and SBOM attestations
 

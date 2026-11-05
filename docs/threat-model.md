@@ -225,8 +225,9 @@ risk.
 ### 6. The update channel and the release pipeline
 
 - **Entry points**: `api.getcmdr.com/update-check` redirecting to `getcmdr.com/latest.json`; the archive download from
-  GitHub Releases; the in-place bundle sync on macOS; the release workflow on GitHub Actions; the maintainer's GitHub
-  account and laptop.
+  `download.getcmdr.com` (an EU R2 bucket on the Cloudflare account, written by the release workflow with the repo's
+  Cloudflare token; GitHub Releases for 0.59.0 and older); the in-place bundle sync on macOS; the release workflow on
+  GitHub Actions; the maintainer's GitHub account and laptop.
 - **Threats**: a forged or replayed update (tampering, elevation to every install); a stolen signing key; a compromised
   CI run or third-party action; a compromised maintainer account.
 - **Mitigations**:
