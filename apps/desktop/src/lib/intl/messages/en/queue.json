@@ -4,25 +4,21 @@
     "description": "Title of the standalone window that lists every running and queued copy, move, delete, trash, rename, and folder- or file-creation operation, with controls to pause, resume, and cancel them. It’s the operating-system window title (shown in the window list and app switcher) and the screen-reader heading for the page. It matches the View menu item and the command palette entry that open the window, so keep those three identical. \"Operation\" is the category word covering all of them; the window is not limited to transfers.",
     "screenshot": "queue-empty.png"
   },
-
   "queue.heading": "Operations",
   "@queue.heading": {
     "description": "Heading at the top of the operation queue window, above the list of operations. It names the category of things listed below it, so it stays a plural noun rather than a verb.",
     "screenshot": "queue-empty.png"
   },
-
   "queue.empty.title": "Nothing in the queue",
   "@queue.empty.title": {
     "description": "Main line of the empty state, shown when no copy, move, delete, or trash operation is running or waiting.",
     "screenshot": "queue-empty.png"
   },
-
   "queue.empty.body": "Copies, moves, deletes, and other file operations show up here while they run, so you can pause, resume, or cancel them.",
   "@queue.empty.body": {
     "description": "Supporting line under the empty-state title, explaining what will appear in the operation queue window and why. It names the most common actions first so the user knows what they’ll actually see, then “other file operations” covers the rest (renames, new folders, archive edits).",
     "screenshot": "queue-empty.png"
   },
-
   "queue.row.label": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}",
   "@queue.row.label": {
     "description": "Names what an operation row is doing, shown next to a direction arrow and the source-to-destination summary. Reads as a present-continuous action. The rename, create_folder, and create_file arms are near-instant metadata ops that usually flash by too fast to read. The archive_edit arm covers changing a zip (adding, removing, or renaming entries inside it), while compress creates a fresh zip from selected files; \"archive\" means a zip file. The tag arm is putting macOS Finder color tags back on files, as an undo.",
@@ -31,21 +27,18 @@
     },
     "screenshot": "quit-confirmation-one-copy.png"
   },
-
   "queue.row.reversalMovingBack": "Putting files back",
   "@queue.row.reversalMovingBack": {
     "description": "Names an operation row that is UNDOING a finished move or a finished move-to-trash: the files are traveling back to where they came from, and nothing is being deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByMovingBack), so use the same verb family: nothing here may sound like a deletion. This is a MOVE home, which your language may name with a different verb than restoring from the Trash (fileOperations.trash.undone) or restoring a file’s old name (askCmdr.renameUndo.undone).",
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.reversalDeleting": "Deleting what it created",
   "@queue.row.reversalDeleting": {
     "description": "Names an operation row that is UNDOING a finished copy, a new file or folder, or a compress: the reversal deletes what that operation created. \"it\" is the operation being undone. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByDeleting), so keep the deleting verb: this one really does take files away.",
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.reversalRenamingBack": "Putting the old names back",
   "@queue.row.reversalRenamingBack": {
     "description": "Names an operation row that is UNDOING a finished rename: the files get their old names back, and nothing moves or is deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByRenamingBack).",
@@ -70,20 +63,18 @@
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.itemCount": "{countText} {count, plural, one {item} other {items}}",
   "@queue.row.itemCount": {
-    "description": "What an operation row acts on when Cmdr doesn't know which of the items are files and which are folders, shown right after the row's action word, e.g. \"Copying 3 items Dropbox → Backup\". Lowercase: it continues the line.",
+    "description": "What an operation row acts on when Cmdr doesn't know which of the items are files and which are folders, shown right after the row's action word, e.g. \"Copying 3 items Dropbox → Backup\". Lowercase: it continues the line. It reads as a separate chunk of the row, like a column, not as the action word's grammatical object, so use the plain (nominative) form; it also stands alone in the row's tooltip.",
     "placeholders": {
       "countText": "how many top-level items, already formatted for display with grouping, e.g. 1,980",
       "count": "the same number (drives the singular/plural noun)"
     },
     "screenshot": "queue.png"
   },
-
   "queue.row.folderCount": "{countText} {count, plural, one {folder} other {folders}}",
   "@queue.row.folderCount": {
-    "description": "The folders part of what an operation row acts on, e.g. the \"2 folders\" in \"Copying 2 folders and 1 file Dropbox → Backup\". Stands alone when every item is a folder, else joined with the files part by queue.row.foldersAndFiles. Lowercase: it continues the line.",
+    "description": "The folders part of what an operation row acts on, e.g. the \"2 folders\" in \"Copying 2 folders and 1 file Dropbox → Backup\". Stands alone when every item is a folder, else joined with the files part by queue.row.foldersAndFiles. Lowercase: it continues the line. It reads as a separate chunk of the row, like a column, not as the action word's grammatical object, so use the plain (nominative) form; it also stands alone in the row's tooltip.",
     "placeholders": {
       "countText": "how many folders, already formatted for display with grouping",
       "count": "the same number (drives the singular/plural noun)"
@@ -91,10 +82,9 @@
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.fileCount": "{countText} {count, plural, one {file} other {files}}",
   "@queue.row.fileCount": {
-    "description": "The files part of what an operation row acts on, e.g. the \"1 file\" in \"Copying 2 folders and 1 file Dropbox → Backup\". Stands alone when every item is a file, else joined with the folders part by queue.row.foldersAndFiles. Lowercase: it continues the line.",
+    "description": "The files part of what an operation row acts on, e.g. the \"1 file\" in \"Copying 2 folders and 1 file Dropbox → Backup\". Stands alone when every item is a file, else joined with the folders part by queue.row.foldersAndFiles. Lowercase: it continues the line. It reads as a separate chunk of the row, like a column, not as the action word's grammatical object, so use the plain (nominative) form; it also stands alone in the row's tooltip.",
     "placeholders": {
       "countText": "how many files, already formatted for display with grouping",
       "count": "the same number (drives the singular/plural noun)"
@@ -102,7 +92,6 @@
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.foldersAndFiles": "{folders} and {files}",
   "@queue.row.foldersAndFiles": {
     "description": "Joins the two parts of what an operation row acts on, e.g. \"2 folders and 1 file\". Both parts arrive already worded (queue.row.folderCount and queue.row.fileCount). Reorder them if your language needs it.",
@@ -113,7 +102,6 @@
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.itemsMore": "{count, plural, other {… and {countText} more}}",
   "@queue.row.itemsMore": {
     "description": "Last line of the tooltip on an operation row's \"2 folders and 1 file\" part. The tooltip lists the first 20 item names, one per line; this line says how many more there are past them, e.g. \"… and 1,980 more\".",
@@ -124,7 +112,6 @@
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.itemsInFolder": "in {folder}",
   "@queue.row.itemsInFolder": {
     "description": "Names the folder a delete or trash row is clearing items from, right after what it acts on, e.g. \"Deleting 3 items in Downloads\". A copy or move names its source folder bare, with an arrow to the destination after it, so only a row without a destination needs the preposition. Keep it short: the full path is in the tooltip.",
@@ -137,7 +124,6 @@
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Canceled} failed {Couldn’t finish} other {Running}}",
   "@queue.row.status": {
     "description": "Short status word for an operation row in the operation queue. \"Waiting\" means it’s queued behind another operation on the same drive; \"Paused\" means the user paused it; \"Couldn’t finish\" is the gentle wording for a failed operation (avoid the words error/failed).",
@@ -146,71 +132,60 @@
     },
     "screenshot": "queue.png"
   },
-
   "queue.row.statusAwaitingAnswer": "Needs your answer",
   "@queue.row.statusAwaitingAnswer": {
     "description": "Replaces the status word on an operation row that has stopped and is waiting for the user to answer a question about a file (a name clash: the file already exists at the destination). The question is on screen in the main window, not in the queue window this row is in. Keep it to two or three words: it sits in the same narrow column as \"Running\" and \"Waiting\", and it must not be confusable with \"Waiting\", which means queued behind another operation.",
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.awaitingAnswerTooltip": "Answer the prompt in the main window and this operation carries on.",
   "@queue.row.awaitingAnswerTooltip": {
     "description": "Tooltip on the \"Needs your answer\" status of an operation row, saying where the question is. The main window is the two-pane file manager window; the operation queue is a separate window, so the prompt can be hidden behind it.",
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.pause": "Pause",
   "@queue.row.pause": {
     "description": "Button on an operation row that pauses that operation in place. It can be resumed later. Toggles to \"Resume\".",
     "screenshot": "queue.png"
   },
-
   "queue.row.resume": "Resume",
   "@queue.row.resume": {
     "description": "Button on a paused operation row that resumes the operation. Toggles back from \"Pause\".",
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.foreground": "Show",
   "@queue.row.foreground": {
     "description": "Button on a running or paused operation row that moves it back into the main window: the main window comes forward and shows this operation's full progress dialog, the same one the user backgrounded it from. The operation keeps running throughout; nothing about it changes, only where it's shown. Keep it short, it sits beside Pause and Cancel on one row.",
     "screenshot": "queue.png"
   },
-
   "queue.row.foregroundTooltip": "Show this operation’s progress dialog in the main window, and bring that window forward. The operation keeps running either way.",
   "@queue.row.foregroundTooltip": {
     "description": "Tooltip on the per-row Show button, explaining what the bare word \"Show\" does: the main window comes to the front and shows this operation's full progress dialog (bars, ETA, the same Pause / Cancel / Rollback). Pressing it doesn't pause, cancel, or restart anything; the operation runs on whichever window shows it.",
     "screenshot": "queue.png"
   },
-
   "queue.row.cancel": "Cancel",
   "@queue.row.cancel": {
     "description": "Button on an operation row that stops that operation. Files already copied are kept; only the half-written file is removed.",
     "screenshot": "queue.png"
   },
-
   "queue.row.dismiss": "Dismiss",
   "@queue.row.dismiss": {
     "description": "Button on an operation row that couldn’t finish, removing that row from the list. It only stops showing the row: nothing is undone, retried, or deleted. It’s the only way a row like that goes away, so the reason stays readable until the user is done with it.",
     "screenshot": "queue-failed.png"
   },
-
   "queue.row.dismissAria": "Dismiss this operation",
   "@queue.row.dismissAria": {
     "description": "Screen-reader label for the per-row Dismiss button on an operation that couldn’t finish (the visible button shows only \"Dismiss\").",
     "screenshot": "queue-failed.png"
   },
-
   "queue.row.treeToggleAria": "Files in this operation",
   "@queue.row.treeToggleAria": {
     "description": "Screen-reader name of an icon-only chevron button on a running copy, move, or compress row in the operation queue. It shows or hides the live list of the files and folders that operation is working through, which sits under the row. The screen reader adds \"expanded\" or \"collapsed\" itself, so this stays the same in both states. Only shown while two or more operations run at once.",
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.treeToggleTooltip": "{open, select, yes {Hide the files} other {Show the files}}",
   "@queue.row.treeToggleTooltip": {
     "description": "Tooltip on the chevron button that shows or hides the live list of files and folders under a running operation's row in the operation queue. \"Hide\" while the list is showing, \"Show\" while it's hidden.",
@@ -220,33 +195,28 @@
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.retry": "Retry",
   "@queue.row.retry": {
     "description": "Button on an operation row that couldn’t finish, starting the same copy or move again as a new operation (same files, same destination, same choice for files that already exist there). The new operation's row takes this one's place. Shown only for reasons worth trying again, such as a network drive that dropped off. Short control label, the same verb as the Retry button in the error dialog.",
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.retryAria": "Retry this operation",
   "@queue.row.retryAria": {
     "description": "Screen-reader label for the per-row Retry button on an operation that couldn’t finish (the visible button shows only \"Retry\"). It starts the same operation again.",
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
-
   "queue.row.selectAria": "Select this operation",
   "@queue.row.selectAria": {
     "description": "Screen-reader label for the checkbox that selects an operation row so it can be canceled together with others via \"Cancel selected\".",
     "screenshot": "queue.png"
   },
-
   "queue.list.aria": "Operations",
   "@queue.list.aria": {
     "description": "Screen-reader label for the list of operations in the queue window. It names the category, matching the visible heading above the list.",
     "screenshot": "quit-confirmation-one-copy.png"
   },
-
   "queue.reorder.moved": "{direction, select, earlier {Moved up.} other {Moved down.}} Now {position} of {waiting} in line.",
   "@queue.reorder.moved": {
     "description": "Spoken by a screen reader (never shown) after the user moves a waiting operation in the operation queue with Option-Up or Option-Down. Waiting operations start in this order once their drive is free, so moving one up means it starts sooner. The second sentence says where it is now, counting only the waiting operations: running ones aren’t in line. Keep both sentences short; they’re read out after every keypress.",
@@ -256,7 +226,6 @@
       "waiting": "how many operations are waiting in line"
     }
   },
-
   "queue.reorder.atEdge": "{direction, select, earlier {Already first in line.} other {Already last in line.}}",
   "@queue.reorder.atEdge": {
     "description": "Spoken by a screen reader (never shown) when the user tries to move a waiting operation in the operation queue further than it can go: up when it already starts next, or down when it already starts last. Nothing moved.",
@@ -264,36 +233,30 @@
       "direction": "\"earlier\" when the user tried to move it up (toward the front of the line), anything else when down"
     }
   },
-
   "queue.reorder.notQueued": "Only waiting operations can move.",
   "@queue.reorder.notQueued": {
     "description": "Spoken by a screen reader (never shown) when the user presses Option-Up or Option-Down on an operation queue row that isn’t waiting: it’s already running, paused, or stopped, and those keep their place. \"Waiting\" matches the status word on waiting rows (queue.row.status)."
   },
-
   "queue.toolbar.pauseAll": "Pause all",
   "@queue.toolbar.pauseAll": {
     "description": "Toolbar button that pauses every running operation at once.",
     "screenshot": "queue-empty.png"
   },
-
   "queue.toolbar.resumeAll": "Resume all",
   "@queue.toolbar.resumeAll": {
     "description": "Toolbar button that resumes every paused operation at once.",
     "screenshot": "queue-empty.png"
   },
-
   "queue.toolbar.cancelSelected": "Cancel selected",
   "@queue.toolbar.cancelSelected": {
     "description": "Toolbar button that cancels the operations the user has selected via the row checkboxes. Files already copied are kept.",
     "screenshot": "queue-empty.png"
   },
-
   "queue.toolbar.dismissAll": "Dismiss all",
   "@queue.toolbar.dismissAll": {
     "description": "Toolbar button that removes every row for an operation that couldn’t finish, in one go. It appears only when more than one such row is listed. Like the per-row Dismiss, it only stops showing them; nothing is undone or retried.",
     "screenshot": "queue-failed.png"
   },
-
   "queue.toolbar.selectedCount": "{count, plural, one {# selected} other {# selected}}",
   "@queue.toolbar.selectedCount": {
     "description": "Count of currently selected operation rows, shown next to \"Cancel selected\", for example \"3 selected\".",
@@ -301,7 +264,6 @@
       "count": "how many rows are selected"
     }
   },
-
   "queue.failureToast.title": "{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to trash} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}",
   "@queue.failureToast.title": {
     "description": "Headline of the notice that pops up in the main window when an operation running in the background stops before it’s done. The explanation underneath says why; this line only says what was interrupted. Avoid the words \"error\" and \"failed\": \"couldn’t finish\" is the house wording, and it matches the status word on the operation’s row in the queue window.",
@@ -310,18 +272,15 @@
     },
     "screenshot": "operation-failure.png"
   },
-
   "queue.failureToast.action": "Show in operation queue",
   "@queue.failureToast.action": {
     "description": "Button on the failure notice that opens the operation queue window, where the operation’s row carries the full reason and what to do about it. \"Operation queue\" is the window’s name; keep it identical to the window title.",
     "screenshot": "operation-failure.png"
   },
-
   "queue.handoffToast.action": "Show in operation queue",
   "@queue.handoffToast.action": {
     "description": "Button on the quiet toast shown after the user sends a copy, move, compress, or trash to the background (F2, or the Background / Queue button). Backgrounding opens no window; this button opens the operation queue window, where the job's row is. \"Operation queue\" is the window’s name; keep it identical to the window title and to queue.failureToast.action."
   },
-
   "queue.failureToast.summary": "{count, plural, one {{countText} operation couldn’t finish} other {{countText} operations couldn’t finish}}",
   "@queue.failureToast.summary": {
     "description": "Headline of the single notice that replaces the individual ones when several operations stop in a row (more than three). It names only how many; the operation queue window lists each one with its own reason, which the button underneath opens. The count updates as more come in and as the user clears them.",
@@ -332,7 +291,6 @@
     "screenshot": "operation-failure.png",
     "screenshotNote": "The notice the main window raises when a backgrounded operation stops early, pictured here with one failure. Your string is the summary that replaces these when several stop at once, in the same place, with a count instead of a name."
   },
-
   "queue.chip.failed": "{count, plural, one {{countText} operation couldn’t finish} other {{countText} operations couldn’t finish}}. Open the operation queue to see why.",
   "@queue.chip.failed": {
     "description": "Screen-reader label and hover tooltip for the main window’s corner chip when it’s marking operations that stopped before they were done. The chip is a button: pressing it opens the operation queue window, which the second sentence promises. It shows this only when nothing is running; anything in flight takes the corner instead.",
@@ -342,7 +300,6 @@
     },
     "screenshot": "operation-failure.png"
   },
-
   "queue.chip.ariaLabel": "{label}, {percentText} percent. Open the operation queue.",
   "@queue.chip.ariaLabel": {
     "description": "Screen-reader label for the small progress chip in the main window’s top-right corner, which previews the operation currently running in the background. The chip is a button: pressing it opens the operation queue window, which the second sentence promises. Spell \"percent\" as a word rather than the % sign, so screen readers say it naturally; where the word can’t agree with the preformatted number in your language, the % sign is fine.",
@@ -352,7 +309,6 @@
     },
     "screenshot": "operation-chip.png"
   },
-
   "queue.chip.scanningAriaLabel": "{label}, scanning. Open the operation queue.",
   "@queue.chip.scanningAriaLabel": {
     "description": "Screen-reader label for the same corner chip as queue.chip.ariaLabel, while the operation is still counting up what it has to do. It is the same sentence with the progress figure replaced by the state word, because a percentage can only read 0 for the whole count and saying so would be dishonest. Keep both other parts: the label, because voice-control users press the chip by saying the word they can see on it, and the closing promise that pressing it opens the operation queue window. Use the same scanning wording as fileOperations.shared.scanningTooltip, in whatever ongoing form reads naturally after the label in your language, and drop that string’s trailing ellipsis: this one is spoken, not seen.",
@@ -362,7 +318,6 @@
     "screenshot": "operation-chip.png",
     "screenshotNote": "The operation chip in the corner of the main window, pictured here. Your string is never shown: a screen reader speaks it for the chip while an operation is still scanning."
   },
-
   "queue.chip.indeterminateAriaLabel": "{label}. Open the operation queue.",
   "@queue.chip.indeterminateAriaLabel": {
     "description": "Screen-reader label for the small background-operation chip while compression or remote-transfer finalization is active but has no honest percentage. The visible label already names the exact phase, for example “Finishing compression…”, so do not add a percentage or a second state word. Keep the closing promise that pressing the chip opens the operation queue.",
@@ -372,7 +327,6 @@
     "screenshot": "operation-chip.png",
     "screenshotNote": "The operation chip in the corner of the main window, pictured here. Your string is never shown: a screen reader speaks it for the chip while an operation is still scanning."
   },
-
   "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} item} other { · {countText} items}}{hasDestination, select, yes { · to {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
   "@queue.chip.tooltip": {
     "description": "Hover tooltip on the main window’s corner progress chip, giving the detail the chip itself has no room for. Reads as one line of facts separated by middle dots, for example \"Copying · 214 items · to Backup · 42% · 1m 20s left\". Three parts can be missing: the item count before the first progress arrives, the destination for a delete (nothing is moving anywhere), and the trailing detail while the estimate is still warming up or the operation is paused. Every clause carries its OWN leading middle dot, and none of them may be glued to the label: the label is a whole fact by itself and can be a state word (\"Paused\") rather than a verb, so a clause that reads as its continuation would break. Keep the whole thing to one line. \"items\" covers files and folders alike, since a copy carries both.",

@@ -30,7 +30,7 @@
   },
   "multiRename.mediaButtonName": "Media fields",
   "@multiRename.mediaButtonName": {
-    "description": "Accessible name of the “media ▾” button (multiRename.mediaButton), read by screen readers and voice control: it opens the list of photo, video, and music fields. Must contain the button's visible word (multiRename.mediaButton), so a voice-control user can say it.",
+    "description": "Accessible name of the “media ▾” button (multiRename.mediaButton), read by screen readers and voice control: it opens the list of photo, video, and music fields. Must contain the button's visible word (multiRename.mediaButton) as a whole word, so a voice-control user can say it: a compound that only contains it as a substring (German “Medienfelder”) doesn't count.",
     "screenshot": "multi-rename.png"
   },
   "multiRename.search": "Search for",

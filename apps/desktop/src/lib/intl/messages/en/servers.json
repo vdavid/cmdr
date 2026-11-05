@@ -506,7 +506,7 @@
   },
   "servers.refusal.s3FieldMalformed": "Use only a–z, 0–9, and dashes here.",
   "@servers.refusal.s3FieldMalformed": {
-    "description": "Under the Region, Location, or Account ID field of the S3 form, before anything was sent, when the typed value holds other characters. Only lowercase Latin letters a to z, the digits 0 to 9, and dashes pass, so keep the two ranges as written. Short and instructive.",
+    "description": "Under the Region, Location, or Account ID field of the S3 form, before anything was sent, when the typed value holds other characters. Only lowercase Latin letters a to z, the digits 0 to 9, and dashes pass, so keep the two ranges as written. You may name the classes (“letters a–z, digits 0–9”) as long as both ranges stay verbatim. Short and instructive.",
     "screenshot": "server-sign-in-refused-local-network.png",
     "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
   },
@@ -850,7 +850,7 @@
   },
   "servers.sheet.remember": "Remember in Keychain",
   "@servers.sheet.remember": {
-    "description": "Checkbox that stores the password in the macOS Keychain. “Keychain” is the macOS feature name, which the OS ships translated; use the name your language's macOS uses.",
+    "description": "Checkbox that stores the secret in the macOS Keychain: a password, or an S3 secret access key, so keep the wording protocol-neutral. “Keychain” is the macOS feature name, which the OS ships translated; use the name your language's macOS uses.",
     "screenshot": "network-sign-in-sheet.png"
   },
   "servers.sheet.connectionModeLegend": "How to connect",
@@ -1125,7 +1125,7 @@
   },
   "servers.hostKey.changedDisclosure": "I’ve checked the key",
   "@servers.hostKey.changedDisclosure": {
-    "description": "A collapsed section holding the button that trusts a CHANGED key. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking.",
+    "description": "A collapsed section holding the button that trusts a CHANGED key. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking. Where the first person would give the user a gender (a Slavic past tense), an impersonal form is fine.",
     "screenshot": "server-sign-in-host-key-first-contact.png"
   },
   "servers.hostKey.fingerprintLabel": "Key fingerprint",
@@ -1171,7 +1171,7 @@
   },
   "servers.certificate.changedDisclosure": "I’ve checked the certificate",
   "@servers.certificate.changedDisclosure": {
-    "description": "A collapsed section holding the button that trusts a CHANGED certificate. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking.",
+    "description": "A collapsed section holding the button that trusts a CHANGED certificate. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking. Where the first person would give the user a gender (a Slavic past tense), an impersonal form is fine.",
     "screenshot": "server-sign-in-certificate-first-contact.png"
   },
   "servers.certificate.fingerprintLabel": "Certificate fingerprint (SHA-256)",

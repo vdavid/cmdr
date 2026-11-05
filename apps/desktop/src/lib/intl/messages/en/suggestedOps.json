@@ -316,7 +316,7 @@
   },
   "suggestedOps.columnModified": "Last modified",
   "@suggestedOps.columnModified": {
-    "description": "Column heading for when each file was last changed, as Cmdr finds it on disk now.",
+    "description": "Column heading for when each file was last changed, as Cmdr finds it on disk now. A column heading, so keep it short; a shorter form (“Modified”) is fine.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
   "suggestedOps.factChanged": "Changed since the suggestion",

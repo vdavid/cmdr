@@ -87,7 +87,7 @@
   },
   "updates.toast.later": "Later",
   "@updates.toast.later": {
-    "description": "Button that dismisses the update-available toast without restarting now. Tight mini button.",
+    "description": "Button that dismisses the update-ready toast (the update is downloaded and waits for a restart) without restarting now. Tight mini button.",
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },

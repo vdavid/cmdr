@@ -271,6 +271,10 @@ bundle unless noted.
 **Write `macOS 通知已關閉`, not `macOS通知已關閉`.** Insert a space on both sides of any Latin word, number, or
 placeholder embedded in Chinese text.
 
+**A runtime list join can still run tight** (`cfprefsd和其他程序` in `errors.eject.unmountRefusedByProcesses`): the
+platform list formatter joins Latin names with `和` and no space, and no catalog string controls that. It's a known
+locale-formatter limit, not an English source issue; don't hand-pad the placeholder around it.
+
 This is a **deliberate departure from Apple**, and the one place we don't follow Tier 1, so it's recorded with its
 evidence rather than left to drift:
 

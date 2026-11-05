@@ -946,7 +946,7 @@
   },
   "settings.mediaIndex.networkVolumes.intro": "Network drives are indexed only when you turn them on here. Cmdr reads photos over the network gently: only while you’re not busy, at a limited speed, and it pauses when the drive disconnects.",
   "@settings.mediaIndex.networkVolumes.intro": {
-    "description": "Intro paragraph above the per-network-drive opt-in list, inside the \"Image search\" card in Settings > Behavior > File system watching. Sets honest expectations about the conservative network reading."
+    "description": "Intro paragraph above the per-network-drive opt-in list, inside the \"Image search\" card in Settings > Indexing > Image indexing. Sets honest expectations about the conservative network reading."
   },
   "settings.mediaIndex.networkVolumes.none": "Connect a network drive to index the photos on it.",
   "@settings.mediaIndex.networkVolumes.none": {
@@ -996,7 +996,7 @@
   },
   "settings.mediaIndex.importanceThreshold.label": "How much to index",
   "@settings.mediaIndex.importanceThreshold.label": {
-    "description": "Label above the slider that sets how deep image indexing goes — from only the folders you use most, to everywhere. In the \"Image search\" card, Settings > Behavior > File system watching."
+    "description": "Label above the slider that sets how deep image indexing goes — from only the folders you use most, to everywhere. In the \"Image search\" card, Settings > Indexing > Image indexing."
   },
   "settings.mediaIndex.importanceThreshold.description": "Cmdr indexes the folders you use most first. Choose how deep to go.",
   "@settings.mediaIndex.importanceThreshold.description": {
@@ -1886,7 +1886,7 @@
   },
   "settings.analytics.email.description": "Example: you@example.com",
   "@settings.analytics.email.description": {
-    "description": "Placeholder/help showing the email-field format. \"you@example.com\" is a literal example email address; keep it as-is. Only translate \"Example:\".",
+    "description": "Placeholder/help showing the email-field format. Use the same example address as settings.updates.emailPlaceholder in your language (its local part may be localized; keep the example.com domain).",
     "screenshot": "settings-updates.png"
   },
   "settings.analytics.email.keywords": "email, beta, contact, newsletter, updates, survey",
@@ -3837,7 +3837,7 @@
   },
   "settings.network.customTimeoutUnit": "seconds",
   "@settings.network.customTimeoutUnit": {
-    "description": "Unit suffix shown after the custom-timeout number input (the value is in seconds)."
+    "description": "Unit suffix shown after the custom-timeout number input (the value is in seconds). It follows a number the user types freely, so use the form that reads after any number (or a plural-neutral one)."
   },
   "settings.updates.emailPlaceholder": "you@example.com",
   "@settings.updates.emailPlaceholder": {

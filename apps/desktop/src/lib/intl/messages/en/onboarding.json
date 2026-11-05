@@ -312,7 +312,7 @@
   },
   "onboarding.stepAi.table.searchWithout": "You type something like <code>*fish*.ppt</code>, and select the “after 1st of this month” filter.",
   "@onboarding.stepAi.table.searchWithout": {
-    "description": "Comparison cell: how you search without AI. <code> wraps a literal filename glob pattern, which must NOT be translated. “after 1st of this month” names a date filter option in the app.",
+    "description": "Comparison cell: how you search without AI. <code> wraps a literal filename glob pattern, which must NOT be translated. “after 1st of this month” describes picking the date filter's this-month preset (queryUi.date.preset.thisMonth); it isn't a label shown word for word, so phrase it naturally.",
     "screenshot": "onboarding-ai.png"
   },
   "onboarding.stepAi.table.searchWith": "You say “my recent fish-related presentations”, agent sets your filters.",

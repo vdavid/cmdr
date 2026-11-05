@@ -56,12 +56,25 @@ through `source-queue.md`.
 - **No pronoun for an insert**: never point a pronoun or possessive back at an inserted name, path, or app; repeat the
   noun or use a pronoun-free form. Never let a pronoun reach past a nearer noun of the same gender. The rule bites where
   the pronoun carries a gender or number the insert may not match (French « il »); a pronoun that carries neither
-  (Traditional Chinese 它) is fine.
+  (Traditional Chinese 它) is fine. Dropping a pronoun for a quoted name never forbids the object's type noun in front
+  of it (“the phone “{device}”…”).
+- **Agreement-bound inserts may move to a colon slot**: when a word before an insert must agree with it (an article that
+  depends on pronunciation, a case ending), move the insert after a colon (“Up to version: {ceiling}”).
+- **A pronoun-only count may go unused**: when `{count}` only picks a pronoun (“move {count, plural, one {it} other
+  {them}} back”) and your language has no grammatical number, write one wording in every branch and leave the number
+  out.
+- **First-person labels may go impersonal**: a checkbox or disclosure the user “speaks” (“I’ve checked the key”) may use
+  an impersonal form where the first person would gender the user (a Slavic past tense).
 - **Counts**: no definite article before a formatted count ("the {countText} items" renders "the 1 item"); carry
   totality another way. A clause that must agree with the count goes inside the plural branches, and an `=0` / `=1` arm
   is only for different wording ("Skip" vs "Skip all").
 - **Colon frames**: a value spliced after a frame's colon reads as a complete unit and doesn't repeat the frame's words,
   unless one value serves several frames.
+- **Counted nouns without a plural**: the English passes a plural wherever ICU can take one; a counted noun with none is
+  a source bug to queue. Only a native menu label (`menu.*`), which can't pluralize, takes a counted-label colon form
+  (“Items: {count}”).
+- **Search keywords cover every label**: when one setting shows different labels per context (a provider-specific name),
+  its `*.keywords` carry every label the search label doesn't, so a search for the label on screen finds it.
 - **Example addresses**: keep RFC 2606 `example.com`; only the local part may translate.
 
 ### Typography

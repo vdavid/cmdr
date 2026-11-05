@@ -22,6 +22,16 @@ Writing, code, and design styles.
 - Quotation marks
   - **UI copy quotes with curly marks, never straight ones**: “double” for a quoted phrase or label, nested ‘single’ for
     a quote inside a quote, never `"` or `'`.
+  - **Quote user-owned names and UI labels named in prose**: a server, drive, share, or branch name, and a button, menu
+    item, or setting named in a sentence (`…so “Add anyway” saves it as you typed it`), take curly quotes, in every key
+    of a family. Locales quote them anyway, so a bare English label leaves them guessing where the label ends.
+- Translatable sentences (these keep every language able to follow)
+  - **"Item" when a row can be a file or a folder**: when a row, line, or insert can be either, the English and its
+    `@key` description say "item", never "file". A file-only word makes translators pick a file-only noun and gender.
+  - **No pronoun pointing back at a separate title or an insert**: name the thing ("Close that app", "so the log starts
+    fresh"). "It" after `{app}` or a title forces a gender or case the translator can't know.
+  - **Command descriptions speak in the third person**, like macOS help tags: "Opens the badge…", never "Open the
+    badge…".
 - Apostrophes
   - **UI copy writes every apostrophe as `’` (U+2019), like Apple**: “Don’t show again”, “Cmdr’s”, “you’re”. In the
     app's catalogs this also retires ICU's doubled `''`. A straight `'` stays only where it's literal code a user types
@@ -39,6 +49,7 @@ Writing, code, and design styles.
     keep `Chooser` (`shortcuts.scope.volumeChooser`, `pane.leftVolumeChooser`), because those are persisted in
     everyone's shortcut settings and can't be renamed; translate the value and ignore the key. Per-locale resolutions:
     each locale's `docs/i18n/<locale>/terms.json`.
+  - **The file list's two layouts are "Full view" and "Brief view"**, the View menu's own names, never "view modes".
   - **Folder vs directory**: We know these mean the same. We allow both. Use whichever feels better in each situation.
     Like, on the backend, listing "folders" with `readdir` feels wrong, but also, "folder" comes more natural on the
     front-end and end-user docs.

@@ -604,7 +604,7 @@
   },
   "commands.paneQuickFilter.label": "Quick filter",
   "@commands.paneQuickFilter.label": {
-    "description": "Command name (Ctrl+S, like Total Commander) in the command palette and the keyboard-shortcuts list: opens the small badge in the pane that holds the typed text which narrows the file list, or, pressed again, switches that badge between filtering and jumping. Same words as fileExplorer.quickFilter.prefix (Filter) and fileExplorer.typeToJump.prefix (Jump).",
+    "description": "Command name (Ctrl+S, like Total Commander) in the command palette and the keyboard-shortcuts list: opens the small badge in the pane that holds the typed text which narrows the file list, or, pressed again, switches that badge between filtering and jumping. Use the noun your language uses for the feature (“Quick filter”); it needn't match the mode words fileExplorer.quickFilter.prefix (Filter) and fileExplorer.typeToJump.prefix (Jump), which may be verbs.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.paneQuickFilter.description": "Opens the filter badge on the current pattern. Press again to switch between Filter and Jump",

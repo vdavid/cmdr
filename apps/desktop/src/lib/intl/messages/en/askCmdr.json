@@ -51,7 +51,7 @@
   "@askCmdr.providerBusy.named": {
     "description": "Ask Cmdr status shown in the assistant's reply bubble, beside a spinner, while the AI provider says it's overloaded (too many people using it at once) and Cmdr waits a few seconds to send the same request again on its own. Reassures the person that nothing is wrong on their side and that Cmdr is handling it; the existing Stop control still works. Ends with an ellipsis character (…). Avoids the words error and failed. Sentence case.",
     "placeholders": {
-      "provider": "The AI provider's brand name, never translated (for example Google Gemini).",
+      "provider": "The AI provider's brand name, never translated (for example Google Gemini). Its grammatical gender is unknown, so don't make words agree with it: name the type first (“the provider {provider}”) where your language needs that.",
       "attemptText": "Which try comes next, a number from 2, already formatted (for example 2).",
       "attemptsText": "How many tries Cmdr makes in all, a number already formatted (for example 4)."
     }
@@ -924,7 +924,7 @@
   },
   "askCmdr.tool.preview.firstRows": "{count, plural, one {Here’s the first one. Copy has the whole result.} other {Here are the first {countText}. Copy has the whole result.}}",
   "@askCmdr.tool.preview.firstRows": {
-    "description": "A note under the short list in an opened Ask Cmdr tool line: only the first few entries are listed here, and the Copy button next to it copies everything the request returned.",
+    "description": "A note under the short list in an opened Ask Cmdr tool line: only the first few entries are listed here, and the Copy button next to it copies everything the request returned. The count is always at least one; the single-entry wording belongs in an =1 arm, since Russian and Ukrainian “one” also covers 21, 31, and so on.",
     "placeholders": {
       "countText": "How many entries are listed here, as a formatted number.",
       "count": "The same count as a number, to pick the plural form."
@@ -997,7 +997,7 @@
   },
   "askCmdr.tool.preview.status.protected": "kept private",
   "@askCmdr.tool.preview.status.protected": {
-    "description": "Beside a file in an opened Ask Cmdr tool line: Cmdr didn’t show the assistant what’s in this file, because it holds passwords, keys, private messages, or browser data. The file’s name still shows. Lowercase where your language allows. It describes the file.",
+    "description": "Beside a file in an opened Ask Cmdr tool line: Cmdr didn’t show the assistant what’s in this file, because it holds passwords, keys, private messages, or browser data. The file’s name still shows. Lowercase where your language allows. It describes the file; its twin askCmdr.tool.outcome.protected says what Cmdr did. One phrase may serve both if it reads right in each place.",
     "screenshot": "ask-cmdr-tools.png",
     "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   },
@@ -1236,7 +1236,7 @@
   "@askCmdr.error.providerBusy.named": {
     "description": "Shown in the Ask Cmdr chat when the AI provider kept saying it was overloaded (too many people using it at once) and Cmdr's automatic retries didn't get through. Temporary and on the provider's side: the person's key and plan are fine, and nothing is wrong with Cmdr. The message wasn't kept, so they send it again later. The provider's own explanation shows on a line under this one. Friendly and actionable; avoids the words error and failed. Different from askCmdr.error.rateLimited, which is about the person's quota. Sentence case.",
     "placeholders": {
-      "provider": "The AI provider's brand name, never translated (for example Google Gemini)."
+      "provider": "The AI provider's brand name, never translated (for example Google Gemini). Its grammatical gender is unknown, so don't make words agree with it: name the type first (“the provider {provider}”) where your language needs that."
     },
     "screenshot": "ask-cmdr-chat.png",
     "screenshotNote": "A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line."
@@ -3394,7 +3394,7 @@
   },
   "askCmdr.tool.outcome.protected": "kept private",
   "@askCmdr.tool.outcome.protected": {
-    "description": "What came back, after a tool line’s label: Cmdr kept a sensitive file’s contents from the assistant (a key, a password store, mail). It’s a safety feature working, not a failure. Lowercase where your language allows it, since it follows the label on one line.",
+    "description": "What came back, after a tool line’s label: Cmdr kept a sensitive file’s contents from the assistant (a key, a password store, mail). It’s a safety feature working, not a failure. It says what Cmdr did; its twin askCmdr.tool.preview.status.protected describes a file. One phrase may serve both if it reads right in each place. Lowercase where your language allows it, since it follows the label on one line.",
     "screenshot": "ask-cmdr-tools.png",
     "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   }

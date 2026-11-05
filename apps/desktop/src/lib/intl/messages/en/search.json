@@ -160,7 +160,7 @@
   },
   "search.walkHandoff.counts": "{matchCount, plural, one {# match} other {# matches}} so far, {folderCount, plural, one {# folder} other {# folders}} scanned",
   "@search.walkHandoff.counts": {
-    "description": "Second line of the still-searching toast: how many files matched and how many folders Cmdr has been through. No percentage or estimate, because the total is unknowable. Use matchText and folderText for the digits if your language needs them grouped.",
+    "description": "Second line of the still-searching toast: how many files matched and how many folders Cmdr has been through. No percentage or estimate, because the total is unknowable. The English uses # for the numbers; matchText and folderText (the same numbers, grouped) may replace # in your branches.",
     "placeholders": {
       "matchCount": "number of matches so far, for plural selection",
       "matchText": "the same number, already formatted with thousands separators",
@@ -193,7 +193,7 @@
   },
   "search.walkHandoff.finished": "{count, plural, one {Found # match} other {Found # matches}} for {label}.",
   "@search.walkHandoff.finished": {
-    "description": "Toast that replaces the still-searching one when the search finishes having covered everything. It fades on its own. Use countText for the digits if your language needs them grouped. The label is uncontrolled (the user’s query text or an AI-written title); build the sentence so it reads right around any text, without inflecting it.",
+    "description": "Toast that replaces the still-searching one when the search finishes having covered everything. It fades on its own. The English uses # for the number; countText (the same number, grouped) may replace # in your branches. The label is uncontrolled (the user’s query text or an AI-written title); build the sentence so it reads right around any text, without inflecting it.",
     "placeholders": {
       "count": "the final number of matches, for plural selection",
       "countText": "the same number, already formatted with thousands separators",

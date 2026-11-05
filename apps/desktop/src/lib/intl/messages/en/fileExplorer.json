@@ -112,7 +112,7 @@
   },
   "fileExplorer.restrictedFolder.tooltip": "Access to this folder is limited. Grant Cmdr {fullDiskAccess} in {systemSettings} → {privacyAndSecurity} → {fullDiskAccess} to remove all such limits. Or grant per-folder access in {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr.",
   "@fileExplorer.restrictedFolder.tooltip": {
-    "description": "Hover tooltip on a folder macOS won’t let Cmdr read fully (a TCC-protected one like Desktop or Documents), shown on its row in the file list and on its breadcrumb. Says what’s wrong, then offers two ways out: the blanket permission, or a per-folder one. Every placeholder is a macOS pane or permission name that the OS itself hands us already translated, so ❌ don’t translate them and don’t reorder the two breadcrumb paths, which the user is about to follow click by click. \"Cmdr\" is the product name; it appears twice, once as the app being granted access and once as the app’s row inside the Files & Folders pane. The arrows are → (U+2192) and separate the steps of a path.",
+    "description": "Hover tooltip on a folder macOS won’t let Cmdr read fully (a TCC-protected one like Desktop or Documents), shown on its row in the file list and on its breadcrumb. Says what’s wrong, then offers two ways out: the blanket permission, or a per-folder one. Every placeholder is a macOS pane or permission name that the OS itself hands us already translated, so ❌ don’t translate them and don’t reorder the steps inside each breadcrumb path, which the user is about to follow click by click. You may restructure the sentences around the two paths freely. \"Cmdr\" is the product name; it appears twice, once as the app being granted access and once as the app’s row inside the Files & Folders pane. The arrows are → (U+2192) and separate the steps of a path.",
     "placeholders": {
       "systemSettings": "the localized OS name of the System Settings app (comes from the OS; do not translate)",
       "privacyAndSecurity": "the localized OS name of the Privacy & Security pane (comes from the OS; do not translate)",
@@ -303,16 +303,16 @@
   },
   "fileExplorer.pane.ejectAllFailedToast": "Couldn’t eject everything on this drive: {message}",
   "@fileExplorer.pane.ejectAllFailedToast": {
-    "description": "Error toast when \"Eject all\" didn't finish: some volumes of the drive may have been ejected, and at least one is still mounted. {message} is one sentence saying why, which may name an app.",
+    "description": "Error toast when \"Eject all\" didn't finish: some volumes of the drive may have been ejected, and at least one is still mounted. {message} is the reason, one or two sentences (some reasons add what to do, like “Close it, then try again.”), which may name an app.",
     "placeholders": {
-      "message": "the reason, already translated, one sentence that reads after a colon"
+      "message": "the reason, already translated: one or two sentences that read after a colon"
     }
   },
   "fileExplorer.pane.ejectAllHeldToast": "Nothing on this drive was ejected: {message}",
   "@fileExplorer.pane.ejectAllHeldToast": {
-    "description": "Error toast when \"Eject all\" found something using one of the drive's volumes and stopped BEFORE ejecting any of them, so the whole drive is exactly as it was. Saying that nothing changed is the point of this message. {message} is one sentence naming who's using it.",
+    "description": "Error toast when \"Eject all\" found something using one of the drive's volumes and stopped BEFORE ejecting any of them, so the whole drive is exactly as it was. Saying that nothing changed is the point of this message. {message} names who's using it, in one or two sentences (some add what to do).",
     "placeholders": {
-      "message": "the reason, already translated, one sentence that reads after a colon"
+      "message": "the reason, already translated: one or two sentences that read after a colon"
     }
   },
   "fileExplorer.pane.ejectFailedToast": "Couldn’t eject {volumeName}: {message}",
@@ -1350,7 +1350,7 @@
   },
   "fileExplorer.restic.forgetPassword.noBackup": "To forget a backup’s password, open the backup first, or put the cursor on its “Browse snapshots” folder.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
-    "description": "Info toast when the user runs the “Forget backup password” command while the focused pane isn’t inside a restic backup and the cursor isn’t on one’s snapshot folder, so Cmdr doesn’t know which backup they mean. “Browse snapshots” is the exact name of a folder Cmdr shows inside every restic backup; keep it in English, exactly as written, inside your language’s quotation marks."
+    "description": "Info toast when the user runs the “Forget backup password” command while the focused pane isn’t inside a restic backup and the cursor isn’t on one’s snapshot folder, so Cmdr doesn’t know which backup they mean. “Browse snapshots” is the exact name of a folder Cmdr shows inside every restic backup; keep it in English, exactly as written, inside your language’s quotation marks: it's a fixed folder name (Cmdr matches it by path, and people type it), so it never gets translated."
   },
   "fileExplorer.archive.useTransferToCopyOut": "To copy files out of an archive, use F5 to copy or F6 to move.",
   "@fileExplorer.archive.useTransferToCopyOut": {
@@ -1374,7 +1374,7 @@
   },
   "fileExplorer.git.portalIntro.showHidden": "Show hidden files",
   "@fileExplorer.git.portalIntro.showHidden": {
-    "description": "Button on the one-time git notification that turns on showing hidden files (the same switch as in the View menu), so the .git folder appears in the list. Only shown while hidden files are hidden. Space is tight; keep it short."
+    "description": "Button on the one-time git notification that turns on showing hidden files (the same switch as the View menu's item; reuse that item's wording if it fits), so the .git folder appears in the list. Only shown while hidden files are hidden. Space is tight; keep it short."
   },
   "fileExplorer.git.portalIntro.goToGitDir": "Go to .git",
   "@fileExplorer.git.portalIntro.goToGitDir": {
@@ -2581,7 +2581,7 @@
   },
   "fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": "“{device}” isn’t connected. Plug it in with a USB cable and unlock it, then try again.",
   "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
-    "description": "Info toast after the user picked a favorite folder on a phone that isn't plugged in, so the pane stayed where it was. Also the second line of that favorite's tooltip in the favorites menu. Says how to fix it: plug in by USB and unlock the phone.",
+    "description": "Info toast after the user picked a favorite folder on a phone that isn't plugged in, so the pane stayed where it was. Also the second line of that favorite's tooltip in the favorites menu. Says how to fix it: plug in by USB and unlock the phone. A language that would otherwise point a pronoun at the name may name the device type before the quoted name (“The phone “Pixel 7”…”).",
     "placeholders": {
       "device": "the phone's name, for example \"Pixel 7\""
     },

@@ -187,7 +187,7 @@
   },
   "viewer.search.searching": "Searching…",
   "@viewer.search.searching": {
-    "description": "Search status while a search runs and no matches have been found yet. A percent-scanned figure is shown right after it (separate, not part of this string). Ends with three dots.",
+    "description": "Search status while a search runs and no matches have been found yet. A percent-scanned figure is shown right after it (separate, not part of this string). Ends with an ellipsis character (…).",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
@@ -316,7 +316,7 @@
   },
   "viewer.markdown.remoteImages.notice": "Images from the web are hidden. Loading them lets those sites see your IP address.",
   "@viewer.markdown.remoteImages.notice": {
-    "description": "Bar above a formatted Markdown document that contains pictures hosted on websites. The viewer doesn't load them by default, for privacy, like an email app holds back remote images. Sits next to the \"Load remote images\" button.",
+    "description": "Bar above a formatted Markdown document that contains pictures hosted on websites. The viewer doesn't load them by default, for privacy, like an email app holds back remote images. Sits next to the “Load images from the web” button (viewer.markdown.remoteImages.load).",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
@@ -493,7 +493,7 @@
   },
   "viewer.statusBar.hint.image": "Click 100% / fit · Scroll zoom · Drag pan",
   "@viewer.statusBar.hint.image": {
-    "description": "Status-bar hint listing the image interactions: clicking toggles between 100% and fit-to-window, scrolling zooms, dragging pans. Middle-dot separators between the three; keep \"100%\". \"fit\" = fit to window, \"pan\" = move the view around.",
+    "description": "Status-bar hint listing the image interactions: clicking toggles between 100% and fit-to-window, scrolling zooms, dragging pans. Middle-dot separators between the three; keep the number 100, written with your language's percent typography (“100 %”). \"fit\" = fit to window, \"pan\" = move the view around.",
     "screenshot": "viewer-view-mode.png"
   },
   "viewer.statusBar.hint.wrap": "{key} wrap",
@@ -588,7 +588,7 @@
   },
   "viewer.copyDialog.refuseBody": "That’s larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the selection as a file.",
   "@viewer.copyDialog.refuseBody": {
-    "description": "Body of the dialog shown when a selection is too big to copy (over the 100 MB clipboard limit), offering search or save-to-file instead. Keep \"100 MB\" and the \"⌘F\" glyph literal.",
+    "description": "Body of the dialog shown when a selection is too big to copy (over the 100 MB clipboard limit), offering search or save-to-file instead. Keep the number 100 and the \"⌘F\" glyph; write the unit and its spacing your language's way (“100 МБ”).",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
