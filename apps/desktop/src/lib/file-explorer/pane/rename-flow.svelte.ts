@@ -51,6 +51,9 @@ export interface RenameFlowDeps {
    * live editor to close.
    */
   onConfirmRenameAsMove: (request: RenameAsMoveRequest) => void
+  /** Whether a folder's editor may open: refused for the person's own home folder, it says why in the editor's place
+   *  (`home-folder-guard.ts`). Absent, the editor opens at once (the headless tests). */
+  passesHomeFolderGuard?: (path: string) => Promise<boolean>
 }
 
 /** What the Move dialog needs to confirm a rename that copies. */
@@ -292,7 +295,33 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     // The next session validates its extension under the user's own setting;
     // only an auto-started rename (paste-clipboard-as-file) suppresses that.
     suppressExtensionWarningOnce = false
-    activateRename(entry)
+    activateWhenNotHome(entry)
+  }
+
+  /** Bumped by every activation request, so a guard answer for an older one drops. */
+  let homeGuardRequest = 0
+
+  /**
+   * [`activateRename`] for a person's or an agent's F2, after the home-folder guard.
+   * Only a folder can be (or hold) a home folder, so a file opens at once; a folder's
+   * editor waits for the answer (one cheap IPC), so a refused one never shows.
+   */
+  function activateWhenNotHome(
+    entry: Pick<FileEntry, 'path' | 'name' | 'isDirectory' | 'isPackage'>,
+    initialName?: string,
+    origin: RenameOrigin = PERSON_RENAMING,
+  ): void {
+    const request = ++homeGuardRequest
+    const guard = deps.passesHomeFolderGuard
+    if (!entry.isDirectory || guard === undefined || pathInsideArchive(entry.path)) {
+      activateRename(entry, initialName, origin)
+      return
+    }
+    void guard(entry.path).then((passes) => {
+      if (request !== homeGuardRequest) return
+      // Refused: the refusal's own dialog took over, and no editor ever opened.
+      if (passes) activateRename(entry, initialName, origin)
+    })
   }
 
   // The row beside the editor for a chained step, anchored on the editor's own file (`rename-neighbour.ts`).
@@ -566,6 +595,8 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       // A fresh startRename supersedes any pending auto-activation poll, and
       // opens a new chain: this is the activation no arrow asked for.
       clearPendingRenameActivation()
+      // A guard answer still on its way belongs to the press this one replaces.
+      homeGuardRequest++
       endChain()
       moveDialog.startChain()
 
@@ -599,7 +630,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         const entry = deps.getEntryUnderCursor()
         if (!entry || entry.name === '..') return false
         if (expectedName !== undefined && entry.name !== expectedName) return false
-        activateRename(entry, initialName, origin)
+        activateWhenNotHome(entry, initialName, origin)
         return true
       }
 

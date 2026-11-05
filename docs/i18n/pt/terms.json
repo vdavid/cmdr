@@ -2578,7 +2578,7 @@
   },
   "reset": {
     "chosen": "Restaurar",
-    "accept": ["redefin"],
+    "accept": ["redefin", "restaur"],
     "forms": "Reset to default → Restaurar para o padrão; Reset all to defaults → Restaurar tudo para os padrões; the zoom level → redefinir o zoom (Zoom redefinido para 100%)",
     "avoid": [
       {

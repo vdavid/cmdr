@@ -477,11 +477,18 @@ func ciVerdict(runs []workflowRun, checks []checkRun) (verdict, workflowRun) {
 
 // runJob is one of `repos/{repo}/actions/runs/{id}/jobs`' `jobs`.
 type runJob struct {
+	ID         int64  `json:"id"`
 	Name       string `json:"name"`
 	Status     string `json:"status"`
 	Conclusion string `json:"conclusion"`
 	URL        string `json:"html_url"`
 	RunAttempt int    `json:"run_attempt"`
+}
+
+// failed: the job ended red. Cancelled and skipped aren't failures (a lane change detection
+// skipped, a run a newer push replaced); the gate's own rules decide those.
+func (j runJob) failed() bool {
+	return j.Status == "completed" && (j.Conclusion == "failure" || j.Conclusion == "timed_out")
 }
 
 // ciGateJob is the job ID of `CI OK` in `ci.yml`.
@@ -583,7 +590,7 @@ func gateNeeds(body []string) []string {
 func failedRequiredJobs(jobs []runJob, required []string, attempt int) []runJob {
 	var out []runJob
 	for _, job := range jobs {
-		if job.RunAttempt != attempt || job.Status != "completed" || (job.Conclusion != "failure" && job.Conclusion != "timed_out") {
+		if job.RunAttempt != attempt || !job.failed() {
 			continue
 		}
 		if slices.ContainsFunc(required, func(name string) bool {

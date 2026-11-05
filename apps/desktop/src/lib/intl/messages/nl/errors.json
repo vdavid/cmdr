@@ -1969,6 +1969,66 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Verwijder je thuismap alsjeblieft niet",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Hé, je kunt je eigen thuismap niet verwijderen.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Je kunt <code>{path}</code> niet verwijderen, want je thuismap staat erin, en je thuismap kun je niet verwijderen.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Als je al je bestanden kwijt wilt, ga erin, selecteer alles en verwijder het. Al klinkt het eerlijk gezegd nog steeds als een heel slecht idee.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Als je ruimte wilt vrijmaken, wees dan wat specifieker. Als je alles op deze computer kwijt wilt, herstel het systeem dan naar de fabrieksinstellingen.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
+  "errors.write.homeFolderMove.title": "Verplaats je thuismap alsjeblieft niet",
+  "@errors.write.homeFolderMove.title": {
+    "sourceHash": "f5db2db"
+  },
+  "errors.write.homeFolderMove.message.isHome": "Hé, je thuismap staat precies waar hij hoort. Verplaats je hem, dan zoekt je Mac je de volgende keer dat je inlogt op de verkeerde plek.",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "17b0b0b"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "Je kunt <code>{path}</code> niet verplaatsen, want je thuismap staat erin, en je Mac verwacht hem precies daar te vinden.",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "c43a8e6"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "Als je je bestanden ergens anders wilt hebben, ga erin, kies wat je nodig hebt en verplaats dat. Je Mac zal je dankbaar zijn.",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "580bee6"
+  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "Als je wat bestanden wilt verplaatsen, wees dan wat specifieker en kies ze van binnenuit.",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "sourceHash": "a766ab5"
+  },
+  "errors.write.homeFolderRename.title": "Wijzig de naam van je thuismap alsjeblieft niet",
+  "@errors.write.homeFolderRename.title": {
+    "sourceHash": "ec47bfe"
+  },
+  "errors.write.homeFolderRename.message.isHome": "Hé, je Mac kent je thuismap onder deze naam. Wijzig je die naam, dan vindt je Mac je de volgende keer dat je inlogt niet meer.",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "fd78f2f"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "Je kunt de naam van <code>{path}</code> niet wijzigen, want je thuismap staat erin, en je Mac verwacht hem op precies dit pad.",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHome": "Als je echt een nieuwe naam nodig hebt, heeft macOS daar een zorgvuldige manier voor in ‘Gebruikers en groepen’. Alleen is het geen snelle F2.",
+  "@errors.write.homeFolderRename.suggestion.isHome": {
+    "sourceHash": "b1e0d3b"
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "Wijzig liever de naam van iets erin, of laat deze map met rust. Er hangt meer van af dan je denkt.",
+  "@errors.write.homeFolderRename.suggestion.holdsHome": {
+    "sourceHash": "aa28a28"
+  },
   "errors.write.sourceChanged.title": "Dit bestand is tijdens het kopiëren gewijzigd",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

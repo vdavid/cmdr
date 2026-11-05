@@ -516,6 +516,10 @@ volume-id string. The record has two halves, and which half answers is the whole
   capabilities: those answer for the drive, and the pane is inside something ON it.
 - **`deleted-dir-poll.ts` drops an answer about a folder the pane has since left**: a share that mounted back elsewhere
   moved the pane mid-poll, and the old path's "missing" walked it off the share.
+- **`deleted-dir-poll.ts` trusts the backend's "missing" for `/` too**: a pane on `/` that hears it twice walks up (the
+  walk never probes `/` itself, and the fallback asks the same disk about `/` before `~`) and lands on `~`. So every
+  host must answer its root "there"; the browser demo's `InMemoryVolume` once didn't (`crates/cmdr-fs/DETAILS.md` §
+  "`InMemoryVolume` honors the contracts data safety leans on").
 - **`paneFolderIsPolledForDeletion(volumeId, path)`** gates `deleted-dir-poll.ts`, which exists only for FSEvents' blind
   spot (macOS doesn't report a watched folder's own deletion). Two halves: the kind's `pollsForDeletedFolder` (true for
   `local`, `smb`, and `archive`; false for the `.git` portal, whose snapshot folders never exist on disk, and for every
@@ -1705,6 +1709,11 @@ passing through any of the others.
   does, and nothing about the mouse earns it an exemption. The drop's gate sits in `handleFileDrop`, after the drag
   lifecycle has been torn down and before any stat or volume-resolution work, so the refusal costs one toast and no
   syscalls. `triggerFileDrop` (the E2E entry) goes through the same function, so the gate is on that path too.
+- **The home-folder guard** (`home-folder-guard.ts`) runs after those gates and before any confirm UI: the delete and
+  move openers, a drag-and-drop move, and a folder's rename editor (`rename-flow.svelte.ts`, through FilePane's
+  `passesHomeFolderGuard` prop) ask the engine, and a refusal opens the error dialog in the confirm dialog's place
+  (`DialogState.showHomeFolderRefusal`) or answers MCP with a typed `homeFolder`. A clipboard paste has no confirm UI;
+  its start refuses typed. `../../file-operations/delete/DETAILS.md` § "The home folder refuses up front".
 - **MCP** is refused in Rust before dispatching (`tools/actions/mod.rs::refuse_while_dialog_blocks`), which is what
   turns a ten-second round-trip timeout into an immediate answer. The blocking dialog's id rides in the JSON-RPC error's
   `data.blockingDialog`, a TYPED field: an agent acts on it to decide what to close, so it's a contract, and the

@@ -196,7 +196,9 @@ impl Volume for InMemoryVolume {
             // A device breathes at every call (`with_yielding`; a no-op otherwise).
             self.breathe().await;
             let normalized = self.normalize(path);
-            self.entries.read_ignore_poison().contains_key(&normalized)
+            // The root has no stored entry, but it's there as long as the volume is: a
+            // "no" here once walked the demo's pane off `/` and home (the deleted-folder poll).
+            normalized == self.root || self.entries.read_ignore_poison().contains_key(&normalized)
         })
     }
 

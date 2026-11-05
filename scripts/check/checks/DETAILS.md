@@ -794,18 +794,19 @@ down), so there's nothing to exempt. Reuses `findClaudeMdFiles` (the same walk a
 
 ## CLAUDE.md reminder
 
-`claude-md-reminder` (**warn-only**, `NotInCI`, in neither `--fast` nor scoped runs) nudges when source files changed
-under a directory with a colocated `CLAUDE.md` but no agent doc covering them was touched. It's a nudge aimed at the
-agent finishing a change, not a gate, and a nudge only works while it's mostly right: a reminder that fires on work the
-author already thought about gets cleared reflexively, which costs the same tokens as a real one and catches nothing.
-Three rules keep the signal-to-noise up, and all are load-bearing.
+`claude-md-reminder` (**warn-only**, `NotInCI`, `IsFast`, not in scoped runs) nudges when source files changed under a
+directory with a colocated `CLAUDE.md` but no agent doc covering them was touched. It's a nudge aimed at the agent
+finishing a change, not a gate, and a nudge only works while it's mostly right: a reminder that fires on work the author
+already thought about gets cleared reflexively, which costs the same tokens as a real one and catches nothing. Three
+rules keep the signal-to-noise up, and all are load-bearing.
 
-**It's one line and stays out of iteration runs.**
+**It's one line, in the pre-commit run.**
 `N dirs changed without a CLAUDE.md/DETAILS.md touch: a/, b/, c/ (+K); update if behavior or gotchas changed`, naming
-the three dirs with the most changed files (`reminderMessage`). It fires on most branches, so a per-dir list on every
-iteration run was text everyone scrolled past; milestone runs (plain `pnpm check`) are when the docs pass happens
-anyway. The repo-root bucket never counts: it collects every file with no nearer `CLAUDE.md`, and the root one is only
-the `@`-import manifest.
+the three dirs with the most changed files (`reminderMessage`). It fires on most branches, so a per-dir list was text
+everyone scrolled past. It rides `--fast` because that's the run agents make before each commit: nobody runs a full
+local `pnpm check` (`AGENTS.md` § Checker script), so a lane outside `--fast` would never reach them. Cheap: 197 ms with
+`--fresh` (one `git diff` plus the `CLAUDE.md` walk, 2026-11-05). The repo-root bucket never counts: it collects every
+file with no nearer `CLAUDE.md`, and the root one is only the `@`-import manifest.
 
 **The window is the change being made now.** `pickBaseRef` bases on LOCAL `main`, and on `main` itself returns "" so
 only the working tree counts. Branches are cut from local `main`, so it's the real branch point. Basing on a lagging
@@ -2446,12 +2447,12 @@ doubles as production code.
   desktop's accent matrix and light/dark token pairs; the dashboard is dark-only), no type-drift (no Rust), and no
   bare-poll (no Playwright helpers).
 - **Scripts / Go**: gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck
-- **Other / Metrics**: file-length, CLAUDE.md-reminder (warn-only), claude-md-length, invariant-density (warn-only and
-  MOTHBALLED, run by name only; `❌` rules per subsystem, absolute and per 1,000 source lines, on a strict ratchet),
-  resident-doc-budget (warn-only; caps the always-resident root-CLAUDE.md + @-imports + rules bundle), docs-reachable
-  (errors when a CLAUDE.md/DETAILS.md/docs file isn't reachable from the root CLAUDE.md), docs-dead-links (errors on a
-  doc link, or a bare backtick path naming a doc, whose local target doesn't exist), docs-link-text (errors on a
-  Markdown link whose text is its own target path), claude-md-details-sibling (errors when a non-root CLAUDE.md
+- **Other / Metrics**: file-length, CLAUDE.md-reminder (warn-only, in `--fast`), claude-md-length, invariant-density
+  (warn-only and MOTHBALLED, run by name only; `❌` rules per subsystem, absolute and per 1,000 source lines, on a
+  strict ratchet), resident-doc-budget (warn-only; caps the always-resident root-CLAUDE.md + @-imports + rules bundle),
+  docs-reachable (errors when a CLAUDE.md/DETAILS.md/docs file isn't reachable from the root CLAUDE.md), docs-dead-links
+  (errors on a doc link, or a bare backtick path naming a doc, whose local target doesn't exist), docs-link-text (errors
+  on a Markdown link whose text is its own target path), claude-md-details-sibling (errors when a non-root CLAUDE.md
   lacks/doesn't reference a sibling DETAILS.md), analytics-event-catalog (errors when an emitted PostHog event has no
   catalog bullet, or a bullet has no emitter), docs-table-hygiene (errors on any 2-column table or any table column
   wider than 100 chars in agent-facing docs), changelog-commit-links, workflows-rustup (forbids

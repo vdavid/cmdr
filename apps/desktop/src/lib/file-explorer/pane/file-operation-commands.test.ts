@@ -18,6 +18,7 @@ vi.mock('#lib/tauri-commands/index.js', async () => {
     getFileAt: spies.getFileAt,
     getSelectionEntries: spies.getSelectionEntries,
     trashRoutingForPaths: spies.trashRoutingForPaths,
+    checkHomeFolderGuard: spies.checkHomeFolderGuard,
   }
 })
 
@@ -100,6 +101,7 @@ const {
   buildTransferPropsFromSelection: buildFromSelectionSpy,
   buildTransferPropsFromCursor: buildFromCursorSpy,
   trashRoutingForPaths: trashRoutingSpy,
+  checkHomeFolderGuard: homeGuardSpy,
 } = spies
 
 function create(access: ReturnType<typeof buildAccess>, dialogs: DialogsStub) {
@@ -111,6 +113,7 @@ beforeEach(() => {
   // `clearAllMocks` leaves implementations in place, so the routing answer is
   // re-stated here: an unset one would leak across tests in file order.
   trashRoutingSpy.mockResolvedValue({ routing: 'trash', folderMayHoldOnlineOnly: false })
+  homeGuardSpy.mockResolvedValue(null)
 })
 
 describe('startRename', () => {
@@ -1079,5 +1082,82 @@ describe('openDeleteDialog in a cloud-storage folder', () => {
       supportsTrash: true,
       cloudOnlineOnly: null,
     })
+  })
+})
+
+describe('the home-folder guard, asked before any confirm UI', () => {
+  const homeRefusal = (action: string) => ({ type: 'home_folder', path: '/Users/me', relation: 'isHome', action })
+
+  it('refuses a delete of the home folder in place of its dialog', async () => {
+    homeGuardSpy.mockResolvedValue(homeRefusal('delete'))
+    getSelectionEntriesSpy.mockResolvedValue([fileEntry({ name: 'me', path: '/Users/me', isDirectory: true })])
+    const access = buildAccess({
+      paneRefs: { left: buildPaneRef({ listingId: 'lst-1', selectedIndices: [0] }) },
+      volumes: [volume()],
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
+
+    expect(homeGuardSpy).toHaveBeenCalledWith(['/Users/me'], 'root', 'delete')
+    expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
+    expect(dialogs.showHomeFolderRefusal).toHaveBeenCalledWith('delete', homeRefusal('delete'))
+  })
+
+  it('answers an MCP delete with a typed refusal and opens nothing', async () => {
+    homeGuardSpy.mockResolvedValue(homeRefusal('delete'))
+    getSelectionEntriesSpy.mockResolvedValue([fileEntry({ name: 'me', path: '/Users/me', isDirectory: true })])
+    const access = buildAccess({
+      paneRefs: { left: buildPaneRef({ listingId: 'lst-1', selectedIndices: [0] }) },
+      volumes: [volume()],
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user', mcpRequestId: 'r-1' })
+
+    expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
+    expect(dialogs.showHomeFolderRefusal).not.toHaveBeenCalled()
+    expect(emit).toHaveBeenCalledWith(
+      'mcp-response',
+      expect.objectContaining({ requestId: 'r-1', refusal: 'homeFolder' }),
+    )
+  })
+
+  it('refuses a move of the home folder in place of its dialog', async () => {
+    homeGuardSpy.mockResolvedValue(homeRefusal('move'))
+    buildFromCursorSpy.mockResolvedValue({ operationType: 'move', sourcePaths: ['/Users/me'], sourceVolumeId: 'root' })
+    const access = buildAccess({ focusedPane: 'left', volumes: [volume()] })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openMoveDialog({ initiator: 'user' })
+
+    expect(homeGuardSpy).toHaveBeenCalledWith(['/Users/me'], 'root', 'move')
+    expect(dialogs.showTransfer).not.toHaveBeenCalled()
+    expect(dialogs.showHomeFolderRefusal).toHaveBeenCalledWith('move', homeRefusal('move'))
+  })
+
+  it('never asks about a copy, which leaves the home folder where it is', async () => {
+    buildFromCursorSpy.mockResolvedValue({ operationType: 'copy', sourcePaths: ['/Users/me'], sourceVolumeId: 'root' })
+    const access = buildAccess({ focusedPane: 'left', volumes: [volume()] })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openCopyDialog({ initiator: 'user' })
+
+    expect(homeGuardSpy).not.toHaveBeenCalled()
+    expect(dialogs.showTransfer).toHaveBeenCalledTimes(1)
+  })
+
+  it('asks for a rename editor through the rename action', async () => {
+    homeGuardSpy.mockResolvedValue(homeRefusal('rename'))
+    const dialogs = buildDialogs()
+
+    const passes = await create(buildAccess(), dialogs).passesRenameHomeFolderGuard({
+      path: '/Users/me',
+      volumeId: 'root',
+    })
+
+    expect(passes).toBe(false)
+    expect(homeGuardSpy).toHaveBeenCalledWith(['/Users/me'], 'root', 'rename')
+    expect(dialogs.showHomeFolderRefusal).toHaveBeenCalledWith('move', homeRefusal('rename'))
   })
 })

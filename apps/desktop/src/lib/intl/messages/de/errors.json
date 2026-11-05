@@ -1969,6 +1969,66 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Bitte lösch deinen persönlichen Ordner nicht",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Hey, deinen eigenen persönlichen Ordner kannst du nicht löschen.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "<code>{path}</code> lässt sich nicht löschen, weil darin dein persönlicher Ordner liegt, und den kannst du nicht löschen.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Wenn du alle deine Dateien loswerden willst, geh hinein, wähl alles aus und lösch es. Klingt aber trotzdem nach einer ziemlich schlechten Idee.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Wenn du Speicherplatz freigeben willst, sei ein bisschen genauer. Wenn du alles auf diesem Computer loswerden willst, setz das System auf den Werkszustand zurück.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
+  "errors.write.homeFolderMove.title": "Bitte beweg deinen persönlichen Ordner nicht",
+  "@errors.write.homeFolderMove.title": {
+    "sourceHash": "f5db2db"
+  },
+  "errors.write.homeFolderMove.message.isHome": "Hey, dein persönlicher Ordner gehört genau dorthin, wo er ist. Bewegst du ihn, sucht dein Mac dich bei der nächsten Anmeldung am falschen Ort.",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "17b0b0b"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "<code>{path}</code> lässt sich nicht bewegen, weil darin dein persönlicher Ordner liegt, und dein Mac erwartet ihn genau dort, wo er ist.",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "c43a8e6"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "Wenn du deine Dateien woanders haben willst, geh hinein, wähl aus, was du brauchst, und beweg das. Dein Mac wird es dir danken.",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "580bee6"
+  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "Wenn du ein paar Dateien bewegen willst, sei ein bisschen genauer und wähl sie von innen aus.",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "sourceHash": "a766ab5"
+  },
+  "errors.write.homeFolderRename.title": "Bitte benenne deinen persönlichen Ordner nicht um",
+  "@errors.write.homeFolderRename.title": {
+    "sourceHash": "ec47bfe"
+  },
+  "errors.write.homeFolderRename.message.isHome": "Hey, dein Mac kennt deinen persönlichen Ordner unter genau diesem Namen. Benennst du ihn um, findet dein Mac dich bei der nächsten Anmeldung nicht mehr.",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "fd78f2f"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "<code>{path}</code> lässt sich nicht umbenennen, weil darin dein persönlicher Ordner liegt, und dein Mac erwartet ihn genau unter diesem Pfad.",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHome": "Wenn du wirklich einen neuen Namen brauchst, hat macOS dafür einen behutsamen Weg unter „Benutzer:innen & Gruppen“. Ein schnelles F2 ist das allerdings nicht.",
+  "@errors.write.homeFolderRename.suggestion.isHome": {
+    "sourceHash": "b1e0d3b"
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "Benenne lieber etwas darin um oder lass diesen Ordner in Ruhe. Da hängt mehr dran, als es aussieht.",
+  "@errors.write.homeFolderRename.suggestion.holdsHome": {
+    "sourceHash": "aa28a28"
+  },
   "errors.write.sourceChanged.title": "Diese Datei hat sich beim Kopieren geändert",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

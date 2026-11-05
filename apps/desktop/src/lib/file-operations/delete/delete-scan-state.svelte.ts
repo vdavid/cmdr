@@ -28,6 +28,13 @@ import { withTimeout } from '#lib/utils/timing.js'
 import { ScanThroughput } from '../scan-throughput'
 import { holdOperationStartReply } from '../transfer/transfer-dispatch'
 import type { CloudOnlineOnlyExtent } from './delete-dialog-utils'
+import type { HomeFolderRelation } from '#lib/ipc/bindings.js'
+
+/** Why the backend won't delete this selection: it's the person's own home folder, or holds it. */
+export interface HomeFolderRefusal {
+  path: string
+  relation: HomeFolderRelation
+}
 
 /** ❗ The safe default when no answer ever lands is the TRASH, which is
  *  today's behavior. The scan watchdog already bounds the walk by inactivity,
@@ -79,6 +86,9 @@ export function createDeleteScanState(deps: DeleteScanStateDeps) {
   let dirsFound = $state(0)
   let bytesFound = $state(0)
   let isScanning = $state(false)
+  /** The backend refused this delete up front: the selection is the person's own
+   *  home folder, or holds it. The dialog shows why in place of the confirm UI. */
+  let homeFolderRefusal = $state<HomeFolderRefusal | null>(null)
   let scanComplete = $state(false)
   let currentDir = $state<string | null>(null)
   const throughput = new ScanThroughput()
@@ -177,9 +187,13 @@ export function createDeleteScanState(deps: DeleteScanStateDeps) {
     const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
     const result = await startScanPreview(request.sourcePaths, 'delete', progressIntervalMs, request.sourceVolumeId)
     if ('refusal' in result) {
-      // No volume answers for the source (an unplugged phone): nothing was
-      // walked and no preview exists. Same as a walk that stopped; the
-      // delete itself is refused typed if it's confirmed.
+      // Nothing was walked and no preview exists. For the home folder the dialog
+      // says why and offers no Delete. Otherwise (no volume answers for the
+      // source, an unplugged phone) it's a walk that stopped; the delete itself
+      // is refused typed if it's confirmed.
+      if (result.refusal.type === 'home_folder') {
+        homeFolderRefusal = { path: result.refusal.path, relation: result.refusal.relation }
+      }
       isScanning = false
       settleOnlineOnlyAnswer()
       return
@@ -236,6 +250,10 @@ export function createDeleteScanState(deps: DeleteScanStateDeps) {
     },
     get previewId() {
       return previewId
+    },
+    /** Set when the backend refused the delete for the home folder's sake, else `null`. */
+    get homeFolderRefusal() {
+      return homeFolderRefusal
     },
     /** `'mixed'` once the walk met an online-only file, else `null`. */
     get onlineOnlyFoundByWalk() {

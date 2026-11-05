@@ -52,7 +52,8 @@ use super::scan_cache::{ScanOutcome, ScanPreviews};
 use super::scan_watchdog::{SCAN_INACTIVITY_LIMIT, ScanTarget, ScanWatchdog};
 use super::state::ScanPreviewState;
 use super::types::{
-    ScanPreviewErrorEvent, ScanPreviewPurpose, ScanPreviewStartResult, ScanPreviewTotals, WriteOperationError,
+    ScanPreviewErrorEvent, ScanPreviewPurpose, ScanPreviewRefusal, ScanPreviewStartResult, ScanPreviewTotals,
+    WriteOperationError,
 };
 use cmdr_fs::volume::Volume;
 
@@ -84,6 +85,8 @@ impl Operations {
     /// the operation's live tree (`super::transfer_tree`), carried to the
     /// operation in the cached result. A compress's LOCAL walk samples a
     /// compressed-size estimate (`compress_estimate`); a volume walk never samples.
+    /// A DELETE preview over the person's own home folder, or a folder holding
+    /// it, refuses before anything walks (`home_folder.rs`).
     pub fn start_scan_preview(
         &self,
         events: Arc<dyn ScanPreviewEventSink>,
@@ -92,7 +95,18 @@ impl Operations {
         source_volume_id: String,
         progress_interval_ms: u64,
         purpose: ScanPreviewPurpose,
-    ) -> ScanPreviewStartResult {
+    ) -> Result<ScanPreviewStartResult, ScanPreviewRefusal> {
+        // A delete of the person's own home folder, or a folder holding it, is
+        // refused at its start (`home_folder.rs`); refusing here too lets the
+        // dialog say so up front, without sizing up the whole disk first.
+        if purpose == ScanPreviewPurpose::Delete
+            && let Some(hit) = self.home_folder_hit(&source_volume_id, &sources)
+        {
+            return Err(ScanPreviewRefusal::HomeFolder {
+                path: hit.path,
+                relation: hit.relation,
+            });
+        }
         let preview_id = Uuid::new_v4().to_string();
         let preview_id_clone = preview_id.clone();
         // `None` means "walk the local disk". A host with no local disk (the browser
@@ -167,7 +181,7 @@ impl Operations {
                 .expect("the OS starts the scan preview's thread");
         }
 
-        ScanPreviewStartResult { preview_id }
+        Ok(ScanPreviewStartResult { preview_id })
     }
 
     /// Returns the cached totals from a completed scan preview, or `None` if the

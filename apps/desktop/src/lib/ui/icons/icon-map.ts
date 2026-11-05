@@ -39,6 +39,7 @@ import IconGripVertical from '~icons/lucide/grip-vertical'
 import IconHeart from '~icons/lucide/heart'
 import IconHistory from '~icons/lucide/history'
 import IconHourglass from '~icons/lucide/hourglass'
+import IconHouse from '~icons/lucide/house'
 import IconInfo from '~icons/lucide/info'
 import IconKey from '~icons/lucide/key'
 import IconLink from '~icons/lucide/link'
@@ -132,6 +133,7 @@ export const ICON_COMPONENTS = {
   heart: IconHeart,
   history: IconHistory,
   hourglass: IconHourglass,
+  house: IconHouse,
   info: IconInfo,
   key: IconKey,
   link: IconLink,

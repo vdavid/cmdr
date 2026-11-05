@@ -28,6 +28,7 @@
     import FdaBadge from '#lib/onboarding/FdaBadge.svelte'
     import SuggestedOpsIndicator from '#lib/suggested-ops/SuggestedOpsIndicator.svelte'
     import OperationChip from './OperationChip.svelte'
+    import { publishCornerBottom } from './toast-clearance'
 
     interface Props {
         /** Rendered left of the indexing hourglass. */
@@ -44,9 +45,13 @@
     }
 
     const { children, onOpenOnboarding }: Props = $props()
+
+    // The top toast stack starts below this row's real bottom, so a toast never covers a member (`toast-clearance.ts`).
+    let corner = $state<HTMLDivElement>()
+    $effect(() => (corner ? publishCornerBottom(corner) : undefined))
 </script>
 
-<div class="status-corner">
+<div class="status-corner" bind:this={corner}>
     {@render children?.()}
     <OperationChip />
     <WakeIndicator />

@@ -914,5 +914,9 @@
   "errors.write.smbEncryptionRequired.suggestion": "Inicia sesión con una cuenta en vez de como invitado, o activa el cifrado SMB en el servidor. También puedes desactivar “Requerir siempre cifrado SMB” en Configuración.",
   "@errors.write.smbEncryptionRequired.suggestion": {
     "sourceHash": "c9c5630"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Si quieres liberar espacio, elige algo más concreto. Si quieres deshacerte de todo lo que hay en esta computadora, restablece el sistema de fábrica.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "0842b3c"
   }
 }

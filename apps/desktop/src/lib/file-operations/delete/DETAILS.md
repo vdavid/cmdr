@@ -51,6 +51,26 @@ turns the suite into a false-positive net; one test asserts the overlay really d
 Each volume exposes `supportsTrash` from its `fsType` (statfs): APFS and HFS+ yes; FAT32, exFAT, smbfs, nfs, afpfs, and
 webdav no.
 
+## The home folder refuses up front
+
+Deleting, trashing, moving, or renaming the person's own home folder, or a folder holding it, is refused by the engine
+(`crates/cmdr-operations/src/delete/DETAILS.md` § "The home folder stays"). The frontend asks BEFORE any confirm UI:
+
+- **The openers ask** `checkHomeFolderGuard` through `file-explorer/pane/home-folder-guard.ts`
+  (`passesHomeFolderGuard`): the delete opener (`file-operation-commands.ts`, the search-results one too), the move
+  opener (`transfer-dialog-opener.ts`), a drag-and-drop move (`drag-drop-controller.svelte.ts`), and a FOLDER's rename
+  editor (`rename-flow.svelte.ts`'s `activateWhenNotHome`, which waits for the answer; a file opens at once). Refused,
+  the error dialog opens in the confirm dialog's place (`DialogState.showHomeFolderRefusal`), or an MCP request gets a
+  typed `homeFolder` refusal. So the confirm view never renders, and no Enter can act before the answer.
+- **The words** are `errors.write.homeFolder*` (one family per action: `homeFolder` for delete, `homeFolderMove`,
+  `homeFolderRename`), built by `homeFolderMessage` (`../transfer/transfer-error-messages.ts`), the same the error
+  dialog shows when a start skipped every dialog (MCP, an AI suggestion). The path renders in `<code>`, escaped. An
+  instant rename refused in a toast says the rename title alone (`mutation-error-messages.ts`).
+- **The delete dialog's own refusal mode is a backstop** for an answer that never came: its scan preview refuses too
+  (`startScanPreview` answers `{ refusal: { type: 'home_folder', … } }`), `delete-scan-state` keeps it as
+  `homeFolderRefusal`, and `DeleteDialog` swaps its body for the words and its footer for Close (Enter and an MCP
+  `dialog_confirm` press nothing).
+
 ## Scan-preview detail
 
 `data-scan-state` on `.scan-stats` (`counting` | `done`) is the only "counting done" signal; tests and MCP wait on it.

@@ -10,7 +10,7 @@
 //  3. pushes the branch and opens its PR, or reuses the open one (the PR is plumbing: CI runs on
 //     `pull_request`, and nobody reviews it);
 //  4. waits for `CI OK` on the head SHA (or the first failure among the jobs it needs), and on
-//     red names the failed jobs and the re-run command;
+//     red names the failed jobs, why each failed (from its log), and the re-run command;
 //  5. lands the green head: with `git push origin <sha>:main` while it still descends from
 //     `origin/main` (the SHAs stay the same, and GitHub marks the PR merged), else with
 //     `gh pr merge --admin --merge`, a merge commit GitHub makes (and signs) onto the `main` that
@@ -52,6 +52,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -488,10 +489,11 @@ func waitForCI(r runner, head string, cfg config) error {
 		case verdictRed:
 			jobs, _ := runJobs(r, run.ID)
 			// `CI OK` can be red while GitHub still calls the run in progress.
-			return ciFailure(run, jobs, run.Status != "completed", cfg.command())
+			return ciFailure(run, jobs, jobLogSummaries(r, jobs), run.Status != "completed", cfg.command())
 		case verdictMissing:
 			if missingRunGivesUp(seen, time.Since(start)) {
-				return fmt.Errorf("no CI run on %s after %s. Check the PR's Checks tab, then land again: %s", head[:12], appearWithin, cfg.command())
+				// GitHub runs no `pull_request` workflow on a PR that conflicts with its base.
+				return fmt.Errorf("no CI run on %s after %s. Does the PR conflict with main? GitHub runs no CI on one that does. Check the PR page, then land again: %s", head[:12], appearWithin, cfg.command())
 			}
 		case verdictPending:
 			seen = true
@@ -500,7 +502,7 @@ func waitForCI(r runner, head string, cfg config) error {
 				announced = true
 			}
 			if jobs, red := earlyRed(r, run, required); red {
-				return ciFailure(run, jobs, true, cfg.command())
+				return ciFailure(run, jobs, jobLogSummaries(r, jobs), true, cfg.command())
 			}
 		}
 		if time.Since(start) > cfg.timeout {
@@ -559,10 +561,11 @@ func runJobs(r runner, runID int64) ([]runJob, error) {
 	return page.Jobs, err
 }
 
-// ciFailure names the failed jobs and how to re-run them; flakes are expected, so that's the
-// first thing to try. early: a job `CI OK` needs failed while the rest still run. The run goes on,
-// so every failure still shows on the PR, and GitHub re-runs only a finished run.
-func ciFailure(run workflowRun, jobs []runJob, early bool, again string) error {
+// ciFailure names the failed jobs, each with why it failed (summaries, by job ID, from
+// `jobLogSummaries`), and how to re-run them; flakes are expected, so that's the first thing to
+// try. early: a job `CI OK` needs failed while the rest still run. The run goes on, so every
+// failure still shows on the PR, and GitHub re-runs only a finished run.
+func ciFailure(run workflowRun, jobs []runJob, summaries map[int64][]string, early bool, again string) error {
 	// A cancelled land run with no newer one beside it (`newestLandRun`): a person stopped it.
 	if run.cancelled() {
 		return fmt.Errorf("CI was cancelled before %s reported, and no newer run is on this head: https://github.com/%s/actions/runs/%d\nRun it again, then land again:\n  gh run rerun %d -R %s && %s", ciCheck, repo, run.ID, run.ID, repo, again)
@@ -571,10 +574,13 @@ func ciFailure(run workflowRun, jobs []runJob, early bool, again string) error {
 	for _, job := range jobs {
 		if job.Status == "completed" && job.Conclusion != "success" && job.Conclusion != "skipped" {
 			msg += fmt.Sprintf("  %s: %s %s\n", job.Name, job.Conclusion, job.URL)
+			for _, line := range summaries[job.ID] {
+				msg += strings.TrimRight("      "+line, " ") + "\n"
+			}
 		}
 	}
 	if early {
-		msg += fmt.Sprintf("%s will fail, so I stopped waiting. The other jobs keep running, so their failures show on the PR too.\nA flake? Once the run finishes, re-run the failed jobs, then land again:\n", ciCheck)
+		msg += fmt.Sprintf("%s will fail, so I stopped waiting. The other jobs keep running, so one push can fix every failure they find.\nClearly real, and the rest can't tell you more? Free the runners: gh run cancel %d -R %s\nA flake? Once the run finishes, re-run the failed jobs, then land again:\n", ciCheck, run.ID, repo)
 	} else {
 		msg += "A flake? Re-run the failed jobs, then land again:\n"
 	}

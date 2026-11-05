@@ -6,7 +6,7 @@
 import { asset } from '$app/paths'
 import { refuse, type AnswerTable, type Payload, type VoidCommand } from './answer-types.js'
 import type { ConfigureAiOutcome } from '#lib/tauri-commands/settings.js'
-import { customShortcuts } from './plugins.js'
+import { customShortcuts, restrictedWindowSettings } from './plugins.js'
 
 /** The bundled generic icon for an icon id: a folder for folder-ish ids (as `FileIcon.svelte` reads them), else a document. */
 function genericIcon(iconId: string): string {
@@ -110,6 +110,8 @@ export const appAnswers: AnswerTable = {
   viewerSetHistoryState: none,
   // The viewer's shortcut read: the same store the main window's shortcuts live in.
   getRestrictedWindowShortcuts: customShortcuts,
+  // The viewer's and queue's settings read: the same store, so they start on the seeded zoom and color too.
+  getRestrictedWindowSettings: restrictedWindowSettings,
 
   // Permissions, license, and startup notices
   checkFullDiskAccess: on,

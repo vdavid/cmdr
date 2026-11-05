@@ -158,8 +158,20 @@ with the usual red report: the failed jobs with links and `gh run rerun <id> --f
 finishes. Why: `CI OK` runs only after every job, so run 40670839400 (2026-10-28) reported a type-aware ESLint failure
 from minute four at minute 20.
 
+- **Each failed job says why, right away** (`jobLogSummaries`, `joblog.go`): a finished job's log is readable while the
+  run goes on (`gh api --allow-escape-sequences repos/{repo}/actions/jobs/{id}/logs`; `gh run view --log-failed` refuses
+  until the run ends), so the red report prints each failed job's failure under its link, timestamps and ANSI stripped.
+  `failureSummary` picks lines by structure, never by length: every check-runner `... FAILED (` block, Playwright's
+  numbered failures (`  1) [cmdr] › …`), and Go's `--- FAIL:`, each running on through the lines indented deeper than
+  its first; with none, GitHub's `##[error]` annotations. Tested on run 41949695576's light lane and run 41938847302's
+  macOS lane logs (2026-11-05), pinned in `joblog_test.go`. One extra call per failed job, only when the wait ends red.
 - **The run isn't cancelled**: the other jobs keep going, so their failures still show on the PR, and one re-run of the
   failed jobs covers them all.
+- **When to cancel it yourself** (`gh run cancel <id>`, which the early report offers): when the failure is clearly real
+  (a compile error, a test that fails for the reason the summary shows) and the jobs still running can't tell you
+  anything new, cancel to free the runners (five macOS at most for the whole account). Keep it running when another
+  failure is plausible (other lanes touch what you changed, or the red one stopped early), so one fix-up push covers
+  both instead of costing a second 25–35 min round.
 - **Required jobs come from head's own `ci.yml`** (`git show <head>:.github/workflows/ci.yml`, `requiredJobNames`): the
   `ci-ok` job's `needs`, mapped to each job's `name:` (else its ID), which is what the jobs API reports. A line-based
   read, the same layout `scripts/check/checks/ci-ok-gate.go` relies on. No hardcoded list: `ci-coverage` keeps those
@@ -224,6 +236,11 @@ answered 403 after CI was green, and that land was lost. So:
   answers. A 5xx on a polled read (`ghAPI`) backs off the same way: on 2026-11-05 one HTTP 500 from the check-runs poll
   outlasted the two 10 s retries and ended a land whose CI was still running. Reads otherwise get two short retries;
   writes (`gh pr create`, ruleset apply) get none, since they may have gone through.
+- **Gotcha: a PR that conflicts with `main` gets no CI run at all.** GitHub runs no `pull_request` workflow while the PR
+  has a merge conflict (GitHub docs, "Events that trigger workflows" § `pull_request`), so the wait sees nothing and
+  stops at `appearWithin`, and the message asks about a conflict first. It has cost us time hunting for a CI problem
+  that was a conflict. `land` rebases before its first push, so this bites when `main` moves between pushes, or on a
+  `-no-wait` push.
 - **A run that showed up never makes the wait give up** (`missingRunGivesUp`): on 2026-10-20 a queued run printed
   "Waiting for CI OK", then dropped out of the `head_sha` list, and the land quit with "no CI run after 5m0s". Only a
   push that started no run at all stops at `appearWithin`; a seen run waits out the usual timeout.

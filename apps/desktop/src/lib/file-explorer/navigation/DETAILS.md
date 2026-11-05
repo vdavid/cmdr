@@ -192,7 +192,10 @@ own 2s timeout, no frontend wrapper needed).
 `{ pathExistsFn, timeoutMs, volumeRoot, volumeId, connectionState, keepSilentVolume }`: defaults to Tauri `pathExists`
 with 1s timeout per step, 11 s on the volume's own rungs when `connectionState` is `direct`. Used both at runtime (with
 timeouts) and at startup via `app-status-store.ts`'s `resolvePersistedPath` wrapper (no timeout, injected
-`pathExistsFn`). Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
+`pathExistsFn`). Fallback chain: parent dirs, then on the boot disk (no `volumeRoot`, or `/`) `/` → `~`, and past
+another volume's root `~` → `/`, then `null` (volume unmounted). `/` comes first on the boot disk because it IS the
+nearest surviving parent of a deleted top-level folder (David's call, 2026-11-05: a deleted `/foo` lands on `/`, ❌ not
+`~`); a gone external volume has no parent left on its own drive, so home is the friendlier landing there.
 
 **Which volume the walk asks.** Every parent probe goes to `volumeId`; `~` and `/` always go to the boot disk. Without
 an id the backend asks `root`, which says "gone" for every path on a phone or server, and the walk lands on the server

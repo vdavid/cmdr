@@ -11,6 +11,8 @@
 import type {
   ArchiveNameRefusal,
   FilesystemKind,
+  HomeFolderAction,
+  HomeFolderRelation,
   ItemKinds,
   LockedContainer,
   MountedVolumeAction,
@@ -231,6 +233,9 @@ export type WriteOperationError =
   // drive or server is mounted on. Refused before anything is removed or
   // copied, as Finder does. `action` is what it would have done to the drive.
   | { type: 'mounted_volume_inside'; mountPoint: string; action: MountedVolumeAction }
+  // A delete, trash, move, or rename of the person's own home folder, or a folder
+  // holding it. Refused before anything happens, whoever asked.
+  | { type: 'home_folder'; path: string; relation: HomeFolderRelation; action: HomeFolderAction }
   // A fresh zip would hold an entry the archive reader hides: a macOS `..\x`
   // reads as `../x`. Refused from the plan, before anything is compressed.
   | { type: 'archive_entry_name_refused'; entry: string; reason: ArchiveNameRefusal }

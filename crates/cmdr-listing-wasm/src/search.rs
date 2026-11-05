@@ -26,8 +26,8 @@ use cmdr_search::run::{
     SearchRunCoverage, SearchRunError, SearchRuns, UnresolvedScope, WalkEnding,
 };
 use cmdr_search::{
-    ARENA_ROOT_ID, CoveredHalf, DirSizeSource, MemoryRow, MemorySource, NameFold, NameRules, SearchContext,
-    SearchError, SearchQuery, SearchResult, SearchResultEntry, SearchRows, SourceError, query, search_covered,
+    ARENA_ROOT_ID, CoveredHalf, DirSizeSource, MemoryRow, MemorySource, NameRules, SearchContext, SearchError,
+    SearchQuery, SearchResult, SearchResultEntry, SearchRows, SourceError, query, search_covered,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -53,14 +53,9 @@ pub const SEARCH_COMMANDS: &[&str] = &[
     "apply_recent_searches_max_count",
 ];
 
-/// The demo's name rules: a Mac's case rule and fold (it presents as one), with
-/// patterns left in the form typed, because the tree's names are the browser's NFC
-/// strings and an NFD pattern would miss every accented one.
-pub const DEMO_NAME_RULES: NameRules = NameRules {
-    case_insensitive_by_default: true,
-    nfd_patterns: false,
-    fold: NameFold::NfdLowercase,
-};
+/// The demo's name rules: a Mac's, since it presents as one. The tree's names are
+/// the browser's NFC strings, which a Mac's pattern meets in either normal form.
+pub const DEMO_NAME_RULES: NameRules = NameRules::MACOS;
 
 /// The search over one in-memory volume.
 pub struct DemoSearch {

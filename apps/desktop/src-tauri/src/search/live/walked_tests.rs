@@ -168,17 +168,22 @@ fn a_walked_entry_and_its_arena_row_get_the_same_verdict() {
 #[test]
 fn an_accented_name_matches_the_same_way_walked_or_indexed() {
     // The case the whole module is here for: the pattern arrives composed, the
-    // filesystem hands back the decomposed name to walk and scanner alike. Under the
-    // Mac's rules, on any machine.
+    // filesystem hands back the decomposed name (or the composed one, #955) to walk
+    // and scanner alike. Under the Mac's rules, on any machine.
     let mut q = query();
     q.name_pattern = Some(CAFE_NFC.to_string());
     let compiled = CompiledQuery::compile(&q, SMALL_ARENA, &NameRules::MACOS).expect("the query compiles");
 
-    assert!(compiled.matches(&file(CAFE_NFD)));
-    assert!(matches_walked(
-        &compiled,
-        &covered(&format!("/Users/alice/{CAFE_NFD}"), false, Some(10), Some(10))
-    ));
+    for name in [CAFE_NFD, CAFE_NFC] {
+        assert!(compiled.matches(&file(name)), "{name:?}");
+        assert!(
+            matches_walked(
+                &compiled,
+                &covered(&format!("/Users/alice/{name}"), false, Some(10), Some(10))
+            ),
+            "{name:?}"
+        );
+    }
 }
 
 #[test]

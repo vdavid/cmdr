@@ -23,7 +23,7 @@ use crate::event_sinks::OperationEventSink;
 use crate::routed_writes::{first_routed, routed_transfer_refusal};
 use crate::source_binding::ExpectedSources;
 use crate::transfer::volume::{PathRole, unregistered_volume_error};
-use crate::types::{ConflictResolution, ReadOnlySide, VolumeCopyConfig, WriteOperationStartResult};
+use crate::types::{ConflictResolution, HomeFolderAction, ReadOnlySide, VolumeCopyConfig, WriteOperationStartResult};
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::twin_path;
 use cmdr_fs::volume::{RenameWork, Volume};
@@ -62,6 +62,11 @@ impl crate::Operations {
         // share one folder, so the refusal names the source side.
         // Collected, ❌ not a lazy `flat_map`: a closure held across the await makes the
         // future not general enough for a Tauri command to hold.
+        // Never the person's own home folder, nor a folder holding it (`home_folder.rs`).
+        let sources: Vec<PathBuf> = rows.iter().map(|row| row.source.clone()).collect();
+        if let Some(error) = self.home_folder_guard(&volume_id, &sources, HomeFolderAction::Rename) {
+            return Err(RenameStartError::Engine { error });
+        }
         let touched: Vec<&Path> = rows
             .iter()
             .flat_map(|row| [row.source.as_path(), row.destination.as_path()])

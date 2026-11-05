@@ -20,6 +20,7 @@ pub mod commands;
 pub mod context_menu;
 pub mod events;
 pub mod folder_sizes;
+pub mod imports;
 mod invoke;
 pub mod menu;
 pub mod operations_host;
@@ -37,6 +38,8 @@ mod context_menu_test;
 mod events_test;
 #[cfg(all(test, not(target_family = "wasm")))]
 mod folder_sizes_test;
+#[cfg(all(test, not(target_family = "wasm")))]
+mod imports_test;
 #[cfg(all(test, not(target_family = "wasm")))]
 mod menu_test;
 #[cfg(all(test, not(target_family = "wasm")))]

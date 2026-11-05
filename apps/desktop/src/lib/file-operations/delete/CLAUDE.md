@@ -1,13 +1,13 @@
 # Delete and trash (frontend)
 
-Permanent delete or macOS Trash, with a confirmation dialog, scan preview, and progress (`TransferProgressDialog`).
-Backend counterpart: `crates/cmdr-operations/src/delete/CLAUDE.md`.
+Permanent delete or macOS Trash: a confirmation dialog, scan preview, and progress (`TransferProgressDialog`). Backend
+counterpart: `crates/cmdr-operations/src/delete/CLAUDE.md`.
 
 ## Files
 
 - **DeleteDialog.svelte**: the confirmation (file list, scan stats, banners, a `footerLeading` trash switch hidden
   wherever permanent is forced), confirm, and Shift-hold. Role: `dialog` (trash) or `alertdialog` (permanent).
-- **delete-scan-state.svelte.ts** (+ test): scan preview and online-only answer.
+- **delete-scan-state.svelte.ts** (+ test): scan preview, online-only answer, home-folder refusal.
 - **delete-dialog-utils.ts** (+ test): pure title, path-abbreviation, and symlink-notice helpers.
 - **TrashCompleteToastContent.svelte** + **trash-undo.ts** (journal rollback, worded; `edit.undoTrash`) +
   **go-to-trash.ts** (toast button + `file.goToTrash`).

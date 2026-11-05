@@ -217,6 +217,8 @@
         onRevealSearchResult?: (path: string) => void
         /** Opens the Move dialog for a rename that copies too much to start unasked. */
         onConfirmRenameAsMove?: (request: RenameAsMoveRequest) => void
+        /** Asks the home-folder guard before a folder's rename editor opens (`home-folder-guard.ts`). */
+        passesHomeFolderGuard?: (target: { path: string; volumeId: string }) => Promise<boolean>
     }
 
     const {
@@ -252,6 +254,7 @@
         onCommand,
         onRevealSearchResult,
         onConfirmRenameAsMove,
+        passesHomeFolderGuard,
     }: Props = $props()
 
     let currentPath = $state(untrack(() => initialPath))
@@ -1270,6 +1273,7 @@
         indexOfEntry: (path: string) => activeListRef()?.indexOfEntry(path),
         moveCursorTo,
         onConfirmRenameAsMove: (request: RenameAsMoveRequest) => onConfirmRenameAsMove?.(request),
+        passesHomeFolderGuard: (path: string) => passesHomeFolderGuard?.({ path, volumeId }) ?? Promise.resolve(true),
     })
 
     // Destructure handlers: factory methods don't use `this`, safe to destructure

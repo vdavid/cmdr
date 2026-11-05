@@ -13,7 +13,7 @@
 //! without a second vocabulary to keep in step.
 
 use super::host::{self, UnregisteredVolume};
-use super::types::TrashRefusalKind;
+use super::types::{HomeFolderRelation, TrashRefusalKind};
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, write_plain};
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::VolumeError;
@@ -35,6 +35,15 @@ pub enum MutationError {
     },
     /// A volume's root has no parent to be renamed within.
     CantRenameVolumeRoot,
+    /// The rename named the person's own home folder, or a folder that holds
+    /// it, which would leave macOS looking for the account in the wrong place
+    /// (`home_folder.rs`). Refused before anything changes.
+    HomeFolder {
+        /// The source as sent, tilde expanded.
+        path: String,
+        /// Whether it IS the home folder or holds it.
+        relation: HomeFolderRelation,
+    },
     /// The containing folder refuses writes, so the rename can't land.
     ParentNotWritable {
         /// The folder, so the message can name it.
@@ -131,6 +140,10 @@ impl ErrorLogText for MutationError {
                 out.value(LogPrivate::path(path))
             }
             Self::CantRenameVolumeRoot => out.write_str("a volume root can't be renamed"),
+            Self::HomeFolder { path, relation } => {
+                write!(out, "the home folder stays ({relation:?}): ")?;
+                out.value(LogPrivate::path(path))
+            }
             Self::ParentNotWritable { path } => {
                 out.write_str("parent not writable: ")?;
                 out.value(LogPrivate::dir_path(path))

@@ -1527,6 +1527,7 @@
                     onMtpFatalError={(msg: string) => edgeFlow.handleMtpFatalError(paneId, msg)}
                     onNeedsPassword={(info: BrowseUnlockRequest) => { dialogs.showUnlockForBrowse(info); }}
                     onConfirmRenameAsMove={(request: RenameAsMoveRequest) => { fileOps.confirmRenameAsMove(paneId, request); }}
+                    passesHomeFolderGuard={fileOps.passesRenameHomeFolderGuard}
                     unreachable={getActiveTab(tabMgr).unreachable}
                     onRetryUnreachable={() => edgeFlow.handleRetryUnreachable(paneId)}
                     onOpenHome={() => edgeFlow.handleOpenHome(paneId)}

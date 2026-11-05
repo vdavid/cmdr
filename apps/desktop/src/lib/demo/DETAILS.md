@@ -112,11 +112,38 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   Esc, and its "Edit shortcuts" link opens Settings at that section as a second panel (a child window opening another
   through the shared backend).
 - The production CSP (`apps/website/nginx-demo-security-headers.conf`) needs `frame-src 'self'` for the panels: any
-  stricter `frame-src` blocks their iframes.
+  stricter `frame-src` blocks their iframes. It also needs `blob:` there for a PDF (§ Viewer media).
 - Known gap: clicking the main window while a panel is open moves DOM focus there but sends no `tauri://focus` /
   `tauri://blur`, and the panel stays on top (on desktop, main would become key and come forward). Fixing it means
   listening for `focusin` outside the panels and lowering them; nothing in the app reacts badly to the missing events
   today.
+
+## Viewer media
+
+- A picture or PDF opens in the viewer's media mode (0) only when the engine's sniff sees its real bytes; on the
+  generated filler it opens as text, with modes 1–3 alone. The bytes come from `demo-contents.ts`, which `fetch`es each
+  asset by its Vite URL.
+- Gotcha: Vite inlines an asset under 4 KB as a `data:` URL, and the demo's CSP (`connect-src 'self'`) refuses to fetch
+  one, so the 583-byte sample PDF silently fell back to filler. Every media import is `?url&no-inline`, pinned by
+  `demo-contents.test.ts` (vitest never inlines, so it reads the imports' queries).
+- The page hands the engine's bytes to `<embed>` as a `blob:` URL (`backend.ts`'s `mediaUrl`), so the browser's own PDF
+  viewer draws it. Chrome's viewer needs `blob:` in `frame-src` besides `object-src`; Firefox's pdf.js needs only
+  `object-src`.
+- Verified against `pnpm build:demo` served with the production CSP (2026-11-05): F3 on `Documents/Annual report.pdf`
+  offers PDF (0) and renders the page in Chrome 156 and Firefox 157 (Playwright's, with `pdfjs.disabled` off: it ships
+  pdf.js disabled); headless Chromium has no PDF viewer, so it shows "Couldn't load plugin" there.
+
+## Light and dark
+
+- On desktop, `setTheme` (`plugin:app|set_app_theme`, `settings-applier.ts`'s `applyTheme`) sets the window's appearance
+  and WebKit's `prefers-color-scheme` follows, so every `@media` rule and `matchMedia` query switches. A page can't set
+  `prefers-color-scheme`, so the backend keeps the theme and pins it in every webview (`DemoWebview.setTheme`, also on
+  attach, so a panel opened later starts on it), and `color-scheme.ts` pins the query in that frame: each `@media` rule
+  naming the feature gets an always-true or always-false condition instead (new stylesheets too, through a
+  `MutationObserver`), `matchMedia` answers scheme queries with a list that fires `change` on a flip, and `:root` gets
+  `color-scheme`. System (`null`) puts the rules back, so the browser follows the OS live.
+- Verified in headless Chromium against `pnpm build:demo` (2026-11-05): Dark and Light from Settings repaint the main
+  window, the Settings panel, the menu bar, and the lights; System with the OS flipped to dark follows it.
 
 ## The menu bar
 
@@ -342,6 +369,200 @@ self-drag identity, and the real transfer dialog on the in-browser write engine.
   `plugins.ts` joins paths for real and takes the writes and drops them, since nothing reads them; `plugins.test.ts`
   fails if a second app module starts using `plugin-fs`, which would need its own answer. The swizzle's state
   (`prepare_self_drag_overlay`, `clear_self_drag_overlay`, `set_self_drag_resolved_op`) is silent.
+- Files dragged in from the computer: § Files dropped in from the computer.
+- Verified in headless Chromium against `pnpm build:demo` (2026-11-04): View > Show hidden files lists `.zshrc` and the
+  check follows; View > Command palette opens it; Go > Home runs; View > Sort by > Size checks Size once the sort lands;
+  Tab > New tab adds a tab and reads ⌃T; Cmdr > Settings opens its panel, File's items grey while it's in front, and Tab
+  > Close tab closes it; the keyboard path from ⌃F2 reaches the palette; nothing lands in `unanswered`.
+
+## Right-click menus
+
+- **What**: the native popups the app opens (`show_file_context_menu`, the breadcrumb's, a tab's, the date header's Sort
+  by, the function key bar's, the viewer's text, a queue row's, a servers hub host's), drawn as HTML macOS 27 menus
+  (`context-menu.ts`) with the bar's look and keys. The app already cancels the browser's own menu
+  (`#lib/context-menu-ownership.ts`), so a right-click reaches the same `show_*` command it does on desktop.
+- **Decision**: the rows are the desktop's own, through WASM. `crates/cmdr-menu`'s `context` holds every popup's rows
+  and what a pick asks for; `cmdr-listing-wasm`'s `context_menu.rs` answers each `show_*` command with them and stashes
+  what the menu went up over, as `commands/menu.rs` stashes it in `MenuState` (`crates/cmdr-listing-wasm/DETAILS.md` §
+  The JS API). **Why**: the same as the bar's; a TS copy drifts on the first new item, and a pick that sent anything but
+  the native event would need its own handler in the app.
+- **Routing**: the backend asks `menu.opensPopup(cmd)` before the menu-state pushes. Each webview passes its label and
+  where its pointer last went down (`InvokeOrigin`, tracked in `webview.ts`), so the backend draws the menu in the TOP
+  frame at the pointer, offset by the panel's iframe for a secondary window, or at the `anchor` the app names for a
+  keyboard-opened menu (which then starts on its first enabled row). Top frame on purpose: a native popup isn't clipped
+  to its window, and one renderer serves every window. The command answers `null` once the menu is up, as the native one
+  returns while its menu tracks.
+- **Picks**: `menu.contextClick(id)`, then `menu-click.ts` sends it: an event to `main`, `queue`, or the viewer the menu
+  went up over, or the `add_favorite` command (the desktop calls it directly, for its add gate). A row the last popup
+  didn't offer enabled does nothing, in the engine as in the page.
+- **Left out**: every OS-filled group (Open with, Share, the tag colors, the provider's actions, Services): a browser
+  has no OS to ask. The image-search group stays hidden (no media index).
+- **Keys**: ↑/↓, Home/End, → into a submenu, ← or Esc out, Esc closes, Enter / Space pick, Tab closes; every key is kept
+  from the app while the menu is up. The header line is a `presentation` row, never a stop, and names the menu for a
+  screen reader (`aria-label`). A click outside, or the page losing focus, closes it.
+- **Shared with the bar**: `menu-surfaces.ts` (an open menu and its submenus: drawing, placement, highlight, the walk),
+  `menu-click.ts` (performing a pick), and `menu-bar-style.ts`'s `MENU_SURFACE_STYLE`, injected once per document.
+- Verified in headless Chromium against `pnpm build:demo` (2026-11-04): right-clicking `Documents` draws the folder menu
+  named by its header, with the live shortcuts (F5, ⌥⌘C) and no OS-filled group; ↓ lands on Selection, hovering it opens
+  the submenu beside it, and Selection > Select all selects the whole pane; no page error.
+
+## Traffic lights
+
+On desktop the OS draws the close, minimize, and zoom buttons over each window's overlay title bar, at the
+`trafficLightPosition` the app gives that window, and the app only leaves them room. In a browser nothing draws them, so
+`traffic-lights.ts` does, from the demo's own DOM: the main window's as a fixed group at its top-left, each panel's
+absolutely placed over its frame (`windows.ts`).
+
+- Placement has one source, the app's own numbers: the main window's `trafficLightPosition` is read from
+  `tauri.conf.json` (imported), and a panel's from the `create_webview_window` options its opener sends (Settings (20,
+  29), Keyboard shortcuts (14, 18), viewer and queue (9, 17), as `LogicalPosition` serializes, `{ x, y }`).
+  `lightsInset` turns one into the close button's corner: `x` as is, `y - 9` for the top (tao grows the title-bar
+  container to the button's frame plus `y`, and AppKit pins the button to the container's bottom).
+- Measured, not guessed (macOS 27.0.1, Cmdr 0.59.0, 2026-11-04): `screencapture -l` of the running app's windows at 2x,
+  the lights' edges found by a pixel scan: main and viewer (9, 17) draw at (9, 8), Settings (20, 29) at (20, 20). Every
+  window's lights are the same size, so the only per-window difference is the inset: 14 px each, on a 23 px pitch (9 px
+  gaps). AppKit also rendered a standard window's buttons offscreen at 2x in light and dark, key and inactive, hovered
+  and not (a Swift script swizzling the key-appearance and mouse-in-group getters, then `cacheDisplay`); the fills,
+  rims, glows, and glyph shapes and colors in `STYLE` are sampled from those renders.
+- Verified against `pnpm build:demo` in headless Chromium at 1x and 2x (2026-11-04): main (9, 8), Settings (20, 20),
+  Keyboard shortcuts (14, 9), each 14 px on a 23 px pitch, measured from the panel's outer edge (its hairline is an
+  overlay, so it doesn't push the page or the lights in); Settings' own drag strip moves its panel.
+- Light: a vertical fill that brightens toward the bottom, a dark rim strongest at the sides, a soft tinted glow below.
+  Dark: a bright rim at the top and bottom and a bloom near the bottom, no glow. Inactive: light grey or dark grey with
+  the matching rim. Hovering the group lights all three and shows every glyph, even on an inactive window, as macOS
+  does.
+- Glyphs: × and −; zoom shows full-screen arrows (inward ones while full screen, or while a panel is zoomed), as every
+  Cmdr window is resizable and so full-screen capable, and Settings' real green light shows them.
+- Active state: lit for the key window while the page has focus (`document.hasFocus()`, read a task after `focus` /
+  `blur`, since focus moving into a panel's iframe blurs the top window), grey otherwise. The window host tracks the key
+  window as it raises and closes panels.
+- What each does. Main: zoom toggles the browser's full screen (inert where the page can't, as in a frame without
+  `allow="fullscreen"`); close and minimize stay inert (`aria-disabled`), since a page can't close or hide its tab.
+  Panel: close closes the window; zoom fills the desktop under the menu bar (capped at the window's `maxWidth`) and
+  back; minimize stays inert, as there's no Dock to restore from. Labels reuse `ui.modalDialog.close`,
+  `menu.window.minimize`, and `menu.window.zoom`. The lights aren't Tab stops and never take focus, as on macOS.
+- The main lights sit under the menu bar: their `top` adds `--cmdr-demo-window-top`, which `menu-bar.svelte.ts` sets.
+
+## Framed by another page
+
+The landing page may embed the demo in an iframe. Nothing may assume a full browser window: sizes come from the frame's
+own `window.innerWidth` / `innerHeight`, focus from `document.hasFocus()`, and the backend lookup on `window.parent` is
+guarded (a cross-origin parent throws). Checked at 960×600 and framed by another origin (headless Chromium, 2026-11-04).
+Testing an embed locally: Chrome's local-network checks block a public-looking page (a Playwright `route.fulfill`
+origin) from framing `localhost`; serve the parent page from a real loopback server.
+
+## Build and serve
+
+- `pnpm build:demo` (in `apps/desktop`, or at the repo root, which runs this one): `pnpm -w build:listing-wasm` (the
+  engine into `crates/cmdr-listing-wasm/pkg/`, gitignored), then `CMDR_DEMO_BUILD=1 vite build` with SvelteKit
+  `paths.base = '/demo'`, output in `apps/desktop/build-demo/` (gitignored; eslint and oxfmt skip it). Never into
+  `build/`: Tauri embeds that dir, and the adapter wipes its output dir on every build.
+- `pnpm dev:demo`: the same engine build, then the dev server under `/demo/`. Pass `CMDR_VITE_PORT` for a port other
+  than 1420. The first load after a config change can sit on the spinner while Vite re-optimizes dependencies; reload.
+- `virtual:cmdr-listing-wasm` is an alias (demo builds only) to the engine's JS glue; `listing-wasm.d.ts` types the
+  subset `listing.ts` uses, so the typecheck passes without the generated package. `server.fs.allow` gets the `pkg/`
+  dir, since SvelteKit's allow list doesn't reach `crates/` and the glue fetches its `.wasm` from there.
+- The static host needs an SPA fallback to `index.html` for paths under `/demo/`, as adapter-static's `fallback`
+  assumes.
+- Hosting on getcmdr.com, the demo's CSP, and the Playwright smoke (`apps/website/e2e/demo.spec.ts`: boots without a
+  page error, lists the home folder): `apps/website/DETAILS.md` § Browser demo. The CSP blocks off-origin fetches,
+  `eval` / `new Function`, and inline scripts added after the build, though the smoke's server sends no CSP.
+
+## Tests
+
+- One colocated `*.test.ts` per module. They pin what breaks the demo silently: the tree's parents and its 1,200 photos
+  (the engine refuses a bad tree at boot), the browser-safe map (real command ids, the canonical combo vocabulary, no
+  clash in an overlapping scope, no browser-reserved combo left), no TS answer for an engine command
+  (`engine-commands.test.ts`), the backend's routing order (TS tables, then `handles()`, then `unanswered`), the
+  webview's JSON wire and event targets, the window panels' open/close/raise/refuse/zoom, the traffic lights' actions
+  and key-window state, the Cmdr gold seed, and the boot role pick. The lights' look is QA'd against AppKit's renders in
+  a real browser (§ Traffic lights).
+- vitest aliases `#lib/demo/boot.js` to `boot-absent.ts`, `$app/paths` to `apps/desktop/src/test-app-paths-shim.ts`, and
+  `virtual:cmdr-listing-wasm` to `apps/desktop/src/test-listing-wasm-shim.ts`; `listing.test.ts` mocks the last with a
+  fake engine. `test-setup.ts` stubs `@tauri-apps/api/event` app-wide, so `webview.test.ts` unmocks it to test the real
+  one.
+- The real `.wasm` and the iframes' pages loading are covered outside vitest: `desktop-rust-listing-wasm` runs the
+  engine's smoke, `apps/website/e2e/demo.spec.ts` boots the built demo, and the headless QA above.
+
+## Answering a command
+
+1. Find what's unanswered: open the demo, then read `window.__cmdrDemo.unanswered` (command → call count) in devtools.
+   The first unanswered call per command also logs `[demo] no answer for …` at debug level.
+2. A listing command belongs to the engine (`crates/cmdr-listing-wasm`): ask there, don't answer it in TS.
+3. Look up its return type in `bindings.ts` (the `__TAURI_INVOKE<...>` or `typedError<Ok, Err>`).
+4. Void command (returns `()`): add its bindings name to `silentCommands` in `answers.ts`. `VoidCommand` rejects a
+   command that returns a value. Unanswered voids work anyway (the fallback answers `null`); listing them only keeps the
+   log quiet. Any OTHER unanswered command rejects with a string, as Tauri rejects a command it lacks: a `null` posing
+   as an answer crashed the search dialog once. Which are void (`Promise<void>`, or a `Result<(), E>` whose success is
+   `null`) is `virtual:cmdr-demo-void-commands`, which `apps/desktop/scripts/vite-demo-void-commands.ts` reads off
+   `bindings.ts` at build time (registered in `vite.config.js` for the demo build only, and in `vitest.config.ts`).
+5. Value command: add an entry to `appAnswers` (app state) or `volumeAnswers` (volumes, paths, and the tree), keyed by
+   its bindings (camelCase) name. The answer is the `ok` value (`RawAnswer<K>`); a `typedError` command's error branch
+   is `refuse('openPath', { type: 'unsupported' })`, typed against that command's error, which `invoke` rejects with as
+   it does for a Rust `Err`. Opening a folder or package uses exactly that: the app's own refusal for a platform with no
+   opener. Opening a demo FILE (Enter) is the backend's: it sends `open-file-viewer` to the main window, so the demo's
+   default app is Cmdr's own viewer. Whether a path is a file is the live volume's answer (the engine's
+   `stat_paths_kinds`), ❌ never the boot tree's `demoEntries`: a set built from the tree once refused every copy, move,
+   and rename the visitor made (the viewer itself already read them, through the volume the write engine wrote to;
+   `viewer_test.rs`'s copied-renamed-moved cell pins that half).
+6. Commands outside the bindings (generic `<R: Runtime>` ones called through raw `invoke`, see `lib/ipc/DETAILS.md`) go
+   in `rawAnswers`, keyed by their snake_case wire name, typed by hand against the wrapper's return type.
+7. Plugin commands (`plugin:<name>|<command>`) go in `plugins.ts`, or in `webview.ts`'s `windowAnswer` when they're
+   about the calling window.
+
+Answer as a fresh, personal-use Cmdr on a Mac with nothing extra would: no index (folder sizes are real anyway, from the
+engine's fold: `crates/cmdr-listing-wasm/DETAILS.md` § Folder sizes), no AI, no network hosts, no updater
+(`getManagedPolicy` says updates are disabled), no tags or custom folder icons. Icons: macOS draws the live ones and the
+demo can't ask it, so `getIcons` answers every id with the app's bundled generic folder or document
+(`static/icons/default-*.png`), through `$app/paths`' `asset()` so they resolve under `/demo`.
+
+- Gotcha: the unanswered fallback answers `null`, which is only right for a void command. A value command left
+  unanswered gets a `null` the app's types say can't happen: `getRecentSearches` did, and the search dialog's render
+  threw on it, so ⌘F flashed the dialog and its boundary closed it. Answer every value command the app asks for.
+- Search: ⌘F is the WASM engine's (`crates/cmdr-listing-wasm/DETAILS.md` § Search), so no TS table answers a search
+  command (`engine-commands.test.ts` pins it). TS answers only `cloudAiConsentStatus` (no consent), which with
+  `getAiStatus` unavailable keeps the dialog's AI mode off.
+
+## Writes
+
+- Every write, queue, path, and undo command goes to the real write engine in the WASM module
+  (`crates/cmdr-listing-wasm/DETAILS.md` § Writes), on the same in-memory volume the panes list, so a copy lands in the
+  other pane through `directory-diff`, the queue window controls it, and the operation log rolls it back. Gone on
+  reload, like the rest of the demo's state. Verified in headless Chromium (2026-11-04): F7, F5, a conflict answered
+  Skip, Shift+F6, F6, F8, the queue's pause and resume, and a roll back (`apps/website/e2e/demo.spec.ts`).
+- The volume is writable and has no Trash (`volumes.ts`: `mountIsReadOnly: false`, `supportsTrash: false`, as the
+  engine's `Volume::has_trash` answers), so F8 takes the app's permanent-delete confirm, as on a network share.
+- `listing.ts` expands `~` in every path argument (`path`, `paths`, `parentPath`, `sources`, `sourcePaths`, `destPath`,
+  `destination`, `from`, `to`, `dir`), as the desktop's commands do for `root`: the dialogs name the home folder `~`.
+- TS answers only what isn't the engine's: `estimateOperationCost` is `[]` (only an S3 transfer has a bill).
+- There's no ⌘Z for an operation in the app either: undo is the operation log's Roll back (⌘⌥L).
+- Not answered yet: multi-rename (`open_multi_rename`, so its dialog fails to open), tags (`toggle_tags`), and the new
+  folder dialog's AI name suggestions (`get_ai_status`).
+
+## Drag and drop
+
+On desktop, `start_drag_paths` hands the files to AppKit, which owns the mouse from then on and reports what it does
+through wry's drag-drop events (`tauri://drag-enter`, `-over`, `-drop`, `-leave`) plus the swizzle's `drag-modifiers`.
+`drag-session.ts` is that OS session for a page: its answer to `start_drag_paths` follows the pointer that's still down
+and sends the same events to the main window. So the app's drag controller
+(`file-explorer/pane/drag-drop-controller.svelte.ts`) runs unchanged: the hit test, the cursor label, auto-scroll, the
+self-drag identity, and the real transfer dialog on the in-browser write engine.
+
+- Events: `drag-modifiers` then `tauri://drag-enter` on the first move (or the release), `-over` per move, `-drop` where
+  it lets go. Positions are client px, which is what the controller reads Tauri's as. Modifiers come off the pointer and
+  key events (Option copies, ⌘ or Shift moves, as on desktop) and go out on enter and on each change.
+- Leaving the page sends `-leave`, coming back `-enter` again (the controller's re-entry fingerprint keeps it a
+  self-drag). Letting go outside the page is a clean no-op: nothing out there takes the files. Escape cancels, kept from
+  the app as AppKit keeps it; so does `pointercancel`, a window `blur`, and a button that was already up when the
+  session began (a quick flick).
+- While it runs, the page's mouse events are kept from the app (`mousedown` through `contextmenu`, plus the release's
+  own `click` a task later), as an OS drag loop keeps them from the webview.
+- Touch: the app arms a drag on a held touch and keeps the page from scrolling under it, generic code for any touch
+  browser (`file-explorer/drag/DETAILS.md` § Touch drags); the session follows that pointer like a mouse.
+- The drag image: the app writes a PNG for the OS session (`tempDir`, `join`, `plugin-fs` `writeFile` / `remove`).
+  `plugins.ts` joins paths for real and takes the writes and drops them, since nothing reads them; `plugins.test.ts`
+  fails if a second app module starts using `plugin-fs`, which would need its own answer. The swizzle's state
+  (`prepare_self_drag_overlay`, `clear_self_drag_overlay`, `set_self_drag_resolved_op`) is silent.
 - Files dragged in from the OS do nothing: the window cancels `dragover` / `drop`, else the browser opens the file in
   place of the demo. Decision: no import. A browser hands over bytes with no path, and the in-memory volume takes no
   outside bytes today (the engine would need a create-file-from-bytes write and the controller a non-path drop source),
@@ -350,6 +571,35 @@ self-drag identity, and the real transfer dialog on the in-browser write engine.
   pane's `~/Downloads` shows "Move to Downloads" and opens Move 1 file, which lands it; with Option it's Copy; dropping
   onto the Documents row moves it there; an iPad-emulated touch held 450 ms then dragged does the same, and a quick
   swipe starts no drag; `__cmdrDemo.unanswered` stays empty.
+
+## Files dropped in from the computer
+
+`os-drop.ts` answers a browser's HTML drag events for files from outside the page (#957). A browser hands over `File`
+objects with no path, so the bytes land on the in-memory disk first, then the app hears wry's drop events with the
+staged paths. The controller runs unchanged: hit test, transfer dialog, conflict handling, write engine. No `if (demo)`.
+
+- While over the page: `drag-image-size` (large, so the app's overlay stays hidden, as for a Finder drag on desktop: the
+  browser draws the OS's own drag image), `drag-modifiers`, `tauri://drag-enter` with `/.drops/incoming` (names aren't
+  readable before the drop; a demo-disk path keeps the Move-or-Copy verdict the staged paths get), `-over` per
+  `dragover`, `-leave` when the `dragenter`/`dragleave` count drops to zero. `dragover` and `drop` are always cancelled,
+  so the browser never opens a dropped file or follows a dropped link in place of the demo.
+- On `drop`: `readDrop` takes `webkitGetAsEntry()` entries at once (the `DataTransfer` empties when the handler
+  returns), walks folders (folders before their contents, `readEntries` until an empty batch), and falls back to the
+  flat `files`. `importDropped` sends the shape (no bytes) to the engine's `importPlan`, reads bytes only for the
+  accepted files, lands each through `importFile`, hands the batch off (`importHandOff`), then `tauri://drag-drop`
+  carries the staged top-level paths.
+- The staging folder goes when its transfer ends, or once nothing can take it: `backend.ts` passes the app's
+  `set_file_operations_blocked { blocked: false }` on to the engine's `importReleaseOffered`. The lifecycle and why it
+  isn't the dialog's close: the engine DETAILS below.
+- The engine side, the staging folder, and the 10 MB per-visit budget: `crates/cmdr-listing-wasm/DETAILS.md` § Files
+  dropped in from the computer. A cut-short drop shows the `ui.demoDrop.overBudget` toast (from `backend.ts`), after the
+  part that fit lands.
+- **Decision/Why: Move, the app's standard.** The staged files sit on the demo disk, so the controller picks Move, as it
+  does for a Finder drag from the Mac's own disk, and the transfer leaves no staged copy behind (Option still copies).
+  Collisions go through the transfer dialog's conflict handling, as for any drop.
+- Verified in headless Chromium against `pnpm build:demo` with a synthetic `DataTransfer` drop (2026-11-05): pinned by
+  `apps/website/e2e/demo.spec.ts` (a drop lands through "Move 1 file", a second drop of the same name shows the clash,
+  an 11 MB drop shows the toast and lands nothing, a dismissed 10 MB drop leaves the full 10 MB for the next).
 
 ## Links
 
@@ -410,3 +660,8 @@ self-drag identity, and the real transfer dialog on the in-browser write engine.
   the desktop default stays so; the seed is the demo's only lever. Settings still offers "System theme color", which in
   the demo is the virtual Mac's accent, the blue `getAccentColor` answers. Since the seed differs from the registry
   default, App color shows its reset arrow, and reset picks that blue.
+- `plugins.ts` also seeds a 125% zoom (`appearance.textSize`, the app's own zoom setting): a browser tab is smaller than
+  the Mac display the 100% default suits. Settings shows 125% with its reset arrow.
+- The viewer and the queue read those seeds too: `getRestrictedWindowSettings` answers from the same `settings.json`
+  store (`restrictedWindowSettings`), as the desktop's loader reads the file. Unanswered, they ran on the registry
+  defaults (100%, the system color).

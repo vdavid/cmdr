@@ -91,6 +91,36 @@ Pinned on a real APFS image mounted inside a test folder (`real_image.rs`, the d
 for the folder and for the mount point, the delete preview (caches nothing), a drive mounted after the preview, and the
 volume walker. Regression anchor: #507.
 
+## The home folder stays
+
+A delete, trash, move, or rename whose sources include the person's own home folder, or a folder holding it (`/Users`,
+`/`), refuses the whole batch with `WriteOperationError::HomeFolder { path, relation, action }` (an instant rename:
+`MutationError::HomeFolder`) before anything is read, moved, or removed. A delete loses the files; a move or a rename
+leaves macOS looking for the account in the wrong place, and a move onto another volume is copy-then-delete besides.
+`action` (`HomeFolderAction`: `delete`, `move`, `rename`) picks the words. Decision/Why: a typed refusal at the engine's
+door, not a frontend check, because every caller (a person, MCP, an AI suggestion) funnels through these starts and a
+frontend-only rule would let MCP through.
+
+- **Where it's asked** (`home_folder.rs`, crate root): `delete_files_start`, `trash_files_start`, and `move_files_start`
+  (`write_start.rs`); `route_volume_move` (every volume move, the retry's too) and `start_rename_by_move`
+  (`routing.rs`); `rename_managed` and its pre-flight `check_rename_permission_for_volume` (`rename.rs`);
+  `start_renames` (`rename/bulk/by_move.rs`); and `start_scan_preview` for a `Delete` purpose
+  (`ScanPreviewRefusal::HomeFolder`, a backstop the delete dialog renders).
+- **The frontend asks first** through `Operations::home_folder_guard` (the `check_home_folder_guard` command, on the
+  desktop and in the demo), before a delete or move dialog or a folder's rename editor renders, so no confirm UI ever
+  shows for a refused one: `apps/desktop/src/lib/file-operations/delete/DETAILS.md` § "The home folder refuses up
+  front". Cheap: the lexical compare plus a few `stat`s.
+
+- **The home comes from the host** (`OperationsBuilder::home_folder`): the app's `dirs::home_dir()`, the demo's
+  `/Users/you` from its tree. No home guards nothing. Only the default volume (`root`) is checked.
+- **Compared lexically, then by file identity on the local disk**: `~` expanded, `.`/`..` folded, trailing slashes
+  dropped; then the source's `lstat` (dev, inode) against `stat` of the home and every folder above it, under both its
+  canonical path and its `/System/Volumes/Data` firmlink twin. That catches a path through a symlinked folder, another
+  letter case, and the firmlink spelling. `lstat`, so a SYMLINK pointing at the home stays deletable: removing it
+  removes only the link. The demo (no local disk) is lexical only; its volume has no links.
+- **Other users' homes stay deletable, movable, and renamable**, and a COPY of the home folder goes ahead: it leaves the
+  original where macOS expects it.
+
 ## Waiting out a dropped share
 
 A volume delete on a server (SMB, SFTP, WebDAV, S3) or a phone over ADB waits for a dropped session the way a copy does
@@ -322,7 +352,8 @@ go" rather than reporting something went wrong.
 ## A trash of online-only cloud content becomes a delete (`cloud_trash.rs`)
 
 A third-party File Provider under `~/Library/CloudStorage/<domain>/` evicts files it has uploaded, leaving a placeholder
-macOS marks `SF_DATALESS` (Finder calls these "online-only").
+macOS marks `SF_DATALESS` (Finder calls these "online-only"). `cloud_trash::is_online_only` is the one `SF_DATALESS`
+read.
 
 **The reason for the whole feature is the DOWNLOAD, ❌ not the refusal.** The Trash is a folder on the boot volume, so
 putting an evicted file there means pulling its bytes back from the provider first, and macOS does exactly that: an

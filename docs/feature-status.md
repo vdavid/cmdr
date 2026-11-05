@@ -66,7 +66,7 @@ Every release is a review point: the release procedure (`docs/guides/releasing.m
 shipped, flipping `planned` → `alpha`, graduating maturing features, and refreshing stale notes, alongside the roadmap
 update. Do it then, or any time a status genuinely changes.
 
-Edit `feature-status.json`, then run `pnpm check` (the desktop unit tests pin the JSON shape and the alpha set). The
-website picks the change up at build time; the app at compile time. No code changes needed for a status flip unless a
-feature graduates to `stable` while a dialog hardcodes a badge lookup for it (it doesn't today; lookups go through
-`getBadgeStatus`, which returns nothing for stable).
+Edit `feature-status.json`, then run `pnpm check svelte-tests` (the desktop unit tests pin the JSON shape and the alpha
+set). The website picks the change up at build time; the app at compile time. No code changes needed for a status flip
+unless a feature graduates to `stable` while a dialog hardcodes a badge lookup for it (it doesn't today; lookups go
+through `getBadgeStatus`, which returns nothing for stable).

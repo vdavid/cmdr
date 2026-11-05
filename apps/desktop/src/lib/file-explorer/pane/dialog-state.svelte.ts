@@ -654,6 +654,14 @@ export function createDialogState(deps: DialogStateDeps) {
       showAlertDialog = true
     },
 
+    /** Says why a delete, move, or rename of the person's own home folder won't
+     *  happen, IN PLACE OF its confirm dialog or the rename editor: the error
+     *  dialog over the typed refusal, which no operation produced (so nothing to
+     *  dismiss from the queue). `./home-folder-guard.ts`. */
+    showHomeFolderRefusal(operationType: TransferOperationType, error: WriteOperationError) {
+      openTransferError(operationType, error, null, null)
+    },
+
     /** Opens the copy/move/compress confirmation, or, with confirmations skipped
      *  (`confirmation-skip.ts`), answers it the way the dialog would have. */
     showTransfer(props: TransferDialogPropsData) {

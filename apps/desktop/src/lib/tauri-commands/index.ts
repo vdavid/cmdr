@@ -342,6 +342,7 @@ export {
   deleteFiles,
   trashFiles,
   trashRoutingForPaths,
+  checkHomeFolderGuard,
   cancelWriteOperation,
   resolveWriteConflict,
   onWriteProgress,

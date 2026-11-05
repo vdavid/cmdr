@@ -94,6 +94,7 @@ mod handle;
 #[cfg(test)]
 mod handle_tests;
 mod hidden_links;
+mod home_folder;
 pub mod host;
 mod human_wait;
 mod in_flight_temps;
@@ -237,7 +238,7 @@ pub use routing::resolve_dest_path;
 
 // The wire vocabulary: payloads, configs, and typed outcomes.
 pub use types::{
-    ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, KnownSize,
+    ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, HomeFolderAction, KnownSize,
     LeftoversKeptEvent, LifecycleStatus, LockedSourcesAnswer, LockedSourcesAnswerOutcome, OperationStatus,
     ReadOnlySide, RetryOutcome, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanPreviewPurpose, ScanPreviewRefusal, ScanPreviewStartResult, ScanPreviewTotals,

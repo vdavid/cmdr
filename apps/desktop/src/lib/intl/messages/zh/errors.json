@@ -1968,6 +1968,66 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "拜托，别删掉你的个人文件夹",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "嘿，你可不能删除自己的个人文件夹。",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "你不能删除 <code>{path}</code>，因为你的个人文件夹就在里面，而个人文件夹是不能删的。",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "如果你想删掉所有文件，就进到里面，全选，然后删除。不过说真的，这听起来还是个很糟糕的主意。",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "如果你想腾出空间，就挑得具体一点。如果你想清空这台电脑上的一切，就重置一下系统。",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
+  "errors.write.homeFolderMove.title": "拜托，别移动你的个人文件夹",
+  "@errors.write.homeFolderMove.title": {
+    "sourceHash": "f5db2db"
+  },
+  "errors.write.homeFolderMove.message.isHome": "嘿，你的个人文件夹就该待在原地。一旦移走，下次登录时你的 Mac 就会去错地方找你。",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "17b0b0b"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "你不能移动 <code>{path}</code>，因为你的个人文件夹就在里面，而你的 Mac 指望在原地找到它。",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "c43a8e6"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "如果你想把文件放到别处，就进到里面，挑选出需要的，再移动它们。你的 Mac 会感谢你的。",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "580bee6"
+  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "如果你想移动一些文件，就挑得具体一点，从里面选出来。",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "sourceHash": "a766ab5"
+  },
+  "errors.write.homeFolderRename.title": "拜托，别重命名你的个人文件夹",
+  "@errors.write.homeFolderRename.title": {
+    "sourceHash": "ec47bfe"
+  },
+  "errors.write.homeFolderRename.message.isHome": "嘿，你的 Mac 就是靠这个名字认出你的个人文件夹的。一旦改名，下次登录时它就找不到你了。",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "fd78f2f"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "你不能重命名 <code>{path}</code>，因为你的个人文件夹就在里面，而你的 Mac 指望在这个确切的路径上找到它。",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHome": "如果你真的需要换个名字，macOS 在“用户与群组”里有一套稳妥的做法。不过，这可不是按一下 F2 那么简单。",
+  "@errors.write.homeFolderRename.suggestion.isHome": {
+    "sourceHash": "b1e0d3b"
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "不如给里面的东西改名，或者干脆别动这个文件夹。它撑起的东西比看上去多。",
+  "@errors.write.homeFolderRename.suggestion.holdsHome": {
+    "sourceHash": "aa28a28"
+  },
   "errors.write.sourceChanged.title": "这个文件在拷贝期间发生了变化",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

@@ -1969,6 +1969,66 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Đừng xóa thư mục chính của bạn nhé",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Này, bạn không xóa được thư mục chính của chính mình đâu.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Bạn không thể xóa <code>{path}</code> vì trong đó có thư mục chính của bạn, mà thư mục chính thì không xóa được.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Nếu muốn bỏ hết tệp của mình, hãy vào trong đó, chọn tất cả rồi xóa. Dù vậy, nghe vẫn là một ý rất tệ đó.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Nếu muốn giải phóng dung lượng, hãy chọn cụ thể hơn một chút. Nếu muốn xóa sạch mọi thứ trên máy tính này, hãy đặt lại hệ điều hành.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
+  "errors.write.homeFolderMove.title": "Đừng di chuyển thư mục chính của bạn nhé",
+  "@errors.write.homeFolderMove.title": {
+    "sourceHash": "f5db2db"
+  },
+  "errors.write.homeFolderMove.message.isHome": "Này, thư mục chính của bạn đang ở đúng chỗ của nó rồi. Nếu bạn di chuyển nó, lần đăng nhập tới máy Mac của bạn sẽ tìm bạn nhầm chỗ đấy.",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "17b0b0b"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "Bạn không thể di chuyển <code>{path}</code> vì thư mục chính của bạn nằm trong đó, mà máy Mac của bạn luôn tìm nó đúng ở chỗ hiện tại.",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "c43a8e6"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "Nếu muốn để tệp ở chỗ khác, hãy vào trong đó, chọn những gì bạn cần rồi di chuyển chúng. Máy Mac của bạn sẽ cảm ơn bạn đấy.",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "580bee6"
+  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "Nếu muốn di chuyển vài tệp, hãy cụ thể hơn một chút và chọn chúng từ bên trong.",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "sourceHash": "a766ab5"
+  },
+  "errors.write.homeFolderRename.title": "Đừng đổi tên thư mục chính của bạn nhé",
+  "@errors.write.homeFolderRename.title": {
+    "sourceHash": "ec47bfe"
+  },
+  "errors.write.homeFolderRename.message.isHome": "Này, máy Mac của bạn nhận ra thư mục chính qua đúng cái tên này. Nếu bạn đổi tên nó, lần đăng nhập tới máy Mac sẽ không tìm thấy bạn đâu.",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "fd78f2f"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "Bạn không thể đổi tên <code>{path}</code> vì thư mục chính của bạn nằm trong đó, mà máy Mac của bạn luôn tìm nó đúng ở đường dẫn này.",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHome": "Nếu thật sự cần tên mới, macOS có một cách làm cẩn thận trong “Người dùng & Nhóm”. Có điều nó không nhanh như bấm F2 đâu.",
+  "@errors.write.homeFolderRename.suggestion.isHome": {
+    "sourceHash": "b1e0d3b"
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "Thay vào đó, hãy đổi tên thứ gì đó bên trong, hoặc cứ để yên thư mục này. Nó đang gánh nhiều hơn bạn tưởng đấy.",
+  "@errors.write.homeFolderRename.suggestion.holdsHome": {
+    "sourceHash": "aa28a28"
+  },
   "errors.write.sourceChanged.title": "Tệp này đã thay đổi trong lúc sao chép",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"

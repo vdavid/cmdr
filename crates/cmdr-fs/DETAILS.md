@@ -47,11 +47,13 @@ the next section.
   `io::ErrorKind`); `app_paths.rs` (whether an app path sits under a volume root, segment-wise, and rebasing it onto a
   moved root); `remote_paths.rs` (a server tree's `<scheme>://user@host:port` app spelling, and the ONE translation);
   `friendly_error/` (typed, word-free classification); `usb_speed.rs` (❗ its doc comment reaches `bindings.ts`);
-  `in_memory.rs` (the store and its knobs; `in_memory/volume_impl.rs` is its `impl Volume`); `conformance.rs` (+
-  `conformance/directory_creation.rs`, the three `create_directory_all` promises, and
-  `conformance/modification_date.rs`, the two date ones, `src/volume/conformance/xattrs.rs`, the xattr one, and
-  `src/volume/conformance/link_landing.rs`, what `can_hold_links` promises); and `host/` (what a backend needs from the
-  app, as named traits; read `src/volume/host/CLAUDE.md` before writing a backend).
+  `in_memory.rs` (the store and its knobs; `in_memory/volume_impl.rs` is its `impl Volume`;
+  `src/volume/in_memory/imports.rs` its door for outside bytes, the browser demo's dropped files, stored as real bytes
+  beside the synthetic ones, no clobber); `conformance.rs` (+ `conformance/directory_creation.rs`, the three
+  `create_directory_all` promises, and `conformance/modification_date.rs`, the two date ones,
+  `src/volume/conformance/xattrs.rs`, the xattr one, and `src/volume/conformance/link_landing.rs`, what `can_hold_links`
+  promises); and `host/` (what a backend needs from the app, as named traits; read `src/volume/host/CLAUDE.md` before
+  writing a backend).
 - `entry.rs` + `icons/`: `FileEntry` and the classifiers behind `get_icon_id`.
 - `sqlite_util.rs`: the ONE process-wide page-cache slab, the connection factories every store opens through, and the
   one way a database file is deleted. `src/sqlite_util/thread_conn_cache.rs` is the per-thread read-connection cache and
@@ -962,6 +964,9 @@ The double is the oracle: these `Volume` contracts have to hold in it, not just 
   moved only the dir node made those tests pass over the exact data-loss shape they existed to catch.
 - **`rename(force = false)` refuses an existing destination**, and **`create_file` refuses an existing path**. Both are
   no-clobber promises the real backends make, so a double that overwrote would let a clobbering caller look correct.
+- **`exists` answers "there" for the volume ROOT**, which has no stored entry. The deleted-folder poll
+  (`apps/desktop/src/lib/file-explorer/pane/deleted-dir-poll.ts`) asks it every 2 s, and a "no" walked the demo's pane
+  off `/` and home after two misses. `get_metadata` and `is_directory` of the root still answer `NotFound`.
 
 ❌ Never relax a contract to make a test green.
 

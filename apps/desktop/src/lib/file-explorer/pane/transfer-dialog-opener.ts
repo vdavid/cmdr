@@ -8,6 +8,7 @@ import {
 } from './transfer-operations'
 import { capabilitiesFor } from './volume-capabilities'
 import { announceRowsStillSettling } from './operation-start-gate'
+import { passesHomeFolderGuard } from './home-folder-guard'
 import { ROW_SETTLE_BUDGET_MS } from './pressed-rows'
 import type { DuplicateFollowUp } from './duplicate-rename'
 import type { FilePaneAPI, OpenTransferDialogArgs } from './types'
@@ -23,7 +24,10 @@ type DialogState = ReturnType<typeof createDialogState>
  * backend listing) and open the transfer dialog on it. The guards before it (the start gate,
  * the destination guard) live in `file-operation-commands.ts`.
  */
-export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<DialogState, 'showTransfer'>) {
+export function createTransferDialogOpener(
+  access: PaneAccess,
+  dialogs: Pick<DialogState, 'showTransfer' | 'showHomeFolderRefusal'>,
+) {
   /** Builds a TransferContext from pane state. */
   function buildTransferContext(pane: 'left' | 'right', mcpRequestId?: string): TransferContext {
     const other = access.otherPane(pane)
@@ -96,8 +100,20 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
     )
   }
 
-  /** Stamps who asked, and how, onto the dialog props, whichever source built them. */
-  function showWithTrigger(props: TransferDialogPropsDraft, trigger: OpenTransferDialogArgs): void {
+  /** Stamps who asked, and how, onto the dialog props, whichever source built them, and
+   *  opens the dialog. A MOVE of the person's own home folder (or a folder holding it) is
+   *  asked about first and refused in its place, so its confirm UI never shows
+   *  (`home-folder-guard.ts`). Answers whether the dialog opened. */
+  async function showWithTrigger(props: TransferDialogPropsDraft, trigger: OpenTransferDialogArgs): Promise<boolean> {
+    if (props.operationType === 'move') {
+      const request = {
+        sources: props.sourcePaths,
+        volumeId: props.sourceVolumeId,
+        action: 'move' as const,
+        mcpRequestId: trigger.mcpRequestId,
+      }
+      if (!(await passesHomeFolderGuard(dialogs, request))) return false
+    }
     // F5/F6 is a person at the keyboard directing this transfer, so a single-item
     // duplicate ends in the rename editor. ❗ Anyone else's takes the same route every
     // other trigger does: an agent's copy has no business pulling focus into a text
@@ -110,6 +126,7 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
       guard: trigger.guard,
       duplicateFollowUp,
     })
+    return true
   }
 
   /**
@@ -173,8 +190,7 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
     if (!capabilitiesFor(access.getPaneVolumeId(pane)).hasBackendListing) {
       const snapshotProps = buildSnapshotTransferProps(operationType, sourcePaneRef, pane)
       if (!snapshotProps) return false
-      showWithTrigger(snapshotProps, trigger)
-      return true
+      return showWithTrigger(snapshotProps, trigger)
     }
     if (!sourcePaneRef) return false
 
@@ -195,8 +211,7 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
       if (!built) return false
       const { props, listingId, generation } = built
       if (transferSourceIsCurrent({ ref: sourcePaneRef, pane, listingId, generation })) {
-        showWithTrigger(props, trigger)
-        return true
+        return showWithTrigger(props, trigger)
       }
       // The pane itself was swapped out (a tab switch), so the press belonged to rows that
       // are gone: dropping it is right. Otherwise the same rows moved; build again.

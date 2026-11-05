@@ -38,6 +38,7 @@ import { buildTransferPropsFromDroppedPaths } from './transfer-operations'
 import type { DuplicateFollowUp } from './duplicate-rename'
 import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
 import { operationStartIsBlocked } from './operation-start-gate'
+import { passesHomeFolderGuard } from './home-folder-guard'
 import type { SelfDragIdentity } from '../drag/drag-drop'
 import type { PathVolumeResolution } from '#lib/tauri-commands/index.js'
 import type { TransferOperationType } from '../types'
@@ -208,7 +209,13 @@ export function createDragDropController(deps: DragDropControllerDeps) {
       return
     }
 
+    // A move of the person's own home folder (or a folder holding it) is refused in
+    // place of its dialog, so no confirm UI ever shows for it (`home-folder-guard.ts`).
+    const refusedForHome = async (volumeId: string, sources: string[]): Promise<boolean> =>
+      operation === 'move' && !(await passesHomeFolderGuard(dialogs, { sources, volumeId, action: 'move' }))
+
     if (recordedIdentity) {
+      if (await refusedForHome(recordedIdentity.sourceVolumeId, sourcePaths)) return
       // In-app self-drag: trust the recorded identity wholesale; skip the
       // resolver and the local kind probe (a volume-relative path can't be
       // stat'd here). The approximate count shape is the honest fallback.
@@ -243,6 +250,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     // direct SMB connection may store another way. Asked once, here, so the
     // scan, the transfer, and its journal all carry the volume's own spelling.
     const storedPaths = await storedSpellings(sourceVolumeId, sourcePaths)
+    if (await refusedForHome(sourceVolumeId, storedPaths)) return
 
     dialogs.showTransfer({
       ...buildTransferPropsFromDroppedPaths(

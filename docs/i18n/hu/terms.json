@@ -3292,7 +3292,7 @@
   },
   "reset": {
     "chosen": "visszaállítás",
-    "accept": ["visszaállít", "állíthatod vissza", "visszaáll"],
+    "accept": ["visszaállít", "állíthatod vissza", "visszaáll", "állítsd vissza"],
     "forms": "Reset to default → Visszaállítás alapértékre; Reset all to defaults → Összes visszaállítása alapértékre",
     "confidence": "high",
     "sources": "ms (Visszaállítás)"

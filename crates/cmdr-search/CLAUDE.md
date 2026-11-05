@@ -24,7 +24,7 @@ the in-memory arena it scans. Tauri-free and `cmdr-index`-free; Cmdr hosts it fr
 - **A source read that fails fails the search** (`SearchError::SourceUnreadable`), ❌ never an empty map (read as "no
   filter"), an "unresolved" scope (read as a typo), or a sizeless folder.
 - **One matcher and one exclusion set, two evaluators** (arena scan = ancestor ids; the host's live walk = the entry's
-  own path). ❌ Never re-derive case folding or NFD normalization: both are `NameRules`.
+  own path). ❌ Never re-derive case folding or the Unicode forms a pattern takes: both are `NameRules`.
 - **The broad-query guard is per evaluator** (`Evaluator`): ❌ never one row-count rule.
 - **A folder's size filter applies BEFORE ranking** (`dir_sizes_for`), ❌ never after.
 - **The arena is sorted by id; `index_of_id` binary-searches it.** ❌ No id map (~143 MB), ❌ no out-of-order rows

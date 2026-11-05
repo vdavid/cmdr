@@ -6,11 +6,11 @@ use crate::operations_host::{
     refuse_scan_preview_not_installed, wire,
 };
 use cmdr_operations::{
-    ConflictId, ConflictResolution, ConflictResolutionOutcome, LockedSourcesAnswer, LockedSourcesAnswerOutcome,
-    MUTATION_REPLY_DEADLINE, MutationError, MutationReply, MutationSettled, OperationEventSink, ReadOnlySide,
-    ScanPreviewPurpose, ScanPreviewRefusal, ScanPreviewStartResult, ScanPreviewTotals, SourcesGoneAnswerOutcome,
-    TrashRoutingAnswer, WriteOperationConfig, WriteOperationError, WriteOperationStartResult, reply_within,
-    trash_routing_for_selection,
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, HomeFolderAction, LockedSourcesAnswer,
+    LockedSourcesAnswerOutcome, MUTATION_REPLY_DEADLINE, MutationError, MutationReply, MutationSettled,
+    OperationEventSink, ReadOnlySide, ScanPreviewPurpose, ScanPreviewRefusal, ScanPreviewStartResult,
+    ScanPreviewTotals, SourcesGoneAnswerOutcome, TrashRoutingAnswer, WriteOperationConfig, WriteOperationError,
+    WriteOperationStartResult, reply_within, trash_routing_for_selection,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -303,6 +303,29 @@ pub async fn delete_files(
         .await
 }
 
+/// The refusal a delete, move, or rename of `sources` would meet for the person's
+/// own home folder's sake, or `None` when it may go ahead (`cmdr-operations`'
+/// `home_folder.rs`). Asked before a confirm dialog or the rename editor opens,
+/// so no confirm UI ever shows for one the engine would refuse. Cheap: a path
+/// compare plus a few `stat`s. Before `install` there's no engine, so nothing
+/// to refuse with yet; the start itself refuses then.
+#[tauri::command]
+#[specta::specta]
+pub fn check_home_folder_guard(
+    sources: Vec<String>,
+    volume_id: Option<String>,
+    action: HomeFolderAction,
+) -> Option<WriteOperationError> {
+    let engine = operations().ok()?;
+    let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
+    let sources: Vec<PathBuf> = if volume_id == "root" {
+        sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect()
+    } else {
+        sources.iter().map(PathBuf::from).collect()
+    };
+    engine.home_folder_guard(&volume_id, &sources, action)
+}
+
 /// Moves files to macOS Trash. Same events as `move_files` but with `operationType: trash`.
 #[tauri::command]
 #[specta::specta]
@@ -402,7 +425,7 @@ pub async fn start_scan_preview(
     let Ok(engine) = operations() else {
         return Ok(refuse_scan_preview_not_installed(&*events));
     };
-    Ok(engine.start_scan_preview(events, sources, source_volume, volume_id, progress_interval, purpose))
+    engine.start_scan_preview(events, sources, source_volume, volume_id, progress_interval, purpose)
 }
 
 #[tauri::command]

@@ -5,6 +5,7 @@
 //! no events leaves every dialog on "Copying…") and may replace any other with
 //! a builder method; the rest default to answers that do nothing.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -34,6 +35,7 @@ pub struct OperationsBuilder {
     index: Option<Arc<dyn OperationIndex>>,
     pacing: Option<Arc<dyn Pacing>>,
     name_order: Option<Arc<dyn NameOrder>>,
+    home_folder: Option<PathBuf>,
 }
 
 impl OperationsBuilder {
@@ -85,6 +87,14 @@ impl OperationsBuilder {
         self
     }
 
+    /// The person's own home folder on the default volume: the app's real one,
+    /// the browser demo's `/Users/you`. No delete or trash removes it or a
+    /// folder holding it (`home_folder.rs`). Without one, nothing is guarded.
+    pub fn home_folder(mut self, home: PathBuf) -> Self {
+        self.home_folder = Some(home);
+        self
+    }
+
     /// The engine. It starts nothing and reads no file until asked.
     pub fn build(self) -> Operations {
         let mut host = EngineHost::new(self.volume_host, self.volumes, self.events);
@@ -103,6 +113,9 @@ impl OperationsBuilder {
         if let Some(name_order) = self.name_order {
             host = host.with_name_order(name_order);
         }
+        if let Some(home) = self.home_folder {
+            host = host.with_home_folder(home);
+        }
         Operations::from_host(host, self.operation_log)
     }
 }
@@ -120,6 +133,7 @@ impl Operations {
             index: None,
             pacing: None,
             name_order: None,
+            home_folder: None,
         }
     }
 

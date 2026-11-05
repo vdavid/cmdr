@@ -1969,6 +1969,66 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
+  "errors.write.homeFolder.title": "Domovskou složku prosím nemažte",
+  "@errors.write.homeFolder.title": {
+    "sourceHash": "6005e89"
+  },
+  "errors.write.homeFolder.message.isHome": "Hej, vlastní domovskou složku přece smazat nemůžete.",
+  "@errors.write.homeFolder.message.isHome": {
+    "sourceHash": "16ee6cd"
+  },
+  "errors.write.homeFolder.message.holdsHome": "Složku <code>{path}</code> smazat nemůžete, protože obsahuje vaši domovskou složku, a tu smazat nejde.",
+  "@errors.write.homeFolder.message.holdsHome": {
+    "sourceHash": "4ad5896"
+  },
+  "errors.write.homeFolder.suggestion.isHome": "Pokud se chcete zbavit všech svých souborů, jděte dovnitř, vyberte vše a smažte to. Pořád to ale zní jako fakt špatný nápad.",
+  "@errors.write.homeFolder.suggestion.isHome": {
+    "sourceHash": "ddf083f"
+  },
+  "errors.write.homeFolder.suggestion.holdsHome": "Pokud chcete uvolnit místo, buďte trochu konkrétnější. Pokud se chcete zbavit všeho na tomto počítači, resetujte systém do továrního nastavení.",
+  "@errors.write.homeFolder.suggestion.holdsHome": {
+    "sourceHash": "4893921"
+  },
+  "errors.write.homeFolderMove.title": "Domovskou složku prosím nepřesouvejte",
+  "@errors.write.homeFolderMove.title": {
+    "sourceHash": "f5db2db"
+  },
+  "errors.write.homeFolderMove.message.isHome": "Hej, vaše domovská složka má své místo přesně tam, kde je. Když ji přesunete, váš Mac vás při příštím přihlášení bude hledat na špatném místě.",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "17b0b0b"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "Složku <code>{path}</code> přesunout nemůžete, protože je v ní vaše domovská složka a váš Mac počítá s tím, že ji najde přesně tam, kde je.",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "c43a8e6"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "Pokud chcete mít soubory jinde, jděte dovnitř, vyberte, co potřebujete, a přesuňte to. Váš Mac vám poděkuje.",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "580bee6"
+  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "Pokud chcete přesunout pár souborů, buďte trochu konkrétnější a vyberte je zevnitř.",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "sourceHash": "a766ab5"
+  },
+  "errors.write.homeFolderRename.title": "Domovskou složku prosím nepřejmenovávejte",
+  "@errors.write.homeFolderRename.title": {
+    "sourceHash": "ec47bfe"
+  },
+  "errors.write.homeFolderRename.message.isHome": "Hej, váš Mac zná vaši domovskou složku pod tímhle názvem. Když ji přejmenujete, při příštím přihlášení vás nenajde.",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "fd78f2f"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "Složku <code>{path}</code> přejmenovat nemůžete, protože je v ní vaše domovská složka a váš Mac počítá s tím, že ji najde přesně na této cestě.",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHome": "Pokud nový název opravdu potřebujete, macOS na to má opatrný postup v nastavení „Uživatelé a skupiny“. Jen to není rychlé F2.",
+  "@errors.write.homeFolderRename.suggestion.isHome": {
+    "sourceHash": "b1e0d3b"
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "Přejmenujte raději něco uvnitř, nebo tuhle složku nechte být. Drží toho víc, než se zdá.",
+  "@errors.write.homeFolderRename.suggestion.holdsHome": {
+    "sourceHash": "aa28a28"
+  },
   "errors.write.sourceChanged.title": "Tento soubor se během kopírování změnil",
   "@errors.write.sourceChanged.title": {
     "sourceHash": "1c63c8b"
