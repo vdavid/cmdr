@@ -183,3 +183,84 @@ jq -R -s 'split("\n") | map(select(length>0)) | map(. as $p | ($p | capture("/(?
 Append those to the two base rules (read them with `GET .../r2/buckets/cmdr-error-reports-eu/lifecycle` and header
 `cf-r2-jurisdiction: eu`) and `PUT` the whole set back: a `PUT` replaces every rule. The rules for dates that have
 passed can go any time after 2027-02-03.
+
+## A3, updates from EU R2
+
+The mechanism, caching, and rollback live in `docs/guides/releasing.md` § Where downloads are served from; this is the
+2026-11-05 record and the land-time steps.
+
+### What we found
+
+- **Nothing shipped pins GitHub.** The macOS updater fetches whatever HTTPS URL `latest.json` names, in every version
+  since the custom updater appeared (`reqwest::get(&url)` in `190a637767`, 2026-03-13; today `fetch_verified_tarball`
+  through `server_request::send`, whose only gate is the managed policy). The Tauri updater plugin before it, and on
+  Linux, doesn't check the host either. No CSP applies (the download runs in Rust), no capability names a host, and the
+  minisign and Developer ID checks aren't tied to GitHub. `cmdr-http`'s proxy and PAC handling routes by host but allows
+  any. So a direct switch is safe for every version in the field.
+- **Who writes `latest.json`**: the release pipeline's `publish` job, onto the GitHub release; the website deploy copies
+  the Latest release's file into `getcmdr.com/latest.json`. So the switch rides the next release: 0.59.0's manifest
+  keeps naming GitHub until then.
+- **Also pinned to GitHub, now fixed**: the API server's `/download` redirects, the website's direct DMG links, and
+  `release-evidence`'s manifest checks (`checkManifest`, `builtInRepo`), which would have failed step 12 of the next
+  release.
+- **Bug**: the blog posts' download dropdown linked the Intel DMG as `_x86_64.dmg`, which 404s (release files say
+  `x64`). Fixed in `d4a778d676`.
+
+### What we built
+
+- `96dae05996`: `scripts/release-mirror.sh`, the `guard` preflight, the `publish` mirror step, mirror URLs in
+  `latest.json`, `release-evidence` accepting them, and the docs.
+- `da93ca6a2c`: the `/download` redirect sends 0.59.0 and later to the mirror, older to GitHub.
+- `d4a778d676`: website links and the `/trust` passages below.
+
+### Infra created (2026-11-05)
+
+- **R2 bucket `cmdr-releases-eu`**, jurisdiction `eu` (location `EEUR`), Standard class.
+- **Custom domain `download.getcmdr.com`** on it (zone getcmdr.com, min TLS 1.2), created through the API with the sops
+  token: no dashboard step needed. No DNS record to add; R2 manages it.
+- **Backfill of v0.59.0**: the 11 mirrored files (three archives, three `.sig`, three DMGs, the pkg, `checksums.txt`),
+  each checked against GitHub's digest and `checksums.txt`, then read back through the public host with matching
+  SHA-256. `.dmg` and `.gz` come back as edge-cache `HIT`; `.sig`, `.txt`, and `.pkg` aren't edge-cached by Cloudflare's
+  default rules (cheap; a "cache everything" rule for the host is optional and would mean editing the zone's existing
+  cache ruleset).
+- `preflight/last-check.txt` exists from the local preflight run.
+- Nothing deleted.
+
+### Public passages changed in `apps/website/src/lib/trust.ts`
+
+- `updates` destination: "`api.getcmdr.com`, then `getcmdr.com/latest.json`. The update itself downloads from
+  `download.getcmdr.com`, which stores the files in the EU. An update to 0.59.0 or older downloads from `github.com` and
+  `release-assets.githubusercontent.com` instead, which stay a public mirror of every release."
+- `allowlistHosts`: new `download.getcmdr.com`: "update downloads"; `github.com, release-assets.githubusercontent.com`:
+  "update downloads while 0.59.0 is the newest release (later ones come from download.getcmdr.com)".
+- Once a release after 0.59.0 is Latest and nobody would roll back to 0.59.0, the GitHub allowlist line can go.
+
+### Runbook
+
+1. **David, before the next release**: make sure the GitHub repo secret `CLOUDFLARE_API_TOKEN` can write R2. It was set
+   2026-03-21 and its value can't be read, so whether it's the same token as sops' (which can, verified by the
+   preflight) is unknown. Check: after landing, the next release's `guard` job fails at "Require write access to the EU
+   download bucket" if it can't. Fix either way: dashboard → My Profile → API Tokens → that token → add "Workers R2
+   Storage: Edit" (no value change), or, better for least privilege, create a token with only "Workers R2 Storage: Edit"
+   on the account, store it as a new secret, and point the two workflow steps at it (a one-line change each).
+2. **Land time (lead)**: nothing extra. The API server and website deploy with `main`; `/download` starts sending 0.59.0
+   to the mirror at once (backfilled), and `latest.json` moves at the next release.
+3. **Next release**: run as usual. `publish` mirrors before marking Latest.
+
+### How to verify after the next release
+
+- `curl -s https://getcmdr.com/latest.json | jq -r '.platforms[].url'` prints three
+  `https://download.getcmdr.com/v<new>/` URLs, and `./scripts/release-evidence.sh verify <new>` passes (it probes each
+  one).
+- The `publish` log shows "Verified ..." for 11 files (10 without a pkg).
+- `curl -sI https://api.getcmdr.com/download/latest/universal` redirects to `download.getcmdr.com`.
+- An installed 0.59.0 updates through Cmdr > Check for updates (its log line "Downloading update ... from
+  https://download.getcmdr.com/...").
+
+### Rollback
+
+- **Mirror broken, installs can't update**: upload a `latest.json` naming the same release's GitHub URLs to that release
+  (`gh release upload vX.Y.Z latest.json --clobber`) and re-run the website deploy; revert the `BASE_URL` line in
+  `publish` before the next release.
+- **Download redirect**: raise `firstMirroredVersion` past the latest version (or revert `da93ca6a2c`) and land.
+- The bucket and domain can stay; deleting them is David's call.
