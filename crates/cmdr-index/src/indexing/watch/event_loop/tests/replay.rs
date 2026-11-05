@@ -8,6 +8,7 @@ use crate::RescanReason;
 use crate::indexing::hold::VolumeWork;
 use crate::indexing::lifecycle::cover;
 use crate::indexing::store::ROOT_ID;
+use crate::indexing::watch::event_loop::ReplayChunks;
 use crate::indexing::watch::event_loop::replay_cost::ReplayBudget;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
@@ -44,6 +45,7 @@ async fn a_replay_that_falls_back_over_budget_leaves_the_writer_committing() {
             ground: cover::Claim::take(volume_id, vec!["/".to_string()], cover::Holder::Rewriting),
             // Nothing to spend: the first delivered event already costs more.
             budget: ReplayBudget::with_limit(0),
+            chunks: ReplayChunks::SHIPPING,
         },
         fallback_tx,
         None,

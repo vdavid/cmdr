@@ -9,8 +9,8 @@ event loop that turns its stream into index writes.
   inotify via `notify`. `supports_event_replay()` is the gate; `watcher/error.rs` is `WatcherError`.
 - **branches.rs** — `WatchScope` + `BranchWatch`: how much of a volume its loop answers for, and the buffer keeping a
   cover walk off a live loop's ground.
-- **event_loop.rs + event_loop/** — `live.rs`, `rename_detect.rs`, `replay.rs` (cold start), `verification.rs` +
-  `verify_guard.rs` (post-replay diff), `storm.rs`, `tests/`.
+- **event_loop.rs + event_loop/** — `live.rs`, `rename_detect.rs`, `replay.rs` (cold start) + `replay_chunks.rs` (its
+  chunked commits), `verification.rs` + `verify_guard.rs` (post-replay diff), `storm.rs`, `tests/`.
 - **churn_monitor.rs** — off-by-default churn rollup (`CMDR_CHURN_SPIKE`). **activity_monitor.rs** — the per-folder
   activity tap, plus `BatchObservers`.
 
@@ -18,9 +18,10 @@ event loop that turns its stream into index writes.
 
 - **A loop needing a rescan SAYS so** (`LiveLoopEnd`, `fallback_tx`); its lifecycle spawner runs it. ❌ No
   `lifecycle::manager` / `state` import here: it welds `watch` into the lifecycle's cycle.
-- **The watcher→loop channel is UNBOUNDED** (`lifecycle/manager.rs`). ❌ Don't re-bound it: a bounded channel
-  backpressured a slow replay drain into an FSEvents overflow → a forced full scan, throwing away a working replay. The
-  LOOP bounds memory (`classify_ingestion_pressure`, `INGESTION_HARD_CAP` = 5,000,000 ≈ 1.5 GB).
+- **The watcher→loop channel is UNBOUNDED.** ❌ Don't re-bound it: backpressure overflowed FSEvents into a forced full
+  scan. The LOOP bounds memory (`classify_ingestion_pressure`, `INGESTION_HARD_CAP`).
+- **A replay commits in CHUNKS, ❌ never one transaction** (that filled a nearly full disk with WAL). The position moves
+  only at a WHOLE-window drain, with the deferred rescans. `DETAILS.md` § "A replay commits in chunks".
 - **`process_live_batch` is three-phase, flushing between phases** so later phases see committed state: (1) dir
   creations depth-sorted and flushed per level, (2) the `detect_renames_by_inode` pre-pass, (3) the rest, with
   removal-storm coalescing.
@@ -32,9 +33,8 @@ event loop that turns its stream into index writes.
   Only STRICT descendants drop, and each dropped event re-queues the anchor.
 - **Both observers hook BOTH live loops, by construction**: `process_live_batch` takes `BatchObservers` (churn + the
   activity tap) by `&mut`, and two scanners key on `BatchObservers::from_env(`.
-- **The activity tap reads the CORRECTED stream, and three of its four counters are unreachable there**: matched renames
-  are `retain`ed out of the batch, storm removals drop for a rescan, and dir creations sit in their own Vec, so each is
-  wired in explicitly. Break one and a rename-only batch reports nothing. `DETAILS.md` § "The activity tap".
+- **The activity tap reads the CORRECTED stream**, where renames, storm removals, and dir creations are already gone, so
+  each is wired in explicitly. Break one and a rename-only batch reports nothing. `DETAILS.md` § "The activity tap".
 - **Every live loop carries a `WatchScope`, and an event in ground a cover walk is covering RIGHT NOW is BUFFERED, not
   written** — on a scanned volume too. Writing it orphans a subtree (`INSERT OR IGNORE` drops the walker's fresh ids);
   discarding it drifts the branch's sizes silently. ❌ Never let the whole-volume arm skip the branch set.

@@ -54,6 +54,9 @@ post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.
   — this same task runs the live loop afterwards, and ground held that long would refuse every scan and search walk on
   the boot disk until quit. Why replay claims ground it never walks: `../lifecycle/DETAILS.md` § "The two single-flight
   questions a scan has to ask".
+- **event_loop/replay_chunks.rs** — how the replay commits: `ReplayCommits` (the chunked explicit transaction),
+  `ReplayChunks` (window and commit sizes, `SHIPPING` outside tests), and the deferred-rescan persistence. Why: § "A
+  replay commits in chunks".
 - **event_loop/replay_cost.rs** — the pure cost pieces replay runs on: `ReplayWindow` (dedup by distinct paths,
   `REPLAY_DEDUP_WINDOW_PATHS`) and `ReplayBudget` (`REPLAY_EVENT_COST`, `REPLAY_PATH_COST`, `REPLAY_BUDGET_FLOOR`). Why:
   § "Replay cost, not event count". `event_loop/replay_cost_bench.rs` is the `#[ignore]`d harness that measured those
@@ -305,9 +308,42 @@ old 1,000-event batches processed every repeat that fell in a different batch. P
 processed once per window lands at its CURRENT state and a wider window only saves repeat work. ❌ Don't fear stale
 merged flags: `handle_removal` stats first and upserts a path that still exists, and an upsert of a gone path deletes
 it. `REPLAY_DEDUP_WINDOW_PATHS` (100,000, about 30 MB) keeps the window small next to the ingestion cap. The read
-connection can't see the replay's own uncommitted rows anyway (one transaction for the whole phase), so a wider window
-changes no parent-resolution order. `UpdateLastEventId` goes out after each drain, so the stored id never passes an
-event still in the window.
+connection sees what earlier chunks committed and nothing of the chunk in flight, so a wider window changes no
+parent-resolution order within a window. `UpdateLastEventId` goes out only when a window drains whole, so the stored id
+never passes an event still in the window (§ "A replay commits in chunks").
+
+## A replay commits in chunks
+
+**Decision: the replay commits every `REPLAY_COMMIT_EVERY_PATHS` (10,000) processed paths, and again at each window
+drain with the journal position; never one transaction for the whole replay.** One transaction kept every write in the
+WAL until `HistoryDone`: a checkpoint can't move frames an open transaction owns, so the 30 s `wal_checkpoint` parked
+(`writer/maintenance.rs`) and the WAL grew with the replay. cmdr-reports#100: a ~37 M-id gap, 1.1 M events, eight
+minutes of parked checkpoints on a disk at 0.5% free, about 1.8 GB gone, then `SQLITE_FULL`. With chunks, SQLite's
+autocheckpoint (4,000 pages) and the `journal_size_limit` (64 MiB) work at each commit, and a parked `TRUNCATE` runs at
+the next one (`run_deferred_wal_checkpoint`).
+
+What keeps a crash at any boundary safe (`replay_chunks.rs`, pinned by `event_loop/tests/replay_chunks.rs`, which reads
+the committed state from a separate connection, which is exactly what a crash leaves):
+
+- **The position moves only at a whole-window drain.** Inside a window, events merge by path and process in hash order,
+  so a mid-window commit carries rows but keeps the previous drain's `last_event_id`. A crash there replays the window
+  again, which is idempotent: processing re-stats each path, and an upsert of a row that exists updates it in place
+  (pinned: `a_replay_that_resumes_from_the_last_chunk_applies_every_change_once`).
+- **The deferred rescans ride the position's commit.** A `MustScanSubDirs` (or a missing-parent escalation) is deferred
+  until after the replay, so a position past its event with the anchor only in memory would lose it for good. Each
+  drain's commit writes the set to `meta.replay_deferred_rescans` (index-relative, rewritten only when it grew); the
+  next replay loads it; `HistoryDone` deletes it as the set goes to the live drain; a fallback to a full walk deletes it
+  too, since the walk covers it.
+- **A stream that closes before `HistoryDone` commits and returns, ❌ never falls through to phase 2.** That's a volume
+  stopping mid-replay (a quit, a pause for disk space, a disable). Phase 2 would store the last RECEIVED id while the
+  window still held unprocessed events, skipping them on the next launch; it used to.
+- ⚠️ Known limit, unchanged: after `HistoryDone` the deferred set lives only in the live drain, so a crash before those
+  rescans run loses them (as a live loop's queued rescans always could). The post-replay verification's origin set is
+  in-memory too, so a resumed replay verifies only what it processed itself.
+
+The read connection now sees earlier chunks' rows, so a parent created in one window resolves for a child in a later one
+instead of escalating to a deferred rescan. A reader can see a half-replayed index between chunks; that's the same state
+a live loop's batches expose, and the sizes settle at the end-of-replay backfill.
 
 **Measured at 1–3 M events, not 10–50 M**: reading this Mac's whole journal (plausibly 40–60 M events) didn't finish in
 20 minutes, and the per-event rate held steady across the runs, so the weights extrapolate. ❌ Don't lower the weights

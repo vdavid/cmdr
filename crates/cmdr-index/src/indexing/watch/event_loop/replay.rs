@@ -17,7 +17,8 @@ use super::super::activity_monitor::BatchObservers;
 use super::super::branches::{self, Admission, WatchScope};
 use super::super::watcher;
 use super::live::{drain_promoted, mark_pending_and_drain, process_live_batch, queue_admitted};
-use super::replay_cost::{REPLAY_DEDUP_WINDOW_PATHS, ReplayBudget, ReplayWindow};
+use super::replay_chunks::{JournalPosition, ReplayCommits, load_deferred_rescans};
+use super::replay_cost::{ReplayBudget, ReplayWindow};
 use super::verification::run_background_verification;
 use super::{
     BacklogTracker, IngestionPressure, JOURNAL_GAP_THRESHOLD, LIVE_FLUSH_INTERVAL_MS, ReplayConfig,
@@ -54,12 +55,14 @@ const REPLAY_PRESSURE_CHECK_EVERY: u64 = 1_000;
 ///
 /// **Phase 1 (replay):** Merge events by path into a [`ReplayWindow`] and drain
 /// it through `process_fs_event_into` each time it fills, collecting affected
-/// parent paths in a `HashSet`. No per-event UI notification.
-/// `UpdateLastEventId` goes out after each drain. A [`ReplayBudget`] caps the
-/// events delivered and paths processed; past it, a full reconcile is cheaper and
-/// the loop falls back.
+/// parent paths in a `HashSet`. No per-event UI notification. The writes commit
+/// in chunks ([`ReplayCommits`]): every few thousand paths, and at each drain
+/// together with `UpdateLastEventId` and the rescans deferred so far, so the WAL
+/// stays bounded and a crash resumes from the last drain (`replay_chunks.rs`). A
+/// [`ReplayBudget`] caps the events delivered and paths processed; past it, a
+/// full reconcile is cheaper and the loop falls back.
 ///
-/// **Phase 2 (after HistoryDone):** Send final `UpdateLastEventId`, flush
+/// **Phase 2 (after HistoryDone):** Commit the final `UpdateLastEventId`, flush
 /// the writer (wait for all prior messages to commit), then emit a single
 /// batched `DirsUpdated`. After that, continue processing live events
 /// with per-event emit (live events arrive slowly enough for the writer to
@@ -85,6 +88,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         work,
         ground,
         mut budget,
+        chunks,
     } = config;
 
     log::info!(
@@ -120,32 +124,37 @@ pub(in crate::indexing) async fn run_replay_event_loop(
     // churn a long gap produces (the same dir re-flagged thousands of times); the
     // live drain they hand off to ancestor-collapses and per-subtree-throttles
     // them, so there's no cap here and no full-rescan escalation on volume.
-    let mut pending_rescans = HashSet::<String>::new();
+    // It starts with what an earlier replay deferred and never handed off: a crash
+    // after a chunk moved the stored position past their events leaves them only
+    // on disk (`replay_chunks.rs`).
+    let mut pending_rescans = load_deferred_rescans(&conn, &space);
+    if !pending_rescans.is_empty() {
+        log::info!(
+            "Replay: picking up {} an earlier replay deferred",
+            pluralize(pending_rescans.len() as u64, "rescan")
+        );
+    }
 
     // Progress reporting interval
     let mut last_progress = Instant::now();
     let replay_start = Instant::now();
 
-    // Wrap all replay writes in a single SQLite transaction.
-    // Without this, each write is auto-committed (separate fsync), making
-    // 50K+ writes take minutes. With a transaction, it takes seconds.
-    // The guard commits on every exit, the early fallbacks below included: a
-    // replay that returned past a hand-sent commit once left the writer inside
-    // this transaction for the rest of the process, invisible to every reader.
-    let transaction = match writer.begin_transaction() {
-        Ok(transaction) => Some(transaction),
-        Err(e) => {
-            log::warn!("Replay: BeginTransaction send failed: {e}");
-            None
-        }
-    };
+    // Batch the replay's writes into explicit transactions: autocommitted, 50K+
+    // writes take minutes, batched they take seconds. Batched in CHUNKS, though,
+    // never one transaction for the whole replay: that parked every WAL checkpoint
+    // until the end and grew the WAL until a nearly full disk ran out
+    // (cmdr-reports#100). The guard inside commits on every exit, the early
+    // fallbacks below included: a replay that returned past a hand-sent commit once
+    // left the writer inside its transaction for the rest of the process.
+    let mut commits = ReplayCommits::open(&writer, chunks, pending_rescans.len());
 
     // ── Phase 1: Replay (before HistoryDone) ─────────────────────────
 
     // Deduplicate events by normalized path before processing, same as the live
     // event loop, in a window bounded by distinct paths (`replay_cost.rs`).
-    let mut window = ReplayWindow::new(REPLAY_DEDUP_WINDOW_PATHS);
+    let mut window = ReplayWindow::new(chunks.window_paths);
     let mut deduped_total = 0u64;
+    let mut history_done = false;
 
     while let Some(event) = event_rx.recv().await {
         // Check for journal gap on the first event
@@ -167,6 +176,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 if let Some(tx) = fallback_tx.take() {
                     let _ = tx.send(RescanReason::JournalGap);
                 }
+                commits.abandon(&writer);
                 return Ok(());
             }
             log::debug!(
@@ -184,6 +194,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
             // budget still covers them.
             if budget.would_exceed(window.len() as u64) {
                 fall_back_over_budget(events.as_ref(), &volume_id, &budget, event_count, &mut fallback_tx);
+                commits.abandon(&writer);
                 return Ok(());
             }
             budget.spend(window.len() as u64);
@@ -196,6 +207,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 &mut origin_dirs,
                 &mut origins_overflow,
                 &mut pending_rescans,
+                Some(&mut commits),
             ) as u64;
 
             // Process the HistoryDone event itself (it may carry other flags).
@@ -222,6 +234,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
             last_event_id = event.event_id;
             event_count += 1;
 
+            history_done = true;
             break; // Exit Phase 1, enter Phase 2
         }
 
@@ -230,6 +243,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         budget.note_event();
         if budget.exhausted() {
             fall_back_over_budget(events.as_ref(), &volume_id, &budget, event_count, &mut fallback_tx);
+            commits.abandon(&writer);
             return Ok(());
         }
 
@@ -261,6 +275,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         if window_full {
             if budget.would_exceed(window.len() as u64) {
                 fall_back_over_budget(events.as_ref(), &volume_id, &budget, event_count, &mut fallback_tx);
+                commits.abandon(&writer);
                 return Ok(());
             }
             budget.spend(window.len() as u64);
@@ -273,11 +288,25 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 &mut origin_dirs,
                 &mut origins_overflow,
                 &mut pending_rescans,
+                Some(&mut commits),
             ) as u64;
-            if last_event_id > since_event_id
-                && let Err(e) = writer.send(WriteMessage::UpdateLastEventId(last_event_id))
-            {
-                log::warn!("Replay: UpdateLastEventId send failed: {e}");
+            // The window drained whole, so every event up to `last_event_id` is
+            // processed: the position and the rescans deferred so far commit together.
+            commits.close_window(
+                &writer,
+                &space,
+                JournalPosition {
+                    last_event_id,
+                    since_event_id,
+                },
+                &pending_rescans,
+            );
+            // A writer that stopped (out of disk space, or a fatal storage error)
+            // drops everything sent to it, and its supervisor is already taking the
+            // volume down. Reading on would only spend fseventsd's time.
+            if writer.failure_signal().is_tripped() {
+                log::info!("Replay: the writer stopped, so the replay stops at its last committed chunk");
+                return Ok(());
             }
         }
 
@@ -302,6 +331,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                     if let Some(tx) = fallback_tx.take() {
                         let _ = tx.send(RescanReason::IngestionBacklog);
                     }
+                    commits.abandon(&writer);
                     return Ok(());
                 }
                 IngestionPressure::FallingBehind => {
@@ -327,6 +357,20 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         }
     }
 
+    // The stream closed before `HistoryDone`: the volume is stopping (a quit, a
+    // pause for disk space, a disable). The window still holds events nothing
+    // processed, so the stored position stays at the last drain and the deferred
+    // rescans stay on disk; the next replay picks up from there. ❌ Don't fall
+    // through to phase 2: its final position would skip the undrained window.
+    if !history_done {
+        log::info!(
+            "Replay: stopped before HistoryDone after {}; the next replay resumes from the last committed chunk",
+            pluralize(event_count, "event")
+        );
+        commits.interrupt();
+        return Ok(());
+    }
+
     // ── Phase 2: After HistoryDone ───────────────────────────────────
 
     if deduped_total < event_count {
@@ -337,19 +381,15 @@ pub(in crate::indexing) async fn run_replay_event_loop(
         );
     }
 
-    // Send final UpdateLastEventId
-    if last_event_id > since_event_id
-        && let Err(e) = writer.send(WriteMessage::UpdateLastEventId(last_event_id))
-    {
-        log::warn!("Replay: final UpdateLastEventId send failed: {e}");
-    }
-
-    // Commit the replay transaction (all writes become visible in one fsync)
-    if let Some(transaction) = transaction
-        && let Err(e) = transaction.commit()
-    {
-        log::warn!("Replay: CommitTransaction send failed: {e}");
-    }
+    // Commit the last chunk with the final position. The deferred rescans come off
+    // the disk here: they go to the live drain below.
+    commits.finish(
+        &writer,
+        JournalPosition {
+            last_event_id,
+            since_event_id,
+        },
+    );
 
     // Flush: wait for the writer to commit all replay data
     match writer.flush().await {
@@ -398,7 +438,7 @@ pub(in crate::indexing) async fn run_replay_event_loop(
 
     // One-shot ledger heal: replay runs no full aggregate of its own, so on a
     // never-healed DB it enqueues one here — AFTER the entries table is fully
-    // replayed (past `CommitTransaction` + backfill above), so the `Sql`
+    // replayed (past the last chunk's commit + backfill above), so the `Sql`
     // recompute sees final state. The writer's armed latch (set at launch)
     // consumes it and persists the healed marker. See `indexing/DETAILS.md`
     // § "The dir_stats ledger".
@@ -683,10 +723,12 @@ fn defer_replay_rescan(pending_rescans: &mut HashSet<String>, path: String) {
 /// Drain the replay dedup buffer, process each event through the
 /// reconciler, and collect the ORIGIN dirs it changed. Returns the number of
 /// deduplicated events processed. Missing-parent escalations DEFER into the
-/// pending-rescan list (no live queueing during replay).
+/// pending-rescan list (no live queueing during replay). `commits` counts each
+/// processed path toward the next chunk commit (`None` for a caller holding its own
+/// transaction, like the cost bench).
 #[allow(
     clippy::too_many_arguments,
-    reason = "the replay drain's state plus the work its delete gate reads; a struct would add indirection without clarity"
+    reason = "the replay drain's state plus the work its delete gate reads and the chunk counter; a struct would add indirection without clarity"
 )]
 pub(super) fn flush_replay_batch(
     pending: &mut HashMap<String, watcher::FsChangeEvent>,
@@ -697,6 +739,7 @@ pub(super) fn flush_replay_batch(
     origin_dirs: &mut HashSet<String>,
     origins_overflow: &mut bool,
     pending_rescans: &mut HashSet<String>,
+    mut commits: Option<&mut ReplayCommits>,
 ) -> usize {
     let count = pending.len();
     // Gathered across the whole drain, so one presence read covers it.
@@ -719,6 +762,9 @@ pub(super) fn flush_replay_batch(
         }
         if let Some(anchor) = escalation {
             defer_replay_rescan(pending_rescans, anchor.to_string_lossy().to_string());
+        }
+        if let Some(commits) = commits.as_deref_mut() {
+            commits.note_processed();
         }
     }
     send_replay_deletes(batch_deletes, work, writer);

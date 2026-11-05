@@ -211,11 +211,13 @@ pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection, signal: &In
 /// commits. Returns whether the checkpoint was parked.
 ///
 /// `PRAGMA wal_checkpoint(TRUNCATE)` cannot run inside a transaction: SQLite
-/// refuses it with `SQLITE_LOCKED` ("database table is locked"). A journal replay
-/// wraps its entire run in one `BeginTransaction`, so an undeferred maintenance
-/// tick fails on every tick for the whole replay — and the WAL grows unchecked
-/// exactly when write volume is highest. Parking it means the truncate happens
-/// once, right after the commit, which is when it can actually reclaim the space.
+/// refuses it with `SQLITE_LOCKED` ("database table is locked"). A bulk run (a
+/// journal replay, a network walk) holds an explicit transaction most of the time,
+/// so an undeferred maintenance tick would fail on nearly every tick, exactly when
+/// write volume is highest. Parking it means the truncate happens right after the
+/// next commit, which is when it can actually reclaim the space. That only bounds
+/// the WAL because those runs commit in chunks (`watch/DETAILS.md` § "A replay
+/// commits in chunks").
 pub(super) fn request_wal_checkpoint(conn: &rusqlite::Connection, signal: &IndexFailureSignal, deferred: &mut bool) {
     if conn.is_autocommit() {
         handle_wal_checkpoint(conn, signal);

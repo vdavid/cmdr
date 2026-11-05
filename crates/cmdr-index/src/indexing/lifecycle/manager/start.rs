@@ -26,7 +26,7 @@ use crate::indexing::reconcile::local_reconcile;
 use crate::indexing::scanner::{self, ScanConfig};
 use crate::indexing::store::{IndexStore, StepDurations};
 use crate::indexing::watch::branches::{self, AfterWalk};
-use crate::indexing::watch::event_loop::{ReplayBudget, ReplayConfig, run_replay_event_loop};
+use crate::indexing::watch::event_loop::{ReplayBudget, ReplayChunks, ReplayConfig, run_replay_event_loop};
 use crate::indexing::watch::watcher::{self, DriveWatcher};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -206,6 +206,7 @@ impl IndexManager {
                     work: replay_work,
                     ground,
                     budget,
+                    chunks: ReplayChunks::SHIPPING,
                 },
                 fallback_tx,
                 watcher_overflow,

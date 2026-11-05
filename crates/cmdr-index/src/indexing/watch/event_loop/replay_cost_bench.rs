@@ -197,6 +197,7 @@ mod bench {
                 &mut origin_dirs,
                 &mut origins_overflow,
                 &mut pending_rescans,
+                None,
             ) as u64;
             let took = td.elapsed();
             processing += took;

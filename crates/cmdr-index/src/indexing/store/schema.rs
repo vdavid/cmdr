@@ -96,6 +96,18 @@ pub(crate) const EXCLUSION_POLICY_KEY: &str = "exclusion_policy_built_for";
 /// per-drive intent markers live in it.
 pub(crate) const INDEX_NEEDS_REBUILD_KEY: &str = "index_needs_rebuild";
 
+/// Meta key holding the rescans a cold-start journal replay deferred but hasn't
+/// handed to the live drain yet: a JSON array of index-relative paths.
+///
+/// The replay commits in chunks, and each chunk moves the stored `last_event_id`
+/// past the `MustScanSubDirs` events it has seen. Those rescans run only after the
+/// replay, so without this a crash between a chunk and the replay's end would skip
+/// them for good: the next launch replays from past their events. Written in the
+/// same transaction as the chunk's `last_event_id`, loaded by the next replay, and
+/// deleted when a replay finishes or falls back to a walk that covers the volume
+/// anyway. `watch/DETAILS.md` § "A replay commits in chunks".
+pub(crate) const REPLAY_DEFERRED_RESCANS_KEY: &str = "replay_deferred_rescans";
+
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
 

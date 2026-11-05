@@ -28,6 +28,7 @@ use cmdr_fs::pluralize::{grouped, pluralize_grouped};
 mod live;
 mod rename_detect;
 mod replay;
+mod replay_chunks;
 mod replay_cost;
 #[cfg(all(test, target_os = "macos"))]
 mod replay_cost_bench;
@@ -40,6 +41,7 @@ mod verify_guard;
 // stress tests) after the internal split.
 pub(in crate::indexing) use live::{LiveConfig, LiveLoopEnd, run_live_event_loop};
 pub(in crate::indexing) use replay::run_replay_event_loop;
+pub(in crate::indexing) use replay_chunks::ReplayChunks;
 pub(in crate::indexing) use replay_cost::ReplayBudget;
 // Only the indexing stress tests and the branch-watch tests reach these
 // directly; gate the re-exports so the non-test build doesn't see them as
@@ -258,6 +260,9 @@ pub(crate) struct ReplayConfig {
     pub(in crate::indexing) ground: crate::indexing::lifecycle::cover::Claim,
     /// How many paths the replay may process before a full reconcile is cheaper.
     pub(in crate::indexing) budget: ReplayBudget,
+    /// How big a dedup window and a commit are. [`ReplayChunks::SHIPPING`] outside
+    /// tests, which shrink both to put a chunk boundary between a few events.
+    pub(in crate::indexing) chunks: ReplayChunks,
 }
 
 // ── Shared helpers ───────────────────────────────────────────────────
