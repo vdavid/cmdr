@@ -274,8 +274,8 @@ To QA against seeded data with zero production impact, run the worker locally an
 
 1. From `apps/api-server/`, start the worker on a local D1 with seeded rows:
    ```bash
-   pnpm exec wrangler d1 migrations apply cmdr-telemetry --local
-   pnpm exec wrangler d1 execute cmdr-telemetry --local --file=scripts/seed-local-telemetry.sql
+   pnpm exec wrangler d1 migrations apply TELEMETRY_DB --local
+   pnpm exec wrangler d1 execute TELEMETRY_DB --local --file=scripts/seed-local-telemetry.sql
    pnpm exec wrangler dev --port 18900 --var ADMIN_API_TOKEN:local-qa-token
    ```
    The seed uses dates relative to `now`, includes a same-day duplicate IP (dedup), a pre-migration NULL-source row, and

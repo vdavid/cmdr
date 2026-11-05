@@ -1,8 +1,8 @@
 -- Sample telemetry for local QA of the analytics dashboard (downloads, update activity, heartbeat DAU).
 -- Dates are relative to `now`, so the data always lands in the last few days regardless of when you run it.
 -- Apply to a LOCAL D1 only:
---   wrangler d1 migrations apply cmdr-telemetry --local
---   wrangler d1 execute cmdr-telemetry --local --file=scripts/seed-local-telemetry.sql
+--   wrangler d1 migrations apply TELEMETRY_DB --local
+--   wrangler d1 execute TELEMETRY_DB --local --file=scripts/seed-local-telemetry.sql
 -- See apps/analytics-dashboard/CLAUDE.md § "Local QA against a local worker".
 
 -- ===== downloads: last 3 days, varied source, with a same-day duplicate IP to show dedup =====

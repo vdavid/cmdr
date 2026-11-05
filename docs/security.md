@@ -146,8 +146,8 @@ Crash reports carry the same two optional fields. Both are cleared server-side a
 
 ### Server retention
 
-Bundles land in the `cmdr-error-reports` R2 bucket (key: `error-reports/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`). Three
-retention layers, in order of aggressiveness:
+Bundles land in the `cmdr-error-reports-eu` R2 bucket (`eu` jurisdiction) (key:
+`error-reports/{yyyy-mm-dd}/{ERR-XXXXX}-{uuid}.zip`). Three retention layers, in order of aggressiveness:
 
 1. **8/6 GB watermark eviction.** On every upload (in `event.waitUntil(...)`, so the client response isn't blocked) the
    server checks total bytes; if > 8 GB it deletes oldest objects until total ≤ 6 GB. KV-locked to avoid concurrent

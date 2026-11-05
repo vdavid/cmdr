@@ -186,7 +186,7 @@ until the live Worker has it (`.github/workflows/deploy-api-server.yml`, `Check 
 
 | Binding                      | Type         | Purpose                                                                                   |
 | ---------------------------- | ------------ | ----------------------------------------------------------------------------------------- |
-| `ERROR_REPORTS_BUCKET`       | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)                        |
+| `ERROR_REPORTS_BUCKET`       | R2 bucket    | Error report zips and license backups (`cmdr-error-reports-eu`, `eu` jurisdiction)        |
 | `ERROR_REPORT_META`          | KV namespace | Eviction bookkeeping + intake admission counters (key list below)                         |
 | `LINK_CODES`                 | KV namespace | One key (`codes`) holds the whole `?r=<code>` → UTM map (see the note below)              |
 | `HEARTBEAT_LIMITER`          | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)             |
@@ -282,7 +282,7 @@ Current values: stored in David's password store (Bitwarden). The secrets also l
 1. https://dash.cloudflare.com → **R2 Object Storage** → **Manage R2 API Tokens** (top right).
 2. **Create API Token**. Name: `cmdr-error-reports-presign`.
 3. Permission: **Object Read** (read-only is enough; writes go through the R2 binding, not the S3 key).
-4. Scope: **Apply to specific buckets only** → `cmdr-error-reports`.
+4. Scope: **Apply to specific buckets only** → `cmdr-error-reports-eu` (listed under the EU jurisdiction).
 5. TTL: forever (or match your rotation policy).
 6. Click **Create API Token**. The token page shows THREE values that are displayed ONCE:
    - **Access Key ID** → `R2_ACCESS_KEY_ID`
@@ -308,12 +308,12 @@ back to the OAuth login).
 ## Storage
 
 **D1 for telemetry and fulfillment:** crash reports, downloads, update checks, heartbeats, relayed feature events,
-feedback, and the `license_issuance` record all live in D1 (binding `TELEMETRY_DB`, database `cmdr-telemetry`).
-Migrations live in `migrations/` (latest: `0026_feedback_error_report_id.sql`, the logs a feedback message came with, §
-The reports repo; `0023_card_ratings.sql`, the triage comments the rating job has applied or flagged, § Card ratings;
-`0022_report_outbox.sql`, the report outbox: `error_reports`, `error_report_amendments`, `ops_events`, and
-`issue_number` on crashes and feedback, § The reports repo; `0021_license_adjustments.sql` is the refund and chargeback
-record `/webhook/paddle` keeps beside the ledger (`src/licensing/DETAILS.md` § Refunds);
+feedback, and the `license_issuance` record all live in D1 (binding `TELEMETRY_DB`, database `cmdr-telemetry-eu`, in the
+`eu` jurisdiction). Migrations live in `migrations/` (latest: `0026_feedback_error_report_id.sql`, the logs a feedback
+message came with, § The reports repo; `0023_card_ratings.sql`, the triage comments the rating job has applied or
+flagged, § Card ratings; `0022_report_outbox.sql`, the report outbox: `error_reports`, `error_report_amendments`,
+`ops_events`, and `issue_number` on crashes and feedback, § The reports repo; `0021_license_adjustments.sql` is the
+refund and chargeback record `/webhook/paddle` keeps beside the ledger (`src/licensing/DETAILS.md` § Refunds);
 `0020_heartbeat_uptime_and_events.sql` is `heartbeat.uptime_seconds` and the `analytics_event` table `/heartbeat` relays
 feature events into; `0017_manual_licenses.sql` is the `source` / `organization_name` / `expires_at` / `revoked_at` /
 `note` columns that turn `license_issuance` into the ledger for hand-issued licenses as well as purchases;

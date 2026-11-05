@@ -440,10 +440,10 @@ const toc = [
             the EEA.
         </li>
         <li>
-            Cloudflare runs the API server on its global network, so each request is handled at the Cloudflare data
-            center nearest the user, which can be outside the EU. The database and the error-report storage are placed
-            in Eastern Europe, but not locked to the EU yet. Keeping request handling inside the EU too would take
-            Cloudflare's Regional Services, which Cmdr doesn't use.
+            Cloudflare runs the API server and its key-value store (which holds license activation codes) on its global
+            network, so each request is handled at the Cloudflare data center nearest the user, which can be outside the
+            EU. The database, the error-report storage, and the update files are stored in Cloudflare's EU jurisdiction. Keeping request handling inside the EU too would take Cloudflare's Regional Services, which
+            Cmdr doesn't use.
         </li>
         <li>Paddle, which handles payments, is in the United Kingdom, which the EU recognizes as giving adequate data protection.</li>
         <li>
@@ -455,18 +455,13 @@ const toc = [
         Website visit recordings (PostHog EU cloud), the website, the newsletter list, and the @getcmdr.com inbox (all
         three self-hosted at Hetzner, Finland) stay in the EU.
     </p>
-    <DevTodo>
-        Once the D1 and R2 switches in <code>docs/notes/eu-data-moves-2026-11.md</code> are done, change "placed in
-        Eastern Europe, but not locked to the EU yet" here, in the Cloudflare subprocessor entry (<code>trust.ts</code>),
-        in "Known limitations", and in the privacy policy to "stored in Cloudflare's EU jurisdiction", say "stored in
-        the EU" in the paragraph for reviewers outside the EU, and add a dated line to the change log.
-    </DevTodo>
 
     <h3 id="outside-eu">Where is my data? For reviewers outside the EU</h3>
     <p>
         Cmdr never receives your files: file contents stay on the Mac (or go to the user's own AI provider, if the user
         sets one up). What reaches Cmdr's servers is license records, usage stats, and the reports and feedback users
-        choose to send. Cloudflare stores them in Eastern Europe, and the update files in its EU jurisdiction. Data
+        choose to send. Cloudflare stores them, and the update files, in its EU jurisdiction, apart from license
+        activation codes, which its key-value store keeps on its global network. Data
         that reaches US companies (Cloudflare, GitHub, and PostHog, whose EU cloud holds the website's visit
         recordings) relies on the EU-US Data Privacy Framework, plus the Standard Contractual Clauses in Cloudflare's and
         PostHog's data processing agreements. Payments go through Paddle in the United Kingdom. Cmdr doesn't offer US

@@ -107,18 +107,19 @@ fi
 # Error report infra: R2 bucket + KV namespace for ERROR_REPORT_META + lifecycle
 # -----------------------------------------------------------------------------
 
-ERROR_REPORTS_BUCKET_NAME="cmdr-error-reports"
+# In the `eu` jurisdiction, so every R2 call below passes `-J eu` (a jurisdiction bucket is invisible without it).
+ERROR_REPORTS_BUCKET_NAME="cmdr-error-reports-eu"
 ERROR_REPORT_META_KV_NAME="ERROR_REPORT_META"
 
 echo ""
 echo "Checking R2 bucket for error reports: $ERROR_REPORTS_BUCKET_NAME"
 
 # `wrangler r2 bucket list` prints a table/JSON; we grep by name.
-if npx wrangler r2 bucket list 2>/dev/null | grep -q "$ERROR_REPORTS_BUCKET_NAME"; then
+if npx wrangler r2 bucket list -J eu 2>/dev/null | grep -q "$ERROR_REPORTS_BUCKET_NAME"; then
     echo "R2 bucket already exists: $ERROR_REPORTS_BUCKET_NAME"
 else
     echo "Creating R2 bucket: $ERROR_REPORTS_BUCKET_NAME"
-    npx wrangler r2 bucket create "$ERROR_REPORTS_BUCKET_NAME"
+    npx wrangler r2 bucket create "$ERROR_REPORTS_BUCKET_NAME" -J eu
 fi
 
 echo ""
@@ -126,14 +127,14 @@ echo "Applying 90-day lifecycle rule to $ERROR_REPORTS_BUCKET_NAME (prefix error
 # The rule MUST stay scoped to `error-reports/`: the same bucket holds the daily license backups
 # under `backups/licenses/`, and an unscoped rule would delete them at 90 days.
 ERROR_REPORTS_LIFECYCLE_RULE="expire-error-reports-90-days"
-if npx wrangler r2 bucket lifecycle list "$ERROR_REPORTS_BUCKET_NAME" 2>/dev/null | grep -q "$ERROR_REPORTS_LIFECYCLE_RULE"; then
+if npx wrangler r2 bucket lifecycle list "$ERROR_REPORTS_BUCKET_NAME" -J eu 2>/dev/null | grep -q "$ERROR_REPORTS_LIFECYCLE_RULE"; then
     echo "Lifecycle rule already exists: $ERROR_REPORTS_LIFECYCLE_RULE"
 else
-    npx wrangler r2 bucket lifecycle add "$ERROR_REPORTS_BUCKET_NAME" \
+    npx wrangler r2 bucket lifecycle add "$ERROR_REPORTS_BUCKET_NAME" -J eu \
         "$ERROR_REPORTS_LIFECYCLE_RULE" "error-reports/" \
         --expire-days 90 --force
 fi
-echo "Verify with: npx wrangler r2 bucket lifecycle list $ERROR_REPORTS_BUCKET_NAME"
+echo "Verify with: npx wrangler r2 bucket lifecycle list $ERROR_REPORTS_BUCKET_NAME -J eu"
 
 echo ""
 echo "Checking KV namespace for error report bookkeeping: $ERROR_REPORT_META_KV_NAME"

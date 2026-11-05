@@ -8,8 +8,9 @@
 # reporter's note and email, and run.sh empties ./bundles/ before and after every run, so none outlives the run.
 #
 # Reads TRIAGE_R2_ACCOUNT_ID, TRIAGE_R2_ACCESS_KEY_ID, and TRIAGE_R2_SECRET_ACCESS_KEY from the environment: an R2 API
-# token with Object Read on the cmdr-error-reports bucket ONLY, so a prompt-injected agent can read bundles and
-# nothing else. Signs with curl's built-in SigV4, so there's no SDK to install.
+# token with Object Read on the cmdr-error-reports-eu bucket ONLY, so a prompt-injected agent can read bundles and
+# nothing else. The bucket is in the `eu` jurisdiction, which answers only on the `<account>.eu.` host. Signs with
+# curl's built-in SigV4, so there's no SDK to install.
 set -euo pipefail
 
 key="${1:?usage: fetch-bundle.sh <r2-key>}"
@@ -33,7 +34,7 @@ curl --fail --silent --show-error --max-time 60 \
   --aws-sigv4 "aws:amz:auto:s3" \
   --user "${TRIAGE_R2_ACCESS_KEY_ID}:${TRIAGE_R2_SECRET_ACCESS_KEY}" \
   --output "$out" \
-  "https://${TRIAGE_R2_ACCOUNT_ID}.r2.cloudflarestorage.com/cmdr-error-reports/${key}"
+  "https://${TRIAGE_R2_ACCOUNT_ID}.eu.r2.cloudflarestorage.com/cmdr-error-reports-eu/${key}"
 
 if [[ "$out" == *.zip ]]; then
   unzip -q -o "$out" -d "$dest/$(basename "$key" .zip)"

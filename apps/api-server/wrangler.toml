@@ -46,18 +46,21 @@ id = "aee2061faad542008fb4a9b5fc765428"
 binding = "DEVICE_COUNTS"
 dataset = "cmdr_device_counts"
 
-# D1 database for telemetry persistence (crash reports, downloads, update checks)
+# D1 database for telemetry persistence (crash reports, downloads, update checks), in the `eu`
+# jurisdiction (a database's jurisdiction is fixed at creation).
 [[d1_databases]]
 binding = "TELEMETRY_DB"
-database_name = "cmdr-telemetry"
-database_id = "537fdb4a-cd66-4faf-a2fe-3e51b5f6f915"
+database_name = "cmdr-telemetry-eu"
+database_id = "936d4ece-7f66-45d9-be68-dc1135790bdd"
 
-# R2 bucket for error report bundles (zips of redacted logs + manifest)
-# Provision with ./scripts/setup-cf-infra.sh (that also applies the 90-day lifecycle rule, scoped to the
-# `error-reports/` prefix so the license backups under `backups/licenses/` survive).
+# R2 bucket for error report bundles (zips of redacted logs + manifest) and the license backups, in the
+# `eu` jurisdiction. Provision with ./scripts/setup-cf-infra.sh (that also applies the 90-day lifecycle
+# rule, scoped to the `error-reports/` prefix so the license backups under `backups/licenses/` survive).
+# `R2_ERROR_REPORTS_BUCKET_NAME` and `R2_ERROR_REPORTS_JURISDICTION` in `[vars]` must match.
 [[r2_buckets]]
 binding = "ERROR_REPORTS_BUCKET"
-bucket_name = "cmdr-error-reports"
+bucket_name = "cmdr-error-reports-eu"
+jurisdiction = "eu"
 
 # KV namespace for error report bookkeeping (total_bytes counter, eviction lock)
 [[kv_namespaces]]
@@ -224,6 +227,11 @@ PADDLE_ENVIRONMENT = "live"
 # 2026-11-05, the day the account moved from Workers Free's 500 MB). The daily size check alerts at
 # 40/60/80/90% of it, so change it with the plan.
 D1_MAX_DB_MB = 10240
+
+# The error-report bucket as presigned download links name it: the same bucket and jurisdiction as the
+# ERROR_REPORTS_BUCKET binding, or every link 404s (`error-report-bucket-config.test.ts`).
+R2_ERROR_REPORTS_BUCKET_NAME = "cmdr-error-reports-eu"
+R2_ERROR_REPORTS_JURISDICTION = "eu"
 
 # Listmonk. The signup routes (POST /beta-signup, /newsletter-signup, /subprocessor-updates-signup) subscribe by list UUID through
 # Listmonk's public endpoint, which needs no credentials; the UUIDs are public anyway (Listmonk's own

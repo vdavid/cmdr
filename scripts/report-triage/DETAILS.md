@@ -8,11 +8,11 @@ The layers, outermost first (schema verified against code.claude.com docs, 2026-
 1. **Credentials**: `run.sh` resolves three secrets from the M1 box's `secret` store, then `exec env -i`, so the agent
    inherits nothing from the box (not its broad `GH_TOKEN` or `CLOUDFLARE_API_TOKEN`). `TRIAGE_GH_TOKEN` is a
    fine-grained PAT for `vdavid/cmdr-reports` only (Issues read+write, Metadata read); the R2 token is Object Read on
-   `cmdr-error-reports` only. There is NO board token on the box (§ Ratings without a board token). The worst a hijacked
-   run can do is edit today's `unprocessed` cards on a private board (wrong ratings included) and read bundles it was
-   meant to read anyway. The claude process also gets the box's `CLAUDE_CODE_OAUTH_TOKEN` (the keychain login isn't
-   reliable over SSH or launchd); `sandbox.credentials.envVars` strips it, and the box's other secret names, from every
-   Bash command.
+   `cmdr-error-reports-eu` only. There is NO board token on the box (§ Ratings without a board token). The worst a
+   hijacked run can do is edit today's `unprocessed` cards on a private board (wrong ratings included) and read bundles
+   it was meant to read anyway. The claude process also gets the box's `CLAUDE_CODE_OAUTH_TOKEN` (the keychain login
+   isn't reliable over SSH or launchd); `sandbox.credentials.envVars` strips it, and the box's other secret names, from
+   every Bash command.
 2. **The agent's shell**: `env -i` alone isn't enough. Claude Code snapshots the user's shell startup outside the
    sandbox and replays it in each Bash command, so the box's `~/.zshenv` put its broad `GH_TOKEN` (overriding ours),
    `CLOUDFLARE_API_TOKEN`, `GH_PROJECT_TOKEN`, and `CARGO_REGISTRY_TOKEN` back into the agent's env. `run.sh` sets
