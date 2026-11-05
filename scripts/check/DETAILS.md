@@ -346,10 +346,10 @@ lock".
 check (positionally or via `--check`) implicitly includes slow checks (`includeSlow = len(checkNames) > 0`); group/app
 selectors don't.
 
-**Fast lane (`--fast`):** `IsFast: true` marks the curated pre-commit check set: 76 checks, about 9 s wall even with
-`--fresh` (verified on David's laptop, `pnpm check --fast --fresh`, 2026-11-04), intended to run before every commit.
-Its budget is 5–10 s, so formatters, test suites, typecheckers, and the i18n generator-freshness lanes stay in the
-default lane. The desktop `knip` is the one Node-booting exception: 3.4 s alone, +1.2 s on the whole lane, and its
+**Fast lane (`--fast`):** `IsFast: true` marks the curated pre-commit check set: 79 checks (2026-11-05), about 9 s wall
+even with `--fresh` (verified on David's laptop, `pnpm check --fast --fresh`, 2026-11-04), intended to run before every
+commit. Its budget is 5–10 s, so formatters, test suites, typecheckers, and the i18n generator-freshness lanes stay in
+the default lane. The desktop `knip` is the one Node-booting exception: 3.4 s alone, +1.2 s on the whole lane, and its
 config hints otherwise only ever showed up as a red CI run (2026-11-03). It's an editorial pick, not a timing-derived
 list (see Key decisions below). Named check invocations bypass the filter so `pnpm check --fast svelte-check` still runs
 svelte-check. Mutually exclusive with `--include-slow` / `--only-slow` — combining them errors out, since the lanes are
