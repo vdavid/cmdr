@@ -112,11 +112,26 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   Esc, and its "Edit shortcuts" link opens Settings at that section as a second panel (a child window opening another
   through the shared backend).
 - The production CSP (`apps/website/nginx-demo-security-headers.conf`) needs `frame-src 'self'` for the panels: any
-  stricter `frame-src` blocks their iframes.
+  stricter `frame-src` blocks their iframes. It also needs `blob:` there for a PDF (§ Viewer media).
 - Known gap: clicking the main window while a panel is open moves DOM focus there but sends no `tauri://focus` /
   `tauri://blur`, and the panel stays on top (on desktop, main would become key and come forward). Fixing it means
   listening for `focusin` outside the panels and lowering them; nothing in the app reacts badly to the missing events
   today.
+
+## Viewer media
+
+- A picture or PDF opens in the viewer's media mode (0) only when the engine's sniff sees its real bytes; on the
+  generated filler it opens as text, with modes 1–3 alone. The bytes come from `demo-contents.ts`, which `fetch`es each
+  asset by its Vite URL.
+- Gotcha: Vite inlines an asset under 4 KB as a `data:` URL, and the demo's CSP (`connect-src 'self'`) refuses to fetch
+  one, so the 583-byte sample PDF silently fell back to filler. Every media import is `?url&no-inline`, pinned by
+  `demo-contents.test.ts` (vitest never inlines, so it reads the imports' queries).
+- The page hands the engine's bytes to `<embed>` as a `blob:` URL (`backend.ts`'s `mediaUrl`), so the browser's own PDF
+  viewer draws it. Chrome's viewer needs `blob:` in `frame-src` besides `object-src`; Firefox's pdf.js needs only
+  `object-src`.
+- Verified against `pnpm build:demo` served with the production CSP (2026-11-05): F3 on `Documents/Annual report.pdf`
+  offers PDF (0) and renders the page in Chrome 156 and Firefox 157 (Playwright's, with `pdfjs.disabled` off: it ships
+  pdf.js disabled); headless Chromium has no PDF viewer, so it shows "Couldn't load plugin" there.
 
 ## The menu bar
 

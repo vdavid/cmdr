@@ -412,9 +412,11 @@ embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until 
 - **Headers**: `nginx-demo-security-headers.conf` replaces the site's CSP for `/demo/` only, sharing the rest via
   `nginx-security-headers-base.conf`. The policy and why each part is there are in that file's header. Verified in the
   built image with Chromium (2026-11-04): no CSP violation on boot, `WebAssembly.instantiate` allowed under `/demo/` and
-  refused under the site's own policy. It also sends `X-Robots-Tag: noindex, nofollow`. `frame-src 'self'` because the
-  demo's secondary windows (Settings) are same-origin iframes of `/demo/<route>`; `frame-ancestors 'self'` lets our own
-  pages embed the demo.
+  refused under the site's own policy. It also sends `X-Robots-Tag: noindex, nofollow`. `frame-src 'self' blob:` because
+  the demo's secondary windows (Settings) are same-origin iframes of `/demo/<route>`, and Chrome's PDF viewer checks
+  `frame-src` for the viewer's `blob:` PDF; `frame-ancestors 'self'` lets our own pages embed the demo.
+  `connect-src 'self'` refuses a `data:` URL, so the demo's media imports are never inlined
+  (`apps/desktop/src/lib/demo/DETAILS.md` § Viewer media).
 - **Smoke test**: `e2e/demo.spec.ts`, against `dist/` like every website E2E (so it runs without nginx's headers; the
   CSP is verified by hand as above). It skips locally when `dist/demo/` isn't built and fails in CI when it's missing.
   Locally it needs Playwright's Chromium (`pnpm exec playwright install chromium` here, once). Its full-disk cell opens
