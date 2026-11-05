@@ -4,9 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { demoContents } from './demo-contents.js'
 import { demoEntries } from './demo-tree.js'
 
-/** The disk file behind a Vite asset URL: `/@fs/<abs>` outside the app root, `/<rel>` inside it. */
+/**
+ * The disk file behind a Vite asset URL: `/@fs/<abs>` outside the app root, `/<rel>` inside it, minus any query Vite
+ * keeps on it (the sample PDF's `?no-inline`).
+ */
 function diskPathOf(url: string): string {
-  return url.startsWith('/@fs/') ? url.slice('/@fs'.length) : path.resolve(process.cwd(), `.${url}`)
+  const bare = url.split('?')[0]
+  return bare.startsWith('/@fs/') ? bare.slice('/@fs'.length) : path.resolve(process.cwd(), `.${bare}`)
 }
 
 /** A `fetch` that serves the real asset bytes from disk, counting requests per URL. */
@@ -21,6 +25,8 @@ function diskFetch(requests: Map<string, number>, answer?: (url: string) => Resp
 }
 
 const extensionOf = (p: string) => p.slice(p.lastIndexOf('.') + 1).toLowerCase()
+/** Whether an asset URL is the sample PDF's, whatever query Vite keeps on it. */
+const isPdfUrl = (url: string) => extensionOf(url.split('?')[0]) === 'pdf'
 const nameOf = (p: string) => p.slice(p.lastIndexOf('/') + 1)
 
 /** The tree's files the viewer shows as text: the text extensions plus the home folder's dotfiles. */
@@ -99,7 +105,7 @@ describe('demoContents', () => {
     vi.stubGlobal(
       'fetch',
       diskFetch(requests, (url) => {
-        if (url.endsWith('.pdf')) throw new TypeError('offline')
+        if (isPdfUrl(url)) throw new TypeError('offline')
         return undefined
       }),
     )
@@ -113,9 +119,7 @@ describe('demoContents', () => {
   it('leaves out an asset the server answers with an error status', async () => {
     vi.stubGlobal(
       'fetch',
-      diskFetch(requests, (url) =>
-        url.endsWith('.pdf') ? new Response('<h1>Not found</h1>', { status: 404 }) : undefined,
-      ),
+      diskFetch(requests, (url) => (isPdfUrl(url) ? new Response('<h1>Not found</h1>', { status: 404 }) : undefined)),
     )
     const contents = await demoContents()
     expect(files.filter((p) => extensionOf(p) === 'pdf' && p in contents)).toEqual([])
