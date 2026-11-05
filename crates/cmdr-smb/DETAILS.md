@@ -885,6 +885,9 @@ The app's `network::smb_encryption` sets it to the setting OR the policy; nothin
 - **No CLI fallback under the requirement**: `smbutil` / `smbclient` don't know about it, so the app's listing skips
   them while it's on, and a guest listing refused for it asks for an account
   (`apps/desktop/src-tauri/src/network/DETAILS.md` § "Requiring SMB encryption").
+- **The kernel mount isn't this crate's**: the app gates it (`apps/desktop/src-tauri/src/network/DETAILS.md` §
+  "Requiring SMB encryption", `smb_mount_gate.rs`) and refuses an SMB mount that doesn't prove encrypted with the same
+  `VolumeError::EncryptionRequired`.
 - **A reconnect that can't encrypt is typed and final** (#966). `map_smb_error` reads `Error::EncryptionRequired` by
   variant (smb2 files it under `ErrorKind::Unsupported`) into `VolumeError::EncryptionRequired`, and
   `do_attempt_reconnect` emits `VolumeConnection::EncryptionRequired` before returning it, so the frontend's backoff

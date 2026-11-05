@@ -63,8 +63,16 @@ describe('directConnectionUnavailableMessage', () => {
     // "system connection" is the app's existing name for the OS-mount path
     // (`fileExplorer.navigation.connectionTooltipSystem`); reusing it keeps the
     // vocabulary consistent and tells the user nothing was lost.
-    for (const reason of ALL_REASONS) {
+    for (const reason of ALL_REASONS.filter((r) => r !== 'encryptionRequired')) {
       expect(directConnectionUnavailableMessage(reason, 'Naspolya')).toContain('system connection')
     }
+  })
+
+  it('promises no system connection when the refusal is for encryption (#966)', () => {
+    // Under "Always require SMB encryption" the macOS mount is refused too unless it's
+    // encrypted, so the sentence says only what Cmdr didn't do.
+    const message = directConnectionUnavailableMessage('encryptionRequired', 'Naspolya')
+    expect(message).toContain('Naspolya')
+    expect(message).not.toContain('system connection')
   })
 })

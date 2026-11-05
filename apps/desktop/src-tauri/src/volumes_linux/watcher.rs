@@ -430,8 +430,6 @@ fn emit_volume_unmounted(volume_path: &str) {
 /// Register a volume with the global VolumeManager.
 fn register_volume_with_manager(volume_path: &str) {
     use crate::file_system::volume::manager::get_volume_manager;
-    use cmdr_local::LocalPosixVolume;
-    use std::sync::Arc;
 
     let volume_id = super::volume_id_for_mount(volume_path);
 
@@ -447,12 +445,7 @@ fn register_volume_with_manager(volume_path: &str) {
     };
 
     let mount = crate::file_system::index_provider::mount_class_at(Path::new(volume_path));
-    let volume = Arc::new(LocalPosixVolume::on_mount(
-        &name,
-        volume_path,
-        mount,
-        crate::volume_host::host(),
-    ));
+    let volume = crate::network::smb_mount_gate::mount_volume(&name, Path::new(volume_path), mount);
     get_volume_manager().register(&volume_id, volume);
     debug!(
         "Registered mounted volume: {} -> {}",

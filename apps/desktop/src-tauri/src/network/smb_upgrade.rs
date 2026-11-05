@@ -528,7 +528,20 @@ pub(crate) async fn register_smb_volume(
             // connection with nothing but a small yellow dot to notice it by. The
             // reason rides along so the notice can drop its retry button for the one
             // failure repeating it cannot fix.
-            crate::network::os_mount_notice::announce_os_mount_fallback(server, &volume_id, share, reason, notice);
+            //
+            // Except when the share isn't on the kernel mount either: under "Always require
+            // SMB encryption" an unencrypted mount is refused too, so "you're still connected
+            // through macOS" would be untrue. The pane's own refusal says why and offers the
+            // setting (`smb_mount_gate`, #966).
+            if reason == UpgradeFailure::EncryptionRequired && crate::network::smb_mount_gate::refuses(&volume_id).await
+            {
+                log::debug!(
+                    "Not announcing the kernel-mount fallback for share={:?}: the mount is refused for encryption too",
+                    LogPrivate::volume(share)
+                );
+            } else {
+                crate::network::os_mount_notice::announce_os_mount_fallback(server, &volume_id, share, reason, notice);
+            }
         }
     }
 }
@@ -583,7 +596,6 @@ pub(crate) async fn resolve_and_register_smb_volume(
 /// so a `LocalPosixVolume` at the same root serves the share from here on.
 pub(crate) async fn return_to_os_mount(volume_id: &str) -> bool {
     use crate::file_system::volume::BackendKind;
-    use cmdr_local::LocalPosixVolume;
 
     let _upgrade_guard = lock_volume_upgrade(volume_id).await;
     let manager = crate::file_system::volume::manager::get_volume_manager();
@@ -593,12 +605,8 @@ pub(crate) async fn return_to_os_mount(volume_id: &str) -> bool {
     if current.backend_kind() != BackendKind::Smb {
         return false;
     }
-    let os_mount = std::sync::Arc::new(LocalPosixVolume::on_mount(
-        current.name(),
-        current.root(),
-        cmdr_fs::volume::MountClass::SmbShare,
-        crate::volume_host::host(),
-    ));
+    // Behind the encryption gate while "Always require SMB encryption" is on.
+    let os_mount = crate::network::smb_mount_gate::os_mount_volume(current.name(), current.root());
     register_replacing_predecessor(volume_id, os_mount).await;
     log::info!(
         "Handed {volume_id} back to the macOS mount at {}",

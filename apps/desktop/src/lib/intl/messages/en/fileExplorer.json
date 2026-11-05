@@ -3256,9 +3256,9 @@
       "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
   },
-  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} can’t encrypt the connection, and Cmdr is set to always require SMB encryption, so Cmdr stays on the system connection.",
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} can’t encrypt the connection, and Cmdr is set to always require SMB encryption, so Cmdr didn’t connect directly.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
-    "description": "Toast shown when connecting a network share directly found that the server can't encrypt the connection while Cmdr's own \"Always require SMB encryption\" setting is on (set by the person, or forced on by their organization), so Cmdr didn't connect directly and the share stays on the slower macOS connection. Not temporary, so avoid wording like \"try again\". Plain text, no markdown. \"SMB\" is a name; keep it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Toast shown when connecting a network share directly found that the server can't encrypt the connection while Cmdr's own \"Always require SMB encryption\" setting is on (set by the person, or forced on by their organization), so Cmdr didn't connect directly. Whether the share stays usable through the macOS connection depends on that connection being encrypted, so the sentence doesn't promise it. Not temporary, so avoid wording like \"try again\". Plain text, no markdown. \"SMB\" is a name; keep it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
       "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
