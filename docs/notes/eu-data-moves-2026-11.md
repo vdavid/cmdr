@@ -11,9 +11,16 @@ are gone.
 - **A2, D1 and R2 in the `eu` jurisdiction**: both EU resources exist. The R2 copy is complete and verified. The D1
   switch is rehearsed on a local copy, and blocked on Workers Paid (§ A2 runbook). No binding is switched on this
   branch, so landing it moves nothing.
-- **A3, updates from EU R2**: § A3.
-- **A4–A6, B1–B3, B5, B7, B8**: public text on this branch, § Changed public passages.
+- **A3, updates from EU R2**: the bucket and `download.getcmdr.com` are LIVE with 0.59.0 backfilled; the `/download`
+  redirect moves when this lands, and `latest.json` with the next release (§ A3).
+- **A4–A6, B1–B3, B5, B7, B8**: public text on this branch, § Changed public passages. B8 is done for everything that's
+  true after the land; the "not locked to the EU yet" lines change when the D1 and R2 switches finish (a `DevTodo` on
+  `/trust#eu` lists them).
+- **A5 list**: Listmonk list 5, "Cmdr subprocessor updates" (public, double opt-in, UUID
+  `990aee1b-97df-4a5b-be6f-d4def6783e87`), LIVE; the signup route and form ship with this branch.
 - **B4** (insurance) deferred; **B6** (contract terms) lives in David's vault.
+- **David's vault**: the DPA draft's Annex IV (Resend out, SMTP2Go in, GitHub's DPA wording, Cloudflare's location) and
+  the commitment note's list details are updated in place.
 
 ## Infra changes made outside the repo (2026-11-05)
 
@@ -239,10 +246,12 @@ The mechanism, caching, and rollback live in `docs/guides/releasing.md` § Where
 
 1. **David, before the next release**: make sure the GitHub repo secret `CLOUDFLARE_API_TOKEN` can write R2. It was set
    2026-03-21 and its value can't be read, so whether it's the same token as sops' (which can, verified by the
-   preflight) is unknown. Check: after landing, the next release's `guard` job fails at "Require write access to the EU
-   download bucket" if it can't. Fix either way: dashboard → My Profile → API Tokens → that token → add "Workers R2
-   Storage: Edit" (no value change), or, better for least privilege, create a token with only "Workers R2 Storage: Edit"
-   on the account, store it as a new secret, and point the two workflow steps at it (a one-line change each).
+   preflight) is unknown. A hint that it can: the API server's CI deploy already passes wrangler's R2 bucket precheck,
+   which needs "Workers R2 Storage: Edit" (`apps/api-server/DETAILS.md` § R2 presigned URLs). Check: after landing, the
+   next release's `guard` job fails at "Require write access to the EU download bucket" if it can't. Fix either way:
+   dashboard → My Profile → API Tokens → that token → add "Workers R2 Storage: Edit" (no value change), or, better for
+   least privilege, create a token with only "Workers R2 Storage: Edit" on the account, store it as a new secret, and
+   point the two workflow steps at it (a one-line change each).
 2. **Land time (lead)**: nothing extra. The API server and website deploy with `main`; `/download` starts sending 0.59.0
    to the mirror at once (backfilled), and `latest.json` moves at the next release.
 3. **Next release**: run as usual. `publish` mirrors before marking Latest.
@@ -264,3 +273,64 @@ The mechanism, caching, and rollback live in `docs/guides/releasing.md` § Where
   `publish` before the next release.
 - **Download redirect**: raise `firstMirroredVersion` past the latest version (or revert `da93ca6a2c`) and land.
 - The bucket and domain can stay; deleting them is David's call.
+
+## Changed public passages (for David's review)
+
+Everything below ships as a v0 when this branch lands. Your #805 comment asked to see public text before it ships, and
+the lead's brief said v0 at the land with your review after; whoever lands it picks. The exact text is in the diff of
+`e7f78a885a` (and `d4a778d676`, `a2a902bac3` for the A3 and signup passages).
+
+`/trust` (`apps/website/src/pages/trust.astro`, `apps/website/src/lib/trust.ts`):
+
+- `#eu`, "Does data leave the EU?": now "Some of it does", with the list rewritten (downloads and updates, GitHub
+  reports under DPF with no DPA, every email through SMTP2Go's EU servers, Cloudflare's nearest-data-center request
+  handling and the not-yet-locked storage, Regional Services not used, Paddle's UK adequacy, and the A6 line "Cmdr's
+  on-device AI keeps everything on the Mac").
+- `#outside-eu`, new: "Where is my data? For reviewers outside the EU" (B1).
+- `#no-soc2`, new, under Compliance: "No SOC 2 yet, and what you get instead", with the questionnaire offer for 50 seats
+  or more (B3). The Known limitations line about audits links to it.
+- `#subprocessors`: Resend removed; SMTP2Go "Sends every email Cmdr sends..."; Cloudflare's "What" adds the release
+  files and its "Where" says US company, EU jurisdiction for release files, Eastern Europe placement for the rest,
+  nearest data center, DPF plus SCCs; GitHub's "What" says public mirror and its "Where" states DPF and why there's no
+  DPA (A4).
+- `#subprocessor-changes`, new: "When we change who handles your data", the vault's public wording almost word for word,
+  plus the signup form and the dated change log (two 2026-11-05 entries: Resend removed, downloads moved) (A5).
+- `#company`: the DPA bullet says "30 days' notice before a change to the subprocessors" and links the new section; a
+  new Support bullet carries B7's reply times. The old "There's no written response time" sentence is gone.
+- `#signing`: downloads come "from `download.getcmdr.com` or its mirror on GitHub Releases".
+- Known limitations: "Cloudflare's database and error-report storage aren't locked to the EU jurisdiction yet."
+- `verifiedAgainst.date`: 2026-11-05 (version stays 0.59.0).
+- A3's `updates` connection and allowlist lines: § A3 above.
+
+Privacy policy (`apps/website/src/pages/privacy-policy.astro`, last updated 2026-11-05):
+
+- §2 Downloads: the file comes from `download.getcmdr.com`, so Cloudflare sees the IP address.
+- §5: the Cloudflare bullet adds `download.getcmdr.com` and "Cloudflare is a US company"; GitHub becomes "release mirror
+  and issue tracking", with the controller and no-DPA sentence; the Resend bullet is gone; SMTP2Go is "all outgoing
+  email" via its EU servers; Listmonk's "except when sending emails via SMTP2Go", and the subprocessor updates list (the
+  signup commit).
+- §6: where each part is stored and the transfer basis (DPF, SCCs, New Zealand's and the UK's adequacy).
+- §10, new: "Your rights in the US (California and other states)" (B2). The old §10–12 are now §11–13.
+
+Pricing FAQ (`apps/website/src/pages/pricing.astro`):
+
+- "Who sells it, and which tax form does our accounts payable team need?" (B5). It links Paddle's buyer support
+  (paddle.net), because no official Paddle page offering its W-8BEN-E turned up; a `DevTodo` beside it says so.
+- "When does support answer?" (B7).
+
+## Open items for David
+
+1. **SMTP2Go key for the Worker** (A1 runbook step 1), then `wrangler secret put SMTP2GO_API_KEY`. Until then, every
+   api-server deploy stops at the secrets check, and the old Worker keeps sending through Resend.
+2. **Workers Paid** ($5 a month) before the D1 switch. It also lifts the 500 MB cap the size alarm tracks.
+3. **The two R2 token scopes** (A2 runbook, R2 preconditions) before the R2 switch.
+4. **The GitHub `CLOUDFLARE_API_TOKEN`'s R2 write access** before the next release (§ A3 runbook step 1).
+5. **Paddle's W-8BEN-E link**: confirm the form and find an official page for it, or ask Paddle support.
+6. **Review the public passages** above, and the support-hours wording: "Stockholm time (CET)" is CEST in summer;
+   "Stockholm time" alone would always be right.
+7. **After the week** (from 2026-11-12): the Resend cleanup in A1 step 7, and later deleting the old D1 database and R2
+   bucket once their switches have run a week.
+8. **SMTP2Go quota**: 1,000 emails a cycle across mailcow, Listmonk, and the Worker. The lists are small today (26 and
+   18 subscribers), but a bigger newsletter needs the next plan.
+9. **Listmonk's public form** (`getcmdr.com/subscription/form`) now shows the subprocessor list too, pre-ticked with the
+   newsletter and beta lists, as Listmonk does for every public list. The `/trust` form subscribes to that list alone.
