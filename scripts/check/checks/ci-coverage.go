@@ -194,7 +194,8 @@ func validateFilterPathsExist(rootDir, ciPath string) []string {
 	}
 	var violations []string
 	for _, p := range extractCIFilterPaths(string(ciContent)) {
-		probe := staticPathPrefix(p)
+		// An exclusion names real paths too, so a stale one is checked like an include.
+		probe := staticPathPrefix(strings.TrimPrefix(p, "!"))
 		if probe == "" {
 			continue // pattern starts with a glob; nothing concrete to verify
 		}
