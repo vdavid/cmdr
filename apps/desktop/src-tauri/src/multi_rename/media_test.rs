@@ -14,15 +14,12 @@ use cmdr_local::reading::list_directory_core;
 use cmdr_media_meta::{MediaFacts, MediaField, ReadError};
 use cmdr_operations::testing::CollectorEventSink;
 
+use super::app_host::app_multi_rename;
 use super::error::MultiRenameError;
 use super::mask::FieldGap;
-use super::media::{FieldUsage, FileJob, Loader, MediaProgress, MultiRenameMediaProgress};
+use super::media::{FieldUsage, FileJob, Loader, MediaProgress, MediaProgressEvent};
 use super::plan::{MultiRenameSpec, RowStatus};
-use super::run::apply;
 use super::run_test::strip_diacritics;
-use super::session::{
-    close, field_samples, media_overview, media_progress, open, preview_session, prioritize_media, start_media_with,
-};
 use crate::ignore_poison::IgnorePoison;
 use crate::test_support::{TestDir, wait_until_async};
 
@@ -68,10 +65,10 @@ fn titled(title: &str) -> MediaFacts {
 
 /// Every progress event the loader sent.
 #[derive(Clone, Default)]
-struct Events(Arc<Mutex<Vec<MultiRenameMediaProgress>>>);
+struct Events(Arc<Mutex<Vec<MediaProgressEvent>>>);
 
 impl Events {
-    fn all(&self) -> Vec<MultiRenameMediaProgress> {
+    fn all(&self) -> Vec<MediaProgressEvent> {
         self.0.lock_ignore_poison().clone()
     }
 }
@@ -133,7 +130,7 @@ fn loader(
 
 async fn read_through(session_id: &str) {
     wait_until_async(WAIT, "the media read to finish", || {
-        media_progress(session_id).is_ok_and(|p| p.done)
+        app_multi_rename().media_progress(session_id).is_ok_and(|p| p.done)
     })
     .await;
 }
@@ -141,9 +138,13 @@ async fn read_through(session_id: &str) {
 #[test]
 fn opening_counts_the_media_files_only() {
     let (_dir, listing) = folder("media-seed", &["a.jpg", "b.MP3", "notes.txt", ".jpg"], &["trip.jpg"]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
 
-    let progress = media_progress(&session.session_id).expect("progress");
+    let progress = app_multi_rename()
+        .media_progress(&session.session_id)
+        .expect("progress");
 
     assert_eq!(
         progress,
@@ -153,16 +154,23 @@ fn opening_counts_the_media_files_only() {
             done: false
         }
     );
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[test]
 fn a_session_without_media_files_is_done_from_the_start() {
     let (_dir, listing) = folder("media-none", &["a.txt"], &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
 
-    assert!(media_progress(&session.session_id).expect("progress").done);
-    close(&session.session_id);
+    assert!(
+        app_multi_rename()
+            .media_progress(&session.session_id)
+            .expect("progress")
+            .done
+    );
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -170,14 +178,17 @@ async fn every_media_file_is_read_once_and_progress_ends_with_done() {
     let files: Vec<String> = (0..30).map(|i| format!("{i:02}.jpg")).collect();
     let names: Vec<&str> = files.iter().map(String::as_str).chain(["readme.txt"]).collect();
     let (_dir, listing) = folder("media-all", &names, &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let (events, calls) = (Events::default(), Calls::default());
 
-    start_media_with(
-        &session.session_id,
-        loader(8, &events, &calls, |job| Ok(titled(&job.name))),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(8, &events, &calls, |job| Ok(titled(&job.name))),
+        )
+        .expect("the read starts");
     read_through(&session.session_id).await;
     wait_until_async(WAIT, "the final event", || events.all().last().is_some_and(|e| e.done)).await;
 
@@ -191,7 +202,7 @@ async fn every_media_file_is_read_once_and_progress_ends_with_done() {
     // Throttled: 30 instant reads don't make 30 events.
     assert!(all.len() < 30, "{} events", all.len());
     assert!(all.windows(2).all(|pair| pair[0].read <= pair[1].read));
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -201,22 +212,27 @@ async fn the_first_file_goes_first_then_the_rows_on_screen_then_the_rest() {
         &["1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg", "6.jpg"],
         &[],
     );
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let (events, calls, gate) = (Events::default(), Calls::default(), Gate::default());
     let held = gate.clone();
 
-    start_media_with(
-        &session.session_id,
-        loader(1, &events, &calls, move |job| {
-            if job.name == "1.jpg" {
-                held.wait();
-            }
-            Ok(MediaFacts::default())
-        }),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(1, &events, &calls, move |job| {
+                if job.name == "1.jpg" {
+                    held.wait();
+                }
+                Ok(MediaFacts::default())
+            }),
+        )
+        .expect("the read starts");
     wait_until_async(WAIT, "the first read to start", || calls.count_of("1.jpg") == 1).await;
-    prioritize_media(&session.session_id, &[4, 5, 99]).expect("the session is open");
+    app_multi_rename()
+        .prioritize_media(&session.session_id, &[4, 5, 99])
+        .expect("the session is open");
     gate.open();
     read_through(&session.session_id).await;
 
@@ -224,13 +240,15 @@ async fn the_first_file_goes_first_then_the_rows_on_screen_then_the_rest() {
         calls.names(),
         vec!["1.jpg", "5.jpg", "6.jpg", "2.jpg", "3.jpg", "4.jpg"]
     );
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn closing_the_sheet_stops_the_read_and_tells_the_read_in_flight() {
     let (_dir, listing) = folder("media-close", &["1.jpg", "2.jpg", "3.jpg"], &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let (events, calls, gate) = (Events::default(), Calls::default(), Gate::default());
     let held = gate.clone();
     let saw_cancel = Arc::new(AtomicBool::new(false));
@@ -239,18 +257,19 @@ async fn closing_the_sheet_stops_the_read_and_tells_the_read_in_flight() {
     let alive = Arc::new(());
     let in_reader = Arc::clone(&alive);
 
-    start_media_with(
-        &session.session_id,
-        loader(1, &events, &calls, move |job| {
-            let _alive = &in_reader;
-            held.wait();
-            saw.store(job.cancel.load(Ordering::Relaxed), Ordering::Relaxed);
-            Err(ReadError::Cancelled)
-        }),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(1, &events, &calls, move |job| {
+                let _alive = &in_reader;
+                held.wait();
+                saw.store(job.cancel.load(Ordering::Relaxed), Ordering::Relaxed);
+                Err(ReadError::Cancelled)
+            }),
+        )
+        .expect("the read starts");
     wait_until_async(WAIT, "the first read to start", || calls.names().len() == 1).await;
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
     gate.open();
     wait_until_async(WAIT, "the loader to let go", || Arc::strong_count(&alive) == 1).await;
 
@@ -265,18 +284,23 @@ async fn closing_the_sheet_stops_the_read_and_tells_the_read_in_flight() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_file_that_changed_since_it_was_read_reads_again() {
     let (dir, listing) = folder("media-fresh", &["a.jpg", "b.jpg"], &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let (events, calls) = (Events::default(), Calls::default());
-    start_media_with(
-        &session.session_id,
-        loader(8, &events, &calls, |_| Ok(MediaFacts::default())),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(8, &events, &calls, |_| Ok(MediaFacts::default())),
+        )
+        .expect("the read starts");
     read_through(&session.session_id).await;
     assert_eq!(calls.count_of("a.jpg"), 1);
 
     change_file(&listing, &dir, "a.jpg", b"a bigger file");
-    preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
+    app_multi_rename()
+        .preview(&session.session_id, &strip_diacritics())
+        .expect("a preview");
 
     wait_until_async(WAIT, "the changed file to read again", || calls.count_of("a.jpg") == 2).await;
     read_through(&session.session_id).await;
@@ -285,7 +309,7 @@ async fn a_file_that_changed_since_it_was_read_reads_again() {
     for event in events.all() {
         assert_eq!(event.done, event.read == event.total, "{event:?}");
     }
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 /// `count` media files, `00.jpg` on.
@@ -298,24 +322,29 @@ async fn a_volume_that_keeps_timing_out_is_given_up_on_after_three_files() {
     let files = photos(20);
     let names: Vec<&str> = files.iter().map(String::as_str).collect();
     let (_dir, listing) = folder("media-dead-volume", &names, &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let (events, calls) = (Events::default(), Calls::default());
 
-    start_media_with(
-        &session.session_id,
-        loader(1, &events, &calls, |_| Err(ReadError::TimedOut)),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(1, &events, &calls, |_| Err(ReadError::TimedOut)),
+        )
+        .expect("the read starts");
     read_through(&session.session_id).await;
 
     assert_eq!(calls.names().len(), 3, "{:?}", calls.names());
-    let progress = media_progress(&session.session_id).expect("progress");
+    let progress = app_multi_rename()
+        .media_progress(&session.session_id)
+        .expect("progress");
     assert_eq!(
         (progress.read, progress.total),
         (20, 20),
         "the rest are unreadable, not reading"
     );
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -323,69 +352,83 @@ async fn a_file_that_reads_resets_the_count_of_failures_in_a_row() {
     let files = photos(10);
     let names: Vec<&str> = files.iter().map(String::as_str).collect();
     let (_dir, listing) = folder("media-flaky-volume", &names, &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let (events, calls) = (Events::default(), Calls::default());
 
-    start_media_with(
-        &session.session_id,
-        loader(1, &events, &calls, |job| match job.name.as_str() {
-            "02.jpg" => Ok(MediaFacts::default()),
-            "00.jpg" | "01.jpg" => Err(ReadError::Io("a dropped packet".to_string())),
-            _ => Err(ReadError::TimedOut),
-        }),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(1, &events, &calls, |job| match job.name.as_str() {
+                "02.jpg" => Ok(MediaFacts::default()),
+                "00.jpg" | "01.jpg" => Err(ReadError::Io("a dropped packet".to_string())),
+                _ => Err(ReadError::TimedOut),
+            }),
+        )
+        .expect("the read starts");
     read_through(&session.session_id).await;
 
     assert_eq!(
         calls.names(),
         vec!["00.jpg", "01.jpg", "02.jpg", "03.jpg", "04.jpg", "05.jpg"]
     );
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_volume_that_went_away_reads_nothing_and_every_file_is_unreadable() {
     let (_dir, listing) = folder("media-gone-volume", &["a.jpg", "b.mp3"], &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let (events, calls) = (Events::default(), Calls::default());
     let gone = Loader {
         volume_gone: Arc::new(|| true),
         ..loader(8, &events, &calls, |_| Ok(MediaFacts::default()))
     };
 
-    start_media_with(&session.session_id, gone).expect("the read starts");
+    app_multi_rename()
+        .start_media_with(&session.session_id, gone)
+        .expect("the read starts");
     read_through(&session.session_id).await;
 
     assert!(calls.names().is_empty());
-    let samples = field_samples(&session.session_id, "=tag.title", &[0]).expect("samples");
+    let samples = app_multi_rename()
+        .field_samples(&session.session_id, "=tag.title", &[0])
+        .expect("samples");
     assert_eq!(
         samples.samples[0].gap,
         Some(FieldGap::Unreadable {
             field: MediaField::TagTitle
         })
     );
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_file_that_fails_or_panics_counts_as_read_and_the_rest_go_on() {
     let (_dir, listing) = folder("media-unreadable", &["boom.jpg", "late.jpg", "ok.mp3"], &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let (events, calls) = (Events::default(), Calls::default());
 
-    start_media_with(
-        &session.session_id,
-        loader(1, &events, &calls, |job| match job.name.as_str() {
-            "boom.jpg" => panic!("a parser met a hostile file"),
-            "late.jpg" => Err(ReadError::TimedOut),
-            _ => Ok(titled("Digital Love")),
-        }),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(1, &events, &calls, |job| match job.name.as_str() {
+                "boom.jpg" => panic!("a parser met a hostile file"),
+                "late.jpg" => Err(ReadError::TimedOut),
+                _ => Ok(titled("Digital Love")),
+            }),
+        )
+        .expect("the read starts");
     read_through(&session.session_id).await;
 
-    let overview = media_overview(&session.session_id).expect("an overview");
+    let overview = app_multi_rename()
+        .media_overview(&session.session_id)
+        .expect("an overview");
     assert_eq!(
         overview.progress,
         MediaProgress {
@@ -401,7 +444,7 @@ async fn a_file_that_fails_or_panics_counts_as_read_and_the_rest_go_on() {
         .expect("every field is listed");
     assert_eq!(title.files_with_it, 1);
     assert_eq!(overview.fields.len(), MediaField::ALL.len());
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 /// A reader that reads nothing (the browser build's, where no parser runs): every
@@ -413,14 +456,17 @@ async fn a_reader_that_reads_nothing_settles_every_file_unreadable_without_givin
     let files = photos(10);
     let names: Vec<&str> = files.iter().map(String::as_str).collect();
     let (_dir, listing) = folder("media-not-supported", &names, &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let (events, calls) = (Events::default(), Calls::default());
 
-    start_media_with(
-        &session.session_id,
-        loader(1, &events, &calls, |_| Err(ReadError::NotSupported)),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(1, &events, &calls, |_| Err(ReadError::NotSupported)),
+        )
+        .expect("the read starts");
     read_through(&session.session_id).await;
     wait_until_async(WAIT, "the final event", || events.all().last().is_some_and(|e| e.done)).await;
 
@@ -433,7 +479,9 @@ async fn a_reader_that_reads_nothing_settles_every_file_unreadable_without_givin
         name_mask: "[=exif.taken]".to_string(),
         ..title_mask()
     };
-    let preview = preview_session(&session.session_id, &taken).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &taken)
+        .expect("a preview");
     assert!(
         preview
             .rows
@@ -448,12 +496,16 @@ async fn a_reader_that_reads_nothing_settles_every_file_unreadable_without_givin
         name_mask: "[=exif.taken|modified:YMD] [N]".to_string(),
         ..title_mask()
     };
-    let preview = preview_session(&session.session_id, &with_fallback).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &with_fallback)
+        .expect("a preview");
     assert_eq!(preview.counts.ready, 10, "{:?}", preview.rows);
-    let samples = field_samples(&session.session_id, "=exif.taken|modified:YMD", &[0]).expect("samples");
+    let samples = app_multi_rename()
+        .field_samples(&session.session_id, "=exif.taken|modified:YMD", &[0])
+        .expect("samples");
     assert_eq!(samples.samples[0].gap, None);
     assert_eq!((samples.usage.fallback, samples.usage.missing), (10, 0));
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 fn title_mask() -> MultiRenameSpec {
@@ -469,90 +521,114 @@ fn title_mask() -> MultiRenameSpec {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_file_changing_under_a_fully_read_preview_makes_it_out_of_date_not_still_reading() {
     let (dir, listing) = folder("media-changed-under", &["song.mp3"], &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let (events, calls) = (Events::default(), Calls::default());
-    start_media_with(
-        &session.session_id,
-        loader(8, &events, &calls, |_| Ok(titled("Harder"))),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(8, &events, &calls, |_| Ok(titled("Harder"))),
+        )
+        .expect("the read starts");
     read_through(&session.session_id).await;
-    let shown = preview_session(&session.session_id, &title_mask()).expect("a preview");
+    let shown = app_multi_rename()
+        .preview(&session.session_id, &title_mask())
+        .expect("a preview");
     assert_eq!(shown.counts.ready, 1);
 
     change_file(&listing, &dir, "song.mp3", b"a re-tagged song");
-    let refused = apply(
-        Arc::new(CollectorEventSink::new()),
-        session.session_id.clone(),
-        shown.preview_id,
-    )
-    .await;
+    let refused = app_multi_rename()
+        .apply(
+            Arc::new(CollectorEventSink::new()),
+            session.session_id.clone(),
+            shown.preview_id,
+        )
+        .await;
 
     assert!(
         matches!(refused, Err(MultiRenameError::PreviewOutOfDate)),
         "{refused:?}"
     );
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn rename_waits_while_a_row_is_still_reading() {
     let (_dir, listing) = folder("media-still-reading", &["song.mp3"], &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
 
     // Never started: the file stays `Reading`.
-    let preview = preview_session(&session.session_id, &title_mask()).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &title_mask())
+        .expect("a preview");
     assert_eq!(preview.rows[0].status, RowStatus::Reading);
     assert_eq!(preview.counts.reading, 1);
 
     let events = Arc::new(CollectorEventSink::new());
-    let refused = apply(events, session.session_id.clone(), preview.preview_id).await;
+    let refused = app_multi_rename()
+        .apply(events, session.session_id.clone(), preview.preview_id)
+        .await;
     assert!(matches!(refused, Err(MultiRenameError::StillReading)), "{refused:?}");
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn the_preview_uses_what_was_read() {
     let (_dir, listing) = folder("media-preview", &["track01.mp3", "track02.mp3"], &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let titles = HashMap::from([("track01.mp3", "One More Time"), ("track02.mp3", "Aerodynamic")]);
     let (events, calls) = (Events::default(), Calls::default());
-    start_media_with(
-        &session.session_id,
-        loader(8, &events, &calls, move |job| Ok(titled(titles[job.name.as_str()]))),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(8, &events, &calls, move |job| Ok(titled(titles[job.name.as_str()]))),
+        )
+        .expect("the read starts");
     read_through(&session.session_id).await;
 
-    let preview = preview_session(&session.session_id, &title_mask()).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &title_mask())
+        .expect("a preview");
 
     let names: Vec<&str> = preview.rows.iter().map(|row| row.new_name.as_str()).collect();
     assert_eq!(names, vec!["One More Time.mp3", "Aerodynamic.mp3"]);
     assert_eq!(preview.counts.ready, 2);
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn field_samples_show_the_token_on_the_rows_asked_and_count_the_whole_session() {
     let (_dir, listing) = folder("media-samples", &["a.mp3", "b.mp3", "c.txt"], &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
-    let before = field_samples(&session.session_id, "=tag.title", &[0]).expect("samples");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
+    let before = app_multi_rename()
+        .field_samples(&session.session_id, "=tag.title", &[0])
+        .expect("samples");
     assert_eq!(before.usage.reading, 2, "asked before the read");
     let (events, calls) = (Events::default(), Calls::default());
-    start_media_with(
-        &session.session_id,
-        loader(8, &events, &calls, |job| {
-            Ok(if job.name == "a.mp3" {
-                titled("Veridis Quo")
-            } else {
-                MediaFacts::default()
-            })
-        }),
-    )
-    .expect("the read starts");
+    app_multi_rename()
+        .start_media_with(
+            &session.session_id,
+            loader(8, &events, &calls, |job| {
+                Ok(if job.name == "a.mp3" {
+                    titled("Veridis Quo")
+                } else {
+                    MediaFacts::default()
+                })
+            }),
+        )
+        .expect("the read starts");
     read_through(&session.session_id).await;
 
-    let samples = field_samples(&session.session_id, "=tag.title", &[0, 1, 7]).expect("samples");
+    let samples = app_multi_rename()
+        .field_samples(&session.session_id, "=tag.title", &[0, 1, 7])
+        .expect("samples");
 
     assert_eq!(samples.samples.len(), 2, "a row past the end is left out");
     assert_eq!(samples.samples[0].text.as_deref(), Some("Veridis Quo"));
@@ -571,38 +647,44 @@ async fn field_samples_show_the_token_on_the_rows_asked_and_count_the_whole_sess
             reading: 0
         }
     );
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[test]
 fn field_samples_say_reading_before_the_read_and_refuse_other_tokens() {
     let (_dir, listing) = folder("media-samples-early", &["a.mp3"], &[]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
 
-    let samples = field_samples(&session.session_id, "=tag.title", &[0]).expect("samples");
+    let samples = app_multi_rename()
+        .field_samples(&session.session_id, "=tag.title", &[0])
+        .expect("samples");
     assert_eq!(samples.samples[0].gap, Some(FieldGap::Reading));
     assert_eq!(samples.usage.reading, 1);
     // Asked again with nothing read since: the same answer (from the usage cache).
     assert_eq!(
-        field_samples(&session.session_id, "=tag.title", &[0]).expect("samples"),
+        app_multi_rename()
+            .field_samples(&session.session_id, "=tag.title", &[0])
+            .expect("samples"),
         samples
     );
 
     assert!(matches!(
-        field_samples(&session.session_id, "N2-5", &[0]),
+        app_multi_rename().field_samples(&session.session_id, "N2-5", &[0]),
         Err(MultiRenameError::Spec { .. })
     ));
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[test]
 fn asking_a_closed_session_says_so() {
     assert!(matches!(
-        media_progress("multi-rename-never-opened"),
+        app_multi_rename().media_progress("multi-rename-never-opened"),
         Err(MultiRenameError::SessionClosed)
     ));
     assert!(matches!(
-        prioritize_media("multi-rename-never-opened", &[0]),
+        app_multi_rename().prioritize_media("multi-rename-never-opened", &[0]),
         Err(MultiRenameError::SessionClosed)
     ));
 }

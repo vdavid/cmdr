@@ -5,26 +5,27 @@ sheet is `src/lib/multi-rename/`.
 
 ## Module map
 
-The pure engine is `crates/cmdr-multi-rename` (`mask`, `transform`, `transliterate`, `plan`, `error`, `presets`,
-`history`, `names_file`), re-exported here so the app names it `crate::multi_rename::…`. This folder is its host:
+The engine is `crates/cmdr-multi-rename` (the pure modules, plus `MultiRename`: sessions in `session.rs`, media reads
+in `media.rs`, apply in `run.rs`), re-exported here so the app names it `crate::multi_rename::…`. This folder is its
+host:
 
-- `session.rs` one sheet's files in rename order (`move_row`), its latest preview, paging, and Results names.
-- `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames`.
-- `media.rs` each file's EXIF and tags, cached per session and read in the background (`crates/cmdr-media-meta`).
+- `app_host.rs` the app's engine (`app_multi_rename`, a `LazyLock` on Tauri's runtime), its `MultiRenameHost` answers
+  (volume reads, `rename_place`, `io_budget`, the write engine), and the `MultiRenameMediaProgress` event.
 - `app_files.rs` the app's files: `LAST_SPEC` (last settings), `FIELD_HISTORY`, and `results_path`.
   `preset_store.rs` the presets file (`PRESETS`).
 
 ## Must-knows
 
-- **The selection becomes file names ONCE, when the sheet opens** (`session::open`, under the listing's sequence
+- **The selection becomes file names ONCE, when the sheet opens** (`MultiRename::open`, under the listing's sequence
   guard). ❌ Never map row numbers through the live listing again: a file appearing while the sheet is open shifts the
   rows, and Start would rename files the user never picked. A session file that's gone is `Missing`.
 - **Names stay in the backend.** The sheet gets counts and the page of rows it draws; apply takes `(session, preview)`
   ids, recomputes, and refuses with `PreviewOutOfDate` unless its ready rows are EXACTLY that preview's.
 - **A Results name is matched by its OLD name, never its line**, and passes every status check. The session
   reads back only the file it wrote, and apply renames with the edits its preview showed.
-- **Sessions are bounded** (`MAX_SESSIONS`, idle eviction on open).
-- **❌ No file read under `SESSIONS` or the media cache's lock**; `Session`'s `Drop` stops the loader.
+- **Sessions are bounded** (`MAX_SESSIONS`, idle eviction on open). The app's test build raises the cap in
+  `app_multi_rename` (its tests share one engine in parallel); ❌ never in the crate.
+- **❌ No file read under the sessions lock or the media cache's lock**; `Session`'s `Drop` stops the loader.
 - **`a|b` → `x|y` replaces in ONE pass** (`Replacement::Pairs`): `a|b` → `b|c` turns `a` into `b`, `one|two` →
   `two|one` swaps. ❌ Never chain the pairs: that's how `a` became `c`.
 - **TC's order is fixed**: mask, then search & replace, case, Greek to Latin, diacritics, and Normalize Unicode last.

@@ -12,20 +12,27 @@ publish = false
 workspace = true
 
 [features]
-# Test hooks a host's tests reach (none yet beyond `cmdr-fs`'s), kept off in every shipped build.
+# Test hooks a host's tests reach (`MultiRename::start_media_with`, `is_open`), kept off in every shipped build.
 testing = ["cmdr-fs/testing"]
 
 [dependencies]
 # The filesystem vocabulary: `FileEntry`, name folding and validation, routed kinds, private logging.
 cmdr-fs = { path = "../cmdr-fs" }
+# The listing engine a session's files come from (`Listings`: the selection's names, the folder's entries).
+cmdr-listing = { path = "../cmdr-listing" }
 # The media fields' vocabulary (`MediaFacts`, `MediaField`, `MediaValue`, `FieldKind`).
 cmdr-media-meta = { path = "../cmdr-media-meta" }
+# Apply's journal attribution (`Initiator::User`).
+cmdr-operation-log = { path = "../cmdr-operation-log" }
+# The write engine apply starts renames on (`start_renames`, `SourceFingerprint`), and
 # `RenameStartError`, which `MultiRenameError::CouldntStart` carries to the sheet.
 cmdr-operations = { path = "../cmdr-operations" }
 # The list rules presets' last settings and the field history follow (`RecentItem`).
 cmdr-recents = { path = "../cmdr-recents" }
 # The mask's dates; `Local` reads the offset from JS `Date` in the browser (default `wasmbind`).
 chrono = "0.4"
+# Apply's remote fingerprints, several at once, and the host's `rename_place` future.
+futures-util = "0.3"
 log = "0.4"
 regex = "1"
 serde = { version = "1", features = ["derive"] }

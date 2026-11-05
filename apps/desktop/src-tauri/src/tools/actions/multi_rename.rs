@@ -30,6 +30,7 @@ use super::{ToolError, ToolResult, fit_to_result_budget, resolve_pane_target_pat
 use crate::agent::AgentDb;
 use crate::agent::store::proposals::{GroupIntent, NewGroup, NewRename, NewSweep, OpSnapshot};
 use crate::ignore_poison::IgnorePoison;
+use crate::multi_rename::app_host::{app_multi_rename, volume_loader};
 use crate::multi_rename::media::{FileJob, Loader, MediaRead, SessionMedia};
 use crate::multi_rename::plan::{Compiled, MultiRenameSpec, NameEdits, NoMedia, PreviewRow, RowStatus, preview_names};
 use crate::security_log::ContentTool;
@@ -482,7 +483,8 @@ async fn read_media(
     }
     // Dropped at the end too, which is harmless: nothing reads after `read_all`.
     let _stop = CancelOnDrop(Arc::clone(&media));
-    media.read_all(loader).await;
+    // On the call's own runtime, the pool it has always read on.
+    media.read_all(loader, &tokio::runtime::Handle::current()).await;
     Ok(media)
 }
 
@@ -529,9 +531,10 @@ pub async fn execute_multi_rename<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx,
     let refused = RefusedReads::default();
     let media = if compiled.uses_media() {
         media_fields_admitted(ctx.caller)?;
-        let open = crate::multi_rename::session::media_over(&volume_id, &folder);
+        let open = app_multi_rename().media_over(&volume_id, &folder);
         // No one watches this read's progress: the call's answer is its end.
-        let loader = gated(Loader::for_volume(volume_id.clone(), Arc::new(|_| {})), &refused);
+        let runtime = tokio::runtime::Handle::current();
+        let loader = gated(volume_loader(volume_id.clone(), Arc::new(|_| {}), &runtime), &refused);
         let media = read_media(&folder, &names, &siblings, &open, loader, MAX_MEDIA_READS).await?;
         note_content_read(ctx.caller, "multi_rename", Access::ReadContents);
         Some(media)

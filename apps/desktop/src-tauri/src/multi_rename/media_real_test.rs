@@ -13,9 +13,10 @@ use cmdr_media_meta::MediaField;
 use cmdr_media_meta::test_fixtures::{apple_meta, atom, concat, exif_jpeg, ftyp, id3_mp3_with_cover, mvhd_v0};
 use exif::{Field, In, Tag, Value};
 
+use super::app_host::app_multi_rename;
 use super::plan::{MultiRenameSpec, RowStatus};
 use super::run_test::strip_diacritics;
-use super::session::{MultiRenamePreview, close, media_progress, open, preview_session, start_media};
+use super::session::MultiRenamePreview;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::test_support::{TestDir, wait_until_async};
 
@@ -86,17 +87,27 @@ async fn photos_movies_and_songs_on_the_local_disk_name_themselves() {
             ("notes.txt", b"not media".to_vec()),
         ],
     );
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
-    start_media(&session.session_id, Arc::new(|_| {})).expect("the read starts");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
+    app_multi_rename()
+        .start_media(&session.session_id, Arc::new(|_| {}))
+        .expect("the read starts");
     // Under nextest's 8 s limit, so a stuck read fails with this wait's message.
     wait_until_async(Duration::from_secs(5), "the media read to finish", || {
-        media_progress(&session.session_id).is_ok_and(|p| p.done)
+        app_multi_rename()
+            .media_progress(&session.session_id)
+            .is_ok_and(|p| p.done)
     })
     .await;
-    let progress = media_progress(&session.session_id).expect("progress");
+    let progress = app_multi_rename()
+        .media_progress(&session.session_id)
+        .expect("progress");
     assert_eq!((progress.read, progress.total), (3, 3));
 
-    let dated = preview_session(&session.session_id, &masked("[=exif.taken:d] [N]")).expect("a preview");
+    let dated = app_multi_rename()
+        .preview(&session.session_id, &masked("[=exif.taken:d] [N]"))
+        .expect("a preview");
     assert_eq!(
         row(&dated, "IMG_0001.jpg"),
         ("2026-07-14 IMG_0001.jpg", &RowStatus::Ready)
@@ -107,7 +118,9 @@ async fn photos_movies_and_songs_on_the_local_disk_name_themselves() {
     };
     assert_eq!(row(&dated, "notes.txt"), ("notes.txt", &no_date));
 
-    let songs = preview_session(&session.session_id, &masked("[=tag.artist] - [=tag.title]")).expect("a preview");
+    let songs = app_multi_rename()
+        .preview(&session.session_id, &masked("[=tag.artist] - [=tag.title]"))
+        .expect("a preview");
     assert_eq!(
         row(&songs, "song.mp3"),
         ("Daft Punk - Digital Love.mp3", &RowStatus::Ready)
@@ -116,7 +129,7 @@ async fn photos_movies_and_songs_on_the_local_disk_name_themselves() {
         field: MediaField::TagArtist,
     };
     assert_eq!(row(&songs, "notes.txt"), ("notes.txt", &no_artist));
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 /// The new name and status of the row whose old name is `old_name`.

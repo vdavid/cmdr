@@ -1923,7 +1923,7 @@ is derived from the PATH while all I/O routing happens in `VolumeManager::resolv
   (`file-operation-commands.ts::startRename`), and `rename-flow.svelte.ts::activateRename`, which every activation
   passes (click-to-rename, a chained step, the Move dialog's in-place rename), refuses it again with the portal message
   as a toast. Multi-rename can't see its rows synchronously, so its Start refuses in the backend
-  (`multi_rename/run.rs::apply`, `ReadOnly`).
+  (`apps/desktop/src-tauri/src/multi_rename/app_host.rs`'s `rename_place`, `ReadOnly`).
 - **No own tint, no breadcrumb special case.** A portal pane lives on the parent drive and shows that drive's tint, the
   same way an archive pane does, so `git-portal` is a capability kind only. The path bar renders
   `…/repo/.git/branches/main/src` for free (`breadcrumbDisplayPath` strips the parent `volumePath` prefix), and

@@ -3,7 +3,9 @@
 //! that cache (progress, the picker's overview, a token's samples).
 //!
 //! `session.rs` owns one [`SessionMedia`] per session and hands every preview a
-//! copy of it as the [`MediaLookup`]. ❌ Nothing here takes `SESSIONS`, no file is
+//! copy of it as the [`MediaLookup`]. How a file is read is the host's
+//! ([`Loader`], from `MultiRenameHost::media_loader`). ❌ Nothing here takes the
+//! sessions' lock, no file is
 //! read under any lock, and the cache's own lock is held only for short steps:
 //! storing an answer, copying the cache out, or resolving a few sample rows.
 
@@ -13,27 +15,27 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use chrono::{Local, NaiveDateTime, TimeZone};
 use serde::{Deserialize, Serialize};
-use tauri_specta::Event;
 use unicode_normalization::UnicodeNormalization;
 
-use cmdr_fs::deadline::Deadline;
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_media_meta::{MediaFacts, MediaField, ReadError, VolumeByteSource, is_media_name, read_media_from};
+use cmdr_fs::pluralize::pluralize;
+use cmdr_fs::rt::{self, Instant, Runtime};
+use cmdr_media_meta::{MediaFacts, MediaField, ReadError, is_media_name};
 
-use super::mask::{FieldGap, FieldText, MediaToken, RowFacts, RowMedia};
-use super::plan::{MediaLookup, folder_names};
-use crate::ignore_poison::IgnorePoison;
+use crate::mask::{FieldGap, FieldText, MediaToken, RowFacts, RowMedia};
+use crate::plan::{MediaLookup, folder_names};
 
 const LOG_TARGET: &str = "multi_rename::media";
 
-/// How many files the loader reads at once. A NAS answers several requests in
+/// How many files a host's loader reads at once. A NAS answers several requests in
 /// parallel; MTP serializes inside its own backend, so no per-volume tuning.
-pub(crate) const MAX_PARALLEL_READS: usize = 8;
+pub const MAX_PARALLEL_READS: usize = 8;
 
 /// The least time between two progress events; a run's last one always goes.
 const PROGRESS_EVERY: Duration = Duration::from_millis(250);
@@ -41,10 +43,6 @@ const PROGRESS_EVERY: Duration = Duration::from_millis(250);
 /// How many reads in a row may time out or fail on I/O before the loader takes
 /// the volume for dead and marks every file left `Unreadable`.
 const GIVE_UP_AFTER_FAILURES: usize = 3;
-
-/// One file's read budget on a local disk; a volume with a live session gets
-/// more (`io_budget_for_volume`).
-const READ_BUDGET: Duration = Duration::from_secs(10);
 
 /// How far a session's media read got. `total` counts media files only.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -55,12 +53,12 @@ pub struct MediaProgress {
     pub done: bool,
 }
 
-/// The `multi-rename-media-progress` event: a session's read moved on. At most
-/// every 250 ms, plus a final one with `done`. ❗ The struct name kebab-cases to
-/// the wire event name.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type, Event)]
+/// A session's read moved on: the `multi-rename-media-progress` event's body,
+/// which a host sends as is (the desktop through its typed event, which
+/// serializes the same). At most every 250 ms, plus a final one with `done`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MultiRenameMediaProgress {
+pub struct MediaProgressEvent {
     pub session_id: String,
     pub read: usize,
     pub total: usize,
@@ -123,7 +121,7 @@ pub struct FieldUsage {
 }
 
 /// One file the loader reads.
-pub(crate) struct FileJob {
+pub struct FileJob {
     /// Where it is on the session's volume.
     pub path: PathBuf,
     /// Its name, which picks the parser.
@@ -137,14 +135,14 @@ pub(crate) struct FileJob {
     stamp: Stamp,
 }
 
-/// Reads one file's facts. Runs on a blocking thread.
-pub(crate) type FileReader = Arc<dyn Fn(&FileJob) -> Result<MediaFacts, ReadError> + Send + Sync>;
+/// Reads one file's facts. Runs on a blocking thread (inline in the browser).
+pub type FileReader = Arc<dyn Fn(&FileJob) -> Result<MediaFacts, ReadError> + Send + Sync>;
 
 /// Hands a progress event to the sheet.
-pub(crate) type ProgressEmit = Arc<dyn Fn(MultiRenameMediaProgress) + Send + Sync>;
+pub type ProgressEmit = Arc<dyn Fn(MediaProgressEvent) + Send + Sync>;
 
 /// What a session's loader reads with and reports to.
-pub(crate) struct Loader {
+pub struct Loader {
     pub reader: FileReader,
     pub emit: ProgressEmit,
     /// How many files at once.
@@ -155,47 +153,7 @@ pub(crate) struct Loader {
 }
 
 /// Whether a session's volume can no longer answer.
-pub(crate) type VolumeGone = Arc<dyn Fn() -> bool + Send + Sync>;
-
-impl Loader {
-    /// Reads files on the volume `volume_id` (resolved per file, so a reconnect's
-    /// new volume is the one read) and reports through `emit`.
-    pub(crate) fn for_volume(volume_id: String, emit: ProgressEmit) -> Self {
-        Self {
-            reader: volume_reader(volume_id.clone()),
-            emit,
-            parallel: MAX_PARALLEL_READS,
-            volume_gone: Arc::new(move || {
-                crate::file_system::volume::manager::get_volume_manager()
-                    .get(&volume_id)
-                    .is_none_or(|volume| volume.connection_state().is_some_and(|state| !state.is_live()))
-            }),
-        }
-    }
-}
-
-/// The real [`FileReader`]: `read_media_from` over the file's bytes through
-/// `Volume::read_range` (64 KiB blocks, cover art never fetched), within one
-/// file's budget. ❗ Builds on the runtime that
-/// calls it, so call it on the async executor.
-fn volume_reader(volume_id: String) -> FileReader {
-    let handle = tokio::runtime::Handle::current();
-    Arc::new(move |job: &FileJob| {
-        let volume = crate::file_system::volume::manager::get_volume_manager()
-            .get(&volume_id)
-            .ok_or_else(|| ReadError::Io("the session's volume isn't registered".to_string()))?;
-        let budget = crate::file_system::volume::io_budget_for_volume(&volume_id, READ_BUDGET);
-        let source = VolumeByteSource::new(
-            volume,
-            job.path.clone(),
-            job.size,
-            handle.clone(),
-            Deadline::new(budget),
-            Arc::clone(&job.cancel),
-        );
-        read_media_from(source, &job.name)
-    })
-}
+pub type VolumeGone = Arc<dyn Fn() -> bool + Send + Sync>;
 
 /// What the listing said about a file when it was read: a different size or
 /// date means it changed, and its facts are stale.
@@ -216,7 +174,7 @@ impl Stamp {
 
 /// Where one file's read stands.
 #[derive(Debug, Clone)]
-pub(crate) enum MediaRead {
+pub enum MediaRead {
     Reading,
     Read(Arc<MediaFacts>),
     /// Why is in the log; the row only says it couldn't be read.
@@ -266,8 +224,8 @@ struct Inner {
     read: usize,
     /// Bumped on every change to `files`, so a remembered usage knows it's stale.
     generation: u64,
-    /// Set by `start`; a loader can only run once it's there.
-    loader: Option<(Arc<Loader>, tokio::runtime::Handle)>,
+    /// Set by `start`, with the runtime it reads on; a loader can only run once it's there.
+    loader: Option<(Arc<Loader>, Runtime)>,
     running: bool,
 }
 
@@ -345,7 +303,7 @@ struct RememberedUsage {
 }
 
 /// One session's media: every file's read, the queue, and the loader's state.
-pub(crate) struct SessionMedia {
+pub struct SessionMedia {
     session_id: String,
     dir: PathBuf,
     cancel: Arc<AtomicBool>,
@@ -358,7 +316,7 @@ impl SessionMedia {
     /// whose listing entries are `entries`: a media file is `Reading` and queued in
     /// rename order, a folder or any other file `NotMedia`. Nothing reads until
     /// [`start`](Self::start).
-    pub(crate) fn seed(session_id: &str, dir: PathBuf, names: &[String], entries: &[FileEntry]) -> Self {
+    pub fn seed(session_id: &str, dir: PathBuf, names: &[String], entries: &[FileEntry]) -> Self {
         let by_name: HashMap<&str, &FileEntry> = entries.iter().map(|e| (e.name.as_str(), e)).collect();
         let mut files = HashMap::with_capacity(names.len());
         let mut queue = VecDeque::new();
@@ -407,16 +365,16 @@ impl SessionMedia {
     }
 
     /// How far the read got.
-    pub(crate) fn progress(&self) -> MediaProgress {
+    pub fn progress(&self) -> MediaProgress {
         self.lock().progress()
     }
 
-    /// Starts reading with `loader`, on the runtime that calls this. A second
-    /// call keeps the first loader.
-    pub(crate) fn start(self: &Arc<Self>, loader: Loader) {
+    /// Starts reading with `loader`, on `runtime`. A second call keeps the first
+    /// loader and runtime.
+    pub(crate) fn start(self: &Arc<Self>, loader: Loader, runtime: Runtime) {
         let mut inner = self.lock();
         if inner.loader.is_none() {
-            inner.loader = Some((Arc::new(loader), tokio::runtime::Handle::current()));
+            inner.loader = Some((Arc::new(loader), runtime));
         }
         self.kick(&mut inner);
     }
@@ -426,16 +384,16 @@ impl SessionMedia {
         if inner.running || inner.queue.is_empty() || self.is_cancelled() {
             return;
         }
-        let Some((loader, handle)) = inner.loader.clone() else {
+        let Some((loader, runtime)) = inner.loader.clone() else {
             return;
         };
         inner.running = true;
-        handle.spawn(Arc::clone(self).run(loader));
+        runtime.spawn(Arc::clone(self).run(loader, runtime.clone()));
     }
 
     /// Stops the loader: no new read starts, and a read in flight stops at its
     /// next fetch. For a session that's going.
-    pub(crate) fn cancel(&self) {
+    pub fn cancel(&self) {
         self.cancel.store(true, Ordering::Relaxed);
     }
 
@@ -464,7 +422,7 @@ impl SessionMedia {
     /// Takes what `other` (a session over the same folder) read: each file waiting here
     /// that `other` read for the same listing facts, and `allowed` lets through, gets its
     /// answer. The rest stay queued for this session's own loader.
-    pub(crate) fn adopt_where(&self, other: &SessionMedia, allowed: impl Fn(&str, &MediaRead) -> bool) {
+    pub fn adopt_where(&self, other: &SessionMedia, allowed: impl Fn(&str, &MediaRead) -> bool) {
         // One lock at a time: `other`'s answers are copied out before ours is taken.
         let answers: Vec<(Arc<str>, Stamp, MediaRead)> = other
             .lock()
@@ -484,9 +442,10 @@ impl SessionMedia {
         queue.retain(|name| files.get(name).is_some_and(|c| c.state.is_reading()));
     }
 
-    /// Reads every waiting file with `loader`, inline, and returns once each is read,
-    /// unreadable, or cancelled. For a preview with no sheet (the MCP `multi_rename` tool).
-    pub(crate) async fn read_all(self: &Arc<Self>, loader: Loader) {
+    /// Reads every waiting file with `loader` (its blocking reads on `runtime`) and
+    /// returns once each is read, unreadable, or cancelled. For a preview with no
+    /// sheet (the MCP `multi_rename` tool).
+    pub async fn read_all(self: &Arc<Self>, loader: Loader, runtime: &Runtime) {
         {
             let mut inner = self.lock();
             if inner.running || inner.queue.is_empty() || self.is_cancelled() {
@@ -494,12 +453,12 @@ impl SessionMedia {
             }
             inner.running = true;
         }
-        Arc::clone(self).run(Arc::new(loader)).await;
+        Arc::clone(self).run(Arc::new(loader), runtime.clone()).await;
     }
 
     /// A copy of the cache as one preview's [`MediaLookup`], so the preview runs
     /// without the lock. [`Lookup::finish`] re-queues the files it found changed.
-    pub(crate) fn lookup(self: &Arc<Self>) -> Lookup {
+    pub fn lookup(self: &Arc<Self>) -> Lookup {
         let files = self.lock().files.clone();
         Lookup {
             media: Arc::clone(self),
@@ -516,8 +475,8 @@ impl SessionMedia {
     /// volume reports it's gone, every file still waiting is `Unreadable` at once.
     /// So at most `parallel + GIVE_UP_AFTER_FAILURES - 1` reads time out per run,
     /// each leaving one detached `read_range` behind (`VolumeByteSource`).
-    async fn run(self: Arc<Self>, loader: Arc<Loader>) {
-        let mut reads = tokio::task::JoinSet::new();
+    async fn run(self: Arc<Self>, loader: Arc<Loader>, runtime: Runtime) {
+        let mut reads = rt::task::JoinSet::new();
         let mut last_emit: Option<Instant> = None;
         let mut failures_in_a_row = 0;
         loop {
@@ -530,13 +489,16 @@ impl SessionMedia {
                     break;
                 };
                 let reader = Arc::clone(&loader.reader);
-                reads.spawn_blocking(move || {
-                    // A parser that panics on a hostile file makes it unreadable, not the read stuck.
-                    match catch_unwind(AssertUnwindSafe(|| reader(&job))) {
-                        Ok(result) => (job, result, false),
-                        Err(_) => (job, Err(ReadError::Io("the reader panicked".to_string())), true),
-                    }
-                });
+                reads.spawn_blocking_on(
+                    move || {
+                        // A parser that panics on a hostile file makes it unreadable, not the read stuck.
+                        match catch_unwind(AssertUnwindSafe(|| reader(&job))) {
+                            Ok(result) => (job, result, false),
+                            Err(_) => (job, Err(ReadError::Io("the reader panicked".to_string())), true),
+                        }
+                    },
+                    &runtime,
+                );
             }
             let Some(joined) = reads.join_next().await else {
                 if self.stop_if_idle() {
@@ -557,8 +519,8 @@ impl SessionMedia {
                 // `catch_unwind` above leaves only a runtime shutdown here.
                 Err(error) => log::debug!(target: LOG_TARGET, "a media read didn't come back: {error}"),
             }
-            if !self.is_cancelled() && last_emit.is_none_or(|at| at.elapsed() >= PROGRESS_EVERY) {
-                last_emit = Some(Instant::now());
+            if !self.is_cancelled() && last_emit.is_none_or(|at| rt::since(at) >= PROGRESS_EVERY) {
+                last_emit = Some(rt::now());
                 self.emit(&loader);
             }
         }
@@ -574,7 +536,7 @@ impl SessionMedia {
             log::warn!(
                 target: LOG_TARGET,
                 "Stopped reading media fields: {why}; {} left unread",
-                crate::pluralize::pluralize(marked as u64, "file")
+                pluralize(marked as u64, "file")
             );
         }
     }
@@ -595,7 +557,7 @@ impl SessionMedia {
     /// read, so a run ending while another starts never claims it.
     fn emit(&self, loader: &Loader) {
         let progress = self.progress();
-        (loader.emit)(MultiRenameMediaProgress {
+        (loader.emit)(MediaProgressEvent {
             session_id: self.session_id.clone(),
             read: progress.read,
             total: progress.total,
@@ -744,7 +706,7 @@ fn local_time(unix_seconds: u64) -> Option<NaiveDateTime> {
 /// The cache, copied for one preview. A file whose listing entry no longer
 /// matches what was read answers `Reading`, and [`finish`](Self::finish) queues
 /// it again.
-pub(crate) struct Lookup {
+pub struct Lookup {
     media: Arc<SessionMedia>,
     files: HashMap<Arc<str>, Cached>,
     changed: RefCell<Vec<(String, bool, Stamp)>>,

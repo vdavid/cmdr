@@ -646,21 +646,29 @@ var surfaceGuardedCrates = []struct {
 		},
 	},
 	{
-		// Measured 2026-11-05, at the extraction, and set to exactly what the crate
-		// exposes, with no headroom.
+		// Measured 2026-11-05, when the sessions, media reads, and apply joined the
+		// pure engine, and set to exactly what the crate exposes, with no headroom.
+		// Argued in `crates/cmdr-multi-rename/DETAILS.md` § "The public surface".
 		//
-		// Seven root promises, all modules: the pure engine the desktop host's
-		// sessions, apply, MCP tool, and IPC commands name (`error`, `history`,
-		// `mask`, `names_file`, `plan`, `presets`, `transform`). Their 74 items are
-		// the wire types (the spec, preview rows and statuses, errors, presets, last
-		// settings, history entries), the mask's parsed tokens and row facts, the
-		// preset and history list ops, and the Results file's read and write. A wider
-		// surface is argued in `crates/cmdr-multi-rename/DETAILS.md` first.
-		Name: "cmdr-multi-rename",
+		// 13 root promises: ten modules (`error`, `history`, `mask`, `media`,
+		// `names_file`, `plan`, `presets`, `run`, `session`, `transform`), whose
+		// paths the wire types keep for the app's `bindings.ts`, plus the engine
+		// (`MultiRename`) and the host seam (`MultiRenameHost`, `RenamePlace`). The
+		// handle's 18 methods are one per thing the sheet asks a session (open, the
+		// media read's start, progress, overview, samples, and priority, preview,
+		// page, row move, range samples, Results' write, read, and clear, the spec
+		// for the history, apply, close), plus `builder` and `media_over` for the
+		// MCP tool. The 110 module items are the wire types, the loader seam a host
+		// fills (`Loader`, `FileJob`, `FileReader`, `ProgressEmit`), the
+		// `SessionMedia` calls the MCP tool shares, and the pure engine's tokens,
+		// list ops, and Results file. A wider surface is argued in that DETAILS first.
+		Name:       "cmdr-multi-rename",
+		HandleType: "MultiRename",
 		Ceilings: surfaceCeilings{
-			RootPromises:   7,
-			PublicModules:  7,
-			SubsystemItems: 74,
+			RootPromises:   13,
+			HandleMethods:  18,
+			PublicModules:  10,
+			SubsystemItems: 110,
 		},
 	},
 }

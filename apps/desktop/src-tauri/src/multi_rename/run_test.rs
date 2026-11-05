@@ -4,10 +4,10 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use super::app_host::app_multi_rename;
 use super::error::{MultiRenameError, ReadOnlyPlace};
 use super::plan::{MultiRenameSpec, RowStatus};
-use super::run::apply;
-use super::session::{FIRST_PAGE, PreviewFilter, close, is_open, open, page, preview_session, spec_of};
+use super::session::{FIRST_PAGE, PreviewFilter};
 use super::transform::CaseChange;
 use crate::ignore_poison::IgnorePoison;
 use crate::test_support::{TestDir, wait_until_async};
@@ -94,15 +94,20 @@ pub(super) async fn settled(events: &CollectorEventSink) {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn the_folder_comes_out_without_diacritics_and_the_rest_is_left_alone() {
     let (dir, listing) = folder("multi-rename-apply", &["Žádost o přezkum.pdf", "plán.txt", "plain.txt"]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     assert_eq!(session.count, 3);
 
-    let preview = preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &strip_diacritics())
+        .expect("a preview");
     assert_eq!(preview.counts.ready, 2, "{preview:?}");
     assert_eq!(preview.counts.unchanged, 1);
 
     let events = Arc::new(CollectorEventSink::new());
-    let started = apply(events.clone(), session.session_id.clone(), preview.preview_id)
+    let started = app_multi_rename()
+        .apply(events.clone(), session.session_id.clone(), preview.preview_id)
         .await
         .expect("the rename starts");
     assert_eq!(started.renaming, 2);
@@ -113,7 +118,7 @@ async fn the_folder_comes_out_without_diacritics_and_the_rest_is_left_alone() {
         names_on_disk(&dir),
         vec!["Zadost o prezkum.pdf", "plain.txt", "plan.txt"]
     );
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 /// The data-safety one: the selection is three files, and a file that lands
@@ -121,16 +126,21 @@ async fn the_folder_comes_out_without_diacritics_and_the_rest_is_left_alone() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_file_appearing_above_the_selection_never_joins_it() {
     let (dir, listing) = folder("multi-rename-shift", &["b-ä.txt", "c-ö.txt", "d-ü.txt", "e-é.txt"]);
-    let session = open(listing.id(), true, Some(&[0, 1, 2]), 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, Some(&[0, 1, 2]), 0)
+        .expect("the session opens");
 
     land_file_on_top(&listing, &dir, "a-å.txt");
 
-    let preview = preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &strip_diacritics())
+        .expect("a preview");
     let old: Vec<&str> = preview.rows.iter().map(|r| r.old_name.as_str()).collect();
     assert_eq!(old, vec!["b-ä.txt", "c-ö.txt", "d-ü.txt"]);
 
     let events = Arc::new(CollectorEventSink::new());
-    let started = apply(events.clone(), session.session_id.clone(), preview.preview_id)
+    let started = app_multi_rename()
+        .apply(events.clone(), session.session_id.clone(), preview.preview_id)
         .await
         .expect("the rename starts");
     assert_eq!(started.renaming, 3);
@@ -140,7 +150,7 @@ async fn a_file_appearing_above_the_selection_never_joins_it() {
         names_on_disk(&dir),
         vec!["a-å.txt", "b-a.txt", "c-o.txt", "d-u.txt", "e-é.txt"]
     );
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[test]
@@ -149,7 +159,7 @@ fn a_selection_read_at_an_older_sequence_is_refused() {
     land_file_on_top(&listing, &dir, "a.txt");
 
     assert!(matches!(
-        open(listing.id(), true, Some(&[0]), 0),
+        app_multi_rename().open(listing.id(), true, Some(&[0]), 0),
         Err(MultiRenameError::SelectionChanged { .. })
     ));
 }
@@ -157,11 +167,15 @@ fn a_selection_read_at_an_older_sequence_is_refused() {
 #[test]
 fn a_session_file_that_vanished_previews_as_missing() {
     let (dir, listing) = folder("multi-rename-vanished", &["a-ä.txt", "b-ö.txt"]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
 
     remove_file(&listing, &dir, "a-ä.txt");
 
-    let preview = preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &strip_diacritics())
+        .expect("a preview");
     assert_eq!(preview.rows.len(), 2);
     assert_eq!(preview.rows[0].old_name, "a-ä.txt");
     assert_eq!(preview.rows[0].status, RowStatus::Missing);
@@ -169,26 +183,32 @@ fn a_session_file_that_vanished_previews_as_missing() {
     assert_eq!(preview.rows[1].old_name, "b-ö.txt");
     assert_eq!(preview.rows[1].status, RowStatus::Ready);
     assert_eq!((preview.counts.ready, preview.counts.problems), (1, 1));
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn nothing_ready_starts_nothing() {
     let (_dir, listing) = folder("multi-rename-nothing", &["plain.txt"]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
-    let preview = preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &strip_diacritics())
+        .expect("a preview");
 
     let events = Arc::new(CollectorEventSink::new());
-    let outcome = apply(events, session.session_id.clone(), preview.preview_id).await;
+    let outcome = app_multi_rename()
+        .apply(events, session.session_id.clone(), preview.preview_id)
+        .await;
 
     assert!(matches!(outcome, Err(MultiRenameError::NothingToRename)));
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[test]
 fn a_gone_listing_is_refused() {
     assert!(matches!(
-        open("no-such-listing", true, None, 0),
+        app_multi_rename().open("no-such-listing", true, None, 0),
         Err(MultiRenameError::Gone { .. })
     ));
 }
@@ -196,49 +216,65 @@ fn a_gone_listing_is_refused() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_folder_that_changed_since_the_preview_is_refused() {
     let (dir, listing) = folder("multi-rename-stale", &["plán.txt", "zoo-ü.txt"]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
-    let preview = preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &strip_diacritics())
+        .expect("a preview");
     assert_eq!(preview.counts.ready, 2);
 
     // A file takes one of the new names after the user saw the preview.
     land_file_on_top(&listing, &dir, "plan.txt");
 
     let events = Arc::new(CollectorEventSink::new());
-    let outcome = apply(events, session.session_id.clone(), preview.preview_id).await;
+    let outcome = app_multi_rename()
+        .apply(events, session.session_id.clone(), preview.preview_id)
+        .await;
 
     assert!(matches!(outcome, Err(MultiRenameError::PreviewOutOfDate)));
     assert!(dir.join("plán.txt").exists(), "nothing was renamed");
     assert!(dir.join("zoo-ü.txt").exists(), "nothing was renamed");
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_preview_a_newer_one_replaced_is_refused() {
     let (dir, listing) = folder("multi-rename-replaced", &["plán.txt"]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
-    let seen = preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
-    let newer = preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
+    let seen = app_multi_rename()
+        .preview(&session.session_id, &strip_diacritics())
+        .expect("a preview");
+    let newer = app_multi_rename()
+        .preview(&session.session_id, &strip_diacritics())
+        .expect("a preview");
     assert!(newer.preview_id > seen.preview_id);
 
     let events = Arc::new(CollectorEventSink::new());
-    let outcome = apply(events, session.session_id.clone(), seen.preview_id).await;
+    let outcome = app_multi_rename()
+        .apply(events, session.session_id.clone(), seen.preview_id)
+        .await;
 
     assert!(matches!(outcome, Err(MultiRenameError::PreviewOutOfDate)));
     assert!(matches!(
-        page(&session.session_id, seen.preview_id, 0, 10, PreviewFilter::All),
+        app_multi_rename().page(&session.session_id, seen.preview_id, 0, 10, PreviewFilter::All),
         Err(MultiRenameError::PreviewOutOfDate)
     ));
     assert!(matches!(
-        spec_of(&session.session_id, seen.preview_id),
+        app_multi_rename().spec_of(&session.session_id, seen.preview_id),
         Err(MultiRenameError::PreviewOutOfDate)
     ));
     assert_eq!(
-        spec_of(&session.session_id, newer.preview_id).expect("the latest"),
+        app_multi_rename()
+            .spec_of(&session.session_id, newer.preview_id)
+            .expect("the latest"),
         strip_diacritics(),
         "the field history records the spec of the preview that ran"
     );
     assert!(dir.join("plán.txt").exists(), "nothing was renamed");
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[test]
@@ -246,37 +282,44 @@ fn the_preview_answers_one_page_and_the_rest_pages_in() {
     let names: Vec<String> = (0..FIRST_PAGE + 50).map(|i| format!("f{i:04}.txt")).collect();
     let refs: Vec<&str> = names.iter().map(String::as_str).collect();
     let (_dir, listing) = folder("multi-rename-pages", &refs);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
 
-    let preview = preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &strip_diacritics())
+        .expect("a preview");
     assert_eq!(preview.rows.len(), FIRST_PAGE);
     assert_eq!(preview.counts.unchanged, FIRST_PAGE + 50);
 
-    let rest = page(
-        &session.session_id,
-        preview.preview_id,
-        FIRST_PAGE,
-        1000,
-        PreviewFilter::All,
-    )
-    .expect("a page");
+    let rest = app_multi_rename()
+        .page(
+            &session.session_id,
+            preview.preview_id,
+            FIRST_PAGE,
+            1000,
+            PreviewFilter::All,
+        )
+        .expect("a page");
     assert_eq!(rest.len(), 50);
     assert_eq!(rest[0].row, FIRST_PAGE);
     assert_eq!(rest[0].old_name, names[FIRST_PAGE]);
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[test]
 fn a_closed_session_answers_nothing() {
     let (_dir, listing) = folder("multi-rename-closed", &["a.txt"]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
-    assert!(is_open(&session.session_id));
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
+    assert!(app_multi_rename().is_open(&session.session_id));
 
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 
-    assert!(!is_open(&session.session_id));
+    assert!(!app_multi_rename().is_open(&session.session_id));
     assert!(matches!(
-        preview_session(&session.session_id, &strip_diacritics()),
+        app_multi_rename().preview(&session.session_id, &strip_diacritics()),
         Err(MultiRenameError::SessionClosed)
     ));
 }
@@ -290,35 +333,48 @@ fn problems_only_pages_through_the_problem_rows_alone() {
     names.push("zz.txt".to_string());
     let refs: Vec<&str> = names.iter().map(String::as_str).collect();
     let (_dir, listing) = folder("multi-rename-problems-only", &refs);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
-    let preview = preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &strip_diacritics())
+        .expect("a preview");
     assert_eq!(preview.counts.problems, 5);
 
-    let all = page(&session.session_id, preview.preview_id, 0, 100, PreviewFilter::Problems).expect("a page");
+    let all = app_multi_rename()
+        .page(&session.session_id, preview.preview_id, 0, 100, PreviewFilter::Problems)
+        .expect("a page");
     assert_eq!(all.len(), 5);
     assert!(all.iter().all(|r| r.status == RowStatus::TargetExists));
     assert!(all.windows(2).all(|w| w[0].row < w[1].row), "in rename order");
 
-    let tail = page(&session.session_id, preview.preview_id, 2, 2, PreviewFilter::Problems).expect("a page");
+    let tail = app_multi_rename()
+        .page(&session.session_id, preview.preview_id, 2, 2, PreviewFilter::Problems)
+        .expect("a page");
     assert_eq!(tail, all[2..4].to_vec());
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn normalizing_renames_a_decomposed_name_to_its_composed_spelling_on_disk() {
     let decomposed = "Z\u{030C}adost.pdf";
     let (dir, listing) = folder("multi-rename-normalize", &[decomposed]);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let spec = MultiRenameSpec {
         remove_diacritics: false,
         normalize_unicode: true,
         ..strip_diacritics()
     };
-    let preview = preview_session(&session.session_id, &spec).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &spec)
+        .expect("a preview");
     assert_eq!(preview.counts.ready, 1, "{preview:?}");
 
     let events = Arc::new(CollectorEventSink::new());
-    apply(events.clone(), session.session_id.clone(), preview.preview_id)
+    app_multi_rename()
+        .apply(events.clone(), session.session_id.clone(), preview.preview_id)
         .await
         .expect("the rename starts");
     settled(&events).await;
@@ -328,7 +384,7 @@ async fn normalizing_renames_a_decomposed_name_to_its_composed_spelling_on_disk(
         vec!["\u{017D}adost.pdf".to_string()],
         "the composed bytes are on disk"
     );
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 /// A repo's `.git/` lists git's real `worktrees/` folder as the portal's
@@ -346,21 +402,26 @@ async fn a_batch_holding_a_dot_git_category_row_is_refused_as_read_only() {
         .entries(list_directory_core(&dot_git, &crate::listing_host::backends::AppListings).expect("the dir lists"))
         .insert(crate::listing_host::listings(), "multi-rename-dot-git");
     crate::file_system::git::wiring::set_virtual_portal_enabled(true);
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let spec = MultiRenameSpec {
         name_mask: "[N]-old".to_string(),
         remove_diacritics: false,
         ..strip_diacritics()
     };
-    let preview = preview_session(&session.session_id, &spec).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &spec)
+        .expect("a preview");
     assert_eq!(preview.counts.ready, 2, "{preview:?}");
 
-    let outcome = apply(
-        Arc::new(CollectorEventSink::new()),
-        session.session_id.clone(),
-        preview.preview_id,
-    )
-    .await;
+    let outcome = app_multi_rename()
+        .apply(
+            Arc::new(CollectorEventSink::new()),
+            session.session_id.clone(),
+            preview.preview_id,
+        )
+        .await;
 
     assert!(
         matches!(
@@ -372,7 +433,7 @@ async fn a_batch_holding_a_dot_git_category_row_is_refused_as_read_only() {
         "{outcome:?}"
     );
     assert_eq!(names_on_disk(&dot_git), vec!["description", "worktrees"]);
-    close(&session.session_id);
+    app_multi_rename().close(&session.session_id);
 }
 
 /// A cached listing of `dir` on `volume_id`, showing every row.
@@ -386,22 +447,27 @@ fn listing_on(volume_id: &str, dir: &Path, tag: &str) -> TestListingGuard {
 
 /// Previews `name_mask` over every row of `listing` and applies it.
 async fn apply_mask(listing: &TestListingGuard, name_mask: &str) -> Result<(), MultiRenameError> {
-    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let session = app_multi_rename()
+        .open(listing.id(), true, None, 0)
+        .expect("the session opens");
     let spec = MultiRenameSpec {
         name_mask: name_mask.to_string(),
         remove_diacritics: false,
         ..strip_diacritics()
     };
-    let preview = preview_session(&session.session_id, &spec).expect("a preview");
+    let preview = app_multi_rename()
+        .preview(&session.session_id, &spec)
+        .expect("a preview");
     assert!(preview.counts.ready > 0, "{preview:?}");
-    let outcome = apply(
-        Arc::new(CollectorEventSink::new()),
-        session.session_id.clone(),
-        preview.preview_id,
-    )
-    .await
-    .map(|_| ());
-    close(&session.session_id);
+    let outcome = app_multi_rename()
+        .apply(
+            Arc::new(CollectorEventSink::new()),
+            session.session_id.clone(),
+            preview.preview_id,
+        )
+        .await
+        .map(|_| ());
+    app_multi_rename().close(&session.session_id);
     outcome
 }
 

@@ -98,7 +98,7 @@ Depth for the handlers shared with outside clients. `CLAUDE.md` holds the must-k
   A mask with a `[=source.field]` reads the files' EXIF and tags inline (`read_media`) through the sheet's own
   `SessionMedia` cache and loader (`multi_rename/DETAILS.md` § Media fields), seeded from the same listing entries the
   preview runs on, so values, `NoValue` / `Unreadable`, and the `|modified` fallback are the sheet's. **Decision:** an
-  open sheet over the same folder lends what it already read (`session::media_over` + `SessionMedia::adopt`, matched
+  open sheet over the same folder lends what it already read (`app_multi_rename().media_over` + `SessionMedia::adopt_where`, matched
   by listing size and mtime); the rest is read before answering, at most `MAX_MEDIA_READS` (2,000) files left to read,
   else the typed `data.specError: { type: 'tooManyMediaFiles', files, max }` before any read. **Why:** a dry run on S3
   or MTP at a few files a second must still answer in minutes, and the sheet reads bigger batches in the background

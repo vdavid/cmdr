@@ -1359,8 +1359,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             OpenFavorite,
             // The organization's managed policy changed while Cmdr runs (managed_policy/cache.rs).
             ManagedPolicyChanged,
-            // A Multi-Rename session's EXIF and tag read moved on (multi_rename/media.rs).
-            crate::multi_rename::media::MultiRenameMediaProgress,
+            // A Multi-Rename session's EXIF and tag read moved on (multi_rename/app_host.rs).
+            crate::multi_rename::app_host::MultiRenameMediaProgress,
         ])
 }
 

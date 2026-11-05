@@ -5,7 +5,7 @@
  * settings (and the preset) the last sheet closed with (`persist`), as TC does; an
  * edit made before they arrive wins.
  *
- * The files and their names live in the backend session (`src-tauri/src/multi_rename/session.rs`):
+ * The files and their names live in the backend session (`crates/cmdr-multi-rename/src/session.rs`):
  * a preview answers its id, the counts, and the first rows, and the list pages in
  * the rows it scrolls to (`show`, which `source` hands `ColumnList`), from every row
  * or from the problem rows alone. Start sends the session and preview ids, never names.

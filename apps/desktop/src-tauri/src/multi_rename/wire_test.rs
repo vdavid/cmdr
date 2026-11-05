@@ -8,11 +8,12 @@ use serde_json::{Value, json};
 use cmdr_media_meta::MediaField;
 use cmdr_operations::RenameStartError;
 
+use super::app_host::MultiRenameMediaProgress;
 use super::error::{MultiRenameError, ReadOnlyPlace};
 use super::history::{FieldHistoryEntry, HistoryField};
 use super::mask::{FieldGap, MaskError};
 use super::media::{
-    FieldSample, FieldSamples, FieldUsage, MediaFieldOverview, MediaOverview, MediaProgress, MultiRenameMediaProgress,
+    FieldSample, FieldSamples, FieldUsage, MediaFieldOverview, MediaOverview, MediaProgress, MediaProgressEvent,
 };
 use super::plan::{InvalidNameReason, MultiRenameSpec, PreviewRow, RowStatus, SpecError};
 use super::presets::{LastSpec, MultiRenameLastSettings, MultiRenamePreset, PresetSaveRefusal};
@@ -270,6 +271,20 @@ fn the_media_progress_event_and_answers() {
     };
     assert_eq!(
         wire(event),
+        json!({ "sessionId": "s1", "read": 3, "total": 5, "done": false })
+    );
+
+    // The engine's payload is the event's body as is (a browser host sends it
+    // straight), so the two must never drift apart.
+    let body = MediaProgressEvent {
+        session_id: "s1".to_string(),
+        read: 3,
+        total: 5,
+        done: false,
+    };
+    assert_eq!(wire(&body), wire(MultiRenameMediaProgress::from(body.clone())));
+    assert_eq!(
+        wire(body),
         json!({ "sessionId": "s1", "read": 3, "total": 5, "done": false })
     );
 

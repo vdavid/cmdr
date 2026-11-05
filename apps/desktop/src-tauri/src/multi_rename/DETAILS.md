@@ -91,7 +91,7 @@ it today), "next step" chaining, and editing names in an editor.
 - `remove_diacritics`: NFD with the combining marks dropped, a table for the letters that don't decompose (`ł` `đ` `ø`
   `ß` `æ` `œ` `þ` `ð` `ı` `ħ` `ŧ`), then NFC. Like foobar2000's `$ascii()`.
 
-## Session, preview, and apply (`session.rs`, `plan.rs`, `run.rs`)
+## Session, preview, and apply (the crate's `session.rs`, `plan.rs`, `run.rs`)
 
 - Row statuses: `Ready`, `Unchanged` (same name), `InvalidName` (via `validate_filename`, plus `.` / `..`),
   `Duplicate` (two rows get one folded name), `TargetExists` (a sibling that STAYS holds the folded name; siblings
@@ -124,15 +124,16 @@ it today), "next step" chaining, and editing names in an editor.
 - **Decision: apply recomputes, then requires the preview the user saw.** `apply_multi_rename(session, previewId)`
   reruns that preview's spec over the session's files and refuses with `PreviewOutOfDate` unless its ready rows are
   exactly the stored ones (same row, names, status, icon, and kind). Why: the folder can change between the preview and Start.
-- **Range samples** (`get_multi_rename_range_samples(session, token, rows)`, `session::range_samples`): for the sheet's
+- **Range samples** (`get_multi_rename_range_samples(session, token, rows)`, `MultiRename::range_samples`): for the sheet's
   range editor, what one range placeholder takes from a few session files (at most `MAX_RANGE_SAMPLES`): each row's
   field text and the taken `first`/`last` character (Unicode scalar indices, what `Array.from` splits in JS), or none.
   **Decision/Why: it reads the latest preview's rows** (old name, folder or not), not the listing: they're the rows
   the sheet lists, the call stays a lookup of a few structs with no listing lock, and a moved row's retired preview
   answers `PreviewOutOfDate` until the next one, which the sheet's cursor row follows anyway. Names are composed first,
   as the preview renders them. A token that isn't a range is a `Spec` error.
-- Sessions live in a process-wide map, at most `MAX_SESSIONS`; opening one drops sessions idle past `IDLE_LIMIT`,
-  then the least recently used. The sheet closes its session (`close_multi_rename`) when it closes.
+- Sessions live in the engine (`MultiRename`; the app's one is `app_host::app_multi_rename`), at most `MAX_SESSIONS`
+  (4, the builder's `max_sessions`; the app's test build raises it out of reach, since its tests share the engine and
+  run in parallel); opening one drops sessions idle past `IDLE_LIMIT`, then the least recently used. The sheet closes its session (`close_multi_rename`) when it closes.
 - **Results (⌥⏎, TC's "edit names", `names_file.rs`)**: `write_multi_rename_names(session, previewId)` writes that
   preview's rows (a `Missing` one gets no line) as `old<TAB>new` lines to
   `<app cache dir>/multi-rename/<pid>-<session>.txt`; the sheet opens it in the user's editor and calls `read_multi_rename_names` when its window gets focus again. A line
@@ -155,8 +156,11 @@ it today), "next step" chaining, and editing names in an editor.
   and names are composed (NFC) first, so `é` typed finds the decomposed `é` an SMB share stores.
 - A single search takes its replacement literally (`|` included); only a list pairs with a list. A list of nothing
   (`|`) searches for nothing.
-- Apply captures a `SourceFingerprint` per ready row: locally on `root`, through the volume elsewhere, eight at a time
-  under one deadline (`REMOTE_FINGERPRINT_TIMEOUT`, stretched by `io_budget` on a live-session volume). It calls
+- Apply captures a `SourceFingerprint` per ready row where the host's `rename_place` says the rename lands: locally
+  on `root` (on the engine's runtime's blocking pool), through the volume elsewhere, eight at a time under one deadline
+  (`REMOTE_FINGERPRINT_TIMEOUT`, stretched by the host's `io_budget` on a live-session volume). The app's
+  `rename_place` resolves ONCE through the volume manager: the folder's route, else a row's (`portal_serves`,
+  `path_routes_over_its_parent`, old and new name), then `root`, then the resolved volume or `NotConnected`. It calls
   `start_renames(.., Initiator::User)`: the executor orders chains, swaps through temp names, rechecks fingerprints,
   journals every hop (so `undo_operations` reverses it), and runs a copying rename (S3) as one move, which can't swap
   names: those rows come back as `swapsLeftOut` and get their own toast (`multiRename.swapsSkipped`).
@@ -167,7 +171,7 @@ it today), "next step" chaining, and editing names in an editor.
   an agent's dry run shows exactly the statuses the sheet would. The tool needs no session: it previews against the
   pane's cached listing and, for a real run, stages the ready rows as a rename proposal rather than calling `run.rs`.
 
-## Media fields (`media.rs`, `crates/cmdr-media-meta`)
+## Media fields (the crate's `media.rs`, `crates/cmdr-media-meta`)
 
 `[=source.field]` placeholders (EXIF, video capture dates, media tags; issue #657). The crate reads files and names the
 fields (`MediaField`, `MediaFacts`; `crates/cmdr-media-meta/CLAUDE.md`); this module caches them per session and
@@ -184,18 +188,20 @@ answers the sheet.
   `../tools/actions/DETAILS.md`.
 - **The cache** (`SessionMedia`, one per session, `Arc`-shared with its loader): each file's `MediaRead` (`Reading`,
   `Read(Arc<MediaFacts>)`, `Unreadable`, `NotMedia`) with the listing's size and modified time it was read for, the
-  read queue, the files in flight, and running counts for `MediaProgress`. `session::open` seeds it from the listing:
+  read queue, the files in flight, and running counts for `MediaProgress`. `MultiRename::open` seeds it from the listing:
   a non-folder `is_media_name` file is `Reading` and queued in rename order, everything else `NotMedia`. A session
   with no media files is `done` from the start and never runs a loader.
-- **The loader** (`SessionMedia::run`, a tokio task): `open_multi_rename` starts it right after the session opens
-  (`session::start_media`, with the command's `AppHandle` as the emitter). It reads up to `MAX_PARALLEL_READS` (8)
-  files at once, each on `spawn_blocking` through `read_media_from` over a `VolumeByteSource` (the volume resolved
+- **The loader** (`SessionMedia::run`, a task on the engine's runtime): `open_multi_rename` starts it right after the
+  session opens (`MultiRename::start_media`, with the command's `AppHandle` as the emitter, through the host's
+  `media_loader`: the app's is `app_host::volume_loader`). It reads up to `MAX_PARALLEL_READS` (8) files at once, each
+  on the runtime's blocking pool (`JoinSet::spawn_blocking_on`) through `read_media_from` over a `VolumeByteSource` (the volume resolved
   per file from the volume manager, so a reconnect's new volume is the one read) under one file's budget,
   `io_budget_for_volume(10 s)`. A reader that panics on a hostile file makes it `Unreadable` (`catch_unwind`); why
   any read failed is logged at debug, the row only says it couldn't read.
   - **Order**: rename order, so row 0 first; `prioritize_multi_rename_media` (the rows the sheet shows) moves those
     files to the front, behind row 0 while it still waits. Files in flight aren't queued twice.
-  - **Progress**: `MultiRenameMediaProgress` at most every 250 ms, plus one when a run ends. `done` is computed
+  - **Progress**: a `MediaProgressEvent` at most every 250 ms (the app sends it as `MultiRenameMediaProgress`, which
+    serializes the same; `wire_test.rs` pins it), plus one when a run ends. `done` is computed
     (`read == total`), never forced: a run that ends while a re-read starts another doesn't claim it. `total` counts
     media files only; an `Unreadable` file counts as read.
   - **A dead volume**: after three timeouts or I/O errors in a row (`GIVE_UP_AFTER_FAILURES`; a read that succeeds
@@ -210,8 +216,8 @@ answers the sheet.
 - **Cancel**: `Session`'s `Drop` (close, eviction, idle drop) sets the cache's cancel flag. No new read starts, a read
   in flight stops at its next block fetch (`VolumeByteSource` checks the flag), the loader exits without a final
   event, and the cache goes with the last `Arc`.
-- **Locks**: ❌ nothing reads a file under `SESSIONS` or the cache's lock. Callers copy the cache's `Arc` out of
-  `SESSIONS` (`with_session`) and release it first. The cache's lock is held only for short steps: storing an answer,
+- **Locks**: ❌ nothing reads a file under the sessions lock or the cache's lock. Callers copy the cache's `Arc` out of
+  the sessions map (`with_session`) and release it first. The cache's lock is held only for short steps: storing an answer,
   copying the cache out (a preview's `Lookup` is a copy, keyed by `Arc<str>` so it's cheap), or resolving a few sample
   rows. The overview, field samples, and prioritizing run on blocking threads (`commands/multi_rename.rs`).
 - **Field samples and the overview read the cache, not the latest preview**, so the token editor shows values before
@@ -226,7 +232,7 @@ answers the sheet.
   a way to report back to a sheet. `prepare` refusing `StillReading` is the backend's safety net.
 - Tests: `media_test.rs` (a stand-in reader: order, throttled progress, freshness, cancel on close, a panicking
   reader, a dead volume, samples, `StillReading` versus `PreviewOutOfDate`), `media_real_test.rs` (real files on the
-  local disk through the real read path), `session.rs`'s eviction test.
+  local disk through the real read path), and the crate's `session.rs` eviction tests.
 - **Statuses**: `RowStatus::Reading` (not a problem, not ready; `PreviewCounts.reading`), `NoValue { field }`, and
   `Unreadable { field }` (problems). A placeholder's own miss is a `FieldGap` (`Reading`, `NoValue`, `Unreadable`, each
   naming the `MediaField`), which crosses IPC in `FieldSample`.
@@ -295,7 +301,7 @@ the frontend (`spec.ts`).
 TC's per-field history (↓ in a field): `RecentsFile<FieldHistoryEntry>` in `multi-rename-history.json`, all four text fields
 (name mask, extension mask, search, replace) in one list of `MAX_FIELD_HISTORY` (200), deduped by field and value, so
 using a value again moves it to the top. `apply_multi_rename` reads the spec of the preview it starts from
-(`session::spec_of`) and, once the rename has started, adds `history_entries`: a field at its no-change default (`[N]`,
+(`MultiRename::spec_of`) and, once the rename has started, adds `history_entries`: a field at its no-change default (`[N]`,
 `[E]`) or empty is skipped, and a replacement counts only beside a search; the name mask goes in last, so it lands on
 top. **Decision/Why:** recorded on a started rename, never on typing, so the list holds values that renamed something.
 `get_multi_rename_history` hands the sheet the whole list; it filters by field. Ported from PR #386 (Jiri Slovacek),

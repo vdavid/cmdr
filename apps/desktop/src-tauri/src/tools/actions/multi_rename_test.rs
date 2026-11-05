@@ -253,8 +253,8 @@ mod media {
 
     use super::*;
     use crate::ignore_poison::IgnorePoison;
+    use crate::multi_rename::app_host::app_multi_rename;
     use crate::multi_rename::media::{FileJob, Loader};
-    use crate::multi_rename::session;
     use crate::test_support::{TestDir, wait_until, wait_until_async};
 
     /// Under nextest's 8 s limit, so a stuck read fails with the wait's message.
@@ -338,12 +338,15 @@ mod media {
 
     /// Opens a sheet session over the folder and reads it through with `loader`.
     async fn read_sheet(listing: &TestListingGuard, loader: Loader) -> String {
-        let id = session::open(listing.id(), true, None, 0)
+        let id = app_multi_rename()
+            .open(listing.id(), true, None, 0)
             .expect("the session opens")
             .session_id;
-        session::start_media_with(&id, loader).expect("the read starts");
+        app_multi_rename()
+            .start_media_with(&id, loader)
+            .expect("the read starts");
         wait_until_async(WAIT, "the sheet's media read", || {
-            session::media_progress(&id).is_ok_and(|p| p.done)
+            app_multi_rename().media_progress(&id).is_ok_and(|p| p.done)
         })
         .await;
         id
@@ -370,7 +373,8 @@ mod media {
         for spec in specs() {
             let compiled = compile(&spec).expect("compiles");
             let ours = preview(&compiled, &dir, &names(&entries), &entries, Some(&media));
-            let theirs = session::preview_session(&sheet, &spec)
+            let theirs = app_multi_rename()
+                .preview(&sheet, &spec)
                 .expect("the sheet previews")
                 .rows;
             assert_eq!(ours, theirs, "{}", spec.name_mask);
@@ -390,7 +394,7 @@ mod media {
                 ("song.mp3", RowStatus::NoValue { field }),
             ]
         );
-        session::close(&sheet);
+        app_multi_rename().close(&sheet);
     }
 
     /// An open sheet already read the folder: the tool takes its values and reads nothing.
@@ -398,7 +402,7 @@ mod media {
     async fn an_open_sheets_reads_are_reused_rather_than_read_again() {
         let (dir, entries, listing) = folder("mcp-rename-media-reuse", &FILES);
         let sheet = read_sheet(&listing, loader(&Calls::default(), facts)).await;
-        let open = session::media_over("root", &dir);
+        let open = app_multi_rename().media_over("root", &dir);
         assert_eq!(open.len(), 1, "the sheet's session is over this folder");
 
         let calls = Calls::default();
@@ -418,9 +422,12 @@ mod media {
         let compiled = compile(spec).expect("compiles");
         assert_eq!(
             preview(&compiled, &dir, &names(&entries), &entries, Some(&media)),
-            session::preview_session(&sheet, spec).expect("the sheet previews").rows
+            app_multi_rename()
+                .preview(&sheet, spec)
+                .expect("the sheet previews")
+                .rows
         );
-        session::close(&sheet);
+        app_multi_rename().close(&sheet);
     }
 
     /// Past the cap of files left to read, the tool refuses, typed, before reading any.
@@ -507,7 +514,7 @@ mod media {
     async fn an_open_sheets_answer_holding_a_private_key_is_not_taken() {
         let (dir, entries, listing) = folder("mcp-rename-key-sheet", &["song.mp3"]);
         let sheet = read_sheet(&listing, loader(&Calls::default(), keyed_title)).await;
-        let open = session::media_over("root", &dir);
+        let open = app_multi_rename().media_over("root", &dir);
         assert_eq!(open.len(), 1, "the sheet's session is over this folder");
         let refused = RefusedReads::default();
 
@@ -525,7 +532,7 @@ mod media {
         assert_eq!(refused.take(), vec![Protected::PrivateKey]);
         let rows = preview(&title_mask(), &dir, &names(&entries), &entries, Some(&media));
         assert!(!rows[0].new_name.contains("PRIVATE KEY"));
-        session::close(&sheet);
+        app_multi_rename().close(&sheet);
     }
 
     /// A cached listing over `dir/.ssh`, holding `files`.
@@ -617,7 +624,7 @@ mod media {
         let dir = TestDir::new("mcp-rename-gate-sheet");
         let (folder, entries, listing) = protected_folder(&dir, "mcp-rename-gate-sheet", &["song.mp3"]);
         let sheet = read_sheet(&listing, loader(&Calls::default(), facts)).await;
-        let open = session::media_over("root", &folder);
+        let open = app_multi_rename().media_over("root", &folder);
         assert_eq!(open.len(), 1, "the sheet's session is over this folder");
         let calls = Calls::default();
         let refused = RefusedReads::default();
@@ -645,7 +652,7 @@ mod media {
                 field: MediaField::TagTitle
             }
         );
-        session::close(&sheet);
+        app_multi_rename().close(&sheet);
     }
 
     /// A folder's worth of refusals is no sign the volume is dying: the rest still read.

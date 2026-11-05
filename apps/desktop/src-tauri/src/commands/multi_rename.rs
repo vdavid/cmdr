@@ -1,21 +1,23 @@
-//! IPC for the Multi-Rename Tool (⌃M). Thin: the work is `crate::multi_rename::session` and `run`.
+//! IPC for the Multi-Rename Tool (⌃M). Thin: the work is the app's `MultiRename` engine
+//! (`crate::multi_rename::app_host::app_multi_rename`), under the deadlines here.
 
 use std::sync::Arc;
 
 use tokio::time::Duration;
 
 use crate::multi_rename::app_files::{FIELD_HISTORY, LAST_SPEC};
+use crate::multi_rename::app_host::{MultiRenameMediaProgress, app_multi_rename};
 use crate::multi_rename::error::MultiRenameError;
 use crate::multi_rename::history::{FieldHistoryEntry, MAX_FIELD_HISTORY, history_entries};
-use crate::multi_rename::media::{FieldSamples, MediaOverview, MediaProgress, MultiRenameMediaProgress, ProgressEmit};
+use crate::multi_rename::media::{FieldSamples, MediaOverview, MediaProgress, MediaProgressEvent, ProgressEmit};
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow, RenameExample, render_examples};
 use crate::multi_rename::preset_store::PRESETS;
 use crate::multi_rename::presets::{
     LastSpec, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PresetMove, PresetSaveRefusal, PresetSeed,
     delete_in, move_in, rename_in, save_in, update_spec_in,
 };
-use crate::multi_rename::run::{MultiRenameStarted, apply};
-use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter, RangeSample, RowMove};
+use crate::multi_rename::run::MultiRenameStarted;
+use crate::multi_rename::session::{MultiRenameOpened, MultiRenamePreview, PreviewFilter, RangeSample, RowMove};
 use cmdr_fs::deadline::{
     BlockingBudget, blocking_typed_result_with_timeout, blocking_with_timeout, timeout_detached_typed,
 };
@@ -40,7 +42,7 @@ pub async fn open_multi_rename(
         || MultiRenameError::TimedOut,
         |detail| MultiRenameError::Internal { detail },
         move || {
-            session::open(
+            app_multi_rename().open(
                 &listing_id,
                 include_hidden,
                 selected_indices.as_deref(),
@@ -49,12 +51,12 @@ pub async fn open_multi_rename(
         },
     )
     .await?;
-    let emit: ProgressEmit = Arc::new(move |progress: MultiRenameMediaProgress| {
-        if let Err(e) = progress.emit(&app) {
+    let emit: ProgressEmit = Arc::new(move |progress: MediaProgressEvent| {
+        if let Err(e) = MultiRenameMediaProgress::from(progress).emit(&app) {
             log::warn!(target: "multi_rename::media", "Couldn't send the media read's progress: {e}");
         }
     });
-    session::start_media(&opened.session_id, emit)?;
+    app_multi_rename().start_media(&opened.session_id, emit)?;
     Ok(opened)
 }
 
@@ -76,7 +78,7 @@ pub async fn preview_multi_rename(
         |detail| MultiRenameError::Internal { detail },
         async move {
             PREVIEWS
-                .run(move || session::preview_session(&session_id, &spec))
+                .run(move || app_multi_rename().preview(&session_id, &spec))
                 .await
                 .map_err(|e| MultiRenameError::Internal { detail: e.to_string() })?
         },
@@ -95,7 +97,7 @@ pub async fn get_multi_rename_preview_rows(
     limit: usize,
     filter: PreviewFilter,
 ) -> Result<Vec<PreviewRow>, MultiRenameError> {
-    session::page(&session_id, preview_id, offset, limit, filter)
+    app_multi_rename().page(&session_id, preview_id, offset, limit, filter)
 }
 
 /// ⇧↑ / ⇧↓ in the sheet's list: moves the file at `row` one place up or down in the
@@ -108,7 +110,7 @@ pub async fn move_multi_rename_row(
     row: usize,
     direction: RowMove,
 ) -> Result<usize, MultiRenameError> {
-    session::move_row(&session_id, row, direction)
+    app_multi_rename().move_row(&session_id, row, direction)
 }
 
 /// The range editor's examples: what the range placeholder `token` (`N2-5`, its
@@ -123,7 +125,7 @@ pub async fn get_multi_rename_range_samples(
     token: String,
     rows: Vec<usize>,
 ) -> Result<Vec<RangeSample>, MultiRenameError> {
-    session::range_samples(&session_id, &token, &rows)
+    app_multi_rename().range_samples(&session_id, &token, &rows)
 }
 
 /// How far the session's media read got, for a sheet that subscribed to
@@ -131,7 +133,7 @@ pub async fn get_multi_rename_range_samples(
 #[tauri::command]
 #[specta::specta]
 pub async fn get_multi_rename_media_progress(session_id: String) -> Result<MediaProgress, MultiRenameError> {
-    session::media_progress(&session_id)
+    app_multi_rename().media_progress(&session_id)
 }
 
 /// The field picker's overview: the read's progress and each field's example
@@ -144,7 +146,7 @@ pub async fn get_multi_rename_media_overview(session_id: String) -> Result<Media
         Duration::from_secs(2),
         || MultiRenameError::TimedOut,
         |detail| MultiRenameError::Internal { detail },
-        move || session::media_overview(&session_id),
+        move || app_multi_rename().media_overview(&session_id),
     )
     .await
 }
@@ -165,7 +167,7 @@ pub async fn get_multi_rename_field_samples(
         Duration::from_secs(2),
         || MultiRenameError::TimedOut,
         |detail| MultiRenameError::Internal { detail },
-        move || session::field_samples(&session_id, &token, &rows),
+        move || app_multi_rename().field_samples(&session_id, &token, &rows),
     )
     .await
 }
@@ -178,7 +180,7 @@ pub async fn prioritize_multi_rename_media(session_id: String, rows: Vec<usize>)
     // Off the async workers: reordering a 200k-file queue isn't free. The only
     // refusal is a closed session, whose read already stopped.
     blocking_with_timeout(Duration::from_secs(2), (), move || {
-        let _ = session::prioritize_media(&session_id, &rows);
+        let _ = app_multi_rename().prioritize_media(&session_id, &rows);
     })
     .await;
 }
@@ -203,8 +205,8 @@ pub async fn apply_multi_rename(
 ) -> Result<MultiRenameStarted, MultiRenameError> {
     let events = Arc::new(crate::operations_host::TauriEventSink::new(app.clone()));
     // Read before apply: the spec of the preview it starts from, for the fields' history.
-    let spec = session::spec_of(&session_id, preview_id).ok();
-    let started = apply(events, session_id, preview_id).await?;
+    let spec = app_multi_rename().spec_of(&session_id, preview_id).ok();
+    let started = app_multi_rename().apply(events, session_id, preview_id).await?;
     // What the fields held when a rename ran: TC's per-field history (↓ in a field).
     for entry in spec.as_ref().map(history_entries).unwrap_or_default() {
         FIELD_HISTORY.add(&app, entry, MAX_FIELD_HISTORY);
@@ -228,7 +230,11 @@ pub async fn write_multi_rename_names(session_id: String, preview_id: u64) -> Re
         Duration::from_secs(5),
         || MultiRenameError::TimedOut,
         |detail| MultiRenameError::Internal { detail },
-        move || session::write_names(&session_id, preview_id).map(|path| path.to_string_lossy().into_owned()),
+        move || {
+            app_multi_rename()
+                .write_names(&session_id, preview_id)
+                .map(|path| path.to_string_lossy().into_owned())
+        },
     )
     .await
 }
@@ -242,7 +248,7 @@ pub async fn read_multi_rename_names(session_id: String) -> Result<usize, MultiR
         Duration::from_secs(2),
         || MultiRenameError::TimedOut,
         |detail| MultiRenameError::Internal { detail },
-        move || session::read_names(&session_id),
+        move || app_multi_rename().read_names(&session_id),
     )
     .await
 }
@@ -255,7 +261,7 @@ pub async fn clear_multi_rename_names(session_id: String) -> Result<(), MultiRen
         Duration::from_secs(2),
         || MultiRenameError::TimedOut,
         |detail| MultiRenameError::Internal { detail },
-        move || session::clear_names(&session_id),
+        move || app_multi_rename().clear_names(&session_id),
     )
     .await
 }
@@ -264,7 +270,7 @@ pub async fn clear_multi_rename_names(session_id: String) -> Result<(), MultiRen
 #[tauri::command]
 #[specta::specta]
 pub async fn close_multi_rename(session_id: String) {
-    session::close(&session_id);
+    app_multi_rename().close(&session_id);
 }
 
 /// The settings the sheet last closed with, if any.
