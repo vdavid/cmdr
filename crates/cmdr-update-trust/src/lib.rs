@@ -20,3 +20,5 @@ mod fixtures;
 pub use archive::{ArchiveRefusal, bundle_version, extract_tarball, vet_update_archive};
 #[cfg(target_os = "macos")]
 pub use code_signature::{CodeSignatureRefusal, verify_release_bundle};
+
+// Throwaway probe for light and land runs; never lands.
