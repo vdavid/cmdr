@@ -357,6 +357,20 @@ pub enum WriteOperationError {
     SmbEncryptionRequired {
         path: String,
     },
+    /// A share this transfer touches: its server didn't confirm the security settings it agreed
+    /// on, so the backend closed the connection (`VolumeError::NegotiationInvalid`, SMB-only). A
+    /// misbehaving server or tampering; its own variant so the stopped state says so and offers
+    /// ❌ no Retry. `message` is the backend's diagnostic, for the technical details only.
+    SmbNegotiationInvalid {
+        path: String,
+        message: cmdr_fs::error_detail::ErrorDetail,
+    },
+    /// A share this transfer touches only accepts encrypted connections, and the connection agreed
+    /// on no way to encrypt (`VolumeError::EncryptionUnavailable`, SMB-only). The server's own
+    /// setting, so ❌ no Retry.
+    SmbEncryptionUnavailable {
+        path: String,
+    },
     /// Couldn't read from the source.
     ReadError {
         path: String,
@@ -555,6 +569,8 @@ macro_rules! item_path_of {
             | WriteOperationError::ChangedWhileDisconnected { path, .. }
             | WriteOperationError::ReplySignatureRefused { path, .. }
             | WriteOperationError::SmbEncryptionRequired { path }
+            | WriteOperationError::SmbNegotiationInvalid { path, .. }
+            | WriteOperationError::SmbEncryptionUnavailable { path }
             | WriteOperationError::FileLocked { path }
             | WriteOperationError::MoveNotConfirmed { path, .. }
             | WriteOperationError::NameTooLong { path }

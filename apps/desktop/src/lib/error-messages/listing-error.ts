@@ -68,6 +68,10 @@ const REFUSALS: ReadonlySet<ListingErrorReason['reason']> = new Set([
   'linkNeedsConsent',
   // Cmdr's own "Always require SMB encryption" turned the share away, as asked.
   'smbEncryptionRequired',
+  // The server didn't confirm the negotiation, or its share wants encryption the connection
+  // couldn't agree on: the server's answer, not a bug in Cmdr (#1000).
+  'smbNegotiationInvalid',
+  'smbEncryptionUnavailable',
 ])
 
 /** Whether the error screen offers "Send error report…". An untyped failure does: it may be a bug. */

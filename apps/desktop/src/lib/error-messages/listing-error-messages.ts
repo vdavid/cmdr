@@ -114,6 +114,8 @@ export type ListingErrorReason =
   | { reason: 'linkTargetUnreachable'; path: string }
   | { reason: 'linkNeedsConsent'; path: string; server: string; target: string }
   | { reason: 'smbEncryptionRequired'; path: string }
+  | { reason: 'smbNegotiationInvalid'; path: string }
+  | { reason: 'smbEncryptionUnavailable'; path: string }
   | { reason: 'readOnly' }
   | { reason: 'storageFull' }
   | { reason: 'connectionTimedOut' }

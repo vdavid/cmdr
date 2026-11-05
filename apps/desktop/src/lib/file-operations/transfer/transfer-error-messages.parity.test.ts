@@ -734,6 +734,28 @@ const cases: Case[] = [
     },
   },
   {
+    // A server that didn't confirm the negotiation has its own stopped state (#1000).
+    name: 'smb_negotiation_invalid',
+    error: { type: 'smb_negotiation_invalid', path: '/p', message: 'dialect' },
+    expected: {
+      title: 'Connection not confirmed',
+      message:
+        'The server didn’t confirm the security settings it agreed on with Cmdr, so Cmdr closed the connection and stopped. A misbehaving server can cause this, and so can someone tampering with the connection.',
+      suggestion: 'Check your network and the server’s settings, then reconnect.',
+    },
+  },
+  {
+    // A share that only accepts encryption the connection couldn't agree on (#1000).
+    name: 'smb_encryption_unavailable',
+    error: { type: 'smb_encryption_unavailable', path: '/p' },
+    expected: {
+      title: 'Share requires encryption',
+      message:
+        'The share only accepts encrypted connections, and the server didn’t agree on a way to encrypt one with Cmdr, so Cmdr stopped.',
+      suggestion: 'Check the server’s SMB encryption settings.',
+    },
+  },
+  {
     // The write itself was refused for lack of room, so nothing was measured:
     // the copy names no sizes, where "needs 0 bytes but only has 0 bytes" used
     // to render.

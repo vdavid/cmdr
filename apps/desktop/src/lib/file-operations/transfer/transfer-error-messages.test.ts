@@ -987,6 +987,13 @@ describe('getErrorDisplayMeta', () => {
     },
     // No Retry: the server answers the same until it or the setting changes.
     { error: { type: 'smb_encryption_required', path: '/p' }, category: 'needs_action', retryHint: false },
+    // No Retry: the same server answers the same (#1000).
+    {
+      error: { type: 'smb_negotiation_invalid', path: '/p', message: 'dialect' },
+      category: 'needs_action',
+      retryHint: false,
+    },
+    { error: { type: 'smb_encryption_unavailable', path: '/p' }, category: 'needs_action', retryHint: false },
     {
       error: { type: 'destination_inside_source', source: '/a', destination: '/a/b' },
       category: 'needs_action',

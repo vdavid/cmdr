@@ -399,6 +399,37 @@ fn a_share_that_cant_encrypt_stops_with_its_own_reason() {
     );
 }
 
+/// A session the server didn't confirm the negotiation for, or one that couldn't agree on the
+/// encryption its share requires, stops the transfer with its own typed reason (#1000), ❌ never
+/// the generic `IoError` that offers a Retry: the same server answers the same.
+#[test]
+fn an_unconfirmed_negotiation_or_unavailable_encryption_stops_with_its_own_reason() {
+    let unconfirmed = map_volume_error(
+        "/Volumes/naspi/photos/a.jpg",
+        PathRole::Source,
+        VolumeError::NegotiationInvalid("the server answered a different dialect".into()),
+    );
+    assert!(
+        matches!(
+            &unconfirmed,
+            WriteOperationError::SmbNegotiationInvalid { path, .. } if path == "/Volumes/naspi/photos/a.jpg"
+        ),
+        "got {unconfirmed:?}"
+    );
+    let unencrypted = map_volume_error(
+        "/Volumes/naspi/photos/a.jpg",
+        PathRole::Destination,
+        VolumeError::EncryptionUnavailable("/Volumes/naspi".into()),
+    );
+    assert!(
+        matches!(
+            &unencrypted,
+            WriteOperationError::SmbEncryptionUnavailable { path } if path == "/Volumes/naspi/photos/a.jpg"
+        ),
+        "got {unencrypted:?}"
+    );
+}
+
 /// A server reply refused for its signature stops the transfer with its own typed reason (#457),
 /// ❌ never the generic `IoError`: the stopped state says the reply wasn't signed, and the backend
 /// already knows a retry invites the same answer.

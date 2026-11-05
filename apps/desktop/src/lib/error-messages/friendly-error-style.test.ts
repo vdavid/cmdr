@@ -116,6 +116,8 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'linkTargetUnreachable', path: PATH },
   { reason: 'linkNeedsConsent', path: PATH, server: 'nas.local', target: 'fs01.local' },
   { reason: 'smbEncryptionRequired', path: PATH },
+  { reason: 'smbNegotiationInvalid', path: PATH },
+  { reason: 'smbEncryptionUnavailable', path: PATH },
   { reason: 'readOnly' },
   { reason: 'storageFull' },
   { reason: 'connectionTimedOut' },

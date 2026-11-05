@@ -267,6 +267,8 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'destination_full', label: 'Destination full' },
       { id: 'reply_signature_refused', label: 'Server reply refused' },
       { id: 'smb_encryption_required', label: 'SMB connection not encrypted' },
+      { id: 'smb_negotiation_invalid', label: 'SMB negotiation not confirmed' },
+      { id: 'smb_encryption_unavailable', label: 'SMB share needs encryption' },
       { id: 'destination_inside_source', label: 'Destination inside source' },
       { id: 'duplicate_source_names', label: 'Two sources share a name' },
       { id: 'named_leaves_refused', label: 'Per-item names refused' },

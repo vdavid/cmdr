@@ -260,6 +260,19 @@ pub(super) fn smb_encryption_required(path_display: &str, raw_detail: String) ->
     }
 }
 
+/// A session to the share that the server can't confirm or encrypt (#1000). Never a retry hint:
+/// the same server gives the same answer, and no Cmdr setting changes it, so no action either.
+pub(super) fn smb_session_refused(reason: ListingErrorReason, raw_detail: String) -> ListingError {
+    ListingError {
+        category: ErrorCategory::NeedsAction,
+        reason,
+        provider: None,
+        action_kind: None,
+        retry_hint: false,
+        raw_detail,
+    }
+}
+
 pub(super) fn connection_timeout(raw_detail: String) -> ListingError {
     ListingError {
         category: ErrorCategory::Transient,

@@ -4157,6 +4157,78 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.listing.smbNegotiationInvalid.title": "The server didn’t confirm this connection",
+  "@errors.listing.smbNegotiationInvalid.title": {
+    "description": "Title of the folder error screen when a network share's (SMB) server didn't confirm the security settings (protocol version and signing) it had just agreed on with Cmdr, so Cmdr closed the connection and didn't open the folder. A misbehaving server or someone tampering with the connection. Plain text. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.smbNegotiationInvalid.explanation": "The server didn’t confirm the security settings it agreed on with Cmdr, so Cmdr closed the connection and didn’t open `{path}`. A misbehaving server can cause this, and so can someone tampering with the connection.",
+  "@errors.listing.smbNegotiationInvalid.explanation": {
+    "description": "Body of the folder error screen for that case. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the folder's path, which Cmdr doesn't control: any length. Calm, not alarming: name both the innocent cause (a misbehaving server) and the serious one (tampering). Same wording as errors.shareList.negotiationInvalid; keep the two consistent.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.smbNegotiationInvalid.suggestion": "Check your network and the server’s settings, then connect again.",
+  "@errors.listing.smbNegotiationInvalid.suggestion": {
+    "description": "Recovery suggestion for that case: look at the network (a device in between could be interfering) and the server's settings, then reconnect. Markdown, one sentence.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.smbEncryptionUnavailable.title": "This share only accepts encrypted connections",
+  "@errors.listing.smbEncryptionUnavailable.title": {
+    "description": "Title of the folder error screen when a network share (SMB) only accepts encrypted connections, but its server agreed on no encryption method Cmdr supports, so Cmdr didn't open the folder. A server-side setting, not Cmdr's own (compare errors.listing.smbEncryptionRequired.title). Plain text. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.smbEncryptionUnavailable.explanation": "The share only accepts encrypted connections, and the server didn’t agree on a way to encrypt one with Cmdr, so Cmdr didn’t open `{path}`.",
+  "@errors.listing.smbEncryptionUnavailable.explanation": {
+    "description": "Body of the folder error screen for that case. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the folder's path, which Cmdr doesn't control: any length. Same wording as errors.shareList.encryptionUnavailable; keep the two consistent.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.smbEncryptionUnavailable.suggestion": "Check the server’s SMB encryption settings.",
+  "@errors.listing.smbEncryptionUnavailable.suggestion": {
+    "description": "Recovery suggestion for that case: the fix is on the server (whoever runs it). Markdown, one sentence. \"SMB\" is a name; keep it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.smbNegotiationInvalid.title": "Connection not confirmed",
+  "@errors.write.smbNegotiationInvalid.title": {
+    "description": "Title of the copy/move error dialog when a network share's (SMB) server didn't confirm the security settings (protocol version and signing) it had just agreed on, so Cmdr closed the connection and stopped the transfer. Short. Plain text. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.smbNegotiationInvalid.message": "The server didn’t confirm the security settings it agreed on with Cmdr, so Cmdr closed the connection and stopped. A misbehaving server can cause this, and so can someone tampering with the connection.",
+  "@errors.write.smbNegotiationInvalid.message": {
+    "description": "Body of the copy/move error dialog for that case. Plain text. Calm, not alarming: name both the innocent cause (a misbehaving server) and the serious one (tampering). Same wording as errors.shareList.negotiationInvalid; keep the two consistent.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.smbNegotiationInvalid.suggestion": "Check your network and the server’s settings, then reconnect.",
+  "@errors.write.smbNegotiationInvalid.suggestion": {
+    "description": "What to do, under that body: look at the network (a device in between could be interfering) and the server's settings, then reconnect to the share. There's no Retry button. Plain text, one sentence.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.smbEncryptionUnavailable.title": "Share requires encryption",
+  "@errors.write.smbEncryptionUnavailable.title": {
+    "description": "Title of the copy/move error dialog when a network share (SMB) the transfer reads from or writes to only accepts encrypted connections, but its server agreed on no encryption method Cmdr supports, so Cmdr stopped. A server-side setting, not Cmdr's own (compare errors.write.smbEncryptionRequired.title). Short. Plain text. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.smbEncryptionUnavailable.message": "The share only accepts encrypted connections, and the server didn’t agree on a way to encrypt one with Cmdr, so Cmdr stopped.",
+  "@errors.write.smbEncryptionUnavailable.message": {
+    "description": "Body of the copy/move error dialog for that case. One sentence, plain text. Same wording as errors.shareList.encryptionUnavailable; keep the two consistent.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.smbEncryptionUnavailable.suggestion": "Check the server’s SMB encryption settings.",
+  "@errors.write.smbEncryptionUnavailable.suggestion": {
+    "description": "What to do, under that body: the fix is on the server (whoever runs it). There's no Retry button. Plain text, one sentence. \"SMB\" is a name; keep it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.listing.linkNeedsConsent.title": "This folder is on another server",
   "@errors.listing.linkNeedsConsent.title": {
     "description": "Title of the listing error panel when a folder in an SMB network share is really a link (a DFS link) to a folder on a different server, and the person hasn’t allowed Cmdr to sign in there yet. Plain text.",

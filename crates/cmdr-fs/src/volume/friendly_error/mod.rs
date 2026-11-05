@@ -310,6 +310,18 @@ pub enum ListingErrorReason {
         /// The path the failure was about.
         path: String,
     },
+    /// `VolumeError::NegotiationInvalid`: the share's server didn't confirm the security settings
+    /// it agreed on, so Cmdr closed the connection (a misbehaving server, or tampering).
+    SmbNegotiationInvalid {
+        /// The path the failure was about.
+        path: String,
+    },
+    /// `VolumeError::EncryptionUnavailable`: the share only accepts encrypted connections, and the
+    /// connection agreed on no way to encrypt, so Cmdr didn't open it.
+    SmbEncryptionUnavailable {
+        /// The path the failure was about.
+        path: String,
+    },
     /// The volume or device is read-only.
     ReadOnly,
     /// The device is out of storage.

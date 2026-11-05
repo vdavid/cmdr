@@ -136,6 +136,18 @@ const simpleMessageFactories: Partial<
     message: w('smbEncryptionRequired.message'),
     suggestion: w('smbEncryptionRequired.suggestion'),
   }),
+  // A share's server didn't confirm the negotiation, or its share only accepts encryption the
+  // connection couldn't agree on (#1000).
+  smb_negotiation_invalid: () => ({
+    title: w('smbNegotiationInvalid.title'),
+    message: w('smbNegotiationInvalid.message'),
+    suggestion: w('smbNegotiationInvalid.suggestion'),
+  }),
+  smb_encryption_unavailable: () => ({
+    title: w('smbEncryptionUnavailable.title'),
+    message: w('smbEncryptionUnavailable.message'),
+    suggestion: w('smbEncryptionUnavailable.suggestion'),
+  }),
   // The destination refused a write for lack of room or quota. Nothing measured
   // it, so the copy names no sizes (a measured refusal is `insufficient_space`).
   destination_full: () => ({
@@ -242,6 +254,9 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   reply_signature_refused: { category: 'needs_action', retryHint: false },
   // No Retry: the server answers the same until it or the setting changes (#966).
   smb_encryption_required: { category: 'needs_action', retryHint: false },
+  // No Retry: the same server answers the same (#1000).
+  smb_negotiation_invalid: { category: 'needs_action', retryHint: false },
+  smb_encryption_unavailable: { category: 'needs_action', retryHint: false },
   destination_inside_source: { category: 'needs_action', retryHint: false },
   // No Retry: the same selection can only be refused again. The way out is
   // picking one of the two, or transferring them one at a time.

@@ -12081,6 +12081,24 @@ export type ListingErrorReason =
       // The path the failure was about.
       path: string
     }
+  /**
+   *  `VolumeError::NegotiationInvalid`: the share's server didn't confirm the security settings
+   *  it agreed on, so Cmdr closed the connection (a misbehaving server, or tampering).
+   */
+  | {
+      reason: 'smbNegotiationInvalid'
+      // The path the failure was about.
+      path: string
+    }
+  /**
+   *  `VolumeError::EncryptionUnavailable`: the share only accepts encrypted connections, and the
+   *  connection agreed on no way to encrypt, so Cmdr didn't open it.
+   */
+  | {
+      reason: 'smbEncryptionUnavailable'
+      // The path the failure was about.
+      path: string
+    }
   // The volume or device is read-only.
   | { reason: 'readOnly' }
   // The device is out of storage.
@@ -22845,6 +22863,19 @@ export type WriteOperationError =
    *  the same answer until it or the setting changes, so it's ❌ never a blip to retry.
    */
   | { type: 'smb_encryption_required'; path: string }
+  /**
+   *  A share this transfer touches: its server didn't confirm the security settings it agreed
+   *  on, so the backend closed the connection (`VolumeError::NegotiationInvalid`, SMB-only). A
+   *  misbehaving server or tampering; its own variant so the stopped state says so and offers
+   *  ❌ no Retry. `message` is the backend's diagnostic, for the technical details only.
+   */
+  | { type: 'smb_negotiation_invalid'; path: string; message: string }
+  /**
+   *  A share this transfer touches only accepts encrypted connections, and the connection agreed
+   *  on no way to encrypt (`VolumeError::EncryptionUnavailable`, SMB-only). The server's own
+   *  setting, so ❌ no Retry.
+   */
+  | { type: 'smb_encryption_unavailable'; path: string }
   // Couldn't read from the source.
   | { type: 'read_error'; path: string; message: string }
   // Couldn't write to the destination.

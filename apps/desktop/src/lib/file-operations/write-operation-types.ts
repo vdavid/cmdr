@@ -282,6 +282,11 @@ export type WriteOperationError =
   // its connection, so Cmdr sent nothing over it. Not a blip: the same server answers the
   // same until it or the setting changes.
   | { type: 'smb_encryption_required'; path: string }
+  // The share's server didn't confirm the security settings it agreed on, so Cmdr closed the
+  // connection and stopped. `message` is the backend's diagnostic, for the technical details only.
+  | { type: 'smb_negotiation_invalid'; path: string; message: string }
+  // The share only accepts encrypted connections, and the connection agreed on no way to encrypt.
+  | { type: 'smb_encryption_unavailable'; path: string }
   | { type: 'read_error'; path: string; message: string }
   | { type: 'write_error'; path: string; message: string }
   | { type: 'name_too_long'; path: string }

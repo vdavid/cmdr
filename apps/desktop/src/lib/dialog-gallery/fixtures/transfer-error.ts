@@ -111,6 +111,20 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     // "Always require SMB encryption" on, and a guest share that can't encrypt.
     error: { type: 'smb_encryption_required', path: '/Volumes/public/photos/2026/DSC09241.arw' },
   },
+  smb_negotiation_invalid: {
+    operationType: 'copy',
+    // An SMB 3.0 server whose answer to FSCTL_VALIDATE_NEGOTIATE_INFO didn't match.
+    error: {
+      type: 'smb_negotiation_invalid',
+      path: '/Volumes/naspi/photos/2026/DSC09241.arw',
+      message: 'negotiate validation failed: the server answered a different dialect',
+    },
+  },
+  smb_encryption_unavailable: {
+    operationType: 'copy',
+    // A share that requires encryption, on a server that offers no cipher Cmdr speaks.
+    error: { type: 'smb_encryption_unavailable', path: '/Volumes/vault/contracts/2026/lease.pdf' },
+  },
   destination_full: {
     operationType: 'copy',
     // A USB stick that filled up partway: the write refused, nothing measured.

@@ -686,6 +686,30 @@ fn encryption_required_points_at_the_smb_encryption_setting() {
     ));
 }
 
+/// A share whose server didn't confirm the negotiation, or whose encryption the session couldn't
+/// agree on, gets its own reason with its path (#1000): no retry hint (the same server answers
+/// the same) and no action (no Cmdr setting changes it).
+#[test]
+fn an_unconfirmed_negotiation_and_unavailable_encryption_have_their_own_reasons() {
+    let path = Path::new("/Volumes/naspi/photos");
+    let unconfirmed = listing_error_from_volume_error(&VolumeError::NegotiationInvalid("dialect".into()), path);
+    assert!(matches!(
+        &unconfirmed.reason,
+        ListingErrorReason::SmbNegotiationInvalid { path } if path == "/Volumes/naspi/photos"
+    ));
+    let unencrypted =
+        listing_error_from_volume_error(&VolumeError::EncryptionUnavailable("/Volumes/naspi".into()), path);
+    assert!(matches!(
+        &unencrypted.reason,
+        ListingErrorReason::SmbEncryptionUnavailable { path } if path == "/Volumes/naspi/photos"
+    ));
+    for listing in [unconfirmed, unencrypted] {
+        assert_eq!(listing.category, ErrorCategory::NeedsAction);
+        assert!(!listing.retry_hint);
+        assert_eq!(listing.action_kind, None);
+    }
+}
+
 #[test]
 fn permission_denied_volume_error_has_open_privacy_settings() {
     let path = Path::new("/test/path");

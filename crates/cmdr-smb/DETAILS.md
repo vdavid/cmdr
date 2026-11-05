@@ -901,7 +901,9 @@ The app's `network::smb_encryption` sets it to the setting OR the policy; nothin
   for the first, offers the setting). The watcher-death loop (`reconnect_backoff_should_give_up`) and a transfer's
   outage wait (`cmdr-operations`'s `volume_outage.rs`, `Attempt::Hopeless`) stop on all three too: the same server
   answers the same until it or the setting changes. Why: as a generic `IoError` each read as a blip and was retried for
-  minutes. A listing or a transfer that meets the last two shows the generic serious words for now (#1000).
+  minutes. A listing or a transfer that meets the last two (from an extra scan or transfer session) has its own words
+  too: `ListingErrorReason::SmbNegotiationInvalid` / `SmbEncryptionUnavailable`, and
+  `WriteOperationError::SmbNegotiationInvalid` / `SmbEncryptionUnavailable`, with no Retry.
 - Pinned by `src/volume/encryption_integration_test.rs` against the `auth` fixture (encrypts) and a guest session on the
   `guest` fixture (can't), off and on, including a guest volume that reconnects after the switch turned on
   (`smb_integration_a_reconnect_that_cant_encrypt_says_so_and_stops`) (verified on smb2 0.41.0, Samba on Alpine,
