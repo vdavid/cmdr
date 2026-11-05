@@ -299,6 +299,7 @@ describe('AskCmdrCostFooter a11y', () => {
     costMock.mockResolvedValue({
       promptTokens: 300,
       completionTokens: 70,
+      cacheReadTokens: 0,
       costMicros: 1_230_000,
       fullyPriced: true,
       providers: ['openAi'],
