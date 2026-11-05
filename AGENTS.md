@@ -88,10 +88,11 @@ Writing them:
   touching it (like `test/e2e-playwright/CLAUDE.md` before the E2E suite).
 - **Before planning**, read `docs/architecture.md`: the subsystem map (what + where + a pointer per area).
 - **Filing or triaging an issue**: `docs/tooling/backlog-board.md` (labels and board fields).
-- **A procedure** (release, screenshots, deps, adding a window): `docs/guides/` and the skills. Building a dialog,
-  settings screen, window, or form control: `docs/guides/building-ui.md` (house primitives, and where each deeper doc
-  lives). Two "icon" docs: a UI glyph is `docs/guides/icons.md`; the app icon and every logo raster come from
-  `brand/logos/cmdr.svg` via `docs/guides/updating-icon.md`.
+- **A procedure** (release, screenshots, deps, a window): `docs/guides/` and the skills. New crate:
+  `docs/guides/adding-a-crate.md`. Building a dialog, settings screen, window, or form control:
+  `docs/guides/building-ui.md` (house primitives, and where each deeper doc lives). Two "icon" docs: a UI glyph is
+  `docs/guides/icons.md`; the app icon and every logo raster come from `brand/logos/cmdr.svg` via
+  `docs/guides/updating-icon.md`.
 - **Debugging a running app / reading logs**: [This](docs/tooling/logging.md) is the first stop, before `Console.app` or
   grepping code. All (FE & BE) log paths, format, and `RUST_LOG` recipes, plus how to read a past Ask Cmdr chat.
 - **CPU, RAM, or idle cost**: `docs/notes/performance/README.md` first.
@@ -143,10 +144,10 @@ Writing them:
 
 ## Checker script
 
-Always use **`pnpm check`** at the repo root (never raw `cargo` / `vitest` / etc.); it's cache-aware. **Before each
-commit: `pnpm check --fast && pnpm check svelte-tests-related`**, plus, if you touched Rust, `pnpm check clippy` and the
-Rust tests you touched (`cargo nextest run <name>`, `docs/tooling/testing.md`). `--fast` (~9 s) is scanners plus knip,
-no compilers, typecheckers, test suites, or formatters; `svelte-tests-related` runs the vitest files that reach your
+Always use **`pnpm check`** at the repo root (never raw `cargo` or `vitest`); it's cache-aware. **Before each commit:
+`pnpm check --fast && pnpm check svelte-tests-related`**, plus, if you touched Rust, `pnpm check clippy` and the Rust
+tests you touched (`cargo nextest run <name>`, `docs/tooling/testing.md`). `--fast` (~9 s) is scanners plus knip, no
+compilers, typecheckers, test suites, or formatters; `svelte-tests-related` runs the vitest files that reach your
 branch's changes; clippy (~25 s warm) catches in seconds what CI finds in 30 min. Scope by name (`pnpm check clippy`),
 tech (`rust`), or app (`desktop`). Docs: `scripts/check/CLAUDE.md`. Run only the checks your change touches, ❌ never a
 local full `pnpm check`: it takes 8–10 min and slows every session on the Mac, and `pnpm land`'s CI is the full run. Add
