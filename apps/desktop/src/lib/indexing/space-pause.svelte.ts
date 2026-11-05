@@ -27,6 +27,7 @@ export interface SpacePause {
 
 const paused = new SvelteMap<string, SpacePause>()
 /** Volumes whose status was already asked for, so a read backfills once, not per render. */
+// eslint-disable-next-line svelte/prefer-svelte-reactivity -- deliberately non-reactive: `getSpacePause` adds to it during a reactive read, which a `SvelteSet` would reject as an unsafe state mutation, and nothing renders from it.
 const asked = new Set<string>()
 let unlisten: UnlistenFn | null = null
 /** Bumped by every init and destroy, so a registration that lands after a teardown stops itself. */
