@@ -3948,5 +3948,41 @@
     "confidence": "high",
     "forms": "the greyed menu marker: the base label word for word, then (ocupado), invariable",
     "sources": "catalog (menu.volume.ejectBusy, disconnectBusy, forgetServerBusy, forgetSavedPasswordBusy)"
+  },
+  "cold-storage": {
+    "chosen": "almacenamiento en frío",
+    "forms": "the per-row glyph label → En almacenamiento en frío; the state in prose → archivado en almacenamiento en frío",
+    "confidence": "high",
+    "sources": "catalog (fileExplorer.archivedFile.tooltip); MS terminology (cold storage → almacenamiento en frío)",
+    "avoid": [
+      {
+        "form": "Archivado (alone)",
+        "why": "reads as the Ask Cmdr chat archive or a zip; English renamed the label to say cold storage"
+      }
+    ]
+  },
+  "focus": {
+    "chosen": "foco",
+    "accept": ["activo"],
+    "forms": "Move focus to X → Mover el foco a X; moves keyboard focus to → mueve el foco del teclado a; the focused pane → el panel activo",
+    "confidence": "high",
+    "sources": "catalog (commands.paneFocusControls.label, commands.appFocusNotifications.label); macOS Keyboard settings say Centrar en … for its own Move focus shortcuts (DefaultShortcutsTable.loctable, macOS 27, 2026-11-05), too opaque for a description"
+  },
+  "grant": {
+    "chosen": "conceder",
+    "accept": ["conced", "concéd"],
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.noPermissionErrno.explanation": "“hasn’t granted it access yet” is said from Cmdr’s side: Cmdr aún no tiene acceso a esta, with no granting verb.",
+      "errors.listing.permissionDenied.explanation": "Same English and wording as errors.listing.noPermissionErrno.explanation.",
+      "errors.listing.notPermitted.explanation": "Said from Cmdr’s side: Cmdr aún no tiene los permisos necesarios, with no granting verb."
+    },
+    "sources": "catalog (onboarding.stepFda.granted.title, errors.listing.*.suggestion: concede acceso a Cmdr)"
+  },
+  "wizard": {
+    "chosen": "asistente",
+    "forms": "the onboarding wizard → el asistente de introducción",
+    "confidence": "high",
+    "sources": "catalog (commands.cmdrOpenOnboarding.description); MS terminology (wizard → asistente)"
   }
 }

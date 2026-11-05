@@ -31,9 +31,9 @@
   "@stateRecovery.appStatus.title": {
     "sourceHash": "53260b0"
   },
-  "stateRecovery.operationLog.title": "Cmdr no pudo leer tu registro de operaciones, así que empieza de cero",
+  "stateRecovery.operationLog.title": "Cmdr no pudo leer tu registro de operaciones, así que el registro empieza de cero",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "09adf45"
+    "sourceHash": "e1d4904"
   },
   "stateRecovery.credentials.title": "Cmdr no pudo leer tus contraseñas y claves guardadas, así que empieza de cero",
   "@stateRecovery.credentials.title": {

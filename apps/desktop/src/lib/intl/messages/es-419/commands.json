@@ -1,7 +1,7 @@
 {
-  "commands.appLicenseKey.enterKey.label": "Ingresar clave de licencia",
+  "commands.appLicenseKey.enterKey.label": "Ingresar clave de licencia…",
   "@commands.appLicenseKey.enterKey.label": {
-    "sourceHash": "d8f5129"
+    "sourceHash": "e5dac0a"
   },
   "commands.appSettings.label": "Abrir la configuración",
   "@commands.appSettings.label": {
@@ -15,9 +15,9 @@
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "a77dc57"
   },
-  "commands.helpWhatsNew.description": "Mira qué cambió en las últimas versiones de Cmdr",
+  "commands.helpWhatsNew.description": "Muestra qué cambió en las últimas versiones de Cmdr",
   "@commands.helpWhatsNew.description": {
-    "sourceHash": "6cf89fd"
+    "sourceHash": "3e5c549"
   },
   "commands.favoritesAdd.label": "Agregar a favoritos",
   "@commands.favoritesAdd.label": {
@@ -26,10 +26,6 @@
   "commands.favoritesAdd.description": "Agrega la carpeta actual del panel activo a favoritos, para volver ahí después desde el menú de favoritos.",
   "@commands.favoritesAdd.description": {
     "sourceHash": "161aa45"
-  },
-  "commands.favoritesOpen.description": "Abre el menú de favoritos en el panel activo y presiona un número para ir a ese favorito.",
-  "@commands.favoritesOpen.description": {
-    "sourceHash": "e554df5"
   },
   "commands.editUndoTrash.label": "Deshacer movimiento al basurero",
   "@commands.editUndoTrash.label": {
@@ -47,9 +43,9 @@
   "@commands.editUndoTrash.description": {
     "sourceHash": "ff1e685"
   },
-  "commands.paneQuickFilter.description": "Abre la insignia de filtro con el patrón actual. Presiona de nuevo para cambiar entre “Filtrar” y “Saltar”",
+  "commands.paneQuickFilter.description": "Abre la insignia con lo que has escrito hasta ahora. Presiona de nuevo para cambiar entre “Filtrar” y “Saltar”",
   "@commands.paneQuickFilter.description": {
-    "sourceHash": "921c393"
+    "sourceHash": "a9d3b51"
   },
   "commands.fileEdit.label": "Editar en el editor predeterminado",
   "@commands.fileEdit.label": {
@@ -167,9 +163,9 @@
   "@commands.handler.openTerminalHere.launchRefused": {
     "sourceHash": "e217de0"
   },
-  "commands.suggestedOpsShow.description": "Revisa las operaciones de archivos que sugirió la IA y decide qué se ejecuta",
+  "commands.suggestedOpsShow.description": "Muestra las operaciones de archivos que sugirió la IA, para que decidas qué se ejecuta",
   "@commands.suggestedOpsShow.description": {
-    "sourceHash": "7864be0"
+    "sourceHash": "121ceeb"
   },
   "commands.handler.viewDebugLog.disabled": "El almacenamiento de registros está desactivado. Pon un límite de espacio en disco mayor que 0 en Configuración > Avanzado y reinicia Cmdr para ver el registro de depuración.",
   "@commands.handler.viewDebugLog.disabled": {

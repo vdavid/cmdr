@@ -171,9 +171,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "Ya tienes {max, number} preajustes, el máximo que guarda Cmdr. Elimina uno para guardar este.",
+  "multiRename.presets.listFull": "Ya tienes {max, plural, one {# preajuste} many {# preajustes} other {# preajustes}}, el máximo que guarda Cmdr. Elimina uno para guardar este.",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "Reemplazar",
   "@multiRename.presets.replace": {
@@ -223,13 +223,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "Mismo nombre que otro archivo",
+  "multiRename.status.duplicate": "Mismo nombre que otro elemento",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
   "multiRename.status.targetExists": "El nombre ya está ocupado",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "No es un nombre válido",
   "@multiRename.status.invalidName": {
@@ -383,17 +383,17 @@
   "@multiRename.status.ready": {
     "sourceHash": "f032574"
   },
-  "multiRename.reason.duplicate": "Otro archivo de este lote recibe el mismo nombre nuevo, así que no se renombra ninguno de los dos.",
+  "multiRename.reason.duplicate": "Otro elemento de este lote recibe el mismo nombre nuevo, así que no se renombra ninguno de los dos.",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
-  "multiRename.reason.targetExists": "Un archivo que se queda en esta carpeta ya tiene este nombre, así que este conserva el suyo.",
+  "multiRename.reason.targetExists": "Un elemento que se queda en esta carpeta ya tiene este nombre, así que este conserva el suyo.",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
-  "multiRename.reason.missing": "Este archivo se ha movido o eliminado después de abrir “Renombrado múltiple”, así que queda fuera.",
+  "multiRename.reason.missing": "Este elemento se ha movido o eliminado después de abrir “Renombrado múltiple”, así que queda fuera.",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "Leyendo…",
   "@multiRename.status.reading": {
@@ -403,13 +403,13 @@
   "@multiRename.status.noValue": {
     "sourceHash": "619464f"
   },
-  "multiRename.reason.noValue": "Este archivo no tiene valor de “{field}”, así que conserva su nombre.",
+  "multiRename.reason.noValue": "Este elemento no tiene valor de “{field}”, así que conserva su nombre.",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "Este archivo no tiene valor de “{field}”, así que conserva su nombre. El editor del marcador puede usar en su lugar la fecha de la última modificación del archivo.",
+  "multiRename.reason.noDate": "Este elemento no tiene valor de “{field}”, así que conserva su nombre. El editor del marcador puede usar en su lugar la fecha de la última modificación del elemento.",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "No se pueden leer las etiquetas",
   "@multiRename.status.unreadable": {
@@ -632,9 +632,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "Se {count, plural, one {ha omitido # cambio de nombre que intercambia nombres} many {han omitido # cambios de nombre que intercambian nombres} other {han omitido # cambios de nombre que intercambian nombres}}. Renombra esos archivos de uno en uno.",
+  "multiRename.swapsSkipped": "Se {count, plural, one {ha omitido # cambio de nombre que intercambia nombres} many {han omitido # cambios de nombre que intercambian nombres} other {han omitido # cambios de nombre que intercambian nombres}}. Renombra esos elementos de uno en uno.",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "“Renombrado múltiple” no funciona dentro de archivos comprimidos",
   "@multiRename.archiveTitle": {

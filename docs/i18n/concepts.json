@@ -275,7 +275,7 @@
     "distinct": ["archive-chat", "app-bundle"],
     "en": "archive",
     "match": ["archive", "archives", "zip archive", "zip archives"],
-    "notMatch": ["=archive", "photo archive"],
+    "notMatch": ["=archive", "photo archive", "archive chat"],
     "sense": "A zip, tar, or 7z file that Cmdr can browse like a folder, create, or edit."
   },
   "archive-chat": {

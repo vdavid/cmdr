@@ -243,9 +243,9 @@
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "sourceHash": "803e737"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr usa tu servicio de IA en la nube. Permite la IA en la nube en la configuración de IA para empezar a chatear.",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr usa tu servicio de IA en la nube. Activa “Permitir IA en la nube” en la configuración de IA para empezar a chatear.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "9c8cd51"
+    "sourceHash": "0703b56"
   },
   "settings.askCmdr.openAiSettings": "Abrir la configuración de IA",
   "@settings.askCmdr.openAiSettings": {
@@ -511,8 +511,8 @@
   "@settings.ai.reasoningEfforts.keywords": {
     "sourceHash": "59fad22"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Cuando eliminas algo que otra app ya movió o eliminó, Cmdr lo da por hecho y te avisa con una nota breve. Desactiva esta opción (o haz clic en “No volver a mostrar” en la nota) para omitir esa nota.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "Cuando eliminas algo que otra app ya movió o eliminó, Cmdr lo da por hecho y muestra un aviso breve que lo indica. Desactiva esta opción (o haz clic en “No volver a mostrar” en el aviso) para dejar de ver estos avisos.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "8650516"
+    "sourceHash": "e0f8c29"
   }
 }

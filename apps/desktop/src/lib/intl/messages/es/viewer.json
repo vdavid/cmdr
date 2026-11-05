@@ -47,9 +47,9 @@
   "@viewer.error.coldStorage": {
     "sourceHash": "236cd1b"
   },
-  "viewer.error.linkTargetUnreachable": "Este archivo está detrás de un enlace a otro servidor, y Cmdr no puede acceder a ese servidor ahora mismo. Comprueba que el servidor esté en marcha y vuelve a intentarlo.",
+  "viewer.error.linkTargetUnreachable": "La ruta de este archivo pasa por un enlace a otro servidor, y Cmdr no puede acceder a ese servidor ahora mismo. Comprueba que el servidor esté en marcha y vuelve a intentarlo.",
   "@viewer.error.linkTargetUnreachable": {
-    "sourceHash": "8dcb736"
+    "sourceHash": "0540c9a"
   },
   "viewer.error.retry": "Reintentar",
   "@viewer.error.retry": {

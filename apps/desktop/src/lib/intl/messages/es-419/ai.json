@@ -15,9 +15,9 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "2e3443b"
   },
-  "ai.cloudConsent.logsNote": "Si activas el registro de llamadas al modelo de IA en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún lado.",
+  "ai.cloudConsent.logsNote": "Si activas “Registrar llamadas al modelo de IA” en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún lado.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "7eb59db"
+    "sourceHash": "6512b49"
   },
   "ai.cloudConsent.notSaved": "Cmdr no pudo guardar tu elección. ¿Lo intentas de nuevo?",
   "@ai.cloudConsent.notSaved": {
@@ -55,9 +55,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "0a7dd7e"
   },
-  "ai.translateError.emptyResponse.body": "Puede que tu modelo necesite un presupuesto mayor para esto. Prueba un modelo más rápido como gpt-4.1-mini en Configuración > IA.",
+  "ai.translateError.emptyResponse.body": "Puede que tu modelo haya agotado su presupuesto de tokens antes de responder. Prueba un modelo más rápido como gpt-4.1-mini en Configuración > IA.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "29fe732"
+    "sourceHash": "811dc44"
   },
   "ai.translateError.serverError.title": "Tu proveedor de IA tuvo un contratiempo",
   "@ai.translateError.serverError.title": {
@@ -79,9 +79,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "9a2d67e"
   },
-  "ai.cloud.timedOut": "El servidor no respondió a tiempo. Inténtalo de nuevo en un momento.",
+  "ai.cloud.timedOut": "El servicio no respondió a tiempo. Inténtalo de nuevo en un momento.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "c91672a"
+    "sourceHash": "51af09b"
   },
   "ai.cloud.providerRefused": "El servicio rechazó la solicitud (código {status}).",
   "@ai.cloud.providerRefused": {

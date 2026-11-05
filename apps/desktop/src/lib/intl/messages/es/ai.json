@@ -87,9 +87,9 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, cuando chateas o cuando abre una conversación por su cuenta:",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, cuando chateas o cuando Cmdr abre una conversación por su cuenta:",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Tus mensajes, incluida cualquier contraseña que escribas en ellos para desbloquear un archivo comprimido o una copia de seguridad",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Si activas el registro de llamadas al modelo de IA en Ajustes avanzados, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún sitio.",
+  "ai.cloudConsent.logsNote": "Si activas “Registrar llamadas al modelo de IA” en Ajustes avanzados, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún sitio.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Desactívalo cuando quieras y Cmdr dejará de enviar al instante. Tu servicio, tu clave y tus chats se quedan como están.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Puede que tu modelo necesite un presupuesto mayor para esto. Prueba un modelo más rápido como gpt-4.1-mini en Ajustes > IA.",
+  "ai.translateError.emptyResponse.body": "Puede que tu modelo haya agotado su presupuesto de tokens antes de responder. Prueba un modelo más rápido como gpt-4.1-mini en Ajustes > IA.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "Tu proveedor de IA ha tenido un contratiempo",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "El servidor no ha respondido a tiempo. Inténtalo de nuevo en un momento.",
+  "ai.cloud.timedOut": "El servicio no ha respondido a tiempo. Inténtalo de nuevo en un momento.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Esa dirección no parece correcta. Usa una dirección web completa que empiece por https://.",
   "@ai.cloud.invalidEndpoint": {

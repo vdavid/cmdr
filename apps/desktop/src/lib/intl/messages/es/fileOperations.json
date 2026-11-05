@@ -252,9 +252,9 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "Este recurso compartido usa la conexión del sistema. La cancelación puede tardar. Usa “Conectar directamente” en el selector de volumen para transferencias más rápidas y una cancelación fiable.",
+  "fileOperations.transferDialog.smbNativeNote": "Este recurso compartido usa la conexión del sistema. La cancelación puede tardar. Usa “Conectar directamente para un acceso más rápido” en el selector de volúmenes para transferencias más rápidas y una cancelación fiable.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "60af535"
+    "sourceHash": "95b30c0"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Esta carpeta todavía no existe. Cmdr la creará durante la copia.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -612,27 +612,27 @@
   "@fileOperations.transferProgress.conflictPolicyCaption": {
     "sourceHash": "cec5c27"
   },
-  "fileOperations.transferProgress.policyName.skip": "Skip",
+  "fileOperations.transferProgress.policyName.skip": "Omitir",
   "@fileOperations.transferProgress.policyName.skip": {
     "sourceHash": "28d0359"
   },
-  "fileOperations.transferProgress.policyName.overwrite": "Overwrite",
+  "fileOperations.transferProgress.policyName.overwrite": "Sobrescribir",
   "@fileOperations.transferProgress.policyName.overwrite": {
     "sourceHash": "b24963e"
   },
-  "fileOperations.transferProgress.policyName.overwriteSmaller": "Overwrite if smaller",
+  "fileOperations.transferProgress.policyName.overwriteSmaller": "Sobrescribir si es menor",
   "@fileOperations.transferProgress.policyName.overwriteSmaller": {
     "sourceHash": "0473dc5"
   },
-  "fileOperations.transferProgress.policyName.overwriteOlder": "Overwrite if older",
+  "fileOperations.transferProgress.policyName.overwriteOlder": "Sobrescribir si es más antiguo",
   "@fileOperations.transferProgress.policyName.overwriteOlder": {
     "sourceHash": "6c111a2"
   },
-  "fileOperations.transferProgress.policyName.askEach": "Ask for each",
+  "fileOperations.transferProgress.policyName.askEach": "Preguntar en cada caso",
   "@fileOperations.transferProgress.policyName.askEach": {
     "sourceHash": "4302843"
   },
-  "fileOperations.transferProgress.policyName.rename": "Rename",
+  "fileOperations.transferProgress.policyName.rename": "Renombrar",
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
@@ -1285,13 +1285,13 @@
   "@fileOperations.validation.empty": {
     "sourceHash": "2a25343"
   },
-  "fileOperations.validation.nameTooLong": "{kind, select, folder {Folder name is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})} other {Filename is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})}}",
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {El nombre de la carpeta es demasiado largo ({byteCount}/{maxBytes} {max, plural, one {byte} many {bytes} other {bytes}})} other {El nombre del archivo es demasiado largo ({byteCount}/{maxBytes} {max, plural, one {byte} many {bytes} other {bytes}})}}",
   "@fileOperations.validation.nameTooLong": {
-    "sourceHash": "76a85fd"
+    "sourceHash": "4978a6f"
   },
-  "fileOperations.validation.pathTooLong": "Full path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathTooLong": "La ruta completa es demasiado larga ({byteCount}/{maxBytes} {max, plural, one {byte} many {bytes} other {bytes}})",
   "@fileOperations.validation.pathTooLong": {
-    "sourceHash": "1658c7a"
+    "sourceHash": "9aa3b43"
   },
   "fileOperations.validation.extensionChangeBlocked": "No se permite cambiar la extensión del archivo (era “{oldExt}”)",
   "@fileOperations.validation.extensionChangeBlocked": {
@@ -1317,13 +1317,13 @@
   "@fileOperations.validation.pathNullChar": {
     "sourceHash": "271149f"
   },
-  "fileOperations.validation.pathTotalTooLong": "Path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathTotalTooLong": "La ruta es demasiado larga ({byteCount}/{maxBytes} {max, plural, one {byte} many {bytes} other {bytes}})",
   "@fileOperations.validation.pathTotalTooLong": {
-    "sourceHash": "30aca7d"
+    "sourceHash": "dd75780"
   },
-  "fileOperations.validation.pathSegmentTooLong": "A folder name in the path is too long ({byteCount}/{maxBytes} {max, plural, one {byte} other {bytes}})",
+  "fileOperations.validation.pathSegmentTooLong": "Un nombre de carpeta de la ruta es demasiado largo ({byteCount}/{maxBytes} {max, plural, one {byte} many {bytes} other {bytes}})",
   "@fileOperations.validation.pathSegmentTooLong": {
-    "sourceHash": "75b2602"
+    "sourceHash": "c0773d3"
   },
   "fileOperations.transferTree.treeLabel": "Archivos de esta operación",
   "@fileOperations.transferTree.treeLabel": {

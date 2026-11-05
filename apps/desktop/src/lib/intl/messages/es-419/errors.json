@@ -127,9 +127,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "e5b747f"
   },
-  "errors.listing.couldntReadUnknown.explanation": "Cmdr se topó con un problema inesperado al leer `{path}`. Revisa los detalles técnicos de abajo para ver el código de sistema concreto, que puede ayudar con la resolución de problemas.",
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr se topó con un problema inesperado al leer `{path}`. Revisa “Detalles técnicos” abajo para ver el código de sistema concreto, que puede ayudar a resolver el problema.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "5acada9"
+    "sourceHash": "4eb6568"
   },
   "errors.listing.notFound.explanation": "Cmdr no pudo encontrar `{path}`. Puede que se haya movido, renombrado o eliminado mientras Cmdr intentaba acceder a ella.",
   "@errors.listing.notFound.explanation": {
@@ -155,9 +155,9 @@
   "@errors.listing.notConnected.explanation": {
     "sourceHash": "3c3268f"
   },
-  "errors.listing.linkTargetUnreachable.explanation": "`{path}` está detrás de un enlace a otro servidor, y Cmdr no puede acceder a ese servidor ahora mismo. El resto de este recurso compartido funciona bien y no se eliminó nada.",
+  "errors.listing.linkTargetUnreachable.explanation": "`{path}` pasa por un enlace a otro servidor, y Cmdr no puede acceder a ese servidor ahora mismo. El resto de este recurso compartido funciona bien y no se eliminó nada.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "97f8323"
+    "sourceHash": "5ae953c"
   },
   "errors.listing.deviceReconnecting.explanation": "La conexión con el dispositivo que contiene `{path}` se reinició, así que esta acción no se completó. El dispositivo sigue conectado y Cmdr lo está reabriendo ahora mismo. Suele ocurrir después de una transferencia cancelada o interrumpida.",
   "@errors.listing.deviceReconnecting.explanation": {
@@ -727,9 +727,9 @@
   "@errors.volume.deviceSessionReset": {
     "sourceHash": "55377d2"
   },
-  "errors.volume.connectionTimeout": "La conexión no respondió a tiempo.",
+  "errors.volume.connectionTimeout": "El servidor o el dispositivo no respondió a tiempo.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "4296eea"
+    "sourceHash": "3389b8a"
   },
   "errors.volume.cancelled": "Cmdr detuvo esto porque se lo pediste.",
   "@errors.volume.cancelled": {
@@ -738,6 +738,10 @@
   "errors.volume.sourceChanged": "El archivo “{path}” cambió mientras Cmdr hacía la copia, así que Cmdr no guardó nada. Vuelve a intentarlo para copiar la versión nueva.",
   "@errors.volume.sourceChanged": {
     "sourceHash": "899c296"
+  },
+  "errors.write.sourcesSpanVolumes.title": "Parte de tu selección está dentro de un respaldo, un archivo comprimido o un historial de git",
+  "@errors.write.sourcesSpanVolumes.title": {
+    "sourceHash": "4232f0c"
   },
   "errors.write.sourcesSpanVolumes.message": "{path} está dentro de las instantáneas de un respaldo, de un archivo comprimido o del historial de un repositorio, y el resto de tu selección no, así que Cmdr no puede leer las dos partes a la vez. No cambió nada.",
   "@errors.write.sourcesSpanVolumes.message": {
@@ -755,9 +759,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "9f59a43"
   },
-  "errors.volume.signatureInvalid": "La respuesta del servidor no tenía una firma válida, así que Cmdr se detuvo.",
+  "errors.volume.signatureInvalid": "La respuesta del servidor no tenía una firma válida, así que Cmdr detuvo la operación ahí.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "5415085"
+    "sourceHash": "55e2716"
   },
   "errors.volume.ioError": "El volumen no pudo completarlo.",
   "@errors.volume.ioError": {
@@ -878,9 +882,9 @@
   "@errors.serverRequest.blockedByPolicy": {
     "sourceHash": "40339f6"
   },
-  "errors.write.replySignatureRefused.message": "La respuesta del servidor no tenía una firma válida, así que Cmdr se detuvo.",
+  "errors.write.replySignatureRefused.message": "La respuesta del servidor no tenía una firma válida, así que Cmdr detuvo la operación ahí.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "5415085"
+    "sourceHash": "55e2716"
   },
   "errors.write.namedLeavesRefused.message.notASource": "Uno de los nombres nuevos es para {path}, que no forma parte de esta sugerencia, así que no empezó nada.",
   "@errors.write.namedLeavesRefused.message.notASource": {

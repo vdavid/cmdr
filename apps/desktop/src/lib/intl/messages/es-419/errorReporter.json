@@ -59,13 +59,13 @@
   "@errorReporter.amend.addFailedToast": {
     "sourceHash": "875be50"
   },
-  "errorReporter.sentToast.message": "Reporte de error enviado. Tu ID de referencia es",
+  "errorReporter.sentToast.message": "Reporte de error enviado. Tu ID de referencia:",
   "@errorReporter.sentToast.message": {
-    "sourceHash": "12a8761"
+    "sourceHash": "8378e97"
   },
-  "errorReporter.amendedToast.message": "Nota agregada a tu reporte. Tu ID de referencia es",
+  "errorReporter.amendedToast.message": "Nota agregada a tu reporte. Tu ID de referencia:",
   "@errorReporter.amendedToast.message": {
-    "sourceHash": "e4d9633"
+    "sourceHash": "7ded0bc"
   },
   "errorReporter.autoSentToast.title": "Reporte de error enviado",
   "@errorReporter.autoSentToast.title": {

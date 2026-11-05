@@ -35,9 +35,9 @@
   "@licensing.dialog.validityExpiredOn": {
     "sourceHash": "0d214a6"
   },
-  "licensing.dialog.retryExhausted": "Lo intentamos {count} veces y no funcionó. Sentimos las molestias. Escríbenos a <supportEmail>{email}</supportEmail> y lo resolveremos.",
+  "licensing.dialog.retryExhausted": "Lo intentamos {count, plural, one {# vez} many {# veces} other {# veces}} y no funcionó. Sentimos las molestias. Escríbenos a <supportEmail>{email}</supportEmail> y lo resolveremos.",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "f100502"
+    "sourceHash": "9292ab4"
   },
   "licensing.dialog.networkFallbackError": "No se pudo verificar tu licencia con el servidor. Inténtalo de nuevo más tarde.",
   "@licensing.dialog.networkFallbackError": {

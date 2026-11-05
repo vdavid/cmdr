@@ -83,9 +83,9 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
-  "fileExplorer.archivedFile.label": "Archivado",
+  "fileExplorer.archivedFile.label": "En almacenamiento en frío",
   "@fileExplorer.archivedFile.label": {
-    "sourceHash": "bdb8650"
+    "sourceHash": "78bf854"
   },
   "fileExplorer.archivedFile.tooltip": "Archivado en almacenamiento en frío. Restáuralo en la consola de tu proveedor de almacenamiento antes de abrirlo o copiarlo.",
   "@fileExplorer.archivedFile.tooltip": {
@@ -312,9 +312,9 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
-  "fileExplorer.open.didNotOpen": "{fileName} no se ha abierto. macOS no ha encontrado el archivo o una app que lo abra.",
+  "fileExplorer.open.didNotOpen": "{fileName} no se ha abierto. macOS no ha encontrado el archivo, o ninguna app lo abre.",
   "@fileExplorer.open.didNotOpen": {
-    "sourceHash": "c8362d8"
+    "sourceHash": "cd95423"
   },
   "fileExplorer.openingToast.noApp": "Abriendo {fileName}…",
   "@fileExplorer.openingToast.noApp": {
@@ -1707,13 +1707,13 @@
   "@fileExplorer.navigation.favoriteShortcutPrompt": {
     "sourceHash": "51f3d7d"
   },
-  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Atajo para {name}. Pulsa A–Z o Supr para borrarlo.",
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Tecla de atajo para {name}. Pulsa A–Z, o Supr para borrarla.",
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
-    "sourceHash": "31515c1"
+    "sourceHash": "0c5db95"
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "No se ha podido guardar ese atajo. ¿Volver a intentarlo?",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "No se ha podido guardar esa tecla de atajo. ¿Volver a intentarlo?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "38e7225"
+    "sourceHash": "de62c34"
   },
   "fileExplorer.navigation.removeFavoriteFailed": "No se ha podido quitar ese favorito. ¿Reintentar?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
@@ -1727,9 +1727,9 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
   },
-  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening this favorite connects to {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}}.",
+  "fileExplorer.navigation.favoriteStatus.connects": "Sin conexión. Al abrir este favorito, Cmdr se conecta a {kind, select, share {el recurso compartido “{place}”} server {el servidor “{place}”} phone {el teléfono “{place}”} other {“{place}”}}.",
   "@fileExplorer.navigation.favoriteStatus.connects": {
-    "sourceHash": "a30b8cd"
+    "sourceHash": "0ed263f"
   },
   "fileExplorer.navigation.favoriteStatus.notFound": "Esta carpeta ya no está ahí.",
   "@fileExplorer.navigation.favoriteStatus.notFound": {
@@ -1739,9 +1739,9 @@
   "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
     "sourceHash": "00f7bf0"
   },
-  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "El almacenamiento en el que estaba esta carpeta no está disponible ahora mismo en {device}.",
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "El almacenamiento en el que estaba esta carpeta no está disponible ahora mismo en “{device}”.",
   "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
-    "sourceHash": "a06d5ae"
+    "sourceHash": "ef526cd"
   },
   "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "La unidad “{drive}” no está conectada. Conéctala y vuelve a intentarlo.",
   "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
@@ -1755,9 +1755,9 @@
   "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
     "sourceHash": "4fba610"
   },
-  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach {kind, select, share {the share “{place}”} server {the server “{place}”} phone {the phone “{place}”} other {“{place}”}} anymore. Connect to it again from Servers, and this favorite works again.",
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr ya no sabe cómo acceder a {kind, select, share {el recurso compartido “{place}”} server {el servidor “{place}”} phone {el teléfono “{place}”} other {“{place}”}}. Vuelve a conectarte desde Servidores y este favorito volverá a funcionar.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
-    "sourceHash": "842858c"
+    "sourceHash": "59f7041"
   },
   "fileExplorer.navigation.favoriteUnreachable.notFound": "“{name}” ya no está en {path}.",
   "@fileExplorer.navigation.favoriteUnreachable.notFound": {
@@ -1863,9 +1863,9 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr sigue trabajando con archivos en este servidor. Desconéctalo cuando termine.",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr sigue trabajando con archivos en este servidor. Podrás desconectarlo cuando termine.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "bd52d60"
+    "sourceHash": "760edfd"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} ya está en tu selector de volúmenes.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1891,7 +1891,7 @@
   "@fileExplorer.navigation.forgetConfirmButton": {
     "sourceHash": "a6bd489"
   },
-  "fileExplorer.navigation.forgetPasswordConfirmButton": "Forget",
+  "fileExplorer.navigation.forgetPasswordConfirmButton": "Olvidar",
   "@fileExplorer.navigation.forgetPasswordConfirmButton": {
     "sourceHash": "a6bd489"
   },
@@ -1935,9 +1935,9 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr sigue trabajando con archivos en este dispositivo. Expúlsalo cuando termine.",
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr sigue trabajando con archivos en este dispositivo. Podrás expulsarlo cuando termine.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "3da6312"
+    "sourceHash": "b298e2f"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Expulsando {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -2113,9 +2113,9 @@
   "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
     "sourceHash": "4ef8487"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "La indexación de unidades está desactivada en Ajustes, así que {name} sigue sin indexar. Actívala en Indexación > Indexación de unidades.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "La indexación de unidades está desactivada en Ajustes, así que {name} sigue sin indexar. Actívala en “Indexación > Indexación de unidades”.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
-    "sourceHash": "ce0d45c"
+    "sourceHash": "0253edd"
   },
   "fileExplorer.navigation.driveIndex.driveLeaving": "{name} se está desconectando, así que Cmdr ha dejado su índice como estaba. Si la unidad sigue conectada, vuelve a intentarlo en un momento.",
   "@fileExplorer.navigation.driveIndex.driveLeaving": {
@@ -2125,9 +2125,9 @@
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "La indexación de unidades está desactivada en Ajustes. Actívala en Indexación > Indexación de unidades, y esta unidad continuará donde lo dejó.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "La indexación de unidades está desactivada en Ajustes. Actívala en “Indexación > Indexación de unidades”, y esta unidad continuará donde lo dejó.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
-    "sourceHash": "e045664"
+    "sourceHash": "26e250c"
   },
   "fileExplorer.dragOut.failed": "{count, plural, =1 {No se ha podido copiar “{name}”.} one {No se ha podido copiar {countText} elemento.} many {No se han podido copiar {countText} elementos.} other {No se han podido copiar {countText} elementos.}}",
   "@fileExplorer.dragOut.failed": {
@@ -2149,9 +2149,9 @@
   "@fileExplorer.typeToJump.modeJump": {
     "sourceHash": "292fdf5"
   },
-  "fileExplorer.typeToJump.clear": "Borrar salto",
+  "fileExplorer.typeToJump.clear": "Borrar el texto escrito",
   "@fileExplorer.typeToJump.clear": {
-    "sourceHash": "42ec82f"
+    "sourceHash": "61920c5"
   },
   "fileExplorer.quickFilter.clear": "Borrar filtro",
   "@fileExplorer.quickFilter.clear": {
@@ -2209,13 +2209,13 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
-  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} no ha confirmado los ajustes de seguridad que acordó con Cmdr, así que Cmdr sigue usando la conexión del sistema. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión.",
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} no ha confirmado los ajustes de seguridad que acordó con Cmdr, así que este recurso compartido sigue usando la conexión del sistema. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión.",
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
-    "sourceHash": "7ea7c4f"
+    "sourceHash": "9b3a6ae"
   },
-  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} solo acepta conexiones cifradas y no ha acordado con Cmdr una forma de cifrarlas, así que Cmdr sigue usando la conexión del sistema.",
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} solo acepta conexiones cifradas y no ha acordado con Cmdr una forma de cifrarlas, así que este recurso compartido sigue usando la conexión del sistema.",
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
-    "sourceHash": "a731300"
+    "sourceHash": "4df31b6"
   },
   "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} no puede cifrar la conexión y Cmdr tiene activado “Requerir siempre cifrado SMB”, así que Cmdr no se ha conectado directamente.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {

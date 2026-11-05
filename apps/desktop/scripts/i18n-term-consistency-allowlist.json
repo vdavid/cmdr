@@ -18,10 +18,6 @@
         "reason": "`Schließen` closes a dialog, toast, or notice that can come back; `Ausblenden` hides a queue row (`queue.row.dismiss`) or a hint line (`adb.hint.dismiss`) for good. A row can't be closed, and the @key says nothing is undone, retried, or deleted. The `dismiss` ruling in `docs/i18n/de/terms.json`."
       },
       {
-        "source": "Archive",
-        "reason": "Two parts of speech. `askCmdr.sessions.archive` is the VERB that hides a chat (`archivieren`, the `archive-chat` ruling); `suggestedOps.facts.archive` is the NOUN label before the zip file a compress suggestion creates (`Archiv`, the `archive` ruling), like `fileExplorer.list.rowKind.archive`."
-      },
-      {
         "source": "Indexing now",
         "reason": "`Wird gerade indiziert` is the tooltip on ONE image's badge (`fileExplorer.imageIndex.file.indexing`), a passive state; `Indizierung läuft` is the heading over the live progress list (`settings.mediaIndex.progressSummary.title`), a nominal status."
       },
@@ -45,10 +41,6 @@
     "en-AU": [],
     "en-GB": [],
     "es": [
-      {
-        "source": "Archive",
-        "reason": "Two senses of one English word. `askCmdr.sessions.archive` is the VERB that hides a chat (`Archivar`, the `archive-chat` ruling); `suggestedOps.facts.archive` is the NOUN labeling the zip file a compress suggestion creates (`Archivo comprimido`, the `archive` ruling)."
-      },
       {
         "source": "Both",
         "reason": "The pronoun agrees in gender with what it covers: `Ambos` for files and folders together (masculine plural), `Ambas` for the two kinds of notification (feminine). Neither fits the other's slot."
@@ -84,6 +76,10 @@
       {
         "source": "Trust and connect",
         "reason": "`Confiar en la clave y conectar` trusts an SSH host key (`servers.hostKey.trustAndConnect`); `Confiar en el certificado y conectar` trusts a WebDAV TLS certificate (`servers.certificate.trustAndConnect`). The English leaves the object implicit, Spanish names it, and the two nouns differ in gender, so one shared label would read wrong in one of the prompts."
+      },
+      {
+        "source": "Unknown",
+        "reason": "The adjective agrees with the value it stands for: `ai.local.modelUnknown` is a model and `suggestedOps.factUnknownSize` a size (el modelo, el tamaño: `Desconocido`); `suggestedOps.factUnknownDate` fills a date cell (la fecha: `Desconocida`)."
       },
       {
         "source": "View",
@@ -580,10 +576,6 @@
         "reason": "Two senses of one English word. `fileExplorer.columns.added` is a date column header, so it takes Finder's date label `Дата добавления` (LocalizableMerged N169.38), parallel with its siblings `Дата создания` and `Дата изменения`. `Добавлено` is a state: a file git added (`fileExplorer.git.status.added`) and a shortcut the user added (`shortcuts.list.addedTooltip`)."
       },
       {
-        "source": "Archived",
-        "reason": "Two senses of one English word. `askCmdr.sessions.archivedBadge` marks a chat the user put away (`В архиве`); `fileExplorer.archivedFile.label` marks a file in an S3 cold-storage class (`В архивном хранилище`). In a file list `В архиве` reads as inside a zip, which hides why the file won't open. See `docs/i18n/ru/terms.json` `cold-storage`."
-      },
-      {
         "source": "Both",
         "reason": "Оба типа covers files and folders in the type filter; Оба варианта covers notification choices."
       },
@@ -662,10 +654,6 @@
       {
         "source": "{countText} {count, plural, one {folder} other {folders}}",
         "reason": "Two grammatical slots. `fileOperations.delete.foldersPart` and `fileOperations.transferDialog.foldersPart` are objects of a verb in their host sentence (`Удалить …`, `Скопировать …`), so the singular is accusative `папку`. `queue.row.folderCount` stands as its own chunk after the queue row action noun (`Удаление`, `Копирование`) and in the row tooltip, where an accusative `1 папку` reads wrong; it takes the nominative `папка`, like the chip tooltip's `{countText} объект`."
-      },
-      {
-        "source": "Archive",
-        "reason": "Two parts of speech. `askCmdr.sessions.archive` is the VERB that hides a chat (`Архивировать`, the `archive-chat` ruling); `suggestedOps.facts.archive` is the NOUN label before the zip file a compress suggestion creates (`Архив`, the `archive` ruling), like `fileExplorer.list.rowKind.archive`."
       },
       {
         "source": "Last modified",

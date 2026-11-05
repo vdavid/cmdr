@@ -7,9 +7,9 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "e50fe4b"
   },
-  "fileExplorer.open.didNotOpen": "{fileName} no se abrió. macOS no encontró el archivo o una app que lo abra.",
+  "fileExplorer.open.didNotOpen": "{fileName} no se abrió. macOS no encontró el archivo, o ninguna app lo abre.",
   "@fileExplorer.open.didNotOpen": {
-    "sourceHash": "81d1927"
+    "sourceHash": "fdabbac"
   },
   "fileExplorer.openWith.notOnThisMac": "{appName} no puede abrir este archivo, porque no es un archivo normal de tu Mac. Presiona {viewKey} para verlo en Cmdr.",
   "@fileExplorer.openWith.notOnThisMac": {
@@ -291,13 +291,13 @@
   "@fileExplorer.navigation.favoritesAddCurrent": {
     "sourceHash": "5dc6365"
   },
-  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Atajo para {name}. Presiona A–Z o Supr para borrarlo.",
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Tecla de atajo para {name}. Presiona A–Z, o Supr para borrarla.",
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
-    "sourceHash": "1a4afc3"
+    "sourceHash": "4d36ba3"
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "No se pudo guardar ese atajo. ¿Volver a intentarlo?",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "No se pudo guardar esa tecla de atajo. ¿Volver a intentarlo?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "2883f1c"
+    "sourceHash": "4ce4c6b"
   },
   "fileExplorer.navigation.favoriteUnreachable.mtpOff": "El acceso a teléfonos y cámaras por MTP está desactivado en Configuración.",
   "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
@@ -399,9 +399,9 @@
   "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
     "sourceHash": "f6cd615"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "La indexación de unidades está desactivada en Configuración, así que {name} sigue sin indexar. Actívala en Indexación > Indexación de unidades.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "La indexación de unidades está desactivada en Configuración, así que {name} sigue sin indexar. Actívala en “Indexación > Indexación de unidades”.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
-    "sourceHash": "ca36324"
+    "sourceHash": "4fbe8e9"
   },
   "fileExplorer.navigation.driveIndex.driveLeaving": "{name} se está desconectando, así que Cmdr dejó su índice como estaba. Si la unidad sigue conectada, vuelve a intentarlo en un momento.",
   "@fileExplorer.navigation.driveIndex.driveLeaving": {
@@ -411,9 +411,9 @@
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "b388385"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "La indexación de unidades está desactivada en Configuración. Actívala en Indexación > Indexación de unidades, y esta unidad continuará donde lo dejó.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "La indexación de unidades está desactivada en Configuración. Actívala en “Indexación > Indexación de unidades”, y esta unidad continuará donde lo dejó.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
-    "sourceHash": "b725d81"
+    "sourceHash": "ed4b144"
   },
   "fileExplorer.dragOut.failed": "{count, plural, =1 {No se pudo copiar “{name}”.} one {No se pudo copiar {countText} elemento.} many {No se pudieron copiar {countText} elementos.} other {No se pudieron copiar {countText} elementos.}}",
   "@fileExplorer.dragOut.failed": {
@@ -495,16 +495,16 @@
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "f0f7045"
   },
-  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} no confirmó la configuración de seguridad que acordó con Cmdr, así que Cmdr sigue usando la conexión del sistema. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión.",
-  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} solo acepta conexiones cifradas y no acordó con Cmdr una forma de cifrarlas, así que Cmdr sigue usando la conexión del sistema.",
+  "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} no confirmó la configuración de seguridad que acordó con Cmdr, así que este recurso compartido sigue usando la conexión del sistema. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión.",
+  "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} solo acepta conexiones cifradas y no acordó con Cmdr una forma de cifrarlas, así que este recurso compartido sigue usando la conexión del sistema.",
   "fileExplorer.network.osMountFallback.negotiationInvalid": "No se pudo conectar directamente a <shareName>{share}</shareName>, porque el servidor no confirmó la configuración de seguridad que acordó con Cmdr. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión. Sigues teniendo acceso, pero a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
   "fileExplorer.network.osMountFallback.encryptionUnavailable": "No se pudo conectar directamente a <shareName>{share}</shareName>, porque este recurso compartido solo acepta conexiones cifradas y el servidor no acordó con Cmdr una forma de cifrarlas. Sigues teniendo acceso, pero a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
   "fileExplorer.network.osMountFallback.encryptionRequired": "No se pudo conectar directamente a <shareName>{share}</shareName>, porque el servidor no puede cifrar la conexión y Cmdr tiene activado “Requerir siempre cifrado SMB”. Sigues teniendo acceso, pero a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
-    "sourceHash": "f02a0b5"
+    "sourceHash": "6608849"
   },
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
-    "sourceHash": "4a79619"
+    "sourceHash": "490ef2b"
   },
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
     "sourceHash": "dfe0e0a"

@@ -166,9 +166,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Alterna el sombreado de las filas para seguir mejor cada línea. Se aplica a las vistas completa y breve.",
+  "settings.listing.stripedRows.description": "Alterna el sombreado de las filas para seguir mejor cada línea. Se aplica tanto a la vista completa como a la vista breve.",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "rayas, rayado, cebra, alterno, alternas, fila, filas, sombreado, accesibilidad, legibilidad",
   "@settings.listing.stripedRows.keywords": {
@@ -823,9 +823,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "Indexar siempre las fotos en {name}",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Indexar siempre esta unidad: {name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "En pausa, se reanuda cuando vuelvas a conectar la unidad",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -943,9 +943,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Eliminar entradas indexadas adicionales",
+  "settings.mediaIndex.reclaim.confirmTitle": "¿Eliminar entradas indexadas adicionales?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "¿Eliminar {doomed, plural, one {{doomedText} entrada indexada} other {{doomedText} entradas indexadas} many {{doomedText} entradas indexadas}} para liberar unos {size}? Puedes volver a indexar estas imágenes más tarde, pero releerlas lleva tiempo.",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1092,9 +1092,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Ocultar la pregunta del atajo de la última descarga",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "No volver a preguntar por el atajo de la última descarga",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "La primera vez que pulsas el atajo que salta a tu última descarga desde cualquier app, Cmdr te pregunta si quieres mantenerlo activado. Al cambiar el atajo, esto se desactiva, así que también se pregunta por la combinación nueva. Desactiva esto para volver a ver la pregunta.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1241,9 +1241,9 @@
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
-  "settings.ai.reasoningEfforts.description": "Cuánto piensa el modelo antes de responder. Más esfuerzo ayuda con las tareas difíciles, pero las respuestas tardan más y lo que piensa se cobra como salida.",
+  "settings.ai.reasoningEfforts.description": "Cuánto piensa el modelo antes de responder. Pensar más ayuda con las tareas difíciles, pero las respuestas tardan más y lo que piensa se cobra como salida.",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "esfuerzo de razonamiento, esfuerzo, razonamiento, pensar, pensamiento, reflexión, profundidad, velocidad, coste, calidad",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1464,7 +1464,7 @@
   },
   "settings.fileExplorer.git.showStatusColumn.description": "Añade una columna que muestra el estado de git por archivo (modificado, sin seguimiento, etc.) en la vista completa.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "estado, columna, modificado, sin seguimiento, ignorado, añadido, eliminado",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1762,13 +1762,13 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "sourceHash": "ad9377a"
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Avisar si un elemento que eliminas ya no estaba",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Mostrar un aviso si un elemento que eliminas ya no estaba",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Cuando eliminas algo que otra app ya ha movido o eliminado, Cmdr lo da por hecho y te avisa con una nota breve. Desactiva esta opción (o haz clic en “No volver a mostrar” en la nota) para omitir esa nota.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "Cuando eliminas algo que otra app ya ha movido o eliminado, Cmdr lo da por hecho y muestra un aviso breve que lo indica. Desactiva esta opción (o haz clic en “No volver a mostrar” en el aviso) para dejar de ver estos avisos.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "desaparecido, falta, borrado, ya no existe, aviso, notificación, mensaje",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2429,9 +2429,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Ask Cmdr usa tu servicio de IA en la nube. Permite la IA en la nube en los ajustes de IA para empezar a chatear.",
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr usa tu servicio de IA en la nube. Activa “Permitir IA en la nube” en los ajustes de IA para empezar a chatear.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "Abrir los ajustes de IA",
   "@settings.askCmdr.openAiSettings": {
@@ -2940,25 +2940,25 @@
   "@settings.appearance.formatHelpYear": {
     "sourceHash": "467ff57"
   },
-  "settings.appearance.formatHelpMonth": "mes de 2 dígitos (01-12)",
+  "settings.appearance.formatHelpMonth": "mes de 2 dígitos (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
-  "settings.appearance.formatHelpDay": "día de 2 dígitos (01-31)",
+  "settings.appearance.formatHelpDay": "día de 2 dígitos (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
-  "settings.appearance.formatHelpHour": "hora de 2 dígitos (00-23)",
+  "settings.appearance.formatHelpHour": "hora de 2 dígitos (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
-  "settings.appearance.formatHelpMinute": "minuto de 2 dígitos (00-59)",
+  "settings.appearance.formatHelpMinute": "minuto de 2 dígitos (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
-  "settings.appearance.formatHelpSecond": "segundo de 2 dígitos (00-59)",
+  "settings.appearance.formatHelpSecond": "segundo de 2 dígitos (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "Añade un tinte de fondo tenue a los paneles para que puedas distinguir los tipos de volumen de un vistazo.",
   "@settings.appearance.tintGroupDescription": {
@@ -3165,9 +3165,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "Cambia el atajo en Atajos de teclado → Ir a la última descarga (global).",
+  "settings.fileSystemWatching.globalShortcutHint": "Cambia el atajo en “Atajos de teclado → Ir a la última descarga”.",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "Acceso a {localNetwork}",
   "@settings.network.localNetworkAccessLabel": {

@@ -7,9 +7,9 @@
   "@suggestedOps.description": {
     "sourceHash": "4d98280"
   },
-  "suggestedOps.approvalNoticeDismiss": "No volver a mostrar esto",
+  "suggestedOps.approvalNoticeDismiss": "No volver a mostrar",
   "@suggestedOps.approvalNoticeDismiss": {
-    "sourceHash": "2c23c21"
+    "sourceHash": "f6f62e0"
   },
   "suggestedOps.sweepWhen.justNow": "Sugerido ahora mismo",
   "@suggestedOps.sweepWhen.justNow": {
@@ -85,7 +85,8 @@
   },
   "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
   "@suggestedOps.groupTitle": {
-    "sourceHash": "201c1fc"
+    "sourceHash": "201c1fc",
+    "sameAsSourceJustification": "Tags and placeholders only: Spanish puts the action verb first (Mover Instaladores antiguos), the same order as English."
   },
   "suggestedOps.approve.move": "Mover {countText} {count, plural, one {archivo} many {archivos} other {archivos}}",
   "@suggestedOps.approve.move": {
@@ -267,11 +268,11 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
-  "suggestedOps.factUnknownSize": "Unknown",
+  "suggestedOps.factUnknownSize": "Desconocido",
   "@suggestedOps.factUnknownSize": {
     "sourceHash": "b764cdc"
   },
-  "suggestedOps.factUnknownDate": "Unknown",
+  "suggestedOps.factUnknownDate": "Desconocida",
   "@suggestedOps.factUnknownDate": {
     "sourceHash": "b764cdc"
   },

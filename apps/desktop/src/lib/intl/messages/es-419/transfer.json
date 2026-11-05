@@ -51,8 +51,8 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "b23c4fc"
   },
-  "transfer.metadataLeftBehind": "Este servidor no puede almacenar {classes}, así que esa información se quedó atrás.",
+  "transfer.metadataLeftBehind": "Este destino no puede guardar algunos datos, así que se quedaron atrás: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "9313d78"
+    "sourceHash": "e1f40c0"
   }
 }

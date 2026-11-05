@@ -31,9 +31,9 @@
   "@stateRecovery.appStatus.title": {
     "sourceHash": "521f5eb"
   },
-  "stateRecovery.operationLog.title": "Cmdr no ha podido leer tu registro de operaciones, así que empieza de cero",
+  "stateRecovery.operationLog.title": "Cmdr no ha podido leer tu registro de operaciones, así que el registro empieza de cero",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "0bfa904"
+    "sourceHash": "e4e9fb0"
   },
   "stateRecovery.chatHistory.title": "Cmdr no ha podido leer tus chats de Ask Cmdr, así que la lista de chats empieza vacía",
   "@stateRecovery.chatHistory.title": {
