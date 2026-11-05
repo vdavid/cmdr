@@ -34,3 +34,5 @@ export async function verifyAdminAuth(c: Context<{ Bindings: Bindings }>): Promi
   }
   return null
 }
+
+// THROWAWAY probe line (never merge).
