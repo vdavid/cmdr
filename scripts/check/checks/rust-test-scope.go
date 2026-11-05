@@ -256,8 +256,15 @@ var rustTestScopeRules = []rustScopeRule{
 	{Glob: "apps/desktop/test/smb-servers/**", Effect: scopeAll, Why: "a fixture server the integration lanes run against"},
 	{Glob: "apps/desktop/test/webdav-servers/**", Effect: scopeAll, Why: "a fixture server the integration lanes run against"},
 	{Glob: ".github/workflows/ci.yml", Effect: scopeAll, Why: "defines how the Rust lanes run"},
+	{Glob: ".github/workflows/rust-lane.yml", Effect: scopeAll, Why: "defines how the Linux Rust lane runs"},
+	{Glob: ".github/workflows/rust-fixtures-lane.yml", Effect: scopeAll, Why: "defines how the fixtures Rust lane runs"},
 	{Glob: ".github/workflows/macos-lane.yml", Effect: scopeAll, Why: "defines how the macOS Rust lane runs"},
-	{Glob: ".github/actions/**", Effect: scopeAll, Why: "composite actions the Rust lanes use (the pinned toolchain)"},
+	// The composite actions the Rust lane files use; another action (say `light-cache`) has no
+	// rule, so it falls through to the unknown-path `all`, which only ever widens.
+	{Glob: ".github/actions/free-disk-if-small/**", Effect: scopeAll, Why: "a composite action the Rust lanes use"},
+	{Glob: ".github/actions/pinned-rust-toolchain/**", Effect: scopeAll, Why: "a composite action the Rust lanes use (the compiler they build with)"},
+	{Glob: ".github/actions/tauri-linux-deps/**", Effect: scopeAll, Why: "a composite action the Rust lanes use (the system libraries they link)"},
+	{Glob: ".github/actions/wasm-toolchain/**", Effect: scopeAll, Why: "a composite action the Rust lanes use"},
 	{Glob: "scripts/check/**", Effect: scopeAll, Why: "the check runner that builds and runs the tests, this scope logic included"},
 	{Glob: "scripts/check.sh", Effect: scopeAll, Why: "the check runner's entry point"},
 
