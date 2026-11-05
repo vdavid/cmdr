@@ -162,6 +162,8 @@ export function buildFlow(
   listingDeps: ReturnType<typeof chainListing>['deps'] | typeof NO_NEIGHBOURS = NO_NEIGHBOURS,
   /** The pane's volume, for the tests that care which one the flow passes on. */
   volumeId = 'root',
+  /** The home-folder guard a folder's editor waits for; absent, it opens at once. */
+  passesHomeFolderGuard?: (path: string) => Promise<boolean>,
 ) {
   const rename = createRenameState()
   const onRequestFocus = vi.fn()
@@ -180,6 +182,7 @@ export function buildFlow(
     getEntryAt: (index: number) => listingDeps.getEntryAt(index) as never,
     indexOfEntry: (path: string) => listingDeps.indexOfEntry(path),
     onConfirmRenameAsMove,
+    passesHomeFolderGuard,
   })
   return { rename, flow, onRequestFocus, onConfirmRenameAsMove }
 }

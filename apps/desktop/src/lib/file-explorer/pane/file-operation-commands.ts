@@ -25,6 +25,7 @@ import { checkTransferDestinationGuard } from './transfer-entry'
 import { answeringDialogOpen, operationStartIsBlocked, refuseOpening } from './operation-start-gate'
 import { readPressedRows } from './pressed-rows'
 import { duplicateInPlace } from './duplicate-command'
+import { passesHomeFolderGuard } from './home-folder-guard'
 import { openRenameAsMove } from './rename-as-move'
 import type { RenameAsMoveRequest } from './rename-flow.svelte'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
@@ -464,7 +465,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    */
   async function openDeleteFromSearchResults(
     sourcePane: 'left' | 'right',
-    { permanent, initiator, guard }: OpenDeleteDialogArgs,
+    { permanent, initiator, guard, mcpRequestId }: OpenDeleteDialogArgs,
   ): Promise<boolean> {
     const sourcePaneRef = access.getPaneRef(sourcePane)
     const snapshotId = snapshotIdFromPanePath(sourcePaneRef?.getCurrentPath() ?? '')
@@ -504,6 +505,9 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const sourcePaths = entries.map((entry) => entry.path)
 
     const sourceVolume = resolveSnapshotSourceVolume(snapshot.volumeId, access.getVolumes())
+    // Before any confirm UI: the person's own home folder is refused in its place.
+    const homeGuard = { sources: sourcePaths, volumeId: sourceVolume.volumeId, action: 'delete' as const, mcpRequestId }
+    if (!(await passesHomeFolderGuard(dialogs, homeGuard))) return false
     // A search reaches into cloud-storage folders like anywhere else, and a hit
     // there can be online-only just the same.
     const cloud = await cloudOnlineOnlyRouting(sourcePaths)
@@ -628,6 +632,11 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     }))
     const sourcePaths = validEntries.map((e) => e.path)
 
+    // Before any confirm UI: the person's own home folder, or a folder holding it,
+    // is refused in its place, so no Delete button ever shows for it.
+    const homeGuard = { sources: sourcePaths, volumeId: sourceVolId, action: 'delete' as const, mcpRequestId }
+    if (!(await passesHomeFolderGuard(dialogs, homeGuard))) return false
+
     const sourceFolderPath = access.getPanePath(sourcePane)
     // Deleting an entry INSIDE a zip is permanent: there's no Trash inside an
     // archive (the backend rejects trashing an archive-inner path), so force
@@ -676,6 +685,9 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     openTransferDialog,
     openCopyDialog,
     duplicateInPlace: () => duplicateInPlace(access, dialogs),
+    /** The home-folder guard a folder's rename editor waits for (`home-folder-guard.ts`). */
+    passesRenameHomeFolderGuard: ({ path, volumeId }: { path: string; volumeId: string }) =>
+      passesHomeFolderGuard(dialogs, { sources: [path], volumeId, action: 'rename' }),
     confirmRenameAsMove: (pane: 'left' | 'right', request: RenameAsMoveRequest) => {
       openRenameAsMove(access, dialogs, pane, request)
     },

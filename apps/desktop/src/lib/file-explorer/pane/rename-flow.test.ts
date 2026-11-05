@@ -861,3 +861,42 @@ describe('a rename a tool opened', () => {
     expect(onRequestFocus).toHaveBeenCalledOnce()
   })
 })
+
+describe('the home-folder guard before a folder’s editor opens', () => {
+  const HOME: Entry = { name: 'me', path: '/Users/me', isDirectory: true }
+
+  it('never opens the editor on a refused folder, so no Enter can act on it', async () => {
+    const answer = deferred<boolean>()
+    const guard = vi.fn(() => answer.promise)
+    const { rename, flow } = buildFlow(() => HOME, true, undefined, 'root', guard)
+
+    flow.startRename()
+    // Asked, not answered yet: no editor.
+    expect(guard).toHaveBeenCalledWith('/Users/me')
+    expect(rename.active).toBe(false)
+
+    answer.resolve(false)
+    await answer.promise
+    await Promise.resolve()
+    expect(rename.active).toBe(false)
+  })
+
+  it('opens the editor once the guard lets the folder through', async () => {
+    const guard = vi.fn(() => Promise.resolve(true))
+    const { rename, flow } = buildFlow(() => HOME, true, undefined, 'root', guard)
+
+    flow.startRename()
+    await vi.waitFor(() => {
+      expect(rename.active).toBe(true)
+    })
+  })
+
+  it('opens a file’s editor at once: only a folder can be a home folder', () => {
+    const guard = vi.fn(() => Promise.resolve(true))
+    const { rename, flow } = buildFlow(() => PASTED, true, undefined, 'root', guard)
+
+    flow.startRename()
+    expect(guard).not.toHaveBeenCalled()
+    expect(rename.active).toBe(true)
+  })
+})

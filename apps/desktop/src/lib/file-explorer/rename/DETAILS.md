@@ -119,6 +119,11 @@ confirmed replace of a folder that holds something is refused everywhere (`Volum
 
 ## Permission check on activation (`checkRenamePermission(path, volumeId)`)
 
+**A folder's editor first waits for the home-folder guard** (`pane/rename-flow.svelte.ts`'s `activateWhenNotHome`, one
+cheap IPC): renaming the person's own home folder, or a folder holding it, never opens the editor at all, and the
+refusal's dialog shows instead (`../../file-operations/delete/DETAILS.md` § "The home folder refuses up front"). A file
+opens at once. The pre-flight below refuses it too (`MutationError::HomeFolder`), the backstop for an agent's rename.
+
 Verifies: parent dir writable (Unix `access(W_OK)`), file not immutable (`UF_IMMUTABLE`), file not SIP-protected
 (`SF_IMMUTABLE`). On failure, auto-cancel and notify. On read-only volumes, show modal alert "This is a read-only
 volume. Renaming isn't possible here."

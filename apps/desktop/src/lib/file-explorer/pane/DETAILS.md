@@ -1705,6 +1705,11 @@ passing through any of the others.
   does, and nothing about the mouse earns it an exemption. The drop's gate sits in `handleFileDrop`, after the drag
   lifecycle has been torn down and before any stat or volume-resolution work, so the refusal costs one toast and no
   syscalls. `triggerFileDrop` (the E2E entry) goes through the same function, so the gate is on that path too.
+- **The home-folder guard** (`home-folder-guard.ts`) runs after those gates and before any confirm UI: the delete and
+  move openers, a drag-and-drop move, and a folder's rename editor (`rename-flow.svelte.ts`, through FilePane's
+  `passesHomeFolderGuard` prop) ask the engine, and a refusal opens the error dialog in the confirm dialog's place
+  (`DialogState.showHomeFolderRefusal`) or answers MCP with a typed `homeFolder`. A clipboard paste has no confirm UI;
+  its start refuses typed. `../../file-operations/delete/DETAILS.md` § "The home folder refuses up front".
 - **MCP** is refused in Rust before dispatching (`tools/actions/mod.rs::refuse_while_dialog_blocks`), which is what
   turns a ten-second round-trip timeout into an immediate answer. The blocking dialog's id rides in the JSON-RPC error's
   `data.blockingDialog`, a TYPED field: an agent acts on it to decide what to close, so it's a contract, and the

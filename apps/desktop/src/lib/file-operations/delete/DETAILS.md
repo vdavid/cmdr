@@ -53,14 +53,23 @@ webdav no.
 
 ## The home folder refuses up front
 
-Deleting or trashing the person's own home folder, or a folder holding it, is refused by the engine
-(`crates/cmdr-operations/src/delete/DETAILS.md` § "The home folder stays"). The dialog learns it from its own scan
-preview: `startScanPreview` answers `{ refusal: { type: 'home_folder', path, relation } }`, `delete-scan-state` keeps it
-as `homeFolderRefusal`, and `DeleteDialog` swaps its whole body for the refusal's words and its footer for Close (no
-trash switch, no Delete; Enter and an MCP `dialog_confirm` press nothing). The words are the `errors.write.homeFolder.*`
-ones `homeFolderMessage` builds (`../transfer/transfer-error-messages.ts`), the same the error dialog shows when a start
-skipped this dialog, so they live in one place. The path renders in `<code>`, escaped. The refusal lands a moment after
-mount, so the confirm UI may show for a frame first; a press in that window awaits `scanStarted` and stops there.
+Deleting, trashing, moving, or renaming the person's own home folder, or a folder holding it, is refused by the engine
+(`crates/cmdr-operations/src/delete/DETAILS.md` § "The home folder stays"). The frontend asks BEFORE any confirm UI:
+
+- **The openers ask** `checkHomeFolderGuard` through `file-explorer/pane/home-folder-guard.ts`
+  (`passesHomeFolderGuard`): the delete opener (`file-operation-commands.ts`, the search-results one too), the move
+  opener (`transfer-dialog-opener.ts`), a drag-and-drop move (`drag-drop-controller.svelte.ts`), and a FOLDER's rename
+  editor (`rename-flow.svelte.ts`'s `activateWhenNotHome`, which waits for the answer; a file opens at once). Refused,
+  the error dialog opens in the confirm dialog's place (`DialogState.showHomeFolderRefusal`), or an MCP request gets a
+  typed `homeFolder` refusal. So the confirm view never renders, and no Enter can act before the answer.
+- **The words** are `errors.write.homeFolder*` (one family per action: `homeFolder` for delete, `homeFolderMove`,
+  `homeFolderRename`), built by `homeFolderMessage` (`../transfer/transfer-error-messages.ts`), the same the error
+  dialog shows when a start skipped every dialog (MCP, an AI suggestion). The path renders in `<code>`, escaped. An
+  instant rename refused in a toast says the rename title alone (`mutation-error-messages.ts`).
+- **The delete dialog's own refusal mode is a backstop** for an answer that never came: its scan preview refuses too
+  (`startScanPreview` answers `{ refusal: { type: 'home_folder', … } }`), `delete-scan-state` keeps it as
+  `homeFolderRefusal`, and `DeleteDialog` swaps its body for the words and its footer for Close (Enter and an MCP
+  `dialog_confirm` press nothing).
 
 ## Scan-preview detail
 

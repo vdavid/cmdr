@@ -50,6 +50,7 @@
         history: 'The "Browse snapshots" row a restic backup repository shows in its folder.',
         hourglass:
             'Pending recursive-size indicator in the file lists and selection info, and the drive-indexing status indicator.',
+        house: 'The delete dialog’s refusal to delete the person’s own home folder, or a folder holding it.',
         info: 'Restricted-path marker in the volume breadcrumb and file lists, and the info banner in the transfer error dialog.',
         key: 'Forget-saved-password button in the SMB share-list header.',
         link: 'Symlink badge overlaid on a file or folder icon when the entry is a symlink.',

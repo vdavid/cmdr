@@ -4,7 +4,7 @@ import type { FilePaneAPI } from './types'
 import type { SearchSnapshot } from '#lib/search/snapshot-store.svelte.js'
 import type { FileEntry, VolumeInfo } from '../types'
 import type { ToastContent, ToastOptions } from '#lib/ui/toast/toast-store.svelte.js'
-import type { TrashRoutingAnswer } from '#lib/ipc/bindings.js'
+import type { HomeFolderAction, TrashRoutingAnswer } from '#lib/ipc/bindings.js'
 
 /**
  * Shared stubs and fixtures for the `file-operation-commands` specs
@@ -23,6 +23,7 @@ export const spies = {
       (listingId: string, includeHidden: boolean, indices: number[], expectedSequence: number) => Promise<FileEntry[]>
     >(),
   trashRoutingForPaths: vi.fn<(sources: string[]) => Promise<TrashRoutingAnswer>>(),
+  checkHomeFolderGuard: vi.fn<(sources: string[], volumeId: string, action: HomeFolderAction) => Promise<unknown>>(),
   addToast: vi.fn<(content: ToastContent, options?: ToastOptions) => string>(),
   getSnapshot: vi.fn<() => SearchSnapshot | undefined>(),
   openFileViewer: vi.fn<() => Promise<void>>(),
@@ -123,6 +124,7 @@ export interface DialogsStub {
   showNewFile: ReturnType<typeof vi.fn>
   showTransfer: ReturnType<typeof vi.fn>
   showDeleteConfirmation: ReturnType<typeof vi.fn>
+  showHomeFolderRefusal: ReturnType<typeof vi.fn>
   closeConfirmationDialog: ReturnType<typeof vi.fn>
   isConfirmationDialogOpen: ReturnType<typeof vi.fn>
 }
@@ -134,6 +136,7 @@ export function buildDialogs(): DialogsStub {
     showNewFile: vi.fn(),
     showTransfer: vi.fn(),
     showDeleteConfirmation: vi.fn(),
+    showHomeFolderRefusal: vi.fn(),
     closeConfirmationDialog: vi.fn(),
     isConfirmationDialogOpen: vi.fn(() => false),
   }
