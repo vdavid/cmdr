@@ -703,9 +703,9 @@ pub(crate) async fn try_smb_upgrade(
             Ok(())
         }
         Err(dial) => {
-            // allowed-discarded-outcome: the manual path has no fallback notice to quiet; the
-            // caller surfaces the typed `UpgradeError` itself.
-            let _security = record_security_refusal(volume_id, &dial);
+            // Its `SecurityRecord` goes unread: the manual path has no fallback notice to quiet,
+            // and the caller surfaces the typed `UpgradeError` itself.
+            record_security_refusal(volume_id, &dial);
             // `info` IS the caller's answered read of the mount, under
             // `MOUNT_READ_LIMIT`: there's no `SmbMountInfo` without one.
             let mount = MountEvidence::Answered;
