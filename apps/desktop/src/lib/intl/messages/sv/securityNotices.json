@@ -49,7 +49,7 @@
   },
   "securityNotices.smbDirectSignatureRefused.body": "Svaret på inloggningen saknade serverns signatur, så Cmdr litade inte på det. Det kan bero på en nätverksenhet som krånglar, men också på att någon manipulerar trafiken mellan dig och servern. Den delade mappen ligger kvar på systemanslutningen. Om det fortsätter, kontrollera ditt nätverk.",
   "@securityNotices.smbDirectSignatureRefused.body": {
-    "sourceHash": "78631bd"
+    "sourceHash": "af04f57"
   },
   "securityNotices.updateNotGenuine.title": "Cmdr installerade inte den här uppdateringen: den är ingen äkta Cmdr-version",
   "@securityNotices.updateNotGenuine.title": {

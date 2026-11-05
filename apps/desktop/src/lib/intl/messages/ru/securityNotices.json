@@ -49,7 +49,7 @@
   },
   "securityNotices.smbDirectSignatureRefused.body": "В ответе на вход не было подписи сервера, поэтому Cmdr не стал доверять этому ответу. Причиной может быть ненадежное сетевое устройство или чье-то вмешательство в трафик между вами и сервером. Общая папка продолжает работать через системное подключение. Если это повторяется, проверьте сеть.",
   "@securityNotices.smbDirectSignatureRefused.body": {
-    "sourceHash": "78631bd"
+    "sourceHash": "af04f57"
   },
   "securityNotices.updateNotGenuine.title": "Cmdr не стал устанавливать обновление: это не подлинный выпуск Cmdr",
   "@securityNotices.updateNotGenuine.title": {

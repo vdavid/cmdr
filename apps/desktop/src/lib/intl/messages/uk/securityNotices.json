@@ -49,7 +49,7 @@
   },
   "securityNotices.smbDirectSignatureRefused.body": "Відповідь на вхід не мала підпису сервера, тож Cmdr не довірився їй. Причиною може бути ненадійний мережевий пристрій, а може й хтось, хто втручається в трафік між вами та сервером. Спільна папка залишається на системному підʼєднанні. Якщо це повторюється, перевірте свою мережу.",
   "@securityNotices.smbDirectSignatureRefused.body": {
-    "sourceHash": "78631bd"
+    "sourceHash": "af04f57"
   },
   "securityNotices.updateNotGenuine.title": "Cmdr не інсталював це оновлення: це не справжній випуск Cmdr",
   "@securityNotices.updateNotGenuine.title": {

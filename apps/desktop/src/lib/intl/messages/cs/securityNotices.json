@@ -49,7 +49,7 @@
   },
   "securityNotices.smbDirectSignatureRefused.body": "Odpověď na přihlášení neměla podpis serveru, takže jí Cmdr nedůvěřoval. Může to způsobit nespolehlivé síťové zařízení, ale také někdo, kdo zasahuje do provozu mezi vámi a serverem. Sdílená složka dál používá systémové připojení. Pokud se to opakuje, zkontrolujte svou síť.",
   "@securityNotices.smbDirectSignatureRefused.body": {
-    "sourceHash": "78631bd"
+    "sourceHash": "af04f57"
   },
   "securityNotices.updateNotGenuine.title": "Cmdr tuto aktualizaci nenainstaloval: není to pravá verze Cmdru",
   "@securityNotices.updateNotGenuine.title": {

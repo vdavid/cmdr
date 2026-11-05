@@ -49,7 +49,7 @@
   },
   "securityNotices.smbDirectSignatureRefused.body": "这个登录回复没有服务器的签名，所以 Cmdr 不信任它。网络设备不稳定可能导致这种情况，有人篡改你和服务器之间的通信也可能导致。这个共享会继续使用系统连接。如果一直这样，请检查你的网络。",
   "@securityNotices.smbDirectSignatureRefused.body": {
-    "sourceHash": "78631bd"
+    "sourceHash": "af04f57"
   },
   "securityNotices.updateNotGenuine.title": "Cmdr 没有安装这个更新：它不是真正的 Cmdr 版本",
   "@securityNotices.updateNotGenuine.title": {

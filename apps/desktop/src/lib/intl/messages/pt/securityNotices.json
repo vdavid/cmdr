@@ -49,7 +49,7 @@
   },
   "securityNotices.smbDirectSignatureRefused.body": "A resposta ao início de sessão não tinha a assinatura do servidor, então o Cmdr não confiou nela. Um dispositivo de rede instável pode causar isso, e também alguém adulterando o tráfego entre você e o servidor. O compartilhamento continua na conexão do sistema. Se continuar acontecendo, verifique sua rede.",
   "@securityNotices.smbDirectSignatureRefused.body": {
-    "sourceHash": "78631bd"
+    "sourceHash": "af04f57"
   },
   "securityNotices.updateNotGenuine.title": "O Cmdr não instalou esta atualização: ela não é uma versão genuína do Cmdr",
   "@securityNotices.updateNotGenuine.title": {

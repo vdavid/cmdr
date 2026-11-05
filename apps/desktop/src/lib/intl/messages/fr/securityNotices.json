@@ -49,7 +49,7 @@
   },
   "securityNotices.smbDirectSignatureRefused.body": "La réponse à l’identification ne portait pas la signature du serveur, donc Cmdr ne lui a pas fait confiance. Un appareil réseau capricieux peut en être la cause, tout comme quelqu’un qui trafique les échanges entre vous et le serveur. Le partage reste sur la connexion système. Si cela continue, vérifiez votre réseau.",
   "@securityNotices.smbDirectSignatureRefused.body": {
-    "sourceHash": "78631bd"
+    "sourceHash": "af04f57"
   },
   "securityNotices.updateNotGenuine.title": "Cmdr n’a pas installé cette mise à jour : ce n’est pas une version authentique de Cmdr",
   "@securityNotices.updateNotGenuine.title": {
