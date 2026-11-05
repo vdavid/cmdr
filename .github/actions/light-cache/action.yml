@@ -4,7 +4,7 @@ description: >-
   built check tool, the Go caches the Go checks use (module and build caches plus their `go install`ed tools), and the
   `go install`ed scorecard binary. Expects a checkout; the save phase also expects the restore phase earlier in the job.
 
-# Used by the light lane (`light-lane.yml`) and `ci.yml`'s `warm-light-cache`, so both read and write the exact same
+# Used by the light lane (`light-lane.yml`) and `ci-upkeep.yml`'s `warm-light-cache`, so both read and write the exact same
 # keys and paths (a cache's version hashes its paths, so a mismatch is an invisible entry).
 # - Each key hashes only what decides the entry's content, so a hit is safe to use as is:
 #   - `node_modules` (every workspace's, minus the runner's own `.cache`): the lockfile, the workspace config (build

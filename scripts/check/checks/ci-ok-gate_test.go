@@ -35,21 +35,6 @@ jobs:
   deploy-website:
     needs: lint
 
-  warm-e2e-linux-cache:
-    needs: changes
-
-  warm-rust-cache:
-    needs: changes
-
-  warm-rust-macos-cache:
-    needs: changes
-
-  warm-light-cache:
-    needs: changes
-
-  prune-superseded-caches:
-    needs: [warm-rust-cache, warm-rust-macos-cache]
-
   ci-ok:
     name:
       ${{ (github.event_name != 'pull_request' || needs.changes.outputs.land == 'true') && 'CI OK' || 'CI light' }}

@@ -78,7 +78,7 @@ old owner's package then needs a manual delete.
 - **Access**: the build adds an `org.opencontainers.image.source` label for the repo, which links the package to it, so
   the workflow token can pull it. Each job that touches the registry runs `docker login ghcr.io` with that token.
 
-A PR can read only its own and `main`'s caches, and a verified `main` push skips the E2E lane, so `ci.yml`'s
+A PR can read only its own and `main`'s caches, and a verified `main` push skips the E2E lane, so `ci-upkeep.yml`'s
 `warm-e2e-linux-cache` job rebuilds the E2E Cargo + target cache on `main` (through `e2e-linux.sh --build-app-only`:
 images plus the Tauri binary, no fixtures, no tests) whenever the current key has no entry there. Without it, each new
 PR's first run built cold, ~21 min against ~11 (`docs/tooling/ci.md` § Build caching).

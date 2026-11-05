@@ -9,6 +9,7 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | ----------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `ci.yml`                | PRs, pushes to main, nightly, manual    | Main suite: change detection, one `uses:` job per lane (§ Lane files), the deploy, and `CI OK`      |
 | `<lane>-lane.yml`       | Called by `ci.yml`                      | One lane's steps each: `rust`, `rust-fixtures`, `macos`, `svelte`, `e2e-linux`, `website`, `light`  |
+| `ci-upkeep.yml`         | CI finished on a `main` push            | Warms `main`'s build caches, then drops superseded ones. § CI upkeep                                |
 | `slow-checks.yml`       | Nightly (3 AM UTC), manual              | osv-scanner, cargo-deny/udeps, govulncheck, website Docker build, 30-min SMB soak                   |
 | `advisories.yml`        | Daily (4:17 AM UTC), manual             | osv-scanner (every lockfile) and cargo-deny (no compile): new advisories surface in a day           |
 | `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                      |
@@ -155,9 +156,9 @@ with a reason.** When you rename one, CI fails until every workflow catches up. 
 
 Each lane's steps live in a reusable workflow of its own (`rust-lane.yml`, `rust-fixtures-lane.yml`, `macos-lane.yml`,
 `svelte-lane.yml`, `e2e-linux-lane.yml`, `website-lane.yml`, `light-lane.yml`), and `ci.yml` keeps the triggers,
-`changes`, one `uses:` job per lane, the base-image, warm, prune, publish, and deploy jobs, and `CI OK`. About a third
-of PR runs touched `ci.yml` (40 runs to 2026-11-04), and with every lane's steps in it, each such edit ran every lane:
-~2 runner-hours, the macOS lane's 34 min among them. Now an edit to one lane file reruns that lane, and editing `ci.yml`
+`changes`, one `uses:` job per lane, the base-image, publish, and deploy jobs, and `CI OK`. About a third of PR runs
+touched `ci.yml` (40 runs to 2026-11-04), and with every lane's steps in it, each such edit ran every lane: ~2
+runner-hours, the macOS lane's 34 min among them. Now an edit to one lane file reruns that lane, and editing `ci.yml`
 itself still reruns all.
 
 - **The calling job keeps the lane's ID and `name:`**, so `CI OK`'s `needs`, the release gate, and `pnpm land`'s
@@ -282,9 +283,9 @@ silent** (a warning, not a red job):
   entries within minutes, and nearly every PR run built cold (PR #593, 2026-10-20). **Load-bearing companion: the
   `warm-rust-*` jobs.** A verified `main` push skips the Rust lanes, so nothing else would write `main`'s entries.
   Post-land on `main`, one job per entry restores it with the lane's exact rust-cache inputs; on an exact hit it skips
-  every build step (~1 min), on a miss it runs the lane's compiling checks and saves. The Linux one skips when its lane
-  ran on that push; the macOS one is its entry's only writer, so it runs on every push (§ The M1 runner). Both are
-  exempt from `ci-ok` (`ciOKGateExempt`). Their rust-cache inputs and the steps before them must match the lane's:
+  every build step (~1 min), on a miss it runs the lane's compiling checks and saves. When the Linux lane ran on that
+  push, it already saved the entry, so its warm job hits; the macOS one is its entry's only writer (§ The M1 runner).
+  Both live in `ci-upkeep.yml` (§ CI upkeep). Their rust-cache inputs and the steps before them must match the lane's:
   rust-cache hashes the rustc version and `CARGO*`/ `RUST*` env into the key, which is also why the switch is named
   `SAVE_RUST_CACHE`.
 - **Every rust-cache step follows the `pinned-rust-toolchain` action** (`.github/actions/`). rust-cache hashes the rustc
@@ -308,7 +309,7 @@ silent** (a warning, not a red job):
   `warm-e2e-linux-cache` job.** A PR restores only its own or `main`'s caches, and a verified `main` push skips the
   lane, so without it no main-scoped entry exists and every new PR's first run builds cold (4 of 9 PR runs on
   2026-10-19, #557). It runs post-land on `main`, rebuilds the E2E target cache only when the current key has no entry,
-  and is exempt from `ci-ok` (`ciOKGateExempt`). Its cache `path`s and key must stay identical to the lane's. It has no
+  in `ci-upkeep.yml` (§ CI upkeep). Its cache `path`s and key must stay identical to the lane's. It has no
   `restore-keys`, so a new key's entry starts empty: nothing prunes `target/` or the registry, so building on the older
   entry carried every stale artifact forward.
 - **The E2E base image is not an Actions cache.** It lives in GitHub's container registry, tagged by the hash of
@@ -347,10 +348,10 @@ GB of E2E target, the repo sat at ~12 GB, and LRU evicted entries within minutes
 
 **Load-bearing companion: the `prune-superseded-caches` job.** A new `Cargo.lock` gives each big entry a new key, and
 the old one lingers until 7 unused days pass, so two generations put the repo at ~11.5 GB (2026-10-22). Post-land on
-`main`, after every job that saves one, it keeps the most recently used `main` entry per family (`v0-rust-*`,
-`*-docker-e2e-*`, the light lane's `light-*`, and `pnpm-store-*`, the key minus its trailing hash parts; for
-`mise-v1-*`, minus only the last one, since an `install_args` hash before it names a variant) and deletes the rest. It's
-exempt from `ci-ok`. Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop under pressure.
+`main` (`ci-upkeep.yml`), after every job that saves one, it keeps the most recently used `main` entry per family
+(`v0-rust-*`, `*-docker-e2e-*`, the light lane's `light-*`, and `pnpm-store-*`, the key minus its trailing hash parts;
+for `mise-v1-*`, minus only the last one, since an `install_args` hash before it names a variant) and deletes the rest.
+Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop under pressure.
 
 **Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
 detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E is usually that floor. Measured
@@ -362,6 +363,37 @@ purpose: the account runs at most 20 jobs at once, five of them macOS, and a sec
 time than the ~5 min it saved (2026-10-20). Sharding the E2E tests (−3 to −4 min) only pays off once the Rust jobs are
 shorter than E2E too. Don't re-add a `needs: desktop-svelte` to the e2e job — it only added ~4 min of latency for a
 compute-saving skip that isn't worth it (see the comment on the job).
+
+## CI upkeep
+
+`ci-upkeep.yml` holds the post-land cache jobs: `warm-e2e-linux-cache`, `warm-rust-cache`, `warm-rust-macos-cache`,
+`warm-light-cache`, and `prune-superseded-caches` (§ Build caching and § The light lane say what each keeps). They used
+to be `ci.yml` jobs outside `CI OK`'s `needs`, but a job's result still sets the run's conclusion: on 2026-11-05 GitHub
+had no macOS runner for `warm-rust-macos-cache`, cancelled it after 15 min ("The job was not acquired by Runner of type
+hosted"), and `main` runs 42071578000 and 42072334820 read failed though every check passed. `continue-on-error: true`
+doesn't help: a job cancelled by its timeout still concluded the run `cancelled` (probed 2026-11-05). In a workflow of
+its own, an upkeep failure is its own red run, and `main`'s CI verdict is about the code alone.
+
+- **Trigger**: `workflow_run` on `CI`, `completed`, branch `main`, and each job's `if:` keeps only a `push` from this
+  repo. The nightly schedule, dispatches, and PR runs don't trigger it (no upkeep job ran there before either). It runs
+  whatever CI concluded, as the jobs did inside CI: a red lane doesn't say the caches are fresh.
+- **Ordering**: it starts after CI's whole run, so every lane that restores or saves an entry is done before the prune
+  picks the most recently used one; inside it, the prune `needs` the four warm jobs (`always()`).
+- **No `needs.changes`**: the Linux and E2E warm jobs used to skip when their lane ran on the push. Now they run anyway:
+  the lane saved the same key, so they hit it and stop (~1 min).
+- **Same caches**: Actions caches are shared across workflows by branch, and a `workflow_run` run's ref is `main`. The
+  keys, paths, and rust-cache inputs are the lanes', with `pinned-rust-toolchain` (and its `CARGO_CI_PROFILES_HASH`)
+  before each rust-cache step. `save-if: true` replaces `SAVE_RUST_CACHE`, since it only ever runs for `main`.
+- **Cache writes need an opt-in**: GitHub gives `workflow_run` a read-only cache token in the default branch's scope
+  (changelog 2026-06-26, against cache poisoning from fork-triggered runs; the save then only warns). The warm jobs set
+  `cache-mode: write`; the prune touches no entry, only deletes through the API (`actions: write`).
+- **Trust**: the file runs from `main` with the repo's secrets, and CI also completes for fork PRs. Two independent
+  guards keep it to `main`'s code: every job's `if:` requires `workflow_run.event == 'push'`, `head_branch == 'main'`,
+  and the head repo being this one (`workflows-hardening` fails a `workflow_run` job without them), and the
+  `checkout-main-commit` action checks out the run's SHA only after `compare/{sha}...main` proves `main` contains it. It
+  never saves a `lane-green-*` marker (`scripts/lane-markers/CLAUDE.md`).
+- **Only the default branch's copy runs**, so an edit to `ci-upkeep.yml` takes effect once landed; a PR can't run it.
+  Check the first `main` run after landing such an edit.
 
 ## Nightly full run
 
@@ -447,7 +479,8 @@ the account's five-job cap. PRs and dispatches (the release gate's `run_all`) ge
 nothing replaces them. The replaced job reads `cancelled`, which `ci-ok` counts as covered (§ Branch protection). The
 group is job-level because the workflow-level one must stay per-run (§ Triggers and concurrency), and GitHub allows
 `concurrency` on a job that calls a reusable workflow (docs: "Supported keywords for jobs that call a reusable
-workflow", checked 2026-10-21). `warm-rust-macos-cache` stays out of the group: it mostly hits the cache and exits.
+workflow", checked 2026-10-21). `warm-rust-macos-cache` (`ci-upkeep.yml`) stays out of the group: it mostly hits the
+cache and exits.
 
 - **Required.** It's in `ci-ok`'s `needs`, so a red macOS job fails the run, `ci-ok`, and the release's CI gate. Its
   first run (2026-10-06) failed on two tests that assumed David's Mac (a malloc zone macOS 26 doesn't register, a tight
@@ -630,7 +663,7 @@ every lane the change needs runs or skips as a verified marker (§ Lane markers)
 
 `ci-ok` is the single required status check, and `main`'s ruleset names it by its check-run name, **`CI OK`**, which the
 job reports on land runs only (§ Light runs and land runs; ❌ don't change the job's `name:` expression). It needs every
-job in `ci.yml` except the post-land ones (`deploy-website` and the `warm-*` cache jobs), `changes` included, and passes
+job in `ci.yml` except the post-land deploy (`publish-website-demo`, `deploy-website`), `changes` included, and passes
 only when each result is `success` or `skipped` and `changes` is `success`. A lane skipped by change detection passes; a
 failed `changes`, which skips every lane, is red. A lane that calls a lane file reports its whole file's result, so a
 red job inside it fails the gate.

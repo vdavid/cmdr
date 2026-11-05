@@ -1,0 +1,38 @@
+name: Check out a commit that's on main
+description: >-
+  Switches the workspace to `sha` after proving `main` contains it. For `ci-upkeep.yml`, which runs on `workflow_run`
+  and builds the commit CI ran. Run it right after a plain `actions/checkout` (which checks out `main`'s tip, and with
+  it this action).
+
+# Why: a `workflow_run` workflow runs from the default branch with the repo's secrets and, in `ci-upkeep.yml`, a
+# cache-write opt-in, while the run it follows may be a fork PR's. Each job's `if:` already requires a push to `main`
+# (`workflows-hardening` enforces it); this is the second, independent proof: it builds nothing `main` doesn't hold,
+# whatever the event payload says. Checking out the payload's SHA straight away is what Scorecard's Dangerous-Workflow
+# and CodeQL's untrusted-checkout rules flag, rightly, since they can't see the guard. `docs/tooling/ci.md` § CI upkeep.
+inputs:
+  sha:
+    description: The commit to check out, which `main` must contain.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Check out the commit, if main contains it
+      shell: bash
+      env:
+        SHA: ${{ inputs.sha }}
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+      run: |
+        if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "::error::'$SHA' isn't a commit SHA."
+          exit 1
+        fi
+        # `main` relative to the commit: `identical` or `ahead` means main contains it.
+        status=$(gh api "repos/$REPO/compare/$SHA...main" --jq .status)
+        if [[ "$status" != "identical" && "$status" != "ahead" ]]; then
+          echo "::error::main doesn't contain $SHA (compare status '$status'), so this won't build it."
+          exit 1
+        fi
+        git fetch --no-tags --depth=1 origin "$SHA"
+        git checkout --detach FETCH_HEAD
+        echo "Checked out $SHA (main is $status of it)."

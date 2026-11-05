@@ -41,6 +41,11 @@ import (
 //
 //  5. A workflow that runs CodeQL analysis also triggers on `pull_request`, or
 //     Scorecard's SAST check scores every merged (Renovate) PR as unchecked.
+//
+//  6. A `workflow_run` workflow gates every job on a push to `main` in this repo
+//     (`workflowRunGuard`). It runs from the default branch with the repo's secrets
+//     and a cache-write opt-in (`ci-upkeep.yml`), while the run it follows may be a
+//     fork PR's, so an unguarded job could check out and run untrusted code.
 func RunWorkflowsHardening(ctx *CheckContext) (CheckResult, error) {
 	wfDir := filepath.Join(ctx.RootDir, ".github", "workflows")
 	entries, err := os.ReadDir(wfDir)
@@ -79,6 +84,7 @@ func RunWorkflowsHardening(ctx *CheckContext) (CheckResult, error) {
 		lines := strings.Split(string(content), "\n")
 		violations = append(violations, checkWorkflowPermissions(lines, rel)...)
 		violations = append(violations, checkCodeQLRunsOnPullRequests(lines, rel)...)
+		violations = append(violations, checkWorkflowRunGuard(string(content), rel)...)
 		scanned++
 	}
 
@@ -244,14 +250,58 @@ func checkCodeQLRunsOnPullRequests(lines []string, rel string) []string {
 	return []string{fmt.Sprintf("%s: runs CodeQL but not on 'pull_request' (Scorecard's SAST check scores merged PRs by it)", rel)}
 }
 
+// workflowRunGuard are the conditions every job of a `workflow_run` workflow's `if:` must hold:
+// the run it follows was a push (a fork can't push here, and a fork PR's run is a
+// `pull_request` one even when its branch is named `main`), to `main`, in this repo.
+var workflowRunGuard = []string{
+	"github.event.workflow_run.event == 'push'",
+	"github.event.workflow_run.head_branch == 'main'",
+	"github.event.workflow_run.head_repository.full_name == github.repository",
+}
+
+var workflowRunWordRE = regexp.MustCompile(`\bworkflow_run\b`)
+
+// checkWorkflowRunGuard enforces invariant 6. Per job, not once per workflow: a job with
+// `always()` runs even when the jobs it needs skipped on their guard.
+func checkWorkflowRunGuard(content, rel string) []string {
+	if !triggersOn(strings.Split(content, "\n"), workflowRunWordRE, "workflow_run") {
+		return nil
+	}
+	jobs := extractWorkflowJobs(content)
+	var ids []string
+	for id := range jobs {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	var violations []string
+	for _, id := range ids {
+		cond := jobScalar(jobs[id], "if")
+		for _, g := range workflowRunGuard {
+			if !strings.Contains(cond, g) {
+				violations = append(violations, fmt.Sprintf(
+					"%s: job `%s` runs on `workflow_run` without `%s` in its `if:`; every job must require a push to `main` in this repo, or a fork PR's run could reach it",
+					rel, id, g))
+				break
+			}
+		}
+	}
+	return violations
+}
+
 // triggersOnPullRequest reports whether the top-level `on:` names `pull_request`, in either the
 // inline form (`on: [push, pull_request]`) or as a key at the block's first indent.
 func triggersOnPullRequest(lines []string) bool {
+	return triggersOn(lines, pullRequestWordRE, "pull_request")
+}
+
+// triggersOn reports whether the top-level `on:` names the trigger `name` (`word` matches it as a
+// whole word in the inline form).
+func triggersOn(lines []string, word *regexp.Regexp, name string) bool {
 	inOn, onIndent := false, -1
 	for _, line := range lines {
 		trimmed := strings.TrimRight(line, " \t")
 		if m := onInlineRE.FindStringSubmatch(trimmed); m != nil {
-			return pullRequestWordRE.MatchString(m[1])
+			return word.MatchString(m[1])
 		}
 		if onIntroRE.MatchString(trimmed) {
 			inOn = true
@@ -267,7 +317,7 @@ func triggersOnPullRequest(lines []string) bool {
 			if onIndent == -1 {
 				onIndent = len(m[1])
 			}
-			if len(m[1]) == onIndent && m[2] == "pull_request" {
+			if len(m[1]) == onIndent && m[2] == name {
 				return true
 			}
 		}

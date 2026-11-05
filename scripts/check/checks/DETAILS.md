@@ -2462,14 +2462,14 @@ doubles as production code.
 - **Other / Go**: go-version-single-source (errors when anything but `.mise.toml` names a Go toolchain version, when the
   `go.mod` floors disagree with each other, or when a floor exceeds the pinned toolchain)
 - **Other / Security**: workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`,
-  read-only workflow-level `permissions:`, CodeQL also on `pull_request`), osv-scanner (every tracked lockfile against
-  OSV, the sweep Scorecard's Vulnerabilities check makes; fix-age grace like govulncheck and cargo-deny),
-  scorecard-local (Scorecard's file-based checks on the tracked tree, against `scorecard-local-baseline.json`),
-  changelog-security (every `### Security` line from 0.57.0 on, plus `[Unreleased]`, names an upstream advisory ID with
-  its severity or our own `CVSS v4.0 <score> (<rating>)` with the rating matching the score's band, plus the affected
-  `Cmdr X.Y.Z–X.Y.Z` versions, en-dashed, not reaching the fixing release. The contract is `SECURITY.md` § How fixed
-  vulnerabilities are published, the forms are in `docs/guides/releasing.md` § Writing the CHANGELOG, and `release.sh`
-  runs it before tagging. Older releases stay as shipped)
+  read-only workflow-level `permissions:`, CodeQL also on `pull_request`, every `workflow_run` job guarded to `main`
+  pushes), osv-scanner (every tracked lockfile against OSV, the sweep Scorecard's Vulnerabilities check makes; fix-age
+  grace like govulncheck and cargo-deny), scorecard-local (Scorecard's file-based checks on the tracked tree, against
+  `scorecard-local-baseline.json`), changelog-security (every `### Security` line from 0.57.0 on, plus `[Unreleased]`,
+  names an upstream advisory ID with its severity or our own `CVSS v4.0 <score> (<rating>)` with the rating matching the
+  score's band, plus the affected `Cmdr X.Y.Z–X.Y.Z` versions, en-dashed, not reaching the fixing release. The contract
+  is `SECURITY.md` § How fixed vulnerabilities are published, the forms are in `docs/guides/releasing.md` § Writing the
+  CHANGELOG, and `release.sh` runs it before tagging. Older releases stay as shipped)
 - **Desktop / Security**: security-advisories (the committed `apps/desktop/src-tauri/resources/security-advisories.json`
   against the app's own contract: the exact schema, semver `fixedIn` no newer than the `tauri.conf.json` version, a
   known severity, an allowlisted `https` link (a changelog one exactly `https://getcmdr.com/changelog#v<fixedIn>`), and
@@ -2630,7 +2630,7 @@ day). **Why**: their answer moves when the advisory database does, not only when
 cache alone kept a pass "OK (cached)" for as long as nobody touched a lockfile. The TTL makes a daily `pnpm check`
 re-ask.
 
-**Decision**: `workflows-hardening` check enforces five GitHub Actions invariants and acts as a regression guard.
+**Decision**: `workflows-hardening` check enforces six GitHub Actions invariants and acts as a regression guard.
 **Why**: cmdr's workflows are already correctly hardened (every third-party action is SHA-pinned with a comment, no
 `pull_request_target` triggers, no workflow-scoped `id-token: write`). Without an automated guard, a future PR or a
 Renovate misconfiguration could silently regress any of those without anyone noticing in review. The check fails on
@@ -2641,7 +2641,10 @@ own block). A missing block inherits the repo's default token setting, which a s
 commit, and it's exactly what OpenSSF Scorecard's Token-Permissions check scores (`docs/tooling/ci.md` § OpenSSF
 Scorecard). The fifth: a workflow running CodeQL analysis also triggers on `pull_request`. Scorecard's SAST check scores
 each merged PR by whether CodeQL checked its head commit, and Renovate's PRs land as merged PRs, so a push-only CodeQL
-quietly took SAST from 10 to 7.
+quietly took SAST from 10 to 7. The sixth: every job of a `workflow_run` workflow has an `if:` requiring the run it
+follows to be a push to `main` in this repo (`workflowRunGuard`). Such a workflow runs from the default branch with the
+repo's secrets, while CI also completes for fork PRs; `ci-upkeep.yml` adds a cache-write opt-in on top
+(`docs/tooling/ci.md` § CI upkeep). Per job, since a job on `always()` runs even when the jobs it needs skipped.
 
 **Decision**: `govulncheck` runs against every Go module. **Why**: it's static-analysis-based, so it only flags vulns
 actually reachable from the code (low false positive rate), where `osv-scanner` flags whatever `go.mod` names. Most of

@@ -310,6 +310,53 @@ func TestCheckCodeQLRunsOnPullRequests(t *testing.T) {
 	}
 }
 
+func TestCheckWorkflowRunGuard(t *testing.T) {
+	const on = "name: x\non:\n  workflow_run:\n    workflows: [CI]\n    types: [completed]\n"
+	const guard = "github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && " +
+		"github.event.workflow_run.head_repository.full_name == github.repository"
+	cases := []struct {
+		name    string
+		content string
+		want    []string // substrings expected in each violation
+	}{
+		{
+			name:    "every job guarded, inline and folded",
+			content: on + "jobs:\n  a:\n    if: " + guard + "\n  b:\n    needs: a\n    if: >-\n      always() && " + guard + "\n",
+			want:    nil,
+		},
+		{
+			name:    "a job without an if is flagged",
+			content: on + "jobs:\n  a:\n    if: " + guard + "\n  b:\n    runs-on: ubuntu-latest\n",
+			want:    []string{"job `b`"},
+		},
+		{
+			name:    "a guard without the event check is flagged",
+			content: on + "jobs:\n  a:\n    if: github.event.workflow_run.head_branch == 'main'\n",
+			want:    []string{"job `a`"},
+		},
+		{
+			name:    "a workflow without workflow_run is ignored",
+			content: "name: x\non:\n  push:\njobs:\n  a:\n    runs-on: ubuntu-latest\n",
+			want:    nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := checkWorkflowRunGuard(tc.content, "test.yml")
+			if len(got) != len(tc.want) {
+				t.Errorf("got %d violations, want %d:\n  got: %v\n  want: %v", len(got), len(tc.want), got, tc.want)
+				return
+			}
+			for i, w := range tc.want {
+				if !strings.Contains(got[i], w) {
+					t.Errorf("violation %d: got %q, want substring %q", i, got[i], w)
+				}
+			}
+		})
+	}
+}
+
 func TestIsExemptUsesRef(t *testing.T) {
 	cases := []struct {
 		ref  string

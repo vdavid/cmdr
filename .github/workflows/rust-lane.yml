@@ -65,7 +65,7 @@ jobs:
       # the cache matters most, because that's the state you push fixes into.
       #
       # `shared-key` names the entry explicitly (it equals the job-ID key rust-cache used to
-      # derive from `desktop-rust`), so the fixtures lane and `ci.yml`'s `warm-rust-cache` use
+      # derive from `desktop-rust`), so the fixtures lane and `ci-upkeep.yml`'s `warm-rust-cache` use
       # this same entry. Saved from `main` only (`SAVE_RUST_CACHE`). The toolchain step before it
       # keeps the key stable across runner images (see the action).
       - name: Keep only the pinned Rust toolchain

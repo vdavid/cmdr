@@ -62,7 +62,7 @@ jobs:
           df -h /
 
       # Restores main's entry on a PR (a PR can read its base branch's caches, never
-      # another PR's); `ci.yml`'s `warm-e2e-linux-cache` keeps that entry alive. Restore and
+      # another PR's); `ci-upkeep.yml`'s `warm-e2e-linux-cache` keeps that entry alive. Restore and
       # save are split so only `main` saves (the save step after the ownership reclaim):
       # a ~1.2 GB entry per PR kept the repo over its 10 GB ceiling and evicted
       # everything into cold builds (2026-10-20, PR #593). Same switch as the Rust caches.
