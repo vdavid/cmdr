@@ -167,10 +167,12 @@ lanes, and the record lands in about a minute instead of waiting out a busy queu
 
 **Its caches** (`.github/actions/light-cache`, shared with `warm-light-cache` so keys and paths match): `node_modules`
 (every workspace's, keyed on the lockfile, `pnpm-workspace.yaml`, and `.mise.toml`; a hit skips `pnpm install`), the
-built check tool (keyed on its non-test Go sources and the Go version), and the Go caches (module and build caches plus
-the runner's `go install`ed tools, scorecard's among them; restored only when the Go checks or Scorecard run). They save
-from `main` only, like the Rust caches, and `warm-light-cache` fills them after a verified land. `GOFLAGS=-count=1`
-keeps test results out of the Go build cache, so `go test` always runs for real.
+built check tool (keyed on its non-test Go sources and the Go version), the Go caches (module and build caches plus the
+Go checks' `go install`ed tools; restored only when the Go checks run), and the scorecard binary (its ~2 min
+`go install`, an entry of its own: in a shared one, a Go-only run's save, which held no scorecard, hit exactly on every
+later run, so scorecard was never cached; seen on the probe PR #964, 2026-11-05). They save from `main` only, like the
+Rust caches, and `warm-light-cache` fills them after a verified land. `GOFLAGS=-count=1` keeps test results out of the
+Go build cache, so `go test` always runs for real.
 
 ## Build caching
 

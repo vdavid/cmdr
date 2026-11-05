@@ -140,7 +140,6 @@ jobs:
             echo "scorecard=$(on "$SCORECARD")"
             echo "termbase=$(on "$TERMBASE")"
             echo "changelog=$(on "$CHANGELOG")"
-            [[ "$(on "$SCRIPTS")" == true || "$(on "$SCORECARD")" == true ]] && echo "go=true" || echo "go=false"
           } | tee -a "$GITHUB_OUTPUT"
 
       # `changelog-commit-links` requires every hash to be reachable from HEAD. The shallow
@@ -162,7 +161,8 @@ jobs:
         uses: ./.github/actions/light-cache
         with:
           phase: restore
-          go: ${{ steps.plan.outputs.go }}
+          go: ${{ steps.plan.outputs.scripts }}
+          scorecard: ${{ steps.plan.outputs.scorecard }}
 
       - name: Install dependencies
         if: steps.cache.outputs.node-modules-hit != 'true'
@@ -222,7 +222,7 @@ jobs:
         if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.termbase == 'true' }}
         run: ./scripts/check/check --check desktop-i18n-termbase --ci
 
-      # Its `go install`ed binary rides in the Go caches restored above.
+      # Its `go install`ed binary (~2 min to build) comes from its own cache entry, restored above.
       - name: Check OpenSSF Scorecard's file-based checks
         if: ${{ !cancelled() && steps.ready.outcome == 'success' && steps.plan.outputs.scorecard == 'true' }}
         run: ./scripts/check/check --check scorecard-local --ci
@@ -265,7 +265,9 @@ jobs:
         uses: ./.github/actions/light-cache
         with:
           phase: save
-          go: ${{ steps.plan.outputs.go }}
+          go: ${{ steps.plan.outputs.scripts }}
+          scorecard: ${{ steps.plan.outputs.scorecard }}
           node-modules-hit: ${{ steps.cache.outputs.node-modules-hit }}
           check-tool-hit: ${{ steps.cache.outputs.check-tool-hit }}
           go-hit: ${{ steps.cache.outputs.go-hit }}
+          scorecard-hit: ${{ steps.cache.outputs.scorecard-hit }}
