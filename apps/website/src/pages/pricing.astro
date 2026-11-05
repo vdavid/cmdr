@@ -4,6 +4,7 @@ import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import DownloadButton from '../components/DownloadButton.astro'
 import PageHeader from '../components/PageHeader.astro'
+import DevTodo from '../components/DevTodo.astro'
 
 // Paddle config - passed to client-side script
 const paddleToken = import.meta.env.PUBLIC_PADDLE_CLIENT_TOKEN ?? ''
@@ -80,6 +81,16 @@ const faq = [
         question: 'Do you offer team and enterprise licenses?',
         answer: 'Yes. For a handful of people, buying Commercial licenses one by one is the quickest route, and each person can use theirs on all of their machines. Once your IT department has to deploy Cmdr, your security team has to sign off on it, or finance wants one invoice against a PO, that\'s an enterprise deal: email sales@getcmdr.com with your headcount and what you need, and you\'ll get a quote back.',
         answerHtml: 'Yes. For a handful of people, buying Commercial licenses one by one is the quickest route, and each person can use theirs on all of their machines. Once your IT department has to deploy Cmdr, your security team has to sign off on it, or finance wants one invoice against a PO, that\'s an enterprise deal: email <a href="mailto:sales@getcmdr.com" class="text-accent-text underline underline-offset-2 hover:text-accent-hover">sales@getcmdr.com</a> with your headcount and what you need, and you\'ll get a quote back.',
+    },
+    {
+        question: 'Who sells it, and which tax form does our accounts payable team need?',
+        answer: "Paddle sells Cmdr for us as the merchant of record, so a license bought on this page is a purchase from Paddle (Paddle.com Market Ltd, a UK company). Paddle handles the sales tax and VAT, and it's the vendor your accounts payable team sets up, so you don't need a W-9 from us. As a company outside the US, Paddle uses Form W-8BEN-E. Paddle's buyer support at paddle.net has it.",
+        answerHtml: 'Paddle sells Cmdr for us as the merchant of record, so a license bought on this page is a purchase from Paddle (Paddle.com Market Ltd, a UK company). Paddle handles the sales tax and VAT, and it\'s the vendor your accounts payable team sets up, so you don\'t need a W-9 from us. As a company outside the US, Paddle uses Form W-8BEN-E. <a href="https://paddle.net" target="_blank" rel="noopener noreferrer" class="text-accent-text underline underline-offset-2 hover:text-accent-hover">Paddle\'s buyer support</a> has it.',
+    },
+    {
+        question: 'When does support answer?',
+        answer: "Within two business days, Monday to Friday, Stockholm time (CET), and usually sooner. During Swedish holidays and summer breaks, a reply can take up to a week in extreme cases. Write to hello@getcmdr.com.",
+        answerHtml: 'Within two business days, Monday to Friday, Stockholm time (CET), and usually sooner. During Swedish holidays and summer breaks, a reply can take up to a week in extreme cases. Write to <a href="mailto:hello@getcmdr.com" class="text-accent-text underline underline-offset-2 hover:text-accent-hover">hello@getcmdr.com</a>.',
     },
 ]
 ---
@@ -262,6 +273,11 @@ const faq = [
                     </div>
                 ))}
             </div>
+            <DevTodo>
+                The tax-form answer links Paddle's buyer support, not a page with the form itself: no official Paddle
+                page offering its W-8BEN-E turned up (searched 2026-11-05). If you find one, link it there instead, and
+                confirm Paddle gives a W-8BEN-E rather than another W-8 form.
+            </DevTodo>
         </section>
     </main>
     <Footer />
