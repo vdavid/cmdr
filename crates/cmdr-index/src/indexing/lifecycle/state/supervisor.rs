@@ -10,7 +10,7 @@ use std::sync::Arc;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::{INDEX_REGISTRY, IndexPhase, TeardownClaim, apply_freshness_event};
-use crate::indexing::lifecycle::failure::IndexFailureSignal;
+use crate::indexing::lifecycle::failure::{IndexFailureSignal, IndexStop};
 use crate::indexing::lifecycle::freshness::FreshnessEvent;
 use crate::indexing::lifecycle::manager::IndexManager;
 use crate::indexing::store::IndexFailure;
@@ -30,13 +30,29 @@ pub(crate) fn spawn_failure_supervisor(
 ) {
     crate::indexing::host::runtime::spawn(async move {
         signal.notified().await;
-        // The writer records the reason before notifying; default only if a
-        // poisoned lock lost it (the transition is still worth making).
-        let reason = signal.reason().unwrap_or(IndexFailure {
-            code: 0,
-            extended_code: 0,
-        });
-        fail_index(events.as_ref(), &volume_id, reason);
+        match signal.stop() {
+            // Out of disk space is the environment, not a dead database: pause the
+            // volume and bring it back once there's room, ❌ never `Failed`, whose
+            // recovery throws the index away.
+            Some(IndexStop::OutOfSpace(why)) => {
+                // `stop_indexing` blocks on the drain; keep it off the async worker.
+                let _ = crate::indexing::host::runtime::spawn_blocking(move || {
+                    super::space_pause::pause_for_space(&volume_id, why);
+                })
+                .await;
+            }
+            Some(IndexStop::Failed(reason)) => fail_index(events.as_ref(), &volume_id, reason),
+            // The writer records the stop before notifying; only a poisoned lock
+            // loses it, and failing is still the transition worth making.
+            None => fail_index(
+                events.as_ref(),
+                &volume_id,
+                IndexFailure {
+                    code: 0,
+                    extended_code: 0,
+                },
+            ),
+        }
     });
 }
 

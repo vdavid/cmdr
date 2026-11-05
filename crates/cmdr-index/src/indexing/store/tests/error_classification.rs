@@ -17,13 +17,12 @@ fn sqlite_err(result_code: std::os::raw::c_int) -> IndexStoreError {
 #[test]
 fn fatal_storage_errors_are_classified_as_fatal() {
     // The storage-death classes: a dead disk, a corrupt file, an unopenable or
-    // full or read-only volume, and non-DB bytes. Each means every later
-    // read/write fails the same way, so the index must stop, not retry forever.
+    // read-only volume, and non-DB bytes. Each means every later read/write fails
+    // the same way, so the index must stop, not retry forever.
     for code in [
         rusqlite::ffi::SQLITE_IOERR,
         rusqlite::ffi::SQLITE_CORRUPT,
         rusqlite::ffi::SQLITE_CANTOPEN,
-        rusqlite::ffi::SQLITE_FULL,
         rusqlite::ffi::SQLITE_READONLY,
         rusqlite::ffi::SQLITE_NOTADB,
     ] {
@@ -31,7 +30,20 @@ fn fatal_storage_errors_are_classified_as_fatal() {
             sqlite_err(code).is_fatal_storage_error(),
             "result code {code} must be fatal"
         );
+        assert!(!sqlite_err(code).is_disk_full());
     }
+}
+
+/// A full disk stops the index too, but it's the environment, not the database: it
+/// pauses until space returns, and it's never reported as a failure (cmdr-reports#100
+/// auto-sent one). So it's its own class, and `as_index_failure` has nothing to say
+/// about it.
+#[test]
+fn a_full_disk_is_its_own_class_not_a_fatal_failure() {
+    let err = sqlite_err(rusqlite::ffi::SQLITE_FULL);
+    assert!(err.is_disk_full());
+    assert!(!err.is_fatal_storage_error());
+    assert!(err.as_index_failure().is_none());
 }
 
 #[test]
@@ -125,5 +137,6 @@ fn non_sqlite_errors_have_no_code_and_are_not_fatal() {
     assert!(!io.is_primary_key_conflict());
     assert!(!io.is_transient_lock_error());
     assert!(!io.indicates_corruption());
+    assert!(!io.is_disk_full());
     assert!(io.as_index_failure().is_none());
 }

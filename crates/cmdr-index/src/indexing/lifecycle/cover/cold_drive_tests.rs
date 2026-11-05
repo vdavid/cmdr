@@ -297,5 +297,8 @@ mod toggles;
 /// Stopping a removable drive's index for an eject, whatever window it lands in.
 mod removals;
 
+/// Pausing a drive's index while its disk is low, and resuming it after.
+mod space;
+
 /// A drive renamed while it indexes, which moves its mount point under the index.
 mod moves;

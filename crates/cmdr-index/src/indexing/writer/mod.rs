@@ -41,6 +41,7 @@ mod maintenance;
 mod pending_rollups;
 mod probe_stats;
 mod repair;
+mod space_guard;
 mod transaction;
 use transaction::LongTransactionWatch;
 pub(crate) use transaction::{TransactionToken, WriterTransaction};
@@ -1246,6 +1247,9 @@ fn writer_loop(
     // Says so when an explicit transaction stays open past anything legitimate.
     // See `transaction.rs`.
     let mut long_transaction = LongTransactionWatch::new();
+    // Stops the writer while the index's disk is below the low-disk-space threshold.
+    // See `space_guard.rs`.
+    let mut space_guard = space_guard::SpaceGuard::new();
 
     // Phase 1 instrumentation: time split between recv() (idle waiting),
     // processing (handlers), and commit (txn commits, tracked via wrapper).
@@ -1382,18 +1386,28 @@ fn writer_loop(
             return;
         }
 
-        // A fatal storage error (dead disk, corruption, full/read-only volume) means
-        // the DB is unusable and every later write fails identically. Stop the writer
-        // thread instead of logging-and-retrying forever (the 12,700-warning
-        // livelock). The supervisor, woken by the same signal, transitions the volume
-        // to the `Failed` phase and tears the rest down. See `indexing::failure`.
+        // The disk the index lives on dropped below the user's low-disk-space
+        // threshold: stop here, before the index takes what's left, and let the
+        // supervisor pause the volume until space returns. Same exit as a fatal
+        // error below; whatever explicit chunk is open rolls back with the
+        // connection, which a chunked replay resumes from.
+        if space_guard.storage_low(Instant::now()) {
+            failure_signal.note_low_disk_space(&format!("Writer for '{volume_id}'"));
+        }
+
+        // A fatal storage error (dead disk, corruption, read-only volume) or a full
+        // disk means every later write fails identically. Stop the writer thread
+        // instead of logging-and-retrying forever (the 12,700-warning livelock). The
+        // supervisor, woken by the same signal, fails the volume (or, for a full
+        // disk, pauses it) and tears the rest down. See `indexing::failure`.
         if failure_signal.is_tripped() {
             // Best effort: a fatal error has usually rolled the batch back already
             // (then this is a no-op), but whatever DID land shouldn't be thrown away
             // just because a later message killed the DB.
             batch.close(&conn, &mut probe, &failure_signal, &mut deferred_checkpoint);
             log::warn!(
-                "Writer: stopping for '{volume_id}' after a fatal storage error ({} messages processed)",
+                "Writer: stopping for '{volume_id}' ({:?}, {} messages processed)",
+                failure_signal.stop(),
                 stats.current.total,
             );
             return;

@@ -39,7 +39,9 @@ Both live under **Behavior > Notifications > Low disk space** (`NotificationsSec
   greyed out while the mode is `'off'`.
 
 `pushLowDiskSpaceConfigToBackend()` calls `setLowDiskSpaceConfig(mode !== 'off', threshold)`. On the Rust side the
-command updates the poller's atomics, re-arms the hysteresis, and registers or removes the boot-volume watcher.
+command updates the poller's atomics and re-arms the hysteresis. The boot-volume watcher stays registered either way,
+because the drive index pauses below the same threshold (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` §
+"Pausing for disk space").
 
 ## Toast shape and live-follow
 

@@ -6,7 +6,8 @@ search-generation bump. Other areas point here.
 
 `mod.rs` the `WriteMessage` protocol + `IndexWriter` handle + `writer_loop`; `batch.rs` the implicit transaction;
 `entries.rs`, `delta.rs`, `aggregation.rs`, `repair/` (+ `deferred.rs` queue), `pending_rollups.rs`,
-`abandoned_retry.rs`, `maintenance.rs`, `probe_stats.rs`, `wait_probe.rs`, `flush_wait.rs`, one job each.
+`abandoned_retry.rs`, `maintenance.rs`, `space_guard.rs`, `probe_stats.rs`, `wait_probe.rs`, `flush_wait.rs`, one job
+each.
 
 ## Must-knows (all hold PER volume id)
 
@@ -14,10 +15,9 @@ search-generation bump. Other areas point here.
   `ReadPool`, ❌ never here. Priority: `UpdateDirStats` before `InsertEntries`.
 - **The writer owns the shared `Arc<AtomicI64>` ID counter; ❌ never allocate from `MAX(id)`** (uncommitted inserts sit
   in the channel, so a read double-assigns). A drifted counter SELF-HEALS on a PK conflict (extended `1555` →
-  `fetch_max` + retry). ❌ Never extend the heal to UNIQUE `2067`: that retry IS the duplicate row the constraint
-  blocks.
-- **A fatal storage error STOPS + FAILS the index, ❌ never retries** (one incident: 12,700 warnings in 8 min). Typed
-  via `IndexFailureSignal`, ❌ never a message substring; `BUSY`/`LOCKED` stay retried.
+  `fetch_max` + retry). ❌ Never extend the heal to UNIQUE `2067`: that retry IS the duplicate row.
+- **A fatal storage error STOPS the writer, ❌ never retries** (12,700 warnings in 8 min once), typed via
+  `IndexFailureSignal`; `BUSY`/`LOCKED` retry. A full or low disk (`space_guard.rs`) stops it too, as a pause.
 - **`dir_stats` ledger, four hard rules:** (1) ❌ never clamp a negative delta — it's drift, escalate to
   `repair_dir_stats_upward`; (2) a failed `dir_stats` read OR write is drift too, so queue the id to
   `repair/deferred.rs`, ❌ never warn-and-continue, ❌ never read `Err` as "no row"; (3) structural rewrites repair

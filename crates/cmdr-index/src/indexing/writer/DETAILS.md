@@ -226,9 +226,12 @@ state.
 
 **Classification (typed, never the message string).** `IndexStoreError::sqlite_code()` extracts
 `(rusqlite::ErrorCode, extended_code)`; `is_fatal_storage_error()` is `true` for the storage-death classes
-(`SQLITE_IOERR*`, `SQLITE_CORRUPT`, `SQLITE_CANTOPEN`, `SQLITE_FULL`, `SQLITE_READONLY`, `SQLITE_NOTADB`) where every
-later op fails identically. Transient contention (`SQLITE_BUSY` / `SQLITE_LOCKED`) is deliberately NOT fatal (the busy
-handler backs those off). `as_index_failure()` builds the typed `IndexFailure { code, extended_code }`.
+(`SQLITE_IOERR*`, `SQLITE_CORRUPT`, `SQLITE_CANTOPEN`, `SQLITE_READONLY`, `SQLITE_NOTADB`) where every later op fails
+identically. Transient contention (`SQLITE_BUSY` / `SQLITE_LOCKED`) is deliberately NOT fatal (the busy handler backs
+those off). `as_index_failure()` builds the typed `IndexFailure { code, extended_code }`. `SQLITE_FULL` is its own class
+(`is_disk_full()`): it stops the writer the same way, but as `IndexStop::OutOfSpace`, which the lifecycle PAUSES and
+resumes, logged at warn with no error report; so does `space_guard.rs` when the host says the disk is below the
+low-disk-space threshold (`../lifecycle/DETAILS.md` § "Pausing for disk space").
 
 **Detection lives here (`../failure.rs::IndexFailureSignal`).** A one-shot per-volume `Arc<IndexFailureSignal>` created
 in `IndexWriter::spawn_for`, cloned into the writer thread, exposed via `IndexWriter::failure_signal()`. Every
@@ -739,12 +742,14 @@ between operations, if one connection holds it, or (2) a brief idle-time barrier
 the wrong tool: it adds seconds to launch, and the same readers would block it mid-session.
 
 **Gotcha — a checkpoint can't run inside a transaction, so the tick defers it.** `PRAGMA wal_checkpoint(TRUNCATE)` fails
-with `SQLITE_LOCKED` whenever a transaction is open. A journal replay wraps its entire run in one `BeginTransaction`, so
-the 30 s tick would fail on every tick for the whole replay (a warn per tick naming a non-error, and no checkpoint when
-write volume was highest). `request_wal_checkpoint` now checks `conn.is_autocommit()` and parks the tick
-(`deferred_checkpoint`, debug-logged); `run_deferred_wal_checkpoint` runs it right after the `CommitTransaction`
-handler's COMMIT and re-checks `is_autocommit` first. A real SQLite error from a checkpoint that DID run still routes to
-`signal.note`.
+with `SQLITE_LOCKED` whenever a transaction is open, and a bulk run (a replay, a network walk) holds one most of the
+time, so the 30 s tick would fail on nearly every tick (a warn per tick naming a non-error, and no checkpoint when write
+volume was highest). `request_wal_checkpoint` checks `conn.is_autocommit()` and parks the tick (`deferred_checkpoint`,
+debug-logged); `run_deferred_wal_checkpoint` runs it right after the `CommitTransaction` handler's COMMIT and re-checks
+`is_autocommit` first. A real SQLite error from a checkpoint that DID run still routes to `signal.note`. ⚠️ This only
+bounds the WAL if the bulk run COMMITS along the way: a replay that held one transaction for its whole run parked every
+checkpoint until the end and filled a nearly full disk (cmdr-reports#100), which is why the replay commits in chunks
+(`../watch/DETAILS.md` § "A replay commits in chunks").
 
 **A checkpoint with nothing to do says nothing.** `handle_wal_checkpoint`'s `(busy, log_size, checkpointed) = (0, 0, 0)`
 row means the WAL was already empty, which on a quiet machine is every 30 s tick (~160 lines an hour across the three

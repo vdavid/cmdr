@@ -19,6 +19,14 @@
 //!
 //! Tripping is idempotent: only the FIRST fatal error logs and wakes the
 //! supervisor, so a dead index emits a handful of lines, never thousands.
+//!
+//! **A full disk trips it too, as a PAUSE** ([`IndexStop::OutOfSpace`]): either
+//! SQLite reported `SQLITE_FULL`, or the writer saw the host's low-disk-space
+//! answer go true (`HostPolicy::index_storage_low`). The writer stops exactly as
+//! it does for a dead DB, but the supervisor pauses the volume and restarts it once
+//! space returns (`state/space_pause.rs`), and the stop is logged at warn with no
+//! `IndexEvent::Error`: it's the environment, not a bug, so it must not auto-report
+//! (cmdr-reports#100 did).
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -29,6 +37,26 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 
 use crate::indexing::store::{IndexFailure, IndexStoreError};
 
+/// Why a volume's writer stopped.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum IndexStop {
+    /// The database is unusable: the volume FAILS, and recovery is a rebuild.
+    Failed(IndexFailure),
+    /// The disk the database lives on is full, or nearly: the volume PAUSES and
+    /// comes back by itself once there's room.
+    OutOfSpace(SpaceStop),
+}
+
+/// What said the disk is out of room.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SpaceStop {
+    /// SQLite refused a write with `SQLITE_FULL`.
+    DiskFull,
+    /// Free space dropped below the user's low-disk-space threshold, so the index
+    /// stopped before taking the last of it.
+    BelowThreshold,
+}
+
 /// A one-shot, per-volume "the index DB has died" signal. See the module docs for
 /// who shares it and why.
 pub(crate) struct IndexFailureSignal {
@@ -36,7 +64,7 @@ pub(crate) struct IndexFailureSignal {
     /// is that volume's sink.
     events: Arc<dyn crate::EventSink>,
     tripped: AtomicBool,
-    reason: Mutex<Option<IndexFailure>>,
+    stop: Mutex<Option<IndexStop>>,
     notify: Notify,
     /// Every [`note`](IndexFailureSignal::note) call, fatal or not. Tests assert on
     /// it to prove a handler treated a situation as normal rather than routing it
@@ -50,9 +78,48 @@ impl IndexFailureSignal {
             events,
             notes: AtomicUsize::new(0),
             tripped: AtomicBool::new(false),
-            reason: Mutex::new(None),
+            stop: Mutex::new(None),
             notify: Notify::new(),
         }
+    }
+
+    /// Trip the signal with `stop` if nothing has yet. Returns whether this call
+    /// was the one that tripped it.
+    fn trip(&self, stop: IndexStop) -> bool {
+        // CAS so only the FIRST stop records + notifies; the rest are the flood
+        // we're here to stop.
+        let first = self
+            .tripped
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .is_ok();
+        if first {
+            *self.stop.lock_ignore_poison() = Some(stop);
+        }
+        first
+    }
+
+    /// The disk ran out of room: pause rather than fail. Logged at warn, ONCE, and
+    /// ❌ never as an `IndexEvent::Error`: a full disk is the user's environment, so
+    /// it isn't worth an error report.
+    fn trip_for_space(&self, why: SpaceStop, context: &str, detail: &dyn std::fmt::Display) {
+        if self.trip(IndexStop::OutOfSpace(why)) {
+            log::warn!(
+                "{context}: the disk the index lives on is out of room ({detail}); pausing this volume's index until space returns"
+            );
+            self.notify.notify_one();
+        }
+    }
+
+    /// The host says free space is below the user's low-disk-space threshold, so
+    /// the writer stops before the index takes what's left. Same pause as a full
+    /// disk. Returns `true`: the caller should stop.
+    pub(crate) fn note_low_disk_space(&self, context: &str) -> bool {
+        self.trip_for_space(
+            SpaceStop::BelowThreshold,
+            context,
+            &"below the low-disk-space threshold",
+        );
+        true
     }
 
     /// Classify `err` and, if it's a FATAL storage error, trip the signal the
@@ -69,18 +136,15 @@ impl IndexFailureSignal {
     /// the hot success path.
     pub(crate) fn note(&self, err: &IndexStoreError, context: &str) -> bool {
         self.notes.fetch_add(1, Ordering::Relaxed);
+        if err.is_disk_full() {
+            self.trip_for_space(SpaceStop::DiskFull, context, err);
+            return true;
+        }
         let Some(failure) = err.as_index_failure() else {
             log::warn!("{context}: {err}");
             return false;
         };
-        // CAS so only the FIRST fatal error logs + notifies; the rest are the
-        // flood we're here to stop.
-        if self
-            .tripped
-            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-            .is_ok()
-        {
-            *self.reason.lock_ignore_poison() = Some(failure);
+        if self.trip(IndexStop::Failed(failure)) {
             self.events.emit(crate::IndexEvent::Error {
                 report: crate::IndexErrorReport::StorageFailed {
                     failure,
@@ -105,9 +169,19 @@ impl IndexFailureSignal {
         self.notes.load(Ordering::Relaxed)
     }
 
-    /// The recorded failure reason, if tripped.
+    /// The recorded failure reason, if a fatal error tripped it (`None` for a
+    /// pause, which isn't a failure).
+    #[cfg(test)]
     pub(crate) fn reason(&self) -> Option<IndexFailure> {
-        *self.reason.lock_ignore_poison()
+        match self.stop() {
+            Some(IndexStop::Failed(failure)) => Some(failure),
+            _ => None,
+        }
+    }
+
+    /// Why the writer stopped, if it did.
+    pub(crate) fn stop(&self) -> Option<IndexStop> {
+        *self.stop.lock_ignore_poison()
     }
 
     /// Await the first trip. Resolves immediately if already tripped. `Notify`
@@ -190,6 +264,46 @@ mod tests {
             }
             other => panic!("expected a StorageFailed report, got {other:?}"),
         }
+    }
+
+    fn full() -> IndexStoreError {
+        IndexStoreError::Sqlite(rusqlite::Error::SqliteFailure(
+            rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_FULL),
+            None,
+        ))
+    }
+
+    /// cmdr-reports#100: a replay filled a nearly full disk, SQLite said
+    /// `SQLITE_FULL`, and the index failed and auto-sent an error report. A full
+    /// disk still stops the writer (every write would fail the same way), but as a
+    /// PAUSE, and with nothing for the error pipeline.
+    #[test]
+    fn a_full_disk_stops_the_writer_as_a_pause_and_reports_nothing() {
+        let events = Arc::new(RecordingSink::new());
+        let signal = IndexFailureSignal::new(Arc::clone(&events) as Arc<dyn crate::EventSink>);
+
+        assert!(signal.note(&full(), "upsert entry"), "the caller stops");
+        assert!(signal.is_tripped());
+        assert_eq!(signal.stop(), Some(IndexStop::OutOfSpace(SpaceStop::DiskFull)));
+        assert_eq!(signal.reason(), None, "a pause isn't a failure");
+        assert!(events.events().is_empty(), "a full disk isn't an error report");
+
+        signal.note(&ioerr(), "a later write");
+        assert_eq!(
+            signal.stop(),
+            Some(IndexStop::OutOfSpace(SpaceStop::DiskFull)),
+            "first stop wins"
+        );
+        assert!(events.events().is_empty());
+    }
+
+    #[test]
+    fn low_disk_space_pauses_the_same_way() {
+        let events = Arc::new(RecordingSink::new());
+        let signal = IndexFailureSignal::new(Arc::clone(&events) as Arc<dyn crate::EventSink>);
+        assert!(signal.note_low_disk_space("writer"));
+        assert_eq!(signal.stop(), Some(IndexStop::OutOfSpace(SpaceStop::BelowThreshold)));
+        assert!(events.events().is_empty());
     }
 
     #[tokio::test]

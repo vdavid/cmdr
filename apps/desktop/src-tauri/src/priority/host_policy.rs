@@ -47,6 +47,13 @@ impl HostPolicy for AppHostPolicy {
     fn priority_roots(&self, volume_id: &str) -> Vec<PathBuf> {
         roots::priority_roots(volume_id)
     }
+
+    fn index_storage_low(&self) -> bool {
+        // The index databases live in the cache dir on the boot volume, which the
+        // space poller watches for the low-disk-space warning; same reading, same
+        // threshold.
+        crate::space_poller::index_storage_low()
+    }
 }
 
 /// Answers a storage backend's "is the user busy on this volume?" from the same

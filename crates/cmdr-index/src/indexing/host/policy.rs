@@ -122,6 +122,21 @@ pub trait HostPolicy: Send + Sync {
     /// contended path and no blocking lock. A host that needs to stat things caches
     /// its answer behind a short TTL.
     fn priority_roots(&self, volume_id: &str) -> Vec<PathBuf>;
+
+    /// Whether the disk the index databases live on is below the user's
+    /// low-disk-space threshold right now.
+    ///
+    /// While it is, every volume's writer stops and its index PAUSES, then restarts
+    /// by itself once this answers `false` again (`lifecycle/state/space_pause.rs`).
+    /// The index is a cache; the user's own files need that room more. The host
+    /// owns the reading, the threshold, and the hysteresis around it (so a disk
+    /// hovering at the line can't flap a volume on and off), which is why this is a
+    /// decision rather than a byte count.
+    ///
+    /// Asked by every writer about once a second while it's writing, so the same
+    /// cost rule as [`clearance`](Self::clearance) applies: ❌ no I/O, no blocking
+    /// lock. Answer from a cached reading.
+    fn index_storage_low(&self) -> bool;
 }
 
 /// The host that never asks for anything: used until one is installed, and by every
@@ -140,6 +155,10 @@ impl HostPolicy for AlwaysClear {
 
     fn priority_roots(&self, _volume_id: &str) -> Vec<PathBuf> {
         Vec::new()
+    }
+
+    fn index_storage_low(&self) -> bool {
+        false
     }
 }
 
@@ -217,6 +236,8 @@ pub struct FakeHostPolicy {
     app_busy: std::sync::atomic::AtomicBool,
     volume_busy: std::sync::atomic::AtomicBool,
     transfer_running: std::sync::atomic::AtomicBool,
+    /// What [`HostPolicy::index_storage_low`] reports.
+    storage_low: std::sync::atomic::AtomicBool,
     /// How many times [`HostPolicy::clearance`] has been asked. The evidence for the
     /// per-batch-not-per-entry rule.
     calls: std::sync::atomic::AtomicUsize,
@@ -253,6 +274,12 @@ impl FakeHostPolicy {
     /// The transfer finished (any exit path).
     pub fn note_transfer_finished(&self) {
         self.transfer_running.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// The disk the index lives on dropped below (`true`) or climbed back above
+    /// (`false`) the low-disk-space threshold.
+    pub fn note_index_storage_low(&self, low: bool) {
+        self.storage_low.store(low, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// The user has a pane open on `path` on `volume_id`.
@@ -295,6 +322,10 @@ impl HostPolicy for FakeHostPolicy {
             .filter(|(id, _)| id == volume_id)
             .map(|(_, path)| path.clone())
             .collect()
+    }
+
+    fn index_storage_low(&self) -> bool {
+        self.storage_low.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     fn clearance(&self, _volume_id: &str, _idle_threshold: Duration) -> WorkClearance {

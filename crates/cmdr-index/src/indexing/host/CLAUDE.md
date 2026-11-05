@@ -28,7 +28,7 @@ into a Tauri-free crate, and this directory is what it will ask its host for.
 - **❌ Never read a setting or resolve the data dir here.** The app turns stored settings into an `IndexConfig` and
   `set_config` applies it. The `CMDR_*` env knobs are the one exception (developer diagnostics).
 - **Every seam degrades, none panics.** No provider ⇒ nothing mounted, no policy ⇒ nothing competing, no sink ⇒ events
-  dropped, no config ⇒ `data_dir()` errors. Cases callers already handle, so tests and tools install nothing.
+  dropped, no config ⇒ `data_dir()` errors. So tests and tools install nothing.
 - **Vocabulary moves down; questions become seams.** `cmdr_fs::volume::{smb_volume_id, mtp_ids}` is pure string work, so
   it sits with the volume types: if you can compute it from a `&str`, it isn't a seam.
 
@@ -36,7 +36,7 @@ into a Tauri-free crate, and this directory is what it will ask its host for.
 
 - `runtime.rs` — the tokio runtime background work spawns onto (`set_runtime`, `spawn`, `spawn_blocking`, `block_on`).
 - `policy.rs` — "may background work run now?" plus "what has the user's attention?": `HostPolicy`, the `Copy`
-  `WorkClearance`, `OpenListing`, `priority_roots`, `AlwaysClear`, the test `FakeHostPolicy`. App side:
+  `WorkClearance`, `OpenListing`, `priority_roots`, `index_storage_low`, `AlwaysClear`, `FakeHostPolicy`. App side:
   `priority::host_policy::AppHostPolicy`.
 - `volumes.rs` — what's mounted (`MountIdentity`), where, what kind of storage, plus the SMB upgrade and MTP handle
   resolution: `VolumeProvider`, `MountFacts`, `NoVolumes`, and the test `FakeVolumeProvider`. App side:

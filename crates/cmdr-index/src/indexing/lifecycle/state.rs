@@ -52,6 +52,7 @@ mod queries;
 mod relocation;
 mod reservation;
 mod scan_control;
+mod space_pause;
 mod startup;
 mod supervisor;
 mod teardown;

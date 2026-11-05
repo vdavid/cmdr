@@ -35,8 +35,11 @@ detector, the `set_low_disk_space_config` live-apply command).
   is noise. Don't add a fourth enum value.
 - **NOT FDA-gated** (unlike the Downloads siblings in the same Settings section): the backend poller reads `statfs`,
   which needs no TCC permission. Don't add a gate.
-- **The bridge bails on `'off'` as defense in depth**: the backend removes its watcher when off, so no event should
-  arrive, but the bridge re-checks the mode per event in case a settings flip races an in-flight emit.
+- **The bridge bails on `'off'` as defense in depth**: the backend emits no `low-disk-space` when off, but the bridge
+  re-checks the mode per event in case a settings flip races an in-flight emit.
+- **The threshold also pauses the drive index**, warning on or off: below it every volume's index stops writing and
+  resumes past the re-arm margin (`space_poller::index_storage_low`, cmdr-reports#100). So the boot-volume watcher stays
+  registered when the warning is off.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

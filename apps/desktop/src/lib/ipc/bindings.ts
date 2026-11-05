@@ -10848,8 +10848,8 @@ export type IndexDebugStatusResponse = {
 
 /**
  *  A fatal storage failure that stopped a volume's index: the SQLite result codes
- *  that classified the DB as unusable (a dead disk, a corrupt file, a full or
- *  read-only volume). Carried on the `IndexPhase::Failed` phase (see `lifecycle/state.rs`)
+ *  that classified the DB as unusable (a dead disk, a corrupt file, a read-only
+ *  volume; a full one pauses instead). Carried on the `IndexPhase::Failed` phase (see `lifecycle/state.rs`)
  *  and surfaced to the UI and logs so the failure is specific.
  *
  *  `code` is the primary SQLite result code (for example `SQLITE_IOERR` = 10);

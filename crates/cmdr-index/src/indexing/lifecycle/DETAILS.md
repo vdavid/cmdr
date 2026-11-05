@@ -36,6 +36,8 @@ concurrently without corrupting each other. Every invariant below holds independ
     not style), plus `bump_current_epoch_for` / `get_freshness`.
   - `supervisor.rs` — `spawn_failure_supervisor` + `fail_index`, the `Failed`-phase transition (the signal itself is
     `failure.rs`).
+  - `space_pause.rs` — `pause_for_space`, the out-of-disk-space stop and the waiter that restarts the volume (§ "Pausing
+    for disk space").
   - `tests.rs` — the registry-level lifecycle tests.
 
   A volume's IDENTITY (`VolumeId`, `ROOT_VOLUME_ID`, `IndexVolumeKind`) is deliberately NOT here: it's the leaf
@@ -901,9 +903,10 @@ show an honest state.
 
 **Classification is typed, never on the message string**. `store::IndexStoreError::sqlite_code()` extracts
 `(rusqlite::ErrorCode, extended_code)`; `is_fatal_storage_error()` is `true` for the storage-death classes
-(`SQLITE_IOERR*`, `SQLITE_CORRUPT`, `SQLITE_CANTOPEN`, `SQLITE_FULL`, `SQLITE_READONLY`, `SQLITE_NOTADB`). Transient
-contention (`SQLITE_BUSY`/`SQLITE_LOCKED`) is deliberately NOT fatal (the busy handler backs those off). The detector
-lives in the writer (`../writer/CLAUDE.md`); this area owns the LIFECYCLE representation of the trip.
+(`SQLITE_IOERR*`, `SQLITE_CORRUPT`, `SQLITE_CANTOPEN`, `SQLITE_READONLY`, `SQLITE_NOTADB`). Transient contention
+(`SQLITE_BUSY`/`SQLITE_LOCKED`) is deliberately NOT fatal (the busy handler backs those off), and `SQLITE_FULL` is a
+pause (§ "Pausing for disk space"). The detector lives in the writer (`../writer/CLAUDE.md`); this area owns the
+LIFECYCLE representation of the trip.
 
 **Detection lives in the writer, the signal is `failure.rs::IndexFailureSignal`.** A one-shot per-volume
 `Arc<IndexFailureSignal>` created in `IndexWriter::spawn_for`, cloned into the writer thread and exposed via
@@ -949,6 +952,38 @@ falls through to a fresh start. `clear_index`/`stop_indexing` each grew a `Faile
 reconciler's failing-resolve churn is bounded to at most one batch after the trip. A pure read-only flood (the event
 loop's `resolve_path` failing fatally while the writer never writes) is still not independently detected — in practice
 live processing always writes, so the writer trips.
+
+## Pausing for disk space (`state/space_pause.rs`)
+
+**Decision: a full disk PAUSES a volume's index and resumes it by itself, ❌ never `Failed`.** cmdr-reports#100: a
+replay filled a disk already at 0.5% free, SQLite said `SQLITE_FULL`, the volume failed, and an ERROR auto-sent a report
+about the user's own environment. Two triggers, one path:
+
+- **`SQLITE_FULL`** (`store::IndexStoreError::is_disk_full`, its own class, out of `is_fatal_storage_error`).
+- **The host's low-disk-space answer** (`HostPolicy::index_storage_low`), asked by every writer about once a second
+  while it writes (`../writer/space_guard.rs`). App side it's the boot volume's reading against the user's
+  low-disk-space threshold, with the warning's 1-point re-arm margin as hysteresis (`space_poller::index_storage_low`).
+  The databases live in the cache dir on the boot volume, so that's the disk that matters for every volume. This one
+  stops the index before it takes the last free space rather than after.
+
+Either trips the writer's `IndexFailureSignal` as `IndexStop::OutOfSpace`: the writer exits (an open explicit chunk
+rolls back with the connection), the live loop stops on `is_tripped`, the replay stops at its next drain, and the signal
+logs ONE warn and emits ❌ no `IndexEvent::Error`. The supervisor then calls `pause_for_space` instead of `fail_index`:
+a non-sticky `stop_indexing` (per-drive intent untouched, database kept) plus a waiter that rechecks every 30 s and
+restarts the volume through `StartRequest::start` (so the master switch still gates it) once the host says there's room.
+The restart is an ordinary start: a journaled volume replays from its last committed chunk (`../watch/DETAILS.md` § "A
+replay commits in chunks"); anything else resumes the way it would after a crash.
+
+- **Whatever happened meanwhile wins over the restart** (`decide`): started again, cleared or forgotten (database gone),
+  or turned off (`user_disabled`) all end the wait.
+- **A volume that fills the disk straight back up backs off**: each pause within an hour doubles the first wait, capped
+  at 30 minutes, so a threshold set lower than one chunk needs can't churn a replay every 30 s.
+- **Why a stop and not a writer that waits in place**: a parked writer backs its bounded channel up into every sender; a
+  blocked replay or live loop stops draining FSEvents, whose unbounded queue then grows into the RAM guard's forced full
+  scan.
+- ⚠️ Known limits: while paused the volume reads as stopped (its read handles are withdrawn, so listings show `<dir>`
+  and the badge goes gray, not "paused"), and with the host's reading stale or absent only `SQLITE_FULL` catches a full
+  disk. Follow-up: cmdr#1002 (serve sizes while paused, a paused UI state, the threshold's 1–50% range).
 
 ## What a cover walk asks of the lifecycle
 

@@ -20,8 +20,8 @@ the first index, each with its own `CLAUDE.md`. Other leaves are one job each (`
 - **❌ Nothing bounces off a TRANSIENT phase; it RECORDS its request there.** A teardown meeting `Detached` claims it; a
   start meeting `ShuttingDown` (a drain, up to 5 s) or a claimed `Detached` rides the same `Option`, and whoever ends
   the window carries it out through `start_indexing_for` (so the master switch still gates it). Refusing instead is a
-  SILENT no-op, and it left "turn this drive's indexing off and back on" with the drive off for the session and vetoed
-  on disk. A start asks `is_active_and_staying`, ❌ never `is_active`, which counts a volume that is about to stop.
+  SILENT no-op that left a toggled drive off for the session. A start asks `is_active_and_staying`, ❌ never
+  `is_active`, which counts a volume that is about to stop.
 - **Route by the TYPED `IndexVolumeKind` capability, never the variant or the volume id.** `has_event_journal()` gates
   journal replay; `rescan_scanner_for_kind` picks the scanner, so a trait-scanned volume never reaches `start_scan`,
   which walks nothing and falsely completes.
@@ -34,13 +34,14 @@ the first index, each with its own `CLAUDE.md`. Other leaves are one job each (`
   stops WRITING (`rescan_request::run_if_owed`).
 - **Fire a pipeline-phase transition through `events::set_phase_for`**; the `IndexPhase` swaps here are a different
   machine. Freshness has ONE total table (`Freshness::on`), and `..._on` vs `apply_freshness_event` is LOCK DISCIPLINE.
-- **A fatal storage error STOPS and FAILS the index.** Recovery is a rebuild, never a retry.
+- **A fatal storage error FAILS the index** (recovery is a rebuild); a full or low disk PAUSES it and resumes on its
+  own, ❌ never `Failed`. `DETAILS.md` § "Pausing for disk space".
 - **The `[4]` `module-cycles` tangle is ACCEPTED** (ownership down, liveness back up via the registry). ❌ Don't hide it
   by moving `context_for_walk` into `state`. `DETAILS.md` § The accepted `[4]` module tangle.
 - **Two switches gate BACKGROUND work only, master first.** `indexing.enabled` hard-gates `Activation::IndexTheVolume`;
   per-drive intent is the `user_enabled` / `user_disabled` pair, written when the user ASKS, ❌ never inferred from
   `scan_completed_at`. A search walk is carved out of both.
-- **FDA gates ONLY `root`'s auto-start**, because scanning `/` stacks TCC popups. It is not a master-switch concern.
+- **FDA gates ONLY `root`'s auto-start** (scanning `/` stacks TCC popups), not the master switch.
 - **`publish_dirs_changed` takes ORIGIN dirs, ❌ never their ancestor closure**: consumers expand DOWNWARD, and one
   ancestor cost ~90 k folders a minute.
 

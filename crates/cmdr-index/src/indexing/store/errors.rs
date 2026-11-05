@@ -115,8 +115,8 @@ impl std::fmt::Display for IndexStoreError {
 impl std::error::Error for IndexStoreError {}
 
 /// A fatal storage failure that stopped a volume's index: the SQLite result codes
-/// that classified the DB as unusable (a dead disk, a corrupt file, a full or
-/// read-only volume). Carried on the `IndexPhase::Failed` phase (see `lifecycle/state.rs`)
+/// that classified the DB as unusable (a dead disk, a corrupt file, a read-only
+/// volume; a full one pauses instead). Carried on the `IndexPhase::Failed` phase (see `lifecycle/state.rs`)
 /// and surfaced to the UI and logs so the failure is specific.
 ///
 /// `code` is the primary SQLite result code (for example `SQLITE_IOERR` = 10);
@@ -150,22 +150,34 @@ impl IndexStoreError {
     /// subsequent read and write will fail the same way, so the index must stop and
     /// fail rather than retry forever (the 12,700-warning livelock this guards
     /// against). Transient contention (`SQLITE_BUSY` / `SQLITE_LOCKED`) is
-    /// deliberately NOT fatal: the busy handler already backs those off. Classified
-    /// on the typed primary `ErrorCode`.
+    /// deliberately NOT fatal: the busy handler already backs those off. Neither is
+    /// a full disk ([`is_disk_full`](Self::is_disk_full)): it stops the index too,
+    /// but as a pause that resumes once space returns, never as a failure.
+    /// Classified on the typed primary `ErrorCode`.
     pub fn is_fatal_storage_error(&self) -> bool {
-        use rusqlite::ErrorCode::{CannotOpen, DatabaseCorrupt, DiskFull, NotADatabase, ReadOnly, SystemIoFailure};
+        use rusqlite::ErrorCode::{CannotOpen, DatabaseCorrupt, NotADatabase, ReadOnly, SystemIoFailure};
         matches!(
             self.sqlite_code(),
             Some((
                 SystemIoFailure     // SQLITE_IOERR*
                     | DatabaseCorrupt   // SQLITE_CORRUPT
                     | CannotOpen        // SQLITE_CANTOPEN
-                    | DiskFull          // SQLITE_FULL
                     | ReadOnly          // SQLITE_READONLY
                     | NotADatabase, // SQLITE_NOTADB
                 _
             ))
         )
+    }
+
+    /// Whether the disk the database lives on ran out of space (`SQLITE_FULL`).
+    ///
+    /// Every later write fails the same way, so the index stops, exactly like a
+    /// fatal error. But it's the environment, not the database: the file is intact,
+    /// the user can free space, and nothing is worth reporting as a bug. So it
+    /// PAUSES the index until space returns (`lifecycle/space_pause.rs`), logs at
+    /// warn, and keeps the database.
+    pub fn is_disk_full(&self) -> bool {
+        matches!(self.sqlite_code(), Some((rusqlite::ErrorCode::DiskFull, _)))
     }
 
     /// Whether this is TRANSIENT lock contention: another connection (or another
