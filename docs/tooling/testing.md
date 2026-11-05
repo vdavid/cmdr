@@ -398,4 +398,4 @@ path to the full text under `~/.local/share/check-runner/cmdr/output/` (read tha
 everything). Per-check: `pnpm check <name>`. By group: `pnpm check rust` / `svelte`. Fast pre-commit lane (~7 s,
 curated): `--fast`. Slow checks (E2E, Docker): `--only-slow`. See `AGENTS.md` § Checker script for when to run which.
 
- THROWAWAY probe line (never merge).
+THROWAWAY probe line (never merge).
