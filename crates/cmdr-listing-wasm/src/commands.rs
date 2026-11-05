@@ -29,6 +29,7 @@ use cmdr_fs::volume::host::VolumeHost;
 use crate::backend_listings::BackendListings;
 use crate::events::{DemoEvents, EventSink, ListingPathEvent};
 use crate::folder_sizes::FolderSizes;
+use crate::imports::{DemoImports, IMPORT_BUDGET_BYTES, ImportWatch};
 use crate::invoke::{answer, ok, parse};
 use crate::operations_host::DemoOperations;
 use crate::search::{DemoSearch, SEARCH_COMMANDS};
@@ -98,6 +99,8 @@ pub struct Demo {
     viewer: DemoViewer,
     /// ⌘F over the same volume, sized by the same fold (`search.rs`).
     search: Arc<DemoSearch>,
+    /// Files dropped in from the visitor's computer, onto the same volume (`imports.rs`).
+    imports: Arc<DemoImports>,
 }
 
 impl Demo {
@@ -118,6 +121,7 @@ impl Demo {
         // The drive index's stand-in, for the panes, the dialogs, the status bar, and ⌘F.
         let sizes = Arc::new(FolderSizes::new(Arc::clone(&store)));
         let searched = Arc::clone(&store);
+        let imports = Arc::new(DemoImports::new(Arc::clone(&store), IMPORT_BUDGET_BYTES));
         let volume: Arc<dyn Volume> = store;
         let viewer = DemoViewer::new(
             volume_id.clone(),
@@ -145,13 +149,19 @@ impl Demo {
             home.clone(),
             listings.collator(),
         ));
+        // The write engine's events pass the imports first: a transfer's end sweeps the drop it read from.
+        let operations_sink: Arc<dyn EventSink> = Arc::new(ImportWatch {
+            inner: sink,
+            imports: Arc::clone(&imports),
+            runtime: page_runtime(),
+        });
         let operations = DemoOperations::new(
             volume_id,
             volume,
             volume_host,
             &listings,
             Arc::clone(&sizes) as _,
-            sink,
+            operations_sink,
             home.map(PathBuf::from),
         );
         Ok(Self {
@@ -162,6 +172,7 @@ impl Demo {
             sizes,
             viewer,
             search,
+            imports,
         })
     }
 
@@ -194,10 +205,22 @@ impl Demo {
         &self.viewer
     }
 
+    /// Files dropped in from the visitor's computer.
+    pub fn imports(&self) -> &Arc<DemoImports> {
+        &self.imports
+    }
+
     /// Runs `command` with Tauri-style `args` (camelCase keys).
     pub async fn invoke(&self, command: &str, args: Value) -> Result<Value, Value> {
         if DemoOperations::handles(command) {
-            return self.operations.invoke(command, args).await;
+            let claim = transfer_sources(command, &args);
+            let answered = self.operations.invoke(command, args).await;
+            if let (Some((copy, sources)), Ok(answer)) = (claim, &answered)
+                && let Some(operation_id) = answer.get("operationId").and_then(Value::as_str)
+            {
+                self.imports.claim(operation_id, copy, &sources).await;
+            }
+            return answered;
         }
         let l = &self.listings;
         match command {
@@ -419,6 +442,22 @@ fn page_runtime() -> cmdr_fs::rt::Runtime {
     return cmdr_fs::rt::Runtime::default();
     #[cfg(not(target_family = "wasm"))]
     cmdr_fs::rt::Runtime::current()
+}
+
+/// A transfer command's sources, and whether it copies: what a drop's staging
+/// folder is claimed by (`imports.rs`). `None` for any other command.
+fn transfer_sources(command: &str, args: &Value) -> Option<(bool, Vec<PathBuf>)> {
+    let (copy, key) = match command {
+        "copy_between_volumes" => (true, "sourcePaths"),
+        "move_between_volumes" => (false, "sourcePaths"),
+        "move_files" => (false, "sources"),
+        _ => return None,
+    };
+    let sources = args.get(key)?.as_array()?;
+    Some((
+        copy,
+        sources.iter().filter_map(Value::as_str).map(PathBuf::from).collect(),
+    ))
 }
 
 /// `ListingStatus` and `StreamingListingStartResult` in the app: the answer is

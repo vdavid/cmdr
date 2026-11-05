@@ -60,6 +60,10 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
   Brief mode's widths (`get_brief_column_text_widths`) and the font metrics behind them (`store_font_metrics`,
   `extend_font_metrics`, `has_font_metrics`), answered by `cmdr-brief-columns`, the code the desktop's commands run. The
   page measures its own fonts with the Canvas API and stores them, as the desktop's frontend does.
+- `demo.importPlan(items): Promise<ImportPlan>`, `demo.importFile(batch, index, bytes: Uint8Array): Promise<null>`,
+  `demo.importHandOff(batch, offered)`, and `demo.importReleaseOffered()`: files dropped in from the computer (§ Files
+  dropped in from the computer). Both reject with an `ImportError`
+  (`{ kind: "badPath" | "unknownItem" | "sizeChanged" | "volume", ... }`).
 - `DemoListing.setLogLevel(level)`: the engine's `log` lines on the console, `"warn"` by default.
 - `new DemoMenuBar()`: the menu bar (`menu.rs`). `DemoMenuBar.handles(command)` and `menu.invoke(command, args)` take
   the desktop's menu-state pushes by their Tauri names (`activate_window_menu`, `set_commands_refused_over_dialog`,
@@ -251,6 +255,45 @@ over the page's one volume, with no index to load.
   the app's `search/live/events.rs`; `search_test.rs` pins their keys against `bindings.ts`.
 - **Results order and recent searches**: `sort_search_results` is `cmdr_listing::sort_search_rows` on the panes'
   collator; the recent list is `cmdr-recents`' rules over `cmdr_search::history`'s key, in memory.
+
+## Files dropped in from the computer
+
+`imports.rs`'s `DemoImports` lands a visitor's dropped files on the page's volume through `InMemoryVolume`'s import door
+(`import_folder`, `import_file`: real bytes beside the synthetic files, no clobber, `StorageFull` past the disk's room;
+`crates/cmdr-fs/DETAILS.md` § Module map). The page side is `apps/desktop/src/lib/demo/DETAILS.md` § Files dropped in
+from the computer. Nothing leaves the page.
+
+- **Two steps, so the page reads only bytes that will land.** `plan(items)` takes the drop's shape (relative
+  `/`-separated paths, folders before their contents, kinds, sizes, `modifiedMs`; no bytes), accepts the longest prefix
+  the budget covers, creates its folders, and reserves its files' bytes. `file(batch, index, bytes)` lands one accepted
+  file; bytes of another size (`SizeChanged`) or a volume refusal give the reservation back. A path with an empty, `.`,
+  or `..` name, or a leading `/`, is `BadPath`, checked by hand: `Path::components` drops a `.`, and `Path::is_absolute`
+  is always `false` in the browser.
+- **Staging**: each drop gets a fresh `/.drops/<n>/` (hidden like a dotfile), so a drop never collides with itself or an
+  earlier one; the page hands the staged top-level paths to the app as an OS drop, and the transfer dialog settles
+  collisions with the destination.
+- **A staging folder lives only while something can read it**, and its sweep gives back the room of what didn't land. A
+  batch is `Landing` (plan to `hand_off`), then `Offered` (the page sent it as a drop), then `Claimed` by the transfer
+  whose sources lie in it (`Demo::invoke` claims on a transfer command's answer). The claiming transfer's
+  `write-settled` (done, cancelled, or failed) sweeps it: `ImportWatch`, the write engine's sink, hears the event and
+  runs the sweep on the page runtime; a settle that beats its command's answer is kept and finished at the claim. An
+  `Offered` batch nobody claimed (its dialog dismissed, or the drop landed nowhere) is swept when the app pushes
+  `set_file_operations_blocked { blocked: false }` (no dialog holds file operations, so no transfer can still take it;
+  `backend.ts` passes the fact on), and at the next `plan`. A hand-off with nothing offered sweeps at once.
+  - What didn't land: a move's is whatever is still staged; a copy leaves the originals, so its landed bytes are its
+    `write-complete` `bytesProcessed` (else its last `write-progress` `bytesDone`), and the rest goes back. A copy
+    rolled back after reporting progress keeps those bytes counted; the budget errs toward the cap.
+  - **Decision/Why: the dialog's unblock, not its close.** On confirm, `notify_dialog_closed { transfer-confirmation }`
+    comes BEFORE the transfer command (verified in Chromium against `pnpm build:demo`, 2026-11-05, an IPC log of drop →
+    Escape and drop → Enter), so sweeping on it would delete the files the transfer is about to read. The unblock comes
+    after the progress dialog closes, when the batch is already claimed.
+- **Decision: 10 MB per visit (`IMPORT_BUDGET_BYTES`), counting every byte imported**, David's call (#957). Reserved at
+  plan time, so two drops in flight can't both spend the same room. The first item that doesn't fit stops the drop
+  there: it and everything after stay out (`OverBudget { budgetBytes, leftOut }`), even a smaller one that would fit, so
+  what came in is always a prefix of the drop. A reload resets it, with the volume.
+- Tests: `imports_test.rs` (plan, structure, the budget across drops, a changed size, bad paths, a staged file copying
+  and counting in folder sizes like any other, and the sweep: a dismissed drop, an empty hand-off, the next drop, a
+  move, a move that skipped its clash, a copy).
 
 ## Where the demo differs from the app
 

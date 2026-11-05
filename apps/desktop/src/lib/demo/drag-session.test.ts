@@ -169,18 +169,3 @@ describe('createDragSessions', () => {
     expect(drops).toEqual([{ event: 'tauri://drag-drop', payload: { paths: ['/b'], position: { x: 11, y: 10 } } }])
   })
 })
-
-describe('files dropped in from the OS', () => {
-  it('does nothing, and keeps the browser from opening the file in place of the demo', () => {
-    const sessions = createDragSessions(window, () => undefined)
-    try {
-      for (const type of ['dragover', 'drop']) {
-        const event = new Event(type, { cancelable: true, bubbles: true })
-        document.dispatchEvent(event)
-        expect(event.defaultPrevented).toBe(true)
-      }
-    } finally {
-      sessions.dispose()
-    }
-  })
-})

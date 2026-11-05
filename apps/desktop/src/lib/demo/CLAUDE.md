@@ -11,7 +11,8 @@ lands in a typed answer here; the listing commands go to the real listing engine
   through WASM). `context-menu.ts`: right-click menus, same engine; both use `menu-surfaces.ts` and `menu-click.ts`.
   `traffic-lights.ts`: the window buttons, at the app's `trafficLightPosition`. `drag-regions.ts`: Tauri's `drag.js`,
   ported. `drag-session.ts`: the OS file drag, answering `start_drag_paths` with Tauri's drag-drop events (DETAILS §
-  Drag and drop). `color-scheme.ts`: `setTheme` per frame (DETAILS § Light and dark).
+  Drag and drop). `os-drop.ts`: files dropped in from the computer. `color-scheme.ts`: `setTheme` per frame (DETAILS §
+  Light and dark).
 - `answers.ts` (app commands), `volumes.ts`, `plugins.ts` (in-memory `plugin:store`, path, app), `opener.ts` (every
   external link opens in a new tab), `listing.ts` (routes to the WASM engine, loaded once by `engine-module.ts`, which
   answers the viewer too), `unanswered.ts` (`window.__cmdrDemo.unanswered`; an unanswered void resolves, any other
@@ -29,12 +30,12 @@ the WASM engine first.
   through existing seams (an IPC answer, a store seed, a typed refusal). `cmdr/demo-isolation` fails any
   `__CMDR_DEMO_BUILD__` or `#lib/demo` outside.
 - **No demo code in any other build.** Outside `CMDR_DEMO_BUILD=1`, `vite.config.js` aliases `#lib/demo/boot.js` to the
-  empty `boot-absent.ts`. Verify with a normal `pnpm build` and a grep of `build/` for `__cmdrDemo`.
+  empty `boot-absent.ts`. Verify: a normal `pnpm build` has no `__cmdrDemo`.
 - **One backend per page, in the top frame; one webview per frame.** A secondary window is a same-origin iframe of its
   route, named after its window label, attached through `window.parent.__cmdrDemoBackend`. Events fan out to every
   attached webview. Keep per-window facts (size, focus) in `webview.ts`, app state in the backend.
-- **The demo may itself be framed** (a landing-page embed): assume no full browser window, and never touch
-  `window.parent` / `window.top` beyond the guarded backend lookup.
+- **The demo may itself be framed** (a landing-page embed): never touch `window.parent` / `window.top` beyond the
+  guarded backend lookup.
 - **Answers are typed against `bindings.ts`** (`AnswerTable`, `VoidCommand`), so a drifted answer fails `svelte-check`.
   An error branch is `refuse(command, typedError)`, never a thrown `Error`.
 - **No menu logic in TS.** Rows, words, shortcuts, enabled and checked state, and what a click sends all come from

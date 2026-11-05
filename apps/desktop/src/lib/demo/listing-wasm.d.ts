@@ -40,6 +40,14 @@ declare module 'virtual:cmdr-listing-wasm' {
     mediaBody(token: string, windowLabel: string): { mime: string; bytes: Uint8Array } | undefined
     /** Frees the viewer sessions of the window `windowLabel`. */
     closeViewerWindow(windowLabel: string): void
+    /** Plans a drop from the computer (`src/imports.rs`); rejects with an `ImportError`. */
+    importPlan(items: readonly import('./os-drop.js').ImportItem[]): Promise<import('./os-drop.js').ImportPlan>
+    /** Lands one planned file's bytes; rejects with an `ImportError`. */
+    importFile(batch: number, index: number, bytes: Uint8Array): Promise<null>
+    /** Done landing `batch`: `offered` when it went to the app as a drop, else it's swept. */
+    importHandOff(batch: number, offered: boolean): Promise<null>
+    /** No dialog holds file operations: sweeps every drop no transfer claimed. */
+    importReleaseOffered(): Promise<null>
   }
 
   /** The menus (`crates/cmdr-listing-wasm/src/menu.rs`, `context_menu.rs`): the menu-state pushes, the bar, the right-click popups, a click. */

@@ -11,8 +11,10 @@ The engine's second host, beside `apps/desktop/src-tauri/src/listing_host/`. Not
   `cmdr-menu`; `context_menu.rs`: its right-click popups, the `show_*` commands answered with rows. `folder_sizes.rs`:
   the drive index's stand-in, a fold over the volume behind both engines' index seams (DETAILS § Folder sizes).
   `viewer.rs`: the file viewer's commands (`cmdr-viewer`, same volume). `search.rs`: ⌘F (`cmdr-search` over the same
-  volume, sized by the fold; DETAILS § Search). `invoke.rs`: the args/answer JSON helpers every command family shares, a
-  leaf so no family imports `commands.rs`. `bindings.rs` (wasm only): the `wasm-bindgen` API.
+  volume, sized by the fold; DETAILS § Search). `imports.rs`: files dropped in from the computer, staged under
+  `/.drops/` within a 10 MB per-visit budget (DETAILS § Files dropped in from the computer). `invoke.rs`: the
+  args/answer JSON helpers every command family shares, a leaf so no family imports `commands.rs`. `bindings.rs` (wasm
+  only): the `wasm-bindgen` API.
 - `operations_host/`: the write engine's host (seams, sinks, `wire.rs` event names, `commands/` by domain), on the same
   volume and `Listings` the listing engine uses. DETAILS § Writes.
 - `smoke.mjs` (+ `smoke-writes.mjs`, `smoke-viewer.mjs`): loads the built module in Node and drives a listing, every

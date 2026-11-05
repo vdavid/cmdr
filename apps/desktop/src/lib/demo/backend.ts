@@ -16,6 +16,11 @@ import { noteUnanswered } from './unanswered.js'
 import type { TimedOut } from '#lib/ipc/bindings.js'
 import { demoPath, volumeAnswers } from './volumes.js'
 import { createDragSessions } from './drag-session.js'
+import { createOsDrops, type ImportRefusal } from './os-drop.js'
+import { addToast } from '#lib/ui/toast/index.js'
+import { tString } from '#lib/intl/messages.svelte.js'
+import { formatInteger } from '#lib/intl/number-format.js'
+import { formatRoundSize } from '#lib/units/byte-size.js'
 import { createWindowHost, type WindowHost } from './windows.js'
 
 type Handler = (payload: Payload) => unknown
@@ -130,6 +135,26 @@ export function createDemoBackend(): DemoBackend {
   const drags = createDragSessions(window, (event, payload) => {
     emit(event, payload, { kind: 'label', label: 'main' })
   })
+  // Files dragged in from the computer land on the in-memory disk, then reach the main window as
+  // wry's drop events (`os-drop.ts`).
+  createOsDrops(
+    window,
+    (event, payload) => {
+      emit(event, payload, { kind: 'label', label: 'main' })
+    },
+    engine.importer,
+    (refusal: ImportRefusal) => {
+      addToast(
+        tString('ui.demoDrop.overBudget', {
+          // A preset amount, built in SI units: "10 MB", never "10.00 MB".
+          budgetText: formatRoundSize(refusal.budgetBytes, 'si'),
+          countText: formatInteger(refusal.leftOut),
+          count: refusal.leftOut,
+        }),
+        { level: 'info' },
+      )
+    },
+  )
   const menu = startMenuEngine()
 
   // The demo's "default app" for a file is Cmdr's own viewer: Enter opens it, through the event the
@@ -163,6 +188,9 @@ export function createDemoBackend(): DemoBackend {
   }
 
   async function invoke(cmd: string, payload: Payload, origin?: InvokeOrigin): Promise<unknown> {
+    // The app says no dialog holds file operations any more: a drop no transfer took by now never
+    // will be, so the engine sweeps its staging (`os-drop.ts`). A fact passed on; the menu answers it.
+    if (cmd === 'set_file_operations_blocked' && payload.blocked === false) void engine.importer.releaseOffered()
     if (cmd === 'open_path' && (await openInViewer(payload))) return null
     if (cmd === 'plugin:app|set_app_theme') return setAppTheme(payload)
     const handler =
