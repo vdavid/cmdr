@@ -975,7 +975,8 @@ The restart is an ordinary start: a journaled volume replays from its last commi
 replay commits in chunks"); anything else resumes the way it would after a crash.
 
 - **Whatever happened meanwhile wins over the restart** (`decide`): started again, cleared or forgotten (database gone),
-  or turned off (`user_disabled`) all end the wait.
+  turned off (`user_disabled`), or a memory-watchdog stop since the pause (`memory_watchdog::stop_generation` moved) all
+  end the wait. Nothing restarts indexing after a watchdog stop but the user, so the pause doesn't either.
 - **A volume that fills the disk straight back up backs off**: each pause within an hour doubles the first wait, capped
   at 30 minutes, so a threshold set lower than one chunk needs can't churn a replay every 30 s.
 - **Why a stop and not a writer that waits in place**: a parked writer backs its bounded channel up into every sender; a

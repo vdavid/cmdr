@@ -26,6 +26,7 @@ use super::teardown::stop_indexing;
 use super::{INDEX_REGISTRY, StartRequest, resolved_index_db_path};
 use crate::indexing::host::policy;
 use crate::indexing::lifecycle::failure::SpaceStop;
+use crate::indexing::resources::memory_watchdog;
 use crate::indexing::store::IndexStore;
 use crate::indexing::volume::VolumeId;
 
@@ -87,15 +88,22 @@ pub(crate) fn pause_for_space(volume_id: &str, why: SpaceStop) {
         return;
     }
     let volume_id = volume_id.to_string();
+    let watchdog_stops = memory_watchdog::stop_generation();
     crate::indexing::host::runtime::spawn(async move {
-        wait_for_room(&volume_id, request, &db_path, first_try).await;
+        wait_for_room(&volume_id, request, &db_path, first_try, watchdog_stops).await;
         WAITING.lock_ignore_poison().remove(&volume_id);
     });
 }
 
 /// Wait until the host says there's room, then restart the volume, unless
 /// something else decided its fate meanwhile.
-async fn wait_for_room(volume_id: &str, request: StartRequest, db_path: &Path, first_try: Duration) {
+async fn wait_for_room(
+    volume_id: &str,
+    request: StartRequest,
+    db_path: &Path,
+    first_try: Duration,
+    watchdog_stops: u64,
+) {
     let mut wait = first_try;
     loop {
         tokio::time::sleep(wait).await;
@@ -104,13 +112,15 @@ async fn wait_for_room(volume_id: &str, request: StartRequest, db_path: &Path, f
             registered: INDEX_REGISTRY.lock_ignore_poison().contains_key(volume_id),
             database_on_disk: db_path.exists(),
             vetoed: IndexStore::user_disabled(db_path),
+            watchdog_stopped: memory_watchdog::stop_generation() != watchdog_stops,
             storage_low: policy::current().index_storage_low(),
         });
         match decision {
             Decision::KeepWaiting => continue,
             Decision::Leave => {
                 log::info!(
-                    "'{volume_id}' no longer waits for disk space: it was started, stopped, or cleared meanwhile"
+                    "'{volume_id}' no longer waits for disk space: it was started, stopped, or cleared meanwhile, \
+                     or the memory watchdog stopped indexing"
                 );
                 return;
             }
@@ -139,6 +149,11 @@ struct Facts {
     database_on_disk: bool,
     /// The user turned this drive off meanwhile.
     vetoed: bool,
+    /// The memory watchdog stopped all indexing since the pause. Nothing restarts
+    /// indexing after a watchdog stop (the user does), so neither does this: a
+    /// restart here would bring one volume back into the memory pressure that
+    /// stopped every other one.
+    watchdog_stopped: bool,
     /// The host still says the disk is low.
     storage_low: bool,
 }
@@ -154,7 +169,7 @@ enum Decision {
 /// decided meanwhile wins over a restart: the pause was ours, the stop or clear
 /// was theirs.
 fn decide(facts: Facts) -> Decision {
-    if facts.registered || !facts.database_on_disk || facts.vetoed {
+    if facts.registered || !facts.database_on_disk || facts.vetoed || facts.watchdog_stopped {
         return Decision::Leave;
     }
     if facts.storage_low {
@@ -199,6 +214,7 @@ mod tests {
         registered: false,
         database_on_disk: true,
         vetoed: false,
+        watchdog_stopped: false,
         storage_low: false,
     };
 
@@ -232,6 +248,13 @@ mod tests {
                 },
             ),
             ("turned off", Facts { vetoed: true, ..ROOM }),
+            (
+                "the memory watchdog stopped indexing",
+                Facts {
+                    watchdog_stopped: true,
+                    ..ROOM
+                },
+            ),
             (
                 "turned off while still low",
                 Facts {

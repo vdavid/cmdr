@@ -8,15 +8,10 @@ use crate::indexing::host::policy::{FakeHostPolicy, HostPolicy, install_for_test
 use crate::indexing::lifecycle::state;
 use crate::indexing::writer::WriteMessage;
 
-#[test]
-fn a_drive_pauses_while_the_disk_is_low_and_resumes_when_there_is_room() {
-    let drive = an_indexed_drive("cover-space-pause-test");
-    let host = FakeHostPolicy::shared();
-    let _host = install_for_test(Arc::clone(&host) as Arc<dyn HostPolicy>);
-
+/// Drive the writer until it pauses for disk space. The writer asks the host as it
+/// handles messages, at most once a second, so keep handing it some.
+fn pause_for_low_disk(drive: &ColdDrive, host: &FakeHostPolicy) {
     host.note_index_storage_low(true);
-    // The writer asks the host as it handles messages, at most once a second, so
-    // keep handing it some until it stops.
     cmdr_fs::testing::wait_until(
         std::time::Duration::from_secs(10),
         "the drive to pause while the disk is low",
@@ -30,6 +25,35 @@ fn a_drive_pauses_while_the_disk_is_low_and_resumes_when_there_is_room() {
             !state::is_active(drive.volume_id)
         },
     );
+}
+
+/// The memory watchdog stops ALL indexing and nothing restarts it but the user. A
+/// paused volume whose disk clears in the meantime must not come back on its own,
+/// into the memory pressure that stopped every other volume.
+#[test]
+fn a_watchdog_stop_during_the_pause_keeps_the_drive_stopped_when_space_returns() {
+    let drive = an_indexed_drive("cover-space-pause-watchdog-test");
+    let host = FakeHostPolicy::shared();
+    let _host = install_for_test(Arc::clone(&host) as Arc<dyn HostPolicy>);
+    pause_for_low_disk(&drive, &host);
+
+    crate::indexing::resources::memory_watchdog::note_stop();
+    host.note_index_storage_low(false);
+    // allowed-test-sleep: proves an ABSENCE (no restart) across several of the test
+    // build's 50 ms rechecks (`space_pause::RECHECK_EVERY`).
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    assert!(
+        !state::is_active(drive.volume_id),
+        "the watchdog's stop wins over the space pause's restart"
+    );
+}
+
+#[test]
+fn a_drive_pauses_while_the_disk_is_low_and_resumes_when_there_is_room() {
+    let drive = an_indexed_drive("cover-space-pause-test");
+    let host = FakeHostPolicy::shared();
+    let _host = install_for_test(Arc::clone(&host) as Arc<dyn HostPolicy>);
+    pause_for_low_disk(&drive, &host);
     assert!(!state::is_failed(drive.volume_id), "a pause, not a failure");
     assert!(
         !drive

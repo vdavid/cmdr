@@ -33,7 +33,8 @@
 //! differ and can be added later).
 
 #[cfg(target_os = "macos")]
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 #[cfg(target_os = "macos")]
 use super::memory_snapshot::{MemorySnapshot, gb};
@@ -161,6 +162,27 @@ impl WatchdogState {
     }
 }
 
+/// How many times the watchdog has stopped all indexing this process. Nothing
+/// restarts indexing after a watchdog stop (the user does), so anything that would
+/// restart a volume on its own compares this against what it saw when it started
+/// waiting and stands down if it moved (`lifecycle/state/space_pause.rs`).
+static STOP_GENERATION: AtomicU64 = AtomicU64::new(0);
+
+/// The watchdog's stop count so far. See [`STOP_GENERATION`].
+pub(crate) fn stop_generation() -> u64 {
+    STOP_GENERATION.load(Ordering::SeqCst)
+}
+
+/// Record a watchdog stop, BEFORE the stop runs, so a waiter that reads the count
+/// after seeing its volume gone can't miss it.
+#[cfg_attr(
+    not(any(target_os = "macos", test)),
+    expect(dead_code, reason = "the watchdog only runs on macOS")
+)]
+pub(crate) fn note_stop() {
+    STOP_GENERATION.fetch_add(1, Ordering::SeqCst);
+}
+
 /// Whether the single global watchdog task is already running. The watchdog is
 /// process-wide (one global budget over all volumes), so the first `start()`
 /// wins and later per-volume `start_indexing_for` calls are no-ops — without
@@ -267,6 +289,7 @@ fn on_stop(events: &dyn crate::EventSink, phys_footprint: u64) {
     // Global budget: stop EVERY registered volume's index, not just `root`. Scans
     // run in parallel (the wire, not RAM, is the bottleneck), so the safety net is
     // one process-wide stop rather than per-volume serialization.
+    note_stop();
     state::stop_all_indexing();
 }
 
@@ -295,6 +318,7 @@ fn on_escalate(events: &dyn crate::EventSink, phys_footprint: u64, escalations: 
 
     // Cheap and idempotent: a volume may have been registered again since the
     // stop, and the subsystem hooks only flip atomics.
+    note_stop();
     state::stop_all_indexing();
 }
 
