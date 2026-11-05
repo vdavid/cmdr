@@ -40,6 +40,17 @@ Issue #456. Must-knows in `CLAUDE.md`; this is the why and the catalog.
   `events/volume_mapping.rs` hands it to `note_smb_signature_rejection`, one episode per volume. A guest session offered
   for a named login (`GuestSessionRefused`) isn't recorded: it reads as a wrong password, and the pane names it
   (`VolumeConnection::GuestSessionRefused`).
+- `smb_negotiation_rejections_started` / `_ended` (`scope`: `{"volume": <volume id>}` | `{"host": <host id>}`): an SMB
+  connection closed because the server didn't confirm the security settings it agreed on
+  (`smb2::ErrorKind::NegotiateValidationFailed`), the same kind of tampering signal as a refused signature (#931).
+  Three sources, all into `note_smb_negotiation_rejection`, one episode per scope: a reconnect (`cmdr-smb` through the
+  `security_refusal` seam, `SecurityRefusal::NegotiationInvalid`), a direct connection
+  (`network/smb_connect_failure.rs` `record_security_refusal`, both upgrade paths), and a share listing
+  (`network/smb_client.rs` `record_security_refusal`, keyed by host since no share is open yet). Its own episode apart
+  from signatures, so the record names the signal. Record-only, no notice: the listing's error, the fallback notice,
+  and the reconnecting pane each say it where the person is looking. A share that only accepts encryption the
+  connection couldn't agree on, and "Always require SMB encryption" refusing one, aren't recorded: those are settings,
+  not tampering.
 - `recording_turned_on` / `recording_turned_off` (`by`: `user` | `organization`): the opt-out itself.
 - `state_file_recovered` (`file`: `settings` | `shortcuts` | `license` | `app_status` | `operation_log` |
   `chat_history` | `favorites` | `go_to_path_history` | `search_history` | `selection_history` |

@@ -36,6 +36,7 @@ import {
   onVolumeReconnectRequested,
 } from '#lib/tauri-commands/index.js'
 import type { SignInShape } from '#lib/tauri-commands/index.js'
+import type { VolumeError } from '#lib/ipc/bindings.js'
 import { asReconnectError, describeReconnectRefusal } from './reconnect-error'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { LogOnceGate } from '#lib/logging/log-once.js'
@@ -65,6 +66,8 @@ export type ReconnectStatus =
   | 'needs-host-key'
   | 'guest-refused'
   | 'encryption-required'
+  | 'negotiation-invalid'
+  | 'encryption-unavailable'
 
 /** The statuses only a person (or the server's admin) can move on from: the backoff stops at them. */
 const STOPPED_STATUSES: ReadonlySet<ReconnectStatus> = new Set([
@@ -72,7 +75,22 @@ const STOPPED_STATUSES: ReadonlySet<ReconnectStatus> = new Set([
   'needs-host-key',
   'guest-refused',
   'encryption-required',
+  'negotiation-invalid',
+  'encryption-unavailable',
 ])
+
+/** A session the backend refused whatever the credentials, which the same server answers the same way. */
+type SessionRefusalStatus = 'encryption-required' | 'negotiation-invalid' | 'encryption-unavailable'
+
+/**
+ * The command's typed refusals that stop the cycle on their own, so it stops even if the event
+ * lands after the failed attempt returns.
+ */
+const SESSION_REFUSAL_FOR_VOLUME_ERROR: Readonly<Partial<Record<VolumeError['type'], SessionRefusalStatus>>> = {
+  encryptionRequired: 'encryption-required',
+  negotiationInvalid: 'negotiation-invalid',
+  encryptionUnavailable: 'encryption-unavailable',
+}
 
 export interface ReconnectState {
   status: ReconnectStatus
@@ -163,7 +181,16 @@ class SmbReconnectManager {
         case 'encryption_required':
           // "Always require SMB encryption" is on and the server can't encrypt: the same server
           // answers the same until it or the setting changes, so the backoff stops (#966).
-          this.handleEncryptionRequired(volumeId)
+          this.handleSessionRefused(volumeId, 'encryption-required')
+          break
+        case 'negotiation_invalid':
+          // The server didn't confirm the security settings it agreed on, and asking again asks
+          // the same server (#931).
+          this.handleSessionRefused(volumeId, 'negotiation-invalid')
+          break
+        case 'encryption_unavailable':
+          // The share only accepts encryption the session agreed on no way to do (#931).
+          this.handleSessionRefused(volumeId, 'encryption-unavailable')
           break
       }
     })
@@ -390,17 +417,18 @@ class SmbReconnectManager {
   }
 
   /**
-   * "Always require SMB encryption" is on, and the server can't encrypt, so the backend refused
-   * the session. Ends the backoff (the server answers the same until it or the setting changes)
-   * and flips to `encryption-required`, which the pane renders with the way to the setting.
+   * The backend refused the session whatever the credentials: "Always require SMB encryption" and
+   * a server that can't encrypt, an unconfirmed negotiation, or a share whose encryption the
+   * session couldn't agree on. Ends the backoff (the server answers the same until it or the
+   * setting changes) and flips to `status`, which the pane renders with the reason.
    */
-  private handleEncryptionRequired(volumeId: string): void {
+  private handleSessionRefused(volumeId: string, status: SessionRefusalStatus): void {
     untrack(() => {
       const entry = this.map.get(volumeId)
       if (!entry) return // No subscribers; the next nav re-enters the flow.
       if (entry.timerId) clearTimeout(entry.timerId)
       entry.timerId = null
-      entry.state = { ...entry.state, status: 'encryption-required' }
+      entry.state = { ...entry.state, status }
     })
   }
 
@@ -483,8 +511,9 @@ class SmbReconnectManager {
       // `handleNeedsAuth` already stopped the cycle; don't schedule another doomed retry.
       if (STOPPED_STATUSES.has(e2.state.status)) return
       // The refusal's own type says it too, so the cycle stops even if the event hasn't landed yet.
-      if (refusal?.type === 'volume' && refusal.error.type === 'encryptionRequired') {
-        e2.state = { ...e2.state, status: 'encryption-required' }
+      const refusedAs = refusal?.type === 'volume' ? SESSION_REFUSAL_FOR_VOLUME_ERROR[refusal.error.type] : undefined
+      if (refusedAs !== undefined) {
+        e2.state = { ...e2.state, status: refusedAs }
         return
       }
       const next = attemptIndex + 1

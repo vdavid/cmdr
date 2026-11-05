@@ -369,6 +369,8 @@ async fn a_reconnect_that_stops_on_a_credential_or_a_key_says_which() {
         (VolumeConnection::NeedsHostKeyApproval, Settled::NeedsApproval),
         (VolumeConnection::GuestSessionRefused, Settled::Refused),
         (VolumeConnection::EncryptionRequired, Settled::EncryptionRequired),
+        (VolumeConnection::NegotiationInvalid, Settled::NegotiationInvalid),
+        (VolumeConnection::EncryptionUnavailable, Settled::EncryptionUnavailable),
     ] {
         let (sender, receiver) = broadcast::channel(8);
         let wait = tokio::spawn(settle(receiver, "lan".to_string(), RECONNECT_WAIT, || None));

@@ -258,6 +258,56 @@ fn a_session_that_cant_encrypt_is_its_own_state_and_ends_the_backoff() {
     )));
 }
 
+/// An unconfirmed negotiation and a share whose encryption the session couldn't agree on are each
+/// their own state, and each stops the watcher-death backoff: the same server answers the same
+/// until it (or the network in between) changes (#931).
+#[test]
+fn an_unconfirmed_negotiation_or_unavailable_encryption_is_its_own_state_and_ends_the_backoff() {
+    let unconfirmed = smb2::Error::NegotiateValidationFailed {
+        reason: "the server answered a different dialect".to_string(),
+    };
+    assert_eq!(
+        session_refusal_state(&unconfirmed),
+        Some(VolumeConnection::NegotiationInvalid)
+    );
+    assert_eq!(
+        session_refusal_state(&smb2::Error::EncryptionUnavailable { share: None }),
+        Some(VolumeConnection::EncryptionUnavailable)
+    );
+    assert_eq!(session_refusal_state(&smb2::Error::Timeout), None);
+    assert_eq!(
+        credentials_refusal_state(&unconfirmed),
+        VolumeConnection::NegotiationInvalid
+    );
+    assert!(reconnect_backoff_should_give_up(&VolumeError::NegotiationInvalid(
+        "unconfirmed".into()
+    )));
+    assert!(reconnect_backoff_should_give_up(&VolumeError::EncryptionUnavailable(
+        "/Volumes/public".into()
+    )));
+}
+
+/// An unconfirmed negotiation is the same kind of tampering signal as a refused signature, so it
+/// reaches the host's security seam too, wherever it surfaces (#931).
+#[test]
+fn an_unconfirmed_negotiation_reaches_the_security_seam() {
+    use cmdr_fs::volume::host::events::SecurityRefusal;
+    let (vol, events) = volume_with_recorded_events();
+    let unconfirmed = smb2::Error::NegotiateValidationFailed {
+        reason: "the server answered a different dialect".to_string(),
+    };
+    crate::volume::session::report_security_refusal(vol.inner.host(), RECORDED_ID, &unconfirmed);
+    crate::volume::session::report_security_refusal(
+        vol.inner.host(),
+        RECORDED_ID,
+        &smb2::Error::EncryptionUnavailable { share: None },
+    );
+    assert_eq!(
+        events.refusals(),
+        vec![(RECORDED_ID.to_string(), SecurityRefusal::NegotiationInvalid)]
+    );
+}
+
 /// A refused reply leaves the signed session in a state nothing can vouch for, so it's dropped
 /// like a lost connection: the next operation, the pane's reconnect, or the notice's Reconnect
 /// builds a fresh, freshly signed one (#457).

@@ -3,6 +3,28 @@
 
 use super::*;
 
+/// A direct connection the server didn't confirm the negotiation for reaches the security log
+/// under the share's volume, like a refused signature does (#931); any other failure doesn't.
+#[test]
+fn an_unconfirmed_negotiation_on_a_direct_connection_reaches_the_security_log() {
+    use crate::security_log::{SecurityEvent, SmbScope, testing};
+    let capture = testing::capture_events();
+    let unconfirmed = smb2::Error::NegotiateValidationFailed {
+        reason: "the server answered a different dialect".to_string(),
+    };
+    record_security_refusal("smb-nas-share", &dial(unconfirmed, std::time::Duration::from_secs(1)));
+    record_security_refusal(
+        "smb-nas-share",
+        &dial(smb2::Error::Timeout, std::time::Duration::from_secs(1)),
+    );
+    assert_eq!(
+        capture.events(),
+        vec![SecurityEvent::SmbNegotiationRejectionsStarted {
+            scope: SmbScope::Volume("smb-nas-share".into())
+        }]
+    );
+}
+
 /// A namespace on another server nobody allowed stays on the system connection,
 /// with its own typed reason.
 #[test]

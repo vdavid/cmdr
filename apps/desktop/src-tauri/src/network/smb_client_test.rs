@@ -210,3 +210,29 @@ async fn smb_integration_required_encryption_sends_a_guest_listing_to_sign_in() 
     .expect("an account's listing encrypts");
     assert!(!account.shares.is_empty());
 }
+
+/// A share listing the server didn't confirm the negotiation for reaches the security log under
+/// the host, like a share's own refusal does under its volume (#931). Any other listing outcome
+/// records nothing.
+#[test]
+fn an_unconfirmed_negotiation_on_a_listing_reaches_the_security_log() {
+    use crate::security_log::{SecurityEvent, SmbScope, testing};
+    let capture = testing::capture_events();
+    let unconfirmed: Result<ShareListResult, ShareListError> = Err(ShareListError::NegotiationInvalid {
+        message: "the server answered a different dialect".to_string(),
+    });
+    record_security_refusal("naspolya", &unconfirmed);
+    record_security_refusal(
+        "naspolya",
+        &Err(ShareListError::Timeout {
+            message: "slow".to_string(),
+        }),
+    );
+    record_security_refusal("naspolya", &Ok(listing(AuthMode::GuestAllowed)));
+    assert_eq!(
+        capture.events(),
+        vec![SecurityEvent::SmbNegotiationRejectionsStarted {
+            scope: SmbScope::Host("naspolya".into())
+        }]
+    );
+}

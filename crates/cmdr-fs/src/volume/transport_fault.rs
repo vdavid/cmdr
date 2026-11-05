@@ -81,6 +81,8 @@ impl VolumeError {
             | Self::DuplicateName(_) // two siblings share the name until someone renames one
             | Self::SignatureInvalid(_) // a refused reply, and a possible sign of tampering
             | Self::EncryptionRequired(_) // the same server can't encrypt until it or the setting changes
+            | Self::NegotiationInvalid(_) // an unconfirmed negotiation, and a possible sign of tampering
+            | Self::EncryptionUnavailable(_) // the share's own requirement, until its settings change
             | Self::IoError { raw_os_error: None, .. } // nothing to classify on
             | Self::NeedsPassword { .. }
             | Self::FriendlyGit(_) => None,

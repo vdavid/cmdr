@@ -44,6 +44,8 @@ fn wire_state(connection: VolumeConnection) -> WireConnection {
         VolumeConnection::NeedsHostKeyApproval => WireConnection::NeedsHostKeyApproval,
         VolumeConnection::GuestSessionRefused => WireConnection::GuestSessionRefused,
         VolumeConnection::EncryptionRequired => WireConnection::EncryptionRequired,
+        VolumeConnection::NegotiationInvalid => WireConnection::NegotiationInvalid,
+        VolumeConnection::EncryptionUnavailable => WireConnection::EncryptionUnavailable,
     }
 }
 
@@ -67,8 +69,12 @@ impl VolumeEventSink for TauriVolumeEvents {
 /// Where a backend's security refusal goes: the security event log, coalesced per episode.
 fn record_security_refusal(volume_id: &str, refusal: SecurityRefusal) {
     // `SecurityRefusal` is `#[non_exhaustive]`: a refusal this build doesn't know yet records nothing.
-    if refusal == SecurityRefusal::ReplySignatureInvalid {
-        crate::security_log::note_smb_signature_rejection(volume_id);
+    match refusal {
+        SecurityRefusal::ReplySignatureInvalid => crate::security_log::note_smb_signature_rejection(volume_id),
+        SecurityRefusal::NegotiationInvalid => crate::security_log::note_smb_negotiation_rejection(
+            crate::security_log::SmbScope::Volume(volume_id.to_string()),
+        ),
+        _ => {}
     }
 }
 
@@ -112,6 +118,31 @@ mod tests {
         assert_eq!(
             wire_state(VolumeConnection::EncryptionRequired),
             WireConnection::EncryptionRequired
+        );
+        assert_eq!(
+            wire_state(VolumeConnection::NegotiationInvalid),
+            WireConnection::NegotiationInvalid
+        );
+        assert_eq!(
+            wire_state(VolumeConnection::EncryptionUnavailable),
+            WireConnection::EncryptionUnavailable
+        );
+    }
+
+    /// An unconfirmed negotiation is its own episode, apart from refused signatures on the same
+    /// volume, so the record says which signal it was (#931).
+    #[test]
+    fn an_unconfirmed_negotiation_reaches_the_security_log_once_per_episode() {
+        use crate::security_log::{SecurityEvent, SmbScope, testing};
+        let capture = testing::capture_events();
+        for _ in 0..3 {
+            record_security_refusal("smb-nas-share", SecurityRefusal::NegotiationInvalid);
+        }
+        assert_eq!(
+            capture.events(),
+            vec![SecurityEvent::SmbNegotiationRejectionsStarted {
+                scope: SmbScope::Volume("smb-nas-share".into())
+            }]
         );
     }
 }

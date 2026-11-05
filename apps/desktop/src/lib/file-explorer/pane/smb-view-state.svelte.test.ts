@@ -199,6 +199,21 @@ describe('createSmbViewState', () => {
     expect(manager.cancel).toHaveBeenCalledWith('smb-vol')
   })
 
+  it.each([
+    ['negotiation-invalid', 'servers.paneState.negotiationInvalid'],
+    ['encryption-unavailable', 'servers.paneState.encryptionUnavailable'],
+  ] as const)('names a %s refusal and offers only Disconnect (#931)', (status, refusal) => {
+    manager.getState.mockReturnValue({ status, attemptIndex: 0, currentDelayMs: 0, waitStartedAt: 0 })
+    const state = create().sub.remoteConnectState
+    expect(state?.kind).toBe('refused')
+    if (state?.kind !== 'refused') throw new Error('unreachable')
+    expect(state.refusal).toBe(refusal)
+    expect(state.retry).toBeUndefined()
+    expect(state.openSettings).toBeUndefined()
+    state.disconnect?.()
+    expect(manager.cancel).toHaveBeenCalledWith('smb-vol')
+  })
+
   it('names a refused guest session and offers another password or Disconnect (#457)', async () => {
     manager.getState.mockReturnValue({ status: 'guest-refused', attemptIndex: 0, currentDelayMs: 0, waitStartedAt: 0 })
     const { openSignInForPlace } = await import('#lib/servers/open-sign-in.js')

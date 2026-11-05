@@ -1264,6 +1264,18 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
+  "servers.paneState.negotiationInvalid": "Cmdr didn’t reconnect: the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. Check your network and the server’s settings.",
+  "@servers.paneState.negotiationInvalid": {
+    "description": "Shown inside a file pane on a network share (SMB) whose connection dropped, when Cmdr tried to reconnect and the server didn't confirm the security settings (protocol version and signing) it had just agreed on, so Cmdr closed the connection. Either a misbehaving server or someone tampering with the connection. Not temporary, so no \"try again\" wording; calm, not alarming. A Disconnect button (servers.paneState.disconnect) sits right below it. Same wording as the share list's errors.shareList.negotiationInvalid; keep the two consistent. Plain text, no markdown.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
+  },
+  "servers.paneState.encryptionUnavailable": "Cmdr didn’t reconnect: the share only accepts encrypted connections, and the server didn’t agree on a way to encrypt one with Cmdr. Check the server’s SMB encryption settings.",
+  "@servers.paneState.encryptionUnavailable": {
+    "description": "Shown inside a file pane on a network share (SMB) whose connection dropped, when Cmdr tried to reconnect and the share only accepts encrypted connections but the server agreed on no encryption method Cmdr supports. A server-side setting, not Cmdr's own (compare servers.paneState.encryptionRequired). Not temporary, so no \"try again\" wording. A Disconnect button (servers.paneState.disconnect) sits right below it. Same wording as the share list's errors.shareList.encryptionUnavailable; keep the two consistent. Plain text, no markdown. \"SMB\" is a name; keep it.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
+  },
   "servers.paneState.guestSessionRefusedHint": "You asked to sign in with your account, but the server offered a guest session instead. Usually that means the password was wrong. Rarely, it means someone is tampering with the connection.",
   "@servers.paneState.guestSessionRefusedHint": {
     "description": "The lines under that heading: what happened, the usual innocent cause (a wrong password), and the rare serious one (tampering). Calm, not alarming. A “Try another password…” button (servers.paneState.tryAnotherPassword) and a Disconnect button sit right below it. Plain text, no markdown.",

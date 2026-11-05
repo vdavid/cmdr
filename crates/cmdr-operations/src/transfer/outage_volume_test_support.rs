@@ -42,7 +42,7 @@
 //! `outage_volume_test_support_impl.rs` is the `impl Volume` that fires them.
 
 use cmdr_fs::ignore_poison::IgnorePoison;
-use cmdr_fs::volume::{BackendKind, InMemoryVolume};
+use cmdr_fs::volume::{BackendKind, InMemoryVolume, VolumeError};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -65,9 +65,9 @@ pub(crate) struct OutageVolume {
     reachable: AtomicBool,
     /// A reconnect is refused for its credentials, as after a password change.
     needs_sign_in: AtomicBool,
-    /// A reconnect is refused because the server can't encrypt and "Always require SMB
-    /// encryption" is on.
-    encryption_refused: AtomicBool,
+    /// What every reconnect is refused with, whatever the credentials: the server can't encrypt
+    /// under "Always require SMB encryption", didn't confirm the negotiation, and so on.
+    session_refusal: Mutex<Option<VolumeError>>,
     reconnect_attempts: AtomicUsize,
     /// A reconnect attempt never returns while this is set.
     hang_reconnects: AtomicBool,
@@ -151,7 +151,7 @@ impl OutageVolume {
             up: AtomicBool::new(true),
             reachable: AtomicBool::new(true),
             needs_sign_in: AtomicBool::new(false),
-            encryption_refused: AtomicBool::new(false),
+            session_refusal: Mutex::new(None),
             reconnect_attempts: AtomicUsize::new(0),
             hang_reconnects: AtomicBool::new(false),
             abandoned_reconnects: AtomicUsize::new(0),
@@ -227,10 +227,9 @@ impl OutageVolume {
         self.needs_sign_in.store(true, Ordering::SeqCst);
     }
 
-    /// Every reconnect from now on is refused for encryption ("Always require SMB encryption"
-    /// on, a server that can't encrypt).
-    pub(crate) fn refuse_for_encryption(&self) {
-        self.encryption_refused.store(true, Ordering::SeqCst);
+    /// Every reconnect from now on is refused with `refusal`, whatever the credentials.
+    pub(crate) fn refuse_sessions_with(&self, refusal: VolumeError) {
+        *self.session_refusal.lock_ignore_poison() = Some(refusal);
     }
 
     /// The session drops (and the server goes away) the moment read-stream open

@@ -896,6 +896,8 @@ drop the button too, each with its own sentence: smb2 closed a connection whose 
 (`ErrorKind::NegotiateValidationFailed`, SMB 3.0 / 3.0.2; possible tampering), or the share requires encryption the
 connection agreed on no cipher for (`Error::EncryptionUnavailable`, read by variant since `EncryptionRequired` shares
 its `Unsupported` kind). Repeating gets the same negotiation. The kernel mount stays, and it checks its own negotiation.
+An unconfirmed negotiation also reaches the security log (`smb_connect_failure::record_security_refusal`, both upgrade
+paths; a share listing's through `smb_client.rs`), `../security_log/DETAILS.md`.
 `EncryptionRequired` (Cmdr's own "Always require SMB encryption", § "Requiring SMB encryption") is the third such
 reason: the same server gets the same answer until it or the setting changes.
 

@@ -477,6 +477,25 @@ fn a_session_that_cant_meet_the_encryption_requirement_maps_to_its_typed_volume_
     ));
 }
 
+/// The two other ways a rebuilt session can't be trusted or used (#931), each typed: an
+/// unconfirmed negotiation (a misbehaving server, or someone tampering with the connection) and a
+/// share that only accepts encryption the connection agreed on no way to do. A generic `IoError`
+/// read as a blip and kept the reconnect backoff dialing an answer that can't change on its own.
+#[test]
+fn an_unconfirmed_negotiation_and_unavailable_encryption_map_to_their_typed_volume_errors() {
+    let unconfirmed = smb2::Error::NegotiateValidationFailed {
+        reason: "the server answered a different dialect".to_string(),
+    };
+    assert!(matches!(
+        map_smb_error(unconfirmed, "/Volumes/naspi"),
+        VolumeError::NegotiationInvalid(_)
+    ));
+    assert!(matches!(
+        map_smb_error(smb2::Error::EncryptionUnavailable { share: None }, "/Volumes/naspi"),
+        VolumeError::EncryptionUnavailable(path) if path == "/Volumes/naspi"
+    ));
+}
+
 #[test]
 fn a_refused_guest_session_maps_like_a_wrong_password() {
     let err = smb2::Error::GuestSessionRefused {

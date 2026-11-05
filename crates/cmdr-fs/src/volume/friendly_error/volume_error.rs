@@ -169,6 +169,12 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         // own words. Never a retry hint: asking again over the same path invites the same answer.
         VolumeError::SignatureInvalid(_) => kinds::io_serious(&path_display, &raw, raw.clone()),
         VolumeError::EncryptionRequired(_) => kinds::smb_encryption_required(&path_display, raw),
+        // Both come from building a session (a reconnect, or an extra scan or transfer session),
+        // ❌ never a retry hint: the same server gives the same answer. The generic serious reason
+        // until listings get their own words for them.
+        VolumeError::NegotiationInvalid(_) | VolumeError::EncryptionUnavailable(_) => {
+            kinds::io_serious(&path_display, &raw, raw.clone())
+        }
         VolumeError::IsADirectory(_) => ListingError {
             category: ErrorCategory::NeedsAction,
             reason: ListingErrorReason::IsADirectory { path: path_display },

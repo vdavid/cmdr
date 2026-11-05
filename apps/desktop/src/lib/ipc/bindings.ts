@@ -21379,6 +21379,17 @@ export type VolumeConnection =
    *  same until it or the setting changes), and the pane says why and offers the setting.
    */
   | 'encryption_required'
+  /**
+   *  SMB: a reconnect's server didn't confirm the security settings it agreed on, so the
+   *  backend closed the session (a misbehaving server, or someone tampering with the
+   *  connection). The reconnect manager stops its backoff and the pane says why.
+   */
+  | 'negotiation_invalid'
+  /**
+   *  SMB: the share only accepts encrypted connections, and a reconnect's session agreed on no
+   *  way to encrypt. The reconnect manager stops its backoff and the pane says why.
+   */
+  | 'encryption_unavailable'
 
 /**
  *  Typed `volume-connection-changed` Tauri event. The frontend reconnect manager
@@ -21731,6 +21742,23 @@ export type VolumeError =
    *  person is pointed at the setting. SMB-only.
    */
   | { type: 'encryptionRequired'; data: string }
+  /**
+   *  The server didn't confirm the security settings the connection agreed on (SMB 3.0 and 3.0.2
+   *  check them after sign-in), so the backend closed it. Carries what the backend reported, for
+   *  the technical-details panel.
+   *
+   *  Like [`SignatureInvalid`](Self::SignatureInvalid), a possible sign of tampering (or a
+   *  misbehaving server), so it's ❌ never retried and the host records it (`SecurityRefusal`).
+   *  SMB-only.
+   */
+  | { type: 'negotiationInvalid'; data: string }
+  /**
+   *  The share or server only accepts encrypted connections, and the connection agreed on no
+   *  way to encrypt. Carries the path. The server's own requirement, where
+   *  [`EncryptionRequired`](Self::EncryptionRequired) is Cmdr's: the same server answers the
+   *  same until its settings change, so it's ❌ never retried. SMB-only.
+   */
+  | { type: 'encryptionUnavailable'; data: string }
   /**
    *  Anything the backend couldn't classify further. The classifier
    *  re-dispatches on `raw_os_error` when one is present.

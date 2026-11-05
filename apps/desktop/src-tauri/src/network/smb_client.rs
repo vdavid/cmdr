@@ -95,14 +95,24 @@ pub async fn list_shares(
     let timeout = Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_LIST_SHARES_TIMEOUT_MS));
 
     // Try to list shares
-    let result =
-        with_unique_share_names(list_shares_uncached(hostname, ip_address, port, credentials, guest, timeout).await?);
+    let listed = list_shares_uncached(hostname, ip_address, port, credentials, guest, timeout).await;
+    record_security_refusal(host_id, &listed);
+    let result = with_unique_share_names(listed?);
 
     // Cache successful result with configurable TTL
     let ttl = cache_ttl_ms.unwrap_or(DEFAULT_CACHE_TTL_MS);
     cache_shares(host_id, &result, ttl);
 
     Ok(result)
+}
+
+/// A listing the server didn't confirm the negotiation for is a tampering signal, so it reaches
+/// the security log under `host_id` (no share is open yet, so there's no volume to name). Read by
+/// the typed variant, ❌ never the message.
+fn record_security_refusal(host_id: &str, listed: &Result<ShareListResult, ShareListError>) {
+    if matches!(listed, Err(ShareListError::NegotiationInvalid { .. })) {
+        crate::security_log::note_smb_negotiation_rejection(crate::security_log::SmbScope::Host(host_id.to_string()));
+    }
 }
 
 /// Lists shares without checking cache.

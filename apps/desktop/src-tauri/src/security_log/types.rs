@@ -71,6 +71,16 @@ pub enum SecurityEvent {
         volume_id: String,
         count: u64,
     },
+    /// The first SMB connection closed since its last quiet spell because the server didn't
+    /// confirm the security settings it agreed on (a misbehaving server, or someone tampering
+    /// with the connection), on `scope`.
+    SmbNegotiationRejectionsStarted {
+        scope: SmbScope,
+    },
+    SmbNegotiationRejectionsEnded {
+        scope: SmbScope,
+        count: u64,
+    },
     RecordingTurnedOn {
         by: RecordingSwitch,
     },
@@ -94,6 +104,17 @@ pub enum SecurityEvent {
         reason: ProtectedContent,
         count: u64,
     },
+}
+
+/// Which SMB connection a refusal was on: a share's volume (a direct connection or a reconnect), or
+/// a server before any share is open (a share listing), by the id Cmdr knows it under.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SmbScope {
+    /// A share's volume id.
+    Volume(String),
+    /// A server's host id, the one its share listing is cached under.
+    Host(String),
 }
 
 /// An AI tool that reads file contents or image-derived text.
@@ -282,6 +303,8 @@ mod tests {
             SecurityEvent::UpdateSignatureInvalid { .. } => &["version", "check"],
             SecurityEvent::SmbSignatureRejectionsStarted { .. } => &["volume_id"],
             SecurityEvent::SmbSignatureRejectionsEnded { .. } => &["volume_id", "count"],
+            SecurityEvent::SmbNegotiationRejectionsStarted { .. } => &["scope"],
+            SecurityEvent::SmbNegotiationRejectionsEnded { .. } => &["scope", "count"],
             SecurityEvent::RecordingTurnedOn { .. } | SecurityEvent::RecordingTurnedOff { .. } => &["by"],
             SecurityEvent::StateFileRecovered { .. } => &["file"],
             SecurityEvent::ContentRefusalsStarted { .. } => &["tool", "reason"],
@@ -363,6 +386,19 @@ mod tests {
                     count: 3,
                 },
                 r#"{"kind":"smb_signature_rejections_ended","volume_id":"smb-nas","count":3}"#,
+            ),
+            (
+                SecurityEvent::SmbNegotiationRejectionsStarted {
+                    scope: SmbScope::Volume("smb-nas".into()),
+                },
+                r#"{"kind":"smb_negotiation_rejections_started","scope":{"volume":"smb-nas"}}"#,
+            ),
+            (
+                SecurityEvent::SmbNegotiationRejectionsEnded {
+                    scope: SmbScope::Host("naspolya".into()),
+                    count: 2,
+                },
+                r#"{"kind":"smb_negotiation_rejections_ended","scope":{"host":"naspolya"},"count":2}"#,
             ),
             (
                 SecurityEvent::McpContentRead {

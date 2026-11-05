@@ -640,6 +640,12 @@ backoff stops at. The pane renders `RemoteConnectView`'s `refused` with the sent
 the switch through `smb-encryption-setting.ts`), and Disconnect, ❌ no retry: the server answers the same until it or
 the setting changes. The volume store shows it as `disconnected`.
 
+`negotiation_invalid` and `encryption_unavailable` (#931) stop the cycle the same way, each with its own status
+(`negotiation-invalid`, `encryption-unavailable`) set by the event or the typed refusal
+(`SESSION_REFUSAL_FOR_VOLUME_ERROR`): the server didn't confirm the negotiation, or the share only accepts encryption
+the session couldn't agree on. The pane renders `refused` with a sentence worded like the share list's, and Disconnect
+only: no retry, and no Cmdr setting to point at.
+
 Lazy-nav path: opening a share that's already `Disconnected` (no fresh event in flight), the `smb-view-state.svelte.ts`
 subscription `$effect` notices `currentVolumeInfo?.connectionState === 'disconnected'` and calls
 `connectPlace({ volumeId, connectionState: 'disconnected' })`. ❗ Through `#lib/servers/connect-flow.ts`'s arm 1 rather

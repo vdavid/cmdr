@@ -358,24 +358,33 @@ async fn a_reconnect_refused_for_its_credentials_stops_the_wait() {
     );
 }
 
-/// A reconnect refused because the server can't encrypt (with "Always require SMB encryption" on)
-/// gets the same answer until the server or the setting changes, so the wait stops at once
-/// instead of spending the item's outage budget on it (#966).
+/// A reconnect the same server answers the same way until it (or a setting) changes stops the wait
+/// at once instead of spending the item's outage budget on it: the server can't encrypt with
+/// "Always require SMB encryption" on (#966), didn't confirm the negotiation, or only accepts
+/// encryption the session agreed on no way to do (#931).
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_reconnect_refused_for_encryption_stops_the_wait() {
-    let engine = TestOperations::new();
-    let op = engine.register_state("outage-encryption", quick_state(&engine));
-    let (nas, volume) = nas("outage-encryption");
-    nas.go_away();
-    nas.refuse_for_encryption();
+async fn a_reconnect_refused_for_the_session_itself_stops_the_wait() {
+    let refusals = [
+        VolumeError::EncryptionRequired("/".to_owned()),
+        VolumeError::NegotiationInvalid("unconfirmed".into()),
+        VolumeError::EncryptionUnavailable("/".to_owned()),
+    ];
+    for (i, refusal) in refusals.into_iter().enumerate() {
+        let name = format!("outage-session-refusal-{i}");
+        let engine = TestOperations::new();
+        let op = engine.register_state(&name, quick_state(&engine));
+        let (nas, volume) = nas(&name);
+        nas.go_away();
+        nas.refuse_sessions_with(refusal.clone());
 
-    let ended = wait_while_out(op.state(), &[&volume], None).await;
+        let ended = wait_while_out(op.state(), &[&volume], None).await;
 
-    assert!(
-        matches!(ended, OutageEnd::NotWaitable),
-        "the clock can't fix an encryption refusal: {ended:?}"
-    );
-    assert_eq!(nas.reconnect_attempts(), 1, "one answer is enough");
+        assert!(
+            matches!(ended, OutageEnd::NotWaitable),
+            "the clock can't fix {refusal:?}: {ended:?}"
+        );
+        assert_eq!(nas.reconnect_attempts(), 1, "one answer is enough for {refusal:?}");
+    }
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

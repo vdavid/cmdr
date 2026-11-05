@@ -79,6 +79,8 @@ const VOLUME_MESSAGE: { [K in VolumeError['type']]: (error: Extract<VolumeError,
   staleDestinationHandle: () => raw('errors.volume.staleDestinationHandle'),
   signatureInvalid: () => raw('errors.volume.signatureInvalid'),
   encryptionRequired: () => raw('errors.volume.encryptionRequired'),
+  negotiationInvalid: () => raw('errors.volume.negotiationInvalid'),
+  encryptionUnavailable: () => raw('errors.volume.encryptionUnavailable'),
   ioError: () => raw('errors.volume.ioError'),
   needsPassword: (e) => {
     if (e.data.wrongAttempt) return raw('errors.volume.passwordRejected')

@@ -357,14 +357,16 @@ pub(super) async fn refresh_remembered_credentials(
     matches!(written, Ok(Ok(())))
 }
 
-/// Tells the host about a reply smb2 refused for its signature, for the app's security record.
-/// The error funnel (`SmbVolumeInner::note_smb_error`) calls it for every smb2 error; the host
-/// coalesces repeats.
+/// Tells the host about a tampering signal smb2 refused, for the app's security record: a reply
+/// refused for its signature, or a negotiation the server didn't confirm (#931). The error funnel
+/// (`SmbVolumeInner::note_smb_error`) and a failed reconnect call it for every smb2 error; the
+/// host coalesces repeats. Read by kind, ❌ never the message.
 pub(super) fn report_security_refusal(host: &VolumeHost, volume_id: &str, err: &smb2::Error) {
-    if err.kind() == smb2::ErrorKind::SignatureInvalid {
-        host.events().security_refusal(
-            volume_id,
-            cmdr_fs::volume::host::events::SecurityRefusal::ReplySignatureInvalid,
-        );
-    }
+    use cmdr_fs::volume::host::events::SecurityRefusal;
+    let refusal = match err.kind() {
+        smb2::ErrorKind::SignatureInvalid => SecurityRefusal::ReplySignatureInvalid,
+        smb2::ErrorKind::NegotiateValidationFailed => SecurityRefusal::NegotiationInvalid,
+        _ => return,
+    };
+    host.events().security_refusal(volume_id, refusal);
 }

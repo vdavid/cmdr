@@ -241,6 +241,47 @@ describe('smbReconnectManager', () => {
   })
 
   /**
+   * An unconfirmed negotiation and a share whose encryption the session couldn't agree on stop the
+   * backoff too, from the event or the command's typed refusal: asking again asks the same server
+   * (#931).
+   */
+  it.each([
+    ['negotiation_invalid', 'negotiationInvalid', 'negotiation-invalid'],
+    ['encryption_unavailable', 'encryptionUnavailable', 'encryption-unavailable'],
+  ] as const)('stops the backoff on %s, by event or typed refusal', async (event, errorType, status) => {
+    await smbReconnectManager.init()
+
+    const byEvent = `vol-${event}-event`
+    const unsubEvent = smbReconnectManager.subscribe(byEvent)
+    mockReconnect.mockRejectedValue(new Error('refused'))
+    smbReconnectManager.startCycle(byEvent)
+    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
+    emit(byEvent, event)
+    expect(smbReconnectManager.getState(byEvent)?.status).toBe(status)
+    smbReconnectManager.cancel(byEvent)
+    unsubEvent()
+
+    const byRefusal = `vol-${event}-typed`
+    const unsubTyped = smbReconnectManager.subscribe(byRefusal)
+    const error =
+      errorType === 'negotiationInvalid'
+        ? ({ type: 'negotiationInvalid', data: 'unconfirmed' } as const)
+        : ({ type: 'encryptionUnavailable', data: '/Volumes/public' } as const)
+    mockReconnect.mockRejectedValue(new ReconnectFailure({ type: 'volume', error }))
+    smbReconnectManager.startCycle(byRefusal)
+    await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
+    expect(smbReconnectManager.getState(byRefusal)?.status).toBe(status)
+
+    const callsAtFlip = mockReconnect.mock.calls.length
+    for (const delay of RECONNECT_DELAYS_MS) {
+      await vi.advanceTimersByTimeAsync(delay)
+    }
+    expect(mockReconnect.mock.calls.length).toBe(callsAtFlip)
+    smbReconnectManager.cancel(byRefusal)
+    unsubTyped()
+  })
+
+  /**
    * The banner asks the backend what a sign-in would want, at the moment it has
    * something to ask about. Nothing renders this yet (the SFTP sign-in UI isn't
    * built), so the cell asserts on the stored value.

@@ -234,6 +234,19 @@ pub enum VolumeError {
     /// gives the same answer until it or the setting changes, so it's ❌ never retried, and the
     /// person is pointed at the setting. SMB-only.
     EncryptionRequired(String),
+    /// The server didn't confirm the security settings the connection agreed on (SMB 3.0 and 3.0.2
+    /// check them after sign-in), so the backend closed it. Carries what the backend reported, for
+    /// the technical-details panel.
+    ///
+    /// Like [`SignatureInvalid`](Self::SignatureInvalid), a possible sign of tampering (or a
+    /// misbehaving server), so it's ❌ never retried and the host records it (`SecurityRefusal`).
+    /// SMB-only.
+    NegotiationInvalid(ErrorDetail),
+    /// The share or server only accepts encrypted connections, and the connection agreed on no
+    /// way to encrypt. Carries the path. The server's own requirement, where
+    /// [`EncryptionRequired`](Self::EncryptionRequired) is Cmdr's: the same server answers the
+    /// same until its settings change, so it's ❌ never retried. SMB-only.
+    EncryptionUnavailable(String),
     /// Anything the backend couldn't classify further. The classifier
     /// re-dispatches on `raw_os_error` when one is present.
     IoError {
@@ -316,6 +329,10 @@ impl ErrorLogText for VolumeError {
                 "SMB encryption is required and this connection can't encrypt: ",
                 LogPrivate::path(path),
             ),
+            Self::EncryptionUnavailable(path) => (
+                "The share only accepts encryption this connection couldn't agree on: ",
+                LogPrivate::path(path),
+            ),
             Self::NotSupported => return out.write_str("Operation not supported"),
             Self::DeviceDisconnected(msg) => return detail_line(out, "Device disconnected: ", msg),
             Self::DeviceSessionReset(msg) => return detail_line(out, "Device session restarted: ", msg),
@@ -325,6 +342,7 @@ impl ErrorLogText for VolumeError {
             Self::Cancelled(msg) => return detail_line(out, "Cancelled: ", msg),
             Self::InvalidName(msg) => return detail_line(out, "Name not usable at the destination: ", msg),
             Self::SignatureInvalid(msg) => return detail_line(out, "Reply refused, its signature didn't hold: ", msg),
+            Self::NegotiationInvalid(msg) => return detail_line(out, "Negotiation not confirmed: ", msg),
             Self::IoError { message, .. } => return detail_line(out, "I/O error: ", message),
             Self::NeedsPassword {
                 container,

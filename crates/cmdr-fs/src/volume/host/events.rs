@@ -45,6 +45,15 @@ pub enum VolumeConnection {
     /// server gives the same answer until it or the setting changes, so a backoff only repeats
     /// it: the pane says why and points at the setting.
     EncryptionRequired,
+    /// The rebuilt session's server didn't confirm the security settings it agreed on, so the
+    /// backend closed it: a misbehaving server, or someone tampering with the connection. A
+    /// backoff would only dial into the same answer, so the pane says why and stops.
+    NegotiationInvalid,
+    /// The share or server only accepts encrypted connections, and the rebuilt session agreed on
+    /// no way to encrypt. The server's own requirement (where
+    /// [`EncryptionRequired`](Self::EncryptionRequired) is Cmdr's), and it answers the same until
+    /// its settings change, so the pane says why and stops.
+    EncryptionUnavailable,
 }
 
 /// Something a backend turned away for the user's safety, for the host's security record (and,
@@ -55,6 +64,9 @@ pub enum VolumeConnection {
 pub enum SecurityRefusal {
     /// A reply on a signed session carried a bad or missing signature, so the backend refused it.
     ReplySignatureInvalid,
+    /// The server didn't confirm the security settings a connection agreed on, so the backend
+    /// closed it.
+    NegotiationInvalid,
 }
 
 /// Where a backend's typed events go.

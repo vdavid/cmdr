@@ -142,6 +142,22 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
           openSettings: () => void openSettingsToSmbEncryption(),
           disconnect: handleSmbReconnectDisconnect,
         }
+      case 'negotiation-invalid':
+        // The server didn't confirm the security settings it agreed on: no retry (it would ask the
+        // same server) and no setting to change, only Disconnect (#931).
+        return {
+          kind: 'refused',
+          refusal: tString('servers.paneState.negotiationInvalid'),
+          disconnect: handleSmbReconnectDisconnect,
+        }
+      case 'encryption-unavailable':
+        // The share only accepts encryption the session couldn't agree on: the server's setting,
+        // so only Disconnect (#931).
+        return {
+          kind: 'refused',
+          refusal: tString('servers.paneState.encryptionUnavailable'),
+          disconnect: handleSmbReconnectDisconnect,
+        }
       case 'gave-up':
         return null
     }

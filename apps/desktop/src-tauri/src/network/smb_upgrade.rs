@@ -17,7 +17,7 @@ use crate::ignore_poison::IgnorePoison;
 use crate::network::os_mount_notice::FallbackNotice;
 use crate::network::smb_connect_failure::{
     DirectConnectOutcome, FailedDial, MountEvidence, UpgradeError, UpgradeFailure, dial_detail,
-    log_direct_connect_failure,
+    log_direct_connect_failure, record_security_refusal,
 };
 use crate::network::smb_server_address::{
     ServerAddress, discover_server, friendly_server_name, get_keychain_password, resolve_server_address,
@@ -512,6 +512,7 @@ pub(crate) async fn register_smb_volume(
             crate::index_host::index().resume_after_reconnect(volume_id.clone());
         }
         Err(dial) => {
+            record_security_refusal(&volume_id, &dial);
             let reason = UpgradeFailure::of_dial(&dial, mount);
             // The raw error belongs in the log, where it's the diagnostic. The volume
             // stays on the OS mount, which still works, at a fraction of the speed.
@@ -692,6 +693,7 @@ pub(crate) async fn try_smb_upgrade(
             Ok(())
         }
         Err(dial) => {
+            record_security_refusal(volume_id, &dial);
             // `info` IS the caller's answered read of the mount, under
             // `MOUNT_READ_LIMIT`: there's no `SmbMountInfo` without one.
             let mount = MountEvidence::Answered;

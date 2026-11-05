@@ -525,6 +525,17 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
         VolumeError::EncryptionRequired(_) => WriteOperationError::SmbEncryptionRequired {
             path: context_path.to_string(),
         },
+        // A session the transfer built (its own, or a reconnect) that the server didn't confirm or
+        // couldn't encrypt: the generic stopped state, with the backend's words in the details,
+        // until transfers get their own words for these.
+        VolumeError::NegotiationInvalid(message) => WriteOperationError::IoError {
+            path: context_path.to_string(),
+            message,
+        },
+        VolumeError::EncryptionUnavailable(_) => WriteOperationError::IoError {
+            path: context_path.to_string(),
+            message: "the share only accepts encryption this connection couldn't agree on".into(),
+        },
         // Reading from a locked archive or repo: a typed signal the FE prompts on
         // (then retries via `unlock_container`), never a generic read error.
         VolumeError::NeedsPassword {

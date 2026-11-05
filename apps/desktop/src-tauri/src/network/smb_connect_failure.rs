@@ -355,6 +355,18 @@ pub(crate) enum DirectConnectOutcome {
     SurfacedToCaller,
 }
 
+/// A direct connection the server didn't confirm the negotiation for is a tampering signal, so it
+/// reaches the security log under the share's `volume_id`, beside a reconnect's (which the
+/// backend reports through the volume host). Both upgrade paths call it on a failed dial. Read by
+/// kind, ❌ never the message.
+pub(crate) fn record_security_refusal(volume_id: &str, dial: &FailedDial) {
+    if dial.error.kind() == ErrorKind::NegotiateValidationFailed {
+        crate::security_log::note_smb_negotiation_rejection(crate::security_log::SmbScope::Volume(
+            volume_id.to_string(),
+        ));
+    }
+}
+
 /// Writes down why a direct smb2 connection didn't happen, naming who was turned
 /// away and where.
 ///

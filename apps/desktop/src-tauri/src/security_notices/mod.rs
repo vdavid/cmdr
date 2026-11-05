@@ -74,6 +74,10 @@ fn notice_for(event: &SecurityEvent) -> Option<AccessNotice> {
         }
         | SecurityEvent::McpRejectionsEnded { .. }
         | SecurityEvent::SmbSignatureRejectionsEnded { .. }
+        // Every place it happens already says so where the person is looking: the share list's
+        // error, the direct-connection notice, and the reconnecting pane (#931).
+        | SecurityEvent::SmbNegotiationRejectionsStarted { .. }
+        | SecurityEvent::SmbNegotiationRejectionsEnded { .. }
         | SecurityEvent::CloudAiConsentGiven
         | SecurityEvent::CloudAiConsentWithdrawn
         | SecurityEvent::McpServerTurnedOn { .. }

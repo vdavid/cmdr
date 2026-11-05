@@ -586,12 +586,15 @@ async fn attempt_once(
         // credentials (the backend already asked the pane to offer Sign in, and
         // dialing again risks locking the account), or the server can't encrypt
         // while "Always require SMB encryption" is on (the same answer until the
-        // server or the setting changes).
+        // server or the setting changes). Likewise a server that didn't confirm the
+        // negotiation, or can't agree on the encryption its share requires (#931).
         Err(
             VolumeError::NotSupported
             | VolumeError::PermissionDenied { .. }
             | VolumeError::NeedsPassword { .. }
-            | VolumeError::EncryptionRequired(_),
+            | VolumeError::EncryptionRequired(_)
+            | VolumeError::NegotiationInvalid(_)
+            | VolumeError::EncryptionUnavailable(_),
         ) => Attempt::Hopeless,
         Err(error) => {
             log::debug!(target: "copy", "volume outage: reconnect attempt failed: {error}", error = LogError(&error));

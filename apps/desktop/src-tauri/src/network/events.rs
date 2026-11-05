@@ -129,6 +129,13 @@ pub enum VolumeConnection {
     /// the backend refused it. The reconnect manager stops its backoff (the server answers the
     /// same until it or the setting changes), and the pane says why and offers the setting.
     EncryptionRequired,
+    /// SMB: a reconnect's server didn't confirm the security settings it agreed on, so the
+    /// backend closed the session (a misbehaving server, or someone tampering with the
+    /// connection). The reconnect manager stops its backoff and the pane says why.
+    NegotiationInvalid,
+    /// SMB: the share only accepts encrypted connections, and a reconnect's session agreed on no
+    /// way to encrypt. The reconnect manager stops its backoff and the pane says why.
+    EncryptionUnavailable,
 }
 
 /// Typed `volume-connection-changed` Tauri event. The frontend reconnect manager

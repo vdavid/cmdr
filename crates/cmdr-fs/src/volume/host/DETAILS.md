@@ -156,9 +156,10 @@ UI copy edit change what a backend means. `GuestSessionRefused` is its SMB sibli
 session, which the pane names instead of a bare sign-in prompt (usually a wrong password, rarely tampering).
 
 `security_refusal` is the seam's second, defaulted method: the backend reports each thing it refused for the user's
-safety (`SecurityRefusal`, today only a reply with a bad or missing signature), and the app feeds its security event
-log, which coalesces repeats (`apps/desktop/src-tauri/src/security_log/CLAUDE.md`). Unlike `connection_changed` it
-reports every occurrence, and a superseded instance reports too: a refused reply is a fact about the server.
+safety (`SecurityRefusal`: a reply with a bad or missing signature, or a negotiation the server didn't confirm), and the
+app feeds its security event log, which coalesces repeats (`apps/desktop/src-tauri/src/security_log/CLAUDE.md`). Unlike
+`connection_changed` it reports every occurrence, and a superseded instance reports too: a refused reply is a fact about
+the server.
 
 ### `CredentialStore`
 

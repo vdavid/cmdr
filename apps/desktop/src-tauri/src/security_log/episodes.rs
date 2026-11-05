@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
-use super::types::{ContentTool, McpRejection, ProtectedContent, SecurityEvent};
+use super::types::{ContentTool, McpRejection, ProtectedContent, SecurityEvent, SmbScope};
 use crate::ignore_poison::IgnorePoison;
 
 /// How long a key must stay free of rejections for its episode to end.
@@ -104,6 +104,7 @@ const CLOSER_TICK: Duration = Duration::from_secs(60);
 
 static MCP: LazyLock<Mutex<Episodes<McpRejection>>> = LazyLock::new(|| Mutex::new(Episodes::new(QUIET)));
 static SMB: LazyLock<Mutex<Episodes<String>>> = LazyLock::new(|| Mutex::new(Episodes::new(QUIET)));
+static SMB_NEGOTIATION: LazyLock<Mutex<Episodes<SmbScope>>> = LazyLock::new(|| Mutex::new(Episodes::new(QUIET)));
 static CONTENT: LazyLock<Mutex<Episodes<(ContentTool, ProtectedContent)>>> =
     LazyLock::new(|| Mutex::new(Episodes::new(QUIET)));
 static CLOSER_RUNNING: AtomicBool = AtomicBool::new(false);
@@ -136,6 +137,19 @@ pub fn note_smb_signature_rejection(volume_id: &str) {
     ensure_closer();
 }
 
+/// An SMB connection on `scope` was closed because the server didn't confirm the security settings it
+/// agreed on. Its own episode, apart from refused signatures, so the record names the signal.
+pub fn note_smb_negotiation_rejection(scope: SmbScope) {
+    let started = SecurityEvent::SmbNegotiationRejectionsStarted { scope: scope.clone() };
+    #[cfg(test)]
+    if let Some(transitions) = captured(|c| c.smb_negotiation.note(scope.clone(), Instant::now())) {
+        return settle(transitions, smb_negotiation_event, started);
+    }
+    let transitions = SMB_NEGOTIATION.lock_ignore_poison().note(scope, Instant::now());
+    settle(transitions, smb_negotiation_event, started);
+    ensure_closer();
+}
+
 /// An AI tool was refused a file's contents. Keyed by tool and reason: an injected turn can ask
 /// for a thousand protected files, and the log still gets one start and one count.
 pub fn note_content_refusal(tool: ContentTool, reason: ProtectedContent) {
@@ -163,11 +177,13 @@ fn settle<K>(transitions: Vec<Transition<K>>, to_event: fn(Transition<K>) -> Sec
 pub(super) fn close_all_now() {
     let mcp = MCP.lock_ignore_poison().close_all();
     let smb = SMB.lock_ignore_poison().close_all();
+    let smb_negotiation = SMB_NEGOTIATION.lock_ignore_poison().close_all();
     let content = CONTENT.lock_ignore_poison().close_all();
     record_all(
         mcp.into_iter()
             .map(mcp_event)
             .chain(smb.into_iter().map(smb_event))
+            .chain(smb_negotiation.into_iter().map(smb_negotiation_event))
             .chain(content.into_iter().map(content_event))
             .collect(),
     );
@@ -184,6 +200,13 @@ fn smb_event(transition: Transition<String>) -> SecurityEvent {
     match transition {
         Transition::Started(volume_id) => SecurityEvent::SmbSignatureRejectionsStarted { volume_id },
         Transition::Ended(volume_id, count) => SecurityEvent::SmbSignatureRejectionsEnded { volume_id, count },
+    }
+}
+
+fn smb_negotiation_event(transition: Transition<SmbScope>) -> SecurityEvent {
+    match transition {
+        Transition::Started(scope) => SecurityEvent::SmbNegotiationRejectionsStarted { scope },
+        Transition::Ended(scope, count) => SecurityEvent::SmbNegotiationRejectionsEnded { scope, count },
     }
 }
 
@@ -221,6 +244,10 @@ fn ensure_closer() {
                     let mut episodes = SMB.lock_ignore_poison();
                     (episodes.close_quiet(now), !episodes.is_empty())
                 };
+                let (smb_negotiation, smb_negotiation_left) = {
+                    let mut episodes = SMB_NEGOTIATION.lock_ignore_poison();
+                    (episodes.close_quiet(now), !episodes.is_empty())
+                };
                 let (content, content_left) = {
                     let mut episodes = CONTENT.lock_ignore_poison();
                     (episodes.close_quiet(now), !episodes.is_empty())
@@ -229,15 +256,17 @@ fn ensure_closer() {
                     mcp.into_iter()
                         .map(mcp_event)
                         .chain(smb.into_iter().map(smb_event))
+                        .chain(smb_negotiation.into_iter().map(smb_negotiation_event))
                         .chain(content.into_iter().map(content_event))
                         .collect(),
                 );
-                if !mcp_left && !smb_left && !content_left {
+                if !mcp_left && !smb_left && !smb_negotiation_left && !content_left {
                     CLOSER_RUNNING.store(false, Ordering::SeqCst);
                     // A rejection between the check and the store saw the flag set and didn't
                     // start a closer, so keep this one when that happened.
                     let reopened = !MCP.lock_ignore_poison().is_empty()
                         || !SMB.lock_ignore_poison().is_empty()
+                        || !SMB_NEGOTIATION.lock_ignore_poison().is_empty()
                         || !CONTENT.lock_ignore_poison().is_empty();
                     if !reopened || CLOSER_RUNNING.swap(true, Ordering::SeqCst) {
                         return;

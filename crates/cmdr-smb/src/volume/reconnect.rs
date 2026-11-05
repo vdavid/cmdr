@@ -23,20 +23,33 @@ use std::time::Duration;
 /// offered for a named login is its own state (the pane names the refusal), anything else asks
 /// for a sign-in. Read by kind, ❌ never the message.
 fn credentials_refusal_state(err: &smb2::Error) -> VolumeConnection {
-    encryption_refusal_state(err).unwrap_or(match err.kind() {
+    session_refusal_state(err).unwrap_or(match err.kind() {
         smb2::ErrorKind::GuestSessionRefused => VolumeConnection::GuestSessionRefused,
         _ => VolumeConnection::NeedsCredentials,
     })
 }
 
-/// A rebuilt session refused under "Always require SMB encryption": its own state, so the
-/// frontend stops a backoff that would only get the same answer (#966). Read by variant, since
-/// smb2 files it under `ErrorKind::Unsupported` beside `EncryptionUnavailable`.
-fn encryption_refusal_state(err: &smb2::Error) -> Option<VolumeConnection> {
-    matches!(err, smb2::Error::EncryptionRequired).then_some(VolumeConnection::EncryptionRequired)
+/// A rebuilt session the backend couldn't use, whatever the credentials: its own state, so the
+/// frontend stops a backoff that would only get the same answer. "Always require SMB encryption"
+/// refused it (#966), the server didn't confirm the negotiation, or its share only accepts
+/// encryption the session agreed on no way to do (#931). The two encryption ones by variant,
+/// since smb2 files both under `ErrorKind::Unsupported`.
+fn session_refusal_state(err: &smb2::Error) -> Option<VolumeConnection> {
+    match err {
+        smb2::Error::EncryptionRequired => Some(VolumeConnection::EncryptionRequired),
+        smb2::Error::EncryptionUnavailable { .. } => Some(VolumeConnection::EncryptionUnavailable),
+        _ if err.kind() == smb2::ErrorKind::NegotiateValidationFailed => Some(VolumeConnection::NegotiationInvalid),
+        _ => None,
+    }
 }
 
 impl SmbVolumeInner {
+    /// A rebuilt session refused for a tampering signal (an unconfirmed negotiation) reaches the
+    /// security record like a refused reply does: a session build never passes the error funnel.
+    fn report_reconnect_refusal(&self, err: &smb2::Error) {
+        super::session::report_security_refusal(&self.host, &self.volume_id, err);
+    }
+
     /// Cancels the existing watcher task (if any). The watcher exits on its
     /// next `select!` iteration. Best-effort: if the watcher already exited on
     /// a connection error, the send is a no-op.
@@ -221,6 +234,7 @@ impl SmbVolumeInner {
                                 // saved no longer works. Tell the FE so it shows a
                                 // "Sign in" prompt instead of the generic "unreachable".
                                 self.emit_state_change_for_id(credentials_refusal_state(&e2));
+                                self.report_reconnect_refusal(&e2);
                                 return Err(map_smb_error(e2, &share_root));
                             }
                         }
@@ -232,6 +246,7 @@ impl SmbVolumeInner {
                             LogPrivate::volume(&self.share_name)
                         );
                         self.emit_state_change_for_id(credentials_refusal_state(&err));
+                        self.report_reconnect_refusal(&err);
                         return Err(map_smb_error(err, &share_root));
                     }
                 }
@@ -242,9 +257,10 @@ impl SmbVolumeInner {
                     LogPrivate::volume(&self.share_name),
                     e
                 );
-                if let Some(state) = encryption_refusal_state(&e) {
+                if let Some(state) = session_refusal_state(&e) {
                     self.emit_state_change_for_id(state);
                 }
+                self.report_reconnect_refusal(&e);
                 return Err(map_smb_error(e, &share_root));
             }
         };
@@ -378,12 +394,17 @@ pub(super) const WATCHER_DEATH_RECONNECT_BACKOFF: [Duration; 6] = [
 /// so only the user's "Sign in" (the FE flow) can fix it, and retrying risks
 /// locking the account. So is a session "Always require SMB encryption" refused
 /// (`EncryptionRequired`): the server answers the same until it or the setting
-/// changes, and the pane already says why. Everything else (network down, timeout,
-/// server rebooting) is transient.
+/// changes, and the pane already says why. So are a negotiation the server didn't
+/// confirm (`NegotiationInvalid`) and a share whose encryption the session couldn't
+/// agree on (`EncryptionUnavailable`), for the same reason (#931). Everything else
+/// (network down, timeout, server rebooting) is transient.
 fn reconnect_backoff_should_give_up(err: &VolumeError) -> bool {
     matches!(
         err,
-        VolumeError::PermissionDenied { .. } | VolumeError::EncryptionRequired(_)
+        VolumeError::PermissionDenied { .. }
+            | VolumeError::EncryptionRequired(_)
+            | VolumeError::NegotiationInvalid(_)
+            | VolumeError::EncryptionUnavailable(_)
     )
 }
 

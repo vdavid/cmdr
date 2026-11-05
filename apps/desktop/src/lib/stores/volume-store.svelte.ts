@@ -239,6 +239,11 @@ export function toConnectionState(state: VolumeConnection): ConnectionState {
     // nothing short of the server or the setting changing brings it back. The pane says why.
     case 'encryption_required':
       return 'disconnected'
+    // Likewise a server that didn't confirm the negotiation, or a share whose encryption the
+    // session couldn't agree on (#931).
+    case 'negotiation_invalid':
+    case 'encryption_unavailable':
+      return 'disconnected'
   }
 }
 

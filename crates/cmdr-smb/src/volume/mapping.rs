@@ -145,6 +145,10 @@ pub(super) fn map_smb_error(err: smb2::Error, path: &str) -> VolumeError {
     if matches!(err, smb2::Error::EncryptionRequired) {
         return VolumeError::EncryptionRequired(path.to_string());
     }
+    // The share's own requirement, under the same `Unsupported` kind, so by variant too (#931).
+    if matches!(err, smb2::Error::EncryptionUnavailable { .. }) {
+        return VolumeError::EncryptionUnavailable(path.to_string());
+    }
 
     match err.kind() {
         ErrorKind::NotFound => VolumeError::NotFound(path.to_string()),
@@ -176,6 +180,9 @@ pub(super) fn map_smb_error(err: smb2::Error, path: &str) -> VolumeError {
         ErrorKind::InvalidName => VolumeError::InvalidName(err.to_string().into()),
         // Typed, never an `IoError`: a refused reply isn't a transport blip to retry.
         ErrorKind::SignatureInvalid => VolumeError::SignatureInvalid(err.to_string().into()),
+        // The same: a negotiation the server didn't confirm isn't a blip, and asking again asks the
+        // same server (#931).
+        ErrorKind::NegotiateValidationFailed => VolumeError::NegotiationInvalid(err.to_string().into()),
         _ => VolumeError::IoError {
             raw_os_error: local_errno(&err),
             message: err.to_string().into(),

@@ -121,6 +121,10 @@ pub(crate) enum Settled {
     /// "Always require SMB encryption" is on, and the server can't encrypt, so Cmdr refused the
     /// session.
     EncryptionRequired,
+    /// The server didn't confirm the security settings it agreed on, so Cmdr closed the session.
+    NegotiationInvalid,
+    /// The share only accepts encrypted connections, and the session agreed on no way to encrypt.
+    EncryptionUnavailable,
     StillReconnecting,
 }
 
@@ -211,6 +215,14 @@ async fn connect(ports: &impl ConnectPorts, asked: &str) -> ConnectAnswer {
                 },
                 Settled::EncryptionRequired => ConnectAnswer {
                     reason: Some("encryption_required"),
+                    ..ConnectAnswer::of(ConnectOutcome::Rejected)
+                },
+                Settled::NegotiationInvalid => ConnectAnswer {
+                    reason: Some("negotiation_invalid"),
+                    ..ConnectAnswer::of(ConnectOutcome::Rejected)
+                },
+                Settled::EncryptionUnavailable => ConnectAnswer {
+                    reason: Some("encryption_unavailable"),
                     ..ConnectAnswer::of(ConnectOutcome::Rejected)
                 },
                 Settled::StillReconnecting => ConnectAnswer::of(ConnectOutcome::StillReconnecting),
@@ -350,6 +362,8 @@ pub(crate) async fn settle(
                     VolumeConnection::NeedsHostKeyApproval => return Settled::NeedsApproval,
                     VolumeConnection::GuestSessionRefused => return Settled::Refused,
                     VolumeConnection::EncryptionRequired => return Settled::EncryptionRequired,
+                    VolumeConnection::NegotiationInvalid => return Settled::NegotiationInvalid,
+                    VolumeConnection::EncryptionUnavailable => return Settled::EncryptionUnavailable,
                     // An attempt that didn't land; the cycle tries again.
                     VolumeConnection::Disconnected => {}
                 },
