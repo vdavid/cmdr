@@ -168,10 +168,10 @@ failed, so a red run lists every failure, like the four separate jobs it replace
 
 **It runs on `ubuntu-latest` by default, and the self-hosted `cmdr-light` runner is a one-line flip** (§ the runner
 bullets below). Hosted wins because the box runs one job at a time on 1.5 cores: measured there (throwaway PRs
-#971–#973, 2026-11-05), a docs-only PR's light job took 61 s against 40 s hosted, a Go-only PR's 174 s, and an
-API-server-only PR's 145 s, and three PRs pushed together queued behind each other (the Go probe waited 110 s, the API
-one ~4 min). With several agents' PRs in flight, that serializes every light job, the opposite of what the box was for.
-The box only beats hosted when hosted runners queue, which these runs didn't measure.
+#971–#973, 2026-11-05), a docs-only PR's light job took 61 s (63 s on hosted the same day, PR #974), a Go-only PR's 174
+s, and an API-server-only PR's 145 s, and three PRs pushed together queued behind each other (the Go probe waited 110 s,
+the API one ~4 min). So it's no faster per job, and with several agents' PRs in flight it serializes every light job,
+the opposite of what the box was for. It would only win while hosted runners queue, which these runs didn't measure.
 
 - **Repo hygiene, on every change**: the checks whose inputs no per-app filter can cover. `oxfmt` formats the whole
   monorepo (before hygiene ran on every change, a docs-only commit ran zero CI, so unformatted markdown could land on
