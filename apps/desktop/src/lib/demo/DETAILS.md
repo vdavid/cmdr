@@ -112,11 +112,38 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   Esc, and its "Edit shortcuts" link opens Settings at that section as a second panel (a child window opening another
   through the shared backend).
 - The production CSP (`apps/website/nginx-demo-security-headers.conf`) needs `frame-src 'self'` for the panels: any
-  stricter `frame-src` blocks their iframes.
+  stricter `frame-src` blocks their iframes. It also needs `blob:` there for a PDF (§ Viewer media).
 - Known gap: clicking the main window while a panel is open moves DOM focus there but sends no `tauri://focus` /
   `tauri://blur`, and the panel stays on top (on desktop, main would become key and come forward). Fixing it means
   listening for `focusin` outside the panels and lowering them; nothing in the app reacts badly to the missing events
   today.
+
+## Viewer media
+
+- A picture or PDF opens in the viewer's media mode (0) only when the engine's sniff sees its real bytes; on the
+  generated filler it opens as text, with modes 1–3 alone. The bytes come from `demo-contents.ts`, which `fetch`es each
+  asset by its Vite URL.
+- Gotcha: Vite inlines an asset under 4 KB as a `data:` URL, and the demo's CSP (`connect-src 'self'`) refuses to fetch
+  one, so the 583-byte sample PDF silently fell back to filler. Every media import is `?url&no-inline`, pinned by
+  `demo-contents.test.ts` (vitest never inlines, so it reads the imports' queries).
+- The page hands the engine's bytes to `<embed>` as a `blob:` URL (`backend.ts`'s `mediaUrl`), so the browser's own PDF
+  viewer draws it. Chrome's viewer needs `blob:` in `frame-src` besides `object-src`; Firefox's pdf.js needs only
+  `object-src`.
+- Verified against `pnpm build:demo` served with the production CSP (2026-11-05): F3 on `Documents/Annual report.pdf`
+  offers PDF (0) and renders the page in Chrome 156 and Firefox 157 (Playwright's, with `pdfjs.disabled` off: it ships
+  pdf.js disabled); headless Chromium has no PDF viewer, so it shows "Couldn't load plugin" there.
+
+## Light and dark
+
+- On desktop, `setTheme` (`plugin:app|set_app_theme`, `settings-applier.ts`'s `applyTheme`) sets the window's appearance
+  and WebKit's `prefers-color-scheme` follows, so every `@media` rule and `matchMedia` query switches. A page can't set
+  `prefers-color-scheme`, so the backend keeps the theme and pins it in every webview (`DemoWebview.setTheme`, also on
+  attach, so a panel opened later starts on it), and `color-scheme.ts` pins the query in that frame: each `@media` rule
+  naming the feature gets an always-true or always-false condition instead (new stylesheets too, through a
+  `MutationObserver`), `matchMedia` answers scheme queries with a list that fires `change` on a flip, and `:root` gets
+  `color-scheme`. System (`null`) puts the rules back, so the browser follows the OS live.
+- Verified in headless Chromium against `pnpm build:demo` (2026-11-05): Dark and Light from Settings repaint the main
+  window, the Settings panel, the menu bar, and the lights; System with the OS flipped to dark follows it.
 
 ## The menu bar
 
@@ -401,3 +428,8 @@ self-drag identity, and the real transfer dialog on the in-browser write engine.
   the desktop default stays so; the seed is the demo's only lever. Settings still offers "System theme color", which in
   the demo is the virtual Mac's accent, the blue `getAccentColor` answers. Since the seed differs from the registry
   default, App color shows its reset arrow, and reset picks that blue.
+- `plugins.ts` also seeds a 125% zoom (`appearance.textSize`, the app's own zoom setting): a browser tab is smaller than
+  the Mac display the 100% default suits. Settings shows 125% with its reset arrow.
+- The viewer and the queue read those seeds too: `getRestrictedWindowSettings` answers from the same `settings.json`
+  store (`restrictedWindowSettings`), as the desktop's loader reads the file. Unanswered, they ran on the registry
+  defaults (100%, the system color).

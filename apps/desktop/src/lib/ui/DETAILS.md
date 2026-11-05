@@ -1509,7 +1509,8 @@ Centralized toast notifications with stacking, levels, and two dismissal modes.
   plain `string`. Optional `id` for dedup (replace in place, which also re-stamps `postedAt`). Max 5 visible.
 - **Container** (`ToastContainer.svelte`): Mounted once in `(main)/+layout.svelte`, always (empty while no toast is up).
   Fixed top-right, stacks vertically, with the two live regions beside it. Reads "Keep notifications until I close
-  them".
+  them". The top stack starts below the status corner's measured bottom (`--titlebar-status-corner-bottom`,
+  `lib/status-corner/DETAILS.md` § Layout model), so no toast covers the copy's progress chip.
 - **Item** (`ToastItem.svelte`): Frame (a `role="group"` named by what it says), level icon, close button, age label,
   auto-dismiss timer for transient toasts.
 - **Speech** (`toast-speech.ts`), **keyboard reach** (`toast-focus.ts`), and **placement** (`toast-placement.ts`): the

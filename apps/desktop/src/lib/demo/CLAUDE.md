@@ -11,7 +11,7 @@ lands in a typed answer here; the listing commands go to the real listing engine
   through WASM). `context-menu.ts`: right-click menus, same engine; both use `menu-surfaces.ts` and `menu-click.ts`.
   `traffic-lights.ts`: the window buttons, at the app's `trafficLightPosition`. `drag-regions.ts`: Tauri's `drag.js`,
   ported. `drag-session.ts`: the OS file drag, answering `start_drag_paths` with Tauri's drag-drop events (DETAILS §
-  Drag and drop).
+  Drag and drop). `color-scheme.ts`: `setTheme` per frame (DETAILS § Light and dark).
 - `answers.ts` (app commands), `volumes.ts`, `plugins.ts` (in-memory `plugin:store`, path, app), `opener.ts` (every
   external link opens in a new tab), `listing.ts` (routes to the WASM engine, loaded once by `engine-module.ts`, which
   answers the viewer too), `unanswered.ts` (`window.__cmdrDemo.unanswered`; an unanswered void resolves, any other

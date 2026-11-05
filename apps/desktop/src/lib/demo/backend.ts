@@ -5,6 +5,7 @@
  * the one Rust process. See `DETAILS.md` § Backend and webviews.
  */
 import type { AnswerTable, Payload } from './answer-types.js'
+import type { AppTheme } from './color-scheme.js'
 import { appAnswers, rawAnswers, silentCommands } from './answers.js'
 import { startListingEngine, type ListingEngineHandle } from './listing.js'
 import { createContextMenuHost, type ContextMenuHost } from './context-menu.js'
@@ -36,6 +37,8 @@ export interface InvokeOrigin {
 export interface DemoWebview {
   label: string
   deliver(event: string, payload: unknown, target: EventTarget): void
+  /** Pins this window's appearance: `setTheme` is app-wide, as on desktop. */
+  setTheme(theme: AppTheme): void
 }
 
 export interface DemoBackend {
@@ -93,6 +96,14 @@ export function createDemoBackend(): DemoBackend {
     const url = URL.createObjectURL(new Blob([body.bytes.slice()], { type: body.mime }))
     mediaUrls.set(token, url)
     return url
+  }
+
+  // The app's appearance (`setTheme`), for every window, and for a window that opens later.
+  let theme: AppTheme = null
+  function setAppTheme(payload: Payload): null {
+    theme = payload.theme === 'light' || payload.theme === 'dark' ? payload.theme : null
+    for (const webview of webviews) webview.setTheme(theme)
+    return null
   }
 
   function emit(event: string, payload: unknown, target: EventTarget): void {
@@ -153,6 +164,7 @@ export function createDemoBackend(): DemoBackend {
 
   async function invoke(cmd: string, payload: Payload, origin?: InvokeOrigin): Promise<unknown> {
     if (cmd === 'open_path' && (await openInViewer(payload))) return null
+    if (cmd === 'plugin:app|set_app_theme') return setAppTheme(payload)
     const handler =
       drags.handler(cmd) ?? windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]
     if (handler) return handler(payload)
@@ -170,6 +182,7 @@ export function createDemoBackend(): DemoBackend {
     mediaUrl,
     attach(webview) {
       webviews.add(webview)
+      webview.setTheme(theme)
       return () => webviews.delete(webview)
     },
   }

@@ -165,8 +165,20 @@ test.describe('Browser demo', () => {
       await page.keyboard.press('F5')
       await confirmTransfer(page, 'Copy')
       await page.getByRole('button', { name: /^Background\b/ }).click()
+      // Regression: at the demo's 125% zoom, the "Still running in the background" toast covered the chip and took its
+      // click. The toast stack starts below the status corner's real box (`status-corner/toast-clearance.ts`).
+      const chip = page.getByRole('button', { name: /Open the operation queue/ })
+      const toast = page.locator('[data-toast-frame]').filter({ hasText: 'Still running in the background' })
+      await expect(toast).toBeVisible()
+      // Polled: the stack moves down a frame after the chip shows, when the corner's resize lands.
+      await expect
+        .poll(async () => {
+          const [chipBox, toastBox] = await Promise.all([chip.boundingBox(), toast.boundingBox()])
+          return chipBox && toastBox ? toastBox.y - (chipBox.y + chipBox.height) : -1
+        })
+        .toBeGreaterThanOrEqual(0)
       // The status corner's progress opens the queue, as in the app.
-      await page.getByRole('button', { name: /Open the operation queue/ }).click()
+      await chip.click()
       const queue = page.frameLocator('.cmdr-demo-window iframe')
       await expect(queue.getByText('Running', { exact: true })).toBeVisible({ timeout: 10_000 })
       await queue

@@ -550,6 +550,9 @@
      while a dialog is open. Windows with a taller bar (the viewer's toolbar)
      override this on their own root so their backdrops stay precise. */
   --titlebar-height: 29px;
+  /* The status corner's bottom edge in viewport px, which the main window's corner publishes on `:root` while it's
+     mounted (`lib/status-corner/toast-clearance.ts`) so the top toast stack starts below it. 0 in every other window. */
+  --titlebar-status-corner-bottom: 0px;
 
   /* === Z-index scale === */
   --z-base: 0;
