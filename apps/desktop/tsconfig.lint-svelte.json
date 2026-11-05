@@ -1,0 +1,10 @@
+{
+  // The type-aware program for ESLint's `.svelte` pass (`eslint.config.js`), and nothing else.
+  // svelte-eslint-parser hands typescript-eslint a virtual TS file per component, so each file
+  // rebuilds a type checker over the whole program. Leaving out the ~1,300 tests and `scripts/`
+  // (which no component imports) made that pass ~40% faster with the same findings:
+  // `docs/notes/performance/local-check-lanes-2026-11-05.md`.
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*.ts", "src/**/*.svelte", "test/fixtures/*.svelte"],
+  "exclude": ["src/**/*.test.ts"]
+}

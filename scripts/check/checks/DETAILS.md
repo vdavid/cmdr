@@ -2880,11 +2880,22 @@ stray cwd can't make `pnpm check` mean this one narrow pass instead of the root 
 projectService can never strip directives again. `apps/desktop` also has `"prepare": "svelte-kit sync"` so plain
 installs and IDE flows generate the file.
 
+**Decision**: the `.svelte` pass builds its type-aware program from `apps/desktop/tsconfig.lint-svelte.json` (`src` TS
+and components, no tests, no `scripts/`) through legacy `parserOptions.project`; the TS pass keeps `projectService` over
+`tsconfig.json`. **Why**: svelte-eslint-parser hands typescript-eslint a virtual TS file per component, which differs
+from disk, so every component rebuilds a type checker over the whole program, and half of `tsconfig.json`'s program is
+tests no component imports. `projectService` can't take a tsconfig per block. A planted cross-file
+`no-floating-promises` in a component is caught either way, and the whole tree's findings match
+(`docs/notes/performance/local-check-lanes-2026-11-05.md`). The cost: legacy `project` mode, which typescript-eslint
+still supports but no longer recommends. A `.svelte` file outside `src/` or `test/fixtures/` must join that `include`,
+or the pass fails on it.
+
 **Decision**: Clippy runs the enforcing pass (`-D warnings`) first, and only invokes `cargo clippy --fix` if that fails
 (and we're not in CI). **Why**: Running `--fix` speculatively before every check doubled wall time on the happy path (no
 warnings = no fix to apply). The enforcing pass is the one that actually decides pass/fail anyway, and `--fix` ignores
 `-D warnings` so it can't be combined into a single invocation. The trade is one extra re-check on the rare warning
-path; cuts ~50% off clippy in the common clean case.
+path; cuts ~50% off clippy in the common clean case. A red verdict only reaches `--fix` when it holds a
+machine-applicable suggestion: § "Clippy's fix pass runs only on a machine-fixable finding".
 
 **Decision**: `bindings-fresh` is hash-cached. **Why**: A naive `pnpm bindings:regen` on every invocation takes ~2 min
 for a test-mode compile of the full crate just to confirm the output didn't change. Instead, we hash every `.rs` file

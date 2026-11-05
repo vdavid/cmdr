@@ -142,6 +142,16 @@ function buildTsRules() {
 // projectService config: only enabled when type checking is needed.
 const projectServiceConfig = noTypecheck ? {} : { projectService: true, tsconfigRootDir: import.meta.dirname }
 
+// The `.svelte` pass's type-aware program: `tsconfig.lint-svelte.json`, which leaves out the tests
+// and `scripts/`. svelte-eslint-parser hands typescript-eslint a virtual TS file per component,
+// so EVERY component rebuilds a type checker over the whole program, and half of `tsconfig.json`'s
+// program is tests no component imports. Legacy `project` because `projectService` can't take a
+// tsconfig per block. Measured −40% on the pass, same findings:
+// `docs/notes/performance/local-check-lanes-2026-11-05.md`.
+const svelteProgramConfig = noTypecheck
+  ? {}
+  : { project: './tsconfig.lint-svelte.json', tsconfigRootDir: import.meta.dirname }
+
 export default tseslint.config(
   // The fast check skips type-aware rules, so eslint-disable comments targeting
   // those rules look "unused." Suppress that: the full (slow) run catches stale comments.
@@ -243,7 +253,7 @@ export default tseslint.config(
       parser: svelteParser,
       parserOptions: {
         parser: tseslint.parser,
-        ...projectServiceConfig,
+        ...svelteProgramConfig,
         extraFileExtensions: ['.svelte'],
       },
     },

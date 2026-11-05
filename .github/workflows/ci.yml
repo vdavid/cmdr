@@ -450,6 +450,7 @@ jobs:
               - 'apps/desktop/vitest.config.ts'
               - 'apps/desktop/eslint.config.js'
               - 'apps/desktop/tsconfig.json'
+              - 'apps/desktop/tsconfig.lint-svelte.json'
               - 'pnpm-lock.yaml'
               - 'scripts/check.sh'
               - 'scripts/check/**'

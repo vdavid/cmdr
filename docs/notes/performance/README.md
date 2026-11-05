@@ -256,7 +256,8 @@ Newest first.
 
 - `local-check-lanes-2026-11-05.md`: not the app but our own tooling: why `clippy`, `svelte-tests-related`, and the two
   type-aware ESLint lanes cost ~42 machine-hours of local `pnpm check` in 14 days (the vitest setup file's import
-  closure, a per-component type-checker rebuild, clippy's fix pass), with seven ranked cuts.
+  closure, a per-component type-checker rebuild, clippy's fix pass), with seven ranked cuts and the measured results of
+  the four that landed.
 - `malloc-large-cache-2026-11-03.md`: the `MallocLargeCache=0` experiment behind #864, search and listing throughput,
   burst and settle footprints, a restic visit both ways, the knob's tight-loop cost, and why `LSEnvironment` over a self
   re-exec. Raw numbers: `malloc-large-cache-2026-11-03-memory.csv` and `malloc-large-cache-2026-11-03-timings.csv`.

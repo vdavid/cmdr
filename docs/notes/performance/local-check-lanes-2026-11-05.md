@@ -210,29 +210,35 @@ Considered and not proposed:
 
 ## Results
 
-Measured in `worktree-agent-ad744b063f60c1fb9` on 2026-11-05, same Mac and tool versions as § Method, under heavy
-contention from other agents (load average 55–170), so wall times are inflated; the spec counts are exact.
+Measured in `worktree-agent-ad744b063f60c1fb9` on 2026-11-05, same Mac and tool versions as § Method, under contention
+from other agents (load average 12–170, given per run), so wall times compare only within a pair; the spec counts are
+exact.
 
-1. **Setup closure cut** (`installMessageRuntimeHooks`; guard: `apps/desktop/src/test-setup-closure.test.ts`).
-   - Closure: 185 modules (173 ours) before, 8 after (the setup file, the message runtime, its three locale helpers,
-     `startup-catalog.ts`, `display-path.ts`, and the layout shim).
-   - Every module of the old closure (172 by a static walk from `test-setup.ts`, the logger, and `#lib/settings`), fed
-     one at a time to Vitest's `related` selection: before, all 172 selected the full suite (1,392 spec files); after, 8
-     do (the new closure), and the median selects 425 (mean 507).
-   - Hubs: `ipc/bindings.ts` 1,392 → 691 spec files, `tauri-commands/index.ts` 1,392 → 392, `logging/logger.ts` 1,392 →
-     629, `settings/definitions/ai.ts` 1,392 → 485.
-   - Wall: the full suite took 311 s (load 55–120); `vitest related` for `settings/definitions/ai.ts` now runs 485 files
-     in 124 s (load 100 → 55). At the report's load 5–7 that's roughly 112 s → 40–45 s for a hub edit, and a leaf
-     formerly in the closure (most of `settings/`, `logging/`) now runs only its own tests.
-2. **Clippy fix gate** (`parseClippyJSON`, `scripts/check/checks/desktop-rust-clippy-json.go`).
-   - Planted an `#[allow(dead_code)]` with no reason in `cmdr-sort` (unfixable: `allow_attributes_without_reason`,
-     `items_after_test_module`) and timed `pnpm check clippy` on a warm tree: **379 s** with the old lane (load 119 →
-     33; `--fix`, the crate-root touch, and the re-verdict), **6 s** with the new one (load ~120), same diagnostics.
-   - The old run's crate-root touch then cost the next clippy a rebuild of every member; the new lane touches nothing on
-     this path.
-   - Warm no-op: 13 s total under load (`--message-format=json` reuses the cached plain verdict: cargo doesn't
-     fingerprint the message format).
-
+- **Cut 1, the setup closure** (`installMessageRuntimeHooks`; guard: `apps/desktop/src/test-setup-closure.test.ts`).
+  - Closure: 185 modules (173 ours) before, 8 after (the setup file, the message runtime, its three locale helpers,
+    `startup-catalog.ts`, `display-path.ts`, and the layout shim).
+  - Every module of the old closure (172 by a static walk from `test-setup.ts`, the logger, and `#lib/settings`), fed
+    one at a time to Vitest's `related` selection: before, all 172 selected the full suite (1,392 spec files); after, 8
+    do (the new closure), and the median selects 425 (mean 507).
+  - Hubs: `ipc/bindings.ts` 1,392 → 691 spec files, `tauri-commands/index.ts` 1,392 → 392, `logging/logger.ts` 1,392 →
+    629, `settings/definitions/ai.ts` 1,392 → 485.
+  - Wall: the full suite took 311 s (load 55–120); `vitest related` for `settings/definitions/ai.ts` now runs 485 files
+    in 124 s (load 100 → 55). A leaf formerly in the closure (most of `settings/`, `logging/`) now runs only its own
+    tests.
+- **Cut 2, a test-free program for the Svelte pass** (`apps/desktop/tsconfig.lint-svelte.json` via
+  `parserOptions.project`).
+  - Interleaved runs, load 14–56: `projectService` 205 s (load 31 → 56) and **108 s** (load 25 → 14); the lint program
+    **68 s** and **69 s** (load 49 → 25, 14 → 32). Parse 94 s → 53–54 s; rule time unchanged (~11–12 s). The fair pair
+    is 108 s → 68–69 s: **−37%**, on top of cut 4.
+  - Parity: zero findings either way on the whole tree (437 files, unused-directive reporting on), and a planted
+    cross-file `no-floating-promises` in a component (`setLocale('de')` unawaited) is reported by both.
+- **Cut 3, the clippy fix gate** (`parseClippyJSON`, `scripts/check/checks/desktop-rust-clippy-json.go`).
+  - Planted an `#[allow(dead_code)]` with no reason in `cmdr-sort` (unfixable: `allow_attributes_without_reason`,
+    `items_after_test_module`) and timed `pnpm check clippy` on a warm tree: **379 s** with the old lane (load 119 → 33;
+    `--fix`, the crate-root touch, and the re-verdict), **6 s** with the new one (load ~120), same diagnostics.
+  - A planted `needless_return` (machine-applicable) still takes the fix branch: rewritten, then green.
+  - The old run's crate-root touch then cost the next clippy a rebuild of every member; the new lane touches nothing on
+    this path. Warm no-op: 13 s under load (cargo doesn't fingerprint `--message-format`, so the cache is shared).
 - **Cut 4, `no-unsafe-enum-assignment` off** (`erasableSyntaxOnly` in `apps/desktop/tsconfig.json` bans enums;
   `MatchQuality` is an `as const` object; eight parameter-property constructors became plain fields).
   - Svelte pass, back to back at load 12–20: **141 s → 117 s** (−17%); rule time 30.6 s → 11.8 s, of which the enum rule
@@ -240,6 +246,7 @@ contention from other agents (load average 55–170), so wall times are inflated
   - TypeScript pass, back to back at load 12–20: 90 s → 97 s, rule time 59.0 s → 59.8 s: no measurable gain. The enum
     rule's 9.6 s was the checker's lazy work, which the next type-aware rule now pays (the caveat in § ESLint).
   - An earlier pair at load 60–130 (675 s → 205 s Svelte) swung with the load and isn't comparable.
+- **Cuts 2 + 4 together**: the Svelte pass went from ~141 s to ~69 s at comparable load (about −50%).
 - **Bug, catalog edits selected nothing** (`catalogReaderTargets`,
   `scripts/check/checks/desktop-svelte-tests-related.go`).
   - An edit to `intl/messages/en/common.json`: **0 → 46 spec files** (every `src/lib/intl/` test plus the parity,
