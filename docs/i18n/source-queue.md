@@ -21,3 +21,5 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   outside the plural, so sv's `one` branch reads `1 objekt … som de är`. Move the tail into both branches. (sv)
 - sv's `ai-lookup` ruling is `sökning`, the search word, which is the mix-up the `privacy-permission` / `ai-lookup` note
   in `concepts.json` warns about. (sv)
+- No `maker` concept: `commands.feedbackSend.description` ("the maker of Cmdr") came out masculine in de (`Macher`) and
+  fr (`créateur`); add a concept with a neutral-wording note, or reword around it. (de, fr)
