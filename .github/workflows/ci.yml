@@ -1007,13 +1007,14 @@ jobs:
         with:
           phase: restore
           go: 'true'
+          scorecard: 'true'
 
       - name: Install dependencies
         if: steps.cache.outputs.node-modules-hit != 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Build check tool
-        if: steps.cache.outputs.check-tool-hit != 'true' || steps.cache.outputs.go-hit != 'true'
+        if: steps.cache.outputs.check-tool-hit != 'true'
         run: go build -o check .
         working-directory: ./scripts/check
 
@@ -1022,7 +1023,12 @@ jobs:
         if: steps.cache.outputs.go-hit != 'true'
         continue-on-error: true
         run: |
-          ./scripts/check/check --ci --check scripts-go-vet,scripts-go-staticcheck,scripts-go-ineffassign,scripts-go-misspell,scripts-go-gocyclo,scripts-go-nilaway,scripts-go-deadcode,scorecard-local
+          ./scripts/check/check --ci --check scripts-go-vet,scripts-go-staticcheck,scripts-go-ineffassign,scripts-go-misspell,scripts-go-gocyclo,scripts-go-nilaway,scripts-go-deadcode
+
+      - name: Install scorecard
+        if: steps.cache.outputs.scorecard-hit != 'true'
+        continue-on-error: true
+        run: ./scripts/check/check --check scorecard-local --ci
 
       - name: Save the light lane caches
         if: ${{ !cancelled() }}
@@ -1030,9 +1036,11 @@ jobs:
         with:
           phase: save
           go: 'true'
+          scorecard: 'true'
           node-modules-hit: ${{ steps.cache.outputs.node-modules-hit }}
           check-tool-hit: ${{ steps.cache.outputs.check-tool-hit }}
           go-hit: ${{ steps.cache.outputs.go-hit }}
+          scorecard-hit: ${{ steps.cache.outputs.scorecard-hit }}
 
   # ===========================================
   # Drop superseded build caches on main
