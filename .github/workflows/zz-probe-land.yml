@@ -1,0 +1,34 @@
+name: Probe land mode
+run-name: >-
+  ${{ github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name != 'land' && 'IGNORED' ||
+  (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'land') && format('Light: {0}', github.event.pull_request.title) || '') }}
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+permissions:
+  contents: read
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      land: ${{ steps.m.outputs.land }}
+    steps:
+      - id: m
+        env:
+          LAND: ${{ contains(github.event.pull_request.labels.*.name, 'land') }}
+          ACTION: ${{ github.event.action }}
+          LABEL: ${{ github.event.label.name }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          echo "action=$ACTION label=$LABEL labels=$LABELS land=$LAND"
+          echo "land=$LAND" >>"$GITHUB_OUTPUT"
+          sleep 75
+  gate:
+    name: ${{ needs.a.outputs.land == 'true' && 'PROBE OK' || 'PROBE light' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: a
+    if: always()
+    steps:
+      - run: echo gate
