@@ -240,3 +240,9 @@ contention from other agents (load average 55–170), so wall times are inflated
   - TypeScript pass, back to back at load 12–20: 90 s → 97 s, rule time 59.0 s → 59.8 s: no measurable gain. The enum
     rule's 9.6 s was the checker's lazy work, which the next type-aware rule now pays (the caveat in § ESLint).
   - An earlier pair at load 60–130 (675 s → 205 s Svelte) swung with the load and isn't comparable.
+- **Bug, catalog edits selected nothing** (`catalogReaderTargets`,
+  `scripts/check/checks/desktop-svelte-tests-related.go`).
+  - An edit to `intl/messages/en/common.json`: **0 → 46 spec files** (every `src/lib/intl/` test plus the parity,
+    catalog-tooling, and settings-search tests that read catalogs), counted through Vitest's `related` selection.
+  - Found on the way: `vite-locale-catalogs.ts` and `i18n-catalog-lib.ts` are `vitest.config.ts` dependencies, so
+    passing either to `vitest related` selects the whole suite. The lane passes the reading tests instead.

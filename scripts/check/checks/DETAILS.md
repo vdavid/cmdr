@@ -3040,3 +3040,18 @@ or a lint with no machine fix, yet each paid `--fix` (167 s: cargo fix re-lints 
 forced re-verdict (61 s), and full-workspace rebuilds in the next Rust lanes (the touched crate roots).
 `docs/notes/performance/local-check-lanes-2026-11-05.md`. The message format isn't part of cargo's fingerprint, so the
 JSON verdict shares the warm cache with a plain one.
+
+## What `svelte-tests-related` selects
+
+The lane passes the branch's changed frontend files to `vitest related`, which walks Vite's module graph. Two edges of
+that graph decide most of its cost:
+
+- **A setup file's closure selects the whole suite.** Vitest runs every spec when a changed file is reachable from
+  `setupFiles`, so `src/test-setup.ts` must stay a near-leaf: `apps/desktop/src/test-setup-closure.test.ts` guards it,
+  and `apps/desktop/src/lib/intl/DETAILS.md` § Tests says how the message runtime stays out of the logger and settings.
+  A config dependency (anything `vitest.config.ts` imports, like `scripts/vite-locale-catalogs.ts`) also selects all.
+- **A catalog JSON is invisible to the walk**: catalogs reach the runtime through the `virtual:cmdr-catalog` plugin. So
+  when a file under `apps/desktop/src/lib/intl/messages/` changes, `catalogReaderTargets` adds the test files that read
+  catalogs: every test under `src/lib/intl/`, plus any test whose source names the catalog dir, the plugin's virtual
+  modules, or the two catalog loaders (46 spec files today). ❌ Never pass a loader itself: it's a config dependency. A
+  component test asserting English copy isn't selected; CI's full suite covers it.
