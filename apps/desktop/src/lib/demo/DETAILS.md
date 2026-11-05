@@ -428,3 +428,8 @@ self-drag identity, and the real transfer dialog on the in-browser write engine.
   the desktop default stays so; the seed is the demo's only lever. Settings still offers "System theme color", which in
   the demo is the virtual Mac's accent, the blue `getAccentColor` answers. Since the seed differs from the registry
   default, App color shows its reset arrow, and reset picks that blue.
+- `plugins.ts` also seeds a 125% zoom (`appearance.textSize`, the app's own zoom setting): a browser tab is smaller than
+  the Mac display the 100% default suits. Settings shows 125% with its reset arrow.
+- The viewer and the queue read those seeds too: `getRestrictedWindowSettings` answers from the same `settings.json`
+  store (`restrictedWindowSettings`), as the desktop's loader reads the file. Unanswered, they ran on the registry
+  defaults (100%, the system color).

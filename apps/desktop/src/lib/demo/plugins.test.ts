@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { browserSafeShortcuts } from './browser-shortcuts.js'
 import { DEMO_HOME } from './demo-tree.js'
-import { customShortcuts, pluginHandler } from './plugins.js'
+import { customShortcuts, pluginHandler, restrictedWindowSettings } from './plugins.js'
 
 /** Calls one plugin command, failing the test when the demo doesn't answer it. */
 function call(cmd: string, payload: Record<string, unknown> = {}): unknown {
@@ -27,6 +27,30 @@ describe('in-memory store plugin', () => {
   it('seeds Cmdr gold as the app color, so "System default" stays a choice in Settings', () => {
     const rid = load('settings.json')
     expect(call('plugin:store|get', { rid, key: 'appearance.appColor' })).toEqual(['cmdr-gold', true])
+  })
+
+  it('seeds a 125% zoom, through the app’s own text size setting', () => {
+    const rid = load('settings.json')
+    expect(call('plugin:store|get', { rid, key: 'appearance.textSize' })).toEqual([125, true])
+  })
+
+  it('answers the viewer’s settings snapshot from the store, as the desktop reads settings.json', () => {
+    // Regression: `get_restricted_window_settings` went unanswered, so the viewer and the queue ran on registry
+    // defaults (100% zoom, the system color) while the main window showed the seeds.
+    const rid = load('settings.json')
+    call('plugin:store|set', { rid, key: 'viewer.wordWrap', value: true })
+    call('plugin:store|set', { rid, key: 'appearance.language', value: 'hu' })
+    expect(restrictedWindowSettings()).toEqual({
+      viewerWordWrap: true,
+      viewerShowTextCursor: null,
+      fileViewerSuppressBinaryWarning: null,
+      appearanceTextSize: 125,
+      appearanceAppColor: 'cmdr-gold',
+      appearanceFileSizeFormat: null,
+      appearanceLanguage: 'hu',
+    })
+    call('plugin:store|delete', { rid, key: 'viewer.wordWrap' })
+    call('plugin:store|delete', { rid, key: 'appearance.language' })
   })
 
   it('seeds the browser-safe shortcuts as shortcut:<id> keys, as the shortcuts store reads them', () => {

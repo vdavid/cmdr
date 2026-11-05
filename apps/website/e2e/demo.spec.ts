@@ -165,6 +165,8 @@ test.describe('Browser demo', () => {
       await page.keyboard.press('F5')
       await confirmTransfer(page, 'Copy')
       await page.getByRole('button', { name: /^Background\b/ }).click()
+      // At the demo's 125% zoom the "Still running in the background" toast covers the status corner's chip.
+      await page.getByRole('button', { name: 'Dismiss notification' }).click()
       // The status corner's progress opens the queue, as in the app.
       await page.getByRole('button', { name: /Open the operation queue/ }).click()
       const queue = page.frameLocator('.cmdr-demo-window iframe')

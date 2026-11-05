@@ -5,6 +5,7 @@
  * writes, and the opener's `open_url` (a new browser tab, `opener.ts`). Commands about one webview's
  * own window live in `webview.ts`.
  */
+import type { RestrictedWindowSettings } from '#lib/ipc/bindings.js'
 import { browserSafeShortcuts } from './browser-shortcuts.js'
 import { DEMO_HOME } from './demo-tree.js'
 import { openInBrowserTab } from './opener.js'
@@ -19,6 +20,9 @@ const seeds: Record<string, Record<string, unknown>> = {
     // The demo shows Cmdr in its own color. "System default" stays in Settings and picks the
     // virtual Mac's accent, the blue `getAccentColor` answers.
     'appearance.appColor': 'cmdr-gold',
+    // A browser tab is usually smaller than a Mac's display at its default zoom, and the demo reads better a bit
+    // bigger. The app's own zoom setting, so Settings shows 125% and can take it back to 100%.
+    'appearance.textSize': 125,
   },
   // One `shortcut:<commandId>` key per customization, as `shortcuts-store.ts` reads them.
   'shortcuts.json': Object.fromEntries(
@@ -119,6 +123,36 @@ export function customShortcuts(): Record<string, string[]> {
     custom[key.slice('shortcut:'.length)] = value.filter((combo): combo is string => typeof combo === 'string')
   }
   return custom
+}
+
+/**
+ * The settings snapshot a restricted window (the viewer, the queue) starts on, read off `settings.json` the way the
+ * desktop's `parse_restricted_window_settings` reads the file: a key that isn't there, or holds the wrong type, is
+ * `null` (the registry default).
+ */
+export function restrictedWindowSettings(): RestrictedWindowSettings {
+  const entries = stores.get(storeFor('settings.json'))?.entries ?? new Map<string, unknown>()
+  const flag = (key: string) => {
+    const value = entries.get(key)
+    return typeof value === 'boolean' ? value : null
+  }
+  const number = (key: string) => {
+    const value = entries.get(key)
+    return typeof value === 'number' ? value : null
+  }
+  const text = (key: string) => {
+    const value = entries.get(key)
+    return typeof value === 'string' ? value : null
+  }
+  return {
+    viewerWordWrap: flag('viewer.wordWrap'),
+    viewerShowTextCursor: flag('viewer.showTextCursor'),
+    fileViewerSuppressBinaryWarning: flag('fileViewer.suppressBinaryWarning'),
+    appearanceTextSize: number('appearance.textSize'),
+    appearanceAppColor: text('appearance.appColor'),
+    appearanceFileSizeFormat: text('appearance.fileSizeFormat'),
+    appearanceLanguage: text('appearance.language'),
+  }
 }
 
 /** The backend's answer for a plugin command, or `undefined` for one it doesn't know. */
