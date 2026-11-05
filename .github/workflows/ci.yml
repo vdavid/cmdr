@@ -1036,6 +1036,10 @@ jobs:
           mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target
           df -h /
 
+      # No `restore-keys`, unlike the lane: this job runs only when the key has no entry, and
+      # building on an older entry carries every stale artifact in its `target/` and registry into
+      # the new save (nothing prunes them; the Linux Rust entry grew the same way, #981). Starting
+      # empty costs a cold build (~22 min) post-land, once per `Cargo.lock` change.
       - name: Cache Cargo + target (via host bind mounts into Docker)
         if: steps.decide.outputs.warm == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -1044,8 +1048,6 @@ jobs:
             /tmp/cmdr-docker-cache/cargo
             /tmp/cmdr-docker-cache/target
           key: ${{ runner.os }}-docker-e2e-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-docker-e2e-
 
       - name: Log in to the container registry
         if: steps.decide.outputs.warm == 'true'
@@ -1079,7 +1081,8 @@ jobs:
   #   before it (rust-cache hashes the rustc version and `CARGO*`/`RUST*` env into the key). On
   #   an exact hit (`cache-hit`) every build step skips and the post-step saves nothing, ~1 min.
   # - On a miss it runs the lane's compiling checks, so the save holds what the lane needs,
-  #   including the tools they install into `~/.cargo/bin`.
+  #   including the tools they install into `~/.cargo/bin`. The Linux one builds from a clean
+  #   `target/` then (its step says why).
   warm-rust-cache:
     name: Warm Rust build cache (Linux)
     runs-on: ubuntu-latest
@@ -1106,6 +1109,8 @@ jobs:
       # Must match the lane's steps in `rust-lane.yml`.
       - name: Keep only the pinned Rust toolchain
         uses: ./.github/actions/pinned-rust-toolchain
+        with:
+          dependency-debuginfo: false # the `desktop-rust` entry's jobs all pass it (see the action)
 
       - name: Cache Rust build
         id: cache
@@ -1114,6 +1119,15 @@ jobs:
           shared-key: desktop-rust
           cache-on-failure: true
           save-if: ${{ env.SAVE_RUST_CACHE }}
+
+      # On a miss rust-cache restores the newest older entry, and its pre-save cleanup keeps every
+      # artifact of a dependency it still lists, whatever version or feature set built it. Building
+      # on top carried old builds into each new save: the entry reached 2.7 GB (12 GB unpacked, with
+      # three copies of some crates; measured 2026-11-05, #981). A clean `target/` saves only what
+      # this commit builds, for a slower post-land build on the pushes that change the key.
+      - name: Start the new entry from a clean target
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: rm -rf target
 
       # Even on a Rust cache hit: a PR reads only its own and `main`'s caches, so this is what
       # keeps a `main` entry of the action's `.deb` cache current for every PR's first run.

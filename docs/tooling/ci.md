@@ -259,6 +259,20 @@ silent** (a warning, not a red job):
   every 5 s, PR #593, 2026-10-20) and an unconditional reclaim cost ~1.5 min for nothing. But the `ubuntu-latest` fleet
   isn't uniform: a runner with a 72 GB disk (`/dev/nvme0n1p1`, image 20261101.64.1) ran `cargo test --no-run` out of
   space mid-link (run 41839837176, 2026-11-04). Both jobs end on `df -h /`.
+- **The `desktop-rust` entry stays lean two ways**, measured with cold builds of the cached set (clippy, rustdoc, test
+  binaries) in a throwaway run, tar+zstd after dropping workspace artifacts as rust-cache does (runs 42024754473 and
+  42028774426, 2026-11-05). The live entry was 2.7 GB (12 GB unpacked); a fresh one is ~1.7 GB, and ~1.1 GB without
+  dependency debuginfo:
+  - **Dependencies build without debuginfo** (`dependency-debuginfo: false` on the `pinned-rust-toolchain` action, in
+    every job that shares the entry). Dependency `.debug_*` sections were ~0.9 GB unpacked, mostly in proc-macro and
+    cdylib `.so`s. Workspace crates keep `Cargo.toml`'s line tables, so a test's backtrace still names our files and
+    lines; local builds are untouched. The action also sets `CARGO_CI_DEPENDENCY_DEBUGINFO`, the `CARGO*` env var that
+    gives these builds their own rust-cache key.
+  - **`warm-rust-cache` builds a new key from a clean `target/`.** On a miss rust-cache restores the newest older entry,
+    and its pre-save cleanup keeps every artifact of a dependency it still lists, whatever version or feature set built
+    it, so stale builds rode along into each new save (three copies of `tauri-plugin-mcp-bridge`'s 338 MB staticlib, for
+    one). The lane itself still builds on the older entry when it runs on `main`, which a landed PR's verified push
+    skips.
 - **The Rust caches save from `main` only** (`desktop-rust` and `desktop-rust-macos`; `SAVE_RUST_CACHE` at the top of
   `ci.yml` and restated in each lane file that saves one, which also gates the E2E target cache below). PR runs restore
   `main`'s entry and save nothing. When every PR saved its own ~1.7 GB entry, the repo sat at ~12 GB, LRU evicted
@@ -287,7 +301,9 @@ silent** (a warning, not a red job):
   `warm-e2e-linux-cache` job.** A PR restores only its own or `main`'s caches, and a verified `main` push skips the
   lane, so without it no main-scoped entry exists and every new PR's first run builds cold (4 of 9 PR runs on
   2026-10-19, #557). It runs post-land on `main`, rebuilds the E2E target cache only when the current key has no entry,
-  and is exempt from `ci-ok` (`ciOKGateExempt`). Its cache `path`s and key must stay identical to the lane's.
+  and is exempt from `ci-ok` (`ciOKGateExempt`). Its cache `path`s and key must stay identical to the lane's. It has no
+  `restore-keys`, so a new key's entry starts empty: nothing prunes `target/` or the registry, so building on the older
+  entry carried every stale artifact forward.
 - **The E2E base image is not an Actions cache.** It lives in GitHub's container registry, tagged by the hash of
   `Dockerfile.base`: the `e2e-base-image` job builds and pushes it only when the tag is missing, and `desktop-e2e-linux`
   (which needs that job) pulls it. As a cache entry it was the LRU victim whenever the repo went over budget, and the
@@ -307,20 +323,27 @@ silent** (a warning, not a red job):
   - apt's own 30-s connection timeout and retries.
 - **`slow-checks` dependency-checks**: rust-cache for cargo-udeps's nightly `target/`, plus the same "Free disk space"
   step. Kept alive by the 6-day cron (below).
+- **mise's tool cache saves from `main` only** (`cache_save` on every mise-action a PR reaches). Its key holds the
+  runner image (`ImageOS`) and the config hash, plus an `install_args` hash for the Go-only install in
+  `lane-markers-tool`, so one run touches up to four entries of ~0.1–0.3 GB each; a container job (the website lane's)
+  has no `ImageOS`, so mise files it under `self-hosted`. When PRs saved their own, PR #982 alone held 0.4 GB of mise
+  (2026-11-05). `prune-superseded-caches` keeps one `main` entry per variant.
 
 rust-cache keys per-job, so these are independent caches and each prunes itself. The shared risk is GitHub's **10 GB
-per-repo ceiling**. With the Rust and E2E target caches saved from `main` only, the steady state is about 6.4 GB
-(`gh cache list`, 2026-10-20, macOS entry from its last single-job save): `desktop-rust` ~1.7, `desktop-rust-macos`
-~1.4, `docker-e2e` ~1.15, the `slow-checks` udeps cache ~1.7 (estimate; it was evicted when measured), mise ~0.2 per OS,
-plus small scorecard and CodeQL entries. Per-PR saves are only mise (~0.17 GB each on macOS). Before this, every PR also
-saved ~1.7 GB of Rust and ~1.2 GB of E2E target, the repo sat at ~12 GB, and LRU evicted entries within minutes.
+per-repo ceiling**, and lane markers are the first LRU victims, since nothing ever restores one (#981). On 2026-11-05
+the repo sat at ~9.5 GB (`gh api repos/vdavid/cmdr/actions/caches`): `desktop-rust-macos` 3.6, `desktop-rust` 2.7,
+`light-go` 1.6, `docker-e2e` ~1.2, four mise entries ~0.9 between `main` and one PR, `light-*` `node_modules` 0.27, and
+the pnpm store 0.2. The fixes above put `desktop-rust` at ~1.1, `light-go` at ~0.23, and `light-node-modules` at ~0.19,
+and PRs no longer add mise. Every PR saves only its markers and the lane-markers tool (~2 MB). Before the Rust caches
+went main-only, every PR also saved ~1.7 GB of Rust and ~1.2 GB of E2E target, the repo sat at ~12 GB, and LRU evicted
+entries within minutes.
 
 **Load-bearing companion: the `prune-superseded-caches` job.** A new `Cargo.lock` gives each big entry a new key, and
 the old one lingers until 7 unused days pass, so two generations put the repo at ~11.5 GB (2026-10-22). Post-land on
 `main`, after every job that saves one, it keeps the most recently used `main` entry per family (`v0-rust-*`,
-`*-docker-e2e-*`, the light lane's `light-*`, and `pnpm-store-*`, the key minus its trailing hash parts) and deletes the
-rest. It's exempt from `ci-ok`. Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop
-under pressure.
+`*-docker-e2e-*`, the light lane's `light-*`, and `pnpm-store-*`, the key minus its trailing hash parts; for
+`mise-v1-*`, minus only the last one, since an `install_args` hash before it names a variant) and deletes the rest. It's
+exempt from `ci-ok`. Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop under pressure.
 
 **Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
 detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E is usually that floor. Measured

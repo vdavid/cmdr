@@ -1,7 +1,7 @@
 name: Keep only the pinned Rust toolchain
 description: >-
-  Installs the toolchain `rust-toolchain.toml` pins and uninstalls every other one the runner image ships. Run it right
-  before `Swatinem/rust-cache`.
+  Installs the toolchain `rust-toolchain.toml` pins and uninstalls every other one the runner image ships, and on
+  request builds dependencies without debuginfo. Run it right before `Swatinem/rust-cache`.
 
 # Why: rust-cache hashes the rustc version of EVERY installed toolchain into its key, and the
 # runner image preinstalls a `stable` of its own. While GitHub rolls a new image out, which takes
@@ -10,6 +10,15 @@ description: >-
 # `e3a6d410` on 2026-10-22). Each flip restored a partial match, recompiled for ~20 min, and saved
 # another ~1.8 GB entry, which kept the repo over its 10 GB cache budget. With only the pin left,
 # the key depends on `rust-toolchain.toml` alone. `docs/tooling/ci.md` § Build caching.
+inputs:
+  dependency-debuginfo:
+    description: >-
+      `false` builds every non-workspace crate without debuginfo (`[profile.dev.package."*"] debug = false` in
+      `$CARGO_HOME/config.toml`), which shrinks the cached `target/`. Workspace crates keep the line tables `Cargo.toml`
+      gives them, so a test's backtrace still names our files and lines. Every job sharing a rust-cache entry must pass
+      the same value, or its first build recompiles every dependency.
+    required: false
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -24,3 +33,19 @@ runs:
           rustup toolchain uninstall "$toolchain"
         done
         rustup toolchain list
+
+    # The profile lives in the runner's cargo config, so local builds keep dependency line tables.
+    # rust-cache keys on `CARGO*` env but not on that file, so the env var below is what gives this
+    # build its own key: without it, a hit on an entry built with debuginfo recompiles every
+    # dependency and never saves (an exact hit saves nothing).
+    - name: Build dependencies without debuginfo
+      if: inputs.dependency-debuginfo == 'false'
+      shell: bash
+      run: |
+        config="${CARGO_HOME:-$HOME/.cargo}/config.toml"
+        mkdir -p "$(dirname "$config")"
+        if ! grep -qF '[profile.dev.package."*"]' "$config" 2>/dev/null; then
+          printf '\n[profile.dev.package."*"]\ndebug = false\n' >>"$config"
+        fi
+        echo "CARGO_CI_DEPENDENCY_DEBUGINFO=false" >>"$GITHUB_ENV"
+        cat "$config"
