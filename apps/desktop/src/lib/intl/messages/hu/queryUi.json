@@ -627,11 +627,13 @@
   },
   "queryUi.date.preset.thisMonth": "{date} {time}",
   "@queryUi.date.preset.thisMonth": {
-    "sourceHash": "030ee23"
+    "sourceHash": "ed860a4",
+    "sameAsSourceJustification": "Placeholder-only: {date} arrives already worded by the Hungarian date formatter (május 1.), and {time} follows with a space, as in the sibling presets (tegnap {time})."
   },
   "queryUi.date.preset.lastMonth": "{date}, {time}",
   "@queryUi.date.preset.lastMonth": {
-    "sourceHash": "0838509"
+    "sourceHash": "1a88956",
+    "sameAsSourceJustification": "Placeholder-only: {date} arrives already worded with its year by the Hungarian date formatter (2026. április 1.); the comma before {time} is fine in Hungarian."
   },
   "queryUi.date.preset.yearStart": "{year}. január 1. {time}",
   "@queryUi.date.preset.yearStart": {

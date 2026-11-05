@@ -228,9 +228,9 @@
   "@licensing.dialog.validityExpiredOn": {
     "sourceHash": "f8383a3"
   },
-  "licensing.dialog.pendingHint": "Automatikusan ellenőrizzük a szerverrel {days} napon belül.",
+  "licensing.dialog.pendingHint": "Automatikusan ellenőrizzük a szerverrel {days, plural, one {# napon} other {# napon}} belül.",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "b4bbb38"
+    "sourceHash": "4ecbc26"
   },
   "licensing.dialog.useDifferentKey": "Másik kulcs használata",
   "@licensing.dialog.useDifferentKey": {
@@ -260,9 +260,9 @@
   "@licensing.dialog.inputPlaceholder": {
     "sourceHash": "3fb5cf9"
   },
-  "licensing.dialog.retryExhausted": "{count} alkalommal próbálkoztunk, és nem sikerült. Sajnáljuk a kellemetlenséget. Kérlek, írj nekünk ide: <supportEmail>{email}</supportEmail>, és megoldjuk.",
+  "licensing.dialog.retryExhausted": "{count, plural, one {# alkalommal} other {# alkalommal}} próbálkoztunk, és nem sikerült. Sajnáljuk a kellemetlenséget. Kérlek, írj nekünk ide: <supportEmail>{email}</supportEmail>, és megoldjuk.",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "d2aa21a"
+    "sourceHash": "9dc812f"
   },
   "licensing.dialog.serverInvalidHelp": "Ha úgy gondolod, hogy ez tévedés, írj nekünk ide: <supportEmail>{email}</supportEmail>, és megoldjuk.",
   "@licensing.dialog.serverInvalidHelp": {

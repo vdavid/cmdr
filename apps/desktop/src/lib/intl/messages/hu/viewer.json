@@ -47,9 +47,9 @@
   "@viewer.error.coldStorage": {
     "sourceHash": "236cd1b"
   },
-  "viewer.error.linkTargetUnreachable": "Ez a fájl egy másik szerverre mutató link mögött van, és a Cmdr most nem éri el azt a szervert. Ellenőrizd, hogy a szerver fut, aztán próbáld újra.",
+  "viewer.error.linkTargetUnreachable": "Ennek a fájlnak az útvonala egy másik szerverre mutató linken át vezet, és a Cmdr most nem éri el azt a szervert. Ellenőrizd, hogy a szerver fut, aztán próbáld újra.",
   "@viewer.error.linkTargetUnreachable": {
-    "sourceHash": "8dcb736"
+    "sourceHash": "0540c9a"
   },
   "viewer.error.retry": "Újra",
   "@viewer.error.retry": {

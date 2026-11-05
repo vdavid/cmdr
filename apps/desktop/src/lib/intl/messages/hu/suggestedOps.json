@@ -9,7 +9,7 @@
   },
   "suggestedOps.approvalNoticeDismiss": "Ne jelenjen meg többé",
   "@suggestedOps.approvalNoticeDismiss": {
-    "sourceHash": "2c23c21"
+    "sourceHash": "f6f62e0"
   },
   "suggestedOps.sweepWhen.justNow": "Javasolva: épp most",
   "@suggestedOps.sweepWhen.justNow": {
@@ -85,7 +85,8 @@
   },
   "suggestedOps.groupTitle": "<actionPart>{action}</actionPart> <titlePart>{title}</titlePart>",
   "@suggestedOps.groupTitle": {
-    "sourceHash": "201c1fc"
+    "sourceHash": "201c1fc",
+    "sameAsSourceJustification": "Tags and placeholders only: the action label is a nominal Hungarian label (Áthelyezés), so action-then-title reads as a label pair; Hungarian needs no other spacing or punctuation."
   },
   "suggestedOps.approve.move": "{countText} {count, plural, one {fájl} other {fájl}} áthelyezése",
   "@suggestedOps.approve.move": {
@@ -267,11 +268,11 @@
   "@suggestedOps.columnModified": {
     "sourceHash": "0fe1058"
   },
-  "suggestedOps.factUnknownSize": "Unknown",
+  "suggestedOps.factUnknownSize": "Ismeretlen",
   "@suggestedOps.factUnknownSize": {
     "sourceHash": "b764cdc"
   },
-  "suggestedOps.factUnknownDate": "Unknown",
+  "suggestedOps.factUnknownDate": "Ismeretlen",
   "@suggestedOps.factUnknownDate": {
     "sourceHash": "b764cdc"
   },

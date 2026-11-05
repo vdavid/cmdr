@@ -33,7 +33,7 @@
   },
   "stateRecovery.operationLog.title": "A Cmdr nem tudta beolvasni a műveletnaplódat, ezért a napló tiszta lappal indul",
   "@stateRecovery.operationLog.title": {
-    "sourceHash": "0bfa904"
+    "sourceHash": "e4e9fb0"
   },
   "stateRecovery.chatHistory.title": "A Cmdr nem tudta beolvasni az Ask Cmdr-csevegéseidet, ezért a csevegések listája üresen indul",
   "@stateRecovery.chatHistory.title": {

@@ -63,9 +63,9 @@
   "@transfer.durabilityUnconfirmedUnnamed": {
     "sourceHash": "20e5d33"
   },
-  "transfer.metadataLeftBehind": "Ez a szerver nem tud tárolni ilyen adatokat: {classes}. Ezért ezek nem kerültek át.",
+  "transfer.metadataLeftBehind": "Ez a célhely néhány adatot nem tud tárolni, ezért ezek nem kerültek át: {classes}.",
   "@transfer.metadataLeftBehind": {
-    "sourceHash": "e8c3789"
+    "sourceHash": "765024b"
   },
   "transfer.lockedSkipped": "{count, plural, one {{countText} zárolt elem a helyén maradt.} other {{countText} zárolt elem a helyén maradt.}}",
   "@transfer.lockedSkipped": {

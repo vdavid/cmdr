@@ -447,9 +447,9 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "af30f30"
   },
-  "errors.listing.couldntReadUnknown.explanation": "A Cmdr váratlan problémába ütközött ennek a beolvasásakor: `{path}`. Nézd meg lent a technikai részleteket a konkrét rendszerkódért, ami segíthet a hibakeresésben.",
+  "errors.listing.couldntReadUnknown.explanation": "A Cmdr váratlan problémába ütközött ennek a beolvasásakor: `{path}`. A konkrét rendszerkódot lent, a „Technikai részletek” alatt találod, ez segíthet a hibakeresésben.",
   "@errors.listing.couldntReadUnknown.explanation": {
-    "sourceHash": "80b9ff5"
+    "sourceHash": "bade4a7"
   },
   "errors.listing.couldntReadUnknown.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Lemezkezelő** appot, és futtasd az **Elsősegélyt** ezen a köteten",
   "@errors.listing.couldntReadUnknown.suggestion": {
@@ -591,9 +591,9 @@
   "@errors.listing.linkTargetUnreachable.title": {
     "sourceHash": "8aee94c"
   },
-  "errors.listing.linkTargetUnreachable.explanation": "`{path}` egy másik szerverre mutató link mögött van, és a Cmdr most nem éri el azt a szervert. A megosztás többi része rendben van, és semmi sem törlődött.",
+  "errors.listing.linkTargetUnreachable.explanation": "`{path}` egy másik szerverre mutató linken át vezet, és a Cmdr most nem éri el azt a szervert. A megosztás többi része rendben van, és semmi sem törlődött.",
   "@errors.listing.linkTargetUnreachable.explanation": {
-    "sourceHash": "394e1e8"
+    "sourceHash": "21089df"
   },
   "errors.listing.linkTargetUnreachable.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a másik szerver fut, és elérhető a hálózatodról\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.linkTargetUnreachable.suggestion": {
@@ -1485,9 +1485,9 @@
   "@errors.write.replySignatureRefused.title": {
     "sourceHash": "829a591"
   },
-  "errors.write.replySignatureRefused.message": "A szerver válaszán nem volt érvényes aláírás, ezért a Cmdr leállt.",
+  "errors.write.replySignatureRefused.message": "A szerver válaszán nem volt érvényes aláírás, ezért a Cmdr ezen a ponton leállította a műveletet.",
   "@errors.write.replySignatureRefused.message": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.write.replySignatureRefused.suggestion": "Ezt okozhatja egy rosszul működő hálózati eszköz, de az is, ha valaki beavatkozik a közted és a szerver közötti forgalomba. Csatlakoztasd újra, és ha ismét előfordul, ellenőrizd a hálózatodat.",
   "@errors.write.replySignatureRefused.suggestion": {
@@ -1889,9 +1889,9 @@
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
     "sourceHash": "a41f65a"
   },
-  "errors.write.readOnlyDevice.destination.fallbackName": "A céleszköz",
+  "errors.write.readOnlyDevice.destination.fallbackName": "A célhely",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
-    "sourceHash": "ef2429e"
+    "sourceHash": "0b0f2aa"
   },
   "errors.write.fileLocked.title": "A fájl zárolva van",
   "@errors.write.fileLocked.title": {
@@ -2221,9 +2221,9 @@
   "@errors.volume.notConnected": {
     "sourceHash": "e128225"
   },
-  "errors.volume.linkTargetUnreachable": "Ez a hely egy másik szerverre mutató link mögött van, és a Cmdr most nem éri el azt a szervert.",
+  "errors.volume.linkTargetUnreachable": "Ez az útvonal egy másik szerverre mutató linken át vezet, és a Cmdr most nem éri el azt a szervert.",
   "@errors.volume.linkTargetUnreachable": {
-    "sourceHash": "5bd2fe8"
+    "sourceHash": "27e854a"
   },
   "errors.volume.deviceSessionReset": "Az eszköz újraindította a kapcsolatot. Várj néhány másodpercet, majd próbáld újra.",
   "@errors.volume.deviceSessionReset": {
@@ -2237,9 +2237,9 @@
   "@errors.volume.storageFull": {
     "sourceHash": "1fcdb67"
   },
-  "errors.volume.connectionTimeout": "A kapcsolat nem válaszolt időben.",
+  "errors.volume.connectionTimeout": "A szerver vagy az eszköz nem válaszolt időben.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "f21c934"
+    "sourceHash": "82f94eb"
   },
   "errors.volume.cancelled": "A Cmdr a kérésedre leállította ezt a műveletet.",
   "@errors.volume.cancelled": {
@@ -2289,9 +2289,9 @@
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.signatureInvalid": "A szerver válaszán nem volt érvényes aláírás, ezért a Cmdr leállt.",
+  "errors.volume.signatureInvalid": "A szerver válaszán nem volt érvényes aláírás, ezért a Cmdr ezen a ponton leállította a műveletet.",
   "@errors.volume.signatureInvalid": {
-    "sourceHash": "299f4c3"
+    "sourceHash": "1247eaf"
   },
   "errors.volume.ioError": "A kötet nem tudta befejezni a műveletet.",
   "@errors.volume.ioError": {
@@ -2369,13 +2369,13 @@
   "@errors.eject.unmountRefused": {
     "sourceHash": "f855a33"
   },
-  "errors.eject.unmountRefusedByApp": "{app} még használ ott valamit. Zárd be az appot, majd próbáld újra.",
+  "errors.eject.unmountRefusedByApp": "{app} még használ ott valamit. Zárd be azt az appot, majd próbáld újra.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "6ccda65"
+    "sourceHash": "f44f710"
   },
   "errors.eject.unmountRefusedByApps": "{apps} még használnak ott valamit. Zárd be ezeket az appokat, majd próbáld újra.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "f46e410"
+    "sourceHash": "1a3c768"
   },
   "errors.eject.otherApps": "egyéb alkalmazások",
   "@errors.eject.otherApps": {
@@ -2545,17 +2545,17 @@
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.sourcesSpanVolumes.title": "A kijelölésed egy része egy nézeten belül van",
+  "errors.write.sourcesSpanVolumes.title": "A kijelölésed egy része biztonsági mentésben, archívumban vagy git-előzményekben van",
   "@errors.write.sourcesSpanVolumes.title": {
-    "sourceHash": "0dad5e0"
+    "sourceHash": "078417c"
   },
   "errors.write.sourcesSpanVolumes.message": "{path} egy biztonsági mentés pillanatképeiben, egy archívumban vagy egy repó előzményeiben van, a kijelölésed többi része viszont nem, ezért a Cmdr nem tudja együtt beolvasni őket. Semmi sem változott.",
   "@errors.write.sourcesSpanVolumes.message": {
     "sourceHash": "46a2988"
   },
-  "errors.write.sourcesSpanVolumes.suggestion": "Csináld két lépésben: előbb külön a nézeten belüli elemeket, aztán a többit.",
+  "errors.write.sourcesSpanVolumes.suggestion": "Csináld két lépésben: előbb külön azokat az elemeket, aztán a többit.",
   "@errors.write.sourcesSpanVolumes.suggestion": {
-    "sourceHash": "c2f9729"
+    "sourceHash": "322f8f7"
   },
   "errors.write.duplicateSourceNames.suggestion.move": "Helyezd át őket egyesével, vagy nevezd át az egyiket.",
   "@errors.write.duplicateSourceNames.suggestion.move": {

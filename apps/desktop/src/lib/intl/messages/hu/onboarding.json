@@ -75,9 +75,9 @@
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "Úgy tűnik, korábban elfogadtad a teljes lemezhozzáférést, de aztán visszavontad.",
+  "onboarding.stepFda.revoked.intro": "Úgy tűnik, korábban megadtad a teljes lemezhozzáférést, de aztán kikapcsoltad.",
   "@onboarding.stepFda.revoked.intro": {
-    "sourceHash": "9087914"
+    "sourceHash": "6759357"
   },
   "onboarding.stepFda.revoked.noAccess": "Az appnak jelenleg nincs teljes lemezhozzáférése.",
   "@onboarding.stepFda.revoked.noAccess": {
@@ -239,9 +239,9 @@
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "5cc5e7f"
   },
-  "onboarding.stepAi.table.renameWithout": "A Csoportos átnevezés eszközben kézzel állítasz be egy átnevezési mintát, aztán átnézed és alkalmazod.",
+  "onboarding.stepAi.table.renameWithout": "A Csoportos átnevezés eszközben kézzel állítasz be egy átnevezési mintát, aztán átnézed és alkalmazod a mintát.",
   "@onboarding.stepAi.table.renameWithout": {
-    "sourceHash": "e7531dc"
+    "sourceHash": "1b85bf6"
   },
   "onboarding.stepAi.table.renameWith": "Azt mondod: „adj ISO dátum-előtagot”, az ágens beállítja az átnevezési mintát, te pedig tetszés szerint átnézed és alkalmazod.",
   "@onboarding.stepAi.table.renameWith": {

@@ -166,9 +166,9 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Váltakozó sorárnyalás a könnyebb sorkövetéshez. Teljes és Rövid nézetmódban egyaránt érvényesül.",
+  "settings.listing.stripedRows.description": "Váltakozó sorárnyalás a könnyebb sorkövetéshez. A Teljes nézetre és a Rövid nézetre egyaránt érvényes.",
   "@settings.listing.stripedRows.description": {
-    "sourceHash": "e95776a"
+    "sourceHash": "15c8cef"
   },
   "settings.listing.stripedRows.keywords": "csík, csíkos, csíkozás, zebra, váltakozó, sor, sorok, árnyalás, sávozás, kisegítő lehetőségek",
   "@settings.listing.stripedRows.keywords": {
@@ -822,9 +822,9 @@
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
-  "settings.mediaIndex.networkVolumes.alwaysAria": "{name} fotói mindig legyenek indexelve",
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Ez a meghajtó mindig legyen indexelve: {name}",
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
-    "sourceHash": "10ee003"
+    "sourceHash": "187bf3d"
   },
   "settings.mediaIndex.networkVolumes.paused": "Szüneteltetve, folytatódik, amikor a meghajtó újra csatlakozik",
   "@settings.mediaIndex.networkVolumes.paused": {
@@ -942,9 +942,9 @@
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "További indexelt bejegyzések törlése",
+  "settings.mediaIndex.reclaim.confirmTitle": "Törlöd a további indexelt bejegyzéseket?",
   "@settings.mediaIndex.reclaim.confirmTitle": {
-    "sourceHash": "778e9c6"
+    "sourceHash": "185109a"
   },
   "settings.mediaIndex.reclaim.confirmBody": "Törlöd {doomed, plural, one {a további {doomedText} indexelt bejegyzést} other {a további {doomedText} indexelt bejegyzést}}, hogy kb. {size} szabaduljon fel? Ezeket a képeket később újraindexelheted, de az újraolvasásuk időbe telik.",
   "@settings.mediaIndex.reclaim.confirmBody": {
@@ -1091,9 +1091,9 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Legutóbbi letöltés billentyűparancsáról szóló kérdés elnyomása",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Ne kérdezzen rá újra a legutóbbi letöltés billentyűparancsára",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "sourceHash": "395a691"
+    "sourceHash": "10be1ae"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Amikor először nyomod meg a billentyűparancsot, amellyel bármelyik appból a legutóbbi letöltésedhez ugorhatsz, a Cmdr megkérdezi, bekapcsolva hagyod-e. A billentyűparancs módosítása ezt kikapcsolja, így az új kombinációra is rákérdez. Kapcsold ezt ki, hogy még egyszer lásd a kérdést.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
@@ -1242,7 +1242,7 @@
   },
   "settings.ai.reasoningEfforts.description": "Mennyi ideig gondolkodik a modell, mielőtt válaszol. Több gondolkodás segít a trükkös feladatoknál, de a válaszok lassabban érkeznek, és a gondolkodást kimenetként számlázzák.",
   "@settings.ai.reasoningEfforts.description": {
-    "sourceHash": "2c0938f"
+    "sourceHash": "0ad6737"
   },
   "settings.ai.reasoningEfforts.keywords": "érvelés mértéke, erőfeszítés, ráfordítás, érvelés, gondolkodás, gondolkodik, mélység, sebesség, költség, minőség",
   "@settings.ai.reasoningEfforts.keywords": {
@@ -1462,7 +1462,7 @@
   },
   "settings.fileExplorer.git.showStatusColumn.description": "Egy oszlopot ad hozzá, amely a fájlonkénti git státuszt (módosítva, nem követett stb.) mutatja Teljes nézetben.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
-    "sourceHash": "7ff07e4"
+    "sourceHash": "fc74b38"
   },
   "settings.fileExplorer.git.showStatusColumn.keywords": "állapot, státusz, oszlop, státuszoszlop, módosítva, nem követett, figyelmen kívül hagyva, hozzáadva, törölve",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
@@ -1761,13 +1761,13 @@
   "@settings.suggestedOps.suppressApprovalNotice.keywords": {
     "sourceHash": "ad9377a"
   },
-  "settings.fileOperations.showAlreadyGoneToast.label": "Jelzés, ha egy törölt elem már nem volt meg",
+  "settings.fileOperations.showAlreadyGoneToast.label": "Értesítés megjelenítése, ha egy törölt elem már nem volt meg",
   "@settings.fileOperations.showAlreadyGoneToast.label": {
-    "sourceHash": "3fd8c41"
+    "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Ha olyasmit törölsz, amit egy másik app már áthelyezett vagy törölt, a Cmdr késznek tekinti, és egy rövid üzenetben jelzi ezt. Kapcsold ki (vagy kattints az üzenet „Soha ne jelenjen meg újra” gombjára), és a Cmdr ezután kihagyja ezt az üzenetet.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "Ha olyasmit törölsz, amit egy másik app már áthelyezett vagy törölt, a Cmdr késznek tekinti, és egy rövid értesítésben jelzi ezt. Kapcsold ki ezt (vagy kattints az értesítés „Soha ne jelenjen meg újra” gombjára), hogy leállítsd ezeket az értesítéseket.",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "84abd5b"
+    "sourceHash": "9655e46"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "hiányzik, eltűnt, nincs meg, értesítés, buborék, figyelmeztetés, áthelyezve, törölve",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -2428,9 +2428,9 @@
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
-  "settings.askCmdr.cloudOffHint": "Az Ask Cmdr a felhő-AI-szolgáltatásodat használja. A csevegéshez engedélyezd a felhő-AI-t az AI-beállításokban.",
+  "settings.askCmdr.cloudOffHint": "Az Ask Cmdr a felhő-AI-szolgáltatásodat használja. A csevegéshez kapcsold be a „Felhő-AI engedélyezése” kapcsolót az AI-beállításokban.",
   "@settings.askCmdr.cloudOffHint": {
-    "sourceHash": "1d3ec5d"
+    "sourceHash": "ab62e7d"
   },
   "settings.askCmdr.openAiSettings": "AI-beállítások megnyitása",
   "@settings.askCmdr.openAiSettings": {
@@ -2940,25 +2940,25 @@
   "@settings.appearance.formatHelpYear": {
     "sourceHash": "467ff57"
   },
-  "settings.appearance.formatHelpMonth": "2 számjegyű hónap (01-12)",
+  "settings.appearance.formatHelpMonth": "2 számjegyű hónap (01–12)",
   "@settings.appearance.formatHelpMonth": {
-    "sourceHash": "b11b1a6"
+    "sourceHash": "af28e63"
   },
-  "settings.appearance.formatHelpDay": "2 számjegyű nap (01-31)",
+  "settings.appearance.formatHelpDay": "2 számjegyű nap (01–31)",
   "@settings.appearance.formatHelpDay": {
-    "sourceHash": "cb5c2d8"
+    "sourceHash": "a8934b5"
   },
-  "settings.appearance.formatHelpHour": "2 számjegyű óra (00-23)",
+  "settings.appearance.formatHelpHour": "2 számjegyű óra (00–23)",
   "@settings.appearance.formatHelpHour": {
-    "sourceHash": "01feb4d"
+    "sourceHash": "80741e8"
   },
-  "settings.appearance.formatHelpMinute": "2 számjegyű perc (00-59)",
+  "settings.appearance.formatHelpMinute": "2 számjegyű perc (00–59)",
   "@settings.appearance.formatHelpMinute": {
-    "sourceHash": "6dffd33"
+    "sourceHash": "3c1e170"
   },
-  "settings.appearance.formatHelpSecond": "2 számjegyű másodperc (00-59)",
+  "settings.appearance.formatHelpSecond": "2 számjegyű másodperc (00–59)",
   "@settings.appearance.formatHelpSecond": {
-    "sourceHash": "982834c"
+    "sourceHash": "b48a952"
   },
   "settings.appearance.tintGroupDescription": "Halvány háttérszínezést ad a paneleknek, hogy egy pillantással megkülönböztethesd a kötettípusokat.",
   "@settings.appearance.tintGroupDescription": {
@@ -3165,9 +3165,9 @@
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "a5708ab"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "A parancsot a Billentyűparancsok → Ugrás a legutóbbi letöltéshez (globális) alatt módosíthatod.",
+  "settings.fileSystemWatching.globalShortcutHint": "A billentyűparancsot itt módosíthatod: „Billentyűparancsok → Ugrás a legutóbbi letöltéshez”.",
   "@settings.fileSystemWatching.globalShortcutHint": {
-    "sourceHash": "1af3da4"
+    "sourceHash": "0020750"
   },
   "settings.network.localNetworkAccessLabel": "{localNetwork} hozzáférés",
   "@settings.network.localNetworkAccessLabel": {

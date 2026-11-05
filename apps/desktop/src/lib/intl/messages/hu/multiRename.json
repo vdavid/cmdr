@@ -171,9 +171,9 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "Már {max, number} előbeállításod van, ennél többet a Cmdr nem tárol. A mentéshez törölj egyet.",
+  "multiRename.presets.listFull": "Már {max, plural, one {# előbeállításod} other {# előbeállításod}} van, ennél többet a Cmdr nem tárol. A mentéshez törölj egyet.",
   "@multiRename.presets.listFull": {
-    "sourceHash": "36531ed"
+    "sourceHash": "83e7c8c"
   },
   "multiRename.presets.replace": "Csere",
   "@multiRename.presets.replace": {
@@ -223,13 +223,13 @@
   "@multiRename.status.unchanged": {
     "sourceHash": "41f9d57"
   },
-  "multiRename.status.duplicate": "Ugyanaz a név, mint egy másik fájlé",
+  "multiRename.status.duplicate": "Ugyanaz a név, mint egy másik elemé",
   "@multiRename.status.duplicate": {
-    "sourceHash": "ff0347b"
+    "sourceHash": "1066d4b"
   },
   "multiRename.status.targetExists": "A név már foglalt",
   "@multiRename.status.targetExists": {
-    "sourceHash": "629f53b"
+    "sourceHash": "58e9841"
   },
   "multiRename.status.invalidName": "Érvénytelen név",
   "@multiRename.status.invalidName": {
@@ -383,17 +383,17 @@
   "@multiRename.status.ready": {
     "sourceHash": "f032574"
   },
-  "multiRename.reason.duplicate": "A csoport egy másik fájlja is ugyanezt az új nevet kapná, ezért a Cmdr egyiket sem nevezi át.",
+  "multiRename.reason.duplicate": "A csoport egy másik eleme is ugyanezt az új nevet kapná, ezért a Cmdr egyiket sem nevezi át.",
   "@multiRename.reason.duplicate": {
-    "sourceHash": "de3e331"
+    "sourceHash": "044d085"
   },
-  "multiRename.reason.targetExists": "Egy ebben a mappában maradó fájlnak már ez a neve, ezért ez a fájl megtartja a nevét.",
+  "multiRename.reason.targetExists": "Egy ebben a mappában maradó elemnek már ez a neve, ezért ez az elem megtartja a nevét.",
   "@multiRename.reason.targetExists": {
-    "sourceHash": "2356c66"
+    "sourceHash": "20972b2"
   },
-  "multiRename.reason.missing": "Ezt a fájlt áthelyezték vagy törölték a Csoportos átnevezés megnyitása után, ezért kimarad.",
+  "multiRename.reason.missing": "Ezt az elemet áthelyezték vagy törölték a Csoportos átnevezés megnyitása után, ezért kimarad.",
   "@multiRename.reason.missing": {
-    "sourceHash": "8697aa3"
+    "sourceHash": "3fc93af"
   },
   "multiRename.status.reading": "Beolvasás…",
   "@multiRename.status.reading": {
@@ -403,13 +403,13 @@
   "@multiRename.status.noValue": {
     "sourceHash": "619464f"
   },
-  "multiRename.reason.noValue": "Ennek a fájlnak nincs „{field}” értéke, ezért megtartja a nevét.",
+  "multiRename.reason.noValue": "Ennek az elemnek nincs „{field}” értéke, ezért megtartja a nevét.",
   "@multiRename.reason.noValue": {
-    "sourceHash": "25d9a0f"
+    "sourceHash": "42ad290"
   },
-  "multiRename.reason.noDate": "Ennek a fájlnak nincs „{field}” értéke, ezért megtartja a nevét. A helyőrző szerkesztőjében helyette a fájl utolsó módosításának dátuma is használható.",
+  "multiRename.reason.noDate": "Ennek az elemnek nincs „{field}” értéke, ezért megtartja a nevét. A helyőrző szerkesztőjében helyette az elem utolsó módosításának dátuma is használható.",
   "@multiRename.reason.noDate": {
-    "sourceHash": "239bc84"
+    "sourceHash": "c097c5e"
   },
   "multiRename.status.unreadable": "Nem sikerült beolvasni a címkéket",
   "@multiRename.status.unreadable": {
@@ -633,9 +633,9 @@
   "@multiRename.selectionChanged": {
     "sourceHash": "357470f"
   },
-  "multiRename.swapsSkipped": "{count, plural, one {# átnevezés kihagyva, mert nevet cserélne egy másikkal. Ezt a fájlt egymagában nevezd át.} other {# átnevezés kihagyva, mert nevet cserélnének egymással. Ezeket a fájlokat egyenként nevezd át.}}",
+  "multiRename.swapsSkipped": "{count, plural, one {# átnevezés kihagyva, mert nevet cserélne egy másikkal. Ezt az elemet egymagában nevezd át.} other {# átnevezés kihagyva, mert nevet cserélnének egymással. Ezeket az elemeket egyenként nevezd át.}}",
   "@multiRename.swapsSkipped": {
-    "sourceHash": "49fb1cc"
+    "sourceHash": "abcdcce"
   },
   "multiRename.archiveTitle": "A Csoportos átnevezés nem működik archívumokban",
   "@multiRename.archiveTitle": {

@@ -146,7 +146,7 @@
   },
   "errorReporter.sentToast.message": "A hibajelentés elment. A hivatkozási azonosítód:",
   "@errorReporter.sentToast.message": {
-    "sourceHash": "75be6ba"
+    "sourceHash": "d1e9bfc"
   },
   "errorReporter.sentToast.dismiss": "Elvetés",
   "@errorReporter.sentToast.dismiss": {
@@ -162,7 +162,7 @@
   },
   "errorReporter.amendedToast.message": "A megjegyzésed bekerült a jelentésbe. A hivatkozási azonosítód:",
   "@errorReporter.amendedToast.message": {
-    "sourceHash": "5471d7f"
+    "sourceHash": "fc7535b"
   },
   "errorReporter.bundleSavedToast.message": "Csomag mentve lemezre",
   "@errorReporter.bundleSavedToast.message": {

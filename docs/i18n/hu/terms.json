@@ -4271,6 +4271,13 @@
     "confidence": "high",
     "sources": "catalog (fileOperations.transferDialog.sourceGroupTitle Forrás, targetGroupTitle Cél, scanPhase.fromLabel Innen:); Total Commander and Double Commander hu"
   },
+  "cold-storage": {
+    "chosen": "offline tárolás",
+    "forms": "the file-row state → Offline tárolásban; archived in cold storage → Archiválva, offline tárolásban",
+    "avoid": [{ "form": "Archivált", "why": "reads as the zip-archive or the archived-chat sense" }],
+    "confidence": "high",
+    "sources": "Microsoft terminology hu (cold storage → offline tárolás); catalog (fileExplorer.archivedFile.tooltip)"
+  },
   "unknown": {
     "chosen": "ismeretlen",
     "accept": ["Ismeretlen"],

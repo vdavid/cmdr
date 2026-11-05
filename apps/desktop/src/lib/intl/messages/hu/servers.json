@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Kattints jobb gombbal egy szerverre, és válaszd a „Rögzítés feloldása a kötetválasztóban” lehetőséget, vagy futtasd a parancspalettából ezt a parancsot: „{command}”. Továbbra is ott marad a Szerverek listában.",
   "@servers.pinHint.body": {
-    "sourceHash": "c2545d0"
+    "sourceHash": "d46e40b"
   },
   "servers.pinHint.gotIt": "Értem",
   "@servers.pinHint.gotIt": {
@@ -63,9 +63,9 @@
   "@servers.hub.status.waitingForKey": {
     "sourceHash": "f0a43e8"
   },
-  "servers.hub.neverUsed": "Soha",
+  "servers.hub.neverUsed": "Soha nem használt",
   "@servers.hub.neverUsed": {
-    "sourceHash": "6300ef8"
+    "sourceHash": "24d3236"
   },
   "servers.hub.shareAccount": "{username} felhasználóként",
   "@servers.hub.shareAccount": {
@@ -379,9 +379,9 @@
   "@servers.sheet.addAnyway": {
     "sourceHash": "d0652ad"
   },
-  "servers.sheet.addAnywayHelp": "A Cmdr nem tudta ellenőrizni ezt a szervert, ezért a Hozzáadás mindenképp gomb úgy menti el, ahogy beírtad.",
+  "servers.sheet.addAnywayHelp": "A Cmdr nem tudta ellenőrizni ezt a szervert, ezért a „Hozzáadás mindenképp” úgy menti el, ahogy beírtad.",
   "@servers.sheet.addAnywayHelp": {
-    "sourceHash": "3704aa5"
+    "sourceHash": "68e90b2"
   },
   "servers.sheet.ejectAndSave": "Kiadás és mentés",
   "@servers.sheet.ejectAndSave": {
@@ -527,9 +527,9 @@
   "@servers.sheet.nfsOtherGidsNotIds": {
     "sourceHash": "a67ce61"
   },
-  "servers.sheet.nfsOtherGidsTooMany": "Az NFS legfeljebb 16 további csoportot kezel, itt pedig {count} van felsorolva.",
+  "servers.sheet.nfsOtherGidsTooMany": "Az NFS legfeljebb 16 további csoportot küld, ez a lista viszont {count, plural, one {# csoportot} other {# csoportot}} tartalmaz.",
   "@servers.sheet.nfsOtherGidsTooMany": {
-    "sourceHash": "dc277f3"
+    "sourceHash": "01ae8c8"
   },
   "servers.sheet.nfsIdentityHelp": "A szerver e számok alapján dönti el, mit nyithatsz meg. Az NFS nem kér jelszót.",
   "@servers.sheet.nfsIdentityHelp": {
@@ -929,9 +929,9 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Állítsd le egyelőre a próbálkozást. A kapcsolat elérhető marad. Válts vissza az újrapróbáláshoz.",
+  "servers.paneState.cancelCycleTooltip": "Állítsd le egyelőre a próbálkozást. A kapcsolat elérhető marad; az újrapróbáláshoz nyisd meg újra a szervert.",
   "@servers.paneState.cancelCycleTooltip": {
-    "sourceHash": "377638b"
+    "sourceHash": "a55d414"
   },
   "servers.paneState.disconnectCycleTooltip": "Állítsd le a próbálkozást, és válj le a szerverről.",
   "@servers.paneState.disconnectCycleTooltip": {

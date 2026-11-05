@@ -87,9 +87,9 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, amikor csevegsz vele, vagy amikor magától kezd beszélgetést:",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, amikor csevegsz vele, vagy amikor a Cmdr magától kezd beszélgetést:",
   "@ai.cloudConsent.askCmdr.title": {
-    "sourceHash": "26e139c"
+    "sourceHash": "bd006c2"
   },
   "ai.cloudConsent.askCmdr.item.messages": "Az üzeneteid, köztük bármilyen jelszó, amit ott beírsz egy archívum vagy biztonsági mentés feloldásához",
   "@ai.cloudConsent.askCmdr.item.messages": {
@@ -159,9 +159,9 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Ha bekapcsolod az LLM-hívások naplózását a Speciális beállításokban, a Cmdr minden kérést és választ elment egy mappába a Mac-eden. Ezek a hívásnaplók helyben maradnak, a Cmdr sehova nem küldi el őket.",
+  "ai.cloudConsent.logsNote": "Ha bekapcsolod az „AI-modellhívások naplózása” beállítást a Speciális beállításokban, a Cmdr minden kérést és választ elment egy mappába a Mac-eden. Ezek a hívásnaplók helyben maradnak, a Cmdr sehova nem küldi el őket.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "d89adfb"
+    "sourceHash": "0178d1c"
   },
   "ai.cloudConsent.turnOffAnyTime": "Bármikor kikapcsolhatod, és a Cmdr azonnal abbahagyja a küldést. A szolgáltatásod, a kulcsod és a csevegéseid maradnak, ahogy vannak.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -223,9 +223,9 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Lehet, hogy a modellednek nagyobb keret kell ehhez. Próbálj egy gyorsabb modellt, például a gpt-4.1-mini-t itt: Beállítások > AI.",
+  "ai.translateError.emptyResponse.body": "Lehet, hogy a modelled elhasználta a tokenkeretét, mielőtt válaszolt volna. Próbálj egy gyorsabb modellt, például a gpt-4.1-mini-t itt: Beállítások > AI.",
   "@ai.translateError.emptyResponse.body": {
-    "sourceHash": "f1704cc"
+    "sourceHash": "d74db0d"
   },
   "ai.translateError.serverError.title": "Az AI-szolgáltatód problémába ütközött",
   "@ai.translateError.serverError.title": {
@@ -347,9 +347,9 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
-  "ai.cloud.timedOut": "A szerver nem válaszolt időben. Próbáld újra egy pillanat múlva.",
+  "ai.cloud.timedOut": "A szolgáltatás nem válaszolt időben. Próbáld újra egy pillanat múlva.",
   "@ai.cloud.timedOut": {
-    "sourceHash": "d6888fb"
+    "sourceHash": "fd562b8"
   },
   "ai.cloud.invalidEndpoint": "Ez a cím nem tűnik jónak. Használj teljes webcímet, https:// előtaggal.",
   "@ai.cloud.invalidEndpoint": {
