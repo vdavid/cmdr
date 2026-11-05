@@ -64,8 +64,9 @@ The claim a verified skip makes: "this lane passed, in a run we trust, on exactl
 - **An external store** (KV, D1): needs a secret that fork runs don't get and that every PR run would then hold.
 
 Caveats of the choice: markers are never restored (only listed), so under size pressure LRU evicts them first (they read
-as least recently used); that costs reruns, never correctness. `prune-superseded-caches` keeps only `v0-rust-*` and
-`*-docker-e2e-*` families, so it leaves `lane-green-*` alone; keep it that way.
+as least recently used); that costs reruns, never correctness. `prune-superseded-caches` prunes only the families its
+`case` names (`v0-rust-*`, `*-docker-e2e-*`, `light-*`, `pnpm-store-*`), so it leaves `lane-green-*` alone; keep it that
+way (every marker key is its own family's only member, so pruning would delete live markers).
 
 ## The one risk: a filter missing an input
 
@@ -90,12 +91,24 @@ with markers, the lane reruns only when a covered input differs from a passed se
 
 `match.go` mirrors the filter source of dorny/paths-filter v4.0.3 (its filter.ts, read 2026-11-05): picomatch with
 `{dot: true}`, a leading `!` inverting the matcher, and the three quantifiers (`some`, `every`, `some-with-excludes`,
-where an exclusion is final and excludes alone include nothing). The glob subset (`**` segments, `*`, `?`, literals) is
-pinned to picomatch 2.3.2's own verdicts in `TestGlobMatchesPicomatch` (dorny depends on `picomatch ^2.3.1`).
-Status-scoped rules (`added|modified: ...`) are refused: a tree has no change status. dorny matches changed paths and we
-match every tracked path, which is the same per-path predicate.
+where an exclusion is final and excludes alone include nothing). The glob subset (`**` segments, `*`, `?`, literals, and
+plain character classes like `[Dd]`, which the `scorecard` filter spells case-insensitive names with) is pinned to
+picomatch 2.3.2's own verdicts in `TestGlobMatchesPicomatch` and `TestClassGlobsMatchPicomatch` (dorny depends on
+`picomatch ^2.3.1`). Two picomatch quirks, found by probing it (`node`, picomatch 2.3.2, 2026-11-05):
+
+- A trailing `/**` matches the bare parent (`crates/**` matches `crates`) except after a segment ending in `*`
+  (`*[Ll][Ii][Cc][Ee][Nn][CcSs][Ee]*/**` doesn't match `LICENSE`). `matchSegsAfter` mirrors it.
+- A class also matches its own literal text (`[a]b` matches `[a]b`). Not mirrored: no tracked path spells out one of our
+  classes. Status-scoped rules (`added|modified: ...`) are refused: a tree has no change status. dorny matches changed
+  paths and we match every tracked path, which is the same per-path predicate.
 
 ## Wiring (per lane, and in `CI OK`)
+
+All six path-filtered lanes in `ci.yml` follow this (`docs/tooling/ci.md` § "Lane markers (skip a lane whose exact
+inputs already passed)" lists them). Go comes from `jdx/mise-action` with `install_args: go` in both `changes` and
+`CI OK`. The save is the `lane-marker` composite action (`.github/actions/lane-marker`), which refuses a key without the
+`lane-green-` prefix; a multi-job lane file (Svelte, website) saves from a `marker` job that `needs` every other job, so
+one green job can't vouch for another.
 
 `changes` job:
 
@@ -126,7 +139,7 @@ Each lane job:
 - Add a checkout, Go, `actions: read`, and after the existing jq gate a step running
   `go -C scripts/lane-markers run . verify -needs "$NEEDS" <the same context flags>` with `NEEDS: ${{ toJSON(needs) }}`.
   The existing gate still judges every lane that ran.
-- Keep `ci-coverage` rule 5 in step: it may need to learn that a lane's `if:` reads `needs.changes.outputs.lanes`.
+- `ci-coverage` rule 5 reads a lane's `if:` folded over several lines (`if: >-`), which the longer gate needs.
 
 Off CI, `go run . hash -files` lists each lane's key and input files at `HEAD`, which is how to answer "why did this
 lane run (or not)".

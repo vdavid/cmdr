@@ -1,0 +1,27 @@
+name: Rust test scope
+description: >-
+  Narrows the Rust test lanes to the crates a pull request can affect: sets `CMDR_RUST_TEST_SCOPE` for the rest of the
+  job from `check --print-rust-test-scope`, measured against the merge commit's first parent. Expects a checkout with
+  `fetch-depth: 2` on a pull request's merge ref, cargo, and the built check tool.
+
+# How the scope is computed and consumed, and why it's safe: `scripts/check/checks/DETAILS.md` § "The Rust test scope".
+# Callers use it on `pull_request` only, so a push, a dispatch, and `run_all` keep testing everything. Every
+# uncertainty widens: the flag itself prints `all` on any error, and a checkout without a parent (or with no merge
+# commit) sets `all` here.
+runs:
+  using: composite
+  steps:
+    - name: Compute the scope
+      shell: bash
+      run: |
+        if [[ "$(git rev-list --parents -n 1 HEAD | wc -w)" -ne 3 ]]; then
+          echo "::warning::HEAD isn't a two-parent merge commit, so every Rust test runs."
+          scope=all
+        else
+          base=$(git rev-parse HEAD^1)
+          echo "Measuring the change against the merge's first parent, $base."
+          scope=$(./scripts/check/check --print-rust-test-scope "$base")
+        fi
+        [[ -n "$scope" ]] || scope=all
+        echo "CMDR_RUST_TEST_SCOPE=$scope" >>"$GITHUB_ENV"
+        echo "Rust test scope: $scope"

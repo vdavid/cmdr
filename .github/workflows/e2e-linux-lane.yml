@@ -7,6 +7,11 @@ name: Linux E2E lane
 # `ci.yml` is and this file isn't. `docs/tooling/ci.md` § Lane files and § Build caching.
 on:
   workflow_call:
+    inputs:
+      marker-key:
+        description: The lane's marker key from `ci.yml`'s lane plan, saved by the last step once every step passed
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -146,3 +151,9 @@ jobs:
           path: /tmp/cmdr-e2e-stacks/
           if-no-files-found: warn
           retention-days: 7
+
+      # Last, with no `if:` (see `rust-lane.yml`). ❌ Nothing after it.
+      - name: Save the lane marker
+        uses: ./.github/actions/lane-marker
+        with:
+          key: ${{ inputs.marker-key }}

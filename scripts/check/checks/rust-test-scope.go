@@ -265,6 +265,8 @@ var rustTestScopeRules = []rustScopeRule{
 	{Glob: ".github/actions/pinned-rust-toolchain/**", Effect: scopeAll, Why: "a composite action the Rust lanes use (the compiler they build with)"},
 	{Glob: ".github/actions/tauri-linux-deps/**", Effect: scopeAll, Why: "a composite action the Rust lanes use (the system libraries they link)"},
 	{Glob: ".github/actions/wasm-toolchain/**", Effect: scopeAll, Why: "a composite action the Rust lanes use"},
+	{Glob: ".github/actions/rust-test-scope/**", Effect: scopeAll, Why: "computes this very scope in the Rust lanes"},
+	{Glob: ".github/actions/lane-marker/**", Effect: scopeNothing, Why: "saves the lane's marker after its last check; no test reads it"},
 	{Glob: "scripts/check/**", Effect: scopeAll, Why: "the check runner that builds and runs the tests, this scope logic included"},
 	{Glob: "scripts/check.sh", Effect: scopeAll, Why: "the check runner's entry point"},
 

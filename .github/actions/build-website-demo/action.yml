@@ -30,13 +30,11 @@ runs:
       with:
         save-cache: ${{ inputs.save-rust-cache }}
 
-    - name: Cache pnpm
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Restore only: the install below is filtered, so it mustn't save a partial store.
+    - name: Restore the pnpm store
+      uses: ./.github/actions/pnpm-store
       with:
-        path: ~/.pnpm-store
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-
+        phase: restore
 
     - name: Install dependencies
       shell: bash

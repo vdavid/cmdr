@@ -47,6 +47,10 @@ Rules the filter block follows (comments in `ci.yml` restate these next to the f
   to one lane's steps reruns that lane alone (§ Lane files).
 - **`.mise.toml` and `.github/workflows/ci.yml` are in every filter**: a toolchain bump or an edit to the orchestration
   can change any job's behavior, so everything reruns.
+- **The check runner (`scripts/check/**`, `scripts/check.sh`) is in every filter whose lane runs checks through it**
+  (the Rust lanes, `svelte`, `website`, `api-server`, `dashboard`, and `scripts`), minus its `_test.go` files, which
+  change no lane's behavior and run in the light lane's Go section. So a runner edit reruns those lanes; lane markers
+  hash the runner too.
 - **`pnpm-lock.yaml` is in every Node-based filter** so lockfile-only bumps (`pnpm dedupe`, transitive updates) still
   run the affected apps' checks.
 - **A filter that gates one light-lane check carries that check's whole fingerprint** (`termbase`, `changelog`,
@@ -69,7 +73,23 @@ lane. `scripts/lane-markers/` hashes each lane's exact inputs (its filters' matc
 local actions, the toolchain pins, the check runner); a lane that passes saves a `lane-green-<lane>-<hash>` Actions
 cache entry, a later PR run that finds it in a trusted scope skips the lane, and `CI OK` re-proves every such skip.
 Pushes, dispatches, and `run_all` ignore markers. Trust argument, store choice, the one risk (a filter missing an input)
-and its guards, and the per-lane wiring: `scripts/lane-markers/DETAILS.md`. No lane is wired to it yet.
+and its guards, and the per-lane wiring: `scripts/lane-markers/DETAILS.md`.
+
+The six path-filtered lanes are wired (`desktop-rust`, `desktop-rust-fixtures`, `desktop-rust-macos`, `desktop-svelte`,
+`desktop-e2e-linux`, `website`); the light lane isn't, since it gates on no filter. In `ci.yml`: `changes` plans
+(`lanes` output), each lane's `if:` adds `!fromJSON(needs.changes.outputs.lanes)['<id>'].verified` and passes its `.key`
+as `marker-key`, `e2e-base-image` follows the E2E lane's verdict, and `CI OK` runs `lane-markers verify` after its jq
+gate. In each lane file, the `lane-marker` action saves the key: as the last step of a one-job lane, or in a `marker`
+job that `needs` every other job of a multi-job lane (Svelte, website), so one green job can't vouch for another.
+
+### Rust test scope in the Rust lanes
+
+On a pull request, `desktop-rust`, `desktop-rust-fixtures`, and `desktop-rust-macos` run the `rust-test-scope` action
+after building the check tool: it measures the change against the merge commit's first parent (the checkout fetches two
+commits) and exports `CMDR_RUST_TEST_SCOPE`, so the suite runs only the crates the change can affect plus their
+dependents. A push, a dispatch, and `run_all` never set it and test everything. Every uncertainty widens to `all`. How
+the scope is computed and why it's safe: `scripts/check/checks/DETAILS.md` § "The Rust test scope". Its tests keep the
+Rust lane filters and the scope's rule table in step (every path the scope says a test reads starts a Rust lane).
 
 ## The registry ↔ CI contract (`ci-coverage`)
 
@@ -145,8 +165,12 @@ failed, so a red run lists every failure, like the four separate jobs it replace
   Then `changelog-security`, the docs checks, the translator-guide and unused-key scans, the cross-app guards, and the
   workflow guards (`workflows-hardening`, `workflows-rustup`, `ci-coverage`: the files they scan are no app's
   territory). Grouped a few per step: one invocation runs its checks in parallel.
-- **Per filter**: the Go checks (`scripts`, one invocation, so nilaway's ~1 min overlaps the rest), the API server
-  (`api-server`), and the dashboard (`dashboard`).
+- **Per filter**: the Go checks (`scripts`, one invocation, so they overlap), the API server (`api-server`), and the
+  dashboard (`dashboard`).
+- **nilaway runs in a job of its own on `ubuntu-latest`** (`nilaway`, gated on `scripts` or a full run): on the
+  self-hosted runner it passed 2.5 GB and kept growing against a 1.5 GB job budget. Its own job also takes it off the Go
+  section's critical path. It restores the check tool and the Go caches (nilaway's binary among them) and saves nothing.
+  The check fans out two modules at a time (`scripts/check/checks/DETAILS.md`).
 - **Three slow hygiene checks, per filter** (each filter carries the check's fingerprint, `ci-coverage` rule 7):
   `desktop-i18n-termbase` (~40 s) on `termbase`; `changelog-commit-links` on `changelog`, which alone needs history, so
   the lane fetches it (`git fetch --unshallow`) only then; `scorecard-local` on `scorecard`.
@@ -158,9 +182,23 @@ failed, so a red run lists every failure, like the four separate jobs it replace
   rename's old path included, has a binary or shell extension, a Dockerfile or `.github/` path, a shebang, or a NUL in
   its first 1,024 bytes. 3,000+ files (the API's cap) or a failed lookup runs it. A push or dispatch always runs it.
 - **The runner is an input** (`runs-on`, default `ubuntu-latest`). `ci.yml`'s top-level `LIGHT_LANE_RUNNER` is the one
-  switch: set it to `cmdr-light` and trusted runs go to the self-hosted runner. `changes`' runner step hands a fork PR
-  `ubuntu-latest` whatever the switch says (`head.repo.full_name != github.repository`), since a self-hosted runner
-  keeps state and sits on our network.
+  switch, set to `cmdr-light`: the self-hosted runner on David's Hetzner box (labels
+  `self-hosted, Linux, X64, cmdr-light`; its budget, containment, and how to pause it live with the `gha-runner` Ansible
+  role in David's private infra repo). Set it to `ubuntu-latest` to move the lane back.
+- **Only trusted runs reach that runner**, since it keeps state (its tool caches) between jobs. `changes`' runner step
+  is an allowlist: a push (only `main`), a dispatch (only collaborators can), or a pull request whose head is in this
+  repo and whose author isn't a bot gets `LIGHT_LANE_RUNNER`; everything else gets `ubuntu-latest`. So a fork PR, a
+  Renovate or Dependabot PR (third-party code a test run executes), and any trigger added later (`pull_request_target`,
+  which no workflow uses and `workflows-hardening` refuses, or `merge_group`) stay hosted. That guards against our own
+  workflow routing outside code there; a fork PR that edits `ci.yml` to name the label itself is stopped by the repo's
+  approval rule, which holds every outside contributor's run until David approves it (`fork-pr-contributor-approval` is
+  `all_external_contributors`, read with `gh api` on 2026-11-05).
+- **What changes on that runner** (`HOSTED` in `light-lane.yml`): `jdx/mise-action` gets `cache: false` and the
+  `node_modules` and Go cache restores skip, because the box keeps mise's tools, pnpm's store, and the Go caches between
+  jobs, pre-warmed from `main`; `pnpm install` links from the warm store. The small per-checkout entries (the check
+  tool, the scorecard binary) still restore, and nothing saves from there (it restored only part of the set), so
+  `warm-light-cache` runs after every `main` push whose light lane ran on the box. `GOFLAGS` adds `-modcacherw`, so the
+  box's disk cleanup can delete the module cache.
 
 **A PR whose head tree equals its base branch's skips it** (`changes`' `same-tree` step, pull requests only). That's a
 `pnpm land -record N` record (`docs/guides/handling-prs.md`): an `ours` merge that changes no file, only ancestry, so
@@ -182,6 +220,14 @@ Go checks' `go install`ed tools; restored only when the Go checks run), and the 
 later run, so scorecard was never cached; seen on the probe PR #964, 2026-11-05). They save from `main` only, like the
 Rust caches, and `warm-light-cache` fills them after a verified land. `GOFLAGS=-count=1` keeps test results out of the
 Go build cache, so `go test` always runs for real.
+
+**The pnpm store** (`.github/actions/pnpm-store`): the Svelte lane, the website lane, the demo build, the deploys, and
+`slow-checks` restore pnpm's store before `pnpm install`, at the path `pnpm store path` reports (pnpm 12 keeps it under
+`$XDG_DATA_HOME`; every job used to cache `~/.pnpm-store`, which didn't exist, so they cached nothing). Exact keys only,
+saved from `main` only, and only by a whole-workspace install (the Svelte lane's `checks`, the website's `site`, and
+`warm-light-cache`, which fills the host entry with `pnpm fetch`); the website's `site` job runs in a container with
+another `HOME`, so it has an entry of its own (`-container-` in the key). `prune-superseded-caches` keeps one per
+family.
 
 ## Build caching
 
@@ -258,8 +304,9 @@ saved ~1.7 GB of Rust and ~1.2 GB of E2E target, the repo sat at ~12 GB, and LRU
 **Load-bearing companion: the `prune-superseded-caches` job.** A new `Cargo.lock` gives each big entry a new key, and
 the old one lingers until 7 unused days pass, so two generations put the repo at ~11.5 GB (2026-10-22). Post-land on
 `main`, after every job that saves one, it keeps the most recently used `main` entry per family (`v0-rust-*`,
-`*-docker-e2e-*`, and the light lane's `light-*`, the key minus its trailing hash parts) and deletes the rest. It's
-exempt from `ci-ok`. Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop under pressure.
+`*-docker-e2e-*`, the light lane's `light-*`, and `pnpm-store-*`, the key minus its trailing hash parts) and deletes the
+rest. It's exempt from `ci-ok`. Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop
+under pressure.
 
 **Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
 detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E is usually that floor. Measured

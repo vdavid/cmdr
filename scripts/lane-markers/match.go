@@ -9,16 +9,39 @@ import (
 // (`{dot: true}`) and reads a leading `!` as a negation. We support the subset our filters use,
 // and refuse everything else so a new syntax fails loudly instead of matching differently from
 // dorny: `**` as a whole segment (zero or more segments), `*` (any run of characters within a
-// segment, dotfiles included), `?` (one character within a segment), and literals.
+// segment, dotfiles included), `?` (one character within a segment), a plain character class
+// (`[Dd]`: one character from a listed set, no ranges or negation; the scorecard filter spells
+// case-insensitive names that way), and literals.
 type glob struct {
 	raw     string
 	negated bool
 	segs    []string
 }
 
-// unsupportedGlobChars are picomatch features we don't reimplement: braces, brackets, extglobs,
-// and escapes. A pattern using one is rejected.
-const unsupportedGlobChars = "{}[]()\\"
+// unsupportedGlobChars are picomatch features we don't reimplement: braces, extglobs, and
+// escapes. A pattern using one is rejected; brackets pass only as a plain class (`checkClasses`).
+const unsupportedGlobChars = "{}()\\"
+
+// checkClasses accepts a segment's `[...]` only as a non-empty set of literal characters: no
+// range (`-`), negation (`!`, `^`), nesting, POSIX class, or stray `]`.
+func checkClasses(seg string) error {
+	for i := 0; i < len(seg); i++ {
+		switch seg[i] {
+		case ']':
+			return fmt.Errorf("a `]` outside a character class")
+		case '[':
+			end := strings.IndexByte(seg[i+1:], ']')
+			if end <= 0 {
+				return fmt.Errorf("an empty or unclosed character class")
+			}
+			if set := seg[i+1 : i+1+end]; strings.ContainsAny(set, "[-!^:") {
+				return fmt.Errorf("a character class with a range, negation, or nesting (%q)", set)
+			}
+			i += end + 1
+		}
+	}
+	return nil
+}
 
 func compileGlob(pattern string) (glob, error) {
 	g := glob{raw: pattern}
@@ -44,6 +67,9 @@ func compileGlob(pattern string) (glob, error) {
 		if seg != "**" && strings.Contains(seg, "**") {
 			return g, fmt.Errorf("pattern %q uses `**` inside a segment", pattern)
 		}
+		if err := checkClasses(seg); err != nil {
+			return g, fmt.Errorf("pattern %q uses glob syntax lane-markers doesn't support: %v; extend match.go and its tests", pattern, err)
+		}
 		g.segs = append(g.segs, seg)
 	}
 	return g, nil
@@ -60,12 +86,23 @@ func (g glob) matches(path string) bool {
 }
 
 func matchSegs(pat, path []string) bool {
+	return matchSegsAfter(pat, path, "")
+}
+
+// matchSegsAfter is matchSegs with the pattern segment just before pat. picomatch quirk: a
+// trailing `**` matches zero segments (`crates/**` matches `crates`) EXCEPT after a segment that
+// ends in `*`, where it needs one (`a*/**` doesn't match `ab`; pinned in `goldenClassGlobs`).
+func matchSegsAfter(pat, path []string, prev string) bool {
 	if len(pat) == 0 {
 		return len(path) == 0
 	}
 	if pat[0] == "**" {
-		for i := 0; i <= len(path); i++ {
-			if matchSegs(pat[1:], path[i:]) {
+		from := 0
+		if len(pat) == 1 && prev != "" && prev != "**" && strings.HasSuffix(prev, "*") {
+			from = 1
+		}
+		for i := from; i <= len(path); i++ {
+			if matchSegsAfter(pat[1:], path[i:], pat[0]) {
 				return true
 			}
 		}
@@ -74,15 +111,18 @@ func matchSegs(pat, path []string) bool {
 	if len(path) == 0 || !matchSegment(pat[0], path[0]) {
 		return false
 	}
-	return matchSegs(pat[1:], path[1:])
+	return matchSegsAfter(pat[1:], path[1:], pat[0])
 }
 
-// matchSegment matches one path segment against `*`, `?`, and literals.
+// matchSegment matches one path segment against `*`, `?`, a plain `[...]` class, and literals.
 func matchSegment(pat, s string) bool {
 	if pat == "" {
 		return s == ""
 	}
 	switch pat[0] {
+	case '[':
+		end := strings.IndexByte(pat, ']') // well-formed: `checkClasses` vetted it
+		return s != "" && strings.IndexByte(pat[1:end], s[0]) >= 0 && matchSegment(pat[end+1:], s[1:])
 	case '*':
 		for i := 0; i <= len(s); i++ {
 			if matchSegment(pat[1:], s[i:]) {
