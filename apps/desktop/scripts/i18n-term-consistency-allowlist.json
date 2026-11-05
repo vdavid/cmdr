@@ -88,16 +88,8 @@
     ],
     "fr": [
       {
-        "source": "Archive",
-        "reason": "Two senses of one English word. `askCmdr.sessions.archive` is the VERB that hides a chat (`Archiver`, the `archive-chat` ruling); `suggestedOps.facts.archive` is the NOUN labeling the zip file a compress suggestion creates (`Archive`, the `archive` ruling)."
-      },
-      {
         "source": "Unknown",
         "reason": "The adjective agrees with the value it stands for: `ai.local.modelUnknown` is a model (`Inconnu`); `suggestedOps.factUnknown` fills a size or date cell (la taille, la date: `Inconnue`), like `fileOperations.transferProgress.sizeUnknown` (`(inconnue)`)."
-      },
-      {
-        "source": "Archived",
-        "reason": "Two senses of one English word. `askCmdr.sessions.archivedBadge` marks an archived chat (une conversation, feminine: `Archivée`); `fileExplorer.archivedFile.label` marks a file in an S3 cold-storage class (un fichier, masculine: `Archivé`). The badge agrees with its noun, so one form can't serve both."
       },
       {
         "source": "App",
@@ -154,8 +146,8 @@
         "reason": "Two surfaces with two verbs, per the `connect` ruling in `docs/i18n/hu/terms.json`. The servers hub status cell (`servers.hub.status.notConnectedYet`) sits in one column with `Kapcsolódva` (AppKit SavePanel's `Nem kapcsolódik` stem), so it reads `Még nincs kapcsolódva`. The error titles (`errors.listing.notConnected.title`, `errors.write.notConnected.title`) cover a phone as well as a server, where the attach verb `csatlakoztat` fits, so they keep `Még nincs csatlakoztatva`."
       },
       {
-        "source": "Archive",
-        "reason": "Two parts of speech. `askCmdr.sessions.archive` is the VERB that hides a chat (`Archiválás`, the `archive-chat` ruling); `suggestedOps.facts.archive` is the NOUN label before the zip file a compress suggestion creates (`Archívum`, the `archive` ruling), like `fileExplorer.list.rowKind.archive`."
+        "source": "Ask for each",
+        "reason": "A caption names a policy; the radio is a command. `fileOperations.transferProgress.policyName.askEach` follows `Ha a fájl már létezik:`, so it's the nominal `Rákérdezés mindegyiknél` (like `settings.archives.opt.ask` = `Rákérdezés`); the copy dialog's radio `fileOperations.transferDialog.policyAskEach` keeps its imperative `Kérdezz mindegyiknél`."
       },
       {
         "source": "Bytes",
@@ -176,10 +168,6 @@
       {
         "source": "Rolling back",
         "reason": "`Visszagörgetés…` is the progress window's title, the ellipsis carrying the ongoing state; the operation log's status cell is `Visszagörgetés folyamatban`, beside capability cells (`Visszagörgethető`), where the bare noun would be ambiguous."
-      },
-      {
-        "source": "Select",
-        "reason": "`Kijelölés` is the file-selection menu and action; `Válassz` is the dropdown placeholder, where the user picks an option rather than selecting files."
       },
       {
         "source": "Send report",
@@ -208,8 +196,8 @@
         "reason": "Two senses of one English word. `fileExplorer.columns.added` is a date column header, so it takes Finder's date label `Toevoegingsdatum` (LocalizableMerged N169.38), parallel with its siblings `Aanmaakdatum` and `Bewerkingsdatum`. `Toegevoegd` is a state: a file git added (`fileExplorer.git.status.added`) and a shortcut the user added (`shortcuts.list.addedTooltip`)."
       },
       {
-        "source": "Archive",
-        "reason": "Two parts of speech. `askCmdr.sessions.archive` is the VERB that hides a chat (`Archiveer`, the `archive-chat` ruling); `suggestedOps.facts.archive` is the NOUN label before the zip file a compress suggestion creates (`Archief`, the `archive` ruling), like `fileExplorer.list.rowKind.archive`."
+        "source": "Ask for each",
+        "reason": "A caption names a policy; the radio is a command. `fileOperations.transferProgress.policyName.askEach` follows the colon in `Als een bestand al bestaat: …`, so it takes the infinitive name `Per bestand vragen`; the copy dialog's radio `fileOperations.transferDialog.policyAskEach` is the imperative button `Vraag voor elk`."
       },
       {
         "source": "Back",
@@ -248,6 +236,22 @@
         "reason": "`Schuif naar voren` moves a waiting operation earlier in the queue's run order (`menu.queue.moveUp`); `Schuif omhoog` moves a preset one place up a list, swapping its 1–9 number with the one above (`multiRename.presets.moveUp`). A preset isn't scheduled, so `naar voren` would read as \"do it sooner\"."
       },
       {
+        "source": "Overwrite",
+        "reason": "A caption names a policy; the radio and the setting option are commands. `fileOperations.transferProgress.policyName.overwrite` follows the colon in `Als een bestand al bestaat: …`, so it takes the infinitive name `Overschrijven`; the conflict button and `settings.fileOperations.defaultConflictPolicy.opt.overwrite` are the imperative `Overschrijf`."
+      },
+      {
+        "source": "Overwrite if older",
+        "reason": "A caption names a policy; the setting option is a command. `fileOperations.transferProgress.policyName.overwriteOlder` takes the infinitive name `Overschrijven indien ouder`; `settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder` keeps the imperative `Overschrijf indien ouder`."
+      },
+      {
+        "source": "Overwrite if smaller",
+        "reason": "A caption names a policy; the setting option is a command. `fileOperations.transferProgress.policyName.overwriteSmaller` takes the infinitive name `Overschrijven indien kleiner`; `settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller` keeps the imperative `Overschrijf indien kleiner`."
+      },
+      {
+        "source": "Rename",
+        "reason": "A caption names a policy; every other `Rename` is a command. `fileOperations.transferProgress.policyName.rename` follows the colon in `Als een bestand al bestaat: …`, so it takes the infinitive name `Naam wijzigen`; buttons and menu items keep the imperative `Wijzig naam` (the `rename` ruling)."
+      },
+      {
         "source": "Running",
         "reason": "`Bezig` is an operation or task in progress (the queue's state word). `Actief` is a local AI server process that is up, which Dutch doesn't call `bezig`."
       },
@@ -276,6 +280,10 @@
         "reason": "The View-menu item is the imperative `Toon verborgen bestanden`; the Settings checkbox label is infinitive-last, `Verborgen bestanden tonen`, the house form of every settings label."
       },
       {
+        "source": "Skip",
+        "reason": "A caption names a policy; the radio and the setting option are commands. `fileOperations.transferProgress.policyName.skip` follows the colon in `Als een bestand al bestaat: …`, so it takes the infinitive name `Overslaan`; the conflict button and `settings.fileOperations.defaultConflictPolicy.opt.skip` are the imperative `Sla over`."
+      },
+      {
         "source": "Start",
         "reason": "Two different things in Multi-rename. `Beginnummer` is the counter's first number (`multiRename.counterEditor.start`, beside `Stapgrootte` and `Cijfers`); `Begin` is the first edge of a character range (`multiRename.rangeEditor.start`, paired with `Einde` and the `Vanaf het begin`/`Vanaf het einde` options). A range edge isn't a number."
       },
@@ -294,8 +302,8 @@
     ],
     "pt": [
       {
-        "source": "Archive",
-        "reason": "Two concepts: `Arquivar` hides an Ask Cmdr chat (`askCmdr.sessions.archive`, concept archive-chat); `Arquivo compactado` labels the zip a compress suggestion creates (`suggestedOps.facts.archive`, concept archive)."
+        "source": "Unknown",
+        "reason": "Gender agreement, not drift: `Desconhecido` agrees with a size or a model (`suggestedOps.factUnknownSize`, `ai.local.modelUnknown`), `Desconhecida` with a date (`suggestedOps.factUnknownDate`), as the @key asks."
       },
       {
         "source": "Both",
@@ -344,10 +352,6 @@
         "reason": "Agreement, not drift: the copy-to-clipboard confirmations (`Kopierat`) are neuter, about text (det är kopierat); the Git column's `fileExplorer.git.status.copied` describes a file (en fil), so it takes the common-gender `Kopierad`, like its siblings `Ändrad`, `Tillagd`, `Raderad` and git's own sv `kopierad:`."
       },
       {
-        "source": "Archive",
-        "reason": "Two parts of speech. `askCmdr.sessions.archive` is the VERB that hides a chat (`Arkivera`, the `archive-chat` ruling); `suggestedOps.facts.archive` is the NOUN label before the zip file a compress suggestion creates (`Arkiv`, the `archive` ruling), like `fileExplorer.list.rowKind.archive`."
-      },
-      {
         "source": "Modified",
         "reason": "`Ändrad` describes one file's date (the column and the date filters); the keyboard-shortcuts filter chip `Ändrade` filters a set of commands, so the participle agrees in the plural."
       },
@@ -356,8 +360,20 @@
         "reason": "`Körs` is a local AI server process that is up; `Pågår` is a file operation in progress, the queue and log status. macOS Finder has the same pair (medan Finder körs / en annan åtgärd pågår)."
       },
       {
-        "source": "Select",
-        "reason": "`Markera` marks files (the menu-bar Select menu, macOS Markera allt); `Välj` picks an option, which is what a dropdown placeholder asks for."
+        "source": "Overwrite",
+        "reason": "A caption names a policy; the conflict button and the setting option are commands. `fileOperations.transferProgress.policyName.overwrite` follows the colon in `Om en fil redan finns: …`, so it takes the infinitive name `Skriva över`; the button and `settings.fileOperations.defaultConflictPolicy.opt.overwrite` are the imperative `Skriv över`."
+      },
+      {
+        "source": "Overwrite if older",
+        "reason": "A caption names a policy; the setting option is a command. `fileOperations.transferProgress.policyName.overwriteOlder` takes the infinitive name `Skriva över om äldre`; `settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder` keeps the imperative `Skriv över om äldre`."
+      },
+      {
+        "source": "Overwrite if smaller",
+        "reason": "A caption names a policy; the setting option is a command. `fileOperations.transferProgress.policyName.overwriteSmaller` takes the infinitive name `Skriva över om mindre`; `settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller` keeps the imperative `Skriv över om mindre`."
+      },
+      {
+        "source": "Rename",
+        "reason": "A caption names a policy; every other `Rename` is a command. `fileOperations.transferProgress.policyName.rename` follows the colon in `Om en fil redan finns: …`, so it takes the infinitive name `Byta namn`; buttons and menu items keep the imperative `Byt namn` (the `rename` ruling)."
       },
       {
         "source": "Trust and connect",
@@ -377,14 +393,10 @@
       },
       {
         "source": "Unknown",
-        "reason": "Gender agreement, not drift: `Okänd` agrees with a model (`ai.local.modelUnknown`, en modell); `suggestedOps.factUnknown` stands for either a size (en storlek) or a date (ett datum), so it takes the neuter `Okänt`. The `unknown` ruling in `docs/i18n/sv/terms.json`."
+        "reason": "Gender agreement, not drift: `Okänd` agrees with a model (`ai.local.modelUnknown`, en modell); `suggestedOps.factUnknownSize` agrees with a size (en storlek, `Okänd`) and `suggestedOps.factUnknownDate` with a date (ett datum), so it takes the neuter `Okänt`. The `unknown` ruling in `docs/i18n/sv/terms.json`."
       }
     ],
     "vi": [
-      {
-        "source": "Archive",
-        "reason": "Two concepts: `Lưu trữ` hides an Ask Cmdr chat (`askCmdr.sessions.archive`, concept archive-chat); `Tệp nén` labels the zip a compress suggestion creates (`suggestedOps.facts.archive`, concept archive)."
-      },
       {
         "source": "Why",
         "reason": "Question vs label: `Tại sao?` is the onboarding link that ASKS why (`onboarding.stepFda.why`); `Lý do:` labels the AI's answer before its explanation (`suggestedOps.agentReason`), where `Tại sao:` reads unnatural in Vietnamese."
@@ -394,20 +406,12 @@
         "reason": "Two different things in Multi-rename. `Số bắt đầu` is the counter's first number (`multiRename.counterEditor.start`, beside the step and digits fields); `Điểm đầu` is the first edge of a character range (`multiRename.rangeEditor.start`, paired with `Điểm cuối` and the `Tính từ đầu`/`Tính từ cuối` options). A range edge isn't a number, and `Số bắt đầu` beside `Điểm cuối` would read as a number field."
       },
       {
-        "source": "Archived",
-        "reason": "Two senses of one English word. `askCmdr.sessions.archivedBadge` marks a chat the user put away (`Đã lưu trữ`, stored away); `fileExplorer.archivedFile.label` marks a file in an S3 cold-storage class that must be restored before it can be read (`Lưu trữ lạnh`, cold storage). Using the chat's word on the file hides why it won't open."
-      },
-      {
         "source": "Back",
         "reason": "macOS vi draws this line: going back in the folder HISTORY is `Trở lại` (Finder Go > Back, `menu.go.back`), returning to the previous SCREEN or step inside a flow is `Quay lại` (Setup Assistant, the Apple ID sheets; the network browser and the onboarding wizard). See `docs/i18n/vi/terms.json` `back`."
       },
       {
         "source": "Modified",
         "reason": "`Đã sửa đổi` is the date column (Finder Get Info \"Modified:\"); `shortcuts.section.filterModified` filters commands whose shortcut the user CHANGED, so `Đã thay đổi`. One word would make the shortcut filter read like a date filter. See `docs/i18n/vi/terms.json` `modified`."
-      },
-      {
-        "source": "Never",
-        "reason": "Two senses. `Chưa từng` says something has never happened yet (a server never used, `servers.hub.neverUsed`); `Không bao giờ` is the picker option meaning never pause however much an answer costs (`settings.askCmdr.spendPause.opt.never`). The never-yet form reads as a past fact, not a choice."
       }
     ],
     "zh": [
@@ -448,10 +452,6 @@
         "reason": "`正在扫描` is the in-progress tooltip with an ellipsis; `扫描` is a step NAME in the two-step progress indicator, the same split AppKit makes (Searching → `搜索`, Searching… → `正在搜索…`)."
       },
       {
-        "source": "Select",
-        "reason": "`选择` is the verb and the menu-bar title; `请选择` is the dropdown placeholder (English `Select...`), a prompt that nothing is chosen yet."
-      },
-      {
         "source": "Start",
         "reason": "Two Multi-rename controls. The counter editor's Start is the NUMBER the counter begins at, `起始值` (Total Commander zh-CN, with `步长` / `位数`); the range editor's Start is the first chosen character's POSITION, paired with End as `起点` / `终点`, and also names the drag handle. `起始值` would read as a number field there."
       },
@@ -465,15 +465,15 @@
       },
       {
         "source": "Overwrite",
-        "reason": "`覆盖` answers ONE clash (`fileOperations.transferProgress.conflictOverwrite`); the Settings option `settings.fileOperations.defaultConflictPolicy.opt.overwrite` is a standing policy and reuses the copy dialog radio `fileOperations.transferDialog.policyOverwrite`, whose Chinese has no one-clash form, so both say `全部覆盖`."
+        "reason": "`覆盖` answers ONE clash (`fileOperations.transferProgress.conflictOverwrite`); the Settings option `settings.fileOperations.defaultConflictPolicy.opt.overwrite` is a standing policy and reuses the copy dialog radio `fileOperations.transferDialog.policyOverwrite`, whose Chinese has no one-clash form, so both say `全部覆盖`. The progress caption's policy name `fileOperations.transferProgress.policyName.overwrite` names that same standing policy, so it says `全部覆盖` too."
       },
       {
         "source": "Skip",
-        "reason": "`跳过` answers ONE clash (`fileOperations.transferProgress.conflictSkip`); the Settings option `settings.fileOperations.defaultConflictPolicy.opt.skip` is a standing policy and reuses the copy dialog radio `fileOperations.transferDialog.policySkip`, whose Chinese has no one-clash form, so both say `全部跳过`."
+        "reason": "`跳过` answers ONE clash (`fileOperations.transferProgress.conflictSkip`); the Settings option `settings.fileOperations.defaultConflictPolicy.opt.skip` is a standing policy and reuses the copy dialog radio `fileOperations.transferDialog.policySkip`, whose Chinese has no one-clash form, so both say `全部跳过`. The progress caption's policy name `fileOperations.transferProgress.policyName.skip` names that same standing policy, so it says `全部跳过` too."
       },
       {
-        "source": "Archive",
-        "reason": "Two parts of speech. `askCmdr.sessions.archive` is the VERB that hides a chat (`存档`, the `archive-chat` ruling); `suggestedOps.facts.archive` is the NOUN label before the zip a compress suggestion creates (`压缩文件`, the `archive` ruling), like `fileExplorer.list.rowKind.archive`."
+        "source": "Forget",
+        "reason": "`忘记` drops a server or a trusted key (`fileExplorer.navigation.forgetConfirmButton`, `settings.servers.trustedHostKeys.forget`); the Forget saved password alert's button `fileExplorer.navigation.forgetPasswordConfirmButton` echoes its title and menu item `清除保存的密码`, so it's `清除` (the `forget` ruling's form for a saved password)."
       },
       {
         "source": "Last modified",
@@ -482,16 +482,16 @@
       {
         "source": "Why",
         "reason": "Two shapes. `onboarding.stepFda.why` is a question link (`为什么？`); `suggestedOps.agentReason` is a label leading the AI's reason, where Chinese names the noun (`原因：`, which its spoken form `原因，按 AI 的说法：` starts with). A `为什么：` label before a statement reads wrong."
-      },
-      {
-        "source": "Never",
-        "reason": "Two senses. `从未` says something has never happened (a server never used, `servers.hub.neverUsed`); `从不` is the picker option meaning never pause however much an answer costs (`settings.askCmdr.spendPause.opt.never`). `从未` reads as a past fact, not a setting."
       }
     ],
     "zh-Hant": [
       {
-        "source": "Archive",
-        "reason": "Two senses of one English word. `封存` archives an Ask Cmdr chat (`askCmdr.sessions.archive`, Apple's Archive verb); `封存檔` is the zip FILE a compress suggestion creates (`suggestedOps.facts.archive`, the archive concept), a noun label before a file path."
+        "source": "Overwrite if smaller",
+        "reason": "A caption names a policy; the setting option is a command. `fileOperations.transferProgress.policyName.overwriteSmaller` follows `檔案已經存在時：`, so it names the policy `覆寫較小的`; `settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller` reuses the copy dialog radio's all-clashes command `覆寫全部較小的`."
+      },
+      {
+        "source": "Overwrite if older",
+        "reason": "Same split as `Overwrite if smaller`: the caption `fileOperations.transferProgress.policyName.overwriteOlder` names the policy `覆寫較舊的`; the setting option reuses the copy dialog radio's command `覆寫全部較舊的`."
       },
       {
         "source": "Why",
@@ -542,10 +542,6 @@
         "reason": "The spinner tooltip renders `Scanning…` and takes the progressive `正在掃描…`. The progress dialog's step chip is a two-word stage NAME in a fixed-width indicator, so it takes the bare `掃描`, matching the other stage chips beside it."
       },
       {
-        "source": "Select",
-        "reason": "`選取` is the menu-bar Select menu and the verb. `ui.select.placeholder` is the empty state of a dropdown, which Traditional Chinese phrases as an invitation (`請選擇`, please choose) rather than a bare verb."
-      },
-      {
         "source": "Send report",
         "reason": "The crash dialog's TITLE asks the question (`要傳送報告嗎`), which is the house pattern for a confirming dialog title in this catalog; the button below it is the bare action `傳送報告`. English reuses one string for both surfaces."
       },
@@ -564,10 +560,6 @@
       {
         "source": "Skip",
         "reason": "`略過` answers ONE clash (`fileOperations.transferProgress.conflictSkip`); the Settings option `settings.fileOperations.defaultConflictPolicy.opt.skip` is a standing policy and reuses the copy dialog radio `fileOperations.transferDialog.policySkip`, whose Chinese has no one-clash form, so both say `全部略過`."
-      },
-      {
-        "source": "Never",
-        "reason": "Two senses. `從未使用` says a server has never been used (`servers.hub.neverUsed`); `從不` is the picker option meaning never pause however much an answer costs (`settings.askCmdr.spendPause.opt.never`). `從未` reads as a past fact, not a setting."
       }
     ],
     "ru": [
@@ -690,10 +682,6 @@
         "reason": "Agreement: «будь-який» qualifies a size, «будь-коли» is the date’s “any time”."
       },
       {
-        "source": "Archive",
-        "reason": "Two senses: `askCmdr.sessions.archive` is the verb (archive a chat, «Архівувати»); `suggestedOps.facts.archive` names an archive file («Архів»)."
-      },
-      {
         "source": "Both",
         "reason": "Different referents: the file-type filter covers files and folders together («Усе»); the notifications option is both of two channels («Обидва»)."
       },
@@ -735,11 +723,15 @@
       },
       {
         "source": "Select",
-        "reason": "Ukrainian macOS writes the menu name as a noun («Вибір»); `menu.queue.select` and the picker placeholder are actions («Вибрати»)."
+        "reason": "Ukrainian macOS writes the menu name as a noun («Вибір»); `menu.queue.select` is an action («Вибрати»)."
       },
       {
         "source": "System default",
         "reason": "Agreement with three different nouns: language («Типова мова системи»), format («Типовий системний»), and app («Типова програма»)."
+      },
+      {
+        "source": "Unknown",
+        "reason": "Agreement with the implied noun: `suggestedOps.factUnknownSize` stands for a size (розмір, masculine) → «Невідомий», `suggestedOps.factUnknownDate` for a date (дата, feminine) → «Невідома»; `ai.local.modelUnknown` is a bare status → «Невідомо»."
       },
       {
         "source": "View",
@@ -804,16 +796,12 @@
         "reason": "`fileExplorer.columns.added` names a date column, so Finder's `Datum přidání` (like Datum změny, Datum vytvoření); `fileExplorer.git.status.added` and `shortcuts.list.addedTooltip` are states, the neuter participle `Přidáno`."
       },
       {
-        "source": "Archive",
-        "reason": "`askCmdr.sessions.archive` is a verb button (archive a chat → `Archivovat`); `suggestedOps.facts.archive` is a noun label before the archive file's path (`Archiv`)."
-      },
-      {
         "source": "Date added",
         "reason": "`menu.sort.dateAdded` completes Seřadit podle with Finder's genitive `Data přidání`; the date tooltip label `fileExplorer.dateTooltip.dateAdded` stays nominative `Datum přidání`. § Sort by takes Finder's genitive."
       },
       {
         "source": "Unknown",
-        "reason": "`ai.local.modelUnknown` agrees with model (m., `Neznámý`); `suggestedOps.factUnknown` stands in for a size (f.) or a date (n.) alike, so the gender-free adverb `Neznámo`."
+        "reason": "`ai.local.modelUnknown` agrees with model (m., `Neznámý`); `suggestedOps.factUnknownSize` agrees with velikost (f., `Neznámá`) and `suggestedOps.factUnknownDate` with datum (n., `Neznámé`)."
       },
       {
         "source": "{countText} {count, plural, one {file} other {files}}",
