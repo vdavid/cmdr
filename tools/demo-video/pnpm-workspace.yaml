@@ -12,3 +12,7 @@ trustPolicyExclude:
 # esbuild's postinstall only verifies the native binary that its optional platform package already ships.
 allowBuilds:
   esbuild: false
+
+# Remotion pins zod 4.5.4 exactly, below GHSA-mrhx-c7xc-m3w5's fix (4.6.6). Zod 4.6 is a minor, so Remotion's schemas run unchanged; drop this once Remotion's own pin passes 4.6.6.
+overrides:
+  zod@4: ^4.6.6
