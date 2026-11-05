@@ -250,6 +250,23 @@ test.describe('Browser demo', () => {
       expect(errors.map((error) => error.message)).toEqual([])
     })
 
+    test('a dismissed drop gives its room back: the full 10 MB comes in again', async ({ page }) => {
+      const errors = collectPageErrors(page)
+      await openDemo(page)
+      const whole = [{ name: 'whole.bin', bytes: 10_000_000 }]
+      await dropFromComputer(page, right(page), whole)
+      await expect(page.getByText(/^Move 1 file$/)).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(page.getByRole('dialog')).toHaveCount(0)
+
+      await dropFromComputer(page, right(page), whole)
+      await expect(page.getByText(/^Move 1 file$/)).toBeVisible()
+      await expect(page.getByText(/holds up to 10 MB/)).toHaveCount(0)
+      await page.keyboard.press('Enter')
+      await expect(row(right(page), 'whole')).toBeVisible()
+      expect(errors.map((error) => error.message)).toEqual([])
+    })
+
     test('a copy onto a full disk stays in the queue, and Retry lands it once there is room', async ({ page }) => {
       const errors = collectPageErrors(page)
       // `?free=100` leaves 100 bytes on the disk, too little for `notes.md` (its 372 real bytes).

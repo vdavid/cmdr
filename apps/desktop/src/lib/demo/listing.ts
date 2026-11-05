@@ -129,6 +129,8 @@ export function startListingEngine(sink: ListingEventSink): ListingEngineHandle 
         if (!loaded) throw new Error("[demo] the listing engine did not load, so it can't take a drop")
         return loaded.engine.importFile(batch, index, bytes)
       },
+      handOff: async (batch, offered) => (await ready)?.engine.importHandOff(batch, offered),
+      releaseOffered: async () => (await ready)?.engine.importReleaseOffered(),
     },
   }
 }

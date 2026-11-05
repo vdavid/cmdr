@@ -177,6 +177,9 @@ export function createDemoBackend(): DemoBackend {
   }
 
   async function invoke(cmd: string, payload: Payload, origin?: InvokeOrigin): Promise<unknown> {
+    // The app says no dialog holds file operations any more: a drop no transfer took by now never
+    // will be, so the engine sweeps its staging (`os-drop.ts`). A fact passed on; the menu answers it.
+    if (cmd === 'set_file_operations_blocked' && payload.blocked === false) void engine.importer.releaseOffered()
     if (cmd === 'open_path' && (await openInViewer(payload))) return null
     const handler =
       drags.handler(cmd) ?? windows.handler(cmd) ?? pluginHandler(cmd) ?? rawAnswers[cmd] ?? answers[camelCase(cmd)]

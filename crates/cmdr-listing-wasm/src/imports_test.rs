@@ -230,3 +230,156 @@ async fn each_drop_stages_in_its_own_folder() {
     demo.imports().file(second.batch, 0, Vec::new()).await.expect("lands");
     assert_ne!(first.roots, second.roots);
 }
+
+// ── The staging folder's life: swept at the transfer's end, or once nothing can take it ──
+
+/// Plans and lands one file of `text` named `name`, then hands it off as a drop.
+async fn dropped(demo: &Demo, name: &str, text: &str) -> crate::imports::ImportPlan {
+    let imports = demo.imports();
+    let plan = imports
+        .plan(&items(json!([{ "path": name, "kind": "file", "size": text.len() }])))
+        .await
+        .expect("plans");
+    imports
+        .file(plan.batch, 0, text.as_bytes().to_vec())
+        .await
+        .expect("lands");
+    imports.hand_off(plan.batch, true).await;
+    plan
+}
+
+async fn swept(demo: &Demo, batch: u64) {
+    let imports = demo.imports();
+    wait_until_async(Duration::from_secs(10), "the staging folder to go", || {
+        !imports.is_staged(batch)
+    })
+    .await;
+    let kinds = call(
+        demo,
+        "stat_paths_kinds",
+        json!({ "paths": [format!("/.drops/{batch}")] }),
+    )
+    .await;
+    assert_eq!(
+        kinds["data"],
+        json!([null]),
+        "the staging folder is gone from the volume"
+    );
+}
+
+fn config(conflicts: &str) -> Value {
+    json!({ "progressIntervalMs": 50, "conflictResolution": conflicts, "maxConflictsToShow": 100 })
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_dismissed_drop_is_swept_and_its_room_given_back() {
+    let (demo, _) = demo();
+    let imports = demo.imports();
+    let whole = json!([{ "path": "big.bin", "kind": "file", "size": IMPORT_BUDGET_BYTES }]);
+    let plan = imports.plan(&items(whole.clone())).await.expect("plans");
+    imports
+        .file(plan.batch, 0, vec![0; IMPORT_BUDGET_BYTES as usize])
+        .await
+        .expect("lands");
+    imports.hand_off(plan.batch, true).await;
+    assert_eq!(imports.used_bytes(), IMPORT_BUDGET_BYTES);
+
+    // The transfer dialog closed without a transfer: the app unblocks file operations.
+    imports.release_offered().await;
+    swept(&demo, plan.batch).await;
+    assert_eq!(imports.used_bytes(), 0);
+    let again = imports.plan(&items(whole)).await.expect("plans");
+    assert_eq!(again.accepted, 1, "the full budget is free again");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_drop_nothing_came_of_is_swept_at_once_and_one_nobody_took_at_the_next_drop() {
+    let (demo, _) = demo();
+    let imports = demo.imports();
+    let empty = imports
+        .plan(&items(json!([{ "path": "a.txt", "kind": "file", "size": 3 }])))
+        .await
+        .expect("plans");
+    // The page couldn't read the file, so it offered nothing.
+    imports.hand_off(empty.batch, false).await;
+    swept(&demo, empty.batch).await;
+    assert_eq!(imports.used_bytes(), 0);
+
+    // A drop that landed nowhere: the next drop sweeps it first.
+    let nowhere = dropped(&demo, "b.txt", "bee").await;
+    let next = dropped(&demo, "c.txt", "sea").await;
+    swept(&demo, nowhere.batch).await;
+    assert!(imports.is_staged(next.batch));
+    assert_eq!(imports.used_bytes(), 3);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_move_sweeps_its_drop_at_its_end_and_keeps_what_landed_counted() {
+    let (demo, _) = demo();
+    let plan = dropped(&demo, "hello.txt", "hello").await;
+    let moved = call(
+        &demo,
+        "move_files",
+        json!({ "sources": plan.roots, "destination": "/Users/you/Downloads", "config": config("stop"), "initiator": "user" }),
+    )
+    .await;
+    assert!(moved["operationId"].is_string());
+    // Nothing but the transfer's end sweeps a claimed drop.
+    swept(&demo, plan.batch).await;
+    let kinds = call(
+        &demo,
+        "stat_paths_kinds",
+        json!({ "paths": ["/Users/you/Downloads/hello.txt"] }),
+    )
+    .await;
+    assert_eq!(kinds["data"], json!([false]));
+    assert_eq!(demo.imports().used_bytes(), 5);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_move_that_left_a_file_behind_gives_its_room_back() {
+    let (demo, _) = demo();
+    let first = dropped(&demo, "same.txt", "first").await;
+    call(
+        &demo,
+        "move_files",
+        json!({ "sources": first.roots, "destination": "/Users/you/Downloads", "config": config("stop"), "initiator": "user" }),
+    )
+    .await;
+    swept(&demo, first.batch).await;
+
+    // A file of that name is there now, and this transfer skips the clash.
+    let second = dropped(&demo, "same.txt", "second").await;
+    call(
+        &demo,
+        "move_files",
+        json!({ "sources": second.roots, "destination": "/Users/you/Downloads", "config": config("skip"), "initiator": "user" }),
+    )
+    .await;
+    swept(&demo, second.batch).await;
+    assert_eq!(demo.imports().used_bytes(), 5, "only the first drop's bytes landed");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_copy_sweeps_its_drop_and_keeps_what_it_wrote_counted() {
+    let (demo, _) = demo();
+    let plan = dropped(&demo, "hello.txt", "hello").await;
+    call(
+        &demo,
+        "copy_between_volumes",
+        json!({
+            "sourceVolumeId": "root", "sourcePaths": plan.roots, "destVolumeId": "root",
+            "destPath": "/Users/you/Downloads", "config": config("stop"), "initiator": "user",
+        }),
+    )
+    .await;
+    swept(&demo, plan.batch).await;
+    let kinds = call(
+        &demo,
+        "stat_paths_kinds",
+        json!({ "paths": ["/Users/you/Downloads/hello.txt"] }),
+    )
+    .await;
+    assert_eq!(kinds["data"], json!([false]));
+    assert_eq!(demo.imports().used_bytes(), 5);
+}

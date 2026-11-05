@@ -166,6 +166,28 @@ impl DemoListing {
         })
     }
 
+    /// The page is done landing `batch`: `offered` when it handed the staged paths
+    /// to the app as a drop, else the batch is swept at once. Resolves with `null`.
+    #[wasm_bindgen(js_name = importHandOff)]
+    pub fn import_hand_off(&self, batch: u32, offered: bool) -> js_sys::Promise {
+        let imports = Arc::clone(self.demo.imports());
+        wasm_bindgen_futures::future_to_promise(async move {
+            imports.hand_off(u64::from(batch), offered).await;
+            Ok(JsValue::NULL)
+        })
+    }
+
+    /// No dialog holds file operations any more: sweeps every drop no transfer
+    /// claimed. Resolves with `null`.
+    #[wasm_bindgen(js_name = importReleaseOffered)]
+    pub fn import_release_offered(&self) -> js_sys::Promise {
+        let imports = Arc::clone(self.demo.imports());
+        wasm_bindgen_futures::future_to_promise(async move {
+            imports.release_offered().await;
+            Ok(JsValue::NULL)
+        })
+    }
+
     /// Lands the bytes of the planned file `index` of `batch`. Resolves with
     /// `null`, rejects with an `ImportError`.
     #[wasm_bindgen(js_name = importFile)]

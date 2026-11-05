@@ -81,6 +81,7 @@ describe('readDrop', () => {
 
 function fakeImporter(plan: Partial<ImportPlan> = {}, refuseIndex?: number) {
   const landed: { batch: number; index: number; text: string }[] = []
+  const handedOff: { batch: number; offered: boolean }[] = []
   const planned: ImportItem[][] = []
   const importer: DropImporter = {
     plan: (items) => {
@@ -93,8 +94,13 @@ function fakeImporter(plan: Partial<ImportPlan> = {}, refuseIndex?: number) {
       landed.push({ batch, index, text: new TextDecoder().decode(bytes) })
       return Promise.resolve(null)
     },
+    handOff: (batch, offered) => {
+      handedOff.push({ batch, offered })
+      return Promise.resolve(null)
+    },
+    releaseOffered: () => Promise.resolve(null),
   }
-  return { importer, landed, planned }
+  return { importer, landed, planned, handedOff }
 }
 
 describe('importDropped', () => {
@@ -110,7 +116,7 @@ describe('importDropped', () => {
       { batch: 1, index: 1, text: 'hello' },
       { batch: 1, index: 2, text: 'hi' },
     ])
-    expect(result).toEqual({ paths: ['/.drops/1/trip', '/.drops/1/b.txt'], refusal: null })
+    expect(result).toEqual({ batch: 1, paths: ['/.drops/1/trip', '/.drops/1/b.txt'], refusal: null })
   })
 
   it('reads no bytes past what the budget accepted, and passes its refusal on', async () => {
@@ -119,7 +125,7 @@ describe('importDropped', () => {
     const dropped = await readDrop({ files: [file('a.txt', 'a'), file('b.txt', 'b')] })
     const result = await importDropped(importer, dropped)
     expect(landed.map((l) => l.index)).toEqual([0])
-    expect(result).toEqual({ paths: ['/.drops/1/a.txt'], refusal })
+    expect(result).toEqual({ batch: 1, paths: ['/.drops/1/a.txt'], refusal })
   })
 
   it('leaves a top-level file that didn’t land out of the drop', async () => {
@@ -201,6 +207,8 @@ describe('createOsDrops', () => {
     expect(sent[2].payload).toEqual({ paths: [INCOMING_PATH], position: { x: 5, y: 6 } })
     expect(sent[4].payload).toEqual({ paths: ['/.drops/1/a.txt'], position: { x: 9, y: 10 } })
     expect(fake.landed).toEqual([{ batch: 1, index: 0, text: 'hello' }])
+    // Handed off as offered before the drop went out, so a transfer can claim the batch.
+    expect(fake.handedOff).toEqual([{ batch: 1, offered: true }])
   })
 
   it('sends the keys again when they change, so Option still forces a copy', () => {
@@ -235,8 +243,10 @@ describe('createOsDrops', () => {
     window.dispatchEvent(drag('dragenter'))
     window.dispatchEvent(drag('drop', { files: [file('big.bin', 'x')] }))
     await vi.waitFor(() => expect(refusals).toEqual([refusal]))
-    expect(names().at(-1)).toBe('tauri://drag-leave')
+    await vi.waitFor(() => expect(names().at(-1)).toBe('tauri://drag-leave'))
     expect(names()).not.toContain('tauri://drag-drop')
+    // Nothing went out, so the empty batch is swept at once.
+    expect(fake.handedOff).toEqual([{ batch: 1, offered: false }])
   })
 
   it('ignores a drag without files, but keeps the browser from following it', () => {

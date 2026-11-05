@@ -559,7 +559,11 @@ staged paths. The controller runs unchanged: hit test, transfer dialog, conflict
 - On `drop`: `readDrop` takes `webkitGetAsEntry()` entries at once (the `DataTransfer` empties when the handler
   returns), walks folders (folders before their contents, `readEntries` until an empty batch), and falls back to the
   flat `files`. `importDropped` sends the shape (no bytes) to the engine's `importPlan`, reads bytes only for the
-  accepted files, lands each through `importFile`, then `tauri://drag-drop` carries the staged top-level paths.
+  accepted files, lands each through `importFile`, hands the batch off (`importHandOff`), then `tauri://drag-drop`
+  carries the staged top-level paths.
+- The staging folder goes when its transfer ends, or once nothing can take it: `backend.ts` passes the app's
+  `set_file_operations_blocked { blocked: false }` on to the engine's `importReleaseOffered`. The lifecycle and why it
+  isn't the dialog's close: the engine DETAILS below.
 - The engine side, the staging folder, and the 10 MB per-visit budget: `crates/cmdr-listing-wasm/DETAILS.md` § Files
   dropped in from the computer. A cut-short drop shows the `ui.demoDrop.overBudget` toast (from `backend.ts`), after the
   part that fit lands.
@@ -568,7 +572,7 @@ staged paths. The controller runs unchanged: hit test, transfer dialog, conflict
   Collisions go through the transfer dialog's conflict handling, as for any drop.
 - Verified in headless Chromium against `pnpm build:demo` with a synthetic `DataTransfer` drop (2026-11-05): pinned by
   `apps/website/e2e/demo.spec.ts` (a drop lands through "Move 1 file", a second drop of the same name shows the clash,
-  an 11 MB drop shows the toast and lands nothing).
+  an 11 MB drop shows the toast and lands nothing, a dismissed 10 MB drop leaves the full 10 MB for the next).
 
 ## Links
 

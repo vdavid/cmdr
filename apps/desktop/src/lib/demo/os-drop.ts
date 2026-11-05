@@ -39,6 +39,10 @@ export interface ImportPlan {
 export interface DropImporter {
   plan(items: readonly ImportItem[]): Promise<ImportPlan>
   file(batch: number, index: number, bytes: Uint8Array): Promise<unknown>
+  /** Done landing `batch`: `offered` when its paths went to the app as a drop, else it's swept at once. */
+  handOff(batch: number, offered: boolean): Promise<unknown>
+  /** No dialog holds file operations any more: sweeps every drop no transfer claimed. */
+  releaseOffered(): Promise<unknown>
 }
 
 /** What a drop read off the browser: the engine's item, plus the file to read its bytes from. */
@@ -139,7 +143,7 @@ export async function readDrop(data: DropData): Promise<DroppedItem[]> {
 export async function importDropped(
   importer: DropImporter,
   dropped: readonly DroppedItem[],
-): Promise<{ paths: string[]; refusal: ImportRefusal | null }> {
+): Promise<{ batch: number; paths: string[]; refusal: ImportRefusal | null }> {
   const plan = await importer.plan(
     dropped.map(({ path, kind, size, modifiedMs }) => ({ path, kind, size, modifiedMs })),
   )
@@ -157,7 +161,7 @@ export async function importDropped(
     }
   }
   const paths = plan.roots.filter((root) => !missing.has(root.slice(root.lastIndexOf('/') + 1)))
-  return { paths, refusal: plan.refusal }
+  return { batch: plan.batch, paths, refusal: plan.refusal }
 }
 
 /** Whether a browser drag carries files from outside the page. */
@@ -242,8 +246,10 @@ export function createOsDrops(
     const reading = readDrop(event.dataTransfer)
     void (async () => {
       try {
-        const { paths, refusal } = await importDropped(importer, await reading)
+        const { batch, paths, refusal } = await importDropped(importer, await reading)
         if (refusal) onRefusal(refusal)
+        // Before the drop goes out, so a transfer that starts at once finds the batch claimable.
+        await importer.handOff(batch, paths.length > 0)
         if (paths.length === 0) {
           if (wasInside) emit('tauri://drag-leave', null)
           return
