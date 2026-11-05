@@ -463,6 +463,14 @@ func resolveLiteral(root, sourceDir, memberDir, literal string) []string {
 		if err != nil || strings.HasPrefix(rel, "..") || slices.Contains(out, c) {
 			continue
 		}
+		// Git's own metadata is never a committed file, so no change can touch it and no
+		// scope rule could ever fire on it: there's nothing to classify. The literals that
+		// hit it (`.git/config`, `.git/HEAD`) name paths inside temp repos the git tests
+		// build, and they only resolve here where `.git` is a directory (a plain clone, as
+		// on CI); in a worktree it's a file. Seen on PR #968's CI, 2026-11-05.
+		if rel == ".git" || strings.HasPrefix(rel, ".git"+string(filepath.Separator)) {
+			continue
+		}
 		if _, err := os.Stat(c); err == nil {
 			out = append(out, c)
 		}
