@@ -125,9 +125,10 @@ call's split). Verified 2026-10-29 with the real keys:
 - **`gpt-6.1-terra`** (`Automatic`): calls 2 and 3 read 2,032 and 2,116 and wrote 84 and 105 (call 1 read too: the
   same prefix from a run minutes earlier, inside the 30-minute TTL). Metered $0.0004 and $0.0003 against $0.0023 and
   $0.0022.
-- **OpenRouter to Claude** (`TopLevel`): not reached, the key's account has no credits (HTTP 402 "never purchased
-  credits", `GET /api/v1/credits` reads `total_credits: 0`, 2026-11-05). The request body is pinned by the fixture
-  test; `smoke_openrouter_claude_cache_reads` is the live check once the account has credits (#809).
+- **OpenRouter to Claude** (`TopLevel`, verified 2026-11-05, `smoke_openrouter_claude_cache_reads`): every call read
+  the prefix back, 3,345, 3,493, and 3,493 tokens (call 1 too: the same prefix from a run minutes earlier), and call 3
+  wrote only the new round (162). Metered $0.0009, $0.0012, and $0.0015 against $0.0072, $0.0078, and $0.0081
+  uncached.
 
 Tests: `genai_impl/cache.rs` (which plan each model gets), `genai_impl/tests.rs`
 (`the_automatic_plan_marks_no_message`), `replay_fixtures.rs`
