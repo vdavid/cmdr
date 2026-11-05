@@ -313,3 +313,5 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   ceiling from three concurrent reads to seven and does nothing for a weak link. Carries the stall dump that confirmed
   the three-of-10 prediction exactly, the truncation guard the fix had to move, and 2026-09-02 throughput baselines for
   the reference NAS (24.7 MB/s up, 40.2 MB/s down, 8.6 MB/s on 4 MB files) to compare against before blaming a server.
+
+A throwaway line from a probe PR; it never lands.
