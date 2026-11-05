@@ -70,8 +70,8 @@ So they make ideal **backbone fillers**: occupy wall-clock cheaply while the sho
 `CpuWeight` ≈ the check's working-profile average busy cores, rounded, Docker-VM-aware:
 
 - **11**: svelte-tests
+- **10**: nilaway (two per-module processes at once; see `scripts/check/checks/DETAILS.md`)
 - **8**: clippy, cargo-udeps, bindings-fresh, integration-tests
-- **7**: nilaway
 - **6**: rust-tests, rust-tests-linux, website-e2e
 - **4**: deadcode, e2e-linux, e2e-playwright
 - **3**: govulncheck

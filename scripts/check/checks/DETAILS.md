@@ -144,6 +144,17 @@ can't land inside the walk and outside a fingerprint:
   vetoes across the whole union, and would take `scripts/check/CLAUDE.md` back out of a lane that walks the scripts
   tree.
 
+### nilaway fans out per module, two at a time
+
+**Decision**: `scripts-go-nilaway` runs the same `nilaway ./...` in each of the ~20 modules (`FindAllGoModules`), on
+`nilawayWorkers` (2) goroutines, and joins findings in `GetGoDirectories` + `find` order. **Why**: a single run over a
+`go.work` would be faster, but MVS unifies dependency versions across modules, so it type-checks different code than
+each module builds and its findings could differ. Same per-module commands means identical findings by construction
+(verified 2026-11-05: old serial vs new output byte-identical, clean and with nil derefs planted in three modules). Each
+process already keeps ~6 cores busy and peaks at 0.8–3.5 GB (`scripts/check` is the 3.5 GB one), so wall time flattens
+past two workers while summed RSS keeps climbing (16-core Mac, warm, sampled `ps` sum: 1 → 24.8 s / 3.6 GB, 2 → 15.6 s /
+4.6 GB, 4 → 14.7 s / 8.3 GB, 6 → 13.7 s / 9.9 GB). Its `CpuWeight` (10) is the two-worker busy-core average.
+
 ### ⚠️ A fresh worktree inherits the cache, so a green check can be a stale answer
 
 The fingerprint cache lives under `target/`, and `new-worktree.sh` APFS-clones `target/` from an existing worktree. So a
