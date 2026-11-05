@@ -110,7 +110,9 @@ The host trait carries only what differs between hosts (shape to adapt as the co
   sends the crate's payload as the event body.
 - `results_path(&self, session_id: &str) -> Option<PathBuf>`: desktop is today's `names_file::path_for`; the demo
   answers `None`, so `write_names` refuses with `CouldntWriteNames` exactly as a desktop with no cache dir does. The
-  sheet words it (`multiRename.error.couldntWriteNames`) and never asks for an editor.
+  sheet words it (`multiRename.error.couldntWriteNames`) and never asks for an editor. A separate
+  `results_supported(&self) -> bool` (desktop `true`, demo `false`) feeds Decision 4's `resultsAvailable`, so a desktop
+  whose cache dir is missing never reads as "needs the desktop app".
 - `rename_place(&self, volume_id: String, dir: PathBuf, ready: &[PreviewRow]) -> BoxFuture<RenamePlace>`, with
   `RenamePlace { ReadOnly(ReadOnlyPlace), LocalDisk, Volume(Arc<dyn Volume>), NotConnected }`: ONE host call that is
   today's block from `run.rs` in today's order: one `get_volume_manager().resolve(..)`, its `routed`, else the per-row
@@ -177,14 +179,15 @@ demo, and the progress event would never run there).
 Per-milestone cadence (from `AGENTS.md` § Checker script): before each commit
 `pnpm check --fast && pnpm check svelte-tests-related`, plus `pnpm check clippy` and
 `cargo nextest run -p <touched crates>` / the touched desktop tests when Rust moved. Each milestone also names its own
-gates below. Before landing: `pnpm check` in the background; this is a 3–4 agent effort, so no `--only-slow` unless the
-lead decides otherwise. Push each green milestone with `pnpm land -no-wait`.
+gates below. Before landing: `pnpm check` in the background. With M2 split three ways this is six implementing agents
+(M1, M2-rt, M2a, M2b, M3, M4), which crosses `AGENTS.md`'s 5+ line: add `pnpm check --only-slow` (backgrounded) after
+M3, unless the lead decides otherwise. Push each green milestone with `pnpm land -no-wait`.
 
 ### M1: characterization pins
 
 - **Scope**: desktop tests only, in `apps/desktop/src-tauri/src/multi_rename/`. No production code.
-- **Intentions**: pin what the extraction could silently change and isn't pinned yet. Audit the 11 test files first and
-  add only what's missing; likely gaps:
+- **Intentions**: pin what the extraction could silently change and isn't pinned yet. Audit the 12 test files (plus
+  `tools/actions/multi_rename_test.rs`) first and add only what's missing; likely gaps:
   - A loader whose reader answers `NotSupported` for every file: all media files end `Unreadable`, the failure count
     never trips `give_up`, the last event is `done: true`, and a preview using `[=exif.taken]` shows `Unreadable` rows
     while `[=exif.taken|modified]` falls back (the demo's exact path, run natively).
@@ -224,10 +227,9 @@ lead decides otherwise. Push each green milestone with `pnpm land -no-wait`.
     (today `cfg!(test)` does it, which a crate's `cfg(test)` can't see from the app's tests).
   - Add the crate to `index-crate-isolation`'s guarded list and a ceilings entry measured at extraction, with a comment
     in the house style (see `cmdr-sort` / `cmdr-recents`); `inputs.go`'s package list; `cargo deny` / `machete` clean.
-  - Tests: pure tests move with their modules. Tests needing a listing move too if `cmdr-listing`'s `testing` fixtures
-    (`TestEngine`, `TestListing`) over `InMemoryVolume` serve them; tests needing the real disk, the volume manager, the
-    real reader, `state_recovery`, or `operations_host` (`run_test.rs`, `media_real_test.rs`, `presets_test.rs`'s file
-    cells, `names_file_test.rs`'s cache-dir cell) stay as desktop host tests.
+  - Tests: pure tests move with their modules (`mask_test`, `plan_test`, `transform_test`, `transliterate_test`,
+    `history_test`, and the pure cells of `presets_test` / `names_file_test`). Every session-level test stays a desktop
+    host test, imports changed and assertions untouched: see "Test reality" below for why.
 - **Landmines**:
   - `bindings.ts` must not change by a byte: run `pnpm check desktop-bindings-fresh` and diff. Moving a type can reorder
     specta's output or change a doc comment.
@@ -255,11 +257,71 @@ lead decides otherwise. Push each green milestone with `pnpm land -no-wait`.
 - **DONE**: desktop green with zero `bindings.ts` diff, the crate compiles for wasm32, no `tauri` in its tree, docs for
   the crate exist (`CLAUDE.md` + `DETAILS.md`, can be thin, M4 finishes them).
 
+#### How M2 runs: three agents, two of them in parallel (second review round)
+
+M2 is ~4,400 production lines plus ~3,200 test lines and the MCP tool (`wc -l`, 2026-11-05): too much for one agent with
+the seam work on top. Split it on the line the code already draws: the pure modules import nothing from `session` /
+`media` / `run` (checked: `plan` → `mask`, `transform`; `error` → `plan`; `history` / `presets` → `plan`, `mask`, plus
+the app's `recents`; `names_file` → `plan`), so they move first and the desktop keeps compiling over a half-moved
+module.
+
+- **M2-rt (parallel with M1, own worktree)**: the `cmdr_fs` additions only: `rt::task::JoinSet::spawn_blocking_on`, the
+  wasm `JoinSet::join_next`, and the runtime-taking twin of `blocking_typed_result_with_timeout`, with rt tests on both
+  halves. Touches nothing under `multi_rename/`, so it can't conflict with M1. Gate: `cargo nextest run -p cmdr-fs`,
+  `pnpm check desktop-rust-listing-wasm` (the golden replay's wasm test build is the only lane that runs the wasm `rt`
+  half).
+- **M2a (after M1)**: the crate skeleton and every list it must be on, then the pure modules (`error`, `mask` +
+  `media_token`, `transform`, `transliterate`, `plan`, the pure halves of `history` / `presets` / `names_file`), their
+  tests, and the three vector JSONs. The desktop keeps `session` / `media` / `run` and imports the moved types from the
+  crate. Every specta type that crosses IPC from these files moves here, so `desktop-bindings-fresh` is THIS agent's
+  landmine. Small and mechanical; it also settles the wasm32 question for `cmdr-media-meta` (below) early.
+- **M2b (after M2a and M2-rt)**: `session` / `media` / `run`, `MultiRename` + the host trait, the desktop host, the MCP
+  tool, `ipc.rs` / `lib.rs`. The seam work, on a stable base.
+
+Every place a new crate must be listed (verified against how `cmdr-viewer` / `cmdr-search` are listed, 2026-11-05), all
+in M2a:
+
+- Root `Cargo.toml` `members`; `apps/desktop/src-tauri/Cargo.toml` `[dependencies]` AND `[dev-dependencies]` with
+  `features = ["testing"]` (as `cmdr-viewer` / `cmdr-search` are, lines ~129 and ~519).
+- `scripts/check/checks/inputs.go` `rustMemberTrees`
+  (`{Pkg: "cmdr-multi-rename", Kind: KindApp, Glob: "crates/cmdr-multi-rename/**"}`):
+  `TestRustMemberTreesMatchTheWorkspace` and `workspace-member-coverage` fail without it. That's what "`inputs.go`'s
+  package list" means; `websiteDemoInputs` is M3's.
+- `index-crate-isolation.go`'s guarded list and `index-crate-isolation-ceilings.go`.
+- `svelteInputs` (`inputs.go`) and ci.yml's `svelte` filter: `crates/cmdr-multi-rename/src/**/*_token_vectors.json`.
+- NOT needed: ci.yml's `rust-inputs` anchor and `rust-test-scope.go` already cover `crates/**` (owner scope plus reverse
+  deps), and the crate's `include_str!("counter_token_vectors.json")` in `mask_test.rs` stays inside its own tree.
+
+Test reality the M2 bullets above must respect (read 2026-11-05):
+
+- **The session-level tests are real-disk desktop tests, and they stay desktop.** `session_test.rs`, `results_test.rs`,
+  `media_test.rs`, and `media_real_test.rs` all import `run_test.rs`'s helpers (`folder`, which opens a real `TestDir`
+  through `listing_host`, `names_on_disk`, `settled`, `strip_diacritics`) and `crate::test_support`. Porting them to
+  `InMemoryVolume` is a rewrite, not a move, and a rewrite is exactly where a pin goes soft. So they stay in
+  `multi_rename/` as host tests, changing only imports and `session::open(..)` → the app's `MultiRename` methods:
+  unchanged assertions over the real host ARE M2's regression net. The crate's own session-level coverage over an
+  in-memory volume comes from M3's native `cmdr-listing-wasm` cells; add crate-side session tests only where neither
+  covers a branch.
+- **`cfg(test)` items used by tests that stay desktop stop compiling** once their module is in the crate: `is_open`
+  (`run_test.rs`), `start_media_with` (`media_test.rs`, 7 calls), `NameEdits::new` (`names_file_test.rs`). Gate them
+  `#[cfg(any(test, feature = "testing"))]` behind the crate's `testing` feature (the `cmdr-viewer` pattern). Items only
+  the moving tests use (`FOLDS`, `SEARCH_BUILDS`, `range_token*`, `counter_token`, `media_token_parts`,
+  `MediaToken::field`) stay `cfg(test)`; their visibility (`pub(super)`, `pub(in crate::multi_rename)`) needs fixing for
+  the new module paths.
+- **`MAX_SESSIONS`**: the desktop host's builder passes `if cfg!(test) { 1024 } else { 4 }`. That `cfg!` sits in the app
+  crate, so it sees the app's test build, and the crate stays free of the hack.
+- **`cmdr-media-meta` for wasm32**: M2a's `cargo build -p cmdr-multi-rename --target wasm32-unknown-unknown` (via
+  `browserBound`) builds `cmdr-media-meta` with default features, so `lofty`, `kamadak-exif`, and `tokio/rt` (its
+  `source.rs` bridge) must compile for wasm32. If any doesn't, the `read` feature moves from M3 to M2a, with the size
+  measurement still in M3.
+
 ### M3: the browser host, demo wiring, smoke, and the demo spec
 
 - **Scope**: `crates/cmdr-listing-wasm` (`src/multi_rename.rs` + test, `commands.rs` routing, `DemoOperations` accessor
   for the engine and an op sink, `smoke-multi-rename.mjs` imported by `smoke.mjs`), the image-key lists,
-  `apps/desktop/src/lib/demo/engine-commands.test.ts`, `apps/website/e2e/demo.spec.ts`.
+  `apps/desktop/src/lib/demo/engine-commands.test.ts`, `apps/website/e2e/demo.spec.ts`; for `resultsAvailable`, the
+  crate's `MultiRenameOpened` and host trait, `bindings.ts` (regenerated), `lib/multi-rename/MultiRenameDialog.svelte`,
+  `lib/intl/messages/en/multiRename.json`, and the dialog's tests (listed under Intentions).
 - **Intentions**:
   - `DemoMultiRename` with `MULTI_RENAME_COMMANDS` (all 24 Tauri names) and `handles`, built in `Demo::new` over
     `listings.clone()`, `page_runtime()`, and a host over the page volume, the write engine, and the sink. Routed after
@@ -279,6 +341,25 @@ lead decides otherwise. Push each green milestone with `pnpm land -no-wait`.
     `MultiRenameError` / `PresetSaveRefusal`, the void ones (`prioritize_multi_rename_media`, `close_multi_rename`,
     `save_multi_rename_last_settings`) answer `null`.
   - `apply_multi_rename` adds `history_entries` after a start, as the desktop command does.
+  - **`resultsAvailable` (Decision 4), where it lands** (read 2026-11-05):
+    - Backend: `MultiRenameOpened` (crate `session.rs`, today `{ session_id, count }`) gains the field, filled from a
+      host capability (`results_supported(&self) -> bool`: desktop `true`, demo `false`), ❌ not from
+      `results_path(..).is_some()`. A desktop with no cache dir would otherwise get "Results needs the desktop app"; it
+      keeps today's `CouldntWriteNames` wording instead.
+    - `apps/desktop/src/lib/multi-rename/MultiRenameDialog.svelte`: the Results `Button` (~line 542,
+      `disabled= {!canResults}`, tooltip `multiRename.resultsTooltip`), `canResults` (~166), `openResults` (~230), and
+      the ⌥⏎ handler (`{ id: 'multiRename.results', run: openResults }`, ~286; the command lives in
+      `commands/sources/multi-rename.ts`, `showInPalette: false`, so no palette path). Keep `canResults` for the
+      transient gates and add the capability as a separate, permanent one. Use `Button`'s `ariaDisabled` with the new
+      tooltip (its doc: a block that needs explaining stays focusable and hoverable; a natively `disabled` button may
+      never show its tooltip), and have `openResults` return early on it.
+    - The string: `apps/desktop/src/lib/intl/messages/en/multiRename.json` beside `resultsTooltip` (English only; the
+      generated `intl/keys.gen.ts` follows).
+    - Tests: `MultiRenameDialog.results.svelte.test.ts` gets the disabled cell (aria-disabled, the tooltip text, ⌥⏎ and
+      a click never call `writeMultiRenameNames`). The `session: { sessionId, count }` fixtures in
+      `MultiRenameDialog.svelte.test.ts` (two), `.a11y.test.ts`, `.history.svelte.test.ts`, `.media.svelte.test.ts`, and
+      `.results.svelte.test.ts` (six sites) need the field or svelte-check fails. Plus a backend cell per host pinning
+      the flag.
   - Measure the `.wasm` size (raw, gzip -9) before and after, with and without the `cmdr-media-meta` `read` feature, and
     record it in `crates/cmdr-listing-wasm/DETAILS.md` § The build.
 - **Landmines**:
