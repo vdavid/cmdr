@@ -110,6 +110,10 @@ pub struct Settings {
     pub low_disk_space_notifications: Option<String>,
     #[serde(alias = "behavior.fileSystemWatching.lowDiskSpaceThresholdPercent", default)]
     pub low_disk_space_threshold_percent: Option<u64>,
+    /// Free-space percent of the boot volume below which the drive index pauses,
+    /// separate from the warning's threshold above (`space_poller/low_space.rs`).
+    #[serde(alias = "advanced.indexPauseFreeSpacePercent", default)]
+    pub index_pause_free_space_percent: Option<u64>,
     #[serde(alias = "network.smbConcurrency", default)]
     pub smb_concurrency: Option<u16>,
     #[serde(alias = "advanced.maxLogStorageMb", default)]
@@ -224,6 +228,7 @@ impl Default for Settings {
             appearance_file_size_format: None,
             low_disk_space_notifications: None,
             low_disk_space_threshold_percent: None,
+            index_pause_free_space_percent: None,
             smb_concurrency: None,
             max_log_storage_mb: None,
             error_reports_enabled: None,
@@ -353,6 +358,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let low_disk_space_threshold_percent = json
         .get("behavior.fileSystemWatching.lowDiskSpaceThresholdPercent")
         .and_then(|v| v.as_u64());
+    let index_pause_free_space_percent = json.get("advanced.indexPauseFreeSpacePercent").and_then(|v| v.as_u64());
     let smb_concurrency = json
         .get("network.smbConcurrency")
         .and_then(|v| v.as_u64())
@@ -403,6 +409,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         appearance_file_size_format,
         low_disk_space_notifications,
         low_disk_space_threshold_percent,
+        index_pause_free_space_percent,
         smb_concurrency,
         max_log_storage_mb,
         error_reports_enabled,

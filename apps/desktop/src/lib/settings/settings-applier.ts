@@ -29,6 +29,7 @@ import {
   setMtpEnabled,
   setDiskSpaceThreshold,
   setDiskSpaceSizeFormat,
+  setIndexPauseFreeSpacePercent,
   setDirectSmbConnection,
   setShowSafeSaveFiles,
   setShowStagingTempFiles,
@@ -242,6 +243,8 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   // below), so the mode and threshold always travel together.
   'behavior.fileSystemWatching.lowDiskSpaceNotifications': () => void pushLowDiskSpaceConfigToBackend(),
   'behavior.fileSystemWatching.lowDiskSpaceThresholdPercent': () => void pushLowDiskSpaceConfigToBackend(),
+  // The drive index's own pause threshold, independent of the warning above.
+  'advanced.indexPauseFreeSpacePercent': (v) => void setIndexPauseFreeSpacePercent(v as number),
   // The native View menu's "Show hidden files" CheckMenuItem mirrors this setting
   // no matter who changed it: the shortcut, the command palette, the Settings
   // window (cross-window event), or the menu item itself. `sync_menu_show_hidden`

@@ -1,5 +1,5 @@
 //! The writer's low-disk-space check: while the host says the disk the index lives
-//! on is below the user's low-disk-space threshold, the writer stops and the volume
+//! on is below the index's free-space threshold, the writer stops and the volume
 //! pauses (`lifecycle/state/space_pause.rs`), rather than writing until SQLite
 //! reports `SQLITE_FULL` with the user's last free gigabytes gone.
 //!
@@ -11,7 +11,8 @@
 
 use std::time::{Duration, Instant};
 
-/// How often a busy writer asks the host. The host's reading refreshes every ~2 s,
+/// How often a busy writer asks the host. The host answers from a reading up to a
+/// couple of seconds old, taking a fresh one when it has none (a local `statfs`),
 /// so asking per message would only re-read the same answer, and per second keeps a
 /// slow leak from going much past the line.
 pub(super) const CHECK_EVERY: Duration = Duration::from_secs(1);

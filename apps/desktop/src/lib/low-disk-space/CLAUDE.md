@@ -37,9 +37,9 @@ detector, the `set_low_disk_space_config` live-apply command).
   which needs no TCC permission. Don't add a gate.
 - **The bridge bails on `'off'` as defense in depth**: the backend emits no `low-disk-space` when off, but the bridge
   re-checks the mode per event in case a settings flip races an in-flight emit.
-- **The threshold also pauses the drive index**, warning on or off: below it every volume's index stops writing and
-  resumes past the re-arm margin (`space_poller::index_storage_low`, cmdr-reports#100). So the boot-volume watcher stays
-  registered when the warning is off.
+- **The warning's threshold is the warning's alone.** The drive index pauses on its own Advanced setting
+  (`advanced.indexPauseFreeSpacePercent`, cmdr#1002) and reads the boot volume on demand, so the boot-volume watcher is
+  registered only while the warning is on. DETAILS § The two settings.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

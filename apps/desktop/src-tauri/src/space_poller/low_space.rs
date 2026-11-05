@@ -1,36 +1,49 @@
 //! What the boot volume's free space means: the low-disk-space warning's hysteresis
 //! detector and its `low-disk-space` event, plus the drive index's "is the disk you
-//! live on low?" answer, which reads the same figure against the same threshold
-//! (cmdr-reports#100). The poll loop in `mod.rs` feeds both on every boot-volume
-//! fetch.
+//! live on low?" answer (cmdr-reports#100). Two thresholds, two settings: the warning
+//! is the user's early heads-up, the index's pause is its own restraint, and one
+//! doesn't move the other.
+//!
+//! The poll loop in `mod.rs` feeds the warning on every boot-volume fetch (it polls
+//! the boot volume only while the warning is on or a pane shows it). The index's
+//! answer is on demand: [`index_storage_low`] reuses the poller's reading when it's
+//! fresh and takes one itself when it isn't (`boot_reading.rs`).
 
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::time::Instant;
 use tauri_specta::Event;
 
 use super::APP_HANDLE;
-use crate::file_system::volume::SpaceInfo;
+use super::boot_reading::BOOT_READING;
+use crate::file_system::volume::{DEFAULT_VOLUME_ID, SpaceInfo};
 
 /// Whether the low-disk-space warning is on. Mirrors the
 /// `behavior.fileSystemWatching.lowDiskSpaceNotifications` setting
 /// (`true` for any mode but "off"; the registry default is "in-app").
 static LOW_SPACE_ENABLED: AtomicBool = AtomicBool::new(true);
 
-/// Free-space percent threshold for the low-disk-space warning and the index's
-/// pause. Mirrors the `behavior.fileSystemWatching.lowDiskSpaceThresholdPercent`
-/// setting.
+/// Free-space percent threshold for the low-disk-space warning. Mirrors the
+/// `behavior.fileSystemWatching.lowDiskSpaceThresholdPercent` setting.
 static LOW_SPACE_THRESHOLD_PERCENT: AtomicU64 = AtomicU64::new(5);
+
+/// Free-space percent below which the drive index pauses. Mirrors the
+/// `advanced.indexPauseFreeSpacePercent` setting.
+static INDEX_PAUSE_THRESHOLD_PERCENT: AtomicU64 = AtomicU64::new(DEFAULT_INDEX_PAUSE_PERCENT);
+
+/// The `advanced.indexPauseFreeSpacePercent` registry default.
+pub(super) const DEFAULT_INDEX_PAUSE_PERCENT: u64 = 5;
 
 /// Hysteresis state: `true` means the detector may fire on the next crossing
 /// below the threshold. Disarmed after firing; re-armed once free space climbs
 /// back above threshold + [`LOW_SPACE_REARM_MARGIN_PERCENT`].
 static LOW_SPACE_ARMED: AtomicBool = AtomicBool::new(true);
 
-/// Whether the boot volume is below the low-disk-space threshold as far as the drive
-/// index is concerned. Its own hysteresis state, separate from [`LOW_SPACE_ARMED`]:
-/// that one follows the warning's on/off switch, this one follows every reading.
-/// Starts `false`, so an index never pauses on a reading nobody took.
+/// Whether the boot volume is below the index's pause threshold. Its own hysteresis
+/// state, separate from [`LOW_SPACE_ARMED`]: that one follows the warning's switch
+/// and threshold, this one every reading the index asks with. Starts `false`, and a
+/// failed reading leaves it alone, so an index never pauses on a reading nobody took.
 static INDEX_STORAGE_LOW: AtomicBool = AtomicBool::new(false);
 
 /// Re-arm margin in percentage points. Without it, free space oscillating
@@ -73,17 +86,38 @@ pub(super) fn toast_up() -> bool {
     LOW_SPACE_ENABLED.load(Ordering::Relaxed) && !LOW_SPACE_ARMED.load(Ordering::Relaxed)
 }
 
+/// Stores the index's pause threshold (at startup and live from Settings). The next
+/// ask re-evaluates the current reading against it.
+pub(super) fn configure_index_pause(threshold_percent: u64) {
+    INDEX_PAUSE_THRESHOLD_PERCENT.store(threshold_percent.clamp(1, 99), Ordering::Relaxed);
+}
+
 /// Whether the boot volume, where the drive index's databases live, is below the
-/// user's low-disk-space threshold. The index pauses while it is
-/// (`AppHostPolicy::index_storage_low`). A plain atomic read: the index asks about
-/// once a second per writer.
+/// index's pause threshold. The index pauses while it is
+/// (`AppHostPolicy::index_storage_low`).
+///
+/// On demand: answers from the poller's boot-volume reading when one is younger than
+/// `boot_reading::FRESH_FOR`, else takes a fresh one (`live_volume_space` on `/`, a
+/// local `statfs` on most calls), so nothing polls the boot volume just for this.
+/// Concurrent askers share that one fetch. Callers are the writers (about once a
+/// second each, only while writing) and a paused volume's waiter (every 30 s or more).
 pub(crate) fn index_storage_low() -> bool {
+    let reading = BOOT_READING.fresh_or(Instant::now(), || {
+        let space = super::fetch_space_for_path("/")?;
+        // `cached_space` serves the MCP tools, and this reading is as good as the poller's.
+        super::update_cache(DEFAULT_VOLUME_ID, &space);
+        Some(space)
+    });
+    if let Some(space) = reading {
+        update_index_storage_low(&space);
+    }
     INDEX_STORAGE_LOW.load(Ordering::Relaxed)
 }
 
-/// Feed a fresh boot-volume reading to [`index_storage_low`], logging each edge.
-/// A volume with no ceiling can't run out, so it leaves the state alone.
-pub(super) fn update_index_storage_low(space: &SpaceInfo) {
+/// Feed a fresh boot-volume reading to [`index_storage_low`], logging each edge once
+/// (concurrent askers may run this on the same reading). A volume with no ceiling
+/// can't run out, so it leaves the state alone.
+fn update_index_storage_low(space: &SpaceInfo) {
     let SpaceInfo::Bounded {
         total_bytes,
         available_bytes,
@@ -92,12 +126,15 @@ pub(super) fn update_index_storage_low(space: &SpaceInfo) {
     else {
         return;
     };
-    let threshold = LOW_SPACE_THRESHOLD_PERCENT.load(Ordering::Relaxed) as f64;
+    let threshold = INDEX_PAUSE_THRESHOLD_PERCENT.load(Ordering::Relaxed) as f64;
     let free = free_percent(total_bytes, available_bytes);
     let was_low = INDEX_STORAGE_LOW.load(Ordering::Relaxed);
     let low = index_storage_low_after(was_low, free, threshold);
-    if low != was_low {
-        INDEX_STORAGE_LOW.store(low, Ordering::Relaxed);
+    if low != was_low
+        && INDEX_STORAGE_LOW
+            .compare_exchange(was_low, low, Ordering::Relaxed, Ordering::Relaxed)
+            .is_ok()
+    {
         info!(
             "index storage {}: boot volume at {:.1}% free, threshold {}%",
             if low {
@@ -299,11 +336,11 @@ mod tests {
         assert_eq!(recoveries, 0);
     }
 
-    /// The drive index pauses below the warning's threshold and resumes past its
-    /// re-arm margin, so a disk hovering at the line doesn't flap every volume's
-    /// index on and off (cmdr-reports#100).
+    /// The drive index pauses below its threshold and resumes past the same 1-point
+    /// margin the warning uses, so a disk hovering at the line doesn't flap every
+    /// volume's index on and off (cmdr-reports#100).
     #[test]
-    fn index_storage_low_has_the_warnings_threshold_and_margin() {
+    fn index_storage_low_has_a_one_point_margin() {
         assert!(!index_storage_low_after(false, 5.0, 5.0), "at the line is not below it");
         assert!(index_storage_low_after(false, 0.5, 5.0), "the incident's 0.5% free");
         assert!(
@@ -315,6 +352,34 @@ mod tests {
             !index_storage_low_after(false, 5.5, 5.0),
             "and inside it, a recovered disk stays clear"
         );
+    }
+
+    /// The warning set to 30% to hear about it early mustn't pause indexing at 30%
+    /// free (vdavid/cmdr#1002): the index reads only its own threshold.
+    #[test]
+    fn the_index_pauses_on_its_own_threshold_not_the_warnings() {
+        const GIB: u64 = 1024 * 1024 * 1024;
+        configure(true, 30);
+        configure_index_pause(5);
+        update_index_storage_low(&SpaceInfo::bounded(100 * GIB, 10 * GIB));
+        assert!(
+            !INDEX_STORAGE_LOW.load(Ordering::Relaxed),
+            "10% free is above the index's 5%"
+        );
+        update_index_storage_low(&SpaceInfo::bounded(100 * GIB, 4 * GIB));
+        assert!(INDEX_STORAGE_LOW.load(Ordering::Relaxed), "4% free is below it");
+        configure(false, 1);
+        update_index_storage_low(&SpaceInfo::bounded(100 * GIB, 4 * GIB));
+        assert!(
+            INDEX_STORAGE_LOW.load(Ordering::Relaxed),
+            "the warning's switch and threshold don't move it"
+        );
+        update_index_storage_low(&SpaceInfo::bounded(100 * GIB, 6 * GIB));
+        assert!(
+            !INDEX_STORAGE_LOW.load(Ordering::Relaxed),
+            "past 5% + the margin it recovers"
+        );
+        configure(true, 5);
     }
 
     #[test]

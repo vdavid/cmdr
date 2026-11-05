@@ -5,13 +5,14 @@
 //! is actively displaying in panes, and emits `volume-space-changed` only when the readout would draw a
 //! different figure (`readout.rs`) and the change passes the user's threshold.
 //! While the main window is hidden (`main_window_visibility`), it polls only the
-//! boot volume for the low-space check and emits nothing, then catches up the
-//! moment the window shows.
+//! boot volume, and only while the low-disk-space warning is on, and emits nothing,
+//! then catches up the moment the window shows. Warning off and window hidden: it
+//! polls nothing.
 //!
 //! Poll intervals are per-volume-type via `Volume::space_poll_interval()`:
 //! local volumes poll every 2 s, network/MTP every 5 s.
 //!
-//! Also owns the low-disk-space warning: a permanent, backend-owned watcher on
+//! Also owns the low-disk-space warning: while it's on, a backend-owned watcher on
 //! the boot volume (so the check works even when neither pane shows it) feeds
 //! a hysteresis detector that emits a `low-disk-space` event on each edge:
 //! `is_low: true` when free space crosses below the user-configured percent
@@ -22,12 +23,13 @@
 //! volume id, so a pane watching the boot volume shares the same single
 //! `statfs` per tick with the permanent watcher.
 //!
-//! The same boot-volume reading and the same threshold also answer the drive index's
-//! "is the disk you live on low?" (`index_storage_low`, through `AppHostPolicy`):
-//! below the threshold every volume's index pauses instead of taking the last free
-//! space, and resumes past the re-arm margin (cmdr-reports#100). That's why the
-//! boot-volume watcher stays on even with the warning off: the warning is the user's
-//! choice, the index's restraint isn't. Both detectors live in `low_space.rs`.
+//! The drive index asks "is the disk you live on low?" (`index_storage_low`, through
+//! `AppHostPolicy`) against its own threshold (`advanced.indexPauseFreeSpacePercent`):
+//! below it every volume's index pauses instead of taking the last free space, and
+//! resumes past the same 1-point margin (cmdr-reports#100). That answer is ON DEMAND,
+//! so the index costs no polling: it reuses the poll loop's boot-volume reading when
+//! that's fresh and takes one itself otherwise (`boot_reading.rs`). Both detectors
+//! live in `low_space.rs`.
 
 use log::{debug, warn};
 use serde::{Deserialize, Serialize};
@@ -43,6 +45,7 @@ use crate::file_system::volume::SpaceInfo;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::ignore_poison::IgnorePoison;
 
+mod boot_reading;
 mod low_space;
 mod readout;
 
@@ -107,11 +110,14 @@ struct WatchEntry {
 /// a syscall that a hung NAS could park them on for two minutes
 /// (`tools/CLAUDE.md`: handlers read stores, never the filesystem).
 ///
-/// A volume has an entry while something is watching it: the boot volume
-/// permanently (the low-disk-space watcher, on by default), and any volume a pane
-/// is showing. Nothing watching ⇒ `None`, which callers render as absent rather
-/// than as a guessed zero. Widening this beyond the watched set means widening
-/// what the poller watches, not reaching for `statfs` here.
+/// A volume has an entry once something has read it: any volume a pane shows, the
+/// boot volume while the low-disk-space warning is on, and the boot volume whenever
+/// the drive index asks whether its disk is low (`index_storage_low`, which takes a
+/// reading of its own when the poller's is stale). An entry stays after its watchers
+/// go, so it can be old: current while watched, the last known figure otherwise.
+/// Never read ⇒ `None`, which callers render as absent rather than as a guessed
+/// zero. Widening this means widening what the poller watches, not reaching for
+/// `statfs` here.
 pub(crate) fn cached_space(volume_id: &str) -> Option<SpaceInfo> {
     let cache = LAST_SPACE.get()?;
     let map = cache.lock_ignore_poison();
@@ -164,6 +170,11 @@ pub fn apply_saved_settings(settings: &crate::settings::loader::Settings) {
         settings.low_disk_space_enabled(),
         settings.low_disk_space_threshold_percent.unwrap_or(5),
     );
+    low_space::configure_index_pause(
+        settings
+            .index_pause_free_space_percent
+            .unwrap_or(low_space::DEFAULT_INDEX_PAUSE_PERCENT),
+    );
 }
 
 /// Updates the threshold from the Settings UI (value in decimal megabytes, 1 MB = 1,000,000 bytes, as its
@@ -174,18 +185,21 @@ pub fn set_threshold_mb(mb: u64) {
 
 /// Applies the low-disk-space warning config (at startup and live from Settings).
 ///
-/// Registers the permanent boot-volume watcher either way: the warning may be
-/// off, but the drive index still pauses below the same threshold
-/// ([`index_storage_low`]), and it needs a reading for that. Always re-arms the
-/// detector: a changed threshold should re-evaluate against the current free
-/// space on the next poll.
+/// Watches the boot volume only while the warning is on: the drive index takes its
+/// own readings on demand ([`index_storage_low`]), so with the warning off and the
+/// window hidden nothing polls. Always re-arms the detector: a changed threshold
+/// should re-evaluate against the current free space on the next poll.
 pub fn configure_low_disk_space(enabled: bool, threshold_percent: u64) {
     low_space::configure(enabled, threshold_percent);
-    watch(
-        LOW_SPACE_BOOT_WATCHER_ID.to_string(),
-        DEFAULT_VOLUME_ID.to_string(),
-        "/".to_string(),
-    );
+    if enabled {
+        watch(
+            LOW_SPACE_BOOT_WATCHER_ID.to_string(),
+            DEFAULT_VOLUME_ID.to_string(),
+            "/".to_string(),
+        );
+    } else {
+        unwatch(LOW_SPACE_BOOT_WATCHER_ID);
+    }
 }
 
 /// Registers (or updates) a watcher for live space updates.
@@ -263,10 +277,17 @@ pub fn set_low_disk_space_config(enabled: bool, threshold_percent: u64) {
     configure_low_disk_space(enabled, threshold_percent);
 }
 
+/// Updates the free-space percent below which the drive index pauses (from settings).
+#[tauri::command]
+#[specta::specta]
+pub fn set_index_pause_free_space_percent(percent: u64) {
+    low_space::configure_index_pause(percent);
+}
+
 /// The core loop. Ticks every second; each volume is polled at its own cadence.
 ///
 /// While the main window is hidden (`main_window_visibility`), nothing is drawn, so the loop polls
-/// only what the low-disk-space warning needs and emits nothing. The moment the window shows, it
+/// only what the low-disk-space warning needs (nothing while it's off) and emits nothing. The moment the window shows, it
 /// wakes, polls every watched volume at once, and emits whatever the readout would draw differently
 /// from the last reading that went out.
 async fn poll_loop() {
@@ -282,8 +303,6 @@ async fn poll_loop() {
         let visible = crate::main_window_visibility::is_visible();
         let catching_up = visible && !was_visible;
         was_visible = visible;
-        // Hidden or not, the boot volume keeps being read: the drive index pauses
-        // on it (`index_storage_low`), and indexing runs with the window closed.
 
         // Snapshot the watch list and deduplicate by volume_id.
         // Multiple panes on the same volume produce one poll.
@@ -305,7 +324,8 @@ async fn poll_loop() {
         let format = size_format();
 
         for (volume_id, path) in unique_volumes {
-            // Hidden: only the boot volume's low-space check still has a reader.
+            // Hidden: only the boot volume's low-space warning still has a reader (it's
+            // watched only while the warning is on, so an off warning polls nothing).
             if !visible && volume_id != DEFAULT_VOLUME_ID {
                 continue;
             }
@@ -344,10 +364,11 @@ async fn poll_loop() {
 
             // The low-space check sees every fetch, not just the ones that
             // pass the emit gate below: a slow leak smaller than the readout's
-            // last digit must still trip the warning.
+            // last digit must still trip the warning. The index's on-demand check
+            // reuses the reading instead of taking its own.
             if volume_id == DEFAULT_VOLUME_ID {
+                boot_reading::BOOT_READING.record(space, std::time::Instant::now());
                 low_space::check_low_space(&volume_id, &space);
-                low_space::update_index_storage_low(&space);
             }
 
             // The toast shows the boot volume's free percent to a tenth while the warning is up.
@@ -487,6 +508,24 @@ mod tests {
     #[test]
     fn the_emit_gate_rounds_in_si_until_settings_load() {
         assert_eq!(size_format(), FileSizeFormat::Si);
+    }
+
+    fn boot_watched() -> bool {
+        WATCHED
+            .get_or_init(|| Mutex::new(HashMap::new()))
+            .lock_ignore_poison()
+            .contains_key(LOW_SPACE_BOOT_WATCHER_ID)
+    }
+
+    /// The index takes its own readings, so an off warning polls nothing (vdavid/cmdr#1002).
+    #[test]
+    fn the_boot_volume_is_watched_only_while_the_warning_is_on() {
+        configure_low_disk_space(false, 5);
+        assert!(!boot_watched(), "warning off: nothing to poll the boot volume for");
+        configure_low_disk_space(true, 5);
+        assert!(boot_watched(), "warning on: the poller feeds its detector");
+        configure_low_disk_space(false, 5);
+        assert!(!boot_watched(), "turned off again: unwatched");
     }
 }
 

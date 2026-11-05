@@ -49,9 +49,9 @@ impl HostPolicy for AppHostPolicy {
     }
 
     fn index_storage_low(&self) -> bool {
-        // The index databases live in the cache dir on the boot volume, which the
-        // space poller watches for the low-disk-space warning; same reading, same
-        // threshold.
+        // The index databases live in the cache dir on the boot volume. The space
+        // poller answers against the index's own threshold, reusing its reading
+        // when fresh and taking one otherwise.
         crate::space_poller::index_storage_low()
     }
 }

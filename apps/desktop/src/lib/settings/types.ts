@@ -771,6 +771,7 @@ export interface SettingsValues {
   'advanced.showStagingTempFiles': boolean
   'advanced.logLlmCalls': boolean
   'advanced.diskSpaceChangeThreshold': number
+  'advanced.indexPauseFreeSpacePercent': number
   'advanced.maxLogStorageMb': number
   /**
    * Whether the one-time "this Mac is below the supported floor" notice has been

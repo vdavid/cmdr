@@ -327,6 +327,7 @@ macro_rules! ipc_command_manifest {
                     crate::space_poller::unwatch_volume_space,
                     crate::space_poller::set_disk_space_threshold,
                     crate::space_poller::set_low_disk_space_config,
+                    crate::space_poller::set_index_pause_free_space_percent,
                     crate::commands::analytics::track_event,
                     crate::update_schedule::update_check_due_in,
                     crate::update_schedule::record_update_check,

@@ -123,8 +123,8 @@ pub trait HostPolicy: Send + Sync {
     /// its answer behind a short TTL.
     fn priority_roots(&self, volume_id: &str) -> Vec<PathBuf>;
 
-    /// Whether the disk the index databases live on is below the user's
-    /// low-disk-space threshold right now.
+    /// Whether the disk the index databases live on is below the index's
+    /// free-space threshold right now.
     ///
     /// While it is, every volume's writer stops and its index PAUSES, then restarts
     /// by itself once this answers `false` again (`lifecycle/state/space_pause.rs`).
@@ -133,9 +133,13 @@ pub trait HostPolicy: Send + Sync {
     /// hovering at the line can't flap a volume on and off), which is why this is a
     /// decision rather than a byte count.
     ///
-    /// Asked by every writer about once a second while it's writing, so the same
-    /// cost rule as [`clearance`](Self::clearance) applies: ❌ no I/O, no blocking
-    /// lock. Answer from a cached reading.
+    /// Asked by every writer about once a second while it's writing, and by a
+    /// paused volume's waiter every 30 s or more. Nobody asks while nothing writes,
+    /// so the host answers ON DEMAND rather than polling for it: from a reading a
+    /// couple of seconds old at most, and when it has none that fresh, by taking
+    /// one (a cheap local `statfs`-class call on the index's own disk), shared by
+    /// concurrent askers. So unlike [`clearance`](Self::clearance), a call may
+    /// block for that one local reading; ❌ never a network call or a long lock.
     fn index_storage_low(&self) -> bool;
 }
 

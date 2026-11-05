@@ -38,7 +38,9 @@ key noted where it differs from the field name.
 - `low_disk_space_notifications: Option<String>` (from `behavior.fileSystemWatching.lowDiskSpaceNotifications`;
   `low_disk_space_enabled()` maps any mode but "off" (or missing) to enabled).
 - `low_disk_space_threshold_percent: Option<u64>` (from `behavior.fileSystemWatching.lowDiskSpaceThresholdPercent`,
-  default 5).
+  default 5; the warning only).
+- `index_pause_free_space_percent: Option<u64>` (from `advanced.indexPauseFreeSpacePercent`, default 5; the drive index
+  pauses below it, `space_poller/low_space.rs`).
 - `smb_concurrency: Option<u16>` (from `network.smbConcurrency`).
 - `max_log_storage_mb: Option<u64>` (from `advanced.maxLogStorageMb`).
 - `error_reports_enabled: Option<bool>` (from `updates.errorReports`; Flow B opt-in, default off).

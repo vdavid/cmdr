@@ -144,6 +144,27 @@ export const advancedSettings: SettingDefinitionSource[] = [
     },
   },
   {
+    // The drive index pauses below this free-space percent of the startup disk and
+    // resumes a point above it. Separate from the low-disk-space warning's threshold
+    // (a user who wants an early warning shouldn't pause indexing that early), and
+    // independent of the warning's on/off mode. Live-applied via `settings-applier.ts`
+    // → `setIndexPauseFreeSpacePercent` (`space_poller/low_space.rs`).
+    id: 'advanced.indexPauseFreeSpacePercent',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.fileWatching',
+    labelKey: 'settings.advanced.indexPauseFreeSpacePercent.label',
+    descriptionKey: 'settings.advanced.indexPauseFreeSpacePercent.description',
+    keywordsKey: 'settings.advanced.indexPauseFreeSpacePercent.keywords',
+    type: 'number',
+    default: 5,
+    component: 'number-input',
+    constraints: {
+      min: 1,
+      max: 20,
+      step: 1,
+    },
+  },
+  {
     id: 'fileViewer.suppressBinaryWarning',
     section: ['Advanced'],
     cardKey: 'settings.advanced.card.hintsAndWarnings',

@@ -255,6 +255,7 @@ export {
   setDiskSpaceThreshold,
   setDiskSpaceSizeFormat,
   setLowDiskSpaceConfig,
+  setIndexPauseFreeSpacePercent,
   checkFullDiskAccess,
   checkFullDiskAccessQuiet,
   getRestrictedPaths,

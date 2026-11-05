@@ -362,11 +362,19 @@ export async function setDiskSpaceSizeFormat(format: FileSizeFormat): Promise<vo
 
 /**
  * Updates the low-disk-space warning config at runtime. `enabled` registers or
- * removes the backend's permanent boot-volume watcher; `thresholdPercent` is
- * the free-space percent that trips the warning.
+ * removes the backend's boot-volume watcher; `thresholdPercent` is the
+ * free-space percent that trips the warning.
  */
 export async function setLowDiskSpaceConfig(enabled: boolean, thresholdPercent: number): Promise<void> {
   await commands.setLowDiskSpaceConfig(enabled, Math.round(thresholdPercent))
+}
+
+/**
+ * Updates the free-space percent of the startup disk below which the drive index
+ * pauses (`advanced.indexPauseFreeSpacePercent`), separate from the warning's threshold.
+ */
+export async function setIndexPauseFreeSpacePercent(percent: number): Promise<void> {
+  await commands.setIndexPauseFreeSpacePercent(Math.round(percent))
 }
 
 // ============================================================================

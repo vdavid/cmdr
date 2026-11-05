@@ -39,9 +39,14 @@ Both live under **Behavior > Notifications > Low disk space** (`NotificationsSec
   greyed out while the mode is `'off'`.
 
 `pushLowDiskSpaceConfigToBackend()` calls `setLowDiskSpaceConfig(mode !== 'off', threshold)`. On the Rust side the
-command updates the poller's atomics and re-arms the hysteresis. The boot-volume watcher stays registered either way,
-because the drive index pauses below the same threshold (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` §
-"Pausing for disk space").
+command updates the poller's atomics, re-arms the hysteresis, and registers the boot-volume watcher (`low-space:boot`)
+while the warning is on, unwatching it when it's off, so an off warning with a hidden window polls nothing.
+
+The drive index's pause is a separate setting, `advanced.indexPauseFreeSpacePercent` (default 5, range 1–20,
+auto-rendered in Advanced > File watching, live-applied through `setIndexPauseFreeSpacePercent`). It holds whether the
+warning is on or off, and the index takes its own boot-volume readings on demand (`space_poller/low_space.rs`,
+`index_storage_low`), so it needs no watcher (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "Pausing for disk
+space").
 
 ## Toast shape and live-follow
 

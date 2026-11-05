@@ -2005,6 +2005,18 @@
   "@settings.advanced.diskSpaceChangeThreshold.keywords": {
     "description": "Search keywords for the “Disk space change threshold (MB)” setting (settings.advanced.diskSpaceChangeThreshold.label) in Settings > Advanced. What it does: sets how much free space must change before the status bar updates its number. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
+  "settings.advanced.indexPauseFreeSpacePercent.label": "Pause indexing when free space is below (%)",
+  "@settings.advanced.indexPauseFreeSpacePercent.label": {
+    "description": "Advanced-section label for the number input that sets the free-space percentage of the startup disk below which drive indexing pauses. \"(%)\" marks the value as a percent; keep the locale's percent sign."
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr pauses drive indexing when free space on your startup disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the low disk space warning is on or off.",
+  "@settings.advanced.indexPauseFreeSpacePercent.description": {
+    "description": "Help text for the index pause threshold (Settings > Advanced). \"Cmdr\" is the product name (keep it). \"drive indexing\" is Cmdr's background scan that computes folder sizes; use the same term as the other indexing settings. \"startup disk\" is the macOS boot-drive term; use the OS's localized term. \"one point\" means one percentage point (5% → 6%). \"low disk space warning\" is the separate notification set under Behavior > Notifications; use that feature's translated name."
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.keywords": "disk, space, full, free, index, indexing, pause, storage, threshold, percent, low",
+  "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
+    "description": "Search keywords for the “Pause indexing when free space is below (%)” setting (settings.advanced.indexPauseFreeSpacePercent.label) in Settings > Advanced. What it does: sets how full the startup disk may get before Cmdr pauses its background drive indexing. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
   "settings.fileViewer.suppressBinaryWarning.label": "Suppress the raw-view warning for binary files",
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "description": "Advanced-section label for the toggle that hides the binary-file warning banner in the viewer. \"binary files\" = non-text files (images, PDFs, archives).",

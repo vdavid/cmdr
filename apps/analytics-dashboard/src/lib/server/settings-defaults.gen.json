@@ -2914,6 +2914,7 @@
     "advanced.exitFullScreenOnEscape": true,
     "advanced.exitFullScreenOnEscapeHintShown": false,
     "advanced.fileWatcherDebounce": 200,
+    "advanced.indexPauseFreeSpacePercent": 5,
     "advanced.logLlmCalls": false,
     "advanced.maxLogStorageMb": 200,
     "advanced.mountTimeout": 20000,

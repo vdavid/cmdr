@@ -230,8 +230,9 @@ state.
 identically. Transient contention (`SQLITE_BUSY` / `SQLITE_LOCKED`) is deliberately NOT fatal (the busy handler backs
 those off). `as_index_failure()` builds the typed `IndexFailure { code, extended_code }`. `SQLITE_FULL` is its own class
 (`is_disk_full()`): it stops the writer the same way, but as `IndexStop::OutOfSpace`, which the lifecycle PAUSES and
-resumes, logged at warn with no error report; so does `space_guard.rs` when the host says the disk is below the
-low-disk-space threshold (`../lifecycle/DETAILS.md` § "Pausing for disk space").
+resumes, logged at warn with no error report; so does `space_guard.rs` when the host says the disk is below the index's
+own free-space threshold (`advanced.indexPauseFreeSpacePercent`, separate from the low-disk-space warning's; the host
+answers on demand, `space_poller/low_space.rs`; `../lifecycle/DETAILS.md` § "Pausing for disk space").
 
 **Detection lives here (`../failure.rs::IndexFailureSignal`).** A one-shot per-volume `Arc<IndexFailureSignal>` created
 in `IndexWriter::spawn_for`, cloned into the writer thread, exposed via `IndexWriter::failure_signal()`. Every
