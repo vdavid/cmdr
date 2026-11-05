@@ -174,7 +174,7 @@
     "description": "Command name that opens a form to send feedback to the app's maker. Appears in the command palette and the Help menu.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.feedbackSend.description": "Tells the maker of Cmdr what you think: ideas, wishes, anything",
+  "commands.feedbackSend.description": "Lets you tell the maker of Cmdr what you think: ideas, wishes, anything",
   "@commands.feedbackSend.description": {
     "description": "Longer help text for the \"Send feedback\" command, shown as a secondary line in the command palette. \"Cmdr\" is the brand name, do not translate it. The tone is warm and inviting."
   },

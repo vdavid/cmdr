@@ -286,8 +286,14 @@
     "notMatch": [
       "is archived",
       "archived in cold storage",
-      { "key": "fileExplorer.list.rowKind.archive", "why": "the zip file's spoken row kind, the archive noun" },
-      { "key": "suggestedOps.facts.archive", "why": "labels the zip a compress suggestion creates, the archive noun" }
+      {
+        "key": "fileExplorer.list.rowKind.archive",
+        "why": "the zip file's spoken row kind, the archive noun"
+      },
+      {
+        "key": "suggestedOps.facts.archive",
+        "why": "labels the zip a compress suggestion creates, the archive noun"
+      }
     ]
   },
   "ask": {
@@ -400,9 +406,21 @@
   "badge": {
     "en": "badge",
     "match": ["badge", "badges", "status badge", "status badges"],
-    "notMatch": ["badges mark"],
-    "note": "Not the gamification sense some term bases give for badge. The typing badge shows in both typing modes, so never name it after the filter alone.",
-    "sense": "A small marker showing a state (an overlay on a file icon, a label in the title bar), or the small box in a pane that holds the text typed in the quick filter or Jump mode."
+    "notMatch": [
+      "badges mark",
+      {
+        "key": "commands.paneQuickFilter.description",
+        "why": "the pane box holding typed text, the typing-badge sense"
+      }
+    ],
+    "note": "Not the gamification sense some term bases give for badge. The pane box that holds typed text is `typing-badge`.",
+    "sense": "A small marker showing a state: an overlay on a file icon, or a label in the title bar."
+  },
+  "typing-badge": {
+    "en": "badge (typing)",
+    "sense": "The small box in a pane corner that holds the text typed in the quick filter or Jump mode; it shows in both modes, so never name it after the filter alone.",
+    "match": ["the badge with what you"],
+    "distinct": ["badge"]
   },
   "batch": {
     "distinct": ["run"],

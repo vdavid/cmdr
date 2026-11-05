@@ -263,7 +263,7 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
   'help.viewDebugLog': 'Shows Cmdr’s debug log live in the file viewer',
   'help.sendErrorReport': 'Sends Cmdr logs to the team to help fix something that went wrong',
   'help.whatsNew': 'Shows what changed in the latest releases of Cmdr',
-  'feedback.send': 'Tells the maker of Cmdr what you think: ideas, wishes, anything',
+  'feedback.send': 'Lets you tell the maker of Cmdr what you think: ideas, wishes, anything',
   'log.operationLog': 'Shows a history of your file operations, and lets you roll them back',
   'suggestedOps.show': 'Shows the file operations the AI suggested, so you can decide what runs',
   'askCmdr.toggle': 'Opens a chat with an AI about your files, drives, and history',
