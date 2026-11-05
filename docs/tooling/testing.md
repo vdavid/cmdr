@@ -394,3 +394,5 @@ Its output is concise and CI-aligned: a check whose output runs past ~40 lines p
 path to the full text under `~/.local/share/check-runner/cmdr/output/` (read that file, or rerun with `-v` for
 everything). Per-check: `pnpm check <name>`. By group: `pnpm check rust` / `svelte`. Fast pre-commit lane (~7 s,
 curated): `--fast`. Slow checks (E2E, Docker): `--only-slow`. See `AGENTS.md` § Checker script for when to run which.
+
+THROWAWAY probe line (never merge).
