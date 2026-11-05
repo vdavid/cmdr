@@ -134,7 +134,9 @@
 <style>
     .toast-container {
         position: fixed;
-        top: var(--spacing-lg);
+        /* Below the status corner's real bottom edge, which it publishes (`status-corner/toast-clearance.ts`), so
+           a toast never covers the copy's progress chip at any zoom or text size. */
+        top: max(var(--spacing-lg), calc(var(--titlebar-status-corner-bottom) + var(--spacing-sm)));
         right: var(--spacing-lg);
         z-index: var(--z-notification);
         display: flex;

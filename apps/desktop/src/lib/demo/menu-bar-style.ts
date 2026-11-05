@@ -54,7 +54,7 @@ html:root .status-corner {
   top: calc(var(--cmdr-demo-window-top, 0px) + var(--spacing-sm) - var(--spacing-xxs));
 }
 html:root .toast-container:not(.at-bottom) {
-  top: calc(var(--cmdr-demo-window-top, 0px) + var(--spacing-lg));
+  top: max(calc(var(--cmdr-demo-window-top, 0px) + var(--spacing-lg)), calc(var(--titlebar-status-corner-bottom) + var(--spacing-sm)));
 }
 `
 

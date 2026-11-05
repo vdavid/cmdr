@@ -42,6 +42,14 @@ The row sits in the initial containing block because no ancestor between it and 
 resolved its own `top`/`right` against the same box before the corner existed, and reproducing it is what makes the
 extraction visually identical.
 
+The top toast stack shares the corner, so the corner publishes its real bottom edge (viewport px) as
+`--titlebar-status-corner-bottom` on `:root` while it's mounted (`toast-clearance.ts`, following the row's size through
+a `ResizeObserver`), and `ToastContainer.svelte` starts the stack at the larger of its own inset and that edge plus
+`--spacing-sm`. Decision: the measured box, never a tuned offset. Why: the row's height moves with its members, the app
+zoom, and the macOS text size; at 125% the "Still running in the background" toast covered the copy's progress chip and
+took its click (`apps/website/e2e/demo.spec.ts`'s queue cell pins it at the demo's 125%). An idle corner's bottom sits
+above the stack's inset, so it moves nothing.
+
 ## Member contract
 
 A member is a plain inline box:
