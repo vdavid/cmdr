@@ -22,6 +22,7 @@ export type OpsEventKind =
   | 'admin-auth-rejected'
   | 'webhook-signature-rejected'
   | 'sale-notice-failed'
+  | 'ci-health'
   | 'beta-signup'
   | 'newsletter-signup'
   | 'subprocessor-updates-signup'

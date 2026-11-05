@@ -211,6 +211,22 @@ describe('handleMorningBrief', () => {
     expect(lastEmail().html).toContain("Couldn't read the board")
   })
 
+  it('carries the CI line, saying what GitHub would not answer (`ci-brief.test.ts` covers the numbers)', async () => {
+    fakeGitHub([], { down: true })
+
+    await handleMorningBrief(testEnv({ CI_HEALTH_REPO: 'vdavid/cmdr' }))
+
+    expect(lastEmail().html).toContain(
+      'CI: main not checked yet · nightly not checked yet · couldn&#39;t read lands from GitHub · cache size unknown',
+    )
+  })
+
+  it('leaves the CI line out without CI_HEALTH_REPO', async () => {
+    fakeGitHub([])
+    await handleMorningBrief(testEnv())
+    expect(lastEmail().html).not.toContain('CI: main')
+  })
+
   it('stays quiet without a recipient or an SMTP2Go key', async () => {
     fakeGitHub([])
     await handleMorningBrief(testEnv({ SMTP2GO_API_KEY: undefined }))

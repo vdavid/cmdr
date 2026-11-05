@@ -240,6 +240,11 @@ D1_MAX_DB_MB = 10240
 R2_ERROR_REPORTS_BUCKET_NAME = "cmdr-error-reports-eu"
 R2_ERROR_REPORTS_JURISDICTION = "eu"
 
+# The PUBLIC repo whose GitHub Actions health the cron watches (`ci-health.ts`: red/green changes and
+# silence, into the digest) and the morning brief sums up (`ci-brief.ts`). `owner/name`; remove to
+# turn both off. Reads are public; `GITHUB_PROJECT_TOKEN` rides along for the rate limit when set.
+CI_HEALTH_REPO = "vdavid/cmdr"
+
 # Listmonk. The signup routes (POST /beta-signup, /newsletter-signup, /subprocessor-updates-signup) subscribe by list UUID through
 # Listmonk's public endpoint, which needs no credentials; the UUIDs are public anyway (Listmonk's own
 # subscription form shows them). The API user + token (`wrangler secret put LISTMONK_API_TOKEN`) are

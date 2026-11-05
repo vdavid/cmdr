@@ -33,6 +33,7 @@ import { fileCrashCards, fileErrorReportCards, fileFeedbackCards, postAmendments
 import { handleReportDigest } from './report-digest'
 import { applyCardRatings } from './report-ratings'
 import { MORNING_CRON, handleMorningBrief, isMorningBriefTick } from './morning-brief'
+import { handleCiHealth } from './ci-health'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -136,6 +137,8 @@ export default {
     await runEveryTick('Amendments on the board', () => postAmendmentsToBoard(env))
     // Before the digest, so a rating that failed on this tick is in it.
     await runEveryTick('Card ratings', () => applyCardRatings(env))
+    // Also before the digest, so a CI change seen on this tick is in it. Never throws on GitHub.
+    await runEveryTick('CI health', () => handleCiHealth(env))
     await runEveryTick('Report digest', () => handleReportDigest(env))
 
     // Daily jobs: only run on the 00:00 UTC invocation

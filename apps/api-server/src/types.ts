@@ -113,6 +113,9 @@ export type Bindings = {
   // The login the report-triage agent's token posts as. Only its comments that start with the triage
   // marker are read for a `Rating:` line (`report-ratings.ts`); unset turns the rating job off.
   GITHUB_TRIAGE_AUTHOR?: string
+  // The PUBLIC repo whose GitHub Actions health the cron watches (`ci-health.ts`) and the morning
+  // brief sums up (`ci-brief.ts`), as `owner/name`. A var; unset turns both off.
+  CI_HEALTH_REPO?: string
   // R2 S3-compatible credentials, used to mint presigned bundle download URLs
   // for the digest and the card comment. Bindings can't presign on their own, but the S3 API can.
   R2_ACCOUNT_ID?: string
