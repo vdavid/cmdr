@@ -805,9 +805,9 @@ jobs:
       # slots keep their `target/` between jobs (that's the speedup), so code from outside the repo
       # must never reach them. Trusted is an allowlist, like the light lane's: a push (only `main`),
       # a dispatch, or a pull request whose head is in this repo and whose author isn't a bot.
-      # Hosted too: a full run (the release gate's `run_all` and the nightly), so a release is
-      # tested on the release builder's own image. (The Finder extension compiles in a hosted job
-      # of the lane's own either way.) A missing token (a fork's run gets no secrets, and the secret
+      # Hosted too, on purpose: a full run (the release gate's `run_all` and the nightly). The M1
+      # runs macOS 27, so these runs are our only macOS 26 coverage, and a release is tested on the
+      # release builder's own image and SDK. A missing token (a fork's run gets no secrets, and the secret
       # may not exist yet) and any failed lookup go hosted, so the worst case is the old behavior.
       # Listing a repo's runners needs
       # Administration: read, which `GITHUB_TOKEN` can't have, hence the fine-grained
@@ -835,7 +835,7 @@ jobs:
             exit 0
           fi
           if [[ "$FULL" == "true" ]]; then
-            pick "$hosted" false "A full run, which tests on the release builder's image."
+            pick "$hosted" false "A full run: our macOS 26 coverage, on the release builder's image."
             exit 0
           fi
           if [[ -z "$GH_TOKEN" ]]; then

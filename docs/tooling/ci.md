@@ -416,14 +416,15 @@ three questions Linux can't answer for that code: `desktop-rust-clippy`, `deskto
 
 Its steps live in the reusable `macos-lane.yml`, called by `ci.yml`'s `desktop-rust-macos` (§ Lane files).
 
-Beside it, in a job of its own on hosted `macos-26` (`finder-extension`), it runs `desktop-finder-extension-compile`:
-both slices of the Swift Finder extension, cross-compiled by `swiftc`. Nothing else compiles it before a release build,
-which is where `Logger` (macOS 11) broke the 10.15 x86_64 slice (`v0.58.1-pipelinetest.1`, 2026-11-03). It took 65 s on
-a cold runner (mostly `swiftc` loading the macOS frameworks; 4 s on a warm Mac, 2026-11-03), so the job runs only when
-the `finder-extension` filter matches (the extension, its check, the lane file, `ci.yml`, or `.mise.toml`) or on
-`run_all`, which the release gate always is. It's always hosted because the M1 has only the Command Line Tools, whose
-Swift runtime has no x86_64 slice, so the 10.15 slice fails to link there (`swiftCompatibility*` undefined, 2026-11-05).
-The lane file's `marker` job saves the lane marker once the main job passed and this one passed or wasn't asked for, so
+It also runs `desktop-finder-extension-compile`: both slices of the Swift Finder extension, cross-compiled by `swiftc`.
+Nothing else compiles it before a release build, which is where `Logger` (macOS 11) broke the 10.15 x86_64 slice
+(`v0.58.1-pipelinetest.1`, 2026-11-03). It took 65 s on a cold runner (mostly `swiftc` loading the macOS frameworks; 4 s
+on a warm Mac, 2026-11-03), so it runs only when the `finder-extension` filter matches (the extension, its check, the
+lane file, `ci.yml`, or `.mise.toml`) or on `run_all`, which the release gate always is. On the M1 it's a step of the
+main job, first, so it never waits for a second free slot; hosted, it's a parallel job of its own (`finder-extension`),
+so its cold minute doesn't lengthen the lane. The x86_64 slice links only against full Xcode's Swift runtime (the
+Command Line Tools lack the x86_64 `swiftCompatibility*` libs), which the M1 has (§ The M1 runner). The lane file's
+`marker` job saves the lane marker once the main job passed and `finder-extension` passed or wasn't asked for, so
 neither can vouch for the other. The `rust` filter carries `apps/desktop/finder-extension/**` too, so a Swift-only
 change starts the lane at all.
 
@@ -476,10 +477,13 @@ tests 154 s, module cycles 174 s). Hosted, the same lane took 29–50 min, media
   author isn't a bot. Listing runners needs Administration: read, which `GITHUB_TOKEN` can't get, so it reads the
   `RUNNER_STATUS_TOKEN` secret (a fine-grained PAT on `vdavid/cmdr` only, Administration read-only). No secret (a fork's
   run gets none) or a failed lookup routes hosted, so the worst case is the old behavior.
-- **Always hosted**: a full run (the release gate's `run_all`, the nightly), so a release is gated on the release
-  builder's own image and SDK, and the Finder extension compile (its own job, § above). The M1 runs a newer macOS than
-  `macos-26`, so a test that depends on the OS version can pass on one and fail on the other; the nightly and the
-  release gate catch the hosted side.
+- **Always hosted, on purpose**: a full run (the release gate's `run_all`, the nightly). The M1 runs macOS 27, so these
+  runs are our only macOS 26 coverage, and a release is gated on the release builder's own image and SDK. A test that
+  depends on the OS version can pass on one and fail on the other; the nightly and the release gate catch the hosted
+  side.
+- **Xcode**: the box has full Xcode (selected, license accepted, first launch done), which the Finder extension's x86_64
+  slice needs (§ macOS lane). The `ci_runner` role fails its play if `ci-runner` can't use it (verified as `ci-runner`,
+  Xcode 27.2, both slices built, 2026-11-05).
 - **What the M1 path changes** (`self-hosted` input): no rust-cache and no mise Actions cache (the box keeps both); the
   pinned toolchain installs under a `shlock` (four slots share one rustup home, and rustup has no lock of its own);
   `timeout-minutes` is 30 instead of 90, so a box dying mid-job fails the run instead of hanging it.

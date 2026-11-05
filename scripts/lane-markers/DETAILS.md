@@ -115,7 +115,8 @@ inputs already passed)" lists them). `changes` and `CI OK` get the built binary 
 (`.github/actions/lane-marker`), which refuses a key without the `lane-green-` prefix; a multi-job lane file (Rust,
 Svelte, website, macOS) saves from a `marker` job that `needs` every other job, so one green job can't vouch for
 another. The macOS lane's `finder-extension` job runs only when asked (`compile-finder-extension`), so its `marker` has
-an explicit `if:` that accepts that job's skip only when the compile wasn't asked for.
+an explicit `if:` that accepts that job's skip only when the compile wasn't asked for or ran as a step of the main job
+(on the M1).
 
 `changes` job:
 

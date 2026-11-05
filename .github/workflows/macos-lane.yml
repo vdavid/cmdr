@@ -10,9 +10,9 @@ name: macOS lane
 # David's M1 (trusted runs, while a slot is idle), or GitHub's hosted `macos-26`. A slot keeps its
 # own warm `CARGO_TARGET_DIR` outside the workspace, so it restores and saves no Rust cache; the
 # hosted runner restores only a small registry-and-tools entry and builds the rest. The Finder
-# extension compiles in a job of its own on hosted `macos-26` either way (the M1 has only the
-# Command Line Tools, which can't link its x86_64 slice), and `marker` saves the lane marker once
-# both passed.
+# extension compiles inside `lane` on the M1 (seconds, warm) and in a parallel job of its own when
+# hosted (a minute of cold `swiftc` that would otherwise lengthen the lane), and `marker` saves the
+# lane marker once both passed.
 on:
   workflow_call:
     inputs:
@@ -40,11 +40,11 @@ jobs:
   # Nothing else compiles the extension before a release build, which is where `Logger` (macOS 11)
   # broke the 10.15 x86_64 slice. About a minute on a cold runner (`swiftc` loading the macOS
   # frameworks), so only when its files changed or on a `run_all`, which the release gate always
-  # is. Always hosted: it needs full Xcode's Swift runtime for the x86_64 slice, which the M1's
-  # Command Line Tools lack (`swiftCompatibility*` undefined, 2026-11-05).
+  # is. Hosted runs only: on the M1, `lane` compiles it as a step, so it doesn't wait for a second
+  # free slot.
   finder-extension:
     name: Finder extension
-    if: inputs.compile-finder-extension
+    if: inputs.compile-finder-extension && !inputs.self-hosted
     runs-on: macos-26
     timeout-minutes: 15
 
@@ -133,6 +133,13 @@ jobs:
         run: go build -o check .
         working-directory: ./scripts/check
 
+      # Self-hosted only; hosted runs compile it in `finder-extension`, in parallel. The M1 has full
+      # Xcode, whose Swift runtime the x86_64 slice links against (the infra repo's `ci_runner` role
+      # checks it). First, as it takes seconds.
+      - name: Compile the Finder extension
+        if: inputs.self-hosted && inputs.compile-finder-extension
+        run: ./scripts/check/check --check desktop-finder-extension-compile --ci
+
       # Pull requests only (see `rust-lane.yml`).
       - name: Scope the Rust tests to the crates this change can affect
         if: github.event_name == 'pull_request'
@@ -158,16 +165,16 @@ jobs:
       - name: Check Rust module cycles
         run: ./scripts/check/check --check desktop-rust-module-cycles --ci
 
-  # The lane's marker, once `lane` passed and `finder-extension` passed or wasn't asked for, so one
-  # green job can't vouch for the other (`scripts/lane-markers/DETAILS.md`). A skipped need would
-  # skip a plain `needs` job, hence the explicit `if:`; `!cancelled()` keeps a cancelled run from
-  # saving one.
+  # The lane's marker, once `lane` passed and `finder-extension` passed or wasn't asked for (not
+  # asked, or the M1 compiled it inside `lane`), so one green job can't vouch for the other
+  # (`scripts/lane-markers/DETAILS.md`). A skipped need would skip a plain `needs` job, hence the
+  # explicit `if:`; `!cancelled()` keeps a cancelled run from saving one.
   marker:
     name: Lane marker
     needs: [finder-extension, lane]
     if: >-
       !cancelled() && needs.lane.result == 'success' && (needs.finder-extension.result == 'success' ||
-      (needs.finder-extension.result == 'skipped' && !inputs.compile-finder-extension))
+      (needs.finder-extension.result == 'skipped' && (!inputs.compile-finder-extension || inputs.self-hosted)))
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
