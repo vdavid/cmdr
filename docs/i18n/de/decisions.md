@@ -206,6 +206,8 @@ or `terms.json` aren't repeated here.
 - `Die direkte Verbindung zu X kam nicht zustande.` fills the missing subject without blaming Cmdr.
   `Direkte Verbindung versuchen`, never stacked infinitives.
 - The X is `Schließen` (shares a `sourceHash` with `lowDiskSpace.toast.closeTooltip`).
+- require → `verlangen` (`SMB-Verschlüsselung immer verlangen`, managed value `Immer verlangt`); prose quotes that
+  label + `eingeschaltet`.
 
 ## Umbenennen und Anlegen: die abgewiesenen Mutationen (`errors.mutation.*`, `errors.volume.*`)
 

@@ -1422,9 +1422,10 @@
   },
   "encrypted": {
     "chosen": "зашифрований",
-    "accept": ["зашифров", "шифруван"],
+    "accept": ["зашифров", "шифруван", "шифру"],
     "confidence": "high",
-    "sources": "macOS Finder Localizable (Encrypted → Зашифрований), live Mail (Encrypted → Зашифровано), Keychain Access (Encryption → Шифрування); MS (encryption → шифрування); Nautilus"
+    "sources": "macOS Finder Localizable (Encrypted → Зашифрований), live Mail (Encrypted → Зашифровано), Keychain Access (Encryption → Шифрування); MS (encryption → шифрування); Nautilus",
+    "note": "«шифру» covers the present-tense verb («Cmdr шифрує») and the infinitive «шифрувати» for SMB connection encryption (settings.network.requireSmbEncryption.*); the setting label reads «Завжди вимагати шифрування SMB» (require → вимагати, macOS-pile «Вимагати підтвердження»)."
   },
   "endpoint": {
     "chosen": "кінцева точка",

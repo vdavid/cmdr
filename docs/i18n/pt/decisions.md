@@ -297,6 +297,13 @@ The non-obvious why behind `terms.json` rulings. Forms: `terms.json`; voice: `st
 
 - `O que sua organização gerencia`, `Só verificação manual`: no agreeing participle. `*Off` agrees with its row.
 
+## Require SMB encryption (`settings.network.requireSmbEncryption.*`, `*encryptionRequired*`, `*EncryptionRequired*`)
+
+- Label `Sempre exigir criptografia SMB` (`exige` is the catalog's verb); messages quote it as
+  `o ajuste “…” está ativado`, so the participle agrees with `ajuste`. Managed value `Sempre exigida` (agrees with
+  `Criptografia SMB`).
+- `{provider}` busy lines name the type first (`O provedor {provider} está ocupado`): a brand's gender is unknown.
+
 ## AI suggestions (`suggestedOps.*`)
 
 - `Sugestões da IA`, as `fileOperations.mkdir.aiSuggestions*`. `Por quê:` (tonic, as `Por quê?`); aria

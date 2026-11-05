@@ -1296,15 +1296,15 @@
   "@settings.network.directSmbConnection.keywords": {
     "sourceHash": "6043806"
   },
-  "settings.network.requireSmbEncryption.label": "Always require SMB encryption",
+  "settings.network.requireSmbEncryption.label": "一律要求 SMB 加密",
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr encrypts its own connections to SMB shares, even when the server doesn’t ask for it, and doesn’t connect to a server that can’t encrypt. Guest connections can’t be encrypted, so you’ll need to sign in. Takes effect for new connections.",
+  "settings.network.requireSmbEncryption.description": "Cmdr 會加密自己建立的 SMB 共享資料夾連線，即使伺服器沒有要求也一樣，而且不會連線到無法加密的伺服器。以訪客身分連線時無法加密，所以你需要登入。對新的連線生效。",
   "@settings.network.requireSmbEncryption.description": {
     "sourceHash": "4b8d40b"
   },
-  "settings.network.requireSmbEncryption.keywords": "encrypt, encrypted, encryption, security, privacy, secure",
+  "settings.network.requireSmbEncryption.keywords": "安全性, 安全, 隱私, 保護, 保密, 加密連線, 強制加密",
   "@settings.network.requireSmbEncryption.keywords": {
     "sourceHash": "1fc0e27"
   },
@@ -2824,11 +2824,11 @@
   "@settings.managed.summary.securityLogRequired": {
     "sourceHash": "baf73d6"
   },
-  "settings.managed.summary.smbEncryption": "SMB encryption",
+  "settings.managed.summary.smbEncryption": "SMB 加密",
   "@settings.managed.summary.smbEncryption": {
     "sourceHash": "059bf46"
   },
-  "settings.managed.summary.smbEncryptionRequired": "Always required",
+  "settings.managed.summary.smbEncryptionRequired": "一律要求",
   "@settings.managed.summary.smbEncryptionRequired": {
     "sourceHash": "8bac3f7"
   },

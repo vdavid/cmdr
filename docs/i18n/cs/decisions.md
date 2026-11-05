@@ -156,6 +156,11 @@ systémové připojení vs přímé připojení; sheet titles Přihlášení: {n
 {host}, fingerprint otisk, revoked kompromitovaný; busy suffix (probíhá operace), gender-free. The OS-named
 {localNetwork} goes in quotes behind a noun: Oprávnění „{localNetwork}“, Otevřít nastavení „{localNetwork}“.
 
+## SMB encryption, busy provider (`*requireSmbEncryption.*`, `*providerBusy.*`)
+
+require → vyžadovat (macOS Vyžadovat heslo); prose quotes the label (volba „Vždy vyžadovat šifrování SMB“). Poskytovatel
+{provider} so zaneprázdněný agrees with a noun.
+
 ## Git (`errors.git.*`, `fileExplorer.git.*`)
 
 repozitář (úložiště is storage), větev, značka, commit, pracovní strom; worktree, stash, HEAD verbatim. Dirty chip →

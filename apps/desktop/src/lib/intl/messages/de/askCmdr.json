@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "{provider} ist gerade ausgelastet. Wird erneut versucht ({attemptText} von {attemptsText}) …",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "Dein KI-Anbieter ist gerade ausgelastet. Wird erneut versucht ({attemptText} von {attemptsText}) …",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "Dieser Chat wird lang. Ein neuer hält die Antworten schnell und fokussiert.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -736,6 +744,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "Dein KI-Anbieter hat das abgelehnt: Das Limit deines Tarifs ist kleiner als eine einzige Anfrage von Cmdr, denn jede Anfrage enthält immer die Anweisungen von Cmdr. Eine kürzere Nachricht hilft nicht. Wechsle zu einem größeren Tarif oder wähle in den Einstellungen einen anderen Anbieter.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "{provider} ist gerade zu ausgelastet und antwortet auch nach ein paar Versuchen nicht. Warte ein paar Minuten und sende deine Nachricht dann noch einmal.",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "Dein KI-Anbieter ist gerade zu ausgelastet und antwortet auch nach ein paar Versuchen nicht. Warte ein paar Minuten und sende deine Nachricht dann noch einmal.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "Diese Antwort hat ihr Limit erreicht, bevor sie fertig war. Frag etwas Genaueres.",
   "@askCmdr.error.budgetExhausted": {

@@ -209,6 +209,13 @@ bundle), Microsoft, file managers, the catalog.
   triple compound. Share-not-on-server is permanent: no `just nu` or `försök igen`; `säger sig inte ha` avoids two
   `den`.
 
+## Require SMB encryption (`settings.network.requireSmbEncryption.*`, `*encryptionRequired*`, `*EncryptionRequired*`, `askCmdr.*providerBusy.*`)
+
+- Label `Kräv alltid SMB-kryptering`; messages say `inställningen ”…” är aktiverad`, so `aktiverad` agrees with
+  `inställningen`. Managed value `Krävs alltid` (like `Loggas alltid`).
+- Busy provider: `har fullt upp` / `har för mycket att göra`, invariant, so nothing agrees with a brand of unknown
+  gender.
+
 ## Mutation and volume errors (`errors.mutation.*`, `errors.volume.*`)
 
 - Top folder `rotmapp` (Thunar, TC); System Integrity Protection stays (Finder `ET6`). No blame:

@@ -2449,7 +2449,7 @@
   "@errors.shareList.encryptionUnavailable": {
     "sourceHash": "ea3a52f"
   },
-  "errors.shareList.encryptionRequired": "“{server}” can’t encrypt this connection, and Cmdr is set to always require SMB encryption. Check the server’s SMB encryption settings.",
+  "errors.shareList.encryptionRequired": "”{server}” kan inte kryptera den här anslutningen och inställningen ”Kräv alltid SMB-kryptering” är aktiverad i Cmdr. Kontrollera serverns inställningar för SMB-kryptering.",
   "@errors.shareList.encryptionRequired": {
     "sourceHash": "4dff9ea"
   },

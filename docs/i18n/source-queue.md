@@ -346,3 +346,8 @@ All (uk) unless noted.
 - The six SMB negotiation and encryption keys list "security", "agreed", "misbehaving", "cause", "someone", "stays",
   "directly" under "No concept yet": ordinary words with nothing to mine. Consider a stop list for the brief, and one
   concept for "the security settings both sides agreed on" (SMB negotiation), now in four keys. (all)
+- Concept `encrypted`: the sense says "an archive or entry", but the `requireSmbEncryption` family uses it for SMB
+  connection encryption, including the verb ("Cmdr encrypts"); widen the sense. uk added the stem `шифру`. (all)
+- `askCmdr.providerBusy.*` and `askCmdr.error.providerBusy.*`: the `{provider}` description says only "brand name". Say
+  its grammatical gender is unknown, so gendered languages name the type first ("the provider {provider}") instead of
+  agreeing "busy" with it. cs, es, fr, pt, ru, uk, and sv all had to work around it. (all)

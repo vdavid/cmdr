@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "El proveedor {provider} está ocupado ahora mismo. Volviendo a intentarlo ({attemptText} de {attemptsText})…",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "Tu proveedor de IA está ocupado ahora mismo. Volviendo a intentarlo ({attemptText} de {attemptsText})…",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "Este chat se está alargando. Uno nuevo mantiene las respuestas rápidas y concisas.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -736,6 +744,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "Tu proveedor de IA ha rechazado esto: el límite de tu plan es menor que una sola solicitud de Cmdr, porque cada solicitud siempre lleva las instrucciones de Cmdr. Un mensaje más corto no servirá. Prueba un plan mayor o elige otro proveedor en Ajustes.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "El proveedor {provider} está demasiado ocupado para responder ahora mismo, incluso después de unos cuantos intentos. Espera unos minutos y vuelve a enviar tu mensaje.",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "Tu proveedor de IA está demasiado ocupado para responder ahora mismo, incluso después de unos cuantos intentos. Espera unos minutos y vuelve a enviar tu mensaje.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "Esta respuesta ha llegado a su límite antes de terminar. Intenta preguntar algo más concreto.",
   "@askCmdr.error.budgetExhausted": {

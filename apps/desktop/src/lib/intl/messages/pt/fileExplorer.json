@@ -2198,11 +2198,11 @@
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "sourceHash": "a731300"
   },
-  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} can’t encrypt the connection, and Cmdr is set to always require SMB encryption, so Cmdr stays on the system connection.",
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} não consegue criptografar a conexão, e o ajuste “Sempre exigir criptografia SMB” está ativado, então o Cmdr continua na conexão do sistema.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
     "sourceHash": "e4af63d"
   },
-  "fileExplorer.network.osMountFallback.encryptionRequired": "Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through macOS’s native SMB network connection, which is a lot slower.",
+  "fileExplorer.network.osMountFallback.encryptionRequired": "Não foi possível conectar diretamente a <shareName>{share}</shareName>, porque o servidor não consegue criptografar a conexão e o ajuste “Sempre exigir criptografia SMB” está ativado no Cmdr. Você continua conectado pela conexão de rede SMB nativa do macOS, que é bem mais lenta.",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {
     "sourceHash": "14a8cb4"
   },

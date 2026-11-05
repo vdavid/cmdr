@@ -499,6 +499,7 @@
   "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} solo acepta conexiones cifradas y no acordó con Cmdr una forma de cifrarlas, así que Cmdr sigue usando la conexión del sistema.",
   "fileExplorer.network.osMountFallback.negotiationInvalid": "No se pudo conectar directamente a <shareName>{share}</shareName>, porque el servidor no confirmó la configuración de seguridad que acordó con Cmdr. Puede deberse a un servidor que no funciona bien o a que alguien esté manipulando la conexión. Sigues teniendo acceso, pero a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
   "fileExplorer.network.osMountFallback.encryptionUnavailable": "No se pudo conectar directamente a <shareName>{share}</shareName>, porque este recurso compartido solo acepta conexiones cifradas y el servidor no acordó con Cmdr una forma de cifrarlas. Sigues teniendo acceso, pero a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
+  "fileExplorer.network.osMountFallback.encryptionRequired": "No se pudo conectar directamente a <shareName>{share}</shareName>, porque el servidor no puede cifrar la conexión y Cmdr tiene activado “Requerir siempre cifrado SMB”. Sigues teniendo acceso, pero a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
     "sourceHash": "f02a0b5"
   },
@@ -510,5 +511,8 @@
   },
   "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
     "sourceHash": "3dccc05"
+  },
+  "@fileExplorer.network.osMountFallback.encryptionRequired": {
+    "sourceHash": "2573b89"
   }
 }

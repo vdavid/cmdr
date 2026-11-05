@@ -41,6 +41,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "{provider} heeft het nu druk. Opnieuw proberen ({attemptText} van {attemptsText})…",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "Je AI-aanbieder heeft het nu druk. Opnieuw proberen ({attemptText} van {attemptsText})…",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "Deze chat wordt lang. Een nieuwe chat houdt de antwoorden snel en gefocust.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -737,6 +745,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "Je AI-aanbieder heeft dit geweigerd: de limiet van je abonnement is kleiner dan één verzoek van Cmdr, want daar zitten altijd de instructies van Cmdr in. Een korter bericht helpt niet. Neem een groter abonnement of kies een andere aanbieder bij Instellingen.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "{provider} heeft het nu te druk om te antwoorden, ook na een paar pogingen. Wacht een paar minuten en verstuur je bericht daarna opnieuw.",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "Je AI-aanbieder heeft het nu te druk om te antwoorden, ook na een paar pogingen. Wacht een paar minuten en verstuur je bericht daarna opnieuw.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "Dit antwoord liep tegen zijn limiet aan voordat het klaar was. Probeer iets specifiekers te vragen.",
   "@askCmdr.error.budgetExhausted": {

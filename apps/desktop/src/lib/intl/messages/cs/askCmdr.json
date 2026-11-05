@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "Poskytovatel {provider} je teď zaneprázdněný. Zkouší se to znovu (pokus {attemptText} z {attemptsText})…",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "Váš poskytovatel AI je teď zaneprázdněný. Zkouší se to znovu (pokus {attemptText} z {attemptsText})…",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "Tento chat už je dlouhý. V novém chatu budou odpovědi rychlé a k věci.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -736,6 +744,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "Váš poskytovatel AI tento požadavek odmítl: limit vašeho tarifu je menší než jediný požadavek z Cmdru, protože každý požadavek vždy obsahuje pokyny Cmdru. Kratší zpráva nepomůže. Zkuste větší tarif nebo v Nastavení vyberte jiného poskytovatele.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "Poskytovatel {provider} je teď příliš zaneprázdněný a ani po několika pokusech neodpověděl. Počkejte pár minut a pak zprávu odešlete znovu.",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "Váš poskytovatel AI je teď příliš zaneprázdněný a ani po několika pokusech neodpověděl. Počkejte pár minut a pak zprávu odešlete znovu.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "Tahle odpověď narazila na limit dřív, než byla hotová. Zkuste se zeptat konkrétněji.",
   "@askCmdr.error.budgetExhausted": {

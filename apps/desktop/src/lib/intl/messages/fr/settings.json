@@ -1300,15 +1300,15 @@
   "@settings.network.directSmbConnection.keywords": {
     "sourceHash": "6043806"
   },
-  "settings.network.requireSmbEncryption.label": "Always require SMB encryption",
+  "settings.network.requireSmbEncryption.label": "Toujours exiger le chiffrement SMB",
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr encrypts its own connections to SMB shares, even when the server doesn’t ask for it, and doesn’t connect to a server that can’t encrypt. Guest connections can’t be encrypted, so you’ll need to sign in. Takes effect for new connections.",
+  "settings.network.requireSmbEncryption.description": "Cmdr chiffre ses propres connexions aux partages SMB, même quand le serveur ne l’exige pas, et ne se connecte pas à un serveur qui ne peut pas chiffrer. Les connexions en tant qu’invité ne peuvent pas être chiffrées, vous devrez donc vous identifier. S’applique aux nouvelles connexions.",
   "@settings.network.requireSmbEncryption.description": {
     "sourceHash": "4b8d40b"
   },
-  "settings.network.requireSmbEncryption.keywords": "encrypt, encrypted, encryption, security, privacy, secure",
+  "settings.network.requireSmbEncryption.keywords": "chiffrer, chiffré, crypter, cryptage, sécurité, sécurisé, confidentialité, protection",
   "@settings.network.requireSmbEncryption.keywords": {
     "sourceHash": "1fc0e27"
   },
@@ -2838,11 +2838,11 @@
   "@settings.managed.summary.securityLogRequired": {
     "sourceHash": "baf73d6"
   },
-  "settings.managed.summary.smbEncryption": "SMB encryption",
+  "settings.managed.summary.smbEncryption": "Chiffrement SMB",
   "@settings.managed.summary.smbEncryption": {
     "sourceHash": "059bf46"
   },
-  "settings.managed.summary.smbEncryptionRequired": "Always required",
+  "settings.managed.summary.smbEncryptionRequired": "Toujours exigé",
   "@settings.managed.summary.smbEncryptionRequired": {
     "sourceHash": "8bac3f7"
   },

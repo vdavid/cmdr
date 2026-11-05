@@ -2188,11 +2188,11 @@
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "sourceHash": "a731300"
   },
-  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} can’t encrypt the connection, and Cmdr is set to always require SMB encryption, so Cmdr stays on the system connection.",
+  "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} nem tudja titkosítani a kapcsolatot, a Cmdrben pedig be van kapcsolva a „Mindig kötelező SMB-titkosítás” beállítás, ezért a Cmdr a rendszerkapcsolaton marad.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
     "sourceHash": "e4af63d"
   },
-  "fileExplorer.network.osMountFallback.encryptionRequired": "Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through macOS’s native SMB network connection, which is a lot slower.",
+  "fileExplorer.network.osMountFallback.encryptionRequired": "Nem sikerült közvetlenül csatlakozni ehhez: <shareName>{share}</shareName>, mert a szerver nem tudja titkosítani a kapcsolatot, a Cmdrben pedig be van kapcsolva a „Mindig kötelező SMB-titkosítás” beállítás. Továbbra is a macOS natív SMB-hálózati kapcsolatán keresztül csatlakozol, ami jóval lassabb.",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {
     "sourceHash": "14a8cb4"
   },

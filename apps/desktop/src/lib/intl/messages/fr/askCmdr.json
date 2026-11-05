@@ -40,6 +40,14 @@
   "@askCmdr.stalled": {
     "sourceHash": "c171aab"
   },
+  "askCmdr.providerBusy.named": "Le fournisseur {provider} est occupé pour le moment. Nouvelle tentative ({attemptText} sur {attemptsText})…",
+  "@askCmdr.providerBusy.named": {
+    "sourceHash": "9929ca9"
+  },
+  "askCmdr.providerBusy.unnamed": "Votre fournisseur d’IA est occupé pour le moment. Nouvelle tentative ({attemptText} sur {attemptsText})…",
+  "@askCmdr.providerBusy.unnamed": {
+    "sourceHash": "d011865"
+  },
   "askCmdr.softCap.message": "Cette conversation devient longue. Une nouvelle conversation garde les réponses rapides et pertinentes.",
   "@askCmdr.softCap.message": {
     "sourceHash": "60d2c54"
@@ -738,6 +746,14 @@
   "askCmdr.error.requestTooLarge.unnamed": "Votre fournisseur d’IA a refusé cette requête : la limite de votre forfait est inférieure à une seule requête de Cmdr, car chacune contient toujours les instructions de Cmdr. Un message plus court n’y changera rien. Passez à un forfait supérieur ou choisissez un autre fournisseur dans les Réglages.",
   "@askCmdr.error.requestTooLarge.unnamed": {
     "sourceHash": "b81536f"
+  },
+  "askCmdr.error.providerBusy.named": "Le fournisseur {provider} est trop occupé pour répondre en ce moment, même après quelques tentatives. Patientez quelques minutes, puis envoyez à nouveau votre message.",
+  "@askCmdr.error.providerBusy.named": {
+    "sourceHash": "9c1fad9"
+  },
+  "askCmdr.error.providerBusy.unnamed": "Votre fournisseur d’IA est trop occupé pour répondre en ce moment, même après quelques tentatives. Patientez quelques minutes, puis envoyez à nouveau votre message.",
+  "@askCmdr.error.providerBusy.unnamed": {
+    "sourceHash": "bf08be4"
   },
   "askCmdr.error.budgetExhausted": "Celle-ci a atteint sa limite avant de terminer. Essayez de poser une question plus précise.",
   "@askCmdr.error.budgetExhausted": {
