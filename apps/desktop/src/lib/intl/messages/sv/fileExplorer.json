@@ -1203,6 +1203,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "Den här storleken kan vara inaktuell: indexeringen är pausad eftersom den här enheten är nästan full.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Den här storleken kan vara inaktuell: indexeringen är pausad eftersom din startskiva, där Cmdr sparar sitt index, är nästan full.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} gren} other {{countText} grenar}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085"
@@ -2004,6 +2012,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexeringen stoppades på grund av ett problem med att spara den här enhetens index. Sök igenom på nytt för att bygga om det.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "Indexeringen är pausad eftersom den här enheten är nästan full. Mappstorlekarna kan vara inaktuella tills indexeringen återupptas, vilket sker automatiskt när det finns mer ledigt utrymme.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Indexeringen är pausad eftersom din startskiva, där Cmdr sparar sitt index, är nästan full. Mappstorlekarna på den här enheten kan vara inaktuella tills indexeringen återupptas, vilket sker automatiskt när det finns mer ledigt utrymme på startskivan.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS tappade koll på ändringar i filsystemet {count, plural, one {en gång} other {{countText} gånger}} {hours, plural, one {under den senaste timmen} other {under de senaste {hoursText} timmarna}}, så några mappstorlekar kan vara lite missvisande. Oftast handlar det om cachemappar fulla med små filer, och Cmdrs nästa fullständiga genomsökning {remaining, plural, one {om en timme} other {om {remainingText} timmar}} rättar till det.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

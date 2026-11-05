@@ -1703,6 +1703,18 @@
   "@settings.advanced.diskSpaceChangeThreshold.keywords": {
     "sourceHash": "74628c1"
   },
+  "settings.advanced.indexPauseFreeSpacePercent.label": "Pausa indexering när ledigt utrymme är under (%)",
+  "@settings.advanced.indexPauseFreeSpacePercent.label": {
+    "sourceHash": "c6fe418"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr pausar enhetsindexeringen när det lediga utrymmet på startskivan sjunker under den här procentandelen, så att indexet inte tar platsen som dina egna filer behöver. Indexeringen fortsätter där den slutade när det lediga utrymmet är en procentenhet över gränsen. Det fungerar oavsett om ”Varning vid lågt diskutrymme” är på eller av.",
+  "@settings.advanced.indexPauseFreeSpacePercent.description": {
+    "sourceHash": "9db2368"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.keywords": "disk, utrymme, diskutrymme, full, ledigt, index, indexering, paus, lagring, tröskel, gräns, procent, lite",
+  "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
+    "sourceHash": "1af2a91"
+  },
   "settings.fileViewer.suppressBinaryWarning.label": "Dölj råvisningsvarningen för binärfiler",
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"

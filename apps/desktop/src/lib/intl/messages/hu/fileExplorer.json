@@ -1202,6 +1202,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "Ez a méret elavult lehet: az indexelés szünetel, mert ez a meghajtó majdnem megtelt.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Ez a méret elavult lehet: az indexelés szünetel, mert az indítólemezed, amelyen a Cmdr az indexét tárolja, majdnem megtelt.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} ág} other {{countText} ág}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085"
@@ -2003,6 +2011,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Az indexelés leállt, mert nem sikerült elmenteni a meghajtó indexét. Indíts újbóli átvizsgálást az újraépítéshez.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "Az indexelés szünetel, mert ez a meghajtó majdnem megtelt. A mappaméretek az indexelés folytatásáig elavultak lehetnek. Ez magától megtörténik, amint több lesz a szabad hely.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Az indexelés szünetel, mert az indítólemezed, amelyen a Cmdr az indexét tárolja, majdnem megtelt. Az ezen a meghajtón lévő mappaméretek az indexelés folytatásáig elavultak lehetnek. Ez magától megtörténik, amint több lesz a szabad hely az indítólemezen.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "A macOS {hours, plural, one {az elmúlt órában} other {az elmúlt {hoursText} órában}} {count, plural, one {egyszer} other {{countText} alkalommal}} elvesztette a fonalat a fájlrendszer-változásoknál, ezért néhány mappaméret kissé pontatlan lehet. Általában csak apró fájlokkal teli gyorsítótárakról van szó, és a Cmdr következő teljes átvizsgálása {remaining, plural, one {egy óra múlva} other {{remainingText} óra múlva}} ezt rendbe hozza.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

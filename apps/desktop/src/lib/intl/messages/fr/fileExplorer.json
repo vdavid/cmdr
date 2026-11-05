@@ -1205,6 +1205,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "Cette taille est peut-être obsolète : l’indexation est en pause, car ce disque est presque plein.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Cette taille est peut-être obsolète : l’indexation est en pause, car votre disque de démarrage, sur lequel Cmdr conserve son index, est presque plein.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} branche} many {{countText} branches} other {{countText} branches}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085"
@@ -2011,6 +2019,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "L’indexation s’est arrêtée à cause d’un problème d’enregistrement de l’index de ce disque. Relancez l’analyse pour le reconstruire.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "L’indexation est en pause, car ce disque est presque plein. Les tailles des dossiers peuvent être obsolètes jusqu’à la reprise de l’indexation, qui se fera automatiquement dès qu’il y aura plus d’espace libre.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "L’indexation est en pause, car votre disque de démarrage, sur lequel Cmdr conserve son index, est presque plein. Les tailles des dossiers sur ce disque peuvent être obsolètes jusqu’à la reprise de l’indexation, qui se fera automatiquement dès qu’il y aura plus d’espace libre sur le disque de démarrage.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS a perdu le fil des changements du système de fichiers {count, plural, one {une fois} many {{countText} fois} other {{countText} fois}} {hours, plural, one {au cours de la dernière heure} many {au cours des {hoursText} dernières heures} other {au cours des {hoursText} dernières heures}}, donc la taille de quelques dossiers peut être un peu décalée. Ce sont en général des caches pleins de petits fichiers, et la prochaine analyse complète de Cmdr, {remaining, plural, one {dans une heure} many {dans {remainingText} heures} other {dans {remainingText} heures}}, remettra tout d’aplomb.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

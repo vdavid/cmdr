@@ -1208,6 +1208,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "Deze grootte is mogelijk verouderd: het indexeren is gepauzeerd, omdat deze schijf bijna vol is.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Deze grootte is mogelijk verouderd: het indexeren is gepauzeerd, omdat je opstartschijf, waarop Cmdr zijn index bewaart, bijna vol is.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} branch} other {{countText} branches}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085",
@@ -2017,6 +2025,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Het indexeren is gestopt door een probleem bij het opslaan van de index van deze schijf. Scan opnieuw om de index opnieuw op te bouwen.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "Het indexeren is gepauzeerd, omdat deze schijf bijna vol is. Mapgroottes zijn mogelijk verouderd tot het indexeren wordt hervat. Dat gebeurt vanzelf zodra er meer vrije ruimte is.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Het indexeren is gepauzeerd, omdat je opstartschijf, waarop Cmdr zijn index bewaart, bijna vol is. Mapgroottes op deze schijf zijn mogelijk verouderd tot het indexeren wordt hervat. Dat gebeurt vanzelf zodra er op de opstartschijf meer vrije ruimte is.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de volgende volledige controle van Cmdr {remaining, plural, one {over een uur} other {over {remainingText} uur}} zet dat weer recht.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

@@ -1205,6 +1205,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "Diese Größe ist womöglich nicht mehr aktuell: Die Indizierung ist angehalten, weil dieses Laufwerk fast voll ist.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Diese Größe ist womöglich nicht mehr aktuell: Die Indizierung ist angehalten, weil dein Startvolume, auf dem Cmdr seinen Index speichert, fast voll ist.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} Branch} other {{countText} Branches}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085"
@@ -2010,6 +2018,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Die Indizierung wurde gestoppt, weil der Index dieses Laufwerks nicht gespeichert werden konnte. Ein erneuter Durchlauf baut ihn neu auf.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "Die Indizierung ist angehalten, weil dieses Laufwerk fast voll ist. Bis sie fortgesetzt wird, sind die Ordnergrößen womöglich nicht mehr aktuell. Das passiert von selbst, sobald wieder mehr Speicherplatz frei ist.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Die Indizierung ist angehalten, weil dein Startvolume, auf dem Cmdr seinen Index speichert, fast voll ist. Bis sie fortgesetzt wird, sind die Ordnergrößen auf diesem Laufwerk womöglich nicht mehr aktuell. Das passiert von selbst, sobald dort wieder mehr Speicherplatz frei ist.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS hat {hours, plural, one {in der letzten Stunde} other {in den letzten {hoursText} Stunden}} {count, plural, one {einmal} other {{countText}-mal}} den Überblick über Dateisystemänderungen verloren, daher können ein paar Ordnergrößen leicht abweichen. Meist sind es Caches voller kleiner Dateien, und der nächste vollständige Durchlauf von Cmdr {remaining, plural, one {in einer Stunde} other {in {remainingText} Stunden}} bringt das wieder in Ordnung.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

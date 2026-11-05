@@ -1702,6 +1702,18 @@
   "@settings.advanced.diskSpaceChangeThreshold.keywords": {
     "sourceHash": "74628c1"
   },
+  "settings.advanced.indexPauseFreeSpacePercent.label": "Pausar a indexação quando o espaço livre estiver abaixo de (%)",
+  "@settings.advanced.indexPauseFreeSpacePercent.label": {
+    "sourceHash": "c6fe418"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.description": "O Cmdr pausa a indexação de discos quando o espaço livre do seu disco de inicialização cai abaixo deste percentual, para que o índice não ocupe o espaço de que seus próprios arquivos precisam. A indexação continua de onde parou assim que o espaço livre sobe um ponto acima desse limite. Isso funciona com o “Aviso de pouco espaço em disco” ativado ou desativado.",
+  "@settings.advanced.indexPauseFreeSpacePercent.description": {
+    "sourceHash": "9db2368"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.keywords": "disco, espaço, cheio, livre, índice, indexação, pausa, armazenamento, limite, porcentagem, percentual, pouco",
+  "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
+    "sourceHash": "1af2a91"
+  },
   "settings.fileViewer.suppressBinaryWarning.label": "Ocultar o aviso de visualização bruta para arquivos binários",
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"

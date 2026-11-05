@@ -1203,6 +1203,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "Tato velikost může být zastaralá: indexování je pozastaveno, protože tento disk je téměř plný.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Tato velikost může být zastaralá: indexování je pozastaveno, protože startovací disk, na kterém Cmdr uchovává svůj index, je téměř plný.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} větev} few {{countText} větve} many {{countText} větve} other {{countText} větví}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085"
@@ -2005,6 +2013,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexování se zastavilo kvůli problému s ukládáním indexu tohoto disku. Prohledejte disk znovu a index se sestaví znovu.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "Indexování je pozastaveno, protože tento disk je téměř plný. Velikosti složek můžou být zastaralé, než bude indexování pokračovat. Pokračuje samo, jakmile bude víc volného místa.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Indexování je pozastaveno, protože startovací disk, na kterém Cmdr uchovává svůj index, je téměř plný. Velikosti složek na tomto disku můžou být zastaralé, než bude indexování pokračovat. Pokračuje samo, jakmile bude na startovacím disku víc volného místa.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS {count, plural, one {jednou} few {{countText}krát} many {{countText}krát} other {{countText}krát}} za {hours, plural, one {poslední hodinu} few {poslední {hoursText} hodiny} many {posledních {hoursText} hodiny} other {posledních {hoursText} hodin}} ztratil přehled o změnách v souborovém systému, takže velikosti některých složek můžou být mírně nepřesné. Obvykle jde o mezipaměti plné malých souborů a Cmdr to napraví při příští úplné kontrole {remaining, plural, one {za hodinu} few {za {remainingText} hodiny} many {za {remainingText} hodiny} other {za {remainingText} hodin}}.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

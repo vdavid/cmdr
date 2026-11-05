@@ -1200,6 +1200,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "這個大小可能已經過時：這個磁碟機快滿了，所以索引已暫停。",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "這個大小可能已經過時：Cmdr 把索引存放在你的啟動磁碟上，而啟動磁碟快滿了，所以索引已暫停。",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, other {{countText} 個分支}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085"
@@ -2000,6 +2008,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "儲存這個磁碟機的索引時出了狀況，所以索引已經停下來。請重新掃描以重建索引。",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "這個磁碟機快滿了，所以索引已暫停。在索引繼續之前，資料夾大小可能過時。可用空間變多後，索引會自動繼續。",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Cmdr 把索引存放在你的啟動磁碟上，而啟動磁碟快滿了，所以索引已暫停。在索引繼續之前，這個磁碟機上的資料夾大小可能過時。啟動磁碟的可用空間變多後，索引會自動繼續。",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "在過去 {hours, plural, other {{hoursText} 小時}}內，macOS 有 {count, plural, other {{countText} 次}}沒跟上檔案系統的改動，所以少數資料夾大小可能會有點出入。這通常只是塞滿小檔案的快取，Cmdr 會在 {remaining, plural, other {{remainingText} 小時}}後做下一次完整檢查，屆時就會恢復準確。",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

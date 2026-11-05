@@ -1698,6 +1698,18 @@
   "@settings.advanced.diskSpaceChangeThreshold.keywords": {
     "sourceHash": "74628c1"
   },
+  "settings.advanced.indexPauseFreeSpacePercent.label": "Призупиняти індексування, коли вільного місця менше ніж (%)",
+  "@settings.advanced.indexPauseFreeSpacePercent.label": {
+    "sourceHash": "c6fe418"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr призупиняє індексування дисків, коли вільного місця на стартовому диску стає менше за цей відсоток, щоб індекс не займав місце, потрібне вашим власним файлам. Індексування продовжиться з того самого місця, щойно вільного місця стане на один відсотковий пункт більше за поріг. Це працює незалежно від того, чи увімкнено «Застереження про брак місця на диску».",
+  "@settings.advanced.indexPauseFreeSpacePercent.description": {
+    "sourceHash": "9db2368"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.keywords": "диск, місце, заповнений, повний, вільне, індекс, індексування, пауза, сховище, поріг, межа, відсоток, мало",
+  "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
+    "sourceHash": "1af2a91"
+  },
   "settings.fileViewer.suppressBinaryWarning.label": "Не показувати застереження під час перегляду двійкових файлів",
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"

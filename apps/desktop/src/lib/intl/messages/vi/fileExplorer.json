@@ -1204,6 +1204,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "Kích cỡ này có thể đã lỗi thời: việc lập chỉ mục đang tạm dừng vì ổ đĩa này sắp đầy.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Kích cỡ này có thể đã lỗi thời: việc lập chỉ mục đang tạm dừng vì ổ đĩa khởi động, nơi Cmdr lưu chỉ mục, sắp đầy.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, other {{countText} nhánh}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085"
@@ -2006,6 +2014,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Đã dừng lập chỉ mục do gặp sự cố khi lưu chỉ mục của ổ đĩa này. Quét lại để tạo lại chỉ mục.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "Việc lập chỉ mục đang tạm dừng vì ổ đĩa này sắp đầy. Kích cỡ thư mục có thể đã lỗi thời cho đến khi việc lập chỉ mục tiếp tục. Việc này sẽ tự diễn ra khi có thêm dung lượng trống.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Việc lập chỉ mục đang tạm dừng vì ổ đĩa khởi động, nơi Cmdr lưu chỉ mục, sắp đầy. Kích cỡ thư mục trên ổ đĩa này có thể đã lỗi thời cho đến khi việc lập chỉ mục tiếp tục. Việc này sẽ tự diễn ra khi ổ đĩa khởi động có thêm dung lượng trống.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS đã mất dấu các thay đổi của hệ thống tệp {count, plural, other {{countText} lần}} trong {hours, plural, other {{hoursText} giờ}} qua, nên kích cỡ của vài thư mục có thể hơi lệch. Thường thì đó chỉ là các bộ đệm chứa đầy tệp nhỏ, và lần kiểm tra toàn bộ tiếp theo của Cmdr sau {remaining, plural, other {{remainingText} giờ}} nữa sẽ chỉnh lại cho đúng.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

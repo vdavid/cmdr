@@ -1205,6 +1205,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "Este tamanho pode estar desatualizado: a indexação está pausada porque este disco está quase cheio.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Este tamanho pode estar desatualizado: a indexação está pausada porque seu disco de inicialização, onde o Cmdr mantém o índice, está quase cheio.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} branch} many {{countText} branches} other {{countText} branches}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085",
@@ -2011,6 +2019,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "A indexação parou por causa de um problema ao salvar o índice deste disco. Refaça a varredura para reconstruí-lo.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "A indexação está pausada porque este disco está quase cheio. Os tamanhos das pastas podem estar desatualizados até a indexação ser retomada, o que acontece automaticamente assim que houver mais espaço livre.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "A indexação está pausada porque seu disco de inicialização, onde o Cmdr mantém o índice, está quase cheio. Os tamanhos das pastas neste disco podem estar desatualizados até a indexação ser retomada, o que acontece automaticamente assim que houver mais espaço livre no disco de inicialização.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "O macOS deixou de acompanhar as mudanças no sistema de arquivos {count, plural, one {uma vez} many {{countText} vezes} other {{countText} vezes}} {hours, plural, one {na última hora} many {nas últimas {hoursText} horas} other {nas últimas {hoursText} horas}}, então alguns tamanhos de pastas podem estar um pouco imprecisos. Normalmente são caches cheios de arquivos pequenos, e a próxima varredura completa do Cmdr, {remaining, plural, one {daqui a uma hora} many {daqui a {remainingText} horas} other {daqui a {remainingText} horas}}, vai corrigir isso.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

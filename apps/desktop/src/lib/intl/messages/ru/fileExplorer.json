@@ -1202,6 +1202,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "Этот размер может быть неактуальным: индексация приостановлена, потому что этот диск почти заполнен.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Этот размер может быть неактуальным: индексация приостановлена, потому что загрузочный диск, на котором Cmdr хранит свой индекс, почти заполнен.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} ветка} few {{countText} ветки} many {{countText} веток} other {{countText} ветки}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085"
@@ -2002,6 +2010,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Индексация остановлена: возникла проблема при сохранении индекса этого диска. Просканируйте диск заново, чтобы восстановить индекс.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "Индексация приостановлена, потому что этот диск почти заполнен. Размеры папок могут быть неактуальны, пока индексация не возобновится. Она возобновится сама, как только освободится больше места.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Индексация приостановлена, потому что загрузочный диск, на котором Cmdr хранит свой индекс, почти заполнен. Размеры папок на этом диске могут быть неактуальны, пока индексация не возобновится. Она возобновится сама, как только на загрузочном диске освободится больше места.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} macOS {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно это кэши с множеством мелких файлов. Следующая полная проверка Cmdr {remaining, plural, =1 {через час} one {через {remainingText} час} few {через {remainingText} часа} many {через {remainingText} часов} other {через {remainingText} часа}} все исправит.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

@@ -1699,6 +1699,18 @@
   "@settings.advanced.diskSpaceChangeThreshold.keywords": {
     "sourceHash": "74628c1"
   },
+  "settings.advanced.indexPauseFreeSpacePercent.label": "Pozastavit indexování při volném místě pod (%)",
+  "@settings.advanced.indexPauseFreeSpacePercent.label": {
+    "sourceHash": "c6fe418"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr pozastaví indexování disků, když volné místo na startovacím disku klesne pod toto procento, aby index nezabíral místo, které potřebují vaše vlastní soubory. Indexování pokračuje tam, kde skončilo, jakmile volné místo stoupne o jeden procentní bod nad tuto hranici. Funguje to bez ohledu na to, jestli je „Varování při nedostatku volného místa na disku“ zapnuté, nebo vypnuté.",
+  "@settings.advanced.indexPauseFreeSpacePercent.description": {
+    "sourceHash": "9db2368"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.keywords": "disk, místo, plný, zaplněný, volné, úložiště, práh, hranice, procenta, málo, zastavit, pauza",
+  "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
+    "sourceHash": "1af2a91"
+  },
   "settings.fileViewer.suppressBinaryWarning.label": "Potlačit varování o surovém zobrazení u binárních souborů",
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"

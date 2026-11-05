@@ -1200,6 +1200,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "这个大小可能已过期：由于此驱动器快满了，索引已暂停。",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "这个大小可能已过期：Cmdr 把索引存放在你的启动磁盘上，而启动磁盘快满了，因此索引已暂停。",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, other {{countText} 个分支}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085"
@@ -2000,6 +2008,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "由于保存此驱动器的索引时出现问题，索引已停止。请重新扫描以重建索引。",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "由于此驱动器快满了，索引已暂停。在索引继续之前，文件夹大小可能已过期。可用空间变多后，索引会自动继续。",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Cmdr 把索引存放在你的启动磁盘上，由于启动磁盘快满了，索引已暂停。在索引继续之前，此驱动器上的文件夹大小可能已过期。启动磁盘的可用空间变多后，索引会自动继续。",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "在过去 {hours, plural, other {{hoursText} 小时}}内，macOS 有 {count, plural, other {{countText} 次}}没能跟上文件系统的改动，因此少数文件夹大小可能略有偏差。这通常只是塞满小文件的缓存，Cmdr 将在 {remaining, plural, other {{remainingText} 小时}}后进行下一次完整检查，届时就会恢复准确。",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

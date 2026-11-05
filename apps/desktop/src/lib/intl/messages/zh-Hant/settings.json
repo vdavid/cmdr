@@ -1700,6 +1700,18 @@
   "@settings.advanced.diskSpaceChangeThreshold.keywords": {
     "sourceHash": "74628c1"
   },
+  "settings.advanced.indexPauseFreeSpacePercent.label": "暫停索引的可用空間閾值（%）",
+  "@settings.advanced.indexPauseFreeSpacePercent.label": {
+    "sourceHash": "c6fe418"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.description": "當啟動磁碟的可用空間低於這個百分比時，Cmdr 會暫停磁碟機索引，以免索引佔用你自己的檔案需要的空間。可用空間回升到比它高一個百分點後，索引會從中斷的地方繼續。無論「磁碟空間不足警告」是否開啟，這個設定都有效。",
+  "@settings.advanced.indexPauseFreeSpacePercent.description": {
+    "sourceHash": "9db2368"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.keywords": "磁碟, 空間, 已滿, 可用空間, 索引, 暫停, 儲存空間, 閾值, 門檻, 百分比, 不足",
+  "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
+    "sourceHash": "1af2a91"
+  },
   "settings.fileViewer.suppressBinaryWarning.label": "對二進位檔案不顯示原始內容檢視警告",
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"

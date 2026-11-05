@@ -1204,6 +1204,14 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.dirSize.pausedForSpaceThisDrive": "Puede que este tamaño esté desactualizado: la indexación está en pausa porque esta unidad está casi llena.",
+  "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
+    "sourceHash": "c655c6f"
+  },
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Puede que este tamaño esté desactualizado: la indexación está en pausa porque tu disco de arranque, donde Cmdr guarda su índice, está casi lleno.",
+  "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
+    "sourceHash": "29c5f81"
+  },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} rama} many {{countText} ramas} other {{countText} ramas}}",
   "@fileExplorer.git.size.branches": {
     "sourceHash": "ea4d085"
@@ -2006,6 +2014,14 @@
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Se ha detenido la indexación por un problema al guardar el índice de esta unidad. Vuelve a analizar para reconstruirlo.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": "La indexación está en pausa porque esta unidad está casi llena. Los tamaños de carpeta pueden estar desactualizados hasta que se reanude, cosa que hará por sí sola en cuanto haya más espacio libre.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
+    "sourceHash": "5714115"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "La indexación está en pausa porque tu disco de arranque, donde Cmdr guarda su índice, está casi lleno. Los tamaños de carpeta de esta unidad pueden estar desactualizados hasta que se reanude, cosa que hará por sí sola en cuanto haya más espacio libre en el disco de arranque.",
+  "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
+    "sourceHash": "68994e4"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS ha perdido la pista de los cambios en el sistema de archivos {count, plural, one {una vez} many {{countText} veces} other {{countText} veces}} en {hours, plural, one {la última hora} many {las últimas {hoursText} horas} other {las últimas {hoursText} horas}}, así que algunos tamaños de carpetas podrían no ser del todo exactos. Suelen ser cachés llenas de archivos pequeños, y el próximo análisis completo de Cmdr, {remaining, plural, one {dentro de una hora} many {dentro de {remainingText} horas} other {dentro de {remainingText} horas}}, lo dejará al día.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {

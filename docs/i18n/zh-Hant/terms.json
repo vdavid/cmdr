@@ -1610,6 +1610,13 @@
     "forms": "frame rate → 影格率",
     "sources": "AP QuickTime (TW = HK; HK frame rate 格率)"
   },
+  "free-space": {
+    "accept": ["空間", "剩餘"],
+    "chosen": "可用空間",
+    "confidence": "high",
+    "forms": "low disk space → 磁碟空間不足; {size} free → 剩餘 {size}; almost full → 快滿了",
+    "sources": "AP-TW Finder LocalizableMerged.json, MS TBX, Nautilus zh-TW/zh-HK, Thunar, TC, DC (all 可用空間); catalog (lowDiskSpaceThresholdPercent, lowDiskSpace.toast)"
+  },
   "from-to": {
     "accept": ["目標"],
     "chosen": "來源",

@@ -1704,6 +1704,18 @@
   "@settings.advanced.diskSpaceChangeThreshold.keywords": {
     "sourceHash": "74628c1"
   },
+  "settings.advanced.indexPauseFreeSpacePercent.label": "Indizierung anhalten bei freiem Speicherplatz unter (%)",
+  "@settings.advanced.indexPauseFreeSpacePercent.label": {
+    "sourceHash": "c6fe418"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr hält die Laufwerksindizierung an, wenn der freie Speicherplatz auf deinem Startvolume unter diesen Prozentwert fällt, damit der Index nicht den Platz belegt, den deine eigenen Dateien brauchen. Die Indizierung macht dort weiter, wo sie aufgehört hat, sobald der freie Speicherplatz einen Prozentpunkt darüber liegt. Das gilt unabhängig davon, ob die „Warnung bei wenig Speicherplatz“ ein- oder ausgeschaltet ist.",
+  "@settings.advanced.indexPauseFreeSpacePercent.description": {
+    "sourceHash": "9db2368"
+  },
+  "settings.advanced.indexPauseFreeSpacePercent.keywords": "Festplatte, Speicherplatz, Platz, voll, frei, Index, Indizierung, anhalten, Pause, Speicher, Schwelle, Grenze, Prozent, wenig, knapp",
+  "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
+    "sourceHash": "1af2a91"
+  },
   "settings.fileViewer.suppressBinaryWarning.label": "Rohansicht-Warnung für Binärdateien unterdrücken",
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
