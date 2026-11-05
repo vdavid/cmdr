@@ -233,6 +233,20 @@ const ResourceCargoBuildDir = "cargo-build-dir"
 // any lane that runs one of those commands.
 const ResourceAstroGeneratedDir = "astro-generated-dir"
 
+// RustTestScopeEnv narrows the host Rust test lanes to the workspace members a
+// change can affect: "all" (or unset/empty, the default), "none", or a list of
+// package names, as `--print-rust-test-scope` prints it (`rust-test-scope.go`).
+// It lives in this core file because the executor reads it too: a scoped pass
+// covers less than the cache key says, so a run with it set records nothing.
+const RustTestScopeEnv = "CMDR_RUST_TEST_SCOPE"
+
+// RustTestScopeNarrowed reports whether this process runs under a narrowed Rust
+// test scope, which is anything but unset, empty, or "all".
+func RustTestScopeNarrowed() bool {
+	raw := strings.TrimSpace(os.Getenv(RustTestScopeEnv))
+	return raw != "" && raw != "all"
+}
+
 // EffectiveCpuWeight returns the scheduling weight clamped to [1, capacity], so
 // an unset weight counts as light (1) and an over-budget weight can still run
 // once nothing else holds the budget (it never deadlocks the admission gate).
