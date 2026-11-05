@@ -1,9 +1,9 @@
 # The four costliest local check lanes (2026-11-05)
 
 Why `clippy`, `svelte-tests-related`, `eslint-typecheck-svelte`, and `eslint-typecheck-ts` cost ~42 machine-hours of
-local `pnpm check` in 14 days, where the time goes inside each, and the ranked cuts. Cuts 1–4 and the catalog bug have
-landed: § "Results" has the before/after numbers. Runner background: `scripts/check/DETAILS.md` § "Input fingerprint
-cache".
+local `pnpm check` in 14 days, where the time goes inside each, and the ranked cuts. Cuts 1–4, 6, and the catalog bug
+have landed: § "Results" has the before/after numbers. Cut 7 was declined. Runner background: `scripts/check/DETAILS.md`
+§ "Input fingerprint cache".
 
 ## Method
 
@@ -247,6 +247,13 @@ exact.
     rule's 9.6 s was the checker's lazy work, which the next type-aware rule now pays (the caveat in § ESLint).
   - An earlier pair at load 60–130 (675 s → 205 s Svelte) swung with the load and isn't comparable.
 - **Cuts 2 + 4 together**: the Svelte pass went from ~141 s to ~69 s at comparable load (about −50%).
+- **Cut 6, no second ESLint verdict when the fix pass changed nothing** (`fixThenReverdict`,
+  `scripts/check/checks/desktop-svelte-eslint-typecheck.go`; measured in `worktree-agent-aaa14f30675d4f0f2`).
+  - Planted an unawaited promise in a new `.ts` file (`no-floating-promises`: type-aware, never auto-fixed) and timed
+    `pnpm check eslint-typecheck-ts --fresh --exact`, old lane against new, in two pairs with the order swapped: **200 s
+    → 92 s** (new first at load 23 → 15, old after at 15 → 18; the fair pair, −54%) and 321 s → 104 s (old first at load
+    70 → 83, new after at 83 → 28, load-skewed). Same single finding reported both ways.
+  - The content check is two `git status` calls and hashes of the lane's dirty files: well under a second.
 - **Bug, catalog edits selected nothing** (`catalogReaderTargets`,
   `scripts/check/checks/desktop-svelte-tests-related.go`).
   - An edit to `intl/messages/en/common.json`: **0 → 46 spec files** (every `src/lib/intl/` test plus the parity,

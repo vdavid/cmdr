@@ -2861,9 +2861,11 @@ cause it, so the invariant is structural instead, planned in `eslint-passes.go` 
 `eslint.config.js` then turns the type-aware rules and unused-directive reporting off) and passes
 `--fix-type problem,suggestion,layout`, so even a misconfigured rule set can't delete an `eslint-disable`. Per lane: the
 desktop's two `eslint-typecheck-*` lanes run the full config check-only first and, only on a red local run, the fix pass
-over their own file set followed by the verdict again (`typeAwareFixPasses`); the single-lane apps (`api-server`,
-`website`, `dashboard`) run the fix pass and then the full config check-only, the final pass being the verdict. The
-cost: type-aware findings (`no-unnecessary-type-assertion`, `no-unnecessary-condition`, unused directives) are reported,
+over their own file set followed by the verdict again (`typeAwareFixPasses`), but only when the fix pass rewrote one of
+the lane's files, compared by content before and after (`fixThenReverdict`, `lintScopeSnapshot`; a fix pass that changed
+nothing leaves the first verdict standing, which saves a whole second lint on every type-aware-only failure); the
+single-lane apps (`api-server`, `website`, `dashboard`) run the fix pass and then the full config check-only, the final
+pass being the verdict. The cost: type-aware findings (`no-unnecessary-type-assertion`, `no-unnecessary-condition`, unused directives) are reported,
 never fixed, so an agent fixes them by hand.
 
 **Decision**: `desktop-svelte-kit-sync` runs before every check that needs the TypeScript program. **Why**:

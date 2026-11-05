@@ -45,7 +45,7 @@ func typeAwareESLintPasses(scopeArgs []string) []eslintPass {
 // typeAwareFixPasses plans what a desktop type-aware lane runs when its verdict is red on a local
 // run: a fix pass without type information over the lane's own scope (so the Svelte and
 // TypeScript lanes, running in parallel, never fix the same file), after which the lane re-runs
-// its verdict. Running it only on red keeps a green run at one ESLint invocation. CI never fixes.
+// its verdict if the fix pass changed any of its files (`fixThenReverdict`). Running it only on red keeps a green run at one ESLint invocation. CI never fixes.
 func typeAwareFixPasses(scopeArgs []string, ci bool) []eslintPass {
 	if ci {
 		return nil
