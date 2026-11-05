@@ -83,6 +83,15 @@ async fn test_exists_returns_true_for_existing() {
     assert!(volume.exists(Path::new("test.txt")).await); // Relative path
 }
 
+/// Regression anchor: the root has no stored entry, and `exists` once answered
+/// "gone" for it, so the deleted-folder poll walked a demo pane on `/` home.
+#[tokio::test]
+async fn test_exists_answers_the_root_with_no_entries() {
+    assert!(InMemoryVolume::new("Test").exists(Path::new("/")).await);
+    let rooted = InMemoryVolume::new("Phone").with_root(PathBuf::from("mtp://phone/1"));
+    assert!(rooted.exists(Path::new("mtp://phone/1")).await);
+}
+
 #[tokio::test]
 async fn test_exists_returns_false_for_nonexistent() {
     let volume = InMemoryVolume::new("Test");
