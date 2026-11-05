@@ -7,6 +7,13 @@ compatibility_date = "2025-01-01"
 # license.getcmdr.com is kept as a permanent alias: existing app versions hardcode it.
 workers_dev = true
 
+# Cost guard against a runaway request: Workers Paid bills CPU past 30 million ms a month, and its
+# default allows 30 s per invocation. The slowest invocation in 30 days used 104 ms (p99.9 29 ms;
+# Cloudflare GraphQL `workersInvocationsAdaptive`, 2026-10-07–2026-11-05), so 1,000 ms is ~10x headroom.
+# Past it, Cloudflare answers that request with error 1102. Raise it before adding CPU-heavy work.
+[limits]
+cpu_ms = 1000
+
 [[routes]]
 pattern = "api.getcmdr.com/*"
 zone_name = "getcmdr.com"

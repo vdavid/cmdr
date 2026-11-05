@@ -13,6 +13,10 @@ telemetry, crash reports, feedback, and download attribution for the rest of tha
 100,000 requests a day is the second risk, and it fails closed, so the download button would show a Cloudflare error
 page. Both go away with Workers Paid ($5 a month), which needs David's go.
 
+**Update 2026-11-05**: the account is on Workers Paid now (vdavid/cmdr#947), so fix 1 is done and failure modes 1, 2,
+and 4 are gone. The D1 size alarm measures against Paid's 10 GB (`D1_MAX_DB_MB`), and `wrangler.toml` caps CPU at 1,000
+ms per invocation (`apps/api-server/DETAILS.md` § Deployment). The rest of this note is the 2026-11-04 snapshot.
+
 ## 1. Traffic to plan for
 
 Public reports (each fetched 2026-11-04 via Firecrawl):
@@ -142,9 +146,10 @@ Per page view, the origin sees (Caddy access log, 80 minutes on 2026-11-04, and 
 
 ### Plan and limits
 
-- The account is on **Workers Free** (`apps/api-server/DETAILS.md`, verified there 2026-10-23 against $0 invoices).
-  Limits (developers.cloudflare.com, fetched 2026-11-04 with `maxAge: 0`): 100,000 requests a day per account, reset at
-  midnight UTC, then Error 1027; 10 ms CPU per request; 50 subrequests per request.
+- The account was on **Workers Free** at the time (`apps/api-server/DETAILS.md`, verified there 2026-10-23 against $0
+  invoices); it moved to Workers Paid on 2026-11-05. Limits (developers.cloudflare.com, fetched 2026-11-04 with
+  `maxAge: 0`): 100,000 requests a day per account, reset at midnight UTC, then Error 1027; 10 ms CPU per request; 50
+  subrequests per request.
 - Both Worker routes (`api.getcmdr.com/*`, `license.getcmdr.com/*`) are `request_limit_fail_open: false` (CF API,
   2026-11-04), so **past the daily cap, every api request gets a Cloudflare 1027 error page**. Fail-open wouldn't help:
   the hostnames are CNAMEs to `workers.dev`, there's no origin behind them.
@@ -227,7 +232,7 @@ or more headroom.
 
 ## 5. Fixes
 
-1. **Workers Paid for the launch** (needs David's go: paid plan).
+1. **Workers Paid for the launch** (done 2026-11-05).
    - Problem: Free caps D1 writes at 100,000 rows a day (half used today), Workers at 100,000 requests (fail closed),
      and CPU at 10 ms (p99 already above it).
    - Impact: fixes failure modes 1, 2, and 4 at once.
@@ -289,7 +294,7 @@ or more headroom.
 
 ## Needs David
 
-- Fix 1 (Workers Paid, $5 a month): a paid plan.
+- Fix 1 (Workers Paid, $5 a month): done 2026-11-05.
 - Fix 2 (deploy freeze): a workflow call for launch day.
 - Fix 7: checking PostHog's quota needs his PostHog login.
 - `/demo/` is still `noindex, nofollow` with the title "Cmdr demo" and isn't linked from the home page (curl,

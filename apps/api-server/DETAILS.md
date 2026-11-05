@@ -338,12 +338,13 @@ validity is checked live via the Paddle API.
 **Data location (#805).** The `eu`-jurisdiction twins exist: D1 `cmdr-telemetry-eu` (empty until its cutover) and R2
 `cmdr-error-reports-eu` (a full copy, with per-date expiry rules so copied bundles still go 90 days after their ORIGINAL
 upload). A jurisdiction can only be set when a resource is created, so a move is a copy plus a binding switch. The
-switch, its preconditions (Workers Paid before the D1 import: Workers Free's 100,000 rows written a day is account-wide,
-so importing ~300,000 rows would stop the production database for the day), the gap reconcile, and the rollback:
-`docs/notes/eu-data-moves-2026-11.md`. The local-only tool it drives: `scripts/eu-move/worker.js` (❌ never deployed).
-The presign host follows `R2_ERROR_REPORTS_JURISDICTION`, which `error-report-bucket-config.test.ts` pins to the
-binding's `jurisdiction`, and the deploy workflow migrates by binding (`TELEMETRY_DB`), so neither keeps pointing at the
-old resource after a switch. KV and Analytics Engine have no jurisdiction and stay on the global network.
+switch, its preconditions (Workers Paid before the D1 import, met since 2026-11-05: Workers Free's 100,000 rows written
+a day is account-wide, so importing ~300,000 rows would have stopped the production database for the day), the gap
+reconcile, and the rollback: `docs/notes/eu-data-moves-2026-11.md`. The local-only tool it drives:
+`scripts/eu-move/worker.js` (❌ never deployed). The presign host follows `R2_ERROR_REPORTS_JURISDICTION`, which
+`error-report-bucket-config.test.ts` pins to the binding's `jurisdiction`, and the deploy workflow migrates by binding
+(`TELEMETRY_DB`), so neither keeps pointing at the old resource after a switch. KV and Analytics Engine have no
+jurisdiction and stay on the global network.
 
 **Workers types:** there's no `@cloudflare/workers-types` dependency. `wrangler types` generates
 `worker-configuration.d.ts` from `wrangler.toml`, and `tsconfig.json` includes it. Two things come out of that file: the
@@ -903,6 +904,12 @@ Deployed to `api.getcmdr.com` via a Cloudflare custom domain (declared in `wrang
 `license.getcmdr.com` is a permanent alias for existing app versions. Fallback URL:
 `cmdr-license-server.veszelovszki.workers.dev`. The cron trigger (`0 */3 * * *`) is declared in `wrangler.toml` under
 `[triggers]` and deploys automatically with `wrangler deploy`.
+
+**CPU cap.** `[limits] cpu_ms = 1000` in `wrangler.toml` is a cost guard: Workers Paid bills CPU by the millisecond and
+defaults to 30 s per invocation, so a runaway loop under load could run up the bill. The slowest invocation in 30 days
+used 104 ms (Cloudflare GraphQL `workersInvocationsAdaptive`, 2026-11-05), so the cap only bites a request that has gone
+wrong; past it, that request gets Cloudflare's error 1102. Raise it before adding CPU-heavy work (big decompression,
+crypto loops). `[limits] cpu_ms` is a Workers Paid setting, so a move back to Free means removing it.
 
 ### Troubleshooting deployment
 

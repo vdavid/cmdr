@@ -84,7 +84,7 @@ export async function sendDbSizeAlert(params: DbSizeAlertParams): Promise<void> 
 
     ${growthParagraph(params)}
 
-    <p>Most of it is <code>heartbeat</code> and <code>analytics_event</code>, kept 730 days for the dashboard's windows. Before the cap, either shorten that retention (and the privacy policy with it) or move to Workers Paid, which raises the cap to 10 GB.</p>
+    <p>Most of it is <code>heartbeat</code> and <code>analytics_event</code>, kept 730 days for the dashboard's windows. Before the cap, shorten that retention (and the privacy policy with it), or split the telemetry across a second database, since 10 GB is D1's largest size on any plan.</p>
 
     <table style="${TABLE_STYLE}">
         <thead>
