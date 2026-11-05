@@ -333,6 +333,10 @@
   "@multiRename.resultsTooltip": {
     "sourceHash": "cc9b9ff"
   },
+  "multiRename.resultsUnavailable": "”Resultatlista” kräver Cmdrs skrivbordsapp: där öppnas namnen i din textredigerare.",
+  "@multiRename.resultsUnavailable": {
+    "sourceHash": "333c543"
+  },
   "multiRename.editedName": "Du skrev det här namnet i ”Resultatlista”",
   "@multiRename.editedName": {
     "sourceHash": "346c8d8"

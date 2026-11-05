@@ -331,6 +331,10 @@
   "@multiRename.resultsTooltip": {
     "sourceHash": "cc9b9ff"
   },
+  "multiRename.resultsUnavailable": "“Resultados” necesita la app de escritorio de Cmdr: abre los nombres en tu editor de texto.",
+  "@multiRename.resultsUnavailable": {
+    "sourceHash": "333c543"
+  },
   "multiRename.editedName": "Escribiste este nombre en “Resultados”",
   "@multiRename.editedName": {
     "sourceHash": "346c8d8"

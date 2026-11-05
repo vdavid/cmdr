@@ -331,6 +331,10 @@
   "@multiRename.resultsTooltip": {
     "sourceHash": "cc9b9ff"
   },
+  "multiRename.resultsUnavailable": "“结果列表”需要 Cmdr 桌面 App：它会在你的文本编辑器里打开这些名称。",
+  "@multiRename.resultsUnavailable": {
+    "sourceHash": "333c543"
+  },
   "multiRename.editedName": "这个名称是你在“结果列表”里输入的",
   "@multiRename.editedName": {
     "sourceHash": "346c8d8"

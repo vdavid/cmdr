@@ -332,6 +332,10 @@
   "@multiRename.resultsTooltip": {
     "sourceHash": "cc9b9ff"
   },
+  "multiRename.resultsUnavailable": "Die Ergebnisliste gibt es nur in der Desktop-App von Cmdr, denn sie öffnet die Namen in deinem Text-Editor.",
+  "@multiRename.resultsUnavailable": {
+    "sourceHash": "333c543"
+  },
   "multiRename.editedName": "Diesen Namen hast du in der Ergebnisliste eingegeben",
   "@multiRename.editedName": {
     "sourceHash": "346c8d8"

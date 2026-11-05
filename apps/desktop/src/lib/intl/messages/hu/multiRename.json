@@ -331,6 +331,10 @@
   "@multiRename.resultsTooltip": {
     "sourceHash": "cc9b9ff"
   },
+  "multiRename.resultsUnavailable": "Az Eredménylistához a Cmdr asztali appja kell: a szövegszerkesztődben nyitja meg a neveket.",
+  "@multiRename.resultsUnavailable": {
+    "sourceHash": "333c543"
+  },
   "multiRename.editedName": "Ezt a nevet te írtad be az Eredménylistában",
   "@multiRename.editedName": {
     "sourceHash": "346c8d8"

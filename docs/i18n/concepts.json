@@ -1021,6 +1021,7 @@
     "distinct": ["documents", "download"],
     "en": "Desktop",
     "match": ["desktop"],
+    "notMatch": ["desktop app"],
     "sense": "The macOS Desktop folder (named in lists of protected folders), and the Desktop & Dock settings pane."
   },
   "destination": {

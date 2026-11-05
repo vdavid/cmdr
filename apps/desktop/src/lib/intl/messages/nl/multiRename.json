@@ -333,6 +333,10 @@
   "@multiRename.resultsTooltip": {
     "sourceHash": "cc9b9ff"
   },
+  "multiRename.resultsUnavailable": "Voor de ‘Resultatenlijst’ heb je de desktop-app van Cmdr nodig: die opent de namen in je teksteditor.",
+  "@multiRename.resultsUnavailable": {
+    "sourceHash": "333c543"
+  },
   "multiRename.editedName": "Deze naam heb jij in de ‘Resultatenlijst’ getypt",
   "@multiRename.editedName": {
     "sourceHash": "346c8d8"

@@ -331,6 +331,10 @@
   "@multiRename.resultsTooltip": {
     "sourceHash": "cc9b9ff"
   },
+  "multiRename.resultsUnavailable": "“Danh sách kết quả” cần ứng dụng Cmdr trên máy tính: tính năng này mở các tên trong trình soạn thảo văn bản của bạn.",
+  "@multiRename.resultsUnavailable": {
+    "sourceHash": "333c543"
+  },
   "multiRename.editedName": "Bạn đã tự nhập tên này trong “Danh sách kết quả”",
   "@multiRename.editedName": {
     "sourceHash": "346c8d8"

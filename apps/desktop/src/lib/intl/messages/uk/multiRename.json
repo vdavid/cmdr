@@ -331,6 +331,10 @@
   "@multiRename.resultsTooltip": {
     "sourceHash": "cc9b9ff"
   },
+  "multiRename.resultsUnavailable": "Список «Результати» є лише в програмі Cmdr для компʼютера: він відкриває назви в текстовому редакторі.",
+  "@multiRename.resultsUnavailable": {
+    "sourceHash": "333c543"
+  },
   "multiRename.editedName": "Цю назву ви ввели у списку «Результати»",
   "@multiRename.editedName": {
     "sourceHash": "346c8d8"

@@ -331,6 +331,10 @@
   "@multiRename.resultsTooltip": {
     "sourceHash": "cc9b9ff"
   },
+  "multiRename.resultsUnavailable": "Výsledky fungují jen v desktopové aplikaci Cmdr: otevírají názvy ve vašem textovém editoru.",
+  "@multiRename.resultsUnavailable": {
+    "sourceHash": "333c543"
+  },
   "multiRename.editedName": "Název napsaný ručně ve Výsledcích",
   "@multiRename.editedName": {
     "sourceHash": "346c8d8"
