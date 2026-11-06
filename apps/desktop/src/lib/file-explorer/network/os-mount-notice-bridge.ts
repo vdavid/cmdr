@@ -77,6 +77,7 @@ function raiseNotice(payload: SmbFellBackToOsMount): void {
       : 'The share stuck on the kernel mount has a reason no retry can fix, so none is offered: {share} ({reason})',
     { share: payload.share, reason: payload.reason },
   )
+  const blocked = payload.reason === 'blockedByThisMac'
   addToast(SmbOsMountFallbackToastContent, {
     level: 'info',
     dismissal: 'persistent',
@@ -89,7 +90,9 @@ function raiseNotice(payload: SmbFellBackToOsMount): void {
       stuckReason,
       // This Mac refused the route to a server its own mount reaches: the notice
       // names the server and the permission to switch.
-      blockedServer: payload.reason === 'blockedByThisMac' ? payload.displayName : undefined,
+      blockedServer: blocked ? payload.displayName : undefined,
+      // ...and right after an update, names the update as the cause (#1019).
+      ...(blocked && payload.afterUpdate ? { blockedAfterUpdate: true } : {}),
     },
   })
 }

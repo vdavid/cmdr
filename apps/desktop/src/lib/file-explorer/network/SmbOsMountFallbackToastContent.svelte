@@ -24,6 +24,7 @@
     import { openLocalNetworkSettings } from '#lib/tauri-commands/index.js'
     import { connectDirectly } from './direct-connect'
     import {
+        blockedAfterUpdateMessage,
         directConnectionUnavailableMessage,
         openLocalNetworkSettingsLabel,
         type StuckReason,
@@ -56,9 +57,15 @@
          * to switch and offers the way there, beside the retry for after.
          */
         blockedServer?: string
+        /**
+         * Set with `blockedServer` on the first launch after an update, when the
+         * block is almost always macOS's Local Network permission still pinned to
+         * the old binary (#1019): the sentence names the update as the cause.
+         */
+        blockedAfterUpdate?: boolean
     }
 
-    const { toastId, volumeId, share, retryable, stuckReason, blockedServer }: Props = $props()
+    const { toastId, volumeId, share, retryable, stuckReason, blockedServer, blockedAfterUpdate }: Props = $props()
 
     const STUCK_MESSAGE: Record<StuckReason, MessageKey> = {
         otherServerNotAllowed: 'fileExplorer.network.osMountFallback.otherServerNotAllowed',
@@ -87,7 +94,9 @@
 
 <div class="content">
     <span class="message">
-        {#if blockedServer !== undefined}
+        {#if blockedServer !== undefined && blockedAfterUpdate === true}
+            {blockedAfterUpdateMessage(blockedServer)}
+        {:else if blockedServer !== undefined}
             {directConnectionUnavailableMessage('blockedByThisMac', blockedServer)}
         {:else if retryable}
             <Trans key="fileExplorer.network.osMountFallback.message" snippets={{ shareName }} params={{ share }} />

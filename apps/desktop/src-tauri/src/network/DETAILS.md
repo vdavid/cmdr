@@ -781,6 +781,14 @@ announced through `SmbFellBackToOsMount`, which carries `display_name` for this 
 (`try_smb_upgrade` → `UpgradeResult::NetworkError`). The frontend's words and button: `src/lib/file-explorer/network/DETAILS.md`
 § "This Mac blocked the connection".
 
+**Right after an update it's the permission, and the quiet sweep speaks.** An in-place update can leave the Local
+Network rule on the replaced binary's UUID (#1019, `../updater/DETAILS.md` § Local Network after an update). The first
+launch after an update re-announces the bundle, which fixes it; when a dial is still blocked on that launch,
+`os_mount_notice::effective_notice` turns even the launch sweep's `StayQuiet` into `Announce`, and the event's
+`after_update` makes the notice name the update and the switch. Only on that launch: a fresh install's first dial is
+refused the same way while macOS's prompt is still up, so `crate::after_update` tells an update from a first install
+(its version stamp, else an update check on record).
+
 **The Add server probe only hints.** `check_reachability` has no mount to compare against, so a server that's off looks
 the same: it answers `AddServerError::Unreachable` as always, with `hint: LocalNetworkPermission` when the kernel refused
 the route (`EHOSTUNREACH` / `ENETUNREACH`) and every resolved address is on the LAN (RFC 1918, link-local, IPv6
@@ -883,7 +891,7 @@ an `authenticated` one on BOTH rows lets one id answer for the other.
 ## Telling the user about a kernel-mount fallback
 
 The log above answers "why is this share slow" for whoever reads logs. `os_mount_notice.rs` answers it for the person
-using the app: `announce_os_mount_fallback` emits `SmbFellBackToOsMount { volume_id, share, reason, display_name }`, and the frontend
+using the app: `announce_os_mount_fallback` emits `SmbFellBackToOsMount { volume_id, share, reason, display_name, after_update }`, and the frontend
 raises a notice with a "Try connecting directly" button (`src/lib/file-explorer/network/DETAILS.md` § "The OS-mount
 fallback notice").
 

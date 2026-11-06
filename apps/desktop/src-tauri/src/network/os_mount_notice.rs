@@ -19,6 +19,13 @@
 //! made at login stays quiet: a notice arriving unprompted at launch read to an
 //! early user as Cmdr reaching out to their NAS uninvited and something breaking,
 //! while the share worked the whole time and the yellow dot already said so.
+//!
+//! **Except a dial this Mac blocked on the first launch after an update.** That's
+//! almost always macOS's Local Network permission still pinned to the replaced
+//! binary (#1019): every share on every server stays slow until the person
+//! switches Cmdr off and on, and nothing else tells them so. [`effective_notice`]
+//! promotes that one case, and the event says `after_update` so the notice can
+//! name the update as the likely cause.
 
 use crate::ignore_poison::IgnorePoison;
 use crate::network::NetworkHost;
@@ -46,7 +53,7 @@ fn app_handle() -> Option<AppHandle> {
 
 /// Tells the frontend a share is staying on the macOS kernel mount, so it can
 /// offer a retry instead of leaving someone on the slow path with no explanation.
-fn emit_fell_back_to_os_mount(server: &str, volume_id: &str, share: &str, reason: UpgradeFailure) {
+fn emit_fell_back_to_os_mount(server: &str, volume_id: &str, share: &str, reason: UpgradeFailure, after_update: bool) {
     use tauri_specta::Event;
     if let Some(app) = app_handle()
         && let Err(e) = (crate::network::SmbFellBackToOsMount {
@@ -54,6 +61,7 @@ fn emit_fell_back_to_os_mount(server: &str, volume_id: &str, share: &str, reason
             share: share.to_string(),
             reason,
             display_name: crate::network::smb_server_address::friendly_server_name(server),
+            after_update,
         })
         .emit(&app)
     {
@@ -76,6 +84,17 @@ pub(crate) enum FallbackNotice {
     /// "told this server" ledger entry either, or a later [`Self::Announce`] on the
     /// same server would stay muted for the rest of the run.
     StayQuiet,
+}
+
+/// What `notice` becomes for a fallback for `reason`: a quiet caller speaks after
+/// all when this Mac blocked the dial on the first launch after an update (the
+/// module doc's exception). Everything else keeps the caller's answer.
+fn effective_notice(notice: FallbackNotice, reason: UpgradeFailure, first_run_after_update: bool) -> FallbackNotice {
+    if reason == UpgradeFailure::BlockedByThisMac && first_run_after_update {
+        FallbackNotice::Announce
+    } else {
+        notice
+    }
 }
 
 /// A server the user was told is on the slow path, and the share the notice named.
@@ -137,7 +156,8 @@ impl OsMountNotices {
 static OS_MOUNT_NOTICES: LazyLock<Mutex<OsMountNotices>> = LazyLock::new(Mutex::default);
 
 /// Tells the frontend `share` is staying on the macOS kernel mount, at most once
-/// per server per app run, and only when `notice` is [`FallbackNotice::Announce`].
+/// per server per app run, and only when `notice` is [`FallbackNotice::Announce`]
+/// (or [`effective_notice`] makes it one).
 ///
 /// Only the auto-upgrade paths call this. The manual "Connect directly" flow
 /// surfaces its own failure to the person who clicked it, so a notice there would
@@ -149,6 +169,8 @@ pub(crate) fn announce_os_mount_fallback(
     reason: UpgradeFailure,
     notice: FallbackNotice,
 ) {
+    let after_update = crate::after_update::is_first_run_after_update();
+    let notice = effective_notice(notice, reason, after_update);
     let hosts = crate::network::fresh_discovered_hosts();
     if !OS_MOUNT_NOTICES
         .lock_ignore_poison()
@@ -168,7 +190,8 @@ pub(crate) fn announce_os_mount_fallback(
         server = LogPrivate::host(server),
         share = LogPrivate::volume(share),
     );
-    emit_fell_back_to_os_mount(server, volume_id, share, reason);
+    let blocked_after_update = reason == UpgradeFailure::BlockedByThisMac && after_update;
+    emit_fell_back_to_os_mount(server, volume_id, share, reason, blocked_after_update);
 }
 
 /// Forgets `server` once a direct session lands on it.

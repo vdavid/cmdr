@@ -221,6 +221,14 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Connect directly says there when something on this Mac refused the connection, with a button that opens System Settings."
   },
+  "fileExplorer.pane.directConnectionBlockedAfterUpdateToast": "Cmdr updated, and macOS sometimes keeps blocking its direct connection to {server} afterwards. Switch Cmdr off and on under {localNetwork} to fix it. Until then, this share stays on the slower system connection.",
+  "@fileExplorer.pane.directConnectionBlockedAfterUpdateToast": {
+    "description": "Notice shown on the first launch after Cmdr updated itself, when Cmdr's own faster connection to a network share was refused by the user's Mac while macOS's own connection to the same server works. The known cause: macOS keeps Cmdr's Local Network privacy permission tied to the old version, so it shows as on but doesn't apply; switching it off and on in System Settings fixes it at once. A button below it opens that permission's page (\"openLocalNetworkSettings\"), and another retries the connection. Reassures the user that the share still works, just slower. \"Cmdr\" is the product name.",
+    "placeholders": {
+      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111",
+      "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
+    }
+  },
   "fileExplorer.pane.openLocalNetworkSettings": "Open {localNetwork} settings",
   "@fileExplorer.pane.openLocalNetworkSettings": {
     "description": "Button in the toast about something on this Mac keeping Cmdr from connecting to a server (\"directConnectionBlockedByThisMacToast\"). Pressing it opens macOS System Settings at Privacy & Security > Local Network, where the user can switch Cmdr's permission off and on.",

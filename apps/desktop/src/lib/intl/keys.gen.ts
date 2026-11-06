@@ -2279,6 +2279,7 @@ export type MessageKey =
   | 'fileExplorer.openingToast.noApp'
   | 'fileExplorer.openingToast.withApp'
   | 'fileExplorer.pane.connectedDirectlyToast'
+  | 'fileExplorer.pane.directConnectionBlockedAfterUpdateToast'
   | 'fileExplorer.pane.directConnectionBlockedByThisMacToast'
   | 'fileExplorer.pane.directConnectionEncryptionRequiredToast'
   | 'fileExplorer.pane.directConnectionEncryptionUnavailableToast'

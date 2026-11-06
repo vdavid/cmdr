@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { UpgradeFailure } from '#lib/ipc/bindings.js'
 import { systemStrings } from '#lib/system-strings.svelte.js'
 import {
+  blockedAfterUpdateMessage,
   directConnectionUnavailableMessage,
   mountNotRespondingMessage,
   openLocalNetworkSettingsLabel,
@@ -49,6 +50,15 @@ describe('directConnectionUnavailableMessage', () => {
     expect(message).toContain(systemStrings.localNetwork)
     expect(message).toContain('firewall')
     expect(openLocalNetworkSettingsLabel()).toContain(systemStrings.localNetwork)
+  })
+
+  it('names the update, the server, and the switch when this Mac blocked the first dial after an update', () => {
+    // #1019: macOS kept the permission on the replaced binary; the switch is the fix.
+    const message = blockedAfterUpdateMessage('Mars')
+    expect(message).toContain('Mars')
+    expect(message).toContain(systemStrings.localNetwork)
+    expect(message).toContain('updated')
+    expect(message.toLowerCase()).not.toMatch(/\berrors?\b|\bfail(ed|ure)?\b/)
   })
 
   it('names a share whose mount stopped answering, without saying anything failed', () => {

@@ -49,6 +49,19 @@ export function directConnectionUnavailableMessage(reason: UpgradeFailure, serve
 }
 
 /**
+ * The `blockedByThisMac` sentence for the first launch after an update, when the
+ * cause is almost always macOS's Local Network permission still pinned to the
+ * replaced binary (#1019, `src-tauri/src/updater/local_network_refresh.rs`), so it
+ * names the update and the one switch that fixes it, without the firewall aside.
+ */
+export function blockedAfterUpdateMessage(server: string): string {
+  return tString('fileExplorer.pane.directConnectionBlockedAfterUpdateToast', {
+    server,
+    localNetwork: systemStrings.localNetwork,
+  })
+}
+
+/**
  * The label of the button that opens System Settings at the Local Network
  * permission, which goes with every `blockedByThisMac` sentence. The permission's
  * name is the one System Settings shows, in the Mac's own language.

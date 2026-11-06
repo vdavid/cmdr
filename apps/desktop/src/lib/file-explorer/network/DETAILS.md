@@ -468,9 +468,12 @@ fallback".
 `displayName`), and the notice swaps its sentence for `directConnectionBlockedByThisMacToast` (names the server and the
 OS-localized `systemStrings.localNetwork`), leads with an "Open {localNetwork} settings" button
 (`openLocalNetworkSettings` in `#lib/tauri-commands`, the same opener Settings > Network uses), and keeps the retry
-beside it as the secondary button: the switch works at once, so pressing the retry right after is the whole fix.
-"Connect directly" words the same answer through `LocalNetworkBlockedToastContent.svelte` (sentence plus the settings
-button), raised by `announceNoUpgrade` instead of a plain string toast, so the sign-in sheet's rounds get it too.
+beside it as the secondary button: the switch works at once, so pressing the retry right after is the whole fix. On the
+first launch after an update the event carries `afterUpdate`, and the bridge passes `blockedAfterUpdate`: the sentence
+becomes `directConnectionBlockedAfterUpdateToast`, which names the update as the cause and drops the firewall aside
+(#1019, backend side in `src-tauri/src/network/DETAILS.md` § "This Mac refusing the route"). "Connect directly" words
+the same answer through `LocalNetworkBlockedToastContent.svelte` (sentence plus the settings button), raised by
+`announceNoUpgrade` instead of a plain string toast, so the sign-in sheet's rounds get it too.
 
 **Dismissal watches the volume list, not the button.** A share can reach a direct session five ways: this notice's
 button, the chip's yellow dot, the switcher's direct-connection switch or its "Connect directly now" fix, and the pane's

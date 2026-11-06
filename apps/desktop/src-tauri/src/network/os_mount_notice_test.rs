@@ -164,6 +164,34 @@ fn a_quiet_caller_stays_silent_and_leaves_the_server_untold() {
     );
 }
 
+/// #1019: right after an update, a dial this Mac blocked is the stuck Local Network
+/// permission, so even the launch sweep speaks. The person needs the switch.
+#[test]
+fn a_blocked_dial_on_the_first_launch_after_an_update_speaks_even_from_a_quiet_caller() {
+    assert_eq!(
+        effective_notice(FallbackNotice::StayQuiet, UpgradeFailure::BlockedByThisMac, true),
+        FallbackNotice::Announce
+    );
+}
+
+/// Only that combination: a blocked dial on an ordinary launch, or any other reason
+/// right after an update, keeps the caller's answer.
+#[test]
+fn only_a_blocked_dial_right_after_an_update_overrides_the_caller() {
+    assert_eq!(
+        effective_notice(FallbackNotice::StayQuiet, UpgradeFailure::BlockedByThisMac, false),
+        FallbackNotice::StayQuiet
+    );
+    assert_eq!(
+        effective_notice(FallbackNotice::StayQuiet, UpgradeFailure::Unreachable, true),
+        FallbackNotice::StayQuiet
+    );
+    assert_eq!(
+        effective_notice(FallbackNotice::Announce, UpgradeFailure::Unreachable, false),
+        FallbackNotice::Announce
+    );
+}
+
 /// Nor does a quiet caller disturb a notice that's already up: it doesn't re-file
 /// the server under its own share, so only the share the notice named frees it.
 #[test]

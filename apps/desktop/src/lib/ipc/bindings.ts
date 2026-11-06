@@ -19183,6 +19183,13 @@ export type SmbFellBackToOsMount = {
    *  connect to.
    */
   displayName: string
+  /**
+   *  `BlockedByThisMac` on the first launch after an update, when the cause is
+   *  almost always macOS's Local Network permission still pinned to the old
+   *  binary (#1019), so the notice names the update and the switch. `false`
+   *  for every other reason.
+   */
+  afterUpdate: boolean
 }
 
 /**
