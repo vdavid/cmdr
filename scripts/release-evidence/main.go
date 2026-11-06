@@ -542,18 +542,57 @@ func saveRun(workflow string, id int64, dir string) error {
 		return err
 	}
 	zw := gzip.NewWriter(log)
-	cmd := exec.Command("gh", "run", "view", fmt.Sprint(id), "-R", repo, "--log")
-	var stderr bytes.Buffer
-	cmd.Stdout, cmd.Stderr = zw, &stderr
-	runErr := cmd.Run()
+	jobIDs, err := loggedJobIDs([]byte(jobs))
+	runErr := err
+	if runErr == nil {
+		runErr = writeJobLogs(jobIDs, zw)
+	}
 	closeErr := errors.Join(zw.Close(), log.Close())
 	if runErr != nil {
-		return fmt.Errorf("gh run view %d --log: %w\n%s", id, runErr, strings.TrimSpace(stderr.String()))
+		return fmt.Errorf("run %d's log: %w", id, runErr)
 	}
 	if closeErr != nil {
 		return closeErr
 	}
-	ok("%s run %d: jobs JSON and gzipped log", workflow, id)
+	ok("%s run %d: jobs JSON and gzipped log (%d jobs)", workflow, id, len(jobIDs))
+	return nil
+}
+
+// loggedJobIDs lists the jobs of a `gh run view --json jobs` answer that have a log, in run
+// order. A skipped job never ran, so it has none.
+func loggedJobIDs(jobsJSON []byte) ([]int64, error) {
+	var run struct {
+		Jobs []struct {
+			DatabaseID int64  `json:"databaseId"`
+			Conclusion string `json:"conclusion"`
+		} `json:"jobs"`
+	}
+	if err := json.Unmarshal(jobsJSON, &run); err != nil {
+		return nil, fmt.Errorf("reading the jobs JSON: %w", err)
+	}
+	var ids []int64
+	for _, job := range run.Jobs {
+		if job.Conclusion != "skipped" {
+			ids = append(ids, job.DatabaseID)
+		}
+	}
+	return ids, nil
+}
+
+// writeJobLogs appends each job's log to w. One `gh run view --log` per job, never one for the
+// whole run: since CI split its lanes into slices, a full run has 30+ jobs, and gh refuses a
+// whole-run log past its API budget ("too many API requests needed to fetch logs", v0.60.0's
+// evidence run, 2026-11-06). Each job's lines carry the same `<job>\t<step>\t<timestamp> <text>`
+// shape, so `parseTestLanes` reads the joined log unchanged.
+func writeJobLogs(jobIDs []int64, w io.Writer) error {
+	for _, jobID := range jobIDs {
+		cmd := exec.Command("gh", "run", "view", "--job", fmt.Sprint(jobID), "-R", repo, "--log")
+		var stderr bytes.Buffer
+		cmd.Stdout, cmd.Stderr = w, &stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("gh run view --job %d --log: %w\n%s", jobID, err, strings.TrimSpace(stderr.String()))
+		}
+	}
 	return nil
 }
 
