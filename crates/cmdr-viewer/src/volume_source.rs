@@ -18,7 +18,7 @@ use std::sync::{Arc, Mutex};
 use log::debug;
 
 use super::ViewerError;
-use super::origin::ReplacementHook;
+use super::replacement::ReplacementHook;
 use super::source::{ByteSource, OpenedFile, file_name_of};
 use super::volume_error::map_volume_error;
 use cmdr_fs::ignore_poison::IgnorePoison;

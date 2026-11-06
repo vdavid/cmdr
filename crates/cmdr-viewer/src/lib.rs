@@ -48,6 +48,7 @@ pub mod media_volume;
 mod origin;
 pub mod pending_open;
 pub mod range_read;
+mod replacement;
 mod row_text;
 mod row_walk;
 mod rows;

@@ -64,8 +64,9 @@ binary-warning classifier.
 - `volume_source.rs`: `VolumeSource`, a `ByteSource` over a volume's positioned reads (`PositionedRead`: a held
   `VolumeRandomReader`, SMB today, or `read_range` through `RangeReader`) with a small block cache, plus
   `open_on_volume` / `size_on_volume`. See § "A file read through its volume"
-- `origin.rs`: above both readers. `SourceOrigin` (how a session opens its file again, `Local` or `Volume`) and
-  `open_for_viewer`, which `open_session` asks first. The two readers never import each other or this.
+- `origin.rs`: above both readers (with `replacement.rs`, the hook a reader calls when its file changed). `SourceOrigin`
+  (how a session opens its file again, `Local` or `Volume`) and `open_for_viewer`, which `open_session` asks first. The
+  two readers never import each other or this.
 - `headless.rs`: `open_text_backend(path, encoding, cancel) -> HeadlessBackend`, the backend pick with nothing around
   it, for callers that read a file the viewer's way without a window. See § "Headless reads".
 - `*_test.rs`: unit tests for each backend: UTF-8 edge cases, search highlighting, checkpoint math, range reads,
@@ -166,8 +167,8 @@ back to it, so a live mount still opens and a missing file still answers `NotFou
 - **A file that changed under the reader reloads the session, ❌ never a quiet reopen.** An SMB reader carries itself
   across a reconnect and refuses a file that isn't the version it was reading (`VolumeError::SourceChanged`,
   `crates/cmdr-smb/DETAILS.md` § "Carrying a handle across a reconnect"). A fresh handle there would serve the new bytes
-  under rows built from the old ones, so `VolumeSource` tells its origin's `ReplacementHook` instead (once per source),
-  and the text session does what a watcher's `Replaced` does: the `rotated` event and a reload
+  under rows built from the old ones, so `VolumeSource` tells its origin's `ReplacementHook` (`replacement.rs`) instead
+  (once per source), and the text session does what a watcher's `Replaced` does: the `rotated` event and a reload
   (`Viewer::reload_on_replacement`). The read itself fails. Markdown and media sessions set no hook (a reload rebuilds a
   text backend), so their read just fails. Pinned by `a_file_rewritten_under_its_held_reader_reloads_the_session`.
 - **The sync core bridges with `tauri::async_runtime::block_on`**, like `materialize.rs`, so it must run off any runtime
