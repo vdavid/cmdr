@@ -84,7 +84,8 @@
         "clippy.toml",
         "apps/website/src/layouts/Layout.astro",
         "apps/website/public/scripts/posthog-init.js",
-        "apps/website/nginx-*security-headers*.conf"
+        "apps/website/nginx-*security-headers*.conf",
+        "apps/desktop/src/lib/demo/**"
       ]
     },
     {
@@ -247,6 +248,8 @@
         "apps/desktop/src/lib/settings/definitions/ai.ts",
         "apps/desktop/src-tauri/src/tauri_builder.rs",
         "apps/desktop/src-tauri/src/network/mdns_discovery.rs",
+        "apps/desktop/src-tauri/src/updater/local_network_refresh.rs",
+        "apps/desktop/src-tauri/src/after_update.rs",
         "crates/cmdr-adb/src/server.rs"
       ]
     },
@@ -389,6 +392,7 @@
       "paths": [
         ".github/workflows/ci.yml",
         ".github/workflows/macos-lane.yml",
+        ".github/workflows/rust-lane.yml",
         ".github/workflows/slow-checks.yml",
         ".github/workflows/advisories.yml",
         ".github/workflows/release-pipeline.yml",
@@ -429,6 +433,7 @@
         "scripts/release-finish/**",
         "scripts/release-ci-gate.sh",
         "scripts/release-codeql-gate.sh",
+        "scripts/release-mirror/**",
         "docs/guides/releasing.md"
       ]
     },
@@ -437,6 +442,7 @@
       "anchor": "updates",
       "paths": [
         "apps/desktop/src-tauri/src/updater/**",
+        "apps/desktop/src-tauri/src/after_update.rs",
         "apps/desktop/src-tauri/tauri.conf.json",
         "crates/cmdr-update-trust/**",
         "apps/desktop/src-tauri/src/managed_policy/**"
@@ -455,6 +461,8 @@
         "apps/desktop/src/lib/utils/webkit-compat.ts",
         "apps/desktop/src/app.html",
         "apps/desktop/vite.config.js",
+        "apps/desktop/scripts/vite-webkit-*.ts",
+        "docs/guides/releasing.md",
         "docs/notes/system-requirements-and-es2025.md",
         "scripts/check/checks/desktop-rust-macos-availability.go",
         "SECURITY.md"
@@ -512,7 +520,8 @@
       "paths": [
         "apps/desktop/src/lib/commands/sources/**",
         "apps/desktop/src/lib/settings/sections/KeyboardShortcutsSection.svelte",
-        "apps/desktop/src/lib/file-operations/**"
+        "apps/desktop/src/lib/file-operations/**",
+        "crates/cmdr-menu/**"
       ]
     },
     {
@@ -548,7 +557,7 @@
     {
       "page": "/trust/accessibility-guide",
       "anchor": "help",
-      "paths": ["apps/desktop/src-tauri/src/menu/**"]
+      "paths": ["apps/desktop/src-tauri/src/menu/**", "crates/cmdr-menu/**"]
     }
   ]
 }

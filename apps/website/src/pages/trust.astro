@@ -222,7 +222,9 @@ const toc = [
     <p>
         Cmdr's web connections (everything above except file servers and phones) follow macOS's proxy settings: an
         HTTP, HTTPS, or SOCKS proxy set by hand, the list of hosts that bypass it, and automatic configuration with a
-        PAC file, which macOS itself runs. If the PAC file can't be loaded, Cmdr connects directly, as macOS does. The
+        PAC file, which macOS itself runs. If the PAC file can't be loaded, Cmdr connects directly, as macOS does. With a PAC file set, Cmdr loads it from
+        your organization's server once at launch, even if nothing else connects, so the first real request already
+        goes through the proxy. The
         <code>HTTPS_PROXY</code>, <code>HTTP_PROXY</code>, <code>ALL_PROXY</code>, and <code>NO_PROXY</code>
         environment variables work too and take precedence, including a SOCKS address like
         <code>socks5h://proxy.example:1080</code>. Addresses on the Mac itself and link-local addresses
@@ -259,14 +261,15 @@ const toc = [
         getcmdr.com counts visits with Umami, which runs on Cmdr's own server in Finland and uses no cookies. It also
         uses PostHog (EU cloud) for visit recordings and heatmaps, kept in memory only, so it sets no cookie either.
         Download links go through <code>api.getcmdr.com</code>, which counts each download with its country, referring
-        site, and browser, and a daily-salted IP hash it removes after 90 days.
+        site, and browser, and a daily-salted IP hash it removes after 90 days. The browser demo (on the home page
+        and at <a href="/demo/">getcmdr.com/demo</a>) runs Cmdr's interface on sample files inside the page: it loads
+        only its own files and sends nothing about what you do in it.
     </p>
 
     <h2 id="mdm">Central management (MDM)</h2>
     <p>
-        IT can turn off usage stats, reports, updates, and AI, and keep the security event log on, for every user with
-        a configuration profile from any
-        MDM (Jamf, Kandji, Intune, and others). Cmdr reads managed preferences from the
+        IT can turn off usage stats, reports, updates, and AI, keep the security event log on, and require SMB
+        encryption, for every user with a configuration profile from any MDM (Jamf, Kandji, Intune, and others). Cmdr reads managed preferences from the
         <code>com.veszelovszki.cmdr</code> preference domain, the app's bundle id. A user can't change a managed
         setting: Settings shows it locked, with a note that the organization manages it, and the MCP server can't
         change it either. Cmdr picks up a new or changed profile while it runs, and reads the profile again before each
@@ -422,8 +425,8 @@ const toc = [
     <ul>
         <li>
             Downloads and updates come from <code>download.getcmdr.com</code>, which Cloudflare stores in its EU
-            jurisdiction. An update to 0.59.0 or older still comes from GitHub (United States), and so does anything
-            downloaded from GitHub's public mirror of the releases. GitHub sees the IP address then.
+            jurisdiction. Anything downloaded from GitHub's public mirror of the releases comes from GitHub (United
+            States), which sees the IP address then.
         </li>
         <li>Optional model downloads come from Hugging Face (United States), which sees the IP address.</li>
         <li>
@@ -434,7 +437,7 @@ const toc = [
             account it handles the data as its own controller.
         </li>
         <li>
-            Every email Cmdr sends (license keys, the newsletter, notifications about reports and feedback, and replies
+            Every email Cmdr sends (license keys, the newsletter, notifications about reports, feedback, and sales, and replies
             from @getcmdr.com addresses) leaves through SMTP2Go's EU servers. SMTP2Go is a New Zealand company, which
             the EU recognizes as giving adequate data protection, and it says it stores data of EEA customers only in
             the EEA.
@@ -624,7 +627,7 @@ const toc = [
         }
     </ul>
     <p>
-        Nothing in Cmdr's code deletes emails in the @getcmdr.com inbox, or Resend's and SMTP2Go's delivery logs.
+        Nothing in Cmdr's code deletes emails in the @getcmdr.com inbox, or SMTP2Go's delivery logs.
     </p>
     <DevTodo>
         Confirm Cmdr is on PostHog's free plan (events kept one year; a paid plan keeps them seven).
@@ -673,7 +676,7 @@ const toc = [
             tied to the builds they describe, the same way.
         </li>
         <li>
-            <strong>Updates</strong>: the app downloads the new version from GitHub and checks its Ed25519 (minisign)
+            <strong>Updates</strong>: the app downloads the new version from <code>download.getcmdr.com</code> and checks its Ed25519 (minisign)
             signature against the two public keys built into the app (the main key and an offline backup key for
             rotation), before writing anything to disk. Before installing, it also checks that the new app carries
             Rymdskottkarra AB's Apple Developer ID signature, so a leaked update key alone can't ship an update. It
@@ -757,6 +760,11 @@ const toc = [
             opens the folder in a Cmdr tab with the cursor on the item; it never opens or runs a file.
         </li>
         <li>
+            On the first launch after an update, Cmdr registers its app with macOS's Launch Services again and updates
+            the app's modification date, so macOS's Local Network permission follows the new version instead of
+            blocking it.
+        </li>
+        <li>
             Cmdr's <code>Info.plist</code> sets one environment variable, <code>MallocLargeCache=0</code>, which turns
             off a macOS memory cache to keep Cmdr's memory use down.
         </li>
@@ -834,10 +842,10 @@ const toc = [
         <li>
             The code that touches files, the network, and the system is Rust. {codeCounts.checks} automated checks,
             including about {fmt(Math.round(codeCounts.rustTests / 100) * 100)} Rust tests with deliberately hostile
-            cases, run during development and again on GitHub before each change lands. Every few days, CI also fuzzes
-            the parsers that read untrusted bytes, checks <code>unsafe</code> Rust with Miri, and runs the file
-            operation engine's thread races under Shuttle. Kani proves the Zip Slip guard and rollback's safety
-            decisions for every input up to a bound.
+            cases, run during development and again on GitHub before each change lands. Before a Rust change lands, CI
+            also runs the file operation engine's thread races under Shuttle, and Kani proves the Zip Slip guard and
+            rollback's safety decisions for every input up to a bound. Every night, CI fuzzes the parsers that read
+            untrusted bytes and checks <code>unsafe</code> Rust with Miri.
         </li>
         <li>
             Development is AI-assisted. One person owns every change; as a one-person company, there's no
@@ -1052,7 +1060,7 @@ const toc = [
                 <li>
                     Download Cmdr only from getcmdr.com, its
                     <a href="https://github.com/vdavid/cmdr/releases/latest">GitHub releases</a>, or the Homebrew
-                    cask. To check a download, see "Build provenance" under <a href="#signing">signing</a>.
+                    cask. Downloads from getcmdr.com and Homebrew come from <code>download.getcmdr.com</code>. To check a download, see "Build provenance" under <a href="#signing">signing</a>.
                 </li>
                 <li>
                     Keep the defaults unless you need something else: automatic updates on, AI and the MCP server off,
@@ -1065,7 +1073,7 @@ const toc = [
                 </li>
                 <li>
                     For remote storage on a network you don't trust, pick SFTP, <code>https://</code>, or SMB with
-                    encryption.
+                    encryption (Settings › File systems › "Always require SMB encryption").
                 </li>
                 <li>Keep FileVault on.</li>
             </ul>

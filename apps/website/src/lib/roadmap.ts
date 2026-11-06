@@ -773,6 +773,13 @@ export const roadmapSections: RoadmapSection[] = [
             description: 'The agent is much more capable with proper tooling.',
             done: true,
           },
+          {
+            date: '(Nov 5)',
+            title: 'Live demo',
+            description:
+              'The real Cmdr at <a href="/">getcmdr.com</a> and <a href="/demo">/demo</a>, how cool is that.',
+            done: true,
+          },
         ],
       },
     ],
