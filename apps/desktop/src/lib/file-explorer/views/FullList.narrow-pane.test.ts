@@ -87,14 +87,17 @@ describe('FullList in a narrow pane', () => {
     expect(rowTemplate(list.target)).toMatch(/^16px 1fr \d+px$/)
   })
 
-  it('stops naming the dropped date in the row’s accessible name', async () => {
+  // A screen reader hears the same row in any pane width: hiding the column is a sighted-layout
+  // tradeoff, and the date costs nothing in the accessible name.
+  it('keeps the dropped date in the row’s accessible name', async () => {
     const wide = await mountAt(800)
-    expect(wide.rows()[0].getAttribute('aria-label')).toMatch(/modified/i)
+    const wideName = wide.rows()[0].getAttribute('aria-label')
+    expect(wideName).toMatch(/modified/i)
     wide.target.remove()
 
     const narrow = await mountAt(240)
     await narrow.settle(() => narrow.target.querySelectorAll('.col-date').length === 0, 'the date column to drop')
-    expect(narrow.rows()[0].getAttribute('aria-label')).not.toMatch(/modified/i)
+    expect(narrow.rows()[0].getAttribute('aria-label')).toBe(wideName)
   })
 
   it('brings the columns back when the pane widens', async () => {

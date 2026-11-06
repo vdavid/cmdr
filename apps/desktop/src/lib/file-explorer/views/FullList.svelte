@@ -943,7 +943,9 @@
                                         triads: sizeTriads,
                                         dirState: dirSizeState,
                                     }),
-                                    date: showDateColumn ? { column: dateColumn, text: date.text } : undefined,
+                                    // Named even when a narrow pane hides the date column: a screen
+                                    // reader hears the same row at any width.
+                                    date: { column: dateColumn, text: date.text },
                                     gitStatus: gitStatus ? labelFor(gitStatus) : undefined,
                                 },
                             }),

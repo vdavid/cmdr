@@ -557,8 +557,9 @@ splitter at its 25 % limit (~240 px pane), `icon 1fr ext size date` left Name 0 
 
 - A dropped Ext behaves exactly like `showExtensionInName`: `FullList`'s `extInName` (setting OR narrow) drives the
   cells, the grid template, the header's split Name/Ext triggers, the rename span, and the row name's restic host. A
-  dropped date drops its cells, its header cell and chevron (the date sorts stay in the header's right-click popup), and
-  the date phrase from the row's accessible name.
+  dropped date drops its cells and its header cell and chevron (the date sorts stay in the header's right-click popup),
+  but the row's accessible name keeps the date phrase: a screen reader hears the same row at any pane width, and the
+  conformance report's "size and date" rows stay true.
 - ❌ Feed the fit the widths measured with the SETTING, never the fitted layout: a dropped Ext would measure `ext: 0`,
   fit again, and flap. The measurer still measures Ext and date while they're hidden, so nothing waits when they return.
 - **A scroll never pops a column**: the fit reads `fitWidths`, `columnWidths` latched per measuring key (listing,
