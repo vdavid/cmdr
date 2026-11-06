@@ -1825,14 +1825,15 @@ pub trait Volume: Send + Sync {
     /// remaining tail), so a resumed transfer's progress stays anchored to the
     /// whole file; `bytes_read()` counts only this segment.
     ///
-    /// A resumable-read primitive. The copy path no longer reopens at an offset
-    /// (pause and foreground yield park in place between bounded windows in the
-    /// transfer wrapper `CheckpointStream`, so nothing calls this with a non-zero
-    /// offset today), but MTP keeps it correct: a non-zero `offset` streams
-    /// exactly `[offset, size)` with no gap or overlap.
+    /// A version-blind primitive: nothing checks the file is the one an earlier
+    /// read saw, so a copy carried on after an outage goes through
+    /// [`resume_read_stream`](Self::resume_read_stream) instead, which several
+    /// backends build on this. A non-zero `offset` streams exactly
+    /// `[offset, size)` with no gap or overlap.
     ///
-    /// Default is `NotSupported`; only MTP implements it. `MtpVolume`'s
-    /// `open_read_stream` routes through it with `offset == 0`.
+    /// Default is `NotSupported`. MTP, ADB, S3, WebDAV, NFS, and the archive
+    /// route implement it; `MtpVolume`'s and `AdbVolume`'s `open_read_stream`
+    /// route through it with `offset == 0`.
     #[allow(
         clippy::type_complexity,
         reason = "async trait method returns a pinned boxed future by design"

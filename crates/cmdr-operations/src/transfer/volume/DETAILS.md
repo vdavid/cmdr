@@ -35,15 +35,16 @@ Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`.
   (`copy_single_path`, `resolve_source_is_directory`, `pull_path_to_local`); `stream_pipe.rs` moves one file's bytes
   (`stream_pipe_file`: staging, retry, outages, the auto-yield tuning, both cancel tiers) and calls neither half back.
   It's a step runner: `stream_pipe.rs` holds the runner and its one fault decision, `stream_pipe_steps.rs` the steps
-  (settle an unanswered create, open, write, land). What a landed file reports (`PipedFile`, `landed_at_final_name`) is
-  a leaf, `piped_file.rs`, shared with `server_side_copy.rs` and `sequential_extract.rs`, so the server-side copy never
-  imports `stream_pipe.rs` back (it would close a module cycle). The vocabulary both halves and both drivers speak
-  (`FileWindow`, `MergeCtx`, `MergeProbe`, `CreatedPaths`) sits beside them in `merge_ctx.rs`. `merge.rs` walks a tree
-  (`copy_directory_streaming`, `resolve_merge_child`): a directory child recurses there, a file child goes to
-  `stream_pipe.rs`. `sequential_extract.rs` reuses the same walk in plan mode, which is why the merge/conflict/rollback
-  code is not reimplemented for one-pass archives. `folder_metadata.rs` holds what the walk notes about the folders it
-  created, stamped once the subtree landed, and `landed_flags.rs` the flags a FILE waits to wear until its landing (both
-  § "Copies keep the source's metadata").
+  (settle an unanswered create, open, write or carry a write on, land), with `remembered_source.rs` replaying the first
+  stream's metadata to a carried-on one (`../DETAILS.md` § "Carrying a file on after a long outage"). What a landed file
+  reports (`PipedFile`, `landed_at_final_name`) is a leaf, `piped_file.rs`, shared with `server_side_copy.rs` and
+  `sequential_extract.rs`, so the server-side copy never imports `stream_pipe.rs` back (it would close a module cycle).
+  The vocabulary both halves and both drivers speak (`FileWindow`, `MergeCtx`, `MergeProbe`, `CreatedPaths`) sits beside
+  them in `merge_ctx.rs`. `merge.rs` walks a tree (`copy_directory_streaming`, `resolve_merge_child`): a directory child
+  recurses there, a file child goes to `stream_pipe.rs`. `sequential_extract.rs` reuses the same walk in plan mode,
+  which is why the merge/conflict/rollback code is not reimplemented for one-pass archives. `folder_metadata.rs` holds
+  what the walk notes about the folders it created, stamped once the subtree landed, and `landed_flags.rs` the flags a
+  FILE waits to wear until its landing (both § "Copies keep the source's metadata").
 - **The move is three files, and the dependency runs ONE way.** `r#move` is the DISPATCHER and nothing else: it picks
   same-volume (`move_same`), both-local (`local_move_start`, one level up), or cross-volume (`move_cross`), then owns
   the managed-op lifecycle around whichever it picked. Both engines are leaves under it. ❗ Nothing in an engine may

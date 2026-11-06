@@ -2,6 +2,7 @@
 //! store, plus its read stream. What the double can be TOLD to be (the knobs,
 //! and the lies it tells on request) lives in the parent module.
 
+use super::carry_on::InMemoryVersion;
 use super::device::{Bandwidth, ContentSink, Yielder};
 use super::{InMemoryContent, InMemoryEntry, InMemoryVolume};
 use crate::entry::FileEntry;
@@ -38,34 +39,6 @@ struct InMemoryReadStream {
     yielder: Option<Arc<Yielder>>,
     /// Which version of the file this stream reads (`Volume::resume_read_stream`).
     version: InMemoryVersion,
-}
-
-/// An in-memory file's version: its very bytes (`InMemoryContent::is_same_as`)
-/// and its date. Any rewrite stores new bytes, so it never matches.
-#[derive(Clone)]
-struct InMemoryVersion {
-    content: InMemoryContent,
-    modified_at: Option<u64>,
-}
-
-impl InMemoryVersion {
-    fn of(entry: &InMemoryEntry) -> Self {
-        Self {
-            content: entry
-                .content
-                .clone()
-                .unwrap_or_else(|| InMemoryContent::bytes(Vec::new())),
-            modified_at: entry.metadata.modified_at,
-        }
-    }
-
-    fn matches(&self, entry: &InMemoryEntry) -> bool {
-        entry
-            .content
-            .as_ref()
-            .is_some_and(|content| content.is_same_as(&self.content))
-            && entry.metadata.modified_at == self.modified_at
-    }
 }
 
 impl VolumeReadStream for InMemoryReadStream {
@@ -914,66 +887,17 @@ impl Volume for InMemoryVolume {
         self.continues_writes
     }
 
-    /// The partial at `target`, cut to `at`, then the stream after it, as
-    /// `write_from_stream` lands it. Refuses a target that's gone or short.
+    /// The partial at `target`, cut to `at`, then the stream after it
+    /// (`carry_on.rs`).
     fn continue_write_from_stream<'a>(
         &'a self,
         target: &'a Path,
         at: u64,
         length: StreamLength,
-        mut stream: Box<dyn VolumeReadStream>,
+        stream: Box<dyn VolumeReadStream>,
         on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<StreamWritten, VolumeError>> + Send + 'a>> {
-        let (Some(size), true) = (length.known(), self.continues_writes) else {
-            return Box::pin(async { Err(VolumeError::NotSupported) });
-        };
-        Box::pin(async move {
-            let prefix = self
-                .entries
-                .read_ignore_poison()
-                .get(&self.normalize(target))
-                .and_then(|entry| entry.content.clone())
-                .filter(|content| content.len() >= at)
-                .ok_or(VolumeError::NotSupported)?;
-            let mut carried = stream.metadata(self.metadata_caps.stores);
-            carried.flags = carried.flags.intersection(self.metadata_caps.staged_flags);
-            let kept = carried
-                .clone()
-                .restricted_to(MetadataClasses::ALL.without(self.write_refuses));
-            let mut data = ContentSink::default();
-            data.push(&prefix.read_at(0, at as usize));
-            let mut bytes_written = at;
-            while let Some(result) = stream.next_chunk().await {
-                let chunk = match result {
-                    Ok(chunk) => chunk,
-                    Err(e) => {
-                        let _ = self.replace_whole(target, data.finish());
-                        return Err(e);
-                    }
-                };
-                bytes_written += chunk.len() as u64;
-                data.push(&chunk);
-                self.breathe().await;
-                if on_progress(StreamWriteProgress {
-                    bytes_written,
-                    expected_length: StreamLength::Known(size),
-                }) == std::ops::ControlFlow::Break(())
-                {
-                    return Err(VolumeError::Cancelled("Operation cancelled".into()));
-                }
-            }
-            self.replace_whole(target, data.finish())?;
-            if let Some(secs) = stream
-                .modified_at()
-                .and_then(|date| date.duration_since(std::time::UNIX_EPOCH).ok())
-            {
-                self.set_modified_at(target, Some(secs.as_secs()));
-            }
-            if !kept.is_empty() {
-                self.set_carried_metadata(target, kept);
-            }
-            Ok(self.written(target, bytes_written, &carried, stream.modified_at()))
-        })
+        self.continue_write_impl(target, at, length, stream, on_progress)
     }
 
     #[cfg(feature = "playwright-e2e")]

@@ -298,7 +298,7 @@ impl FileRun<'_> {
                     started_on,
                     staged,
                     source_reads: SourceReads::failed(),
-                    carry: Some(carry),
+                    carry: Some(Box::new(carry)),
                 })));
             }
             Err(VolumeError::NotSupported) => {
@@ -508,7 +508,7 @@ impl FileRun<'_> {
                 started_on,
                 staged,
                 source_reads,
-                carry,
+                carry: carry.map(Box::new),
             }))),
         }
     }

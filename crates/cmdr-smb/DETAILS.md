@@ -429,6 +429,11 @@ from byte 0. Now each carries on, on the next session, from where it was (`resum
   lost (the transfer session, or main), which then reconnects.
 - **The download's hold** moves to the new lease (`Resumed.on`), so a dead transfer session's hold doesn't keep the idle
   close away.
+- **Past these tries, the engine carries the copy on.** The streaming download names its version
+  (`VolumeReadStream::source_version`, smb2's `FileVersion` off its own open) and `SmbVolume::resume_read_stream` opens
+  it again from an offset through the same producer (`open_smb_download_stream`'s `from`), so when the transfer engine's
+  outage wait outlasts `REATTACH_BACKOFF` the download to a local disk keeps what it already wrote. The engine side:
+  `crates/cmdr-operations/src/transfer/DETAILS.md` § "Carrying a file on after a long outage".
 - Pinned by `reattach_integration_test.rs` (Docker: a reader across a no-FIN drop, eight racing reads, a rewritten file
   refused twice, a 32 MiB download byte for byte, a download refused for a file rewritten while the network stayed down
   through `BlackHoleProxy::refuse_new`), `dfs_links_integration_test.rs`

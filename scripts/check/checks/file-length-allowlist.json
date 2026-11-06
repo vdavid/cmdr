@@ -174,7 +174,7 @@
       "reason": "the archive's one `Volume` impl, one short method per trait call over the cached index; the stream adapters already live in `volume_streams.rs` and the AppleDouble pairing in `read/sidecars.rs`, so a further split would only scatter the trait impl"
     },
     "crates/cmdr-fs/src/volume/in_memory.rs": {
-      "lines": 940,
+      "lines": 946,
       "reason": "TODO: the 25 knob builders (`with_*`, each a field plus a doc saying which `Volume` method it bends and what real backend it stands in for) are the bulk of the file; move them into `in_memory/knobs.rs` as a second `impl InMemoryVolume` block, beside `volume_impl.rs`. What stays here is the store (`InMemoryEntry`, the struct and its fields), `new`, and the private helpers the impl calls."
     },
     "crates/cmdr-fs/src/volume/in_memory/volume_impl.rs": {

@@ -15,8 +15,9 @@
 //! [`REATTACH_BACKOFF`] reports the loss as before, and the transfer engine's
 //! own outage wait (`cmdr-operations`'s `transfer/volume_outage.rs`, which has
 //! the budget, the Cancel, the Pause, and the "waiting for the server" line)
-//! takes over and runs the file again. This only bridges the blip that wait
-//! would otherwise turn into a restart from byte 0.
+//! takes over. Once the share is back, that wait carries the copy on from
+//! where it was too (`Volume::resume_read_stream`, `read_stream.rs`), so this
+//! only spares it the wait.
 
 use std::time::Duration;
 

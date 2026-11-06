@@ -78,6 +78,8 @@ mod local_posix_conformance_test;
 #[cfg(test)]
 mod local_posix_link_test;
 #[cfg(test)]
+mod local_posix_resume_test;
+#[cfg(test)]
 mod local_posix_test;
 #[cfg(test)]
 mod reading_parity_test;

@@ -27,6 +27,7 @@ use device::{Bandwidth, Yielder};
 use std::sync::atomic::{AtomicU64, Ordering};
 pub use subtree_totals::{HeldAt, SubtreeTotals};
 
+mod carry_on;
 mod device;
 mod imports;
 mod links;
@@ -475,15 +476,6 @@ impl InMemoryVolume {
     /// delete failure never fails or blocks the edit.
     pub fn with_delete_failing(mut self) -> Self {
         self.delete_fails = true;
-        self
-    }
-
-    /// Makes this volume carry a failed write on (`Volume::continue_write_from_stream`):
-    /// a write that fails mid-stream leaves the bytes it got at its name, as a disk
-    /// does, and a continuation picks up from any byte count it heard. What lets an
-    /// engine test copy onto this double through a long outage and keep its bytes.
-    pub fn with_continuable_writes(mut self) -> Self {
-        self.continues_writes = true;
         self
     }
 

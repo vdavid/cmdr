@@ -19,9 +19,11 @@ use cmdr_fs::metadata::{CarriedMetadata, MetadataClasses};
 use cmdr_fs::volume::{ScanStop, SourceVersion, StreamLength, VolumeError, VolumeReadStream};
 
 /// The first stream's answers, by what each question asked.
+// DEFAULT-OK: an empty record is "no answer remembered", and a resumed stream then asks its own.
 #[derive(Clone, Default)]
 pub(super) struct Remembered(Arc<Mutex<Answers>>);
 
+// DEFAULT-OK: nothing asked yet is exactly what a fresh stream has been told.
 #[derive(Default)]
 struct Answers {
     metadata: Vec<(MetadataClasses, CarriedMetadata)>,

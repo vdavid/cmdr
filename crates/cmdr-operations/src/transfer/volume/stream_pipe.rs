@@ -366,7 +366,7 @@ enum Fault {
         started_on: StartedOn,
         staged: StagedWrite,
         source_reads: SourceReads,
-        carry: Option<steps::CarryOn>,
+        carry: Option<Box<steps::CarryOn>>,
     },
     /// A landing step the transport cut off (a rename, or a swap's clearing
     /// delete), which the server may or may not have performed. A resume
@@ -589,7 +589,7 @@ impl FileRun<'_> {
         error: VolumeError,
         staged: StagedWrite,
         source_reads: SourceReads,
-        carry: Option<steps::CarryOn>,
+        carry: Option<Box<steps::CarryOn>>,
         lost: Option<LostConnection>,
     ) -> ControlFlow<Result<PipedFile, PathedVolumeError>> {
         let (dest_volume, dest_path, attempt) = (self.dest_volume, self.dest_path, self.attempt);
@@ -663,8 +663,8 @@ impl FileRun<'_> {
     /// destination confirmed, when `carry` allows (the next pass then reopens
     /// the source there, `steps::continue_write`), else clear the attempt's
     /// partial so the file starts clean. `true` when it carries on.
-    async fn carry_on_or_clear(&mut self, staged: StagedWrite, carry: Option<steps::CarryOn>) -> bool {
-        match steps::Continuation::of(staged, carry) {
+    async fn carry_on_or_clear(&mut self, staged: StagedWrite, carry: Option<Box<steps::CarryOn>>) -> bool {
+        match steps::Continuation::of(staged, carry.map(|carry| *carry)) {
             Ok(continuation) => {
                 self.write_to_continue = Some(continuation);
                 true

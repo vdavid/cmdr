@@ -1030,7 +1030,7 @@ async fn smb_integration_a_download_carries_on_after_a_long_outage_instead_of_st
     let sent = proxy.bytes_to_client();
     assert!(
         sent < DOWNLOAD_BYTES as u64 * 13 / 10,
-        "the share sent {sent} bytes for a {DOWNLOAD_BYTES}-byte file: the download started over"
+        "the share sent {sent} bytes for a {DOWNLOAD_BYTES}-byte file: the download started over" // allowed-pluralize-noun: a test failure message, never a count shown to a person
     );
     ensure_clean(&direct, &base).await;
 }

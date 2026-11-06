@@ -2001,7 +2001,8 @@ attempt's target first — one case WIDER than the terminal `abandon`, because b
 it also removes what an `Unstaged` attempt left at the final name, which is only the partial we just gave up on. Leaving
 it would make the next attempt depend on how each backend treats a write onto an existing path (`LocalPosixVolume`
 truncates, `InMemoryVolume` refuses with `AlreadyExists`, MTP can make a duplicate object). A `SingleShot` write is
-still left entirely to its backend.
+still left entirely to its backend. The one exception keeps the temp on purpose: a write that can be carried on from its
+last confirmed byte (§ "Carrying a file on after a long outage").
 
 **What is retryable, and why by type.** Exactly a transport fault: `VolumeError::transport_fault`
 (`crates/cmdr-fs/src/volume/transport_fault.rs`), the ONE classifier the retry, the outage wait below, the
@@ -2145,7 +2146,8 @@ again:
 - `stream_pipe_file`, a step runner: each pass walks the file's checkpoints (settle an unanswered create, open the
   source, write, land), and a failed step hands its `Fault` to ONE decision, `FileRun::on_fault`, which waits with that
   step's own `StartedOn` snapshot and resumes at the step's checkpoint. The open resumes by opening again (nothing
-  staged yet); the write by clearing the failed attempt's temp AFTER the wait, when the delete can reach the share, then
+  staged yet); the write by carrying it on from its last confirmed byte when both ends can (§ "Carrying a file on after
+  a long outage"), else by clearing the failed attempt's temp AFTER the wait, when the delete can reach the share, then
   running the file again; a landing step the transport cut off (`LandingError::CutOff`: a first rename, a claimed name's
   clearing delete, a swap's replacing rename or move aside, the rename after either) by settling it first, on the next
   pass's first checkpoint (`resume_landing`, § "A landing the drop cut off" below): what landed counts as done, a whole
@@ -2289,6 +2291,61 @@ wait, the start gate, a landing cut off before the server saw it, after it perfo
 the name then taken by someone else, a single-shot write the drop swallowed, with the name then taken by a
 different-size and a same-size file, and a late error in the concurrent window). `volume/copy_landing_race_tests.rs`
 pins a performed landing answered by a late error landing once, in both drivers.
+
+### Carrying a file on after a long outage
+
+**Decision**: a streamed write that fails on the transport keeps its `.cmdr-tmp-*` and, once the volume is back (after
+the outage wait above, or a blip's retry backoff), carries on from the last byte the destination confirmed, rather than
+running the file again from its first. Only when all three hold, else the file starts over exactly as before:
+
+- the source named its version (`VolumeReadStream::source_version`, asked of the stream the backend handed out, before
+  any wrapper),
+- the destination continues writes (`Volume::continues_writes`), and
+- the write went to a temp of its own (`StagedWrite::writes_a_temp`: never a single-shot frame at the final name, never
+  an unstaged write).
+
+**Why**: before this, a 20 GB download that met a NAS reboot at 19 GB read 19 GB twice, and a flapping link could keep a
+big file from ever finishing. The backend's own reconnect (SMB's `resume.rs`, about 15 s of tries) bridges a blip; this
+is what the engine's 15-minute wait now hands back to.
+
+**How** (`volume/stream_pipe.rs`, `volume/stream_pipe_steps.rs`): `write` builds a `CarryOn` (the version, the confirmed
+byte count fed by the destination's own progress, and what the landing needs), and a `Fault::Write` carries it.
+`FileRun::carry_on_or_clear` turns it into a `Continuation` instead of `abandon_attempt` wherever the file would run
+again. The next pass's `continue_write` asks `Volume::resume_read_stream(path, version, at)`, wraps the stream as an
+open does (`remember`ed metadata, `source_reads::watch` held to the bytes LEFT, quarantine), and streams into
+`Volume::continue_write_from_stream(temp, at, ...)`, through the same `stream_into` a fresh write takes (yield, stall
+watchdog, tier 2), then lands as usual.
+
+- **Every byte once.** The carry-on point is the destination's last progress count, which `continues_writes` promises is
+  a contiguous prefix of the target; the destination cuts the temp to it before writing. A destination whose writes land
+  out of order (SMB's pipelined WRITEs are counted as they're answered) says no until it can name a proven offset.
+- **❗ Proof before bytes, ❌ never a splice.** The source's backend checks the version before reading: a file that
+  changed meanwhile is `VolumeError::SourceChanged`, the temp goes (`abandon`), and the file fails as the source having
+  changed, which the person reads as such. ❌ Not a quiet restart either: a copy that silently took a different version
+  of the file than the one it started on would hide that the source moved. The version is the FIRST open's through every
+  carry-on, so a change while the first stream still read is caught at the next one.
+- **The metadata is the first stream's** (`volume/remembered_source.rs`): the destination asks a stream once, before its
+  first chunk, and stamps the answers after its last, so the resumed stream replays the first one's answers by what was
+  asked, and no backend has to learn them again.
+- **Falls back, never fails, on "can't".** `NotSupported` from either end (a source that named a version another backend
+  can't read, a destination temp that's gone or shorter than the count) clears the temp and runs the file again from its
+  first byte. A transport fault while reopening keeps the continuation and takes the outage wait again.
+
+**Where each backend stands.** Sources that resume: SMB (smb2's `FileVersion`: identity, length, both times; a compound
+small-file read names none), S3 and WebDAV (`cmdr_fs::volume::HttpEntityVersion`: a strong ETag, else the date, and the
+length; a weak ETag never counts), NFS (`fsid`, `fileid`, length, both times), SFTP (length and date, best-effort: a
+same-size rewrite inside the second passes), a local disk (device, inode, length, both times to the nanosecond), and
+`InMemoryVolume`. MTP, ADB, archives, and the git portal name no version and start over. Destinations that continue: a
+local disk (`write_all` in order, so its progress is a prefix) and `InMemoryVolume::with_continuable_writes`. So today a
+DOWNLOAD to the Mac carries on; an UPLOAD still starts over until a remote destination can name a proven offset (SMB
+could, with a periodic `FileWriter::flush_checkpoint`).
+
+Pinned by `volume/copy_resume_tests.rs` (server-free, through the real pipeline: carried on from ~320 KiB with the
+source read once over, a file rewritten during the outage refused with nothing left, a destination that can't continue
+starting over), each backend's resume cell against its Docker fixture, and the app's live
+`operations_host/backend_suites/smb_outage_test.rs::smb_integration_a_download_carries_on_after_a_long_outage_instead_of_starting_over`
+(a 32 MiB SMB → local download cut half-way and kept out past the backend's own tries: under 1.3× the file sent, where
+starting over sent 1.58×).
 
 ### The watchdog ACTS
 

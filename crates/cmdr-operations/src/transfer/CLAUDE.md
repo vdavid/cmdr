@@ -1,7 +1,7 @@
 # Transfer (copy + move)
 
-Local and cross-volume copy/move (`transfer_driver/`, `OperationEventSink`). Shared operation state: `../../CLAUDE.md`.
-Frontend: `apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`.
+Local and cross-volume copy/move. Shared operation state: `../../CLAUDE.md`. Frontend:
+`apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`.
 
 Local: `copy/`, `move_op/`, `copy_strategy.rs`. Cross-volume facade: `transfer::volume::<item>` (`volume/CLAUDE.md`).
 Drivers: `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
@@ -26,9 +26,9 @@ Drivers: `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
   leave it, report it on `write-cancelled`; ❌ nothing goes on sight; a move-back never overwrites an occupied source.
   Only the `Drop` net is unconditional, sweeping from `../ledger.rs`; ❌ don't route it through `reversal.rs` (module
   cycle). § "What a reversal does with that identity".
-- **A move's source delete removes the LEDGER of what it copied, ❌ never the tree** (`move_op/`, `volume/`
-  `source_sweep.rs`; locally after the flush, DETAILS § Durability): what arrived mid-move keeps its original
-  (`AppearedDuringMove`), as does one saved over after copying (`SourceStamp`).
+- **A move's source delete removes the LEDGER of what it copied, ❌ never the tree** (`source_sweep.rs`; DETAILS §
+  Durability): what arrived mid-move keeps its original (`AppearedDuringMove`), as does one saved over after copying
+  (`SourceStamp`).
 - **A MERGED move is NOT rollbackable, and a cross-FS move journals FINAL paths, never staging ones**
   (`note_not_rollbackable`; `JournalDestUnder` rebases, created-dir rows included).
   `crates/cmdr-operation-log/DETAILS.md` § "Why a directory merge isn't reversible".
@@ -46,8 +46,9 @@ Drivers: `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
   deletes its own partial; ❌ never race a write against it. Tier 2 (`backend_abort`) skips cleanup. A cancel AND the
   concurrent driver's first failure fire `state.stop_work` (it DRAINS, ❌ never drops); only the intent tells them
   apart. DETAILS § "Two tiers of cancel".
-- **Retry is per-FILE** (`retry.rs`): ❌ never higher, ❌ never on a `Cancelled`; a cut-off landing RESUMES. A
-  `Disconnected` volume is WAITED for (`volume_outage.rs`); ❌ only re-runnable calls use `through_outages`. **The stall
-  watchdog is GATED** (liveness `Dead`, SMB only, AND `STALL_ABORT_AFTER`): ❌ never collapse the AND.
+- **Retry is per-FILE** (`retry.rs`): ❌ never higher, ❌ never on a `Cancelled`; a cut-off landing RESUMES, as does a
+  write both ends can carry on (`CarryOn`). A `Disconnected` volume is WAITED for (`volume_outage.rs`); ❌ only
+  re-runnable calls use `through_outages`. **The stall watchdog is GATED** (liveness `Dead`, SMB only, AND
+  `STALL_ABORT_AFTER`): ❌ never collapse the AND.
 
 Read `DETAILS.md` before non-trivial work.
