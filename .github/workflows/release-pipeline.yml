@@ -1037,9 +1037,10 @@ jobs:
               "$RUNNER_TEMP/archives/Cmdr_${VERSION}_x64.app.tar.gz" \
               "$RUNNER_TEMP/archives/Cmdr_${VERSION}_universal.app.tar.gz"
 
-  # The browser demo getcmdr.com serves at /demo/, built from the tagged sources: both wasm
-  # engines first, with the listing engine's Node smoke run and golden traces (`desktop-rust-*-wasm`,
-  # which no land runs; the nightly CI run builds them too), then `pnpm build:demo`, pushed as
+  # The browser demo getcmdr.com serves at /demo/, built from the tagged sources: `pnpm build:demo`,
+  # the website built around it with the full demo suite run against it (`website-demo-e2e`), and
+  # both wasm engines with the listing engine's Node smoke run and golden traces
+  # (`desktop-rust-*-wasm`; no land runs these, the nightly CI run does), then pushed as
   # `ghcr.io/vdavid/cmdr-demo:<tag>` and attested, so `scripts/released-demo.sh` can refuse a tag
   # moved by anyone else. `publish` needs it: a release whose demo doesn't build doesn't ship.
   # Every run of this workflow runs it (the tag push in both modes builds beside `compile`, since
@@ -1097,16 +1098,23 @@ jobs:
 
       # The demo's own small Rust cache (`website-demo`), restored from `main`, where the nightly
       # CI run's wasm job saves it.
-      - name: Build the browser demo
+      - name: Build the browser demo and ready its suite
         if: steps.existing.outputs.found != 'true'
-        uses: ./.github/actions/build-website-demo
+        uses: ./.github/actions/website-demo-suite
         with:
           save-rust-cache: 'false'
 
-      - name: Build check tool
+      # The full demo suite (`demo.spec.ts`), against the demo this release ships, before it's
+      # pushed: the website lane only smoke-tests the released image.
+      - name: Build the website with the demo
         if: steps.existing.outputs.found != 'true'
-        run: go build -o check .
-        working-directory: ./scripts/check
+        run: ./scripts/check/check --check website-build --ci
+        env:
+          CMDR_WEBSITE_DEMO: '1'
+
+      - name: Run the full browser demo suite
+        if: steps.existing.outputs.found != 'true'
+        run: ./scripts/check/check --check website-demo-e2e --ci
 
       - name: Build and smoke-run the listing engine for wasm
         if: steps.existing.outputs.found != 'true'

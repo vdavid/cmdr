@@ -355,11 +355,12 @@ embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until 
   per land put ~4 min of wasm builds in the Rust lane and a demo build in the website lane on every land run, for a page
   that shows what users can download, which is the release. `release-pipeline.yml`'s `demo` job builds both wasm engines
   with the listing engine's smoke run and golden traces (`desktop-rust-listing-wasm`, `desktop-rust-viewer-wasm`), runs
-  `pnpm build:demo` on the tagged sources, pushes `cmdr-demo:<tag>`, and attests it (SLSA provenance naming
-  `release-pipeline.yml`, pushed beside the image). `publish` needs it, so a release whose demo doesn't build doesn't
-  ship. The nightly CI run also builds both engines (`rust-lane.yml`'s `wasm` job), so a host-only dep reaching the
-  engine surfaces the next morning, not on release day. A change to the desktop frontend or the engine reaches `/demo/`
-  with the next release; a change to the site itself still deploys on land.
+  `pnpm build:demo` on the tagged sources, runs the full demo suite against it, pushes `cmdr-demo:<tag>`, and attests it
+  (SLSA provenance naming `release-pipeline.yml`, pushed beside the image). `publish` needs it, so a release whose demo
+  doesn't build or pass doesn't ship. The nightly CI run also builds both engines (`rust-lane.yml`'s `wasm` job) and the
+  demo with its full suite (`website-lane.yml`'s `demo-suite` job), so a host-only dep reaching the engine or a change
+  that breaks the demo surfaces the next morning, not on release day. A change to the desktop frontend or the engine
+  reaches `/demo/` with the next release; a change to the site itself still deploys on land.
 - **Decision: the source of truth is GitHub's "Latest" release, resolved at use.** `scripts/released-demo.sh` reads the
   Latest release's tag, resolves `cmdr-demo:<tag>` to its digest, and runs `gh attestation verify` against
   `release-pipeline.yml` as signer, so a tag moved by anything but the release pipeline is refused. Why this over a file
@@ -386,10 +387,11 @@ embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until 
   `sudo systemctl restart deploy-webhook` on the server after it lands, then a redeploy (`workflow_dispatch`).
 - **CI**: the website lane's `demo` job (`.github/workflows/website-lane.yml`) runs `released-demo.sh`, unpacks that
   image on the bare runner (`docker buildx build --output type=local`; its `site` job runs inside the Playwright image,
-  which has no Docker), and hands the files over as an artifact, so the site's build, E2E, and Lighthouse see exactly
-  the `/demo/` the deploy ships. The `website` filter carries no demo source: a frontend or engine change doesn't run
-  the lane. The lane's verdict therefore also rides on which release is Latest, which its marker doesn't hash; the
-  nightly full run (no markers) re-tests the site against the current one.
+  which has no Docker), and hands the files over as an artifact, so the site's build, the demo smoke, and Lighthouse see
+  exactly the `/demo/` the deploy ships (the full demo suite runs elsewhere: the tests bullet below). The `website`
+  filter carries no demo source: a frontend or engine change doesn't run the lane. The lane's verdict therefore also
+  rides on which release is Latest, which its marker doesn't hash; the nightly full run (no markers) re-tests the site
+  against the current one.
 - **Serving** (`nginx.conf`): `/demo` redirects to `/demo/`; `/demo/_app/immutable/` is content-hashed (a year,
   immutable, and a bare 404 when missing: no body, the demo's headers, never the site's HTML 404 page, so the demo's
   loader can tell a stale chunk name in an old tab from a real failure); anything else under `/demo/` is the file or,
@@ -428,10 +430,21 @@ embeds it (below); `/demo/` itself stays out of the sitemap and `noindex` until 
   `frame-src` for the viewer's `blob:` PDF; `frame-ancestors 'self'` lets our own pages embed the demo.
   `connect-src 'self'` refuses a `data:` URL, so the demo's media imports are never inlined
   (`apps/desktop/src/lib/demo/DETAILS.md` § Viewer media).
-- **Smoke test**: `e2e/demo.spec.ts`, against `dist/` like every website E2E (so it runs without nginx's headers; the
-  CSP is verified by hand as above). It skips locally when `dist/demo/` isn't built and fails in CI when it's missing.
-  Locally it needs Playwright's Chromium (`pnpm exec playwright install chromium` here, once). Its full-disk cell opens
-  `/demo/?free=1000` (`crates/cmdr-listing-wasm/DETAILS.md` § Writes).
+- **Tests: a smoke on every land, the full suite against a demo of the same sources.** Both run against `dist/` like
+  every website E2E (so without nginx's headers; the CSP is verified by hand as above), skip locally when `dist/demo/`
+  isn't built, and fail in CI when it's missing. Locally they need Playwright's Chromium
+  (`pnpm exec playwright install chromium` here, once). Two Playwright projects split them (`playwright.config.ts`):
+  - `e2e/demo-smoke.spec.ts` (boots without a page error, kept out of search results, lists the home folder) is in the
+    `chromium` project with every other spec, so `website-e2e` runs it in the website lane against the RELEASED demo. It
+    asks only what every release's demo answers.
+  - `e2e/demo.spec.ts` is everything else (⌘F, file operations, the queue and the operation log, Multi-Rename, drops, a
+    full disk via `/demo/?free=1000`, touch), the `demo` project with the smoke, run by `website-demo-e2e` (CI-only)
+    against a demo built from the same sources: in the release pipeline's `demo` job before it publishes (a failure
+    blocks the release), and in the nightly full run's website `demo-suite` job (a failure reaches the CI health
+    digest). **Why**: the land path tests the released image, which predates `main`'s frontend, so a test of a new demo
+    feature failed every land run until the next release (land run 42134174874, 2026-11-06, two Multi-Rename cells).
+    Both jobs prepare through `.github/actions/website-demo-suite`. Locally: `pnpm build:demo`,
+    `CMDR_WEBSITE_DEMO=1 pnpm build` here, then `pnpm check website-demo-e2e`.
 - **Other dist checks skip `dist/demo/`**: `.htmlvalidateignore` (the desktop's `app.html` conventions differ) and
   `website-dead-links` (Vite hashes its own asset names, so the `?v=` rule doesn't apply). A build without the demo (no
   `CMDR_WEBSITE_DEMO=1`) can't judge links INTO `/demo/` either, like the hero's, so `website-dead-links` skips those

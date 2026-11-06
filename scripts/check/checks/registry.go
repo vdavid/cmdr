@@ -1495,6 +1495,23 @@ var AllChecks = []CheckDefinition{
 		Run:    RunWebsiteE2E,
 	},
 	{
+		ID:          "website-demo-e2e",
+		CpuWeight:   4,
+		Nickname:    "demo-e2e",
+		DisplayName: "browser demo e2e",
+		App:         AppWebsite,
+		Tech:        "🚀 Astro",
+		DependsOn:   []string{"website-build"},
+		// Needs a site built around a demo built from the same sources, which only the release
+		// pipeline's `demo` job and the nightly run make; a plain local run has no demo, so it runs
+		// only there or when named after a local demo build.
+		CIOnly: true,
+		// Reads the built `dist/demo/`, like `website-e2e`; the demo's sources are what the release
+		// and nightly jobs build it from right before.
+		Inputs: websiteInputs,
+		Run:    RunWebsiteDemoE2E,
+	},
+	{
 		ID:          "website-analytics-injection",
 		Nickname:    "analytics-injection",
 		CpuWeight:   2,

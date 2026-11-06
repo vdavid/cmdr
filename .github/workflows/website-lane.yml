@@ -7,6 +7,10 @@ name: Website lane
 on:
   workflow_call:
     inputs:
+      demo-suite:
+        description: Whether to build the browser demo from these sources and run its full suite (the nightly full run)
+        type: boolean
+        required: true
       playwright-image:
         description: 'The pinned Playwright container image the site job runs in (from `changes`)'
         type: string
@@ -210,11 +214,62 @@ jobs:
           path: apps/website/.lighthouseci/
           retention-days: 7
 
-  # The lane's marker, once both jobs passed (`site` needs `demo`, and this needs `site`), on
-  # the bare runner (`scripts/lane-markers/DETAILS.md`).
+  # The nightly full run only (`demo-suite`): the browser demo built from THESE sources and the full
+  # demo suite against it (`demo.spec.ts`, the `demo` Playwright project), which the land path never
+  # runs (its `site` job smoke-tests the released image), so a change that breaks the demo surfaces in
+  # the next morning's CI health digest instead of in the release's `demo` job. On the bare runner:
+  # it needs Rust for the demo, and the demo suite has no visual baselines tying it to the pinned
+  # Playwright image. It reads the `website-demo` Rust cache the Rust lane's nightly `wasm` job
+  # saves, and saves nothing. `apps/website/DETAILS.md` § Browser demo.
+  demo-suite:
+    name: Full browser demo suite
+    if: inputs.demo-suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          cache_save: false
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Build the browser demo and ready its suite
+        uses: ./.github/actions/website-demo-suite
+        with:
+          save-rust-cache: 'false'
+
+      - name: Build the website with the demo
+        run: ./scripts/check/check --check website-build --ci
+        env:
+          CMDR_WEBSITE_DEMO: '1'
+
+      - name: Run the full browser demo suite
+        run: ./scripts/check/check --check website-demo-e2e --ci
+
+      - name: Upload Playwright results
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: website-demo-suite-results
+          path: apps/website/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # The lane's marker, once every job passed (`site` needs `demo`, and this needs `site`), on the
+  # bare runner (`scripts/lane-markers/DETAILS.md`). `demo-suite` may skip, but only when it
+  # wasn't asked for.
   marker:
     name: Lane marker
-    needs: [demo, site]
+    needs: [demo, site, demo-suite]
+    if: >-
+      !cancelled() && needs.demo.result == 'success' && needs.site.result == 'success' && (needs.demo-suite.result ==
+      'success' || (needs.demo-suite.result == 'skipped' && !inputs.demo-suite))
     runs-on: ubuntu-latest
     timeout-minutes: 5
 

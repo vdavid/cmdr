@@ -1,0 +1,40 @@
+name: Build the browser demo and ready its full suite
+description: >-
+  Builds the browser demo from this checkout (`build-website-demo`) into `apps/desktop/build-demo/`, installs every
+  workspace's dependencies and Playwright's Chromium, and builds the check tool, so the caller's next steps are
+  `website-build` (with `CMDR_WEBSITE_DEMO=1`) and `website-demo-e2e`. Expects a checkout and mise's tools installed, on
+  a bare Linux runner.
+
+# Used by `release-pipeline.yml`'s `demo` job (before it publishes the demo image) and the website
+# lane's nightly `demo-suite` job. The checks themselves stay in the workflows, where `ci-coverage`
+# reads `--check` names. The land path runs only the smoke, against the released image.
+# `apps/website/DETAILS.md` § Browser demo.
+inputs:
+  save-rust-cache:
+    description: Whether this run may save the demo's Rust cache (`main` only, like every Rust lane)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Build the browser demo
+      uses: ./.github/actions/build-website-demo
+      with:
+        save-rust-cache: ${{ inputs.save-rust-cache }}
+
+    # The demo build installed only the desktop app; the site and its Playwright need the rest.
+    - name: Install every workspace's dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Build check tool
+      shell: bash
+      working-directory: ./scripts/check
+      run: go build -o check .
+
+    # The browser the website's own Playwright version pins, with its system libraries. The website
+    # lane's `site` job runs in the pinned Playwright image instead, for its visual baselines; the
+    # demo suite has none.
+    - name: Install Chromium for Playwright
+      shell: bash
+      working-directory: ./apps/website
+      run: pnpm exec playwright install --with-deps chromium

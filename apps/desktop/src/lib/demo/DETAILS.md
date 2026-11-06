@@ -270,8 +270,8 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
   dir, since SvelteKit's allow list doesn't reach `crates/` and the glue fetches its `.wasm` from there.
 - The static host needs an SPA fallback to `index.html` for paths under `/demo/`, as adapter-static's `fallback`
   assumes.
-- Hosting on getcmdr.com, the demo's CSP, and the Playwright smoke (`apps/website/e2e/demo.spec.ts`: boots without a
-  page error, lists the home folder): `apps/website/DETAILS.md` § Browser demo. The CSP blocks off-origin fetches,
+- Hosting on getcmdr.com, the demo's CSP, and the Playwright smoke (`apps/website/e2e/demo-smoke.spec.ts`: boots without
+  a page error, lists the home folder): `apps/website/DETAILS.md` § Browser demo. The CSP blocks off-origin fetches,
   `eval` / `new Function`, and inline scripts added after the build, though the smoke's server sends no CSP.
 
 ## Tests
@@ -288,7 +288,8 @@ origin) from framing `localhost`; serve the parent page from a real loopback ser
   fake engine. `test-setup.ts` stubs `@tauri-apps/api/event` app-wide, so `webview.test.ts` unmocks it to test the real
   one.
 - The real `.wasm` and the iframes' pages loading are covered outside vitest: `desktop-rust-listing-wasm` runs the
-  engine's smoke, `apps/website/e2e/demo.spec.ts` boots the built demo, and the headless QA above.
+  engine's smoke, `apps/website/e2e/demo-smoke.spec.ts` boots the built demo (`demo.spec.ts` drives the rest, against a
+  demo of the same sources: `apps/website/DETAILS.md` § Browser demo), and the headless QA above.
 
 ## Answering a command
 

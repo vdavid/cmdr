@@ -114,10 +114,10 @@ inputs already passed)" lists them). `changes` and `CI OK` get the built binary 
 ~20 s in each of those jobs, both on every run's critical path. The save is the `lane-marker` composite action
 (`.github/actions/lane-marker`), which refuses a key without the `lane-green-` prefix. Every lane file is multi-job, so
 each saves from a `marker` job that `needs` every other job (a matrix job, like the Vitest and Linux E2E slices, counts
-as passed only when every slice did), so one green job can't vouch for another. Two jobs run only when asked, and their
-lane's `marker` has an explicit `if:` that accepts the skip only then: the macOS lane's `finder-extension`
-(`compile-finder-extension`, or it ran as a step of the main job on the M1) and the Rust lane's `wasm` (`build-wasm`,
-the nightly).
+as passed only when every slice did), so one green job can't vouch for another. Three jobs run only when asked, and
+their lane's `marker` has an explicit `if:` that accepts the skip only then: the macOS lane's `finder-extension`
+(`compile-finder-extension`, or it ran as a step of the main job on the M1), the Rust lane's `wasm` (`build-wasm`, the
+nightly), and the website lane's `demo-suite` (`demo-suite`, the nightly).
 
 `changes` job:
 

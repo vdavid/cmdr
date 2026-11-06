@@ -500,6 +500,11 @@ jobs:
               - '.github/workflows/website-lane.yml'
               - '.github/actions/lane-marker/**'
               - '.github/actions/pnpm-store/**'
+              # The nightly `demo-suite` job's, followed into the actions it nests.
+              - '.github/actions/website-demo-suite/**'
+              - '.github/actions/build-website-demo/**'
+              - '.github/actions/pinned-rust-toolchain/**'
+              - '.github/actions/wasm-toolchain/**'
               # The site builds and tests /demo/ from the LAST RELEASE's demo image, which this
               # script finds, so a change to the desktop frontend or the listing engine waits for
               # the next release (`apps/website/DETAILS.md` § Browser demo).
@@ -1003,6 +1008,9 @@ jobs:
       !fromJSON(needs.changes.outputs.lanes)['website'].verified)
     uses: ./.github/workflows/website-lane.yml
     with:
+      # The nightly builds the demo from `main` and runs its full suite; land runs smoke-test the
+      # released demo only.
+      demo-suite: ${{ github.event_name == 'schedule' }}
       playwright-image: ${{ needs.changes.outputs.playwright-image }}
       marker-key: ${{ fromJSON(needs.changes.outputs.lanes)['website'].key }}
     secrets:

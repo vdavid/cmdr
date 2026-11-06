@@ -18,9 +18,19 @@ export default defineConfig({
     baseURL: 'http://localhost:18473',
     trace: 'on-first-retry',
   },
+  // Two suites, one per project (the `website-e2e` and `website-demo-e2e` checks each pick theirs):
+  // `chromium` is every spec but the full browser demo suite, so it passes against an older released
+  // demo; `demo` is that suite plus its smoke, for a demo built from the same sources. Running with no
+  // `--project` runs both, the smoke twice. `e2e/demo-support.ts` says where each runs.
   projects: [
     {
       name: 'chromium',
+      testIgnore: '**/demo.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'demo',
+      testMatch: ['**/demo-smoke.spec.ts', '**/demo.spec.ts'],
       use: { ...devices['Desktop Chrome'] },
     },
   ],

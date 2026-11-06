@@ -9,8 +9,21 @@ import (
 	"strconv"
 )
 
-// RunWebsiteE2E runs Playwright E2E tests on the website.
+// RunWebsiteE2E runs the website's Playwright suite: every spec in the `chromium` project, which
+// holds only the browser demo's smoke. The website lane runs it against the RELEASED demo image,
+// which can predate `main`'s frontend (`apps/website/e2e/demo-support.ts`).
 func RunWebsiteE2E(ctx *CheckContext) (CheckResult, error) {
+	return runWebsitePlaywright(ctx, "chromium", false)
+}
+
+// RunWebsiteDemoE2E runs the full browser demo suite (the `demo` project: the smoke plus
+// `demo.spec.ts`) against the site's `dist/demo/`, which must exist: the release pipeline's `demo`
+// job and the nightly CI run build the demo from the same sources first.
+func RunWebsiteDemoE2E(ctx *CheckContext) (CheckResult, error) {
+	return runWebsitePlaywright(ctx, "demo", true)
+}
+
+func runWebsitePlaywright(ctx *CheckContext, project string, needsDemo bool) (CheckResult, error) {
 	websiteDir := filepath.Join(ctx.RootDir, "apps", "website")
 
 	// Without a built site, `serve` answers 404 on every path, which Playwright never counts as ready:
@@ -19,8 +32,14 @@ func RunWebsiteE2E(ctx *CheckContext) (CheckResult, error) {
 	if _, err := os.Stat(filepath.Join(websiteDir, "dist", "index.html")); os.IsNotExist(err) {
 		return CheckResult{}, fmt.Errorf("apps/website/dist/index.html not found: build the site first (pnpm check website-build website-e2e)")
 	}
+	// The demo suite skips itself without a demo off CI, which would read as a pass here.
+	if needsDemo {
+		if _, err := os.Stat(filepath.Join(websiteDir, "dist", "demo", "index.html")); os.IsNotExist(err) {
+			return CheckResult{}, fmt.Errorf("apps/website/dist/demo/index.html not found: run `pnpm build:demo` at the repo root, then `CMDR_WEBSITE_DEMO=1 pnpm build` in apps/website")
+		}
+	}
 
-	cmd := exec.Command("pnpm", "exec", "playwright", "test", "--reporter=list")
+	cmd := exec.Command("pnpm", "exec", "playwright", "test", "--project="+project, "--reporter=list")
 	cmd.Dir = websiteDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {

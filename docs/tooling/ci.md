@@ -84,8 +84,8 @@ The six path-filtered lanes are wired (`desktop-rust`, `desktop-rust-fixtures`, 
 (`lanes` output), each lane's `if:` adds `!fromJSON(needs.changes.outputs.lanes)['<id>'].verified` and passes its `.key`
 as `marker-key`, `e2e-base-image` follows the E2E lane's verdict, and `CI OK` runs `lane-markers verify` after its jq
 gate. In each lane file, the `lane-marker` action saves the key in a `marker` job that `needs` every other job of the
-lane, so one green job can't vouch for another. macOS's `finder-extension` and the Rust lane's `wasm` run only on
-demand, so their `marker` takes a skip only when the job wasn't asked for.
+lane, so one green job can't vouch for another. macOS's `finder-extension`, the Rust lane's `wasm`, and the website
+lane's `demo-suite` run only on demand, so their `marker` takes a skip only when the job wasn't asked for.
 
 A PR run hashes `refs/pull/N/merge`, the PR merged with the current `main`. So a follow-up push skips a lane only while
 `main` hasn't moved any of that lane's inputs since the run that passed; a land that touched them makes a new tree and
@@ -426,9 +426,12 @@ caught within a day instead of at the next release's gate. Its lanes save fresh 
 scope, which seeds every PR. It's also the one CI run that builds the browser demo's engines for wasm (`rust-lane.yml`'s
 `wasm` job, `build-wasm`), which no land does: a host-only dep reaching the engine shows the next morning, not in the
 release's `demo` job (`apps/website/DETAILS.md` § Browser demo); it saves the `website-demo` Rust cache and the wasm
-toolchain cache that job restores. It doesn't deploy: the deploy jobs run on pushes and dispatches only. A red one
-reaches David the way a red `main` push does: through the digest (§ How a red `main` reaches David). A schedule rather
-than a dispatch from another workflow: dispatching needs `actions: write`, which Scorecard's Token-Permissions flags.
+toolchain cache that job restores. Likewise the website lane's `demo-suite` job (`demo-suite` input) builds the demo
+from `main` and runs the full demo suite (`website-demo-e2e`), which land runs never do: they smoke-test the released
+demo image only, since its tests can't know features `main` added after that release. It doesn't deploy: the deploy jobs
+run on pushes and dispatches only. A red one reaches David the way a red `main` push does: through the digest (§ How a
+red `main` reaches David). A schedule rather than a dispatch from another workflow: dispatching needs `actions: write`,
+which Scorecard's Token-Permissions flags.
 
 ### How a red `main` reaches David
 
