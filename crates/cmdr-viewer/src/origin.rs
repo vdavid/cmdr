@@ -3,7 +3,7 @@
 //! know nothing of each other. `DETAILS.md` § "Byte sources".
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use log::debug;
 
@@ -14,6 +14,29 @@ use super::volume_error::map_volume_error;
 use super::volume_source::{PositionedRead, open_on_volume, size_on_volume};
 use cmdr_fs::rt::Runtime;
 use cmdr_fs::volume::{Volume, VolumeError};
+
+/// What a session asks its file's reader to do when the file turns out to have
+/// changed under it (`VolumeError::SourceChanged`: SMB refusing to splice two versions
+/// after a reconnect): reload, as a watcher seeing the file replaced does. Shared by
+/// every source its origin opens, so a reload's fresh source answers the same way, and
+/// set once the session exists (`Viewer::reload_on_replacement`).
+#[derive(Clone, Default)]
+pub struct ReplacementHook(Arc<OnceLock<Box<dyn Fn() + Send + Sync>>>);
+
+impl ReplacementHook {
+    /// Runs `on_replaced` whenever a source this hook was handed to finds its file
+    /// changed. The first call wins; a later one changes nothing.
+    pub(super) fn set(&self, on_replaced: impl Fn() + Send + Sync + 'static) {
+        let _ = self.0.set(Box::new(on_replaced));
+    }
+
+    /// Tells the session its file changed. Nothing before the session set the hook.
+    pub(super) fn fire(&self) {
+        if let Some(on_replaced) = self.0.get() {
+            on_replaced();
+        }
+    }
+}
 
 /// Where a session's file lives, so the session can open it again: a reload, or a file
 /// replaced under it, needs a fresh handle rather than the one it holds.
@@ -27,6 +50,8 @@ pub enum SourceOrigin {
         path: PathBuf,
         way: PositionedRead,
         runtime: Runtime,
+        /// Told when the file changes under a reader this origin opened.
+        replaced: ReplacementHook,
     },
 }
 
@@ -48,7 +73,16 @@ impl SourceOrigin {
                 path,
                 way,
                 runtime,
-            } => open_on_volume(volume, path, *way, runtime),
+                replaced,
+            } => open_on_volume(volume, path, *way, runtime, replaced),
+        }
+    }
+
+    /// Has every reader this origin opens, now and on a reload, call `on_replaced` when
+    /// its file changes under it. Nothing for a local file: its watcher says so.
+    pub(super) fn on_replaced(&self, on_replaced: impl Fn() + Send + Sync + 'static) {
+        if let Self::Volume { replaced, .. } = self {
+            replaced.set(on_replaced);
         }
     }
 
@@ -134,6 +168,7 @@ fn open_through_volume(
         path: requested.to_path_buf(),
         way,
         runtime: runtime.clone(),
+        replaced: ReplacementHook::default(),
     };
     match origin.open_volume() {
         Ok(opened) => Ok(Some(VolumeOpen {

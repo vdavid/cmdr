@@ -163,6 +163,13 @@ back to it, so a live mount still opens and a missing file still answers `NotFou
 - **A held reader answers only up to the size it opened at.** The backends never read past their `total_bytes`
   (`FileSource` clamps), so a request past the reader's size means tail mode said the file grew: the source reopens
   first. Any failed read reopens once and retries (a handle may not outlive a reconnect), then surfaces the error.
+- **A file that changed under the reader reloads the session, ❌ never a quiet reopen.** An SMB reader carries itself
+  across a reconnect and refuses a file that isn't the version it was reading (`VolumeError::SourceChanged`,
+  `crates/cmdr-smb/DETAILS.md` § "Carrying a handle across a reconnect"). A fresh handle there would serve the new bytes
+  under rows built from the old ones, so `VolumeSource` tells its origin's `ReplacementHook` instead (once per source),
+  and the text session does what a watcher's `Replaced` does: the `rotated` event and a reload
+  (`Viewer::reload_on_replacement`). The read itself fails. Markdown and media sessions set no hook (a reload rebuilds a
+  text backend), so their read just fails. Pinned by `a_file_rewritten_under_its_held_reader_reloads_the_session`.
 - **The sync core bridges with `tauri::async_runtime::block_on`**, like `materialize.rs`, so it must run off any runtime
   worker (every caller is a blocking worker or a plain thread). A replaced reader closes on the runtime once the last
   read holding it lets go (`HeldReader`'s `Drop`).

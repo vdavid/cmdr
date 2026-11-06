@@ -16,6 +16,7 @@ use super::volume_source::{BLOCK_BYTES, PositionedRead, VolumeSource};
 use super::{SeekTarget, ViewerError};
 use crate::session_test_support::viewer;
 use crate::testing::test_volumes;
+use cmdr_fs::testing::wait_until;
 use cmdr_fs::volume::{ListingProgress, Volume, VolumeError, VolumeRandomReader};
 
 /// Every synthetic row is 15 digits plus a newline.
@@ -44,6 +45,10 @@ struct ShareState {
     bytes_read: AtomicU64,
     fail_next_read: AtomicBool,
     latency_ms: AtomicU64,
+    /// Which version of the file is on the share. A reader opened on an older one
+    /// answers `SourceChanged`, the way an SMB reader does once a reconnect finds
+    /// the file rewritten.
+    version: AtomicU64,
 }
 
 /// A share holding one synthetic file, generated on read, so a 5 GiB file costs nothing.
@@ -56,6 +61,8 @@ struct SyntheticShare {
 
 struct SyntheticReader {
     size: u64,
+    /// The file's version when this reader opened it.
+    version: u64,
     state: Arc<ShareState>,
 }
 
@@ -78,6 +85,9 @@ impl VolumeRandomReader for SyntheticReader {
             self.state.reads.fetch_add(1, Ordering::SeqCst);
             if self.state.fail_next_read.swap(false, Ordering::SeqCst) {
                 return Err(VolumeError::ConnectionTimeout("the share dropped".into()));
+            }
+            if self.state.version.load(Ordering::SeqCst) != self.version {
+                return Err(VolumeError::SourceChanged("big.log".into()));
             }
             let end = (offset + len as u64).min(self.size);
             let bytes: Vec<u8> = (offset.min(end)..end).map(synthetic_byte).collect();
@@ -141,6 +151,7 @@ impl Volume for SyntheticShare {
             self.state.opens.fetch_add(1, Ordering::SeqCst);
             Ok(Box::new(SyntheticReader {
                 size: self.state.size.load(Ordering::SeqCst),
+                version: self.state.version.load(Ordering::SeqCst),
                 state: Arc::clone(&self.state),
             }) as Box<dyn VolumeRandomReader>)
         })
@@ -314,4 +325,45 @@ fn a_missing_file_on_the_share_is_not_found() {
         "got {:?}",
         result.err()
     );
+}
+
+/// A held reader that comes back to a rewritten file (SMB refuses to splice two
+/// versions after a reconnect, `SourceChanged`) reloads the session onto the new
+/// version, as a watcher seeing the file replaced does, ❌ never a quiet reopen
+/// that serves the new bytes under the old version's line index.
+#[test]
+fn a_file_rewritten_under_its_held_reader_reloads_the_session() {
+    let (path, _share, state) = a_share("viewer-vsrc-changed", FIVE_GIB, false);
+    let opened = viewer().open_session(&path, "viewer-vsrc-changed").expect("opens");
+    assert_eq!(opened.total_bytes, FIVE_GIB);
+
+    let rewritten = FIVE_GIB + ROW_BYTES;
+    state.size.store(rewritten, Ordering::SeqCst);
+    state.version.fetch_add(1, Ordering::SeqCst);
+
+    let jump = viewer().get_lines(
+        &opened.session_id,
+        SeekTarget::Fraction(0.5),
+        500,
+        &AtomicBool::new(false),
+    );
+    assert!(
+        jump.is_err(),
+        "a read of the old version's rows must not answer from the new version"
+    );
+    wait_until(
+        Duration::from_secs(3),
+        "the session to reload onto the new version",
+        || {
+            viewer()
+                .get_lines(
+                    &opened.session_id,
+                    SeekTarget::Fraction(0.0),
+                    1,
+                    &AtomicBool::new(false),
+                )
+                .is_ok_and(|chunk| chunk.total_bytes == rewritten)
+        },
+    );
+    viewer().close_session(&opened.session_id).unwrap();
 }

@@ -12,11 +12,13 @@ use std::collections::VecDeque;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use log::debug;
 
 use super::ViewerError;
+use super::origin::ReplacementHook;
 use super::source::{ByteSource, OpenedFile, file_name_of};
 use super::volume_error::map_volume_error;
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -152,6 +154,11 @@ pub struct VolumeSource {
     /// Full blocks only, keyed by block index. A short block (the file's tail) is
     /// never cached, so an append is read fresh.
     cache: Mutex<VecDeque<(u64, Arc<Vec<u8>>)>>,
+    /// Told when the file changed under the reader ([`ReplacementHook`]).
+    replaced: ReplacementHook,
+    /// The hook was told already: a reload is on its way, and the reads still
+    /// failing on this source are the same news.
+    reported: AtomicBool,
 }
 
 impl VolumeSource {
@@ -173,9 +180,18 @@ impl VolumeSource {
                 runtime: runtime.clone(),
                 reader: Mutex::new(Arc::new(HeldReader::new(reader, runtime))),
                 cache: Mutex::new(VecDeque::new()),
+                replaced: ReplacementHook::default(),
+                reported: AtomicBool::new(false),
             },
             size,
         ))
+    }
+
+    /// This source, telling `hook` when its file changed under the reader.
+    #[must_use]
+    pub(super) fn reporting_replacement_to(mut self, hook: ReplacementHook) -> Self {
+        self.replaced = hook;
+        self
     }
 
     fn current(&self) -> Arc<HeldReader> {
@@ -199,10 +215,19 @@ impl VolumeSource {
     }
 
     /// One positioned read, reopening once on an error: a handle may not survive the
-    /// share reconnecting under it.
+    /// share reconnecting under it. A file that changed under the reader is the
+    /// exception: the session reloads instead ([`ReplacementHook`]).
     fn read_span(&self, reader: &Arc<HeldReader>, offset: u64, len: usize) -> Result<Vec<u8>, ViewerError> {
         match super::bridge::block_on(&self.runtime, reader.get().read_at(offset, len)) {
             Ok(bytes) => Ok(bytes),
+            // The rows this session shows came from another version of the file, so a
+            // fresh handle here would serve the new bytes under the old line index.
+            Err(changed @ VolumeError::SourceChanged(_)) => {
+                if !self.reported.swap(true, Ordering::AcqRel) {
+                    self.replaced.fire();
+                }
+                Err(map_volume_error(changed, None))
+            }
             Err(first) => {
                 debug!(
                     "viewer volume source: read at {offset} failed ({first}); reopening {} once",
@@ -304,16 +329,18 @@ impl ByteSource for VolumeSource {
     }
 }
 
-/// The file at `path` on `volume`, as a session's [`OpenedFile`].
+/// The file at `path` on `volume`, as a session's [`OpenedFile`], telling `replaced`
+/// when the file changes under its reader.
 pub(super) fn open_on_volume(
     volume: &Arc<dyn Volume>,
     path: &Path,
     way: PositionedRead,
     runtime: &Runtime,
+    replaced: &ReplacementHook,
 ) -> Result<OpenedFile, VolumeError> {
     let (source, size) = VolumeSource::open(Arc::clone(volume), path, way, runtime)?;
     Ok(OpenedFile {
-        source: Arc::new(source),
+        source: Arc::new(source.reporting_replacement_to(replaced.clone())),
         total_bytes: size,
         file_name: file_name_of(path),
     })
