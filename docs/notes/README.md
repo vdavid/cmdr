@@ -23,6 +23,9 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 - `ci-gate-review-2026-11-05.md`: the adversarial review of the per-lane CI (lane markers, Rust test scope, runner
   allowlist) before it landed: every false-green path it found, the fixes, and what it checked and found sound.
+- `local-network-after-update-2026-11-06.md`: why Local Network stopped applying after each in-place update (#1019),
+  measured on real releases on macOS 27.0.1: `nehelper` caches the replaced binary's UUID, and what does and doesn't
+  make it re-read. Read it before touching `updater/local_network_refresh.rs` or the updater's bundle touch.
 - `ci-light-runs-2026-11-05.md`: the live validation of light runs and land runs (throwaway PRs #976 and #978): what
   each run skipped, how GitHub treats a `CI light` gate against the required `CI OK`, and the timings.
 

@@ -65,6 +65,12 @@ fn record_outcome(record: &mut SendRecord, answered: bool, now_ms: i64) {
     }
 }
 
+/// Whether `data_dir` holds an update check on record, which only an earlier run writes:
+/// `after_update` reads it as "this install ran before" when its own stamp is missing.
+pub(crate) fn has_record(data_dir: &Path) -> bool {
+    data_dir.join(STATE_FILE_NAME).exists()
+}
+
 fn state_path(app: &AppHandle) -> Option<PathBuf> {
     crate::config::resolved_app_data_dir(app)
         .inspect_err(|e| log::debug!(target: "updater", "No app data dir for the update schedule: {e}"))

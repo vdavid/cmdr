@@ -237,6 +237,9 @@ All under `apps/desktop/src-tauri/src/`.
   and gets a typed `ServerRequestError` back. Contract in the module doc
 - `update_schedule.rs`: when the frontend's background update check is due, persisted across relaunches. See
   `apps/desktop/src/lib/updates/DETAILS.md` § The schedule
+- `after_update.rs`: whether this run is the first of a newly installed version (a version stamp in the data dir), for
+  the Local Network re-announce and the share notice. See `apps/desktop/src-tauri/src/updater/DETAILS.md` § Local
+  Network after an update
 - `install_id.rs`: Two Rust-owned per-install random ids (`anal_` for analytics, `diag_` for diagnostics) that never
   meet by construction. AppHandle-free accessors, one `install-ids.json`
 - `usage/`: The launch-day ledger: which local calendar days the app was opened on, appended once per launch to
@@ -381,8 +384,8 @@ All under `apps/desktop/src-tauri/src/`.
   auto-dispatcher, and the amend path that adds a note to a report that already went out
 - `events/`: App-side Tauri payloads for subsystems that emit typed values instead of wire formats (the drive index,
   media index, importance). See `events/CLAUDE.md`
-- `updater/`: macOS custom updater: syncs files into the running `.app` in place so FDA survives updates. Other
-  platforms use stock Tauri
+- `updater/`: macOS custom updater: syncs files into the running `.app` in place (per-file atomic renames, the bundle's
+  `com.apple.macl` kept). Other platforms use stock Tauri
 - `security_advisories/`: The committed list of fixed vulnerabilities (`resources/security-advisories.json`), read from
   a vetted staged bundle by `updater/` for the restart toast's security variant and from this build's embedded copy by
   the What's new popup. See `apps/desktop/src-tauri/src/security_advisories/CLAUDE.md`

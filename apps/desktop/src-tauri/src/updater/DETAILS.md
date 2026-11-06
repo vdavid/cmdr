@@ -212,6 +212,29 @@ gate, and answers `UpdateInstallError::Unwritable { blocker }`. `installer::sync
 (a nested mount, a file flag) onto the same variant: `ReadOnlyFilesystem` to `ReadOnlyVolume`, `PermissionDenied` to the
 permission blocker. Neither is a failure, so neither files an error report.
 
+## Local Network after an update
+
+macOS's Local Network rule is per bundle id, but the kernel matches processes to it by main-executable UUID, which
+`nehelper` copies from LaunchServices on an "apps installed" notification. The sync's FSEvents and `touch_bundle` fire
+that notification, yet `nehelper` reads the user's LaunchServices record before it catches up with the new binary, so
+the rule keeps the replaced binary's UUID. The relaunched app then falls outside its own rule: blocked until someone
+switches Cmdr off and on in System Settings (#1019; verified on macOS 27.0.1 with real 0.58.0 → 0.59.0 in-app updates,
+three of three, 2026-11-06; `docs/notes/local-network-after-update-2026-11-06.md`).
+
+- **The fix runs on the first launch after an update** (`local_network_refresh::spawn_after_update`, gated by
+  `crate::after_update`'s version stamp): `LSRegisterURL(bundle, true)` makes the user record current, then
+  `touch_bundle` makes `nehelper` re-read it. Measured: the new UUID lands in the rule about 1.5 s later, long before the
+  launch sweep's first dial (about 15 s in).
+- **Why at launch, not right after the sync.** The old process is still running when the sync finishes, and it needs
+  the OLD UUID in the rule until the person restarts. It also means the first release carrying this repairs the very
+  update that installed it.
+- **Why both calls.** `LSRegisterURL` alone doesn't notify `nehelper` (measured). The touch alone works when the user
+  record is already current, which at launch it usually is; the re-register makes that deterministic.
+- Only an installed production copy does it (`skip_reason` none, in an Applications folder), on its own 8 MB-stack
+  thread, since LaunchServices answers over XPC.
+- The backstop when it doesn't help: the share notice speaks up about a dial this Mac blocked on that launch
+  (`../network/DETAILS.md` § This Mac refusing the route).
+
 ## Dependencies
 
 - `reqwest`: HTTP client for manifest + tarball download.

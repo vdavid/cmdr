@@ -14,6 +14,8 @@ mod bundle_location;
 // Crate-visible for `installer::running_bundle`, which `dock/` needs to decide whether a Dock tile
 // could point at this copy. Nothing else outside `updater` reaches in.
 pub(crate) mod installer;
+// `lib.rs::setup` calls it on the first launch after an update (#1019).
+pub(crate) mod local_network_refresh;
 mod manifest;
 mod security_events;
 mod signature;

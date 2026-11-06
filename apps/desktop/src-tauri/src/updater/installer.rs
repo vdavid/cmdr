@@ -441,8 +441,10 @@ fn sync_failure(e: SyncError, not_writable: impl Fn() -> BundleWriteBlocker) -> 
 }
 
 /// Touches the `.app` bundle directory to update its modification time.
-/// This triggers a LaunchServices refresh so the Dock and Finder pick up any icon/metadata changes.
-fn touch_bundle(bundle_path: &Path) {
+/// This triggers a LaunchServices refresh so the Dock and Finder pick up any icon/metadata changes,
+/// and the "apps installed" notification `nehelper` rebuilds the Local Network rule from
+/// (`local_network_refresh`, which touches again on the next launch for that reason).
+pub(super) fn touch_bundle(bundle_path: &Path) {
     let now = filetime::FileTime::now();
     if let Err(e) = filetime::set_file_mtime(bundle_path, now) {
         log::warn!("Couldn't touch bundle: {e}");

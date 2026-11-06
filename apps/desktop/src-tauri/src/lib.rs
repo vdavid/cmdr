@@ -79,6 +79,8 @@ mod go_to_path;
 pub mod icons;
 mod index_host;
 mod install_id;
+// Whether this run is the first of a newly installed version (#1019).
+mod after_update;
 // Is this copy of Cmdr in an Applications folder? Shared by the Dock pin and the reveal handler,
 // which must not disagree about it. macOS-only, like both of them and the `running_bundle()` it
 // asks.
@@ -750,6 +752,17 @@ pub fn run() {
             // Initialize custom updater state (shared between download and install commands)
             #[cfg(target_os = "macos")]
             app.manage(updater::UpdateState::new());
+
+            // Is this the first launch after an update? Answered before any share is dialed (the
+            // launch sweep waits on mDNS), since the share notices read it. On macOS that launch
+            // also re-announces the bundle, so Local Network keeps up with the new binary (#1019).
+            let launch = after_update::init(app.handle());
+            #[cfg(target_os = "macos")]
+            if launch == after_update::LaunchKind::FirstAfterUpdate {
+                updater::local_network_refresh::spawn_after_update();
+            }
+            #[cfg(not(target_os = "macos"))]
+            let _ = launch;
 
             // Native Quick Look controller. Empty on init; populated lazily
             // when the user presses Shift+Space. macOS-only state machine;
