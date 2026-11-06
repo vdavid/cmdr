@@ -129,6 +129,13 @@
     "confidence": "high",
     "sources": "macOS Finder pt-BR (NE73 Já existe um item com o mesmo nome nesta localização.)"
   },
+  "always": {
+    "chosen": "sempre",
+    "accept": ["Sempre"],
+    "forms": "Always ask (segmented option) → Sempre perguntar",
+    "confidence": "high",
+    "sources": "macOS pt-BR Finder (Always reveal in a new Finder window → Sempre revelar em uma nova janela do Finder; VO14 Sempre abrir em ícones); catalog (settings.fileOperations.allowFileExtensionChanges.opt.ask)"
+  },
   "answer": {
     "chosen": "resposta",
     "accept": ["respond"],
@@ -300,6 +307,13 @@
     "confidence": "high",
     "sources": "MS terminology pt-BR (badge → selo)",
     "decision": "Image index"
+  },
+  "include-in-approval": {
+    "chosen": "Incluir",
+    "accept": ["inclu"],
+    "forms": "the Include column → Incluir; Include {name} → Incluir {name}; a settings option meaning keep these files in → Incluir; its default as a link → Incluídos por padrão",
+    "confidence": "high",
+    "sources": "macOS pt-BR Finder (RV_SYSTEM_FILES_SLICE_DESCRIPTION Inclui arquivos do sistema…); catalog (suggestedOps.columnInclude, suggestedOps.includeFile)"
   },
   "typing-badge": {
     "chosen": "selo",

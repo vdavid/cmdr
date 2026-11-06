@@ -2466,6 +2466,14 @@
     "confidence": "high",
     "sources": "macOS Finder (NE79 A disk on “^0” is in use… → Том «^0» используется…; PE7 … объект «^0» используется); AppKit (Key is already in use → Ключ уже используется); live (In use → Используется)"
   },
+  "include-in-approval": {
+    "chosen": "Включить",
+    "accept": ["включ", "не пропуска"],
+    "forms": "the Include column → Включить; Include {name} → Включить «{name}»; a settings option meaning keep these files in → Включить (same English, same value); its default as a link → По умолчанию не пропускаются",
+    "confidence": "tentative",
+    "sources": "macOS ru Finder (RV_SYSTEM_FILES_SLICE_DESCRIPTION Включать системные файлы…); catalog (suggestedOps.columnInclude, suggestedOps.includeFile)",
+    "note": "Under a switch-like label Включить can read as turn on; settings.fileOperations.macOnlyFiles.opt.include keeps it only for term consistency (review-queue.md)."
+  },
   "incoming-connections": {
     "chosen": "входящие подключения",
     "accept": ["входящ"],

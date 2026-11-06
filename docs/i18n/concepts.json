@@ -1808,6 +1808,12 @@
     "distinct": ["select", "approve", "skip"],
     "en": "Include",
     "match": ["=include", "include all files"],
+    "notMatch": [
+      {
+        "key": "settings.fileOperations.macOnlyFiles.opt.include",
+        "why": "The Mac-only hidden files setting's option to copy those files along, not an AI suggestion's tick box."
+      }
+    ],
     "note": "Never reuse the file-selection verb (the `select` concept): these boxes decide what an approval acts on, and the pane's selection is a different thing.",
     "sense": "The tick boxes in an AI suggestion's file list that keep a file in, or leave it out of, the operation the user approves (the Include column, Include all files, Include a named file)."
   },
@@ -3618,6 +3624,7 @@
     "distinct": ["save", "write"],
     "en": "store",
     "match": ["store", "stores", "stored", "storing"],
+    "notMatch": ["ds_store"],
     "sense": "Where data or a name physically lives (a destination that can't store a name, a file stored on a drive, a password stored in the keychain)."
   },
   "streaming": {

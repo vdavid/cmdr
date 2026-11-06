@@ -4327,5 +4327,19 @@
     "forms": "the greyed menu marker: the base label word for word, then (in Benutzung)",
     "sources": "catalog (menu.volume.ejectBusy, disconnectBusy, forgetServerBusy, forgetSavedPasswordBusy)",
     "accept": ["ausgelastet"]
+  },
+  "always": {
+    "chosen": "immer",
+    "accept": ["immer"],
+    "forms": "Always ask → Immer fragen; Always open with → Immer öffnen mit",
+    "confidence": "high",
+    "sources": "macOS Finder (Immer öffnen mit, Immer als ^0 komprimieren); catalog settings.fileOperations.allowFileExtensionChanges.opt.ask"
+  },
+  "include-in-approval": {
+    "chosen": "einbeziehen",
+    "accept": ["einbez", "einzubez"],
+    "forms": "column and option label → Einbeziehen; Include {name} → „{name}“ einbeziehen; status including → werden einbezogen",
+    "confidence": "high",
+    "sources": "macOS AppKit NSSearchBar (Anhänge einbeziehen); catalog suggestedOps.columnInclude"
   }
 }

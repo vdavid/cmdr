@@ -404,19 +404,19 @@
   "@fileOperations.transferDialog.rememberedOverwriteNote": {
     "sourceHash": "7456023"
   },
-  "fileOperations.transferDialog.macOnlyFiles.toggle": "Skip Mac-only hidden files (.DS_Store, ._*)",
+  "fileOperations.transferDialog.macOnlyFiles.toggle": "Bỏ qua tệp ẩn chỉ dành cho Mac (.DS_Store, ._*)",
   "@fileOperations.transferDialog.macOnlyFiles.toggle": {
     "sourceHash": "0f28753"
   },
-  "fileOperations.transferDialog.macOnlyFiles.dontAskAgain": "Don’t ask again?",
+  "fileOperations.transferDialog.macOnlyFiles.dontAskAgain": "Đừng hỏi lại?",
   "@fileOperations.transferDialog.macOnlyFiles.dontAskAgain": {
     "sourceHash": "0c17630"
   },
-  "fileOperations.transferDialog.macOnlyFiles.includingByDefault": "Including by default",
+  "fileOperations.transferDialog.macOnlyFiles.includingByDefault": "Mặc định: bao gồm",
   "@fileOperations.transferDialog.macOnlyFiles.includingByDefault": {
     "sourceHash": "23a2743"
   },
-  "fileOperations.transferDialog.macOnlyFiles.skippingByDefault": "Skipping by default",
+  "fileOperations.transferDialog.macOnlyFiles.skippingByDefault": "Mặc định: bỏ qua",
   "@fileOperations.transferDialog.macOnlyFiles.skippingByDefault": {
     "sourceHash": "1837ebb"
   },

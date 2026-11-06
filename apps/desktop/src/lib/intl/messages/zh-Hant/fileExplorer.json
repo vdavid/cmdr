@@ -143,6 +143,10 @@
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
     "sourceHash": "74f758e"
   },
+  "fileExplorer.pane.directConnectionBlockedAfterUpdateToast": "Cmdr 已經更新，但更新後 macOS 有時仍會讓 Cmdr 無法直接連線到 {server}。在「{localNetwork}」裡把 Cmdr 關掉再開啟就能解決。在那之前，這個共享資料夾會繼續使用較慢的系統連線。",
+  "@fileExplorer.pane.directConnectionBlockedAfterUpdateToast": {
+    "sourceHash": "c0dba06"
+  },
   "fileExplorer.pane.openLocalNetworkSettings": "開啟「{localNetwork}」設定",
   "@fileExplorer.pane.openLocalNetworkSettings": {
     "sourceHash": "c3931df"

@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "Не вдалося показати «{name}»: диск або сервер, де розміщено цей елемент, не відповідає.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "Не вдалося відкрити папку «{folder}», щоб показати «{name}».",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Не вдалося відкрити папку «{name}».",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "Папку «{folder}» відкрито, але «{name}» зараз у ній немає. Можливо, файл перемістили, або він прихований.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "Відкрито: {opened, plural, one {# папка} few {# папки} many {# папок} other {# папки}}. Не вмістилося: {dropped}, бо вкладок на одній панелі може бути не більше ніж {limit}.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

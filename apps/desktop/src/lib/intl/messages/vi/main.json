@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "Không thể hiển thị “{name}”: ổ đĩa hoặc máy chủ chứa mục này không phản hồi.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "Không thể mở {folder} để hiển thị “{name}”.",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Không thể mở thư mục “{name}”.",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "Đã mở {folder}, nhưng lúc này “{name}” không có trong đó. Có thể tệp đã được chuyển đi nơi khác, hoặc đó là một tệp ẩn.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "Đã mở {opened, plural, other {# thư mục}}. Còn {dropped} thư mục nữa không vừa, vì mỗi khung chỉ chứa được tối đa {limit} tab.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

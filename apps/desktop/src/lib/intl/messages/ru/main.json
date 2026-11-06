@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "Не удалось показать «{name}»: диск или сервер, на котором находится этот объект, не отвечает.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "Не удалось открыть папку {folder}, чтобы показать «{name}».",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Не удалось открыть папку «{name}».",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "Папка {folder} открыта, но «{name}» сейчас в ней нет. Возможно, объект перемещен или это скрытый файл.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "Открыто: {opened, plural, one {# папка} few {# папки} many {# папок} other {# папки}}. Не поместилось: {dropped}, потому что вкладок на одной панели может быть не больше {limit}.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

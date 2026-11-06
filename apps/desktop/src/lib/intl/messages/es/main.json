@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "No se ha podido mostrar “{name}”: la unidad o el servidor donde está no responde.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "No se ha podido abrir la carpeta {folder} para mostrar “{name}”.",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "No se ha podido abrir la carpeta “{name}”.",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "Se ha abierto la carpeta {folder}, pero “{name}” no está ahí ahora mismo. Puede que se haya movido o que sea un archivo oculto.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {Se ha abierto # carpeta} many {Se han abierto # carpetas} other {Se han abierto # carpetas}}. No ha habido sitio para {dropped} más, porque un panel admite hasta {limit} pestañas.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

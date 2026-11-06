@@ -4549,5 +4549,12 @@
     "forms": "m.: move focus to → přesunout fokus na; keyboard focus → fokus klávesnice; the focused pane → aktivní panel (pane ruling)",
     "confidence": "tentative",
     "sources": "catalog labels commands.paneFocusControls.label, commands.appFocusNotifications.label (Přesunout fokus na…); macOS SystemSettings says zaměření klávesnice, queued in review-queue.md"
+  },
+  "include-in-approval": {
+    "chosen": "zahrnout",
+    "accept": ["zahrn"],
+    "forms": "column and option label → Zahrnout; Include {name} → Zahrnout {name}; status including → zahrnují se",
+    "confidence": "high",
+    "sources": "macOS AppKit NSSearchBar (Zahrnout přílohy); Thunar (Zahrnout podsložky); catalog suggestedOps.columnInclude"
   }
 }

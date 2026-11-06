@@ -213,7 +213,8 @@
     "chosen": "總是",
     "confidence": "high",
     "exceptions": {
-      "settings.fileOperations.allowFileExtensionChanges.opt.ask": "The ask-each-time option: 每次詢問 (see ask)."
+      "settings.fileOperations.allowFileExtensionChanges.opt.ask": "The ask-each-time option: 每次詢問 (see ask).",
+      "settings.fileOperations.macOnlyFiles.opt.ask": "The ask-each-time option: 每次詢問 (see ask), byte-identical to allowFileExtensionChanges.opt.ask."
     },
     "sources": "AP live HK 63 總是 / 0 永遠 / 0 一律; AP live TW mixes 38/27/2"
   },

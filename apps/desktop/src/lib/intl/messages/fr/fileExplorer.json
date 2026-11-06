@@ -144,6 +144,10 @@
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
     "sourceHash": "74f758e"
   },
+  "fileExplorer.pane.directConnectionBlockedAfterUpdateToast": "Cmdr s’est mis à jour, et macOS bloque parfois ensuite la connexion directe de Cmdr à {server}. Pour régler le problème, désactivez puis réactivez Cmdr dans {localNetwork}. D’ici là, ce partage reste sur la connexion système, plus lente.",
+  "@fileExplorer.pane.directConnectionBlockedAfterUpdateToast": {
+    "sourceHash": "c0dba06"
+  },
   "fileExplorer.pane.openLocalNetworkSettings": "Ouvrir les réglages {localNetwork}",
   "@fileExplorer.pane.openLocalNetworkSettings": {
     "sourceHash": "c3931df"

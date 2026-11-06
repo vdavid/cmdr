@@ -4060,5 +4060,19 @@
     "chosen": "cet ordinateur",
     "confidence": "high",
     "sources": "catalog (errors.mount.hostUnreachable, errors.mount.unsupportedProtocol)"
+  },
+  "always": {
+    "chosen": "toujours",
+    "accept": ["toujours"],
+    "forms": "before the verb, as macOS writes it: Always ask → Toujours demander; Always open with → Toujours ouvrir avec",
+    "confidence": "high",
+    "sources": "macOS Finder (Toujours ouvrir avec, Toujours présenter par liste); catalog settings.fileOperations.allowFileExtensionChanges.opt.ask"
+  },
+  "include-in-approval": {
+    "chosen": "inclure",
+    "accept": ["inclu"],
+    "forms": "column and option label → Inclure; Include {name} → Inclure {name}; status including by default → Inclus par défaut",
+    "confidence": "high",
+    "sources": "macOS AppKit NSSearchBar (Inclure les pièces jointes); catalog suggestedOps.columnInclude"
   }
 }

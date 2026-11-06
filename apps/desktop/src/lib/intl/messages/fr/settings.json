@@ -507,27 +507,27 @@
   "@settings.fileOperations.pasteClipboardAsFile.keywords": {
     "sourceHash": "3e077e3"
   },
-  "settings.fileOperations.macOnlyFiles.label": "Skip Mac-only hidden files",
+  "settings.fileOperations.macOnlyFiles.label": "Ignorer les fichiers cachés propres au Mac",
   "@settings.fileOperations.macOnlyFiles.label": {
     "sourceHash": "be693c6"
   },
-  "settings.fileOperations.macOnlyFiles.description": "Skips .DS_Store and ._* files when copying/moving/compressing files.",
+  "settings.fileOperations.macOnlyFiles.description": "Ignore les fichiers .DS_Store et ._* lors de la copie, du déplacement ou de la compression.",
   "@settings.fileOperations.macOnlyFiles.description": {
     "sourceHash": "72d2492"
   },
-  "settings.fileOperations.macOnlyFiles.opt.include": "Include",
+  "settings.fileOperations.macOnlyFiles.opt.include": "Inclure",
   "@settings.fileOperations.macOnlyFiles.opt.include": {
     "sourceHash": "7285576"
   },
-  "settings.fileOperations.macOnlyFiles.opt.skip": "Skip",
+  "settings.fileOperations.macOnlyFiles.opt.skip": "Ignorer",
   "@settings.fileOperations.macOnlyFiles.opt.skip": {
     "sourceHash": "28d0359"
   },
-  "settings.fileOperations.macOnlyFiles.opt.ask": "Always ask",
+  "settings.fileOperations.macOnlyFiles.opt.ask": "Toujours demander",
   "@settings.fileOperations.macOnlyFiles.opt.ask": {
     "sourceHash": "3c42771"
   },
-  "settings.fileOperations.macOnlyFiles.keywords": "hidden, metadata, clutter, junk, resource fork, archive, compress, copy, move, other systems",
+  "settings.fileOperations.macOnlyFiles.keywords": "masqués, invisibles, fichiers point, métadonnées, fichiers inutiles, encombrement, fourche de ressources, resource fork, archive, compresser, copier, déplacer, autres systèmes, partage",
   "@settings.fileOperations.macOnlyFiles.keywords": {
     "sourceHash": "b668774"
   },

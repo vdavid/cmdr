@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "无法显示“{name}”：它所在的驱动器或服务器没有响应。",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "无法打开“{folder}”来显示“{name}”。",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "无法打开文件夹“{name}”。",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "已打开“{folder}”，但“{name}”现在不在里面。它可能已被移走，也可能是隐藏文件。",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "已打开 {opened, plural, other {# 个文件夹}}。还有 {dropped} 个放不下，因为一个窗格最多只能有 {limit} 个标签页。",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

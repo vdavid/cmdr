@@ -120,3 +120,7 @@ item once settled, and record the outcome in `terms.json` or `decisions.md`.
   `…encryptionUnavailable`): the new keys put a type noun before the insert, as the placeholder rule asks; the older
   siblings (`…message`, `…otherServerNotAllowed`, `…shareNotOnServer`) still write a bare
   `к <shareName>{share}</shareName>`. Confirm, then realign the siblings.
+- **`Включить` as the Include option** (`settings.fileOperations.macOnlyFiles.opt.include`): kept for term consistency
+  with `suggestedOps.columnInclude`, but under the label `Пропускать скрытые файлы только для Mac` it can read as "turn
+  on" (the skipping). `Не пропускать` is unambiguous; switching needs a reasoned `reviewed` entry in the
+  term-consistency allowlist.

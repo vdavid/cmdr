@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "Položku „{name}“ se nepodařilo zobrazit: disk nebo server, na kterém leží, neodpovídá.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "Nepodařilo se otevřít složku {folder} a zobrazit v ní soubor „{name}“.",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Složku „{name}“ se nepodařilo otevřít.",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "Složka {folder} je otevřená, ale soubor „{name}“ v ní teď není. Možná byl přesunut, nebo je to skrytý soubor.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "Otevřeno: {opened, plural, one {# složka} few {# složky} many {# složky} other {# složek}}. Nevešlo se: {dropped}, protože jeden panel pojme nejvýš {limit} záložek.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

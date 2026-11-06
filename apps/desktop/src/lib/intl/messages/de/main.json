@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "„{name}“ ließ sich nicht anzeigen: Das Laufwerk oder der Server, auf dem das Objekt liegt, antwortet nicht.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "Der Ordner {folder} ließ sich nicht öffnen, um „{name}“ anzuzeigen.",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Der Ordner „{name}“ ließ sich nicht öffnen.",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "Der Ordner {folder} ist geöffnet, aber „{name}“ liegt gerade nicht darin. Vielleicht wurde die Datei bewegt, oder es ist eine verborgene Datei.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {# Ordner} other {# Ordner}} geöffnet. Für {dropped} Ordner mehr war kein Platz, weil ein Bereich höchstens {limit} Tabs fasst.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

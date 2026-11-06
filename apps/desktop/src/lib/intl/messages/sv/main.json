@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "Det gick inte att visa ”{name}”: enheten eller servern där objektet ligger svarar inte.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "Det gick inte att öppna mappen {folder} för att visa ”{name}”.",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Det gick inte att öppna mappen ”{name}”.",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "Öppnade mappen {folder}, men ”{name}” finns inte där just nu. Objektet kan ha flyttats, eller så är det en dold fil.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {Öppnade # mapp} other {Öppnade # mappar}}. {dropped} till fick inte plats, eftersom en panel rymmer högst {limit} flikar.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

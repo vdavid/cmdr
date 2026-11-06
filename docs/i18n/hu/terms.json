@@ -185,6 +185,12 @@
     "confidence": "high",
     "sources": "macOS Finder (PE1: Már létezik egy „^0” nevű elem ezen a helyen.); Nautilus"
   },
+  "always": {
+    "chosen": "mindig",
+    "forms": "Always ask (option) → Mindig kérdezzen",
+    "confidence": "high",
+    "sources": "macOS Finder (VO14 Megnyitás mindig ikonnézetben; Always reveal in a new Finder window → Mindig új Finder-ablakban jelenjen meg); catalog (settings.fileOperations.allowFileExtensionChanges.opt.ask)"
+  },
   "android-platform-tools": {
     "chosen": "az Android platform tools csomag",
     "accept": ["platform tools csomag"],
@@ -897,6 +903,13 @@
     "accept": ["bővítmény"],
     "confidence": "high",
     "sources": "macOS pane Indítóelemek és bővítmények (errors.provider.pCloudFuse.needsAction); rendszerbővítmény"
+  },
+  "include-in-approval": {
+    "chosen": "Belefoglalás",
+    "accept": ["belefoglal"],
+    "forms": "the Include column → Belefoglalás; Include {name} → Belefoglalás: {name}; a settings option meaning keep these files in → Belefoglalás",
+    "confidence": "high",
+    "sources": "macOS Finder (RV_SYSTEM_FILES_SLICE_DESCRIPTION Include system files → … belefoglalása); catalog (suggestedOps.columnInclude, suggestedOps.includeFile)"
   },
   "learn-more": {
     "chosen": "Bővebben",
@@ -3583,7 +3596,7 @@
   },
   "skip": {
     "chosen": "Átugrás",
-    "accept": ["átugr", "kihagy", "hagyott ki", "ugord át"],
+    "accept": ["átugr", "átugor", "ugorja át", "kihagy", "hagyott ki", "ugord át"],
     "forms": "the conflict-policy button → Átugrás; Skip all → Összes átugrása; a past outcome → kihagyva; telling the user to skip one item → Ugord át ezt az elemet (the imperative splits the prefix off)",
     "confidence": "high",
     "sources": "macOS Finder (PE112/AL6 Átugrás; Kihagyás/Kihagyva)",

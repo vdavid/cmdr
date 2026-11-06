@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "Impossible d’afficher « {name} » : le disque ou le serveur qui contient l’élément ne répond pas.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "Impossible d’ouvrir le dossier {folder} pour afficher « {name} ».",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Impossible d’ouvrir le dossier « {name} ».",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "Le dossier {folder} est ouvert, mais « {name} » ne s’y trouve pas pour le moment. L’élément a peut-être été déplacé, ou c’est un fichier caché.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {# dossier ouvert} many {# dossiers ouverts} other {# dossiers ouverts}}. Pas assez de place pour {dropped} de plus, car un panneau peut contenir jusqu’à {limit} onglets.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

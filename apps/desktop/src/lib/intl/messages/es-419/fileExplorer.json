@@ -518,5 +518,9 @@
   "fileExplorer.errorPane.openSmbEncryptionSetting": "Abrir la configuración de SMB",
   "@fileExplorer.errorPane.openSmbEncryptionSetting": {
     "sourceHash": "99eab87"
+  },
+  "fileExplorer.pane.directConnectionBlockedAfterUpdateToast": "Cmdr se actualizó y, después, macOS a veces sigue bloqueando la conexión directa de Cmdr con {server}. Para solucionarlo, desactiva y vuelve a activar Cmdr en {localNetwork}. Hasta entonces, este recurso compartido sigue usando la conexión del sistema, que es más lenta.",
+  "@fileExplorer.pane.directConnectionBlockedAfterUpdateToast": {
+    "sourceHash": "df84283"
   }
 }

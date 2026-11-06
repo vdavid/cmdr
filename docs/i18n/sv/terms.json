@@ -194,6 +194,12 @@
     "forms": "title Finns redan; Det finns redan en fil eller mapp på …",
     "sources": "macOS Finder"
   },
+  "always": {
+    "chosen": "alltid",
+    "forms": "Always ask (segmented option) → Fråga alltid (verb first, as Finder puts it)",
+    "confidence": "high",
+    "sources": "macOS sv Finder (VO14 Öppna alltid i symbolvy; Always reveal in a new Finder window → Visa alltid i ett nytt Finder-fönster); catalog (settings.fileOperations.allowFileExtensionChanges.opt.ask)"
+  },
   "android-platform-tools": {
     "chosen": "platform tools",
     "confidence": "tentative",
@@ -802,6 +808,13 @@
     "accept": ["tillägg"],
     "confidence": "high",
     "sources": "macOS pane Startobjekt och tillägg (errors.provider.pCloudFuse.needsAction); systemtillägg"
+  },
+  "include-in-approval": {
+    "chosen": "Ta med",
+    "accept": ["tas med", "tar med", "togs med"],
+    "forms": "the Include column → Ta med; Include {name} → Ta med {name}; a settings option meaning keep these files in → Ta med; its default as a link → Tas med som standard",
+    "confidence": "high",
+    "sources": "catalog (suggestedOps.columnInclude, suggestedOps.includeFile); macOS sv Finder uses Inkludera (RV_SYSTEM_FILES_SLICE_DESCRIPTION), the catalog's everyday Ta med reads the same and is already shipped"
   },
   "learn-more": {
     "chosen": "Mer om",

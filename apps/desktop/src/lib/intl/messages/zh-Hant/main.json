@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "無法顯示「{name}」：它所在的磁碟機或伺服器沒有回應。",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "無法開啟「{folder}」來顯示「{name}」。",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "無法開啟資料夾「{name}」。",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "已開啟「{folder}」，但「{name}」現在不在裡面。它可能已被移走，也可能是隱藏檔案。",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "已開啟 {opened, plural, other {# 個資料夾}}。還有 {dropped} 個放不下，因為一個窗格最多只能有 {limit} 個分頁。",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

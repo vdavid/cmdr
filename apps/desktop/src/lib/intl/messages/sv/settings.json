@@ -508,27 +508,27 @@
   "@settings.fileOperations.pasteClipboardAsFile.keywords": {
     "sourceHash": "3e077e3"
   },
-  "settings.fileOperations.macOnlyFiles.label": "Skip Mac-only hidden files",
+  "settings.fileOperations.macOnlyFiles.label": "Hoppa över Mac-specifika dolda filer",
   "@settings.fileOperations.macOnlyFiles.label": {
     "sourceHash": "be693c6"
   },
-  "settings.fileOperations.macOnlyFiles.description": "Skips .DS_Store and ._* files when copying/moving/compressing files.",
+  "settings.fileOperations.macOnlyFiles.description": "Hoppar över filerna .DS_Store och ._* när du kopierar, flyttar eller komprimerar.",
   "@settings.fileOperations.macOnlyFiles.description": {
     "sourceHash": "72d2492"
   },
-  "settings.fileOperations.macOnlyFiles.opt.include": "Include",
+  "settings.fileOperations.macOnlyFiles.opt.include": "Ta med",
   "@settings.fileOperations.macOnlyFiles.opt.include": {
     "sourceHash": "7285576"
   },
-  "settings.fileOperations.macOnlyFiles.opt.skip": "Skip",
+  "settings.fileOperations.macOnlyFiles.opt.skip": "Hoppa över",
   "@settings.fileOperations.macOnlyFiles.opt.skip": {
     "sourceHash": "28d0359"
   },
-  "settings.fileOperations.macOnlyFiles.opt.ask": "Always ask",
+  "settings.fileOperations.macOnlyFiles.opt.ask": "Fråga alltid",
   "@settings.fileOperations.macOnlyFiles.opt.ask": {
     "sourceHash": "3c42771"
   },
-  "settings.fileOperations.macOnlyFiles.keywords": "hidden, metadata, clutter, junk, resource fork, archive, compress, copy, move, other systems",
+  "settings.fileOperations.macOnlyFiles.keywords": "metadata, skräp, bråte, onödiga filer, punktfiler, resursgren, resource fork, arkiv, komprimera, kopiera, flytta, andra system, bara Mac",
   "@settings.fileOperations.macOnlyFiles.keywords": {
     "sourceHash": "b668774"
   },

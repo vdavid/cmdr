@@ -405,19 +405,19 @@
   "@fileOperations.transferDialog.rememberedOverwriteNote": {
     "sourceHash": "7456023"
   },
-  "fileOperations.transferDialog.macOnlyFiles.toggle": "Skip Mac-only hidden files (.DS_Store, ._*)",
+  "fileOperations.transferDialog.macOnlyFiles.toggle": "Přeskočit skryté soubory jen pro Mac (.DS_Store, ._*)",
   "@fileOperations.transferDialog.macOnlyFiles.toggle": {
     "sourceHash": "0f28753"
   },
-  "fileOperations.transferDialog.macOnlyFiles.dontAskAgain": "Don’t ask again?",
+  "fileOperations.transferDialog.macOnlyFiles.dontAskAgain": "Už se neptat?",
   "@fileOperations.transferDialog.macOnlyFiles.dontAskAgain": {
     "sourceHash": "0c17630"
   },
-  "fileOperations.transferDialog.macOnlyFiles.includingByDefault": "Including by default",
+  "fileOperations.transferDialog.macOnlyFiles.includingByDefault": "Ve výchozím nastavení se zahrnují",
   "@fileOperations.transferDialog.macOnlyFiles.includingByDefault": {
     "sourceHash": "23a2743"
   },
-  "fileOperations.transferDialog.macOnlyFiles.skippingByDefault": "Skipping by default",
+  "fileOperations.transferDialog.macOnlyFiles.skippingByDefault": "Ve výchozím nastavení se přeskakují",
   "@fileOperations.transferDialog.macOnlyFiles.skippingByDefault": {
     "sourceHash": "1837ebb"
   },

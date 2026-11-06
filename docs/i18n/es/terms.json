@@ -3087,7 +3087,10 @@
     "chosen": "Omitir",
     "accept": ["omit"],
     "confidence": "high",
-    "sources": "Nautilus (_Omitir)"
+    "sources": "Nautilus (_Omitir)",
+    "exceptions": {
+      "fileOperations.transferDialog.macOnlyFiles.skippingByDefault": "Se omiten por omisión stutters, so the status says no se incluyen, the negative of its includingByDefault sibling"
+    }
   },
   "slow": {
     "chosen": "lento",
@@ -3984,5 +3987,19 @@
     "forms": "the onboarding wizard → el asistente de introducción",
     "confidence": "high",
     "sources": "catalog (commands.cmdrOpenOnboarding.description); MS terminology (wizard → asistente)"
+  },
+  "always": {
+    "chosen": "siempre",
+    "accept": ["siempre"],
+    "forms": "after the verb, as macOS writes it: Always ask → Preguntar siempre; Always open with → Abrir siempre con",
+    "confidence": "high",
+    "sources": "macOS Finder (Abrir siempre con, Comprimir siempre como ^0); catalog settings.fileOperations.allowFileExtensionChanges.opt.ask"
+  },
+  "include-in-approval": {
+    "chosen": "incluir",
+    "accept": ["inclu"],
+    "forms": "column and option label → Incluir; Include {name} → Incluir {name}; status including → se incluyen",
+    "confidence": "high",
+    "sources": "macOS AppKit NSSearchBar (Incluir archivos adjuntos); catalog suggestedOps.columnInclude"
   }
 }

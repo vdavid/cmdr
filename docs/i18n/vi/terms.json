@@ -130,6 +130,11 @@
     "forms": "button Cho phép / Cho phép tất cả; Android's own button quoted bare as Cho phép; not allowed → không được phép",
     "sources": "MS terminology (Allow … → Cho phép …), macOS TCC (REQUEST_ACCESS_ALLOW), AOSP usb_debugging_allow = Cho phép"
   },
+  "always": {
+    "chosen": "luôn",
+    "confidence": "high",
+    "sources": "macOS Finder vi (Always Open With → Luôn mở bằng; Luôn nén dưới dạng ^0; Luôn hiển thị…); catalog (Always ask → Luôn hỏi)"
+  },
   "already-exists": {
     "accept": ["đã có"],
     "chosen": "đã tồn tại",

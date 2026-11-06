@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "Kon ‘{name}’ niet tonen: de schijf of server waar dit onderdeel op staat, reageert niet.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "Kon de map {folder} niet openen om ‘{name}’ te tonen.",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Kon de map ‘{name}’ niet openen.",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "De map {folder} is geopend, maar ‘{name}’ staat er nu niet in. Misschien is dit onderdeel verplaatst, of het is een verborgen bestand.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {# map geopend} other {# mappen geopend}}. Voor nog {dropped} was geen plek, omdat een paneel maximaal {limit} tabbladen kan bevatten.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

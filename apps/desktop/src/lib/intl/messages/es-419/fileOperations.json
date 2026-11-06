@@ -314,5 +314,13 @@
   "fileOperations.transferDialog.presetOverwriteNote": "{reach, select, smaller {Este diálogo se abrió configurado para sobrescribir los archivos que ya hay ahí y son más pequeños.} older {Este diálogo se abrió configurado para sobrescribir los archivos que ya hay ahí y son más antiguos.} other {Este diálogo se abrió configurado para sobrescribir los archivos que ya hay ahí.}}",
   "@fileOperations.transferDialog.presetOverwriteNote": {
     "sourceHash": "6d30a11"
+  },
+  "fileOperations.transferDialog.macOnlyFiles.includingByDefault": "Se incluyen de forma predeterminada",
+  "@fileOperations.transferDialog.macOnlyFiles.includingByDefault": {
+    "sourceHash": "254bcf2"
+  },
+  "fileOperations.transferDialog.macOnlyFiles.skippingByDefault": "Se omiten de forma predeterminada",
+  "@fileOperations.transferDialog.macOnlyFiles.skippingByDefault": {
+    "sourceHash": "501cb9f"
   }
 }

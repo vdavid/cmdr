@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "Nem sikerült megjeleníteni ezt: „{name}”, mert nem válaszol a meghajtó vagy a szerver, amelyen van.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "„{name}” megjelenítéséhez nem sikerült megnyitni ezt a mappát: {folder}.",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Nem sikerült megnyitni ezt a mappát: „{name}”.",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "A Cmdr megnyitotta ezt a mappát: {folder}, de „{name}” most nincs benne. Lehet, hogy áthelyezték, vagy rejtett fájl.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {# mappa megnyitva} other {# mappa megnyitva}}. Még {dropped} nem fért el, mert egy panelen legfeljebb {limit} lap lehet.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

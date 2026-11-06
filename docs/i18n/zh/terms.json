@@ -153,6 +153,13 @@
     "forms": "Allow all → 全部允许; settings label 允许使用云端 AI (允许 alone reads as missing a verb); Android's own button quoted as “允许” with 点按",
     "sources": "macOS permission dialogs; AOSP usb_debugging_allow"
   },
+  "always": {
+    "chosen": "始终",
+    "accept": ["每次"],
+    "confidence": "high",
+    "forms": "Always + verb → 始终… (始终以此方式打开); the ask option Always ask → 每次询问 (an every-time option, as the catalog ships it)",
+    "sources": "macOS Finder zh-CN (Always Open With → 始终以此方式打开; 始终压缩成^0); catalog (Always ask → 每次询问)"
+  },
   "already-exists": {
     "accept": ["已经有", "已经在"],
     "chosen": "已存在",

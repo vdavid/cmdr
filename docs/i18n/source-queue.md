@@ -17,3 +17,6 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   a key-scoped `match`. (all)
 - `menu.window.zoom` and `menu.view.zoom` are both "Zoom" in English, so cs, fr, and uk keep a `zoom` exception; split
   the English or accept it. (uk)
+- `settings.fileOperations.macOnlyFiles.description`: "when copying/moving/compressing files" uses slashes and says
+  "files" twice; "when copying, moving, or compressing" reads cleaner, and cs, de, es, fr, hu, nl, pt, ru, and sv
+  already render it that way. (cs, de, es, fr, hu, nl, pt, ru, sv)

@@ -118,5 +118,21 @@
   "main.cliCommand.adminPromptInstall": "Cmdr quiere agregar el comando “cmdr” a /usr/local/bin.",
   "@main.cliCommand.adminPromptInstall": {
     "sourceHash": "646ca96"
+  },
+  "main.revealNotShown.notAnswering": "No se pudo mostrar “{name}”: la unidad o el servidor donde está no responde.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "759f23b"
+  },
+  "main.revealNotShown.folderNotOpened": "No se pudo abrir la carpeta {folder} para mostrar “{name}”.",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "9617823"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "No se pudo abrir la carpeta “{name}”.",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "6b687d7"
+  },
+  "main.revealNotShown.notInFolder": "Se abrió la carpeta {folder}, pero “{name}” no está ahí ahora mismo. Puede que se haya movido o que sea un archivo oculto.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "c476eda"
   }
 }

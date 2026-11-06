@@ -111,6 +111,22 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "sourceHash": "fe4bc3f"
   },
+  "main.revealNotShown.notAnswering": "Não foi possível mostrar “{name}”: o disco ou servidor onde o item está não está respondendo.",
+  "@main.revealNotShown.notAnswering": {
+    "sourceHash": "b5b72c5"
+  },
+  "main.revealNotShown.folderNotOpened": "Não foi possível abrir a pasta {folder} para mostrar “{name}”.",
+  "@main.revealNotShown.folderNotOpened": {
+    "sourceHash": "38701ca"
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Não foi possível abrir a pasta “{name}”.",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "sourceHash": "a21623c"
+  },
+  "main.revealNotShown.notInFolder": "O Cmdr abriu a pasta {folder}, mas “{name}” não está nela agora. O item pode ter sido movido, ou pode ser um arquivo oculto.",
+  "@main.revealNotShown.notInFolder": {
+    "sourceHash": "295785f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {# pasta aberta} many {# pastas abertas} other {# pastas abertas}}. Não houve espaço para mais {dropped}, porque um painel comporta até {limit} abas.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

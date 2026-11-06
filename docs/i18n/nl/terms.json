@@ -177,6 +177,13 @@
     "forms": "\"Er bestaat al … op deze locatie\"; conflict title Bestand bestaat al; a subordinate clause puts the verb last (Als een bestand in die map al bestaat:)",
     "sources": "macOS Finder (\"Er bestaat al een onderdeel … op deze locatie\")"
   },
+  "always": {
+    "chosen": "altijd",
+    "accept": ["Altijd"],
+    "forms": "Always ask (segmented option) → Altijd vragen",
+    "confidence": "high",
+    "sources": "macOS Finder (VO14 Open altijd in symboolweergave; Always reveal in a new Finder window → Toon altijd in een nieuw Finder-venster); catalog (settings.fileOperations.allowFileExtensionChanges.opt.ask)"
+  },
   "android-platform-tools": {
     "accept": ["platform tools"],
     "chosen": "Android platform tools",
@@ -770,6 +777,13 @@
     "confidence": "tentative",
     "forms": "Accessibility guide → Toegankelijkheidsgids; the guide to X → de gids over X",
     "sources": "catalog commands.helpAccessibility.label, menu.help.accessibility"
+  },
+  "include-in-approval": {
+    "chosen": "Meenemen",
+    "accept": ["meenemen", "meegenomen", "neem mee"],
+    "forms": "the Include column → Meenemen; Include {name} → {name} meenemen; a settings option meaning keep these files in → Meenemen; its default as a link → Standaard meegenomen",
+    "confidence": "high",
+    "sources": "catalog (suggestedOps.columnInclude, suggestedOps.includeFile); macOS Finder RV_SYSTEM_FILES_SLICE_DESCRIPTION uses Inclusief, a preposition that can't name an option"
   },
   "learn-more": {
     "chosen": "Meer over",
