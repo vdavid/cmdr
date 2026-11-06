@@ -222,6 +222,24 @@ impl Volume for SftpVolume {
         }))
     }
 
+    /// The stream again from `offset`, once the file's `fstat` still names the
+    /// size and date the first one saw (`streams.rs`, best-effort).
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn resume_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+        version: &'a cmdr_fs::volume::SourceVersion,
+        offset: u64,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(self.noting(async move {
+            let stream = self.resume_read_stream_impl(path, version, offset).await?;
+            Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
+        }))
+    }
+
     /// The background scan's reads, ❗ deliberately narrower than the foreground
     /// window: both share one SSH channel, and a prefetch that fills the channel
     /// window is a pane that waits for it.

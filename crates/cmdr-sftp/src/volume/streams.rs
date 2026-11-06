@@ -28,7 +28,7 @@ use std::time::SystemTime;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::CarriedMetadata;
 use cmdr_fs::volume::read_window::ReadWindow;
-use cmdr_fs::volume::{ChannelReadStream, StreamLength, VolumeError};
+use cmdr_fs::volume::{ChannelReadStream, SourceVersion, StreamLength, VolumeError};
 use log::debug;
 use openssh_sftp_client::file::File;
 use tokio::io::AsyncSeek;
@@ -130,6 +130,35 @@ struct OpenedFile {
     mode: Option<u32>,
 }
 
+/// Which version of a file an SFTP read saw: its size and modified time, all an
+/// `fstat` says about a file's content (protocol v3 has no inode and no change
+/// time). ❗ Best-effort: a rewrite to the same size inside the same second
+/// passes. What a copy carries on from after an outage
+/// (`Volume::resume_read_stream`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) struct SftpVersion {
+    size: u64,
+    modified_at: SystemTime,
+}
+
+impl SftpVersion {
+    /// `None` when the `fstat` left out either: nothing could prove the file
+    /// unchanged later.
+    fn of(opened: &OpenedFile) -> Option<Self> {
+        Some(Self {
+            size: opened.size?,
+            modified_at: opened.modified_at?,
+        })
+    }
+}
+
+/// Where a carried-on read starts, and the version the file must still be.
+#[derive(Clone, Copy)]
+pub(super) struct ReadFrom {
+    pub(super) version: SftpVersion,
+    pub(super) offset: u64,
+}
+
 impl OpenedFile {
     /// The length the stream declares. ❗ A size the server didn't send is
     /// `Unknown`, ❌ never `Known(0)`: the copy engine fails a stream whose bytes
@@ -228,6 +257,35 @@ impl SftpVolume {
         path: &Path,
         depth: usize,
     ) -> Result<ChannelReadStream, VolumeError> {
+        self.read_stream_from(path, depth, None).await
+    }
+
+    /// [`Volume::resume_read_stream`](cmdr_fs::volume::Volume::resume_read_stream):
+    /// the same stream from `offset`, once the file's `fstat` still says
+    /// `version`; a file that changed is `SourceChanged` before a byte is
+    /// handed out.
+    pub(super) async fn resume_read_stream_impl(
+        &self,
+        path: &Path,
+        version: &SourceVersion,
+        offset: u64,
+    ) -> Result<ChannelReadStream, VolumeError> {
+        let Some(version) = version.downcast_ref::<SftpVersion>() else {
+            return Err(VolumeError::NotSupported);
+        };
+        let from = ReadFrom {
+            version: *version,
+            offset,
+        };
+        self.read_stream_from(path, READ_WINDOW_DEPTH, Some(from)).await
+    }
+
+    async fn read_stream_from(
+        &self,
+        path: &Path,
+        depth: usize,
+        from: Option<ReadFrom>,
+    ) -> Result<ChannelReadStream, VolumeError> {
         let remote = self.to_remote_path(path)?;
         // ❗ Cloned out from under a short read guard. Holding it across the read
         // would serialize every other operation on the one channel.
@@ -239,10 +297,9 @@ impl SftpVolume {
 
         // ❌ Never `tokio::spawn` here: a backend inherits whatever runtime it is
         // called on, and some of those are watcher OS threads with none.
-        self.inner
-            .host
-            .runtime()
-            .spawn(produce_stream(session, remote, depth, size_tx, chunk_tx, cancel_rx));
+        self.inner.host.runtime().spawn(produce_stream(
+            session, remote, depth, from, size_tx, chunk_tx, cancel_rx,
+        ));
 
         let opened = match size_rx.await {
             Ok(Ok(opened)) => opened,
@@ -252,12 +309,16 @@ impl SftpVolume {
             Err(_) => return Err(VolumeError::DeviceDisconnected(self.inner.volume_id.clone().into())),
         };
 
-        Ok(ChannelReadStream::new(chunk_rx, cancel_tx, opened.length())
+        let stream = ChannelReadStream::new(chunk_rx, cancel_tx, opened.length())
             .with_modified_at(opened.modified_at)
             .with_metadata(CarriedMetadata {
                 mode: opened.mode,
                 ..CarriedMetadata::default()
-            }))
+            });
+        Ok(match SftpVersion::of(&opened) {
+            Some(version) => stream.with_source_version(SourceVersion::new(version)),
+            None => stream,
+        })
     }
 
     /// Exactly `[offset, offset + len)`, filled from as few round trips as the
@@ -299,6 +360,7 @@ async fn produce_stream(
     session: Arc<SshConnection>,
     remote: String,
     depth: usize,
+    from: Option<ReadFrom>,
     size_tx: tokio::sync::oneshot::Sender<Result<OpenedFile, VolumeError>>,
     chunk_tx: tokio::sync::mpsc::Sender<Result<Vec<u8>, VolumeError>>,
     mut cancel_rx: tokio::sync::oneshot::Receiver<()>,
@@ -315,9 +377,13 @@ async fn produce_stream(
     // round trip after the open instead of two. The first read asks for a whole
     // chunk without knowing the size yet, which is safe: reading past the end of
     // a file answers with fewer bytes, never with an error.
+    // A carried-on read starts at its offset, and only once the `fstat` says
+    // it's still the file the first read saw: the head chunk read beside it
+    // is dropped otherwise, never handed out.
+    let start = from.map_or(0, |from| from.offset);
     let mut sizing = RemoteFile::new(file, Arc::from(remote.as_str()));
     let mut head = sizing.clone();
-    let (opened, first) = tokio::join!(sizing.stat(), head.read_at(0, CHUNK_BYTES));
+    let (opened, first) = tokio::join!(sizing.stat(), head.read_at(start, CHUNK_BYTES));
 
     let opened = match opened {
         Ok(opened) => opened,
@@ -326,6 +392,12 @@ async fn produce_stream(
             return;
         }
     };
+    if let Some(from) = from
+        && SftpVersion::of(&opened) != Some(from.version)
+    {
+        let _ = size_tx.send(Err(VolumeError::SourceChanged(remote.clone())));
+        return;
+    }
     let first = match first {
         Ok(bytes) => bytes,
         Err(e) => {
@@ -341,7 +413,7 @@ async fn produce_stream(
 
     // The first read may have been answered short, so the window picks up
     // wherever it actually got to rather than at a chunk boundary.
-    let mut delivered = first.len() as u64;
+    let mut delivered = start + first.len() as u64;
     if !first.is_empty() && chunk_tx.send(Ok(first)).await.is_err() {
         return;
     }

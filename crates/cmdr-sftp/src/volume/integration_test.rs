@@ -865,3 +865,45 @@ async fn sftp_a_listings_paths_are_what_the_app_hands_back() {
     assert_eq!(handed_back, volume.root().join("hello.txt"));
     assert!(volume.exists(&handed_back).await, "and it still names the same file");
 }
+
+/// A copy that waited out a long outage carries a download on from an offset
+/// (`Volume::resume_read_stream`), on the file the first read saw; one written
+/// over since (another size or date) is `SourceChanged`, before a byte reaches
+/// the copy.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_read_resumes_on_its_named_file_and_refuses_a_rewritten_one() {
+    let params = fixture_params("OPENSSH", 12480);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+    let dir = scratch_dir("resume");
+    volume.create_directory(Path::new(&dir)).await.expect(FIXTURE);
+    let path = format!("{dir}/resume.bin");
+    let bytes = fixture_large_bytes(600_000);
+    volume.create_file(Path::new(&path), &bytes).await.expect(FIXTURE);
+
+    let first = volume.open_read_stream(Path::new(&path)).await.expect(FIXTURE);
+    let version = first.source_version().expect("an fstat names the file's version");
+    drop(first);
+    let mut rest = volume
+        .resume_read_stream(Path::new(&path), &version, 250_000)
+        .await
+        .expect("the same file resumes");
+    let mut read = Vec::new();
+    while let Some(chunk) = rest.next_chunk().await {
+        read.extend_from_slice(&chunk.expect(FIXTURE));
+    }
+    assert_same_bytes(&read, &bytes[250_000..], "exactly the bytes from the offset");
+
+    volume.delete(Path::new(&path)).await.expect(FIXTURE);
+    volume
+        .create_file(Path::new(&path), &fixture_large_bytes(600_001))
+        .await
+        .expect(FIXTURE);
+    match volume.resume_read_stream(Path::new(&path), &version, 250_000).await {
+        Err(VolumeError::SourceChanged(_)) => {}
+        Err(other) => panic!("expected SourceChanged, got {other:?}"),
+        Ok(_) => panic!("expected SourceChanged, got a stream"),
+    }
+    clean_scratch(&volume, &dir).await;
+}
