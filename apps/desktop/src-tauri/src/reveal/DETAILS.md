@@ -226,7 +226,7 @@ surface or duplicating that machinery. The name `mcp` is about the protocol thes
 is allowed to speak it; an OS reveal makes the same move a user or an agent does.
 
 It answers a typed `GoToFailure`: `NotOpened` (the pane never got there) or `NotPointed` (it got there and the cursor or
-selection missed). The tool caller folds both into its `ToolError` through `From`; this module turns them into
+selection missed). The tool caller folds both into its `ToolError` through `GoToFailure::into_error` (a `From` impl would close a `module-cycles` circle); this module turns them into
 `RevealNotShown` reasons.
 
 Ordering around it is load-bearing: new tab, navigate, move the cursor, THEN multi-select. The frontend's cursor move resets the

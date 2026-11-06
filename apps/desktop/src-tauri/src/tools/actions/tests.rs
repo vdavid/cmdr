@@ -570,7 +570,7 @@ fn a_go_to_failure_knows_a_stalled_folder_from_its_typed_reason() {
 
 #[test]
 fn a_go_to_failure_folds_into_the_tool_error_it_carries() {
-    let err: ToolError = GoToFailure::NotPointed(ToolError::internal("\"a.txt\" not found")).into();
+    let err = GoToFailure::NotPointed(ToolError::internal("\"a.txt\" not found")).into_error();
     assert_eq!(err.message, "\"a.txt\" not found");
 }
 

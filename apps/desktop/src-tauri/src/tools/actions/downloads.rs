@@ -9,7 +9,7 @@
 use serde_json::json;
 use tauri::{AppHandle, Runtime};
 
-use super::nav::{PaneChoice, go_to_in_pane};
+use super::nav::{GoToFailure, PaneChoice, go_to_in_pane};
 use super::{ToolError, ToolResult};
 
 /// `go_to_latest_download` MCP tool. No parameters in v1 (the `index`
@@ -44,6 +44,7 @@ pub async fn execute_go_to_latest_download<R: Runtime>(app: &AppHandle<R>) -> To
         &latest.parent_dir,
         std::slice::from_ref(&latest.file_name),
     )
-    .await?;
+    .await
+    .map_err(GoToFailure::into_error)?;
     Ok(json!(format!("OK: Went to {}", latest.path)))
 }

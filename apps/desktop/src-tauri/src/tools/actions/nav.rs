@@ -305,10 +305,14 @@ impl GoToFailure {
     }
 }
 
-impl From<GoToFailure> for ToolError {
-    fn from(failure: GoToFailure) -> Self {
-        match failure {
-            GoToFailure::NotOpened(err) | GoToFailure::NotPointed(err) => err,
+// A method on `GoToFailure`, ❌ not `impl From<GoToFailure> for ToolError`: cargo-modules
+// files a `From` under the module defining `ToolError` (`actions`), drawing `actions → nav`
+// and closing an `actions → nav → ask/policy → actions` circle (`module-cycles`).
+impl GoToFailure {
+    /// The [`ToolError`] a tool caller answers with, whichever half went wrong.
+    pub(crate) fn into_error(self) -> ToolError {
+        match self {
+            Self::NotOpened(err) | Self::NotPointed(err) => err,
         }
     }
 }
