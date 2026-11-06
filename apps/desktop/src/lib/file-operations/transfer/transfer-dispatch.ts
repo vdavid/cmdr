@@ -191,6 +191,13 @@ export async function startTransferOperation(config: TransferStartConfig): Promi
   }
 }
 
+/** The toggle's answer, or for a confirm nobody saw, the setting's default. A rename leaves
+ *  nothing out, whatever the default: it's the same items under a new name. */
+function resolveMacOnlyFiles(config: TransferDispatchConfig): MacOnlyFiles {
+  if (config.newName !== undefined) return 'include'
+  return config.macOnlyFiles ?? defaultMacOnlyFiles(getSetting(MAC_ONLY_FILES_SETTING))
+}
+
 /** Starts the operation and resolves with the id the backend gave it. Rejects
  *  with the backend's structured `WriteOperationError` on a validation failure. */
 export function dispatchTransferOperation(config: TransferDispatchConfig): Promise<{ operationId: string }> {
@@ -200,12 +207,7 @@ export function dispatchTransferOperation(config: TransferDispatchConfig): Promi
   // archive); the backend clamps it to 1..=9 and ignores it for non-archive
   // copies.
   const compressionLevel = getSetting('behavior.archiveCompressionLevel')
-  // The toggle's answer, or for a confirm nobody saw, the setting's default. A rename leaves
-  // nothing out, whatever the default: it's the same items under a new name.
-  const macOnlyFiles: MacOnlyFiles =
-    config.newName !== undefined
-      ? 'include'
-      : (config.macOnlyFiles ?? defaultMacOnlyFiles(getSetting(MAC_ONLY_FILES_SETTING)))
+  const macOnlyFiles = resolveMacOnlyFiles(config)
   const sourceKinds = sourceKindsOf(config)
 
   if (config.operationType === 'trash') {

@@ -11,10 +11,11 @@ import { mount, tick } from 'svelte'
 import TransferDialog from './TransferDialog.svelte'
 import type { TransferConfirmPayload } from '#lib/file-explorer/pane/dialog-props.js'
 import * as commands from '#lib/tauri-commands/index.js'
+import type { openSettingsWindow } from '#lib/settings/settings-window.js'
 
 const settingsState: { macOnly: unknown } = { macOnly: 'ask' }
 const setSettingMock = vi.fn<(id: string, value: unknown) => void>()
-const openSettingsWindowMock = vi.fn<(surface: string, section?: string[], anchor?: string) => Promise<void>>(() =>
+const openSettingsWindowMock = vi.fn<(...args: Parameters<typeof openSettingsWindow>) => Promise<void>>(() =>
   Promise.resolve(),
 )
 
@@ -57,8 +58,7 @@ vi.mock('#lib/settings/index.js', () => ({
 }))
 
 vi.mock('#lib/settings/settings-window.js', () => ({
-  openSettingsWindow: (surface: string, section?: string[], anchor?: string) =>
-    openSettingsWindowMock(surface, section, anchor),
+  openSettingsWindow: (...args: Parameters<typeof openSettingsWindow>) => openSettingsWindowMock(...args),
   settingAnchorId: (id: string) => `setting-${id}`,
 }))
 
