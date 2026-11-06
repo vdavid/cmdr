@@ -79,6 +79,10 @@ All of this is `delivery.rs`, which is macOS-only like the rest of the mechanism
 2. Raise the main window (`unminimize` → `show` → `set_focus`), the same three calls the go-to-latest-download hotkey
    makes. The reveal was fired from another app, so without the raise the result stays hidden behind it. On a cold
    launch there is no window yet and this does nothing, which is correct: the window is on its way up anyway.
+   **Decision: raise BEFORE the move, and explain any move that doesn't land** (#1020). Raising only after a landing
+   wouldn't keep Cmdr behind: macOS activates it as the open event arrives (Cmdr's log shows "App became active" ~30 ms
+   before "Finder reveal: 1 path(s) to show"; macOS 27.0.1, installed 0.59.0, read from its log, 2026-11-06). And a covered window's webview is a
+   hidden page WebKit throttles, so raising late would slow the very round trip the move waits on.
 3. Park the requests in `PendingReveals`, and deliver them right away if the frontend has drained at least once.
    Delivery is one task per batch, moving the pane request by request, so two can't race for the same pane.
 4. `plan_moves` decides the pane moves, then each gets its tab through `crate::tools::open_tab_in_pane` if it wants one,
@@ -89,6 +93,19 @@ All of this is `delivery.rs`, which is macOS-only like the rest of the mechanism
    first one it sees (`apps/desktop/src/lib/reveal/DETAILS.md`); a reveal onto a dead mount, an unreadable path, or a
    `cmdr` typed in a terminal (which says nothing about Finder) must not be what spends it. It carries no payload: the
    paths are already crossing over `mcp-nav-to-path`, and a second copy would be a second thing that can disagree.
+6. Anything that didn't show goes out as ONE `RevealNotShown` per batch (the first miss), for every origin, and the
+   frontend words it as a toast naming the item (`apps/desktop/src/lib/reveal/reveal-not-shown-notice.ts`). Its typed
+   reason comes from where the delivery stopped:
+   - `notAnswering`: the folder probe outlived its 2 s deadline, or the pane reported the folder stalled
+     (`GoToFailure::folder_stalled`, read off the typed `data.reason`).
+   - `folderNotOpened`: nothing could be planned, or the pane never came to rest on the folder (refused, unresolvable,
+     fell back, or no answer within the 30 s budget): `GoToFailure::NotOpened`.
+   - `notInFolder`: the pane opened the folder but the cursor or selection missed (`GoToFailure::NotPointed`): the item
+     is gone, renamed, or hidden while hidden files are off. The pane did move, so this still counts as landed for
+     `RevealDelivered`.
+
+   ❌ Never let a failure end in a log line alone: the window is in front by then, and a silent miss is exactly the
+   "Cmdr jumped to the front on the wrong folder" report #1020 came from.
 
 Verified end to end on macOS 26.6 (bundled debug build, `open -R`, 2026-09-09): cold launch with a file, already
 running with a file in another directory, already running with a folder, and two siblings at once. `open -R` with
@@ -104,6 +121,10 @@ Which tab, per origin (decided by David, 2026-11-02, in [#853](https://github.co
 
 - **A revealed file keeps the current tab.** A reveal points at something. Other files in its directory are selected too;
   files elsewhere are dropped with a log line saying how many, since one pane shows one directory.
+- **A revealed package (`Foo.app`) is a file here**: its folder opens with it selected, as in Finder. An app that
+  reveals an app it just downloaded or unpacked means the app, and landing INSIDE its bundle is never what was meant. Name-only
+  (`cmdr_fs::file_extension::is_listed_package`), so it costs no I/O inside the probe deadline; a package the list
+  doesn't know still opens as a folder. Finder origin only: "Open in Cmdr" on a package was asked for by name.
 - **A revealed folder gets a new tab**, so the user's current location survives. `file://` can't say which door a folder
   came through, so this rule covers any `file://` folder.
 - **"Open in Cmdr" always gets new tabs**: one per folder, and one per directory for files, with those files selected.
@@ -120,7 +141,17 @@ than one move use the current tab: each one would overwrite the last.
 their tabs.
 
 The folder probe runs under a 2 s deadline (`blocking_with_timeout`). A revealed path can sit on a dead network mount
-where `is_dir` blocks for minutes, and a reveal that quietly does nothing beats a task wedged on a syscall.
+where `is_dir` blocks for minutes, and a reveal that gives up (and says so, step 6) beats a task wedged on a syscall.
+
+### What Firefox sends
+
+Firefox's "Show in folder" calls `nsIFile.reveal()`, which on macOS is `-[NSWorkspace selectFile:inFileViewerRootedAtPath:@""]`
+on the download's final target path (`xpcom/io/CocoaFileUtils.mm` `RevealFileInFinder`, and
+`DownloadIntegration.sys.mjs` `showContainingDirectory`; read on Firefox `main`, 2026-11-06). If that returns `NO` (a
+missing file), Firefox falls back to `parent.launch()`, a plain folder open, which goes to Finder and never reaches us.
+Opening a finished download is `launchFile` (an open in the default app), not a reveal. So a reveal "when a download
+finishes" comes from whatever opens the file next (unverified: Archive Utility's "reveal expanded items" did NOT reach
+Cmdr in a `open -a "Archive Utility"` test on macOS 27.0.1, 2026-11-06).
 
 ### Buffering
 
@@ -193,6 +224,10 @@ that" is spoken entirely in the `mcp-*` frontend protocol (`mcp-tab`, `mcp-nav-t
 correlation, the typed `NavAck` landing check, the ack budgets. Moving it out would mean either widening `actions`'s
 surface or duplicating that machinery. The name `mcp` is about the protocol these events are named for, not about who
 is allowed to speak it; an OS reveal makes the same move a user or an agent does.
+
+It answers a typed `GoToFailure`: `NotOpened` (the pane never got there) or `NotPointed` (it got there and the cursor or
+selection missed). The tool caller folds both into its `ToolError` through `From`; this module turns them into
+`RevealNotShown` reasons.
 
 Ordering around it is load-bearing: new tab, navigate, move the cursor, THEN multi-select. The frontend's cursor move resets the
 selection, so selecting first would lose it.

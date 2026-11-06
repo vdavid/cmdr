@@ -20,6 +20,8 @@ Finder's right-click menu (a macOS service). All share the buffer and the pane m
   submodules in plain backticks, never intra-doc links: those break the Linux `rustdoc` job.
 - **`RevealDelivered` fires only after a pane moved, only for `RevealOrigin::Finder`, only while the key is ours.** The
   frontend spends a once-ever "Show in Finder lands here" notice on it.
+- **The window is raised BEFORE the move, so every move that doesn't land must emit `RevealNotShown`** (one toast per
+  batch, typed reason), ❌ never a warn alone (#1020). `DETAILS.md` § Delivery.
 - **❌ At a pane's tab limit, only the FIRST move may use the current tab**, or every extra folder overwrites it. The
   rest drop with `RevealTabsDropped`. The frontend owns the limit. `DETAILS.md` § "The dispatch rule".
 - **A cold-launch reveal arrives ~500 ms BEFORE Tauri's `setup` runs** (macOS 26.6, 2026-09-09): no `app.manage`d state,

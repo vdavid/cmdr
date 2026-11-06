@@ -114,6 +114,36 @@
   "@main.finderExtensionNudge.notTurnedOn": {
     "description": "Notification shown when the person accepted the offer but macOS didn't switch the menu item on. \"it\" is the menu item. It points at the switch in Cmdr's Settings. Must not use the words \"error\" or \"failed\"."
   },
+  "main.revealNotShown.notAnswering": "Couldn’t show “{name}”: the drive or server it’s on isn’t answering.",
+  "@main.revealNotShown.notAnswering": {
+    "description": "Brief notification after another app asked Cmdr to show a file (that app's “Show in Finder”, which Cmdr receives), Cmdr came to the front, but the disk or network server holding the file didn't respond in time, so its folder couldn't open. It names the item so the person knows which request this is about. It disappears on its own. Must not use the words \"error\" or \"failed\".",
+    "placeholders": {
+      "name": "The name of the file or folder that was to be shown, for example report.pdf."
+    }
+  },
+  "main.revealNotShown.folderNotOpened": "Couldn’t open {folder} to show “{name}”.",
+  "@main.revealNotShown.folderNotOpened": {
+    "description": "Brief notification after another app asked Cmdr to show a file (that app's “Show in Finder”, which Cmdr receives), Cmdr came to the front, but its file list couldn't open the folder holding the file, so it still shows the folder it was on before. It disappears on its own. Must not use the words \"error\" or \"failed\".",
+    "placeholders": {
+      "folder": "The name of the folder Cmdr tried to open, for example Downloads.",
+      "name": "The name of the file that was to be shown, for example report.pdf."
+    }
+  },
+  "main.revealNotShown.folderItselfNotOpened": "Couldn’t open the folder “{name}”.",
+  "@main.revealNotShown.folderItselfNotOpened": {
+    "description": "Same situation as main.revealNotShown.folderNotOpened, except that what the other app asked Cmdr to show was a folder, and Cmdr couldn't open that folder. It disappears on its own. Must not use the words \"error\" or \"failed\".",
+    "placeholders": {
+      "name": "The name of the folder, for example Photos."
+    }
+  },
+  "main.revealNotShown.notInFolder": "Opened {folder}, but “{name}” isn’t in it right now. It may have moved, or it may be a hidden file.",
+  "@main.revealNotShown.notInFolder": {
+    "description": "Brief notification after another app asked Cmdr to show a file (that app's “Show in Finder”, which Cmdr receives). Cmdr opened the folder the file should be in, but the file wasn't listed there: it was deleted, moved, or renamed, or it's a hidden file and Cmdr is set to not show hidden files. It disappears on its own. Must not use the words \"error\" or \"failed\".",
+    "placeholders": {
+      "folder": "The name of the folder Cmdr opened, for example Downloads.",
+      "name": "The name of the file that wasn't there, for example report.pdf."
+    }
+  },
   "main.revealTabsDropped": "Opened {opened, plural, one {# folder} other {# folders}}. {dropped} more didn’t fit, since a pane holds up to {limit} tabs.",
   "@main.revealTabsDropped": {
     "description": "Brief notification after the user chose “Open in Cmdr” on more folders than the pane has room for, so Cmdr opened some of them and left out the rest. A \"pane\" is one of Cmdr's two side-by-side file lists; use the word the rest of this locale's Cmdr uses for it. It disappears on its own. Must not use the words \"error\" or \"failed\".",

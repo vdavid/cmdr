@@ -4,7 +4,8 @@ use std::path::Path;
 
 use super::app::{TabMoveAck, TabMoveRefusal, parse_tab_move_response, parse_tab_opened_response, tab_move_result};
 use super::nav::{
-    PaneChoice, SelectableVolume, nav_result, pane_reports_volume, resolve_volume_selector, select_volume_result,
+    GoToFailure, PaneChoice, SelectableVolume, nav_result, pane_reports_volume, resolve_volume_selector,
+    select_volume_result,
 };
 use super::search::parse_human_size;
 use super::*;
@@ -538,6 +539,39 @@ fn nav_result_says_the_folder_is_stalled() {
         stalled.data,
         Some(json!({ "reason": "folderStalled", "path": "/Volumes/nas/photos" }))
     );
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn a_go_to_failure_knows_a_stalled_folder_from_its_typed_reason() {
+    let stalled = || {
+        nav_result(
+            "left",
+            "/Volumes/nas/photos",
+            NavAck::Stalled {
+                path: "/Volumes/nas/photos".to_string(),
+            },
+        )
+        .expect_err("a stalled folder is not an OK")
+    };
+    assert!(GoToFailure::NotOpened(stalled()).folder_stalled());
+    // The same reason on the pointing half isn't a folder that stopped answering.
+    assert!(!GoToFailure::NotPointed(stalled()).folder_stalled());
+    let fell_back = nav_result(
+        "left",
+        "/tmp/a",
+        NavAck::FellBack {
+            path: "/tmp".to_string(),
+        },
+    )
+    .expect_err("a fallback is not an OK");
+    assert!(!GoToFailure::NotOpened(fell_back).folder_stalled());
+}
+
+#[test]
+fn a_go_to_failure_folds_into_the_tool_error_it_carries() {
+    let err: ToolError = GoToFailure::NotPointed(ToolError::internal("\"a.txt\" not found")).into();
+    assert_eq!(err.message, "\"a.txt\" not found");
 }
 
 #[test]

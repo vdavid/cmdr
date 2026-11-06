@@ -5,7 +5,12 @@
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '#lib/ipc/bindings.js'
-import type { FinderExtensionStatus, RevealHandlerStatus, RevealTabsDropped } from '#lib/ipc/bindings.js'
+import type {
+  FinderExtensionStatus,
+  RevealHandlerStatus,
+  RevealNotShown,
+  RevealTabsDropped,
+} from '#lib/ipc/bindings.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 
 const log = getAppLogger('reveal')
@@ -97,6 +102,13 @@ export async function setFinderExtensionEnabled(enabled: boolean): Promise<Finde
 export function onRevealDelivered(handler: () => void): Promise<UnlistenFn> {
   return events.revealDelivered.listen(() => {
     handler()
+  })
+}
+
+/** Fires when a reveal brought the window up but couldn't show what it was asked for. */
+export function onRevealNotShown(handler: (notShown: RevealNotShown) => void): Promise<UnlistenFn> {
+  return events.revealNotShown.listen((event) => {
+    handler(event.payload)
   })
 }
 

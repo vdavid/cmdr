@@ -15,6 +15,7 @@ time a reveal actually lands, and the once-ever offer of the Finder extension. E
 - **`should-show-finder-extension-nudge.ts`**, **`finder-extension-nudge.ts`**, **`finder-extension-nudge-answer.ts`**:
   the extension's offer, shaped like the reveal one.
 - **`reveal-tabs-dropped-notice.ts`**: says so when a pane's tab limit turned away some of what was asked for.
+- **`reveal-not-shown-notice.ts`**: says what a reveal couldn't show and why, worded from the typed reason.
 - **`reveal-settings-link.ts`**: the card's anchor id and the one deep link to it.
 
 ## Must-knows
@@ -30,8 +31,9 @@ time a reveal actually lands, and the once-ever offer of the Finder extension. E
   in the shared cooldown and answers to its own `behavior.revealActivationNoticeSeen`.
 - **The notice offers a way INTO Settings and ❌ never a "Turn it off" button.** Switching this back should cost one
   more click, in the place the setting lives.
-- **`startRevealActivationNotice` must be subscribed BEFORE `drainPendingReveals`** (`window-services.ts`, phase 2), or
-  a cold-launch reveal — the first one many people ever see — delivers with nobody listening.
+- **`startRevealActivationNotice` (and the two other notices) must be subscribed BEFORE `drainPendingReveals`**
+  (`window-services.ts`, phase 2), or a cold-launch reveal — the first one many people ever see — delivers with nobody
+  listening.
 - **The flag is read PER EVENT, ❌ never snapshotted at subscribe time.** The subscription outlives the window's whole
   session; a snapshot would arm a second notice for the rest of it.
 - **A refusal is worded from its typed `RevealHandlerState` variant**, ❌ never from a message string

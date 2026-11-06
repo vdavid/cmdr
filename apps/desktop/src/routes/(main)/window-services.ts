@@ -70,6 +70,7 @@ import { getSetting } from '#lib/settings/index.js'
 import { drainPendingReveals } from '#lib/tauri-commands/index.js'
 import { startRevealActivationNotice } from '#lib/reveal/reveal-activation-notice.js'
 import { startRevealTabsDroppedNotice } from '#lib/reveal/reveal-tabs-dropped-notice.js'
+import { startRevealNotShownNotice } from '#lib/reveal/reveal-not-shown-notice.js'
 import { refreshCliCommandName } from '#lib/cli-command/toggle-cli-command.js'
 import {
   startOperationFailureWatch,
@@ -337,6 +338,10 @@ export async function startWindowServices(scope: MountScope, ctx: WindowServices
     // Same ordering rule: a cold launch from "Open in Cmdr" with more folders than fit.
     async (s) => {
       s.add(await startRevealTabsDroppedNotice())
+    },
+    // Same ordering rule: a cold-launch reveal that can't show its file says so (#1020).
+    async (s) => {
+      s.add(await startRevealNotShownNotice())
     },
     // A "Show in Cmdr" that arrived before this window existed: a cold launch delivers the OS
     // event long before we mount, so the backend parks it and this drains it. ⚠️ Must stay

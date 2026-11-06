@@ -6248,6 +6248,7 @@ export const events = {
   quitRequested: makeEvent<QuitRequested>('quit-requested'),
   restrictedPathsChanged: makeEvent<RestrictedPathsChangedPayload>('restricted-paths-changed'),
   revealDelivered: makeEvent<RevealDelivered>('reveal-delivered'),
+  revealNotShown: makeEvent<RevealNotShown>('reveal-not-shown'),
   revealPath: makeEvent<RevealPath>('reveal-path'),
   revealTabsDropped: makeEvent<RevealTabsDropped>('reveal-tabs-dropped'),
   scanConflict: makeEvent<ConflictInfo>('scan-conflict'),
@@ -16500,6 +16501,34 @@ export type RevealHandlerStatus = {
   // Why the switch won't take a yes, or `None` when the user may operate it.
   blockedBy: RevealHandlerBlocker | null
 }
+
+/**
+ *  Typed `reveal-not-shown` Tauri event: a reveal raised the window but couldn't show what
+ *  it was asked for, so the frontend says what and why. Without it, Cmdr jumps to the
+ *  front on the wrong folder with nothing to explain it (#1020).
+ *
+ *  Carries display names, not paths: the toast names the item and its folder, and the
+ *  frontend has no business re-deriving them.
+ */
+export type RevealNotShown = {
+  // The revealed item's own name (a file, or the folder asked for).
+  name: string
+  // The name of the folder the pane was to show (the item itself, for a folder).
+  folder: string
+  reason: RevealNotShownReason
+}
+
+// Why a reveal didn't show what it was asked for. The frontend words each one.
+export type RevealNotShownReason =
+  // The drive or server the item sits on didn't answer in time.
+  | 'notAnswering'
+  // The pane never came to rest on the folder.
+  | 'folderNotOpened'
+  /**
+   *  The pane opened the folder, but the item isn't in it (gone, renamed, or hidden
+   *  while hidden files are off).
+   */
+  | 'notInFolder'
 
 /**
  *  `reveal-path`: show a folder in the main window's focused pane. Two emitters:

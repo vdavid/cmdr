@@ -268,6 +268,51 @@ pub(crate) async fn open_tab_in_pane<R: Runtime>(app: &AppHandle<R>, pane: PaneC
     super::app::open_tab_round_trip(app, pane.resolve(&focused)).await
 }
 
+/// Where a [`go_to_in_pane`] stopped short, so a caller that speaks to a person can say
+/// which half went wrong: the pane never got there, or it got there and the thing to
+/// point at wasn't in the listing. A tool caller folds both into its [`ToolError`].
+#[derive(Debug)]
+pub(crate) enum GoToFailure {
+    /// The pane didn't come to rest on the folder (refused, unresolvable, fell back,
+    /// stalled, or the frontend never answered).
+    NotOpened(ToolError),
+    /// The pane is on the folder, but the cursor or the selection couldn't land on the
+    /// entries: they aren't in the listing (gone, renamed, or hidden while hidden files
+    /// are off).
+    NotPointed(ToolError),
+}
+
+// macOS-only like its one reader, `crate::reveal`: off macOS it has nobody, and `-D unused`.
+#[cfg(target_os = "macos")]
+impl GoToFailure {
+    /// Whether the folder's server or drive stopped answering, read off the typed
+    /// `data.reason` that `stalled_error` attaches, ❌ never off the message.
+    pub(crate) fn folder_stalled(&self) -> bool {
+        let Self::NotOpened(err) = self else {
+            return false;
+        };
+        err.data
+            .as_ref()
+            .and_then(|data| data.get("reason"))
+            .and_then(Value::as_str)
+            == Some("folderStalled")
+    }
+
+    pub(crate) fn error(&self) -> &ToolError {
+        match self {
+            Self::NotOpened(err) | Self::NotPointed(err) => err,
+        }
+    }
+}
+
+impl From<GoToFailure> for ToolError {
+    fn from(failure: GoToFailure) -> Self {
+        match failure {
+            GoToFailure::NotOpened(err) | GoToFailure::NotPointed(err) => err,
+        }
+    }
+}
+
 /// Take a pane to `dir` and point it at `entries`: cursor on the first, all of them
 /// selected when there's more than one. An empty `entries` just opens `dir`.
 ///
@@ -285,7 +330,7 @@ pub(crate) async fn go_to_in_pane<R: Runtime>(
     pane: PaneChoice,
     dir: &str,
     entries: &[String],
-) -> Result<(), ToolError> {
+) -> Result<(), GoToFailure> {
     let store = app.try_state::<PaneStateStore>();
     let focused = store.as_ref().map(|store| store.get_focused_pane()).unwrap_or_default();
     let pane = pane.resolve(&focused).to_string();
@@ -305,8 +350,9 @@ pub(crate) async fn go_to_in_pane<R: Runtime>(
         json!({"pane": pane, "path": dir}),
         NAV_TO_PATH_TIMEOUT_SECS,
     )
-    .await?;
-    nav_result(&pane, dir, ack)?;
+    .await
+    .map_err(GoToFailure::NotOpened)?;
+    nav_result(&pane, dir, ack).map_err(GoToFailure::NotOpened)?;
 
     let Some(first) = entries.first() else {
         return Ok(());
@@ -314,7 +360,9 @@ pub(crate) async fn go_to_in_pane<R: Runtime>(
     // If the entry vanished between resolving it and the FE placing the cursor, the FE
     // says so through `mcp-response` and the caller reports it. Jump-then-vanish is
     // acceptable to leak through: the navigation completed, only the cursor missed.
-    mcp_round_trip_ack(app, "mcp-move-cursor", json!({"pane": pane, "to": first})).await?;
+    mcp_round_trip_ack(app, "mcp-move-cursor", json!({"pane": pane, "to": first}))
+        .await
+        .map_err(GoToFailure::NotPointed)?;
 
     if entries.len() > 1 {
         mcp_round_trip_ack(
@@ -322,7 +370,8 @@ pub(crate) async fn go_to_in_pane<R: Runtime>(
             "mcp-select-names",
             json!({"pane": pane, "names": entries, "mode": "replace"}),
         )
-        .await?;
+        .await
+        .map_err(GoToFailure::NotPointed)?;
     }
     Ok(())
 }

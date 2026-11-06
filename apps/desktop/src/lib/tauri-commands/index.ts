@@ -681,6 +681,7 @@ export {
   getFinderExtensionStatus,
   getRevealHandlerState,
   onRevealDelivered,
+  onRevealNotShown,
   onRevealTabsDropped,
   setFinderExtensionEnabled,
   setRevealHandlerEnabled,
