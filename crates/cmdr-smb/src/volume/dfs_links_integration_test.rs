@@ -57,10 +57,16 @@ async fn dfs_volume() -> SmbVolume {
 
 /// [`dfs_volume`] reporting to `host`.
 async fn dfs_volume_with_host(host: VolumeHost) -> SmbVolume {
+    dfs_volume_reaching_the_target_at(DFS_TARGET_ADDR, host).await
+}
+
+/// [`dfs_volume_with_host`] with the link's target name pointed at `target_addr`
+/// (a proxy in front of the target container).
+async fn dfs_volume_reaching_the_target_at(target_addr: &str, host: VolumeHost) -> SmbVolume {
     TEST_DFS_TARGET_OVERRIDES
         .lock_ignore_poison()
         .get_or_insert_with(Default::default)
-        .insert("smb-dfs-target".to_string(), DFS_TARGET_ADDR.to_string());
+        .insert("smb-dfs-target".to_string(), target_addr.to_string());
     assert!(crate::LinkConsents::allow("127.0.0.1", "smb-dfs-target"));
     let params = SmbConnectionParams::new("127.0.0.1", "dfs", DFS_ROOT_PORT, None, None);
     connect_smb_volume(
@@ -735,4 +741,71 @@ async fn smb_dfs_a_server_side_copy_through_a_link_asks_the_caller_to_stream() {
         matches!(result, Err(VolumeError::NotSupported)),
         "the engine's 'stream it instead', got {result:?}"
     );
+}
+
+/// A held reader behind a link owns the TARGET's connection. When only that one
+/// drops, the reader reopens through the link on the share's own session (smb2
+/// dials the target again), and the share never reads as disconnected: its
+/// connection was fine all along.
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "Requires smb2's smb-dfs-root and smb-dfs-target containers and CMDR_SMB_DFS_FIXTURE=1 (see this file's header)"]
+async fn smb_dfs_a_held_reader_behind_a_link_reopens_after_the_target_drops() {
+    if dfs_fixture_not_requested() {
+        return;
+    }
+    let target_port: u16 = DFS_TARGET_ADDR.rsplit(':').next().unwrap().parse().unwrap();
+    let proxy = black_hole_proxy::BlackHoleProxy::start(target_port).await;
+    let events = Arc::new(cmdr_fs::volume::host::events::RecordingVolumeEvents::new());
+    let host = VolumeHost::builder().events(events.clone()).build();
+    let vol = dfs_volume_reaching_the_target_at(&format!("127.0.0.1:{}", proxy.port()), host).await;
+
+    let reader = vol.open_random_reader(Path::new("data/hello.txt")).await.unwrap();
+    assert_eq!(reader.read_at(6, 4).await.unwrap(), b"from".to_vec());
+
+    assert_eq!(proxy.connections(), 1, "the reader reads through the proxy");
+    proxy.cut();
+    assert_eq!(
+        reader.read_at(6, 4).await.expect("the reader reopens through the link"),
+        b"from".to_vec()
+    );
+    assert_eq!(proxy.connections(), 2, "the reopen dialed the target again");
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
+    assert!(
+        events.transitions().is_empty(),
+        "the share's own connection never went, so nothing may say it did: {:?}",
+        events.transitions()
+    );
+    reader.close().await.unwrap();
+}
+
+/// A download behind a link carries on through the link when the target's
+/// connection drops mid-file, from the byte the consumer got to.
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "Requires smb2's smb-dfs-root and smb-dfs-target containers and CMDR_SMB_DFS_FIXTURE=1 (see this file's header)"]
+async fn smb_dfs_a_download_behind_a_link_resumes_after_the_target_drops() {
+    if dfs_fixture_not_requested() {
+        return;
+    }
+    let target_port: u16 = DFS_TARGET_ADDR.rsplit(':').next().unwrap().parse().unwrap();
+    let proxy = black_hole_proxy::BlackHoleProxy::start(target_port).await;
+    let vol = dfs_volume_reaching_the_target_at(&format!("127.0.0.1:{}", proxy.port()), VolumeHost::detached()).await;
+    let folder = run_folder();
+    vol.create_directory(Path::new(&folder)).await.unwrap();
+    let path = format!("{folder}/big.bin");
+    let big = payload(32 * 1024 * 1024);
+    upload(&vol, &path, big.clone(), WriteMode::CreateOrReplace).await;
+
+    let mut stream = vol.open_read_stream(Path::new(&path)).await.unwrap();
+    let mut got = stream.next_chunk().await.unwrap().unwrap();
+    let before = proxy.connections();
+    proxy.cut();
+    while let Some(chunk) = stream.next_chunk().await {
+        got.extend(chunk.expect("the download resumes through the link"));
+    }
+    assert!(proxy.connections() > before, "the resume dialed the target again");
+    assert_eq!(got.len(), big.len());
+    assert!(got == big, "the resumed download reads back byte for byte");
+
+    vol.delete(Path::new(&path)).await.unwrap();
+    vol.delete(Path::new(&folder)).await.unwrap();
 }

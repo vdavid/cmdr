@@ -5,7 +5,7 @@
 use super::mapping::map_smb_error;
 use super::state::{ConnectionState, RanOn, SessionGeneration};
 use super::transfer_session::{Member, TransferHold};
-use super::{SmbConnectionParams, SmbVolume};
+use super::{SmbConnectionParams, SmbVolume, SmbVolumeInner};
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::VolumeError;
 use cmdr_fs::volume::host::VolumeHost;
@@ -76,11 +76,11 @@ pub(super) enum LeaseOn {
     Transfer { member: Arc<Member>, _hold: TransferHold },
 }
 
-impl SmbVolume {
+impl SmbVolumeInner {
     /// Checks that the connection is in `Direct` state. Returns
     /// `DeviceDisconnected` for `Disconnected`.
     fn check_connection(&self) -> Result<(), VolumeError> {
-        match self.inner.connection_state() {
+        match self.connection_state() {
             ConnectionState::Direct => Ok(()),
             ConnectionState::Disconnected => {
                 Err(VolumeError::DeviceDisconnected("SMB connection is disconnected".into()))
@@ -110,8 +110,8 @@ impl SmbVolume {
         }
         let closed = lease.generation;
         drop(lease);
-        if let Err(e) = self.inner.revive_idle_closed(closed).await {
-            self.inner.transition_to_disconnected(closed);
+        if let Err(e) = self.revive_idle_closed(closed).await {
+            self.transition_to_disconnected(closed);
             return Err(e);
         }
         let lease = self.lease_installed_session().await?;
@@ -123,7 +123,7 @@ impl SmbVolume {
     /// is up, ITS window is what copies spend, and only `transfer_lease`
     /// measures it.
     fn measured(&self, lease: SessionLease) -> SessionLease {
-        if !self.inner.transfer.is_up() {
+        if !self.transfer.is_up() {
             self.note_credit_capacity(&lease.conn);
         }
         lease
@@ -142,14 +142,14 @@ impl SmbVolume {
         log::trace!(
             "client-mutex: waiting ticket={} caller=clone_session share={:?}",
             ticket,
-            LogPrivate::volume(&self.inner.share_name)
+            LogPrivate::volume(&self.share_name)
         );
         let lease = {
-            let mut guard = self.inner.session.lock().await;
+            let mut guard = self.session.lock().await;
             log::trace!(
                 "client-mutex: acquired ticket={} caller=clone_session share={:?} waited={:?}",
                 ticket,
-                LogPrivate::volume(&self.inner.share_name),
+                LogPrivate::volume(&self.share_name),
                 start.elapsed()
             );
             let acquired_at = std::time::Instant::now();
@@ -180,7 +180,7 @@ impl SmbVolume {
     /// hand: `Volume::max_concurrent_ops` is sync and can't reach one. See
     /// `REPRESENTATIVE_COPY_REQUEST_BYTES`.
     fn note_credit_capacity(&self, conn: &smb2::client::Connection) {
-        self.inner.credit_copy_capacity.store(
+        self.credit_copy_capacity.store(
             conn.credit_capacity_for(super::REPRESENTATIVE_COPY_REQUEST_BYTES),
             Ordering::Relaxed,
         );
@@ -191,10 +191,10 @@ impl SmbVolume {
     /// the main session's, which is where [`transfer_lease`](Self::transfer_lease)
     /// falls back to.
     pub(super) fn transfer_connection(&self) -> &super::liveness::LiveConnection {
-        if self.inner.transfer.is_up() {
-            &self.inner.transfer.live
+        if self.transfer.is_up() {
+            &self.transfer.live
         } else {
-            &self.inner.live_connection
+            &self.live_connection
         }
     }
 
@@ -206,8 +206,8 @@ impl SmbVolume {
     /// answer to "is the share up", which a transfer's outage wait asks.
     pub(super) async fn transfer_lease(&self) -> Result<TransferLease, VolumeError> {
         self.check_connection()?;
-        if !self.inner.unmounted.load(Ordering::Relaxed)
-            && let Some(leased) = self.inner.transfer.lease().await
+        if !self.unmounted.load(Ordering::Relaxed)
+            && let Some(leased) = self.transfer.lease().await
         {
             self.note_credit_capacity(&leased.conn);
             return Ok(TransferLease {
@@ -228,6 +228,27 @@ impl SmbVolume {
             ran_on: RanOn::Main(generation),
             on: LeaseOn::Main,
         })
+    }
+}
+
+/// The leases, reached from a mount-root instance. They live on the share
+/// (`SmbVolumeInner`) so a task that outlives its call and holds only the share
+/// (a streaming download's producer, a held reader) leases the same way after a
+/// reconnect (`resume.rs`).
+impl SmbVolume {
+    /// [`SmbVolumeInner::clone_session`].
+    pub(super) async fn clone_session(&self) -> Result<SessionLease, VolumeError> {
+        self.inner.clone_session().await
+    }
+
+    /// [`SmbVolumeInner::transfer_lease`].
+    pub(super) async fn transfer_lease(&self) -> Result<TransferLease, VolumeError> {
+        self.inner.transfer_lease().await
+    }
+
+    /// [`SmbVolumeInner::transfer_connection`].
+    pub(super) fn transfer_connection(&self) -> &super::liveness::LiveConnection {
+        self.inner.transfer_connection()
     }
 
     /// Maps an smb2 result, handling connection state transitions on error.

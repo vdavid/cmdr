@@ -4,16 +4,18 @@
 //! the compound CREATE+READ+CLOSE fast path hands out, and the condition for
 //! taking that fast path. Writing a stream into a file is `write_stream`.
 
-use super::SmbVolume;
 use super::copy_xattrs::{SourceXattrs, XattrAsk, source_xattrs};
 use super::dfs_links::is_behind_dfs_link;
 use super::mapping::{map_smb_error, user_flags_of};
-use super::session::TransferLease;
+use super::resume::Reattach;
+use super::session::{LeaseOn, TransferLease};
+use super::state::{RanOn, ends_the_session};
+use super::{SmbVolume, SmbVolumeInner};
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataAsk, MetadataClasses, UserFlags};
 use cmdr_fs::volume::{ChannelReadStream, StreamLength, VolumeError, VolumeReadStream};
-use log::{debug, warn};
-use smb2::client::stream::FileDownload;
+use log::{debug, info, warn};
+use smb2::client::stream::{DownloadCheckpoint, FileDownload, resume_file_download};
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -370,8 +372,8 @@ impl SmbVolume {
             let TransferLease {
                 tree,
                 mut conn,
-                ran_on,
-                on,
+                mut ran_on,
+                mut on,
             } = lease;
             // For the xattr reads beside the download, which holds `conn`.
             let mut side_conn = conn.clone();
@@ -383,13 +385,19 @@ impl SmbVolume {
                 true => share.open_link_download(ran_on, &on, &tree, &smb_path_owned).await,
                 false => None,
             };
+            // Whether the download reads through a link, so a resume goes the
+            // same way.
+            let mut via_link = through_link.is_some();
             let opened = match through_link {
                 Some(opened) => opened,
                 None => match open_download(&tree, &mut conn, &smb_path_owned, xattrs).await {
-                    Err(e) if is_behind_dfs_link(&e) => share
-                        .open_link_download(ran_on, &on, &tree, &smb_path_owned)
-                        .await
-                        .unwrap_or(Err(e)),
+                    Err(e) if is_behind_dfs_link(&e) => {
+                        via_link = true;
+                        share
+                            .open_link_download(ran_on, &on, &tree, &smb_path_owned)
+                            .await
+                            .unwrap_or(Err(e))
+                    }
                     opened => opened,
                 },
             };
@@ -431,6 +439,9 @@ impl SmbVolume {
             let mut finished = false;
             // Held until the CLOSE's answer, so a delete of this file waits for it.
             let mut closing = None;
+            // Bytes handed to the consumer, across every resume: a resumed
+            // download counts only its own part.
+            let mut delivered: u64 = 0;
             loop {
                 tokio::select! {
                     biased;
@@ -439,16 +450,17 @@ impl SmbVolume {
                             "SmbVolume::download(share={:?}, path={:?}): cancelled after {} bytes",
                             LogPrivate::volume(&share_name),
                             LogPrivate::file_path(&smb_path_owned),
-                            download.bytes_received()
+                            delivered
                         );
                         break;
                     }
                     chunk = download.next_chunk() => match chunk {
                         Some(Ok(bytes)) => {
+                            delivered += bytes.len() as u64;
                             // The last byte. smb2 put the CLOSE on the wire before
                             // handing it out; only its answer is left. Registered
                             // before the consumer can have it.
-                            let last = download.bytes_received() == total_size;
+                            let last = delivered == total_size;
                             if last {
                                 closing = Some(share.closing_reads.begin(&smb_path_owned));
                             }
@@ -463,13 +475,40 @@ impl SmbVolume {
                         }
                         Some(Err(e)) => {
                             share.note_error(ran_on, &e);
+                            // The session went, not the file: carry on from the
+                            // last byte the consumer got, on whichever session is
+                            // up next (`resume.rs`). A consumer that goes away
+                            // meanwhile stops the wait.
+                            let resumed = match (ends_the_session(&e), download.checkpoint()) {
+                                (true, Some(checkpoint)) => tokio::select! {
+                                    biased;
+                                    _ = &mut cancel_rx => break,
+                                    () = chunk_tx.closed() => break,
+                                    resumed = share.resume_download(&smb_path_owned, &checkpoint, via_link) => Some(resumed),
+                                },
+                                _ => None,
+                            };
+                            let failure = match resumed {
+                                Some(Ok(Resumed { download: carried_on, ran_on: now_on, on: lease_on })) => {
+                                    download = carried_on;
+                                    ran_on = now_on;
+                                    // The dead session's hold goes; the new one's is kept
+                                    // to the task's end, which is all it's for.
+                                    drop(std::mem::replace(&mut on, lease_on));
+                                    continue;
+                                }
+                                // The resume's own answer: the file changed or went.
+                                Some(Err(Some(refusal))) => refusal,
+                                // No session came back in time: the loss stands.
+                                Some(Err(None)) | None => e,
+                            };
                             warn!(
                                 "SmbVolume::download(share={:?}, path={:?}): chunk error: {}",
                                 LogPrivate::volume(&share_name),
                                 LogPrivate::file_path(&smb_path_owned),
-                                e
+                                failure
                             );
-                            let _ = chunk_tx.send(Err(map_smb_error(e, &display_path))).await;
+                            let _ = chunk_tx.send(Err(map_smb_error(failure, &display_path))).await;
                             break;
                         }
                         None => break, // download complete (a file that shrank ends here)
@@ -526,6 +565,71 @@ impl SmbVolume {
             SourceXattrs::None | SourceXattrs::Values(_) => stream,
         }
         .with_metadata(carried))
+    }
+}
+
+/// A download carried on after a reconnect, with the lease it now rides.
+struct Resumed {
+    download: FileDownload<'static>,
+    ran_on: RanOn,
+    /// Keeps the new session's hold (on the transfer session, the one that
+    /// stops its idle close).
+    on: LeaseOn,
+}
+
+impl SmbVolumeInner {
+    /// Carries a download that lost its session on from `checkpoint`, on the
+    /// next session up (`resume.rs`): smb2 reopens the file read-only, proves
+    /// it's still the version the download was reading, and reads from the
+    /// first byte the consumer hasn't had. `via_link` resumes it through the
+    /// DFS link it was opened through.
+    ///
+    /// `Err(Some(_))` is the resume's own answer (`FileChanged`, the file
+    /// gone), already through the funnel; `Err(None)` means no session came
+    /// back in time, and the caller reports the loss it had.
+    async fn resume_download(
+        &self,
+        smb_path: &str,
+        checkpoint: &DownloadCheckpoint,
+        via_link: bool,
+    ) -> Result<Resumed, Option<smb2::Error>> {
+        let mut tries = Reattach::new(self);
+        while tries.next().await.is_ok() {
+            let Ok(TransferLease { tree, conn, ran_on, on }) = self.transfer_lease().await else {
+                continue;
+            };
+            let resumed = match via_link {
+                true => match self
+                    .resume_link_download(ran_on, &on, &tree, smb_path, checkpoint)
+                    .await
+                {
+                    Some(resumed) => resumed,
+                    // A reconnect replaced the lease's session meanwhile.
+                    None => continue,
+                },
+                false => resume_file_download(Arc::clone(&tree), conn, checkpoint).await,
+            };
+            match resumed {
+                Ok(download) => {
+                    info!(
+                        "SmbVolume::download(volume={:?}, path={:?}): resumed at byte {} after a reconnect",
+                        self.volume_id,
+                        LogPrivate::file_path(smb_path),
+                        checkpoint.offset
+                    );
+                    return Ok(Resumed { download, ran_on, on });
+                }
+                // The new session went too: funnel it and wait for the next.
+                Err(e) if ends_the_session(&e) => {
+                    self.note_error(ran_on, &e);
+                }
+                Err(e) => {
+                    self.note_error(ran_on, &e);
+                    return Err(Some(e));
+                }
+            }
+        }
+        Err(None)
     }
 }
 

@@ -6,7 +6,7 @@
       "reason": "TODO: trim to roughly 400 words; `DETAILS.md` has a section per bullet. Fold the keychain, NetFS, and subprocess rules into one line each pointing at their sections, and move the saved-share and re-register bullets' detail there."
     },
     "crates/cmdr-smb/CLAUDE.md": {
-      "words": 624,
+      "words": 632,
       "reason": "TODO: trim to roughly 400 words; the write-path rules (`write_from_stream`, date stamping, unknown lengths, the forced rename, the one-frame limits) are one concern, and `DETAILS.md` already explains each. Fold them into one line pointing there, saving roughly 120 words."
     },
     "apps/desktop/src/lib/file-explorer/drag/CLAUDE.md": {

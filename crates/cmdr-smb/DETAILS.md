@@ -182,15 +182,15 @@ on", not by watching a number.
   metadata, existence, space); `mutation` changes it and patches the listings that showed it; then `session`,
   `session_build` (opens a fresh smb2 session, for every owner of one), `reconnect`, `state`, `read_stream` (a file read
   as chunks), `write_stream` (a stream written into a file), `random_reader` (one held-open `FileReader` read by offset,
-  which the file viewer keeps for a whole session, #303), `scan`, `scan_pool`, `transfer_session` (the extra session
-  byte-moving calls ride), `dfs_links` (any call through a DFS link inside the share), `link_watch` (a shown link's own
-  watch), `watcher`, `foreground_yield`, `links` (what a stat reads as through a link), `slow_calls` (the rolled-up
-  `warn` for a metadata call the server held over a second), `attributes` (Hidden and Locked by path), `xattrs`
-  (`Volume`'s xattr methods, over named streams), `apple_double` (a deleted file's `._` sidecar), and the stateless
-  `mapping`. Splitting further needs a responsibility you can name the same way; a line count is not one. `e5ea10d02`
-  reverted four splits invented to satisfy the counter, and every one of them had widened a visibility or torn a struct
-  from its trait impl to do it. These carry the same `pub(super)` the crate already used and leave no module reaching
-  into another's internals.
+  which the file viewer keeps for a whole session, #303), `resume` (how a held handle waits for the session after the
+  one it lost), `scan`, `scan_pool`, `transfer_session` (the extra session byte-moving calls ride), `dfs_links` (any
+  call through a DFS link inside the share), `link_watch` (a shown link's own watch), `watcher`, `foreground_yield`,
+  `links` (what a stat reads as through a link), `slow_calls` (the rolled-up `warn` for a metadata call the server held
+  over a second), `attributes` (Hidden and Locked by path), `xattrs` (`Volume`'s xattr methods, over named streams),
+  `apple_double` (a deleted file's `._` sidecar), and the stateless `mapping`. Splitting further needs a responsibility
+  you can name the same way; a line count is not one. `e5ea10d02` reverted four splits invented to satisfy the counter,
+  and every one of them had widened a visibility or torn a struct from its trait impl to do it. These carry the same
+  `pub(super)` the crate already used and leave no module reaching into another's internals.
 - **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" from the WORK, not the transport.**
   MTP has an explicit holder for its single scarce USB pipe; SMB frames just interleave over a connection, so there is
   nothing on the transport to count. It survives the transfer session because the copy and the pane still share the link
@@ -391,6 +391,50 @@ hooks close that, both funneling through the ONE reconnect path (`do_attempt_rec
   media scheduler resumes enrichment with no scheduler changes. The resumed index loads Stale (we weren't watching while
   disconnected); a rescan restores Fresh. Canonical detail lives in `indexing/DETAILS.md` § "SMB indexing and the
   freshness model"; this bullet is the volume-side trigger map.
+
+### Carrying a handle across a reconnect
+
+A handle outlives the call that opened it in two places: the random reader (`random_reader.rs`, held by the viewer for a
+whole session and by restic per pack) and a streaming download's producer (`read_stream.rs`). Before smb2 0.43 a
+reconnect killed both: every later `read_at` failed, and a copy failed its file and the transfer engine ran it again
+from byte 0. Now each carries on, on the next session, from where it was (`resume.rs`).
+
+- **Same funnel, then wait.** The loss goes through `note_smb_error` / `note_error` with the handle's own generation
+  like any call's, which marks its session lost. Then `Reattach` hands out tries on `REATTACH_BACKOFF` (at once, then 1,
+  3, and 10 s, the transfer session's cadence), each bringing the share back through `do_attempt_reconnect` when it
+  reads `Disconnected` (single-flight, so ten downloads meeting one outage dial once), and the owner leases and reopens.
+  An error that ends the NEW session funnels as that session's and takes the next try. ❌ No second reconnect path, and
+  no wait of its own past the steps: a copy still down after them reports the loss as before, and the transfer engine's
+  outage wait (`cmdr-operations`' `transfer/volume_outage.rs`, which owns the budget, the Cancel, and the "waiting"
+  line) takes it from there, restarting the file. Unmounted, or a reconnect a person must answer (auth, encryption,
+  `reconnect_backoff_should_give_up`), stops at once.
+- **smb2 proves the file, Cmdr never assumes.** The reader reopens with `Tree::reopen_file_reader`, the download with
+  `resume_file_download` from `FileDownload::checkpoint()` (bytes handed out, never bytes in flight, so the consumer
+  gets each byte exactly once). Both reopen read-only by path and compare the file's version (identity, length,
+  last-write and change times); a file that changed is `Error::FileChanged`, mapped to `VolumeError::SourceChanged`. The
+  reader then refuses every read with it at once (`changed`), the viewer reloads on it (`crates/cmdr-viewer/DETAILS.md`
+  § "A file read through its volume"), and a copy stops on the file, ❌ never a quiet restart. The version is the FIRST
+  open's, through every resume, so a change while the first download still read is caught at the resume. Best-effort: a
+  server rewriting a file in place to the same length while holding back both times gets past it.
+- **No durable handles.** `ReaderOptions::durable(true)` would reclaim the old open instead, at the price of a batch
+  oplock that bills every other client's open of the file a break. A path reopen plus the version check is as safe for a
+  reader, and the old session is named away anyway (§ "A replacement session names the one it replaces").
+- **Reads that race one dead handle reopen once**: the reader's `reopening` lock, and a read that finds the handle
+  already swapped reads through the new one.
+- **A DFS link.** A reader or download opened through a link (`link_open_reader`, `open_link_download`) reopens through
+  it: the reader by `or_through_link` (smb2's `SmbClient::reopen_file_reader` on the target tree), the download by
+  `resume_link_download` (the link resolved again on the new session). A reader whose share session is still up when its
+  handle's connection went lost only the TARGET's, so it funnels nothing and reopens at once
+  (`installed_session_is_up`). A download keeps the known gap below: its target's loss still marks the session it rode
+  lost (the transfer session, or main), which then reconnects.
+- **The download's hold** moves to the new lease (`Resumed.on`), so a dead transfer session's hold doesn't keep the idle
+  close away.
+- Pinned by `reattach_integration_test.rs` (Docker: a reader across a no-FIN drop, eight racing reads, a rewritten file
+  refused twice, a 32 MiB download byte for byte, a download refused for a file rewritten while the network stayed down
+  through `BlackHoleProxy::refuse_new`), `dfs_links_integration_test.rs`
+  (`smb_dfs_a_held_reader_behind_a_link_reopens_after_the_target_drops`, which also proves the share never flapped, and
+  `smb_dfs_a_download_behind_a_link_resumes_after_the_target_drops`, through `BlackHoleProxy::cut`), and
+  `resume_test.rs` (the tries, server-free).
 
 ## Scanning: where the copy scan asks whether to carry on
 
@@ -780,10 +824,12 @@ vdavid/cmdr#815 for the rest):
   - **`LinkTargetUnreachable` is no transport fault**: the volume's connection is fine, so an outage wait would never
     end. A listing shows its own Transient panel with a retry hint; a transfer fails that file as
     `ConnectionInterrupted` and moves on.
-  - **Known gap**: a handle ALREADY open through a link (a held `FileReader`, a streaming download or upload) owns the
-    target's connection and has no link to name, so a target dropping mid-stream still funnels as `ConnectionLost` on
-    the lease's session: the transfer session for a transfer (the share stays up), the MAIN session for the random
-    reader or a stream on a main lease. Only an open or a one-shot call gets the typed refusal.
+  - **Known gap**: a handle ALREADY open through a link (a streaming download or upload) owns the target's connection
+    and has no link to name, so a target dropping mid-stream still funnels as `ConnectionLost` on the lease's session:
+    the transfer session for a transfer (the share stays up), the MAIN session for a stream on a main lease. A download
+    then resumes through the link. The held reader is the exception: it checks whether its share session is still up and
+    funnels nothing if so (§ "Carrying a handle across a reconnect"). Only an open or a one-shot call gets the typed
+    refusal.
 - **Cost**: under a known link, nothing extra on the share's connection
   (`smb_dfs_a_call_under_a_known_link_skips_the_refused_round_trip`: 0 requests there, 6 before the resolver). The first
   call into a link pays one refused CREATE and the referral. A streamed read or write under a known link opens through
@@ -1758,9 +1804,9 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   cache), `volume_impl_test.rs` (re-rooting and every capability flag), `reconnect_test.rs` (the reconnect early-exits,
   the transitions and the events they suppress, the watch-coverage gate, both retirement paths), `read_stream_test.rs`
   (the channel-backed read-stream consumer and the compound read's limit), `write_stream_test.rs` (the one-frame write's
-  limit and the single-shot write promise), `scan_test.rs` (the progress ticker), `retirement_test.rs`,
-  `watcher/archive_refresh_test.rs`, and the inline `mod tests` in `foreground_yield.rs` and `scan_pool.rs`. These run
-  by default.
+  limit and the single-shot write promise), `scan_test.rs` (the progress ticker), `resume_test.rs` (when a held handle
+  gets a try at the next session, and when it stops), `retirement_test.rs`, `watcher/archive_refresh_test.rs`, and the
+  inline `mod tests` in `foreground_yield.rs` and `scan_pool.rs`. These run by default.
 - `host_seam_test.rs` — the PACE of what this backend tells the listing seam, which no type can hold: one call per
   mutation, none per directory entry. Its server-free cells pin the addressing and that an un-stattable creation patches
   nothing; its Docker cell seeds a directory, walks it with a listing and a copy scan, and asserts
@@ -1790,6 +1836,8 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   reconnect cycle, the refcounted scan pool, and what a supersede leaves alone.
 - `previous_session_integration_test.rs` — a reconnect naming the session it replaces, on the `auth` fixture through
   `black_hole_proxy.rs` (§ "A replacement session names the one it replaces").
+- `reattach_integration_test.rs` — a held reader and a streaming download carrying on after their connection drops, and
+  refusing a file rewritten meanwhile (§ "Carrying a handle across a reconnect"), through `black_hole_proxy.rs`.
 - `src/connection_integration_test.rs` — the three answers `try_open_share` hears from the `both` fixture: a guest
   refused at TreeConnect, the allowed account let in, and a missing share's bad network name. What the app makes of them
   is `apps/desktop/src-tauri/src/network/share_access_test.rs`.
@@ -1805,26 +1853,26 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
     assertion it makes is about what arrived on the share, even though its source is an `InMemoryVolume`.
   - `wire_shape_integration_test.rs` — what a byte-path op COSTS, which neither of the above asks: the hinted read's ONE
     compound frame and the `quick_read_limit` boundary where it gives way to streaming (on a cold connection `(1, 3)` at
-    512 KiB, `(0, 4)` one byte over, in two chunks; after a measuring download, `(1, 3)` for 2 MiB), the streamed read
-    ending at its last byte rather than at the CLOSE's answer (timed on the `slow` fixture, where that answer is 200 ms
-    away), the single-shot write promise the transfer layer skips `.cmdr-tmp-*` staging on (the wire proof and the
-    `write_is_single_shot` predicate behind it, kept together, and where that promise stops: one upload chunk on a cold
-    connection, what a measured uplink moves in 250 ms after, with a staged write over it streaming and a promised one
-    still `(2, 9)`), the copy-slot clamp, and a delete's one frame (§ "Junctions and symlinks"). Its frame assertions
-    read `test_support.rs::request_counts`, the diagnostics-metric reader, on a volume with no watcher
-    (`make_counting_volume`: a watcher stats every change on the fixture's shared share over the main session, so
-    another suite's writes landed in a count, #638). **Every cell here asserts on the PAIR
-    `(compound_requests_sent, requests_sent)`, because `requests_sent` alone reads like a frame count and is not one**:
-    smb2 ticks it once per sub-op of a chain (`allocate_msg_id` is the funnel every send path goes through), while
-    `compound_requests_sent` counts the chain, and `execute_compound` hands the whole chain to one `send_and_count`. So
-    a hinted read is `(1, 3)` for one frame carrying CREATE+READ+CLOSE, and the single-shot write is `(2, 9)` for two
-    frames, its own four ops and the post-write stat's five (CREATE, three QUERY_INFOs, the last the reparse tag, CLOSE;
-    verified against Samba 4.23.8 in the `smb-consumer` container on smb2 0.34.0, 2026-10-20). Reading the second number
-    as round trips costs an afternoon: it makes `requests == 1` look like the fast path's proof, and that assertion is
-    unsatisfiable by construction. The pair also asserts more than either half: a streaming open reads as `(0, 3)`, a
-    loose round trip beside the compound as `(1, 4)`. The copy-concurrency cell exercises neither byte path; it sits
-    here because its subject is the credit window of § "Copy concurrency and the credit window", which the sized read
-    and the slot clamp are the two halves of.
+    512 KiB, `(1, 8)` one byte over (the open is a compound carrying its version), in two chunks; after a measuring
+    download, `(1, 3)` for 2 MiB), the streamed read ending at its last byte rather than at the CLOSE's answer (timed on
+    the `slow` fixture, where that answer is 200 ms away), the single-shot write promise the transfer layer skips
+    `.cmdr-tmp-*` staging on (the wire proof and the `write_is_single_shot` predicate behind it, kept together, and
+    where that promise stops: one upload chunk on a cold connection, what a measured uplink moves in 250 ms after, with
+    a staged write over it streaming and a promised one still `(2, 9)`), the copy-slot clamp, and a delete's one frame
+    (§ "Junctions and symlinks"). Its frame assertions read `test_support.rs::request_counts`, the diagnostics-metric
+    reader, on a volume with no watcher (`make_counting_volume`: a watcher stats every change on the fixture's shared
+    share over the main session, so another suite's writes landed in a count, #638). **Every cell here asserts on the
+    PAIR `(compound_requests_sent, requests_sent)`, because `requests_sent` alone reads like a frame count and is not
+    one**: smb2 ticks it once per sub-op of a chain (`allocate_msg_id` is the funnel every send path goes through),
+    while `compound_requests_sent` counts the chain, and `execute_compound` hands the whole chain to one
+    `send_and_count`. So a hinted read is `(1, 3)` for one frame carrying CREATE+READ+CLOSE, and the single-shot write
+    is `(2, 9)` for two frames, its own four ops and the post-write stat's five (CREATE, three QUERY_INFOs, the last the
+    reparse tag, CLOSE; verified against Samba 4.23.8 in the `smb-consumer` container on smb2 0.34.0, 2026-10-20).
+    Reading the second number as round trips costs an afternoon: it makes `requests == 1` look like the fast path's
+    proof, and that assertion is unsatisfiable by construction. The pair also asserts more than either half: a streaming
+    open reads as `(0, 3)`, a loose round trip beside the compound as `(1, 4)`. The copy-concurrency cell exercises
+    neither byte path; it sits here because its subject is the credit window of § "Copy concurrency and the credit
+    window", which the sized read and the slot clamp are the two halves of.
 - `links_integration_test.rs` — a Unix symlink made inside the guest container (`run_in_the_guest_container`): a stat
   reports it, deleting it leaves its target, a selected folder symlink scans and reads as its folder, Samba's listing
   doesn't mark it, and `entry_kind` names it in one frame (§ "Junctions and symlinks").

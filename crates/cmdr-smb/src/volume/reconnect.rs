@@ -174,6 +174,17 @@ impl SmbVolumeInner {
             .is_some_and(|s| s.generation == closed && s.client.connection().is_disconnected())
     }
 
+    /// Whether session `generation` is still installed with its connection up.
+    /// A handle opened on it that lost ITS connection anyway lost a DFS link
+    /// target's (`random_reader.rs`), which leaves the session alone.
+    pub(super) async fn installed_session_is_up(&self, generation: SessionGeneration) -> bool {
+        self.session
+            .lock()
+            .await
+            .as_ref()
+            .is_some_and(|s| s.generation == generation && !s.client.connection().is_disconnected())
+    }
+
     /// [`Self::do_attempt_reconnect`]'s body, answering which credentials a fresh
     /// session came up on, or `None` when one was already live and nothing was
     /// dialed. A sign-in needs the difference before it writes anything down.
@@ -430,7 +441,7 @@ pub(super) const WATCHER_DEATH_RECONNECT_BACKOFF: [Duration; 6] = [
 /// confirm (`NegotiationInvalid`) and a share whose encryption the session couldn't
 /// agree on (`EncryptionUnavailable`), for the same reason (#931). Everything else
 /// (network down, timeout, server rebooting) is transient.
-fn reconnect_backoff_should_give_up(err: &VolumeError) -> bool {
+pub(super) fn reconnect_backoff_should_give_up(err: &VolumeError) -> bool {
     matches!(
         err,
         VolumeError::PermissionDenied { .. }

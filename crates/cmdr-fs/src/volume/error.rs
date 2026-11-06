@@ -208,7 +208,10 @@ pub enum VolumeError {
     /// what happened; a retry copies the new version. Raised by an S3
     /// server-side copy in parts (`cmdr-s3` `server_copy.rs`), and by the copy
     /// engine for a source stream that delivered more or fewer bytes than its
-    /// `StreamLength::Known` (`cmdr-operations` `transfer/volume/source_reads.rs`).
+    /// `StreamLength::Known` (`cmdr-operations` `transfer/volume/source_reads.rs`),
+    /// and by SMB when a held reader or a download comes back after a reconnect
+    /// to a file that isn't the version it was reading (`cmdr-smb` `resume.rs`),
+    /// which the viewer reloads on.
     SourceChanged(String),
     /// The entry has no bytes a copy can carry: a symlink the backend can't
     /// recreate, or a device, fifo, or socket. Carries the path.

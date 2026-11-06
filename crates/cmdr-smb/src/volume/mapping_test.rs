@@ -531,3 +531,19 @@ fn a_refused_guest_session_maps_like_a_wrong_password() {
         VolumeError::PermissionDenied { raw_os_error: None, .. }
     ));
 }
+
+/// A file that changed while a reader or a download was away (smb2's reopen and resume refuse to
+/// splice two versions, `Error::FileChanged`) is the source changing under its reader: the viewer
+/// reloads on it and a copy stops with the file's name, ❌ never a generic `IoError` a Retry would
+/// read as a blip.
+#[test]
+fn a_file_that_changed_while_its_reader_was_away_maps_to_source_changed() {
+    let err = smb2::Error::FileChanged {
+        path: "docs/a.txt".into(),
+        change: smb2::error::FileChange::Size { was: 10, now: 12 },
+    };
+    match map_smb_error(err, "/Volumes/share/docs/a.txt") {
+        VolumeError::SourceChanged(path) => assert_eq!(path, "/Volumes/share/docs/a.txt"),
+        other => panic!("expected SourceChanged, got {other:?}"),
+    }
+}

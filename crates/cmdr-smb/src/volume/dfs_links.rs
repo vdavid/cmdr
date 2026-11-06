@@ -40,7 +40,7 @@ use std::sync::Arc;
 
 use cmdr_fs::volume::WriteMode;
 use smb2::SmbClient;
-use smb2::client::stream::{FileDownload, FileReader, FileWriter};
+use smb2::client::stream::{DownloadCheckpoint, FileDownload, FileReader, FileWriter};
 use smb2::client::tree::{FileInfo, Tree};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -104,7 +104,7 @@ pub(super) fn is_at_or_below(path: &str, ancestor: &str) -> bool {
         .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
 }
 
-impl SmbVolume {
+impl SmbVolumeInner {
     /// A main-session call on `smb_path`, followed through the DFS link it
     /// sits behind: `first` (the call on the share's tree), or `op` on the
     /// link's target.
@@ -155,7 +155,7 @@ impl SmbVolume {
     where
         F: for<'c> FnOnce(&'c mut SmbClient, &'c mut Tree, &'c str) -> LinkCall<'c, T>,
     {
-        if self.inner.link_paths.covers(smb_path) {
+        if self.link_paths.covers(smb_path) {
             return match self.on_main_session(route, generation, smb_path, op).await {
                 Some(result) => result,
                 None => first.await,
@@ -185,7 +185,7 @@ impl SmbVolume {
     where
         F: for<'c> FnOnce(&'c mut SmbClient, &'c mut Tree, &'c str) -> LinkCall<'c, T>,
     {
-        let mut guard = self.inner.session.lock().await;
+        let mut guard = self.session.lock().await;
         let session = guard.as_mut().filter(|s| s.generation == generation)?;
         if route == LinkRoute::ShareTree {
             let mut tree = Tree::clone(&session.tree);
@@ -201,9 +201,43 @@ impl SmbVolume {
         // Only a call that got through says where a link is: a refusal from
         // the link's far side may be its target refusing the referral's path.
         if result.is_ok() {
-            self.inner.link_paths.note(&link.link_path);
+            self.link_paths.note(&link.link_path);
         }
         Some(result)
+    }
+}
+
+/// The routing, reached from a mount-root instance. It lives on the share so a
+/// held reader, which holds only the share, reopens through a link the same way
+/// (`random_reader.rs`).
+impl SmbVolume {
+    /// [`SmbVolumeInner::or_through_link`].
+    pub(super) async fn or_through_link<T, F>(
+        &self,
+        generation: SessionGeneration,
+        smb_path: &str,
+        first: impl Future<Output = Result<T, smb2::Error>>,
+        op: F,
+    ) -> Result<T, smb2::Error>
+    where
+        F: for<'c> FnOnce(&'c mut SmbClient, &'c mut Tree, &'c str) -> LinkCall<'c, T>,
+    {
+        self.inner.or_through_link(generation, smb_path, first, op).await
+    }
+
+    /// [`SmbVolumeInner::around_link`].
+    pub(super) async fn around_link<T, F>(
+        &self,
+        route: LinkRoute,
+        generation: SessionGeneration,
+        smb_path: &str,
+        first: impl Future<Output = Result<T, smb2::Error>>,
+        op: F,
+    ) -> Result<T, smb2::Error>
+    where
+        F: for<'c> FnOnce(&'c mut SmbClient, &'c mut Tree, &'c str) -> LinkCall<'c, T>,
+    {
+        self.inner.around_link(route, generation, smb_path, first, op).await
     }
 }
 
@@ -371,6 +405,29 @@ impl SmbVolumeInner {
         let client = client.client();
         Some(match target_of(client, tree, smb_path).await {
             Ok((tree, path)) => client.open_file_download(&tree, &path).await,
+            Err(e) => Err(e),
+        })
+    }
+
+    /// [`open_link_download`](Self::open_link_download)'s resume after a
+    /// reconnect (`resume.rs`): the link resolved again on the new session,
+    /// and the download carried on from `checkpoint`'s offset at the path
+    /// behind it, once smb2 proved the file is still `checkpoint`'s version.
+    pub(super) async fn resume_link_download(
+        &self,
+        ran_on: RanOn,
+        on: &LeaseOn,
+        tree: &Tree,
+        smb_path: &str,
+        checkpoint: &DownloadCheckpoint,
+    ) -> Option<Result<FileDownload<'static>, smb2::Error>> {
+        let mut client = self.link_client(ran_on, on).await?;
+        let client = client.client();
+        Some(match target_of(client, tree, smb_path).await {
+            Ok((mut tree, path)) => {
+                let behind = DownloadCheckpoint::new(path, checkpoint.offset, checkpoint.version);
+                client.resume_download(&mut tree, &behind).await
+            }
             Err(e) => Err(e),
         })
     }
