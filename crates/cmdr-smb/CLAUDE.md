@@ -24,9 +24,8 @@ keychain, mounts, and human-facing words stay in the app's `network/`.
 - **`paths_are_os_visible()` tracks the MOUNT**. ❌ Never hardcode `true`: smb2 browses on past a dead mount, so a drag
   fails silently.
 - **`write_from_stream` drives an OWNED `FileWriter` on a cloned `Connection`** (❌ never borrowed under the session
-  mutex: the QNAP deadlock); on error, `abort()` then delete the partial.
+  mutex: the QNAP deadlock); unknown lengths stream, counted by `finish`; on error, `abort()` then delete the partial.
 - **A copy stamps dates on the writer's OWN handle before `finish()`**; ❌ never by path (its close re-stamps).
-- **Unknown-length writes stream**, succeeding on `finish`'s count.
 - **A forced file rename is one atomic `ReplaceIfExists` swap**; ❌ never clear a destination that's the source
   re-cased.
 - **One-frame fast paths stop at `quick_read_limit()` / `quick_write_limit()`**. ❌ A refused one-frame write to a
@@ -37,6 +36,8 @@ keychain, mounts, and human-facing words stay in the app's `network/`.
   `link_watch.rs`); a loss there ❌ never moves the MAIN state.
 - **An error funnels with its lease's generation**, ❌ never a fresh read (DETAILS § "Which session a loss is about").
 - **A rebuilt session names only its OWN dead predecessor** (`retired_session_id`), ❌ never a live one.
+- **A held reader or download outlives its session** (`resume.rs`): smb2 proves the file unchanged. ❌ Never reopen
+  unchecked.
 - **smb2 bounds every wait itself**: ❌ no timeout layer of ours.
 - **A path call follows a DFS link only via `or_through_link`**; ❌ a bare `Tree` call fails there.
 - **Every `ClientConfig` ends `..encryption::session_config()`** (encryption, link consent), ❌ never

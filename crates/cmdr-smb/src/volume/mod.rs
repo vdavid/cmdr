@@ -40,6 +40,7 @@ mod query;
 mod random_reader;
 mod read_stream;
 mod reconnect;
+mod resume;
 mod scan;
 mod scan_pool;
 mod session;
@@ -727,6 +728,8 @@ mod links_integration_test;
 mod previous_session_integration_test;
 #[cfg(test)]
 mod read_stream_integration_test;
+#[cfg(test)]
+mod reattach_integration_test;
 #[cfg(test)]
 mod retirement_test;
 #[cfg(test)]

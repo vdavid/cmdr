@@ -88,8 +88,9 @@ async fn smb_integration_a_hinted_read_leaves_as_one_compound_frame() {
 /// connection until the whole body arrived (cmdr-reports#15: 23 s for 8 MiB on
 /// a 375 KB/s link).
 ///
-/// The streaming side reads `(0, 4)`: CREATE, two READs, CLOSE as loose
-/// requests, and the body reaches the consumer in more than one chunk, which is
+/// The streaming side reads `(1, 8)`: the open as one compound (CREATE plus
+/// the four queries that name the file's version, smb2 0.43, what makes the
+/// download resumable: `resume.rs`), then two READs and a CLOSE, and the body reaches the consumer in more than one chunk, which is
 /// what lets the copy's progress and liveness watchdog see it move.
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
@@ -108,7 +109,7 @@ async fn smb_integration_the_compound_read_stops_at_one_download_chunk() {
     );
     for (size, expected_frames, expected_chunks, what) in [
         (chunk, (1, 3), 1, "a file of exactly one chunk takes the compound path"),
-        (chunk + 1, (0, 4), 2, "a file one byte over a chunk streams"),
+        (chunk + 1, (1, 8), 2, "a file one byte over a chunk streams"),
     ] {
         let data: Vec<u8> = (0..=255u8).cycle().take(size).collect();
         let path = format!("{}/boundary-{size}.bin", dir);

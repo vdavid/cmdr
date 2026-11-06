@@ -9,6 +9,7 @@ use log::debug;
 
 use super::ViewerError;
 use super::host::ViewerHost;
+use super::replacement::ReplacementHook;
 use super::source::{OpenedFile, open_local};
 use super::volume_error::map_volume_error;
 use super::volume_source::{PositionedRead, open_on_volume, size_on_volume};
@@ -27,6 +28,8 @@ pub enum SourceOrigin {
         path: PathBuf,
         way: PositionedRead,
         runtime: Runtime,
+        /// Told when the file changes under a reader this origin opened.
+        replaced: ReplacementHook,
     },
 }
 
@@ -48,7 +51,16 @@ impl SourceOrigin {
                 path,
                 way,
                 runtime,
-            } => open_on_volume(volume, path, *way, runtime),
+                replaced,
+            } => open_on_volume(volume, path, *way, runtime, replaced),
+        }
+    }
+
+    /// Has every reader this origin opens, now and on a reload, call `on_replaced` when
+    /// its file changes under it. Nothing for a local file: its watcher says so.
+    pub(super) fn on_replaced(&self, on_replaced: impl Fn() + Send + Sync + 'static) {
+        if let Self::Volume { replaced, .. } = self {
+            replaced.set(on_replaced);
         }
     }
 
@@ -134,6 +146,7 @@ fn open_through_volume(
         path: requested.to_path_buf(),
         way,
         runtime: runtime.clone(),
+        replaced: ReplacementHook::default(),
     };
     match origin.open_volume() {
         Ok(opened) => Ok(Some(VolumeOpen {

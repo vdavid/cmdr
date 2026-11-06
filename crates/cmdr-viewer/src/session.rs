@@ -439,6 +439,9 @@ impl Viewer {
         let file_name = backend_box.file_name().to_string();
 
         let session_id = generate_session_id();
+        // A file read through its volume that changes under the reader reloads, like
+        // one the watcher sees replaced.
+        origin.on_replaced(self.reload_on_replacement(&session_id));
         let upgrade_cancel = upgrading.clone();
         let is_indexing = upgrade_cancel.is_some();
 
@@ -1669,6 +1672,26 @@ impl Viewer {
         };
         if on_disk > covered {
             self.handle_watcher_event(session_id, WatcherEvent::Grew(on_disk));
+        }
+    }
+
+    /// What session `session_id` does when its volume's reader finds the file changed
+    /// under it (`volume_source::ReplacementHook`: SMB refusing to splice two versions
+    /// after a reconnect): what a watcher seeing the file replaced does, on a job of its
+    /// own so the read that found it returns first. Holds the viewer weakly, since the
+    /// hook lives inside a session the viewer holds.
+    fn reload_on_replacement(&self, session_id: &str) -> impl Fn() + Send + Sync + 'static {
+        let viewer = Arc::downgrade(&self.0);
+        let session_id = session_id.to_string();
+        move || {
+            let Some(state) = viewer.upgrade() else {
+                return;
+            };
+            let viewer = Viewer(state);
+            let session_id = session_id.clone();
+            drop(worker::spawn(move || {
+                viewer.handle_watcher_event(&session_id, WatcherEvent::Replaced);
+            }));
         }
     }
 

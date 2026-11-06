@@ -191,6 +191,10 @@ pub(super) fn map_smb_error(err: smb2::Error, path: &str) -> VolumeError {
         // The same: a negotiation the server didn't confirm isn't a blip, and asking again asks the
         // same server (#931).
         ErrorKind::NegotiateValidationFailed => VolumeError::NegotiationInvalid(err.to_string().into()),
+        // A held reader or a download came back after a reconnect to a file that's no longer the
+        // version it was reading, so smb2 refused to splice the two (`resume.rs`). The viewer
+        // reloads on it; a copy stops rather than publish a mix.
+        ErrorKind::FileChanged => VolumeError::SourceChanged(path.to_string()),
         _ => VolumeError::IoError {
             raw_os_error: local_errno(&err),
             message: err.to_string().into(),
