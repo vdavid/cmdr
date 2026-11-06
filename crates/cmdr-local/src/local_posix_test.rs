@@ -1300,3 +1300,34 @@ async fn a_write_is_not_carried_on_into_a_target_that_is_gone_or_short() {
     }
     assert!(!dir.join("gone.tmp").exists(), "nothing is created to carry on into");
 }
+
+/// A local source carries a read on from an offset on the file it first read
+/// (`Volume::resume_read_stream`), and refuses one written over since, even
+/// with the same bytes: its inode and change time moved.
+#[tokio::test]
+async fn a_local_read_resumes_on_its_named_file_and_refuses_a_rewritten_one() {
+    let dir = TestDir::new("resume_read");
+    let data: Vec<u8> = (0..200_000u32).map(|i| (i % 251) as u8).collect();
+    std::fs::write(dir.join("f.bin"), &data).unwrap();
+    let volume = LocalPosixVolume::local_folder("Test", dir.to_str().unwrap(), VolumeHost::detached());
+
+    let first = volume.open_read_stream(Path::new("f.bin")).await.unwrap();
+    let version = first.source_version().expect("a local file names its version");
+    drop(first);
+    let mut rest = volume
+        .resume_read_stream(Path::new("f.bin"), &version, 70_000)
+        .await
+        .expect("the same file resumes");
+    let mut read = Vec::new();
+    while let Some(chunk) = rest.next_chunk().await {
+        read.extend_from_slice(&chunk.unwrap());
+    }
+    assert!(read == data[70_000..], "exactly the bytes from the offset");
+
+    std::fs::remove_file(dir.join("f.bin")).unwrap();
+    std::fs::write(dir.join("f.bin"), &data).unwrap();
+    assert!(matches!(
+        volume.resume_read_stream(Path::new("f.bin"), &version, 70_000).await,
+        Err(VolumeError::SourceChanged(_))
+    ));
+}

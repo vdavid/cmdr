@@ -864,6 +864,15 @@ impl Volume for LocalPosixVolume {
         self.write_from_stream_impl(dest, mode, length, stream, on_progress)
     }
 
+    fn resume_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+        version: &'a cmdr_fs::volume::SourceVersion,
+        offset: u64,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        self.resume_read_stream_impl(path, version, offset)
+    }
+
     /// A local write lands its chunks in order with `write_all`, so its
     /// progress count is a prefix of the file, and a failed write leaves it.
     fn continues_writes(&self) -> bool {

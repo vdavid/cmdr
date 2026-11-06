@@ -37,6 +37,32 @@ struct LocalPosixReadStream {
     stat: std::fs::Metadata,
 }
 
+/// Which version of a local file a read saw: its device and inode, its length,
+/// and its modification and change times to the nanosecond. The change time
+/// moves on any change at all, so a rewrite in place is refused at any length.
+/// What a copy carries on from after an outage (`Volume::resume_read_stream`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct LocalVersion {
+    dev: u64,
+    ino: u64,
+    len: u64,
+    mtime: (i64, i64),
+    ctime: (i64, i64),
+}
+
+impl LocalVersion {
+    fn of(stat: &std::fs::Metadata) -> Self {
+        use std::os::unix::fs::MetadataExt as _;
+        Self {
+            dev: stat.dev(),
+            ino: stat.ino(),
+            len: stat.len(),
+            mtime: (stat.mtime(), stat.mtime_nsec()),
+            ctime: (stat.ctime(), stat.ctime_nsec()),
+        }
+    }
+}
+
 /// How a streamed write opens its file.
 #[derive(Clone, Copy)]
 enum Opening {
@@ -130,6 +156,10 @@ impl VolumeReadStream for LocalPosixReadStream {
             None => self.metadata(wanted),
         }
     }
+
+    fn source_version(&self) -> Option<cmdr_fs::volume::SourceVersion> {
+        Some(cmdr_fs::volume::SourceVersion::new(LocalVersion::of(&self.stat)))
+    }
 }
 
 impl LocalPosixVolume {
@@ -163,6 +193,47 @@ impl LocalPosixVolume {
             })
             .await
             .expect("spawn_blocking open_read_stream closure doesn't panic and the task is uncancelable")
+        })
+    }
+
+    /// [`Volume::resume_read_stream`](cmdr_fs::volume::Volume::resume_read_stream):
+    /// the file opened again and read from `offset`, once its own `fstat` still
+    /// names the device, inode, length, and both times `version` saw; any other
+    /// file is `SourceChanged` before a byte is read.
+    #[allow(
+        clippy::type_complexity,
+        reason = "carries the trait method's own signature, which returns a pinned boxed future by design"
+    )]
+    pub(super) fn resume_read_stream_impl<'a>(
+        &'a self,
+        path: &'a Path,
+        version: &'a cmdr_fs::volume::SourceVersion,
+        offset: u64,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        let abs_path = self.resolve(path);
+        let expected = version.downcast_ref::<LocalVersion>().copied();
+        Box::pin(async move {
+            let Some(expected) = expected else {
+                return Err(VolumeError::NotSupported);
+            };
+            spawn_blocking(move || {
+                use std::io::Seek;
+                let mut file = std::fs::File::open(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
+                let stat = file.metadata().map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
+                if LocalVersion::of(&stat) != expected {
+                    return Err(VolumeError::SourceChanged(abs_path.display().to_string()));
+                }
+                file.seek(std::io::SeekFrom::Start(offset))
+                    .map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
+                Ok(Box::new(LocalPosixReadStream {
+                    file: Some(file),
+                    total_size: stat.len(),
+                    bytes_read: 0,
+                    stat,
+                }) as Box<dyn VolumeReadStream>)
+            })
+            .await
+            .expect("spawn_blocking resume_read_stream closure doesn't panic and the task is uncancelable")
         })
     }
 
