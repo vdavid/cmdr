@@ -1454,6 +1454,13 @@ pub trait Volume: Send + Sync {
     /// slow share from a dead one, and Cancel and Pause reach a walk that would
     /// otherwise run for minutes with no way to stop it.
     ///
+    /// ❗ **Ask `boundary.leaves_out(name, is_directory)` of every LISTED child
+    /// first**, and skip one it answers `true` for: neither counted, recorded, nor
+    /// walked. That's how a transfer that skips Mac-only files (`.DS_Store`, `._*`,
+    /// `crate::mac_only_files`) gets totals that match what it writes. A selected
+    /// top-level path is never asked. The per-path default below can't honor it
+    /// (it sees only totals), so a backend with directories overrides this.
+    ///
     /// ❗ **Ask BEFORE the round trip, not after.** A boundary on the far side of
     /// a listing is a boundary the user waits out; over a sleeping NAS that is
     /// seconds per directory.

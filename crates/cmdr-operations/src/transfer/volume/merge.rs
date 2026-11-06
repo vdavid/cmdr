@@ -819,6 +819,10 @@ async fn merge_level<'a>(
         ))
         .await?;
     let ((dest_index, level_made_here), mut entries) = level;
+    // A Mac-only file the person asked to leave out is no part of the transfer:
+    // never copied, and never in the tree or the totals the scan already left
+    // it out of. A move's sweep removes it with its folder (`source_sweep.rs`).
+    entries.retain(|entry| !state.mac_only.leaves_out_str(&entry.name, merges_as_a_directory(entry)));
     // Tree order, whatever order the backend listed in (SMB and MTP don't
     // sort): the walker starts files, asks conflicts, and creates folders in
     // the order the progress tree shows. `DETAILS.md` § "Processing order".

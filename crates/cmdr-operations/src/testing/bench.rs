@@ -170,6 +170,7 @@ impl BenchEngine {
         let state = Arc::new(ScanPreviewState {
             cancelled: AtomicBool::new(false),
             progress_interval: Duration::from_millis(WriteOperationConfig::default().progress_interval_ms),
+            mac_only: cmdr_fs::mac_only_files::MacOnlyFiles::Include,
         });
         let events: Arc<dyn ScanPreviewEventSink> = Arc::new(DiscardPreviewEvents);
         let watchdog = ScanWatchdog::start(

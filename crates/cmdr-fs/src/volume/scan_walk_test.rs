@@ -192,6 +192,50 @@ async fn the_walk_records_every_entry_under_the_callers_paths() {
     );
 }
 
+/// A transfer that skips Mac-only files counts and records none of them, at any
+/// depth, while a FOLDER of such a name and a selected one still count (#314).
+#[tokio::test]
+async fn a_walk_leaving_out_mac_only_files_neither_counts_nor_records_them() {
+    use crate::mac_only_files::MacOnlyFiles;
+    use crate::testing::scan_recording::{Recorded, ScanRecording};
+
+    let tree = FakeTree::new()
+        .with_dir(
+            "/top",
+            &[(".DS_Store", false, 6_148), ("a.txt", false, 10), ("._folder", true, 0)],
+        )
+        .with_dir("/top/._folder", &[("._a.txt", false, 4_096), ("b.txt", false, 5)])
+        .with_dir("/picked", &[(".DS_Store", false, 3)]);
+    let recording = Arc::new(ScanRecording::default());
+    let boundary = ScanBoundary::silent()
+        .recording_to(Arc::clone(&recording) as Arc<dyn crate::volume::ScanRecorder>)
+        .leaving_out(MacOnlyFiles::Skip);
+
+    let batch = scan_trees(
+        &tree,
+        &[PathBuf::from("/top"), PathBuf::from("/picked/.DS_Store")],
+        &boundary,
+    )
+    .await
+    .expect("the batch");
+
+    assert_eq!(
+        batch.aggregate.file_count, 3,
+        "a.txt, b.txt, and the selected .DS_Store"
+    );
+    assert_eq!(batch.aggregate.total_bytes, 18);
+    assert_eq!(
+        recording.sorted(),
+        vec![
+            Recorded::Dir("/top".into()),
+            Recorded::Dir("/top/._folder".into()),
+            Recorded::File("/picked/.DS_Store".into(), 3),
+            Recorded::File("/top/._folder/b.txt".into(), 5),
+            Recorded::File("/top/a.txt".into(), 10),
+        ]
+    );
+}
+
 #[tokio::test]
 async fn a_backend_that_does_not_keep_files_gets_none() {
     let tree = FakeTree::new().with_dir("/top", &[("a.txt", false, 10)]);

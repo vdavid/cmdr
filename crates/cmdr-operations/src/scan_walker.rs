@@ -18,6 +18,7 @@ use std::time::Duration;
 
 use cmdr_fs::apple_double::SidecarRule;
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_fs::mac_only_files::MacOnlyFiles;
 
 use super::state::FileInfo;
 use super::validation::is_symlink_loop;
@@ -101,6 +102,10 @@ pub(super) struct WalkContext<'a, E> {
     /// a selected source, so a `._` file the person picked still goes. Tests
     /// inject the volume probe to play a FAT volume on APFS.
     pub(super) sidecars: &'a SidecarRule,
+    /// Leaves out the Mac-only files (`.DS_Store`, `._*`) a transfer that
+    /// skips them won't write (#314). Like `sidecars`, asked of every LISTED
+    /// entry and never of a selected source.
+    pub(super) mac_only: MacOnlyFiles,
     /// The fresh-listing oracle: a directory an open pane keeps watcher-fresh
     /// is walked from its listing instead of the disk. Asked only for a walk
     /// that names its volume.
@@ -315,7 +320,8 @@ pub(super) fn walk_dir_recursive<E>(
         } else {
             let entries = fs::read_dir(path).map_err(|e| (ctx.on_io_error)(path, e))?;
             for entry in entries.flatten() {
-                if is_left_out(ctx, path, device, &entry.file_name()) {
+                let is_directory = entry.file_type().is_ok_and(|kind| kind.is_dir());
+                if is_left_out(ctx, path, device, &entry.file_name(), is_directory) {
                     continue;
                 }
                 walk_dir_recursive(
@@ -382,7 +388,13 @@ fn walk_cached_entries<E>(
             return Err((ctx.on_cancelled)());
         }
         (ctx.park_while_paused)();
-        if is_left_out(ctx, parent_path, parent_device, OsStr::new(&entry.name)) {
+        if is_left_out(
+            ctx,
+            parent_path,
+            parent_device,
+            OsStr::new(&entry.name),
+            entry.is_directory && !entry.is_symlink,
+        ) {
             continue;
         }
         let child_path = PathBuf::from(&entry.path);
@@ -458,9 +470,13 @@ fn walk_cached_entries<E>(
     Ok(())
 }
 
-/// Whether the walk leaves out `name`, listed in `dir`: an AppleDouble sidecar
-/// the kernel already serves as its sibling's xattrs. See [`WalkContext::sidecars`].
-fn is_left_out<E>(ctx: &WalkContext<'_, E>, dir: &Path, dir_device: u64, name: &OsStr) -> bool {
+/// Whether the walk leaves out `name`, listed in `dir`: a Mac-only file the
+/// transfer skips ([`WalkContext::mac_only`]), or an AppleDouble sidecar the
+/// kernel already serves as its sibling's xattrs ([`WalkContext::sidecars`]).
+fn is_left_out<E>(ctx: &WalkContext<'_, E>, dir: &Path, dir_device: u64, name: &OsStr, is_directory: bool) -> bool {
+    if ctx.mac_only.leaves_out(name, is_directory) {
+        return true;
+    }
     let sidecar = ctx.sidecars.is_sidecar(dir, dir_device, name);
     if sidecar {
         log::trace!(

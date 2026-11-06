@@ -7,6 +7,7 @@
 
 use std::path::{Path, PathBuf};
 
+use cmdr_fs::mac_only_files::MacOnlyFiles;
 use cmdr_fs::volume::{BatchScanResult, CopyScanResult, ScanBoundary, ScanRecorder, VolumeError, fold_batch};
 
 use super::ArchiveVolume;
@@ -14,7 +15,11 @@ use super::ArchiveVolume;
 impl ArchiveVolume {
     /// One subtree's counts and bytes, from the central directory: no
     /// decompression during a scan.
-    pub(super) async fn scan_subtree(&self, path: &Path) -> Result<CopyScanResult, VolumeError> {
+    pub(super) async fn scan_subtree(
+        &self,
+        path: &Path,
+        mac_only: MacOnlyFiles,
+    ) -> Result<CopyScanResult, VolumeError> {
         let inner = self.inner_path(path);
         let index = self.index().await?;
         let node = index
@@ -46,6 +51,9 @@ impl ArchiveVolume {
         while let Some(dir) = pending.pop() {
             let Some(children) = index.list(&dir) else { continue };
             for child in children {
+                if mac_only.leaves_out_str(&child.name, child.is_dir) {
+                    continue;
+                }
                 if child.is_dir {
                     dir_count += 1;
                     pending.push(child.path);
@@ -77,9 +85,10 @@ impl ArchiveVolume {
         let mut per_path = Vec::with_capacity(paths.len());
         for path in paths {
             boundary.check().await?;
-            let scan = self.scan_subtree(path).await?;
+            let scan = self.scan_subtree(path, boundary.mac_only()).await?;
             if let Some(recorder) = boundary.recorder() {
-                self.record_subtree(path, recorder.as_ref()).await?;
+                self.record_subtree(path, recorder.as_ref(), boundary.mac_only())
+                    .await?;
             }
             boundary.counted(&scan).await?;
             per_path.push((path.clone(), scan));
@@ -94,7 +103,12 @@ impl ArchiveVolume {
 
     /// Hands `recorder` the entry at `path` and every one below it, named under
     /// `path` as the caller spelled it.
-    async fn record_subtree(&self, path: &Path, recorder: &dyn ScanRecorder) -> Result<(), VolumeError> {
+    async fn record_subtree(
+        &self,
+        path: &Path,
+        recorder: &dyn ScanRecorder,
+        mac_only: MacOnlyFiles,
+    ) -> Result<(), VolumeError> {
         let index = self.index().await?;
         let inner = self.inner_path(path);
         let Some(node) = index.get(&inner) else {
@@ -109,6 +123,9 @@ impl ArchiveVolume {
         while let Some((dir, as_called)) = pending.pop() {
             let Some(children) = index.list(&dir) else { continue };
             for child in children {
+                if mac_only.leaves_out_str(&child.name, child.is_dir) {
+                    continue;
+                }
                 let child_as_called = as_called.join(&child.name);
                 if child.is_dir {
                     recorder.dir(&child_as_called);

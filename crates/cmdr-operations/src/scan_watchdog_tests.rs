@@ -37,6 +37,7 @@ fn in_flight_preview(engine: &TestOperations) -> (String, Arc<ScanPreviewState>)
     let state = Arc::new(ScanPreviewState {
         cancelled: AtomicBool::new(false),
         progress_interval: Duration::from_millis(50),
+        mac_only: cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     });
     engine
         .stores()
@@ -240,6 +241,7 @@ async fn a_preview_that_finishes_before_its_first_tick_still_reports_what_it_wal
         // Far longer than the walk, so no progress tick can fire: the production
         // shape this covers.
         progress_interval: Duration::from_secs(600),
+        mac_only: cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     });
     engine
         .stores()

@@ -228,6 +228,7 @@ async fn scan_preview_uses_authoritative_listing_for_top_level_files() {
         None,
         &on_progress,
         None,
+        cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     )
     .await
     .expect("oracle-aware batch scan should succeed");
@@ -282,6 +283,7 @@ async fn scan_preview_falls_through_when_watcher_dead() {
         None,
         &on_progress,
         None,
+        cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     )
     .await
     .expect("scan should succeed via fallthrough");
@@ -331,6 +333,7 @@ async fn scan_preview_uses_cached_subfolder_listing_when_other_pane_has_it() {
         None,
         &on_progress,
         None,
+        cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     )
     .await
     .expect("scan should succeed");
@@ -387,6 +390,7 @@ async fn scan_preview_records_what_the_oracle_serves() {
         None,
         &on_progress,
         Some(Arc::clone(&recording) as Arc<dyn cmdr_fs::volume::ScanRecorder>),
+        cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     )
     .await
     .expect("scan should succeed");
@@ -432,6 +436,7 @@ async fn scan_preview_preserves_symlink_semantics() {
         None,
         &on_progress,
         None,
+        cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     )
     .await
     .expect("symlink scan should succeed");
@@ -487,6 +492,7 @@ async fn scan_preview_handles_listing_closed_mid_walk() {
         None,
         &on_progress,
         None,
+        cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     )
     .await
     .expect("mid-walk close scan should succeed");

@@ -1022,6 +1022,37 @@ Three of the local engine's four emit points are non-obvious:
   partly skipped leaves the source directory on disk, so the flag is read rather than derived from the operation type.
   Pinned by `move_op_tests.rs`'s `a_same_fs_merge_that_skipped_a_child_reports_the_source_still_there`.
 
+## Mac-only files a transfer leaves out
+
+A copy, move, or compress can leave Finder's `.DS_Store` and the AppleDouble `._*` files out of its destination (#314,
+the person's choice per operation: `cmdr_fs::mac_only_files::MacOnlyFiles` on `WriteOperationConfig` /
+`VolumeCopyConfig`, carried on the op as `WriteOperationState::mac_only`). The match is on the NAME of a FILE, typed
+once in `cmdr-fs`; a folder of such a name always goes.
+
+- **It's a LISTING filter, applied to every listed child and ❌ never to a selected source.** A `.DS_Store` the person
+  picked goes, the same stance the AppleDouble sidecar rule takes (`cmdr_fs::apple_double`), and no per-source verdict
+  ever goes missing for a source that silently vanished. The walks: the local scan (`scan_walker.rs`
+  `WalkContext::mac_only`), every backend's copy scan (`ScanBoundary::leaves_out`, `cmdr_fs` `Volume` docs), the oracle
+  walk (`scan_oracle.rs`), the cross-volume merge level (`volume/merge.rs`), and the compress plan
+  (`archive_edit/fresh_plan.rs`). A left-out file is never counted, so it's not a skip either: the totals and the bars
+  simply don't include it.
+- **A preview walks with the same choice, and a cached preview is a hit only for an op leaving out the same thing**
+  (`ScanPreviews::take_cached_transfer_scan`). The dialog restarts its preview when the toggle flips; a flip that races
+  the confirm costs a rescan, ❌ never totals that name files the op won't write.
+- **A move takes them with the folders that moved, so it never leaves a husk.** The sweep deletes a LEDGER, and a
+  left-out file isn't in it, so a folder holding only such files would otherwise stay. Both sweeps finish such a folder:
+  locally `move_op/source_sweep.rs::remove_husk` on the `ENOTEMPTY`, across volumes `volume/source_sweep.rs`'s `husk`
+  list, deleted only once everything else in the folder went. A folder that stays for a real reason (a Skip, a newcomer)
+  keeps its metadata, and none of it counts as "appeared". Pinned by `move_op/move_mac_only_tests.rs` and
+  `volume/move_mac_only_tests.rs`.
+- **A compress also drops every `__MACOSX` sidecar** it would write from a local source's xattrs (`FreshPlan.sidecars`,
+  `FreshZipSource::LocalWithoutSidecar`): on another system those are the same `._` clutter.
+- **A same-volume move that RENAMES carries a folder whole, metadata included**, local `rename(2)` and a backend's
+  rename-merge alike: nothing is written, and the files keep describing the folder they sit in. A move that copies
+  (cross-filesystem, cross-volume) filters like a copy.
+- **Not yet: copying INTO an existing zip** (`archive_edit/copy_into.rs`, the mutator's own walk) carries what it lists
+  whatever the choice. Its op state never hears it (`archive_edit/driver.rs` builds it from the routed config).
+
 ## Processing order
 
 **Every driver STARTS files in tree order**, the order the transfer's progress tree lists its rows in

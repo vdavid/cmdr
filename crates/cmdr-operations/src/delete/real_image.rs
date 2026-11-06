@@ -37,6 +37,7 @@ async fn run_delete_preview(engine: &TestOperations, sources: &[PathBuf], previe
     let preview_state = Arc::new(ScanPreviewState {
         cancelled: AtomicBool::new(false),
         progress_interval: Duration::from_millis(50),
+        mac_only: cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     });
     let watchdog = ScanWatchdog::start(
         engine,

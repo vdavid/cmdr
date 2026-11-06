@@ -152,6 +152,7 @@ impl DemoOperations {
                     volume_id,
                     a.progress_interval_ms.unwrap_or(500),
                     a.purpose,
+                    a.mac_only_files,
                 ))
             }
             "cancel_scan_preview" => {
@@ -273,6 +274,8 @@ struct ScanPreviewArgs {
     source_volume_id: Option<String>,
     progress_interval_ms: Option<u64>,
     purpose: ScanPreviewPurpose,
+    #[serde(default)]
+    mac_only_files: cmdr_fs::mac_only_files::MacOnlyFiles,
 }
 
 #[derive(Deserialize)]

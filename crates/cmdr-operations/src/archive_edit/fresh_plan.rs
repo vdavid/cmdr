@@ -35,6 +35,10 @@ pub(super) struct FreshPlan {
     pub(super) entries: Vec<PlannedEntry>,
     pub(super) source_bytes: u64,
     pub(super) skipped: usize,
+    /// Whether a local entry's xattrs ride an AppleDouble sidecar
+    /// (`__MACOSX/._name`). `false` when the person asked to leave Mac-only
+    /// files out: those sidecars are the same `._` clutter on another system.
+    pub(super) sidecars: bool,
 }
 
 /// One entry of the plan: the producer's `FreshZipEntry`, with a source that
@@ -73,7 +77,10 @@ impl FreshPlan {
             .map(|entry| FreshZipEntry {
                 name: entry.name.clone(),
                 source: match &entry.source {
-                    PlannedSource::Local(path) => FreshZipSource::Local(path.clone()),
+                    PlannedSource::Local(path) if self.sidecars => FreshZipSource::Local(path.clone()),
+                    // A local folder's only use as a source is its sidecar.
+                    PlannedSource::Local(_) if entry.is_directory => FreshZipSource::Bytes(Vec::new()),
+                    PlannedSource::Local(path) => FreshZipSource::LocalWithoutSidecar(path.clone()),
                     PlannedSource::Bytes(bytes) => FreshZipSource::Bytes(bytes.clone()),
                     PlannedSource::Remote(path) => {
                         let (feeder, remote) = remote_source_bridge();
@@ -235,6 +242,13 @@ async fn plan_sources_with_context(
                     .await?;
                 dirs += 1;
                 report(on_progress, files, dirs, source_bytes, &path);
+                // A Mac-only file the person asked to leave out never enters
+                // the plan, so it's neither packed nor counted (#314).
+                children.retain(|child| {
+                    !state
+                        .mac_only
+                        .leaves_out_str(&child.name, child.is_directory && !child.is_symlink)
+                });
                 order.sort(&mut children, |child| {
                     (child.is_directory && !child.is_symlink, child.name.as_str())
                 });
@@ -278,6 +292,7 @@ async fn plan_sources_with_context(
         entries,
         source_bytes,
         skipped,
+        sidecars: state.mac_only == cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     })
 }
 

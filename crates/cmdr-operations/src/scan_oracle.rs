@@ -7,6 +7,7 @@ use cmdr_fs::entry::FileEntry;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use cmdr_fs::mac_only_files::MacOnlyFiles;
 use cmdr_fs::volume::host::listings::ListingHost;
 use cmdr_fs::volume::{CopyScanResult, ScanRecorder, Volume, VolumeError};
 
@@ -66,6 +67,7 @@ pub(super) async fn scan_subtree_with_oracle(
     on_progress: Option<&(dyn Fn(cmdr_fs::volume::ListingProgress) + Sync)>,
     recorder: Option<&dyn ScanRecorder>,
     seen_inodes: &mut HashSet<u64>,
+    mac_only: MacOnlyFiles,
 ) -> Result<SubtreeTotals, VolumeError> {
     use cmdr_fs::volume::ListingProgress;
 
@@ -98,6 +100,10 @@ pub(super) async fn scan_subtree_with_oracle(
         if is_cancelled() {
             return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
         }
+        // A Mac-only file the transfer leaves out is no part of it (#314).
+        if mac_only.leaves_out_str(&entry.name, entry.is_directory && !entry.is_symlink) {
+            continue;
+        }
         // After the cancel check, never before: cancel outranks pause.
         if let Some(pause) = pause {
             pause.park_while_paused_async().await;
@@ -129,6 +135,7 @@ pub(super) async fn scan_subtree_with_oracle(
                         Some(&shifted),
                         recorder,
                         seen_inodes,
+                        mac_only,
                     ))
                     .await?
                 }
@@ -143,6 +150,7 @@ pub(super) async fn scan_subtree_with_oracle(
                         None,
                         recorder,
                         seen_inodes,
+                        mac_only,
                     ))
                     .await?
                 }

@@ -29,6 +29,9 @@ pub(super) enum FreshZipSource {
     /// A local file to stream, or for a directory entry the local folder it's
     /// made from, read only for the AppleDouble sidecar its xattrs ride in.
     Local(PathBuf),
+    /// A local file streamed WITHOUT its AppleDouble sidecar: a compress that
+    /// leaves Mac-only files out writes no `__MACOSX/._name` either (#314).
+    LocalWithoutSidecar(PathBuf),
     Bytes(Vec<u8>),
     Remote(RemoteZipSource),
 }
@@ -459,9 +462,10 @@ fn produce(
         let read_limit = entry.size.saturating_add(1);
         // A local source's sidecar, read off the fd the copy already holds.
         let mut sidecar = None;
+        let carries_sidecar = matches!(entry.source, FreshZipSource::Local(_));
         let actual = match &mut entry.source {
-            FreshZipSource::Local(path) => {
-                let mut file = std::fs::File::open(path).map_err(|error| FreshZipError::Source {
+            FreshZipSource::Local(path) | FreshZipSource::LocalWithoutSidecar(path) => {
+                let mut file = std::fs::File::open(&*path).map_err(|error| FreshZipError::Source {
                     entry: entry.name.clone(),
                     message: error.to_string(),
                 })?;
@@ -474,7 +478,9 @@ fn produce(
                     entries_done,
                     progress,
                 )?;
-                sidecar = cmdr_archive::mutator::local_file_sidecar(&file);
+                if carries_sidecar {
+                    sidecar = cmdr_archive::mutator::local_file_sidecar(&file);
+                }
                 actual
             }
             FreshZipSource::Bytes(bytes) => copy_reader(

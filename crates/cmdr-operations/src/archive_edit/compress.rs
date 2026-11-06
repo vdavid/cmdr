@@ -8,6 +8,7 @@ use super::super::OperationEventSink;
 use super::super::look_alike::{LookAlike, look_alike_in, spelled_new_path};
 use super::super::transfer::volume::{PathRole, map_volume_error};
 use super::super::types::{ConflictResolution, ReadOnlySide, WriteOperationError, WriteOperationStartResult};
+use cmdr_fs::mac_only_files::MacOnlyFiles;
 use cmdr_fs::volume::Volume;
 
 /// Picks the concrete remote spelling that the overwrite warning referred to.
@@ -34,8 +35,9 @@ async fn archive_landing(parent: &dyn Volume, target: PathBuf) -> Result<(PathBu
 }
 
 impl crate::Operations {
-    /// Starts one managed fresh compression. Nothing at the destination changes
-    /// until the producer has closed, byte counts agree, and the staged ZIP parses.
+    /// Starts one managed fresh compression that keeps Mac-only files, for the
+    /// tests. The app starts through [`Self::compress_start_leaving_out`].
+    #[cfg(any(test, feature = "testing"))]
     #[allow(
         clippy::too_many_arguments,
         reason = "command seam carries both endpoints, operation settings, preview ownership, and provenance"
@@ -52,6 +54,46 @@ impl crate::Operations {
         compression_level: Option<i64>,
         preview_id: Option<String>,
         initiator: cmdr_operation_log::types::Initiator,
+    ) -> Result<WriteOperationStartResult, WriteOperationError> {
+        self.compress_start_leaving_out(
+            events,
+            source_volume,
+            source_paths,
+            dest_zip_full_path,
+            parent_volume_id,
+            conflict,
+            progress_interval_ms,
+            compression_level,
+            preview_id,
+            initiator,
+            MacOnlyFiles::Include,
+        )
+        .await
+    }
+
+    /// Starts one managed fresh compression. Nothing at the destination changes
+    /// until the producer has closed, byte counts agree, and the staged ZIP parses.
+    ///
+    /// `mac_only` says whether to leave out the Mac-only files below the
+    /// selection, and with them every `__MACOSX` sidecar the zip would otherwise
+    /// carry, which a person on another system sees as the same clutter (#314).
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "command seam carries both endpoints, operation settings, preview ownership, and provenance"
+    )]
+    pub(crate) async fn compress_start_leaving_out(
+        &self,
+        events: Arc<dyn OperationEventSink>,
+        source_volume: Arc<dyn Volume>,
+        source_paths: Vec<PathBuf>,
+        dest_zip_full_path: PathBuf,
+        parent_volume_id: String,
+        conflict: ConflictResolution,
+        progress_interval_ms: u64,
+        compression_level: Option<i64>,
+        preview_id: Option<String>,
+        initiator: cmdr_operation_log::types::Initiator,
+        mac_only: MacOnlyFiles,
     ) -> Result<WriteOperationStartResult, WriteOperationError> {
         super::routing::ensure_zip_writable(&dest_zip_full_path, ReadOnlySide::Destination)?;
         // Plain `get`: the `.zip` file itself is a plain file on its parent drive.
@@ -90,6 +132,7 @@ impl crate::Operations {
             preview_id,
             !existed,
             initiator,
+            mac_only,
         )
         .await
     }

@@ -407,6 +407,9 @@ pub async fn start_scan_preview(
     // Which dialog this walk serves: a transfer's also builds its live tree,
     // a compress's samples a compressed-size estimate (local sources only).
     purpose: ScanPreviewPurpose,
+    // What the transfer will leave out, so the totals match what it writes
+    // (`cmdr_fs::mac_only_files`). `None` (a delete) is `Include`.
+    mac_only_files: Option<cmdr_fs::mac_only_files::MacOnlyFiles>,
 ) -> Result<ScanPreviewStartResult, ScanPreviewRefusal> {
     let volume_id = source_volume_id.unwrap_or_else(|| "root".to_string());
     let is_local = volume_id == "root";
@@ -425,7 +428,15 @@ pub async fn start_scan_preview(
     let Ok(engine) = operations() else {
         return Ok(refuse_scan_preview_not_installed(&*events));
     };
-    engine.start_scan_preview(events, sources, source_volume, volume_id, progress_interval, purpose)
+    engine.start_scan_preview(
+        events,
+        sources,
+        source_volume,
+        volume_id,
+        progress_interval,
+        purpose,
+        mac_only_files.unwrap_or_default(),
+    )
 }
 
 #[tauri::command]

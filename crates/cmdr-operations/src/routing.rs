@@ -726,7 +726,7 @@ impl crate::Operations {
 
         let dest_zip_path = resolve_dest_path(&dest_volume, dest_zip_path);
 
-        self.compress_start(
+        self.compress_start_leaving_out(
             events,
             source_volume,
             source_paths,
@@ -737,6 +737,7 @@ impl crate::Operations {
             config.compression_level,
             config.preview_id.clone(),
             initiator,
+            config.mac_only_files,
         )
         .await
     }

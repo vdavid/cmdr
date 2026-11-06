@@ -611,6 +611,10 @@ pub struct WriteOperationConfig {
     /// See [`ItemKinds`].
     #[serde(default)]
     pub source_kinds: Option<ItemKinds>,
+    /// Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+    /// out of its destination. See `cmdr_fs::mac_only_files`.
+    #[serde(default)]
+    pub mac_only_files: cmdr_fs::mac_only_files::MacOnlyFiles,
 }
 
 impl Default for WriteOperationConfig {
@@ -625,6 +629,7 @@ impl Default for WriteOperationConfig {
             leaves: TransferLeaves::default(),
             space_shortfall: SpaceShortfall::Refuse,
             source_kinds: None,
+            mac_only_files: cmdr_fs::mac_only_files::MacOnlyFiles::Include,
         }
     }
 }
@@ -768,6 +773,10 @@ pub struct VolumeCopyConfig {
     /// See [`ItemKinds`].
     #[serde(default)]
     pub source_kinds: Option<ItemKinds>,
+    /// Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+    /// out of its destination. See `cmdr_fs::mac_only_files`.
+    #[serde(default)]
+    pub mac_only_files: cmdr_fs::mac_only_files::MacOnlyFiles,
 }
 
 impl Default for VolumeCopyConfig {
@@ -782,6 +791,7 @@ impl Default for VolumeCopyConfig {
             compression_level: None,
             space_shortfall: SpaceShortfall::Refuse,
             source_kinds: None,
+            mac_only_files: cmdr_fs::mac_only_files::MacOnlyFiles::Include,
         }
     }
 }
@@ -800,6 +810,7 @@ impl From<&WriteOperationConfig> for VolumeCopyConfig {
             compression_level: None,
             space_shortfall: config.space_shortfall,
             source_kinds: config.source_kinds,
+            mac_only_files: config.mac_only_files,
         }
     }
 }

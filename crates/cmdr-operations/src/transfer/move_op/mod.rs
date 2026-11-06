@@ -637,6 +637,11 @@ mod tests;
 #[path = "move_source_sweep_tests.rs"]
 mod move_source_sweep_tests;
 
+/// A copy and a cross-FS move that leave Mac-only files out (#314).
+#[cfg(test)]
+#[path = "move_mac_only_tests.rs"]
+mod move_mac_only_tests;
+
 /// What the sweep does with an original someone saved over after its copy.
 #[cfg(test)]
 #[path = "move_source_drift_tests.rs"]

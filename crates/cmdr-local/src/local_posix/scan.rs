@@ -11,6 +11,7 @@
 use super::LocalPosixVolume;
 use cmdr_fs::apple_double::SidecarRule;
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::mac_only_files::MacOnlyFiles;
 use cmdr_fs::volume::ScanRecorder;
 use cmdr_fs::volume::Volume;
 use cmdr_fs::volume::{CopyScanResult, ScanConflict, SourceItemInfo, VolumeError};
@@ -39,11 +40,15 @@ impl LocalPosixVolume {
     /// `recorder` gets every entry the walk counts, named under `path` as the
     /// caller spelled it. Handed in directly because the walk can't await the
     /// boundary from in here (see `ScanBoundary::counted`).
+    ///
+    /// `mac_only` leaves out the Mac-only files a transfer won't write (#314),
+    /// below the selection only, like the sidecars.
     pub(super) fn scan_subtree<'a>(
         &'a self,
         path: &'a Path,
         stop: cmdr_fs::volume::ScanStop,
         recorder: Option<Arc<dyn ScanRecorder>>,
+        mac_only: MacOnlyFiles,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
         let sidecars = SidecarRule::with_probe(self.sidecar_probe);
@@ -71,10 +76,11 @@ impl LocalPosixVolume {
                 // The same walk a transfer makes, so the count leaves out what
                 // `list_directory_as_source` leaves out. The top level is the
                 // person's selection, never filtered.
-                let walk = WalkDir::new(&abs_path)
-                    .min_depth(0)
-                    .into_iter()
-                    .filter_entry(|entry| entry.depth() == 0 || !is_walked_sidecar(&sidecars, entry));
+                let walk = WalkDir::new(&abs_path).min_depth(0).into_iter().filter_entry(|entry| {
+                    entry.depth() == 0
+                        || !(is_walked_sidecar(&sidecars, entry)
+                            || mac_only.leaves_out(entry.file_name(), entry.file_type().is_dir()))
+                });
                 for entry in walk {
                     if stop.should_stop_blocking() {
                         return Err(cmdr_fs::volume::scan_stopped());
@@ -199,7 +205,7 @@ impl LocalPosixVolume {
             for path in paths {
                 boundary.check().await?;
                 let scan = self
-                    .scan_subtree(path, boundary.stop(), boundary.recorder().cloned())
+                    .scan_subtree(path, boundary.stop(), boundary.recorder().cloned(), boundary.mac_only())
                     .await?;
                 boundary.counted(&scan).await?;
                 per_path.push((path.clone(), scan));

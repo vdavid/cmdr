@@ -45,6 +45,7 @@ fn publish_local_preview(engine: &TestOperations, preview_id: &str, sources: &[P
         on_file: None,
         online_only: None,
         sidecars: &sidecars,
+        mac_only: cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     };
     let (mut files, mut dirs) = (Vec::new(), Vec::new());
     let (mut total_bytes, mut dedup_bytes) = (0u64, 0u64);

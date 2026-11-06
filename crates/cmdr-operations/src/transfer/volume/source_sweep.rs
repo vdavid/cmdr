@@ -35,6 +35,7 @@ use super::transfer_error::{AtPath, PathedVolumeError};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_fs::mac_only_files::MacOnlyFiles;
 use cmdr_fs::volume::{EntryKind, Volume, VolumeError};
 
 /// What a source entry looked like to the move: its size, its mtime, and its
@@ -73,9 +74,20 @@ impl SourceStamp {
 pub(crate) struct SourceLedger {
     files: HashMap<PathBuf, SourceStamp>,
     walked_dirs: HashSet<PathBuf>,
+    /// What the walk left out (`WriteOperationState::mac_only`): a folder that
+    /// holds nothing else once its carried files are gone goes WITH them.
+    mac_only: MacOnlyFiles,
 }
 
 impl SourceLedger {
+    /// An empty ledger for a walk that leaves out `mac_only`.
+    pub(crate) fn leaving_out(mac_only: MacOnlyFiles) -> Self {
+        Self {
+            mac_only,
+            ..Self::default()
+        }
+    }
+
     pub(super) fn record_walked_dir(&mut self, dir: PathBuf) {
         self.walked_dirs.insert(dir);
     }
@@ -155,6 +167,9 @@ async fn sweep_level(
     // The files this level clears, deleted together once the level is read:
     // one request per thousand on an object store (`Volume::delete_files`).
     let mut doomed: Vec<PathBuf> = Vec::new();
+    // Mac-only files the move left out: removed only once everything else here
+    // went, so a folder that stays keeps the metadata describing it.
+    let mut husk: Vec<PathBuf> = Vec::new();
     for entry in &entries {
         let path = PathBuf::from(&entry.path);
         let outcome = if skipped.contains(&path) {
@@ -176,6 +191,12 @@ async fn sweep_level(
                     Ok(true)
                 }
                 Ok(EntryKind::File) => match ledger.files.get(&path) {
+                    // A Mac-only file the move left out (#314): this folder's
+                    // own metadata, so it goes if the folder does.
+                    None if ledger.mac_only.leaves_out_str(&entry.name, false) => {
+                        husk.push(path);
+                        Ok(false)
+                    }
                     None => {
                         left.appeared += 1;
                         Ok(true)
@@ -207,6 +228,16 @@ async fn sweep_level(
             Some(failure) => Err(failure),
             None => Ok(true),
         };
+    }
+    // Everything the move carried is gone, so the folder goes too, and the
+    // Mac-only files it held with it: ❌ never a husk folder in the source.
+    if !husk.is_empty() {
+        for (path, result) in husk.iter().zip(volume.delete_files(&husk).await) {
+            match result {
+                Ok(()) | Err(VolumeError::NotFound(_)) => {}
+                Err(e) => return Err(e).at_source(path),
+            }
+        }
     }
     // ❗ As a folder, never `delete`: once such a folder's last file goes, a
     // plain delete finds only a file of its name, which the move never copied.

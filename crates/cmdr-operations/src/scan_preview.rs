@@ -87,6 +87,13 @@ impl Operations {
     /// compressed-size estimate (`compress_estimate`); a volume walk never samples.
     /// A DELETE preview over the person's own home folder, or a folder holding
     /// it, refuses before anything walks (`home_folder.rs`).
+    /// `mac_only` is what the transfer will leave out (`cmdr_fs::mac_only_files`):
+    /// the walk leaves the same files out, and the dialog starts a new preview
+    /// when the person flips it. A delete passes `Include`.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the IPC command's arguments, one each: what to walk, where, how often to report, and what for"
+    )]
     pub fn start_scan_preview(
         &self,
         events: Arc<dyn ScanPreviewEventSink>,
@@ -95,6 +102,7 @@ impl Operations {
         source_volume_id: String,
         progress_interval_ms: u64,
         purpose: ScanPreviewPurpose,
+        mac_only: cmdr_fs::mac_only_files::MacOnlyFiles,
     ) -> Result<ScanPreviewStartResult, ScanPreviewRefusal> {
         // A delete of the person's own home folder, or a folder holding it, is
         // refused at its start (`home_folder.rs`); refusing here too lets the
@@ -123,6 +131,7 @@ impl Operations {
         let state = Arc::new(ScanPreviewState {
             cancelled: AtomicBool::new(false),
             progress_interval: Duration::from_millis(progress_interval_ms),
+            mac_only,
         });
 
         self.stores()

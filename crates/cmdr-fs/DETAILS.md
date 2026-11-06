@@ -68,34 +68,37 @@ the next section.
 - `staging.rs`: `StagingTemp`, the ONLY way to name a scratch file. `src/staging/names.rs` is the one name builder
   behind it (and behind `temp_sibling_name` / `_path` / `_prefix` for the backends that name their own upload temps).
 - Leaves: `apple_double.rs` (whether a listed `._name` is the AppleDouble sidecar the kernel serves as `name`'s xattrs
-  on a volume with none of its own, so a copy walk leaves it out), `archive_format.rs` (sole source of truth for archive
-  detection, and the extension-only split of a path at its archive component), `file_extension.rs` (what counts as a
-  name's extension, product-wide: § "What counts as an extension"), `restic_view.rs` (the `Browse snapshots` name and
-  the lexical split of a path at it, here so the listing engine and the write guards ask it without linking
-  `rustic_core`; `cmdr-restic` confirms), `benchmark.rs` (the env-gated `[TIMELINE]` stderr events,
-  `docs/guides/benchmarking-file-loading.md`), `cloud_provider.rs` (macOS: which cloud provider owns a path, and what it
-  can do; pure path rules, its module docs say why it's a type), `validation.rs` (the platform's name and path-length
-  limits, `ValidationError`, the typed refusal a rename's validity check carries over IPC, and `validate_plain_leaf`,
-  the stricter check for a name somebody else chose for the user: no edge whitespace, control character, or invisible
-  bidi, zero-width, or format character, so the name a review shows is the name that lands; a transfer's per-source
-  names go through it), `firmlinks.rs` (`normalize_path`; the index and the app's watchers have to agree on it),
-  `file_provider.rs` (the cloud-domain marker), `filesystem_kind.rs`, `path_locations.rs` (how many PLACES a set of
-  directories amounts to), `path_hash.rs` (the fixed 64-bit folder-path hash two resident maps key on instead of the
-  path: search's importance weights and the media coverage score cache), `git_meta` (what a git portal row's Size cell
-  states), `restic_meta` (a restic snapshot row's host, tags, and paths), `name_fold.rs` (the ONE "same name, spelled
-  another way" key: NFC + lowercase, shared by share IDs, transfer conflict buckets, the SMB spelling resolve, and
-  cursor placement; beside it `normalize_for_comparison`, the local filesystem's own key, which the drive index stores
-  and the write engine matches sources under), `log_rollup`, `log_private` + `log_detail` (`LogPrivate`, the wrapper a
-  log site marks a user-derived value with, over the ONE marker table and lexer the app's span pass reads too;
-  `LogDetail` for external OS/server/CLI text as one Debug-quoted, 1 KiB-capped field, and `LoggedText` for our own;
-  `log_error`, the `LogError` a path-carrying error logs through, `error_detail`, the message field that keeps its cause
-  typed for it, and `log_json`, a value's JSON with its fields marked; § "Marked log values"), `tcc_paths`,
-  `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path a person typed on THIS machine), `twin_path` (a
-  same-named twin's row path: `folder_of` past its pick, and `shown`, the one rule that takes a pick out of anything a
-  person reads; `crates/cmdr-mtp/src/connection/DETAILS.md` § "Same-named siblings"), `byte_size` (`format_size`, the
-  IEC byte count log lines and model-facing answers read), `thread_qos`, `thread_cpu`, `process_cpu/`, `process_memory`,
-  `utility_pool.rs` (`UtilityPool`, a keep-alive pool of `Utility`-QoS threads, so background work that comes in
-  streams, like index walks, reuses threads instead of creating one per job).
+  on a volume with none of its own, so a copy walk leaves it out), `mac_only_files.rs` (`MacOnlyFiles`: whether a
+  transfer leaves `.DS_Store` and `._*` FILES out, the person's per-operation choice; every copy-scan walk asks it of
+  each listed child through `ScanBoundary::leaves_out`, `crates/cmdr-operations/src/transfer/DETAILS.md` § "Mac-only
+  files a transfer leaves out"), `archive_format.rs` (sole source of truth for archive detection, and the extension-only
+  split of a path at its archive component), `file_extension.rs` (what counts as a name's extension, product-wide: §
+  "What counts as an extension"), `restic_view.rs` (the `Browse snapshots` name and the lexical split of a path at it,
+  here so the listing engine and the write guards ask it without linking `rustic_core`; `cmdr-restic` confirms),
+  `benchmark.rs` (the env-gated `[TIMELINE]` stderr events, `docs/guides/benchmarking-file-loading.md`),
+  `cloud_provider.rs` (macOS: which cloud provider owns a path, and what it can do; pure path rules, its module docs say
+  why it's a type), `validation.rs` (the platform's name and path-length limits, `ValidationError`, the typed refusal a
+  rename's validity check carries over IPC, and `validate_plain_leaf`, the stricter check for a name somebody else chose
+  for the user: no edge whitespace, control character, or invisible bidi, zero-width, or format character, so the name a
+  review shows is the name that lands; a transfer's per-source names go through it), `firmlinks.rs` (`normalize_path`;
+  the index and the app's watchers have to agree on it), `file_provider.rs` (the cloud-domain marker),
+  `filesystem_kind.rs`, `path_locations.rs` (how many PLACES a set of directories amounts to), `path_hash.rs` (the fixed
+  64-bit folder-path hash two resident maps key on instead of the path: search's importance weights and the media
+  coverage score cache), `git_meta` (what a git portal row's Size cell states), `restic_meta` (a restic snapshot row's
+  host, tags, and paths), `name_fold.rs` (the ONE "same name, spelled another way" key: NFC + lowercase, shared by share
+  IDs, transfer conflict buckets, the SMB spelling resolve, and cursor placement; beside it `normalize_for_comparison`,
+  the local filesystem's own key, which the drive index stores and the write engine matches sources under),
+  `log_rollup`, `log_private` + `log_detail` (`LogPrivate`, the wrapper a log site marks a user-derived value with, over
+  the ONE marker table and lexer the app's span pass reads too; `LogDetail` for external OS/server/CLI text as one
+  Debug-quoted, 1 KiB-capped field, and `LoggedText` for our own; `log_error`, the `LogError` a path-carrying error logs
+  through, `error_detail`, the message field that keeps its cause typed for it, and `log_json`, a value's JSON with its
+  fields marked; § "Marked log values"), `tcc_paths`, `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path
+  a person typed on THIS machine), `twin_path` (a same-named twin's row path: `folder_of` past its pick, and `shown`,
+  the one rule that takes a pick out of anything a person reads; `crates/cmdr-mtp/src/connection/DETAILS.md` §
+  "Same-named siblings"), `byte_size` (`format_size`, the IEC byte count log lines and model-facing answers read),
+  `thread_qos`, `thread_cpu`, `process_cpu/`, `process_memory`, `utility_pool.rs` (`UtilityPool`, a keep-alive pool of
+  `Utility`-QoS threads, so background work that comes in streams, like index walks, reuses threads instead of creating
+  one per job).
 - `attr_buf.rs` (macOS): the packed record decoder every `getattrlist` / `getattrlistbulk` caller shares. § "`attr_buf`:
   the packed attribute layout".
 - `mapped_file_faults/`: the SIGBUS recovery that turns a read of a mapped file whose disk went away into zeros, and the

@@ -296,7 +296,9 @@ reaped, fresh spared, other-archive ignored, delete-failure doesn't fail the edi
   flagged with a data descriptor it never gets loses ditto its place ("Couldn't read pkzip signature") while `unzip` and
   Cmdr, which read the central directory, pass. `zip` 8.6's stream mode did exactly that (#400); 9.0.1 sets no
   descriptor flag on a directory. Pinned for a folder, its files, and their tags by
-  `fresh_zip_tests.rs::a_tagged_local_file_and_folder_compress_with_sidecars_ditto_reads` (macOS).
+  `fresh_zip_tests.rs::a_tagged_local_file_and_folder_compress_with_sidecars_ditto_reads` (macOS). A compress that
+  leaves Mac-only files out writes no sidecar at all (`FreshPlan.sidecars`): `../transfer/DETAILS.md` § "Mac-only files
+  a transfer leaves out".
 
   **Validation precedes publication.** After producer close and destination close/sync, producer bytes, writer bytes,
   and staged stat size must agree. `ArchiveVolume` then parses the staged ZIP, which must read back as exactly the

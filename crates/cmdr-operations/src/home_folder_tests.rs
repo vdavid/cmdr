@@ -210,6 +210,7 @@ async fn a_delete_preview_over_the_home_folder_refuses_without_walking() {
         "root".into(),
         50,
         ScanPreviewPurpose::Delete,
+        cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     );
 
     assert_eq!(
@@ -233,6 +234,7 @@ async fn a_copy_preview_of_the_home_folder_still_walks() {
         "root".into(),
         50,
         ScanPreviewPurpose::Transfer,
+        cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     );
     let preview = started.expect("a copy preview starts");
     engine.cancel_scan_preview(&preview.preview_id);

@@ -75,7 +75,7 @@ pub(super) fn move_with_staging(
         // cache hit the same as a miss and fall through to a fresh local scan.
         let previews = state.scope().stores().previews();
         if let Some(cached) = previews
-            .take_cached_scan_result(preview_id, sources)
+            .take_cached_transfer_scan(preview_id, sources, state.mac_only)
             .filter(|c| !c.files.is_empty())
         {
             log::debug!(

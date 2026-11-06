@@ -769,6 +769,7 @@ async fn a_volume_move_reports_why_it_cant_roll_back() {
             Arc::new(ScanPreviewState {
                 cancelled: std::sync::atomic::AtomicBool::new(false),
                 progress_interval: Duration::from_millis(50),
+                mac_only: cmdr_fs::mac_only_files::MacOnlyFiles::Include,
             }),
         );
         let events = Arc::new(CollectorEventSink::new());

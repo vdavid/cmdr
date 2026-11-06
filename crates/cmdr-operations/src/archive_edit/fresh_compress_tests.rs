@@ -115,6 +115,7 @@ async fn backend_refusal_unblocks_a_producer_parked_by_pause() {
         }],
         source_bytes: 3,
         skipped: 0,
+        sidecars: true,
     };
     let destination: Arc<dyn Volume> = Arc::new(RefuseAfterProducerProgress {
         inner: InMemoryVolume::new("destination"),
@@ -790,6 +791,7 @@ fn plan_of(names: &[&str]) -> FreshPlan {
             .collect(),
         source_bytes: 0,
         skipped: 0,
+        sidecars: true,
     }
 }
 

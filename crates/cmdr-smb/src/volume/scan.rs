@@ -115,6 +115,10 @@ impl SmbVolume {
                 .await?;
 
             for entry in &entries {
+                // A Mac-only file the transfer leaves out is no part of it (#314).
+                if boundary.leaves_out(&entry.name, entry.is_directory) {
+                    continue;
+                }
                 let child_smb = if smb_path.is_empty() {
                     entry.name.clone()
                 } else {

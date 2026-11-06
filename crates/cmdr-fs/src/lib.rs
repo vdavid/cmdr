@@ -51,6 +51,7 @@ pub mod log_error;
 pub mod log_json;
 pub mod log_private;
 pub mod log_rollup;
+pub mod mac_only_files;
 // The browser build (`wasm32`, `crates/cmdr-listing-wasm`) maps no files, so
 // this one is host-only. `DETAILS.md` § "The browser build".
 #[cfg(not(target_family = "wasm"))]

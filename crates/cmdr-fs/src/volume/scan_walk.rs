@@ -312,6 +312,10 @@ fn walk_directory<'a>(
             .through_outages(dir, || unless_stopped(source, boundary, source.scan_list(dir)))
             .await?
         {
+            // A Mac-only file the transfer leaves out is no part of it (#314).
+            if boundary.leaves_out(&entry.name, entry.is_directory && !entry.is_symlink) {
+                continue;
+            }
             let child = dir.join(&entry.name);
             // ❗ A symlinked directory is ONE entry, never a subtree. Following
             // one double-counts its target (Android's `/sdcard` and

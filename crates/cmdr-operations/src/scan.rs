@@ -96,6 +96,7 @@ fn scan_sources_internal(
     let refuse_mounted_volume = |path: &Path| refused_at(path, MountedVolumeAction::Delete);
     let ctx = WalkContext {
         sidecars: &sidecars,
+        mac_only: state.mac_only,
         progress_interval,
         is_cancelled: &|| state.intent().is_cancelled(),
         park_while_paused: &|| pause.park_while_paused(),

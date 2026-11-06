@@ -30,6 +30,8 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
+use crate::mac_only_files::MacOnlyFiles;
+
 use super::{CopyScanResult, ListingProgress, ScanOutages, ScanReadNext, ScanRecorder, ScanStop, VolumeError};
 
 /// How often [`ScanBoundary::stopped`] asks the stop while a read is in
@@ -49,6 +51,9 @@ pub struct ScanBoundary<'a> {
     /// Who decides whether a failed read waits out an outage and runs again.
     /// Borrowed: only an async walk asks it, never one inside `spawn_blocking`.
     outages: Option<&'a dyn ScanOutages>,
+    /// Which listed files the walk leaves out entirely: not counted, not
+    /// recorded, so the scan's totals are what the transfer will write.
+    mac_only: MacOnlyFiles,
     files: AtomicUsize,
     dirs: AtomicUsize,
     bytes: AtomicU64,
@@ -63,6 +68,7 @@ impl<'a> ScanBoundary<'a> {
             stop: ScanStop::none(),
             recorder: None,
             outages: None,
+            mac_only: MacOnlyFiles::Include,
             files: AtomicUsize::new(0),
             dirs: AtomicUsize::new(0),
             bytes: AtomicU64::new(0),
@@ -86,6 +92,25 @@ impl<'a> ScanBoundary<'a> {
     pub fn recording_to(mut self, recorder: Arc<dyn ScanRecorder>) -> Self {
         self.recorder = Some(recorder);
         self
+    }
+
+    /// The walk leaves out what `mac_only` says to (#314).
+    pub fn leaving_out(mut self, mac_only: MacOnlyFiles) -> Self {
+        self.mac_only = mac_only;
+        self
+    }
+
+    /// Whether the walk leaves out the LISTED child `name` (`is_directory` per
+    /// the listing): ask it for every child before counting or recursing.
+    /// ❌ Never of a selected top-level source: a file the person picked goes.
+    pub fn leaves_out(&self, name: &str, is_directory: bool) -> bool {
+        self.mac_only.leaves_out_str(name, is_directory)
+    }
+
+    /// The leave-out choice on its own, for a walk inside `spawn_blocking`
+    /// (see [`stop`](Self::stop)).
+    pub fn mac_only(&self) -> MacOnlyFiles {
+        self.mac_only
     }
 
     /// A read the walk sends that fails asks `outages` whether to wait and run

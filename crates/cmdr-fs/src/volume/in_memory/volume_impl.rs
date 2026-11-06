@@ -632,72 +632,15 @@ impl Volume for InMemoryVolume {
         Box::pin(async move {
             // A device breathes at every call (`with_yielding`; a no-op otherwise).
             self.breathe().await;
-            let normalized = self.normalize(path);
-            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-                message: "Lock poisoned".into(),
-                raw_os_error: None,
-            })?;
-
-            // Check if the path is a file
-            if let Some(entry) = entries.get(&normalized)
-                && !entry.metadata.is_directory
-            {
-                return Ok(CopyScanResult {
-                    file_count: 1,
-                    dir_count: 0,
-                    total_bytes: entry.metadata.size.unwrap_or(0),
-                    // In-memory volume has no hardlinks: footprints are equal.
-                    dedup_bytes: entry.metadata.size.unwrap_or(0),
-                    top_level_is_directory: false,
-                    top_level_modified_at: entry.metadata.modified_at,
-                    top_level_created_at: entry.metadata.created_at,
-                });
-            }
-
-            // Recursively scan all descendants
-            let mut file_count = 0;
-            let mut dir_count = 0;
-            let mut total_bytes = 0u64;
-
-            for (entry_path, entry) in entries.iter() {
-                // Skip the root path itself, only count descendants
-                if entry_path == &normalized {
-                    continue;
-                }
-                if !entry_path.starts_with(&normalized) {
-                    continue;
-                }
-                if entry.metadata.is_directory {
-                    dir_count += 1;
-                } else {
-                    file_count += 1;
-                    total_bytes += entry.metadata.size.unwrap_or(0);
-                }
-            }
-
-            Ok(CopyScanResult {
-                file_count,
-                dir_count,
-                total_bytes,
-                // In-memory volume has no hardlinks: footprints are equal.
-                dedup_bytes: total_bytes,
-                // We only reach this branch if the path isn't a known file
-                // entry. In-memory roots and unknown paths both report `true`
-                // to match how callers use the flag (fall through to the
-                // directory-recursion path). Empty roots or unknown paths
-                // behave like empty directories, which is the existing
-                // contract on this backend.
-                top_level_is_directory: true,
-                top_level_modified_at: entries.get(&normalized).and_then(|entry| entry.metadata.modified_at),
-                top_level_created_at: entries.get(&normalized).and_then(|entry| entry.metadata.created_at),
-            })
+            self.scan_subtree(path, crate::mac_only_files::MacOnlyFiles::Include)
         })
     }
 
     /// The trait's per-path default, plus every entry handed to the boundary's
     /// recorder, so a transfer over the double draws as complete a tree as one
     /// over a walking backend. The counts and their one-report-per-path rhythm
-    /// are the default's, unchanged.
+    /// are the default's, unchanged. What the boundary leaves out (#314) is
+    /// neither counted nor recorded.
     fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
@@ -709,9 +652,9 @@ impl Volume for InMemoryVolume {
             let mut per_path = Vec::with_capacity(paths.len());
             for path in paths {
                 boundary.check().await?;
-                let scan = self.scan_for_copy(path).await?;
+                let scan = self.scan_subtree(path, boundary.mac_only())?;
                 if let Some(recorder) = boundary.recorder() {
-                    self.record_subtree(path, recorder.as_ref());
+                    self.record_subtree(path, recorder.as_ref(), boundary.mac_only());
                 }
                 boundary.counted(&scan).await?;
                 per_path.push((path.clone(), scan));

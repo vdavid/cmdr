@@ -220,6 +220,7 @@ async fn run_oracle_aware_batch_scan_forwards_dirs_and_bytes_from_backend() {
         None,
         &on_progress,
         None,
+        cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     )
     .await
     .expect("oracle-aware batch scan should succeed");
@@ -281,6 +282,7 @@ async fn dirs_and_bytes_baseline_shifts_across_parent_groups() {
         None,
         &on_progress,
         None,
+        cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     )
     .await
     .expect("oracle-aware batch scan should succeed");

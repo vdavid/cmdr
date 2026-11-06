@@ -7,6 +7,7 @@
 //! through its private fields while nothing else can.
 
 use crate::rt::Instant;
+use cmdr_fs::mac_only_files::MacOnlyFiles;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -30,6 +31,10 @@ use cmdr_operation_log::types::OperationId;
 pub(crate) struct ScanPreviewState {
     pub cancelled: AtomicBool,
     pub progress_interval: Duration,
+    /// What the walk leaves out: the Mac-only files a transfer that skips them
+    /// won't write (#314), so the totals match what it writes. Kept on the
+    /// settled result too, so an operation that skips differently rescans.
+    pub mac_only: MacOnlyFiles,
 }
 
 /// How a scan preview ended. Published atomically with the in-flight state's
@@ -347,7 +352,7 @@ impl ScanPreviews {
         preview_id: &str,
         requested_sources: &[PathBuf],
     ) -> Option<ScanResult> {
-        self.take_settled(preview_id, requested_sources, None)
+        self.take_settled(preview_id, requested_sources, None, MacOnlyFiles::Include)
     }
 
     /// [`Self::take_cached_scan_result`] for a caller that DELETES the cached
@@ -361,7 +366,25 @@ impl ScanPreviews {
         preview_id: &str,
         requested_sources: &[PathBuf],
     ) -> Option<ScanResult> {
-        self.take_settled(preview_id, requested_sources, Some(ScanPreviewPurpose::Delete))
+        self.take_settled(
+            preview_id,
+            requested_sources,
+            Some(ScanPreviewPurpose::Delete),
+            MacOnlyFiles::Include,
+        )
+    }
+
+    /// [`Self::take_cached_scan_result`] for a copy, move, or compress that leaves
+    /// out `mac_only` (#314): a preview that left out something else isn't a hit,
+    /// so the dialog's last-second flip of the toggle costs a rescan, never a
+    /// transfer that writes what the person asked it not to.
+    pub(crate) fn take_cached_transfer_scan(
+        &self,
+        preview_id: &str,
+        requested_sources: &[PathBuf],
+        mac_only: MacOnlyFiles,
+    ) -> Option<ScanResult> {
+        self.take_settled(preview_id, requested_sources, None, mac_only)
     }
 
     fn take_settled(
@@ -369,6 +392,7 @@ impl ScanPreviews {
         preview_id: &str,
         requested_sources: &[PathBuf],
         walked_for: Option<ScanPreviewPurpose>,
+        leaving_out: MacOnlyFiles,
     ) -> Option<ScanResult> {
         let mut previews = self.write();
         let entry = previews.remove(preview_id)?;
@@ -407,6 +431,16 @@ impl ScanPreviews {
                 preview_id,
                 cached.purpose,
                 wanted
+            );
+            return None;
+        }
+        if cached.mac_only != leaving_out {
+            log::info!(
+                target: "cmdr_operations",
+                "scan preview {} left out {:?}, but the operation leaves out {:?}; ignoring the cache and rescanning",
+                preview_id,
+                cached.mac_only,
+                leaving_out
             );
             return None;
         }
@@ -520,6 +554,7 @@ impl ScanPreviews {
             estimated_compressed_bytes: None,
             scanned_files: None,
             tree: None,
+            mac_only: MacOnlyFiles::Include,
         };
         self.write().insert(
             preview_id,

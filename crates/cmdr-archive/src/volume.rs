@@ -585,7 +585,7 @@ impl Volume for ArchiveVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
-        Box::pin(self.scan_subtree(path))
+        Box::pin(self.scan_subtree(path, cmdr_fs::mac_only_files::MacOnlyFiles::Include))
     }
 
     /// Overridden so a transfer's tree gets every entry, not one opaque row per

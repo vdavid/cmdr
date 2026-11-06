@@ -98,6 +98,7 @@ fn fresh_state() -> Arc<ScanPreviewState> {
     Arc::new(ScanPreviewState {
         cancelled: AtomicBool::new(false),
         progress_interval: Duration::from_millis(50),
+        mac_only: cmdr_fs::mac_only_files::MacOnlyFiles::Include,
     })
 }
 
