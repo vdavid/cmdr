@@ -312,7 +312,8 @@ func listedLanes(jobs []runJob) (map[string]bool, bool) {
 	for _, j := range jobs {
 		switch j.Name {
 		case changesJob:
-			changed = j.Status == "completed"
+			// Only a `changes` that succeeded picked the lanes; a cancelled one ran nothing.
+			changed = j.Status == "completed" && j.Conclusion == "success"
 		case ciCheck, lightGate:
 		default:
 			lane := laneOf(j.Name)

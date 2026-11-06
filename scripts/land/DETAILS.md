@@ -99,10 +99,17 @@ are never landed as they are, and each one used to pay the macOS lane's ~34 min 
   title that lies only makes the wait follow the wrong run: a light run finished without `CI OK` reads red, never green.
 - **Re-runs keep their mode** (a re-run keeps its event payload), so `gh run rerun --failed` on a land run is a land
   run. A newer push while the label is on is a land run too, which is what the conflict rebase needs.
+- **A light run that took the land run's slot gets it back** (`supplantedLandRun`, `slotRetaker`). GitHub can deliver
+  the label's `labeled` event before the push's `synchronize`; the push's run then reads a payload without the label,
+  starts light, and, newer in the PR's concurrency group, cancels the land run (PR #1010, 2026-11-05: land run at
+  23:39:32Z, light run at 23:39:33Z). So when the newest land run is cancelled and a light run on the head is no older,
+  the wait re-runs the land run (once per attempt; the re-run is a land run and cancels the light one) and keeps
+  waiting. A light run older than the cancelled land run means a person cancelled it: that stays red.
 - **`-record N`** opens the record PR the same way and asks the same way; its tree is `main`'s, so it still goes green
   in about a minute.
-- Unit-tested (`TestNextLandAsk`, `TestCIVerdictIgnoresLightRuns`, `TestPRCreateArgsCarryOnlyTheAgentLabel`); the GitHub
-  side on throwaway PR #978 (`docs/notes/ci-light-runs-2026-11-05.md`).
+- Unit-tested (`TestNextLandAsk`, `TestCIVerdictIgnoresLightRuns`, `TestSupplantedLandRun`,
+  `TestPRCreateArgsCarryOnlyTheAgentLabel`); the GitHub side on throwaway PR #978
+  (`docs/notes/ci-light-runs-2026-11-05.md`).
 
 ## Gotcha: never two labels on `gh pr create`
 
@@ -414,9 +421,9 @@ So `finish` cancels every unfinished run on the branch (`leftoverRuns`: this rep
 Agents kept quoting a CI duration remembered from a doc, long after CI got faster. So `land` works it out live (`eta.go`
 decides, `etagh.go` fetches), and the docs point at `pnpm land eta` rather than carry a figure.
 
-- **When**: once the run's `Detect changes` job ends, the lanes that need only it are listed (run or skipped), so the
-  lane plan is known. `land` prints one line then ("CI runs E2E, Rust, ... Expect CI OK around 00:31, in about 19 min
-  (up to 24 min)."), and again only when the estimate moves more than `etaSlip` (3 min).
+- **When**: once the run's `Detect changes` job succeeds, the lanes that need only it are listed (run or skipped), so
+  the lane plan is known. `land` prints one line then ("CI runs E2E, Rust, ... Expect CI OK around 00:31, in about 19
+  min (up to 24 min)."), and again only when the estimate moves more than `etaSlip` (3 min).
 - **Per lane, never per job**: a lane is a top-level `ci.yml` job (a reusable workflow's jobs show as `<lane> / <job>`).
   Its jobs chain, and a lane that needs another (Linux E2E needs the base image) isn't listed until that one ends, so
   `plannedLanes` adds it from `ci.yml`'s `needs` when recent land runs ran it.

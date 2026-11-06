@@ -441,6 +441,27 @@ func newestLandRun(runs []workflowRun) workflowRun {
 	return slices.MaxFunc(live, byAge)
 }
 
+// supplantedLandRun finds a land run a light run took the slot from: the newest land run is
+// cancelled, and a light run on the head was created no earlier. GitHub can deliver the `land`
+// label's event before the push's; the push's run then starts as light (its payload predates the
+// label) and, being newer in the PR's concurrency group, cancels the land run (PR #1010,
+// 2026-11-05). Re-running the land run takes the slot back. A light run older than the cancelled
+// land run means a person cancelled it, which stays red.
+func supplantedLandRun(runs []workflowRun) (workflowRun, bool) {
+	lands := landRuns(runs)
+	if len(lands) == 0 {
+		return workflowRun{}, false
+	}
+	land := newestLandRun(lands)
+	if !land.cancelled() {
+		return workflowRun{}, false
+	}
+	took := slices.ContainsFunc(runs, func(r workflowRun) bool {
+		return r.isLightRun() && !r.CreatedAt.Before(land.CreatedAt)
+	})
+	return land, took
+}
+
 // landAsk is how `land` asks CI to land the head (`ci.yml`'s `mode` step reads the PR's labels).
 type landAsk int
 

@@ -504,6 +504,7 @@ func waitForCI(r runner, head string, cfg config) error {
 	// list lagging, never a push that started nothing.
 	seen := false
 	var cancelled cancelWait
+	var retaker slotRetaker
 	var eta etaTracker
 	for {
 		// The runs, then the `CI OK` check runs once a run exists: `CI OK` decides even while
@@ -521,6 +522,11 @@ func waitForCI(r runner, head string, cfg config) error {
 			if err := r.ghAPI(&checks, fmt.Sprintf("repos/%s/commits/%s/check-runs?check_name=%s&filter=all", repo, head, url.PathEscape(ciCheck))); err != nil {
 				return err
 			}
+		}
+		if retaker.retake(r, runs.WorkflowRuns) {
+			cancelled = cancelWait{}
+			time.Sleep(fastPoll)
+			continue
 		}
 		v, run := ciVerdict(runs.WorkflowRuns, checks.CheckRuns)
 		v = cancelled.verdict(v, run, time.Now())

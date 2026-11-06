@@ -189,6 +189,11 @@ func TestEstimate(t *testing.T) {
 	if !changed || !listed["Website"] || listed["Desktop (Rust)"] {
 		t.Fatalf("listed %v, changed %v", listed, changed)
 	}
+	// A cancelled `changes` picked no lanes (PR #1010, 2026-11-05: "CI runs Deploy website").
+	cancelledChanges := append([]runJob{{Name: changesJob, Status: "completed", Conclusion: "cancelled"}}, jobs[1:]...)
+	if _, changed := listedLanes(cancelledChanges); changed {
+		t.Error("a cancelled changes job counted as a lane plan")
+	}
 	planned := plannedLanes(workflowJobBodies(etaWorkflow), listed, m)
 	est := estimate(run, jobs, planned, m, ciLoad{}, now)
 	// E2E isn't listed yet: it ends no sooner than its usual 20 min, nor 18 after now.
