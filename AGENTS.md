@@ -148,9 +148,9 @@ Always use **`pnpm check`** at the repo root (never raw `cargo` or `vitest`); it
 `pnpm check --fast && pnpm check svelte-tests-related`**, plus, if you touched Rust, `pnpm check clippy` and the Rust
 tests you touched (`cargo nextest run <name>`, `docs/tooling/testing.md`). `--fast` (~9 s) is scanners plus knip, no
 compilers, typecheckers, test suites, or formatters; `svelte-tests-related` runs the vitest files that reach your
-branch's changes; clippy (~25 s warm) catches in seconds what CI finds much later. Scope by name (`pnpm check clippy`),
-tech (`rust`), or app (`desktop`). Docs: `scripts/check/CLAUDE.md`. Run only the checks your change touches, ❌ never a
-local full `pnpm check`: it takes 8–10 min and slows every session on the Mac, and `pnpm land`'s CI is the full run. Add
+branch's changes; clippy (~25 s warm) catches in seconds what CI finds later. Scope by name (`pnpm check clippy`), tech
+(`rust`), or app (`desktop`). Docs: `scripts/check/CLAUDE.md`. Run only the checks your change touches, ❌ never a local
+full `pnpm check`: it takes 8–10 min and slows every session on the Mac, and `pnpm land`'s CI is the full run. Add
 `pnpm check --only-slow`, also backgrounded, only after the last milestone of a large effort (5+ non-translator
 subagents). ❌ Never `--include-slow`.
 
@@ -190,10 +190,9 @@ inventory). Desktop-specific test, MCP, and E2E mechanics live in `apps/desktop/
 - Step back per milestone: is it solid AND elegant AND documented?
 - An **outside contributor's PR**: land it without asking them for anything, and have GitHub mark it merged.
   `docs/guides/handling-prs.md`.
-- **Landing**: a worktree branch reaches `main` only through `pnpm land`, on green CI (the lead lands, in the
-  background; how long: `pnpm land eta`). Push each green milestone with `pnpm land -no-wait`: a light run, without Rust
-  lanes, macOS, or E2E. Several ready branches land as one batch (`docs/guides/multi-agent-refactors.md`).
-  `scripts/land/CLAUDE.md`.
+- **Landing**: a worktree branch reaches `main` only through `pnpm land`, on green CI (the lead lands in the background;
+  ETA: `pnpm land eta`). Push each green milestone with `pnpm land -no-wait`: a light run (no Rust lanes, macOS, or
+  E2E). Several ready branches land as one batch (`docs/guides/multi-agent-refactors.md`). `scripts/land/CLAUDE.md`.
 - Commits: nobody reads PRs, so the message explains the change. Conventional-commits style, leading with impact: the
   title says what the change achieves and why, which feeds our release notes. No title length cap, comprehensive bodies
   fine, no wraps, entities in backticks. Never `Co-Authored-By`.
