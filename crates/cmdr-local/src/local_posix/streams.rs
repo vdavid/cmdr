@@ -37,6 +37,28 @@ struct LocalPosixReadStream {
     stat: std::fs::Metadata,
 }
 
+/// How a streamed write opens its file.
+#[derive(Clone, Copy)]
+enum Opening {
+    /// A new write, under its mode.
+    Fresh(WriteMode),
+    /// Carrying on the file a failed write left, from this byte.
+    Continue(u64),
+}
+
+/// Why a streamed write's open didn't hand back a file.
+enum OpenRefusal {
+    /// The file to carry on is gone or shorter than the byte to carry on from.
+    CantContinue,
+    Io(std::io::Error),
+}
+
+impl From<std::io::Error> for OpenRefusal {
+    fn from(e: std::io::Error) -> Self {
+        Self::Io(e)
+    }
+}
+
 /// 1 MiB chunks, matching `chunked_copy.rs`'s constant.
 const LOCAL_STREAM_CHUNK_SIZE: usize = 1024 * 1024;
 
@@ -188,6 +210,32 @@ impl LocalPosixVolume {
         dest: &'a Path,
         mode: WriteMode,
         length: StreamLength,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<StreamWritten, VolumeError>> + Send + 'a>> {
+        self.stream_into(dest, Opening::Fresh(mode), length, stream, on_progress)
+    }
+
+    /// [`Volume::continue_write_from_stream`](cmdr_fs::volume::Volume::continue_write_from_stream):
+    /// the same write, into the file a failed one left, cut to `at` and carried
+    /// on from there. Refuses (`NotSupported`) a target that's gone or shorter
+    /// than `at`, creating nothing.
+    pub(super) fn continue_write_from_stream_impl<'a>(
+        &'a self,
+        target: &'a Path,
+        at: u64,
+        length: StreamLength,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<StreamWritten, VolumeError>> + Send + 'a>> {
+        self.stream_into(target, Opening::Continue(at), length, stream, on_progress)
+    }
+
+    fn stream_into<'a>(
+        &'a self,
+        dest: &'a Path,
+        opening: Opening,
+        length: StreamLength,
         mut stream: Box<dyn VolumeReadStream>,
         on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<StreamWritten, VolumeError>> + Send + 'a>> {
@@ -220,23 +268,46 @@ impl LocalPosixVolume {
             // after its last byte, so a private file is never readable by
             // others while it streams; one without keeps the umask's default.
             let dest_for_open = dest_abs.clone();
-            let mut file = spawn_blocking(move || {
+            let mut file = spawn_blocking(move || -> Result<std::fs::File, OpenRefusal> {
                 let mut options = std::fs::OpenOptions::new();
                 options.write(true);
-                if landed_mode.is_some() {
-                    options.mode(0o600);
+                match opening {
+                    Opening::Fresh(mode) => {
+                        if landed_mode.is_some() {
+                            options.mode(0o600);
+                        }
+                        match mode {
+                            WriteMode::CreateNew | WriteMode::CreateNewInFreshFolder => options.create_new(true),
+                            WriteMode::CreateOrReplace => options.create(true).truncate(true),
+                        };
+                        Ok(options.open(&dest_for_open)?)
+                    }
+                    // The file a failed write left, never a new one: a gone or
+                    // short one can't be carried on, and a byte past `at` is
+                    // one nobody reported, so it's cut.
+                    Opening::Continue(at) => {
+                        use std::io::Seek;
+                        let mut file = options.open(&dest_for_open).map_err(|_| OpenRefusal::CantContinue)?;
+                        if file.metadata()?.len() < at {
+                            return Err(OpenRefusal::CantContinue);
+                        }
+                        file.set_len(at)?;
+                        file.seek(std::io::SeekFrom::Start(at))?;
+                        Ok(file)
+                    }
                 }
-                match mode {
-                    WriteMode::CreateNew | WriteMode::CreateNewInFreshFolder => options.create_new(true),
-                    WriteMode::CreateOrReplace => options.create(true).truncate(true),
-                };
-                options.open(&dest_for_open)
             })
             .await
             .expect("spawn_blocking open closure doesn't panic and the task is uncancelable")
-            .map_err(|e| VolumeError::from_io_at(&e, &dest_abs))?;
+            .map_err(|refusal| match refusal {
+                OpenRefusal::CantContinue => VolumeError::NotSupported,
+                OpenRefusal::Io(e) => VolumeError::from_io_at(&e, &dest_abs),
+            })?;
 
-            let mut bytes_written = 0u64;
+            let mut bytes_written = match opening {
+                Opening::Fresh(_) => 0u64,
+                Opening::Continue(at) => at,
+            };
             while let Some(chunk_result) = stream.next_chunk().await {
                 let chunk = chunk_result?;
                 if chunk.is_empty() {

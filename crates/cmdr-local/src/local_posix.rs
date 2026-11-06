@@ -864,6 +864,23 @@ impl Volume for LocalPosixVolume {
         self.write_from_stream_impl(dest, mode, length, stream, on_progress)
     }
 
+    /// A local write lands its chunks in order with `write_all`, so its
+    /// progress count is a prefix of the file, and a failed write leaves it.
+    fn continues_writes(&self) -> bool {
+        true
+    }
+
+    fn continue_write_from_stream<'a>(
+        &'a self,
+        target: &'a Path,
+        at: u64,
+        length: StreamLength,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<StreamWritten, VolumeError>> + Send + 'a>> {
+        self.continue_write_from_stream_impl(target, at, length, stream, on_progress)
+    }
+
     fn scan_for_conflicts<'a>(
         &'a self,
         source_items: &'a [SourceItemInfo],
