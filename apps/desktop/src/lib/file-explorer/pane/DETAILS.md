@@ -1445,6 +1445,14 @@ guard: a phone's pane once re-listed `adb://<serial>` about 15 times a second th
 nobody connected, or a phone nobody dialed, answers "couldn't tell", so the branch shows the error without walking at
 all.
 
+**Three typed reasons are final and skip the existence probe** (`onListingError`, in this order): an access refusal
+(`#lib/error-messages/access-refusal.ts::isAccessRefusal`: the OS, TCC, a share, a server, an object store, or a phone
+said no), `archiveNeedsPassword`, and `notConnected`. Each shows the error in place. Gotcha/Why (#1018): a direct SMB
+share's `exists` once read `ACCESS_DENIED` as "not there", so a NAS folder the account may not read walked the pane to
+its parent with no word about permissions. The backend now answers "couldn't tell" there too (`Volume::presence`), but a
+refusal is definitive on its own, so ❌ don't make it wait on a probe. The refusal check runs BEFORE the MTP arm: a
+phone refusing `Android/data` is still attached, ❌ never `onMtpFatalError`'s lost-device fallback.
+
 _Decision / why:_ assuming the pane's volume still owns the fallback target strands the pane. An SMB share unmounts, its
 volume id is unregistered, the walk-up climbs from `/Volumes/<share>/sub` out to `/Volumes` (owned by the ROOT volume),
 and the listing goes out under the share's dead id → `VolumeError::NotFound`. It's PERMANENT, not transient: the landed

@@ -55,6 +55,7 @@ import { resolveValidPath } from '../navigation/path-resolution'
 import { restoredCursorIndex } from '../navigation/history-cursor'
 import type { HistoryCursor } from '../navigation/navigation-history'
 import { renderListingError } from '#lib/error-messages/listing-error.js'
+import { isAccessRefusal } from '#lib/error-messages/access-refusal.js'
 import { evictPerPathIconsForDir } from '#lib/icon-cache.js'
 import { cancelClickToRename } from '../rename/rename-activation'
 import { dismissTransientToastsForPane } from '#lib/ui/toast/index.js'
@@ -510,16 +511,6 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
               reason: reason?.reason ?? 'untyped',
             })
 
-            // For MTP volumes, trigger fallback on error (device likely disconnected)
-            if (deps.getIsMtpView()) {
-              resetLoadingState(payload.message)
-              log.warn('MTP listing error, triggering fallback: {error}', {
-                error: payload.message,
-              })
-              deps.onMtpFatalError?.(payload.message)
-              return
-            }
-
             // Shows the failed listing and records it in history so Cmd+[ goes
             // back one step, not two. The success path pushes via the
             // `onPathChange` call in `handleListingComplete`; without this an
@@ -535,6 +526,27 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
               deps.syncMcp()
             }
 
+            // Access refused (the OS, a share, a server, a phone): the folder IS there,
+            // so this is final, like the two cases below. ❌ Never the existence probe:
+            // a backend may not be able to stat a folder it may not read, and its "no"
+            // walked the pane to the parent as if the folder were deleted (#1018).
+            // Ahead of the MTP arm too: a phone refusing `Android/data` is still attached.
+            if (isAccessRefusal(reason)) {
+              log.info('Listing of {path} refused access, showing it in place', { path: loadPath })
+              showListingError()
+              return
+            }
+
+            // For MTP volumes, trigger fallback on error (device likely disconnected)
+            if (deps.getIsMtpView()) {
+              resetLoadingState(payload.message)
+              log.warn('MTP listing error, triggering fallback: {error}', {
+                error: payload.message,
+              })
+              deps.onMtpFatalError?.(payload.message)
+              return
+            }
+
             // A locked container (a header-encrypted archive, a restic repo) needs
             // its password even to LIST it.
             // Raise the browse-time password prompt ON TOP of the fallback
@@ -544,9 +556,9 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
             //
             // ⚠️ Answered BEFORE the existence probe below, not inside it. That
             // probe resolves through the same archive volume, which can't say
-            // whether an inner path exists without the password either — so it
-            // answers "gone", and the walk-up took the pane back out of the
-            // archive before anyone could be asked for the password. The typed
+            // whether an inner path exists without the password either (once it
+            // answered "gone", and the walk-up took the pane back out of the
+            // archive before anyone could be asked for the password). The typed
             // reason is definitive; ❌ don't make it wait on a probe that
             // cannot answer.
             if (reason?.reason === 'archiveNeedsPassword') {

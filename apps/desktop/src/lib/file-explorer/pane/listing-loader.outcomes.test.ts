@@ -154,6 +154,51 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
     expect(spies.onPathChange).toHaveBeenCalledWith('adb://R58M/sdcard')
   })
 
+  it.each([
+    { reason: 'permissionDenied', path: '/Volumes/naspi/private' },
+    { reason: 'remotePermissionDenied', path: '/Volumes/naspi/private' },
+    { reason: 'noPermissionErrno', path: '/Volumes/naspi/private' },
+    { reason: 'notPermitted', path: '/Volumes/naspi/private' },
+    { reason: 'tccRestricted', path: '/Volumes/naspi/private' },
+    { reason: 'objectStoreRefused', path: '/Volumes/naspi/private' },
+    { reason: 'serverRefused' },
+    { reason: 'phoneRefused' },
+  ])('shows a $reason refusal in place, never walking up as if the folder were deleted (#1018)', async (reason) => {
+    // Pre-fix a direct SMB share answered the existence probe "no" for a folder the
+    // account can't read (ACCESS_DENIED read as missing), so the pane jumped to the
+    // parent with no word about permissions. A refusal says the folder is THERE.
+    const { loader, state, spies } = makeHarness({ volumeId: 'smb-naspi', volumePath: '/Volumes/naspi' })
+    h.pathExistsChecked.mockResolvedValue({ data: false, timedOut: false })
+    h.resolveValidPath.mockResolvedValue('/Volumes/naspi')
+    await loader.loadDirectory({ path: '/Volumes/naspi/private' })
+    h.listeners.error[0]({ listingId: state.listingId, message: 'refused', error: { reason } })
+    await vi.waitFor(() => {
+      expect(state.error).toBe('refused')
+    })
+
+    expect(h.pathExistsChecked).not.toHaveBeenCalled()
+    expect(h.resolveValidPath).not.toHaveBeenCalled()
+    expect(state.currentPath).not.toBe('/Volumes/naspi')
+    expect(spies.onPathChange).toHaveBeenCalledWith('/Volumes/naspi/private')
+  })
+
+  it('shows a phone refusal on an MTP pane in place, never as a lost device', async () => {
+    // Android refuses some folders (`Android/data`) on purpose; the phone is still there.
+    const { loader, state, spies } = makeHarness({ isMtpView: true, volumeId: 'mtp-1:2' })
+    await loader.loadDirectory({ path: '/Android/data' })
+    h.listeners.error[0]({
+      listingId: state.listingId,
+      message: 'refused',
+      error: { reason: { reason: 'phoneRefused' } },
+    })
+    await vi.waitFor(() => {
+      expect(state.error).toBe('refused')
+    })
+
+    expect(spies.onMtpFatalError).not.toHaveBeenCalled()
+    expect(h.pathExistsChecked).not.toHaveBeenCalled()
+  })
+
   it("tells the walk-up the volume's session state, so a busy server's slow stat of a live parent isn't skipped", async () => {
     const { loader, state } = makeHarness({
       volumeId: 'smb-naspi',
