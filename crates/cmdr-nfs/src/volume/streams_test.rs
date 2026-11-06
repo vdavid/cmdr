@@ -92,7 +92,7 @@ fn the_chunk_is_the_servers_preference_within_its_maximum_and_our_record_cap() {
         wtpref: 0,
         dtpref: 0,
         maxfilesize: 0,
-        time_delta: crate::proto::nfs3::NfsTime::default(),
+        time_delta: NfsTime::default(),
         properties: 0,
     };
     assert_eq!(chunk_bytes(&info(131_072, 1_048_576)), 131_072);

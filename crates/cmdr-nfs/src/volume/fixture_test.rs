@@ -254,3 +254,43 @@ async fn space_and_write_access_come_from_the_server() {
         cmdr_fs::volume::WriteAccess::Writable
     );
 }
+
+/// A copy that waited out a long outage carries a download on from an offset
+/// (`Volume::resume_read_stream`), on the file its first read saw; one written
+/// over since (a new change time) is `SourceChanged`, before a byte is read.
+#[tokio::test]
+#[ignore = "needs the NFS fixture stack: nfs-servers/start.sh (nfs-fixture)"]
+async fn a_read_resumes_on_its_named_file_and_refuses_a_rewritten_one() {
+    let volume = connect_insecure().await;
+    let dir = scratch_dir(&volume, "resume").await;
+    let path = dir.join("resume.bin");
+    let bytes: Vec<u8> = (0..300_000u32).map(|i| (i % 251) as u8).collect();
+    volume.create_file(&path, &bytes).await.unwrap();
+
+    let first = volume.open_read_stream(&path).await.unwrap();
+    let version = first.source_version().expect("a lookup names the file's version");
+    drop(first);
+    let mut rest = volume
+        .resume_read_stream(&path, &version, 100_000)
+        .await
+        .expect("the same file resumes");
+    assert_eq!(
+        rest.total_size(),
+        StreamLength::Known(bytes.len() as u64),
+        "the whole file's size"
+    );
+    let mut read = Vec::new();
+    while let Some(chunk) = rest.next_chunk().await {
+        read.extend_from_slice(&chunk.unwrap());
+    }
+    assert!(read == bytes[100_000..], "exactly the bytes from the offset");
+
+    volume.delete(&path).await.unwrap();
+    volume.create_file(&path, &bytes).await.unwrap();
+    match volume.resume_read_stream(&path, &version, 100_000).await {
+        Err(VolumeError::SourceChanged(_)) => {}
+        Err(other) => panic!("expected SourceChanged, got {other:?}"),
+        Ok(_) => panic!("expected SourceChanged, got a stream"),
+    }
+    clean_deep(&volume, &dir).await;
+}

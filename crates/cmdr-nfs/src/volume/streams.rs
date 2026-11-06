@@ -20,14 +20,14 @@ use std::path::Path;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::CarriedMetadata;
 use cmdr_fs::volume::read_window::ReadWindow;
-use cmdr_fs::volume::{ChannelReadStream, StreamLength, VolumeError};
+use cmdr_fs::volume::{ChannelReadStream, SourceVersion, StreamLength, VolumeError};
 use log::debug;
 
 use super::NfsVolume;
 use super::handles::Follow;
 use super::mapping::system_time;
 use crate::errors::map_nfs_error;
-use crate::proto::nfs3::{Fattr3, FileHandle, FileType, FsInfo, Nfs3Client, NfsError};
+use crate::proto::nfs3::{Fattr3, FileHandle, FileType, FsInfo, Nfs3Client, NfsError, NfsTime};
 use crate::transport::MAX_PAYLOAD;
 
 /// How many READs one stream keeps in flight. SFTP's measured optimum, taken
@@ -164,7 +164,32 @@ impl NfsVolume {
         offset: u64,
     ) -> Result<ChannelReadStream, VolumeError> {
         let opened = self.open_file(path).await?;
+        Ok(self.stream_opened(opened, offset))
+    }
+
+    /// [`Volume::resume_read_stream`](cmdr_fs::volume::Volume::resume_read_stream):
+    /// the stream from `offset`, once a fresh lookup still names the file
+    /// `version` saw (the same file system and file number, length, and both
+    /// times); any other is `SourceChanged` before a byte is read.
+    pub(super) async fn resume_read_stream_impl(
+        &self,
+        path: &Path,
+        version: &SourceVersion,
+        offset: u64,
+    ) -> Result<ChannelReadStream, VolumeError> {
+        let Some(expected) = version.downcast_ref::<NfsVersion>() else {
+            return Err(VolumeError::NotSupported);
+        };
+        let opened = self.open_file(path).await?;
+        if NfsVersion::of(&opened.attrs) != *expected {
+            return Err(VolumeError::SourceChanged(opened.file.remote.to_string()));
+        }
+        Ok(self.stream_opened(opened, offset))
+    }
+
+    fn stream_opened(&self, opened: Opened, offset: u64) -> ChannelReadStream {
         let size = opened.attrs.size;
+        let version = NfsVersion::of(&opened.attrs);
         let (chunk_tx, chunk_rx) = tokio::sync::mpsc::channel(STREAM_CHANNEL_CAPACITY);
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
         // ❌ Never `tokio::spawn`: a backend inherits whatever runtime it's
@@ -174,16 +199,16 @@ impl NfsVolume {
             chunk_tx,
             cancel_rx,
         ));
-        // `fattr3` always carries a size, so the length is `Known`: the size
-        // left past `offset`.
-        Ok(
-            ChannelReadStream::new(chunk_rx, cancel_tx, StreamLength::Known(size.saturating_sub(offset)))
-                .with_modified_at(Some(system_time(opened.attrs.mtime)))
-                .with_metadata(CarriedMetadata {
-                    mode: Some(opened.attrs.mode & 0o7777),
-                    ..CarriedMetadata::default()
-                }),
-        )
+        // `fattr3` always carries a size, so the length is `Known`: the WHOLE
+        // file's, from any offset, as `Volume::open_read_stream_at_offset`
+        // promises, so a resumed transfer's progress stays anchored to it.
+        ChannelReadStream::new(chunk_rx, cancel_tx, StreamLength::Known(size))
+            .with_modified_at(Some(system_time(opened.attrs.mtime)))
+            .with_metadata(CarriedMetadata {
+                mode: Some(opened.attrs.mode & 0o7777),
+                ..CarriedMetadata::default()
+            })
+            .with_source_version(SourceVersion::new(version))
     }
 
     /// Exactly `[offset, offset + len)`, short only at end of file, so a caller
@@ -201,6 +226,31 @@ impl NfsVolume {
             }
         }
         Ok(out)
+    }
+}
+
+/// Which version of a file an NFS read saw: the file system and file number
+/// (`fsid`, `fileid`), its length, and its write and change times. The change
+/// time moves on any change at all, so a rewrite in place is refused even at the
+/// same length. What a copy carries on from after an outage.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) struct NfsVersion {
+    fsid: u64,
+    fileid: u64,
+    size: u64,
+    mtime: NfsTime,
+    ctime: NfsTime,
+}
+
+impl NfsVersion {
+    fn of(attrs: &Fattr3) -> Self {
+        Self {
+            fsid: attrs.fsid,
+            fileid: attrs.fileid,
+            size: attrs.size,
+            mtime: attrs.mtime,
+            ctime: attrs.ctime,
+        }
     }
 }
 
