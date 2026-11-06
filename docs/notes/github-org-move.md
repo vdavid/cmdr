@@ -19,8 +19,6 @@ what's identity-bound) is in the issue. Delete this note once the move is done a
   is `scripts/org-move/rules.go`: the file types it rewrites, the paths it leaves alone (each with a reason), the
   mentions it keeps wherever they appear, and hand-written edits a rename can't express. It's idempotent, prints every
   change and every kept mention by reason, and exits 1 on a mention no rule covers or an edit whose anchor is gone.
-- **The `worktree-org-move-swap-v2` branch is a preview** of the script's output (2026-10-22, `-cutoff v0.55.0`, 116
-  files) for review. ❌ Don't rebase or land it: `main` moves too fast. Regenerate on the day.
 - **What the swap rewrites**: `github.com/vdavid/cmdr`, `git@github.com:vdavid/cmdr`, `repos/vdavid/cmdr`,
   `-R`/`--repo vdavid/cmdr`, bare `vdavid/cmdr` and `vdavid/cmdr#N`, and the runner service name
   `actions.runner.vdavid-cmdr.*`.
