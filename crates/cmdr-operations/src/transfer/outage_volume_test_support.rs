@@ -60,9 +60,9 @@ pub(crate) struct OutageVolume {
     lane: String,
     /// Whether the session is up: what `connection_state` reports and what
     /// every call checks first.
-    up: AtomicBool,
+    up: Arc<AtomicBool>,
     /// Whether a reconnect would succeed right now: the server is back.
-    reachable: AtomicBool,
+    reachable: Arc<AtomicBool>,
     /// A reconnect is refused for its credentials, as after a password change.
     needs_sign_in: AtomicBool,
     /// What every reconnect is refused with, whatever the credentials: the server can't encrypt
@@ -76,6 +76,14 @@ pub(crate) struct OutageVolume {
     opens: AtomicUsize,
     /// Drop the session at the start of this (0-based) read-stream open.
     drop_at_open: Mutex<Option<usize>>,
+    /// The next read stream (an open or a resume) drops the session once it
+    /// has handed out this many bytes, once: a download the network went away
+    /// under, mid-file.
+    drop_mid_read: Mutex<Option<u64>>,
+    /// The offset of every resumed read (`Volume::resume_read_stream`), in order.
+    resumed_at: Mutex<Vec<u64>>,
+    /// Every byte any of its read streams handed out: a file read twice shows.
+    bytes_read: Arc<AtomicU64>,
     writes: AtomicUsize,
     /// Where each write went, in order.
     written: Mutex<Vec<PathBuf>>,
@@ -148,8 +156,11 @@ impl OutageVolume {
         Arc::new(Self {
             inner,
             lane: lane.to_owned(),
-            up: AtomicBool::new(true),
-            reachable: AtomicBool::new(true),
+            up: Arc::new(AtomicBool::new(true)),
+            reachable: Arc::new(AtomicBool::new(true)),
+            drop_mid_read: Mutex::new(None),
+            resumed_at: Mutex::new(Vec::new()),
+            bytes_read: Arc::new(AtomicU64::new(0)),
             needs_sign_in: AtomicBool::new(false),
             session_refusal: Mutex::new(None),
             reconnect_attempts: AtomicUsize::new(0),
@@ -236,6 +247,22 @@ impl OutageVolume {
     /// number `n` (0-based) starts: a copy FROM the share meets the outage.
     pub(crate) fn drop_at_open(&self, n: usize) {
         *self.drop_at_open.lock_ignore_poison() = Some(n);
+    }
+
+    /// The next read stream drops the session (and the server goes away) once
+    /// it has handed out `bytes`, mid-file.
+    pub(crate) fn drop_mid_read(&self, bytes: u64) {
+        *self.drop_mid_read.lock_ignore_poison() = Some(bytes);
+    }
+
+    /// The offset of every resumed read, in order.
+    pub(crate) fn resumed_at(&self) -> Vec<u64> {
+        self.resumed_at.lock_ignore_poison().clone()
+    }
+
+    /// Every byte its read streams handed out.
+    pub(crate) fn bytes_read(&self) -> u64 {
+        self.bytes_read.load(Ordering::SeqCst)
     }
 
     /// The session drops (and the server goes away) the moment write number

@@ -42,6 +42,7 @@ mod naming;
 mod piped_file;
 mod preflight;
 mod refused_item;
+mod remembered_source;
 mod rename_merge;
 mod scan_wait;
 mod sequential_extract;

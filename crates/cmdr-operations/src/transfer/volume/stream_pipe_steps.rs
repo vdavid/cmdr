@@ -6,6 +6,7 @@
 
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::{Fault, FileRun, LandingToResume, PipedFile, Stop, auto_yield_tuning};
 use crate::metadata_losses;
@@ -16,6 +17,7 @@ use crate::transfer::retry;
 use crate::transfer::staged_write::{LandingError, LandingSource, Resumed, StagedWrite, WriteStaging, resolve_staging};
 use crate::transfer::transfer_probe::{TaskPhase, arm_current_task_stall_abort, set_task_bytes, set_task_phase};
 use crate::transfer::volume::piped_file::landed_at_final_name;
+use crate::transfer::volume::remembered_source::{self, Remembered};
 use crate::transfer::volume::source_reads::{self, SourceReads};
 use crate::transfer::volume::transfer_error::{AtPath, PathedVolumeError, hard_abort_error};
 use crate::transfer::volume::{extract_quarantine, landed_flags};
@@ -23,7 +25,7 @@ use crate::transfer::volume_outage::{self, StartedOn};
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataAsk, MetadataClasses};
-use cmdr_fs::volume::{StreamWritten, VolumeError, VolumeReadStream};
+use cmdr_fs::volume::{SourceVersion, StreamWritten, VolumeError, VolumeReadStream};
 
 /// The source, open and wrapped, with what was asked of it before the write
 /// consumes it.
@@ -35,6 +37,70 @@ pub(super) struct Opened {
     lost: MetadataClasses,
     /// What can't go on until the file has its final name (Locked).
     after_landing: CarriedMetadata,
+    /// Which version of the file the source reads, when it can say: what lets
+    /// the write carry on after a failure (`Volume::resume_read_stream`).
+    version: Option<SourceVersion>,
+    /// What the stream tells the destination beyond its bytes, for a
+    /// carried-on stream to tell it again.
+    remembered: Remembered,
+}
+
+/// What a write needs to carry on from the last byte its destination
+/// confirmed, rather than run the file again from its first: a source that
+/// named its version, a destination that continues its writes
+/// (`Volume::continues_writes`), and a temp of this attempt's own.
+/// `transfer/DETAILS.md` § "Carrying a file on after a long outage".
+pub(super) struct CarryOn {
+    version: SourceVersion,
+    remembered: Remembered,
+    /// The destination's last progress count: a contiguous prefix of the temp,
+    /// by `Volume::continues_writes`' promise.
+    confirmed: Arc<AtomicU64>,
+    size: u64,
+    lost: MetadataClasses,
+    after_landing: CarriedMetadata,
+}
+
+/// A write to carry on, at its next pass: the temp it writes into, and the
+/// byte to carry on from.
+pub(super) struct Continuation {
+    staged: StagedWrite,
+    carry: CarryOn,
+    at: u64,
+}
+
+impl Continuation {
+    /// The continuation of a write that failed holding `carry`: from the last
+    /// byte the destination confirmed. `Err(staged)` when there's nothing to
+    /// carry on (no carry, or not a byte confirmed yet).
+    pub(super) fn of(staged: StagedWrite, carry: Option<CarryOn>) -> Result<Self, StagedWrite> {
+        match carry {
+            Some(carry) => {
+                let at = carry.confirmed.load(Ordering::Acquire);
+                if at == 0 || at > carry.size {
+                    return Err(staged);
+                }
+                Ok(Self { staged, carry, at })
+            }
+            None => Err(staged),
+        }
+    }
+}
+
+/// One stream into one staged target, from byte `at` (`0`: a fresh write).
+struct Streaming {
+    staged: StagedWrite,
+    stream: Box<dyn VolumeReadStream>,
+    source_reads: SourceReads,
+    size: u64,
+    at: u64,
+    lost: MetadataClasses,
+    after_landing: CarriedMetadata,
+    carry: Option<CarryOn>,
+    /// What `Volume::write_is_single_shot` promised, for the yield floor.
+    single_shot_promise: bool,
+    /// The write goes to its final name in one frame: no stall watchdog.
+    single_shot_staging: bool,
 }
 
 /// The write's last byte is down: what the landing needs.
@@ -117,6 +183,9 @@ impl FileRun<'_> {
             opened = source_volume.open_read_stream_for_copy(self.source_path, self.source_facts.size, ask) => opened,
         };
         let stream = opened.map_err(|error| Stop::Faulted(Box::new(Fault::OpenSource { error, started_on })))?;
+        // Asked of the stream the backend handed out, before anything wraps it.
+        let version = stream.source_version();
+        let (stream, remembered) = remembered_source::remember(stream);
         let Some(size) = stream.total_size().known() else {
             return Err(VolumeError::NotSupported)
                 .at_source(self.source_path)
@@ -143,6 +212,8 @@ impl FileRun<'_> {
             size,
             lost,
             after_landing,
+            version,
+            remembered,
         })
     }
 
@@ -150,13 +221,15 @@ impl FileRun<'_> {
     /// against tier 2 and (for a staged write) the stall watchdog.
     pub(super) async fn write(&mut self, opened: Opened) -> Result<Written, Stop> {
         let state = self.state;
-        let (source_volume, dest_volume, dest_path) = (self.source_volume, self.dest_volume, self.dest_path);
+        let dest_volume = self.dest_volume;
         let Opened {
             stream,
             source_reads,
             size,
             lost,
             after_landing,
+            version,
+            remembered,
         } = opened;
         let length = cmdr_fs::volume::StreamLength::Known(size);
         // ONE probe, two consumers: the staging decision below and the
@@ -171,6 +244,127 @@ impl FileRun<'_> {
             write_is_single_shot || dest_volume.publishes_writes_whole(),
         );
         let staged = StagedWrite::begin(state, &**dest_volume, self.announced_dest, resolved_staging);
+        let carry = match version {
+            Some(version) if dest_volume.continues_writes() && staged.writes_a_temp() => Some(CarryOn {
+                version,
+                remembered,
+                confirmed: Arc::new(AtomicU64::new(0)),
+                size,
+                lost,
+                after_landing: after_landing.clone(),
+            }),
+            _ => None,
+        };
+        self.stream_into(Streaming {
+            staged,
+            stream,
+            source_reads,
+            size,
+            at: 0,
+            lost,
+            after_landing,
+            carry,
+            single_shot_promise: write_is_single_shot,
+            single_shot_staging: matches!(resolved_staging, WriteStaging::SingleShot(_)),
+        })
+        .await
+    }
+
+    /// Carries a write that failed on: reopens the source from the last byte
+    /// the destination confirmed, once its backend has proven the file is the
+    /// version the write started on, and streams the rest into the same temp
+    /// (`Volume::continue_write_from_stream`). A file that changed meanwhile
+    /// (or went) ends here, its partial with it; a source or destination that
+    /// can't carry on runs the file again from its first byte.
+    pub(super) async fn continue_write(&mut self, continuation: Continuation) -> Result<Written, Stop> {
+        let (state, source_volume, source_path) = (self.state, self.source_volume, self.source_path);
+        let Continuation { staged, carry, at } = continuation;
+        set_task_phase(TaskPhase::OpeningSource);
+        let started_on = StartedOn::now(&[source_volume, self.dest_volume]);
+        let reopened = tokio::select! {
+            biased;
+            () = state.backend_abort.cancelled() => {
+                return Err(hard_abort_error(source_path)).at_source(source_path).map_err(Stop::Over);
+            }
+            reopened = source_volume.resume_read_stream(source_path, &carry.version, at) => reopened,
+        };
+        let stream = match reopened {
+            Ok(stream) => stream,
+            // The share went again: the outage wait decides, and the write
+            // carries on from the same byte once it's back.
+            Err(error) if error.transport_fault().is_some() => {
+                return Err(Stop::Faulted(Box::new(Fault::Write {
+                    error,
+                    started_on,
+                    staged,
+                    source_reads: SourceReads::failed(),
+                    carry: Some(carry),
+                })));
+            }
+            Err(VolumeError::NotSupported) => {
+                log::info!(
+                    target: "copy",
+                    "stream_pipe_file: {} can't carry on from byte {at}; running it again",
+                    LogPrivate::file_path(source_path),
+                );
+                staged.abandon_attempt(self.dest_volume).await;
+                return Err(Stop::RunAgain);
+            }
+            // The file changed meanwhile, or went: what's in the temp is a
+            // version that no longer exists, so it goes, and the file ends here.
+            Err(error) => {
+                log::warn!(
+                    target: "copy",
+                    "stream_pipe_file: not carrying {} on from byte {at}: {error}",
+                    LogPrivate::file_path(source_path), error = LogError(&error),
+                );
+                staged.abandon(self.dest_volume).await;
+                return Err(error).at_source(source_path).map_err(Stop::Over);
+            }
+        };
+        log::info!(
+            target: "copy",
+            "stream_pipe_file: carrying {} on from byte {at} of {}",
+            LogPrivate::file_path(source_path),
+            carry.size,
+        );
+        let left = cmdr_fs::volume::StreamLength::Known(carry.size - at);
+        let stream = carry.remembered.answering(stream);
+        let (stream, source_reads) = source_reads::watch(stream, source_path, left);
+        let stream = extract_quarantine::quarantine_stream(state, source_volume, stream);
+        self.stream_into(Streaming {
+            staged,
+            stream,
+            source_reads,
+            size: carry.size,
+            at,
+            lost: carry.lost,
+            after_landing: carry.after_landing.clone(),
+            carry: Some(carry),
+            single_shot_promise: false,
+            single_shot_staging: false,
+        })
+        .await
+    }
+
+    /// Streams `streaming.stream` into its staged target, from its byte `at`,
+    /// raced against tier 2 and (for a staged write) the stall watchdog.
+    async fn stream_into(&mut self, streaming: Streaming) -> Result<Written, Stop> {
+        let state = self.state;
+        let (source_volume, dest_volume, dest_path) = (self.source_volume, self.dest_volume, self.dest_path);
+        let Streaming {
+            staged,
+            stream,
+            source_reads,
+            size,
+            at,
+            lost,
+            after_landing,
+            carry,
+            single_shot_promise: write_is_single_shot,
+            single_shot_staging,
+        } = streaming;
+        let length = cmdr_fs::volume::StreamLength::Known(size);
         // Wrap so a paused op parks (and a long copy yields to foreground)
         // between bounded windows. `size` is read off the raw stream first — the
         // wrapper forwards `total_size()` unchanged, so the destination still sees
@@ -190,7 +384,7 @@ impl FileRun<'_> {
             write_is_single_shot,
         ));
         set_task_phase(TaskPhase::Streaming);
-        set_task_bytes(0, size);
+        set_task_bytes(at, size);
         // The watchdog ACTING: a task that sits inside a backend call with
         // zero byte movement for `STALL_ABORT_AFTER` has its wait ended here, and
         // the transport error that produces feeds straight back into the retry.
@@ -205,7 +399,7 @@ impl FileRun<'_> {
         // already there and we never touched it" (`staged_write.rs` § abandon).
         // Abandoning one from out here would add a client-initiated instance of
         // the transport hazard that exemption already documents as unfixable.
-        let stall_abort = if matches!(resolved_staging, WriteStaging::SingleShot(_)) {
+        let stall_abort = if single_shot_staging {
             None
         } else {
             arm_current_task_stall_abort()
@@ -224,11 +418,20 @@ impl FileRun<'_> {
         // the write future. No allocation, no timer, no syscall, and no change to
         // any backend.
         let on_file_progress = self.on_file_progress;
-        let write_progress =
-            |progress: cmdr_fs::volume::StreamWriteProgress| on_file_progress(progress.bytes_written, size);
+        // The destination's count, from the start of the file either way, is
+        // also how far a write that fails can be carried on from (`CarryOn`).
+        let confirmed = carry.as_ref().map(|carry| Arc::clone(&carry.confirmed));
+        let write_progress = |progress: cmdr_fs::volume::StreamWriteProgress| {
+            if let Some(confirmed) = &confirmed {
+                confirmed.store(progress.bytes_written, Ordering::Release);
+            }
+            on_file_progress(progress.bytes_written, size)
+        };
         let started_on = StartedOn::now(&[source_volume, dest_volume]);
-        let write_fut =
-            dest_volume.write_from_stream(staged.target(), staged.write_mode(), length, stream, &write_progress);
+        let write_fut = match at {
+            0 => dest_volume.write_from_stream(staged.target(), staged.write_mode(), length, stream, &write_progress),
+            at => dest_volume.continue_write_from_stream(staged.target(), at, length, stream, &write_progress),
+        };
         let outcome = tokio::select! {
             biased;
             () = state.backend_abort.cancelled() => WriteAttemptOutcome::HardAborted,
@@ -289,11 +492,23 @@ impl FileRun<'_> {
                     after_landing,
                 })
             }
+            // The destination couldn't carry its write on after all (its
+            // temp is gone or short): the file runs again from its first byte.
+            Err(VolumeError::NotSupported) if at > 0 => {
+                log::info!(
+                    target: "copy",
+                    "stream_pipe_file: {} can't carry its write on from byte {at}; running the file again",
+                    LogPrivate::file_path(dest_path),
+                );
+                staged.abandon_attempt(dest_volume).await;
+                Err(Stop::RunAgain)
+            }
             Err(error) => Err(Stop::Faulted(Box::new(Fault::Write {
                 error,
                 started_on,
                 staged,
                 source_reads,
+                carry,
             }))),
         }
     }
@@ -328,6 +543,7 @@ impl FileRun<'_> {
                 started_on,
                 staged,
                 source_reads: SourceReads::unwatched(),
+                carry: None,
             }))),
         }
     }

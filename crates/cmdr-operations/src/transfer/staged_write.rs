@@ -305,6 +305,13 @@ impl StagedWrite {
         }
     }
 
+    /// Whether the bytes go to a `.cmdr-tmp-*` of this attempt's own, which is
+    /// the only target a write may be carried on into after a failure: nobody
+    /// else writes there, and nothing lands until its last byte.
+    pub(crate) fn writes_a_temp(&self) -> bool {
+        self.temp.is_some()
+    }
+
     /// Where the streaming writer must put the bytes.
     pub(crate) fn target(&self) -> &Path {
         self.temp.as_ref().map_or(&self.final_path, StagingTemp::path)

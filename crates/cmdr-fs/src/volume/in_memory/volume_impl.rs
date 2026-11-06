@@ -36,6 +36,36 @@ struct InMemoryReadStream {
     bandwidth: Option<Arc<Bandwidth>>,
     /// The device's breath between chunks (`with_yielding`), when it has one.
     yielder: Option<Arc<Yielder>>,
+    /// Which version of the file this stream reads (`Volume::resume_read_stream`).
+    version: InMemoryVersion,
+}
+
+/// An in-memory file's version: its very bytes (`InMemoryContent::is_same_as`)
+/// and its date. Any rewrite stores new bytes, so it never matches.
+#[derive(Clone)]
+struct InMemoryVersion {
+    content: InMemoryContent,
+    modified_at: Option<u64>,
+}
+
+impl InMemoryVersion {
+    fn of(entry: &InMemoryEntry) -> Self {
+        Self {
+            content: entry
+                .content
+                .clone()
+                .unwrap_or_else(|| InMemoryContent::bytes(Vec::new())),
+            modified_at: entry.metadata.modified_at,
+        }
+    }
+
+    fn matches(&self, entry: &InMemoryEntry) -> bool {
+        entry
+            .content
+            .as_ref()
+            .is_some_and(|content| content.is_same_as(&self.content))
+            && entry.metadata.modified_at == self.modified_at
+    }
 }
 
 impl VolumeReadStream for InMemoryReadStream {
@@ -73,6 +103,10 @@ impl VolumeReadStream for InMemoryReadStream {
 
     fn metadata(&self, wanted: MetadataClasses) -> CarriedMetadata {
         self.metadata.clone().restricted_to(wanted)
+    }
+
+    fn source_version(&self) -> Option<crate::volume::SourceVersion> {
+        Some(crate::volume::SourceVersion::new(self.version.clone()))
     }
 }
 
@@ -723,6 +757,43 @@ impl Volume for InMemoryVolume {
                 chunk_delay: self.read_chunk_delay,
                 bandwidth: self.bandwidth(),
                 yielder: self.yielder(),
+                version: InMemoryVersion::of(entry),
+            }) as Box<dyn VolumeReadStream>)
+        })
+    }
+
+    /// The same bytes from `offset`, once the entry still holds the very bytes
+    /// and date `version` saw; `SourceChanged` after any rewrite.
+    fn resume_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+        version: &'a crate::volume::SourceVersion,
+        offset: u64,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            self.breathe().await;
+            let Some(version) = version.downcast_ref::<InMemoryVersion>() else {
+                return Err(VolumeError::NotSupported);
+            };
+            let normalized = self.normalize(path);
+            let entries = self.entries.read_ignore_poison();
+            let entry = entries
+                .get(&normalized)
+                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
+            if !version.matches(entry) {
+                return Err(VolumeError::SourceChanged(path.display().to_string()));
+            }
+            Ok(Box::new(InMemoryReadStream {
+                content: version.content.clone(),
+                offset: offset.min(version.content.len()),
+                modified_at: version
+                    .modified_at
+                    .map(|secs| std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs)),
+                metadata: Self::carried_of(entry).restricted_to(self.metadata_caps.reports),
+                chunk_delay: self.read_chunk_delay,
+                bandwidth: self.bandwidth(),
+                yielder: self.yielder(),
+                version: version.clone(),
             }) as Box<dyn VolumeReadStream>)
         })
     }
@@ -787,7 +858,16 @@ impl Volume for InMemoryVolume {
                 let mut bytes_written = 0u64;
 
                 while let Some(result) = stream.next_chunk().await {
-                    let chunk = result?;
+                    let chunk = match result {
+                        Ok(chunk) => chunk,
+                        Err(e) => {
+                            // A disk keeps what reached it; the engine carries on from there.
+                            if self.continues_writes {
+                                let _ = self.replace_whole(dest, data.finish());
+                            }
+                            return Err(e);
+                        }
+                    };
                     bytes_written += chunk.len() as u64;
                     data.push(&chunk);
                     self.breathe().await;
@@ -827,6 +907,72 @@ impl Volume for InMemoryVolume {
                 self.patch_created_at(&self.normalize(dest)).await;
             }
             result
+        })
+    }
+
+    fn continues_writes(&self) -> bool {
+        self.continues_writes
+    }
+
+    /// The partial at `target`, cut to `at`, then the stream after it, as
+    /// `write_from_stream` lands it. Refuses a target that's gone or short.
+    fn continue_write_from_stream<'a>(
+        &'a self,
+        target: &'a Path,
+        at: u64,
+        length: StreamLength,
+        mut stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<StreamWritten, VolumeError>> + Send + 'a>> {
+        let (Some(size), true) = (length.known(), self.continues_writes) else {
+            return Box::pin(async { Err(VolumeError::NotSupported) });
+        };
+        Box::pin(async move {
+            let prefix = self
+                .entries
+                .read_ignore_poison()
+                .get(&self.normalize(target))
+                .and_then(|entry| entry.content.clone())
+                .filter(|content| content.len() >= at)
+                .ok_or(VolumeError::NotSupported)?;
+            let mut carried = stream.metadata(self.metadata_caps.stores);
+            carried.flags = carried.flags.intersection(self.metadata_caps.staged_flags);
+            let kept = carried
+                .clone()
+                .restricted_to(MetadataClasses::ALL.without(self.write_refuses));
+            let mut data = ContentSink::default();
+            data.push(&prefix.read_at(0, at as usize));
+            let mut bytes_written = at;
+            while let Some(result) = stream.next_chunk().await {
+                let chunk = match result {
+                    Ok(chunk) => chunk,
+                    Err(e) => {
+                        let _ = self.replace_whole(target, data.finish());
+                        return Err(e);
+                    }
+                };
+                bytes_written += chunk.len() as u64;
+                data.push(&chunk);
+                self.breathe().await;
+                if on_progress(StreamWriteProgress {
+                    bytes_written,
+                    expected_length: StreamLength::Known(size),
+                }) == std::ops::ControlFlow::Break(())
+                {
+                    return Err(VolumeError::Cancelled("Operation cancelled".into()));
+                }
+            }
+            self.replace_whole(target, data.finish())?;
+            if let Some(secs) = stream
+                .modified_at()
+                .and_then(|date| date.duration_since(std::time::UNIX_EPOCH).ok())
+            {
+                self.set_modified_at(target, Some(secs.as_secs()));
+            }
+            if !kept.is_empty() {
+                self.set_carried_metadata(target, kept);
+            }
+            Ok(self.written(target, bytes_written, &carried, stream.modified_at()))
         })
     }
 

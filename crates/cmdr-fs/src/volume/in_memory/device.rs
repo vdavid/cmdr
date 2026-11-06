@@ -61,6 +61,16 @@ impl InMemoryContent {
         }
     }
 
+    /// Whether `other` holds the very same bytes: the same stored `Arc`, or
+    /// the same seed and length. A rewrite stores a new `Arc`, so it never is.
+    pub(crate) fn is_same_as(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Bytes(a), Self::Bytes(b)) => Arc::ptr_eq(a, b),
+            (Self::Synthetic { seed, len }, Self::Synthetic { seed: s, len: l }) => seed == s && len == l,
+            _ => false,
+        }
+    }
+
     /// Whether the file is empty.
     pub fn is_empty(&self) -> bool {
         self.len() == 0

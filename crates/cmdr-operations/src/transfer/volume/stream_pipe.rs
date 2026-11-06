@@ -205,6 +205,7 @@ pub(super) async fn stream_pipe_file(
         outages: 0,
         unanswered_create: None,
         landing_to_resume: None,
+        write_to_continue: None,
     };
     run.run_to_the_end(fault).await
 }
@@ -249,6 +250,7 @@ pub(super) async fn land_link(
         outages: 0,
         unanswered_create: None,
         landing_to_resume: None,
+        write_to_continue: None,
     };
     match run.run_to_the_end(None).await {
         Ok(_) => Ok(()),
@@ -324,6 +326,10 @@ struct FileRun<'a> {
     /// pass settles and finishes it before anything streams again
     /// (`staged_write::CutOffLanding::resume`).
     landing_to_resume: Option<LandingToResume>,
+    /// Set when a write that failed on the transport can be carried on from
+    /// the last byte its destination confirmed: the next pass does that rather
+    /// than run the file again from its first byte (`steps::continue_write`).
+    write_to_continue: Option<steps::Continuation>,
 }
 
 /// A cut-off landing, with what its file's landed tail still needs.
@@ -351,13 +357,16 @@ enum Stop {
 enum Fault {
     /// Opening the source. Nothing is staged yet, so a resume opens it again.
     OpenSource { error: VolumeError, started_on: StartedOn },
-    /// The write into the staged target. A resume clears the attempt's partial
+    /// The write into the staged target. A resume carries the write on from
+    /// the last byte the destination confirmed when `carry` allows
+    /// (`steps::Continuation`); otherwise it clears the attempt's partial
     /// first, then runs the file again.
     Write {
         error: VolumeError,
         started_on: StartedOn,
         staged: StagedWrite,
         source_reads: SourceReads,
+        carry: Option<steps::CarryOn>,
     },
     /// A landing step the transport cut off (a rename, or a swap's clearing
     /// delete), which the server may or may not have performed. A resume
@@ -417,6 +426,10 @@ impl FileRun<'_> {
         if let Some(piped) = self.resume_landing().await? {
             return Ok(piped);
         }
+        if let Some(continuation) = self.write_to_continue.take() {
+            let written = self.continue_write(continuation).await?;
+            return self.land(written).await;
+        }
         let written = match self.link_target {
             Some(target) => self.write_link(target).await?,
             None => {
@@ -471,20 +484,29 @@ impl FileRun<'_> {
                 error,
                 staged,
                 source_reads,
+                carry,
                 ..
             } => match ended {
                 OutageEnd::Back => {
-                    staged.abandon_attempt(self.dest_volume).await;
-                    log::info!(
-                        target: "copy",
-                        "stream_pipe_file: running {} again now that its volume is back",
-                        LogPrivate::file_path(self.dest_path),
-                    );
                     self.attempt = 1;
+                    if self.carry_on_or_clear(staged, carry).await {
+                        log::info!(
+                            target: "copy",
+                            "stream_pipe_file: carrying {} on now that its volume is back",
+                            LogPrivate::file_path(self.dest_path),
+                        );
+                    } else {
+                        log::info!(
+                            target: "copy",
+                            "stream_pipe_file: running {} again now that its volume is back",
+                            LogPrivate::file_path(self.dest_path),
+                        );
+                    }
                     ControlFlow::Continue(())
                 }
                 OutageEnd::Cancelled | OutageEnd::GaveUp { .. } | OutageEnd::NotWaitable => {
-                    self.write_failed(error, staged, source_reads, connection_lost).await
+                    self.write_failed(error, staged, source_reads, carry, connection_lost)
+                        .await
                 }
             },
             // A landing step the transport cut off: the destination went away
@@ -567,6 +589,7 @@ impl FileRun<'_> {
         error: VolumeError,
         staged: StagedWrite,
         source_reads: SourceReads,
+        carry: Option<steps::CarryOn>,
         lost: Option<LostConnection>,
     ) -> ControlFlow<Result<PipedFile, PathedVolumeError>> {
         let (dest_volume, dest_path, attempt) = (self.dest_volume, self.dest_path, self.attempt);
@@ -574,7 +597,7 @@ impl FileRun<'_> {
             // The server dropped the upload during the person's pause, and the
             // volume has waited for the resume: run the file again, attempt
             // count untouched.
-            staged.abandon_attempt(dest_volume).await;
+            self.carry_on_or_clear(staged, carry).await;
             log::info!(
                 target: "copy",
                 "stream_pipe_file: the server outlasted a pause on {}; running the file again without spending an attempt",
@@ -587,8 +610,9 @@ impl FileRun<'_> {
             // clear them BEFORE the next attempt starts, so a retried file
             // never leaves a trail of `.cmdr-tmp-*` siblings and the next
             // write lands on a clean path (see `abandon_attempt` for why that
-            // reaches one case further than the terminal `abandon`).
-            staged.abandon_attempt(dest_volume).await;
+            // reaches one case further than the terminal `abandon`). Unless
+            // the write can be carried on from where it got to.
+            self.carry_on_or_clear(staged, carry).await;
             log::warn!(
                 target: "copy",
                 "stream_pipe_file: attempt {attempt} of {} for {} failed ({error}); running the file again in {:?}",
@@ -633,6 +657,23 @@ impl FileRun<'_> {
         ControlFlow::Break(Err(source_reads
             .label(error, self.source_path, dest_path)
             .with_lost_connection(lost)))
+    }
+
+    /// Before the file runs again: carry its write on from the last byte the
+    /// destination confirmed, when `carry` allows (the next pass then reopens
+    /// the source there, `steps::continue_write`), else clear the attempt's
+    /// partial so the file starts clean. `true` when it carries on.
+    async fn carry_on_or_clear(&mut self, staged: StagedWrite, carry: Option<steps::CarryOn>) -> bool {
+        match steps::Continuation::of(staged, carry) {
+            Ok(continuation) => {
+                self.write_to_continue = Some(continuation);
+                true
+            }
+            Err(staged) => {
+                staged.abandon_attempt(self.dest_volume).await;
+                false
+            }
+        }
     }
 }
 

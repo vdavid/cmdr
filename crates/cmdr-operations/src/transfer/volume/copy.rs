@@ -1332,6 +1332,9 @@ mod precheck_tests;
 #[path = "copy_prescan_reuse_tests.rs"]
 mod prescan_reuse_tests;
 #[cfg(test)]
+#[path = "copy_resume_tests.rs"]
+mod resume_tests;
+#[cfg(test)]
 #[path = "copy_retry_tests.rs"]
 mod retry_tests;
 #[cfg(test)]

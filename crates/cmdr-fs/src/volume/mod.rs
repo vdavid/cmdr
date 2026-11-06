@@ -1846,6 +1846,44 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
+    /// Opens `path` again from byte `offset`, once this backend has proven the
+    /// file is still `version` (what [`VolumeReadStream::source_version`] said
+    /// when the first stream opened it). How a copy carries on after an outage
+    /// longer than its backend bridges by itself, keeping the bytes it already
+    /// wrote rather than running the file again from its first byte.
+    ///
+    /// Contract, every part load-bearing:
+    ///
+    /// - **Proof before bytes.** A file that isn't `version` any more answers
+    ///   [`VolumeError::SourceChanged`] carrying `path`, before any byte is
+    ///   read: bytes of the new version spliced onto the old one's are a
+    ///   corrupt copy. A file that's gone answers `NotFound`.
+    /// - **Exactly `[offset, size)`**, no gap and no overlap. `total_size()`
+    ///   reports the FULL file size, like
+    ///   [`open_read_stream_at_offset`](Self::open_read_stream_at_offset).
+    /// - **The same `version` carries on**: the stream's own `source_version`
+    ///   answers the first open's, so a file that changed while the first
+    ///   stream still read is caught at whichever resume comes next.
+    /// - **The metadata is the first stream's.** The engine answers it for the
+    ///   resumed stream, so a backend needn't ask again.
+    ///
+    /// Default `NotSupported`, and the caller runs the file again from its
+    /// first byte. Where each backend stands: `crates/cmdr-operations/src/transfer/DETAILS.md`
+    /// § "Carrying a file on after a long outage".
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn resume_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+        version: &'a SourceVersion,
+        offset: u64,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        let _ = (path, version, offset);
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
     /// Reads a bounded byte range `[offset, offset + len)` of `path`, returning
     /// the bytes actually read.
     ///
@@ -2181,6 +2219,50 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
+    /// Whether [`continue_write_from_stream`](Self::continue_write_from_stream)
+    /// carries a write on here. ❗ Saying yes is a promise about
+    /// [`write_from_stream`](Self::write_from_stream) too: its
+    /// [`StreamWriteProgress::bytes_written`] counts a CONTIGUOUS prefix of
+    /// the target, every byte before it on disk, and a write that fails
+    /// leaves that prefix in place. The engine continues from the last count
+    /// it heard, so a backend whose writes land out of order (SMB's pipelined
+    /// WRITEs, counted as they're answered) must say no until it can name a
+    /// proven offset.
+    ///
+    /// Default `false`.
+    fn continues_writes(&self) -> bool {
+        false
+    }
+
+    /// Carries a [`write_from_stream`](Self::write_from_stream) that failed
+    /// part-way on, into the same `target`, from byte `at`: the engine's own
+    /// staged temp, which the failed write left holding at least `at` bytes.
+    /// `stream` yields the file from `at` on, and `length` is the WHOLE file's.
+    ///
+    /// - Opens `target` without creating it, and refuses (any error but a
+    ///   transport fault, `NotSupported` by convention) a target that's gone
+    ///   or shorter than `at`. The engine then runs the file again from its
+    ///   first byte.
+    /// - Cuts the target to `at` first: a byte past the last progress count
+    ///   is one nobody confirmed.
+    /// - Progress and the returned byte count are from the start of the file,
+    ///   `at` included, and the metadata goes on exactly as
+    ///   `write_from_stream` puts it.
+    ///
+    /// Only asked when [`continues_writes`](Self::continues_writes) says yes.
+    /// Default `NotSupported`.
+    fn continue_write_from_stream<'a>(
+        &'a self,
+        target: &'a Path,
+        at: u64,
+        length: StreamLength,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<StreamWritten, VolumeError>> + Send + 'a>> {
+        let _ = (target, at, length, stream, on_progress);
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
     /// Copies one FILE from `from` to `to` inside THIS volume, without the bytes
     /// travelling through Cmdr.
     ///
@@ -2372,6 +2454,7 @@ pub mod scan_walk;
 pub mod secret_store;
 pub mod server_side;
 pub mod share_link;
+mod source_version;
 mod supported_dates;
 pub mod tls;
 mod transfer_hold;
@@ -2412,6 +2495,7 @@ pub use ids::*;
 pub use presence::Presence;
 pub use server_side::{RenameWork, ServerCopyProgress, SubtreeTally};
 pub use share_link::{ShareLink, ShareLinkExpiry};
+pub use source_version::SourceVersion;
 pub use supported_dates::SupportedDates;
 // The app-path schemes live beside the translation they feed; re-exported here
 // so callers keep `volume::sftp_app_root` and friends.

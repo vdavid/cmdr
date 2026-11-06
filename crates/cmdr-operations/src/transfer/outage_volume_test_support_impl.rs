@@ -9,12 +9,12 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::metadata::{CarriedMetadata, ClassOutcome, MetadataReport};
 use cmdr_fs::volume::{
     BackendKind, BatchScanResult, ConnectionState, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress,
-    ScanBoundary, ScanConflict, ScanSource, SourceItemInfo, SpaceInfo, StreamLength, StreamWriteProgress,
-    StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode, scan_walk,
+    ScanBoundary, ScanConflict, ScanSource, SourceItemInfo, SourceVersion, SpaceInfo, StreamLength,
+    StreamWriteProgress, StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode, scan_walk,
 };
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 
 /// Counts itself into its counter when dropped: held across an await that never
 /// resolves, it counts the futures that were abandoned there.
@@ -26,7 +26,70 @@ impl Drop for CountOnDrop<'_> {
     }
 }
 
+/// A read stream off the share: counts what it hands out, and drops the
+/// session mid-file when armed to (`OutageVolume::drop_mid_read`).
+struct WatchedRead {
+    inner: Box<dyn VolumeReadStream>,
+    drop_after: Option<u64>,
+    delivered: u64,
+    up: Arc<AtomicBool>,
+    reachable: Arc<AtomicBool>,
+    bytes_read: Arc<AtomicU64>,
+}
+
+impl VolumeReadStream for WatchedRead {
+    fn next_chunk(&mut self) -> Fut<'_, Option<Result<Vec<u8>, VolumeError>>> {
+        Box::pin(async move {
+            if !self.up.load(Ordering::SeqCst) {
+                return Some(Err(VolumeError::DeviceDisconnected(
+                    "the session is down".to_owned().into(),
+                )));
+            }
+            if self.drop_after.is_some_and(|after| self.delivered >= after) {
+                self.reachable.store(false, Ordering::SeqCst);
+                self.up.store(false, Ordering::SeqCst);
+                return Some(Err(VolumeError::DeviceDisconnected(
+                    "the session is down".to_owned().into(),
+                )));
+            }
+            let chunk = self.inner.next_chunk().await;
+            if let Some(Ok(bytes)) = &chunk {
+                self.delivered += bytes.len() as u64;
+                self.bytes_read.fetch_add(bytes.len() as u64, Ordering::SeqCst);
+            }
+            chunk
+        })
+    }
+    fn total_size(&self) -> StreamLength {
+        self.inner.total_size()
+    }
+    fn bytes_read(&self) -> u64 {
+        self.inner.bytes_read()
+    }
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        self.inner.modified_at()
+    }
+    fn metadata(&self, wanted: cmdr_fs::metadata::MetadataClasses) -> CarriedMetadata {
+        self.inner.metadata(wanted)
+    }
+    fn source_version(&self) -> Option<SourceVersion> {
+        self.inner.source_version()
+    }
+}
+
 impl OutageVolume {
+    /// `stream`, counted, and armed with the next mid-read drop.
+    fn watched(&self, stream: Box<dyn VolumeReadStream>) -> Box<dyn VolumeReadStream> {
+        Box::new(WatchedRead {
+            inner: stream,
+            drop_after: self.drop_mid_read.lock_ignore_poison().take(),
+            delivered: 0,
+            up: Arc::clone(&self.up),
+            reachable: Arc::clone(&self.reachable),
+            bytes_read: Arc::clone(&self.bytes_read),
+        })
+    }
+
     fn gate(&self) -> Result<(), VolumeError> {
         if self.up.load(Ordering::SeqCst) {
             Ok(())
@@ -331,7 +394,21 @@ impl Volume for OutageVolume {
                 self.go_away();
             }
             self.gate()?;
-            self.inner.open_read_stream(path).await
+            let stream = self.inner.open_read_stream(path).await?;
+            Ok(self.watched(stream))
+        })
+    }
+    fn resume_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+        version: &'a SourceVersion,
+        offset: u64,
+    ) -> Fut<'a, Result<Box<dyn VolumeReadStream>, VolumeError>> {
+        Box::pin(async move {
+            self.gate()?;
+            self.resumed_at.lock_ignore_poison().push(offset);
+            let stream = self.inner.resume_read_stream(path, version, offset).await?;
+            Ok(self.watched(stream))
         })
     }
     fn scan_for_copy<'a>(&'a self, path: &'a Path) -> Fut<'a, Result<CopyScanResult, VolumeError>> {

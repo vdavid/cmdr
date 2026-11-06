@@ -191,6 +191,11 @@ pub struct InMemoryVolume {
     /// readable until then). Default `false`, where a write onto an existing
     /// name refuses whatever the mode. Set via [`Self::with_whole_publish`].
     publishes_writes_whole: bool,
+    /// What [`Volume::continues_writes`] reports, and whether a write that fails
+    /// mid-stream leaves its partial at the name the way a disk does. Default
+    /// `false`, where a failed write leaves nothing. Set via
+    /// [`Self::with_continuable_writes`].
+    continues_writes: bool,
     /// What [`Volume::cut_off_write_may_land_late`] reports. Default `false`;
     /// set via [`Self::with_cut_off_writes_landing_late`].
     cut_off_writes_land_late: bool,
@@ -293,6 +298,7 @@ impl InMemoryVolume {
             create_directory_not_found: false,
             composes_new_names: false,
             publishes_writes_whole: false,
+            continues_writes: false,
             cut_off_writes_land_late: false,
             renames_by_copy: false,
             holds_links: false,
@@ -469,6 +475,15 @@ impl InMemoryVolume {
     /// delete failure never fails or blocks the edit.
     pub fn with_delete_failing(mut self) -> Self {
         self.delete_fails = true;
+        self
+    }
+
+    /// Makes this volume carry a failed write on (`Volume::continue_write_from_stream`):
+    /// a write that fails mid-stream leaves the bytes it got at its name, as a disk
+    /// does, and a continuation picks up from any byte count it heard. What lets an
+    /// engine test copy onto this double through a long outage and keep its bytes.
+    pub fn with_continuable_writes(mut self) -> Self {
+        self.continues_writes = true;
         self
     }
 

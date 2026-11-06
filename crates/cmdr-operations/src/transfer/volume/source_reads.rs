@@ -40,6 +40,12 @@ impl SourceReads {
         Self(Arc::new(AtomicBool::new(false)))
     }
 
+    /// For a source that failed before any stream existed (a resume refused at
+    /// its open): the failure is the source's.
+    pub(super) fn failed() -> Self {
+        Self(Arc::new(AtomicBool::new(true)))
+    }
+
     /// Labels a failed `write_from_stream` with the side that broke: the source,
     /// at `source_path`, when one of its reads failed, else the destination, at
     /// `dest_path`.

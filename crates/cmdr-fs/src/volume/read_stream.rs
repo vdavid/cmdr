@@ -90,6 +90,20 @@ pub trait VolumeReadStream: Send {
         ScanStop::none()
     }
 
+    /// Which version of the file this stream reads, for a copy to carry on
+    /// from after a long outage ([`Volume::resume_read_stream`]). Taken from
+    /// what the open already learned, ❌ never a round trip of its own.
+    ///
+    /// Default `None`: this stream can't be resumed, and a copy that loses it
+    /// runs the file again from its first byte. ❗ The engine asks the stream
+    /// the backend handed out, before wrapping it, so a wrapper needn't forward
+    /// this.
+    ///
+    /// [`Volume::resume_read_stream`]: super::Volume::resume_read_stream
+    fn source_version(&self) -> Option<super::SourceVersion> {
+        None
+    }
+
     /// Promptly release any scarce backend resource this stream holds across
     /// chunks, before the stream is dropped. After this call the stream is spent;
     /// `next_chunk` must not be called again on it.
