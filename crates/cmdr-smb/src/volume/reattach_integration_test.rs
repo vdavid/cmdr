@@ -13,6 +13,7 @@
 use super::black_hole_proxy::BlackHoleProxy;
 use super::test_support::*;
 use super::*;
+use cmdr_fs::volume::StreamLength;
 
 /// Bytes whose value depends on their offset, so a skipped or doubled span
 /// can't compare equal.
@@ -185,5 +186,59 @@ async fn smb_integration_a_download_refuses_a_file_rewritten_while_it_was_away()
         "expected SourceChanged, got {ended_with:?}"
     );
     drop(stream);
+    ensure_clean(&vol, path.split('/').next().unwrap()).await;
+}
+
+/// A copy that waited out a long outage carries a download on through
+/// `Volume::resume_read_stream`: the version the first stream named, the bytes
+/// from the offset on, and nothing before it.
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_download_resumes_from_an_offset_on_its_named_version() {
+    let vol = make_docker_volume().await;
+    let (path, data) = seeded(&vol, 4 * 1024 * 1024).await;
+    let first = vol.open_read_stream(Path::new(&path)).await.unwrap();
+    let version = first
+        .source_version()
+        .expect("a streamed SMB download names its version");
+    drop(first);
+
+    let offset = 1_500_000;
+    let mut rest = vol
+        .resume_read_stream(Path::new(&path), &version, offset)
+        .await
+        .expect("the same file resumes");
+    assert_eq!(
+        rest.total_size(),
+        StreamLength::Known(data.len() as u64),
+        "the whole file's size"
+    );
+    let mut got = Vec::new();
+    while let Some(chunk) = rest.next_chunk().await {
+        got.extend(chunk.unwrap());
+    }
+    assert!(got == data[offset as usize..], "exactly the bytes from the offset on");
+    ensure_clean(&vol, path.split('/').next().unwrap()).await;
+}
+
+/// A file rewritten since the first stream opened it is refused before a byte
+/// is read: `SourceChanged`, carrying the path.
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_resume_refuses_a_file_rewritten_since() {
+    let vol = make_docker_volume().await;
+    let (path, _) = seeded(&vol, 4 * 1024 * 1024).await;
+    let first = vol.open_read_stream(Path::new(&path)).await.unwrap();
+    let version = first
+        .source_version()
+        .expect("a streamed SMB download names its version");
+    drop(first);
+    rewrite(&path, b"a different file").await;
+
+    match vol.resume_read_stream(Path::new(&path), &version, 1_000).await {
+        Err(VolumeError::SourceChanged(_)) => {}
+        Err(other) => panic!("expected SourceChanged, got {other:?}"),
+        Ok(_) => panic!("expected SourceChanged, got a stream"),
+    }
     ensure_clean(&vol, path.split('/').next().unwrap()).await;
 }

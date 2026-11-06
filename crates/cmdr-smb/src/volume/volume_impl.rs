@@ -588,7 +588,7 @@ impl Volume for SmbVolume {
             );
 
             let stream = self
-                .open_smb_download_stream(&smb_path, super::copy_xattrs::XattrAsk::Nothing)
+                .open_smb_download_stream(&smb_path, super::copy_xattrs::XattrAsk::Nothing, None)
                 .await?;
             Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
         })
@@ -613,6 +613,17 @@ impl Volume for SmbVolume {
         ask: cmdr_fs::metadata::MetadataAsk,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
         Box::pin(self.open_read_stream_for_copy_impl(path, size_hint, ask))
+    }
+
+    /// The streaming download again from `offset`, once smb2 proves the file
+    /// is the version the first one read (`read_stream.rs`).
+    fn resume_read_stream<'a>(
+        &'a self,
+        path: &'a Path,
+        version: &'a cmdr_fs::volume::SourceVersion,
+        offset: u64,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        Box::pin(self.resume_read_stream_impl(path, version, offset))
     }
 
     fn open_read_stream_for_scan<'a>(

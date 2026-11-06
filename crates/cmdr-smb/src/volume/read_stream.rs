@@ -13,9 +13,9 @@ use super::state::{RanOn, ends_the_session};
 use super::{SmbVolume, SmbVolumeInner};
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataAsk, MetadataClasses, UserFlags};
-use cmdr_fs::volume::{ChannelReadStream, StreamLength, VolumeError, VolumeReadStream};
+use cmdr_fs::volume::{ChannelReadStream, SourceVersion, StreamLength, VolumeError, VolumeReadStream};
 use log::{debug, info, warn};
-use smb2::client::stream::{DownloadCheckpoint, FileDownload, resume_file_download};
+use smb2::client::stream::{DownloadCheckpoint, FileDownload, FileVersion, resume_file_download};
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -113,8 +113,23 @@ impl InlineReadStream {
     }
 }
 
+/// Which version of a file an SMB download read, as smb2 checks it again on a
+/// resume (identity, length, last-write and change times): what
+/// `VolumeReadStream::source_version` hands the engine.
+#[derive(Clone, Copy)]
+pub(super) struct SmbSourceVersion(FileVersion);
+
+/// Where a carried-on download starts, and the version it must still be.
+#[derive(Clone, Copy)]
+pub(super) struct CarryFrom {
+    version: FileVersion,
+    offset: u64,
+}
+
 /// What a streaming download's producer learned from opening the file.
 struct OpenedDownload {
+    /// Which version of the file the download reads, when it opened its own.
+    version: Option<FileVersion>,
     total_size: u64,
     /// The server's `LastWriteTime`, from the same CREATE response.
     modified_at: Option<std::time::SystemTime>,
@@ -322,7 +337,36 @@ impl SmbVolume {
             LogPrivate::volume(&self.inner.share_name),
             LogPrivate::file_path(&smb_path)
         );
-        let stream = self.open_smb_download_stream(&smb_path, xattrs).await?;
+        let stream = self.open_smb_download_stream(&smb_path, xattrs, None).await?;
+        Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
+    }
+
+    /// Inherent body for the `resume_read_stream` trait method: the streaming
+    /// download again, from `offset`, once smb2 has proven the file is still
+    /// `version` (`resume_file_download`). A version another backend made, or
+    /// one from a compound read (which records none), can't be carried on.
+    pub(super) async fn resume_read_stream_impl(
+        &self,
+        path: &Path,
+        version: &SourceVersion,
+        offset: u64,
+    ) -> Result<Box<dyn VolumeReadStream>, VolumeError> {
+        let Some(SmbSourceVersion(version)) = version.downcast_ref::<SmbSourceVersion>() else {
+            return Err(VolumeError::NotSupported);
+        };
+        let smb_path = self.to_smb_path(path)?;
+        debug!(
+            "SmbVolume::resume_read_stream: share={:?}, path={:?}, offset={offset}",
+            LogPrivate::volume(&self.inner.share_name),
+            LogPrivate::file_path(&smb_path)
+        );
+        let from = CarryFrom {
+            version: *version,
+            offset,
+        };
+        let stream = self
+            .open_smb_download_stream(&smb_path, XattrAsk::Nothing, Some(from))
+            .await?;
         Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
     }
 
@@ -340,10 +384,16 @@ impl SmbVolume {
     /// This is the single streaming-read primitive for `SmbVolume`. The
     /// cross-volume streaming path (`open_read_stream`) goes through here, so
     /// no path has to buffer whole files in memory.
+    ///
+    /// `from` carries a copy on after a long outage
+    /// (`Volume::resume_read_stream`): the download opens with smb2's resume,
+    /// which proves the file is still that version before reading from its
+    /// offset, and a changed one fails the open as `SourceChanged`.
     pub(super) async fn open_smb_download_stream(
         &self,
         smb_path: &str,
         xattrs: XattrAsk,
+        from: Option<CarryFrom>,
     ) -> Result<ChannelReadStream, VolumeError> {
         let lease = self.transfer_lease().await?;
 
@@ -381,25 +431,44 @@ impl SmbVolume {
             // download owns the target's connection (`dfs_links.rs`). Under a
             // known link it goes there first, skipping the refused open.
             let known_link = share.link_paths.covers(&smb_path_owned);
-            let through_link = match known_link {
-                true => share.open_link_download(ran_on, &on, &tree, &smb_path_owned).await,
-                false => None,
+            // A copy carried on after an outage opens with the resume, which
+            // proves the version before its first READ.
+            let checkpoint = from.map(|from| DownloadCheckpoint::new(smb_path_owned.clone(), from.offset, from.version));
+            let through_link = match (known_link, &checkpoint) {
+                (true, None) => share.open_link_download(ran_on, &on, &tree, &smb_path_owned).await,
+                (true, Some(checkpoint)) => {
+                    share
+                        .resume_link_download(ran_on, &on, &tree, &smb_path_owned, checkpoint)
+                        .await
+                }
+                (false, _) => None,
             };
             // Whether the download reads through a link, so a resume goes the
             // same way.
             let mut via_link = through_link.is_some();
             let opened = match through_link {
                 Some(opened) => opened,
-                None => match open_download(&tree, &mut conn, &smb_path_owned, xattrs).await {
-                    Err(e) if is_behind_dfs_link(&e) => {
-                        via_link = true;
-                        share
-                            .open_link_download(ran_on, &on, &tree, &smb_path_owned)
-                            .await
-                            .unwrap_or(Err(e))
+                None => {
+                    let direct = match &checkpoint {
+                        None => open_download(&tree, &mut conn, &smb_path_owned, xattrs).await,
+                        Some(checkpoint) => resume_file_download(Arc::clone(&tree), conn.clone(), checkpoint).await,
+                    };
+                    match direct {
+                        Err(e) if is_behind_dfs_link(&e) => {
+                            via_link = true;
+                            let through = match &checkpoint {
+                                None => share.open_link_download(ran_on, &on, &tree, &smb_path_owned).await,
+                                Some(checkpoint) => {
+                                    share
+                                        .resume_link_download(ran_on, &on, &tree, &smb_path_owned, checkpoint)
+                                        .await
+                                }
+                            };
+                            through.unwrap_or(Err(e))
+                        }
+                        opened => opened,
                     }
-                    opened => opened,
-                },
+                }
             };
             let mut download = match opened {
                 Ok(d) => d,
@@ -419,9 +488,18 @@ impl SmbVolume {
             let total_size = download.size();
             let info = download.info();
             // A download through a DFS link listed nothing: its xattrs stay
-            // unknown, which the loss note can't count.
-            let carried = source_xattrs(&tree, &mut side_conn, &smb_path_owned, download.streams(), xattrs).await;
+            // unknown, which the loss note can't count. A carried-on one asks
+            // nothing: the engine replays the first stream's answers.
+            let ask = match checkpoint {
+                None => xattrs,
+                Some(_) => XattrAsk::Nothing,
+            };
+            let carried = source_xattrs(&tree, &mut side_conn, &smb_path_owned, download.streams(), ask).await;
+            // Which version this download reads (the first open's, through any
+            // resume), for the copy to carry on from after a long outage.
+            let version = download.checkpoint().map(|checkpoint| checkpoint.version);
             let opened = OpenedDownload {
+                version,
                 total_size,
                 modified_at: info.and_then(|info| info.modified.to_system_time()),
                 created: info.and_then(|info| info.created.to_system_time()),
@@ -439,9 +517,9 @@ impl SmbVolume {
             let mut finished = false;
             // Held until the CLOSE's answer, so a delete of this file waits for it.
             let mut closing = None;
-            // Bytes handed to the consumer, across every resume: a resumed
-            // download counts only its own part.
-            let mut delivered: u64 = 0;
+            // Bytes of the file the consumer has, from its first byte, across
+            // every resume: a resumed download counts only its own part.
+            let mut delivered: u64 = from.map_or(0, |from| from.offset);
             loop {
                 tokio::select! {
                     biased;
@@ -555,8 +633,11 @@ impl SmbVolume {
             xattrs: opened.xattrs.values(),
             ..CarriedMetadata::default()
         };
-        let stream = ChannelReadStream::new(chunk_rx, cancel_tx, StreamLength::Known(opened.total_size))
+        let mut stream = ChannelReadStream::new(chunk_rx, cancel_tx, StreamLength::Known(opened.total_size))
             .with_modified_at(opened.modified_at);
+        if let Some(version) = opened.version {
+            stream = stream.with_source_version(SourceVersion::new(SmbSourceVersion(version)));
+        }
         Ok(match opened.xattrs {
             SourceXattrs::Names(names) => stream.with_metadata_outline(CarriedMetadata {
                 xattrs: names,

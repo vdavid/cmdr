@@ -28,6 +28,9 @@ pub struct ChannelReadStream {
     /// it read values for (an xattr's name without its value). `None`: the
     /// same as `metadata`.
     outline: Option<CarriedMetadata>,
+    /// Which version of the file the producer reads, when its backend can
+    /// resume it (`VolumeReadStream::source_version`).
+    version: Option<super::SourceVersion>,
 }
 
 impl ChannelReadStream {
@@ -50,7 +53,17 @@ impl ChannelReadStream {
             modified_at: None,
             metadata: CarriedMetadata::default(),
             outline: None,
+            version: None,
         }
+    }
+
+    /// Which version of the file the producer reads, for
+    /// [`VolumeReadStream::source_version`]: pass it when the backend can
+    /// resume this file (`Volume::resume_read_stream`).
+    #[must_use]
+    pub fn with_source_version(mut self, version: super::SourceVersion) -> Self {
+        self.version = Some(version);
+        self
     }
 
     /// The source file's date, for [`VolumeReadStream::modified_at`]. Pass what
@@ -125,5 +138,9 @@ impl VolumeReadStream for ChannelReadStream {
             .unwrap_or(&self.metadata)
             .clone()
             .restricted_to(wanted)
+    }
+
+    fn source_version(&self) -> Option<super::SourceVersion> {
+        self.version.clone()
     }
 }

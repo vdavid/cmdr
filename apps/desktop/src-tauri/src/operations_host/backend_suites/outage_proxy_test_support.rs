@@ -11,7 +11,7 @@
 //! connection (the client sees its socket close, the way a router restart
 //! looks) and refuses new ones until [`OutageProxy::restore`].
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use tokio::net::{TcpListener, TcpStream};
@@ -28,6 +28,8 @@ pub(crate) struct OutageProxy {
 struct Shared {
     up: AtomicBool,
     live: Mutex<Vec<JoinHandle<()>>>,
+    /// Every byte the server sent the client, across every connection.
+    to_client: AtomicU64,
 }
 
 impl OutageProxy {
@@ -40,6 +42,7 @@ impl OutageProxy {
         let shared = Arc::new(Shared {
             up: AtomicBool::new(true),
             live: Mutex::new(Vec::new()),
+            to_client: AtomicU64::new(0),
         });
         let accepting = Arc::clone(&shared);
         let listener = tokio::spawn(async move {
@@ -54,7 +57,7 @@ impl OutageProxy {
                     drop(client);
                     continue;
                 }
-                live.push(tokio::spawn(forward(client, target_port)));
+                live.push(tokio::spawn(forward(client, target_port, Arc::clone(&accepting))));
             }
         });
         Self { port, shared, listener }
@@ -79,6 +82,12 @@ impl OutageProxy {
     pub(crate) fn restore(&self) {
         self.shared.up.store(true, Ordering::SeqCst);
     }
+
+    /// Every byte the server has sent through the proxy so far: a file read
+    /// twice shows.
+    pub(crate) fn bytes_to_client(&self) -> u64 {
+        self.shared.to_client.load(Ordering::SeqCst)
+    }
 }
 
 impl Drop for OutageProxy {
@@ -90,11 +99,30 @@ impl Drop for OutageProxy {
     }
 }
 
-async fn forward(mut client: TcpStream, target_port: u16) {
-    let Ok(mut server) = TcpStream::connect(("127.0.0.1", target_port)).await else {
+async fn forward(client: TcpStream, target_port: u16, shared: Arc<Shared>) {
+    use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
+    let Ok(server) = TcpStream::connect(("127.0.0.1", target_port)).await else {
         return;
+    };
+    let (mut client_reads, mut client_writes) = client.into_split();
+    let (mut server_reads, mut server_writes) = server.into_split();
+    let up = tokio::io::copy(&mut client_reads, &mut server_writes);
+    // Counted as it goes, so a connection `cut` aborts still counts.
+    let down = async {
+        let mut buf = vec![0u8; 64 * 1024];
+        loop {
+            let n = server_reads.read(&mut buf).await?;
+            if n == 0 {
+                return Ok::<(), std::io::Error>(());
+            }
+            client_writes.write_all(&buf[..n]).await?;
+            shared.to_client.fetch_add(n as u64, Ordering::SeqCst);
+        }
     };
     // Ends when either side closes, or when `cut` aborts this task, which drops
     // both sockets.
-    let _ = tokio::io::copy_bidirectional(&mut client, &mut server).await;
+    tokio::select! {
+        _ = up => {}
+        _ = down => {}
+    }
 }
