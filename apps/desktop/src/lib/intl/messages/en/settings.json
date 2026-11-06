@@ -613,28 +613,23 @@
   },
   "settings.fileOperations.macOnlyFiles.label": "Skip Mac-only hidden files",
   "@settings.fileOperations.macOnlyFiles.label": {
-    "description": "Settings label for a three-way choice: whether copying, moving, and compressing leaves out the hidden files only macOS uses (Finder’s .DS_Store and the ._ files beside items). \"Mac-only\" means files that mean something only on a Mac; other systems show them as clutter. Same wording as the copy dialog’s toggle (fileOperations.transferDialog.macOnlyFiles.toggle).",
-    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+    "description": "Settings label for a three-way choice: whether copying, moving, and compressing leaves out the hidden files only macOS uses (Finder’s .DS_Store and the ._ files beside items). \"Mac-only\" means files that mean something only on a Mac; other systems show them as clutter. Same wording as the copy dialog’s toggle (fileOperations.transferDialog.macOnlyFiles.toggle)."
   },
   "settings.fileOperations.macOnlyFiles.description": "Skips .DS_Store and ._* files when copying/moving/compressing files.",
   "@settings.fileOperations.macOnlyFiles.description": {
-    "description": "Help text under the 'Skip Mac-only hidden files' setting. Keep \".DS_Store\" and \"._*\" exactly as written: they are file names. The slashes join the three operations (copy, move, compress) as alternatives.",
-    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+    "description": "Help text under the 'Skip Mac-only hidden files' setting. Keep \".DS_Store\" and \"._*\" exactly as written: they are file names. The slashes join the three operations (copy, move, compress) as alternatives."
   },
   "settings.fileOperations.macOnlyFiles.opt.include": "Include",
   "@settings.fileOperations.macOnlyFiles.opt.include": {
-    "description": "Option of the 'Skip Mac-only hidden files' setting: copy these files like any other file. Segmented-control label, keep it short.",
-    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+    "description": "Option of the 'Skip Mac-only hidden files' setting: copy these files like any other file. Segmented-control label, keep it short."
   },
   "settings.fileOperations.macOnlyFiles.opt.skip": "Skip",
   "@settings.fileOperations.macOnlyFiles.opt.skip": {
-    "description": "Option of the 'Skip Mac-only hidden files' setting: leave these files out. Segmented-control label, keep it short.",
-    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+    "description": "Option of the 'Skip Mac-only hidden files' setting: leave these files out. Segmented-control label, keep it short."
   },
   "settings.fileOperations.macOnlyFiles.opt.ask": "Always ask",
   "@settings.fileOperations.macOnlyFiles.opt.ask": {
-    "description": "Option of the 'Skip Mac-only hidden files' setting, and the default: the copy, move, and compress dialog shows the choice, unticked, each time. Segmented-control label, keep it short. Same meaning as settings.fileOperations.allowFileExtensionChanges.opt.ask.",
-    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+    "description": "Option of the 'Skip Mac-only hidden files' setting, and the default: the copy, move, and compress dialog shows the choice, unticked, each time. Segmented-control label, keep it short. Same meaning as settings.fileOperations.allowFileExtensionChanges.opt.ask."
   },
   "settings.fileOperations.macOnlyFiles.keywords": "hidden, metadata, clutter, junk, resource fork, archive, compress, copy, move, other systems",
   "@settings.fileOperations.macOnlyFiles.keywords": {

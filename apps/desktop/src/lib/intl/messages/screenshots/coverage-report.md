@@ -16,7 +16,7 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 3880 / 5613 keys have a screenshot (69%):** 2076 direct (37%) and 1804 representative (32%). 1541 remain
+**Total: 3880 / 5639 keys have a screenshot (69%):** 2076 direct (37%) and 1804 representative (32%). 1567 remain
 uncoupled, and 192 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
@@ -32,26 +32,26 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | errorReporter   |     16 |              0 |        43 |      0 |    59 |   27% |
 | errors          |    157 |            515 |         0 |      0 |   672 |  100% |
 | feedback        |      8 |              6 |         2 |      0 |    16 |   88% |
-| fileExplorer    |    162 |             82 |       314 |      0 |   558 |   44% |
-| fileOperations  |    141 |             94 |       112 |      0 |   347 |   68% |
+| fileExplorer    |    162 |             82 |       319 |      0 |   563 |   43% |
+| fileOperations  |    141 |             94 |       116 |      0 |   351 |   67% |
 | goToPath        |      5 |              6 |         2 |      0 |    13 |   85% |
 | indexing        |     34 |             18 |        18 |      0 |    70 |   74% |
 | licensing       |     49 |             35 |        25 |      0 |   109 |   77% |
 | lowDiskSpace    |      0 |              0 |         5 |      0 |     5 |    0% |
-| main            |      7 |              0 |        54 |      2 |    63 |   11% |
+| main            |      7 |              0 |        58 |      2 |    67 |   10% |
 | menu            |      4 |              0 |         0 |    190 |   194 |    2% |
 | mtp             |     18 |              4 |         0 |      0 |    22 |  100% |
-| multiRename     |     90 |              0 |       140 |      0 |   230 |   39% |
+| multiRename     |     90 |              0 |       141 |      0 |   231 |   39% |
 | notifications   |      0 |              0 |         1 |      0 |     1 |    0% |
 | onboarding      |     96 |             43 |        25 |      0 |   164 |   85% |
 | operationLog    |     26 |             33 |         0 |      0 |    59 |  100% |
 | queryUi         |     41 |            126 |         0 |      0 |   167 |  100% |
 | queue           |     24 |             20 |         5 |      0 |    49 |   90% |
 | search          |      9 |             49 |         0 |      0 |    58 |  100% |
-| securityNotices |      0 |              0 |        13 |      0 |    13 |    0% |
+| securityNotices |      0 |              0 |        16 |      0 |    16 |    0% |
 | selection       |     14 |              0 |         1 |      0 |    15 |   93% |
 | servers         |     95 |             82 |        57 |      0 |   234 |   76% |
-| settings        |    449 |             47 |       416 |      0 |   912 |   54% |
+| settings        |    449 |             47 |       425 |      0 |   921 |   54% |
 | shortcuts       |     35 |             31 |         0 |      0 |    66 |  100% |
 | stateRecovery   |      0 |              0 |        33 |      0 |    33 |    0% |
 | suggestedOps    |     85 |              0 |        27 |      0 |   112 |   76% |

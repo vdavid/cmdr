@@ -182,7 +182,7 @@
       "reason": "The contract oracle's `Volume` impl: one short method per trait method (every backend contract `conformance.rs` asserts has its in-memory answer here), so it grows by a few lines with each trait method, plus the device model's `breathe` at each call boundary (the model itself lives in `in_memory/device.rs`). Its test knobs and behaviors already live apart (`in_memory.rs` builders, `in_memory/transfer_holds.rs`); what's left is the impl block Rust needs in one place."
     },
     "crates/cmdr-fs/src/volume/mod.rs": {
-      "lines": 2244,
+      "lines": 2473,
       "reason": "Over half its lines are doc comments, because this is the `Volume` trait definition, the vocabulary every storage backend in Cmdr speaks. Rust needs a trait in one block, and the prose is the deliverable: contracts like `delete` refusing to recurse and `rename(force: false)` refusing an existing destination are stated here and enforced by the shared assertions in `conformance.rs`. Everything that could leave already has, as the module declarations at the foot of the file show: `read_stream` (the two stream traits its methods hand back), `types`, `ids`, `capabilities`, `in_memory`, `mkdir_all`, `patching`, `scan_walk`, `host/`, and a dozen more."
     },
     "crates/cmdr-index/src/indexing/aggregator/mod.rs": {
