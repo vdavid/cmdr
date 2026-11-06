@@ -95,6 +95,7 @@ describe('createTransferScanState', () => {
         getConfirmed: () => false,
         getDestroyed: () => destroyed,
         getScanPurpose: () => 'transfer',
+        getMacOnlyFiles: () => 'include',
       })
     })
     // The toggle effect's first run is the one it skips; get it out of the way.
@@ -136,7 +137,7 @@ describe('createTransferScanState', () => {
       registrations.resolve(undefined)
       scan.start()
       await vi.waitFor(() => {
-        expect(commands.startScanPreview).toHaveBeenCalledWith(['/src/a.txt'], 'transfer', 500, 'root')
+        expect(commands.startScanPreview).toHaveBeenCalledWith(['/src/a.txt'], 'transfer', 500, 'root', 'include')
       })
 
       close()

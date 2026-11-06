@@ -27,6 +27,7 @@
  * reacts to the boolean.
  */
 
+import { untrack } from 'svelte'
 import {
   startScanPreview,
   cancelScanPreview,
@@ -39,6 +40,7 @@ import {
   type CompressedSizeEstimate,
   type ScanPreviewPurpose,
   type ScanPreviewRefusal,
+  type MacOnlyFiles,
 } from '#lib/tauri-commands/index.js'
 import { getSetting } from '#lib/settings/index.js'
 
@@ -64,6 +66,12 @@ export interface TransferScanStateDeps {
    * rides the scan-complete event and is absent for remote sources (never sampled).
    */
   getScanPurpose: () => ScanPreviewPurpose
+  /**
+   * What the transfer will leave out (#314), read at scan start so the walk leaves the same
+   * files out and the tallies match what the operation writes. Reactive: a flip restarts the
+   * preview (the mac-only `$effect` below).
+   */
+  getMacOnlyFiles: () => MacOnlyFiles
 }
 
 export function createTransferScanState(deps: TransferScanStateDeps) {
@@ -147,6 +155,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
     const sourcePaths = deps.getSourcePaths()
     const sourceVolumeId = deps.getSourceVolumeId()
     const purpose = deps.getScanPurpose()
+    const macOnlyFiles = deps.getMacOnlyFiles()
     // Subscribe to events BEFORE starting scan (avoid missing fast completions)
     keepListener(
       await onScanPreviewProgress((event) => {
@@ -192,7 +201,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
     scanFailure = null
     sourceRefusal = null
     const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
-    const result = await startScanPreview(sourcePaths, purpose, progressIntervalMs, sourceVolumeId)
+    const result = await startScanPreview(sourcePaths, purpose, progressIntervalMs, sourceVolumeId, macOnlyFiles)
     if ('refusal' in result) {
       // Nothing started, so there's nothing to free and no event to wait for.
       if (!isOvertaken()) {
@@ -307,6 +316,25 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
       // No preview running and we're back on a path that needs one: start it.
       scanStarted = startScan()
     }
+  })
+
+  // The "Skip Mac-only hidden files" toggle: the walk leaves out what the transfer will, so a
+  // flip walks again with the new choice (the old preview is freed, its tallies reset). Like
+  // the toggle effect above, created in the factory body (L3) and skipping its first run,
+  // which `start()` owns. A same-volume move has no preview to redo.
+  let macOnlyEffectInitialized = false
+  $effect(() => {
+    deps.getMacOnlyFiles()
+    if (!macOnlyEffectInitialized) {
+      macOnlyEffectInitialized = true
+      return
+    }
+    // Untracked: only the toggle reruns this. The same-volume flip is the effect above's.
+    untrack(() => {
+      if (deps.getConfirmed() || deps.getDestroyed() || deps.getIsSameVolumeMove()) return
+      cancelPreview()
+      scanStarted = startScan()
+    })
   })
 
   return {

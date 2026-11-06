@@ -7,7 +7,7 @@
         WriteOperationError,
         ConflictResolution,
     } from '#lib/file-explorer/types.js'
-    import type { OpKind, RollbackSupport, SpaceShortfall } from '#lib/ipc/bindings.js'
+    import type { MacOnlyFiles, OpKind, RollbackSupport, SpaceShortfall } from '#lib/ipc/bindings.js'
     import type { CompletionView, TransferCompletePayload } from '#lib/file-explorer/pane/dialog-props.js'
     import { getSetting } from '#lib/settings/index.js'
     import { isOperationLogRecording } from '#lib/operation-log/recording.js'
@@ -86,6 +86,8 @@
         /** Source filenames known to conflict at dest (from TransferDialog's pre-flight scan).
          *  Forwarded to the BE so it can bulk-skip them upfront under `Skip all`. */
         preKnownConflicts?: string[]
+        /** Copy, move, compress: the setup dialog's "Skip Mac-only hidden files" answer. */
+        macOnlyFiles?: MacOnlyFiles
         /** Copy only: `proceed` when the person chose "Copy anyway" after a space shortfall. */
         spaceShortfall?: SpaceShortfall
         /** Per-item sizes for trash progress (from scan or drive index, optional) */
@@ -135,6 +137,7 @@
         destVolumeId,
         conflictResolution,
         preKnownConflicts,
+        macOnlyFiles,
         spaceShortfall,
         itemSizes,
         fileCount,
@@ -232,6 +235,7 @@
         destVolumeId,
         conflictResolution,
         preKnownConflicts,
+        macOnlyFiles,
         spaceShortfall,
         itemSizes,
         fileCount,

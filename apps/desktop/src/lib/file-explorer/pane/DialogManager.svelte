@@ -217,6 +217,7 @@
             destVolumeId={transferProgressProps.destVolumeId}
             conflictResolution={transferProgressProps.conflictResolution}
             preKnownConflicts={transferProgressProps.preKnownConflicts}
+            macOnlyFiles={transferProgressProps.macOnlyFiles}
             spaceShortfall={transferProgressProps.spaceShortfall}
             itemSizes={transferProgressProps.itemSizes}
             fileCount={transferProgressProps.fileCount}

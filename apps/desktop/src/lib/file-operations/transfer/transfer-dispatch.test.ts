@@ -30,7 +30,9 @@ vi.mock('#lib/logging/logger.js', () => ({
 vi.mock('#lib/settings/index.js', () => ({
   // Key-aware so the archive compression level is distinguishable from the
   // progress-interval / max-conflicts settings (all others resolve to 200).
-  getSetting: vi.fn((key: string) => (key === 'behavior.archiveCompressionLevel' ? 6 : 200)),
+  getSetting: vi.fn((key: string) =>
+    key === 'behavior.archiveCompressionLevel' ? 6 : key === 'fileOperations.macOnlyFiles' ? 'ask' : 200,
+  ),
 }))
 
 import { emit } from '@tauri-apps/api/event'
@@ -91,6 +93,7 @@ describe('dispatchTransferOperation: routing', () => {
         previewId: 'preview-9',
         preKnownConflicts: [],
         compressionLevel: 6,
+        macOnlyFiles: 'include',
       },
       'user',
     )
@@ -356,6 +359,43 @@ it('forwards a Move target name to the volume engine', async () => {
     expect.objectContaining({ destinationName: 'renamed.txt' }),
     'user',
   )
+})
+
+describe('dispatchTransferOperation: Mac-only hidden files (#314)', () => {
+  /** The `macOnlyFiles` the one command this dispatch reached carried. */
+  function sentMacOnly(command: (...args: never[]) => unknown, configIndex: number): unknown {
+    const call = vi.mocked(command).mock.calls[0] as unknown[]
+    return (call[configIndex] as { macOnlyFiles?: unknown }).macOnlyFiles
+  }
+
+  it('carries the dialog’s answer to a copy, a move, and a compress', async () => {
+    await dispatchTransferOperation(makeConfig({ macOnlyFiles: 'skip' }))
+    expect(sentMacOnly(copyBetweenVolumes, 4)).toBe('skip')
+    await dispatchTransferOperation(makeConfig({ operationType: 'move', macOnlyFiles: 'skip' }))
+    expect(sentMacOnly(moveFiles, 2)).toBe('skip')
+    await dispatchTransferOperation(makeConfig({ operationType: 'compress', macOnlyFiles: 'skip' }))
+    expect(sentMacOnly(compressFiles, 4)).toBe('skip')
+  })
+
+  it('falls back to the setting when nobody saw the toggle, where “Always ask” includes them', async () => {
+    await dispatchTransferOperation(makeConfig())
+    expect(sentMacOnly(copyBetweenVolumes, 4)).toBe('include')
+  })
+
+  it('never leaves anything out of a rename', async () => {
+    await dispatchTransferOperation(
+      makeConfig({
+        operationType: 'move',
+        sourceVolumeId: 's3-acct',
+        destVolumeId: 's3-acct',
+        sourcePaths: ['/bucket/photos'],
+        destinationPath: '/bucket',
+        newName: 'pictures',
+        macOnlyFiles: 'skip',
+      }),
+    )
+    expect(sentMacOnly(renameByMove, 4)).toBe('include')
+  })
 })
 
 /**

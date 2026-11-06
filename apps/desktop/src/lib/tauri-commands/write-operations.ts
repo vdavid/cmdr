@@ -1,7 +1,13 @@
 // Copy/move/delete operations + event handlers
 
 import { type Event, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { commands, events, type HomeFolderAction, type ScanPreviewPurpose } from '#lib/ipc/bindings.js'
+import {
+  commands,
+  events,
+  type HomeFolderAction,
+  type MacOnlyFiles,
+  type ScanPreviewPurpose,
+} from '#lib/ipc/bindings.js'
 import { throwIpcError } from './ipc-types'
 import type {
   ConflictResolution,
@@ -86,14 +92,23 @@ export type {
  * `purpose` names the dialog: a transfer's walk also builds the operation's live tree, and a
  * compress's local walk samples a compressed-size estimate.
  * A non-local id no volume answers for (an unplugged phone) comes back as a typed `refusal`
- * instead: nothing was walked and no preview exists. */
+ * instead: nothing was walked and no preview exists.
+ * `macOnlyFiles` is what the transfer will leave out, so the totals match what it writes; a
+ * delete passes nothing. */
 export async function startScanPreview(
   sources: string[],
   purpose: ScanPreviewPurpose,
   progressIntervalMs?: number,
   sourceVolumeId?: string,
+  macOnlyFiles?: MacOnlyFiles,
 ): Promise<ScanPreviewStart> {
-  const res = await commands.startScanPreview(sources, sourceVolumeId ?? null, progressIntervalMs ?? null, purpose)
+  const res = await commands.startScanPreview(
+    sources,
+    sourceVolumeId ?? null,
+    progressIntervalMs ?? null,
+    purpose,
+    macOnlyFiles ?? null,
+  )
   return res.status === 'ok' ? res.data : { refusal: res.error }
 }
 

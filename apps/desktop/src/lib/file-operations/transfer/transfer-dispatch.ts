@@ -27,10 +27,11 @@ import { emit } from '@tauri-apps/api/event'
 import type { ConflictResolution, TransferOperationType, WriteOperationError } from '#lib/file-explorer/types.js'
 import { getSetting } from '#lib/settings/index.js'
 import { pathCrossesArchiveBoundary, pathInsideArchive } from '#lib/file-explorer/pane/archive-paths.js'
-import type { ItemKinds, SpaceShortfall } from '#lib/ipc/bindings.js'
+import type { ItemKinds, MacOnlyFiles, SpaceShortfall } from '#lib/ipc/bindings.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { pluralize } from '#lib/utils/pluralize.js'
 import { logLevelFor } from './transfer-error-log-level'
+import { MAC_ONLY_FILES_SETTING, defaultMacOnlyFiles } from './mac-only-files'
 
 const log = getAppLogger('transferProgress')
 
@@ -53,6 +54,10 @@ export interface TransferDispatchConfig {
   conflictResolution?: ConflictResolution
   /** Source filenames known to conflict at dest (forwarded so the BE bulk-skips them under `Skip all`). */
   preKnownConflicts?: string[]
+  /** Copy, move, compress: whether to leave Mac-only hidden files out, as the dialog's toggle
+   *  said. Absent (nobody saw the toggle), the `fileOperations.macOnlyFiles` default
+   *  decides (`mac-only-files.ts`). */
+  macOnlyFiles?: MacOnlyFiles
   /** Copy only: `proceed` when the person chose "Copy anyway" after a space shortfall. */
   spaceShortfall?: SpaceShortfall
   /** Per-item sizes for trash progress (from scan or drive index). */
@@ -195,6 +200,12 @@ export function dispatchTransferOperation(config: TransferDispatchConfig): Promi
   // archive); the backend clamps it to 1..=9 and ignores it for non-archive
   // copies.
   const compressionLevel = getSetting('behavior.archiveCompressionLevel')
+  // The toggle's answer, or for a confirm nobody saw, the setting's default. A rename leaves
+  // nothing out, whatever the default: it's the same items under a new name.
+  const macOnlyFiles: MacOnlyFiles =
+    config.newName !== undefined
+      ? 'include'
+      : (config.macOnlyFiles ?? defaultMacOnlyFiles(getSetting(MAC_ONLY_FILES_SETTING)))
   const sourceKinds = sourceKindsOf(config)
 
   if (config.operationType === 'trash') {
@@ -223,6 +234,7 @@ export function dispatchTransferOperation(config: TransferDispatchConfig): Promi
       preKnownConflicts: config.preKnownConflicts ?? [],
       compressionLevel,
       sourceKinds,
+      macOnlyFiles,
     }
     // A rename that copies, confirmed in the Move dialog: one source, one volume.
     if (config.newName !== undefined) {
@@ -258,14 +270,15 @@ export function dispatchTransferOperation(config: TransferDispatchConfig): Promi
         preKnownConflicts: config.preKnownConflicts ?? [],
         destinationName: config.destinationName,
         sourceKinds,
+        macOnlyFiles,
       },
       config.initiator,
     )
   }
   if (config.operationType === 'compress') {
-    return dispatchCompress(config, progressIntervalMs, maxConflictsToShow, compressionLevel)
+    return dispatchCompress(config, progressIntervalMs, maxConflictsToShow, compressionLevel, macOnlyFiles)
   }
-  return dispatchCopy(config, progressIntervalMs, maxConflictsToShow, compressionLevel, sourceKinds)
+  return dispatchCopy(config, progressIntervalMs, maxConflictsToShow, compressionLevel, sourceKinds, macOnlyFiles)
 }
 
 /** Copy: always via `copyBetweenVolumes`; the backend optimizes local-to-local. */
@@ -275,6 +288,7 @@ function dispatchCopy(
   maxConflictsToShow: number,
   compressionLevel: number,
   sourceKinds: ItemKinds | undefined,
+  macOnlyFiles: MacOnlyFiles,
 ): Promise<{ operationId: string }> {
   return copyBetweenVolumes(
     config.sourceVolumeId,
@@ -291,6 +305,7 @@ function dispatchCopy(
       destinationName: config.destinationName,
       spaceShortfall: config.spaceShortfall ?? 'refuse',
       sourceKinds,
+      macOnlyFiles,
     },
     config.initiator,
   )
@@ -308,6 +323,7 @@ function dispatchCompress(
   progressIntervalMs: number,
   maxConflictsToShow: number,
   compressionLevel: number,
+  macOnlyFiles: MacOnlyFiles,
 ): Promise<{ operationId: string }> {
   return compressFiles(
     config.sourceVolumeId,
@@ -320,6 +336,7 @@ function dispatchCompress(
       maxConflictsToShow,
       previewId: config.previewId,
       compressionLevel,
+      macOnlyFiles,
     },
     config.initiator,
   )

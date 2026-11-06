@@ -321,6 +321,12 @@ export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
 /** What ⌘V does in a pane when the clipboard holds no file URLs but has pasteable content (text, image, PDF). */
 export type PasteClipboardAsFileMode = 'doNothing' | 'createFile' | 'createFileAndRename'
 /**
+ * Whether copy, move, and compress leave Finder's `.DS_Store` and AppleDouble `._*` files out
+ * (#314): the default the dialog's toggle starts from, or `ask` to start it off with a
+ * "Don't ask again?" link. The backend matches the names (`cmdr_fs::mac_only_files`).
+ */
+export type MacOnlyFilesPolicy = 'include' | 'skip' | 'ask'
+/**
  * The policy the copy/move dialog's "files already exist" radios start on: the
  * dialog's own five choices, spelled as the wire `ConflictResolution` values
  * (`stop` = ask later). `rename` stays out: the dialog doesn't offer it upfront.
@@ -532,6 +538,7 @@ export interface SettingsValues {
   'fileOperations.adbBinaryPath': string
   'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
   'fileOperations.pasteClipboardAsFile': PasteClipboardAsFileMode
+  'fileOperations.macOnlyFiles': MacOnlyFilesPolicy
   'fileOperations.skipConfirmation': boolean
   'fileOperations.defaultConflictPolicy': DefaultConflictPolicy
   'fileOperations.keepProgressOpenWhenDone': boolean

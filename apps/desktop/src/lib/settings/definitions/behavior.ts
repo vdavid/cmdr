@@ -128,6 +128,28 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     },
   },
   {
+    // FE-owned: the copy, move, and compress dialog's "Skip Mac-only hidden files"
+    // toggle starts from it, and a confirm the dialog never showed dispatches it
+    // (`file-operations/transfer/mac-only-files.ts`). The backend matches the names.
+    id: 'fileOperations.macOnlyFiles',
+    section: ['Behavior', 'Navigation & file ops'],
+    cardKey: 'settings.navigationAndFileOps.card.fileOperations',
+    labelKey: 'settings.fileOperations.macOnlyFiles.label',
+    descriptionKey: 'settings.fileOperations.macOnlyFiles.description',
+    keywordsKey: 'settings.fileOperations.macOnlyFiles.keywords',
+    terms: ['DS_Store', 'AppleDouble', 'Finder', 'macOS', 'NAS', 'zip'],
+    type: 'enum',
+    default: 'ask',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'include', labelKey: 'settings.fileOperations.macOnlyFiles.opt.include' },
+        { value: 'skip', labelKey: 'settings.fileOperations.macOnlyFiles.opt.skip' },
+        { value: 'ask', labelKey: 'settings.fileOperations.macOnlyFiles.opt.ask' },
+      ],
+    },
+  },
+  {
     // FE-owned: read by `DualPaneExplorer` into the dialog state, where
     // `pane/confirmation-skip.ts` decides which confirmations it may leave out.
     // A permanent delete always asks, whatever this says.

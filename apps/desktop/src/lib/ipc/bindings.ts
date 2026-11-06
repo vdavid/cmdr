@@ -791,6 +791,11 @@ export const commands = {
        *  See [`ItemKinds`].
        */
       sourceKinds?: ItemKinds | null
+      /**
+       *  Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+       *  out of its destination. See `cmdr_fs::mac_only_files`.
+       */
+      macOnlyFiles?: MacOnlyFiles
     } | null,
     initiator: Initiator,
   ) =>
@@ -831,6 +836,11 @@ export const commands = {
        *  See [`ItemKinds`].
        */
       sourceKinds?: ItemKinds | null
+      /**
+       *  Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+       *  out of its destination. See `cmdr_fs::mac_only_files`.
+       */
+      macOnlyFiles?: MacOnlyFiles
     } | null,
     initiator: Initiator,
   ) =>
@@ -868,6 +878,11 @@ export const commands = {
        *  See [`ItemKinds`].
        */
       sourceKinds?: ItemKinds | null
+      /**
+       *  Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+       *  out of its destination. See `cmdr_fs::mac_only_files`.
+       */
+      macOnlyFiles?: MacOnlyFiles
     } | null,
     initiator: Initiator,
   ) =>
@@ -1419,9 +1434,18 @@ export const commands = {
     sourceVolumeId: string | null,
     progressIntervalMs: number | null,
     purpose: ScanPreviewPurpose,
+    macOnlyFiles:
+      /**
+       *  Copy them like any other file. The default: leaving a file out is
+       *  something a person asks for.
+       */
+      | 'include'
+      // Leave every listed `.DS_Store` and `._*` file out of the destination.
+      | 'skip'
+      | null,
   ) =>
     typedError<ScanPreviewStartResult, ScanPreviewRefusal>(
-      __TAURI_INVOKE('start_scan_preview', { sources, sourceVolumeId, progressIntervalMs, purpose }),
+      __TAURI_INVOKE('start_scan_preview', { sources, sourceVolumeId, progressIntervalMs, purpose, macOnlyFiles }),
     ),
   cancelScanPreview: (previewId: string) => __TAURI_INVOKE<void>('cancel_scan_preview', { previewId }),
   /**
@@ -1645,6 +1669,11 @@ export const commands = {
        *  See [`ItemKinds`].
        */
       sourceKinds?: ItemKinds | null
+      /**
+       *  Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+       *  out of its destination. See `cmdr_fs::mac_only_files`.
+       */
+      macOnlyFiles?: MacOnlyFiles
     } | null,
     initiator: Initiator,
   ) =>
@@ -1704,6 +1733,11 @@ export const commands = {
        *  See [`ItemKinds`].
        */
       sourceKinds?: ItemKinds | null
+      /**
+       *  Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+       *  out of its destination. See `cmdr_fs::mac_only_files`.
+       */
+      macOnlyFiles?: MacOnlyFiles
     } | null,
     initiator: Initiator,
   ) =>
@@ -1764,6 +1798,11 @@ export const commands = {
        *  See [`ItemKinds`].
        */
       sourceKinds?: ItemKinds | null
+      /**
+       *  Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+       *  out of its destination. See `cmdr_fs::mac_only_files`.
+       */
+      macOnlyFiles?: MacOnlyFiles
     } | null,
     initiator: Initiator,
   ) =>
@@ -1816,6 +1855,11 @@ export const commands = {
        *  See [`ItemKinds`].
        */
       sourceKinds?: ItemKinds | null
+      /**
+       *  Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+       *  out of its destination. See `cmdr_fs::mac_only_files`.
+       */
+      macOnlyFiles?: MacOnlyFiles
     } | null,
     initiator: Initiator,
   ) =>
@@ -12742,6 +12786,16 @@ export type LowDiskSpacePayload = {
   isLow: boolean
 }
 
+// Whether a transfer writes Mac-only hidden files to its destination.
+export type MacOnlyFiles =
+  /**
+   *  Copy them like any other file. The default: leaving a file out is
+   *  something a person asks for.
+   */
+  | 'include'
+  // Leave every listed `.DS_Store` and `._*` file out of the destination.
+  | 'skip'
+
 // Why the policy refused an AI request. Produced only by [`super::ManagedPolicy::ai_destination`].
 export type ManagedAiRefusal =
   // `DisableAI`: no AI at all, local included.
@@ -21592,6 +21646,11 @@ export type VolumeCopyConfig = {
    *  See [`ItemKinds`].
    */
   sourceKinds?: ItemKinds | null
+  /**
+   *  Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+   *  out of its destination. See `cmdr_fs::mac_only_files`.
+   */
+  macOnlyFiles?: MacOnlyFiles
 }
 
 /**
@@ -22632,6 +22691,11 @@ export type WriteOperationConfig = {
    *  See [`ItemKinds`].
    */
   sourceKinds?: ItemKinds | null
+  /**
+   *  Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`)
+   *  out of its destination. See `cmdr_fs::mac_only_files`.
+   */
+  macOnlyFiles?: MacOnlyFiles
 }
 
 // Errors that can occur during write operations.

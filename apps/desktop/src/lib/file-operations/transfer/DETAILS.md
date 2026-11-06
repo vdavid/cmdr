@@ -690,6 +690,24 @@ came from (`ConflictPolicySource`: `remembered`, `picked`, `preset`, or `explici
 E2E specs share one app per shard, so a saved policy would leak into the next spec; the conflict-family specs reset it
 through `resetRememberedConflictPolicy` (`test/e2e-playwright/conflict-helpers.ts`).
 
+### "Skip Mac-only hidden files" (#314)
+
+The "To" card ends with a checkbox and a link. The rules live in `mac-only-files.ts`; which names match, and what a
+transfer then does with them (the walks, the totals, a move's husk folders, a zip's `__MACOSX` sidecars), is the
+backend's: `crates/cmdr-operations/src/transfer/DETAILS.md` § "Mac-only files a transfer leaves out".
+
+- **It starts from `fileOperations.macOnlyFiles`** (`include` / `skip` / `ask`, default `ask`): ticked only on `skip`.
+  The link names that default ("Including by default", "Skipping by default"), or on `ask` offers "Don't ask again?",
+  and opens Settings at the row either way.
+- **The checkbox is always a one-off override**: ❌ it never writes the setting. Until the person touches it, it follows
+  a default they change through the link while the dialog is open.
+- **The preview walks with the same choice**, so the tallies match what the operation writes, and a flip walks again
+  (`transfer-scan-state.svelte.ts`'s mac-only `$effect`; the backend treats a preview that left out something else as a
+  miss, so a flip racing the confirm costs a rescan, never wrong totals).
+- **A confirm nobody saw** (skipped confirmation, a start with no dialog) sends the setting's starting state, so `ask`
+  includes them (`transfer-dispatch.ts`, `defaultMacOnlyFiles`). **A rename never leaves anything out**: rename mode
+  shows no checkbox, and the dispatch sends `include` for any `newName`.
+
 ### The confirm dispatches without waiting for the conflict check
 
 A confirm dispatches as soon as the preview id is in hand, even with the check still running.

@@ -605,6 +605,22 @@
       "reach": "which files the saved option overwrites: 'smaller' (only files at the destination that are smaller), 'older' (only older ones), or anything else for every clashing file"
     }
   },
+  "fileOperations.transferDialog.macOnlyFiles.toggle": "Skip Mac-only hidden files (.DS_Store, ._*)",
+  "@fileOperations.transferDialog.macOnlyFiles.toggle": {
+    "description": "Checkbox label in the 'To' group of the copy, move, and compress dialog. When checked, this one operation leaves out the hidden files only macOS uses (Finder’s .DS_Store and the ._ files beside items), which other systems show as clutter. Keep \".DS_Store\" and \"._*\" exactly as written: they are file names. Same wording as the setting (settings.fileOperations.macOnlyFiles.label)."
+  },
+  "fileOperations.transferDialog.macOnlyFiles.dontAskAgain": "Don’t ask again?",
+  "@fileOperations.transferDialog.macOnlyFiles.dontAskAgain": {
+    "description": "Link right after the 'Skip Mac-only hidden files' checkbox in the copy, move, and compress dialog, shown while the setting says to ask each time. Opens Settings at that setting, where the user can pick a default (include or skip) so the dialog stops asking. A short question, styled as a link."
+  },
+  "fileOperations.transferDialog.macOnlyFiles.includingByDefault": "Including by default",
+  "@fileOperations.transferDialog.macOnlyFiles.includingByDefault": {
+    "description": "Link right after the 'Skip Mac-only hidden files' checkbox in the copy, move, and compress dialog, shown while the setting's default is to include these files (the checkbox starts unchecked and only changes this one operation). Opens Settings at that setting. Short, styled as a link."
+  },
+  "fileOperations.transferDialog.macOnlyFiles.skippingByDefault": "Skipping by default",
+  "@fileOperations.transferDialog.macOnlyFiles.skippingByDefault": {
+    "description": "Link right after the 'Skip Mac-only hidden files' checkbox in the copy, move, and compress dialog, shown while the setting's default is to skip these files (the checkbox starts checked and only changes this one operation). Opens Settings at that setting. Short, styled as a link."
+  },
   "fileOperations.transferDialog.rememberChoice": "Remember this choice",
   "@fileOperations.transferDialog.rememberChoice": {
     "description": "Checkbox label right under the 'files already exist' options (Skip, Overwrite, and so on) in the copy/move dialog. When checked, copying or moving makes the selected option the one the dialog starts on next time; unchecked, the dialog goes back to asking. Hidden while 'Ask later' is selected. Short control label."

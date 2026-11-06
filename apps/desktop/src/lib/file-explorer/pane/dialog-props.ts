@@ -8,7 +8,7 @@
  * other's behavior.
  */
 
-import type { Initiator, ProgressAtStop } from '#lib/tauri-commands/index.js'
+import type { Initiator, MacOnlyFiles, ProgressAtStop } from '#lib/tauri-commands/index.js'
 import type {
   AlreadyGone,
   AppearedDuringMove,
@@ -45,6 +45,9 @@ export interface TransferConfirmPayload {
    *  under `Skip all`. Empty when no conflicts were found or the pre-flight
    *  scan failed. */
   preKnownConflicts: string[]
+  /** Whether to leave Mac-only hidden files out, as the dialog's toggle said. Absent from a
+   *  confirm the dialog never showed: the setting's default then decides. */
+  macOnlyFiles?: MacOnlyFiles
   /** Rename mode only: the leaf of the edited path, which the source moves under
    *  into `destination` (then the folder part alone). */
   newName?: string
@@ -186,6 +189,8 @@ export interface TransferProgressPropsData {
   /** Source filenames known to conflict at dest (from pre-flight scan).
    *  Forwarded to the BE so it can bulk-skip them upfront under `Skip all`. */
   preKnownConflicts?: string[]
+  /** Copy, move, compress: the dialog's "Skip Mac-only hidden files" answer, if it showed. */
+  macOnlyFiles?: MacOnlyFiles
   /** Copy only: `proceed` when the person chose "Copy anyway" after a space shortfall. */
   spaceShortfall?: SpaceShortfall
   /** Top-level files the operation will transfer (for the completion toast's per-type

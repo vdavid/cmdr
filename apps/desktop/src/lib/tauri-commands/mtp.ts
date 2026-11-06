@@ -7,6 +7,7 @@ import {
   type DestinationRootEcho,
   type Initiator,
   type ItemKinds,
+  type MacOnlyFiles,
   type MtpDeviceConnected,
   type MtpDeviceDisconnected,
   type MtpExclusiveAccessError,
@@ -198,6 +199,8 @@ export interface VolumeCopyConfig {
   spaceShortfall?: SpaceShortfall
   /** The top-level sources split into files and folders, for the queue row's "2 folders and 1 file". */
   sourceKinds?: ItemKinds
+  /** Whether the transfer leaves Mac-only hidden files (`.DS_Store`, `._*`) out of its destination. */
+  macOnlyFiles?: MacOnlyFiles
 }
 
 /** Input for source item in conflict scanning. */
