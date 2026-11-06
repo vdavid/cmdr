@@ -5,6 +5,90 @@ This file holds all notable changes to Cmdr over time.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.60.0] - 2026-11-06
+
+About 40 fixes and improvements, lots of them for search and the file viewer. And a lot of code refactors in the
+background that you shouldn't notice.
+
+Fun: You can now try Cmdr in your browser, nothing to install: [getcmdr.com/demo](https://getcmdr.com/demo/) 😄
+
+### Added
+
+- Encrypt SMB connections (AES-128 and AES-256), with "Always require SMB encryption" in Settings and an MDM key to
+  enforce it (f57c4c0f0, 08098b812, 455a4838b, 94cec13f4, df32ae1df, 7b7188757, 2227718c4, 547e5ec8a, fad5ee110,
+  b8df11532, 101535705)
+- Pause indexing while your disk is nearly full (threshold in Settings > Advanced, default 5%), with a red badge and a
+  warning on folder sizes (d889b3bc1, dc6d87c75, ec6cd0d85, af913d4f6, 3ee98a01b, 7a1bfadf7, 240371f95)
+- Offer Retry when a copy stops for lack of space, in the dialog and the operation queue (8fc51c0e3)
+- Show how many tokens the AI provider's cache served in Ask Cmdr's cost meter (43bcdfc1b, 76442a7ac, ca2a45e23)
+- Choose whether to skip Mac-only hidden files (`.DS_Store`, `._*`) when copying, moving, or compressing, with a default
+  in Settings (20428a942, 36435893b, 0f413346e, 206363b6f)
+
+### Changed
+
+- Refuse to delete, trash, move, or rename your home folder or a folder holding it (f2b2e7bd1, 9113621fc, 6fbcbb403,
+  f44b6ac08, 79975316d)
+- Retry a busy AI provider up to four times, and say it's busy while waiting (0cb3c74bb)
+- Let Ask Cmdr plan renames in any folder on any connected volume, and name every row it can't rename (27047184a,
+  90e7de7cb)
+- Reconnect silently to a NAS that dropped an idle connection, with no reconnect bar (429f80f87)
+- Tell you when an SMB server's sign-in reply fails its signature check on a direct connection (342e1387a, 85630709c,
+  00709307a, e0d69acaf)
+- Delete a file's `._` resource-fork twin along with it on QNAP shares (88ebd7514)
+- Land on `/` instead of your home folder when the top-level folder you're in gets deleted (00f6ead3a)
+- Reword dozens of messages so every language can translate them naturally (e30eaa99c, dcf7f051e, 96a6f48bd, ead283dec)
+
+### Fixed
+
+- Fix a blank window on macOS Catalina, and broken layouts there in the Servers view, Acknowledgements, and conflict
+  dialogs (2854af6c9, 67d0d826c)
+- Fix SMB 3.1.1 servers that sign only with HMAC-SHA256 not connecting (f57c4c0f0)
+- Fix a long change replay filling a nearly full disk, and a quit mid-replay skipping changes (61e39cf34, e81d02881)
+- Fix a running Cmdr refusing other apps' ejects of drives it had no work on (7adefae03)
+- Fix search finding nothing in accented folders on a NAS (9d5333345, ea0029037)
+- Fix search on a Mac missing names written in the other Unicode form, like an NFC `café` (4542247c7, 871ef5c24)
+- Fix AI search dates, date chips, and MCP dates using UTC days instead of yours (2c91be414, 59e416c2a, 1074e62f4,
+  3ffe6ae26)
+- Fix a search exclusion Cmdr couldn't use being silently ignored (4610349ee, e622c6e78)
+- Fix search answering "no matches" or "invalid pattern" when it couldn't read the drive index (4d5256e4f, 42ca0b03d,
+  b85acd055, bdfceb75d)
+- Fix search showing a mangled `~` path for folders whose name starts like your home folder's (1668dd10b)
+- Fix the viewer showing an extra empty line at the end of files ending in a newline (d9f608364)
+- Fix a viewer regex ending in `$` skipping every line of a Windows (CRLF) file (fd1d829d0)
+- Fix ⌘C copying nothing after a drag between wrapped lines in the viewer (5c8f38792)
+- Fix undoing a rename on SMB, SFTP, or a phone skipping it instead of restoring the old name (411619855)
+- Fix a canceled copy's log row claiming it copied everything it planned (ae9350623, 3bf4c6313)
+- Fix a double-click in Brief view opening a folder twice (0fdc4a03a)
+- Fix a drop onto a pane showing your home folder suggesting Copy instead of Move on the same disk (7c87c3251)
+- Fix file names shrinking to nothing in a narrow Full view pane: Date, then Ext, now make room (0721a101b, c06bfa0e4)
+- Fix a nearly empty drive reading "100% free" (b077b3215)
+- Fix About, Settings, and Zoom menu items looking clickable while a dialog blocks them (8fa2e53ba)
+- Fix dialogs scrolling sideways with a mouse connected (2935968f3)
+- Fix a toast covering the progress chip in the title bar (cb4deed0f)
+- Fix new users seeing "We've added new onboarding options" on their second launch (75f7811d7)
+- Fix the first requests on a busy Mac sometimes skipping your proxy (bc7904b2b)
+- Fix expected refusals, like a delete denied in a system folder, sending automatic error reports (72d2a18eb)
+- Fix image indexing on Linux filling search with made-up text, and clean up what it left (8e23f2af3, 4ebd6c17c)
+- Fix Linux license checks not telling your machines apart (dbfd5c8d5)
+- Fix a network folder you can't read jumping to its parent folder instead of saying access is denied (6103957a4,
+  90455b07a)
+- Fix Local Network access stopping after each update until you switched Cmdr off and on in System Settings (e2ddb8cf3,
+  c8d4b0783)
+- Fix opening a file in Cmdr from another app sometimes doing nothing, with no word of why (5c8cfbd9c, a11ecd431)
+
+### Non-app
+
+- Launch a live demo at getcmdr.com/demo that runs Cmdr's real engine in the browser, also in the home page hero
+  (788892b6a, 074cc4ead, fcf097991, 87f132c69, 24df93cf6, 20c1293eb, 43b5e49df, aa33dbc41, e56ac13d9, b4791a74c)
+- Move the viewer, search, menu bar, Multi-Rename, and recents into their own Tauri-free crates (3ad0b1110, 229cb2765,
+  3c0e73cb8, 87b7132eb, 48f936268)
+- Serve downloads and updates from an EU mirror, keep telemetry and error reports in Cloudflare's EU jurisdiction, and
+  send license emails through an EU provider (a4054e461, 843d7cf49, c6ff7b0d9, eb206a923)
+- Run CI per lane, so a push tests only what it touches, with the macOS lane on David's M1 when it's free (f3ed2d06b,
+  b3ebbc06d, 58f8fa6ce, a5dc9cf60, 5eec7de6c)
+- Fail the build on JavaScript, CSS, or regex that Catalina's Safari 15 can't run (fac66a3dd, ad58cbce3, 5a29519e6,
+  ec410f072)
+
 ## [0.59.0] - 2026-11-04
 
 My highlights this time:

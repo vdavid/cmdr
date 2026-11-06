@@ -54,7 +54,7 @@
       "id": "network-drives",
       "name": "Network drives (SMB)",
       "status": "beta",
-      "note": "Browsing and fast direct transfers work on common NAS setups, with server-side copies within a share, saved servers and shares, account switching, accented names, DFS namespace roots and links, browsing during a copy, and unreliable servers. Constantly testing with more real-world servers."
+      "note": "Browsing and fast direct transfers work on common NAS setups, with server-side copies within a share, saved servers and shares, account switching, accented names, encryption (which you can require), DFS namespace roots and links, browsing during a copy, and unreliable servers. Constantly testing with more real-world servers."
     },
     {
       "id": "android-devices",
@@ -162,7 +162,7 @@
       "id": "full-disk-index",
       "name": "Full-disk index",
       "status": "stable",
-      "note": "Covers your drive folder by folder, starting with the folders you use most, then stays current through file system events. A drive unplugged mid-scan marks its index for a fresh pass instead of quietly going short. Powers search and folder sizes."
+      "note": "Covers your drive folder by folder, starting with the folders you use most, then stays current through file system events. A drive unplugged mid-scan marks its index for a fresh pass instead of quietly going short, and indexing pauses while your disk is nearly full. Powers search and folder sizes."
     },
     {
       "id": "drag-and-drop",

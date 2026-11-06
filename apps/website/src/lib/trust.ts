@@ -18,7 +18,7 @@
  */
 
 /** The release and date the page's claims were checked against. */
-export const verifiedAgainst = { version: '0.59.0', date: '2026-11-05' }
+export const verifiedAgainst = { version: '0.60.0', date: '2026-11-06' }
 
 export interface NetworkConnection {
   id: string
@@ -41,7 +41,7 @@ export const networkConnections: NetworkConnection[] = [
     id: 'updates',
     name: 'Update check and download',
     destination:
-      '<code>api.getcmdr.com</code>, then <code>getcmdr.com/latest.json</code>. The update itself downloads from <code>download.getcmdr.com</code>, which stores the files in the EU. An update to 0.59.0 or older downloads from <code>github.com</code> and <code>release-assets.githubusercontent.com</code> instead, which stay a public mirror of every release.',
+      "<code>api.getcmdr.com</code>, then <code>getcmdr.com/latest.json</code>. The update itself downloads from <code>download.getcmdr.com</code>, which stores the files in the EU. GitHub keeps a public mirror of every release, but the app doesn't download from it.",
     when: 'In the background, at most once every three hours, counted across relaunches, and whenever the user picks "Check for updates". Users can set the interval from five minutes to 24 hours in Settings &gt; Advanced.',
     sends:
       'The app version and CPU architecture, in the URL. The server keeps a one-way hash of the IP address, the date, the version, and the architecture. It deletes each record after seven days and keeps only daily totals.',
@@ -126,7 +126,7 @@ export const networkConnections: NetworkConnection[] = [
       'Only servers and devices the user connects to: SMB, SFTP, NFS, and WebDAV servers, S3-compatible storage, and phones over USB, plus any server an SMB share links a folder to, once the user allows it.',
     when: 'When the user browses them. To find SMB servers on the local network, Cmdr uses Bonjour (mDNS). It runs only while the Servers view is open, while Cmdr looks up the server behind an SMB share (including shares already mounted at launch), and for about 20 seconds after launch once the user has used network features. Each search stops 10 seconds after nothing needs it.',
     sends:
-      'What the protocol needs: credentials the user entered and the file operations the user asked for. An SMB share can point a folder at another server (a DFS link). Cmdr contacts that server only after the user allows that pair of servers, and then signs in with the same credentials. A share on the macOS mount follows such links itself, without asking.',
+      'What the protocol needs: credentials the user entered and the file operations the user asked for. Cmdr encrypts an SMB connection when the server requires it, and every SMB connection when the user turns on "Always require SMB encryption" in Settings &gt; File systems (IT can force it with <code>RequireSMBEncryption</code>). An SMB share can point a folder at another server (a DFS link). Cmdr contacts that server only after the user allows that pair of servers, and then signs in with the same credentials. A share on the macOS mount follows such links itself, without asking.',
     control:
       'SMB, phone (MTP), and Android (ADB) support are on by default and each can be turned off in Settings &gt; File systems. Git support is local only and never fetches or pushes.',
   },
@@ -157,10 +157,6 @@ export const allowlistHosts: { host: string; purpose: string }[] = [
   },
   { host: 'getcmdr.com', purpose: 'the update manifest (latest.json)' },
   { host: 'download.getcmdr.com', purpose: 'update downloads' },
-  {
-    host: 'github.com, release-assets.githubusercontent.com',
-    purpose: 'update downloads while 0.59.0 is the newest release (later ones come from download.getcmdr.com)',
-  },
   { host: 'license.getcmdr.com', purpose: 'license checks from older versions only' },
   {
     host: 'huggingface.co, *.hf.co',
@@ -209,7 +205,7 @@ export const dataLocations: DataLocation[] = [
   },
   {
     name: 'SMTP2Go',
-    what: 'Sends every email Cmdr sends: license emails (with the license key), newsletter and confirmation emails, internal notification emails about reports and feedback, and the emails we write from @getcmdr.com addresses, like replies to support and security emails. So it sees who they go to and what they say. Mail we receive never passes through it.',
+    what: "Sends every email Cmdr sends: license emails (with the license key), newsletter and confirmation emails, internal notification emails about reports, feedback, and sales (a sale's note names the buyer, their email address, and country), and the emails we write from @getcmdr.com addresses, like replies to support and security emails. So it sees who they go to and what they say. Mail we receive never passes through it.",
     where:
       'New Zealand company, which the EU recognizes as giving adequate data protection. Cmdr sends through its EU servers, and SMTP2Go says it stores data of EEA customers only in the EEA.',
     inEu: 'partly',
@@ -310,7 +306,7 @@ export const knownLimitations: string[] = [
   '<strong>Error-report cleaning has one known gap</strong>: Cmdr marks every name and path it logs itself, but a file name inside a message from macOS, a server, or a library, with no path on the same line, can get through.',
   "<strong>The local AI model download is checked by size only</strong>, not by a fixed hash, and comes from the model's main branch on Hugging Face. The image-search model has a fixed SHA-256 hash.",
   '<strong>No reproducible builds.</strong> Instead, each release publishes SHA-256 checksums, signed build provenance, and signed SBOMs, and its tag is signed.',
-  '<strong>Automated tests run on one macOS version</strong> (macOS 26). A release-time check catches system frameworks and functions too new for older versions.',
+  '<strong>Automated tests run on the two newest macOS versions only</strong> (macOS 26 and 27). A release-time check catches system frameworks and functions too new for older versions.',
   '<strong>No third-party audit, penetration test, SOC 2, or ISO 27001.</strong> Cmdr is self-assessed instead: the CSA STAR listing and the OpenChain self-certifications above, and we fill in security questionnaires (<a href="#no-soc2">what you get instead</a>).',
   "<strong>Proxy sign-in is limited</strong> to a user name and password in the proxy's address (<code>HTTPS_PROXY</code> or <code>ALL_PROXY</code>).",
 ]

@@ -247,6 +247,9 @@ const toc = [
             also the Rust lints and tests on macOS, the Kani proofs, and the Shuttle interleaving tests, plus a build
             of the Finder extension for both chip types, against
             the oldest macOS version Cmdr supports, when it changed. Nobody can skip this, the maintainer included.
+            The macOS checks of the maintainer's own changes run on his Mac, registered as a GitHub Actions runner,
+            when it's free. Changes from outside contributors and bots, and the full run before a release, use GitHub's
+            own macOS machines.
         </li>
         <li>
             <strong>Every day, on GitHub</strong>: the dependency vulnerability and license scans
@@ -254,7 +257,8 @@ const toc = [
             versions.
         </li>
         <li>
-            <strong>Every night, on GitHub</strong>: <code>govulncheck</code> for the Go build scripts, an
+            <strong>Every night, on GitHub</strong>: the full check run on the main branch, so two changes that each
+            passed alone but break together get caught within a day. Also <code>govulncheck</code> for the Go build scripts, an
             unused-dependency scan, and live tests against five AI providers' real APIs. Also fuzzing: random-input
             testing, 20 minutes each, of the parsers that read data from outside (Android phones, WebDAV, S3, and NFS
             server responses, archives, PDFs, and image headers), where each target checks real properties such as
@@ -368,6 +372,12 @@ const toc = [
             <code>gh attestation verify &lt;file&gt; --repo vdavid/cmdr</code>.
         </li>
         <li>
+            <strong>Where downloads come from</strong>: the release workflow copies each release's files to
+            <code>download.getcmdr.com</code> (stored in the EU), checks every file against GitHub's SHA-256 and the
+            published checksums, and reads each one back to compare. Only then does the release become the latest one,
+            with an update feed that points there. GitHub Releases keeps a public mirror of every file.
+        </li>
+        <li>
             <strong>Signing keys</strong>: Apple's signing and notarization credentials sit in a protected GitHub
             environment that only release tags reach, and only after the tag's signature checks out. The
             update-signing key never reaches GitHub: the maintainer signs each update on his own Mac, and only after
@@ -382,7 +392,9 @@ const toc = [
             <strong>How</strong>: the app checks for a new version every three hours. It downloads the update,
             checks its signature, installs it in place, and asks the user to restart. It only ever installs a newer
             version. Users can turn this off per Mac, and IT can control it centrally
-            (<a href="/trust#mdm">central management</a>).
+            (<a href="/trust#mdm">central management</a>). The permissions the user gave Cmdr in macOS, such as Full
+            Disk Access, carry over to the new version, and on the first launch after an update, Cmdr re-registers
+            itself with macOS so Local Network access keeps working too.
         </li>
         <li>
             <strong>How often</strong>: {releaseCadence.releases} releases in the {window.days} days to {measuredOn}, from
@@ -440,9 +452,12 @@ const toc = [
             <strong>Only the latest version gets fixes.</strong> Automatic updates keep most installs on it.
         </li>
         <li>
-            <strong>No automated test runs the app on an older macOS version.</strong> A release-time check catches
-            system frameworks and functions that are too new for the oldest supported version. That check exists
-            because two releases in September 2026 (0.42.0 and 0.46.0) wouldn't start on Catalina; both were fixed in a
+            <strong>No automated test runs the app on an older macOS version.</strong> Three things stand in for one. A
+            release-time check catches system frameworks and functions that are too new for the oldest supported
+            version. Every build of the user interface fails if it uses a JavaScript function, regular expression
+            feature, or CSS that Safari 15.4, the oldest web engine Cmdr supports, lacks. And before each release, the maintainer's process starts the
+            app on a real Catalina Mac and checks that it lists folders. These exist because three releases
+            (0.42.0 and 0.46.0 in September 2026, and 0.59.0 in November) broke on Catalina; each was fixed in a
             follow-up release.
         </li>
         <li>
