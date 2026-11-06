@@ -129,7 +129,7 @@ beforeEach(() => {
 
 describe('the toggle starts from the setting', () => {
   it.each([
-    ['ask', false, 'Don’t ask again?'],
+    ['ask', false, 'Don’t ask again'],
     ['include', false, 'Including by default'],
     ['skip', true, 'Skipping by default'],
   ] as const)('on %s it starts %s, and the link reads “%s”', async (policy, ticked, linkText) => {

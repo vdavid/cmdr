@@ -323,7 +323,7 @@ export type PasteClipboardAsFileMode = 'doNothing' | 'createFile' | 'createFileA
 /**
  * Whether copy, move, and compress leave Finder's `.DS_Store` and AppleDouble `._*` files out
  * (#314): the default the dialog's toggle starts from, or `ask` to start it off with a
- * "Don't ask again?" link. The backend matches the names (`cmdr_fs::mac_only_files`).
+ * "Don't ask again" link. The backend matches the names (`cmdr_fs::mac_only_files`).
  */
 export type MacOnlyFilesPolicy = 'include' | 'skip' | 'ask'
 /**

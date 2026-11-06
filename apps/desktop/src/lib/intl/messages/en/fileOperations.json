@@ -609,9 +609,9 @@
   "@fileOperations.transferDialog.macOnlyFiles.toggle": {
     "description": "Checkbox label in the 'To' group of the copy, move, and compress dialog. When checked, this one operation leaves out the hidden files only macOS uses (Finder’s .DS_Store and the ._ files beside items), which other systems show as clutter. Keep \".DS_Store\" and \"._*\" exactly as written: they are file names. Same wording as the setting (settings.fileOperations.macOnlyFiles.label)."
   },
-  "fileOperations.transferDialog.macOnlyFiles.dontAskAgain": "Don’t ask again?",
+  "fileOperations.transferDialog.macOnlyFiles.dontAskAgain": "Don’t ask again",
   "@fileOperations.transferDialog.macOnlyFiles.dontAskAgain": {
-    "description": "Link right after the 'Skip Mac-only hidden files' checkbox in the copy, move, and compress dialog, shown while the setting says to ask each time. Opens Settings at that setting, where the user can pick a default (include or skip) so the dialog stops asking. A short question, styled as a link."
+    "description": "Link right after the 'Skip Mac-only hidden files' checkbox in the copy, move, and compress dialog, shown while the setting says to ask each time. Opens Settings at that setting, where the user can pick a default (include or skip) so the dialog stops asking. A short phrase (no question mark), styled as a link."
   },
   "fileOperations.transferDialog.macOnlyFiles.includingByDefault": "Including by default",
   "@fileOperations.transferDialog.macOnlyFiles.includingByDefault": {

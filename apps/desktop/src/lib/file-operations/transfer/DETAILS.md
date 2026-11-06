@@ -697,8 +697,8 @@ transfer then does with them (the walks, the totals, a move's husk folders, a zi
 backend's: `crates/cmdr-operations/src/transfer/DETAILS.md` § "Mac-only files a transfer leaves out".
 
 - **It starts from `fileOperations.macOnlyFiles`** (`include` / `skip` / `ask`, default `ask`): ticked only on `skip`.
-  The link names that default ("Including by default", "Skipping by default"), or on `ask` offers "Don't ask again?",
-  and opens Settings at the row either way.
+  The link names that default ("Including by default", "Skipping by default"), or on `ask` offers "Don't ask again", and
+  opens Settings at the row either way.
 - **The checkbox is always a one-off override**: ❌ it never writes the setting. Until the person touches it, it follows
   a default they change through the link while the dialog is open.
 - **The preview walks with the same choice**, so the tallies match what the operation writes, and a flip walks again

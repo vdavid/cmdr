@@ -408,9 +408,9 @@
   "@fileOperations.transferDialog.macOnlyFiles.toggle": {
     "sourceHash": "0f28753"
   },
-  "fileOperations.transferDialog.macOnlyFiles.dontAskAgain": "Đừng hỏi lại?",
+  "fileOperations.transferDialog.macOnlyFiles.dontAskAgain": "Đừng hỏi lại",
   "@fileOperations.transferDialog.macOnlyFiles.dontAskAgain": {
-    "sourceHash": "0c17630"
+    "sourceHash": "3f6e4da"
   },
   "fileOperations.transferDialog.macOnlyFiles.includingByDefault": "Mặc định: bao gồm",
   "@fileOperations.transferDialog.macOnlyFiles.includingByDefault": {
