@@ -44,6 +44,7 @@ export function announceSecurityNotice({ notice, count }: SecurityNoticeRaised):
   switch (notice.kind) {
     case 'mcpForeignOrigin':
     case 'smbSignatureRefused':
+    case 'smbDirectSignatureRefused':
       addToast(SecurityNoticeToastContent, { ...shared, level: 'warn' })
       return
     case 'updateNotGenuine': {

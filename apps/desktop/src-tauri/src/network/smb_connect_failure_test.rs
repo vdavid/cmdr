@@ -25,6 +25,59 @@ fn an_unconfirmed_negotiation_on_a_direct_connection_reaches_the_security_log() 
     );
 }
 
+/// A direct connection whose sign-in reply was refused for its signature reaches the security log
+/// under the share's volume, marked as a direct connection so its notice offers no Reconnect: the
+/// share stays on the kernel mount, with no Cmdr session to reconnect (#1007).
+#[test]
+fn a_refused_signature_on_a_direct_connection_reaches_the_security_log() {
+    use crate::security_log::{SecurityEvent, SmbScope, SmbSignatureSource, testing};
+    let capture = testing::capture_events();
+    let refused = || smb2::Error::SignatureInvalid {
+        command: Command::SessionSetup,
+        message_id: smb2::types::MessageId(3),
+        reason: smb2::error::SignatureFailure::Mismatch,
+    };
+    record_security_refusal("smb-nas-share", &dial(refused(), std::time::Duration::from_secs(1)));
+    record_security_refusal("smb-nas-share", &dial(refused(), std::time::Duration::from_secs(1)));
+    assert_eq!(
+        capture.events(),
+        vec![SecurityEvent::SmbSignatureRejectionsStarted {
+            scope: SmbScope::Volume("smb-nas-share".into()),
+            source: SmbSignatureSource::DirectConnection,
+        }]
+    );
+}
+
+/// What the record answers decides whether the kernel-mount fallback notice still speaks: a
+/// refused signature raises its own security notice, so the fallback's "Try connecting directly"
+/// (which would only be refused again) stays quiet (#1013). An unconfirmed negotiation is
+/// record-only, so the fallback's own sentence is what tells the person.
+#[test]
+fn only_a_refused_signature_hands_the_fallback_notice_to_the_security_notice() {
+    let _capture = crate::security_log::testing::capture_events();
+    let second = std::time::Duration::from_secs(1);
+    let refused = smb2::Error::SignatureInvalid {
+        command: Command::SessionSetup,
+        message_id: smb2::types::MessageId(3),
+        reason: smb2::error::SignatureFailure::Missing,
+    };
+    let unconfirmed = smb2::Error::NegotiateValidationFailed {
+        reason: "the server answered a different dialect".to_string(),
+    };
+    assert_eq!(
+        record_security_refusal("smb-nas-share", &dial(refused, second)),
+        SecurityRecord::RaisesNotice
+    );
+    assert_eq!(
+        record_security_refusal("smb-nas-share", &dial(unconfirmed, second)),
+        SecurityRecord::RecordOnly
+    );
+    assert_eq!(
+        record_security_refusal("smb-nas-share", &dial(smb2::Error::Timeout, second)),
+        SecurityRecord::NotASecurityRefusal
+    );
+}
+
 /// A namespace on another server nobody allowed stays on the system connection,
 /// with its own typed reason.
 #[test]

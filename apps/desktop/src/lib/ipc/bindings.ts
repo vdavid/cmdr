@@ -6322,8 +6322,17 @@ export type AccessNotice =
    *  origin itself is in the log, never here: it's a site the person visits.
    */
   | { kind: 'mcpForeignOrigin' }
-  // A server reply on a signed session carried a bad or missing signature.
+  /**
+   *  A server reply on a signed session carried a bad or missing signature. The session was
+   *  dropped, so Reconnect builds a fresh one.
+   */
   | { kind: 'smbSignatureRefused'; volumeId: string }
+  /**
+   *  Cmdr's direct connection to a share macOS mounted got a sign-in reply with a bad or missing
+   *  signature, so it never connected. The share stays on the kernel mount, so there's no Cmdr
+   *  session to reconnect (#1007).
+   */
+  | { kind: 'smbDirectSignatureRefused'; volumeId: string }
   // An offered update didn't carry Cmdr's signature, so nothing was installed.
   | { kind: 'updateNotGenuine'; version: string; check: SignatureCheck }
 

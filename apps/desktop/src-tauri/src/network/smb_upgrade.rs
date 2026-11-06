@@ -16,7 +16,7 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::network::os_mount_notice::FallbackNotice;
 use crate::network::smb_connect_failure::{
-    DirectConnectOutcome, FailedDial, MountEvidence, UpgradeError, UpgradeFailure, dial_detail,
+    DirectConnectOutcome, FailedDial, MountEvidence, SecurityRecord, UpgradeError, UpgradeFailure, dial_detail,
     log_direct_connect_failure, record_security_refusal,
 };
 use crate::network::smb_server_address::{
@@ -512,7 +512,7 @@ pub(crate) async fn register_smb_volume(
             crate::index_host::index().resume_after_reconnect(volume_id.clone());
         }
         Err(dial) => {
-            record_security_refusal(&volume_id, &dial);
+            let security = record_security_refusal(&volume_id, &dial);
             let reason = UpgradeFailure::of_dial(&dial, mount);
             // The raw error belongs in the log, where it's the diagnostic. The volume
             // stays on the OS mount, which still works, at a fraction of the speed.
@@ -534,7 +534,17 @@ pub(crate) async fn register_smb_volume(
             // SMB encryption" an unencrypted mount is refused too, so "you're still connected
             // through macOS" would be untrue. The pane's own refusal says why and offers the
             // setting (`smb_mount_gate`, #966).
-            if reason == UpgradeFailure::EncryptionRequired && crate::network::smb_mount_gate::refuses(&volume_id).await
+            //
+            // Or when the security notice already speaks for it: a sign-in reply refused for its
+            // signature raises `SmbDirectSignatureRefused`, and this one's "Try connecting
+            // directly" would only be refused again (#1013).
+            if security == SecurityRecord::RaisesNotice {
+                log::debug!(
+                    "Not announcing the kernel-mount fallback for share={:?}: the security notice speaks for it",
+                    LogPrivate::volume(share)
+                );
+            } else if reason == UpgradeFailure::EncryptionRequired
+                && crate::network::smb_mount_gate::refuses(&volume_id).await
             {
                 log::debug!(
                     "Not announcing the kernel-mount fallback for share={:?}: the mount is refused for encryption too",
@@ -693,6 +703,8 @@ pub(crate) async fn try_smb_upgrade(
             Ok(())
         }
         Err(dial) => {
+            // Its `SecurityRecord` goes unread: the manual path has no fallback notice to quiet,
+            // and the caller surfaces the typed `UpgradeError` itself.
             record_security_refusal(volume_id, &dial);
             // `info` IS the caller's answered read of the mount, under
             // `MOUNT_READ_LIMIT`: there's no `SmbMountInfo` without one.

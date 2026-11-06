@@ -13,6 +13,10 @@ Must-knows in `CLAUDE.md`; the backend half (which events notify, the rate limit
   backend already dropped the refused session, so this builds a fresh signed one); Disconnect calls
   `disconnectSmbVolume`. Both close the toast without marking it dismissed. The transfer that hit it shows its own
   stopped reason (`reply_signature_refused` in `#lib/file-operations/transfer/transfer-error-messages.ts`).
+- **`smbDirectSignatureRefused`**: warn, persistent, one per volume, its own toast id beside `smbSignatureRefused`'s.
+  Cmdr's direct connection got a sign-in reply refused for its signature, so it never connected (#1007). Names the share
+  like `smbSignatureRefused`, and offers only Dismiss: the share stays on the system connection, so there's no Cmdr
+  session to reconnect.
 - **`updateNotGenuine`**: error, persistent, one per offered version, with the report offer on: a typed
   `updateNotGenuine` incident (`#lib/error-reporter/report-incident.ts`) carrying the version and which signature didn't
   hold, never the tarball or a path. "Open getcmdr.com" opens the website. Nothing is sent unless the person sends it.

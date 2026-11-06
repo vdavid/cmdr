@@ -39,6 +39,18 @@
   "@securityNotices.smbSignatureRefused.disconnect": {
     "sourceHash": "acfc5be"
   },
+  "securityNotices.smbDirectSignatureRefused.title": "Cmdr maakte geen directe verbinding met {name}",
+  "@securityNotices.smbDirectSignatureRefused.title": {
+    "sourceHash": "63cc0e2"
+  },
+  "securityNotices.smbDirectSignatureRefused.titleUnnamed": "Cmdr maakte geen directe verbinding met een gedeelde map",
+  "@securityNotices.smbDirectSignatureRefused.titleUnnamed": {
+    "sourceHash": "653ae47"
+  },
+  "securityNotices.smbDirectSignatureRefused.body": "Het antwoord bij het inloggen had geen handtekening van de server, dus Cmdr vertrouwde het niet. Een haperend netwerkapparaat kan dit veroorzaken, maar ook iemand die met het verkeer tussen jou en de server knoeit. De gedeelde map blijft op de systeemverbinding. Als het blijft gebeuren, controleer dan je netwerk.",
+  "@securityNotices.smbDirectSignatureRefused.body": {
+    "sourceHash": "af04f57"
+  },
   "securityNotices.updateNotGenuine.title": "Cmdr heeft deze update niet geïnstalleerd: het is geen echte versie van Cmdr",
   "@securityNotices.updateNotGenuine.title": {
     "sourceHash": "be55b39"

@@ -112,7 +112,10 @@ pub async fn list_shares(
 fn record_security_refusal(host_id: &str, listed: &Result<ShareListResult, ShareListError>) {
     let scope = || crate::security_log::SmbScope::Host(host_id.to_string());
     match listed {
-        Err(ShareListError::SignatureInvalid { .. }) => crate::security_log::note_smb_signature_rejection(scope()),
+        Err(ShareListError::SignatureInvalid { .. }) => crate::security_log::note_smb_signature_rejection(
+            scope(),
+            crate::security_log::SmbSignatureSource::ShareListing,
+        ),
         Err(ShareListError::NegotiationInvalid { .. }) => crate::security_log::note_smb_negotiation_rejection(scope()),
         _ => {}
     }

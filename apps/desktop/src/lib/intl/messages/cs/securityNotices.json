@@ -39,6 +39,18 @@
   "@securityNotices.smbSignatureRefused.disconnect": {
     "sourceHash": "acfc5be"
   },
+  "securityNotices.smbDirectSignatureRefused.title": "Cmdr se nepřipojil přímo ke sdílené složce {name}",
+  "@securityNotices.smbDirectSignatureRefused.title": {
+    "sourceHash": "63cc0e2"
+  },
+  "securityNotices.smbDirectSignatureRefused.titleUnnamed": "Cmdr se nepřipojil přímo ke sdílené složce",
+  "@securityNotices.smbDirectSignatureRefused.titleUnnamed": {
+    "sourceHash": "653ae47"
+  },
+  "securityNotices.smbDirectSignatureRefused.body": "Odpověď na přihlášení neměla podpis serveru, takže jí Cmdr nedůvěřoval. Může to způsobit nespolehlivé síťové zařízení, ale také někdo, kdo zasahuje do provozu mezi vámi a serverem. Sdílená složka dál používá systémové připojení. Pokud se to opakuje, zkontrolujte svou síť.",
+  "@securityNotices.smbDirectSignatureRefused.body": {
+    "sourceHash": "af04f57"
+  },
   "securityNotices.updateNotGenuine.title": "Cmdr tuto aktualizaci nenainstaloval: není to pravá verze Cmdru",
   "@securityNotices.updateNotGenuine.title": {
     "sourceHash": "be55b39"

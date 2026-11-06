@@ -24,10 +24,18 @@ Issue #457. Must-knows in `CLAUDE.md`.
   has it.
 - **MCP, refused web page `Origin`**: `McpForeignOrigin`, keyed by kind alone (a local process can't be identified
   reliably). No innocent setup story, so it's a persistent warning. The origin stays in the log.
-- **SMB, reply refused for its signature**: `SmbSignatureRefused { volume_id }`, one per volume. The transfer that hit it
-  also stops with its own typed reason (`WriteOperationError::ReplySignatureRefused`), and `cmdr-smb` drops the session
-  so the next dial is a fresh, freshly signed one (`crates/cmdr-smb/DETAILS.md`). A share listing's refusal (host-scoped
-  in the log) raises no notice: the listing's own error says it, and there's no share to reconnect or disconnect yet.
+- **SMB, reply refused for its signature**: `notice_for` reads the event's `source`, ❌ never a message. A session's
+  (`source: session`) is `SmbSignatureRefused { volume_id }`, one per volume, with Reconnect and Disconnect. The transfer
+  that hit it also stops with its own typed reason (`WriteOperationError::ReplySignatureRefused`), and `cmdr-smb` drops
+  the session so the next dial is a fresh, freshly signed one (`crates/cmdr-smb/DETAILS.md`). A share listing's refusal
+  (host-scoped in the log) raises no notice: the listing's own error says it, and there's no share to reconnect or
+  disconnect yet.
+- **SMB, direct connection refused for its signature** (`source: direct_connection`, #1007): `SmbDirectSignatureRefused
+  { volume_id }`, one per volume, its own gate key and toast beside a session's. Explains only, with Dismiss: the share
+  stays on the kernel mount, so there's no Cmdr session to reconnect (David's call 2026-11-06, option (c)). On the auto
+  upgrade path it replaces the kernel-mount fallback notice, whose retry would only be refused again (#1013,
+  `../network/DETAILS.md`). ❗ `network::smb_connect_failure::SecurityRecord` mirrors which direct-connection events
+  notify here: change both together.
 - **SMB, guest session offered for a named login**: no notice. It happens at connect, so it's a pane state
   (`VolumeConnection::GuestSessionRefused`), also for a background reconnect.
 - **Update, signature doesn't hold** (minisign on the archive, or the Developer ID on the bundle): `UpdateNotGenuine

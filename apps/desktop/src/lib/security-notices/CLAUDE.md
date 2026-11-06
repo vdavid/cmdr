@@ -1,8 +1,8 @@
 # Security notices (frontend)
 
 The toast that tells the person Cmdr turned an access attempt away: a web page at the MCP server, a server reply refused
-for its signature, an update that isn't a genuine Cmdr release (#457). The backend decides what and how often:
-`apps/desktop/src-tauri/src/security_notices/CLAUDE.md`.
+for its signature (on a session, or on a direct connection that never got in), an update that isn't a genuine Cmdr
+release (#457). The backend decides what and how often: `apps/desktop/src-tauri/src/security_notices/CLAUDE.md`.
 
 ## Module map
 

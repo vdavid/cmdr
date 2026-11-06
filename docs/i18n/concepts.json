@@ -131,7 +131,8 @@
       "server reply",
       "server's reply",
       "trust the reply",
-      "the reply didn't carry"
+      "the reply didn't carry",
+      "sign-in reply"
     ],
     "sense": "The AI's answer in an Ask Cmdr chat, an AI provider response, or a logged model response."
   },

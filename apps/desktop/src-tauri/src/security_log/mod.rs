@@ -27,7 +27,7 @@ pub use episodes::{
 pub use types::PolicyRefusal;
 pub use types::{
     ContentTool, Initiator, LogLine, McpRejection, PolicyTrigger, ProtectedContent, RecordingSwitch, SecurityEvent,
-    SignatureCheck, SmbScope, StateFile,
+    SignatureCheck, SmbScope, SmbSignatureSource, StateFile,
 };
 pub use writer::file_path;
 
@@ -246,13 +246,13 @@ pub mod testing {
     use std::cell::RefCell;
 
     use super::episodes::Episodes;
-    use super::{ContentTool, McpRejection, ProtectedContent, SecurityEvent, SmbScope};
+    use super::{ContentTool, McpRejection, ProtectedContent, SecurityEvent, SmbScope, SmbSignatureSource};
 
     pub(super) struct Captured {
         pub events: Vec<SecurityEvent>,
         pub repeats: Vec<SecurityEvent>,
         pub mcp: Episodes<McpRejection>,
-        pub smb: Episodes<SmbScope>,
+        pub smb: Episodes<(SmbScope, SmbSignatureSource)>,
         pub smb_negotiation: Episodes<SmbScope>,
         pub content: Episodes<(ContentTool, ProtectedContent)>,
     }

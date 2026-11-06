@@ -355,16 +355,46 @@ pub(crate) enum DirectConnectOutcome {
     SurfacedToCaller,
 }
 
-/// A direct connection the server didn't confirm the negotiation for is a tampering signal, so it
-/// reaches the security log under the share's `volume_id`, beside a reconnect's (which the
-/// backend reports through the volume host). Both upgrade paths call it on a failed dial. Read by
-/// kind, ❌ never the message.
-pub(crate) fn record_security_refusal(volume_id: &str, dial: &FailedDial) {
-    if dial.error.kind() == ErrorKind::NegotiateValidationFailed {
-        crate::security_log::note_smb_negotiation_rejection(crate::security_log::SmbScope::Volume(
-            volume_id.to_string(),
-        ));
+/// A direct connection the server didn't confirm the negotiation for, or whose sign-in reply was
+/// refused for its signature, is a tampering signal, so it reaches the security log under the
+/// share's `volume_id`, beside a reconnect's (which the backend reports through the volume host).
+/// A refused signature is marked [`SmbSignatureSource::DirectConnection`], so its notice offers no
+/// Reconnect: the share stays on the kernel mount (#1007). Both upgrade paths call it on a failed
+/// dial. Read by kind, ❌ never the message.
+///
+/// [`SmbSignatureSource::DirectConnection`]: crate::security_log::SmbSignatureSource::DirectConnection
+pub(crate) fn record_security_refusal(volume_id: &str, dial: &FailedDial) -> SecurityRecord {
+    use crate::security_log::{SmbScope, SmbSignatureSource};
+    match dial.error.kind() {
+        ErrorKind::NegotiateValidationFailed => {
+            crate::security_log::note_smb_negotiation_rejection(SmbScope::Volume(volume_id.to_string()));
+            SecurityRecord::RecordOnly
+        }
+        ErrorKind::SignatureInvalid => {
+            crate::security_log::note_smb_signature_rejection(
+                SmbScope::Volume(volume_id.to_string()),
+                SmbSignatureSource::DirectConnection,
+            );
+            SecurityRecord::RaisesNotice
+        }
+        _ => SecurityRecord::NotASecurityRefusal,
     }
+}
+
+/// What [`record_security_refusal`] did with a failed dial, which decides whether the kernel-mount
+/// fallback notice still speaks for it. Mirrors `security_notices::notice_for` for the two direct
+/// connection events: keep them in step.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SecurityRecord {
+    /// Not a tampering signal; nothing recorded.
+    NotASecurityRefusal,
+    /// Recorded, with no security notice (an unconfirmed negotiation), so the fallback notice's
+    /// own sentence is what tells the person.
+    RecordOnly,
+    /// Recorded, and it raises its own security notice (a refused signature,
+    /// `AccessNotice::SmbDirectSignatureRefused`). The fallback notice stays quiet: its "Try
+    /// connecting directly" would only be refused again (#1013).
+    RaisesNotice,
 }
 
 /// Writes down why a direct smb2 connection didn't happen, naming who was turned

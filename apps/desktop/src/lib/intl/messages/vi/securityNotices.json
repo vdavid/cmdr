@@ -39,6 +39,18 @@
   "@securityNotices.smbSignatureRefused.disconnect": {
     "sourceHash": "acfc5be"
   },
+  "securityNotices.smbDirectSignatureRefused.title": "Cmdr đã không kết nối trực tiếp tới {name}",
+  "@securityNotices.smbDirectSignatureRefused.title": {
+    "sourceHash": "63cc0e2"
+  },
+  "securityNotices.smbDirectSignatureRefused.titleUnnamed": "Cmdr đã không kết nối trực tiếp tới một mục chia sẻ",
+  "@securityNotices.smbDirectSignatureRefused.titleUnnamed": {
+    "sourceHash": "653ae47"
+  },
+  "securityNotices.smbDirectSignatureRefused.body": "Phản hồi khi đăng nhập không có chữ ký của máy chủ, nên Cmdr không tin cậy phản hồi đó. Một thiết bị mạng chập chờn có thể gây ra chuyện này, và ai đó can thiệp vào dữ liệu truyền giữa bạn và máy chủ cũng vậy. Mục chia sẻ này vẫn dùng kết nối hệ thống. Nếu việc này cứ tiếp diễn, hãy kiểm tra mạng của bạn.",
+  "@securityNotices.smbDirectSignatureRefused.body": {
+    "sourceHash": "af04f57"
+  },
   "securityNotices.updateNotGenuine.title": "Cmdr đã không cài đặt bản cập nhật này: đây không phải bản phát hành chính thức của Cmdr",
   "@securityNotices.updateNotGenuine.title": {
     "sourceHash": "be55b39"

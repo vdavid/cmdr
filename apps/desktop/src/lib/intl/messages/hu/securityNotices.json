@@ -39,6 +39,18 @@
   "@securityNotices.smbSignatureRefused.disconnect": {
     "sourceHash": "acfc5be"
   },
+  "securityNotices.smbDirectSignatureRefused.title": "A Cmdr nem csatlakozott közvetlenül ehhez: {name}",
+  "@securityNotices.smbDirectSignatureRefused.title": {
+    "sourceHash": "63cc0e2"
+  },
+  "securityNotices.smbDirectSignatureRefused.titleUnnamed": "A Cmdr nem csatlakozott közvetlenül egy megosztáshoz",
+  "@securityNotices.smbDirectSignatureRefused.titleUnnamed": {
+    "sourceHash": "653ae47"
+  },
+  "securityNotices.smbDirectSignatureRefused.body": "A bejelentkezésre adott válaszon nem volt rajta a szerver aláírása, ezért a Cmdr nem tekintette megbízhatónak. Ezt okozhatja egy rosszul működő hálózati eszköz, de az is, ha valaki beavatkozik a közted és a szerver közötti forgalomba. A megosztás a rendszerkapcsolaton marad. Ha ez továbbra is előfordul, ellenőrizd a hálózatodat.",
+  "@securityNotices.smbDirectSignatureRefused.body": {
+    "sourceHash": "af04f57"
+  },
   "securityNotices.updateNotGenuine.title": "A Cmdr nem telepítette ezt a frissítést: nem hiteles Cmdr-kiadás",
   "@securityNotices.updateNotGenuine.title": {
     "sourceHash": "be55b39"

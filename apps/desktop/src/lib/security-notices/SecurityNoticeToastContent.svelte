@@ -41,7 +41,7 @@
 
     /** The share's name as the volume list shows it, or `null` once it's gone from the list. */
     const serverName = $derived(
-        notice.kind === 'smbSignatureRefused'
+        notice.kind === 'smbSignatureRefused' || notice.kind === 'smbDirectSignatureRefused'
             ? (getVolumes().find((volume) => volume.id === notice.volumeId)?.name ?? null)
             : null,
     )
@@ -54,6 +54,10 @@
                 return serverName === null
                     ? tString('securityNotices.smbSignatureRefused.titleUnnamed')
                     : tString('securityNotices.smbSignatureRefused.title', { name: serverName })
+            case 'smbDirectSignatureRefused':
+                return serverName === null
+                    ? tString('securityNotices.smbDirectSignatureRefused.titleUnnamed')
+                    : tString('securityNotices.smbDirectSignatureRefused.title', { name: serverName })
             case 'updateNotGenuine':
                 return tString('securityNotices.updateNotGenuine.title')
         }
@@ -65,6 +69,8 @@
                 return tString('securityNotices.mcpForeignOrigin.body')
             case 'smbSignatureRefused':
                 return tString('securityNotices.smbSignatureRefused.body')
+            case 'smbDirectSignatureRefused':
+                return tString('securityNotices.smbDirectSignatureRefused.body')
             case 'updateNotGenuine':
                 return tString('securityNotices.updateNotGenuine.body')
         }
@@ -120,7 +126,16 @@
         </span>
     {/if}
     <ToastActions>
-        {#if notice.kind === 'mcpForeignOrigin'}
+        {#if notice.kind === 'smbDirectSignatureRefused'}
+            <!-- The share stays on the system connection, so there's no Cmdr session to reconnect. -->
+            <Button
+                variant="secondary"
+                size="mini"
+                onclick={() => {
+                    dismissSecurityNotice(notice)
+                }}>{tString('securityNotices.dismiss')}</Button
+            >
+        {:else if notice.kind === 'mcpForeignOrigin'}
             <Button
                 variant="secondary"
                 size="mini"
