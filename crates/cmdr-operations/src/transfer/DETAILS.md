@@ -2331,14 +2331,17 @@ watchdog, tier 2), then lands as usual.
   can't read, a destination temp that's gone or shorter than the count) clears the temp and runs the file again from its
   first byte. A transport fault while reopening keeps the continuation and takes the outage wait again.
 
-**Where each backend stands.** Sources that resume: SMB (smb2's `FileVersion`: identity, length, both times; a compound
-small-file read names none), S3 and WebDAV (`cmdr_fs::volume::HttpEntityVersion`: a strong ETag, else the date, and the
-length; a weak ETag never counts), NFS (`fsid`, `fileid`, length, both times), SFTP (length and date, best-effort: a
-same-size rewrite inside the second passes), a local disk (device, inode, length, both times to the nanosecond), and
-`InMemoryVolume`. MTP, ADB, archives, and the git portal name no version and start over. Destinations that continue: a
-local disk (`write_all` in order, so its progress is a prefix) and `InMemoryVolume::with_continuable_writes`. So today a
-DOWNLOAD to the Mac carries on; an UPLOAD still starts over until a remote destination can name a proven offset (SMB
-could, with a periodic `FileWriter::flush_checkpoint`).
+**Where each backend stands.** A backend whose offset open already learns the version names it
+`SourceVersion::comparable` (its own "same file" rule) and takes the trait's default `resume_read_stream`: the offset
+open, kept only when the new stream's version passes the rule (S3, WebDAV, NFS). SMB, SFTP, and a local disk prove the
+version inside their own override. Sources that resume: SMB (smb2's `FileVersion`: identity, length, both times; a
+compound small-file read names none), S3 and WebDAV (`cmdr_fs::volume::HttpEntityVersion`: a strong ETag, else the date,
+and the length; a weak ETag never counts), NFS (`fsid`, `fileid`, length, both times), SFTP (length and date,
+best-effort: a same-size rewrite inside the second passes), a local disk (device, inode, length, both times to the
+nanosecond), and `InMemoryVolume`. MTP, ADB, archives, and the git portal name no version and start over. Destinations
+that continue: a local disk (`write_all` in order, so its progress is a prefix) and
+`InMemoryVolume::with_continuable_writes`. So today a DOWNLOAD to the Mac carries on; an UPLOAD still starts over until
+a remote destination can name a proven offset (SMB could, with a periodic `FileWriter::flush_checkpoint`).
 
 Pinned by `volume/copy_resume_tests.rs` (server-free, through the real pipeline: carried on from ~320 KiB with the
 source read once over, a file rewritten during the outage refused with nothing left, a destination that can't continue

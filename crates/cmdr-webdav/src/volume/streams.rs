@@ -135,7 +135,9 @@ impl VolumeReadStream for WebdavReadStream {
     }
 
     fn source_version(&self) -> Option<SourceVersion> {
-        self.version.clone().map(SourceVersion::new)
+        self.version
+            .clone()
+            .map(|version| SourceVersion::comparable(version, HttpEntityVersion::is_same_as))
     }
 }
 
@@ -167,26 +169,6 @@ fn content_range_total(response: &Response) -> Option<u64> {
 }
 
 impl WebdavVolume {
-    /// [`Volume::resume_read_stream`](cmdr_fs::volume::Volume::resume_read_stream):
-    /// the ranged GET from `offset`, kept only when its answer says it's the
-    /// file `version` read (a strong ETag, else the date, and the length); any
-    /// other file is `SourceChanged`, its body dropped unread.
-    pub(super) async fn resume_read_stream_impl(
-        &self,
-        path: &Path,
-        version: &SourceVersion,
-        offset: u64,
-    ) -> Result<WebdavReadStream, VolumeError> {
-        let Some(expected) = version.downcast_ref::<HttpEntityVersion>() else {
-            return Err(VolumeError::NotSupported);
-        };
-        let stream = self.open_read_stream_impl(path, offset).await?;
-        match &stream.version {
-            Some(now) if expected.is_same_as(now) => Ok(stream),
-            _ => Err(VolumeError::SourceChanged(path.display().to_string())),
-        }
-    }
-
     /// A GET, from `offset`, in whatever chunks the body arrives in.
     pub(super) async fn open_read_stream_impl(
         &self,

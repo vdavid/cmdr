@@ -251,24 +251,6 @@ impl Volume for WebdavVolume {
         }))
     }
 
-    /// The ranged GET again, kept only for the file the first GET read, for a
-    /// copy carried on after an outage (`streams.rs`).
-    #[allow(
-        clippy::type_complexity,
-        reason = "async trait method returns a pinned boxed future by design"
-    )]
-    fn resume_read_stream<'a>(
-        &'a self,
-        path: &'a Path,
-        version: &'a cmdr_fs::volume::SourceVersion,
-        offset: u64,
-    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        Box::pin(self.noting(async move {
-            let stream = self.resume_read_stream_impl(path, version, offset).await?;
-            Ok(Box::new(stream) as Box<dyn VolumeReadStream>)
-        }))
-    }
-
     #[allow(
         clippy::type_complexity,
         reason = "async trait method returns a pinned boxed future by design"

@@ -167,26 +167,6 @@ impl NfsVolume {
         Ok(self.stream_opened(opened, offset))
     }
 
-    /// [`Volume::resume_read_stream`](cmdr_fs::volume::Volume::resume_read_stream):
-    /// the stream from `offset`, once a fresh lookup still names the file
-    /// `version` saw (the same file system and file number, length, and both
-    /// times); any other is `SourceChanged` before a byte is read.
-    pub(super) async fn resume_read_stream_impl(
-        &self,
-        path: &Path,
-        version: &SourceVersion,
-        offset: u64,
-    ) -> Result<ChannelReadStream, VolumeError> {
-        let Some(expected) = version.downcast_ref::<NfsVersion>() else {
-            return Err(VolumeError::NotSupported);
-        };
-        let opened = self.open_file(path).await?;
-        if NfsVersion::of(&opened.attrs) != *expected {
-            return Err(VolumeError::SourceChanged(opened.file.remote.to_string()));
-        }
-        Ok(self.stream_opened(opened, offset))
-    }
-
     fn stream_opened(&self, opened: Opened, offset: u64) -> ChannelReadStream {
         let size = opened.attrs.size;
         let version = NfsVersion::of(&opened.attrs);
@@ -208,7 +188,7 @@ impl NfsVolume {
                 mode: Some(opened.attrs.mode & 0o7777),
                 ..CarriedMetadata::default()
             })
-            .with_source_version(SourceVersion::new(version))
+            .with_source_version(SourceVersion::comparable(version, NfsVersion::eq))
     }
 
     /// Exactly `[offset, offset + len)`, short only at end of file, so a caller

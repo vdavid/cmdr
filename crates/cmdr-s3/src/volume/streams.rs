@@ -88,7 +88,7 @@ pub(super) struct S3ReadStream {
     /// `mode`), when a copy put them there.
     carried: CarriedMetadata,
     /// Which object the GET read, by its ETag and length, for a copy to carry
-    /// on from after an outage (`resume_read_stream_impl`).
+    /// on from after an outage (`Volume::resume_read_stream`'s default).
     version: Option<HttpEntityVersion>,
 }
 
@@ -167,7 +167,9 @@ impl VolumeReadStream for S3ReadStream {
     }
 
     fn source_version(&self) -> Option<SourceVersion> {
-        self.version.clone().map(SourceVersion::new)
+        self.version
+            .clone()
+            .map(|version| SourceVersion::comparable(version, HttpEntityVersion::is_same_as))
     }
 }
 
@@ -216,26 +218,6 @@ impl S3Volume {
                 carried,
             }),
             Answered::Refused => Err(refusal(opened, &remote).await),
-        }
-    }
-
-    /// [`Volume::resume_read_stream`](cmdr_fs::volume::Volume::resume_read_stream):
-    /// the ranged GET from `offset`, kept only when its ETag (and length) say
-    /// it's the object `version` read; any other object is `SourceChanged`,
-    /// its body dropped unread.
-    pub(super) async fn resume_read_stream_impl(
-        &self,
-        path: &Path,
-        version: &SourceVersion,
-        offset: u64,
-    ) -> Result<S3ReadStream, VolumeError> {
-        let Some(expected) = version.downcast_ref::<HttpEntityVersion>() else {
-            return Err(VolumeError::NotSupported);
-        };
-        let stream = self.open_read_stream_impl(path, offset).await?;
-        match &stream.version {
-            Some(now) if expected.is_same_as(now) => Ok(stream),
-            _ => Err(VolumeError::SourceChanged(path.display().to_string())),
         }
     }
 

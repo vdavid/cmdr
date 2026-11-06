@@ -1868,9 +1868,16 @@ pub trait Volume: Send + Sync {
     /// - **The metadata is the first stream's.** The engine answers it for the
     ///   resumed stream, so a backend needn't ask again.
     ///
-    /// Default `NotSupported`, and the caller runs the file again from its
-    /// first byte. Where each backend stands: `crates/cmdr-operations/src/transfer/DETAILS.md`
-    /// § "Carrying a file on after a long outage".
+    /// Default: for a [`comparable`](SourceVersion::comparable) version, the
+    /// offset open ([`open_read_stream_at_offset`](Self::open_read_stream_at_offset)),
+    /// kept only when the version the new stream names is the same by that
+    /// version's own rule, and `SourceChanged` otherwise, dropped before a
+    /// byte is read. So a backend whose offset open learns the version anyway
+    /// (S3, WebDAV, NFS, SFTP) needs no override. Any other version, or a
+    /// backend with no offset open, is `NotSupported`, and the caller runs the
+    /// file again from its first byte. Where each backend stands:
+    /// `crates/cmdr-operations/src/transfer/DETAILS.md` § "Carrying a file on
+    /// after a long outage".
     #[allow(
         clippy::type_complexity,
         reason = "async trait method returns a pinned boxed future by design"
@@ -1881,8 +1888,16 @@ pub trait Volume: Send + Sync {
         version: &'a SourceVersion,
         offset: u64,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        let _ = (path, version, offset);
-        Box::pin(async { Err(VolumeError::NotSupported) })
+        Box::pin(async move {
+            if version.is_same_as(version).is_none() {
+                return Err(VolumeError::NotSupported);
+            }
+            let stream = self.open_read_stream_at_offset(path, offset).await?;
+            match stream.source_version() {
+                Some(now) if version.is_same_as(&now) == Some(true) => Ok(stream),
+                _ => Err(VolumeError::SourceChanged(path.display().to_string())),
+            }
+        })
     }
 
     /// Reads a bounded byte range `[offset, offset + len)` of `path`, returning
