@@ -362,3 +362,61 @@ async fn a_scan_keeps_every_objects_size_and_upload_date_on_versitygw() {
 async fn a_scan_keeps_every_objects_size_and_upload_date_on_garage() {
     a_scan_keeps_every_objects_size_and_upload_date(GARAGE).await;
 }
+
+// ── Carrying a copy on after an outage ───────────────────────────────
+
+/// A copy that waited out a long outage carries a download on from an offset
+/// (`Volume::resume_read_stream`), on the object its first GET read; a key
+/// written over since (a new ETag) is `SourceChanged`, before a byte reaches
+/// the copy.
+async fn a_read_resumes_on_its_named_object_and_refuses_a_replaced_one(service: FixtureService) {
+    let volume = connect_fixture(service, Some(FIXTURE_BUCKET)).await;
+    let key = format!("{}resume.bin", scratch_prefix("read-resume"));
+    let content = self_describing_bytes(400_000, "resume");
+    seed(service, FIXTURE_BUCKET, &[object(&key, &content)]).await;
+    let path = at(&volume, &key);
+
+    let first = volume.open_read_stream(&path).await.expect(FIXTURE);
+    let version = first
+        .source_version()
+        .unwrap_or_else(|| panic!("{}: a GET names its object's version", service.key));
+    drop(first);
+
+    let mut rest = volume
+        .resume_read_stream(&path, &version, 150_000)
+        .await
+        .unwrap_or_else(|e| panic!("{}: the same object resumes: {e:?}", service.key));
+    let mut read = Vec::new();
+    while let Some(chunk) = rest.next_chunk().await {
+        read.extend_from_slice(&chunk.expect(FIXTURE));
+    }
+    assert!(
+        read == content[150_000..],
+        "{}: exactly the bytes from the offset",
+        service.key
+    );
+
+    seed(
+        service,
+        FIXTURE_BUCKET,
+        &[object(&key, &self_describing_bytes(400_000, "other"))],
+    )
+    .await;
+    match volume.resume_read_stream(&path, &version, 150_000).await {
+        Err(VolumeError::SourceChanged(_)) => {}
+        Err(other) => panic!("{}: expected SourceChanged, got {other:?}", service.key),
+        Ok(_) => panic!("{}: expected SourceChanged, got a stream", service.key),
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the S3 fixture stack: apps/desktop/test/s3-servers/start.sh (s3-fixture)"]
+async fn a_read_resumes_on_its_named_object_and_refuses_a_replaced_one_on_versitygw() {
+    a_read_resumes_on_its_named_object_and_refuses_a_replaced_one(VERSITYGW).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the S3 fixture stack: apps/desktop/test/s3-servers/start.sh (s3-fixture)"]
+async fn a_read_resumes_on_its_named_object_and_refuses_a_replaced_one_on_garage() {
+    a_read_resumes_on_its_named_object_and_refuses_a_replaced_one(GARAGE).await;
+}

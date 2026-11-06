@@ -14,7 +14,7 @@ use std::time::SystemTime;
 use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataClasses};
 use cmdr_fs::pluralize::pluralize_grouped;
-use cmdr_fs::volume::{StreamLength, VolumeError, VolumeReadStream};
+use cmdr_fs::volume::{HttpEntityVersion, SourceVersion, StreamLength, VolumeError, VolumeReadStream};
 use http::StatusCode;
 
 use super::S3Volume;
@@ -87,6 +87,9 @@ pub(super) struct S3ReadStream {
     /// The creation date and mode off the same headers (rclone's `btime` and
     /// `mode`), when a copy put them there.
     carried: CarriedMetadata,
+    /// Which object the GET read, by its ETag and length, for a copy to carry
+    /// on from after an outage (`resume_read_stream_impl`).
+    version: Option<HttpEntityVersion>,
 }
 
 impl S3ReadStream {
@@ -162,6 +165,10 @@ impl VolumeReadStream for S3ReadStream {
     fn metadata(&self, wanted: MetadataClasses) -> CarriedMetadata {
         self.carried.clone().restricted_to(wanted)
     }
+
+    fn source_version(&self) -> Option<SourceVersion> {
+        self.version.clone().map(SourceVersion::new)
+    }
 }
 
 impl S3Volume {
@@ -180,8 +187,12 @@ impl S3Volume {
         );
         let modified_at = stored_mtime(opened.header(MTIME_HEADER), opened.header("last-modified"));
         let carried = carried_from_headers(opened.header(BTIME_HEADER), opened.header(MODE_HEADER));
+        let version_of = |total: Option<u64>| {
+            total.and_then(|total| HttpEntityVersion::of(opened.header("etag"), opened.header("last-modified"), total))
+        };
         match answered {
             Answered::Window { total, skip } => Ok(S3ReadStream {
+                version: version_of(total),
                 body: Some(opened),
                 total,
                 size_hint: None,
@@ -193,6 +204,7 @@ impl S3Volume {
                 carried,
             }),
             Answered::PastTheEnd { total } => Ok(S3ReadStream {
+                version: version_of(total),
                 body: None,
                 total,
                 size_hint: None,
@@ -204,6 +216,26 @@ impl S3Volume {
                 carried,
             }),
             Answered::Refused => Err(refusal(opened, &remote).await),
+        }
+    }
+
+    /// [`Volume::resume_read_stream`](cmdr_fs::volume::Volume::resume_read_stream):
+    /// the ranged GET from `offset`, kept only when its ETag (and length) say
+    /// it's the object `version` read; any other object is `SourceChanged`,
+    /// its body dropped unread.
+    pub(super) async fn resume_read_stream_impl(
+        &self,
+        path: &Path,
+        version: &SourceVersion,
+        offset: u64,
+    ) -> Result<S3ReadStream, VolumeError> {
+        let Some(expected) = version.downcast_ref::<HttpEntityVersion>() else {
+            return Err(VolumeError::NotSupported);
+        };
+        let stream = self.open_read_stream_impl(path, offset).await?;
+        match &stream.version {
+            Some(now) if expected.is_same_as(now) => Ok(stream),
+            _ => Err(VolumeError::SourceChanged(path.display().to_string())),
         }
     }
 
@@ -246,6 +278,7 @@ impl S3Volume {
             path: remote,
             modified_at: None,
             carried: CarriedMetadata::default(),
+            version: None,
         };
         let mut out = Vec::with_capacity(len);
         while out.len() < len {

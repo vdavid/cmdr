@@ -869,3 +869,43 @@ async fn a_listings_paths_are_what_the_app_hands_back() {
     assert_eq!(handed_back, volume.root().join("hello.txt"));
     assert!(volume.exists(&handed_back).await, "and it still names the same file");
 }
+
+// ── Carrying a copy on after an outage ───────────────────────────────
+
+/// A copy that waited out a long outage carries a download on from an offset
+/// (`Volume::resume_read_stream`), on the file its first GET read; a file
+/// written over since (a new ETag) is `SourceChanged`, before a byte reaches
+/// the copy.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_read_resumes_on_its_named_file_and_refuses_a_rewritten_one() {
+    let (volume, dir) = stock_with_scratch().await;
+    let path = dir.join("resume.bin");
+    let bytes = fixture_large_bytes(300_000);
+    volume.create_file(&path, &bytes).await.expect(FIXTURE);
+
+    let first = volume.open_read_stream(&path).await.expect(FIXTURE);
+    let version = first.source_version().expect("a GET names its file's version");
+    drop(first);
+    let mut rest = volume
+        .resume_read_stream(&path, &version, 120_000)
+        .await
+        .expect("the same file resumes");
+    let mut read = Vec::new();
+    while let Some(chunk) = rest.next_chunk().await {
+        read.extend_from_slice(&chunk.expect(FIXTURE));
+    }
+    assert_same_bytes(&read, &bytes[120_000..], "exactly the bytes from the offset");
+
+    volume.delete(&path).await.expect(FIXTURE);
+    volume
+        .create_file(&path, &fixture_large_bytes(300_001))
+        .await
+        .expect(FIXTURE);
+    match volume.resume_read_stream(&path, &version, 120_000).await {
+        Err(VolumeError::SourceChanged(_)) => {}
+        Err(other) => panic!("expected SourceChanged, got {other:?}"),
+        Ok(_) => panic!("expected SourceChanged, got a stream"),
+    }
+    clean(&volume, &dir).await;
+}

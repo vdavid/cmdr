@@ -16,10 +16,10 @@ use std::time::SystemTime;
 use bytes::Bytes;
 use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::pluralize::pluralize_grouped;
-use cmdr_fs::volume::{StreamLength, VolumeError, VolumeReadStream};
+use cmdr_fs::volume::{HttpEntityVersion, SourceVersion, StreamLength, VolumeError, VolumeReadStream};
 use futures_util::Stream;
 use futures_util::StreamExt;
-use reqwest::header::{CONTENT_RANGE, LAST_MODIFIED, RANGE};
+use reqwest::header::{CONTENT_RANGE, ETAG, LAST_MODIFIED, RANGE};
 use reqwest::{Method, Response, StatusCode};
 
 use super::WebdavVolume;
@@ -52,6 +52,9 @@ pub(super) struct WebdavReadStream {
     /// The GET's `Last-Modified`: the same date a PROPFIND lists as
     /// `getlastmodified`, in whole seconds, at no extra round trip.
     modified_at: Option<SystemTime>,
+    /// Which file the GET read (its strong ETag, else its date, and its
+    /// length), for a copy to carry on from after an outage.
+    version: Option<HttpEntityVersion>,
 }
 
 impl WebdavReadStream {
@@ -130,6 +133,18 @@ impl VolumeReadStream for WebdavReadStream {
     fn modified_at(&self) -> Option<SystemTime> {
         self.modified_at
     }
+
+    fn source_version(&self) -> Option<SourceVersion> {
+        self.version.clone().map(SourceVersion::new)
+    }
+}
+
+/// Which file a GET's answer is: its `ETag` and `Last-Modified`, and the full
+/// length the answer named (`None` when it named none, and then nothing could
+/// prove a later answer the same file).
+fn entity_version(response: &Response, total: Option<u64>) -> Option<HttpEntityVersion> {
+    let header = |name| response.headers().get(name).and_then(|value| value.to_str().ok());
+    HttpEntityVersion::of(header(ETAG), header(LAST_MODIFIED), total?)
 }
 
 /// The date a response's `Last-Modified` carries. `None` when the server sent
@@ -152,6 +167,26 @@ fn content_range_total(response: &Response) -> Option<u64> {
 }
 
 impl WebdavVolume {
+    /// [`Volume::resume_read_stream`](cmdr_fs::volume::Volume::resume_read_stream):
+    /// the ranged GET from `offset`, kept only when its answer says it's the
+    /// file `version` read (a strong ETag, else the date, and the length); any
+    /// other file is `SourceChanged`, its body dropped unread.
+    pub(super) async fn resume_read_stream_impl(
+        &self,
+        path: &Path,
+        version: &SourceVersion,
+        offset: u64,
+    ) -> Result<WebdavReadStream, VolumeError> {
+        let Some(expected) = version.downcast_ref::<HttpEntityVersion>() else {
+            return Err(VolumeError::NotSupported);
+        };
+        let stream = self.open_read_stream_impl(path, offset).await?;
+        match &stream.version {
+            Some(now) if expected.is_same_as(now) => Ok(stream),
+            _ => Err(VolumeError::SourceChanged(path.display().to_string())),
+        }
+    }
+
     /// A GET, from `offset`, in whatever chunks the body arrives in.
     pub(super) async fn open_read_stream_impl(
         &self,
@@ -173,6 +208,7 @@ impl WebdavVolume {
             _ => (response.content_length(), offset),
         };
         Ok(WebdavReadStream {
+            version: entity_version(&response, total),
             modified_at: last_modified(&response),
             body: Box::pin(response.bytes_stream()),
             total,
@@ -233,6 +269,7 @@ impl WebdavVolume {
             liveness: Arc::clone(client.liveness()),
             // A window collected here, never a stream a destination writes from.
             modified_at: None,
+            version: None,
         };
         let mut out = Vec::with_capacity(len);
         while out.len() < len {

@@ -2495,7 +2495,7 @@ pub use ids::*;
 pub use presence::Presence;
 pub use server_side::{RenameWork, ServerCopyProgress, SubtreeTally};
 pub use share_link::{ShareLink, ShareLinkExpiry};
-pub use source_version::SourceVersion;
+pub use source_version::{HttpEntityVersion, SourceVersion};
 pub use supported_dates::SupportedDates;
 // The app-path schemes live beside the translation they feed; re-exported here
 // so callers keep `volume::sftp_app_root` and friends.
