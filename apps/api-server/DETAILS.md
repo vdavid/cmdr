@@ -644,7 +644,8 @@ triage agent marks duplicates. Debug builds are our own E2E traffic and never ge
 
 **Labels.** The source (`crash-report`, `error-report`, `in-app-feedback`), `unprocessed` on every new card, and
 `needs-reply` when the person attached an address (an amendment that brings one adds it). The triage agent
-(`scripts/report-triage/CLAUDE.md`) takes `unprocessed` off once it has researched and renamed a card.
+(`scripts/report-triage/CLAUDE.md`) takes `unprocessed` off once it has researched and renamed a card. When
+`needs-reply` comes off and a card closes: `docs/tooling/feedback-and-error-digest.md` § Replying to a reporter.
 
 **Titles are technical** (`Error report ERR-XXXXX: hand-written on 0.52.0 (macOS 27.0)`,
 `Crash CRASH-XXXXX in cmdr::x (SIGABRT) on …`, `Feedback #14 on …`) until the triage agent writes a better one. ❌ Never

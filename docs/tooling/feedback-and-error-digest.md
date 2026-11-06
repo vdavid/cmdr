@@ -24,6 +24,19 @@ predates 2026-10-14 may have no card at all (back then only hand-written reports
 How the filing works, and the invariants that keep private data off the public repo: `apps/api-server/DETAILS.md` § The
 reports repo.
 
+### Replying to a reporter, and closing their card
+
+Two rules, because a report's side questions are what get lost: on 2026-10-20 a reply covered a reporter's big fixes,
+then four cards closed in one command with no note, and three questions plus a fixed bug went unanswered for weeks.
+
+- **Map every ask before drafting.** List each question and bug the person raised, from the card notes AND the whole
+  email thread (follow-ups and later emails included), and show David which line of the draft answers each one. An ask
+  with no line gets one anyway: "tracked in vdavid/cmdr#N" or "not yet, here's why".
+- **Close a card only with a closing note.** A card with a reply-to closes with a comment like
+  `Replied 2026-10-20: answered A, B; still open: C → vdavid/cmdr#N`. Take `needs-reply` off only once every ask in the
+  note has an answer the person actually received; an open ask keeps the card open or moves to a linked issue named in
+  the note.
+
 The `/feedback-and-error-digest-from-app` command (`.claude/commands/`) drives the whole flow; this doc is the access
 recipe it points to. Read-only: never write or delete here without explicit approval (`no-external-actions`).
 
