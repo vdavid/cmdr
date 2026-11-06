@@ -8,6 +8,7 @@
 
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::metadata::{CarriedMetadata, ClassOutcome, MetadataReport};
+use cmdr_fs::volume::Presence;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -149,9 +150,9 @@ impl Volume for SftpVolume {
     /// Kept rather than taken from the trait default: the default routes through
     /// `Volume::get_metadata`, which is `noting`-wrapped, so a bare existence
     /// probe on a dropped link would report a connection transition and drive a
-    /// reconnect. An `exists` question stays a question.
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(self.exists_impl(path))
+    /// reconnect. An existence question stays a question.
+    fn presence<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Presence> + Send + 'a>> {
+        Box::pin(self.presence_impl(path))
     }
 
     fn entry_kind<'a>(

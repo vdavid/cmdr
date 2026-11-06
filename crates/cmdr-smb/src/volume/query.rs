@@ -9,12 +9,12 @@
 use super::apple_double::Sidecars;
 use super::dfs_links::{link_bare_stat, link_stat};
 use super::links::stat_through_link;
-use super::mapping::{directory_entry_to_file_entry, file_info_to_file_entry, fs_info_to_space_info};
+use super::mapping::{directory_entry_to_file_entry, file_info_to_file_entry, fs_info_to_space_info, stat_presence};
 use super::session::SessionLease;
 use super::{SmbVolume, slow_calls};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::volume::{EntryKind, ListingProgress, SpaceInfo, VolumeError};
+use cmdr_fs::volume::{EntryKind, ListingProgress, Presence, SpaceInfo, VolumeError};
 use log::{debug, trace};
 use smb2::DirectoryReader;
 use std::path::Path;
@@ -241,16 +241,15 @@ impl SmbVolume {
         Ok(file_info_to_file_entry(&info, name, display_path))
     }
 
-    /// Whether `path` is there, as a plain yes/no: anything that can't be asked
-    /// (a path off this share, a session that won't clone) is a no.
-    pub(super) async fn exists_impl(&self, path: &Path) -> bool {
-        // A path outside this share doesn't exist ON THIS VOLUME, which is
-        // exactly the question asked.
+    /// Whether `path` is there, from one bare `stat`. A path off this share is
+    /// `Absent` (nothing is there ON THIS VOLUME, the question asked); a session
+    /// that won't clone, or a refusal, is `Unknown` (`mapping::stat_presence`).
+    pub(super) async fn presence_impl(&self, path: &Path) -> Presence {
         let Ok(smb_path) = self.to_smb_path(path) else {
-            return false;
+            return Presence::Absent;
         };
         if smb_path.is_empty() {
-            return true; // Root always exists if we're connected
+            return Presence::Present; // Root always exists if we're connected
         }
 
         let start = std::time::Instant::now();
@@ -260,14 +259,13 @@ impl SmbVolume {
                 mut conn,
                 generation,
             }) => {
-                let found = self
+                let stat = self
                     .or_through_link(generation, &smb_path, tree.stat(&mut conn, &smb_path), link_bare_stat)
-                    .await
-                    .is_ok();
+                    .await;
                 slow_calls::note(&self.inner.share_name, "exists", start.elapsed());
-                found
+                stat_presence(stat, &self.to_display_path(&smb_path))
             }
-            Err(_) => false,
+            Err(_) => Presence::Unknown,
         }
     }
 

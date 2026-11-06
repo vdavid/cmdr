@@ -5,6 +5,7 @@
 //! ❗ **A capability answers for a method that works**, ❌ never ahead of it:
 //! `is_writable` is button state, and `supports_export` gates copy-from.
 
+use cmdr_fs::volume::Presence;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -106,10 +107,10 @@ impl Volume for S3Volume {
 
     /// Kept rather than taken from the trait default: the default routes
     /// through `noting`, so a bare existence probe on a dropped link would
-    /// report a connection transition and drive a reconnect. An `exists`
+    /// report a connection transition and drive a reconnect. An existence
     /// question stays a question.
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(async move { self.get_metadata_impl(path).await.is_ok() })
+    fn presence<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Presence> + Send + 'a>> {
+        Box::pin(async move { Presence::of(&self.get_metadata_impl(path).await) })
     }
 
     // ── The byte path ────────────────────────────────────────────────

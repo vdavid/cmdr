@@ -965,7 +965,7 @@ The double is the oracle: these `Volume` contracts have to hold in it, not just 
   moved only the dir node made those tests pass over the exact data-loss shape they existed to catch.
 - **`rename(force = false)` refuses an existing destination**, and **`create_file` refuses an existing path**. Both are
   no-clobber promises the real backends make, so a double that overwrote would let a clobbering caller look correct.
-- **`exists` answers "there" for the volume ROOT**, which has no stored entry. The deleted-folder poll
+- **`presence` (so `exists`) answers "there" for the volume ROOT**, which has no stored entry. The deleted-folder poll
   (`apps/desktop/src/lib/file-explorer/pane/deleted-dir-poll.ts`) asks it every 2 s, and a "no" walked the demo's pane
   off `/` and home after two misses. `get_metadata` and `is_directory` of the root still answer `NotFound`.
 

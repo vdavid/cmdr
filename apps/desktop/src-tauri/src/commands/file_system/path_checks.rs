@@ -8,6 +8,7 @@ use tokio::time::Duration;
 use crate::file_system::volume::manager::get_volume_manager;
 use cmdr_fs::deadline::{TimedOut, timeout_detached_typed};
 use cmdr_fs::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
+use cmdr_fs::volume::Presence;
 use cmdr_operations::held_in_another_spelling;
 
 use super::expand_tilde;
@@ -104,7 +105,7 @@ async fn exists_on_volume(volume_id: Option<String>, path: String, spelling: Spe
         .await
         .volume
     {
-        // On a remote volume an immediate `false` from `exists()` may be the session
+        // On a remote volume an immediate `Absent` may be the session
         // dying (`clone_session` returns `Err`) rather than the path actually missing.
         // Snapshot whether this volume HAS a session, so the answer can be re-checked
         // against it below.
@@ -129,7 +130,14 @@ async fn exists_on_volume(volume_id: Option<String>, path: String, spelling: Spe
                 let exists = if volume.local_path().is_some() {
                     local_exists(path_for_check.clone()).await?
                 } else {
-                    volume.exists(&path_for_check).await
+                    // `presence`, ❌ never `exists`: a refusal (a share folder this
+                    // account may not read) is "couldn't tell", and `exists` folds
+                    // it into a "no" the pane reads as "deleted" (#1018).
+                    match volume.presence(&path_for_check).await {
+                        Presence::Present => true,
+                        Presence::Absent => false,
+                        Presence::Unknown => return Err(()),
+                    }
                 };
                 if exists || spelling == Spelling::Exact {
                     return Ok(exists);

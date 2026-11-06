@@ -290,7 +290,7 @@ row two's file (#523).
 - **Only the name alone is refused.** A path with no row behind it (an MCP call, a typed path) that names the shared
   name answers `MtpConnectionError::AmbiguousName` and touches nothing. `MtpVolume` maps it to
   `VolumeError::DuplicateName`, its own variant (not SMB's look-alike `AmbiguousName`) so the person reads the device's
-  cause, and `MtpVolume::exists` counts it as taken, so a no-clobber rename or upload can't add a third.
+  cause, and `MtpVolume::presence` (so `exists`) counts it as taken, so a no-clobber rename or upload can't add a third.
 - **A twin's change re-reads its folder.** `MtpVolume::notify_mutation` given a row path minus its name (what
   `Path::parent` of a row path yields) reports `FullRefresh` on the real folder: the by-name `Removed` / `Renamed`
   patches can't tell a twin from its sibling.

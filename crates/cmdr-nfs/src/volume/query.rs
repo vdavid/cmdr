@@ -2,6 +2,7 @@
 //! with READDIR + LOOKUP where the server has none), one entry's attributes,
 //! the room left, and whether a folder takes writes.
 
+use cmdr_fs::volume::Presence;
 use std::path::Path;
 
 use cmdr_fs::entry::FileEntry;
@@ -192,15 +193,16 @@ impl NfsVolume {
         Ok(found.attributes.as_ref().map_or(EntryKind::Directory, entry_kind))
     }
 
-    /// Whether anything is at `path`, a dangling link included.
-    pub(super) async fn exists_impl(&self, path: &Path) -> bool {
+    /// Whether anything is at `path`, a dangling link included. A path off
+    /// this export is `Absent`; no client, or a refusal, is `Unknown`.
+    pub(super) async fn presence_impl(&self, path: &Path) -> Presence {
         let Ok(remote) = self.to_remote_path(path) else {
-            return false;
+            return Presence::Absent;
         };
         let Ok(client) = self.client().await else {
-            return false;
+            return Presence::Unknown;
         };
-        self.resolve(&client, &remote, Follow::Never, true).await.is_ok()
+        Presence::of(&self.resolve(&client, &remote, Follow::Never, true).await)
     }
 
     /// The room on the export's filesystem, from one `FSSTAT` on the root.

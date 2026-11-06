@@ -1,4 +1,5 @@
 //! Reading what's on the server without changing it.
+use cmdr_fs::volume::Presence;
 use std::path::{Path, PathBuf};
 
 use cmdr_fs::entry::FileEntry;
@@ -163,11 +164,10 @@ impl SftpVolume {
         Ok(statvfs_to_space_info(&stat))
     }
 
-    /// Whether `path` is there, as a plain yes/no.
-    pub(super) async fn exists_impl(&self, path: &Path) -> bool {
-        // A path off this volume doesn't exist ON THIS VOLUME, which is the
-        // question asked.
-        self.get_metadata_impl(path).await.is_ok()
+    /// Whether `path` is there. A path off this volume is `Absent` (nothing is
+    /// there ON THIS VOLUME, the question asked); a refusal is `Unknown`.
+    pub(super) async fn presence_impl(&self, path: &Path) -> Presence {
+        Presence::of(&self.get_metadata_impl(path).await)
     }
 }
 

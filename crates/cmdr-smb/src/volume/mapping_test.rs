@@ -408,6 +408,30 @@ fn map_smb_error_access_denied_is_not_misclassified() {
     );
 }
 
+#[test]
+fn stat_presence_reads_a_refusal_as_unknown_never_absent() {
+    // #1018: `exists` was `stat(..).is_ok()`, so a folder a QNAP account may not read
+    // (ACCESS_DENIED) answered "doesn't exist" and the pane walked to its parent.
+    use cmdr_fs::volume::Presence;
+    use smb2::types::status::NtStatus;
+    let stat = |status| -> Result<(), smb2::Error> {
+        Err(smb2::Error::Protocol {
+            status,
+            command: smb2::types::Command::Create,
+        })
+    };
+    assert_eq!(stat_presence(Ok::<(), smb2::Error>(()), "/p"), Presence::Present);
+    assert_eq!(
+        stat_presence(stat(NtStatus::OBJECT_NAME_NOT_FOUND), "/p"),
+        Presence::Absent
+    );
+    assert_eq!(
+        stat_presence(stat(NtStatus::OBJECT_PATH_NOT_FOUND), "/p"),
+        Presence::Absent
+    );
+    assert_eq!(stat_presence(stat(NtStatus::ACCESS_DENIED), "/p"), Presence::Unknown);
+}
+
 /// A Read-only item refusing its own removal is a permission refusal, which is
 /// what a reversal clears and retries on.
 #[test]

@@ -315,23 +315,34 @@ pub trait Volume: Send + Sync {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>>;
 
-    /// Checks if a path exists (relative to volume root).
-    ///
-    /// Defaults to "[`get_metadata`](Self::get_metadata) answered", which is the
-    /// right answer for any backend whose only existence primitive is a stat.
-    /// Override when the backend can answer more cheaply (a bare protocol
-    /// `stat`, an in-memory index) or when its truth differs:
-    /// `LocalPosixVolume` uses `symlink_metadata`, because a BROKEN symlink is
-    /// still a thing on disk the user can see and delete.
+    /// Checks if a path exists (relative to volume root): [`presence`](Self::presence)
+    /// as a plain yes/no, where "couldn't tell" is a no. The right fold for a
+    /// conflict check; ❌ the wrong one wherever "no" means "deleted".
     fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(async move { self.get_metadata(path).await.is_ok() })
+        Box::pin(async move { self.presence(path).await.is_present() })
+    }
+
+    /// Whether a path is there, with "couldn't tell" kept apart from "not
+    /// there" (relative to volume root). [`exists`](Self::exists) is this
+    /// folded to a yes/no, so a backend overrides THIS, ❌ not `exists`.
+    ///
+    /// Defaults to [`Presence::of`] on [`get_metadata`](Self::get_metadata):
+    /// only `NotFound` is [`Presence::Absent`]. ❗ A refusal is
+    /// [`Presence::Unknown`], ❌ never `Absent`: a folder the account may not
+    /// read is still there, and the pane's deleted-folder walk-up reads
+    /// "absent" as "deleted" (#1018). Override when the backend can answer
+    /// more cheaply (a bare protocol `stat`, an in-memory index) or when its
+    /// truth differs: `LocalPosixVolume` uses `symlink_metadata`, because a
+    /// BROKEN symlink is still a thing on disk the user can see and delete.
+    fn presence<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Presence> + Send + 'a>> {
+        Box::pin(async move { Presence::of(&self.get_metadata(path).await) })
     }
 
     /// Checks if a path is a directory.
     /// Returns Ok(true) if directory, Ok(false) if file, Err if path doesn't exist.
     ///
     /// Defaults to the directory bit off [`get_metadata`](Self::get_metadata).
-    /// Same reasons to override as [`exists`](Self::exists).
+    /// Same reasons to override as [`presence`](Self::presence).
     fn is_directory<'a>(
         &'a self,
         path: &'a Path,
@@ -2338,6 +2349,7 @@ pub mod mtp_ids;
 mod node_identity;
 mod password_locked;
 pub mod patching;
+mod presence;
 mod read_stream;
 pub mod read_window;
 pub mod remote_paths;
@@ -2390,6 +2402,7 @@ pub use connection_reporter::{ConnectionReporter, ReportedState};
 pub use entry_kind::EntryKind;
 pub use error::{ErrnoField, LinkSignIn, VolumeError};
 pub use ids::*;
+pub use presence::Presence;
 pub use server_side::{RenameWork, ServerCopyProgress, SubtreeTally};
 pub use share_link::{ShareLink, ShareLinkExpiry};
 pub use supported_dates::SupportedDates;

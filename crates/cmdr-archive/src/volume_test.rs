@@ -18,7 +18,7 @@ use cmdr_fs::testing::TestDir;
 use cmdr_fs::volume::InMemoryVolume;
 use cmdr_fs::volume::WriteMode;
 use cmdr_fs::volume::{
-    ListingProgress, LockedContainer, StreamLength, UnlockOutcome, Volume, VolumeError, VolumeReadStream,
+    ListingProgress, LockedContainer, Presence, StreamLength, UnlockOutcome, Volume, VolumeError, VolumeReadStream,
 };
 
 /// A zip written into a scratch dir, cleaned up on drop. Hands out
@@ -582,6 +582,20 @@ async fn header_encrypted_7z_browse_prompts_then_lists_and_extracts() {
         read_all(&volume, Path::new("secret.txt")).await.unwrap(),
         b"top secret 7z"
     );
+}
+
+#[tokio::test]
+async fn a_locked_archive_cant_say_whats_inside_but_an_open_one_can() {
+    // Before the password, the index won't open: "couldn't tell", ❌ never "absent",
+    // which the pane's deleted-folder walk-up reads as "deleted" (#1018).
+    let bytes = build_encrypted_7z(&[("secret.txt", b"top secret 7z")], "hunter2", true);
+    let archive = TestArchive::from_bytes(bytes);
+    let volume = archive.sevenz_volume();
+    assert_eq!(volume.presence(Path::new("secret.txt")).await, Presence::Unknown);
+
+    volume.set_password("hunter2".to_string());
+    assert_eq!(volume.presence(Path::new("secret.txt")).await, Presence::Present);
+    assert_eq!(volume.presence(Path::new("missing.txt")).await, Presence::Absent);
 }
 
 #[tokio::test]

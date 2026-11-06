@@ -328,8 +328,8 @@ is about.
   generation. A transfer lease carries `RanOn` (`state.rs`): `Main(generation)`, or `Transfer(TransferGeneration)` on
   the transfer session, whose loss `note_error` routes to `TransferSession::lose` and ❌ never to the main state (§ "The
   transfer session"). `handle_smb_result` and the stamp helpers take `impl Into<RanOn>`, so a main-session call passes
-  its generation as before. Probes whose failure only means "no" (`exists`, the rename's directory and destination
-  stats) report nothing to the funnel.
+  its generation as before. Probes whose failure only means "no" or "couldn't tell" (`presence`, the rename's directory
+  and destination stats) report nothing to the funnel.
 - Pinned by `state_test.rs` (the cell, the predicate) and `reconnect_test.rs` (`a_late_loss_from_a_replaced_session_*`,
   `a_send_failure_and_a_disconnect_*`, `the_reported_generation_moves_only_when_a_session_is_installed`), through both
   `handle_smb_result` and `note_smb_error`.
@@ -1343,7 +1343,7 @@ delete that descended into a junction deleted the target's files, a folder tree 
   the tag. So a selected link copies the way every cross-volume copy treats one, materializing its target, as a local
   link does (`crates/cmdr-operations/src/transfer/volume/copy_selected_link_tests.rs`). Up to two extra round trips, for
   such a link only. Pinned by `links_integration_test.rs`.
-- `exists`, `attributes_impl`, the rename's `either_end_is_a_directory`, and `copy_on_server`'s date stat describe the
+- `presence`, `attributes_impl`, the rename's `either_end_is_a_directory`, and `copy_on_server`'s date stat describe the
   link itself. On Windows a junction or `mklink /D` link keeps its `DIRECTORY` attribute, so nothing that asks "folder?"
   changes. `spelling.rs`'s probe only asks whether a prefix opens, which a link does.
 - `write_stream.rs` and `copy.rs` delete only a partial they wrote, never a link.
@@ -1384,12 +1384,13 @@ file name on the share, which the server would happily create or delete. Anythin
 "strip the leading slash", so `/Users/me/notes.txt` went out as the share-relative `Users/me/notes.txt`. Matching whole
 path COMPONENTS (`Path::strip_prefix`) kills the first, and `VolumeError::NotFound` for the rest kills the second: a
 path that isn't on this volume genuinely isn't found there, and the caller surfaces that instead of acting elsewhere.
-`exists` maps the error to `false` (the honest answer to the question it was asked), and the post-mutation listing-cache
-patches go through `display_path_for`, which returns an `Option` so a write that already succeeded is never reported as
-failed because its parent path didn't convert. The Docker integration tests address the fixture share the same way
-production does, through `volume::testing::share_path` (and, app-side, `smb_index_scan_test::unique_base`), so a test
-path is either relative or absolute under `TEST_MOUNT_ROOT`; ❌ never a bare `format!("/{name}")`, which reads as a real
-absolute path somewhere else entirely.
+`presence` maps the error to `Absent` (the honest answer to the question it was asked; a refusal or a session that won't
+clone is `Unknown`, `mapping.rs::stat_presence`), and the post-mutation listing-cache patches go through
+`display_path_for`, which returns an `Option` so a write that already succeeded is never reported as failed because its
+parent path didn't convert. The Docker integration tests address the fixture share the same way production does, through
+`volume::testing::share_path` (and, app-side, `smb_index_scan_test::unique_base`), so a test path is either relative or
+absolute under `TEST_MOUNT_ROOT`; ❌ never a bare `format!("/{name}")`, which reads as a real absolute path somewhere
+else entirely.
 
 **Decision**: `map_smb_error` maps `ErrorKind::InvalidName` to its own `VolumeError::InvalidName`, never the `IoError`
 catch-all **Why**: `STATUS_OBJECT_NAME_INVALID` means the server refused the NAME, so it never looked for the file and

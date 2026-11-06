@@ -10,6 +10,7 @@ use crate::connection::{MtpConnectionError, MtpDeleteScope, UploadedFile, twins}
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_fs::volume::Presence;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, StreamLength,
     StreamWriteProgress, StreamWritten, Volume, VolumeError, VolumeReadStream, WatchCoverage, WriteMode,
@@ -185,15 +186,15 @@ impl Volume for MtpVolume {
         })
     }
 
-    /// A name two items share is TAKEN: the default (`get_metadata(..).is_ok()`)
-    /// would read its `DuplicateName` as free, and a no-clobber rename or upload
-    /// onto it would add a third.
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+    /// A name two items share is TAKEN: the default (`Presence::of` on
+    /// `get_metadata`) would read its `DuplicateName` as "couldn't tell", and a
+    /// no-clobber rename or upload onto it would add a third.
+    fn presence<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Presence> + Send + 'a>> {
         Box::pin(async move {
-            matches!(
-                self.get_metadata(path).await,
-                Ok(_) | Err(VolumeError::DuplicateName(_))
-            )
+            match self.get_metadata(path).await {
+                Err(VolumeError::DuplicateName(_)) => Presence::Present,
+                stat => Presence::of(&stat),
+            }
         })
     }
 

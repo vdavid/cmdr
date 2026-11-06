@@ -1,5 +1,6 @@
 //! Reading what's on the server without changing it: PROPFIND, at depth 1 for
 //! a listing and depth 0 for one resource.
+use cmdr_fs::volume::Presence;
 use std::path::Path;
 
 use cmdr_fs::entry::FileEntry;
@@ -127,9 +128,9 @@ impl WebdavVolume {
             .ok_or_else(|| VolumeError::NotFound(remote.to_string()))
     }
 
-    /// Whether `path` is there, as a plain yes/no.
-    pub(super) async fn exists_impl(&self, path: &Path) -> bool {
-        self.get_metadata_impl(path).await.is_ok()
+    /// Whether `path` is there. A refusal (a 403 for this account) is `Unknown`.
+    pub(super) async fn presence_impl(&self, path: &Path) -> Presence {
+        Presence::of(&self.get_metadata_impl(path).await)
     }
 
     /// Space on the root, as far as the server is willing to say.

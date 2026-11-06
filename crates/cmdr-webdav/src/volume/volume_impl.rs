@@ -2,6 +2,7 @@
 //! the modules that do the work. Every answer here is deliberate: a default this
 //! backend accepts silently is a promise it may not be able to keep.
 
+use cmdr_fs::volume::Presence;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -115,9 +116,9 @@ impl Volume for WebdavVolume {
     /// Kept rather than taken from the trait default: the default routes through
     /// `Volume::get_metadata`, which is `noting`-wrapped, so a bare existence
     /// probe on a dropped link would report a connection transition and drive a
-    /// reconnect. An `exists` question stays a question.
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(self.exists_impl(path))
+    /// reconnect. An existence question stays a question.
+    fn presence<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Presence> + Send + 'a>> {
+        Box::pin(self.presence_impl(path))
     }
 
     // ── The byte path ────────────────────────────────────────────────

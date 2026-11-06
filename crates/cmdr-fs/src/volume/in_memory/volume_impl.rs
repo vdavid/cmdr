@@ -9,7 +9,7 @@ use crate::ignore_poison::IgnorePoison;
 use crate::ignore_poison::RwLockIgnorePoison;
 use crate::metadata::{CarriedMetadata, ClassOutcome, MetadataCaps, MetadataClasses, MetadataReport};
 use crate::volume::{
-    BackendKind, ConnectionState, CopyScanResult, IndexWalk, LaneKey, NodeIdentity, RenameWork, ScanConflict,
+    BackendKind, ConnectionState, CopyScanResult, IndexWalk, LaneKey, NodeIdentity, Presence, RenameWork, ScanConflict,
     SourceItemInfo, SpaceInfo, StreamLength, StreamWriteProgress, StreamWritten, SupportedDates, Volume, VolumeError,
     VolumeReadStream, WriteAccess, WriteMode, XattrAnswer, XattrReadMode,
 };
@@ -191,14 +191,18 @@ impl Volume for InMemoryVolume {
         })
     }
 
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+    fn presence<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Presence> + Send + 'a>> {
         Box::pin(async move {
             // A device breathes at every call (`with_yielding`; a no-op otherwise).
             self.breathe().await;
             let normalized = self.normalize(path);
             // The root has no stored entry, but it's there as long as the volume is: a
             // "no" here once walked the demo's pane off `/` and home (the deleted-folder poll).
-            normalized == self.root || self.entries.read_ignore_poison().contains_key(&normalized)
+            if normalized == self.root || self.entries.read_ignore_poison().contains_key(&normalized) {
+                Presence::Present
+            } else {
+                Presence::Absent
+            }
         })
     }
 

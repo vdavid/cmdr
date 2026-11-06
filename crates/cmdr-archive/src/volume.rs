@@ -33,6 +33,7 @@
 //! land, a remote parent supplies bytes by implementing [`ArchiveByteSource`]
 //! over its ranged reads, with no change to the index/reader layer.
 
+use cmdr_fs::volume::Presence;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -493,14 +494,17 @@ impl Volume for ArchiveVolume {
         })
     }
 
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+    fn presence<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Presence> + Send + 'a>> {
         let inner = self.inner_path(path);
         Box::pin(async move {
-            // An unreadable archive (parse error or a lost remote) has no
-            // browsable entries.
+            // An archive that won't open (it needs a password, it doesn't parse,
+            // its remote is lost) can't say what's inside: `Unknown`, ❌ never
+            // `Absent`, which walked a pane out of a locked archive as if its
+            // folder were deleted.
             match self.index().await {
-                Ok(index) => index.exists(&inner),
-                Err(_) => false,
+                Ok(index) if index.exists(&inner) => Presence::Present,
+                Ok(_) => Presence::Absent,
+                Err(_) => Presence::Unknown,
             }
         })
     }

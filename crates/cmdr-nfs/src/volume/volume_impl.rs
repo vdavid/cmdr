@@ -2,6 +2,7 @@
 //! the modules that do the work. Every answer here is deliberate: a default this
 //! backend accepts silently is a promise it may not be able to keep.
 
+use cmdr_fs::volume::Presence;
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -80,10 +81,10 @@ impl Volume for NfsVolume {
 
     /// Kept rather than taken from the trait default, which routes through the
     /// `noting`-wrapped `get_metadata`: a bare existence probe on a dropped link
-    /// would report a connection transition. An `exists` question stays a
+    /// would report a connection transition. An existence question stays a
     /// question.
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(self.exists_impl(path))
+    fn presence<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Presence> + Send + 'a>> {
+        Box::pin(self.presence_impl(path))
     }
 
     /// LOOKUP's own attributes, which don't follow a link: a link to a folder

@@ -20,6 +20,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataCaps, MetadataClasses, MetadataReport, Unblock, UserFlags};
 use cmdr_fs::volume::MountClass;
+use cmdr_fs::volume::Presence;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::listing_progress::report_while;
 use cmdr_fs::volume::{
@@ -449,14 +450,21 @@ impl Volume for LocalPosixVolume {
         })
     }
 
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        // Use symlink_metadata instead of exists() to detect broken symlinks
-        // Path::exists() follows symlinks and returns false for broken ones
+    fn presence<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Presence> + Send + 'a>> {
+        // `symlink_metadata`, ❌ not `Path::exists()`, which follows a link and
+        // answers false for a broken one. Only ENOENT / ENOTDIR are a definite
+        // miss: EACCES, EIO, or a stalled FUSE daemon say nothing about the path.
         let abs_path = self.resolve(path);
         Box::pin(async move {
-            spawn_blocking(move || std::fs::symlink_metadata(abs_path).is_ok())
-                .await
-                .expect("spawn_blocking symlink_metadata closure doesn't panic and the task is uncancelable")
+            spawn_blocking(move || match std::fs::symlink_metadata(abs_path) {
+                Ok(_) => Presence::Present,
+                Err(e) if matches!(e.kind(), io::ErrorKind::NotFound | io::ErrorKind::NotADirectory) => {
+                    Presence::Absent
+                }
+                Err(_) => Presence::Unknown,
+            })
+            .await
+            .expect("spawn_blocking symlink_metadata closure doesn't panic and the task is uncancelable")
         })
     }
 

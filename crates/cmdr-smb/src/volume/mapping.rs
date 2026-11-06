@@ -3,7 +3,7 @@
 
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::metadata::UserFlags;
-use cmdr_fs::volume::{SpaceInfo, VolumeError};
+use cmdr_fs::volume::{Presence, SpaceInfo, VolumeError};
 use smb2::FileAttributes;
 
 /// Converts an `smb2::FileTime` to seconds since the Unix epoch, matching
@@ -84,6 +84,14 @@ pub(super) fn attributes_of(flags: UserFlags) -> FileAttributes {
 /// is always [`SpaceInfo::Bounded`].
 pub(super) fn fs_info_to_space_info(info: &smb2::client::tree::FsInfo) -> SpaceInfo {
     SpaceInfo::bounded(info.total_bytes, info.free_bytes)
+}
+
+/// What a `stat` said about presence, classified by [`map_smb_error`] so "not
+/// there" means exactly what a `NotFound` means everywhere else. ❗ A refusal
+/// (`ACCESS_DENIED`, a QNAP folder this account may not read) is `Unknown`, ❌
+/// never `Absent`: the pane read that as "deleted" and walked to the parent (#1018).
+pub(super) fn stat_presence<T>(stat: Result<T, smb2::Error>, path: &str) -> Presence {
+    Presence::of(&stat.map_err(|e| map_smb_error(e, path)))
 }
 
 /// Converts an `smb2::Error` to `VolumeError`, for an operation on `path`.

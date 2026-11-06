@@ -23,7 +23,7 @@ use cmdr_fs::volume::{
     ServerCopyProgress, SourceItemInfo, SpaceInfo, StreamLength, StreamWriteProgress, StreamWritten, Volume,
     VolumeError, VolumeRandomReader, VolumeReadStream, WatchCoverage, WriteMode, XattrAnswer, XattrReadMode,
 };
-use cmdr_fs::volume::{ListingProgress, ListingWatch, Retirement};
+use cmdr_fs::volume::{ListingProgress, ListingWatch, Presence, Retirement};
 use log::debug;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -176,14 +176,14 @@ impl Volume for SmbVolume {
         Box::pin(self.get_metadata_impl(path))
     }
 
-    /// Kept rather than taken from the trait default: `exists_impl` is a raw
+    /// Kept rather than taken from the trait default: `presence_impl` is a raw
     /// `stat` rather than the full `FileEntry` build `get_metadata` does, and
     /// the share root answers with no round trip at all.
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(self.exists_impl(path))
+    fn presence<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Presence> + Send + 'a>> {
+        Box::pin(self.presence_impl(path))
     }
 
-    /// Kept for the same reason as [`exists`](Self::exists): a raw `stat`, and a
+    /// Kept for the same reason as [`presence`](Self::presence): a raw `stat`, and a
     /// share root that needs no round trip.
     fn is_directory<'a>(
         &'a self,
