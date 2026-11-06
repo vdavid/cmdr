@@ -343,8 +343,8 @@ check.
    it syncs `main`, runs the release-prep checks (§ Release prep checks that abort before tagging), commits
    `chore(release): vX.Y.Z` (call it R) on a `release/vX.Y.Z` branch on top of `origin/main`, signs the tag on R, pushes
    the branch, and starts R's full CI run and CodeQL on it. In `local` mode it pushes the tag right away, so the build
-   (about an hour) runs beside CI (well under the build; `pnpm land eta` prints its typical length); in `ci` mode, whose
-   tag push publishes on its own, it waits for green CI first. Re-run it with the same version after any stop: it
+   (about 45 minutes) runs beside CI (well under the build; `pnpm land eta` prints its typical length); in `ci` mode,
+   whose tag push publishes on its own, it waits for green CI first. Re-run it with the same version after any stop: it
    resumes. If it stops before tagging, fix what it says and re-run; if CI goes red later, § The CI gate says what to
    do.
 8. **`local` mode: start `./scripts/release-finish.sh X.Y.Z` right after `release.sh`**, as a background command. It
@@ -429,7 +429,7 @@ with these differences. The procedure pre-approves building and publishing it, s
   the tag can't be signed unattended and `release.sh` aborts before pushing. (Verified on David's laptop with
   `git config`, `ssh-add -l`, and the `v0.52.0` tag's SSH signature, 2026-10-15; the reboot path is untested.)
 - **Docker running**: `release.sh` aborts before tagging without it (§ Release prep checks that abort before tagging).
-- **The laptop awake and online for about 75 minutes after `release.sh`**, while `release-finish.sh` waits for the build
+- **The laptop awake and online for about an hour after `release.sh`**, while `release-finish.sh` waits for the build
   and CI, signs, and waits for the finishing run. Run it as `caffeinate -i ./scripts/release-finish.sh X.Y.Z`, on power
   with the lid open. If it stops, re-run it: it's resumable.
 - MFA, Bitwarden, and the phone aren't needed: everything else runs on GitHub with credentials already in place.
@@ -444,8 +444,10 @@ with these differences. The procedure pre-approves building and publishing it, s
 - If `main` carries unreleased features, cut the fix from the last release tag instead: § Security-only patch release.
 
 **Timeline**, not yet measured on a real incident: two to three hours of agent work on the fix and changelog, then about
-75 minutes from `release.sh` to `latest.json`: the hour-long build with the release's CI run beside it, then signing and
-the finishing run. A running copy checks every three hours by default, so it picks the fix up within hours.
+an hour from `release.sh` to `latest.json`: the 45-minute build with the release's CI run beside it, then signing and
+the six-minute finishing run (v0.60.0, 2026-11-06: tag to green build 46 min, compiles 38 of them; a macOS runner
+shortage added 30 more that day). A running copy checks every three hours by default, so it picks the fix up within
+hours.
 
 **After it ships:** run steps 12 and 13 of § The release procedure, then:
 
@@ -995,7 +997,7 @@ Decided by David on 2026-11-04 in #805: switch directly, no waiting period.
   comparing SHA-256, and with `-manifest` checks that `latest.json` names only mirrored archives. It never deletes. By
   hand it backfills a release, with `CLOUDFLARE_API_TOKEN` (the sops one) and `CLOUDFLARE_ACCOUNT_ID` set.
 - **In the pipeline**: the `guard` job runs `release-mirror.sh -preflight` (one small write), so a token that can't
-  write the bucket fails in seconds, before the hour-long build. `publish` writes `latest.json` with mirror URLs, and
+  write the bucket fails in seconds, before the 45-minute build. `publish` writes `latest.json` with mirror URLs, and
   its "Mirror the downloads to the EU bucket" step runs after the checksums and before "Mark the release Latest". If it
   fails, the release stays un-Latest, so the website keeps the old manifest; "Re-run failed jobs" retries it. Both use
   the repo secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, which need R2 write on the bucket.
