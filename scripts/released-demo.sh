@@ -6,7 +6,7 @@
 #   digest=<64 hex chars>
 #
 # The release pipeline's `demo` job builds the demo from the tagged sources, pushes it as
-# `ghcr.io/vdavid/cmdr-demo:<tag>`, and attests it; a release can't publish without it. This
+# `ghcr.io/<repo owner>/cmdr-demo:<tag>`, and attests it; a release can't publish without it. This
 # resolves the tag to its digest and refuses an image the release pipeline didn't attest, so a
 # moved tag can't put another build on the site. The website lane (to build and test /demo/) and
 # the deploy (to pin the Dockerfile's `DEMO_IMAGE_DIGEST`) both read it, so CI tests exactly the
@@ -19,9 +19,12 @@
 # Usage: ./scripts/released-demo.sh [tag]
 set -euo pipefail
 
-REPO="${GITHUB_REPOSITORY:-vdavid/cmdr}"
-IMAGE="ghcr.io/vdavid/cmdr-demo"
-SIGNER="$REPO/.github/workflows/release-pipeline.yml"
+REPO="${GITHUB_REPOSITORY:-$(gh repo view --json nameWithOwner --jq .nameWithOwner)}"
+# The image is a package of the account that owns the repo.
+IMAGE="ghcr.io/${REPO%%/*}/cmdr-demo"
+# An attestation names the repo that built it, for good, so a release from before the move to
+# the `getcmdr` org (#476) verifies under the old name. Only these two are accepted.
+PRE_MOVE_REPO="vdavid/cmdr"
 
 # Releases up to this one published no demo image (the pipeline started publishing after it).
 # Theirs is the demo `main` deployed when the cutover landed, pinned here so a rollback to one
@@ -57,11 +60,19 @@ if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
 fi
 
 # Only the release pipeline signs these, so a tag someone moved by hand fails here.
-if ! gh attestation verify "oci://$IMAGE@$digest" --repo "$REPO" --signer-workflow "$SIGNER" >/dev/null; then
-    echo "$IMAGE:$tag ($digest) carries no provenance from $SIGNER; refusing it." >&2
+verified=""
+for signer_repo in "$REPO" "$PRE_MOVE_REPO"; do
+    if gh attestation verify "oci://$IMAGE@$digest" --repo "$signer_repo" \
+        --signer-workflow "$signer_repo/.github/workflows/release-pipeline.yml" >/dev/null; then
+        verified="$signer_repo"
+        break
+    fi
+done
+if [[ -z "$verified" ]]; then
+    echo "$IMAGE:$tag ($digest) carries no provenance from the release pipeline of $REPO or $PRE_MOVE_REPO; refusing it." >&2
     exit 1
 fi
 
-echo "$IMAGE:$tag is $digest, attested by the release pipeline." >&2
+echo "$IMAGE:$tag is $digest, attested by the release pipeline of $verified." >&2
 echo "version=$tag"
 echo "digest=${digest#sha256:}"

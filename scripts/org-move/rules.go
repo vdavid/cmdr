@@ -10,7 +10,7 @@ import "regexp"
 var includeGlobs = []string{
 	"**/*.md", "**/*.ts", "**/*.js", "**/*.mjs", "**/*.svelte", "**/*.astro", "**/*.html", "**/*.css",
 	"**/*.go", "**/*.rs", "**/*.kt", "**/*.sh",
-	"**/*.yml", "**/*.yaml", "**/*.toml", "**/*.json", "**/*.txt",
+	"**/*.yml", "**/*.yaml", "**/*.toml", "**/*.json", "**/*.jsonc", "**/*.txt", "**/*Dockerfile",
 }
 
 type exclusion struct{ glob, why string }
@@ -27,6 +27,7 @@ var excludedPaths = []exclusion{
 	{"scripts/land/**", "asks `gh repo view` for the name; its tests cover both names"},
 	{"scripts/release-finish/**", "asks `gh repo view` for the name; its tests cover both names and pre-move signers"},
 	{"scripts/release-evidence/**", "asks `gh repo view` for the name; its fixtures are real pre-move attestations"},
+	{"scripts/released-demo.sh", "asks `gh repo view` for the name; accepts the pre-move signer for releases built before the move"},
 	{"scripts/org-move/**", "this tool names both on purpose"},
 	{"scripts/org-move.sh", "this tool names both on purpose"},
 }
@@ -58,6 +59,10 @@ type literalSwap struct{ from, to string }
 var literalSwaps = []literalSwap{
 	// A self-hosted runner's launchd service is named after the repo it registered with.
 	{"actions.runner.vdavid-cmdr.", "actions.runner.getcmdr-cmdr."},
+	// The browser demo image is a package of the account that owns the repo. Packages don't move
+	// with a transfer, so the released images are copied to the org on transfer day (the runbook).
+	{"ghcr.io/vdavid/cmdr-demo", "ghcr.io/getcmdr/cmdr-demo"},
+	{"github.com/users/vdavid/packages/container/cmdr-demo", "github.com/orgs/getcmdr/packages/container/cmdr-demo"},
 }
 
 // edit is a hand-written change the generic swap can't express: text that has to name both
@@ -117,8 +122,8 @@ var edits = []edit{
 	},
 	{
 		files: []string{"docs/guides/releasing.md"},
-		find:  "`https://getcmdr.com/changelog`). Nothing else: the app shows generic, translated text.\n- **Append, never prune.**",
-		replace: "`https://getcmdr.com/changelog`). Nothing else: the app shows generic, translated text. Write a " +
+		find:  "Nothing else: the app shows generic, translated text.\n- **Append, never prune.**",
+		replace: "Nothing else: the app shows generic, translated text. Write a " +
 			"GitHub advisory's link as `https://github.com/vdavid/cmdr/security/advisories/<id>` (it redirects): " +
 			"builds before v0.55.0 only admit that name " +
 			"(`apps/desktop/src-tauri/src/security_advisories/DETAILS.md` § The link allowlist).\n- **Append, never prune.**",

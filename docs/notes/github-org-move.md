@@ -80,7 +80,14 @@ what's identity-bound) is in the issue. Delete this note once the move is done a
    one owner, so the `vdavid` one sees nothing in the org, and failures look like plain 404s); an agent stores it as
    `GH_TOKEN` in the M1's sops store. David regenerates `LHCI_GITHUB_APP_TOKEN` for the org install of Lighthouse CI; an
    agent sets it with `gh secret set LHCI_GITHUB_APP_TOKEN -R getcmdr/cmdr`.
-8. **Agent: run the swap on fresh `main` and land it.**
+8. **Agent: copy the browser demo images to the org.** `ghcr.io/vdavid/cmdr-demo` is a package of David's account, and
+   packages don't move with the repo. Copy every tag (at least the latest release's and the pre-cutover content-keyed
+   one in `scripts/released-demo.sh`) with
+   `docker buildx imagetools create -t ghcr.io/getcmdr/cmdr-demo:<tag> ghcr.io/vdavid/cmdr-demo:<tag>`, which keeps the
+   digests, so the attestations still match. Needs `gh auth refresh -s write:packages` and `docker login ghcr.io`. Then
+   David sets github.com/orgs/getcmdr/packages/container/cmdr-demo/settings to public and gives the `cmdr` repo Actions
+   write access there. `released-demo.sh` then resolves the image under the org and accepts the pre-move signer.
+9. **Agent: run the swap on fresh `main` and land it.**
    - `WT=$(~/.claude/scripts/new-worktree.sh org-move-swap)`, then in it `./scripts/org-move.sh -cutoff "$CUTOFF"`. It
      must exit 0. Read its "Kept on the old name" section, and fix `rules.go` for anything new that's misfiled.
    - Commit the output, run `pnpm check oxfmt` (rewraps lines that grew) and commit that too, then run the lanes the
@@ -91,7 +98,7 @@ what's identity-bound) is in the issue. Delete this note once the move is done a
    - `git grep vdavid/cmdr -- ':!docs/notes/' ':!CHANGELOG.md'` lists only what the "Kept" section explains.
    - `pnpm land`. It's the first push under the org: watch CI, both `main` rulesets, Renovate, GitGuardian, and the
      website deploy webhook fire.
-9. **Resume the agents.** A session that cached the old name in a running `pnpm land` restarts it.
+10. **Resume the agents.** A session that cached the old name in a running `pnpm land` restarts it.
 
 ## Verification checklist
 
