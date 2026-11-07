@@ -5,7 +5,9 @@ use rusqlite::Connection;
 
 use super::{FinalizeOperation, FinalizeOutcome};
 use crate::store::OperationLogStoreError;
-use crate::types::{ExecutionStatus, NotRollbackableReason, RollbackState, RowRole};
+use crate::types::{
+    ExecutionStatus, NotRollbackableReason, RollbackState, RowRole, SearchCoverage, SearchCoverageReason,
+};
 
 /// Write the terminal state and return the per-`row_role` durable counts.
 pub(super) fn apply_finalize(
@@ -76,7 +78,8 @@ pub(super) fn apply_set_rollback_state(
     Ok(())
 }
 
-/// End an interrupted op in one statement: `failed`, `ended_at = started_at`, and the
+/// End an interrupted op in one statement: `failed`, `ended_at = started_at`, search
+/// coverage `top_level_only(interrupted)` (rows it never wrote are missing), and the
 /// rollback state `eligibility` names (`None` keeps what it stored). Only while it's
 /// still `queued` or `running`, so a finalize that landed first wins.
 pub(super) fn apply_end_interrupted(
@@ -90,7 +93,9 @@ pub(super) fn apply_end_interrupted(
             execution_status = ?2,
             ended_at = started_at,
             rollback_state = COALESCE(?3, rollback_state),
-            not_rollbackable_reason = CASE WHEN ?3 IS NULL THEN not_rollbackable_reason ELSE ?4 END
+            not_rollbackable_reason = CASE WHEN ?3 IS NULL THEN not_rollbackable_reason ELSE ?4 END,
+            search_coverage = ?7,
+            search_coverage_reason = ?8
          WHERE op_id = ?1 AND execution_status IN (?5, ?6)",
         rusqlite::params![
             op_id,
@@ -99,6 +104,8 @@ pub(super) fn apply_end_interrupted(
             reason.flatten().map(|r| r.as_token()),
             ExecutionStatus::Queued.as_token(),
             ExecutionStatus::Running.as_token(),
+            SearchCoverage::TopLevelOnly.as_token(),
+            SearchCoverageReason::Interrupted.as_token(),
         ],
     )?;
     Ok(())

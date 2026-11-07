@@ -998,8 +998,9 @@ op ended):
   simply aren't reversed.
 - An interrupted INVERSE ends the same way but keeps its stored state: it's never rolled back, and its original's state
   is the reconcile's call.
-- Search coverage stays as stored (`full` unless a note came): a crash can lose `search_only` leaves the op never got to
-  write, and nothing records that.
+- Search coverage becomes `top_level_only(interrupted)`: rows the op never got to write are missing, and a coverage note
+  it held never reached finalize, so it can't honestly claim `full`. The tree words a folder unit with no recorded
+  contents as `NotRecorded` off the same coverage (`tree/layout.rs`).
 - `operations` has no status index: the step scans it once per launch, as `ops_in_rolling_back` does (the table is small
   next to its items).
 

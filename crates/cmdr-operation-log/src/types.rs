@@ -173,6 +173,9 @@ token_enum! {
         VolumeNotLive => "volume_not_live",
         /// A `search_only` leaf row was dropped/errored (the completeness downgrade).
         SearchRowIncomplete => "search_row_incomplete",
+        /// A crash interrupted the operation, so rows it never got to write are
+        /// missing (the next launch ended it).
+        Interrupted => "interrupted",
     }
 }
 
@@ -380,7 +383,14 @@ mod tests {
         check!(SearchCoverage, [Full, TopLevelOnly]);
         check!(
             SearchCoverageReason,
-            [Capped, IndexAbsent, IndexStale, VolumeNotLive, SearchRowIncomplete]
+            [
+                Capped,
+                IndexAbsent,
+                IndexStale,
+                VolumeNotLive,
+                SearchRowIncomplete,
+                Interrupted
+            ]
         );
         check!(EntryType, [File, Dir]);
         check!(RowRole, [RollbackUnit, SearchOnly]);

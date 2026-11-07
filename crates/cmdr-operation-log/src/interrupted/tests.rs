@@ -7,6 +7,7 @@ use crate::OperationLog;
 use crate::store::{OperationRow, open_read_connection, operation_log_db_path, read_operation};
 use crate::types::{
     EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState, RowRole,
+    SearchCoverage, SearchCoverageReason,
 };
 use crate::writer::{FinalizeOperation, JournalItem, OpenOperation, OperationLogWriter, PruneRequest};
 
@@ -123,6 +124,11 @@ fn every_kind_ends_failed_at_its_start_with_only_the_rollback_its_rows_allow() {
             (state, reason),
             "{op_id}"
         );
+        assert_eq!(
+            (op.search_coverage, op.search_coverage_reason),
+            (SearchCoverage::TopLevelOnly, Some(SearchCoverageReason::Interrupted)),
+            "{op_id}: rows it never wrote are missing from search, and it says so"
+        );
     }
     let queued = read(&path, "queued");
     assert_eq!(queued.execution_status, ExecutionStatus::Failed);
@@ -203,7 +209,7 @@ fn a_finalize_that_landed_first_wins() {
             rollback_state: RollbackState::Rollbackable,
             not_rollbackable_reason: None,
             archive_subkind: None,
-            search_coverage: crate::types::SearchCoverage::Full,
+            search_coverage: SearchCoverage::Full,
             search_coverage_reason: None,
             ended_at: STARTED + 30,
             item_count: None,

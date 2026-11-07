@@ -17812,6 +17812,11 @@ export type SearchCoverageReason =
   | 'volumeNotLive'
   // A `search_only` leaf row was dropped/errored (the completeness downgrade).
   | 'searchRowIncomplete'
+  /**
+   *  A crash interrupted the operation, so rows it never got to write are
+   *  missing (the next launch ended it).
+   */
+  | 'interrupted'
 
 // The run couldn't run.
 export type SearchErrorEvent = {

@@ -655,8 +655,8 @@ section describe the selection; the frontend `DETAILS.md` re-entry argument ment
 - **The startup step is its own module**, `src/interrupted.rs`, beside the reconcile in `OperationLog::open`, with one
   writer message (`end_interrupted`, a no-op once the op ended). No new public item: the surface ceiling stays.
 - **No status index**: `ops_left_running` scans `operations` once per launch, as `ops_in_rolling_back` already did.
-- **An interrupted op keeps its stored search coverage** (`full`), though a crash can lose `search_only` leaves it never
-  wrote. No `SearchCoverageReason` fits, and a new token is a schema decision: left as an open question.
+- **An interrupted op's search coverage becomes `top_level_only(interrupted)`**, a new `SearchCoverageReason` token
+  (stored as `TEXT`, no constraint, so no migration; lead's call 2026-11-08): rows it never wrote are missing.
 - **Also landed**: a created folder whose files were ALL checked one by one now goes with them
   (`Selection::fully_chosen`), where it used to stay behind and leave the op partial.
 
@@ -797,6 +797,9 @@ through the house integer formatter (`formatInteger`, thousands separators) with
 - After a reversal ends, re-read the op header AND the tree (outcomes changed); toggles for rows now settled drop out in
   normalization.
 - `ModalDialog` resizing and `fillBody`: the two panes must fill, with one scroller each (the tree's own viewport).
+- **An interrupted op** (milestone 5b) reads `failed` with `searchCoverageReason: interrupted`: word it in the detail
+  pane (for example "Cmdr closed before this finished, so the log may be missing some of its items"), next to the
+  `notRollbackable` reason it may carry. Its folder units with no recorded contents already answer `NotRecorded`.
 - Strings: English only, `@key` descriptions written for translators; delete keys that die (`moreItems`, `itemsError` if
   unused) and their translations (that's removal, not translation).
 - E2E selectors: keep `data-op-id` (or similar) stable hooks so milestone 9 can address rows without positions.
