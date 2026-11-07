@@ -2135,6 +2135,62 @@
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   },
+  "fileExplorer.dropIn.sourceNameFromAppAndHost": "{name} з програми {appName} ({host})",
+  "@fileExplorer.dropIn.sourceNameFromAppAndHost": {
+    "sourceHash": "94c2e01"
+  },
+  "fileExplorer.dropIn.sourceNameFromApp": "{name} з програми {appName}",
+  "@fileExplorer.dropIn.sourceNameFromApp": {
+    "sourceHash": "c08306c"
+  },
+  "fileExplorer.dropIn.sourceNameFromHost": "{name} з сайту {host}",
+  "@fileExplorer.dropIn.sourceNameFromHost": {
+    "sourceHash": "c29d126"
+  },
+  "fileExplorer.dropIn.sourceCountFromAppAndHost": "{count, plural, one {{countText} файл} few {{countText} файли} many {{countText} файлів} other {{countText} файлу}} з програми {appName} ({host})",
+  "@fileExplorer.dropIn.sourceCountFromAppAndHost": {
+    "sourceHash": "013a1fe"
+  },
+  "fileExplorer.dropIn.sourceCountFromApp": "{count, plural, one {{countText} файл} few {{countText} файли} many {{countText} файлів} other {{countText} файлу}} з програми {appName}",
+  "@fileExplorer.dropIn.sourceCountFromApp": {
+    "sourceHash": "f1434f5"
+  },
+  "fileExplorer.dropIn.sourceCountFromHost": "{count, plural, one {{countText} файл} few {{countText} файли} many {{countText} файлів} other {{countText} файлу}} з сайту {host}",
+  "@fileExplorer.dropIn.sourceCountFromHost": {
+    "sourceHash": "8e00637"
+  },
+  "fileExplorer.dropIn.sourceCount": "{count, plural, one {{countText} перетягнутий файл} few {{countText} перетягнуті файли} many {{countText} перетягнутих файлів} other {{countText} перетягнутого файлу}}",
+  "@fileExplorer.dropIn.sourceCount": {
+    "sourceHash": "ed46fe2"
+  },
+  "fileExplorer.dropIn.receiving": "{count, plural, =1 {Отримання перетягнутого файлу…} one {Отримання {countText} перетягнутого файлу…} few {Отримання {countText} перетягнутих файлів…} many {Отримання {countText} перетягнутих файлів…} other {Отримання {countText} перетягнутого файлу…}}",
+  "@fileExplorer.dropIn.receiving": {
+    "sourceHash": "599f539"
+  },
+  "fileExplorer.dropIn.receivingFromApp": "{count, plural, =1 {Отримання перетягнутого файлу з програми {appName}…} one {Отримання {countText} перетягнутого файлу з програми {appName}…} few {Отримання {countText} перетягнутих файлів з програми {appName}…} many {Отримання {countText} перетягнутих файлів з програми {appName}…} other {Отримання {countText} перетягнутого файлу з програми {appName}…}}",
+  "@fileExplorer.dropIn.receivingFromApp": {
+    "sourceHash": "c10dca2"
+  },
+  "fileExplorer.dropIn.nothingReceived": "Програма, з якої ви перетягували, не передала файл. Перетягніть його ще раз або спершу збережіть файл у цій програмі.",
+  "@fileExplorer.dropIn.nothingReceived": {
+    "sourceHash": "6636842"
+  },
+  "fileExplorer.dropIn.nothingReceivedFromApp": "Програма {appName} не передала файл. Перетягніть його ще раз або спершу збережіть файл у програмі {appName}.",
+  "@fileExplorer.dropIn.nothingReceivedFromApp": {
+    "sourceHash": "439543b"
+  },
+  "fileExplorer.dropIn.timedOut": "Перетягнутий файл не надійшов вчасно. Перетягніть його ще раз.",
+  "@fileExplorer.dropIn.timedOut": {
+    "sourceHash": "7591ca5"
+  },
+  "fileExplorer.dropIn.noFolder": "Cmdr не вдалося підготувати місце для перетягнутого файлу. Перевірте, чи є вільне місце на диску, а тоді спробуйте ще раз.",
+  "@fileExplorer.dropIn.noFolder": {
+    "sourceHash": "ea7fb38"
+  },
+  "fileExplorer.dropIn.someMissing": "{count, plural, =1 {Один перетягнутий файл не надійшов, тому його не буде скопійовано.} one {{countText} перетягнутий файл не надійшов, тому його не буде скопійовано.} few {{countText} перетягнуті файли не надійшли, тому їх не буде скопійовано.} many {{countText} перетягнутих файлів не надійшло, тому їх не буде скопійовано.} other {{countText} перетягнутого файлу не надійшло, тому їх не буде скопійовано.}}",
+  "@fileExplorer.dropIn.someMissing": {
+    "sourceHash": "e3fbd8a"
+  },
   "fileExplorer.folderSizes.unreadable": "{count, plural, =1 {Не вдалося повністю прочитати одну папку, тож її розмір може бути неповним.} one {Не вдалося повністю прочитати # папку, тож їхні розміри можуть бути неповними.} few {Не вдалося повністю прочитати # папки, тож їхні розміри можуть бути неповними.} many {Не вдалося повністю прочитати # папок, тож їхні розміри можуть бути неповними.} other {Не вдалося повністю прочитати # папки, тож їхні розміри можуть бути неповними.}}",
   "@fileExplorer.folderSizes.unreadable": {
     "sourceHash": "ad31a56"

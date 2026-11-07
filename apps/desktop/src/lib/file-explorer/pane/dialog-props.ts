@@ -171,6 +171,8 @@ export interface TransferProgressPropsData {
   operationType: TransferOperationType
   sourcePaths: string[]
   sourceFolderPath: string
+  /** The source line in place of `sourceFolderPath` (a promised drop, `TransferDialogPropsData`). */
+  sourceDisplay?: string
   sourcePaneSide: 'left' | 'right'
   /** Not applicable for delete/trash */
   destinationPath?: string

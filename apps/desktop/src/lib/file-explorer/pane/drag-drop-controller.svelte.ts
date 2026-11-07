@@ -33,10 +33,12 @@ import {
   setModifiers,
 } from '../modifier-key-tracker.svelte'
 import { addToast } from '#lib/ui/toast/index.js'
-import { statPathsKinds, storedSpellings, resolvePathVolume } from '#lib/tauri-commands/index.js'
+import { statPathsKinds, storedSpellings, resolvePathVolume, releasePromiseDrop } from '#lib/tauri-commands/index.js'
 import { buildTransferPropsFromDroppedPaths } from './transfer-operations'
 import type { DuplicateFollowUp } from './duplicate-rename'
 import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
+import { createPromiseDropController, type ReceivedDrop } from './promise-drop-controller'
+import { canAcceptDrag, emptyDropOutcome } from './promise-drop'
 import { operationStartIsBlocked } from './operation-start-gate'
 import { passesHomeFolderGuard } from './home-folder-guard'
 import type { SelfDragIdentity } from '../drag/drag-drop'
@@ -140,6 +142,17 @@ export function createDragDropController(deps: DragDropControllerDeps) {
   let unlistenDragImageSize: UnlistenFn | undefined
   let unlistenDragModifiers: UnlistenFn | undefined
 
+  // Drops from other apps that hand over promises, not files (a browser image).
+  // Their files arrive after wry's drop, then take the normal Copy path below.
+  const promiseDrops = createPromiseDropController({
+    openTransfer: (drop: ReceivedDrop) => {
+      void handleFileDrop(drop.paths, drop.target.pane, drop.target.folderPath, 'copy', undefined, {
+        dropId: drop.dropId,
+        sourceDisplay: drop.sourceDisplay,
+      })
+    },
+  })
+
   const inactiveAutoScrollResult: DragAutoScrollFrameResult = { active: false, scrolled: false }
 
   /**
@@ -180,6 +193,11 @@ export function createDragDropController(deps: DragDropControllerDeps) {
    *   (`statPathsKinds`) runs in one batched IPC so the dialog and completion
    *   toast report the real file/folder split; it degrades to all-unknown on a
    *   slow mount, so it never blocks the drop.
+   * - **Promised drop** (`promised` set): files another app handed over into a
+   *   drop folder (`promise-drop-controller.ts`). They take the external path,
+   *   and the dialog shows `promised.sourceDisplay` instead of the folder. Every
+   *   refusal below lets the folder go; a started copy owns it from there
+   *   (`src-tauri/src/drop_in/CLAUDE.md`).
    */
   async function handleFileDrop(
     paths: string[],
@@ -187,13 +205,27 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     targetFolderPath?: string,
     operation: TransferOperationType = 'copy',
     recordedIdentity?: SelfDragIdentity,
+    promised?: { dropId: string; sourceDisplay: string },
   ) {
+    const opened = await openDropTransfer(paths, targetPane, targetFolderPath, operation, recordedIdentity, promised)
+    if (!opened && promised) void releasePromiseDrop(promised.dropId)
+  }
+
+  /** {@link handleFileDrop}'s body. Returns whether the dialog opened. */
+  async function openDropTransfer(
+    paths: string[],
+    targetPane: 'left' | 'right',
+    targetFolderPath: string | undefined,
+    operation: TransferOperationType,
+    recordedIdentity: SelfDragIdentity | undefined,
+    promised: { dropId: string; sourceDisplay: string } | undefined,
+  ): Promise<boolean> {
     // For a recorded self-drag, the source paths come from app state, never the
     // pasteboard. The dropped `paths` are only used for hit-testing upstream.
     const sourcePaths = recordedIdentity?.sourcePaths ?? paths
-    if (sourcePaths.length === 0) return
+    if (sourcePaths.length === 0) return false
 
-    if (operationStartIsBlocked()) return
+    if (operationStartIsBlocked()) return false
 
     const destVolId = access.getPaneVolumeId(targetPane)
     // The real drop target: a hovered folder row (`targetFolderPath`, which can be
@@ -206,7 +238,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     if (!guard.ok) {
       if (guard.toast) addToast(guard.toast.message, { level: guard.toast.level })
       else dialogs.showAlert(guard.alert.title, guard.alert.message)
-      return
+      return false
     }
 
     // A move of the person's own home folder (or a folder holding it) is refused in
@@ -215,7 +247,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
       operation === 'move' && !(await passesHomeFolderGuard(dialogs, { sources, volumeId, action: 'move' }))
 
     if (recordedIdentity) {
-      if (await refusedForHome(recordedIdentity.sourceVolumeId, sourcePaths)) return
+      if (await refusedForHome(recordedIdentity.sourceVolumeId, sourcePaths)) return false
       // In-app self-drag: trust the recorded identity wholesale; skip the
       // resolver and the local kind probe (a volume-relative path can't be
       // stat'd here). The approximate count shape is the honest fallback.
@@ -232,7 +264,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
         duplicateFollowUp: DROP_DUPLICATE_FOLLOW_UP,
         initiator: 'user',
       })
-      return
+      return true
     }
 
     const sourceVolumeId = await resolveSourceVolumeId(sourcePaths, access.getVolumes(), resolveVolumeForPath)
@@ -250,7 +282,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     // direct SMB connection may store another way. Asked once, here, so the
     // scan, the transfer, and its journal all carry the volume's own spelling.
     const storedPaths = await storedSpellings(sourceVolumeId, sourcePaths)
-    if (await refusedForHome(sourceVolumeId, storedPaths)) return
+    if (await refusedForHome(sourceVolumeId, storedPaths)) return false
 
     dialogs.showTransfer({
       ...buildTransferPropsFromDroppedPaths(
@@ -264,7 +296,9 @@ export function createDragDropController(deps: DragDropControllerDeps) {
       ),
       duplicateFollowUp: DROP_DUPLICATE_FOLLOW_UP,
       initiator: 'user',
+      ...(promised ? { sourceDisplay: promised.sourceDisplay, promiseDropId: promised.dropId } : {}),
     })
+    return true
   }
 
   /** Extracts the last path component as a display name. */
@@ -448,8 +482,11 @@ export function createDragDropController(deps: DragDropControllerDeps) {
 
     // Block drops onto the source itself or into one of its descendants.
     const effectiveTarget = targetPathOf(resolved)
+    // A drag carrying nothing droppable (plain text, a bare link) lights nothing
+    // up: same treatment as a drop onto its own source.
     const isInvalidSelfDrop =
-      effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, currentDragSourcePaths)
+      !canAcceptDrag(promiseDrops.payloadKind()) ||
+      (effectiveTarget !== null && isInvalidSelfDescendantDrop(effectiveTarget, currentDragSourcePaths))
     // One modifier read for the highlight, the overlay, and the resolved op, so
     // the highlight can only promise what `handleDrop` will actually do.
     const modifiers = getModifierState()
@@ -527,6 +564,13 @@ export function createDragDropController(deps: DragDropControllerDeps) {
       reportDropReceived(origin, outcome, operation, paths.length)
     }
 
+    // An external drop with no paths: file promises (a browser image), whose files
+    // arrive later, or nothing usable at all. Never a `transfer` here.
+    if (paths.length === 0 && !recordedIdentity) {
+      handleEmptyExternalDrop(resolved, report)
+      return
+    }
+
     if (!resolved) {
       report('noTarget')
       return
@@ -553,6 +597,20 @@ export function createDragDropController(deps: DragDropControllerDeps) {
       resolved.type === 'folder' ? resolved.path : undefined,
       operation,
       recordedIdentity,
+    )
+  }
+
+  /**
+   * An external drop that carried no paths. A promise drop (a browser image) hands
+   * its target to `promiseDrops`, which opens the Copy dialog once the files land
+   * (or lets them go when it hit no target); anything else had nothing usable.
+   */
+  function handleEmptyExternalDrop(resolved: ResolvedDropTarget, report: (outcome: DropOutcome) => void) {
+    const outcome = emptyDropOutcome(promiseDrops.payloadKind())
+    report(resolved ? outcome : 'noTarget')
+    if (outcome !== 'promise') return
+    promiseDrops.dropped(
+      resolved ? { pane: resolved.paneId, folderPath: resolved.type === 'folder' ? resolved.path : undefined } : null,
     )
   }
 
@@ -610,6 +668,8 @@ export function createDragDropController(deps: DragDropControllerDeps) {
 
   /** Registers the three native-drag Tauri listeners. Called from the component's `onMount`. */
   async function init(): Promise<void> {
+    await promiseDrops.init()
+
     // Listen for drag image size from native swizzle (macOS).
     // Fires before the Tauri drag enter event, so the flag is ready when handleDragEnter runs.
     unlistenDragImageSize = await onDragImageSize((payload) => {
@@ -660,6 +720,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
         // record can't be consumed unless re-entry restores the flag.
         clearSelfDragIdentity()
         void endSelfDragSession()
+        promiseDrops.endDrag()
         externalDragHasLargeImage = false
         currentDragSourcePaths = []
         lastDragPosition = null
@@ -674,6 +735,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
         // Do NOT call endSelfDragSession() here; the native swizzle needs
         // SELF_DRAG_ACTIVE + rich image path to swap images on window exit.
         // State is cleaned up when startDrag resolves (finally block) or on drop.
+        promiseDrops.endDrag()
         externalDragHasLargeImage = false
         currentDragSourcePaths = []
         lastDragPosition = null
@@ -689,6 +751,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     unlistenDragImageSize?.()
     unlistenDragModifiers?.()
     unlistenDragDrop?.()
+    promiseDrops.cleanup()
     stopDragAutoScroll()
     stopModifierTracking()
   }

@@ -888,6 +888,12 @@
     "forms": "the setting label says 直接連接 (settings.network.directSmbConnection.label)",
     "sources": "catalog fileExplorer.navigation.useDirectConnection, fileExplorer.pane.connectedDirectlyToast"
   },
+  "dropped-file": {
+    "accept": ["拖放的"],
+    "chosen": "拖放的檔案",
+    "confidence": "high",
+    "sources": "GNOME Nautilus zh-TW (Dropped Image → 拖放的影像; the file that you dropped → 拖放的檔案)"
+  },
   "finder-extension": {
     "chosen": "Finder 延伸功能",
     "accept": ["延伸功能"],

@@ -3167,6 +3167,111 @@
       "name": "the one item’s file or folder name, uncontrolled (any length, any language); only used when exactly one item didn’t arrive"
     }
   },
+  "fileExplorer.dropIn.sourceNameFromAppAndHost": "{name} from {appName} ({host})",
+  "@fileExplorer.dropIn.sourceNameFromAppAndHost": {
+    "description": "The source line of the Copy dialog after the user dropped a file from another app that doesn’t hand over real files (an image dragged out of Chrome or Safari, a Mail attachment). Cmdr received the file into a temporary folder, so instead of a folder path the line says what the file is and where it came from. Example: “cat.jpg from Google Chrome (example.com)”.",
+    "placeholders": {
+      "name": "the received file’s name, uncontrolled (any length, any language)",
+      "appName": "the app the user dragged from, as macOS names it (for example Google Chrome, Safari, Mail)",
+      "host": "the host name of the web address the image came from (for example example.com)"
+    }
+  },
+  "fileExplorer.dropIn.sourceNameFromApp": "{name} from {appName}",
+  "@fileExplorer.dropIn.sourceNameFromApp": {
+    "description": "Like fileExplorer.dropIn.sourceNameFromAppAndHost, when there’s no web address (for example a Mail attachment). Example: “invoice.pdf from Mail”.",
+    "placeholders": {
+      "name": "the received file’s name, uncontrolled (any length, any language)",
+      "appName": "the app the user dragged from, as macOS names it"
+    }
+  },
+  "fileExplorer.dropIn.sourceNameFromHost": "{name} from {host}",
+  "@fileExplorer.dropIn.sourceNameFromHost": {
+    "description": "Like fileExplorer.dropIn.sourceNameFromAppAndHost, when Cmdr couldn’t tell which app the drag came from but knows the web address. Example: “cat.jpg from example.com”.",
+    "placeholders": {
+      "name": "the received file’s name, uncontrolled (any length, any language)",
+      "host": "the host name of the web address (for example example.com)"
+    }
+  },
+  "fileExplorer.dropIn.sourceCountFromAppAndHost": "{count, plural, one {{countText} file} other {{countText} files}} from {appName} ({host})",
+  "@fileExplorer.dropIn.sourceCountFromAppAndHost": {
+    "description": "The Copy dialog’s source line for a drop of several files from another app that doesn’t hand over real files, see fileExplorer.dropIn.sourceNameFromAppAndHost. Example: “3 files from Safari (example.com)”.",
+    "placeholders": {
+      "count": "how many files were received (picks the plural form)",
+      "countText": "the same number, formatted for display (for example 1,234)",
+      "appName": "the app the user dragged from",
+      "host": "the host name of the web address"
+    }
+  },
+  "fileExplorer.dropIn.sourceCountFromApp": "{count, plural, one {{countText} file} other {{countText} files}} from {appName}",
+  "@fileExplorer.dropIn.sourceCountFromApp": {
+    "description": "Like fileExplorer.dropIn.sourceCountFromAppAndHost, with no web address. Example: “3 files from Mail”.",
+    "placeholders": {
+      "count": "how many files were received (picks the plural form)",
+      "countText": "the same number, formatted for display",
+      "appName": "the app the user dragged from"
+    }
+  },
+  "fileExplorer.dropIn.sourceCountFromHost": "{count, plural, one {{countText} file} other {{countText} files}} from {host}",
+  "@fileExplorer.dropIn.sourceCountFromHost": {
+    "description": "Like fileExplorer.dropIn.sourceCountFromAppAndHost, when the app is unknown. Example: “3 files from example.com”.",
+    "placeholders": {
+      "count": "how many files were received (picks the plural form)",
+      "countText": "the same number, formatted for display",
+      "host": "the host name of the web address"
+    }
+  },
+  "fileExplorer.dropIn.sourceCount": "{count, plural, one {{countText} dropped file} other {{countText} dropped files}}",
+  "@fileExplorer.dropIn.sourceCount": {
+    "description": "Like fileExplorer.dropIn.sourceCountFromAppAndHost, when neither the app nor a web address is known. Example: “3 dropped files”.",
+    "placeholders": {
+      "count": "how many files were received (picks the plural form)",
+      "countText": "the same number, formatted for display"
+    }
+  },
+  "fileExplorer.dropIn.receiving": "{count, plural, one {Getting the dropped file…} other {Getting {countText} dropped files…}}",
+  "@fileExplorer.dropIn.receiving": {
+    "description": "Progress toast while Cmdr waits for another app to hand over what the user dropped (Chrome may still be downloading a big image). It disappears when the Copy dialog opens.",
+    "placeholders": {
+      "count": "how many files are on their way (picks the plural form)",
+      "countText": "the same number, formatted for display"
+    }
+  },
+  "fileExplorer.dropIn.receivingFromApp": "{count, plural, one {Getting the dropped file from {appName}…} other {Getting {countText} dropped files from {appName}…}}",
+  "@fileExplorer.dropIn.receivingFromApp": {
+    "description": "Like fileExplorer.dropIn.receiving, naming the app the drag came from. Example: “Getting the dropped file from Google Chrome…”.",
+    "placeholders": {
+      "count": "how many files are on their way (picks the plural form)",
+      "countText": "the same number, formatted for display",
+      "appName": "the app the user dragged from"
+    }
+  },
+  "fileExplorer.dropIn.nothingReceived": "The app you dragged from didn’t hand over the file. Try dragging it again, or save it from there first.",
+  "@fileExplorer.dropIn.nothingReceived": {
+    "description": "Toast after the user dropped something from another app (an image from a browser, a Mail attachment) and that app gave Cmdr nothing. Avoid the words “error” and “failed”."
+  },
+  "fileExplorer.dropIn.nothingReceivedFromApp": "{appName} didn’t hand over the file. Try dragging it again, or save it from {appName} first.",
+  "@fileExplorer.dropIn.nothingReceivedFromApp": {
+    "description": "Like fileExplorer.dropIn.nothingReceived, naming the app. Example: “Google Chrome didn’t hand over the file.” Avoid the words “error” and “failed”.",
+    "placeholders": {
+      "appName": "the app the user dragged from"
+    }
+  },
+  "fileExplorer.dropIn.timedOut": "The dropped file didn’t arrive in time. Try dragging it again.",
+  "@fileExplorer.dropIn.timedOut": {
+    "description": "Toast after Cmdr waited ten minutes for another app to hand over a dropped file and gave up. Avoid the words “error” and “failed”."
+  },
+  "fileExplorer.dropIn.noFolder": "Cmdr couldn’t make room for the dropped file. Check that your disk has free space, then try again.",
+  "@fileExplorer.dropIn.noFolder": {
+    "description": "Toast when Cmdr couldn’t create the temporary folder a dropped file from another app goes into (usually a full disk). Avoid the words “error” and “failed”."
+  },
+  "fileExplorer.dropIn.someMissing": "{count, plural, one {One dropped file didn’t arrive, so it’s not in this copy.} other {{countText} dropped files didn’t arrive, so they’re not in this copy.}}",
+  "@fileExplorer.dropIn.someMissing": {
+    "description": "Warning toast shown with the Copy dialog when another app handed over only some of the files the user dropped. Avoid the words “error” and “failed”.",
+    "placeholders": {
+      "count": "how many files didn’t arrive (picks the plural form)",
+      "countText": "the same number, formatted for display"
+    }
+  },
   "fileExplorer.folderSizes.unreadable": "{count, plural, one {Couldn’t fully read # folder, so its size may be incomplete.} other {Couldn’t fully read # folders, so their sizes may be incomplete.}}",
   "@fileExplorer.folderSizes.unreadable": {
     "description": "Info toast after Calculate folder sizes (⌥⇧⏎, or Space on a folder) when some folders, or parts of them, couldn't be read (no permission, or gone). A partly read folder shows a lower bound (≥); a wholly unreadable one keeps whatever it showed before (an older size, or no size). Either way its size may be incomplete, so don't say it's missing. {count} is how many folders. The singular branch is for exactly one folder: in a language whose `one` category also covers 21, 31, …, use an `=1` arm for the singular wording.",

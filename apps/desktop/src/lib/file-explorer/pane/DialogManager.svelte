@@ -167,6 +167,7 @@
                 fileCount={transferDialogProps.fileCount}
                 folderCount={transferDialogProps.folderCount}
                 sourceFolderPath={transferDialogProps.sourceFolderPath}
+                sourceDisplay={transferDialogProps.sourceDisplay}
                 sourceVolumeId={transferDialogProps.sourceVolumeId}
                 destVolumeId={transferDialogProps.destVolumeId}
                 presetOnConflict={transferDialogProps.presetOnConflict}
@@ -209,6 +210,7 @@
             operationType={transferProgressProps.operationType}
             sourcePaths={transferProgressProps.sourcePaths}
             sourceFolderPath={transferProgressProps.sourceFolderPath}
+            sourceDisplay={transferProgressProps.sourceDisplay}
             destinationPath={transferProgressProps.destinationPath}
             destinationName={transferProgressProps.destinationName}
             direction={transferProgressProps.direction}

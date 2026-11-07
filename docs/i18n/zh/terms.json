@@ -757,6 +757,12 @@
     "forms": "noun and verb 直接连接 (建立直接连接, 直接连接到 {server}); asking for one 请求直接连接到一个共享",
     "sources": "catalog fileExplorer.pane.directConnectionUnavailableToast, fileExplorer.network.osMountFallback.message"
   },
+  "dropped-file": {
+    "accept": ["拖放的"],
+    "chosen": "拖放的文件",
+    "confidence": "high",
+    "sources": "GNOME Nautilus zh-CN (Dropped Image → 拖放的图像; the file that you dropped → 拖放的文件)"
+  },
   "finder-extension": {
     "chosen": "Finder 扩展",
     "accept": ["扩展"],

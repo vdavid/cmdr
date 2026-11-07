@@ -518,6 +518,12 @@
       "search.coverage.unnamedDrive": "the fallback stands for a drive or a server: toto umístění"
     }
   },
+  "dropped-file": {
+    "accept": ["přetažen"],
+    "chosen": "přetažený soubor",
+    "confidence": "tentative",
+    "sources": "GNOME Nautilus (Dropped Image → Vložený obrázek; the file that you dropped → který jste pustili); no macOS or Microsoft string; přetažený follows the catalog's drag ruling (přetáhnout)"
+  },
   "duplicate": {
     "chosen": "duplikovat",
     "accept": ["duplik"],

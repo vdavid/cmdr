@@ -85,6 +85,8 @@
         fileCount: number
         folderCount: number
         sourceFolderPath: string
+        /** Shown in place of `sourceFolderPath` when that path means nothing to the user (a drop from another app). */
+        sourceDisplay?: string
         /** Source volume ID (like "root", "mtp-336592896:65537") */
         sourceVolumeId: string
         /** Destination volume ID */
@@ -117,6 +119,7 @@
         fileCount,
         folderCount,
         sourceFolderPath,
+        sourceDisplay,
         sourceVolumeId,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Part of Props interface, used by parent
         destVolumeId,
@@ -793,7 +796,10 @@
              it's too long for the row (the tail carries the meaning). -->
         <SectionCard label={tString('fileOperations.transferDialog.sourceGroupTitle')}>
             <!-- The action writes the text and carries the full path as its `title`. -->
-            <div class="source-path" use:useShortenMiddle={{ text: sourceFolderPath, preferBreakAt: '/' }}></div>
+            <div
+                class="source-path"
+                use:useShortenMiddle={{ text: sourceDisplay ?? sourceFolderPath, preferBreakAt: sourceDisplay ? ' ' : '/' }}
+            ></div>
         </SectionCard>
 
         <!-- Where the items go: volume, then the editable path on that volume. -->

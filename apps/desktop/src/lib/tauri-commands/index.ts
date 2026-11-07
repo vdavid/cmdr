@@ -660,7 +660,18 @@ export {
 export { onDirectoryDiff, onDirectoryDeleted } from './directory-watcher'
 
 // Native drag events
-export { onDragImageSize, onDragModifiers, onDragOutSessionStarted, onDragOutSessionComplete } from './native-drag'
+export {
+  onDragImageSize,
+  onDragModifiers,
+  onDragOutSessionStarted,
+  onDragOutSessionComplete,
+  onDragPayloadKind,
+  onPromiseDropStarted,
+  onPromiseDropReady,
+  onPromiseDropFailed,
+  releasePromiseDrop,
+} from './native-drag'
+export type { DragPayloadKind, DropSource, PromiseDropFailure } from '#lib/ipc/bindings.js'
 
 // Quick Look events
 export { onQuickLookKey, onQuickLookClosed } from './quick-look'

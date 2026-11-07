@@ -845,6 +845,12 @@
     "confidence": "high",
     "sources": "catalog (fileExplorer.pane.directConnectionUnavailableToast, fileExplorer.navigation.connectingDirectly, fileExplorer.navigation.useDirectConnection)"
   },
+  "dropped-file": {
+    "accept": ["abgelegte"],
+    "chosen": "abgelegte Datei",
+    "confidence": "high",
+    "sources": "GNOME Nautilus (The file that you dropped → Die abgelegte Datei); matches the drag ruling's accepted ablegen"
+  },
   "finder-extension": {
     "chosen": "Finder-Erweiterung",
     "accept": ["Erweiterung"],

@@ -1516,6 +1516,12 @@
     "confidence": "high",
     "sources": "macOS Finder (AL8 Eject → Извлечь диск; Hard disks → Жесткие диски; NE79 Том «^0» используется); Total Commander (жёсткий диск, Сетевой диск)"
   },
+  "dropped-file": {
+    "accept": ["перетянут"],
+    "chosen": "перетянутый файл",
+    "confidence": "tentative",
+    "sources": "GNOME Nautilus (Dropped Image → Перенесенное изображение; the file that you dropped → Файл, который вы перетащили); перетянутый follows the catalog's drag ruling (перетянуть, macOS), перетащ is prose-only there"
+  },
   "duplicate": {
     "chosen": "Дублировать",
     "accept": ["дублир", "дубликат"],

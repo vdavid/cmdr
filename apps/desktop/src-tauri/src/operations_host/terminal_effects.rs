@@ -31,6 +31,8 @@ pub(crate) trait TerminalEffects {
     fn retain_failure(&self, event: &WriteErrorEvent);
     /// The pane's free-space readout re-reads purgeable space on its next poll.
     fn expect_space_change(&self);
+    /// A promised drop's folder the operation read from goes (`drop_in/folders.rs`).
+    fn release_drop_folder(&self, operation_id: &str);
 }
 
 /// The production effects, retaining failures on `operations` (`None` only
@@ -91,9 +93,13 @@ impl TerminalEffects for AppTerminalEffects<'_> {
         #[cfg(target_os = "macos")]
         cmdr_local::live_space::expect_space_change();
     }
+
+    fn release_drop_folder(&self, operation_id: &str) {
+        crate::drop_in::folders::release_for_operation(operation_id);
+    }
 }
 
-/// `write-complete`: analytics, then the ring, then the emit.
+/// `write-complete`: analytics, then the ring, the drop-folder release, then the emit.
 pub(crate) fn complete(fx: &impl TerminalEffects, event: WriteCompleteEvent, emit: impl FnOnce(WriteCompleteEvent)) {
     // Categorical only (op, a count bucket, a bool); never names or paths. Fires
     // before the emit so it can read the event the emit moves.
@@ -102,16 +108,20 @@ pub(crate) fn complete(fx: &impl TerminalEffects, event: WriteCompleteEvent, emi
     // `listing_errors` uses), since the manager removes the op before
     // `operations-changed` could carry a terminal status.
     fx.record_terminal(&event.operation_id, event.operation_type, TerminalStatus::Completed);
+    // The copy out of a promised drop's folder is done with it.
+    fx.release_drop_folder(&event.operation_id);
     emit(event);
 }
 
-/// `write-cancelled`: the ring, then the emit.
+/// `write-cancelled`: the ring, the drop-folder release, then the emit.
 pub(crate) fn cancelled(fx: &impl TerminalEffects, event: WriteCancelledEvent, emit: impl FnOnce(WriteCancelledEvent)) {
     fx.record_terminal(&event.operation_id, event.operation_type, TerminalStatus::Cancelled);
+    fx.release_drop_folder(&event.operation_id);
     emit(event);
 }
 
-/// `write-error`: the ring, the `warn!`, the retained failure, then the emit.
+/// `write-error`: the ring, the `warn!`, the retained failure, then the emit. A failed
+/// copy KEEPS its drop folder, so the error dialog's Retry still finds the files.
 pub(crate) fn error(fx: &impl TerminalEffects, event: WriteErrorEvent, emit: impl FnOnce(WriteErrorEvent)) {
     fx.record_terminal(&event.operation_id, event.operation_type, TerminalStatus::Failed);
     fx.warn_failure(&event);

@@ -2140,6 +2140,62 @@
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   },
+  "fileExplorer.dropIn.sourceNameFromAppAndHost": "{name} z aplikace {appName} ({host})",
+  "@fileExplorer.dropIn.sourceNameFromAppAndHost": {
+    "sourceHash": "94c2e01"
+  },
+  "fileExplorer.dropIn.sourceNameFromApp": "{name} z aplikace {appName}",
+  "@fileExplorer.dropIn.sourceNameFromApp": {
+    "sourceHash": "c08306c"
+  },
+  "fileExplorer.dropIn.sourceNameFromHost": "{name} z webu {host}",
+  "@fileExplorer.dropIn.sourceNameFromHost": {
+    "sourceHash": "c29d126"
+  },
+  "fileExplorer.dropIn.sourceCountFromAppAndHost": "{count, plural, one {{countText} soubor} few {{countText} soubory} many {{countText} souboru} other {{countText} souborů}} z aplikace {appName} ({host})",
+  "@fileExplorer.dropIn.sourceCountFromAppAndHost": {
+    "sourceHash": "013a1fe"
+  },
+  "fileExplorer.dropIn.sourceCountFromApp": "{count, plural, one {{countText} soubor} few {{countText} soubory} many {{countText} souboru} other {{countText} souborů}} z aplikace {appName}",
+  "@fileExplorer.dropIn.sourceCountFromApp": {
+    "sourceHash": "f1434f5"
+  },
+  "fileExplorer.dropIn.sourceCountFromHost": "{count, plural, one {{countText} soubor} few {{countText} soubory} many {{countText} souboru} other {{countText} souborů}} z webu {host}",
+  "@fileExplorer.dropIn.sourceCountFromHost": {
+    "sourceHash": "8e00637"
+  },
+  "fileExplorer.dropIn.sourceCount": "{count, plural, one {{countText} přetažený soubor} few {{countText} přetažené soubory} many {{countText} přetaženého souboru} other {{countText} přetažených souborů}}",
+  "@fileExplorer.dropIn.sourceCount": {
+    "sourceHash": "ed46fe2"
+  },
+  "fileExplorer.dropIn.receiving": "{count, plural, one {Přebírá se přetažený soubor…} few {Přebírají se {countText} přetažené soubory…} many {Přebírá se {countText} přetaženého souboru…} other {Přebírá se {countText} přetažených souborů…}}",
+  "@fileExplorer.dropIn.receiving": {
+    "sourceHash": "599f539"
+  },
+  "fileExplorer.dropIn.receivingFromApp": "{count, plural, one {Přebírá se přetažený soubor z aplikace {appName}…} few {Přebírají se {countText} přetažené soubory z aplikace {appName}…} many {Přebírá se {countText} přetaženého souboru z aplikace {appName}…} other {Přebírá se {countText} přetažených souborů z aplikace {appName}…}}",
+  "@fileExplorer.dropIn.receivingFromApp": {
+    "sourceHash": "c10dca2"
+  },
+  "fileExplorer.dropIn.nothingReceived": "Aplikace, ze které jste přetahovali, soubor nepředala. Zkuste ho přetáhnout znovu, nebo ho tam nejdřív uložte.",
+  "@fileExplorer.dropIn.nothingReceived": {
+    "sourceHash": "6636842"
+  },
+  "fileExplorer.dropIn.nothingReceivedFromApp": "Aplikace {appName} soubor nepředala. Zkuste ho přetáhnout znovu, nebo ho nejdřív uložte z aplikace {appName}.",
+  "@fileExplorer.dropIn.nothingReceivedFromApp": {
+    "sourceHash": "439543b"
+  },
+  "fileExplorer.dropIn.timedOut": "Přetažený soubor nedorazil včas. Zkuste ho přetáhnout znovu.",
+  "@fileExplorer.dropIn.timedOut": {
+    "sourceHash": "7591ca5"
+  },
+  "fileExplorer.dropIn.noFolder": "Cmdr nemohl pro přetažený soubor připravit místo. Zkontrolujte, že je na disku volné místo, a zkuste to znovu.",
+  "@fileExplorer.dropIn.noFolder": {
+    "sourceHash": "ea7fb38"
+  },
+  "fileExplorer.dropIn.someMissing": "{count, plural, one {Jeden přetažený soubor nedorazil, takže se nezkopíruje.} few {{countText} přetažené soubory nedorazily, takže se nezkopírují.} many {{countText} přetaženého souboru nedorazilo, takže se nezkopírují.} other {{countText} přetažených souborů nedorazilo, takže se nezkopírují.}}",
+  "@fileExplorer.dropIn.someMissing": {
+    "sourceHash": "e3fbd8a"
+  },
   "fileExplorer.folderSizes.unreadable": "{count, plural, one {# složku se nepodařilo úplně přečíst, takže její velikost může být neúplná.} few {# složky se nepodařilo úplně přečíst, takže jejich velikosti můžou být neúplné.} many {# složky se nepodařilo úplně přečíst, takže jejich velikosti můžou být neúplné.} other {# složek se nepodařilo úplně přečíst, takže jejich velikosti můžou být neúplné.}}",
   "@fileExplorer.folderSizes.unreadable": {
     "sourceHash": "ad31a56"

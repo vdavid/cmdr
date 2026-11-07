@@ -381,6 +381,8 @@ objc2-app-kit = { version = "0.3", features = [
     # File promises (drag out from MTP/SMB panes): NSFilePromiseProvider +
     # its delegate's writePromiseToURL:completionHandler: (block2 completion).
     "NSFilePromiseProvider", "block2",
+    # Receiving file promises dropped INTO Cmdr (a browser image, a Mail attachment): `drop_in/macos.rs`.
+    "NSFilePromiseReceiver",
     # TIFF→PNG conversion for paste-clipboard-as-file (NSBitmapImageRep +
     # representationUsingType:properties:); NSImageRep is its parent class.
     "NSBitmapImageRep", "NSImageRep",

@@ -178,6 +178,20 @@ pub fn set_self_drag_resolved_op(operation: String) {
 #[specta::specta]
 pub fn set_self_drag_resolved_op(_operation: String) {}
 
+/// Lets a promised drop's folder go (`drop_in/folders.rs`): its transfer dialog was
+/// cancelled, or the drop hit no target. A folder a started copy reads from stays
+/// until that copy ends. A few local removals, so the write tier's 5 s.
+#[tauri::command]
+#[specta::specta]
+pub async fn release_promise_drop(drop_id: String) {
+    // Nothing to release (claimed, or already gone) is the normal no-op, so the answer
+    // goes nowhere: the frontend has nothing to say about it either way.
+    let _released = cmdr_fs::deadline::blocking_with_timeout(std::time::Duration::from_secs(5), false, move || {
+        crate::drop_in::folders::release_drop(&drop_id)
+    })
+    .await;
+}
+
 #[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;

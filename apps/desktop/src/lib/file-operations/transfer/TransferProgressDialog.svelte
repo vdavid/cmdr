@@ -67,6 +67,8 @@
         /** Started only. */
         sourcePaths?: string[]
         sourceFolderPath: string
+        /** Shown in place of `sourceFolderPath` when that path means nothing to the user (a drop from another app). */
+        sourceDisplay?: string
         /** Destination path (not applicable for delete/trash) */
         destinationPath?: string
         destinationName?: string
@@ -129,6 +131,7 @@
         operationType,
         sourcePaths = [],
         sourceFolderPath,
+        sourceDisplay,
         destinationPath,
         destinationName,
         direction,
@@ -200,7 +203,7 @@
     const sourceVolume = $derived(volumes.find((v) => v.id === sourceVolumeId))
     const destVolume = $derived(volumes.find((v) => v.id === destVolumeId))
     const sourceLabel = $derived(
-        deriveTransferLabel(sourceFolderPath, sourceVolume?.path ?? '/', sourceVolume?.name ?? ''),
+        sourceDisplay ?? deriveTransferLabel(sourceFolderPath, sourceVolume?.path ?? '/', sourceVolume?.name ?? ''),
     )
     const destinationLabel = $derived(
         deriveTransferLabel(destinationPath ?? '/', destVolume?.path ?? '/', destVolume?.name ?? ''),
@@ -696,7 +699,7 @@
         {#if showDirection && destinationPath}
             <DirectionIndicator
                 id={DIRECTION_ID}
-                sourcePath={sourceFolderPath}
+                sourcePath={sourceDisplay ?? sourceFolderPath}
                 {destinationPath}
                 {direction}
                 {sourceLabel}
@@ -744,7 +747,7 @@
 
             <div class="scan-wait-section">
                 <ScanPhaseBody
-                    {sourceFolderPath}
+                    sourceFolderPath={sourceDisplay ?? sourceFolderPath}
                     scanFilesFound={scan.filesFound}
                     scanDirsFound={scan.dirsFound}
                     scanBytesFound={scan.bytesFound}

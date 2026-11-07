@@ -316,7 +316,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `editor_opened` (frontend, same file, `file.edit`): no props. F4 hands the file to the OS's text editor (`open -t`),
   so nothing downstream can count it, and the file's name and extension are exactly what must never cross.
 - `drop_received` (frontend, `file-explorer/drag/drag-analytics.ts`, from `pane/drag-drop-controller.svelte.ts`
-  `handleDrop`): `origin` (`self` / `external`), `outcome` (`transfer` / `noTarget` / `samePane` / `selfDescendant`),
+  `handleDrop`): `origin` (`self` / `external`), `outcome` (`transfer` / `noTarget` / `samePane` / `selfDescendant` / `promise`, another app's file promises whose Copy dialog opens once they land / `nothingUsable`, an external drop with nothing to make a file from),
   `op` (`move` / `copy`), `item_count` bucket. **This is what makes drag readable as an INPUT PATH**:
   `file_transfer_completed` can't say how an operation was started, because by the time it settles nothing remembers,
   so `drop_received{outcome: transfer}` against the transfer total is the split between dragging and the keyboard.

@@ -2152,6 +2152,62 @@
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   },
+  "fileExplorer.dropIn.sourceNameFromAppAndHost": "{name} uit {appName} ({host})",
+  "@fileExplorer.dropIn.sourceNameFromAppAndHost": {
+    "sourceHash": "94c2e01"
+  },
+  "fileExplorer.dropIn.sourceNameFromApp": "{name} uit {appName}",
+  "@fileExplorer.dropIn.sourceNameFromApp": {
+    "sourceHash": "c08306c"
+  },
+  "fileExplorer.dropIn.sourceNameFromHost": "{name} van {host}",
+  "@fileExplorer.dropIn.sourceNameFromHost": {
+    "sourceHash": "c29d126"
+  },
+  "fileExplorer.dropIn.sourceCountFromAppAndHost": "{count, plural, one {{countText} bestand} other {{countText} bestanden}} uit {appName} ({host})",
+  "@fileExplorer.dropIn.sourceCountFromAppAndHost": {
+    "sourceHash": "013a1fe"
+  },
+  "fileExplorer.dropIn.sourceCountFromApp": "{count, plural, one {{countText} bestand} other {{countText} bestanden}} uit {appName}",
+  "@fileExplorer.dropIn.sourceCountFromApp": {
+    "sourceHash": "f1434f5"
+  },
+  "fileExplorer.dropIn.sourceCountFromHost": "{count, plural, one {{countText} bestand} other {{countText} bestanden}} van {host}",
+  "@fileExplorer.dropIn.sourceCountFromHost": {
+    "sourceHash": "8e00637"
+  },
+  "fileExplorer.dropIn.sourceCount": "{count, plural, one {{countText} gesleept bestand} other {{countText} gesleepte bestanden}}",
+  "@fileExplorer.dropIn.sourceCount": {
+    "sourceHash": "ed46fe2"
+  },
+  "fileExplorer.dropIn.receiving": "{count, plural, one {Gesleept bestand ophalen…} other {{countText} gesleepte bestanden ophalen…}}",
+  "@fileExplorer.dropIn.receiving": {
+    "sourceHash": "599f539"
+  },
+  "fileExplorer.dropIn.receivingFromApp": "{count, plural, one {Gesleept bestand ophalen uit {appName}…} other {{countText} gesleepte bestanden ophalen uit {appName}…}}",
+  "@fileExplorer.dropIn.receivingFromApp": {
+    "sourceHash": "c10dca2"
+  },
+  "fileExplorer.dropIn.nothingReceived": "De app waaruit je sleepte, heeft het bestand niet doorgegeven. Sleep het opnieuw of bewaar het daar eerst.",
+  "@fileExplorer.dropIn.nothingReceived": {
+    "sourceHash": "6636842"
+  },
+  "fileExplorer.dropIn.nothingReceivedFromApp": "{appName} heeft het bestand niet doorgegeven. Sleep het opnieuw of bewaar het eerst vanuit {appName}.",
+  "@fileExplorer.dropIn.nothingReceivedFromApp": {
+    "sourceHash": "439543b"
+  },
+  "fileExplorer.dropIn.timedOut": "Het gesleepte bestand kwam niet op tijd aan. Sleep het opnieuw.",
+  "@fileExplorer.dropIn.timedOut": {
+    "sourceHash": "7591ca5"
+  },
+  "fileExplorer.dropIn.noFolder": "Cmdr kon geen ruimte maken voor het gesleepte bestand. Controleer of je schijf nog vrije ruimte heeft en probeer het dan opnieuw.",
+  "@fileExplorer.dropIn.noFolder": {
+    "sourceHash": "ea7fb38"
+  },
+  "fileExplorer.dropIn.someMissing": "{count, plural, one {Eén gesleept bestand is niet aangekomen, dus het zit niet in deze kopie.} other {{countText} gesleepte bestanden zijn niet aangekomen, dus ze zitten niet in deze kopie.}}",
+  "@fileExplorer.dropIn.someMissing": {
+    "sourceHash": "e3fbd8a"
+  },
   "fileExplorer.folderSizes.unreadable": "{count, plural, one {Kon # map niet volledig lezen, dus de grootte ervan is misschien onvolledig.} other {Kon # mappen niet volledig lezen, dus de groottes ervan zijn misschien onvolledig.}}",
   "@fileExplorer.folderSizes.unreadable": {
     "sourceHash": "ad31a56"

@@ -747,6 +747,12 @@
     "confidence": "high",
     "sources": "TC (Todos los detalles); catalog (Mostrar detalles, El registro tiene los detalles)"
   },
+  "dropped-file": {
+    "accept": ["arrastrad"],
+    "chosen": "archivo arrastrado",
+    "confidence": "tentative",
+    "sources": "GNOME Nautilus (Dropped Image → Imagen soltada); arrastrado follows the catalog's drag ruling (arrastrar), the everyday word for a file you brought in by dragging"
+  },
   "finder-extension": {
     "chosen": "extensión del Finder",
     "accept": ["extensión"],
@@ -2840,7 +2846,7 @@
   },
   "save": {
     "chosen": "Guardar",
-    "accept": ["guard"],
+    "accept": ["guard", "guárd"],
     "confidence": "high",
     "sources": "macOS AppKit SavePanel (Save → Guardar)"
   },

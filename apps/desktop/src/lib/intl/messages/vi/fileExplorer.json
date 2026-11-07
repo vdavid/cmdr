@@ -2139,6 +2139,62 @@
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   },
+  "fileExplorer.dropIn.sourceNameFromAppAndHost": "{name} từ {appName} ({host})",
+  "@fileExplorer.dropIn.sourceNameFromAppAndHost": {
+    "sourceHash": "94c2e01"
+  },
+  "fileExplorer.dropIn.sourceNameFromApp": "{name} từ {appName}",
+  "@fileExplorer.dropIn.sourceNameFromApp": {
+    "sourceHash": "c08306c"
+  },
+  "fileExplorer.dropIn.sourceNameFromHost": "{name} từ {host}",
+  "@fileExplorer.dropIn.sourceNameFromHost": {
+    "sourceHash": "c29d126"
+  },
+  "fileExplorer.dropIn.sourceCountFromAppAndHost": "{count, plural, other {{countText} tệp}} từ {appName} ({host})",
+  "@fileExplorer.dropIn.sourceCountFromAppAndHost": {
+    "sourceHash": "013a1fe"
+  },
+  "fileExplorer.dropIn.sourceCountFromApp": "{count, plural, other {{countText} tệp}} từ {appName}",
+  "@fileExplorer.dropIn.sourceCountFromApp": {
+    "sourceHash": "f1434f5"
+  },
+  "fileExplorer.dropIn.sourceCountFromHost": "{count, plural, other {{countText} tệp}} từ {host}",
+  "@fileExplorer.dropIn.sourceCountFromHost": {
+    "sourceHash": "8e00637"
+  },
+  "fileExplorer.dropIn.sourceCount": "{count, plural, other {{countText} tệp đã thả}}",
+  "@fileExplorer.dropIn.sourceCount": {
+    "sourceHash": "ed46fe2"
+  },
+  "fileExplorer.dropIn.receiving": "{count, plural, other {Đang nhận {countText} tệp đã thả…}}",
+  "@fileExplorer.dropIn.receiving": {
+    "sourceHash": "599f539"
+  },
+  "fileExplorer.dropIn.receivingFromApp": "{count, plural, other {Đang nhận {countText} tệp đã thả từ {appName}…}}",
+  "@fileExplorer.dropIn.receivingFromApp": {
+    "sourceHash": "c10dca2"
+  },
+  "fileExplorer.dropIn.nothingReceived": "Ứng dụng nguồn không chuyển tệp sang. Hãy thử kéo lại hoặc lưu tệp từ ứng dụng đó trước.",
+  "@fileExplorer.dropIn.nothingReceived": {
+    "sourceHash": "6636842"
+  },
+  "fileExplorer.dropIn.nothingReceivedFromApp": "{appName} không chuyển tệp sang. Hãy thử kéo lại hoặc lưu tệp từ {appName} trước.",
+  "@fileExplorer.dropIn.nothingReceivedFromApp": {
+    "sourceHash": "439543b"
+  },
+  "fileExplorer.dropIn.timedOut": "Tệp đã thả không đến kịp. Hãy thử kéo lại.",
+  "@fileExplorer.dropIn.timedOut": {
+    "sourceHash": "7591ca5"
+  },
+  "fileExplorer.dropIn.noFolder": "Cmdr không thể tạo chỗ cho tệp đã thả. Hãy kiểm tra xem ổ đĩa của bạn còn dung lượng trống không, rồi thử lại.",
+  "@fileExplorer.dropIn.noFolder": {
+    "sourceHash": "ea7fb38"
+  },
+  "fileExplorer.dropIn.someMissing": "{count, plural, other {{countText} tệp đã thả không đến nên sẽ không được sao chép lần này.}}",
+  "@fileExplorer.dropIn.someMissing": {
+    "sourceHash": "e3fbd8a"
+  },
   "fileExplorer.folderSizes.unreadable": "{count, plural, other {Có # thư mục không đọc được hết, nên kích cỡ có thể không đầy đủ.}}",
   "@fileExplorer.folderSizes.unreadable": {
     "sourceHash": "ad31a56"

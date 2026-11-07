@@ -36,6 +36,14 @@ export type DropOutcome =
   | 'samePane'
   /** Blocked: the target is the source itself, or inside it. */
   | 'selfDescendant'
+  /**
+   * Another app dropped file promises or image bytes (a browser image, a Mail
+   * attachment): the Copy dialog opens once the backend has the files
+   * (`pane/promise-drop.ts`). Counted at the drop, like `transfer`.
+   */
+  | 'promise'
+  /** Another app dropped nothing Cmdr can make a file from (text, a bare link). */
+  | 'nothingUsable'
 
 /** Reports one drop into a Cmdr pane, whatever came of it. */
 export function reportDropReceived(

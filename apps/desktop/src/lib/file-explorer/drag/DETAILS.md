@@ -210,6 +210,73 @@ clipboard paste use, so all three entry points prepare a transfer identically. O
   store them composed and match bytes exactly. The paste path does the same. Rule and rationale:
   `crates/cmdr-listing/DETAILS.md` § "A pane path the volume stores another way".
 
+### Drops from other apps
+
+A drag from an app that has no file on disk to offer (an image in Chrome or Safari, a Mail attachment, a Photos item)
+puts a file PROMISE on the pasteboard, often with the image bytes and a URL, and no `public.file-url`. wry reads file
+URLs only, so its `enter` / `over` / `drop` fire with empty `paths`. Before
+[issue #1035](https://github.com/vdavid/cmdr/issues/1035) folders lit up, the drop did nothing, and analytics counted it
+as a `transfer`.
+
+How it works now (backend: `apps/desktop/src-tauri/src/drop_in/CLAUDE.md`; frontend: `../pane/promise-drop.ts` and
+`../pane/promise-drop-controller.ts`):
+
+- **Enter**: the swizzle classifies the pasteboard (`fileUrls` / `promises` / `imageData` / `inApp` / `nothing`) and
+  emits `drag-payload-kind` before wry's enter. `handleDragOver` treats `nothing` like a drop onto its own source: no
+  highlight, "Can't drop here".
+- **Drop**: for `promises` / `imageData` the swizzle receives the files into a fresh drop folder and emits
+  `promise-drop-started` before wry's drop. `handleDrop` sees empty paths, reports `promise` (or `nothingUsable` for
+  anything else, ❌ never `transfer`), and hands the resolved target (pane + folder row) to the pairing. When
+  `promise-drop-ready` lands, the normal external path (`handleFileDrop`) opens the Copy dialog with the drop folder's
+  files and a source line from `dropSourceLabel` ("cat.jpg from Google Chrome (example.com)"), ❌ never the folder path.
+  A drop that takes over 400 ms shows a "Getting the dropped file…" toast meanwhile.
+- **Cleanup**: a cancelled dialog, a refused drop, or a drop that hit no target releases the folder
+  (`release_promise_drop`); a started copy owns it until it completes or is cancelled. Detail: `drop_in/DETAILS.md`.
+
+#### What the pasteboard holds (verified vs. assumed)
+
+- **Chrome (verified from source, Chromium `main` on 2026-11-07,
+  `content/app_shim_remote_cocoa/web_drag_source_mac.mm`)**: one pasteboard item with the Carbon-style promise
+  `com.apple.pasteboard.promised-file-url` + `com.apple.pasteboard.promised-file-content-type` (Chromium deliberately
+  doesn't use `NSFilePromiseProvider`), the image bytes under their UTI (`public.jpeg`, `public.png`, …), `public.url`,
+  `public.url-name`, Chromium's own tags, and HTML under a Chromium-only type. No `public.file-url`. The destination
+  asks for `promised-file-url` after setting `com.apple.pastelocation`; Chrome writes the file there and answers its
+  URL.
+- **Safari (verified from source, WebKit commits)**: since WebKit `1cea00ee072a` (2026-03-25, "Move away from -[NSView
+  dragImage:...] in WebViewImpl::startDrag()") image drags carry an `NSFilePromiseProvider` plus URL data. Older Safari
+  wrote the legacy `NSFilesPromisePboardType` with TIFF and URL types. Which Safari release ships the new path is not
+  checked.
+- **Mail (verified from source, WebKit `9a5dd61958c8`, 2026-05-06)**: an inline image carries `WebArchivePboardType` +
+  the legacy `NSFilesPromisePboardType`. A Mail attachment's layout is assumed to be a promise too.
+- **`NSFilePromiseReceiver` reads all three styles (verified with a standalone Swift probe on macOS 27.0.1,
+  2026-11-07)**: a Chrome-shaped item (data provider for `promised-file-url` / `-content-type` / `public.png`) yields
+  one receiver with `fileTypes = ["public.png"]`, a legacy `NSFilesPromisePboardType` declaration yields one with
+  `["png"]`, and a text-only pasteboard yields none. AppKit derives the legacy types from the Carbon ones on its own.
+  `fileNames` is empty before receiving. `readableDraggedTypes` is `com.apple.NSFilePromiseItemMetaData`, one `dyn.*`
+  type (the legacy promise), and `com.apple.pasteboard.promised-file-content-type`.
+- **Assumed, not verified (needs a real drag)**: that `receivePromisedFilesAtDestination:` fulfills Chrome's Carbon
+  promise and Safari's provider into our folder; that WKWebView's registered types (plus the promise types we add) let a
+  Mail attachment reach `draggingEntered:`; that the frontmost app during the drag is the source app. The probe could
+  only instantiate receivers: calling `receivePromisedFiles…` outside a drop raises `NSInternalInconsistencyException`.
+
+#### Manual QA plan (#1035)
+
+Run `pnpm dev`, two panes on local folders. For each, check the dialog's source line, the copied file, and that
+`<data dir>/drops/` is empty afterwards.
+
+1. Chrome: drag an image from a web page onto a pane, then onto a folder row. Copy dialog opens, source reads "name from
+   Google Chrome (host)", the file lands in the right folder.
+2. Safari: the same.
+3. Mail: drag an attachment, and an inline image, onto a pane.
+4. Finder: drag a file in: unchanged (dialog shows the folder path, Move/Copy default as before).
+5. Self-drag: pane to pane, local and from an MTP or SMB pane: unchanged.
+6. Text: drag selected text or a bare link from Chrome: no folder lights up, overlay says "Can't drop here", nothing
+   happens.
+7. Drop the Chrome image onto an SMB pane and an MTP pane: copies there; onto an open archive: refused as today.
+8. Cancel the dialog: the drop folder goes. Drop outside both panes: nothing opens, the folder goes.
+9. A big image on a slow connection (Network Link Conditioner, or a large file): the "Getting the dropped file…" toast
+   shows, then the dialog.
+
 ### Drag image detection (macOS-specific hack)
 
 **Problem**: Tauri's `DragDropEvent` doesn't include drag image size. Need size to decide whether to suppress Cmdr's
@@ -221,7 +288,8 @@ overlay (large source preview) or show it (tiny/no preview).
 
 Key files:
 
-- `drag_image_detection.rs`: Swizzle install + `draggingEntered:`/`draggingUpdated:`/`draggingExited:` overrides
+- `drag_image_detection.rs`: Swizzle install + `draggingEntered:`/`draggingUpdated:`/`draggingExited:`/
+  `performDragOperation:` overrides (the last two hooks feed `drop_in/`, § "Drops from other apps")
 - `drag_image_swap.rs`: Image swapping logic for self-drags (transparent inside window, rich outside)
 
 ## Key decisions

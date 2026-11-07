@@ -2136,6 +2136,62 @@
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   },
+  "fileExplorer.dropIn.sourceNameFromAppAndHost": "{name}, innen: {appName} ({host})",
+  "@fileExplorer.dropIn.sourceNameFromAppAndHost": {
+    "sourceHash": "94c2e01"
+  },
+  "fileExplorer.dropIn.sourceNameFromApp": "{name}, innen: {appName}",
+  "@fileExplorer.dropIn.sourceNameFromApp": {
+    "sourceHash": "c08306c"
+  },
+  "fileExplorer.dropIn.sourceNameFromHost": "{name}, innen: {host}",
+  "@fileExplorer.dropIn.sourceNameFromHost": {
+    "sourceHash": "c29d126"
+  },
+  "fileExplorer.dropIn.sourceCountFromAppAndHost": "{count, plural, one {{countText} fájl} other {{countText} fájl}}, innen: {appName} ({host})",
+  "@fileExplorer.dropIn.sourceCountFromAppAndHost": {
+    "sourceHash": "013a1fe"
+  },
+  "fileExplorer.dropIn.sourceCountFromApp": "{count, plural, one {{countText} fájl} other {{countText} fájl}}, innen: {appName}",
+  "@fileExplorer.dropIn.sourceCountFromApp": {
+    "sourceHash": "f1434f5"
+  },
+  "fileExplorer.dropIn.sourceCountFromHost": "{count, plural, one {{countText} fájl} other {{countText} fájl}}, innen: {host}",
+  "@fileExplorer.dropIn.sourceCountFromHost": {
+    "sourceHash": "8e00637"
+  },
+  "fileExplorer.dropIn.sourceCount": "{count, plural, one {{countText} behúzott fájl} other {{countText} behúzott fájl}}",
+  "@fileExplorer.dropIn.sourceCount": {
+    "sourceHash": "ed46fe2"
+  },
+  "fileExplorer.dropIn.receiving": "{count, plural, one {A behúzott fájl átvétele…} other {{countText} behúzott fájl átvétele…}}",
+  "@fileExplorer.dropIn.receiving": {
+    "sourceHash": "599f539"
+  },
+  "fileExplorer.dropIn.receivingFromApp": "{count, plural, one {A behúzott fájl átvétele innen: {appName}…} other {{countText} behúzott fájl átvétele innen: {appName}…}}",
+  "@fileExplorer.dropIn.receivingFromApp": {
+    "sourceHash": "c10dca2"
+  },
+  "fileExplorer.dropIn.nothingReceived": "Az app, ahonnan áthúztad, nem adta át a fájlt. Próbáld újra behúzni, vagy előbb mentsd el onnan.",
+  "@fileExplorer.dropIn.nothingReceived": {
+    "sourceHash": "6636842"
+  },
+  "fileExplorer.dropIn.nothingReceivedFromApp": "{appName} nem adta át a fájlt. Próbáld újra behúzni, vagy előbb mentsd el innen: {appName}.",
+  "@fileExplorer.dropIn.nothingReceivedFromApp": {
+    "sourceHash": "439543b"
+  },
+  "fileExplorer.dropIn.timedOut": "A behúzott fájl nem érkezett meg időben. Próbáld újra behúzni.",
+  "@fileExplorer.dropIn.timedOut": {
+    "sourceHash": "7591ca5"
+  },
+  "fileExplorer.dropIn.noFolder": "A Cmdr nem tudott helyet csinálni a behúzott fájlnak. Nézd meg, van-e szabad hely a lemezeden, aztán próbáld újra.",
+  "@fileExplorer.dropIn.noFolder": {
+    "sourceHash": "ea7fb38"
+  },
+  "fileExplorer.dropIn.someMissing": "{count, plural, one {Egy behúzott fájl nem érkezett meg, így nem kerül bele ebbe a másolásba.} other {{countText} behúzott fájl nem érkezett meg, így ezek nem kerülnek bele ebbe a másolásba.}}",
+  "@fileExplorer.dropIn.someMissing": {
+    "sourceHash": "e3fbd8a"
+  },
   "fileExplorer.folderSizes.unreadable": "{count, plural, one {Nem sikerült teljesen beolvasni # mappát, ezért lehet, hogy a mérete hiányos.} other {Nem sikerült teljesen beolvasni # mappát, ezért lehet, hogy a méretük hiányos.}}",
   "@fileExplorer.folderSizes.unreadable": {
     "sourceHash": "ad31a56"

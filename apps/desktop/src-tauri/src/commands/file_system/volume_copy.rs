@@ -64,11 +64,12 @@ async fn copy_between_volumes_on(
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Before `install` there is no engine to start on: refuse, never write.
     let engine = engine.map_err(refuse_not_installed)?;
-    engine
+    let sources: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
+    let started = engine
         .start_volume_copy(
             events,
             source_volume_id,
-            source_paths.iter().map(PathBuf::from).collect(),
+            sources.clone(),
             dest_volume_id,
             dest_path,
             config.unwrap_or_default(),
@@ -76,7 +77,11 @@ async fn copy_between_volumes_on(
             // No source binding: the user picked these in the pane they are looking at.
             None,
         )
-        .await
+        .await?;
+    // A copy out of a promised drop's folder (a browser image) holds that folder until
+    // it ends: `drop_in/folders.rs`. A no-op for every other copy.
+    let _ = crate::drop_in::folders::claim_for_operation(&started.operation_id, &sources);
+    Ok(started)
 }
 
 /// Unified move across volume types. Handles same-volume (native rename/move),
@@ -96,11 +101,12 @@ pub async fn move_between_volumes(
     // Before `install` there is no engine to start on: refuse, never write.
     let engine = operations().map_err(refuse_not_installed)?;
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    engine
+    let sources: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
+    let started = engine
         .start_volume_move(
             events,
             source_volume_id,
-            source_paths.iter().map(PathBuf::from).collect(),
+            sources.clone(),
             dest_volume_id,
             dest_path,
             config.unwrap_or_default(),
@@ -108,7 +114,10 @@ pub async fn move_between_volumes(
             // No source binding: the user picked these in the pane they are looking at.
             None,
         )
-        .await
+        .await?;
+    // The dialog's Move on a promised drop (`drop_in/folders.rs`), same as a copy.
+    let _ = crate::drop_in::folders::claim_for_operation(&started.operation_id, &sources);
+    Ok(started)
 }
 
 /// A rename that runs as a move on one volume: `source_path` moves into
@@ -160,17 +169,21 @@ pub async fn compress_files(
     // Before `install` there is no engine to start on: refuse, never write.
     let engine = operations().map_err(refuse_not_installed)?;
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    engine
+    let sources: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
+    let started = engine
         .start_volume_compress(
             events,
             source_volume_id,
-            source_paths.iter().map(PathBuf::from).collect(),
+            sources.clone(),
             dest_volume_id,
             dest_zip_path,
             config.unwrap_or_default(),
             initiator,
         )
-        .await
+        .await?;
+    // The dialog's Compress on a promised drop (`drop_in/folders.rs`), same as a copy.
+    let _ = crate::drop_in::folders::claim_for_operation(&started.operation_id, &sources);
+    Ok(started)
 }
 
 /// Whether the transfer dialog's destination folder takes writes, for the notice

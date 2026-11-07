@@ -685,6 +685,12 @@
     "forms": "Asking for a direct connection to a share → Đang yêu cầu kết nối trực tiếp tới một mục chia sẻ",
     "sources": "catalog (fileExplorer.navigation.useDirectConnection, settings.network.directSmbConnection.description)"
   },
+  "dropped-file": {
+    "accept": ["đã thả"],
+    "chosen": "tệp đã thả",
+    "confidence": "high",
+    "sources": "GNOME Nautilus (Dropped Image → Ảnh đã thả; the file that you dropped → thả vào); matches the drag ruling's accepted thả"
+  },
   "finder-extension": {
     "chosen": "phần mở rộng Finder",
     "accept": ["phần mở rộng"],

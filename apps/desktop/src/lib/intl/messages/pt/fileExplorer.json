@@ -2146,6 +2146,62 @@
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   },
+  "fileExplorer.dropIn.sourceNameFromAppAndHost": "{name} de {appName} ({host})",
+  "@fileExplorer.dropIn.sourceNameFromAppAndHost": {
+    "sourceHash": "94c2e01"
+  },
+  "fileExplorer.dropIn.sourceNameFromApp": "{name} de {appName}",
+  "@fileExplorer.dropIn.sourceNameFromApp": {
+    "sourceHash": "c08306c"
+  },
+  "fileExplorer.dropIn.sourceNameFromHost": "{name} de {host}",
+  "@fileExplorer.dropIn.sourceNameFromHost": {
+    "sourceHash": "c29d126"
+  },
+  "fileExplorer.dropIn.sourceCountFromAppAndHost": "{count, plural, one {{countText} arquivo} many {{countText} arquivos} other {{countText} arquivos}} de {appName} ({host})",
+  "@fileExplorer.dropIn.sourceCountFromAppAndHost": {
+    "sourceHash": "013a1fe"
+  },
+  "fileExplorer.dropIn.sourceCountFromApp": "{count, plural, one {{countText} arquivo} many {{countText} arquivos} other {{countText} arquivos}} de {appName}",
+  "@fileExplorer.dropIn.sourceCountFromApp": {
+    "sourceHash": "f1434f5"
+  },
+  "fileExplorer.dropIn.sourceCountFromHost": "{count, plural, one {{countText} arquivo} many {{countText} arquivos} other {{countText} arquivos}} de {host}",
+  "@fileExplorer.dropIn.sourceCountFromHost": {
+    "sourceHash": "8e00637"
+  },
+  "fileExplorer.dropIn.sourceCount": "{count, plural, one {{countText} arquivo arrastado} many {{countText} arquivos arrastados} other {{countText} arquivos arrastados}}",
+  "@fileExplorer.dropIn.sourceCount": {
+    "sourceHash": "ed46fe2"
+  },
+  "fileExplorer.dropIn.receiving": "{count, plural, one {Recebendo o arquivo arrastado…} many {Recebendo {countText} arquivos arrastados…} other {Recebendo {countText} arquivos arrastados…}}",
+  "@fileExplorer.dropIn.receiving": {
+    "sourceHash": "599f539"
+  },
+  "fileExplorer.dropIn.receivingFromApp": "{count, plural, one {Recebendo o arquivo arrastado de {appName}…} many {Recebendo {countText} arquivos arrastados de {appName}…} other {Recebendo {countText} arquivos arrastados de {appName}…}}",
+  "@fileExplorer.dropIn.receivingFromApp": {
+    "sourceHash": "c10dca2"
+  },
+  "fileExplorer.dropIn.nothingReceived": "O app de onde você arrastou não entregou o arquivo. Tente arrastar de novo ou salve o arquivo lá primeiro.",
+  "@fileExplorer.dropIn.nothingReceived": {
+    "sourceHash": "6636842"
+  },
+  "fileExplorer.dropIn.nothingReceivedFromApp": "{appName} não entregou o arquivo. Tente arrastar de novo ou salve o arquivo em {appName} primeiro.",
+  "@fileExplorer.dropIn.nothingReceivedFromApp": {
+    "sourceHash": "439543b"
+  },
+  "fileExplorer.dropIn.timedOut": "O arquivo arrastado não chegou a tempo. Tente arrastar de novo.",
+  "@fileExplorer.dropIn.timedOut": {
+    "sourceHash": "7591ca5"
+  },
+  "fileExplorer.dropIn.noFolder": "O Cmdr não conseguiu abrir espaço para o arquivo arrastado. Confira se o seu disco tem espaço livre e tente de novo.",
+  "@fileExplorer.dropIn.noFolder": {
+    "sourceHash": "ea7fb38"
+  },
+  "fileExplorer.dropIn.someMissing": "{count, plural, one {Um arquivo arrastado não chegou, então não está nesta cópia.} many {{countText} arquivos arrastados não chegaram, então não estão nesta cópia.} other {{countText} arquivos arrastados não chegaram, então não estão nesta cópia.}}",
+  "@fileExplorer.dropIn.someMissing": {
+    "sourceHash": "e3fbd8a"
+  },
   "fileExplorer.folderSizes.unreadable": "{count, plural, one {Não foi possível ler # pasta por completo, então o tamanho pode estar incompleto.} many {Não foi possível ler # pastas por completo, então os tamanhos podem estar incompletos.} other {Não foi possível ler # pastas por completo, então os tamanhos podem estar incompletos.}}",
   "@fileExplorer.folderSizes.unreadable": {
     "sourceHash": "ad31a56"

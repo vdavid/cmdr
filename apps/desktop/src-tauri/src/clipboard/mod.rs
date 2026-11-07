@@ -117,6 +117,10 @@ pub enum ClipboardPasteOutcome {
 
 #[cfg(target_os = "macos")]
 pub use payload::{ClipboardPayload, payload_to_content, pick_clipboard_payload};
+/// The raw flavors `pick_clipboard_payload` reads; a drop of bare image bytes builds
+/// one too (`drop_in/macos.rs`).
+#[cfg(target_os = "macos")]
+pub(crate) use store::ClipboardData;
 
 // Paste clipboard content as a file: the payload goes through the engine's numbered-create instant op.
 #[cfg(target_os = "macos")]

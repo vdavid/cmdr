@@ -751,6 +751,12 @@
     "sources": "MS terminology (gesprek); shipped settings.askCmdr.chatMemorySize.description",
     "accept": ["chat"]
   },
+  "dropped-file": {
+    "accept": ["gesleept"],
+    "chosen": "gesleept bestand",
+    "confidence": "tentative",
+    "sources": "GNOME Nautilus (Dropped Image → Neergezette afbeelding); gesleept follows the catalog's drag ruling (slepen)"
+  },
   "finder-extension": {
     "chosen": "Finder-extensie",
     "accept": ["extensie"],
