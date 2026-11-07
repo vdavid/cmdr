@@ -95,7 +95,7 @@ pub(crate) struct WaiterPlan {
     /// `/usr/bin/open` in production; a stand-in in tests.
     pub opener: PathBuf,
     pub bundle: PathBuf,
-    /// The app's own args, without argv[0].
+    /// The app's own args, without `argv[0]`.
     pub args: Vec<OsString>,
 }
 
