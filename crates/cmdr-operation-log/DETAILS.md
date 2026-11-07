@@ -821,8 +821,11 @@ run, report, and bar are an unfiltered run's. The engine normalizes again before
   never a guessed decision).
 - **The stop is asked per page too**: a narrow selection over a big op streams page after page it keeps nothing of.
 - **A folder unit is decided by its own folder** (`self_dir_id`, its axis side: unchecking a trashed folder keeps it in
-  the Trash; a same-FS move's is the landed folder). A created folder goes only when everything under it does, so a
-  left-out file keeps its folders and no misleading `DirNotEmpty` lands on them.
+  the Trash; a same-FS move's is the landed folder). A created folder (no checkbox) goes exactly when everything
+  selectable under it does (`Selection::fully_chosen`), so a left-out file keeps its folders and no misleading
+  `DirNotEmpty` lands on them, and a folder whose every file was checked one by one goes with them (an empty created
+  folder among them follows the nearest counted folder above it). Safe either way: the sweep only removes an empty
+  folder. Pinned by `selection_tests.rs::a_created_folder_goes_when_*`.
 - **The bar**: `chosen()` units and bytes off the summary (`RollbackFilter::progress_totals`), the same rows the loop
   credits. **The queue row's name** comes from one row the selection takes (`Selection::sample_seq`: an `on` item, else
   a row under the deepest `on` folder), one point read, ❌ never a stream.

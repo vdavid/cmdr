@@ -354,10 +354,11 @@ impl Selection {
     }
 
     /// The engine's per-row decision: does a rollback with this selection act on this
-    /// row? A row's own item toggle, else its folder's decision; a folder a copy or
-    /// move made goes along only when its folder's decision is on AND every
-    /// selectable unit under it is selected, since a folder still holding a file
-    /// can't be emptied. No DB read beyond one summary row per distinct folder.
+    /// row? A row's own item toggle, else its folder's decision. A folder a copy or
+    /// move made has no checkbox: it goes exactly when everything selectable under it
+    /// is selected, since a folder still holding a file can't be emptied, and one whose
+    /// every file was checked one by one must not stay behind. No DB read beyond one
+    /// summary row per distinct folder.
     pub(crate) fn includes(
         &mut self,
         reader: &mut OpReader<'_>,
@@ -369,10 +370,36 @@ impl Selection {
         let context = reader.context;
         let dir = facts.placement(context.axis);
         let on = self.decision_at(reader, dir)?;
-        if facts.role(context.kind) != UnitRole::Housekeeping || !on {
+        if facts.role(context.kind) != UnitRole::Housekeeping {
             return Ok(on);
         }
-        Ok(self.nodes.get(&dir).is_none_or(|node| node.chosen == node.all))
+        self.fully_chosen(reader, dir, on)
+    }
+
+    /// Whether every selectable unit at or under `dir` is selected, `on` being `dir`'s
+    /// decision. A folder with a toggle at or under it has a node that counted it. One
+    /// without is all-or-nothing by its decision, except one holding nothing selectable
+    /// (an empty created folder), which follows the nearest counted folder above it: it
+    /// goes with a parent whose files were all checked one by one.
+    fn fully_chosen(&mut self, reader: &mut OpReader<'_>, dir: i64, on: bool) -> Result<bool, OperationLogStoreError> {
+        if let Some(node) = self.nodes.get(&dir) {
+            return Ok(node.chosen == node.all);
+        }
+        if on {
+            return Ok(true);
+        }
+        let Some(row) = reader.dir(dir)? else { return Ok(false) };
+        if row.totals.units_selectable > 0 {
+            return Ok(false);
+        }
+        let mut current = row.parent_dir_id;
+        while let Some(id) = current {
+            if let Some(node) = self.nodes.get(&id) {
+                return Ok(node.chosen == node.all);
+            }
+            current = reader.dir(id)?.and_then(|row| row.parent_dir_id);
+        }
+        Ok(false)
     }
 
     /// One row the selection takes, for naming where a reversal will act without

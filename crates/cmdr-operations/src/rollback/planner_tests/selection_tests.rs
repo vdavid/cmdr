@@ -121,6 +121,78 @@ async fn a_subset_of_a_folder_copy_leaves_the_rest_and_the_folders_holding_it() 
 }
 
 #[tokio::test]
+async fn a_created_folder_goes_when_each_file_in_it_was_checked_one_by_one() {
+    // Nothing checked as a folder: every file picked on its own. The folders a copy
+    // made around exactly those files go with them, an empty one it made among them
+    // too, and the op reads fully rolled back.
+    let rig = Rig::new();
+    let dst = Arc::new(InMemoryVolume::new("Dst"));
+    mkdir(&dst, "/tree").await;
+    mkdir(&dst, "/tree/sub").await;
+    mkdir(&dst, "/tree/empty").await;
+    put(&dst, "/tree/a.txt", b"a").await;
+    put(&dst, "/tree/sub/c.txt", b"ccc").await;
+    rig.register("src", Arc::new(InMemoryVolume::new("Src")));
+    rig.register("dst", Arc::clone(&dst));
+    rig.seed(
+        "op",
+        OpKind::Copy,
+        "src",
+        Some("dst"),
+        RollbackState::Rollbackable,
+        vec![
+            file_unit(0, "src", "/tree/a.txt", "dst", "/tree/a.txt", 1),
+            file_unit(1, "src", "/tree/sub/c.txt", "dst", "/tree/sub/c.txt", 3),
+            dir_unit(2, "dst", "/tree/empty"),
+            dir_unit(3, "dst", "/tree/sub"),
+            dir_unit(4, "dst", "/tree"),
+        ],
+    );
+    rig.put_originals("op").await;
+
+    let both_files = only(vec![Item { seq: 0, on: true }, Item { seq: 1, on: true }]);
+    let report = rig
+        .rollback_selected("op", &both_files)
+        .await
+        .expect("the gate takes it");
+
+    assert_eq!(
+        (report.reversed, report.skipped, report.left_out),
+        (5, 0, 0),
+        "two files and the three folders: {report:?}"
+    );
+    assert_eq!(report.final_state, RollbackState::RolledBack);
+    assert!(!exists(&dst, "/tree").await, "every created folder went with the files");
+}
+
+#[tokio::test]
+async fn a_created_folder_goes_when_its_own_files_are_checked_and_its_parent_stays() {
+    let (rig, dst) = copied_tree().await;
+
+    let report = rig
+        .rollback_selected("op", &only(vec![Item { seq: 2, on: true }]))
+        .await
+        .expect("the gate takes it");
+
+    assert_eq!(
+        (report.reversed, report.skipped),
+        (2, 0),
+        "the file and `/tree/sub`: {report:?}"
+    );
+    assert_eq!(report.left_out, 3, "the two other files and `/tree`: {report:?}");
+    assert!(
+        !exists(&dst, "/tree/sub").await,
+        "everything in it was checked, so it goes"
+    );
+    assert!(exists(&dst, "/tree/a.txt").await);
+    assert_eq!(
+        outcome_of(&rig, 4),
+        ItemOutcome::Done,
+        "`/tree` still holds unchecked files"
+    );
+}
+
+#[tokio::test]
 async fn a_selected_item_still_goes_through_every_guard() {
     // Drift: the selected copy changed since, so it stays; the unselected one is
     // left alone either way.
