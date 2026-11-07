@@ -720,9 +720,43 @@ pub(crate) fn read_rollback_file_totals(conn: &Connection, op_id: &str) -> Resul
     Ok(totals)
 }
 
-/// Every operation currently in `rolling_back` — the startup-reconcile input
-/// (`rollback.rs`): each resolves deterministically from its (unfinalized) inverse op's
-/// recorded outcomes, or straight back to `rollbackable` when no inverse row exists.
+/// [`has_rollback_outcome`]'s query (binds `?2` = `rolled_back`).
+const HAS_ROLLBACK_OUTCOME_SQL: &str = "SELECT EXISTS (SELECT 1 FROM operation_items \
+     WHERE op_id = ?1 AND (outcome = ?2 OR rollback_skip_reason IS NOT NULL))";
+
+/// [`any_inverse_reversed`]'s query (binds `?2` = `done`).
+const ANY_INVERSE_REVERSED_SQL: &str = "SELECT EXISTS (SELECT 1 FROM operations o \
+     JOIN operation_items i ON i.op_id = o.op_id WHERE o.rolls_back_op_id = ?1 AND i.outcome = ?2)";
+
+/// Whether a rollback pass already settled any of `op_id`'s rows: reversed one
+/// (`rolled_back`) or held one back (a stored `rollback_skip_reason`). An `EXISTS`
+/// that stops at the first hit; the row filter isn't index-served past `op_id`, so a
+/// miss reads the whole op. The startup reconcile is its only caller, and only for an
+/// op a crash left `rolling_back`.
+pub(crate) fn has_rollback_outcome(conn: &Connection, op_id: &str) -> Result<bool, OperationLogStoreError> {
+    let hit = conn
+        .prepare_cached(HAS_ROLLBACK_OUTCOME_SQL)?
+        .query_row(rusqlite::params![op_id, ItemOutcome::RolledBack.as_token()], |row| {
+            row.get::<_, bool>(0)
+        })?;
+    Ok(hit)
+}
+
+/// Whether ANY inverse of `original_op_id` (every op whose `rolls_back_op_id` names
+/// it, not only the newest) journaled a `done` row, meaning it durably reversed
+/// something. An `EXISTS` over the `operations_rolls_back` index and each inverse's
+/// rows, stopping at the first hit.
+pub(crate) fn any_inverse_reversed(conn: &Connection, original_op_id: &str) -> Result<bool, OperationLogStoreError> {
+    let hit = conn
+        .prepare_cached(ANY_INVERSE_REVERSED_SQL)?
+        .query_row(rusqlite::params![original_op_id, ItemOutcome::Done.as_token()], |row| {
+            row.get::<_, bool>(0)
+        })?;
+    Ok(hit)
+}
+
+/// Every operation currently in `rolling_back`: the startup-reconcile input
+/// (`rollback.rs`), each resolved from its own outcomes and every inverse's.
 pub(crate) fn ops_in_rolling_back(conn: &Connection) -> Result<Vec<OperationRow>, OperationLogStoreError> {
     let sql = format!("SELECT {OPERATION_COLUMNS} FROM operations WHERE rollback_state = ?1");
     let mut out = Vec::new();
@@ -738,8 +772,9 @@ pub(crate) fn ops_in_rolling_back(conn: &Connection) -> Result<Vec<OperationRow>
 }
 
 /// The most recent inverse operation reversing `original_op_id` (its
-/// `rolls_back_op_id`), or `None` if none was ever opened. Used by startup
-/// reconcile to resolve a crashed `rolling_back` op from the inverse's outcomes.
+/// `rolls_back_op_id`), or `None` if none was ever opened. ❌ Not a reconcile input:
+/// an op reversed in several passes has several inverses, and the startup reconcile
+/// reads them all ([`any_inverse_reversed`]).
 pub fn read_inverse_op(
     conn: &Connection,
     original_op_id: &str,

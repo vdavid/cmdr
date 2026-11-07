@@ -379,6 +379,37 @@ fn v4_migration_keeps_older_rows_with_no_recorded_identity() {
     );
 }
 
+/// The startup reconcile's two reads never scan a table: the original's rows come off
+/// `operation_items_op_seq` (by `op_id`), and its inverses off `operations_rolls_back`
+/// then each inverse's rows off the same item index. A bare `SCAN operation_items`
+/// here would read every journaled row of every op at launch.
+#[test]
+fn the_reconcile_reads_are_index_served() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let store = OperationLogStore::open(&operation_log_db_path(dir.path()), &|_| None).expect("open");
+    for sql in [HAS_ROLLBACK_OUTCOME_SQL, ANY_INVERSE_REVERSED_SQL] {
+        let mut stmt = store
+            .conn()
+            .prepare(&format!("EXPLAIN QUERY PLAN {sql}"))
+            .expect("explain");
+        let plan: Vec<String> = stmt
+            .query_map(rusqlite::params!["op", "x"], |row| row.get::<_, String>(3))
+            .expect("plan")
+            .collect::<Result<_, _>>()
+            .expect("rows");
+        for step in &plan {
+            assert!(
+                !(step.starts_with("SCAN operation") && !step.contains("USING")),
+                "a full table scan in {sql}: {plan:?}"
+            );
+        }
+        assert!(
+            plan.iter().any(|s| s.contains("operation_items_op_seq")),
+            "the item rows come off the (op_id, seq) index in {sql}: {plan:?}"
+        );
+    }
+}
+
 /// Read-only connections open with the smaller page cache, write connections
 /// with the bigger one. Both are upper bounds drawn from the process-wide slab;
 /// budgets and rationale: `cmdr_fs::sqlite_util`.

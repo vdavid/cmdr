@@ -48,12 +48,10 @@ use std::path::{Path, PathBuf};
 use cmdr_fs::volume::{NodeIdentity, Volume, VolumeError};
 
 use super::store::{
-    OperationRow, RollbackUnit, open_read_connection, ops_in_rolling_back, read_inverse_op, read_operation,
-    read_operation_items, read_rollback_file_totals, read_rollback_units_page,
+    OperationRow, RollbackUnit, any_inverse_reversed, has_rollback_outcome, open_read_connection, ops_in_rolling_back,
+    read_operation, read_rollback_file_totals, read_rollback_units_page,
 };
-use super::types::{
-    EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState, SkipReason,
-};
+use super::types::{EntryType, ExecutionStatus, Initiator, NotRollbackableReason, OpKind, RollbackState, SkipReason};
 use super::writer::{OpenOperation, OperationLogWriter};
 
 /// Rows streamed per page from the journal — bounded so a huge op never
@@ -954,14 +952,10 @@ where
 // ── Startup reconcile: resolve ops left mid-rollback by a crash ───────────────
 
 /// On open, resolve every operation left `rolling_back` by a crash mid-rollback
-/// deterministically:
-///
-/// - An **inverse op row exists** (crashed mid-stream, so it's unfinalized):
-///   reconcile from its recorded per-item outcomes — `partially_rolled_back` if it
-///   durably reversed anything (an item with outcome `done`), else back to
-///   `rollbackable`.
-/// - **No inverse op row** (crashed after setting `rolling_back` but before/at the
-///   spawn — the Finding-3 window): straight back to `rollbackable`; nothing ran.
+/// deterministically, from its own rows and every inverse's ([`reconcile_one`]):
+/// `partially_rolled_back` when any pass durably reversed or held back something,
+/// else back to `rollbackable` (including a crash after setting `rolling_back` but
+/// before the inverse op opened: nothing ran).
 ///
 /// Either way a re-issued rollback resumes safely — every per-item inverse is an
 /// idempotent recheck-then-act, so already-reversed items no-op. Called once at
@@ -992,18 +986,30 @@ pub fn reconcile_rolling_back_on_open(writer: &OperationLogWriter) {
 }
 
 /// The reconcile verdict for one stuck op (see [`reconcile_rolling_back_on_open`]).
+///
+/// Partial when ANY earlier pass left a durable trace: the original has a row it
+/// reversed or held back, or ANY inverse of it (not only the newest: a second pass
+/// that crashed early has an empty one) has a `done` row. Each source alone misses a
+/// crash: `RunAcc::flush` sends the inverse's rows THEN the original's outcomes, so a
+/// crash between the two leaves `done` inverse rows over an untouched original, and a
+/// dropped inverse row leaves the reverse. Else nothing was reversed or held back, and
+/// the op is cleanly `rollbackable`. A read that fails resolves partial: never claim
+/// nothing came back on an unanswered question (a retry is admitted either way).
 fn reconcile_one(conn: &rusqlite::Connection, op_id: &str) -> RollbackState {
-    match read_inverse_op(conn, op_id) {
-        Ok(Some(inverse)) => {
-            // Read a bounded prefix of the inverse's items: any `done` means
-            // something was durably reversed ⇒ partial; none ⇒ back to rollbackable.
-            match read_operation_items(conn, &inverse.op_id, 10_000) {
-                Ok(items) if items.iter().any(|i| i.outcome == ItemOutcome::Done) => RollbackState::PartiallyRolledBack,
-                _ => RollbackState::Rollbackable,
-            }
+    let touched = has_rollback_outcome(conn, op_id).and_then(|hit| {
+        if hit {
+            Ok(true)
+        } else {
+            any_inverse_reversed(conn, op_id)
         }
-        // No inverse op ever opened ⇒ nothing ran ⇒ cleanly rollbackable again.
-        _ => RollbackState::Rollbackable,
+    });
+    match touched {
+        Ok(true) => RollbackState::PartiallyRolledBack,
+        Ok(false) => RollbackState::Rollbackable,
+        Err(e) => {
+            log::warn!(target: "operation_log", "rollback reconcile: reading {op_id}'s outcomes failed: {e}");
+            RollbackState::PartiallyRolledBack
+        }
     }
 }
 

@@ -848,11 +848,24 @@ the original's items `rolled_back`/`skipped` and journals the inverse op's own i
 `skipped`), which drive the reconcile.
 
 **Startup reconcile** (`reconcile_rolling_back_on_open`, called by `OperationLog::open` before the journal is reachable)
-resolves any op a crash left `rolling_back`: from its unfinalized inverse op's recorded outcomes (any `done` item ⇒
-`partially_rolled_back`, else `rollbackable`), or — when **no inverse op row exists** (crashed after setting
-`rolling_back` but before the spawn) — straight back to `rollbackable`. Either way a re-issued rollback resumes
-idempotently: every per-item inverse is a recheck-then-act, and an already-reversed item reads as `AlreadyGone` (counted
-as a no-op success).
+resolves any op a crash left `rolling_back` (`reconcile_one`). It's `partially_rolled_back` if ANY of: the original has
+a `rolled_back` row; the original has a stored `rollback_skip_reason` (an earlier pass held it back); or ANY inverse of
+it (every op whose `rolls_back_op_id` names it) has a `done` row. Else `rollbackable`, which covers a crash after
+setting `rolling_back` but before the inverse op opened. Each clause is two `EXISTS` reads that stop at the first hit
+(`has_rollback_outcome`, `any_inverse_reversed`); a read that fails resolves partial. Why every source:
+
+- **The original alone misses a crash mid-flush**: `RunAcc::flush` sends the inverse's rows (`record_items`) and THEN
+  the original's outcomes (`set_item_outcomes`), so a crash between them leaves `done` inverse rows over untouched
+  original rows.
+- **The newest inverse alone misses a crashed second pass**: Finish (and partial rollback) open a fresh inverse per
+  pass, and one that crashed before reversing anything holds no `done` row while an earlier pass's inverse does.
+- **An inverse alone misses a dropped row**: the writer drops a row it can't insert and `flush` still sends the
+  original's outcomes.
+- **No prefix cap**: an inverse whose first 10,000 rows are skips can hold its `done` row past them.
+
+Pinned one cell per clause (`cmdr-operations`' `planner_tests/lifecycle_tests.rs`, `reconcile_guard_*`). Either way a
+re-issued rollback resumes idempotently: every per-item inverse is a recheck-then-act, and an already-reversed item
+reads as `AlreadyGone` (counted as a no-op success).
 
 That re-entrancy is load-bearing beyond the crash path: the history dialog's **Finish rolling back** button on a
 `partially_rolled_back` row is nothing but a second `rollback_operation` call on the SAME op, which the gate admits. The
