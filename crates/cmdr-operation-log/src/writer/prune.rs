@@ -99,6 +99,11 @@ fn prune_by_age(conn: &mut Connection, cutoff: i64) -> Result<(), OperationLogSt
         &format!("UPDATE operations SET rolls_back_op_id = NULL WHERE rolls_back_op_id IN ({selector})"),
         [],
     )?;
+    // Summary rows first: they reference both the op and the dirs the GC frees.
+    tx.execute(
+        &format!("DELETE FROM operation_tree_dirs WHERE op_id IN ({selector})"),
+        [],
+    )?;
     tx.execute(&format!("DELETE FROM operation_items WHERE op_id IN ({selector})"), [])?;
     tx.execute(&format!("DELETE FROM operations WHERE {predicate}"), [])?;
     tx.commit()?;
@@ -190,6 +195,10 @@ fn delete_op_set(conn: &Connection, op_ids: &[String]) -> Result<(), OperationLo
         [params.as_slice(), params.as_slice()].concat().as_slice(),
     )?;
     conn.execute(
+        &format!("DELETE FROM operation_tree_dirs WHERE op_id IN ({placeholders})"),
+        params.as_slice(),
+    )?;
+    conn.execute(
         &format!("DELETE FROM operation_items WHERE op_id IN ({placeholders})"),
         params.as_slice(),
     )?;
@@ -229,7 +238,8 @@ fn reclaim_fully(conn: &Connection) {
 }
 
 /// GC interned dirs no longer live: iterate leaf-up, deleting dirs referenced by
-/// no item AND no child dir, until stable. This deletes exactly the complement
+/// no item (as its source, dest, or own folder), no tree-summary row, AND no child
+/// dir, until stable. A DIR unit's own folder is often referenced by nothing else. This deletes exactly the complement
 /// of the referenced-dirs-plus-their-ancestors closure — a referenced dir's
 /// whole parent chain survives (path reconstruction walks it), and a pruned
 /// dir's ancestors fall away only once nothing live remains under them.
@@ -239,6 +249,8 @@ fn gc_orphan_dirs(conn: &Connection) -> Result<(), OperationLogStoreError> {
             "DELETE FROM dirs
              WHERE dir_id NOT IN (SELECT source_dir_id FROM operation_items)
                AND dir_id NOT IN (SELECT dest_dir_id FROM operation_items WHERE dest_dir_id IS NOT NULL)
+               AND dir_id NOT IN (SELECT self_dir_id FROM operation_items WHERE self_dir_id IS NOT NULL)
+               AND dir_id NOT IN (SELECT dir_id FROM operation_tree_dirs)
                AND dir_id NOT IN (SELECT parent_dir_id FROM dirs WHERE parent_dir_id IS NOT NULL)",
             [],
         )?;

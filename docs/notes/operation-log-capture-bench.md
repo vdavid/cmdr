@@ -82,3 +82,26 @@ Arm (c) is the point: even a writer busy with retention vacuum can't stall the o
 `incremental_vacuum` slices between insert batches (never one stop-the-world pass) and the channel's backpressure only
 ever blocks briefly. A capture that went synchronous on the op thread would blow the budget in (b)/(c). The test passes
 with wide margin.
+
+## 5. The schema v6 step on a 4M-row journal (launch cost)
+
+The app opens the journal synchronously in `setup()`, so the v6 step (the tree summary,
+`crates/cmdr-operation-log/DETAILS.md` § "Tree summary") is paid by the first launch after the upgrade. Measured
+2026-11-07 on Apple Silicon (macOS 27), RELEASE build, with the ignored bench:
+
+- `cargo test --release -p cmdr-operation-log --lib bench_v6_migration -- --ignored --nocapture` (nextest's per-test
+  timeout stops it in under 10 s, so it runs under `cargo test`)
+
+Seed: 2,000 copy ops × 2,000 file rows = 4,000,000 rows, 100 dirs per op, half the rows with a dest, written straight
+into a v5 file with production pragmas (1,053 MB, about 263 bytes per row).
+
+- **Launch**: the migrating `open_write_connection` took 5.35 s, once.
+- **WAL during the step**: 386 MB, back to nothing at the next `TRUNCATE` checkpoint.
+- **Permanent growth**: +384 MB (1,053 → 1,437 MB), about 96 bytes per row, so 96 MB per million rows. Nearly all of it
+  is the two item indexes `(op_id, source_dir_id, source_name_folded)` and the partial
+  `(op_id, dest_dir_id, dest_name_folded)`; the `ALTER`s and the empty summary table cost nothing measurable. A journal
+  of only copies (every row with a dest) grows somewhat more.
+
+Scaling: index builds are `O(n log n)`, close to linear here, so a 1M-row journal pays about 1.3 s and one at the 3 GB
+retention default (about 11M rows) about 15 s. The fallback, if that's too much: build the two indexes after open
+through the writer, with the tree answering `Building` until they exist (#1033).

@@ -9,7 +9,8 @@ disposable cache. Tauri-free; the app hosts it in `apps/desktop/src-tauri/src/op
 `handle.rs` (`OperationLog`: journal slot, writer, the `recording.rs` gate; `OpJournal`), `store/` (the DB, the
 migration ladder), `writer.rs` (+ `writer/prune.rs`), `capture.rs`, `types.rs` (typed tokens), `query.rs`,
 `retention.rs`, `rollback.rs` (+ `order.rs`, `skips.rs`, `runner.rs`, `self_collision.rs`, `tags.rs`: the PLANNER; its
-executor is `crates/cmdr-operations/src/rollback.rs`).
+executor is `crates/cmdr-operations/src/rollback.rs`), `tree.rs` (+ `tree/`: the item tree's axis, roles, and per-folder
+summary; the writer's half is `src/writer/tree_summary.rs`).
 
 ## Must-knows
 
@@ -35,5 +36,7 @@ The full text of each, with its why: DETAILS § "Must-knows, in full".
 - **Op ids are UUIDv7 (`new_operation_id`)**, ❌ never v4: only v7 sorts by time.
 - **The journal records what SURVIVES**, whatever the terminal state, never the mid-write partial.
 - **Search spans every `row_role`; retention prunes whole ops only**, ❌ never a `rolling_back` op or its target.
+- **The tree summary moves in its rows' own transaction**, written only by the writer (❌ never an outcome by raw SQL on
+  a built op: the reconcile trusts the summary). A summary failure marks the op unbuilt, ❌ never drops a row.
 
 Everything else: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

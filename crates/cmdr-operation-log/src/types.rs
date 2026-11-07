@@ -264,6 +264,16 @@ token_enum! {
     }
 }
 
+token_enum! {
+    /// Whether an operation's `operation_tree_dirs` rows are exact, the nullable
+    /// `operations.tree_summary` column. NULL means unbuilt: an op journaled before the
+    /// summary existed, or one whose summary write failed (it's rebuilt from its rows
+    /// on demand). Every op opened since is `Built` from its first row.
+    pub enum TreeSummaryState {
+        Built => "built",
+    }
+}
+
 /// One operation's id: the managed operation's UUIDv7
 /// ([`new_operation_id`](crate::new_operation_id)), reused as its journal row's
 /// key. The journal's API takes this, so an id can't be swapped with a volume
@@ -375,6 +385,7 @@ mod tests {
         check!(EntryType, [File, Dir]);
         check!(RowRole, [RollbackUnit, SearchOnly]);
         check!(ItemOutcome, [Done, Skipped, Failed, RolledBack]);
+        check!(TreeSummaryState, [Built]);
         check!(
             SkipReason,
             [
@@ -384,6 +395,7 @@ mod tests {
                 DirNotEmpty,
                 AlreadyGone,
                 Vanished,
+                OriginalGone,
                 Failed,
                 Locked
             ]

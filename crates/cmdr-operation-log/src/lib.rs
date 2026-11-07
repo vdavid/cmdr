@@ -51,6 +51,7 @@ pub mod writer;
 mod handle;
 mod recording;
 mod rt;
+mod tree;
 
 pub use handle::{OpJournal, OpenError, OperationLog};
 

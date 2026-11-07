@@ -119,8 +119,8 @@ two data-safety guards").
 
 ## Schema
 
-Three tables plus `meta` (the migration anchor). Full DDL: `store/migrations.rs::migrate_v1_initial`. The shape and its
-non-obvious choices:
+Four tables plus `meta` (the migration anchor). Full DDL: `store/migrations.rs` (`migrate_v1_initial`, then each
+appended step). The shape and its non-obvious choices (the fourth, `operation_tree_dirs`, has its own § "Tree summary"):
 
 - **`dirs` — interned directory prefixes.** `dir_id`, `volume_id`, nullable `parent_dir_id`, `name`, `name_folded`. A
   1M-file operation under one tree shares a handful of directories; interning stores each hot dir once, forever (reused
@@ -152,7 +152,8 @@ non-obvious choices:
   informational — NOT the completeness yardstick), `items_done`, `bytes_total`, `search_coverage` +
   `search_coverage_reason`, and an optional dev-only `dev_summary`. **No stored rendered summary**: the UI label is
   formatted client-side from the typed fields so it localizes per viewer; `dev_summary` is dev-only and never shown in
-  the alpha dialog.
+  the alpha dialog. Two v6 columns serve the item tree (§ "Tree summary"): the nullable `tree_summary`
+  (`TreeSummaryState`, `built` or NULL) and `outcome_generation`.
 - **`OperationRow.inverse_op_id` is read-side only, and every reader fills it.** It's the mirror of the stored
   `rolls_back_op_id` (the newest operation reversing THIS one), resolved through the partial `operations_rolls_back`
   index by `store::fill_inverse_op_ids` right after the mapper runs, because the mapper holds a `Row` and not the
@@ -174,14 +175,19 @@ non-obvious choices:
   `tag` op's rows (§ "A tag write restores the exact prior value"). Directories the op created are **first-class `dir`
   rows** sequenced after their contents, so a `seq DESC` rollback removes files before the dirs that held them. Names
   are indexed folded (search) and, unlike dirs, **not interned** — a b-tree handles the massive duplication across a
-  large op fine, and names must stay directly queryable.
+  large op fine, and names must stay directly queryable. The nullable `self_dir_id` (v6) is a DIR row's own folder on
+  the op's tree axis (§ "Tree summary"). Indexes: `(op_id, seq)`, `(source_name_folded)`, partial `(dest_name_folded)`,
+  and (v6) `(op_id, source_dir_id, source_name_folded)` plus partial `(op_id, dest_dir_id, dest_name_folded)`, which
+  serve "this folder's files of this op, in name order".
 
 ## The writer (`writer.rs`)
 
 One dedicated OS thread owns the single write connection; the cloneable `OperationLogWriter` handle is the only way in.
-Message surface: `OpenOperation` (insert the header, `Running`), `RecordItems` (batched insert of a slice in one
-transaction, interning dirs + folding names), `FinalizeOperation` (write terminal state, return per-`row_role` durable
-counts), `Prune` (retention), `Flush` (barrier), `Shutdown`.
+Message surface: `OpenOperation` (insert the header, `Running`, its tree summary `built`), `RecordItems` (batched insert
+of a slice in one transaction, interning dirs + folding names), `FinalizeOperation` (write terminal state, return
+per-`row_role` durable counts), `SetRollbackState` and `SetItemOutcomes` (the rollback engine's two writes, each a
+barrier), `Prune` (retention), `Flush` (barrier), `Shutdown`. `RecordItems` and `SetItemOutcomes` carry the op's
+tree-summary delta in their own transaction (`src/writer/tree_summary.rs`, § "Tree summary").
 
 - **Lossless with backpressure.** The channel is a bounded `sync_channel`; `record_items` blocks briefly if the writer
   falls behind rather than dropping. Safe for "logging never slows an op": a batched row insert is far cheaper than the
@@ -874,8 +880,11 @@ the original's items `rolled_back`/`skipped` and journals the inverse op's own i
 resolves any op a crash left `rolling_back` (`reconcile_one`). It's `partially_rolled_back` if ANY of: the original has
 a `rolled_back` row; the original has a stored `rollback_skip_reason` (an earlier pass held it back); or ANY inverse of
 it (every op whose `rolls_back_op_id` names it) has a `done` row. Else `rollbackable`, which covers a crash after
-setting `rolling_back` but before the inverse op opened. Each clause is two `EXISTS` reads that stop at the first hit
-(`has_rollback_outcome`, `any_inverse_reversed`); a read that fails resolves partial. Why every source:
+setting `rolling_back` but before the inverse op opened. For an op whose tree summary is built, the original's two
+clauses are read off its volume-root summary rows (`units_rolled_back + units_held_back`, kept exact in the outcome
+transactions themselves, § "Tree summary"); an unbuilt op pays the `EXISTS` over its rows (`has_rollback_outcome`), and
+the inverse clause is always an `EXISTS` (`any_inverse_reversed`). Each stops at the first hit; a read that fails
+resolves partial. Why every source:
 
 - **The original alone misses a crash mid-flush**: `RunAcc::flush` sends the inverse's rows (`record_items`) and THEN
   the original's outcomes (`set_item_outcomes`), so a crash between them leaves `done` inverse rows over untouched
@@ -886,7 +895,8 @@ setting `rolling_back` but before the inverse op opened. Each clause is two `EXI
   original's outcomes.
 - **No prefix cap**: an inverse whose first 10,000 rows are skips can hold its `done` row past them.
 
-Pinned one cell per clause (`cmdr-operations`' `planner_tests/lifecycle_tests.rs`, `reconcile_guard_*`). Either way a
+Pinned one cell per clause (`cmdr-operations`' `planner_tests/lifecycle_tests.rs`, `reconcile_guard_*`, which seed an
+unbuilt op so the row clauses decide; the summary clause's cell is `src/tree/maintenance_tests.rs`). Either way a
 re-issued rollback resumes idempotently: every per-item inverse is a recheck-then-act, and an already-reversed item
 reads as `AlreadyGone` (counted as a no-op success).
 
@@ -1019,6 +1029,58 @@ surface is two thin pass-throughs (`commands/operation_log.rs`): `get_recent_ope
   counts; every label and the per-operation summary are composed frontend-side, so they localize per viewer. A
   pre-rendered English `summary` column would be unlocalizable the day it shipped.
 
+## Tree summary (`src/tree/`, `src/writer/tree_summary.rs`)
+
+The Operation log's item tree (#1033) opens any op, 2M items included, by reading a handful of rows: per (op, folder)
+subtree totals in `operation_tree_dirs`, kept exact by the writer.
+
+- **The axis** (`TreeAxis::of(kind, is_inverse)`, an exhaustive match): `Dest` for copy, move, create, archive edit;
+  `Source` for trash, delete, rename, tag, and every inverse (its rows carry no dest). A row missing its axis side falls
+  back to the other one (`TreeAxis::side`), so the tree may be a forest, one root per volume, and no row is ever left
+  out. An inverse whose original retention pruned loses its `rolls_back_op_id`, reads as a plain `Delete` / `Move`, and
+  still lands on its source side, since its rows have no dest.
+- **Roles** (`unit_role`, row-pure): `Contents` (`search_only`), `Settled` (rolled back, or the op's own skip or
+  failure), `NotReversible` (no inverse: a delete's), `Housekeeping` (a created-in-place DIR row of a copy or move, the
+  folder a transfer made), else `Selectable`. Op-level rollbackability is applied by readers at query time, ❌ never
+  stored: eligibility is written at finalize, after the rows.
+- **One row per folder, ancestors included.** `(op_id, dir_id)` WITHOUT ROWID, plus
+  `(op_id, parent_dir_id, name_folded)` so a folder's child folders come off the index in order. Columns:
+  `parent_dir_id`, `name_folded`, `self_seq`, `child_dirs` (child rows in this op), `direct_files` (FILE rows directly
+  inside), and the subtree totals `files` / `bytes` (FILE rows of both roles, `MAX(size, 0)`), `units_selectable`,
+  `unit_files_selectable` / `unit_bytes_selectable` (the reversal's progress totals, as `read_rollback_file_totals`
+  counts them), `units_rolled_back`, `units_held_back`, `units_unfinished` (all over `rollback_unit` rows, housekeeping
+  included), and `housekeeping_waiting` (why "Roll back the rest" still has work at 0 of 0). Per-skip-reason counts are
+  NOT stored per folder; a row carries its own.
+- **A DIR row is its own folder.** `operation_items.self_dir_id` is the folder at the row's AXIS-side path, interned by
+  the writer at insert (`store::intern_child_dir`, the child of the already interned parent, so a `scheme://` root
+  survives). The row counts in that folder's subtree, never its parent's, so unchecking a trashed folder subtracts
+  exactly its unit, and its summary row carries `self_seq` (the lowest seq when several DIR rows share a folder). ❗ A
+  same-FS move's unit owns its LANDED folder; a source-side id would never match the folder the tree hands out.
+- **Maintained in the rows' own transaction.** `RecordItems` adds exactly the rows that inserted (a dropped row never
+  counts); `SetItemOutcomes` reads each row's old fields by `(op_id, seq)` on the writer, takes the old contribution
+  away, adds the new, and bumps `outcome_generation`. Each delta walks the dir chain once per distinct folder. A new
+  folder row adds one to its parent's `child_dirs`.
+- **A summary write that fails never costs a row.** The delta rolls back to its savepoint and the op's `tree_summary`
+  goes NULL in the same transaction; the writer then maintains nothing for it until it's rebuilt. So does a DIR row
+  whose own folder didn't intern (the row still inserts, with no `self_dir_id`). Pinned by
+  `src/tree/maintenance_tests.rs` with a test-made `RAISE(ABORT)` trigger (no production fault seam).
+- **Exact means equal to `summary::aggregate_op`**, the from-scratch aggregate over the op's rows in `seq` chunks, which
+  a backfill writes for an unbuilt op. Golden fixtures with hand-written expected rows: `src/tree/tests.rs`.
+- **Unbuilt ops and the backfill seam** (`src/tree/status.rs`): every op journaled before v6 reads `tree_summary` NULL.
+  `read_tree_summary_status` answers `Built`, `Unbuilt(OperationRunning | RollingBack)` (a backfill can't start: inserts
+  don't bump the generation, and a rollback would make it restart on every batch), `Building(progress)` from the
+  `BackfillRegistry`, or `Unbuilt(NotBuilt)`.
+- **The reconcile reads it.** A built op answers the "original settled a row" clause from its volume-root rows instead
+  of an `EXISTS` over the op (§ "The `rolling_back` state machine + startup reconcile").
+- **Prune and GC**: a pruned op's summary rows go first (they reference the op and its dirs), and `gc_orphan_dirs` keeps
+  any dir a summary row or a `self_dir_id` names: a DIR unit's own folder is often referenced by nothing else.
+- **Launch cost of the step** (`src/store/migration_bench.rs`, release, a seeded 4M-row v5 journal of 1,053 MB, Apple
+  Silicon, 2026-11-07): the open that migrates takes 5.35 s, once; the WAL reaches 386 MB during the step; the file
+  grows 384 MB for good, about 96 bytes or 96 MB per million rows (half the seeded rows carry a dest). Nearly all of it
+  is the two item indexes; the `ALTER`s and the empty table are free. A journal at the 3 GB retention default holds
+  about 11M rows, which would stall that first launch about 15 s. Scaling and the rerun command:
+  `docs/notes/operation-log-capture-bench.md` § 5.
+
 ## Alpha UI — the "Operation log" dialog
 
 The read API's one user-facing consumer: a menu- and shortcut-triggered soft dialog listing recent operations, newest
@@ -1075,6 +1137,9 @@ the oldest whole ops until the DB fits the budget) → **dir GC** → **reclaim*
 - **Size budget is measured as live bytes.** `live_size_bytes = (page_count - freelist) * page_size` — the size the file
   would have after a full vacuum — so the delete loop makes progress before pages are physically reclaimed (each delete
   grows the freelist). It stops when under budget or nothing prunable remains (everything left protected).
+- **The tree's indexes cost history.** The two v6 item indexes add about 96 bytes per item row (§ "Tree summary"), so
+  under the same byte budget a big journal keeps roughly a quarter fewer rows than before v6. The summary table itself
+  is a few rows per folder per op, noise beside that.
 - **Dir GC — the referenced-plus-ancestors closure.** Interning keeps a dir row forever, so pruning ops alone leaves a
   monotonically-growing `dirs` floor. GC iterates leaf-up: delete dirs referenced by no item AND no child dir, repeat
   until stable — exactly the complement of the referenced-dirs-plus-their-ancestors closure, so a referenced dir's whole

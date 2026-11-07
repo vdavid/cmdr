@@ -45,10 +45,12 @@ use std::thread;
 
 use rusqlite::Connection;
 
-use super::store::{OperationLogStoreError, fold_name, intern_dir, open_write_connection};
+use super::store::{OperationLogStoreError, fold_name, intern_child_dir, intern_dir, open_write_connection};
+use super::tree::TreeAxis;
+use super::tree::summary::RowFacts;
 use super::types::{
     ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, OperationId,
-    RollbackState, RowRole, SearchCoverage, SearchCoverageReason, SkipReason,
+    RollbackState, RowRole, SearchCoverage, SearchCoverageReason, SkipReason, TreeSummaryState,
 };
 use cmdr_fs::entry::TagsChange;
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -468,13 +470,14 @@ fn apply_message(conn: &mut Connection, msg: WriteMessage) -> std::ops::ControlF
 
 /// Insert the operation header. `rollback_state` opens as `not_rollbackable`
 /// (finalize computes the real eligibility); a crash before finalize thus leaves
-/// the op honestly not-rollbackable.
+/// the op honestly not-rollbackable. Its tree summary opens `built`: it has no rows
+/// yet, and every batch keeps it exact from here (`tree_summary.rs`).
 fn apply_open(conn: &Connection, open: &OpenOperation) -> Result<(), OperationLogStoreError> {
     conn.execute(
         "INSERT INTO operations
             (op_id, kind, initiator, execution_status, rollback_state, rolls_back_op_id,
-             source_volume_id, dest_volume_id, started_at, item_count, search_coverage)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+             source_volume_id, dest_volume_id, started_at, item_count, search_coverage, tree_summary)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
         rusqlite::params![
             open.op_id.as_str(),
             open.kind.as_token(),
@@ -487,14 +490,16 @@ fn apply_open(conn: &Connection, open: &OpenOperation) -> Result<(), OperationLo
             open.started_at,
             open.item_count as i64,
             SearchCoverage::Full.as_token(),
+            TreeSummaryState::Built.as_token(),
         ],
     )?;
     Ok(())
 }
 
-/// Insert an item batch in ONE transaction, interning dirs and folding names. A
-/// per-row error logs and drops that row (a journal problem never fails the op);
-/// the surviving rows still commit.
+/// Insert an item batch in ONE transaction, interning dirs and folding names, with
+/// the op's tree-summary delta for exactly the rows that inserted. A per-row error
+/// logs and drops that row (a journal problem never fails the op); the surviving
+/// rows still commit.
 fn apply_record_items(conn: &mut Connection, op_id: &str, items: &[JournalItem]) {
     let tx = match conn.unchecked_transaction() {
         Ok(tx) => tx,
@@ -503,30 +508,58 @@ fn apply_record_items(conn: &mut Connection, op_id: &str, items: &[JournalItem])
             return;
         }
     };
+    let mut summary = SummaryBatch::begin(&tx, op_id);
     for item in items {
-        if let Err(e) = insert_one_item(&tx, op_id, item) {
+        match insert_one_item(&tx, op_id, item, summary.axis()) {
+            Ok(facts) => summary.add_inserted(&facts),
             // Drop this row, keep going — the op must not fail for a journal
             // problem, and finalize's completeness count will catch the hole.
-            log::warn!(target: "operation_log", "record_items({op_id}): dropping item seq {}: {e}", item.seq);
+            Err(e) => {
+                log::warn!(target: "operation_log", "record_items({op_id}): dropping item seq {}: {e}", item.seq);
+            }
         }
     }
+    summary.finish(&tx, op_id);
     if let Err(e) = tx.commit() {
         log::warn!(target: "operation_log", "record_items({op_id}): commit failed: {e}");
     }
 }
 
-fn insert_one_item(conn: &Connection, op_id: &str, item: &JournalItem) -> Result<(), OperationLogStoreError> {
+/// Insert one row and answer what the tree summary reads of it. A DIR row's own
+/// folder is interned on the op's `axis` (`self_dir_id`); if that fails the row still
+/// inserts with none, and the summary batch marks the op unbuilt.
+fn insert_one_item(
+    conn: &Connection,
+    op_id: &str,
+    item: &JournalItem,
+    axis: TreeAxis,
+) -> Result<RowFacts, OperationLogStoreError> {
     let source_dir_id = intern_dir(conn, &item.source_volume_id, &item.source_dir)?;
     let (dest_dir_id, dest_name_folded) = match (&item.dest_volume_id, &item.dest_dir, &item.dest_name) {
         (Some(vol), Some(dir), Some(name)) => (Some(intern_dir(conn, vol, dir)?), Some(fold_name(name))),
         _ => (None, None),
     };
+    let dest = dest_dir_id.zip(item.dest_name.clone());
+    let self_dir_id = match item.entry_type {
+        EntryType::Dir => {
+            let (parent, name) = axis.side(
+                (source_dir_id, &item.source_name),
+                dest.as_ref().map(|(dir, name)| (*dir, name.as_str())),
+            );
+            intern_child_dir(conn, parent, name)
+                .inspect_err(|e| {
+                    log::warn!(target: "operation_log", "record_items({op_id}): seq {} has no own folder: {e}", item.seq);
+                })
+                .ok()
+        }
+        EntryType::File => None,
+    };
     conn.execute(
         "INSERT INTO operation_items
             (op_id, seq, entry_type, row_role, source_dir_id, source_name, source_name_folded,
              dest_dir_id, dest_name, dest_name_folded, size, mtime, outcome, overwrote,
-             dest_inode, dest_birth_ns, tags_before, tags_after)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
+             dest_inode, dest_birth_ns, tags_before, tags_after, self_dir_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
         rusqlite::params![
             op_id,
             item.seq,
@@ -546,9 +579,21 @@ fn insert_one_item(conn: &Connection, op_id: &str, item: &JournalItem) -> Result
             item.dest_identity.map(|id| id.birth_nanos),
             item.tags.as_ref().map(|tags| tags.before.as_slice()),
             item.tags.as_ref().map(|tags| tags.after.as_slice()),
+            self_dir_id,
         ],
     )?;
-    Ok(())
+    Ok(RowFacts {
+        seq: item.seq,
+        entry_type: item.entry_type,
+        row_role: item.row_role,
+        outcome: item.outcome,
+        skip_reason: None,
+        size: item.size,
+        source_dir_id,
+        source_name: item.source_name.clone(),
+        dest,
+        self_dir_id,
+    })
 }
 
 /// Write the terminal state and return the per-`row_role` durable counts.
@@ -623,25 +668,49 @@ fn apply_set_rollback_state(
 /// Both columns are written together on purpose: a reason without its `skipped` outcome
 /// — or one left behind by an earlier attempt that has since reversed the item — would
 /// be a stale explanation of something that no longer happened.
+///
+/// The same transaction moves each row's tree-summary counts from its old outcome to
+/// its new one (read here, on the writer, by `(op_id, seq)`, so the rollback engine
+/// pays no per-row read), and bumps `outcome_generation` so a backfill that read the op
+/// before this batch knows its result is stale.
 fn apply_set_item_outcomes(
     conn: &mut Connection,
     op_id: &str,
     updates: &[ItemOutcomeUpdate],
 ) -> Result<(), OperationLogStoreError> {
     let tx = conn.unchecked_transaction()?;
+    let mut summary = SummaryBatch::begin(&tx, op_id);
     {
         let mut stmt = tx.prepare_cached(
             "UPDATE operation_items SET outcome = ?3, rollback_skip_reason = ?4 WHERE op_id = ?1 AND seq = ?2",
         )?;
         for update in updates {
+            let before = summary.maintains().then(|| read_row_facts(&tx, op_id, update.seq));
             stmt.execute(rusqlite::params![
                 op_id,
                 update.seq,
                 update.outcome.as_token(),
                 update.skip_reason.map(|r| r.as_token()),
             ])?;
+            match before {
+                Some(Ok(rows)) => {
+                    for old in rows {
+                        let new = RowFacts {
+                            outcome: update.outcome,
+                            skip_reason: update.skip_reason,
+                            ..old.clone()
+                        };
+                        summary.add_change(&old, &new);
+                    }
+                }
+                Some(Err(e)) => summary.fail(op_id, &e),
+                None => {}
+            }
         }
     }
+    tx.prepare_cached("UPDATE operations SET outcome_generation = outcome_generation + 1 WHERE op_id = ?1")?
+        .execute(rusqlite::params![op_id])?;
+    summary.finish(&tx, op_id);
     tx.commit()?;
     Ok(())
 }
@@ -650,6 +719,10 @@ fn apply_set_item_outcomes(
 /// never stops a capture burst. `retention.rs` decides when to ask.
 mod prune;
 use prune::handle_prune;
+
+/// The tree summary's delta, written in the same transaction as the rows it counts.
+mod tree_summary;
+use tree_summary::{SummaryBatch, read_row_facts};
 
 #[cfg(test)]
 mod retention_tests;

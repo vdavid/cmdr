@@ -299,6 +299,12 @@ fn seed_rolling_back(rig: &Rig, original: &[Row], inverses: &[Inverse<'_>]) {
             .expect("hold the row back");
         }
     }
+    // These cells guard the clauses that read ROWS, so the op reads as one journaled
+    // before the tree summary existed (that clause has its own cell in
+    // `cmdr-operation-log`'s `tree/maintenance_tests.rs`). It also keeps the hand-made
+    // held-back row honest: the summary only moves with the writer's outcome updates.
+    conn.execute("UPDATE operations SET tree_summary = NULL WHERE op_id = 'op'", [])
+        .expect("read the op's rows");
 }
 
 /// Seed per [`seed_rolling_back`], run the startup reconcile, and read the verdict.
