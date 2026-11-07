@@ -42,14 +42,13 @@ on its next write. `entries::entry_path` reads both forms, because our own fresh
 type 0 and every neighbour is type 15.
 
 **No `book` blob.** The `book` value is an opaque `CFURLCreateBookmarkData` bookmark that lets the
-Dock follow the app if it moves. **Not verified first-hand that an entry without one survives** —
-verifying it means writing to the real `com.apple.dock`, which this milestone was explicitly barred
-from doing. The evidence it rests on: `dockutil` (github.com/kcrawford/dockutil, 1,598 stars, last
-pushed 2025-12-30, the tool every MDM deployment uses for this) writes exactly the six keys above,
-with `_CFURLStringType: 0`, no `book`, and no `bundle-identifier`, and has done so across every
-macOS release since Big Sur. **Manual confirmation is still owed**; see the manual check below. If it
-turns out a bookmark is required, `CFURLCreateBookmarkData` is the API to reach for — ❌ never
-fabricate the blob.
+Dock follow the app if it moves. **An entry without one survives, and the Dock fills it in**: after
+the write and the Dock restart, the stored tile carried a 568-byte `book`, `_CFURLStringType` 15,
+`dock-extra`, `is-beta`, and zeroed `file-mod-date` / `parent-mod-date`, and a launched Cmdr got its
+running dot on that tile (verified on macOS 27.0.1, the same six keys written through CFPreferences
+by a Swift tool plus a Dock terminate, against real 0.59.0 and 0.60.0 installs, 2026-11-07;
+`docs/notes/dock-duplicate-icon-2026-11-07.md`). `dockutil` (github.com/kcrawford/dockutil, the tool
+MDM deployments use for this) writes the same minimal shape. ❌ Never fabricate the blob.
 
 **`bundle-identifier` is ours on top of dockutil's minimum**, taken from `NSBundle::mainBundle()` so
 the tile always names the app that wrote it. It's a key macOS writes on every entry itself, and
@@ -127,7 +126,6 @@ Still unknown, and only a manual run can settle it:
   proof about a domain Apple ships, and macOS has singled out individual domains before.
 - Whether a **notarized, signed** build behaves the same as this unsigned test binary. Signing
   changes which TCC identity the request carries.
-- Whether an entry with no `book` survives the Dock's parse (see above).
 
 ## The manual check
 

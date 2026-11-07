@@ -26,6 +26,9 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 - `local-network-after-update-2026-11-06.md`: why Local Network stopped applying after each in-place update (#1019),
   measured on real releases on macOS 27.0.1: `nehelper` caches the replaced binary's UUID, and what does and doesn't
   make it re-read. Read it before touching `updater/local_network_refresh.rs` or the updater's bundle touch.
+- `dock-duplicate-icon-2026-11-07.md`: why a second Cmdr icon shows up in the Dock after an update (#1023), measured on
+  real releases on macOS 27.0.1: the Restart button's `open -n` relaunch starts a second instance, which the Dock gives
+  its own tile. Read it before changing how Cmdr relaunches.
 - `ci-light-runs-2026-11-05.md`: the live validation of light runs and land runs (throwaway PRs #976 and #978): what
   each run skipped, how GitHub treats a `CI light` gate against the required `CI OK`, and the timings.
 
