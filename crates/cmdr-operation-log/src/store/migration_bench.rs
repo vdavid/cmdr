@@ -1,17 +1,20 @@
-//! What the v6 step costs a big journal at launch, measured on a seeded v5 file.
+//! What the v6 schema costs a big journal after the upgrade, measured on a seeded v5
+//! file.
 //!
-//! The app opens the journal synchronously in `setup()`, so a slow migration step is
-//! a slow launch. This bench seeds 4,000,000 item rows straight into a v5 file, then
-//! times the open that migrates it (exactly the app's `open_write_connection`), and
-//! reports the WAL growth during the step and the file's permanent growth. Numbers:
-//! `DETAILS.md` § "Tree summary". Run it in release (debug builds SQLite at `-O0`):
+//! The app opens the journal synchronously in `setup()`, on its main thread, so a slow
+//! migration step is a window that can't show. This bench seeds 4,000,000 item rows
+//! straight into a v5 file, times the open that migrates it (exactly the app's
+//! `open_write_connection`), then the writer's folder-index build
+//! (`tree_indexes.rs`), and reports the WAL growth and the file's permanent growth.
+//! Numbers: `DETAILS.md` § "Tree summary". Run it in release (debug builds SQLite at
+//! `-O0`), under `cargo test` (nextest's per-test timeout stops it):
 //!
-//! `cargo nextest run --release -p cmdr-operation-log --run-ignored ignored-only -E 'test(bench_v6_migration_on_a_4m_row_journal)' --no-capture`
+//! `cargo test --release -p cmdr-operation-log --lib bench_v6_migration -- --ignored --nocapture`
 
 use std::time::Instant;
 
 use super::migrations::{MIGRATIONS, run_migrations};
-use super::open_write_connection;
+use super::{build_tree_item_indexes, open_write_connection};
 
 const OPS: usize = 2_000;
 const ROWS_PER_OP: usize = 2_000;
@@ -90,10 +93,14 @@ fn bench_v6_migration_on_a_4m_row_journal() {
         seeded as f64 / 1e6
     );
 
-    // The launch: the app's own open, which runs the pending v6 step.
+    // The launch: the app's own open, which runs the pending v6 step on the main thread.
     let started = Instant::now();
     let conn = open_write_connection(&db).expect("migrating open");
     let launch = started.elapsed();
+    // Then the writer's first message after open: the folder indexes.
+    let started = Instant::now();
+    build_tree_item_indexes(&conn).expect("indexes");
+    let indexes = started.elapsed();
     let wal_during = file_len(&wal);
     conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))
         .expect("checkpoint");
@@ -101,7 +108,7 @@ fn bench_v6_migration_on_a_4m_row_journal() {
     let migrated = file_len(&db);
     let growth = migrated.saturating_sub(seeded);
     println!(
-        "v6 open: {launch:.2?}; WAL after the step {:.1} MB; file {:.1} MB → {:.1} MB (+{:.1} MB, {:.1} MB per million rows, {:.0} bytes/row)",
+        "v6 open (main thread): {launch:.2?}; folder indexes (writer thread): {indexes:.2?}; WAL after both {:.1} MB; file {:.1} MB → {:.1} MB (+{:.1} MB, {:.1} MB per million rows, {:.0} bytes/row)",
         wal_during as f64 / 1e6,
         seeded as f64 / 1e6,
         migrated as f64 / 1e6,

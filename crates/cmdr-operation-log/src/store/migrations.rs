@@ -110,15 +110,19 @@ pub fn run_migrations(conn: &Connection, migrations: &[Migration]) -> Result<(),
     let mut pending: Vec<&Migration> = migrations.iter().filter(|m| m.version > current).collect();
     pending.sort_by_key(|m| m.version);
     for migration in pending {
+        // The ladder runs while the app launches, so a slow step is a slow launch:
+        // every step logs what it cost.
+        let started = cmdr_fs::rt::now();
         let tx = conn.unchecked_transaction()?;
         (migration.up)(&tx)?;
         stamp_schema_version(&tx, migration.version)?;
         tx.commit()?;
         log::info!(
             target: "operation_log",
-            "operation-log DB migrated to schema v{} ({})",
+            "operation-log DB migrated to schema v{} ({}) in {:.1?}",
             migration.version,
-            migration.description
+            migration.description,
+            cmdr_fs::rt::since(started)
         );
     }
     Ok(())
@@ -310,9 +314,11 @@ fn migrate_v5_tags_change(tx: &Transaction<'_>) -> rusqlite::Result<()> {
 ///   rows.
 /// - `operation_tree_dirs`: per (op, axis folder) subtree totals, every column a pure
 ///   function of row fields.
-/// - Two item indexes that serve "this folder's files, in name order, from position k"
-///   on either side. These are the only part of the step that scales with the
-///   journal: building them is the launch cost, measured in `DETAILS.md`.
+///
+/// Every part of it is constant-time on any journal. The two item indexes the tree's
+/// folder listings read are NOT here: building them scales with the journal (5.35 s on
+/// 4M rows), and this ladder runs on the app's main thread before the window can show,
+/// so the writer builds them after open (`tree_indexes.rs`).
 fn migrate_v6_tree_summary(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     tx.execute_batch(
         "ALTER TABLE operations ADD COLUMN tree_summary TEXT;
@@ -339,12 +345,6 @@ fn migrate_v6_tree_summary(tx: &Transaction<'_>) -> rusqlite::Result<()> {
              PRIMARY KEY (op_id, dir_id)
          ) WITHOUT ROWID;
          CREATE INDEX operation_tree_dirs_children
-             ON operation_tree_dirs (op_id, parent_dir_id, name_folded);
-
-         CREATE INDEX operation_items_source_dir
-             ON operation_items (op_id, source_dir_id, source_name_folded);
-         CREATE INDEX operation_items_dest_dir
-             ON operation_items (op_id, dest_dir_id, dest_name_folded)
-             WHERE dest_dir_id IS NOT NULL;",
+             ON operation_tree_dirs (op_id, parent_dir_id, name_folded);",
     )
 }

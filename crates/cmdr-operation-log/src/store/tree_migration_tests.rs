@@ -51,6 +51,25 @@ fn a_v5_journal_migrates_keeping_every_row_and_reads_unbuilt() {
         .query_row("SELECT COUNT(*) FROM operation_tree_dirs", [], |row| row.get(0))
         .expect("count");
     assert_eq!(summary_rows, 0, "the step builds no summary: that's on demand, per op");
+    assert!(
+        !tree_item_indexes_exist(conn).expect("lookup"),
+        "the ladder runs on the app's main thread, so it never builds the journal-sized indexes"
+    );
+}
+
+/// `OperationLog::open` queues the index build on the writer thread, after the ladder
+/// and the reconcile, so the open itself pays nothing that scales with the journal.
+#[test]
+fn opening_the_journal_builds_the_folder_indexes_on_the_writer() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = operation_log_db_path(dir.path());
+    seed_v5(&path);
+
+    let log = crate::OperationLog::detached();
+    log.open(&path, &|_| None).expect("open");
+    log.writer().expect("writer").flush_blocking().expect("flush");
+    let conn = open_read_connection(&path).expect("read connection");
+    assert!(tree_item_indexes_exist(&conn).expect("lookup"));
 }
 
 fn plan(conn: &Connection, sql: &str) -> Vec<String> {
@@ -68,6 +87,7 @@ fn plan(conn: &Connection, sql: &str) -> Vec<String> {
 fn a_folders_listing_is_index_served_in_name_order() {
     let dir = tempfile::tempdir().expect("temp dir");
     let store = OperationLogStore::open(&operation_log_db_path(dir.path()), &|_| None).expect("open");
+    build_tree_item_indexes(store.conn()).expect("indexes");
     let cases = [
         (
             "SELECT seq FROM operation_items WHERE op_id = ?1 AND source_dir_id = ?2 \

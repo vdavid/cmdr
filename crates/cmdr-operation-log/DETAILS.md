@@ -177,8 +177,9 @@ appended step). The shape and its non-obvious choices (the fourth, `operation_tr
   are indexed folded (search) and, unlike dirs, **not interned** — a b-tree handles the massive duplication across a
   large op fine, and names must stay directly queryable. The nullable `self_dir_id` (v6) is a DIR row's own folder on
   the op's tree axis (§ "Tree summary"). Indexes: `(op_id, seq)`, `(source_name_folded)`, partial `(dest_name_folded)`,
-  and (v6) `(op_id, source_dir_id, source_name_folded)` plus partial `(op_id, dest_dir_id, dest_name_folded)`, which
-  serve "this folder's files of this op, in name order".
+  and `(op_id, source_dir_id, source_name_folded)` plus partial `(op_id, dest_dir_id, dest_name_folded)`, which serve
+  "this folder's files of this op, in name order" and which the writer builds after open, outside the ladder (§ "Tree
+  summary").
 
 ## The writer (`writer.rs`)
 
@@ -1067,18 +1068,24 @@ subtree totals in `operation_tree_dirs`, kept exact by the writer.
 - **Exact means equal to `summary::aggregate_op`**, the from-scratch aggregate over the op's rows in `seq` chunks, which
   a backfill writes for an unbuilt op. Golden fixtures with hand-written expected rows: `src/tree/tests.rs`.
 - **Unbuilt ops and the backfill seam** (`src/tree/status.rs`): every op journaled before v6 reads `tree_summary` NULL.
-  `read_tree_summary_status` answers `Built`, `Unbuilt(OperationRunning | RollingBack)` (a backfill can't start: inserts
-  don't bump the generation, and a rollback would make it restart on every batch), `Building(progress)` from the
-  `BackfillRegistry`, or `Unbuilt(NotBuilt)`.
+  `read_tree_summary_status` answers `IndexesBuilding` (below), `Built`, `Unbuilt(OperationRunning | RollingBack)` (a
+  backfill can't start: inserts don't bump the generation, and a rollback would make it restart on every batch),
+  `Building(progress)` from the `BackfillRegistry`, or `Unbuilt(NotBuilt)`.
 - **The reconcile reads it.** A built op answers the "original settled a row" clause from its volume-root rows instead
   of an `EXISTS` over the op (§ "The `rolling_back` state machine + startup reconcile").
 - **Prune and GC**: a pruned op's summary rows go first (they reference the op and its dirs), and `gc_orphan_dirs` keeps
   any dir a summary row or a `self_dir_id` names: a DIR unit's own folder is often referenced by nothing else.
-- **Launch cost of the step** (`src/store/migration_bench.rs`, release, a seeded 4M-row v5 journal of 1,053 MB, Apple
-  Silicon, 2026-11-07): the open that migrates takes 5.35 s, once; the WAL reaches 386 MB during the step; the file
-  grows 384 MB for good, about 96 bytes or 96 MB per million rows (half the seeded rows carry a dest). Nearly all of it
-  is the two item indexes; the `ALTER`s and the empty table are free. A journal at the 3 GB retention default holds
-  about 11M rows, which would stall that first launch about 15 s. Scaling and the rerun command:
+- **The two item indexes are built by the writer after open, never in the ladder** (`src/store/tree_indexes.rs`).
+  Decision/Why: `OperationLog::open` runs inside `setup()` on the app's main thread, before the event loop runs and the
+  window can show, and these indexes are the only part of v6 that scales with the journal. So `open` queues
+  `BuildTreeIndexes` on the writer right after the reconcile (whose writes block on their reply), and operations journal
+  behind it through the channel's backpressure. Until both exist, `read_tree_summary_status` answers `IndexesBuilding`.
+  `IF NOT EXISTS` makes later launches a schema lookup. The build logs its duration at info, as every ladder step does.
+- **Upgrade cost** (`src/store/migration_bench.rs`, release, a seeded 4M-row v5 journal of 1,053 MB, Apple Silicon,
+  2026-11-07): the migrating open on the main thread takes 1.2 ms; the writer's index build takes 4.5 s, once; the WAL
+  reaches 386 MB during it; the file grows 384 MB for good, about 96 bytes or 96 MB per million rows (half the seeded
+  rows carry a dest). The `ALTER`s and the empty table are free. A journal at the 3 GB retention default holds about 11M
+  rows, so its first launch after the upgrade journals about 13 s late. Rerun command and scaling:
   `docs/notes/operation-log-capture-bench.md` § 5.
 
 ## Alpha UI — the "Operation log" dialog

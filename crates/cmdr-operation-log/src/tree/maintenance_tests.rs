@@ -374,4 +374,11 @@ fn the_status_says_why_a_summary_cant_be_read_yet() {
     );
     registry.remove("op");
     assert_eq!(registry.status("op"), None);
+
+    sql(&j, "DROP INDEX operation_items_dest_dir;");
+    assert_eq!(
+        status("op"),
+        Some(TreeSummaryStatus::IndexesBuilding),
+        "no tree reads a folder before the writer built its indexes"
+    );
 }

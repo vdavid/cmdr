@@ -45,7 +45,9 @@ use std::thread;
 
 use rusqlite::Connection;
 
-use super::store::{OperationLogStoreError, fold_name, intern_child_dir, intern_dir, open_write_connection};
+use super::store::{
+    OperationLogStoreError, build_tree_item_indexes, fold_name, intern_child_dir, intern_dir, open_write_connection,
+};
 use super::tree::TreeAxis;
 use super::tree::summary::RowFacts;
 use super::types::{
@@ -233,6 +235,7 @@ enum WriteMessage {
         reply: mpsc::Sender<()>,
     },
     Prune(PruneRequest),
+    BuildTreeIndexes,
     Flush(mpsc::Sender<()>),
     Shutdown,
 }
@@ -357,6 +360,13 @@ impl OperationLogWriter {
         self.send(WriteMessage::Prune(request))
     }
 
+    /// Enqueue building the item tree's folder indexes if they're missing
+    /// (`store/tree_indexes.rs`). Fire-and-forget: what's sent after it waits behind
+    /// it, so call it once, right after open, off the app's main thread's path.
+    pub(crate) fn build_tree_indexes(&self) -> Result<(), OperationLogStoreError> {
+        self.send(WriteMessage::BuildTreeIndexes)
+    }
+
     /// Block until all prior messages are committed.
     pub fn flush_blocking(&self) -> Result<(), OperationLogStoreError> {
         let (tx, rx) = mpsc::channel();
@@ -458,6 +468,11 @@ fn apply_message(conn: &mut Connection, msg: WriteMessage) -> std::ops::ControlF
         WriteMessage::Prune(request) => {
             if let Err(e) = handle_prune(conn, &request) {
                 log::warn!(target: "operation_log", "prune failed: {e}");
+            }
+        }
+        WriteMessage::BuildTreeIndexes => {
+            if let Err(e) = build_tree_item_indexes(conn) {
+                log::warn!(target: "operation_log", "building the item tree's folder indexes failed: {e}");
             }
         }
         WriteMessage::Flush(done) => {

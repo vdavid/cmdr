@@ -24,6 +24,8 @@ pub(super) fn journal() -> Journal {
     let path = operation_log_db_path(dir.path());
     drop(OperationLogStore::open(&path, &|_| None).expect("open store"));
     let writer = OperationLogWriter::spawn(&path).expect("spawn writer");
+    // As `OperationLog::open` does.
+    writer.build_tree_indexes().expect("queue the folder indexes");
     Journal {
         writer,
         path,

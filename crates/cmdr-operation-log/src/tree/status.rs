@@ -9,12 +9,15 @@ use std::sync::Mutex;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use rusqlite::{Connection, OptionalExtension};
 
-use crate::store::OperationLogStoreError;
+use crate::store::{OperationLogStoreError, tree_item_indexes_exist};
 use crate::types::{RollbackState, TreeSummaryState};
 
 /// Where an op's tree summary stands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TreeSummaryStatus {
+    /// The writer is still building the folder indexes every tree reads (once, after
+    /// the upgrade that added them; `store/tree_indexes.rs`). Ahead of any op's state.
+    IndexesBuilding,
     /// Exact: the tree reads it.
     Built,
     /// A backfill is building it: `done` of `total` rows read.
@@ -68,7 +71,8 @@ impl BackfillRegistry {
     }
 }
 
-/// Where `op_id`'s summary stands, `None` for an op with no header. In order: a built
+/// Where `op_id`'s summary stands, `None` for an op with no header. In order: the
+/// journal's folder indexes still building (no tree can read a folder yet); a built
 /// summary reads as built whatever the op is doing (every op opened since the summary
 /// existed is built from its first row); a running op or rollback says why nothing can
 /// build it yet; then a running backfill's progress; else not built.
@@ -90,6 +94,9 @@ pub(crate) fn read_tree_summary_status(
     let Some((summary, running, rollback_state)) = row else {
         return Ok(None);
     };
+    if !tree_item_indexes_exist(conn)? {
+        return Ok(Some(TreeSummaryStatus::IndexesBuilding));
+    }
     if let Some(value) = summary {
         return match TreeSummaryState::from_token(&value) {
             Some(TreeSummaryState::Built) => Ok(Some(TreeSummaryStatus::Built)),

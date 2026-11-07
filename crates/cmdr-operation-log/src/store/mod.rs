@@ -17,6 +17,7 @@
 mod connection;
 mod dirs;
 mod migrations;
+mod tree_indexes;
 
 use std::path::{Path, PathBuf};
 
@@ -30,6 +31,7 @@ pub(crate) use connection::open_write_connection;
 pub use dirs::reconstruct_dir_path;
 pub(crate) use dirs::{intern_child_dir, intern_dir};
 pub use migrations::{MIGRATIONS, Migration, run_migrations};
+pub(crate) use tree_indexes::{build_tree_item_indexes, tree_item_indexes_exist};
 
 use super::types::{
     ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState,

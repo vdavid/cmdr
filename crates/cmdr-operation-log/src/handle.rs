@@ -103,6 +103,13 @@ impl OperationLog {
         // inverse ever opened. Before anything can journal, so a re-issued
         // rollback resumes cleanly.
         reconcile_rolling_back_on_open(&writer);
+        // AFTER the reconcile, whose writes block on their reply: the first build
+        // after an upgrade can take seconds on a big journal, and `open` runs on the
+        // app's main thread. Queued here, it runs on the writer thread, and what's
+        // journaled meanwhile waits behind it (`store/tree_indexes.rs`).
+        if let Err(e) = writer.build_tree_indexes() {
+            log::warn!(target: "operation_log", "couldn't queue the item tree's folder indexes: {e}");
+        }
         *self.inner.slot.write_ignore_poison() = Some(Published {
             journal: Arc::new(WriterJournal::new(writer.clone())),
             writer: Some(writer),
