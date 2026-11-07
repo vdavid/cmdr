@@ -7,7 +7,8 @@ stops everything and exits inside a hard budget.
 
 - `mod.rs`: `QuitGate` (phase machine + deadline thread), `blocks_quit` (the policy), `tear_down_and_exit` (the
   ordering), `TauriQuitHost` (the real outside world), the `quit-requested` and `quit-called-off` events.
-- `commands.rs`: `quit_confirm` / `quit_cancel`, both thin, both returning the gate's `QuitAnswer`.
+- `commands.rs`: `quit_confirm` / `quit_cancel`, both thin, both returning the gate's `QuitAnswer`; `relaunch_app`.
+- `relaunch.rs`: Restart (update toast, onboarding): quit, then a detached waiter reopens the bundle.
 - Frontend counterpart: `apps/desktop/src/lib/quit/CLAUDE.md`. MCP surface (the `quit` tool and the two answers):
   `../tools/actions/quit.rs`.
 
@@ -28,8 +29,9 @@ stops everything and exits inside a hard budget.
   else takes a prompt down when the answer comes from MCP, and one counting toward a quit that will never come is a lie.
 - **`Phase::Quitting` is load-bearing.** The teardown ends in `AppHandle::exit(0)`, which comes straight back as
   `ExitRequested`; without the phase the gate would prompt again over the operations it just aborted, forever.
-- **A restart (`RESTART_EXIT_CODE`) never reaches the gate**: Tauri ignores `prevent_exit` there, so asking would show
-  a dialog nobody could answer.
+- **Restart is `relaunch.rs`'s `relaunch_app`, through the gate like ⌘Q.** ❌ Never Tauri's `relaunch()` /
+  `restart()` on macOS: its `open -n` doubles the Dock icon (#1037). A Tauri restart (`RESTART_EXIT_CODE`, the dev and
+  non-macOS fallback) skips the gate, since Tauri ignores `prevent_exit` there. `DETAILS.md` § Relaunch.
 - **Classify by TYPED variant, never a string**. Both matches in `blocks_quit`
   are exhaustive so a new operation type or lifecycle status has to declare its side.
 - **"Don't quit" deletes the countdown, it doesn't defer it.** A snooze would still kill the transfer seconds later,

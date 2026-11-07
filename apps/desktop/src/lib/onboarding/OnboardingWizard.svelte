@@ -1,8 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy, tick, untrack } from 'svelte'
-    import { relaunch } from '@tauri-apps/plugin-process'
     import Icon from '#lib/ui/Icon.svelte'
-    import { getAiRuntimeStatus, notifyDialogOpened, notifyDialogClosed } from '#lib/tauri-commands/index.js'
+    import { getAiRuntimeStatus, notifyDialogOpened, notifyDialogClosed, relaunchApp } from '#lib/tauri-commands/index.js'
     import { getSettingLock } from '#lib/managed-policy/managed-policy.svelte.js'
     import { markDialogOpen, markDialogClosed } from '#lib/ui/open-dialogs.svelte.js'
     import Button from '#lib/ui/Button.svelte'
@@ -132,9 +131,9 @@
 
     async function handleRestart(): Promise<void> {
         try {
-            await relaunch()
+            await relaunchApp()
         } catch (error) {
-            log.warn('relaunch() failed: {error}', { error })
+            log.warn('relaunchApp() failed: {error}', { error })
         }
     }
 

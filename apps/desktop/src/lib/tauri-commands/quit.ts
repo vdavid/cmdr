@@ -21,6 +21,14 @@ export async function quitCancel(): Promise<QuitAnswer> {
   return commands.quitCancel()
 }
 
+/** Quit and open Cmdr again (the update toast's Restart, onboarding's "Restart Cmdr"). The
+ *  quit goes through the gate like ⌘Q, so with work in flight the person is asked first. ❌ Never
+ *  `relaunch()` from `@tauri-apps/plugin-process`: on macOS its `open -n` leaves a second Dock
+ *  icon (`apps/desktop/src-tauri/src/quit/relaunch.rs`). The promise may never settle: the app is exiting. */
+export async function relaunchApp(): Promise<void> {
+  await commands.relaunchApp()
+}
+
 /** Subscribe to the backend holding a quit: what's still running, and how long
  *  the user has. Returns an `UnlistenFn`; call it on teardown or you leak the
  *  listener. */

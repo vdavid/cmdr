@@ -41,9 +41,12 @@ const LOCK_FILE_NAME: &str = ".instance.lock";
 /// against one data dir, and both must survive.
 ///
 /// - `scripts/i18n-capture.ts` relaunches the app repeatedly without waiting for the previous exit.
-/// - The in-app updater's `relaunch()` spawns the new process before the old one is gone.
+/// - A Tauri restart (`open -n`, the dev and non-macOS fallback of `quit::relaunch`) starts the
+///   new process before the old one is gone.
 ///
-/// A user quitting and immediately relaunching lands in the same window.
+/// A user quitting and immediately relaunching lands in the same window. The macOS bundle's
+/// Restart (`quit::relaunch`) doesn't overlap: its waiter opens the app only once our pid is
+/// gone, unless the old process hangs past the waiter's bound.
 const ACQUIRE_WINDOW: Duration = Duration::from_secs(5);
 
 /// Poll interval inside [`ACQUIRE_WINDOW`].

@@ -82,9 +82,10 @@ commands, and notable non-obvious placements.
   resolves only with the whole tally, which is what Ask Cmdr's rename undo reports. ❌ Don't reorder the ids handed to
   `undoOperations`: the backend reverses them newest-first and the apply order breaks a same-second tie.
 - **`quit.ts`**: the quit gate's two answers (`quitConfirm` / `quitCancel`, each returning the gate's typed
-  `QuitAnswer`) and the two subscriptions, `onQuitRequested` and `onQuitCalledOff`. There is deliberately no
-  cancel-every-operation wrapper anywhere in this directory: that command belongs to the gate, which calls it in Rust
-  (`src-tauri/src/quit/`), and a frontend wrapper is how a window teardown once came to kill backgrounded transfers.
+  `QuitAnswer`), `relaunchApp` (Restart: quit through the gate, then reopen without a second Dock icon), and the two
+  subscriptions, `onQuitRequested` and `onQuitCalledOff`. There is deliberately no cancel-every-operation wrapper
+  anywhere in this directory: that command belongs to the gate, which calls it in Rust (`src-tauri/src/quit/`), and a
+  frontend wrapper is how a window teardown once came to kill backgrounded transfers.
 - **`data-wipe.ts`**: "Delete all Cmdr data": `getDataWipeSummary`, `deleteAllAppData` (both throw `DataWipeFailure`,
   read back with `asDataWipeError`), and `quitAfterDataWipe`, which goes through the same quit gate.
 - **`storage.ts`**: `listVolumes`, `getVolumeSpace`, `watchVolumeSpace` / `unwatchVolumeSpace`, `ejectVolume`,

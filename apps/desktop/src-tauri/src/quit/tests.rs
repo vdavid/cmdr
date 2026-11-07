@@ -271,6 +271,28 @@ fn cancelling_releases_the_gate_and_the_timer_is_gone() {
     assert_eq!(host.announcements().len(), 2);
 }
 
+/// A Restart that hit the prompt goes with it: "Keep working" and a later plain ⌘Q must not
+/// reopen the app (#1037).
+#[cfg(target_os = "macos")]
+#[test]
+fn keep_working_calls_a_pending_relaunch_off() {
+    let host = RecordingHost::with(vec![operation(WriteOperationType::Copy, LifecycleStatus::Running)]);
+    let gate = gate(Duration::from_secs(600), Duration::from_millis(50));
+    relaunch::arm_for_test(relaunch::WaiterPlan {
+        pid: 1,
+        ticks: 1,
+        interval: "0.1".to_string(),
+        opener: "/usr/bin/open".into(),
+        bundle: "/Applications/Cmdr.app".into(),
+        args: Vec::new(),
+    });
+
+    assert!(gate.request_quit(Arc::clone(&host)).is_held());
+    assert!(relaunch::is_armed(), "holding the quit must not drop the relaunch");
+    gate.cancel();
+    assert!(!relaunch::is_armed());
+}
+
 #[test]
 fn a_second_quit_request_rides_the_countdown_already_running() {
     let host = RecordingHost::with(vec![operation(WriteOperationType::Copy, LifecycleStatus::Running)]);

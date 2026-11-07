@@ -8,15 +8,14 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 
-const { relaunchMock, dismissToastMock, openExternalUrlMock } = vi.hoisted(() => ({
-  relaunchMock: vi.fn(() => Promise.resolve()),
+const { relaunchAppMock, dismissToastMock, openExternalUrlMock } = vi.hoisted(() => ({
+  relaunchAppMock: vi.fn(() => Promise.resolve()),
   dismissToastMock: vi.fn(),
   openExternalUrlMock: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('@tauri-apps/plugin-process', () => ({ relaunch: relaunchMock }))
 vi.mock('#lib/ui/toast/index.js', () => ({ dismissToast: dismissToastMock }))
-vi.mock('#lib/tauri-commands/index.js', () => ({ openExternalUrl: openExternalUrlMock }))
+vi.mock('#lib/tauri-commands/index.js', () => ({ openExternalUrl: openExternalUrlMock, relaunchApp: relaunchAppMock }))
 
 import UpdateToastContent from './UpdateToastContent.svelte'
 import { updateState } from './update-state.svelte'
@@ -40,7 +39,7 @@ function resetState() {
 describe('UpdateToastContent', () => {
   beforeEach(() => {
     resetState()
-    relaunchMock.mockClear()
+    relaunchAppMock.mockClear()
     dismissToastMock.mockClear()
     openExternalUrlMock.mockClear()
   })
@@ -90,10 +89,10 @@ describe('UpdateToastContent', () => {
 
     later?.click()
     expect(dismissToastMock).toHaveBeenCalledWith('update')
-    expect(relaunchMock).not.toHaveBeenCalled()
+    expect(relaunchAppMock).not.toHaveBeenCalled()
 
     restart?.click()
-    expect(relaunchMock).toHaveBeenCalledTimes(1)
+    expect(relaunchAppMock).toHaveBeenCalledTimes(1)
   })
 
   /** An update with nothing to say about security must read exactly as it always has. */

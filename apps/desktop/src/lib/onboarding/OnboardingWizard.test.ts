@@ -33,6 +33,7 @@ import { blockingSoftDialog, isAnySoftDialogOpen, _resetOpenDialogsForTesting } 
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
+  relaunchApp: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   checkFullDiskAccess: vi.fn(() => Promise.resolve(false)),
   getMacosMajorVersion: vi.fn(() => Promise.resolve(14)),
@@ -89,10 +90,6 @@ vi.mock('#lib/ai/cloud-consent.svelte.js', () => ({
   declineCloudConsent: vi.fn(() => Promise.resolve('done')),
   acceptCloudConsent: vi.fn(() => Promise.resolve('done')),
   CLOUD_CONSENT_ANCHOR: 'settings-ai-cloud-consent',
-}))
-
-vi.mock('@tauri-apps/plugin-process', () => ({
-  relaunch: vi.fn(() => Promise.resolve()),
 }))
 
 // Force macOS in jsdom so the wizard renders step 1 (StepFda) instead of skipping it.
@@ -187,7 +184,7 @@ describe('OnboardingWizard', () => {
     expect(getOnboardingState().currentStep).toBe(2)
   })
 
-  it('step 1 in `restart` footer mode shows a Restart Cmdr button that calls relaunch()', async () => {
+  it('step 1 in `restart` footer mode shows a Restart Cmdr button that calls relaunchApp()', async () => {
     openWizard('first-launch')
     setStep1Restart()
     mounted = mountWizard()
@@ -197,8 +194,8 @@ describe('OnboardingWizard', () => {
     btn?.click()
     flushSync()
     await tick()
-    const { relaunch } = await import('@tauri-apps/plugin-process')
-    expect(relaunch).toHaveBeenCalledOnce()
+    const { relaunchApp } = await import('#lib/tauri-commands/index.js')
+    expect(relaunchApp).toHaveBeenCalledOnce()
   })
 
   it('Finish on the last step fires onComplete after walking 1 → 2 → 3 → 4', async () => {

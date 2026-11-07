@@ -169,6 +169,10 @@ pub fn on_run_event(app: &AppHandle<Wry>, event: tauri::RunEvent) {
             // Last, after the plugins' own Exit handlers (Tauri runs those first, and the store
             // plugin saves every open store there): remove what shutdown wrote back after a wipe.
             data_wipe::on_exit();
+
+            // After every flush: a Restart's waiter opens the app again once this process is
+            // gone. A no-op unless `quit::relaunch::relaunch` armed it.
+            quit::relaunch::on_exit(app);
         }
         _ => {}
     }

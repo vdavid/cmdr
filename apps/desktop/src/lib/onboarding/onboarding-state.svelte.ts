@@ -51,7 +51,7 @@ export type Step1Variant = 'first-ask' | 'revoked' | 'already-granted'
  * - `'decide'`: Allow + Deny buttons (or the single Next button for the already-granted
  *   variant). The wizard's footer renders nothing here; the step body owns the buttons.
  * - `'restart'`: user has clicked Allow this session. The wizard's footer shows a
- *   "Restart Cmdr" primary button (which calls `relaunch()`). The step body keeps the
+ *   "Restart Cmdr" primary button (which calls `relaunchApp()`). The step body keeps the
  *   Allow/Deny buttons live so the user can change their mind to Deny.
  *
  * Why we model this here, not in `StepFda.svelte`: the footer button lives in

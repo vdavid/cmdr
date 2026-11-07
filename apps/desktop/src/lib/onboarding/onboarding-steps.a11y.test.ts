@@ -100,10 +100,6 @@ vi.mock('#lib/settings/ai-config.js', () => ({
   pushConfigToBackend: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('@tauri-apps/plugin-process', () => ({
-  relaunch: vi.fn(() => Promise.resolve()),
-}))
-
 // jsdom isn't macOS, so the safety-net guard would short-circuit the FDA render.
 // Resume-rule platform logic is unit-tested separately.
 vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => {

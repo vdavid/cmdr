@@ -7,7 +7,7 @@ type, because each window has a different trust level and splitting by window pr
 window. Having no caller-window guard is deliberate: `docs/security.md` § "Why there's no caller-window authorization
 guard". Don't claim a window "can't invoke" an app command.
 
-- `default.json`: main window (the most powerful capability: `updater`, `process:allow-restart` / `-exit`,
+- `default.json`: main window (the most powerful capability: `updater`, `process:allow-exit`,
   `mcp-bridge`, `create-webview-window`, `global-shortcut`, scoped `fs` write/remove, …). Lists only `"main"`.
 - `settings.json`: settings window (`src/capabilities.rs` pins its APIs to callers). `viewer.json`: file viewer windows (wildcard `"viewer-*"` covers `viewer-0`, …).
 - `shortcuts.json`: read-only Keyboard shortcuts help window. `debug.json`: dev-only debug window, self-contained with

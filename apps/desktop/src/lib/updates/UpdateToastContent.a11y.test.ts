@@ -17,10 +17,6 @@ vi.mock('#lib/ui/toast/index.js', () => ({
   dismissToast: vi.fn(),
 }))
 
-vi.mock('@tauri-apps/plugin-process', () => ({
-  relaunch: vi.fn(() => Promise.resolve()),
-}))
-
 async function render() {
   const target = document.createElement('div')
   document.body.appendChild(target)

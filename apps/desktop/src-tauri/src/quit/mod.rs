@@ -15,6 +15,7 @@
 //! `DETAILS.md`.
 
 pub(crate) mod commands;
+pub(crate) mod relaunch;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError};
@@ -335,6 +336,9 @@ impl QuitGate {
                 // Off the lock before touching the outside world, and only on
                 // the arm that actually took a prompt down.
                 drop(phase);
+                // A Restart that hit this prompt is called off with it, or the
+                // next plain ⌘Q would reopen the app.
+                relaunch::disarm();
                 host.announce_called_off();
                 QuitAnswer::Answered
             }

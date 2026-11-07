@@ -179,9 +179,10 @@ pub fn show_main_window<R: Runtime>(window: Window<R>, reason: ShowReason) -> Re
     if activates_app(reason) {
         // `show()` is `makeKeyAndOrderFront:`, which makes the window key WITHIN Cmdr but never
         // makes Cmdr the active app, so a launch that isn't already frontmost lands behind
-        // whatever is. Two ways that happens: the updater's relaunch spawns the binary directly
-        // (`tauri::process::restart_macos_app`), which bypasses LaunchServices, so macOS grants
-        // the new process no activation at all; and a slow cold launch can lose the front position
+        // whatever is. Two ways that happened: Tauri 2.12.1 and older restarted by spawning the
+        // binary directly, bypassing LaunchServices, so macOS granted the new process no
+        // activation at all (Restart now goes through `open`, `quit::relaunch`, but a build that
+        // old still updates into this one); and a slow cold launch can lose the front position
         // before the frontend mounts, since the window is created `"visible": false` and nothing
         // shows it until then. `set_focus` is what asks for activation
         // (`activateIgnoringOtherApps:` under tao).

@@ -1,10 +1,9 @@
 <script lang="ts">
-    import { relaunch } from '@tauri-apps/plugin-process'
     import { dismissToast } from '#lib/ui/toast/index.js'
     import Button from '#lib/ui/Button.svelte'
     import ToastActions from '#lib/ui/toast/ToastActions.svelte'
     import LinkButton from '#lib/ui/LinkButton.svelte'
-    import { openExternalUrl } from '#lib/tauri-commands/index.js'
+    import { openExternalUrl, relaunchApp } from '#lib/tauri-commands/index.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { updateState } from './update-state.svelte'
@@ -32,7 +31,7 @@
     )
 
     function handleRestart() {
-        void relaunch()
+        void relaunchApp()
     }
 
     function handleDismiss() {

@@ -131,6 +131,41 @@ The 2 s budget is `DRAIN` plus a tier-2 abort (token flips, no I/O), a ledger fl
 Both matches are written exhaustively so a new variant is a compile error here rather than a silent default into
 "killable at quit".
 
+## Relaunch
+
+The update toast's Restart and onboarding's "Restart Cmdr" call `relaunch_app` (`relaunch.rs`). On macOS, from a
+`.app` bundle:
+
+1. `relaunch` stores a `WaiterPlan` (our pid, the bundle, our args) in `ARMED` and calls `AppHandle::exit(0)`.
+2. That's an ordinary `ExitRequested`, so the gate may hold it and ask. "Keep working" (`cancel`) calls `disarm`, or a
+   later plain ⌘Q would reopen the app. Pinned by `tests::keep_working_calls_a_pending_relaunch_off`.
+3. Last in `RunEvent::Exit`, after every flush, `on_exit` starts the waiter: `/bin/sh -c` with everything passed as
+   positional params (no quoting), forking a subshell into the background and returning at once, so we reap the outer
+   shell and the subshell, reparented to launchd, outlives us. Its own process group, stdio on `/dev/null`.
+4. The waiter polls `kill -0 <pid>` every 100 ms; once we're gone it runs `/usr/bin/open <bundle> --args …` without
+   `-n`. After 30 s it opens anyway (an `open` while we still run only activates us) and writes a line through
+   `logger -t cmdr-relaunch`, as does a failed `open`. Read them with
+   `log show --last 1h --predicate 'eventMessage CONTAINS "cmdr-relaunch"'`; Cmdr's own log can't hold them, since the
+   process that owns it is gone.
+5. If the waiter can't start, `on_exit` falls back to `tauri::process::restart` (Cmdr comes back, with the doubled
+   tile) rather than leaving the person with no Cmdr.
+
+Decisions:
+
+- **Decision: wait for our exit, then `open` without `-n`.** Why: Tauri 2.12.2+ restarts with `open -n` while the old
+  process lives, the Dock gives the second instance its own tile, and the pinned tile goes dark once the old one exits
+  (`docs/notes/dock-duplicate-icon-2026-11-07.md`). One instance at a time, LaunchServices binds the new process to the
+  pinned tile. Sparkle's relauncher has the same shape. It keeps what Tauri's change fixed: launchd owns the new
+  process, so it never inherits our stdio.
+- **Decision: through the gate, unlike Tauri's restart.** Why: a Restart with a copy running used to kill it with no
+  prompt, which ⌘Q never does. Arming before the exit and spawning in `RunEvent::Exit` means the waiter exists only once
+  the exit is certain.
+- **Outside a bundle (a dev binary) and off macOS** it's Tauri's `request_restart`: nothing to double there, and it
+  skips the gate as before.
+
+The waiter's argv and both waits (opens after the exit, opens anyway at the bound) are tested against a stand-in opener
+in `relaunch_tests.rs`.
+
 ## Testing it
 
 `tests.rs` drives the real gate, the real thread, and the real channel against a `RecordingHost`, with the two

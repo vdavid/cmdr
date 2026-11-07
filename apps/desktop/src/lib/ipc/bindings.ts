@@ -4120,6 +4120,12 @@ export const commands = {
    */
   quitCancel: () => __TAURI_INVOKE<QuitAnswer>('quit_cancel'),
   /**
+   *  Quits Cmdr and opens it again: the update toast's Restart and onboarding's "Restart Cmdr".
+   *  The quit goes through the gate like ⌘Q. ❌ Never Tauri's `relaunch()` on macOS: its `open -n`
+   *  doubles the Dock icon. See [`super::relaunch`].
+   */
+  relaunchApp: () => __TAURI_INVOKE<void>('relaunch_app'),
+  /**
    *  The recent-operations feed (newest first), paged — the alpha UI's "last 50 +
    *  load 50 more" and the Debug panel's list.
    */
@@ -21870,7 +21876,10 @@ export type VolumeError =
    *  what happened; a retry copies the new version. Raised by an S3
    *  server-side copy in parts (`cmdr-s3` `server_copy.rs`), and by the copy
    *  engine for a source stream that delivered more or fewer bytes than its
-   *  `StreamLength::Known` (`cmdr-operations` `transfer/volume/source_reads.rs`).
+   *  `StreamLength::Known` (`cmdr-operations` `transfer/volume/source_reads.rs`),
+   *  and by SMB when a held reader or a download comes back after a reconnect
+   *  to a file that isn't the version it was reading (`cmdr-smb` `resume.rs`),
+   *  which the viewer reloads on.
    */
   | { type: 'sourceChanged'; data: string }
   /**

@@ -306,9 +306,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   Cmdr visible (the window is created `"visible": false`; the frontend calls it from `onMount`), and it takes a
   `ShowReason`: a `launch` show follows `show()` with `set_focus()`, a `repaint-repair` re-show doesn't. The activation
   is load-bearing, because `show()` is only `makeKeyAndOrderFront:`, which makes the window key within Cmdr without
-  making Cmdr the active app: the update toast's relaunch spawns the binary directly
-  (`tauri::process::restart_macos_app`), bypassing LaunchServices, so the new process is granted no activation and its
-  window opens behind whatever is frontmost (verified on macOS 15.5 with Tauri 2.11.5, from a user-reported background
+  making Cmdr the active app: a relaunch that spawns the binary directly (Tauri 2.12.1 and older, which older builds
+  still run when they update), bypassing LaunchServices, is granted no activation and its window opens behind whatever
+  is frontmost (verified on macOS 15.5 with Tauri 2.11.5, from a user-reported background
   start after "Restart now", 2026-08-27). `order_window_to_back` is E2E-only z-ordering (order to back without focus),
   a no-op off macOS / outside E2E, and the E2E branch of `show_main_window` orders back instead of showing.
   `raise_child_window(label)` is how a singleton opener (Settings, Keyboard shortcuts, the queue) brings its

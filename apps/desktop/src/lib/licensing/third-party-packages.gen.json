@@ -4788,12 +4788,6 @@
       "url": "https://github.com/tauri-apps/plugins-workspace#readme"
     },
     {
-      "name": "@tauri-apps/plugin-process",
-      "version": "2.4.0",
-      "license": "MIT OR Apache-2.0",
-      "url": "https://github.com/tauri-apps/plugins-workspace#readme"
-    },
-    {
       "name": "@tauri-apps/plugin-store",
       "version": "2.5.0",
       "license": "MIT OR Apache-2.0",

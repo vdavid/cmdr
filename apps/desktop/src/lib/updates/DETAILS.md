@@ -102,9 +102,9 @@ fixes it, and since the toast is persistent, a user who leaves it on screen is n
 When `status` becomes `'ready'`, the updater funnels through `showUpdateToast()`, which consults the pure, unit-tested
 `shouldShowUpdateToast({ onboarded, onboardingShowing, status })` and only fires
 `addToast(UpdateToastContent, { id: 'update', dismissal: 'persistent' })` when all three hold.
-`UpdateToastContent.svelte` renders the body, calls `relaunch()` from `@tauri-apps/plugin-process` for the restart
-action, and dismisses via `dismissToast('update')` for "Later". There's no local dismissed flag; the toast
-infrastructure manages dismissal.
+`UpdateToastContent.svelte` renders the body, calls `relaunchApp()` (the backend's `relaunch_app`,
+`apps/desktop/src-tauri/src/quit/relaunch.rs`) for the restart action, and dismisses via `dismissToast('update')` for
+"Later". There's no local dismissed flag; the toast infrastructure manages dismissal.
 
 ### Why the toast names the fallback
 
@@ -328,7 +328,7 @@ When a gate opens, the helper re-attempts the toast; if the download finished du
 
 - `@tauri-apps/api/core` `invoke()` (macOS custom commands).
 - `@tauri-apps/plugin-updater` `check()` / `downloadAndInstall()` (non-macOS, dynamically imported).
-- `@tauri-apps/plugin-process` `relaunch()`; `@tauri-apps/api/app` `getVersion()`.
+- `relaunchApp()` from `#lib/tauri-commands` (Restart); `@tauri-apps/api/app` `getVersion()`.
 - `#lib/settings/settings-store` (`getSetting`, `setSetting`, `forceSave`, `onSpecificSettingChange`; `forceSave` is
   what makes the `onboarding.completed` write survive an immediate quit); `#lib/logging/logger` (`getAppLogger`).
 

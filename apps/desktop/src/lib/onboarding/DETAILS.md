@@ -209,11 +209,11 @@ on), and on Linux the whole component renders `null`, so nothing polls there.
 ### Allow path requires a restart
 
 Per the "FDA gate clear-on-Allow" decision (see also § "Key decisions" below): after the user clicks Allow, the wizard
-does NOT advance to step 2 in-session. The footer's primary button flips to "Restart Cmdr" (calls `relaunch()` from
-`@tauri-apps/plugin-process`). Reason: the FDA gate (`fda_gate::FDA_PENDING`) is set once at boot from
-`(fda_choice, os_fda_granted)`; clearing it at runtime would race the TCC popups the gate was built to suppress (we hit
-5–10 stacked popups once already). The user's choice persists, and the resume rule lands them on step 2 immediately
-after relaunch.
+does NOT advance to step 2 in-session. The footer's primary button flips to "Restart Cmdr" (calls `relaunchApp()`, the
+backend's Dock-safe relaunch in `apps/desktop/src-tauri/src/quit/relaunch.rs`). Reason: the FDA gate
+(`fda_gate::FDA_PENDING`) is set once at boot from `(fda_choice, os_fda_granted)`; clearing it at runtime would race the
+TCC popups the gate was built to suppress (we hit 5–10 stacked popups once already). The user's choice persists, and the
+resume rule lands them on step 2 immediately after relaunch.
 
 The Allow / Deny buttons stay live in restart mode so the user can change their mind to Deny without restarting (Deny
 advances normally).
@@ -842,4 +842,4 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 - `#lib/beta-links`: `GITHUB_REPO_URL`, `ALTERNATIVE_TO_URL`, `ABOUT_DAVID_URL` (Step 3's two checklist links and
   David's own page). `GITHUB_ISSUES_URL` and `BOOK_A_CALL_URL` live in the same module but belong to
   `FeedbackDialog.svelte` and `AboutWindow.svelte` now, ❌ not here.
-- `@tauri-apps/plugin-process`: `relaunch` (Allow-path footer button)
+- `#lib/tauri-commands`: `relaunchApp` (Allow-path footer button)

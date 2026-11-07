@@ -414,7 +414,7 @@ export type {
 
 // The quit gate: the backend holding an exit while operations run, and the
 // dialog's two answers.
-export { quitConfirm, quitCancel, onQuitRequested, onQuitCalledOff } from './quit'
+export { quitConfirm, quitCancel, relaunchApp, onQuitRequested, onQuitCalledOff } from './quit'
 export type { QuitAnswer, QuitRequested } from './quit'
 
 // Network types

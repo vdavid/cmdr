@@ -237,14 +237,21 @@ three of three, 2026-11-06; `docs/notes/local-network-after-update-2026-11-06.md
 
 ## The restart, and a second Dock icon
 
-The update toast's Restart calls `relaunch()` (`@tauri-apps/plugin-process`), and Tauri 2.12.2+ relaunches with
-`/usr/bin/open -n <bundle>` and then exits. `-n` starts a second instance while the old one still runs, the Dock gives
-that instance its own tile, and once the old process (the one bound to the pinned tile) exits, the pinned tile stays dark
-while an extra Cmdr tile carries the running dot until the next quit (#1023). The sync itself doesn't do this: an update
-from 0.51.0 or older (Tauri 2.12.1, which spawned the binary directly) left the pinned tile lit (verified on macOS
-27.0.1, real 0.50.0/0.51.0/0.55.0/0.59.0 → 0.60.0 updates through the toast, 2026-11-07;
-`docs/notes/dock-duplicate-icon-2026-11-07.md`). The fix it points to: relaunch from a helper that waits for this
-process to exit, then `open` without `-n`.
+The update toast's Restart calls Cmdr's own `relaunch_app`: quit (through the quit gate), then a detached waiter that
+outlives us waits for this process to exit and runs `/usr/bin/open <bundle> --args …` without `-n`. One instance at a
+time, so LaunchServices and the Dock bind the new process to the pinned tile. Mechanism and decisions:
+`../quit/DETAILS.md` § Relaunch.
+
+Why not Tauri's `relaunch()`: Tauri 2.12.2+ restarts with `/usr/bin/open -n <bundle>` and then exits. `-n` starts a
+second instance while the old one still runs, the Dock gives that instance its own tile, and once the old process (the
+one bound to the pinned tile) exits, the pinned tile stays dark while an extra Cmdr tile carries the running dot until
+the next quit (#1037). The sync itself doesn't do this: an update from 0.51.0 or older (Tauri 2.12.1, which spawned the
+binary directly) left the pinned tile lit (verified on macOS 27.0.1, real 0.50.0/0.51.0/0.55.0/0.59.0 → 0.60.0 updates
+through the toast, 2026-11-07; `docs/notes/dock-duplicate-icon-2026-11-07.md`).
+
+The restart that runs is the OLD version's code, so the fix shows from the update AFTER the first build carrying it.
+Anyone already showing two tiles needs nothing: the first relaunch without `-n`, or any quit and reopen, lights the
+pinned tile again.
 
 ## Dependencies
 

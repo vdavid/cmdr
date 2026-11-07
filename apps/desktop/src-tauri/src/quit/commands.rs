@@ -16,6 +16,15 @@ pub fn quit_confirm() -> QuitAnswer {
     super::gate().confirm()
 }
 
+/// Quits Cmdr and opens it again: the update toast's Restart and onboarding's "Restart Cmdr".
+/// The quit goes through the gate like ⌘Q. ❌ Never Tauri's `relaunch()` on macOS: its `open -n`
+/// doubles the Dock icon. See [`super::relaunch`].
+#[tauri::command]
+#[specta::specta]
+pub fn relaunch_app(app: tauri::AppHandle) {
+    super::relaunch::relaunch(&app);
+}
+
 /// The user pressed "Keep working". Releases the gate and **removes** the
 /// countdown; it is not a snooze.
 #[tauri::command]
