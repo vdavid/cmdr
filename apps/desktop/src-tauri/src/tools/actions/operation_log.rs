@@ -223,6 +223,11 @@ fn refusal_error(refusal: &RollbackRefusal) -> ToolError {
         RollbackRefusal::VolumeUnavailable { volume_id } => {
             format!("A volume it touched isn't connected ({volume_id}), so no dialog opened.")
         }
+        // A tool's rollback always takes the whole operation, so this only words the
+        // variant for completeness.
+        RollbackRefusal::Selection(reason) => {
+            format!("The item selection can't run ({reason:?}), so no dialog opened.")
+        }
     };
     let wire = serde_json::to_value(refusal).unwrap_or(Value::Null);
     let mut data = json!({ "refusal": wire.get("kind").cloned().unwrap_or(Value::Null) });

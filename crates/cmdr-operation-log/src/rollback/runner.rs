@@ -19,6 +19,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::super::store::RollbackUnit;
+use super::super::types::EntryType;
 use super::removal_target;
 use cmdr_fs::volume::{Volume, VolumeError};
 
@@ -203,8 +204,12 @@ impl ProgressStand {
         });
     }
 
+    /// One item done. Only a file adds bytes: a folder's recorded `size` is an inode
+    /// length, never bytes, so the totals carry none for it either.
     pub(super) fn credit(&mut self, unit: &RollbackUnit) {
         self.files_done += 1;
-        self.bytes_done += unit.size.unwrap_or(0).max(0) as u64;
+        if unit.entry_type == EntryType::File {
+            self.bytes_done += unit.size.unwrap_or(0).max(0) as u64;
+        }
     }
 }

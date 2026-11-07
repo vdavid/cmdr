@@ -16,6 +16,7 @@ mod page_error_tests;
 mod redo_tests;
 mod resume_tests;
 mod root_reach_tests;
+mod selection_tests;
 mod tag_tests;
 mod test_support;
 mod tests;

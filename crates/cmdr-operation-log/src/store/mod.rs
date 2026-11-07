@@ -536,7 +536,12 @@ pub(super) fn join_leaf(dir_path: &str, name: &str) -> PathBuf {
     PathBuf::from(dir_path).join(name)
 }
 
-fn map_rollback_unit(conn: &Connection, item: &OperationItemRow) -> Result<RollbackUnit, OperationLogStoreError> {
+/// Resolve one raw row's interned dirs into the [`RollbackUnit`] the engine acts on.
+/// Two dir resolutions per row, so the engine calls it only for a row it will act on.
+pub(crate) fn rollback_unit_of(
+    conn: &Connection,
+    item: &OperationItemRow,
+) -> Result<RollbackUnit, OperationLogStoreError> {
     let (source_volume_id, source_dir) = resolve_dir(conn, item.source_dir_id)?;
     let source_path = join_leaf(&source_dir, &item.source_name);
     let (dest_volume_id, dest_path) = match (item.dest_dir_id, &item.dest_name) {
@@ -576,6 +581,23 @@ pub fn read_rollback_units_page(
     before_seq: i64,
     limit: u32,
 ) -> Result<Vec<RollbackUnit>, OperationLogStoreError> {
+    read_rollback_rows_page(conn, op_id, before_seq, limit)?
+        .iter()
+        .map(|item| rollback_unit_of(conn, item))
+        .collect()
+}
+
+/// [`read_rollback_units_page`]'s rows before their dirs are resolved: a selective
+/// rollback decides each row on these, so a row its selection leaves out never pays
+/// for a path ([`rollback_unit_of`] resolves the ones it keeps). Page by the raw
+/// rows' smallest `seq`, never the kept ones', or a page that keeps nothing would
+/// read again forever.
+pub(crate) fn read_rollback_rows_page(
+    conn: &Connection,
+    op_id: &str,
+    before_seq: i64,
+    limit: u32,
+) -> Result<Vec<OperationItemRow>, OperationLogStoreError> {
     let sql = format!(
         "SELECT {ITEM_COLUMNS} FROM operation_items \
          WHERE op_id = ?1 AND row_role = ?2 AND {AWAITS_REVERSAL_SQL} AND seq < ?5 \
@@ -594,23 +616,33 @@ pub fn read_rollback_units_page(
     while let Some(row) = rows.next()? {
         items.push(map_item_row(row)?);
     }
-    // Resolve dirs after draining the query so the prepared-statement borrow is
-    // released (the cache reuses one connection).
-    items.iter().map(|item| map_rollback_unit(conn, item)).collect()
+    Ok(items)
 }
 
-/// What a reversal of `op_id` has ahead of it: how many FILE `rollback_unit` rows
-/// it will stream, and how many bytes they carry. One indexed aggregate, so a
-/// reversal gets honest totals without a scanning phase and without materializing
-/// the list [`read_rollback_units_page`] pages through.
+/// What a reversal of `op_id` has ahead of it: how many rows it will credit on its
+/// bar, and how many bytes they carry. One aggregate, so a reversal gets honest
+/// totals without a scanning phase and without materializing the list
+/// [`read_rollback_units_page`] pages through.
 ///
-/// The filters mirror that page query exactly (same `row_role`, same outcomes),
-/// or the bar would count rows the loop never visits. Directory rows are left out
-/// on purpose: they're removed in a trailing sweep of empty leftovers, not moved.
-pub(crate) fn read_rollback_file_totals(conn: &Connection, op_id: &str) -> Result<(u64, u64), OperationLogStoreError> {
+/// The filters mirror that page query exactly (same `row_role`, same outcomes), or
+/// the bar would count rows the loop never visits. It counts every row whose
+/// [`UnitRole`](crate::tree::UnitRole) is `Selectable`: each file, and each folder
+/// the operation moved, trashed, or made on its own (a trashed folder is one unit
+/// the sweep puts back, and a big trash can hold 100,000 of them). It leaves out the
+/// folders a copy or move made around its files: the sweep removes those empty
+/// leftovers, nothing a person is waiting on. Bytes are files' only, `MAX(size, 0)`,
+/// since a folder's `size` is an inode length. The engine credits by the same role
+/// (`rollback.rs::credits_progress`), and a selective reversal reads the same counts
+/// off the tree summary (`units_selectable`, `unit_bytes_selectable`).
+pub(crate) fn read_rollback_progress_totals(
+    conn: &Connection,
+    op_id: &str,
+    kind: OpKind,
+) -> Result<(u64, u64), OperationLogStoreError> {
     let sql = format!(
-        "SELECT COUNT(*), COALESCE(SUM(MAX(size, 0)), 0) FROM operation_items \
-         WHERE op_id = ?1 AND row_role = ?2 AND {AWAITS_REVERSAL_SQL} AND entry_type = ?5"
+        "SELECT COUNT(*), COALESCE(SUM(CASE WHEN entry_type = ?5 THEN MAX(size, 0) ELSE 0 END), 0) \
+         FROM operation_items WHERE op_id = ?1 AND row_role = ?2 AND {AWAITS_REVERSAL_SQL} \
+         AND NOT (?6 AND entry_type = ?7 AND dest_dir_id IS source_dir_id AND dest_name IS source_name)"
     );
     let mut stmt = conn.prepare_cached(&sql)?;
     let totals = stmt.query_row(
@@ -619,11 +651,29 @@ pub(crate) fn read_rollback_file_totals(conn: &Connection, op_id: &str) -> Resul
             RowRole::RollbackUnit.as_token(),
             ItemOutcome::Done.as_token(),
             ItemOutcome::Skipped.as_token(),
-            EntryType::File.as_token()
+            EntryType::File.as_token(),
+            crate::tree::creates_folders_around_files(kind),
+            EntryType::Dir.as_token(),
         ],
         |row| Ok((row.get::<_, i64>(0)?.max(0) as u64, row.get::<_, i64>(1)?.max(0) as u64)),
     )?;
     Ok(totals)
+}
+
+/// One item row by its `seq`, `None` when the op has none there. Served by the
+/// `(op_id, seq)` index.
+pub(crate) fn read_item_row(
+    conn: &Connection,
+    op_id: &str,
+    seq: i64,
+) -> Result<Option<OperationItemRow>, OperationLogStoreError> {
+    let sql = format!("SELECT {ITEM_COLUMNS} FROM operation_items WHERE op_id = ?1 AND seq = ?2");
+    let mut stmt = conn.prepare_cached(&sql)?;
+    let mut rows = stmt.query(rusqlite::params![op_id, seq])?;
+    match rows.next()? {
+        Some(row) => Ok(Some(map_item_row(row)?)),
+        None => Ok(None),
+    }
 }
 
 /// [`has_rollback_outcome`]'s query (binds `?2` = `rolled_back`).

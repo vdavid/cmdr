@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use cmdr_fs::rt::task;
 use cmdr_operation_log::query::{
-    self, OperationTreeRequest, TreeBackfill, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep,
+    self, OperationTreeRequest, RollbackSelection, TreeBackfill, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep,
 };
 use cmdr_operation_log::rollback::RollbackRefusal;
 use cmdr_operation_log::store::{OperationLogStoreError, open_read_connection};
@@ -42,8 +42,12 @@ impl DemoOperations {
             }
             "rollback_operation" => {
                 let a: RollbackArgs = parse(command, args)?;
-                let dispatched: Result<_, RollbackRefusal> =
-                    e.dispatch_rollback(&OperationId::from(a.operation_id), a.initiator, self.op_sink());
+                let dispatched: Result<_, RollbackRefusal> = e.dispatch_rollback(
+                    &OperationId::from(a.operation_id),
+                    a.initiator,
+                    a.selection.as_ref(),
+                    self.op_sink(),
+                );
                 answer(dispatched)
             }
             "get_recent_operation_log_entries" => {
@@ -116,11 +120,15 @@ impl DemoOperations {
     }
 }
 
+/// `deny_unknown_fields`: a field the demo hadn't learned would be dropped, and a
+/// dropped `selection` would reverse every row while the dialog says "selected".
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RollbackArgs {
     operation_id: String,
     initiator: Initiator,
+    /// The item tree's selection; `null` (or absent) reverses every row.
+    selection: Option<RollbackSelection>,
 }
 
 #[derive(Deserialize)]

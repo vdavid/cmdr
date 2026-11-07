@@ -20,9 +20,17 @@
       "property": "kani:cmdr-operation-log/rollback::proofs::a_run_never_claims_more_than_it_reversed",
       "why": "the resume rule's comparison flips, so an empty pass over a partly rolled back op calls it fully rolled back",
       "file": "crates/cmdr-operation-log/src/rollback.rs",
-      "find": "} else if skipped > 0 || (resuming && reversed == 0) {",
-      "replace": "} else if skipped > 0 || (resuming && reversed > 0) {",
+      "find": "} else if skipped > 0 || left_out > 0 || (resuming && reversed == 0) {",
+      "replace": "} else if skipped > 0 || left_out > 0 || (resuming && reversed > 0) {",
       "expect": "an empty pass finished a partial op"
+    },
+    {
+      "property": "kani:cmdr-operation-log/rollback::proofs::a_run_never_claims_more_than_it_reversed",
+      "why": "a selective run forgets the rows it left out, so rolling back three of 400 calls the operation fully rolled back and drops \"Roll back the rest\"",
+      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "find": "} else if skipped > 0 || left_out > 0 || (resuming && reversed == 0) {",
+      "replace": "} else if skipped > 0 || (resuming && reversed == 0) {",
+      "expect": "rolled back with items the selection left out"
     },
     {
       "property": "kani:cmdr-operation-log/rollback::proofs::a_run_never_claims_more_than_it_reversed",

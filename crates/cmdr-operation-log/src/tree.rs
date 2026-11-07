@@ -24,6 +24,7 @@ pub(crate) mod summary;
 
 mod layout;
 pub(crate) mod read;
+pub(crate) mod rollback_filter;
 pub(crate) mod selection;
 pub(crate) mod view;
 
@@ -90,6 +91,13 @@ impl TreeAxis {
     }
 }
 
+/// Whether an op of `kind` writes the folders it creates around its files as rows of
+/// their own (created in place): a copy, and a cross-FS move. Those folders are
+/// [`UnitRole::Housekeeping`]. A create-folder's folder is the item itself.
+pub(crate) fn creates_folders_around_files(kind: OpKind) -> bool {
+    matches!(kind, OpKind::Copy | OpKind::Move)
+}
+
 /// What a row is to a rollback, as the tree shows it and the selection counts it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum UnitRole {
@@ -129,8 +137,7 @@ pub(crate) fn unit_role(
     if !has_inverse(kind, entry_type, created_in_place) {
         return UnitRole::NotReversible;
     }
-    let made_by_a_transfer = matches!(kind, OpKind::Copy | OpKind::Move);
-    if entry_type == EntryType::Dir && created_in_place && made_by_a_transfer {
+    if entry_type == EntryType::Dir && created_in_place && creates_folders_around_files(kind) {
         return UnitRole::Housekeeping;
     }
     UnitRole::Selectable

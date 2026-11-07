@@ -39,9 +39,11 @@ use tokio::sync::oneshot;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::{DEFAULT_VOLUME_ID, Volume};
+use cmdr_operation_log::query::RollbackSelection;
 use cmdr_operation_log::rollback::{
     ActRefusal, InverseAct, InversePlan, RollbackDispatch, RollbackProgress, RollbackRefusal, RollbackReport,
-    RollbackRunner, SkipBreakdown, execute_rollback, inverse_kind, rollback_operation, undo_order,
+    RollbackRunner, SkipBreakdown, execute_rollback_with_selection, inverse_kind, rollback_operation_with_selection,
+    undo_order,
 };
 use cmdr_operation_log::store::{open_read_connection, read_operation};
 use cmdr_operation_log::types::{Initiator, OpKind, OperationId, RollbackState};
@@ -315,8 +317,12 @@ impl crate::Operations {
     /// inverse as a managed op. Returns the inverse op's id (the reversal runs
     /// asynchronously; poll the original op's `rollback_state` for the terminal
     /// result). A refusal (unknown / already rolling back / not rollbackable / a
-    /// volume disconnected) surfaces typed; the entry resets `rolling_back` on a
-    /// synchronous spawn failure so a retry isn't wedged.
+    /// volume disconnected / a selection it can't run) surfaces typed; the entry
+    /// resets `rolling_back` on a synchronous spawn failure so a retry isn't wedged.
+    ///
+    /// `selection` narrows the reversal to the rows it takes (the Operation log's
+    /// item tree); `None` takes every row, the default "undo the whole thing" and
+    /// "Roll back the rest". MCP and undo always pass `None`.
     ///
     /// `events` is built at the IPC/MCP edge like every other managed op's sink: the
     /// pipeline in here never constructs one (see `mod.rs`).
@@ -324,9 +330,10 @@ impl crate::Operations {
         &self,
         op_id: &OperationId,
         initiator: Initiator,
+        selection: Option<&RollbackSelection>,
         events: Arc<dyn OperationEventSink>,
     ) -> Result<RollbackDispatch, RollbackRefusal> {
-        self.dispatch_inverse(op_id.as_str(), initiator, events, None)
+        self.dispatch_inverse(op_id.as_str(), initiator, selection, events, None)
     }
 
     /// [`Self::dispatch_rollback`] plus a channel that resolves with the inverse's
@@ -344,7 +351,8 @@ impl crate::Operations {
         events: Arc<dyn OperationEventSink>,
     ) -> Result<oneshot::Receiver<RollbackReport>, RollbackRefusal> {
         let (report_tx, report_rx) = oneshot::channel();
-        self.dispatch_inverse(op_id, initiator, events, Some(report_tx))?;
+        // An undo reverses the whole operation.
+        self.dispatch_inverse(op_id, initiator, None, events, Some(report_tx))?;
         Ok(report_rx)
     }
 
@@ -352,6 +360,7 @@ impl crate::Operations {
         &self,
         op_id: &str,
         initiator: Initiator,
+        selection: Option<&RollbackSelection>,
         events: Arc<dyn OperationEventSink>,
         report: Option<oneshot::Sender<RollbackReport>>,
     ) -> Result<RollbackDispatch, RollbackRefusal> {
@@ -359,7 +368,7 @@ impl crate::Operations {
         let writer = self.operation_log().writer().ok_or(RollbackRefusal::UnknownOperation)?;
         let vm = self.host().volumes();
 
-        let plan = rollback_operation(vm, &writer, op_id, |plan| {
+        let plan = rollback_operation_with_selection(vm, &writer, op_id, selection, |plan| {
             self.spawn_managed_inverse(&writer, plan, initiator, Arc::clone(&events), report)
         })?;
         Ok(RollbackDispatch {
@@ -381,6 +390,8 @@ impl crate::Operations {
     ) -> Result<(), RollbackRefusal> {
         let vm = self.host().volumes();
         let original = plan.original.clone();
+        // The gate's normalized selection; the engine normalizes it again before it runs.
+        let selection = plan.selection.clone();
         let inverse_op_id = OperationId::from(plan.inverse_op_id.clone());
 
         // Resolve the lanes + ejectable volume ids from the volumes the op touches.
@@ -452,8 +463,16 @@ impl crate::Operations {
                 // somebody stopping the reversal itself.
                 let runner = ReversalRunner::new(inverse_op_id.to_string(), op_type, state_for_op, events);
                 let vm = ops.host().volumes();
-                let outcome =
-                    execute_rollback(vm, &writer, &original, inverse_op_id.as_str(), initiator, &runner).await;
+                let outcome = execute_rollback_with_selection(
+                    vm,
+                    &writer,
+                    &original,
+                    inverse_op_id.as_str(),
+                    initiator,
+                    selection.as_ref(),
+                    &runner,
+                )
+                .await;
                 // Hand the tally to a caller awaiting it (a multi-operation undo). A
                 // dropped receiver (the caller went away) is not a problem: the reversal
                 // already happened and is journaled.

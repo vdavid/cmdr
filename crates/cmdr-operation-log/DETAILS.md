@@ -793,6 +793,49 @@ are a small fraction of an op (interning shares them), so buffering just the dir
 the LAST page, never per page. Pinned by `crates/cmdr-operations/src/rollback/planner_tests/dir_sweep_tests.rs` (folder
 rows streamed before every file, shallow first, a file inside on the second page).
 
+A trashed or same-FS-moved folder is ONE DIR `rollback_unit`, so it's reversed in the sweep too, and a big trash can put
+100,000 of them there. So the sweep owes each item what the file loop does: it parks on a pause BEFORE the item is
+verified, polls the stop, and credits the bar. **The bar counts every `UnitRole::Selectable` row** (each file, and each
+folder the op moved, trashed, or made on its own; `rollback.rs::credits_progress`), bytes from files only (a folder's
+`size` is an inode length). A folder a copy or move made around its files is housekeeping the sweep removes, never on
+the bar. The totals come off `store::read_rollback_progress_totals`, which counts the same rows, or off the selection's
+algebra (below). Pinned by `crates/cmdr-operations/src/rollback/planner_tests/selection_tests.rs`
+(`a_trash_of_folders_moves_the_bar_once_per_folder`,
+`the_folder_sweep_parks_before_each_folder_and_skips_the_left_out_one`).
+
+**Partial rollback: a selection filters the stream** (`execute_rollback_with_selection`,
+`rollback_operation_with_selection`; issue #1033). The item tree's `RollbackSelection` rides on `InversePlan.selection`
+(`None` takes every row: the default, "Roll back the rest", MCP, and undo). The gate (`tree/rollback_filter.rs::narrow`)
+normalizes it with THE resolver (`tree/selection.rs`, § "The selection"), ❌ never trusting the wire, and refuses it
+typed (`RollbackRefusal::Selection(SelectionRefusal)`) before `rolling_back` is set: `summaryNotBuilt` (the decision
+reads the summary), `tooManyToggles` (normalizing drops the NEWEST toggles past 2,000, and a dropped `off` would reverse
+a row the person unchecked), `nothingSelected` (`N = 0`). A selection that normalizes to everything IS `None`, so its
+run, report, and bar are an unfiltered run's. The engine normalizes again before it streams.
+
+- **Decided on the RAW row, before any path resolves** (`store::read_rollback_rows_page`, then `store::rollback_unit_of`
+  only for kept rows): a left-out row costs one `HashMap` lookup plus one summary read per distinct folder for the run,
+  is never verified, acted on, flushed, or recorded, and counts as `left_out`. A selection only removes rows from the
+  stream; every row it keeps goes through every guard.
+- **Paging stays on the raw rows**: `before` is the page's smallest raw `seq`, never a kept row's, or a page that keeps
+  nothing would read again forever. A page whose summary lookup fails stops the run like a page it couldn't read (❌
+  never a guessed decision).
+- **The stop is asked per page too**: a narrow selection over a big op streams page after page it keeps nothing of.
+- **A folder unit is decided by its own folder** (`self_dir_id`, its axis side: unchecking a trashed folder keeps it in
+  the Trash; a same-FS move's is the landed folder). A created folder goes only when everything under it does, so a
+  left-out file keeps its folders and no misleading `DirNotEmpty` lands on them.
+- **The bar**: `chosen()` units and bytes off the summary (`RollbackFilter::progress_totals`), the same rows the loop
+  credits. **The queue row's name** comes from one row the selection takes (`Selection::sample_seq`: an `on` item, else
+  a row under the deepest `on` folder), one point read, ❌ never a stream.
+- **The skip pass, measured** (release, Apple Silicon laptop, 2026-11-08, `tree/scale_tests.rs`): the engine's page read
+  streams a 2M-row copy in 2.62 s; with a three-file selection the pass takes 2.83 s. The decision adds 8%; the stream
+  is the cost, and an unfiltered rollback pays it too, spread over its acts. The stream is NOT narrowed to the `on`
+  subtrees (through the item indexes): that's a second streaming order in the data-safety core, worth it only if a
+  narrow selection's wait on a multi-million-row op proves a real problem.
+- Left-out rows keep the op `partially_rolled_back` (§ below), and the inverse's header counts only what the run
+  attempted (`RunAcc::totals`), so "3 of 400" reads 3. Pinned by the same `selection_tests.rs`, each cell shown red on a
+  mutant of the clause it guards; a demo cell (`cmdr-listing-wasm`'s `commands_test.rs`) pins that the demo's
+  `rollback_operation` takes the selection and refuses an unknown field.
+
 Rollback eligibility is narrow at both boundaries: mutation code journals rollback leaves only for committed rows, and
 `read_rollback_units_page` streams only rows that await reversal (`done`, or `skipped` with a stored
 `rollback_skip_reason`, § "The `rolling_back` state machine"). `restore_move` also refuses a unit that doesn't await
@@ -867,17 +910,22 @@ injected `spawn`. The double-rollback guard is automatic: a second request reads
 `rolling_back` back to the state the op held (`rollbackable`, or `partially_rolled_back` for a Finish) in the same call
 before returning the typed error, so a retry isn't wedged.
 
-`execute_rollback` resolves the original op at the end (`resolve_final_state`, given the state the op started in):
-`RolledBack` (nothing skipped), `PartiallyRolledBack` (any skip, even if nothing could be reversed; Finish retries
-them). A run that STOPPED with nothing reversed leaves the op as it found it: `Rollbackable`, or still
-`PartiallyRolledBack` when an earlier run reversed some of it. A journal page that fails to read (busy past its timeout,
-an undecodable row, an I/O error) is a stop too: the run never saw what lies past it, so it skips the directory sweep
-(unread files may sit inside those dirs), finalizes the inverse `Failed`, and resolves like a cancel, keeping what it
-reversed. One bad row fails its whole page rather than becoming a per-item skip: a newer build's token can't reach this
-build (a downgrade is refused), and a skip would need a new `SkipReason` for a row with no readable path. ❌ A run over
-a partial op never resolves `RolledBack` on an empty pass: finding nothing to retry proves nothing came back. It marks
-the original's items `rolled_back`/`skipped` and journals the inverse op's own item rows (reversed ⇒ `done`, skipped ⇒
-`skipped`), which drive the reconcile.
+`rollback_operation` is `rollback_operation_with_selection` with `None`; a selection is refused typed here too, before
+`rolling_back` is set (§ "Streaming + ordering").
+
+`execute_rollback` resolves the original op at the end (`resolve_final_state`, given the state the op started in and the
+run's `RunTally { reversed, skipped, left_out }`): `RolledBack` (nothing skipped, nothing left out by a selection),
+`PartiallyRolledBack` (any skip, even if nothing could be reversed, or any row the selection left out; "Roll back the
+rest" retries them). Kani proves `RolledBack` never comes with a skip or a left-out row (`rollback/proofs.rs`). A run
+that STOPPED with nothing reversed leaves the op as it found it: `Rollbackable`, or still `PartiallyRolledBack` when an
+earlier run reversed some of it. A journal page that fails to read (busy past its timeout, an undecodable row, an I/O
+error) is a stop too: the run never saw what lies past it, so it skips the directory sweep (unread files may sit inside
+those dirs), finalizes the inverse `Failed`, and resolves like a cancel, keeping what it reversed. One bad row fails its
+whole page rather than becoming a per-item skip: a newer build's token can't reach this build (a downgrade is refused),
+and a skip would need a new `SkipReason` for a row with no readable path. ❌ A run over a partial op never resolves
+`RolledBack` on an empty pass: finding nothing to retry proves nothing came back. It marks the original's items
+`rolled_back`/`skipped` and journals the inverse op's own item rows (reversed ⇒ `done`, skipped ⇒ `skipped`), which
+drive the reconcile.
 
 **Startup reconcile** (`reconcile_rolling_back_on_open`, called by `OperationLog::open` before the journal is reachable)
 resolves any op a crash left `rolling_back` (`reconcile_one`). It's `partially_rolled_back` if ANY of: the original has
@@ -1180,9 +1228,9 @@ counts and checkboxes and the engine's per-row decision (`includes`) both go thr
   answer carries the normalized selection, which the frontend sends straight back.
 - **Counted by algebra, never by a scan**: the toggles' folders and their ancestors form a small forest; each folder in
   it gets its selected (units, files, bytes) from its children's and its own item toggles, every folder outside it is
-  all-or-nothing by its decision, and the op's totals are its volume roots'. Files and bytes are a selective reversal's
-  progress totals, as `read_rollback_file_totals` counts them. Tri-state: `none` at zero selectable, else on, off, or
-  mixed by selected against selectable.
+  all-or-nothing by its decision, and the op's totals are its volume roots'. Units and bytes are a selective reversal's
+  progress totals, the rows `read_rollback_progress_totals` counts for an unfiltered one. Tri-state: `none` at zero
+  selectable, else on, off, or mixed by selected against selectable.
 - **The engine's decision** (`includes`): one HashMap lookup per row plus one summary read per distinct folder (cached).
   A housekeeping folder goes along only when its decision is on AND everything selectable under it is selected, since a
   folder still holding a file can't be emptied.
@@ -1201,9 +1249,10 @@ counts and checkboxes and the engine's per-row decision (`includes`) both go thr
   a 2M-file delete (one folder of 1M files, one of 100,000 child folders) and a 2M-file folder copy, seeded in about 40
   s. Measured (Apple Silicon, 2026-11-07): open 0.2 ms, unfold 0.6, the middle of the 1M-file folder 15, its end 0.4,
   the middle of 100,000 child folders 2, the cursor in the 1M-file folder 29, "N of M" with the copied folder off 0.3,
-  with three files on 0.3, with 2,000 items off 23. The engine's skip pass over 2M rows for a three-file selection took
-  1.13–1.20 s against 1.08 s to stream the rows alone: the decision is cheap, the stream is today's cost of any
-  rollback. Budgets are about three times those; the twin at 20,000 rows runs every time without budgets.
+  with three files on 0.3, with 2,000 items off 23. The engine's skip pass (its own page read and filter) over 2M rows
+  for a three-file selection took 2.83 s against 2.62 s to stream the rows alone (2026-11-08): the decision is cheap,
+  the stream is today's cost of any rollback (§ "Streaming + ordering"). Budgets are about three times those; the twin
+  at 20,000 rows runs every time without budgets.
 
 ## Alpha UI — the "Operation log" dialog
 
@@ -1301,12 +1350,13 @@ the write engine, whose `OperationVolumes` is its supertrait.
 
 ### The public surface is capped
 
-`index-crate-isolation` holds the surface to 11 root promises, 7 `OperationLog` methods, seven public modules, and 92
+`index-crate-isolation` holds the surface to 11 root promises, 7 `OperationLog` methods, seven public modules, and 95
 items in them, with no headroom: measured at the extraction, re-measured when the journal API took `OperationId`,
 tightened when the test-only accessors went behind `cfg(test)`, raised for the item tree's backfill (`tree_backfills`,
 and in `query` the backfill job, its four wire types, `BackfillRegistry`, `BackfillProgress`, and `UnbuiltReason`; start
 and cancel live on `TreeBackfill` and the registry, not the handle), and raised for the item tree's window (§ "The tree
-view"), whose request, answer, and selection vocabulary both hosts pass through
+view"), whose request, answer, and selection vocabulary both hosts pass through, and raised for partial rollback
+(`rollback_operation_with_selection`, `execute_rollback_with_selection`, `SelectionRefusal`; § "Streaming + ordering")
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). A helper only this crate's tests call stays `#[cfg(test)]`
 (`OperationLogStore::conn` and `schema_version`, `query::coverage_is_complete`), so the count promises nothing to no
 caller. By module:
@@ -1323,9 +1373,10 @@ caller. By module:
 - **`types`**: the typed classification tokens, which cross IPC, and `OperationId` (with its `as_str`, and a
   `Borrow<str>` so an id-keyed map answers a wire row's text), which the journal API and the write engine's public verbs
   take: `OpenOperation`, the `OperationJournal` seam, and `OpJournal::op_id`.
-- **`rollback`**: the planner (`check_rollbackable`, `rollback_operation`, `execute_rollback`, `undo_order`, the
-  reconcile), its `RollbackRunner` / `VolumeLookup` seams, and the fail-safe verdicts the engine's in-flight reversals
-  share (`verify_snapshot`, `SnapshotVerdict`, `ItemResult`, `SkipTally`).
+- **`rollback`**: the planner (`check_rollbackable`, `rollback_operation` and `execute_rollback` with their
+  `_with_selection` twins and `SelectionRefusal`, `undo_order`, the reconcile), its `RollbackRunner` / `VolumeLookup`
+  seams, and the fail-safe verdicts the engine's in-flight reversals share (`verify_snapshot`, `SnapshotVerdict`,
+  `ItemResult`, `SkipTally`).
 - **`retention`**: the limits type and the closure shape the host passes.
 
 ## The dev bin

@@ -10,6 +10,7 @@ import {
   type OperationItemView,
   type OperationUndoOutcome,
   type RollbackDispatch,
+  type RollbackSelection,
   type SkipBreakdown,
   type SkipReason,
   type UndoReport,
@@ -84,9 +85,17 @@ export async function undoOperations(operationIds: string[]): Promise<UndoReport
  *
  * A refusal arrives TYPED (`asRollbackRefusal`), because each reason gets its own
  * sentence: already rolling back, already rolled back, a drive that went away.
+ *
+ * `selection` narrows it to what the item tree has checked: send back the normalized
+ * selection the tree last answered with. `null` (the default) reverses everything
+ * that still awaits it, which is also "Roll back the rest".
  */
-export async function rollbackOperation(operationId: string, initiator: Initiator): Promise<RollbackDispatch> {
-  const res = await commands.rollbackOperation(operationId, initiator)
+export async function rollbackOperation(
+  operationId: string,
+  initiator: Initiator,
+  selection: RollbackSelection | null = null,
+): Promise<RollbackDispatch> {
+  const res = await commands.rollbackOperation(operationId, initiator, selection)
   if (res.status === 'error') throwRollbackRefusal(res.error)
   return res.data
 }

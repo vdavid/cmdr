@@ -579,6 +579,18 @@ compaction, budgets with evidence).
 
 ### 5. Partial rollback in the engine
 
+**Status: done.** Findings that differ from the text below:
+
+- **The bar now counts folder units for EVERY run, `None` included** (the landmine wins over invariant 3): a trash of
+  folders read 0 of 0 while the sweep restored them. Copies are unchanged (their created folders are housekeeping).
+- **The skip pass, through the engine's own page read**, is 2.83 s over 2M rows against 2.62 s to stream them (release,
+  2026-11-08); milestone 4's 1.08 s streamed only the fact columns. Over the "second or so" bar, but the decision adds
+  8% and the stream is what any rollback pays, so the stream is NOT narrowed; the stop is asked per page instead. The
+  lead's call.
+- **A third refusal, `tooManyToggles`**: normalizing past 2,000 drops the newest toggles, and a dropped `off` would
+  reverse an unchecked row. All three ride one variant, `RollbackRefusal::Selection(SelectionRefusal)`.
+- **The inverse header count needed no change**: `RunAcc::totals` already bounds by what the run attempted.
+
 **Scope.** `crates/cmdr-operation-log/src/rollback.rs` (+ `bookkeeping.rs`, `proofs.rs`, `proofs.mutants.json`),
 `store/mod.rs` (`read_rollback_units_page` maps inside the store today, so the engine never sees a raw row: it takes a
 decision closure over the raw `OperationItemRow` and counts what it rejects as `left_out`, or a raw-row page variant

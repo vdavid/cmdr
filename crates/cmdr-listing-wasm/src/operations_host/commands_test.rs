@@ -47,6 +47,21 @@ impl Collector {
         self.find(event, &matches).expect("it arrived")
     }
 
+    /// Waits until a queue snapshot listed `operation_id` and the newest one doesn't.
+    async fn left_the_queue(&self, operation_id: &str) {
+        let description = format!("`{operation_id}` to leave the queue");
+        wait_until_async(Duration::from_secs(5), &description, || {
+            let events = self.0.lock().expect("collector lock");
+            let mut snapshots = events
+                .iter()
+                .filter(|(name, _)| name == "operations-changed")
+                .map(|(_, p)| p.to_string().contains(operation_id));
+            let listed = snapshots.clone().any(|lists| lists);
+            listed && snapshots.next_back() == Some(false)
+        })
+        .await;
+    }
+
     /// Waits for `operation_id`'s `write-settled`, and answers its terminal event.
     async fn settled(&self, operation_id: &str) -> String {
         let of = |p: &Value| p["operationId"] == operation_id;
@@ -284,6 +299,73 @@ async fn the_log_tree_answers_and_refuses_a_field_it_doesnt_know() {
         )
         .await;
     assert!(refused.is_err(), "an unknown field must not be dropped: {refused:?}");
+}
+
+/// The demo's Roll back takes the tree's selection: unchecking one copied file
+/// reverses only the other, the op stays partial, and a field the demo hasn't
+/// learned is refused rather than dropped (a dropped `selection` would reverse
+/// everything while the dialog said "selected").
+#[tokio::test(flavor = "multi_thread")]
+async fn a_selective_rollback_reverses_only_what_was_selected() {
+    let (demo, events) = demo();
+    open(&demo, &events, "docs", "/Users/you/Documents").await;
+    let op = copy(
+        &demo,
+        &["/Users/you/a.txt", "/Users/you/c.txt"],
+        "/Users/you/Documents",
+        "stop",
+    )
+    .await;
+    assert_eq!(events.settled(&op).await, "write-complete");
+    let request = json!({ "expanded": [], "selection": null, "cursor": null, "offset": 0, "limit": 50 });
+    let view = call(
+        &demo,
+        "get_operation_log_tree",
+        json!({ "operationId": op, "request": request }),
+    )
+    .await;
+    let a = view["rows"]
+        .as_array()
+        .expect("rows")
+        .iter()
+        .find(|row| row["label"] == "a.txt")
+        .unwrap_or_else(|| panic!("a.txt has a row: {view}"));
+    let selection =
+        json!({ "base": "everything", "toggles": [{ "kind": "item", "seq": a["key"]["seq"], "on": false }] });
+
+    let mut unknown = json!({ "operationId": op, "initiator": "user", "selection": selection });
+    unknown["selected"] = json!([]);
+    let refused = demo.invoke("rollback_operation", unknown).await;
+    assert!(refused.is_err(), "an unknown field must not be dropped: {refused:?}");
+
+    let dispatched = call(
+        &demo,
+        "rollback_operation",
+        json!({ "operationId": op, "initiator": "user", "selection": selection }),
+    )
+    .await;
+    let inverse = dispatched["inverseOpId"].as_str().expect("an inverse id").to_string();
+    // A reversal ends with no `write-complete` of its own: it has settled once the
+    // queue it joined no longer lists it, and it resolves the op before it leaves.
+    events.left_the_queue(&inverse).await;
+    assert_eq!(
+        names(&demo, "docs").await,
+        ["a.txt", "b.txt"],
+        "only the selected copy went"
+    );
+    let rows = call(
+        &demo,
+        "get_recent_operation_log_entries",
+        json!({ "limit": 10, "offset": 0 }),
+    )
+    .await;
+    let original = rows
+        .as_array()
+        .expect("rows")
+        .iter()
+        .find(|row| row["opId"] == op)
+        .unwrap_or_else(|| panic!("the copy is listed: {rows}"));
+    assert_eq!(original["rollbackState"], "partiallyRolledBack", "{original}");
 }
 
 /// A rename on the demo volume undoes through the planner, dated or not: the

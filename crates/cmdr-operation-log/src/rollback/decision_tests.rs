@@ -162,25 +162,61 @@ fn pure_mapping_helpers() {
     assert_eq!(inverse_action(OpKind::Delete, EntryType::File), None);
 
     let fresh = RollbackState::Rollbackable;
-    assert_eq!(resolve_final_state(3, 0, false, fresh), RollbackState::RolledBack);
+    assert_eq!(resolve_final_state(ran(3, 0), false, fresh), RollbackState::RolledBack);
     assert_eq!(
-        resolve_final_state(2, 1, false, fresh),
+        resolve_final_state(ran(2, 1), false, fresh),
         RollbackState::PartiallyRolledBack
     );
     // A full pass, all skipped ⇒ partial ("Finish" retries the skips).
     assert_eq!(
-        resolve_final_state(0, 3, false, fresh),
+        resolve_final_state(ran(0, 3), false, fresh),
         RollbackState::PartiallyRolledBack
     );
     // A vacuously-empty op is fully undone.
-    assert_eq!(resolve_final_state(0, 0, false, fresh), RollbackState::RolledBack);
+    assert_eq!(resolve_final_state(ran(0, 0), false, fresh), RollbackState::RolledBack);
     // Stopped with nothing reversed ⇒ back to rollbackable (a clean retry).
-    assert_eq!(resolve_final_state(0, 0, true, fresh), RollbackState::Rollbackable);
+    assert_eq!(resolve_final_state(ran(0, 0), true, fresh), RollbackState::Rollbackable);
     // Stopped after reversing some ⇒ partial.
     assert_eq!(
-        resolve_final_state(3, 0, true, fresh),
+        resolve_final_state(ran(3, 0), true, fresh),
         RollbackState::PartiallyRolledBack
     );
+}
+
+/// A run's tally with nothing left out by a selection.
+fn ran(reversed: u64, skipped: u64) -> RunTally {
+    RunTally {
+        reversed,
+        skipped,
+        left_out: 0,
+    }
+}
+
+/// A row a selection left out still awaits reversal, so a run that left one out is
+/// never `RolledBack`, however clean the rows it took went; a stop still decides by
+/// what came back.
+#[test]
+fn a_run_that_left_rows_out_stays_partial() {
+    let left = |reversed, skipped| RunTally {
+        reversed,
+        skipped,
+        left_out: 2,
+    };
+    for before in [RollbackState::Rollbackable, RollbackState::PartiallyRolledBack] {
+        assert_eq!(
+            resolve_final_state(left(3, 0), false, before),
+            RollbackState::PartiallyRolledBack
+        );
+        assert_eq!(
+            resolve_final_state(left(3, 1), false, before),
+            RollbackState::PartiallyRolledBack
+        );
+        assert_eq!(
+            resolve_final_state(left(3, 0), true, before),
+            RollbackState::PartiallyRolledBack
+        );
+        assert_eq!(resolve_final_state(left(0, 0), true, before), untouched_state(before));
+    }
 }
 
 /// Finishing a partial rollback never forgets what an earlier run reversed.
@@ -188,20 +224,23 @@ fn pure_mapping_helpers() {
 fn a_run_over_a_partial_op_resolves_without_forgetting_the_earlier_run() {
     let partial = RollbackState::PartiallyRolledBack;
     // Every held-back item came back ⇒ done.
-    assert_eq!(resolve_final_state(2, 0, false, partial), RollbackState::RolledBack);
+    assert_eq!(
+        resolve_final_state(ran(2, 0), false, partial),
+        RollbackState::RolledBack
+    );
     // Some still held back ⇒ still partial.
     assert_eq!(
-        resolve_final_state(1, 1, false, partial),
+        resolve_final_state(ran(1, 1), false, partial),
         RollbackState::PartiallyRolledBack
     );
     // An empty pass proves nothing came back ⇒ still partial, never `RolledBack`.
     assert_eq!(
-        resolve_final_state(0, 0, false, partial),
+        resolve_final_state(ran(0, 0), false, partial),
         RollbackState::PartiallyRolledBack
     );
     // Stopped before reversing anything ⇒ still partial, never a clean `Rollbackable`.
     assert_eq!(
-        resolve_final_state(0, 0, true, partial),
+        resolve_final_state(ran(0, 0), true, partial),
         RollbackState::PartiallyRolledBack
     );
     assert_eq!(untouched_state(partial), RollbackState::PartiallyRolledBack);

@@ -14,6 +14,7 @@ use crate::rollback::Reversal;
 use crate::testing::TestOperations;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{InMemoryVolume, Volume, VolumeError};
+use cmdr_operation_log::query::{RollbackSelection, SelectionBase, SelectionToggle};
 use cmdr_operation_log::rollback::*;
 use cmdr_operation_log::store::{
     OperationItemRow, OperationRow, open_read_connection, operation_log_db_path, read_operation, read_operation_items,
@@ -198,6 +199,103 @@ impl Rig {
             reversal.runner(),
         )
         .await
+    }
+}
+
+impl Rig {
+    /// Roll back only what `selection` takes, the way the dialog's Roll back does:
+    /// through the gate (which may refuse it), then the run with the plan's
+    /// normalized selection.
+    pub(super) async fn rollback_selected(
+        &self,
+        op_id: &str,
+        selection: &RollbackSelection,
+    ) -> Result<RollbackReport, RollbackRefusal> {
+        self.rollback_selected_driven_by(op_id, selection, &self.reversal("rollback"))
+            .await
+    }
+
+    /// [`Self::rollback_selected`] against a [`Reversal`] the test holds, to read its frames.
+    pub(super) async fn rollback_selected_driven_by(
+        &self,
+        op_id: &str,
+        selection: &RollbackSelection,
+        reversal: &Reversal,
+    ) -> Result<RollbackReport, RollbackRefusal> {
+        let plan = rollback_operation_with_selection(&self.vm, &self.writer, op_id, Some(selection), |_plan| Ok(()))?;
+        Ok(execute_rollback_with_selection(
+            &self.vm,
+            &self.writer,
+            &plan.original,
+            &plan.inverse_op_id,
+            Initiator::User,
+            plan.selection.as_ref(),
+            reversal.runner(),
+        )
+        .await)
+    }
+
+    /// The interned `dirs` id of `path` on `volume`: the key the item tree hands out
+    /// for that folder's row.
+    pub(super) fn dir_id(&self, volume: &str, path: &str) -> i64 {
+        let conn = open_read_connection(self.writer.db_path()).expect("read conn");
+        let mut id: i64 = conn
+            .query_row(
+                "SELECT dir_id FROM dirs WHERE volume_id = ?1 AND parent_dir_id IS NULL",
+                [volume],
+                |row| row.get(0),
+            )
+            .expect("the volume's root folder is interned");
+        for name in path.split('/').filter(|name| !name.is_empty()) {
+            id = conn
+                .query_row(
+                    "SELECT dir_id FROM dirs WHERE parent_dir_id = ?1 AND name = ?2",
+                    rusqlite::params![id, name],
+                    |row| row.get(0),
+                )
+                .unwrap_or_else(|e| panic!("{path} is interned on {volume}: {e}"));
+        }
+        id
+    }
+}
+
+/// Everything, minus or plus these toggles.
+pub(super) fn everything_but(toggles: Vec<SelectionToggle>) -> RollbackSelection {
+    RollbackSelection {
+        base: SelectionBase::Everything,
+        toggles,
+    }
+}
+
+/// Nothing, plus these toggles.
+pub(super) fn only(toggles: Vec<SelectionToggle>) -> RollbackSelection {
+    RollbackSelection {
+        base: SelectionBase::Nothing,
+        toggles,
+    }
+}
+
+/// A folder the operation moved (a same-volume move, or a trash): ONE `rollback_unit`
+/// DIR row from `src` to where it landed, as `record_items` writes a moved folder.
+pub(super) fn folder_unit(seq: i64, vol: &str, src: &str, dst: &str) -> JournalItem {
+    let (sd, sn) = split(src);
+    let (dd, dn) = split(dst);
+    JournalItem {
+        seq,
+        entry_type: EntryType::Dir,
+        row_role: RowRole::RollbackUnit,
+        source_volume_id: vol.to_string(),
+        source_dir: sd,
+        source_name: sn,
+        dest_volume_id: Some(vol.to_string()),
+        dest_dir: Some(dd),
+        dest_name: Some(dn),
+        size: Some(96),
+        mtime: Some(MT as i64),
+        outcome: ItemOutcome::Done,
+        overwrote: false,
+        dest_identity: None,
+        tags: None,
     }
 }
 

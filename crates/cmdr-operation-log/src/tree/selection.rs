@@ -113,7 +113,7 @@ impl Picked {
 /// A DIR row that owns what's recorded inside it: a trashed or moved folder, never a
 /// folder a copy or move created around its files. Its contents have no checkbox.
 pub(crate) fn owns_contents(kind: OpKind, facts: &RowFacts) -> bool {
-    let made_by_a_transfer = matches!(kind, OpKind::Copy | OpKind::Move) && facts.created_in_place();
+    let made_by_a_transfer = super::creates_folders_around_files(kind) && facts.created_in_place();
     facts.entry_type == EntryType::Dir && facts.row_role == RowRole::RollbackUnit && !made_by_a_transfer
 }
 
@@ -373,6 +373,47 @@ impl Selection {
             return Ok(on);
         }
         Ok(self.nodes.get(&dir).is_none_or(|node| node.chosen == node.all))
+    }
+
+    /// One row the selection takes, for naming where a reversal will act without
+    /// streaming the op: a row an `on` item toggle names, else one at or under the
+    /// deepest `on` folder toggle (that folder's own row, its first file, or its
+    /// first child folder's, down the chain). `None` when no toggle is `on`; the
+    /// caller then reads the op's newest unit, which `base: Everything` takes unless
+    /// a toggle turned its folder off.
+    pub(crate) fn sample_seq(&self, reader: &mut OpReader<'_>) -> Result<Option<i64>, OperationLogStoreError> {
+        let mut deepest: Option<(usize, i64)> = None;
+        for toggle in &self.normalized.toggles {
+            match *toggle {
+                SelectionToggle::Item { seq, on: true } => return Ok(Some(seq)),
+                SelectionToggle::Folder { dir_id, on: true } => {
+                    let depth = self.nodes.get(&dir_id).map_or(0, |node| node.depth);
+                    if deepest.is_none_or(|(known, _)| depth > known) {
+                        deepest = Some((depth, dir_id));
+                    }
+                }
+                SelectionToggle::Item { on: false, .. } | SelectionToggle::Folder { on: false, .. } => {}
+            }
+        }
+        let Some((_, mut dir)) = deepest else { return Ok(None) };
+        loop {
+            let row = reader.known_dir(dir)?;
+            if let Some(seq) = row.self_seq {
+                return Ok(Some(seq));
+            }
+            if row.direct_files > 0
+                && let Some(file) = reader.files(dir, 0, 1, row.direct_files as u64)?.first()
+            {
+                return Ok(Some(file.facts.seq));
+            }
+            if row.child_dirs == 0 {
+                return Ok(None);
+            }
+            match reader.child_dirs(dir, 0, 1, row.child_dirs as u64)?.first() {
+                Some(child) => dir = child.dir_id,
+                None => return Ok(None),
+            }
+        }
     }
 
     /// Count the selection: the toggles' folders and their ancestors form a small

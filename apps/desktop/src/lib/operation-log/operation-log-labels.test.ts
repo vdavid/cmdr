@@ -179,6 +179,15 @@ describe('rollbackRefusalNotice', () => {
         { kind: 'volumeUnavailable', detail: { volumeId: 'smb-nas' } },
         'Connect the drive this operation used, then try again.',
       ],
+      [{ kind: 'selection', detail: 'nothingSelected' }, 'Check at least one item to roll back.'],
+      [
+        { kind: 'selection', detail: 'summaryNotBuilt' },
+        'Cmdr is still reading this operation’s items. Try again in a moment.',
+      ],
+      [
+        { kind: 'selection', detail: 'tooManyToggles' },
+        'That’s more separate picks than Cmdr can hold. Pick a folder instead.',
+      ],
     ]
     for (const [refusal, notice] of cases) {
       expect(tString(rollbackRefusalNotice(refusal))).toBe(notice)

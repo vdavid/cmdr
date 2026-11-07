@@ -4223,9 +4223,26 @@ export const commands = {
    *
    *  `initiator` is who started the question a person answered: `user` for their own Roll back
    *  button, or the agent whose dialog they confirmed. Required, so provenance can't fail open.
+   *
+   *  `selection` is the item tree's normalized selection, sent back as the tree answered it;
+   *  `null` reverses every row (the default, "Roll back the rest", and every agent's call).
+   *  The engine normalizes it again and refuses one it can't run, typed (`selection`).
    */
-  rollbackOperation: (operationId: string, initiator: Initiator) =>
-    typedError<RollbackDispatch, RollbackRefusal>(__TAURI_INVOKE('rollback_operation', { operationId, initiator })),
+  rollbackOperation: (
+    operationId: string,
+    initiator: Initiator,
+    selection: {
+      base: SelectionBase
+      /**
+       *  In the order they were made: a later folder toggle overrides every earlier
+       *  toggle inside it.
+       */
+      toggles: SelectionToggle[]
+    } | null,
+  ) =>
+    typedError<RollbackDispatch, RollbackRefusal>(
+      __TAURI_INVOKE('rollback_operation', { operationId, initiator, selection }),
+    ),
   /**
    *  Undo the given operations as one action, **newest first** (a multi-batch rename
    *  run is the case this exists for; the order is data-safety-critical, see
@@ -16922,6 +16939,8 @@ export type RollbackRefusal =
         volumeId: string
       }
     }
+  // The selection sent with the request can't run; carries why.
+  | { kind: 'selection'; detail: SelectionRefusal }
 
 /**
  *  Which rows a rollback takes. A row's decision is its own `Item` toggle, else the
@@ -18344,6 +18363,18 @@ export type SelectionHistoryEntry = {
    */
   matchCount: number
 }
+
+/**
+ *  Why a rollback refuses the selection it was sent. The dialog keeps its button off
+ *  at "0 of M" and refuses toggles past the cap itself, so each of these is a backstop.
+ */
+export type SelectionRefusal =
+  // It takes no unit that still awaits reversal ("0 of M").
+  | 'nothingSelected'
+  // The op's tree summary isn't built yet, and a selection is decided off it.
+  | 'summaryNotBuilt'
+  // It holds more hand toggles than a selection may.
+  | 'tooManyToggles'
 
 // Exact paths and kinds consumed from one guarded backend row space.
 export type SelectionSnapshot = {

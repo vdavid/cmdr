@@ -43,13 +43,18 @@
 //! crash-reconcile), computing its own eligibility — a move/rename undo is
 //! rollbackable again (redo), a delete-the-copies undo is not.
 
-use std::path::Path;
+use rusqlite::Connection;
 
 use super::store::{
-    OperationRow, RollbackUnit, open_read_connection, read_operation, read_rollback_file_totals,
-    read_rollback_units_page,
+    OperationItemRow, OperationLogStoreError, OperationRow, RollbackUnit, open_read_connection,
+    read_rollback_progress_totals, read_rollback_rows_page, rollback_unit_of,
 };
-use super::types::{EntryType, ExecutionStatus, Initiator, NotRollbackableReason, OpKind, RollbackState, SkipReason};
+use super::tree::rollback_filter::{Narrowed, RollbackFilter, narrow};
+use super::tree::selection::RollbackSelection;
+use super::tree::{UnitRole, unit_role};
+use super::types::{
+    EntryType, ExecutionStatus, Initiator, NotRollbackableReason, OpKind, RollbackState, RowRole, SkipReason,
+};
 use super::writer::{OpenOperation, OperationLogWriter};
 
 /// Rows streamed per page from the journal — bounded so a huge op never
@@ -83,6 +88,25 @@ pub enum RollbackRefusal {
     /// time from mount state, never stored; names the missing volume so the
     /// UI/agent can say "Volume 'Backup' is not connected".
     VolumeUnavailable { volume_id: String },
+    /// The selection sent with the request can't run; carries why.
+    Selection(SelectionRefusal),
+}
+
+/// Why a rollback refuses the selection it was sent. The dialog keeps its button off
+/// at "0 of M" and refuses toggles past the cap itself, so each of these is a backstop.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+#[allow(
+    missing_docs,
+    reason = "a wire type: every `///` here reaches `bindings.ts` as JSDoc, so its fields and variants stay as they ship"
+)]
+pub enum SelectionRefusal {
+    /// It takes no unit that still awaits reversal ("0 of M").
+    NothingSelected,
+    /// The op's tree summary isn't built yet, and a selection is decided off it.
+    SummaryNotBuilt,
+    /// It holds more hand toggles than a selection may.
+    TooManyToggles,
 }
 
 impl SkipReason {
@@ -123,6 +147,9 @@ pub struct RollbackReport {
     pub reversed: u64,
     /// Items skipped (drift, unverifiable, occupied target, non-empty dir, error).
     pub skipped: u64,
+    /// Items still awaiting reversal that the run's selection left out, never
+    /// attempted. Any keeps the op `partially_rolled_back`.
+    pub left_out: u64,
     /// Which reason left which file alone: one group per [`SkipReason`], with the
     /// complete count and one example file name. The counts sum to `skipped`, so a
     /// report can name a file instead of a reason class without understating the rest.
@@ -282,6 +309,16 @@ pub fn verify_snapshot(
     }
 }
 
+/// What a run did with the rows it streamed: each one reversed, skipped, or left out
+/// by its selection.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(kani, derive(kani::Arbitrary))]
+struct RunTally {
+    reversed: u64,
+    skipped: u64,
+    left_out: u64,
+}
+
 /// Resolve the state the original op lands in from the run tally. `before` is the
 /// state the op held when this run started.
 ///
@@ -295,7 +332,16 @@ pub fn verify_snapshot(
 /// "Finish" re-attempts those items with a fresh recheck. The one exception is an
 /// empty pass over a partial op: it found nothing to retry, which proves nothing
 /// came back, so the op stays partial.
-fn resolve_final_state(reversed: u64, skipped: u64, stopped: bool, before: RollbackState) -> RollbackState {
+///
+/// A row the run's selection LEFT OUT still awaits reversal, so like a skip it keeps
+/// the op partial: "Roll back the rest" picks it up. Kani proves `RolledBack` never
+/// comes with a skip or a left-out row (`rollback/proofs.rs`).
+fn resolve_final_state(tally: RunTally, stopped: bool, before: RollbackState) -> RollbackState {
+    let RunTally {
+        reversed,
+        skipped,
+        left_out,
+    } = tally;
     let resuming = before == RollbackState::PartiallyRolledBack;
     if stopped {
         if reversed == 0 {
@@ -303,7 +349,7 @@ fn resolve_final_state(reversed: u64, skipped: u64, stopped: bool, before: Rollb
         } else {
             RollbackState::PartiallyRolledBack
         }
-    } else if skipped > 0 || (resuming && reversed == 0) {
+    } else if skipped > 0 || left_out > 0 || (resuming && reversed == 0) {
         RollbackState::PartiallyRolledBack
     } else {
         RollbackState::RolledBack
@@ -318,40 +364,6 @@ fn untouched_state(before: RollbackState) -> RollbackState {
     } else {
         RollbackState::Rollbackable
     }
-}
-
-// ── The op-level gate (used by the managed rollback entry point + tested here) ─────────────
-
-/// Check whether `op` may be rolled back right now: its stored `rollback_state`
-/// and (for a connected-volume requirement) whether every volume it touches is
-/// registered. Returns `Ok(())` to proceed, or the typed refusal. Does NOT mutate
-/// anything — the caller sets `rolling_back` only on a successful spawn.
-pub fn check_rollbackable(volumes: &dyn VolumeLookup, op: &OperationRow) -> Result<(), RollbackRefusal> {
-    match op.rollback_state {
-        RollbackState::RollingBack => return Err(RollbackRefusal::AlreadyRollingBack),
-        RollbackState::RolledBack => return Err(RollbackRefusal::AlreadyRolledBack),
-        RollbackState::NotRollbackable => {
-            let reason = op
-                .not_rollbackable_reason
-                .unwrap_or(NotRollbackableReason::PermanentDelete);
-            return Err(RollbackRefusal::NotRollbackable(reason));
-        }
-        // Rollbackable or PartiallyRolledBack (a resumed rollback): proceed.
-        RollbackState::Rollbackable | RollbackState::PartiallyRolledBack => {}
-    }
-
-    // Every volume the op touches must be connected NOW (the cross-volume gate).
-    for volume_id in [op.source_volume_id.as_deref(), op.dest_volume_id.as_deref()]
-        .into_iter()
-        .flatten()
-    {
-        if volumes.get(volume_id).is_none() {
-            return Err(RollbackRefusal::VolumeUnavailable {
-                volume_id: volume_id.to_string(),
-            });
-        }
-    }
-    Ok(())
 }
 
 // ── The planner: the item loop ───────────────────────────────────────────────
@@ -379,6 +391,31 @@ pub async fn execute_rollback(
     initiator: Initiator,
     runner: &dyn RollbackRunner,
 ) -> RollbackReport {
+    execute_rollback_with_selection(volumes, writer, original, inverse_op_id, initiator, None, runner).await
+}
+
+/// [`execute_rollback`] over only the rows `selection` takes (`None` takes every row,
+/// exactly as [`execute_rollback`]). The engine normalizes the selection again here
+/// (❌ never trusts what it was handed) and decides each RAW row before resolving its
+/// paths, so a row left out costs one cached lookup and is never verified, acted on,
+/// or recorded. Every row it takes goes through the same guards as an unfiltered
+/// run's. Left-out rows keep the op `partially_rolled_back`.
+///
+/// A selection the run can't resolve (the summary went missing, a read failed)
+/// reverses nothing and leaves the op as it found it.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "execute_rollback's arguments plus the selection it narrows to"
+)]
+pub async fn execute_rollback_with_selection(
+    volumes: &dyn VolumeLookup,
+    writer: &OperationLogWriter,
+    original: &OperationRow,
+    inverse_op_id: &str,
+    initiator: Initiator,
+    selection: Option<&RollbackSelection>,
+    runner: &dyn RollbackRunner,
+) -> RollbackReport {
     let inv_kind = inverse_kind(original.kind);
 
     // Open the inverse op's journal row (Running). It carries the same volumes as
@@ -398,6 +435,7 @@ pub async fn execute_rollback(
     }
 
     let mut acc = RunAcc::default();
+    let mut left_out: u64 = 0;
     let mut canceled = false;
     // A page the journal couldn't hand over (busy past its timeout, an undecodable
     // row, an I/O error). The run never saw what lies past it, so it ends like a
@@ -409,53 +447,71 @@ pub async fn execute_rollback(
         Ok(c) => c,
         Err(e) => {
             log::warn!(target: "operation_log", "rollback: read connection failed: {e}");
-            // Can't stream: nothing reversed, so the op goes back to how it was.
-            finalize_inverse(
-                writer,
-                inverse_op_id,
-                inv_kind,
-                ExecutionStatus::Failed,
-                InverseTotals::default(),
-            );
-            let final_state = untouched_state(original.rollback_state);
-            let _ = writer.set_rollback_state(&original.op_id, final_state, None);
-            return RollbackReport {
-                reversed: 0,
-                skipped: 0,
-                skips: Vec::new(),
-                canceled: false,
-                final_state,
-            };
+            return abandon_run(writer, original, inverse_op_id, inv_kind);
+        }
+    };
+    let mut filter: Option<RollbackFilter> = match selection.map(|wire| narrow(&conn, &original.op_id, wire)) {
+        None | Some(Ok(Narrowed::Everything)) => None,
+        Some(Ok(Narrowed::Some(filter))) => Some(*filter),
+        Some(Ok(Narrowed::Refused(refusal))) => {
+            log::warn!(target: "operation_log", "rollback: the selection can't run: {refusal:?}");
+            return abandon_run(writer, original, inverse_op_id, inv_kind);
+        }
+        Some(Err(e)) => {
+            log::warn!(target: "operation_log", "rollback: the selection didn't resolve: {e}");
+            return abandon_run(writer, original, inverse_op_id, inv_kind);
         }
     };
 
-    // The bar's totals, straight off the journal: one indexed count before the
-    // first act, so a reversal has no scanning phase and its bar means something
-    // from the first frame. Only FILE rows count — the deferred dir phase below
-    // removes leftovers rather than moving anything a person is waiting on.
-    let mut stand = ProgressStand::over(read_rollback_file_totals(&conn, &original.op_id).unwrap_or_default());
+    // The bar's totals before the first act, so a reversal has no scanning phase and
+    // its bar means something from the first frame: one aggregate off the journal, or
+    // a selection's counts off the tree summary. Both count exactly the rows the loop
+    // credits (`credits_progress`).
+    let totals = match &filter {
+        Some(filter) => filter.progress_totals(),
+        None => read_rollback_progress_totals(&conn, &original.op_id, original.kind).unwrap_or_default(),
+    };
+    let mut stand = ProgressStand::over(totals);
 
     // Reverse in two phases, matching `CopyTransaction::rollback`: first every
     // FILE (streamed `seq DESC`, so the 1M-row list is never materialized), then
-    // the created DIRECTORY rows deepest-first — a dir can only be removed once its
+    // the DIRECTORY rows deepest-first — a dir can only be removed once its
     // contents are gone, and pure `seq DESC` puts deep dirs (highest seq) before
     // the files they hold. Dirs are a small fraction of an op (interning shares
     // them), so buffering just the dir rows stays bounded.
     let mut deferred_dirs: Vec<RollbackUnit> = Vec::new();
     let mut before = i64::MAX;
     'pages: loop {
-        let page = match read_rollback_units_page(&conn, &original.op_id, before, ROLLBACK_PAGE) {
-            Ok(p) => p,
+        // Also asked per page, not only per item: a narrow selection over a big op
+        // streams page after page it keeps nothing of (2M rows take about 3 s), and a
+        // stop in there must land on the click.
+        if runner.should_stop() {
+            canceled = true;
+            break;
+        }
+        let rows = match read_rollback_rows_page(&conn, &original.op_id, before, ROLLBACK_PAGE) {
+            Ok(rows) => rows,
             Err(e) => {
                 log::warn!(target: "operation_log", "rollback: page read failed: {e}");
                 read_failed = true;
                 break;
             }
         };
-        if page.is_empty() {
-            break;
-        }
-        before = page.last().map(|u| u.seq).unwrap_or(before);
+        let Some(last) = rows.last() else { break };
+        // Page on the raw rows, never the kept ones: a page the selection keeps none of
+        // would otherwise read again forever.
+        before = last.seq;
+        let page = match admit_page(&conn, filter.as_mut(), &rows) {
+            Ok(admitted) => {
+                left_out += admitted.left_out;
+                admitted.units
+            }
+            Err(e) => {
+                log::warn!(target: "operation_log", "rollback: page read failed: {e}");
+                read_failed = true;
+                break;
+            }
+        };
 
         for unit in page {
             if runner.should_stop() {
@@ -472,7 +528,7 @@ pub async fn execute_rollback(
             // Pause inside it without staging thousands of files. It sits ABOVE the
             // two gates below so a click landing inside the window is honored for
             // THIS item rather than the next one. Only the FILE loop is paced: the
-            // deferred-dir phase below removes empty leftovers, so slowing it would
+            // deferred-dir phase below is mostly empty leftovers, so slowing it would
             // buy a spec dead time rather than a window.
             if let Some(pace) = runner.pace_between_items() {
                 crate::rt::time::sleep(pace).await;
@@ -486,7 +542,10 @@ pub async fn execute_rollback(
                 canceled = true;
                 break 'pages;
             }
-            stand.announce(runner, Some(&unit));
+            let credits = credits_progress(original.kind, &unit);
+            if credits {
+                stand.announce(runner, Some(&unit));
+            }
             let result = reverse_item(volumes, runner, original.kind, &unit).await;
             // A stop observed INSIDE an item (a cancel during a cross-volume stream)
             // ends the run instead of recording a skip: nothing was left behind for a
@@ -496,7 +555,9 @@ pub async fn execute_rollback(
                 canceled = true;
                 break 'pages;
             }
-            stand.credit(&unit);
+            if credits {
+                stand.credit(&unit);
+            }
             acc.record(&unit, result);
         }
         // Flush this page's side-effects durably (bounded memory: never buffer the
@@ -504,15 +565,13 @@ pub async fn execute_rollback(
         // recorded outcomes for the reconcile to read).
         acc.flush(writer, inverse_op_id, &original.op_id);
     }
-    // The frame that lands on the total (or wherever a stop left it), so a bar that
-    // was throttled mid-item still ends where the run ended.
-    stand.announce(runner, None);
 
     // Phase two: the buffered directory rows, deepest path first (so a child dir is
     // removed before its parent). Skipped entirely if the run was canceled or a page
-    // failed to read (the unread files may still sit inside these dirs) — and it
-    // polls the stop itself, so a reversal of a directory-heavy op stops on the
-    // click rather than at the end of the sweep.
+    // failed to read (the unread files may still sit inside these dirs). A trashed or
+    // moved folder is a unit here too (a big trash can put 100,000 of them in this
+    // sweep), so the sweep parks on a pause BEFORE each item is verified, as the file
+    // loop does, polls the stop, and credits each folder unit on the bar.
     if !canceled && !read_failed {
         deferred_dirs.sort_by_key(|u| std::cmp::Reverse(u.source_path.components().count()));
         for unit in &deferred_dirs {
@@ -520,11 +579,26 @@ pub async fn execute_rollback(
                 canceled = true;
                 break;
             }
+            runner.wait_while_paused().await;
+            if runner.should_stop() {
+                canceled = true;
+                break;
+            }
+            let credits = credits_progress(original.kind, unit);
+            if credits {
+                stand.announce(runner, Some(unit));
+            }
             let result = reverse_item(volumes, runner, original.kind, unit).await;
+            if credits {
+                stand.credit(unit);
+            }
             acc.record(unit, result);
         }
     }
     acc.flush(writer, inverse_op_id, &original.op_id);
+    // The frame that lands on the total (or wherever a stop left it), so a bar that
+    // was throttled mid-item still ends where the run ended.
+    stand.announce(runner, None);
 
     let inv_status = if read_failed {
         ExecutionStatus::Failed
@@ -536,7 +610,12 @@ pub async fn execute_rollback(
     finalize_inverse(writer, inverse_op_id, inv_kind, inv_status, acc.totals(original));
 
     let stopped = canceled || read_failed;
-    let final_state = resolve_final_state(acc.reversed, acc.skipped, stopped, original.rollback_state);
+    let tally = RunTally {
+        reversed: acc.reversed,
+        skipped: acc.skipped,
+        left_out,
+    };
+    let final_state = resolve_final_state(tally, stopped, original.rollback_state);
     if let Err(e) = writer.set_rollback_state(&original.op_id, final_state, None) {
         log::warn!(target: "operation_log", "rollback: resolve original state failed: {e}");
     }
@@ -544,127 +623,89 @@ pub async fn execute_rollback(
     RollbackReport {
         reversed: acc.reversed,
         skipped: acc.skipped,
+        left_out,
         skips: acc.skips.into_breakdowns(),
         canceled,
         final_state,
     }
 }
 
-// ── Entry point: gate + set rolling_back + spawn (state machine) ──────────────
-
-/// Everything the caller needs to actually run the inverse op after the gate
-/// passed and `rolling_back` was set: the original op's row, the fresh id for its
-/// inverse, and where the reversal will act.
-#[derive(Debug, Clone)]
-pub struct InversePlan {
-    /// The operation being reversed, as it read when the gate passed.
-    pub original: OperationRow,
-    /// The id the inverse operation journals under.
-    pub inverse_op_id: String,
-    /// Where the reversal will act.
-    pub summary: InverseSummary,
-}
-
-/// Where a reversal will act, so its queue row can say so instead of sitting
-/// nameless. Read off the newest journal row at dispatch — one row, never the
-/// list.
-#[derive(Debug, Clone, Default)]
-pub struct InverseSummary {
-    /// The folder the reversal takes items FROM (for a removal, the folder it
-    /// cleans; for a created directory, that directory itself).
-    pub from: Option<String>,
-    /// Where a restore puts them back. `None` for a removal inverse, which has
-    /// nowhere to put anything.
-    pub to: Option<String>,
-}
-
-/// Summarize what reversing `op` will do, from its newest `rollback_unit` row.
-///
-/// The newest row is the cheapest honest sample: for a copy it's the created
-/// directory (the exact folder the undo cleans), and for anything else it's a
-/// leaf whose parent folder is the place the user is watching.
-fn summarize_inverse(conn: &rusqlite::Connection, op: &OperationRow) -> InverseSummary {
-    let Ok(page) = read_rollback_units_page(conn, &op.op_id, i64::MAX, 1) else {
-        return InverseSummary::default();
-    };
-    let Some(unit) = page.first() else {
-        return InverseSummary::default();
-    };
-    let (_, acting_on) = removal_target(unit);
-    // A directory row IS the thing being removed; a file row names its folder.
-    let from = if unit.entry_type == EntryType::Dir {
-        Some(acting_on)
-    } else {
-        acting_on.parent().map(Path::to_path_buf)
-    };
-    let to = match item_action(op.kind, unit.entry_type, is_created_in_place(unit)) {
-        Some(InverseAction::RestoreMove) => unit.source_path.parent().map(Path::to_path_buf),
-        _ => None,
-    };
-    InverseSummary {
-        from: from.map(|p| p.to_string_lossy().into_owned()),
-        to: to.map(|p| p.to_string_lossy().into_owned()),
-    }
-}
-
-/// The entry point of the `rolling_back` state machine (`DETAILS.md` § "The
-/// `rolling_back` state machine + startup reconcile"): read the op, gate it
-/// (unknown / already rolling back / not rollbackable / a volume disconnected),
-/// then — as late as possible — set it `rolling_back` and hand the plan to
-/// `spawn`, which launches the inverse operation. If `spawn` fails synchronously
-/// (a volume dropped between the gate and the spawn, so the inverse never
-/// starts), reset `rolling_back → rollbackable` in the SAME call before
-/// returning the error, so the op isn't wedged behind the `AlreadyRollingBack`
-/// guard and an immediate retry is accepted. The double-rollback guard is
-/// automatic: a second call reads the op as `rolling_back` and refuses.
-///
-/// `spawn` is injected so the manager wiring (which lives in `cmdr-operations`,
-/// where the `OperationManager` is reachable) supplies the real managed-op spawn,
-/// while tests drive the gate/reset logic directly.
-pub fn rollback_operation<F>(
-    volumes: &dyn VolumeLookup,
+/// End a run that never streamed a row: the inverse op is `failed`, and the original
+/// goes back to how it was, since nothing was reversed.
+fn abandon_run(
     writer: &OperationLogWriter,
-    op_id: &str,
-    spawn: F,
-) -> Result<InversePlan, RollbackRefusal>
-where
-    F: FnOnce(&InversePlan) -> Result<(), RollbackRefusal>,
-{
-    let conn = open_read_connection(writer.db_path()).map_err(|_| RollbackRefusal::UnknownOperation)?;
-    let op = read_operation(&conn, op_id)
-        .map_err(|_| RollbackRefusal::UnknownOperation)?
-        .ok_or(RollbackRefusal::UnknownOperation)?;
+    original: &OperationRow,
+    inverse_op_id: &str,
+    inv_kind: OpKind,
+) -> RollbackReport {
+    finalize_inverse(
+        writer,
+        inverse_op_id,
+        inv_kind,
+        ExecutionStatus::Failed,
+        InverseTotals::default(),
+    );
+    let final_state = untouched_state(original.rollback_state);
+    let _ = writer.set_rollback_state(&original.op_id, final_state, None);
+    RollbackReport {
+        reversed: 0,
+        skipped: 0,
+        left_out: 0,
+        skips: Vec::new(),
+        canceled: false,
+        final_state,
+    }
+}
 
-    check_rollbackable(volumes, &op)?;
+/// One page's rows as the run takes them: the units it will act on, each path
+/// resolved, and how many the selection left out. Resolves the whole page before any
+/// item runs, so a page with a row it can't read fails as a unit, as it always has.
+struct AdmittedPage {
+    units: Vec<RollbackUnit>,
+    left_out: u64,
+}
 
-    let summary = summarize_inverse(&conn, &op);
-    drop(conn);
-
-    let plan = InversePlan {
-        original: op,
-        inverse_op_id: super::new_operation_id(),
-        summary,
+fn admit_page(
+    conn: &Connection,
+    filter: Option<&mut RollbackFilter>,
+    rows: &[OperationItemRow],
+) -> Result<AdmittedPage, OperationLogStoreError> {
+    let mut admitted = AdmittedPage {
+        units: Vec::with_capacity(rows.len()),
+        left_out: 0,
     };
-    // Set `rolling_back` as late as possible — right before the spawn — to shrink
-    // the window in which a crash leaves it set with no inverse row (the reconcile
-    // resolves that anyway, straight back to rollbackable).
-    if let Err(e) = writer.set_rollback_state(op_id, RollbackState::RollingBack, None) {
-        log::warn!(target: "operation_log", "rollback: set rolling_back failed: {e}");
-    }
-    match spawn(&plan) {
-        Ok(()) => Ok(plan),
-        Err(refusal) => {
-            // The inverse never started — put back the state the op held (a partial
-            // op stays partial) so a retry isn't refused, BEFORE returning the typed error.
-            if let Err(e) = writer.set_rollback_state(op_id, untouched_state(plan.original.rollback_state), None) {
-                log::warn!(target: "operation_log", "rollback: reset after failed spawn failed: {e}");
-            }
-            Err(refusal)
+    let mut filter = filter.map(|filter| filter.on(conn));
+    for row in rows {
+        if let Some(filter) = filter.as_mut()
+            && !filter.admits(row)?
+        {
+            admitted.left_out += 1;
+            continue;
         }
+        admitted.units.push(rollback_unit_of(conn, row)?);
     }
+    Ok(admitted)
+}
+
+/// Whether reversing `unit` moves the bar: every [`UnitRole::Selectable`] row, file
+/// or folder unit. A folder a copy or move made around its files is a leftover the
+/// sweep removes, not something a person is waiting on. The totals count the same
+/// rows (`store::read_rollback_progress_totals`, and a selection's
+/// `units_selectable` off the tree summary).
+fn credits_progress(kind: OpKind, unit: &RollbackUnit) -> bool {
+    let role = unit_role(
+        kind,
+        RowRole::RollbackUnit,
+        unit.entry_type,
+        is_created_in_place(unit),
+        unit.outcome,
+        unit.rollback_skip_reason,
+    );
+    role == UnitRole::Selectable
 }
 
 mod bookkeeping;
+mod gate;
 mod inverse;
 mod order;
 mod reconcile;
@@ -673,6 +714,9 @@ mod self_collision;
 mod skips;
 mod tags;
 use bookkeeping::{InverseTotals, RunAcc, finalize_inverse, inverse_planned_item_count};
+pub use gate::{
+    InversePlan, InverseSummary, check_rollbackable, rollback_operation, rollback_operation_with_selection,
+};
 use inverse::{removal_target, reverse_item, vanished_item};
 pub use order::undo_order;
 pub use reconcile::reconcile_rolling_back_on_open;

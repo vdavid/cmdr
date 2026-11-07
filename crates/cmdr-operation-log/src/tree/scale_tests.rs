@@ -23,13 +23,14 @@ use super::read::{
     FileSql, OpReader, SQL_CHILD_DIR_AT, SQL_CHILD_DIR_AT_DESC, SQL_CHILD_DIRS_FROM, SQL_CHILD_DIRS_UPTO,
     SQL_COUNT_DIRS_AFTER, SQL_COUNT_DIRS_BEFORE, SQL_DIR, SQL_DIR_NAME, SQL_ROOTS, sql_first_rows, sql_item,
 };
+use super::rollback_filter::{Narrowed, narrow};
 use super::selection::{RollbackSelection, Selection, SelectionBase, SelectionToggle};
 use super::status::BackfillRegistry;
 use super::summary::{FACT_COLUMNS, aggregate_op, map_facts, read_op_tree_context};
 use super::view::{OperationTreeRequest, OperationTreeView, TreeRowKey, operation_tree};
 use crate::store::{
     OperationLogStore, build_tree_item_indexes, fold_name, intern_child_dir, intern_dir, open_read_connection,
-    operation_log_db_path,
+    operation_log_db_path, read_rollback_rows_page,
 };
 
 /// A seeded journal.
@@ -343,18 +344,22 @@ fn reads(seeded: &Seeded, shape: Shape) -> Vec<Read> {
     ]
 }
 
+/// The three-file selection the engine cells decide.
+fn three_files() -> RollbackSelection {
+    RollbackSelection {
+        base: SelectionBase::Nothing,
+        toggles: (0..3)
+            .map(|i| SelectionToggle::Item { seq: i * 37, on: true })
+            .collect(),
+    }
+}
+
 /// The engine's per-row decision over the copy's first `rows` rows, with a
 /// three-file selection: how many it takes.
 fn engine_decisions(conn: &Connection, rows: i64) -> u64 {
     let context = read_op_tree_context(conn, "copy").expect("context").expect("op");
     let mut reader = OpReader::new(conn, "copy", context);
-    let selection = RollbackSelection {
-        base: SelectionBase::Nothing,
-        toggles: (0..3)
-            .map(|i| SelectionToggle::Item { seq: i * 37, on: true })
-            .collect(),
-    };
-    let mut resolved = Selection::resolve(&mut reader, &selection).expect("resolve");
+    let mut resolved = Selection::resolve(&mut reader, &three_files()).expect("resolve");
     let sql = format!("SELECT {FACT_COLUMNS} FROM operation_items WHERE op_id = 'copy' AND seq < ?1 ORDER BY seq");
     let mut stmt = conn.prepare(&sql).expect("prepare");
     let mut found = stmt.query([rows]).expect("query");
@@ -368,18 +373,46 @@ fn engine_decisions(conn: &Connection, rows: i64) -> u64 {
     taken
 }
 
-/// Stream the copy's rows as [`engine_decisions`] does, deciding nothing.
-fn stream_only(conn: &Connection) -> u64 {
-    let sql = format!("SELECT {FACT_COLUMNS} FROM operation_items WHERE op_id = 'copy' ORDER BY seq");
-    let mut stmt = conn.prepare(&sql).expect("prepare");
-    let mut found = stmt.query([]).expect("query");
-    let mut rows = 0;
-    while let Some(row) = found.next().expect("row") {
-        map_facts(row).expect("facts");
-        rows += 1;
+/// The rollback engine's skip pass over the copy, as `execute_rollback_with_selection`
+/// runs it: every row it streams (`read_rollback_rows_page`, a page at a time), each
+/// through the run's filter, with a three-file selection. How many it takes.
+fn engine_skip_pass(conn: &Connection) -> u64 {
+    let mut filter = match narrow(conn, "copy", &three_files()).expect("narrow") {
+        Narrowed::Some(filter) => *filter,
+        Narrowed::Everything | Narrowed::Refused(_) => panic!("three files narrow the run"),
+    };
+    let mut before = i64::MAX;
+    let mut taken = 0;
+    loop {
+        let rows = read_rollback_rows_page(conn, "copy", before, SKIP_PASS_PAGE).expect("page");
+        let Some(last) = rows.last() else { break };
+        before = last.seq;
+        let mut page = filter.on(conn);
+        for row in &rows {
+            if page.admits(row).expect("decide") {
+                taken += 1;
+            }
+        }
     }
-    rows
+    taken
 }
+
+/// Stream the copy's rows as [`engine_skip_pass`] does, deciding nothing: what an
+/// unfiltered rollback pays before its first act.
+fn stream_only(conn: &Connection) -> u64 {
+    let mut before = i64::MAX;
+    let mut streamed = 0;
+    loop {
+        let rows = read_rollback_rows_page(conn, "copy", before, SKIP_PASS_PAGE).expect("page");
+        let Some(last) = rows.last() else { break };
+        before = last.seq;
+        streamed += rows.len() as u64;
+    }
+    streamed
+}
+
+/// The engine's page size (`rollback.rs::ROLLBACK_PAGE`).
+const SKIP_PASS_PAGE: u32 = 512;
 
 /// SQLite VM steps `read` takes on `conn`, counted by its progress handler.
 fn vm_steps(conn: &mut Connection, read: &Read) -> (u64, u64) {
@@ -528,8 +561,11 @@ fn budgets() -> HashMap<&'static str, u64> {
     ])
 }
 
-/// What deciding every row may add to streaming them: the skip pass for a three-file
-/// selection over 2M rows streamed in 1.08 s and decided in 1.13 s.
+/// What deciding every row may add to streaming them. Through the engine's own page
+/// read (`read_rollback_rows_page`, every column, 512 a page), the copy's 2M rows
+/// streamed in 2.62 s and the three-file skip pass took 2.83 s (release, Apple Silicon
+/// laptop, 2026-11-08): the decision adds 8%, the stream is the cost, and an
+/// unfiltered rollback pays that stream too.
 const DECISION_OVERHEAD: f64 = 0.25;
 
 fn timed(seeded: &Seeded, shape: Shape, budgets: &HashMap<&'static str, u64>) {
@@ -559,7 +595,7 @@ fn timed(seeded: &Seeded, shape: Shape, budgets: &HashMap<&'static str, u64>) {
         "streaming every row, no decision"
     );
     let started = Instant::now();
-    let taken = engine_decisions(&conn, i64::MAX);
+    let taken = engine_skip_pass(&conn);
     let took = started.elapsed();
     eprintln!(
         "{:>45}: {took:>8.2?} (took {taken})",

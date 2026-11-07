@@ -508,13 +508,22 @@ var surfaceGuardedCrates = []struct {
 		// unbuilt reason, the registry the host keeps, and the selection: base,
 		// toggle, selection). Every one crosses into `bindings.ts`; a host-side copy
 		// of any would let the desktop and the demo drift.
+		//
+		// Raised 92 -> 95 on 2026-11-08 for partial rollback (#1033), the engine half
+		// of that same tree: in `rollback`, `rollback_operation_with_selection` (the
+		// gate, which normalizes and refuses a selection), `execute_rollback_with_selection`
+		// (the run, which `cmdr-operations`' managed dispatch calls), and
+		// `SelectionRefusal` (the typed reason inside `RollbackRefusal::Selection`,
+		// which crosses into `bindings.ts`). `rollback_operation` and `execute_rollback`
+		// stay as their `None` wrappers on purpose: about 20 callers across both crates
+		// and the app's backend suites reverse a whole op and stay byte-identical.
 		Name:       "cmdr-operation-log",
 		HandleType: "OperationLog",
 		Ceilings: surfaceCeilings{
 			RootPromises:   11,
 			HandleMethods:  7,
 			PublicModules:  7,
-			SubsystemItems: 92,
+			SubsystemItems: 95,
 		},
 	},
 	{

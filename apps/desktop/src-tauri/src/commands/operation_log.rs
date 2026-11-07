@@ -26,8 +26,8 @@ use tauri_specta::Event as _;
 
 use crate::operations_host::{TauriEventSink, operations, wire};
 use cmdr_operation_log::query::{
-    self, OperationDetail, OperationTreeRequest, OperationTreeView, TreeBackfill, TreeBackfillEvent, TreeBackfillStart,
-    TreeBackfillStep,
+    self, OperationDetail, OperationTreeRequest, OperationTreeView, RollbackSelection, TreeBackfill, TreeBackfillEvent,
+    TreeBackfillStart, TreeBackfillStep,
 };
 use cmdr_operation_log::rollback::{RollbackDispatch, RollbackRefusal};
 use cmdr_operation_log::store::{OperationLogStoreError, OperationRow, open_read_connection, operation_log_db_path};
@@ -166,12 +166,17 @@ pub async fn get_operation_log_tree(
 ///
 /// `initiator` is who started the question a person answered: `user` for their own Roll back
 /// button, or the agent whose dialog they confirmed. Required, so provenance can't fail open.
+///
+/// `selection` is the item tree's normalized selection, sent back as the tree answered it;
+/// `null` reverses every row (the default, "Roll back the rest", and every agent's call).
+/// The engine normalizes it again and refuses one it can't run, typed (`selection`).
 #[tauri::command]
 #[specta::specta]
 pub async fn rollback_operation(
     app: AppHandle,
     operation_id: String,
     initiator: Initiator,
+    selection: Option<RollbackSelection>,
 ) -> Result<RollbackDispatch, RollbackRefusal> {
     // The gate opens a read connection and reads the operation's row before it
     // spawns anything, so it runs on the blocking pool like every other DB touch here.
@@ -179,7 +184,7 @@ pub async fn rollback_operation(
     let engine = operations().map_err(|_| RollbackRefusal::UnknownOperation)?;
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     tauri::async_runtime::spawn_blocking(move || {
-        engine.dispatch_rollback(&OperationId::from(operation_id), initiator, events)
+        engine.dispatch_rollback(&OperationId::from(operation_id), initiator, selection.as_ref(), events)
     })
     .await
     // The gate panicked, so nothing was dispatched and nothing changed on disk.

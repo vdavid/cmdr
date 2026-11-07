@@ -18,14 +18,16 @@ const getRecentMock = vi.fn<(payload: { limit: number; offset: number }) => Prom
 const getDetailMock =
   vi.fn<(payload: { operationId: string; itemLimit: number; itemOffset: number }) => Promise<Res<unknown>>>()
 const undoMock = vi.fn<(ids: string[]) => Promise<Res<unknown>>>()
-const rollbackMock = vi.fn<(args: { id: string; initiator: string }) => Promise<Res<unknown, { kind: string }>>>()
+const rollbackMock =
+  vi.fn<(args: { id: string; initiator: string; selection: unknown }) => Promise<Res<unknown, { kind: string }>>>()
 vi.mock('#lib/ipc/bindings.js', () => ({
   commands: {
     getRecentOperationLogEntries: (limit: number, offset: number) => getRecentMock({ limit, offset }),
     getOperationLogDetail: (id: string, l: number, o: number) =>
       getDetailMock({ operationId: id, itemLimit: l, itemOffset: o }),
     undoOperations: (ids: string[]) => undoMock(ids),
-    rollbackOperation: (id: string, initiator: string) => rollbackMock({ id, initiator }),
+    rollbackOperation: (id: string, initiator: string, selection: unknown) =>
+      rollbackMock({ id, initiator, selection }),
   },
 }))
 
@@ -99,7 +101,15 @@ describe('rollbackOperation', () => {
   it("returns the inverse operation's id once the reversal is queued", async () => {
     rollbackMock.mockResolvedValue({ status: 'ok', data: { inverseOpId: 'op-2' } })
     expect(await rollbackOperation('op-1', 'agent')).toEqual({ inverseOpId: 'op-2' })
-    expect(rollbackMock).toHaveBeenCalledWith({ id: 'op-1', initiator: 'agent' })
+    // No selection means the whole operation, which is what every caller but the tree wants.
+    expect(rollbackMock).toHaveBeenCalledWith({ id: 'op-1', initiator: 'agent', selection: null })
+  })
+
+  it("passes the tree's selection through untouched", async () => {
+    rollbackMock.mockResolvedValue({ status: 'ok', data: { inverseOpId: 'op-2' } })
+    const selection = { base: 'everything' as const, toggles: [{ kind: 'item' as const, seq: 3, on: false }] }
+    await rollbackOperation('op-1', 'user', selection)
+    expect(rollbackMock).toHaveBeenCalledWith({ id: 'op-1', initiator: 'user', selection })
   })
 
   it('throws the refusal TYPED, so the caller can word each reason itself', async () => {

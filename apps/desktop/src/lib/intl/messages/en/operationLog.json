@@ -322,6 +322,24 @@
     "screenshot": "operation-log-more-pages.png",
     "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
+  "operationLog.rollback.refusalNothingSelected": "Check at least one item to roll back.",
+  "@operationLog.rollback.refusalNothingSelected": {
+    "description": "Shown in the Operation log when the user presses Roll back with none of the operation's items checked, or when every checked item was already rolled back by the time the press arrived. Actionable: check an item in the list and press again.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
+  },
+  "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr is still reading this operation’s items. Try again in a moment.",
+  "@operationLog.rollback.refusalSummaryNotBuilt": {
+    "description": "Shown in the Operation log when the user presses Roll back with some items checked while Cmdr is still preparing the list of that operation's items, so it can't yet tell which items the checks cover. Actionable: wait a moment and press again. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
+  },
+  "operationLog.rollback.refusalTooManyToggles": "That’s more separate picks than Cmdr can hold. Pick a folder instead.",
+  "@operationLog.rollback.refusalTooManyToggles": {
+    "description": "Shown in the Operation log when the user presses Roll back after checking or unchecking more than 2,000 individual items one by one. Actionable: check or uncheck a whole folder instead of its items one at a time. \"Picks\" means the individual items the user checked or unchecked by hand. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
+  },
   "operationLog.rollback.refusalUnexpected": "Cmdr couldn’t start the rollback. Try again in a moment.",
   "@operationLog.rollback.refusalUnexpected": {
     "description": "Shown on a row of the Operation log when pressing Roll back doesn’t reach Cmdr’s backend at all, so there is no specific reason to give. Friendly and actionable; avoids the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",

@@ -21,6 +21,7 @@ import type {
   OperationRow,
   RollbackRefusal,
   RollbackState,
+  SelectionRefusal,
 } from '#lib/ipc/bindings.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { tString } from '#lib/intl/messages.svelte.js'
@@ -244,6 +245,24 @@ export function rollbackRefusalNotice(refusal: RollbackRefusal | null): MessageK
       return notRollbackableNotice(refusal.detail)
     case 'volumeUnavailable':
       return 'operationLog.rollback.refusalVolumeUnavailable'
+    case 'selection':
+      return selectionRefusalNotice(refusal.detail)
+  }
+}
+
+/**
+ * Why the checked items couldn't be rolled back. The dialog keeps its button off at
+ * "0 of M" and refuses a pick past the cap itself, so each of these is a race or a
+ * backstop: the items changed under the tree, or it was still reading the operation.
+ */
+function selectionRefusalNotice(reason: SelectionRefusal): MessageKey {
+  switch (reason) {
+    case 'nothingSelected':
+      return 'operationLog.rollback.refusalNothingSelected'
+    case 'summaryNotBuilt':
+      return 'operationLog.rollback.refusalSummaryNotBuilt'
+    case 'tooManyToggles':
+      return 'operationLog.rollback.refusalTooManyToggles'
   }
 }
 

@@ -127,6 +127,11 @@ finish. The reason that's safe is in the ENGINE, not in this dialog:
 - **The two data-safety guards still stand on the second pass.** Drift and unverifiable snapshots skip, and a restore
   never overwrites a different entry. So a file the user created at a reversed item's old path after the cancel is
   skipped, not clobbered.
+- **A selective pass is the same re-entry, narrowed.** `rollbackOperation` takes the item tree's normalized selection
+  (`null` for everything); the engine normalizes it again and only REMOVES rows from the stream, so every row it takes
+  gets the same recheck-then-act, and the rows it left out still await reversal, keeping the op `partiallyRolledBack`
+  for the next pass. A selection it can't run is refused typed (`selection`: nothing selected, the summary not built,
+  too many picks) before anything is set. Engine side: `crates/cmdr-operation-log/DETAILS.md` § "Streaming + ordering".
 
 That's why the copy promises a pass rather than a completion: the same state also covers a reversal that RAN to the end
 and skipped items it couldn't verify, and those skip again. `partiallyRolledBackNotice` says "Finishing takes another

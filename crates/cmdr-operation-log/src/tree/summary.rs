@@ -13,7 +13,7 @@ use std::collections::{BTreeMap, HashMap};
 use rusqlite::{Connection, OptionalExtension};
 
 use super::{TreeAxis, UnitRole, unit_role};
-use crate::store::OperationLogStoreError;
+use crate::store::{OperationItemRow, OperationLogStoreError};
 use crate::types::{EntryType, ItemOutcome, OpKind, RowRole, SkipReason, TreeSummaryState};
 
 /// The subtree totals of one folder: every row placed in it or anywhere below it.
@@ -28,7 +28,7 @@ pub(crate) struct SubtreeTotals {
     pub(crate) units_selectable: i64,
     /// The FILE ones among them, which a reversal's progress bar counts.
     pub(crate) unit_files_selectable: i64,
-    /// Their bytes, `MAX(size, 0)`, as `read_rollback_file_totals` sums them.
+    /// Their bytes, `MAX(size, 0)`, as `read_rollback_progress_totals` sums them.
     pub(crate) unit_bytes_selectable: i64,
     /// `rollback_unit` rows a rollback reversed, housekeeping folders included.
     pub(crate) units_rolled_back: i64,
@@ -165,6 +165,28 @@ impl RowFacts {
             }
         }
         t
+    }
+}
+
+impl From<&OperationItemRow> for RowFacts {
+    /// The facts of a row the rollback engine streamed, for its per-row selection
+    /// decision (`selection.rs::Selection::includes`).
+    fn from(row: &OperationItemRow) -> Self {
+        RowFacts {
+            seq: row.seq,
+            entry_type: row.entry_type,
+            row_role: row.row_role,
+            outcome: row.outcome,
+            skip_reason: row.rollback_skip_reason,
+            size: row.size,
+            source_dir_id: row.source_dir_id,
+            source_name: row.source_name.clone(),
+            dest: match (row.dest_dir_id, &row.dest_name) {
+                (Some(dir), Some(name)) => Some((dir, name.clone())),
+                _ => None,
+            },
+            self_dir_id: row.self_dir_id,
+        }
     }
 }
 

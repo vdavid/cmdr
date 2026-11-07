@@ -53,19 +53,24 @@ fn a_snapshot_matches_exactly_when_nothing_changed() {
     }
 }
 
-/// The state a rollback run leaves the op in. Only a run that tried every item
-/// and skipped none (and, resuming a partial op, brought something back) may
-/// call it rolled back; a run that changed nothing leaves the op as it found
-/// it; and once anything came back, the op never reads as untouched again.
+/// The state a rollback run leaves the op in. Only a run that tried every item,
+/// skipped none, and left none out by its selection (and, resuming a partial op,
+/// brought something back) may call it rolled back; a run that changed nothing
+/// leaves the op as it found it; and once anything came back, the op never reads
+/// as untouched again.
 #[kani::proof]
 fn a_run_never_claims_more_than_it_reversed() {
-    let reversed: u64 = kani::any();
-    let skipped: u64 = kani::any();
+    let tally: RunTally = kani::any();
+    let RunTally {
+        reversed,
+        skipped,
+        left_out,
+    } = tally;
     let stopped: bool = kani::any();
     let before: RollbackState = kani::any();
     let resuming = before == RollbackState::PartiallyRolledBack;
 
-    let after = resolve_final_state(reversed, skipped, stopped, before);
+    let after = resolve_final_state(tally, stopped, before);
     assert!(
         matches!(
             after,
@@ -75,6 +80,7 @@ fn a_run_never_claims_more_than_it_reversed() {
     );
     if after == RollbackState::RolledBack {
         assert!(!stopped && skipped == 0, "rolled back with items left behind");
+        assert!(left_out == 0, "rolled back with items the selection left out");
         assert!(!(resuming && reversed == 0), "an empty pass finished a partial op");
     }
     if stopped && reversed == 0 {
