@@ -67,6 +67,7 @@ mod downloads;
 mod drag_image_detection;
 #[cfg(target_os = "macos")]
 mod drag_image_swap;
+mod drop_in;
 mod error_reporter;
 pub mod events;
 mod favorites;
@@ -393,6 +394,9 @@ pub fn run() {
                 file_viewer::init_open_with_extract_dir(data_dir.join("open-with-extract"));
                 // The report dialogs' "see everything" files: per instance too, cleared at startup.
                 error_reporter::preview_file::init_report_preview_dir(data_dir.join("report-preview"));
+                // Promised drops (a browser image) land in a per-drop folder here until the copy
+                // out of it ends; per instance, and swept at startup (`drop_in/folders.rs`).
+                drop_in::init_drop_folder_root(data_dir.join("drops"));
             }
 
             // The write engine claims its leftover ledger: points it at the data dir

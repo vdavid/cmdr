@@ -49,6 +49,8 @@ const {
   statPathsKindsSpy,
   storedSpellingsSpy,
   addToastSpy,
+  trackEventSpy,
+  releasePromiseDropSpy,
   listenHandlers,
   dragDropHandlerRef,
 } = vi.hoisted(() => ({
@@ -68,6 +70,8 @@ const {
   stopModifierTrackingSpy: vi.fn(),
   getModifierStateSpy: vi.fn<() => { altHeld: boolean; cmdHeld: boolean; shiftHeld: boolean }>(),
   addToastSpy: vi.fn(),
+  trackEventSpy: vi.fn(() => Promise.resolve()),
+  releasePromiseDropSpy: vi.fn(() => Promise.resolve()),
   // Captured event-name → handler map, for driving the native listeners in `init()`.
   listenHandlers: new Map<string, (event: { payload: unknown }) => void>(),
   dragDropHandlerRef: { current: null as ((event: { payload: DragDropPayload }) => void) | null },
@@ -77,7 +81,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   DEFAULT_VOLUME_ID: 'root',
   // The drop path reports one PII-free event per drop; the emitter is fire-and-forget
   // so a stub is all it needs (`drag/drag-analytics.ts`).
-  trackEvent: vi.fn(() => Promise.resolve()),
+  trackEvent: trackEventSpy,
   itemCountBucket: (n: number) => String(n),
   setSelfDragResolvedOperation: setSelfDragResolvedOperationSpy,
   statPathsKinds: statPathsKindsSpy,
@@ -106,9 +110,36 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
     })
     return Promise.resolve(vi.fn())
   }),
+  // Drops from other apps (`promise-drop-controller.ts`), routed the same way.
+  // `onDragPayloadKind` hands over the bare kind, like the real wrapper.
+  onDragPayloadKind: vi.fn((handler: (kind: unknown) => void) => {
+    listenHandlers.set('drag-payload-kind', (event) => {
+      handler((event.payload as { kind: unknown }).kind)
+    })
+    return Promise.resolve(vi.fn())
+  }),
+  onPromiseDropStarted: vi.fn((handler: (payload: unknown) => void) => {
+    listenHandlers.set('promise-drop-started', (event) => {
+      handler(event.payload)
+    })
+    return Promise.resolve(vi.fn())
+  }),
+  onPromiseDropReady: vi.fn((handler: (payload: unknown) => void) => {
+    listenHandlers.set('promise-drop-ready', (event) => {
+      handler(event.payload)
+    })
+    return Promise.resolve(vi.fn())
+  }),
+  onPromiseDropFailed: vi.fn((handler: (payload: unknown) => void) => {
+    listenHandlers.set('promise-drop-failed', (event) => {
+      handler(event.payload)
+    })
+    return Promise.resolve(vi.fn())
+  }),
+  releasePromiseDrop: releasePromiseDropSpy,
 }))
 
-vi.mock('#lib/ui/toast/index.js', () => ({ addToast: addToastSpy }))
+vi.mock('#lib/ui/toast/index.js', () => ({ addToast: addToastSpy, dismissToast: vi.fn() }))
 
 // Nothing is on screen in this suite, so the gate always lets a drop through.
 // Its verdict is driven in `drag-drop-controller.svelte.test.ts`.
@@ -313,6 +344,79 @@ describe('drag-drop-controller — native listeners', () => {
       const lastCall = lastOverlayArgs()
       expect(lastCall[0]).toBe(7)
       expect(lastCall[1]).toBe(9)
+    })
+
+    it('a drag carrying nothing droppable lights nothing up, and its drop is no transfer', async () => {
+      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
+      const { controller, showTransfer } = create()
+      await controller.init()
+      const fire = dragDropHandler()
+
+      listenHandler('drag-payload-kind')({ payload: { kind: 'nothing' } })
+      fire({ payload: { type: 'enter', paths: [], position: { x: 1, y: 1 } } })
+      expect(controller.getDropTargetPane()).toBeNull()
+      expect(lastOverlayArgs()[3]).toBe(false)
+
+      fire({ payload: { type: 'drop', paths: [], position: { x: 1, y: 1 } } })
+      await flushDrop()
+      expect(showTransfer).not.toHaveBeenCalled()
+      expect(trackEventSpy).toHaveBeenCalledWith('drop_received', expect.objectContaining({ outcome: 'nothingUsable' }))
+    })
+
+    it('a browser image drop opens the Copy dialog once its files land, labeled by where it came from', async () => {
+      resolveDropTargetSpy.mockReturnValue(paneTarget('right'))
+      const { controller, showTransfer } = create({ paths: { right: '/Users/x/Pictures' } })
+      await controller.init()
+      const fire = dragDropHandler()
+      const received = '/Users/x/Library/Application Support/cmdr/drops/drop-1-0/cat.jpg'
+
+      listenHandler('drag-payload-kind')({ payload: { kind: 'promises' } })
+      fire({ payload: { type: 'enter', paths: [], position: { x: 1, y: 1 } } })
+      expect(controller.getDropTargetPane()).toBe('right')
+
+      // The backend's started event goes out before wry's drop.
+      listenHandler('promise-drop-started')({
+        payload: {
+          dropId: 'drop-1-0',
+          itemCount: 1,
+          source: { appName: 'Google Chrome', pageUrl: 'https://www.example.com/cat.jpg' },
+        },
+      })
+      fire({ payload: { type: 'drop', paths: [], position: { x: 1, y: 1 } } })
+      await flushDrop()
+      expect(showTransfer).not.toHaveBeenCalled()
+      expect(trackEventSpy).toHaveBeenCalledWith('drop_received', expect.objectContaining({ outcome: 'promise' }))
+
+      listenHandler('promise-drop-ready')({ payload: { dropId: 'drop-1-0', paths: [received], failedCount: 0 } })
+      await flushDrop()
+      expect(showTransfer).toHaveBeenCalledTimes(1)
+      const props = showTransfer.mock.calls[0]?.[0]
+      expect(props).toMatchObject({
+        operationType: 'copy',
+        sourcePaths: [received],
+        destinationPath: '/Users/x/Pictures',
+        sourceVolumeId: 'root',
+        sourceDisplay: 'cat.jpg from Google Chrome (example.com)',
+        promiseDropId: 'drop-1-0',
+      })
+    })
+
+    it('a browser image dropped outside both panes lets its drop folder go', async () => {
+      resolveDropTargetSpy.mockReturnValue(null)
+      const { controller, showTransfer } = create()
+      await controller.init()
+      const fire = dragDropHandler()
+
+      listenHandler('drag-payload-kind')({ payload: { kind: 'promises' } })
+      listenHandler('promise-drop-started')({
+        payload: { dropId: 'drop-2-0', itemCount: 1, source: { appName: null, pageUrl: null } },
+      })
+      fire({ payload: { type: 'drop', paths: [], position: { x: 1, y: 1 } } })
+      listenHandler('promise-drop-ready')({ payload: { dropId: 'drop-2-0', paths: ['/d/cat.jpg'], failedCount: 0 } })
+      await flushDrop()
+
+      expect(showTransfer).not.toHaveBeenCalled()
+      expect(releasePromiseDropSpy).toHaveBeenCalledWith('drop-2-0')
     })
 
     it('cleanup unsubscribes the listeners and stops modifier tracking', async () => {

@@ -46,6 +46,15 @@ export interface TransferDialogPropsData {
    * folder) to the Move dialog (`rename-as-move.ts`).
    */
   newName?: string
+  /**
+   * What the dialog's source line says in place of `sourceFolderPath`: a drop from
+   * another app (a browser image) arrives in a drop folder whose path means
+   * nothing to anyone, so it reads "cat.jpg from Google Chrome" instead
+   * (`promise-drop.ts::dropSourceLabel`). Carried on to the progress dialog.
+   */
+  sourceDisplay?: string
+  /** The drop folder a promised drop's files sit in, released if this dialog is cancelled. */
+  promiseDropId?: string
 }
 
 /**

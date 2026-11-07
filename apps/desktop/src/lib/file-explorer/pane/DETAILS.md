@@ -45,6 +45,12 @@ carry live here:
   creates both, hands each `TabBar` its `forPane()` face, and mounts `TabDragOverlay`; a tab drop lands in
   `tab-operations.ts::handleTabDrop`. ❌ Don't grow tab logic into the file controller. Detail: `../tabs/DETAILS.md` §
   Moving a tab.
+- **A drop from another app that hands over promises, not files (a browser image), is its own small controller**:
+  `promise-drop-controller.ts` (listeners, toasts, actions) over the pure `promise-drop.ts` (accept verdict, drop/event
+  pairing, the dialog's source line), created by `drag-drop-controller.svelte.ts`, which hands it empty-paths drops and
+  gets the received files back through `handleFileDrop`'s `promised` arm. The dialog shows `sourceDisplay` instead of
+  the drop folder, and a cancel releases the folder (`dialog-state.svelte.ts::handleTransferCancel`). Detail:
+  `../drag/DETAILS.md` § "Drops from other apps".
 - **The pane mirror fetches its visible range in ONE `getFileRange`**, capped at `MAX_MIRRORED_ROWS`. A row at a time
   was ~100 IPC round trips per sync, and the app stopped answering IPC on a big directory
   (`docs/notes/listing-row-fetch-quadratic-2026-08-22.md`). ⚠️ The gate is `syncsToMcp`, a pane-KIND capability, so this

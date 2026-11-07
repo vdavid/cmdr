@@ -1,14 +1,19 @@
 //! Native drag interception for macOS via method swizzling on wry's webview class.
 //!
-//! Swizzles `draggingEntered:`, `draggingUpdated:`, and `draggingExited:` to:
+//! Swizzles `draggingEntered:`, `draggingUpdated:`, `draggingExited:`, and
+//! `performDragOperation:` to:
 //! 1. Read drag image dimensions via `enumerateDraggingItems` (for overlay suppression)
 //! 2. Read modifier key state via `[NSEvent modifierFlags]` (for copy/move detection)
 //! 3. Swap the OS drag image for self-drags (delegated to `drag_image_swap`)
+//! 4. Say what an incoming drag carries, and receive a file-promise drop (delegated to
+//!    `drop_in::macos`), since wry reads file URLs only
 //!
 //! Events emitted:
 //! - `drag-image-size` `{ width, height }`: on drag enter
+//! - `drag-payload-kind` `{ kind }`: on drag enter
 //! - `drag-modifiers` `{ altHeld, cmdHeld, shiftHeld }`: on drag enter and every drag update (only
 //!   when changed)
+//! - `promise-drop-*`: on a promise or image drop (`drop_in/events.rs`)
 //!
 //! ## Resilience
 //!
@@ -49,6 +54,7 @@ const NS_EVENT_MODIFIER_FLAG_COMMAND: usize = 1 << 20;
 static ORIGINAL_ENTERED_IMP: OnceLock<Imp> = OnceLock::new();
 static ORIGINAL_UPDATED_IMP: OnceLock<Imp> = OnceLock::new();
 static ORIGINAL_EXITED_IMP: OnceLock<Imp> = OnceLock::new();
+static ORIGINAL_PERFORM_IMP: OnceLock<Imp> = OnceLock::new();
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 
 /// Tracks previous modifier state so we only emit `drag-modifiers` when something changes.
@@ -61,6 +67,7 @@ static WARNED_NSEVENT_MISSING: AtomicBool = AtomicBool::new(false);
 static WARNED_ENTERED_PANIC: AtomicBool = AtomicBool::new(false);
 static WARNED_UPDATED_PANIC: AtomicBool = AtomicBool::new(false);
 static WARNED_EXITED_PANIC: AtomicBool = AtomicBool::new(false);
+static WARNED_PERFORM_PANIC: AtomicBool = AtomicBool::new(false);
 static WARNED_NSARRAY_MISSING: AtomicBool = AtomicBool::new(false);
 static WARNED_DRAGGED_IMAGE_REMOVED: AtomicBool = AtomicBool::new(false);
 
@@ -181,6 +188,30 @@ unsafe fn install_swizzles(webview_ptr: *mut std::ffi::c_void) {
         );
     }
 
+    // Swizzle performDragOperation: to receive file promises (a browser image), which
+    // wry's own drop handler can't see.
+    if let Some(method) = cls.instance_method(sel!(performDragOperation:)) {
+        ORIGINAL_PERFORM_IMP.set(method.implementation()).ok();
+        // SAFETY: inverse of the `call_original_perform` transmute. `swizzled_perform_drag_operation`
+        // is `unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> Bool`, matching the ObjC
+        // `- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender` ABI that `Imp` expects.
+        unsafe {
+            method.set_implementation(std::mem::transmute::<*const (), Imp>(
+                swizzled_perform_drag_operation as *const (),
+            ));
+        }
+    } else {
+        log::warn!(
+            "drag_image_detection: performDragOperation: not found on webview class. \
+             Dropping a browser image or a Mail attachment into Cmdr is disabled. \
+             Wry may have changed how it implements NSDraggingDestination."
+        );
+    }
+
+    // A promise-only drag (a Mail attachment) must reach draggingEntered: at all.
+    // SAFETY: `obj` is the live webview `NSView` (checked non-null above), on the main thread.
+    unsafe { crate::drop_in::macos::register_promise_types(obj.as_ref().expect("checked non-null above")) };
+
     // allowed-log-private: an Objective-C class name, not a user value
     log::debug!("drag_image_detection: swizzles installed on {:?}", cls.name());
 }
@@ -291,6 +322,22 @@ unsafe fn call_original_exited(this: &AnyObject, cmd: Sel, drag_info: &AnyObject
     }
 }
 
+/// Forwards to wry's original `performDragOperation:`. Returns NO if it wasn't saved.
+unsafe fn call_original_perform(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> Bool {
+    // SAFETY: Same as `call_original_entered`, except `performDragOperation:` returns `BOOL`, so
+    // the transmute target is `fn(&AnyObject, Sel, &AnyObject) -> Bool` to match that C ABI;
+    // `this`/`cmd`/`drag_info` are the live receiver, selector, and NSDraggingInfo from the swizzle.
+    unsafe {
+        if let Some(&original) = ORIGINAL_PERFORM_IMP.get() {
+            let f =
+                std::mem::transmute::<Imp, unsafe extern "C-unwind" fn(&AnyObject, Sel, &AnyObject) -> Bool>(original);
+            f(this, cmd, drag_info)
+        } else {
+            Bool::NO
+        }
+    }
+}
+
 /// Returns our resolved-op override for the current self-drag, or `None` to defer to wry.
 /// The OS draws the green "+" copy badge based on the destination's returned `NSDragOperation`;
 /// wry's stock implementation returns `Copy` unconditionally, so without this override the
@@ -334,6 +381,13 @@ unsafe extern "C-unwind" fn swizzled_dragging_entered(this: &AnyObject, cmd: Sel
         // SAFETY: same live `id<NSDraggingInfo>` sender; `on_drag_entered` only requires a valid
         // `NSDraggingInfo`, which it enumerates synchronously within this main-thread call.
         unsafe { drag_image_swap::on_drag_entered(drag_info) };
+
+        // Say what the drag carries, before wry's enter event, so the frontend only lights
+        // drop targets up for something it can take.
+        if let Some(app_handle) = APP_HANDLE.get() {
+            // SAFETY: same live `id<NSDraggingInfo>` sender, on the main thread.
+            unsafe { crate::drop_in::macos::on_dragging_entered(app_handle, drag_info) };
+        }
     }));
 
     if result.is_err() {
@@ -409,6 +463,33 @@ unsafe extern "C-unwind" fn swizzled_dragging_exited(this: &AnyObject, cmd: Sel,
     // sender AppKit passed to this swizzled `draggingExited:` callback, the exact arguments
     // `call_original_exited` forwards to wry's saved original IMP.
     unsafe { call_original_exited(this, cmd, drag_info) }
+}
+
+// --- performDragOperation: swizzle ---
+
+unsafe extern "C-unwind" fn swizzled_perform_drag_operation(this: &AnyObject, cmd: Sel, drag_info: &AnyObject) -> Bool {
+    // A promise or image drop starts receiving here, and `promise-drop-started` goes out
+    // BEFORE wry's drop event below, so the frontend knows to wait for the files.
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        if let Some(app_handle) = APP_HANDLE.get() {
+            // SAFETY: `drag_info` is the live `id<NSDraggingInfo>` sender AppKit passed this
+            // `performDragOperation:` callback, on the main thread: the one place promise
+            // receiving is allowed.
+            unsafe { crate::drop_in::macos::on_perform_drag_operation(app_handle, drag_info) };
+        }
+    }));
+    if result.is_err() {
+        warn_once(
+            &WARNED_PERFORM_PANIC,
+            "drag_image_detection: panic in performDragOperation swizzle. Dropping a browser image \
+             or a Mail attachment may not work this session. Check drop_in/macos.rs.",
+        );
+    }
+
+    // Always forward, so wry's drop event (and every ordinary file drop) is untouched.
+    // SAFETY: `this`, `cmd`, and `drag_info` are the live receiver, selector, and
+    // `NSDraggingInfo` sender AppKit passed this swizzled callback.
+    unsafe { call_original_perform(this, cmd, drag_info) }
 }
 
 // --- Drag image size reading ---

@@ -12,6 +12,7 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
 - `drag-auto-scroll.ts`, `DragOverlay.svelte` + `drag-overlay.svelte.ts`, `drag-image-renderer.ts`: scroll bands, cursor
   label, canvas drag preview.
 - `drag-analytics.ts`: `drop_received` (every `handleDrop` arm, refusals too), `drag_out_completed`.
+- Browser-image (file-promise) drops: `../pane/promise-drop*.ts`, backend `src-tauri/src/drop_in/`.
 - Backend: `native_drag.rs` (+ `native_drag/type_plan.rs`), `commands/file_system/drag.rs`, `drag_image_detection.rs`,
   `drag_image_swap.rs`. Self-drag consumption lives in `pane/drag-drop-controller.svelte.ts`.
 
@@ -51,6 +52,8 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
   and reported 0 bytes / 0 files.
 - **Self-drag op override**: the swizzle returns our resolved `NSDragOperation` only while `SELF_DRAG_ACTIVE`; without
   it macOS always draws the green "+" copy badge inside our window even on a Move.
+- **An empty-paths external drop is never a `transfer`**: a promise drop (Copy dialog once the files land) or
+  `nothingUsable`. DETAILS § "Drops from other apps".
 - **Swizzle calls are wrapped in `catch_unwind` + `warn_once`**: a panic across the FFI boundary mid-drag would crash
   the app. Keep the guards if you touch `drag_image_detection.rs`.
 - **`startDrag()` resolves before macOS delivers drag events.** Don't clear self-drag state (rich image path, active

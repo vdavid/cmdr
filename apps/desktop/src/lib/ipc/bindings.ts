@@ -1961,6 +1961,12 @@ export const commands = {
    */
   setSelfDragResolvedOp: (operation: string) => __TAURI_INVOKE<void>('set_self_drag_resolved_op', { operation }),
   /**
+   *  Lets a promised drop's folder go (`drop_in/folders.rs`): its transfer dialog was
+   *  cancelled, or the drop hit no target. A folder a started copy reads from stays
+   *  until that copy ends. A few local removals, so the write tier's 5 s.
+   */
+  releasePromiseDrop: (dropId: string) => __TAURI_INVOKE<void>('release_promise_drop', { dropId }),
+  /**
    *  Returns the repo info for any path inside a worktree, or `None` if there's
    *  no repo above it.
    *
@@ -6213,6 +6219,7 @@ export const events = {
   dragModifiers: makeEvent<DragModifiers>('drag-modifiers'),
   dragOutSessionComplete: makeEvent<SessionCompleteEvent>('drag-out-session-complete'),
   dragOutSessionStarted: makeEvent<SessionStartedEvent>('drag-out-session-started'),
+  dragPayloadKind: makeEvent<DragPayloadKindEvent>('drag-payload-kind'),
   dryRunComplete: makeEvent<DryRunResult>('dry-run-complete'),
   errorReportAutoSent: makeEvent<ErrorReportAutoSent>('error-report-auto-sent'),
   executeCommand: makeEvent<ExecuteCommand>('execute-command'),
@@ -6284,6 +6291,9 @@ export const events = {
   operationsChanged: makeEvent<OperationsChanged>('operations-changed'),
   osLocalesChanged: makeEvent<OsLocalesChanged>('os-locales-changed'),
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
+  promiseDropFailed: makeEvent<PromiseDropFailed>('promise-drop-failed'),
+  promiseDropReady: makeEvent<PromiseDropReady>('promise-drop-ready'),
+  promiseDropStarted: makeEvent<PromiseDropStarted>('promise-drop-started'),
   queueRowContextAction: makeEvent<QueueRowContextAction>('queue-row-context-action'),
   queueSelectAll: makeEvent<QueueSelectAll>('queue-select-all'),
   quickLookClosed: makeEvent<QuickLookClosed>('quick-look-closed'),
@@ -9238,6 +9248,34 @@ export type DragModifiers = {
   shiftHeld: boolean
 }
 
+// What an incoming drag carries, as far as a drop into Cmdr goes.
+export type DragPayloadKind =
+  // Real files (`public.file-url`): Finder, most apps. The drop carries their paths.
+  | 'fileUrls'
+  /**
+   *  File promises and no file URLs: a browser image, a Mail attachment, a Photos item.
+   *  The files exist only once Cmdr asks for them on drop.
+   */
+  | 'promises'
+  // Raw image bytes and nothing else Cmdr can turn into a file.
+  | 'imageData'
+  /**
+   *  A drag Cmdr itself started. Its identity is recorded at drag start, so the
+   *  pasteboard is never read for it.
+   */
+  | 'inApp'
+  // Nothing Cmdr can make a file from (plain text, a bare link).
+  | 'nothing'
+
+/**
+ *  `drag-payload-kind`: emitted on drag enter, before wry's own enter event, so the
+ *  frontend knows whether to light drop targets up at all.
+ */
+export type DragPayloadKindEvent = {
+  // What the drag carries.
+  kind: DragPayloadKind
+}
+
 /**
  *  Why a drive couldn't be indexed, whatever its transport. Typed (and
  *  serialized as a snake_case tag) so callers and the per-drive UX classify by
@@ -9289,6 +9327,23 @@ export type DriveItemLinks = {
    *  folders, which Gemini's `?di=` parameter can't name.
    */
   geminiUrl: string | null
+}
+
+/**
+ *  Where a promised drop came from, as far as the pasteboard and the OS say. The
+ *  frontend turns it into the transfer dialog's source line; ❌ never a path.
+ */
+export type DropSource = {
+  /**
+   *  The app the drag came from (the frontmost app while the drag entered), when it
+   *  isn't Cmdr itself.
+   */
+  appName: string | null
+  /**
+   *  The `public.url` on the pasteboard: for a browser image, the image's or the
+   *  link's address.
+   */
+  pageUrl: string | null
 }
 
 // Result of a dry-run operation.
@@ -15568,6 +15623,46 @@ export type ProgressAxis = 'bytes' | 'files'
 export type ProgressStep = {
   number: number
   total: number
+}
+
+// `promise-drop-failed`: the drop produced no file.
+export type PromiseDropFailed = {
+  // The drop's id from [`PromiseDropStarted`].
+  dropId: string
+  // Why.
+  reason: PromiseDropFailure
+}
+
+// Why a promised drop produced no file.
+export type PromiseDropFailure =
+  // The source app answered every promise with an error, or with nothing.
+  | 'nothingReceived'
+  // The drop folder couldn't be made.
+  | 'noDropFolder'
+  // The source app didn't deliver within the receive window.
+  | 'timedOut'
+
+// `promise-drop-ready`: the drop's files are on disk, at `paths`.
+export type PromiseDropReady = {
+  // The drop's id from [`PromiseDropStarted`].
+  dropId: string
+  // The received files, inside the drop folder.
+  paths: string[]
+  // Promised files that didn't arrive (the source app refused or failed them).
+  failedCount: number
+}
+
+/**
+ *  `promise-drop-started`: a promise or image drop landed and Cmdr started receiving
+ *  it into a fresh drop folder. Emitted before wry's own drop event.
+ */
+export type PromiseDropStarted = {
+  // Names this drop on the ready/failed event and on `release_promise_drop`.
+  dropId: string
+  // How many files the drop promised.
+  itemCount: number
+  // Where it came from, for the dialog's source line.
+  source: DropSource
 }
 
 /**
@@ -21870,7 +21965,10 @@ export type VolumeError =
    *  what happened; a retry copies the new version. Raised by an S3
    *  server-side copy in parts (`cmdr-s3` `server_copy.rs`), and by the copy
    *  engine for a source stream that delivered more or fewer bytes than its
-   *  `StreamLength::Known` (`cmdr-operations` `transfer/volume/source_reads.rs`).
+   *  `StreamLength::Known` (`cmdr-operations` `transfer/volume/source_reads.rs`),
+   *  and by SMB when a held reader or a download comes back after a reconnect
+   *  to a file that isn't the version it was reading (`cmdr-smb` `resume.rs`),
+   *  which the viewer reloads on.
    */
   | { type: 'sourceChanged'; data: string }
   /**

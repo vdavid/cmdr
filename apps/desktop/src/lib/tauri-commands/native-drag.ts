@@ -1,11 +1,18 @@
 // Native drag event listeners. Typed `on*` wrappers over the `tauri-specta`
 // drag events: the macOS drag-overlay events (`drag-image-size`,
-// `drag-modifiers`) and the drag-out-to-Finder session toasts
-// (`drag-out-session-started`, `drag-out-session-complete`).
+// `drag-modifiers`), the drag-out-to-Finder session toasts
+// (`drag-out-session-started`, `drag-out-session-complete`), and a drop from
+// another app that carries file promises (`drag-payload-kind`,
+// `promise-drop-*`, `src-tauri/src/drop_in/CLAUDE.md`).
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import {
+  commands,
   events,
+  type DragPayloadKind,
+  type PromiseDropFailed,
+  type PromiseDropReady,
+  type PromiseDropStarted,
   type DragImageSize,
   type DragModifiers,
   type SessionCompleteEvent,
@@ -38,4 +45,41 @@ export function onDragOutSessionComplete(handler: (payload: SessionCompleteEvent
   return events.dragOutSessionComplete.listen((event) => {
     handler(event.payload)
   })
+}
+
+/** What an incoming drag carries, read on drag enter (before wry's own enter event). */
+export function onDragPayloadKind(handler: (kind: DragPayloadKind) => void): Promise<UnlistenFn> {
+  return events.dragPayloadKind.listen((event) => {
+    handler(event.payload.kind)
+  })
+}
+
+/** A promise or image drop landed and the backend started receiving it. */
+export function onPromiseDropStarted(handler: (payload: PromiseDropStarted) => void): Promise<UnlistenFn> {
+  return events.promiseDropStarted.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/** A promised drop's files are on disk. */
+export function onPromiseDropReady(handler: (payload: PromiseDropReady) => void): Promise<UnlistenFn> {
+  return events.promiseDropReady.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/** A promised drop produced no file. */
+export function onPromiseDropFailed(handler: (payload: PromiseDropFailed) => void): Promise<UnlistenFn> {
+  return events.promiseDropFailed.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/** Lets an unclaimed drop folder go (dialog cancelled, no target, refused). Never throws. */
+export async function releasePromiseDrop(dropId: string): Promise<void> {
+  try {
+    await commands.releasePromiseDrop(dropId)
+  } catch {
+    // The startup sweep takes whatever this misses.
+  }
 }

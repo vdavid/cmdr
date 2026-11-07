@@ -99,6 +99,7 @@ use crate::ai::{
 };
 use crate::downloads::global_shortcut::GlobalShortcutFired;
 use crate::downloads::watcher::DownloadDetectedEvent;
+use crate::drop_in::events::{DragPayloadKindEvent, PromiseDropFailed, PromiseDropReady, PromiseDropStarted};
 use crate::error_reporter::auto_dispatcher::ErrorReportAutoSent;
 use crate::file_system::watcher::DirectoryDeletedEvent;
 use crate::menu::{
@@ -208,6 +209,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::file_system::prepare_self_drag_overlay,
                     crate::commands::file_system::clear_self_drag_overlay,
                     crate::commands::file_system::set_self_drag_resolved_op,
+                    crate::commands::file_system::release_promise_drop,
                     crate::commands::file_system::get_git_repo_info,
                     crate::commands::file_system::subscribe_git_state,
                     crate::commands::file_system::unsubscribe_git_state,
@@ -1310,6 +1312,11 @@ pub fn builder() -> Builder<tauri::Wry> {
             RestrictedPathsChangedPayload, // event_name = "restricted-paths-changed"
             SessionStartedEvent,           // event_name = "drag-out-session-started"
             SessionCompleteEvent,          // event_name = "drag-out-session-complete"
+            // Drops from other apps (`drop_in/`): what a drag carries, and a promised drop's lifecycle.
+            DragPayloadKindEvent, // event_name = "drag-payload-kind"
+            PromiseDropStarted,   // event_name = "promise-drop-started"
+            PromiseDropReady,     // event_name = "promise-drop-ready"
+            PromiseDropFailed,    // event_name = "promise-drop-failed"
             ErrorReportAutoSent,
             // Window management: `emit_to`-targeted window lifecycle
             // (tools/actions/, menu/menu_handlers.rs, commands/settings.rs). Struct

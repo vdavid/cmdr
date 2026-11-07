@@ -27,6 +27,7 @@ enum Fired {
     Warned,
     Retained,
     SpaceHint,
+    DropReleased,
     Emitted,
 }
 
@@ -59,6 +60,9 @@ impl TerminalEffects for Recorder {
     }
     fn expect_space_change(&self) {
         self.push(Fired::SpaceHint);
+    }
+    fn release_drop_folder(&self, _operation_id: &str) {
+        self.push(Fired::DropReleased);
     }
 }
 
@@ -128,6 +132,7 @@ fn complete_fires_its_category_then_the_ring_then_the_emit_for_every_progressed_
             vec![
                 Fired::Analytics(Some(category)),
                 Fired::Terminal(TerminalStatus::Completed),
+                Fired::DropReleased,
                 Fired::Emitted
             ],
             "write-complete for {operation_type:?}"
@@ -147,17 +152,21 @@ fn instant_ops_have_no_completion_category() {
 }
 
 #[test]
-fn cancel_fires_the_ring_then_the_emit_and_nothing_else() {
+fn cancel_fires_the_ring_and_the_drop_release_then_the_emit() {
     let fx = Recorder::default();
     terminal_effects::cancelled(&fx, cancelled_event("op-cancel"), |_| fx.push(Fired::Emitted));
     assert_eq!(
         fx.fired(),
-        vec![Fired::Terminal(TerminalStatus::Cancelled), Fired::Emitted]
+        vec![
+            Fired::Terminal(TerminalStatus::Cancelled),
+            Fired::DropReleased,
+            Fired::Emitted
+        ]
     );
 }
 
 #[test]
-fn error_fires_the_ring_the_warning_and_the_retained_failure_before_the_emit() {
+fn error_fires_the_ring_the_warning_and_the_retained_failure_before_the_emit_and_keeps_the_drop() {
     let fx = Recorder::default();
     terminal_effects::error(&fx, error_event("op-error"), |_| fx.push(Fired::Emitted));
     assert_eq!(

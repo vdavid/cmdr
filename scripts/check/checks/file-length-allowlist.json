@@ -134,7 +134,7 @@
       "reason": "TODO: two concerns share the file. Move `SettingsValues` (the stored-value map, one line per setting, about 370 lines) and the value unions it uses (`UiDensity` through `LanguageSetting`) into `settings-values.ts`, re-exported from here, so this file keeps only the registry's definition, constraint, and search shapes."
     },
     "apps/desktop/src/lib/tauri-commands/index.ts": {
-      "lines": 1112,
+      "lines": 1230,
       "reason": "A pure barrel: nothing but `export { … } from './x'` and `export type { … }` across about 40 domain sub-files, one line per re-exported symbol, with zero declarations, imports, or logic anywhere in it. `tauri-commands/CLAUDE.md` makes it the single stable import path precisely so sub-file layout can shift behind it, so its length tracks the IPC surface and cutting it would mean either fewer commands or breaking that contract."
     },
     "apps/desktop/src/lib/ui/Menu.svelte": {

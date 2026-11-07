@@ -22,7 +22,7 @@
  */
 
 import { onDirectoryDiff, findFileIndex } from '#lib/tauri-commands/index.js'
-import { dismissFailedOperation } from '#lib/tauri-commands/index.js'
+import { dismissFailedOperation, releasePromiseDrop } from '#lib/tauri-commands/index.js'
 import {
   getForegroundFailureId,
   getForegroundOperationId,
@@ -740,6 +740,7 @@ export function createDialogState(deps: DialogStateDeps) {
         operationType,
         sourcePaths: transferDialogProps.sourcePaths,
         sourceFolderPath: transferDialogProps.sourceFolderPath,
+        sourceDisplay: transferDialogProps.sourceDisplay,
         sourcePaneSide: transferDialogProps.direction === 'right' ? 'left' : 'right',
         destinationPath: destination,
         destinationName,
@@ -774,6 +775,9 @@ export function createDialogState(deps: DialogStateDeps) {
     },
 
     handleTransferCancel() {
+      // A promised drop's files go with the dialog: no copy will read them.
+      const promiseDropId = transferDialogProps?.promiseDropId
+      if (promiseDropId) void releasePromiseDrop(promiseDropId)
       showTransferDialog = false
       transferDialogProps = null
       deps.onRefocus()

@@ -197,6 +197,9 @@ All under `apps/desktop/src-tauri/src/`.
   or a move, `server_move.rs`), and dialing one (one flight per place), plus the wire vocabulary. Below
   `commands/servers.rs` and Ask Cmdr, which both go through it. See `apps/desktop/src-tauri/src/saved_servers/CLAUDE.md`
 - `clipboard/`: File clipboard (Cmd+C/X/V) with NSPasteboard interop; tracks cut state and validates at paste
+- `drop_in/`: drops from other apps with no file URLs (a browser image, a Mail attachment): what a drag carries, file
+  promises received into a per-drop folder, and that folder's lifetime. See
+  `apps/desktop/src-tauri/src/drop_in/CLAUDE.md`
 - `secrets/`: Pluggable secret storage: Keychain (macOS), Secret Service (Linux), encrypted-file fallback. Server
   passwords, AI keys, and the license key
 - `data_wipe/`: "Delete all Cmdr data" (Settings › Updates & privacy): every folder, file, and secret-store item this
