@@ -181,14 +181,17 @@ fn view_from_row(conn: &Connection, item: &OperationItemRow) -> Result<Operation
 
 /// The most recent operations by start time (newest first), paged. This is the
 /// alpha UI's feed ("last 50 + load 50 more" = `limit = 50` with a growing
-/// `offset`). Includes unfinished ops.
+/// `offset`). Includes unfinished ops; leaves out every rollback (an inverse op),
+/// whose original carries its state and its `inverse_op_id`.
 pub fn recent_operations(
     conn: &Connection,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<OperationRow>, OperationLogStoreError> {
-    let sql =
-        format!("SELECT {OPERATION_COLUMNS} FROM operations ORDER BY started_at DESC, op_id DESC LIMIT ?1 OFFSET ?2");
+    let sql = format!(
+        "SELECT {OPERATION_COLUMNS} FROM operations WHERE rolls_back_op_id IS NULL \
+         ORDER BY started_at DESC, op_id DESC LIMIT ?1 OFFSET ?2"
+    );
     let mut out = Vec::new();
     {
         let mut stmt = conn.prepare_cached(&sql)?;
@@ -285,7 +288,9 @@ fn build_search_query(
     offset: u32,
 ) -> (String, Vec<Box<dyn rusqlite::ToSql>>) {
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
-    let mut where_clauses: Vec<String> = Vec::new();
+    // A rollback is never listed as its own operation (`DETAILS.md` § "No rollback of
+    // a rollback"): the original carries its state.
+    let mut where_clauses: Vec<String> = vec!["o.rolls_back_op_id IS NULL".to_string()];
 
     // Name predicate on the joined items (only present when a name filter is set).
     let joins_items = filters.name.is_some();
@@ -353,11 +358,7 @@ fn build_search_query(
         "FROM operations o"
     };
     let distinct = if joins_items { "DISTINCT " } else { "" };
-    let where_sql = if where_clauses.is_empty() {
-        String::new()
-    } else {
-        format!("WHERE {}", where_clauses.join(" AND "))
-    };
+    let where_sql = format!("WHERE {}", where_clauses.join(" AND "));
     params.push(Box::new(limit));
     let limit_ph = params.len();
     params.push(Box::new(offset));

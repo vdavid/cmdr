@@ -15,6 +15,7 @@ use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 
 use super::capture::{FinalizeInputs, OperationJournal, WriterJournal};
+use super::interrupted::end_interrupted_on_open;
 use super::recording::Recording;
 use super::retention::{self, RetentionLimitsSource};
 use super::rollback::reconcile_rolling_back_on_open;
@@ -87,7 +88,7 @@ impl OperationLog {
     /// forward (or hands an unparseable file to `set_aside` and recreates it, or
     /// refuses a downgrade), the
     /// writer thread starts, the operations a crash left mid-rollback resolve,
-    /// and only THEN do the writer and the journal become reachable, together.
+    /// the ones it left queued or running end, and only THEN do the writer and the journal become reachable, together.
     /// So a rollback can never be dispatched into a reconcile.
     ///
     /// Once per handle: a second call is [`OpenError::AlreadyOpen`] and touches
@@ -107,6 +108,10 @@ impl OperationLog {
         // inverse ever opened. Before anything can journal, so a re-issued
         // rollback resumes cleanly.
         reconcile_rolling_back_on_open(&writer);
+        // Every op a crash left queued or running gets its end. After the reconcile,
+        // which reads a stale inverse's rows; before publishing, so nothing journaled
+        // this launch can look stale.
+        end_interrupted_on_open(&writer);
         // AFTER the reconcile, whose writes block on their reply: the first build
         // after an upgrade can take seconds on a big journal, and `open` runs on the
         // app's main thread. Queued here, it runs on the writer thread, and what's

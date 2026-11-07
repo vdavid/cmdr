@@ -411,6 +411,30 @@ fn an_op_whose_summary_broke_mid_copy_backfills_once_it_finishes() {
     assert_eq!(j.self_dir_path("op", 2), "v:/dst/S");
 }
 
+/// An op a crash left running (its summary broken mid-copy, so it needs a backfill)
+/// backfills once the next launch has ended it.
+#[test]
+fn an_op_a_crash_left_running_backfills_once_the_next_launch_ends_it() {
+    let j = journal();
+    let registry = Arc::new(BackfillRegistry::default());
+    j.open("op", OpKind::Copy);
+    sql(
+        &j,
+        "CREATE TRIGGER no_summary BEFORE INSERT ON operation_tree_dirs BEGIN SELECT RAISE(ABORT, 'x'); END;",
+    );
+    j.record("op", vec![file(0, ("/src", "a"), Some(("/dst", "a")), 1)]);
+    sql(&j, "DROP TRIGGER no_summary;");
+    assert!(matches!(
+        start(&j, &registry, "op"),
+        (TreeBackfillStart::Unbuilt(UnbuiltReason::OperationRunning), None)
+    ));
+
+    crate::interrupted::end_interrupted_on_open(&j.writer);
+
+    assert_eq!(drive(&mut started(&j, &registry, "op")).0, TreeBackfillEnd::Built);
+    j.assert_exact("op");
+}
+
 /// The journal's folder indexes still building (the first launch after the upgrade)
 /// don't hold a backfill back: it reads by `(op_id, seq)`, and its write queues
 /// behind their build on the writer. A built op still answers built meanwhile.

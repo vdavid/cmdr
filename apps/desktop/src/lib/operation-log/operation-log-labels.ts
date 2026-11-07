@@ -241,6 +241,8 @@ export function rollbackRefusalNotice(refusal: RollbackRefusal | null): MessageK
       return 'operationLog.rollback.refusalAlreadyRollingBack'
     case 'alreadyRolledBack':
       return 'operationLog.rollback.refusalAlreadyRolledBack'
+    case 'isARollback':
+      return 'operationLog.rollback.refusalIsARollback'
     case 'notRollbackable':
       return notRollbackableNotice(refusal.detail)
     case 'volumeUnavailable':

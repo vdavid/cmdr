@@ -234,6 +234,11 @@ enum WriteMessage {
         updates: Vec<ItemOutcomeUpdate>,
         reply: mpsc::Sender<()>,
     },
+    EndInterrupted {
+        op_id: String,
+        eligibility: Option<(RollbackState, Option<NotRollbackableReason>)>,
+        reply: mpsc::Sender<()>,
+    },
     FillSelfDirs {
         op_id: String,
         seqs: Vec<i64>,
@@ -366,6 +371,24 @@ impl OperationLogWriter {
         rx.recv().map_err(writer_gone)
     }
 
+    /// End an operation a crash left `queued` or `running` (`interrupted.rs`): `failed`,
+    /// ended when it started (the only time the journal knows), and, with
+    /// `eligibility`, the rollback state the facts allow. Touches nothing once the op
+    /// has ended. Blocks for the reply (a barrier).
+    pub(crate) fn end_interrupted(
+        &self,
+        op_id: &str,
+        eligibility: Option<(RollbackState, Option<NotRollbackableReason>)>,
+    ) -> Result<(), OperationLogStoreError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::EndInterrupted {
+            op_id: op_id.to_string(),
+            eligibility,
+            reply: tx,
+        })?;
+        rx.recv().map_err(writer_gone)
+    }
+
     /// Enqueue a retention prune (+ optional bounded vacuum). Fire-and-forget.
     pub fn prune(&self, request: PruneRequest) -> Result<(), OperationLogStoreError> {
         self.send(WriteMessage::Prune(request))
@@ -476,6 +499,16 @@ fn apply_message(conn: &mut Connection, msg: WriteMessage) -> std::ops::ControlF
             }
             let _ = reply.send(());
         }
+        WriteMessage::EndInterrupted {
+            op_id,
+            eligibility,
+            reply,
+        } => {
+            if let Err(e) = apply_end_interrupted(conn, &op_id, eligibility) {
+                log::warn!(target: "operation_log", "end_interrupted({op_id}) failed: {e}");
+            }
+            let _ = reply.send(());
+        }
         WriteMessage::FillSelfDirs { op_id, seqs, reply } => {
             apply_fill_self_dirs(conn, &op_id, &seqs);
             let _ = reply.send(());
@@ -507,8 +540,8 @@ fn apply_message(conn: &mut Connection, msg: WriteMessage) -> std::ops::ControlF
 }
 
 /// Insert the operation header. `rollback_state` opens as `not_rollbackable`
-/// (finalize computes the real eligibility); a crash before finalize thus leaves
-/// the op honestly not-rollbackable. Its tree summary opens `built`: it has no rows
+/// (finalize computes the real eligibility); a crash before finalize leaves it so
+/// until the next open ends it (`interrupted.rs`). Its tree summary opens `built`: it has no rows
 /// yet, and every batch keeps it exact from here (`tree_summary.rs`).
 fn apply_open(conn: &Connection, open: &OpenOperation) -> Result<(), OperationLogStoreError> {
     conn.execute(
@@ -634,72 +667,6 @@ fn insert_one_item(
     })
 }
 
-/// Write the terminal state and return the per-`row_role` durable counts.
-fn apply_finalize(conn: &Connection, f: &FinalizeOperation) -> Result<FinalizeOutcome, OperationLogStoreError> {
-    conn.execute(
-        "UPDATE operations SET
-            execution_status = ?2,
-            rollback_state = ?3,
-            not_rollbackable_reason = ?4,
-            archive_subkind = ?5,
-            search_coverage = ?6,
-            search_coverage_reason = ?7,
-            ended_at = ?8,
-            -- COALESCE keeps the open-time item_count when finalize supplies NULL
-            -- (instant/archive/no-status paths), else refines it to the scanned total.
-            item_count = COALESCE(?9, item_count),
-            items_done = ?10,
-            bytes_total = ?11,
-            dev_summary = ?12
-         WHERE op_id = ?1",
-        rusqlite::params![
-            f.op_id,
-            f.execution_status.as_token(),
-            f.rollback_state.as_token(),
-            f.not_rollbackable_reason.map(|r| r.as_token()),
-            f.archive_subkind.map(|s| s.as_token()),
-            f.search_coverage.as_token(),
-            f.search_coverage_reason.map(|r| r.as_token()),
-            f.ended_at,
-            f.item_count.map(|c| c as i64),
-            f.items_done as i64,
-            f.bytes_total as i64,
-            f.dev_summary,
-        ],
-    )?;
-    count_rows_by_role(conn, &f.op_id)
-}
-
-fn count_rows_by_role(conn: &Connection, op_id: &str) -> Result<FinalizeOutcome, OperationLogStoreError> {
-    let count_for = |role: RowRole| -> Result<u64, OperationLogStoreError> {
-        let n: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM operation_items WHERE op_id = ?1 AND row_role = ?2",
-            rusqlite::params![op_id, role.as_token()],
-            |row| row.get(0),
-        )?;
-        Ok(n as u64)
-    };
-    Ok(FinalizeOutcome {
-        rollback_unit_rows: count_for(RowRole::RollbackUnit)?,
-        search_only_rows: count_for(RowRole::SearchOnly)?,
-    })
-}
-
-/// Transition an op's `rollback_state` + nullable reason (rollback). A no-op if the
-/// op_id is unknown (the row count is 0, not an error).
-fn apply_set_rollback_state(
-    conn: &Connection,
-    op_id: &str,
-    state: RollbackState,
-    reason: Option<NotRollbackableReason>,
-) -> Result<(), OperationLogStoreError> {
-    conn.execute(
-        "UPDATE operations SET rollback_state = ?2, not_rollbackable_reason = ?3 WHERE op_id = ?1",
-        rusqlite::params![op_id, state.as_token(), reason.map(|r| r.as_token())],
-    )?;
-    Ok(())
-}
-
 /// Set per-item outcomes (+ the nullable rollback skip reason) by `(op_id, seq)` in one
 /// transaction (rollback). A seq with no matching row updates nothing (not an error).
 ///
@@ -762,6 +729,10 @@ use prune::handle_prune;
 mod backfill;
 pub(crate) use backfill::TreeSummaryWrite;
 use backfill::{apply_fill_self_dirs, apply_write_tree_summary};
+
+/// How an op ended and its rollback state transitions: the header's state writes.
+mod op_state;
+use op_state::{apply_end_interrupted, apply_finalize, apply_set_rollback_state};
 
 /// The tree summary's delta, written in the same transaction as the rows it counts.
 mod tree_summary;

@@ -49,6 +49,7 @@ pub mod types;
 pub mod writer;
 
 mod handle;
+mod interrupted;
 mod recording;
 mod rt;
 mod tree;

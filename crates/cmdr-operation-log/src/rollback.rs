@@ -39,9 +39,9 @@
 //! paged cursor (`store::read_rollback_units_page`), so a 1M-item op never
 //! materializes its list. The `seq DESC` order removes copied files before the
 //! `entry_type = dir` rows that held them. The inverse operation is itself
-//! journaled with `rolls_back_op_id` set (so it appears in history and drives the
-//! crash-reconcile), computing its own eligibility — a move/rename undo is
-//! rollbackable again (redo), a delete-the-copies undo is not.
+//! journaled with `rolls_back_op_id` set (it drives the crash-reconcile and names the
+//! running reversal), computing its own eligibility like any op; the gate refuses to
+//! roll it back whatever that says (`DETAILS.md` § "No rollback of a rollback").
 
 use rusqlite::Connection;
 
@@ -81,6 +81,9 @@ pub enum RollbackRefusal {
     AlreadyRollingBack,
     /// The op was already fully reversed; there's nothing to undo.
     AlreadyRolledBack,
+    /// The op is itself a rollback of another operation, and a rollback is never
+    /// rolled back.
+    IsARollback,
     /// The op is not rollbackable; carries the stored reason (delete, overwrote,
     /// archive-overwrite, zip-edit-unsupported, journal-incomplete).
     NotRollbackable(NotRollbackableReason),
@@ -163,8 +166,8 @@ pub struct RollbackReport {
 // ── Pure decision helpers (unit-tested in isolation) ─────────────────────────
 
 /// The inverse operation's `kind`, for its own journal row + eligibility. A
-/// copy/create/compress undo is a delete (not rollbackable again); a move/trash
-/// undo is a move (rollbackable again — redo); a rename undo is a rename.
+/// copy/create/compress undo is a delete; a move/trash undo is a move; a rename
+/// undo is a rename. None is ever rolled back in turn (`check_rollbackable`).
 pub fn inverse_kind(kind: OpKind) -> OpKind {
     match kind {
         OpKind::Copy | OpKind::CreateFolder | OpKind::CreateFile | OpKind::ArchiveEdit => OpKind::Delete,

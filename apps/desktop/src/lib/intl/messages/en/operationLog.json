@@ -269,6 +269,12 @@
     "screenshot": "operation-log-more-pages.png",
     "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
+  "operationLog.rollback.refusalIsARollback": "This one undid another operation, and an undo doesn’t get undone in turn. The operation it undid is still in the log.",
+  "@operationLog.rollback.refusalIsARollback": {
+    "description": "Shown in the Operation log when a Roll back request reaches an operation that was itself the rollback (undo) of an earlier operation. Cmdr never rolls back a rollback (there is no redo), so nothing happened. \"The log\" is the Operation log dialog this appears in, which still lists the original operation.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
+  },
   "operationLog.rollback.refusalOverwrote": "This operation replaced files that were already there. Cmdr doesn’t keep copies of what it replaces, so the originals can’t come back.",
   "@operationLog.rollback.refusalOverwrote": {
     "description": "Shown on a row of the Operation log when the user presses Roll back on a copy or move that overwrote files at the destination. Cmdr deliberately keeps no backup of a replaced file, so the reversal isn’t offered. Explain the limit without sounding like something went wrong; avoid the words error and failed. Apostrophes are curly typographic apostrophes (U+2019).",

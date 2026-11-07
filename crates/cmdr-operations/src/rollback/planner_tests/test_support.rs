@@ -14,6 +14,7 @@ use crate::rollback::Reversal;
 use crate::testing::TestOperations;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{InMemoryVolume, Volume, VolumeError};
+use cmdr_operation_log::OperationLog;
 use cmdr_operation_log::query::{RollbackSelection, SelectionBase, SelectionToggle};
 use cmdr_operation_log::rollback::*;
 use cmdr_operation_log::store::{
@@ -143,6 +144,45 @@ impl Rig {
         self.writer.flush_blocking().expect("flush");
     }
 
+    /// Journal an op that never finalizes, as a crash mid-run leaves it: opened
+    /// `running` with these rows, still `not_rollbackable`.
+    pub(super) fn seed_interrupted(
+        &self,
+        op_id: &str,
+        kind: OpKind,
+        src_vol: &str,
+        dst_vol: Option<&str>,
+        items: Vec<JournalItem>,
+    ) {
+        self.writer
+            .open_operation(OpenOperation {
+                op_id: op_id.into(),
+                kind,
+                initiator: Initiator::User,
+                source_volume_id: Some(src_vol.to_string()),
+                dest_volume_id: dst_vol.map(str::to_string),
+                item_count: items.len() as u64,
+                started_at: 100,
+                rolls_back_op_id: None,
+                execution_status: ExecutionStatus::Running,
+            })
+            .expect("open");
+        self.writer.record_items(op_id, items).expect("record");
+        self.writer.flush_blocking().expect("flush");
+    }
+
+    /// The next launch over this rig's journal: the writer stops, and the journal
+    /// reopens through [`OperationLog::open`], startup steps and all.
+    pub(super) fn relaunched(self) -> Rig {
+        self.writer.shutdown();
+        let log = OperationLog::detached();
+        log.open(self.writer.db_path(), &|_| None).expect("reopen the journal");
+        Rig {
+            writer: log.writer().expect("the reopened journal's writer"),
+            ..self
+        }
+    }
+
     /// Put every copied file's ORIGINAL back where the seeded rows say it was copied
     /// from, at the recorded size, on its registered source volume. Undoing a copy
     /// removes it only while its original is still there, so a copy cell that wants
@@ -203,6 +243,17 @@ impl Rig {
 }
 
 impl Rig {
+    /// Ask the gate to roll `op_id` back and answer its refusal; a gate that lets it
+    /// through fails the test without starting anything.
+    pub(super) fn refusal_of(&self, op_id: &str) -> RollbackRefusal {
+        match rollback_operation(&self.vm, &self.writer, op_id, |_plan| {
+            panic!("the gate let {op_id} through to a spawn")
+        }) {
+            Ok(plan) => panic!("the gate admitted {op_id}: {plan:?}"),
+            Err(refusal) => refusal,
+        }
+    }
+
     /// Roll back only what `selection` takes, the way the dialog's Roll back does:
     /// through the gate (which may refuse it), then the run with the plan's
     /// normalized selection.

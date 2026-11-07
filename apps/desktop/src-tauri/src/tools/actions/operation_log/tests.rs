@@ -254,6 +254,14 @@ fn what_the_journal_refuses_is_typed_with_no_dialog() {
     gone.dest_volume_id = Some("backup".to_string());
     let data = refusal_of(logged_question(Some(gone), &NoVolumes));
     assert_eq!(data["refusal"], json!("volumeUnavailable"));
+
+    // A rollback is never itself rolled back, whatever state it stored.
+    let mut undo = logged_row(RollbackState::Rollbackable);
+    undo.rolls_back_op_id = Some("original".to_string());
+    assert_eq!(
+        refusal_of(logged_question(Some(undo), &NoVolumes)),
+        json!({ "refusal": "isARollback" })
+    );
 }
 
 #[test]

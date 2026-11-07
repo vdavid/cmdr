@@ -650,6 +650,16 @@ section describe the selection; the frontend `DETAILS.md` re-entry argument ment
 
 ### 5b. Interrupted ops end, and rollbacks are never rolled back
 
+**Status: done.** Findings that differ from the text below:
+
+- **The startup step is its own module**, `src/interrupted.rs`, beside the reconcile in `OperationLog::open`, with one
+  writer message (`end_interrupted`, a no-op once the op ended). No new public item: the surface ceiling stays.
+- **No status index**: `ops_left_running` scans `operations` once per launch, as `ops_in_rolling_back` already did.
+- **An interrupted op keeps its stored search coverage** (`full`), though a crash can lose `search_only` leaves it never
+  wrote. No `SearchCoverageReason` fits, and a new token is a schema decision: left as an open question.
+- **Also landed**: a created folder whose files were ALL checked one by one now goes with them
+  (`Selection::fully_chosen`), where it used to stay behind and leave the op partial.
+
 **Scope.** `crates/cmdr-operation-log`: a startup step beside `reconcile_rolling_back_on_open` (called from
 `OperationLog::open`, before the journal is published), `rollback.rs`'s `check_rollbackable` and its typed refusals,
 `query.rs` (`recent_operations`, `search_operations`), the existing pins that rolled back an inverse

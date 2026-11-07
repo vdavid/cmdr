@@ -126,7 +126,8 @@ pub(super) struct InverseTotals {
 }
 
 /// Finalize the inverse op's journal row, computing its own eligibility (a
-/// delete-the-copies undo is not rollbackable; a move/rename undo is — redo).
+/// delete-the-copies undo is not rollbackable; a move/rename undo stores
+/// rollbackable, which the gate overrides: a rollback is never rolled back).
 pub(super) fn finalize_inverse(
     writer: &OperationLogWriter,
     inverse_op_id: &str,
@@ -182,7 +183,7 @@ fn inverse_item_row(seq: i64, unit: &RollbackUnit, result: &ItemResult) -> Journ
         outcome,
         overwrote: false,
         dest_identity: None,
-        // A tag undo wrote `before` over `after`, so undoing IT swaps them back (redo).
+        // A tag undo wrote `before` over `after`, so its own row records them swapped.
         tags: unit.tags.as_ref().map(|tags| TagsChange {
             before: tags.after.clone(),
             after: tags.before.clone(),

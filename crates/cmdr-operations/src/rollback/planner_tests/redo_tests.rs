@@ -1,24 +1,22 @@
-//! Rolling back an undo (a redo) of a move or a rename, as it behaves today: the
-//! inverse op opens `rollbackable` (`inverse_kind` makes it a move or a rename), yet
-//! its rows carry no dest (`bookkeeping::inverse_item_row`), so `restore_move` holds
-//! every row back as `Failed`. It fails safe: nothing moves, and the undo lands
-//! partial.
-//!
-//! ❗ This pins a known gap, not a promise. The fix (record the original's source as
-//! the inverse row's dest) turns on a redo that has never worked; when it lands, these
-//! assertions flip on purpose.
+//! A rollback is never itself rolled back (`cmdr-operation-log`'s `DETAILS.md` § "No
+//! rollback of a rollback"): the gate refuses an inverse op typed, before anything is
+//! set or started, whatever state the inverse stored, and the files and the journal
+//! stay as the undo left them. The tag kind's cell is `tag_tests.rs`.
 
 use std::sync::Arc;
 
 use super::test_support::*;
 use cmdr_fs::volume::InMemoryVolume;
-use cmdr_operation_log::types::{ItemOutcome, OpKind, RollbackState, SkipReason};
+use cmdr_operation_log::rollback::RollbackRefusal;
+use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind, RollbackState};
+use cmdr_operation_log::writer::OpenOperation;
 
 #[tokio::test]
-async fn rolling_back_the_undo_of_a_move_or_rename_holds_every_row_back_and_moves_nothing() {
+async fn the_undo_of_a_move_rename_or_copy_is_never_rolled_back() {
     for (kind, from, to) in [
         (OpKind::Move, "/src/a.txt", "/dst/a.txt"),
         (OpKind::Rename, "/photo.jpg", "/image.jpg"),
+        (OpKind::Copy, "/src/a.txt", "/dst/a.txt"),
     ] {
         let rig = Rig::new();
         let v = Arc::new(InMemoryVolume::new("V"));
@@ -32,33 +30,59 @@ async fn rolling_back_the_undo_of_a_move_or_rename_holds_every_row_back_and_move
             RollbackState::Rollbackable,
             vec![file_unit(0, "v", from, "v", to, 4)],
         );
+        if kind == OpKind::Copy {
+            rig.put_originals("op").await;
+        }
         let undo = rig.rollback_as("op", "undo").await;
-        assert_eq!(undo.final_state, RollbackState::RolledBack, "{kind:?}");
-        assert!(exists(&v, from).await, "{kind:?}: the undo put it back");
+        assert_eq!(undo.final_state, RollbackState::RolledBack, "{kind:?}: {undo:?}");
+        let undo_before = rig.read_op("undo");
+        let undo_rows_before = rig.read_items("undo");
+        let original_before = rig.read_op("op");
 
-        let undo_op = rig.read_op("undo");
-        assert_eq!(undo_op.kind, kind, "{kind:?}: the undo is itself a {kind:?}");
+        assert_eq!(rig.refusal_of("undo"), RollbackRefusal::IsARollback, "{kind:?}");
+
         assert_eq!(
-            undo_op.rollback_state,
-            RollbackState::Rollbackable,
-            "{kind:?}: and offers to be rolled back"
+            rig.read_op("undo"),
+            undo_before,
+            "{kind:?}: the undo's header is untouched"
         );
-
-        let redo = rig.rollback_as("undo", "redo").await;
-
-        assert_eq!((redo.reversed, redo.skipped), (0, 1), "{kind:?}: {redo:?}");
-        assert!(
-            redo.skips.iter().all(|s| s.reason == SkipReason::Failed),
-            "{kind:?}: {redo:?}"
-        );
-        assert_eq!(redo.final_state, RollbackState::PartiallyRolledBack, "{kind:?}");
-        let rows = rig.read_items("undo");
-        assert!(
-            rows.iter()
-                .all(|r| r.outcome == ItemOutcome::Skipped && r.rollback_skip_reason == Some(SkipReason::Failed)),
-            "{kind:?}: {rows:?}"
-        );
+        assert_eq!(rig.read_items("undo"), undo_rows_before, "{kind:?}: so are its rows");
+        assert_eq!(rig.read_op("op"), original_before, "{kind:?}: and the original's state");
         assert!(exists(&v, from).await, "{kind:?}: nothing moved");
-        assert!(!exists(&v, to).await, "{kind:?}: nothing moved");
+        assert!(!exists(&v, to).await, "{kind:?}: nothing came back");
     }
+}
+
+#[test]
+fn an_undo_that_stored_rollbackable_is_still_refused_first() {
+    // An inverse journaled before this rule may say `rollbackable`; the gate reads its
+    // link to the original, never its stored state, and refuses ahead of every other
+    // check (here, a volume that isn't connected).
+    let rig = Rig::new();
+    rig.seed(
+        "op",
+        OpKind::Move,
+        "gone",
+        Some("gone"),
+        RollbackState::RolledBack,
+        vec![],
+    );
+    rig.writer
+        .open_operation(OpenOperation {
+            op_id: "undo".into(),
+            kind: OpKind::Move,
+            initiator: Initiator::User,
+            source_volume_id: Some("gone".to_string()),
+            dest_volume_id: Some("gone".to_string()),
+            item_count: 0,
+            started_at: 100,
+            rolls_back_op_id: Some("op".into()),
+            execution_status: ExecutionStatus::Done,
+        })
+        .expect("open");
+    rig.writer
+        .set_rollback_state("undo", RollbackState::Rollbackable, None)
+        .expect("store the old shape");
+
+    assert_eq!(rig.refusal_of("undo"), RollbackRefusal::IsARollback);
 }

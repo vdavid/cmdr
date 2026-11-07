@@ -16924,6 +16924,11 @@ export type RollbackRefusal =
   // The op was already fully reversed; there's nothing to undo.
   | { kind: 'alreadyRolledBack' }
   /**
+   *  The op is itself a rollback of another operation, and a rollback is never
+   *  rolled back.
+   */
+  | { kind: 'isARollback' }
+  /**
    *  The op is not rollbackable; carries the stored reason (delete, overwrote,
    *  archive-overwrite, zip-edit-unsupported, journal-incomplete).
    */

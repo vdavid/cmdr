@@ -24,7 +24,16 @@ use super::{
 /// and (for a connected-volume requirement) whether every volume it touches is
 /// registered. Returns `Ok(())` to proceed, or the typed refusal. Does NOT mutate
 /// anything — the caller sets `rolling_back` only on a successful spawn.
+///
+/// A rollback is never itself rolled back (no redo), whatever state it stored: an
+/// inverse op's rows carry no dest, so a move's or rename's would hold every row
+/// back, and undoing an undo is not a feature (`DETAILS.md` § "No rollback of a
+/// rollback"). Checked first, so every entry (dialog, MCP, `undo_operations`) refuses
+/// it the same way.
 pub fn check_rollbackable(volumes: &dyn VolumeLookup, op: &OperationRow) -> Result<(), RollbackRefusal> {
+    if op.rolls_back_op_id.is_some() {
+        return Err(RollbackRefusal::IsARollback);
+    }
     match op.rollback_state {
         RollbackState::RollingBack => return Err(RollbackRefusal::AlreadyRollingBack),
         RollbackState::RolledBack => return Err(RollbackRefusal::AlreadyRolledBack),

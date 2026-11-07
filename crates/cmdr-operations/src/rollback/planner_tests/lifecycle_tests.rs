@@ -525,3 +525,47 @@ async fn retention_cannot_prune_a_rollbacks_source_mid_stream() {
     assert!(!exists(&dst, "/one.txt").await);
     assert!(!exists(&dst, "/two.txt").await);
 }
+
+// ── An operation a crash interrupted ─────────────────────────────────────────
+
+/// A copy the app crashed out of ends `failed` at the next launch, rollbackable since
+/// nothing it journaled overwrote anything, and its rollback takes exactly the files it
+/// recorded, through the gate like any other.
+#[tokio::test]
+async fn a_copy_a_crash_interrupted_rolls_back_what_it_recorded() {
+    let rig = Rig::new();
+    let dst = Arc::new(InMemoryVolume::new("Dst"));
+    put(&dst, "/one.txt", b"1").await;
+    put(&dst, "/two.txt", b"22").await;
+    put(&dst, "/unrecorded.txt", b"333").await;
+    rig.register("src", Arc::new(InMemoryVolume::new("Src")));
+    rig.register("dst", Arc::clone(&dst));
+    rig.seed_interrupted(
+        "op",
+        OpKind::Copy,
+        "src",
+        Some("dst"),
+        vec![
+            file_unit(0, "src", "/one.txt", "dst", "/one.txt", 1),
+            file_unit(1, "src", "/two.txt", "dst", "/two.txt", 2),
+        ],
+    );
+    rig.put_originals("op").await;
+
+    let rig = rig.relaunched();
+
+    let op = rig.read_op("op");
+    assert_eq!(op.execution_status, ExecutionStatus::Failed);
+    assert_eq!(op.ended_at, Some(op.started_at));
+    assert_eq!(op.rollback_state, RollbackState::Rollbackable);
+    let plan = rollback_operation(&rig.vm, &rig.writer, "op", |_plan| Ok(())).expect("the gate admits it");
+    let report = rig.rollback_as("op", &plan.inverse_op_id).await;
+    assert_eq!((report.reversed, report.skipped), (2, 0), "{report:?}");
+    assert_eq!(report.final_state, RollbackState::RolledBack);
+    assert!(!exists(&dst, "/one.txt").await);
+    assert!(!exists(&dst, "/two.txt").await);
+    assert!(
+        exists(&dst, "/unrecorded.txt").await,
+        "a file the journal never saw stays"
+    );
+}

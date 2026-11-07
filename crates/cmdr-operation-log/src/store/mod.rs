@@ -727,6 +727,34 @@ pub(crate) fn ops_in_rolling_back(conn: &Connection) -> Result<Vec<OperationRow>
     Ok(out)
 }
 
+/// Every operation still `queued` or `running`: at open, before any engine runs, each
+/// one is an operation a crash interrupted (`interrupted.rs`). A scan of `operations`
+/// (no index on the status; the table is small next to its items, and this runs once
+/// per launch, as `ops_in_rolling_back` does).
+pub(crate) fn ops_left_running(conn: &Connection) -> Result<Vec<OperationRow>, OperationLogStoreError> {
+    let sql = format!("SELECT {OPERATION_COLUMNS} FROM operations WHERE execution_status IN (?1, ?2)");
+    let mut out = Vec::new();
+    let mut stmt = conn.prepare_cached(&sql)?;
+    let mut rows = stmt.query(rusqlite::params![
+        ExecutionStatus::Queued.as_token(),
+        ExecutionStatus::Running.as_token()
+    ])?;
+    while let Some(row) = rows.next()? {
+        out.push(map_operation_row(row)?);
+    }
+    Ok(out)
+}
+
+/// Whether any of `op_id`'s rows overwrote an existing file: the fact finalize turns
+/// into `not_rollbackable(overwrote)`. An `EXISTS` that stops at the first hit; a miss
+/// reads the op's rows, which only an interrupted op pays, once.
+pub(crate) fn any_row_overwrote(conn: &Connection, op_id: &str) -> Result<bool, OperationLogStoreError> {
+    let hit = conn
+        .prepare_cached("SELECT EXISTS (SELECT 1 FROM operation_items WHERE op_id = ?1 AND overwrote = 1)")?
+        .query_row(rusqlite::params![op_id], |row| row.get::<_, bool>(0))?;
+    Ok(hit)
+}
+
 /// The most recent inverse operation reversing `original_op_id` (its
 /// `rolls_back_op_id`), or `None` if none was ever opened. ❌ Not a reconcile input:
 /// an op reversed in several passes has several inverses, and the startup reconcile

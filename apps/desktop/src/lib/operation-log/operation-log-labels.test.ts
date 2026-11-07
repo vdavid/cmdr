@@ -176,6 +176,10 @@ describe('rollbackRefusalNotice', () => {
       [{ kind: 'alreadyRollingBack' }, 'This one is already rolling back. Watch it in the queue.'],
       [{ kind: 'alreadyRolledBack' }, 'This one is already back the way it was.'],
       [
+        { kind: 'isARollback' },
+        'This one undid another operation, and an undo doesn’t get undone in turn. The operation it undid is still in the log.',
+      ],
+      [
         { kind: 'volumeUnavailable', detail: { volumeId: 'smb-nas' } },
         'Connect the drive this operation used, then try again.',
       ],

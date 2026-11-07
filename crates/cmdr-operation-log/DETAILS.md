@@ -742,8 +742,8 @@ context-menu circles (`user`), and the `tag` tool (`agent` or `ai_client`, by ca
   files before it, under a `failed` op.
 
 Pinned by `crates/cmdr-operations/src/rollback/planner_tests/tag_tests.rs` (restore, retagged since, gone, already back,
-redo, a row with no values) and `tags_journal_test.rs` beside the app's writer (exact bytes off a real disk, the
-initiator).
+the undo refused a rollback of its own, a row with no values) and `tags_journal_test.rs` beside the app's writer (exact
+bytes off a real disk, the initiator).
 
 ### Per-kind inverse table
 
@@ -771,16 +771,29 @@ created-in-place override below and is the ONE per-item decision: the reversal a
   renamed into place) before the source side goes, so a stop mid-file leaves the source untouched and no partial behind.
   A cross-volume restore of a DIRECTORY row is refused: those are recorded per leaf, so one is a journal-shape bug.
 - **tag** → `RestoreTags` (write the file's prior Finder-tags value back, only while it still holds the value the write
-  left, § "A tag write restores the exact prior value"). Its inverse is a `tag` op too, rows swapped, so it undoes
-  again.
+  left, § "A tag write restores the exact prior value"). Its inverse is a `tag` op too, rows swapped.
 - **delete** → refused op-level (a permanent delete can't be restored).
 
-The inverse op's own eligibility is computed like any op: a delete-the-copies undo is `not_rollbackable`, a move/rename
-undo is `rollbackable` again. ❗ But a redo of a move, trash, or rename doesn't work today: `inverse_item_row`
-(`rollback/bookkeeping.rs`) records the inverse's rows with no dest, so rolling the undo back reaches `restore_move` and
-holds every row back as `Failed`. It fails safe (nothing moves; the undo lands partial). Pinned as today's behavior by
-`crates/cmdr-operations/src/rollback/planner_tests/redo_tests.rs`, so the fix flips a known pin. A tag undo's redo works
-(its rows swap `before`/`after`).
+### No rollback of a rollback
+
+Undoing an operation leaves the ORIGINAL `rolled_back` or `partially_rolled_back`, and that's the whole story (David,
+2026-11-08, #1033): no redo. `check_rollbackable` refuses any op with `rolls_back_op_id` set,
+`RollbackRefusal::IsARollback`, BEFORE every other check, so the dialog, MCP's `operations_rollback`, and
+`undo_operations` all hit the same guard, and an inverse that stored `rollbackable` (its eligibility is computed like
+any op's at finalize, so a move or rename undo says so) stays harmless. `query::recent_operations` and
+`query::search_operations` leave inverses out (`rolls_back_op_id IS NULL`), so neither the dialog, the MCP list, nor
+name search shows one; `get_operation` still reads one by id.
+
+- **Why**: an inverse's rows carry no dest (`bookkeeping::inverse_item_row`), so rolling back a move, trash, or rename
+  undo held every row back as `Failed`. A redo that never worked was a dead button, and making it work is a feature
+  nobody asked for.
+- **The inverse's rows stay**, internally: the startup reconcile reads every inverse's `done` rows (§ "The
+  `rolling_back` state machine"), `OperationRow.inverse_op_id` (`store::fill_inverse_op_ids`) is how the dialog's
+  `RollbackControls` find the running reversal, and retention guards a rolling-back op's inverse target.
+- Pinned by `crates/cmdr-operations/src/rollback/planner_tests/redo_tests.rs` (move, rename, copy, and a stored
+  `rollbackable` refused first), `tag_tests.rs::the_undo_of_a_tag_write_is_never_rolled_back`, the MCP cell
+  `tools/actions/operation_log/tests.rs::what_the_journal_refuses_is_typed_with_no_dialog`, and
+  `query/tests.rs::neither_the_feed_nor_a_search_lists_a_rollback`.
 
 ### Streaming + ordering
 
@@ -905,13 +918,14 @@ and its caller polls). It exists for the Ask Cmdr rename rail, where one run can
 
 ### The `rolling_back` state machine + startup reconcile
 
-`rollback_operation` (the entry) reads the op, gates it (`check_rollbackable`: `UnknownOperation` / `AlreadyRollingBack`
-/ `NotRollbackable(reason)` / `VolumeUnavailable{volume_id}` — the cross-volume gate is computed from live mount state,
-never stored), then sets `rolling_back` **as late as possible** (right before the spawn) and hands the plan to the
-injected `spawn`. The double-rollback guard is automatic: a second request reads `rolling_back` and refuses. On a
-**synchronous spawn failure** (a volume dropped between the gate and the spawn, so the inverse never starts) it resets
-`rolling_back` back to the state the op held (`rollbackable`, or `partially_rolled_back` for a Finish) in the same call
-before returning the typed error, so a retry isn't wedged.
+`rollback_operation` (the entry) reads the op, gates it (`check_rollbackable`: `UnknownOperation` / `IsARollback`
+(first, § "No rollback of a rollback") / `AlreadyRollingBack` / `NotRollbackable(reason)` /
+`VolumeUnavailable{volume_id}` — the cross-volume gate is computed from live mount state, never stored), then sets
+`rolling_back` **as late as possible** (right before the spawn) and hands the plan to the injected `spawn`. The
+double-rollback guard is automatic: a second request reads `rolling_back` and refuses. On a **synchronous spawn
+failure** (a volume dropped between the gate and the spawn, so the inverse never starts) it resets `rolling_back` back
+to the state the op held (`rollbackable`, or `partially_rolled_back` for a Finish) in the same call before returning the
+typed error, so a retry isn't wedged.
 
 `rollback_operation` is `rollback_operation_with_selection` with `None`; a selection is refused typed here too, before
 `rolling_back` is set (§ "Streaming + ordering").
@@ -963,6 +977,37 @@ whose outcomes didn't flush re-reads them as `AlreadyGone`. ❌ So don't make `c
 `PartiallyRolledBack`, and ❌ don't let any inverse act without its recheck: either one turns that button into a
 double-act. The UI side is `apps/desktop/src/lib/operation-log/DETAILS.md` § "a partly-reversed operation offers to
 finish".
+
+### Operations a crash interrupted
+
+At open no engine runs yet, so every op still `queued` or `running` is one a crash interrupted. Left alone it read
+"still running" forever: no `ended_at`, so retention by age never pruned it, its tree backfill refused it as running,
+and it sat at the `not_rollbackable` it opened with (NULL reason). `interrupted.rs::end_interrupted_on_open`, called by
+`OperationLog::open` AFTER the reconcile (which reads a stale inverse's rows) and before the journal is published (so
+nothing this launch journals can look stale), ends each one in one writer statement (`end_interrupted`, a no-op once the
+op ended):
+
+- `failed` ("Didn't finish"), `ended_at = started_at`: the only time the journal knows. It never claims a duration it
+  didn't see, and never jumps to "now" to outlive its retention.
+- Its rollback state as finalize would have decided it, failing safe where the deciding facts were never written:
+  `delete` ⇒ `not_rollbackable(permanent_delete)`; a copy with any `overwrote` row ⇒ `not_rollbackable(overwrote)` (an
+  `EXISTS`, paid once per interrupted copy); `move` and `archive_edit` ⇒ `not_rollbackable(journal_incomplete)`, since a
+  directory merge, a staged conflict resolved at the destination, or a compress over an existing archive is a driver
+  note finalize never got, and guessing could carry untouched files away; every other kind (a copy without overwrites,
+  trash, rename, create, tag) ⇒ `rollbackable`, since every inverse rechecks before it acts and the rows the crash lost
+  simply aren't reversed.
+- An interrupted INVERSE ends the same way but keeps its stored state: it's never rolled back, and its original's state
+  is the reconcile's call.
+- Search coverage stays as stored (`full` unless a note came): a crash can lose `search_only` leaves the op never got to
+  write, and nothing records that.
+- `operations` has no status index: the step scans it once per launch, as `ops_in_rolling_back` does (the table is small
+  next to its items).
+
+Pinned by `src/interrupted/tests.rs` (every kind, an interrupted inverse, the open ordering, a finalize that landed
+first, aging from the start),
+`tree/backfill_tests.rs::an_op_a_crash_left_running_backfills_once_the_next_launch_ends_it`, and, end to end through the
+gate and the executor, `cmdr-operations`'
+`planner_tests/lifecycle_tests.rs::a_copy_a_crash_interrupted_rolls_back_what_it_recorded`.
 
 ### The retention race it closes
 
@@ -1041,10 +1086,9 @@ exactly that reason.
 ### Future: Cmd+Z (designed for, not built)
 
 A later Cmd+Z is
-`SELECT op_id FROM operations WHERE initiator='user' AND rollback_state='rollbackable' ORDER BY ended_at DESC LIMIT 1`
-then `dispatch_rollback`. The two-axis status + `rolls_back_op_id` linkage make it a query, not a new engine; because a
-rollback is itself a journaled user op, "undo the undo" (redo) is the same query, once a move/rename undo records a dest
-(§ "Per-kind inverse table", the redo gap). Don't build it; don't preclude it.
+`SELECT op_id FROM operations WHERE initiator='user' AND rollback_state='rollbackable' AND rolls_back_op_id IS NULL ORDER BY ended_at DESC LIMIT 1`
+then `dispatch_rollback`. The two-axis status + `rolls_back_op_id` linkage make it a query, not a new engine. There's no
+redo (§ "No rollback of a rollback"). Don't build it; don't preclude it.
 
 ## Query API + search
 
@@ -1056,6 +1100,8 @@ surface is three thin pass-throughs (`commands/operation_log.rs`): `get_recent_o
 (§ "The tree view"); the MCP `operations_list` / `operations_get` handlers (`tools/actions/operation_log.rs`) do the
 same off the MCP task.
 
+- **A rollback is never listed as its own operation**: the feed and search take `rolls_back_op_id IS NULL`, and the
+  original carries the state and the running reversal's id (§ "No rollback of a rollback").
 - **Within one second, "newest first" has no defined order.** `get_recent_operation_log_entries` sorts
   `started_at DESC, op_id DESC`, and `op_id` is a random UUID, so operations that start in the same second come back in
   arbitrary order. That's invisible in normal use and a trap for anything that identifies an operation as "the top row":

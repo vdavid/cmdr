@@ -217,6 +217,10 @@ fn refusal_error(refusal: &RollbackRefusal) -> ToolError {
         RollbackRefusal::UnknownOperation => "No operation has that id, so no dialog opened.".to_string(),
         RollbackRefusal::AlreadyRollingBack => "It's already rolling back, so no dialog opened.".to_string(),
         RollbackRefusal::AlreadyRolledBack => "It's already rolled back, so no dialog opened.".to_string(),
+        RollbackRefusal::IsARollback => {
+            "It's a rollback of another operation, and a rollback can't be rolled back, so no dialog opened."
+                .to_string()
+        }
         RollbackRefusal::NotRollbackable(reason) => {
             format!("This operation can't be rolled back ({reason:?}), so no dialog opened.")
         }

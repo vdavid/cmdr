@@ -3697,6 +3697,7 @@ export type MessageKey =
   | 'operationLog.rollback.refusalAlreadyRollingBack'
   | 'operationLog.rollback.refusalArchiveOverwrite'
   | 'operationLog.rollback.refusalDirectoryMerge'
+  | 'operationLog.rollback.refusalIsARollback'
   | 'operationLog.rollback.refusalJournalIncomplete'
   | 'operationLog.rollback.refusalNothingSelected'
   | 'operationLog.rollback.refusalOverwrote'
