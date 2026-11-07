@@ -30,7 +30,10 @@ close keys.
 - **Shift+click**: mouse range selection with anchor (A) and end (B). If anchor was already selected, the range
   deselects.
 - **Cmd+click**: toggles the clicked item's selection (Finder-style). Moves the cursor to the clicked item and clears
-  the Shift+click anchor. `..` is a no-op. Shift wins when both modifiers are held.
+  the Shift+click anchor. `..` is a no-op. Shift wins when both modifiers are held. With nothing selected, the cursor
+  row counts as selected (Finder), so the first Cmd+click on another row selects both. The cursor row stays out when
+  it's `..` or the row the last Cmd+click acted on (⌘-click A off, then ⌘-click B, selects only B). Mouse only: Space,
+  Insert, and MCP toggles keep acting on one row. Rule lives in `pane/pane-pointer.ts::handleSelect`.
 - **Shift+arrow / Shift+Page / Shift+Home/End / Shift+Left/Right (Brief)**: keyboard toggle-and-fill. Toggles the item
   at the cursor's _old_ position, then sets (not toggles) every item the cursor jumps over to that toggled state. The
   landing item is included only when the jump **overflowed** (intended distance > actual distance because of a list

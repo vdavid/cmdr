@@ -68,7 +68,7 @@ export interface PanePointerDeps {
   fetchCursorEntry: () => void
   /** Shift+click: extend the range from the cursor to the clicked row. */
   extendSelectionFromMouse: (args: ExtendSelectionFromMouseArgs) => void
-  /** Cmd+click: toggle the clicked row (a no-op on `..`). */
+  /** Cmd+click: toggle a row (a no-op on `..`): the clicked one, and first the cursor row when nothing is selected. */
   toggleSelectionAt: (index: number, hasParent: boolean) => void
   /** End the Shift+click anchor gesture. */
   clearRangeState: () => void
@@ -96,17 +96,42 @@ export interface PanePointer {
 }
 
 export function createPanePointer(deps: PanePointerDeps): PanePointer {
+  /**
+   * The row the last Cmd+click acted on, while the cursor still sits there. The user
+   * already decided that row's state by hand, so a later Cmd+click never pulls it
+   * back in as the implicit cursor row (Finder: ⌘-click A off, then ⌘-click B, selects
+   * only B). Keyed by listing so an index from another folder never matches.
+   */
+  let cmdClickedRow: { listingId: string; index: number } | null = null
+
+  /**
+   * Finder's rule: with nothing selected, the cursor row counts as selected, so the first
+   * Cmd+click on another row selects BOTH. `..` never joins (it's unselectable), and nor
+   * does the row the user last Cmd+clicked (see `cmdClickedRow`).
+   */
+  function cursorRowJoinsCmdClick(index: number, hasParent: boolean): boolean {
+    const cursor = deps.getCursorIndex()
+    if (cursor === index || (hasParent && cursor === 0)) return false
+    if (deps.getSelectedIndices().length > 0) return false
+    return !(cmdClickedRow?.index === cursor && cmdClickedRow.listingId === deps.getListingId())
+  }
+
   function handleSelect({ index, shiftKey = false, metaKey = false }: SelectPayload): void {
     const hasParent = deps.getHasParent()
     if (shiftKey) {
       // Shift wins over Cmd when both are held (matches Finder).
       deps.extendSelectionFromMouse({ index, cursorIndex: deps.getCursorIndex(), hasParent })
+      cmdClickedRow = null
     } else if (metaKey) {
-      // Cmd+click toggles the clicked item. `..` is a no-op inside toggleAt.
+      // Cmd+click toggles the clicked item. `..` is a no-op inside toggleAt. With nothing
+      // selected yet, toggling the cursor row selects it.
+      if (cursorRowJoinsCmdClick(index, hasParent)) deps.toggleSelectionAt(deps.getCursorIndex(), hasParent)
       deps.toggleSelectionAt(index, hasParent)
       deps.clearRangeState()
+      cmdClickedRow = { listingId: deps.getListingId(), index }
     } else {
       deps.clearRangeState()
+      cmdClickedRow = null
     }
     deps.setCursorIndex(index)
     deps.onRequestFocus()

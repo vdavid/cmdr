@@ -2,7 +2,8 @@
  * Tests for `pane-pointer.ts`, what the mouse does to a file pane. They pin:
  * - plain click moves the cursor, focuses the pane, and ends any range gesture,
  * - Shift extends the range and Cmd toggles, with Shift winning when both are
- *   held (Finder parity),
+ *   held (Finder parity), and the first Cmd+click with nothing selected takes the
+ *   cursor row along (unless it's `..` or the row the last Cmd+click acted on),
  * - a right-click inside the current selection acts on the whole selection, and
  *   outside it acts on the one entry,
  * - the two pane facts the context menu carries answer different questions and
@@ -157,9 +158,94 @@ describe('createPanePointer', () => {
     })
 
     it('toggles on Cmd+click and drops the anchor', () => {
+      state.selected = [7]
       createPanePointer(deps).handleSelect({ index: 5, shiftKey: false, metaKey: true })
+      expect(calls.toggleSelectionAt).toHaveBeenCalledTimes(1)
       expect(calls.toggleSelectionAt).toHaveBeenCalledWith(5, true)
       expect(calls.clearRangeState).toHaveBeenCalledTimes(1)
+    })
+
+    describe('Cmd+click with nothing selected yet (Finder parity)', () => {
+      it('selects the cursor row too, so the selection starts from both rows', () => {
+        createPanePointer(deps).handleSelect({ index: 5, metaKey: true })
+        expect(calls.toggleSelectionAt.mock.calls).toEqual([
+          [2, true],
+          [5, true],
+        ])
+      })
+
+      it('leaves the `..` cursor row out', () => {
+        state.cursorIndex = 0
+        createPanePointer(deps).handleSelect({ index: 5, metaKey: true })
+        expect(calls.toggleSelectionAt.mock.calls).toEqual([[5, true]])
+      })
+
+      it('counts row 0 as a real row when the pane has no `..`', () => {
+        state.cursorIndex = 0
+        state.hasParent = false
+        createPanePointer(deps).handleSelect({ index: 5, metaKey: true })
+        expect(calls.toggleSelectionAt.mock.calls).toEqual([
+          [0, false],
+          [5, false],
+        ])
+      })
+
+      it('selects only the cursor row when that is the row clicked', () => {
+        createPanePointer(deps).handleSelect({ index: 2, metaKey: true })
+        expect(calls.toggleSelectionAt.mock.calls).toEqual([[2, true]])
+      })
+
+      it('leaves the cursor row out when a Cmd+click just deselected it', () => {
+        const pointer = createPanePointer(deps)
+        state.selected = [2]
+        pointer.handleSelect({ index: 2, metaKey: true }) // deselects the last selected row
+        state.selected = []
+        calls.toggleSelectionAt.mockClear()
+        pointer.handleSelect({ index: 5, metaKey: true })
+        expect(calls.toggleSelectionAt.mock.calls).toEqual([[5, true]])
+      })
+
+      it('brings the cursor row back in once a plain click moved the cursor', () => {
+        const pointer = createPanePointer(deps)
+        state.selected = [2]
+        pointer.handleSelect({ index: 2, metaKey: true })
+        state.selected = []
+        pointer.handleSelect({ index: 3 })
+        calls.toggleSelectionAt.mockClear()
+        pointer.handleSelect({ index: 5, metaKey: true })
+        expect(calls.toggleSelectionAt.mock.calls).toEqual([
+          [3, true],
+          [5, true],
+        ])
+      })
+
+      it('brings the cursor row back in once the cursor moved off the deselected row', () => {
+        const pointer = createPanePointer(deps)
+        state.selected = [2]
+        pointer.handleSelect({ index: 2, metaKey: true })
+        state.selected = []
+        state.cursorIndex = 4 // an arrow key moved it
+        calls.toggleSelectionAt.mockClear()
+        pointer.handleSelect({ index: 5, metaKey: true })
+        expect(calls.toggleSelectionAt.mock.calls).toEqual([
+          [4, true],
+          [5, true],
+        ])
+      })
+
+      it('brings the cursor row back in after the pane moved to another listing', () => {
+        const pointer = createPanePointer(deps)
+        state.selected = [2]
+        pointer.handleSelect({ index: 2, metaKey: true })
+        state.selected = []
+        state.listingId = 'listing-2'
+        calls.toggleSelectionAt.mockClear()
+        pointer.handleSelect({ index: 5, metaKey: true })
+        expect(calls.toggleSelectionAt.mock.calls).toEqual([
+          [2, true],
+          [5, true],
+        ])
+      })
     })
 
     it('lets Shift win when both modifiers are held (Finder parity)', () => {
