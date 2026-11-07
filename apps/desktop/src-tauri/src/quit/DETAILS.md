@@ -163,6 +163,12 @@ Decisions:
 - **Outside a bundle (a dev binary) and off macOS** it's Tauri's `request_restart`: nothing to double there, and it
   skips the gate as before.
 
+Verified on macOS 27.0.1 (M1, 2026-11-07): a release build with this code, pinned in the Dock, took a real 0.60.0
+update into its bundle, then onboarding's "Restart Cmdr" (pressed over AX; the update toast stayed behind the wizard)
+ran `relaunch_app`. The new process was up within a second, never alongside the old one, and the pinned tile kept the
+running dot with no extra tile. `open -n` plus quitting the old copy, same setup, gave the dark pinned tile and an extra
+running one. Method: `docs/notes/dock-duplicate-icon-2026-11-07.md` § Reproducing.
+
 The waiter's argv and both waits (opens after the exit, opens anyway at the bound) are tested against a stand-in opener
 in `relaunch_tests.rs`.
 

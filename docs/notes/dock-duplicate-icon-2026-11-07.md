@@ -88,6 +88,9 @@ Finder); "extra" is the other Cmdr tile (the M1 has recents on, so it sits in th
 
 ## What would fix it
 
+Shipped in #1037 (`apps/desktop/src-tauri/src/quit/relaunch.rs`, verified on the M1 the same evening:
+`apps/desktop/src-tauri/src/quit/DETAILS.md` § Relaunch).
+
 - **Relaunch only after the old process is gone, without `-n`.** A detached helper that waits for the old pid to exit
   and then runs `open <bundle>` (no `-n`), or an equivalent `NSWorkspace.openApplication` call made from that helper.
   That's the shape Sparkle's relauncher has. The new process then is the only instance, and the Dock binds it to the
