@@ -14,11 +14,18 @@
      *
      * Named for what it is: a list (one cursor, listbox semantics by default) laid out in
      * columns. Ark UI has no table or data grid, and its `Listbox` owns selection and keys
-     * itself, which is exactly what this leaves to the parent.
+     * itself, which is exactly what this leaves to the parent. A `treegrid` is the same grid
+     * with each row's place in a tree on it (`rowAria`); the tree stays the consumer's.
      */
     import { untrack } from 'svelte'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
-    import { OVERSCAN_ROWS, revealScrollTop, visibleRange } from './column-list-layout'
+    import {
+        OVERSCAN_ROWS,
+        revealScrollTop,
+        scrollMapping,
+        visibleRange,
+        windowPlacement,
+    } from './column-list-layout'
     import { createColumnTracks } from './column-list-tracks.svelte'
     import { createDeferredActiveDescendant } from './deferred-active-descendant.svelte'
     import { listCursorMoveOf, nextListCursor } from './list-cursor'
@@ -35,6 +42,7 @@
         rows,
         rowKey,
         semantics = 'listbox',
+        rowAria,
         ariaLabel,
         cursorIndex = -1,
         onCursorChange,
@@ -71,7 +79,9 @@
     /** One row's height in pixels, read off the probe (which carries the row height token). */
     let rowHeightPx = $state(0)
 
-    const isGrid = $derived(semantics === 'grid')
+    const isTree = $derived(semantics === 'treegrid')
+    // A treegrid is a grid whose rows say where they sit in a tree.
+    const isGrid = $derived(semantics === 'grid' || isTree)
     // A grid is a table that takes focus: the same rows, cells, and header.
     const isTable = $derived(semantics === 'table' || isGrid)
     // A content-sized row takes `rowHeight` as its floor rather than its height.
@@ -79,15 +89,26 @@
     const rowMinHeight = $derived(virtualized ? undefined : rowHeight)
     const arrayRows = $derived(isWindowed(rows) ? null : rows)
     const count = $derived(isWindowed(rows) ? rows.count : rows.length)
+    // Past WebKit's layout-height cap, the scroll position is a scaled stand-in for the rows'.
+    const mapping = $derived(scrollMapping({ count, rowHeight: rowHeightPx, viewportHeight }))
     const range = $derived(
         virtualized
-            ? visibleRange({ count, rowHeight: rowHeightPx, scrollTop, viewportHeight, overscan: OVERSCAN_ROWS })
+            ? visibleRange({
+                  count,
+                  rowHeight: rowHeightPx,
+                  scrollTop: scrollTop * mapping.ratio,
+                  viewportHeight,
+                  overscan: OVERSCAN_ROWS,
+              })
             : { start: 0, end: count },
     )
     const drawn = $derived(Array.from({ length: range.end - range.start }, (_, i) => range.start + i))
     // Spacers stand in for the rows outside the window, so the scrollbar spans the whole list.
-    const padTop = $derived(rowHeightPx > 0 ? range.start * rowHeightPx : 0)
-    const padBottom = $derived(rowHeightPx > 0 ? (count - range.end) * rowHeightPx : 0)
+    const placement = $derived(
+        virtualized
+            ? windowPlacement({ count, range, rowHeight: rowHeightPx, scrollTop, mapping })
+            : { padTop: 0, padBottom: 0, marginTop: 0 },
+    )
 
     function rowAt(index: number): ColumnListRow<T> {
         return isWindowed(rows) ? rows.getRow(index) : rows[index]
@@ -240,6 +261,33 @@
     const activeDescendant = createDeferredActiveDescendant()
     const cursorRowId = $derived(isGrid ? activeDescendantId(cursorIndex) : undefined)
 
+    let rootEl: HTMLDivElement | undefined = $state()
+
+    /** A focusable thing inside a cell (a checkbox's hidden input or its label), or null. */
+    function cellControlOf(target: EventTarget | null): Element | null {
+        if (!(target instanceof Element) || !rootEl) return null
+        const control = target.closest('input, button, select, textarea, label, a[href], [tabindex]')
+        return control && control !== rootEl && rootEl.contains(control) ? control : null
+    }
+
+    /**
+     * A grid keeps focus on itself, never on a control in a cell: a focused cell control
+     * drops the grid's `aria-activedescendant`, and a focused checkbox would toggle on the
+     * same Space the consumer answers, so it'd flip twice. Pressing a control doesn't move
+     * focus (the click still lands: the row takes the cursor, the control acts), and a
+     * browser that focuses one anyway (a label's click focuses its input in some engines)
+     * hands focus straight back.
+     */
+    function onGridMousedown(event: MouseEvent): void {
+        if (!cellControlOf(event.target)) return
+        event.preventDefault()
+        if (rootEl && document.activeElement !== rootEl) rootEl.focus({ preventScroll: true })
+    }
+
+    function onGridFocusin(event: FocusEvent): void {
+        if (cellControlOf(event.target)) rootEl?.focus({ preventScroll: true })
+    }
+
     /** A grid's own cursor keys. Anything else (⇧↑, Enter) goes to `onKeydown`, and bubbles on. */
     function onGridKeydown(event: KeyboardEvent): void {
         const next = cursorTarget(event, cursorIndex)
@@ -263,6 +311,7 @@
                 rowHeight: rowHeightPx,
                 scrollTop: viewport.scrollTop,
                 viewportHeight: viewport.clientHeight,
+                ratio: mapping.ratio,
             })
             if (next === undefined) return
             viewport.scrollTop = next
@@ -280,12 +329,15 @@
 <div
     class="column-list"
     class:is-content-sized={!virtualized}
-    role={isGrid ? 'grid' : isTable ? 'table' : undefined}
+    bind:this={rootEl}
+    role={isTree ? 'treegrid' : isGrid ? 'grid' : isTable ? 'table' : undefined}
     aria-label={isTable ? ariaLabel : undefined}
     aria-rowcount={isTable ? count + 1 : undefined}
     tabindex={isGrid ? 0 : undefined}
     aria-activedescendant={isGrid ? activeDescendant.of(cursorRowId) : undefined}
     onkeydown={isGrid ? onGridKeydown : undefined}
+    onmousedown={isGrid ? onGridMousedown : undefined}
+    onfocusin={isGrid ? onGridFocusin : undefined}
     onfocus={isGrid ? () => { activeDescendant.tookFocus(cursorRowId) } : undefined}
     onblur={isGrid ? () => { activeDescendant.reset() } : undefined}
 >
@@ -330,7 +382,11 @@
             scrollTop = viewportEl?.scrollTop ?? 0
         }}
     >
-        <div style:padding-top="{padTop}px" style:padding-bottom="{padBottom}px">
+        <div
+            style:padding-top="{placement.padTop}px"
+            style:padding-bottom="{placement.padBottom}px"
+            style:margin-top={placement.marginTop < 0 ? `${String(placement.marginTop)}px` : undefined}
+        >
             <!-- Each block reads its row through its own drawn item, by key: a block on its way out
                  keeps the row it drew (`heldRowOf`), never a neighbour that shifted into its index. -->
             {#each drawnItems as item (item.key)}
@@ -367,6 +423,10 @@
                 {:else}
                     {@const row = heldRowOf(item, live)}
                     {@const isUnderCursor = index === cursorIndex}
+                    {@const tree = isTree ? rowAria?.(row) : undefined}
+                    <!-- A treegrid's rows say where they sit in the tree, and carry no
+                         `aria-selected`: the active descendant marks the cursor, and a row's
+                         checkbox its state, so "selected" would contradict an unchecked box. -->
                     <div
                         class="column-list-row is-data {rowClass}"
                         class:animate-track={tracks.animateTracks}
@@ -377,9 +437,12 @@
                         role={isTable ? 'row' : 'option'}
                         id={rowId(index)}
                         tabindex={isTable ? undefined : -1}
-                        aria-selected={isTable && !isGrid ? undefined : isUnderCursor}
-                        aria-setsize={isTable ? undefined : count}
-                        aria-posinset={isTable ? undefined : index + 1}
+                        aria-selected={isTree || (isTable && !isGrid) ? undefined : isUnderCursor}
+                        aria-level={tree?.level}
+                        aria-expanded={tree?.expanded}
+                        aria-describedby={tree?.describedBy}
+                        aria-setsize={isTree ? tree?.setSize : isTable ? undefined : count}
+                        aria-posinset={isTree ? tree?.posInSet : isTable ? undefined : index + 1}
                         aria-rowindex={isTable ? index + 2 : undefined}
                         data-index={index}
                         onclick={() => {
@@ -483,11 +546,14 @@
         text-align: right;
     }
 
-    /* The `flex: 1 1 auto` child: it absorbs every bit of room the header leaves. */
+    /* The `flex: 1 1 auto` child: it absorbs every bit of room the header leaves. No scroll
+       anchoring: a list past the height cap moves its drawn rows within the content as it
+       scrolls (`windowPlacement`), and an engine that anchors would scroll back against it. */
     .column-list-viewport {
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
+        overflow-anchor: none;
         background: var(--color-bg-primary);
     }
 
@@ -523,11 +589,13 @@
 
     /* A grid holds focus itself. The ring sits inside its edge: a consumer's well around the
        list clips what overhangs (Multi-rename's rounded preview). */
-    .column-list[role='grid'] {
+    .column-list[role='grid'],
+    .column-list[role='treegrid'] {
         outline: none;
     }
 
-    .column-list[role='grid']:focus-visible {
+    .column-list[role='grid']:focus-visible,
+    .column-list[role='treegrid']:focus-visible {
         outline: 2px solid var(--color-accent);
         outline-offset: -2px;
     }

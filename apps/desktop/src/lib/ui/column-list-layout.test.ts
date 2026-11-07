@@ -11,10 +11,13 @@ import {
   buildGridTemplate,
   columnDemand,
   createTabularMeasure,
+  MAX_SCROLL_HEIGHT_PX,
   MEASUREMENT_PAD,
   revealScrollTop,
+  scrollMapping,
   splitShareColumns,
   visibleRange,
+  windowPlacement,
   type LayoutColumn,
 } from './column-list-layout'
 
@@ -218,5 +221,86 @@ describe('revealScrollTop', () => {
 
   it('aligns a row below the viewport to its bottom edge', () => {
     expect(revealScrollTop({ ...base, index: 9, scrollTop: 0 })).toBe(100)
+  })
+})
+
+// Past WebKit's layout-height cap the list scrolls a scaled position (`MAX_SCROLL_HEIGHT_PX`):
+// 2,000,000 rows of 20 px are 40M virtual pixels in a 32M-pixel scroller.
+describe('scrollMapping and windowPlacement', () => {
+  const rowHeight = 20
+  const viewportHeight = 200
+  const count = 2_000_000
+  const mapping = scrollMapping({ count, rowHeight, viewportHeight })
+
+  function placementAt(scrollTop: number) {
+    const range = visibleRange({
+      count,
+      rowHeight,
+      scrollTop: scrollTop * mapping.ratio,
+      viewportHeight,
+      overscan: 20,
+    })
+    return { range, ...windowPlacement({ count, range, rowHeight, scrollTop, mapping }) }
+  }
+
+  /** Where row `index` shows, in pixels below the viewport's top, for a scroll at `scrollTop`. */
+  function shownAt(index: number, scrollTop: number): number {
+    const { range, padTop, marginTop } = placementAt(scrollTop)
+    expect(index).toBeGreaterThanOrEqual(range.start)
+    expect(index).toBeLessThan(range.end)
+    return marginTop + padTop + (index - range.start) * rowHeight - scrollTop
+  }
+
+  it('lays out every pixel while the rows fit under the cap', () => {
+    expect(scrollMapping({ count: 1_000, rowHeight, viewportHeight })).toEqual({ contentHeight: 20_000, ratio: 1 })
+    expect(
+      windowPlacement({
+        count: 1_000,
+        range: { start: 80, end: 130 },
+        rowHeight,
+        scrollTop: 2_000,
+        mapping: { contentHeight: 20_000, ratio: 1 },
+      }),
+    ).toEqual({ padTop: 1_600, padBottom: 20_000 - 2_600, marginTop: 0 })
+  })
+
+  it('caps the content past the limit and scales the scroll so the last position shows the last row', () => {
+    expect(mapping.contentHeight).toBe(MAX_SCROLL_HEIGHT_PX)
+    expect(mapping.ratio).toBeCloseTo((40_000_000 - 200) / (MAX_SCROLL_HEIGHT_PX - 200))
+    // The last row's bottom edge meets the viewport's bottom edge.
+    expect(shownAt(count - 1, MAX_SCROLL_HEIGHT_PX - viewportHeight)).toBeCloseTo(viewportHeight - rowHeight, 1)
+  })
+
+  it('keeps each drawn row at its virtual position, inside a content of fixed height', () => {
+    for (const scrollTop of [0, 7, 150, 1_234_567, 20_000_000, MAX_SCROLL_HEIGHT_PX - viewportHeight]) {
+      const virtualTop = scrollTop * mapping.ratio
+      const first = Math.floor(virtualTop / rowHeight)
+      expect(shownAt(first, scrollTop)).toBeCloseTo(first * rowHeight - virtualTop, 1)
+      const { range, padTop, padBottom, marginTop } = placementAt(scrollTop)
+      expect(padTop).toBeGreaterThanOrEqual(0)
+      expect(padBottom).toBeGreaterThanOrEqual(0)
+      expect(marginTop).toBeLessThanOrEqual(0)
+      const height = marginTop + padTop + (range.end - range.start) * rowHeight + padBottom
+      expect(height).toBeCloseTo(MAX_SCROLL_HEIGHT_PX, 1)
+      // A tiny float written as `1.4e-8px` is invalid CSS, and the old spacer would stay.
+      for (const px of [padTop, padBottom, marginTop]) expect(String(px)).not.toContain('e')
+    }
+  })
+
+  it('pulls the window above the content top with a margin once the first rows scroll out', () => {
+    // 150 scrolled pixels are ~187 virtual ones: row 0 sits ~187 px above the viewport, so
+    // ~37 px above the content's own top, which only a negative margin can place.
+    const { range, padTop, marginTop } = placementAt(150)
+    expect(range.start).toBe(0)
+    expect(padTop).toBe(0)
+    expect(marginTop).toBeCloseTo(150 - 150 * mapping.ratio, 1)
+  })
+
+  it('reveals a row by its virtual position and answers a scaled scroll position', () => {
+    const ratio = mapping.ratio
+    const last = revealScrollTop({ index: count - 1, rowHeight, scrollTop: 0, viewportHeight, ratio })
+    expect(last).toBeCloseTo(MAX_SCROLL_HEIGHT_PX - viewportHeight, 3)
+    const middle = revealScrollTop({ index: 1_000_000, rowHeight, scrollTop: 0, viewportHeight, ratio })
+    expect((middle ?? 0) * ratio).toBeCloseTo(1_000_001 * rowHeight - viewportHeight, 3)
   })
 })

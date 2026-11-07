@@ -948,8 +948,9 @@ means nothing on its own (a banner's or a dialog header's leading mark) is neith
 
 ### Column list (app)
 
-`ColumnList.svelte` is how a dialog lists files or records in columns: Search and Selection results today, the rename
-previews next. It's the dialog-sized sibling of the file list, so it borrows its cursor and leaves density alone.
+`ColumnList.svelte` is how a dialog lists files or records in columns: Search and Selection results, the rename
+previews, and item trees. It's the dialog-sized sibling of the file list, so it borrows its cursor and leaves density
+alone.
 
 - **Surface**: `--color-bg-primary`, the recessed well against the dialog panel. A header row of `--color-text-tertiary`
   labels on `--spacing-xs` / `--spacing-md` padding, a `--color-border-subtle` hairline under it.
@@ -960,6 +961,10 @@ previews next. It's the dialog-sized sibling of the file list, so it borrows its
   every tone reads at `--color-text-primary`, which keeps AA on the lightest accent tints.
 - **Columns** fit their content: short ones shrink-wrap, and the wide ones share what's left so whichever is still cut
   off gets the spare room. Tracks ease between widths over `--transition-slow`, never under reduced motion.
+- **Tree mode** (`treegrid`): the same rows and cursor, for an item tree. The consumer's first column draws the depth as
+  `--spacing-lg` of indent per level and a small disclosure triangle in `--color-text-tertiary` (a pointer target; the
+  keys are → and ←). A checkbox in a row is a bare `Checkbox` out of the Tab order: the list keeps focus, so the cursor
+  stays visible while you tick boxes. A row's tooltip text (a skip reason) is also its accessible description.
 
 ### Keyboard shortcut hints (app)
 

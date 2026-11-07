@@ -77,8 +77,9 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`NumberInput.svelte`**: Presentational Ark `NumberInput`: framed field with −/+ steppers and a unit;
   `SettingNumberInput` wraps it
 - **`ColumnList.svelte`**: The house list of rows in measured columns: one shared grid template, a single cursor,
-  virtual scrolling, listbox, table, or grid semantics. Math in `column-list-layout.ts`, DOM reads in
-  `column-list-tracks.svelte.ts`, types in `column-list-types.ts`, the cursor keys in `list-cursor.ts`. See § ColumnList
+  virtual scrolling (scaled past the browser's height cap), listbox, table, grid, or treegrid semantics. Math in
+  `column-list-layout.ts`, DOM reads in `column-list-tracks.svelte.ts`, types in `column-list-types.ts`, the cursor keys
+  in `list-cursor.ts`, a tree's ← / → in `tree-cursor.ts`. See § ColumnList
 - **`DateLabel.svelte`**: Canonical inline modified-date renderer: format + per-component age-tier coloring
 - **`ShortcutChip.svelte`**: Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key`
   mode
@@ -1820,10 +1821,10 @@ mismatch-warning + cursor-row neutralization treatment.
 ## ColumnList
 
 Every dialog that lists files or records in columns renders `ColumnList`: Search and Selection (`QueryResults`) today,
-Ask Cmdr's rename review (`table` semantics, content-sized rows), and the Multi-rename preview (`grid` semantics, a
-windowed source). One look, one cursor model, one width contract. The name says what it is: a list (one cursor, listbox
-semantics by default) laid out in columns. Ark UI has no table or data grid, and its `Listbox` owns selection and keys
-itself, which is exactly what this leaves to the parent.
+Ask Cmdr's rename review (`table` semantics, content-sized rows), the Multi-rename preview (`grid` semantics, a windowed
+source), and a `treegrid` mode for item trees (the Operation log's, issue #1033). One look, one cursor model, one width
+contract. The name says what it is: a list (one cursor, listbox semantics by default) laid out in columns. Ark UI has no
+table or data grid, and its `Listbox` owns selection and keys itself, which is exactly what this leaves to the parent.
 
 ### Consumer contract
 
@@ -1880,6 +1881,27 @@ itself, which is exactly what this leaves to the parent.
   with columns: a listbox's option reads as one run of text ("a.pdf b.pdf"), while a grid keeps the column headers and
   the row count. Its focus ring (`:focus-visible`, the accent) sits inside the edge, since a consumer's rounded well
   clips what overhangs.
+- **`treegrid`**: a `grid` whose rows form a tree, for a tree too big to hold (the Operation log's item tree). The props
+  are a union on `semantics` (`ColumnListTreeProps`): a treegrid takes a WINDOWED source only, a required
+  `rowAria(row) → { level, expanded?, setSize, posInSet, describedBy? }`, and no group headings. The root is
+  `role="treegrid"`; each loaded row carries `aria-level` (1-based), `aria-expanded` only when `expanded` is set (a row
+  that can open), `aria-setsize` / `aria-posinset` among its siblings, and `aria-describedby` naming an element the
+  consumer renders in the row (a skip reason, where it came from: what a pointer user reads in a tooltip).
+  **Decision/Why: no `aria-selected` in a treegrid.** A grid marks its cursor row selected, but a tree row with a
+  checkbox would then read "selected" whatever its box says; the active descendant marks the cursor, the checkbox its
+  state. **Decision/Why: the tree stays the consumer's.** `ColumnList` knows nothing of folders: the source hands it a
+  flattened window (built in Rust, never in TS), the first column's snippet draws the indent and disclosure (a pointer
+  target, not a Tab stop), and ← / → reach the consumer's `onKeydown`, which asks `tree-cursor.ts` (`treeCursorKeyOf`,
+  `nextTreeCursor`: → opens a shut folder or steps into an open one, ← shuts an open one, steps to the parent the
+  consumer locates, or answers `leave` on a top-level row). ↑ ↓ PageUp PageDown Home End stay the grid's.
+- **A grid keeps focus on itself, never on a cell control** (`grid` and `treegrid`). A `mousedown` on a focusable thing
+  in a cell (input, label, button, `[tabindex]`) is `preventDefault`ed and the grid focused, and a `focusin` on one
+  hands focus straight back, for an engine whose label click focuses its input anyway. Why: a focused cell control drops
+  the grid's `aria-activedescendant`, and a focused checkbox toggles on the same Space the consumer answers, so it would
+  flip twice. The click still lands: the row takes the cursor and the control acts. Give such a control `tabindex={-1}`
+  too (`Checkbox`'s `tabindex` prop). Pinned in `ColumnList.svelte.test.ts` (treegrid block).
+- **A cursor moved onto a row still loading** (End into a windowed source) has no active descendant until the row lands,
+  then names it at once: `activeDescendantId` is reactive on `getRow`, so VoiceOver reads the row as a change.
 - **Named by a combobox**: a listbox given `id` takes it, and every option gets `{id}-option-{index}`, so a field
   outside the list (Search's query field) can `aria-controls` it. The exported `activeDescendantId(index)` returns that
   id only while the row is drawn (a data row, not a heading), since an `aria-activedescendant` naming an unmounted row
@@ -1936,6 +1958,21 @@ itself, which is exactly what this leaves to the parent.
   on the inner box standing in for the rest, so the scrollbar spans the whole list. Before the row height or viewport is
   known (the first frame, or the test DOM) it draws the first `FALLBACK_ROWS` (100), so a short list renders whole and
   behaves exactly like an unvirtualized one.
+- **Past the browser's height cap, the scroll is scaled** (`scrollMapping`, `windowPlacement`). WebKit stores layout
+  lengths as 1/64 px in an int32, so it clamps any box past 2^25 px (33,554,432) without a word: at the default 23.6 px
+  row, rows past about 1,421,000 sat beyond the scrollbar (verified on macOS 27.0.1 WKWebView, a Swift probe padding a
+  scroller to 47.2M px read `scrollHeight` 33,554,432, 2026-11-07). Above `MAX_SCROLL_HEIGHT_PX` (32M, under the cap
+  with room) the content is the cap, and one scrolled pixel moves `ratio` virtual ones, mapped so the scroller's last
+  position shows the last row. The window computes in virtual pixels; the drawn rows sit at
+  `start × rowHeight − (virtualTop − scrollTop)` in the content, a negative top margin when that's above the top (a
+  padding can't go negative), and the bottom spacer keeps the content at the cap. `revealScrollTop` takes the ratio, so
+  `scrollIndexIntoView` and End reach row 1,999,999 of 2,000,000. Below the cap the ratio is 1 and the spacers are
+  exactly `start × rowHeight` and `(count − end) × rowHeight`, as always. Costs of the scaled mode: the wheel moves
+  `ratio` rows per row's worth of scrolling (1.5 at 2M rows), and the rows move within the content while scrolling, so
+  the viewport sets `overflow-anchor: none` (an anchoring engine would scroll back against it). ❗ Scaled spacers snap
+  to the 1/64 px layout unit: a float difference a hair off zero once printed as `1.4e-8px`, which CSS rejects, so the
+  old spacer stayed and the content doubled. Pinned in `column-list-layout.test.ts` and `ColumnList.svelte.test.ts`
+  ("past the browser height cap"). The panes' `virtual-scroll.ts` has the same uncapped shape: #1039.
 - **Virtual rows can't grow**: content taller than the row height spills over its neighbors rather than growing the row,
   because every row's position is `index × height`. A consumer whose rows need more either raises `rowHeight` for every
   row, or, for a short list, turns virtualization off.

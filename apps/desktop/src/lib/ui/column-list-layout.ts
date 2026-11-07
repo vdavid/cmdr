@@ -205,21 +205,120 @@ export function visibleRange({
   return { start, end: Math.max(start, end) }
 }
 
-/** The `scrollTop` that brings row `index` fully into view, or `undefined` if it already is. */
+/**
+ * The tallest scroll content the list lays out, in CSS pixels. WebKit stores layout lengths
+ * as 1/64 px in an int32, so a box taller than 2^25 px (33,554,432) is silently clamped: at
+ * the default 23.6 px row, every row past about 1,421,000 sat beyond the scrollbar's reach
+ * (verified on macOS 27.0.1 WKWebView, a Swift probe padding a scroller to 47.2M px read
+ * `scrollHeight` 33,554,432 and a max `scrollTop` 33,554,032, 2026-11-07). A list taller than
+ * this scrolls through `scrollMapping`'s scaled position instead. Kept under the cap with
+ * room for the drawn rows and rounding.
+ */
+export const MAX_SCROLL_HEIGHT_PX = 32_000_000
+
+/** How a list's scroll position maps onto its rows. */
+export interface ScrollMapping {
+  /** The scroll content's height in CSS pixels: every row's, or the cap. */
+  contentHeight: number
+  /** Virtual pixels per scrolled pixel: 1 while the rows fit under the cap, more past it. */
+  ratio: number
+}
+
+/**
+ * The scroll content's height and its scale. A list that fits lays out every row's pixel
+ * (ratio 1, today's plain spacers). Past `MAX_SCROLL_HEIGHT_PX`, the content is the cap and
+ * one scrolled pixel moves `ratio` virtual ones, mapped so the scroller's last position shows
+ * the last row: (virtual height − viewport) / (cap − viewport).
+ */
+export function scrollMapping({
+  count,
+  rowHeight,
+  viewportHeight,
+}: {
+  count: number
+  rowHeight: number
+  viewportHeight: number
+}): ScrollMapping {
+  const virtualHeight = count * rowHeight
+  if (virtualHeight <= MAX_SCROLL_HEIGHT_PX || viewportHeight >= MAX_SCROLL_HEIGHT_PX) {
+    return { contentHeight: virtualHeight, ratio: 1 }
+  }
+  const viewport = Math.max(0, viewportHeight)
+  return {
+    contentHeight: MAX_SCROLL_HEIGHT_PX,
+    ratio: (virtualHeight - viewport) / (MAX_SCROLL_HEIGHT_PX - viewport),
+  }
+}
+
+/**
+ * Where the drawn rows sit inside the scroll content: spacer padding above and below them,
+ * plus a negative top margin when a scaled list's first rows belong above the content's top.
+ *
+ * With ratio 1 a row sits at `index × rowHeight`, so the spacers are the rows outside the
+ * window. Scaled, row `index` must show at `index × rowHeight − virtualTop` below the
+ * viewport's top, so the window starts at `start × rowHeight − (virtualTop − scrollTop)` in
+ * the content: that can be negative near the top (row 0 already scrolled partly out), which
+ * a padding can't say and a margin can. The bottom spacer keeps the content at
+ * `contentHeight` either way.
+ *
+ * Scaled values are snapped to WebKit's 1/64 px layout unit: a difference of floats can land a
+ * hair off zero, and `String()` writes 1.4e-8 in exponent form, which CSS rejects, so the
+ * style kept its OLD spacer and the content doubled in height.
+ */
+export function windowPlacement({
+  count,
+  range,
+  rowHeight,
+  scrollTop,
+  mapping,
+}: {
+  count: number
+  range: { start: number; end: number }
+  rowHeight: number
+  scrollTop: number
+  mapping: ScrollMapping
+}): { padTop: number; padBottom: number; marginTop: number } {
+  if (rowHeight <= 0) return { padTop: 0, padBottom: 0, marginTop: 0 }
+  if (mapping.ratio === 1) {
+    return { padTop: range.start * rowHeight, padBottom: (count - range.end) * rowHeight, marginTop: 0 }
+  }
+  const drawnHeight = (range.end - range.start) * rowHeight
+  const virtualTop = scrollTop * mapping.ratio
+  const top = toLayoutUnit(range.start * rowHeight - (virtualTop - scrollTop))
+  return {
+    padTop: Math.max(0, top),
+    padBottom: Math.max(0, toLayoutUnit(mapping.contentHeight - top - drawnHeight)),
+    marginTop: Math.min(0, top),
+  }
+}
+
+/** Snaps a length to WebKit's layout unit, 1/64 px, which also keeps it out of exponent notation. */
+function toLayoutUnit(px: number): number {
+  return Math.round(px * 64) / 64
+}
+
+/**
+ * The `scrollTop` that brings row `index` fully into view, or `undefined` if it already is.
+ * `ratio` is a scaled list's `ScrollMapping.ratio`: the row is placed in virtual pixels and
+ * the answer converted back to a scroll position.
+ */
 export function revealScrollTop({
   index,
   rowHeight,
   scrollTop,
   viewportHeight,
+  ratio = 1,
 }: {
   index: number
   rowHeight: number
   scrollTop: number
   viewportHeight: number
+  ratio?: number
 }): number | undefined {
+  const virtualTop = scrollTop * ratio
   const top = index * rowHeight
   const bottom = top + rowHeight
-  if (top < scrollTop) return top
-  if (bottom > scrollTop + viewportHeight) return bottom - viewportHeight
+  if (top < virtualTop) return top / ratio
+  if (bottom > virtualTop + viewportHeight) return (bottom - viewportHeight) / ratio
   return undefined
 }

@@ -84,25 +84,77 @@ export interface ColumnListRowEvent<T> {
 export type ColumnListRow<T> = ReturnType<ColumnListWindowedSource<T>['getRow']>
 
 /**
+ * A treegrid row's place in its tree, which `rowAria` answers per loaded row and the list
+ * writes as `aria-level`, `aria-expanded`, `aria-setsize`, and `aria-posinset`.
+ */
+export interface ColumnListRowAria {
+  /** 1-based depth: a top-level row is 1. */
+  level: number
+  /** `true` open, `false` shut; `undefined` for a row with nothing to open, which then has no `aria-expanded`. */
+  expanded?: boolean
+  /** How many rows share this row's parent, itself included. */
+  setSize: number
+  /** This row's 1-based place among them. */
+  posInSet: number
+  /**
+   * The id of an element in the row that describes it (a skip reason, where it came from),
+   * written as `aria-describedby`, so a screen reader reads after the row what a pointer user
+   * gets from a tooltip. The consumer renders that element in a cell (a `sr-only` span works)
+   * and keeps the id document-unique.
+   */
+  describedBy?: string
+}
+
+/**
  * `ColumnList`'s props. The type-aware linter can't instantiate a generic Svelte component,
  * so it reads every prop as `any` and flags each inline callback; build the props in
  * TypeScript with `columnListProps` and spread them instead.
+ *
+ * A union on `semantics`: a `treegrid` takes a windowed source and `rowAria`, and no group
+ * headings; every other kind takes any source and no `rowAria`.
  */
-export interface ColumnListProps<T> {
-  columns: ColumnListColumn<T>[]
+export type ColumnListProps<T> = ColumnListFlatProps<T> | ColumnListTreeProps<T>
+
+/**
+ * A flat list. `listbox` (default): rows are options and the cursor row is `aria-selected`,
+ * for lists you move through and act on. `table`: rows and cells, for previews and rows
+ * holding their own controls (an option can't contain a checkbox or a text field). `grid`: a
+ * table that is itself a Tab stop with a cursor: it takes focus, answers the cursor keys and
+ * clicks (`onCursorChange`), and names its cursor row through `aria-activedescendant`, its
+ * cells read under their column headers.
+ */
+export interface ColumnListFlatProps<T> extends ColumnListBaseProps<T> {
+  semantics?: 'listbox' | 'table' | 'grid'
   /** An array (measured columns walk it), or a windowed source that pages on demand. */
   rows: ColumnListSource<T>
+  rowAria?: never
+  /** Marks a row as a group heading (a folder name above its files). */
+  isGroupHeading?: (row: T) => boolean
+  /** Renders a group heading across every column. */
+  groupHeading?: Snippet<[ColumnListCellContext<T>]>
+}
+
+/**
+ * A `grid` whose rows form a tree: `role="treegrid"`, each row carrying its `rowAria`, and
+ * no `aria-selected` (the active descendant marks the cursor; a row's own checkbox, if any,
+ * its state). The tree itself lives with the consumer's backend: the source hands over the
+ * flattened rows, the first column's snippet draws the indent and disclosure, and ← / → come
+ * through `onKeydown` to `tree-cursor.ts`. Windowed sources only: a tree big enough to need
+ * this pages from the backend.
+ */
+export interface ColumnListTreeProps<T> extends ColumnListBaseProps<T> {
+  semantics: 'treegrid'
+  rows: ColumnListWindowedSource<T>
+  /** A loaded row's place in the tree. */
+  rowAria: (row: T) => ColumnListRowAria
+  isGroupHeading?: never
+  groupHeading?: never
+}
+
+interface ColumnListBaseProps<T> {
+  columns: ColumnListColumn<T>[]
   /** Keys an array source's rows so a re-sorted list moves rows instead of rebuilding them. */
   rowKey?: (row: T) => string | number
-  /**
-   * `listbox` (default): rows are options and the cursor row is `aria-selected`, for
-   * lists you move through and act on. `table`: rows and cells, for previews and rows
-   * holding their own controls (an option can't contain a checkbox or a text field).
-   * `grid`: a table that is itself a Tab stop with a cursor: it takes focus, answers the
-   * cursor keys and clicks (`onCursorChange`), and names its cursor row through
-   * `aria-activedescendant`, its cells read under their column headers.
-   */
-  semantics?: 'listbox' | 'table' | 'grid'
   ariaLabel: string
   /** The row under the cursor, or -1. */
   cursorIndex?: number
@@ -118,15 +170,14 @@ export interface ColumnListProps<T> {
    * jump while the pointer passes over.
    */
   hoverMovesCursor?: boolean
-  /** A `grid`'s keydown that isn't one of its cursor keys (the Multi-rename preview's ⇧↑ / ⇧↓). */
+  /**
+   * A `grid` or `treegrid`'s keydown that isn't one of its cursor keys (the Multi-rename
+   * preview's ⇧↑ / ⇧↓, a tree's ← / →).
+   */
   onKeydown?: (event: KeyboardEvent) => void
   onRowClick?: (index: number) => void
   /** Right-click on a data row. The list calls `preventDefault` when this is set. */
   onRowContextMenu?: (payload: ColumnListRowEvent<T>) => void
-  /** Marks a row as a group heading (a folder name above its files). */
-  isGroupHeading?: (row: T) => boolean
-  /** Renders a group heading across every column. */
-  groupHeading?: Snippet<[ColumnListCellContext<T>]>
   /** Consumer hook classes on the header and each row (test selectors, contrast audits). */
   headerClass?: string
   rowClass?: string

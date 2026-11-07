@@ -156,6 +156,51 @@ describe('ColumnList a11y', () => {
     await untilFocusNamesARow()
     await expectNoA11yViolations(target)
   })
+
+  it('focused treegrid with levels, a described row, a checkbox cell, and a loading row has no a11y violations', async () => {
+    interface TreeRow extends Row {
+      level: number
+      expanded?: boolean
+    }
+    const tree: TreeRow[] = [
+      { name: 'Photos', note: 'folder', level: 1, expanded: true },
+      { name: 'a.jpg', note: 'Skipped', level: 2 },
+      { name: 'Old', note: 'folder', level: 2, expanded: false },
+    ]
+    const pickCell = createRawSnippet<[{ row: TreeRow; index: number }]>((ctx) => ({
+      render: () =>
+        `<span><input type="checkbox" tabindex="-1" aria-label="Include ${ctx().row.name}" />` +
+        `<span id="tree-why-${String(ctx().index)}" class="sr-only">${ctx().row.note}</span></span>`,
+    }))
+    const treeColumns: ColumnListColumn<TreeRow>[] = [
+      { id: 'pick', label: 'Include', labelHidden: true, width: { kind: 'fixed', px: 24 }, cell: pickCell },
+      { id: 'name', label: 'Name', width: { kind: 'share', minPx: 80 }, emphasis: true, cell: nameCell },
+    ]
+    const target = container()
+    mount(ColumnList<TreeRow>, {
+      target,
+      props: {
+        columns: treeColumns,
+        rows: { count: 4, getRow: (index: number) => tree[index] },
+        semantics: 'treegrid',
+        rowAria: (row: TreeRow) => ({
+          level: row.level,
+          expanded: row.expanded,
+          setSize: row.level === 1 ? 1 : 2,
+          posInSet: row.name === 'Old' ? 2 : 1,
+          describedBy: row.expanded === undefined ? 'tree-why-1' : undefined,
+        }),
+        ariaLabel: 'Items',
+        cursorIndex: 1,
+      },
+    })
+    await tick()
+    expect(target.querySelector('.column-list-row.is-placeholder')).not.toBeNull()
+    const grid = target.querySelector<HTMLElement>('[role="treegrid"]')
+    grid?.focus()
+    await untilFocusNamesARow()
+    await expectNoA11yViolations(target)
+  })
 })
 
 /**
