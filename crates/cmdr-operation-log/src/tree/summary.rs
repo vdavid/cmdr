@@ -402,55 +402,74 @@ pub(crate) fn mark_unbuilt(conn: &Connection, op_id: &str) -> Result<(), Operati
     Ok(())
 }
 
-/// How many rows [`aggregate_op`] reads per query.
-const AGGREGATE_CHUNK: i64 = 4_096;
+/// How many rows [`aggregate_op`] and a backfill read per query.
+pub(crate) const AGGREGATE_CHUNK: i64 = 4_096;
 
 /// The summary `op_id`'s rows add up to, from scratch: what the writer-maintained
 /// rows must always equal, and what a backfill writes. Reads the rows in `seq`
 /// chunks, so it never holds the op in memory, only its folders.
-#[cfg_attr(not(test), expect(dead_code, reason = "the backfill is its first non-test caller"))]
+#[cfg(test)]
 pub(crate) fn aggregate_op(conn: &Connection, op_id: &str) -> Result<Vec<TreeDirRow>, OperationLogStoreError> {
     let Some(context) = read_op_tree_context(conn, op_id)? else {
         return Ok(Vec::new());
     };
     let mut delta = TreeDelta::default();
-    let sql =
-        format!("SELECT {FACT_COLUMNS} FROM operation_items WHERE op_id = ?1 AND seq > ?2 ORDER BY seq ASC LIMIT ?3");
     let mut after = i64::MIN;
     loop {
-        let mut chunk = Vec::new();
-        {
-            let mut stmt = conn.prepare_cached(&sql)?;
-            let mut rows = stmt.query(rusqlite::params![op_id, after, AGGREGATE_CHUNK])?;
-            while let Some(row) = rows.next()? {
-                chunk.push(map_facts(row)?);
-            }
-        }
+        let chunk = read_facts_after(conn, op_id, after, AGGREGATE_CHUNK)?;
         let Some(last) = chunk.last() else { break };
         after = last.seq;
         for facts in &chunk {
             delta.add_row(context.kind, context.axis, facts, 1);
         }
     }
-    let placed = delta.roll_up(conn)?;
-    let mut child_dirs: HashMap<i64, i64> = HashMap::new();
-    for node in placed.values() {
-        if let Some(parent) = node.parent_dir_id {
-            *child_dirs.entry(parent).or_default() += 1;
-        }
+    delta.into_rows(conn)
+}
+
+/// Up to `limit` of `op_id`'s rows with a `seq` past `after`, in `seq` order (served by
+/// the `(op_id, seq)` index). Capture hands out one `seq` per row, so `seq` alone
+/// pages without a gap.
+pub(crate) fn read_facts_after(
+    conn: &Connection,
+    op_id: &str,
+    after: i64,
+    limit: i64,
+) -> Result<Vec<RowFacts>, OperationLogStoreError> {
+    let sql =
+        format!("SELECT {FACT_COLUMNS} FROM operation_items WHERE op_id = ?1 AND seq > ?2 ORDER BY seq ASC LIMIT ?3");
+    let mut stmt = conn.prepare_cached(&sql)?;
+    let mut rows = stmt.query(rusqlite::params![op_id, after, limit])?;
+    let mut chunk = Vec::new();
+    while let Some(row) = rows.next()? {
+        chunk.push(map_facts(row)?);
     }
-    Ok(placed
-        .into_iter()
-        .map(|(dir_id, node)| TreeDirRow {
-            dir_id,
-            parent_dir_id: node.parent_dir_id,
-            name_folded: node.name_folded,
-            self_seq: node.self_seq,
-            child_dirs: child_dirs.get(&dir_id).copied().unwrap_or(0),
-            direct_files: node.direct_files,
-            totals: node.totals,
-        })
-        .collect())
+    Ok(chunk)
+}
+
+impl TreeDelta {
+    /// The summary rows a delta of WHOLE rows adds up to (every row added once, none
+    /// taken away): each folder with its ancestors, `child_dirs` counted among them.
+    pub(crate) fn into_rows(self, conn: &Connection) -> Result<Vec<TreeDirRow>, OperationLogStoreError> {
+        let placed = self.roll_up(conn)?;
+        let mut child_dirs: HashMap<i64, i64> = HashMap::new();
+        for node in placed.values() {
+            if let Some(parent) = node.parent_dir_id {
+                *child_dirs.entry(parent).or_default() += 1;
+            }
+        }
+        Ok(placed
+            .into_iter()
+            .map(|(dir_id, node)| TreeDirRow {
+                dir_id,
+                parent_dir_id: node.parent_dir_id,
+                name_folded: node.name_folded,
+                self_seq: node.self_seq,
+                child_dirs: child_dirs.get(&dir_id).copied().unwrap_or(0),
+                direct_files: node.direct_files,
+                totals: node.totals,
+            })
+            .collect())
+    }
 }
 
 /// Every summary row of `op_id`, by `dir_id`.

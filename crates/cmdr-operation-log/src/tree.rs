@@ -8,11 +8,14 @@
 //!   writer's transactions, and the from-scratch aggregate they must always equal.
 //! - `status`: whether an op's summary is built, and the backfill registry the tree
 //!   view asks about one that isn't.
+//! - `backfill`: building the summary of an op journaled before it existed, as a
+//!   chunk loop the host drives.
 
 use crate::rollback::has_inverse;
 use crate::store::awaits_reversal;
 use crate::types::{EntryType, ItemOutcome, OpKind, RowRole, SkipReason};
 
+pub(crate) mod backfill;
 #[cfg_attr(
     not(test),
     expect(
@@ -23,6 +26,8 @@ use crate::types::{EntryType, ItemOutcome, OpKind, RowRole, SkipReason};
 pub(crate) mod status;
 pub(crate) mod summary;
 
+#[cfg(test)]
+mod backfill_tests;
 #[cfg(test)]
 mod maintenance_tests;
 #[cfg(test)]

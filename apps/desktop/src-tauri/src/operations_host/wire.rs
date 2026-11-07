@@ -51,6 +51,9 @@ wire_event!(MutationSettled(engine::MutationSettled) = "mutation-settled");
 wire_event!(LeftoversKept(engine::LeftoversKeptEvent) = "leftovers-kept");
 wire_event!(OperationsChanged(engine::OperationsChanged) = "operations-changed");
 
+// The operation log's tree-summary backfill, one per step (`commands/operation_log.rs`).
+wire_event!(OperationLogTreeBackfill(cmdr_operation_log::query::TreeBackfillEvent) = "operation-log-tree-backfill");
+
 // One scan preview's events (`sinks.rs`'s `TauriScanPreviewSink`).
 wire_event!(ScanPreviewProgress(engine::ScanPreviewProgressEvent) = "scan-preview-progress");
 wire_event!(ScanPreviewComplete(engine::ScanPreviewCompleteEvent) = "scan-preview-complete");

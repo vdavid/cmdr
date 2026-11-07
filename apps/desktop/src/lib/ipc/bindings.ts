@@ -4155,6 +4155,22 @@ export const commands = {
       string
     >(__TAURI_INVOKE('get_operation_log_detail', { operationId, itemLimit, itemOffset })),
   /**
+   *  Ask for an operation's tree summary, so its item tree can open: start the backfill
+   *  of an op journaled before the summary existed, join the one running, or say why
+   *  none is needed or possible (typed). Returns at once; a started or joined backfill
+   *  reports each step as an `operation-log-tree-backfill` event, ending with its
+   *  `finished` step. The job runs on the blocking pool, one chunk per step, and stops at
+   *  the next chunk after `cancel_operation_log_tree_backfill`.
+   */
+  startOperationLogTreeBackfill: (operationId: string) =>
+    typedError<TreeBackfillStart, string>(__TAURI_INVOKE('start_operation_log_tree_backfill', { operationId })),
+  /**
+   *  Ask an operation's running tree backfill to stop (the dialog closed or moved to
+   *  another operation). A later start takes the cancel back if it comes first.
+   */
+  cancelOperationLogTreeBackfill: (operationId: string) =>
+    __TAURI_INVOKE<void>('cancel_operation_log_tree_backfill', { operationId }),
+  /**
    *  Roll one logged operation back, and hand the reversal to the operation queue.
    *
    *  Returns after DISPATCH, not after the reversal finishes: the inverse is a normal
@@ -6294,6 +6310,7 @@ export const events = {
   openWithCopyLaunched: makeEvent<OpenWithCopyLaunched>('open-with-copy-launched'),
   openWithCopyRefused: makeEvent<OpenWithCopyRefused>('open-with-copy-refused'),
   openWithNotOnThisMac: makeEvent<OpenWithNotOnThisMac>('open-with-not-on-this-mac'),
+  operationLogTreeBackfill: makeEvent<TreeBackfillEvent>('operation-log-tree-backfill'),
   operationsChanged: makeEvent<OperationsChanged>('operations-changed'),
   osLocalesChanged: makeEvent<OsLocalesChanged>('os-locales-changed'),
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
@@ -7373,6 +7390,14 @@ export type BackendCapabilities = {
 
 // Which backend strategy is active for a session.
 export type BackendType = 'fullLoad' | 'byteSeek' | 'lineIndex'
+
+// How far a running backfill got.
+export type BackfillProgress = {
+  // Rows read so far.
+  done: number
+  // Rows the op holds.
+  total: number
+}
 
 /**
  *  The prefix's estimated size against the budget the next send resolves. Both are `chars/4`
@@ -20740,6 +20765,54 @@ export type TrashRoutingAnswer = {
   folderMayHoldOnlineOnly: boolean
 }
 
+// How a backfill ended.
+export type TreeBackfillEnd =
+  // The summary is built: read the tree.
+  | { kind: 'built' }
+  /**
+   *  Cancelled before it finished; nothing was stamped, and the next start begins
+   *  afresh.
+   */
+  | { kind: 'cancelled' }
+  // The operation is gone (retention pruned it meanwhile).
+  | { kind: 'gone' }
+  // It can't be built now, for this reason (a rollback started meanwhile).
+  | { kind: 'unbuilt'; detail: UnbuiltReason }
+  /**
+   *  The journal couldn't be read or written; the details are in the log. The op
+   *  stays unbuilt, so opening its tree again retries.
+   */
+  | { kind: 'unreadable' }
+
+// The event payload a host emits for every step: which op, and the step.
+export type TreeBackfillEvent = {
+  opId: string
+  step: TreeBackfillStep
+}
+
+// What asking for an op's backfill answered.
+export type TreeBackfillStart =
+  // A backfill started; its progress and end arrive as events.
+  | { kind: 'started' }
+  // One was already running; its events keep coming.
+  | { kind: 'joined' }
+  // The summary is already built: read the tree.
+  | { kind: 'built' }
+  // It can't be built yet, for this reason (a running operation or rollback).
+  | { kind: 'unbuilt'; detail: UnbuiltReason }
+  // No operation with this id in the journal (or no journal).
+  | { kind: 'unknownOperation' }
+
+// One step of a backfill, as the host hears it and passes it on.
+export type TreeBackfillStep =
+  /**
+   *  Still reading: `done` of `total` rows so far. A restart after a rollback landed
+   *  starts `done` from zero again.
+   */
+  | { kind: 'progress'; detail: BackfillProgress }
+  // Over; further steps answer the same.
+  | { kind: 'finished'; detail: TreeBackfillEnd }
+
 export type TreeRowKind = 'file' | 'folder'
 
 // A row's state as the view shows it, for files and folders alike.
@@ -20897,6 +20970,21 @@ export type TypeToJumpInfo = {
    */
   lastMatchedName?: string | null
 }
+
+// Why an op's summary isn't built and isn't building.
+export type UnbuiltReason =
+  /**
+   *  Nothing has built it yet (an op journaled before the summary existed, or one
+   *  whose summary write failed). Opening its tree starts a backfill.
+   */
+  | 'notBuilt'
+  /**
+   *  The operation is still running. A backfill can't start: inserts don't bump
+   *  `outcome_generation`, so it couldn't tell rows that landed while it read.
+   */
+  | 'operationRunning'
+  // A rollback of it is running. A backfill would restart on every outcome batch.
+  | 'rollingBack'
 
 /**
  *  The whole job's undo result: a per-operation breakdown plus the totals the UI

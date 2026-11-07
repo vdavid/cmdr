@@ -49,7 +49,7 @@ use super::store::{
     OperationLogStoreError, build_tree_item_indexes, fold_name, intern_child_dir, intern_dir, open_write_connection,
 };
 use super::tree::TreeAxis;
-use super::tree::summary::RowFacts;
+use super::tree::summary::{RowFacts, TreeDirRow};
 use super::types::{
     ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, OperationId,
     RollbackState, RowRole, SearchCoverage, SearchCoverageReason, SkipReason, TreeSummaryState,
@@ -233,6 +233,17 @@ enum WriteMessage {
         op_id: String,
         updates: Vec<ItemOutcomeUpdate>,
         reply: mpsc::Sender<()>,
+    },
+    FillSelfDirs {
+        op_id: String,
+        seqs: Vec<i64>,
+        reply: mpsc::Sender<()>,
+    },
+    WriteTreeSummary {
+        op_id: String,
+        generation: i64,
+        rows: Vec<TreeDirRow>,
+        reply: mpsc::Sender<Option<TreeSummaryWrite>>,
     },
     Prune(PruneRequest),
     BuildTreeIndexes,
@@ -464,6 +475,18 @@ fn apply_message(conn: &mut Connection, msg: WriteMessage) -> std::ops::ControlF
                 log::warn!(target: "operation_log", "set_item_outcomes({op_id}) failed: {e}");
             }
             let _ = reply.send(());
+        }
+        WriteMessage::FillSelfDirs { op_id, seqs, reply } => {
+            apply_fill_self_dirs(conn, &op_id, &seqs);
+            let _ = reply.send(());
+        }
+        WriteMessage::WriteTreeSummary {
+            op_id,
+            generation,
+            rows,
+            reply,
+        } => {
+            let _ = reply.send(apply_write_tree_summary(conn, &op_id, generation, &rows));
         }
         WriteMessage::Prune(request) => {
             if let Err(e) = handle_prune(conn, &request) {
@@ -734,6 +757,11 @@ fn apply_set_item_outcomes(
 /// never stops a capture burst. `retention.rs` decides when to ask.
 mod prune;
 use prune::handle_prune;
+
+/// The writes a tree-summary backfill hands the writer: own folders, then the result.
+mod backfill;
+pub(crate) use backfill::TreeSummaryWrite;
+use backfill::{apply_fill_self_dirs, apply_write_tree_summary};
 
 /// The tree summary's delta, written in the same transaction as the rows it counts.
 mod tree_summary;

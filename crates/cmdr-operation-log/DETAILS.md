@@ -187,8 +187,10 @@ One dedicated OS thread owns the single write connection; the cloneable `Operati
 Message surface: `OpenOperation` (insert the header, `Running`, its tree summary `built`), `RecordItems` (batched insert
 of a slice in one transaction, interning dirs + folding names), `FinalizeOperation` (write terminal state, return
 per-`row_role` durable counts), `SetRollbackState` and `SetItemOutcomes` (the rollback engine's two writes, each a
-barrier), `Prune` (retention), `Flush` (barrier), `Shutdown`. `RecordItems` and `SetItemOutcomes` carry the op's
-tree-summary delta in their own transaction (`src/writer/tree_summary.rs`, § "Tree summary").
+barrier), `FillSelfDirs` and `WriteTreeSummary` (a tree backfill's two writes, each a barrier,
+`src/writer/backfill.rs`), `BuildTreeIndexes`, `Prune` (retention), `Flush` (barrier), `Shutdown`. `RecordItems` and
+`SetItemOutcomes` carry the op's tree-summary delta in their own transaction (`src/writer/tree_summary.rs`, § "Tree
+summary").
 
 - **Lossless with backpressure.** The channel is a bounded `sync_channel`; `record_items` blocks briefly if the writer
   falls behind rather than dropping. Safe for "logging never slows an op": a batched row insert is far cheaper than the
@@ -1065,12 +1067,42 @@ subtree totals in `operation_tree_dirs`, kept exact by the writer.
   goes NULL in the same transaction; the writer then maintains nothing for it until it's rebuilt. So does a DIR row
   whose own folder didn't intern (the row still inserts, with no `self_dir_id`). Pinned by
   `src/tree/maintenance_tests.rs` with a test-made `RAISE(ABORT)` trigger (no production fault seam).
-- **Exact means equal to `summary::aggregate_op`**, the from-scratch aggregate over the op's rows in `seq` chunks, which
-  a backfill writes for an unbuilt op. Golden fixtures with hand-written expected rows: `src/tree/tests.rs`.
+- **Exact means equal to `summary::aggregate_op`** (test-only), the from-scratch aggregate over the op's rows in `seq`
+  chunks, made of the same `read_facts_after` and `TreeDelta::into_rows` a backfill steps through. Golden fixtures with
+  hand-written expected rows: `src/tree/tests.rs`.
 - **Unbuilt ops and the backfill seam** (`src/tree/status.rs`): every op journaled before v6 reads `tree_summary` NULL.
   `read_tree_summary_status` answers `IndexesBuilding` (below), `Built`, `Unbuilt(OperationRunning | RollingBack)` (a
   backfill can't start: inserts don't bump the generation, and a rollback would make it restart on every batch),
   `Building(progress)` from the `BackfillRegistry`, or `Unbuilt(NotBuilt)`.
+- **The backfill** (`src/tree/backfill.rs`, writer half `src/writer/backfill.rs`): on demand, the first time someone
+  opens an unbuilt op's tree. Decision/Why on demand: only ops someone opens pay, and a whole-journal background pass
+  stays a later option.
+  - **A chunk loop the host drives.** `TreeBackfill::start(&log, op_id)` answers `TreeBackfillStart` (`Started` with the
+    job, `Joined`, `Built`, `Unbuilt(reason)`, `UnknownOperation`); each `step()` reads one `seq` chunk (4,096 rows) on
+    the job's own read connection into an in-memory per-folder delta and answers `Progress { done, total }`, until
+    `Finished(TreeBackfillEnd)`. The desktop drives it on the blocking pool, the demo between turns of the page's event
+    loop (no thread); both emit every step as `operation-log-tree-backfill` (`TreeBackfillEvent`). ❌ Never aggregate on
+    the writer thread: a 2M-row read there blocks `record_items` and, through backpressure, a running copy.
+  - **Pre-v6 DIR rows get their own folder on the writer.** A read connection can't intern, so a chunk holding DIR rows
+    with no `self_dir_id` sends their seqs as `FillSelfDirs` (same axis side as an insert; skipped for a built op, whose
+    summary placed them in their parent), then reads the chunk again. A cancelled run keeps what it filled; it's
+    harmless and the rerun skips it.
+  - **The result applies only if nothing moved.** `WriteTreeSummary` replaces the op's summary rows and stamps `built`
+    in one transaction, only if the op exists (`Gone`: retention pruned it, so no summary row keeps its dirs alive),
+    isn't built (`AlreadyBuilt`), and its `outcome_generation` still equals the value read before the first chunk
+    (`Stale`: a rollback landed outcomes, so the job reads again, or stops with `Unbuilt(RollingBack)` if one is
+    running). A prune that also took the op's folders mid-read ends `Gone` too, never `Unreadable`.
+  - **One per op, cancelable.** `BackfillRegistry` (one per `OperationLog`, `tree_backfills()`) claims the op at start;
+    a second start joins, and takes back a cancel the closing dialog asked for, so reopening it keeps the work. A cancel
+    stops the job at its next step, forgetting the claim in the same lock that saw it; a finished or dropped job frees
+    the op.
+  - **It doesn't wait for the folder indexes**: the job reads by `(op_id, seq)` and its write queues behind
+    `BuildTreeIndexes` on the writer, so `start` reads the op's own state rather than `read_tree_summary_status`, which
+    puts `IndexesBuilding` first.
+  - Pinned by `src/tree/backfill_tests.rs` (equal to the writer-built rows for a copy, a trash, and a same-FS move;
+    axis-side own folders; cancel, join, drop, stale restart, a rollback starting, a prune, a summary broken mid-copy,
+    the indexes still building, a 20,000-row run inside the two-second bar) and the demo's
+    `an_old_op_backfills_its_tree_summary_and_says_so`.
 - **The reconcile reads it.** A built op answers the "original settled a row" clause from its volume-root rows instead
   of an `EXISTS` over the op (§ "The `rolling_back` state machine + startup reconcile").
 - **Prune and GC**: a pruned op's summary rows go first (they reference the op and its dirs), and `gc_orphan_dirs` keeps
@@ -1184,19 +1216,22 @@ the write engine, whose `OperationVolumes` is its supertrait.
 
 ### The public surface is capped
 
-`index-crate-isolation` holds the surface to 11 root promises, 6 `OperationLog` methods, seven public modules, and 71
-items in them, with no headroom: measured at the extraction, re-measured when the journal API took `OperationId`, and
-tightened when the test-only accessors went behind `cfg(test)`
+`index-crate-isolation` holds the surface to 11 root promises, 7 `OperationLog` methods, seven public modules, and 79
+items in them, with no headroom: measured at the extraction, re-measured when the journal API took `OperationId`,
+tightened when the test-only accessors went behind `cfg(test)`, and raised for the item tree's backfill
+(`tree_backfills`, and in `query` the backfill job, its four wire types, `BackfillRegistry`, `BackfillProgress`, and
+`UnbuiltReason`; start and cancel live on `TreeBackfill` and the registry, not the handle)
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). A helper only this crate's tests call stays `#[cfg(test)]`
 (`OperationLogStore::conn` and `schema_version`, `query::coverage_is_complete`), so the count promises nothing to no
 caller. By module:
 
 - **Root**: `OperationLog` (the handle), `OpJournal`, `OpenError`, `new_operation_id`, and the seven modules below. The
-  handle's methods are `detached`, `open`, `set_recording`, `writer`, `spawn_retention`, and `journal_open`; an
-  `OpJournal` records, notes, and finalizes its one operation.
+  handle's methods are `detached`, `open`, `set_recording`, `writer`, `spawn_retention`, `journal_open`, and
+  `tree_backfills`; an `OpJournal` records, notes, and finalizes its one operation.
 - **`store`**: the DB path, `fold_name`, the error type, the row types, the migration ladder, and the low-level reads
   the IPC commands, the MCP tools, the dump tool, and the planner's app-side cells use.
-- **`query`**: the paged history read and indexed name search behind the IPC commands and MCP tools.
+- **`query`**: the paged history read and indexed name search behind the IPC commands and MCP tools, plus the item
+  tree's backfill job and registry the hosts drive (§ "Tree summary").
 - **`writer`** and **`capture`**: the writer thread and the journal the write engine records through.
 - **`types`**: the typed classification tokens, which cross IPC, and `OperationId` (with its `as_str`, and a
   `Borrow<str>` so an id-keyed map answers a wire row's text), which the journal API and the write engine's public verbs

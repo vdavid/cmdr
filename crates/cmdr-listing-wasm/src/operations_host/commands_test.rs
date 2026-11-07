@@ -500,3 +500,43 @@ async fn the_home_folder_and_its_holders_refuse_delete() {
     let deleted = deleted["operationId"].as_str().expect("id").to_string();
     assert_eq!(events.settled(&deleted).await, "write-complete");
 }
+
+/// The tree backfill answers as the desktop's does: a fresh op is built, an unknown one
+/// is unknown, and an op journaled before the summary existed backfills on the page's
+/// event loop with its steps out as `operation-log-tree-backfill`.
+#[tokio::test(flavor = "multi_thread")]
+async fn an_old_op_backfills_its_tree_summary_and_says_so() {
+    let (demo, events) = demo();
+    let op = copy(&demo, &["/Users/you/a.txt"], "/Users/you/Documents", "stop").await;
+    assert_eq!(events.settled(&op).await, "write-complete");
+    let start = |id: &str| call(&demo, "start_operation_log_tree_backfill", json!({ "operationId": id }));
+    assert_eq!(start(&op).await, json!({ "kind": "built" }));
+    assert_eq!(start("nope").await, json!({ "kind": "unknownOperation" }));
+
+    let writer = demo.operations().engine().operation_log().writer().expect("open");
+    writer.flush_blocking().expect("flush");
+    let conn = cmdr_fs::sqlite_util::open(demo.operations().log_db()).expect("journal");
+    conn.execute_batch(&format!(
+        "PRAGMA busy_timeout = 5000;
+         DELETE FROM operation_tree_dirs WHERE op_id = '{op}';
+         UPDATE operations SET tree_summary = NULL WHERE op_id = '{op}';"
+    ))
+    .expect("an old op");
+    assert_eq!(start(&op).await, json!({ "kind": "started" }));
+    let finished = events
+        .wait_for("operation-log-tree-backfill", |p| p["step"]["kind"] == "finished")
+        .await;
+    assert_eq!(
+        finished,
+        json!({ "opId": op, "step": { "kind": "finished", "detail": { "kind": "built" } } })
+    );
+    assert_eq!(start(&op).await, json!({ "kind": "built" }));
+
+    let strict = demo
+        .invoke(
+            "cancel_operation_log_tree_backfill",
+            json!({ "operationId": op, "extra": 1 }),
+        )
+        .await;
+    assert!(strict.is_err(), "an unknown field refuses loudly");
+}

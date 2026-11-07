@@ -22,8 +22,12 @@ use tauri::AppHandle;
 
 use std::sync::Arc;
 
-use crate::operations_host::{TauriEventSink, operations};
-use cmdr_operation_log::query::{self, OperationDetail};
+use tauri_specta::Event as _;
+
+use crate::operations_host::{TauriEventSink, operations, wire};
+use cmdr_operation_log::query::{
+    self, OperationDetail, TreeBackfill, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep,
+};
 use cmdr_operation_log::rollback::{RollbackDispatch, RollbackRefusal};
 use cmdr_operation_log::store::{OperationLogStoreError, OperationRow, open_read_connection, operation_log_db_path};
 use cmdr_operation_log::types::{Initiator, OperationId};
@@ -80,6 +84,53 @@ pub async fn get_operation_log_detail(
         query::get_operation(conn, &operation_id, item_limit, item_offset)
     })
     .await
+}
+
+/// Ask for an operation's tree summary, so its item tree can open: start the backfill
+/// of an op journaled before the summary existed, join the one running, or say why
+/// none is needed or possible (typed). Returns at once; a started or joined backfill
+/// reports each step as an `operation-log-tree-backfill` event, ending with its
+/// `finished` step. The job runs on the blocking pool, one chunk per step, and stops at
+/// the next chunk after `cancel_operation_log_tree_backfill`.
+#[tauri::command]
+#[specta::specta]
+pub async fn start_operation_log_tree_backfill(
+    app: AppHandle,
+    operation_id: String,
+) -> Result<TreeBackfillStart, String> {
+    let log = crate::operation_log_host::operation_log().clone();
+    let (start, job) = tauri::async_runtime::spawn_blocking(move || TreeBackfill::start(&log, &operation_id))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())?;
+    if let Some(mut job) = job {
+        tauri::async_runtime::spawn_blocking(move || {
+            loop {
+                let step = job.step();
+                let event = TreeBackfillEvent {
+                    op_id: job.op_id().to_string(),
+                    step,
+                };
+                if let Err(e) = wire::OperationLogTreeBackfill(event).emit(&app) {
+                    log::warn!(target: "operation_log", "couldn't emit a tree backfill step: {e}");
+                }
+                if matches!(step, TreeBackfillStep::Finished(_)) {
+                    break;
+                }
+            }
+        });
+    }
+    Ok(start)
+}
+
+/// Ask an operation's running tree backfill to stop (the dialog closed or moved to
+/// another operation). A later start takes the cancel back if it comes first.
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_operation_log_tree_backfill(operation_id: String) {
+    crate::operation_log_host::operation_log()
+        .tree_backfills()
+        .cancel(&operation_id);
 }
 
 /// Roll one logged operation back, and hand the reversal to the operation queue.

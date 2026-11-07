@@ -19,6 +19,7 @@ use super::recording::Recording;
 use super::retention::{self, RetentionLimitsSource};
 use super::rollback::reconcile_rolling_back_on_open;
 use super::store::{OperationLogStore, OperationLogStoreError};
+use super::tree::status::BackfillRegistry;
 use super::types::{NotRollbackableReason, OperationId, SearchCoverage, SearchCoverageReason};
 use super::writer::{FinalizeOutcome, JournalItem, OpenOperation, OperationLogWriter};
 
@@ -34,6 +35,8 @@ struct Inner {
     recording: Recording,
     /// Set by the first [`OperationLog::open`], whatever its outcome.
     open_claimed: AtomicBool,
+    /// The tree-summary backfills running now, one per op.
+    backfills: Arc<BackfillRegistry>,
 }
 
 #[derive(Clone)]
@@ -75,6 +78,7 @@ impl OperationLog {
                 slot: RwLock::new(None),
                 recording: Recording::new(),
                 open_claimed: AtomicBool::new(false),
+                backfills: Arc::default(),
             }),
         }
     }
@@ -128,6 +132,13 @@ impl OperationLog {
     /// inverse op through it directly, and for the read side's DB path.
     pub fn writer(&self) -> Option<OperationLogWriter> {
         self.inner.slot.read_ignore_poison().as_ref()?.writer.clone()
+    }
+
+    /// The tree-summary backfills running on this log, one per op: what the tree view
+    /// asks to answer `Building`, what `TreeBackfill::start` claims an op in, and where
+    /// a host cancels one.
+    pub fn tree_backfills(&self) -> &Arc<BackfillRegistry> {
+        &self.inner.backfills
     }
 
     /// Prune by age and size now and on a slow timer, on `runtime`, with the

@@ -156,6 +156,7 @@ fn every_write_event_name_matches_the_generated_bindings() {
         (wire::SCAN_PREVIEW_COMPLETE, "ScanPreviewCompleteEvent"),
         (wire::SCAN_PREVIEW_ERROR, "ScanPreviewErrorEvent"),
         (wire::SCAN_PREVIEW_CANCELLED, "ScanPreviewCancelledEvent"),
+        (wire::OPERATION_LOG_TREE_BACKFILL, "TreeBackfillEvent"),
     ];
     for (event, ts) in named {
         assert_eq!(

@@ -51,6 +51,9 @@ pub(crate) const SCAN_PREVIEW_ERROR: &str = "scan-preview-error";
 /// `ScanPreviewCancelledEvent`.
 pub(crate) const SCAN_PREVIEW_CANCELLED: &str = "scan-preview-cancelled";
 
+/// `TreeBackfillEvent` (the operation log's, from `commands/history.rs`).
+pub(crate) const OPERATION_LOG_TREE_BACKFILL: &str = "operation-log-tree-backfill";
+
 /// `volumes-busy-changed`'s payload (`VolumesBusyChanged` in the app, which
 /// lives in the app crate).
 #[derive(Serialize)]

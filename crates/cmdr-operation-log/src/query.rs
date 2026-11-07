@@ -36,6 +36,13 @@ use super::store::{
 };
 use super::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState, RowRole, SkipReason};
 
+// The item tree's summary status and its backfill, which the hosts drive and wire
+// (`crate::tree`, `DETAILS.md` § "Tree summary").
+pub use super::tree::backfill::{
+    TreeBackfill, TreeBackfillEnd, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep,
+};
+pub use super::tree::status::{BackfillProgress, BackfillRegistry, UnbuiltReason};
+
 /// How a name filter matches the folded name column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NameMatch {

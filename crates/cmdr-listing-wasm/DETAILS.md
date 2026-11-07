@@ -192,7 +192,9 @@ tree lists as a folder (as on disk).
 and per-preview sinks; a failure is retained for the queue before its `write-error`, as the desktop's terminal effects
 order it), `wire.rs` (every event name, pinned against `bindings.ts` by `events_test.rs`), and `commands/` by domain
 (`transfers.rs`, `instant.rs`, `queue.rs`, `history.rs`, and `paths.rs`: the dialogs' `path_exists`,
-`destination_exists`, `destination_root_echo`, and `stat_paths_kinds`, answered from the live volume). The volume is
+`destination_exists`, `destination_root_echo`, and `stat_paths_kinds`, answered from the live volume). `history.rs` also
+drives an operation log tree backfill on the page's event loop, one chunk per turn, since the page has no thread to
+block (every demo op is journaled with its summary built, so only a test's doctored journal needs one). The volume is
 named after the tree's `volumeName` (`Macintosh HD`), and its `home` makes it stand in for the computer's own disk
 (`Volume::stands_in_for_own_disk`), so a transfer's summary reads `~/Documents` as the desktop's does. `Demo` routes a
 command to it when `DemoOperations::handles` claims it.

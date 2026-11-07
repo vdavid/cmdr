@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use super::{OpenError, OperationLog};
 use crate::capture::{CapturingJournal, FinalizeInputs};
+use crate::query::{TreeBackfill, TreeBackfillStart};
 use crate::store::{open_read_connection, operation_log_db_path, read_operation, read_operation_items};
 use crate::types::{
     EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState, RowRole,
@@ -164,6 +165,32 @@ fn an_operation_opened_before_the_journal_journals_nothing_through_its_journal()
     assert_eq!(op.finalize(done()).rollback_unit_rows, 0);
     assert_eq!(heard_about(&journal), (0, 0, 0), "no tail and no finalize");
     assert!(journal.not_rollbackable_notes.lock_ignore_poison().is_empty());
+}
+
+/// Before `open` every op is unknown to a tree backfill; after it, an op opened now
+/// needs none.
+#[test]
+fn a_tree_backfill_needs_an_open_log() {
+    let detached = OperationLog::detached();
+    assert!(matches!(
+        TreeBackfill::start(&detached, "op").expect("answer"),
+        (TreeBackfillStart::UnknownOperation, None)
+    ));
+    assert!(!detached.tree_backfills().cancel("op"), "nothing to cancel");
+
+    let (_dir, path) = temp_db();
+    let log = opened(&path);
+    let writer = log.writer().expect("writer");
+    writer.open_operation(header("op")).expect("open op");
+    writer.flush_blocking().expect("flush");
+    assert!(
+        matches!(
+            TreeBackfill::start(&log, "op").expect("answer"),
+            (TreeBackfillStart::Built, None)
+        ),
+        "an op opened now is built from its first row"
+    );
+    assert_eq!(log.tree_backfills().status("op"), None);
 }
 
 /// The next operation after the journal arrives journals normally, whatever

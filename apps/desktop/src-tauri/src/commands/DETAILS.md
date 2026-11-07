@@ -257,7 +257,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   thin pass-throughs over `operation_log::query` on a short-lived read-only connection) plus two write entries over the
   same rollback engine. `rollback_operation` reverses ONE and returns after DISPATCH, so the history dialog's Roll back
   button hands the reversal to the operation queue; `undo_operations` reverses SEVERAL and awaits each, because Ask
-  Cmdr's rename undo has to report a tally. Both refuse with the typed `RollbackRefusal`, never a sentence.
+  Cmdr's rename undo has to report a tally. Both refuse with the typed `RollbackRefusal`, never a sentence. The item
+  tree's backfill: `start_operation_log_tree_backfill` answers `TreeBackfillStart` at once and drives a started job on
+  the blocking pool, emitting each step as `operation-log-tree-backfill`; `cancel_operation_log_tree_backfill` asks it to
+  stop (`crates/cmdr-operation-log/DETAILS.md` § "Tree summary").
 - **`restricted_paths.rs`**: `get_restricted_paths`: read-only snapshot for the frontend store bootstrap. See
   `crate::restricted_paths` for the state machine and the `restricted-paths-changed` event payload.
 - **`file_viewer.rs`**: session lifecycle, regex/literal search with mode flags, word wrap, menu state (including

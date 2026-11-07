@@ -487,6 +487,8 @@ macro_rules! ipc_command_manifest {
                     crate::quit::commands::relaunch_app,
                     crate::commands::operation_log::get_recent_operation_log_entries,
                     crate::commands::operation_log::get_operation_log_detail,
+                    crate::commands::operation_log::start_operation_log_tree_backfill,
+                    crate::commands::operation_log::cancel_operation_log_tree_backfill,
                     crate::commands::operation_log::rollback_operation,
                     crate::commands::operation_log::undo_operations,
                     crate::commands::agent::ask_cmdr_send_message,
@@ -1133,6 +1135,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             // The leftover sweep, which belongs to no operation
             // (crates/cmdr-operations/src/in_flight_sweep.rs).
             wire::LeftoversKept,
+            // A tree-summary backfill's progress and end (commands/operation_log.rs).
+            wire::OperationLogTreeBackfill,
             // An "Open with" click on a file inside an archive that couldn't be copied
             // out, so no app launched (file_viewer/open_with_extract.rs).
             OpenWithCopyRefused,

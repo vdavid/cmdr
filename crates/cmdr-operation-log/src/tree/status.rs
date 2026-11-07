@@ -1,7 +1,8 @@
 //! Whether an op's tree summary can be read yet, and the registry of backfills
 //! building one. The seam the tree view and the backfill meet at: the view asks
 //! [`read_tree_summary_status`] and answers `Building` without knowing how a backfill
-//! runs; the backfill reports into [`BackfillRegistry`].
+//! runs; the backfill (`backfill.rs`) claims its op here, reports its progress here,
+//! and hears a cancel here.
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -27,8 +28,9 @@ pub(crate) enum TreeSummaryStatus {
 }
 
 /// Why an op's summary isn't built and isn't building.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum UnbuiltReason {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum UnbuiltReason {
     /// Nothing has built it yet (an op journaled before the summary existed, or one
     /// whose summary write failed). Opening its tree starts a backfill.
     NotBuilt,
@@ -40,34 +42,102 @@ pub(crate) enum UnbuiltReason {
 }
 
 /// How far a running backfill got.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct BackfillProgress {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BackfillProgress {
     /// Rows read so far.
-    pub(crate) done: u64,
+    pub done: u64,
     /// Rows the op holds.
-    pub(crate) total: u64,
+    pub total: u64,
 }
 
 /// The backfills running now, by op id: one per op, so a second ask joins the first.
+/// The host reaches its log's one registry through `OperationLog::tree_backfills`.
 #[derive(Debug, Default)]
-pub(crate) struct BackfillRegistry {
-    running: Mutex<HashMap<String, BackfillProgress>>,
+pub struct BackfillRegistry {
+    running: Mutex<HashMap<String, Running>>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Running {
+    progress: BackfillProgress,
+    /// Asked to stop; the backfill stops at its next chunk unless someone joins first.
+    cancelled: bool,
+}
+
+/// What [`BackfillRegistry::claim`] answered.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Claim {
+    /// Nobody was building this op's summary; the caller is now.
+    Claimed,
+    /// A backfill was already running; the caller joined it (and took back any cancel
+    /// asked of it, since someone wants it again).
+    Joined,
 }
 
 impl BackfillRegistry {
     /// The progress of `op_id`'s running backfill, if one is running.
     pub(crate) fn status(&self, op_id: &str) -> Option<BackfillProgress> {
-        self.running.lock_ignore_poison().get(op_id).copied()
+        self.running.lock_ignore_poison().get(op_id).map(|r| r.progress)
     }
 
     /// Record `op_id`'s backfill progress, registering it on the first report.
     pub(crate) fn report(&self, op_id: &str, progress: BackfillProgress) {
-        self.running.lock_ignore_poison().insert(op_id.to_string(), progress);
+        self.running
+            .lock_ignore_poison()
+            .entry(op_id.to_string())
+            .and_modify(|r| r.progress = progress)
+            .or_insert(Running {
+                progress,
+                cancelled: false,
+            });
     }
 
     /// Forget `op_id`'s backfill: it finished, stopped, or was cancelled.
     pub(crate) fn remove(&self, op_id: &str) {
         self.running.lock_ignore_poison().remove(op_id);
+    }
+
+    /// Claim `op_id` for a new backfill, or join the one running.
+    pub(crate) fn claim(&self, op_id: &str) -> Claim {
+        let mut running = self.running.lock_ignore_poison();
+        if let Some(existing) = running.get_mut(op_id) {
+            existing.cancelled = false;
+            return Claim::Joined;
+        }
+        running.insert(
+            op_id.to_string(),
+            Running {
+                progress: BackfillProgress { done: 0, total: 0 },
+                cancelled: false,
+            },
+        );
+        Claim::Claimed
+    }
+
+    /// Ask `op_id`'s running backfill to stop at its next step (the dialog closed, or
+    /// moved to another op). `false` when none is running. A start that comes first
+    /// takes the cancel back.
+    pub fn cancel(&self, op_id: &str) -> bool {
+        match self.running.lock_ignore_poison().get_mut(op_id) {
+            Some(running) => {
+                running.cancelled = true;
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// Whether `op_id`'s backfill was asked to stop; if so it's forgotten in the same
+    /// lock, so a [`Self::claim`] that comes after starts afresh instead of joining a
+    /// backfill that's stopping.
+    pub(crate) fn stop_if_cancelled(&self, op_id: &str) -> bool {
+        let mut running = self.running.lock_ignore_poison();
+        if running.get(op_id).is_some_and(|r| r.cancelled) {
+            running.remove(op_id);
+            return true;
+        }
+        false
     }
 }
 
