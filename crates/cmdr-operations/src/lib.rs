@@ -401,6 +401,8 @@ mod journal_capture_tests;
 #[cfg(test)]
 mod journal_capture_volume_tests;
 #[cfg(test)]
+mod journal_row_shape_tests;
+#[cfg(test)]
 mod named_leaf_entry_tests;
 #[cfg(test)]
 mod named_leaf_undo_tests;

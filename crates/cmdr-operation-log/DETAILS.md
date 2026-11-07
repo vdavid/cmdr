@@ -283,7 +283,10 @@ for any ordinary-sized op. The frontend side of this contract lives in
 
 ### Per-kind record points and granularity
 
-Each point is where the op already stats the item, so journaling is near-zero marginal cost (no new syscalls):
+Each point is where the op already stats the item, so journaling is near-zero marginal cost (no new syscalls). The row
+SHAPES below (which side each row's source and dest sit on, created-in-place folder rows, a folder unit's `size` being
+its inode length) are pinned through the real capture paths, resolved to full paths, in
+`crates/cmdr-operations/src/journal_row_shape_tests.rs`:
 
 - **copy** — per-leaf `rollback_unit` rows at `transfer/copy/single_item.rs` (right where each file commits to the
   `CopyTransaction`, carrying the free source `mtime` + the overwrite flag), plus the **created-directory rows** from
@@ -753,7 +756,11 @@ created-in-place override below and is the ONE per-item decision: the reversal a
 - **delete** → refused op-level (a permanent delete can't be restored).
 
 The inverse op's own eligibility is computed like any op: a delete-the-copies undo is `not_rollbackable`, a move/rename
-undo is `rollbackable` again, so redo falls out (§ "Future: Cmd+Z").
+undo is `rollbackable` again. ❗ But a redo of a move, trash, or rename doesn't work today: `inverse_item_row`
+(`rollback/bookkeeping.rs`) records the inverse's rows with no dest, so rolling the undo back reaches `restore_move` and
+holds every row back as `Failed`. It fails safe (nothing moves; the undo lands partial). Pinned as today's behavior by
+`crates/cmdr-operations/src/rollback/planner_tests/redo_tests.rs`, so the fix flips a known pin. A tag undo's redo works
+(its rows swap `before`/`after`).
 
 ### Streaming + ordering
 
@@ -762,11 +769,16 @@ cursor, `before_seq` = the smallest seq of the prior page), so a 1M-item op neve
 leaves are excluded (they're for search, never reversal). Removal happens in two phases matching
 `CopyTransaction::rollback`: all **files** first (streamed), then the buffered **created-dir** rows deepest-path-first —
 a dir removes only once its contents are gone, and pure `seq DESC` would hit a deep dir before the files it holds. Dirs
-are a small fraction of an op (interning shares them), so buffering just the dir rows stays bounded.
+are a small fraction of an op (interning shares them), so buffering just the dir rows stays bounded. The sweep waits for
+the LAST page, never per page. Pinned by `crates/cmdr-operations/src/rollback/planner_tests/dir_sweep_tests.rs` (folder
+rows streamed before every file, shallow first, a file inside on the second page).
 
-Rollback eligibility is Done-only at both boundaries: mutation code journals rollback leaves only for committed rows,
-and `read_rollback_units_page` filters `outcome = done`. The executor also rejects any non-Done unit defensively. A
-skipped or unsuccessful planned rename must never make an untouched destination eligible for rename-back.
+Rollback eligibility is narrow at both boundaries: mutation code journals rollback leaves only for committed rows, and
+`read_rollback_units_page` streams only rows that await reversal (`done`, or `skipped` with a stored
+`rollback_skip_reason`, § "The `rolling_back` state machine"). `restore_move` also refuses a unit that doesn't await
+reversal. A row the operation itself skipped (no reason) must never make an untouched destination eligible for
+rename-back, and a `rolled_back` row never streams again: Finish can't touch a file someone later put at a reversed
+copy's path (`planner_tests/resume_tests.rs::finishing_never_touches_a_row_an_earlier_pass_reversed`).
 
 ### The E2E pacing hook in the item loop
 
@@ -956,7 +968,8 @@ exactly that reason.
 A later Cmd+Z is
 `SELECT op_id FROM operations WHERE initiator='user' AND rollback_state='rollbackable' ORDER BY ended_at DESC LIMIT 1`
 then `dispatch_rollback`. The two-axis status + `rolls_back_op_id` linkage make it a query, not a new engine; because a
-rollback is itself a journaled user op, "undo the undo" (redo) falls out too. Don't build it; don't preclude it.
+rollback is itself a journaled user op, "undo the undo" (redo) is the same query, once a move/rename undo records a dest
+(§ "Per-kind inverse table", the redo gap). Don't build it; don't preclude it.
 
 ## Query API + search
 
