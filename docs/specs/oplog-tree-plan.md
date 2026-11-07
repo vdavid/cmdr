@@ -365,6 +365,8 @@ Each milestone: one agent, one worktree branch, commits per green step, report â
 
 ### 1. Characterize the rollback engine, fix reconcile
 
+**Status: done** (`2d7ab502ed`, `fb56215f17`).
+
 **Scope.** Rust tests only, plus the `reconcile_one` fix. `crates/cmdr-operations/src/rollback/planner_tests/`,
 `crates/cmdr-operation-log/src/rollback/decision_tests.rs`, `crates/cmdr-operation-log/src/rollback.rs` (reconcile
 only), and row-shape pins beside the journal capture tests.
@@ -584,6 +586,12 @@ tests (app backend suites, `cmdr-operations` test modules) stay byte-identical (
 - The inverse op's header count (`inverse_planned_item_count`, `RunAcc::totals`) is bounded by the selected units, so
   "Rolled back 3 of 400" reads as 3.
 - Housekeeping dirs under a mixed subtree are left out, never attempted (see roles).
+- **Folder units go through the dir sweep, not the file loop** (found in milestone 1): a trashed or same-FS-moved folder
+  is a DIR `rollback_unit`, so `execute_rollback` defers it into the deepest-first sweep, which has no pause gate and no
+  progress credit, and a big trash can put 100,000 such rows there. The selection filter must cover the sweep too (a
+  left-out folder unit is never attempted and counts as `left_out`), and the sweep should honor pause (parking BEFORE
+  verification, as the file loop does) and credit progress for folder units. Folder units then belong in the progress
+  totals as well; keep `read_rollback_file_totals` and the selection algebra in step with whatever the sweep credits.
 - `rollback_operation` refuses an empty selection (`N = 0`) and a selection on an op whose summary isn't built, typed,
   before `rolling_back` is set.
 - The confirmation's "the selected items" wording needs only "is this a subset", which the frontend knows; nothing
