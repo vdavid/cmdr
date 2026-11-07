@@ -154,6 +154,12 @@ impl NameOrder for PaneNameOrder {
 /// browser (gone on reload, like the volume), a scratch file natively (tests).
 /// Numbered per engine, so two in one module (the golden replay's wasm tests)
 /// never share a journal.
+///
+/// Natively the name carries the process id, and the OS reuses those: a scratch
+/// file a test run days ago left under the same id would open as this engine's
+/// journal, history and all. So a stale one (with its WAL and shared-memory
+/// files) goes before the engine opens it, and every engine starts empty, as it
+/// does in the browser.
 fn log_db_path() -> PathBuf {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(0);
@@ -166,10 +172,17 @@ fn log_db_path() -> PathBuf {
     }
     #[cfg(not(target_family = "wasm"))]
     {
-        std::env::temp_dir().join(format!(
+        let path = std::env::temp_dir().join(format!(
             "cmdr-demo-operation-log-{}-{}.db",
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed)
-        ))
+        ));
+        for suffix in ["", "-wal", "-shm"] {
+            let mut stale = path.clone().into_os_string();
+            stale.push(suffix);
+            // Absent is the usual case; anything else surfaces when the engine opens it.
+            let _ = std::fs::remove_file(stale);
+        }
+        path
     }
 }
