@@ -25,7 +25,12 @@
 //! [`OperationRow`] (from `store`) is the summary type returned directly (it holds
 //! no interned ids). [`OperationDetail`] / [`OperationItemView`] resolve the
 //! interned dir prefixes of item rows to full paths so the frontend never sees a
-//! `dir_id`.
+//! `dir_id`, except as the item tree's opaque row key ([`TreeRowKey`]).
+//!
+//! ## The item tree
+//!
+//! [`operation_tree`] answers one window of an operation's tree with its selection
+//! normalized and counted; the logic is `src/tree/` (`DETAILS.md` § "The tree view").
 
 use rusqlite::Connection;
 
@@ -36,12 +41,32 @@ use super::store::{
 };
 use super::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState, RowRole, SkipReason};
 
-// The item tree's summary status and its backfill, which the hosts drive and wire
-// (`crate::tree`, `DETAILS.md` § "Tree summary").
+// The item tree: its summary status and backfill, which the hosts drive and wire, and
+// its windowed view with the rollback selection (`crate::tree`, `DETAILS.md` § "Tree
+// summary" and § "The tree view").
 pub use super::tree::backfill::{
     TreeBackfill, TreeBackfillEnd, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep,
 };
 pub use super::tree::status::{BackfillProgress, BackfillRegistry, UnbuiltReason};
+
+pub use crate::tree::selection::{RollbackSelection, SelectionBase, SelectionToggle};
+pub use crate::tree::view::{
+    OperationTreeRequest, OperationTreeRow, OperationTreeView, TreeCheckbox, TreeRowKey, TreeRowRole, TreeSummaryView,
+    TreeTally, UnexpandableReason,
+};
+
+/// One window of `op_id`'s item tree (`None` for an unknown op): the rows under the
+/// request's expansion from its offset, with the selection normalized and counted.
+/// `registry` is the host's running backfills, so an op being backfilled answers
+/// `building`. O(expansion + window + toggles) for any op size.
+pub fn operation_tree(
+    conn: &Connection,
+    op_id: &str,
+    request: &OperationTreeRequest,
+    registry: &BackfillRegistry,
+) -> Result<Option<OperationTreeView>, OperationLogStoreError> {
+    crate::tree::view::operation_tree(conn, op_id, request, registry)
+}
 
 /// How a name filter matches the folded name column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

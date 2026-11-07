@@ -10,30 +10,43 @@
 //!   view asks about one that isn't.
 //! - `backfill`: building the summary of an op journaled before it existed, as a
 //!   chunk loop the host drives.
+//! - `view` (+ `layout`, `read`): one window of an op's tree, read off the summary
+//!   and the item indexes; `selection`: the rollback selection, normalized and
+//!   counted, and THE per-row decision the engine shares.
 
 use crate::rollback::has_inverse;
 use crate::store::awaits_reversal;
 use crate::types::{EntryType, ItemOutcome, OpKind, RowRole, SkipReason};
 
 pub(crate) mod backfill;
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the seam the backfill and the tree view meet at; they are its first non-test callers"
-    )
-)]
 pub(crate) mod status;
 pub(crate) mod summary;
+
+mod layout;
+pub(crate) mod read;
+pub(crate) mod selection;
+pub(crate) mod view;
 
 #[cfg(test)]
 mod backfill_tests;
 #[cfg(test)]
 mod maintenance_tests;
 #[cfg(test)]
+#[allow(
+    clippy::print_stderr,
+    reason = "the scale tests print what each read took, as a benchmark does"
+)]
+mod scale_tests;
+#[cfg(test)]
+mod selection_tests;
+#[cfg(test)]
 mod test_support;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod view_test_support;
+#[cfg(test)]
+mod view_tests;
 
 /// Which side of each row an operation's tree is built on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

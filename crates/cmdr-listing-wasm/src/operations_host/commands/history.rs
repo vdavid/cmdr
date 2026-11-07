@@ -5,7 +5,9 @@ use std::path::Path;
 use std::sync::Arc;
 
 use cmdr_fs::rt::task;
-use cmdr_operation_log::query::{self, TreeBackfill, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep};
+use cmdr_operation_log::query::{
+    self, OperationTreeRequest, TreeBackfill, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep,
+};
 use cmdr_operation_log::rollback::RollbackRefusal;
 use cmdr_operation_log::store::{OperationLogStoreError, open_read_connection};
 use cmdr_operation_log::types::{Initiator, OperationId};
@@ -25,6 +27,7 @@ pub(super) const NAMES: &[&str] = &[
     "get_operation_log_detail",
     "start_operation_log_tree_backfill",
     "cancel_operation_log_tree_backfill",
+    "get_operation_log_tree",
 ];
 
 impl DemoOperations {
@@ -61,6 +64,13 @@ impl DemoOperations {
                 let a: TreeBackfillArgs = parse(command, args)?;
                 e.operation_log().tree_backfills().cancel(&a.operation_id);
                 ok(())
+            }
+            "get_operation_log_tree" => {
+                let a: TreeArgs = parse(command, args)?;
+                answer(self.read_log(None, |conn| {
+                    // The log's own registry, so an op its backfill is building answers `building`.
+                    query::operation_tree(conn, &a.operation_id, &a.request, e.operation_log().tree_backfills())
+                }))
             }
             other => Err(Value::String(format!("the demo doesn't answer `{other}`"))),
         }
@@ -134,4 +144,13 @@ struct DetailArgs {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct TreeBackfillArgs {
     operation_id: String,
+}
+
+/// `deny_unknown_fields`, as the request inside it: a field the demo hasn't learned
+/// fails loudly instead of being dropped.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct TreeArgs {
+    operation_id: String,
+    request: OperationTreeRequest,
 }

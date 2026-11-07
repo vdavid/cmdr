@@ -26,7 +26,8 @@ use tauri_specta::Event as _;
 
 use crate::operations_host::{TauriEventSink, operations, wire};
 use cmdr_operation_log::query::{
-    self, OperationDetail, TreeBackfill, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep,
+    self, OperationDetail, OperationTreeRequest, OperationTreeView, TreeBackfill, TreeBackfillEvent, TreeBackfillStart,
+    TreeBackfillStep,
 };
 use cmdr_operation_log::rollback::{RollbackDispatch, RollbackRefusal};
 use cmdr_operation_log::store::{OperationLogStoreError, OperationRow, open_read_connection, operation_log_db_path};
@@ -131,6 +132,24 @@ pub fn cancel_operation_log_tree_backfill(operation_id: String) {
     crate::operation_log_host::operation_log()
         .tree_backfills()
         .cancel(&operation_id);
+}
+
+/// One window of an operation's item tree: the rows under the request's expanded
+/// folders from its offset, with its selection normalized and counted
+/// (`cmdr_operation_log::query::operation_tree`). `None` when the operation is absent.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_operation_log_tree(
+    app: AppHandle,
+    operation_id: String,
+    request: OperationTreeRequest,
+) -> Result<Option<OperationTreeView>, String> {
+    // The log's own registry, so an op its backfill is building answers `building`.
+    let backfills = Arc::clone(crate::operation_log_host::operation_log().tree_backfills());
+    with_read_connection(app, None, move |conn| {
+        query::operation_tree(conn, &operation_id, &request, &backfills)
+    })
+    .await
 }
 
 /// Roll one logged operation back, and hand the reversal to the operation queue.

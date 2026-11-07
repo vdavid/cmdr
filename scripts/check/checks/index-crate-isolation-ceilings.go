@@ -498,13 +498,23 @@ var surfaceGuardedCrates = []struct {
 		// `spawn_retention`, `journal_open`, and `tree_backfills`; the `testing`-gated `set_journal`
 		// counts apart. Item-by-item:
 		// `crates/cmdr-operation-log/DETAILS.md` § "The public surface is capped".
+		//
+		// Raised 79 -> 92 on 2026-11-07 for ONE concept, the Operation log's item
+		// tree (#1033), whose window both hosts answer from the crate (16 items, three
+		// of them the backfill's, counted once): `query`'s
+		// `operation_tree` and the wire vocabulary its request and answer are made
+		// of (the request, the view, a row, its key, role, checkbox, tally, and
+		// unexpandable reason, the summary state with the backfill's progress and
+		// unbuilt reason, the registry the host keeps, and the selection: base,
+		// toggle, selection). Every one crosses into `bindings.ts`; a host-side copy
+		// of any would let the desktop and the demo drift.
 		Name:       "cmdr-operation-log",
 		HandleType: "OperationLog",
 		Ceilings: surfaceCeilings{
 			RootPromises:   11,
 			HandleMethods:  7,
 			PublicModules:  7,
-			SubsystemItems: 79,
+			SubsystemItems: 92,
 		},
 	},
 	{

@@ -253,14 +253,15 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   volume whose `supports_local_fs_access()` is false (and an id that resolves to no volume at all) answers `Ok`
   untouched. ❗ It used to run unconditionally, which made every F2 on an SFTP / WebDAV / ADB pane fail with a
   `NotFound` naming the scheme-prefixed path (ERR-KVERS).
-- **`operation_log.rs`**: the journal's read side (`get_recent_operation_log_entries`, `get_operation_log_detail`, both
-  thin pass-throughs over `operation_log::query` on a short-lived read-only connection) plus two write entries over the
+- **`operation_log.rs`**: the journal's read side (`get_recent_operation_log_entries`, `get_operation_log_detail`, and
+  the item tree's window `get_operation_log_tree`, all thin pass-throughs over `operation_log::query` on a short-lived read-only connection) plus two write entries over the
   same rollback engine. `rollback_operation` reverses ONE and returns after DISPATCH, so the history dialog's Roll back
   button hands the reversal to the operation queue; `undo_operations` reverses SEVERAL and awaits each, because Ask
   Cmdr's rename undo has to report a tally. Both refuse with the typed `RollbackRefusal`, never a sentence. The item
   tree's backfill: `start_operation_log_tree_backfill` answers `TreeBackfillStart` at once and drives a started job on
   the blocking pool, emitting each step as `operation-log-tree-backfill`; `cancel_operation_log_tree_backfill` asks it to
-  stop (`crates/cmdr-operation-log/DETAILS.md` § "Tree summary").
+  stop (`crates/cmdr-operation-log/DETAILS.md` § "Tree summary"). `get_operation_log_tree` hands the read the log's
+  own registry (`tree_backfills`), so an op its backfill is building answers `building`.
 - **`restricted_paths.rs`**: `get_restricted_paths`: read-only snapshot for the frontend store bootstrap. See
   `crate::restricted_paths` for the state machine and the `restricted-paths-changed` event payload.
 - **`file_viewer.rs`**: session lifecycle, regex/literal search with mode flags, word wrap, menu state (including

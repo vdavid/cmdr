@@ -257,6 +257,35 @@ async fn undo_reverses_a_copy() {
     assert_eq!(names(&demo, "docs").await, ["b.txt"]);
 }
 
+/// The Operation log's item tree answers from the real journal, and a request field
+/// the demo hasn't learned is refused rather than dropped.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_log_tree_answers_and_refuses_a_field_it_doesnt_know() {
+    let (demo, events) = demo();
+    let op = copy(&demo, &["/Users/you/a.txt"], "/Users/you/Documents", "stop").await;
+    assert_eq!(events.settled(&op).await, "write-complete");
+    let request = json!({ "expanded": [], "selection": null, "cursor": null, "offset": 0, "limit": 50 });
+    let view = call(
+        &demo,
+        "get_operation_log_tree",
+        json!({ "operationId": op, "request": request }),
+    )
+    .await;
+    assert_eq!(view["summary"]["kind"], "built", "{view}");
+    assert_eq!(view["rows"][0]["label"], "a.txt", "{view}");
+    assert_eq!(view["tally"]["selectable"], 1, "{view}");
+
+    let mut unknown = request.clone();
+    unknown["selected"] = json!([]);
+    let refused = demo
+        .invoke(
+            "get_operation_log_tree",
+            json!({ "operationId": op, "request": unknown }),
+        )
+        .await;
+    assert!(refused.is_err(), "an unknown field must not be dropped: {refused:?}");
+}
+
 /// A rename on the demo volume undoes through the planner, dated or not: the
 /// rename journals the size and mtime its one `get_metadata` probe read, so the
 /// planner has something to verify.

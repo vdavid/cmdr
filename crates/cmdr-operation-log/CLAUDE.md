@@ -10,7 +10,8 @@ disposable cache. Tauri-free; the app hosts it in `apps/desktop/src-tauri/src/op
 migration ladder), `writer.rs` (+ `writer/prune.rs`), `capture.rs`, `types.rs` (typed tokens), `query.rs`,
 `retention.rs`, `rollback.rs` (+ `order.rs`, `skips.rs`, `runner.rs`, `self_collision.rs`, `tags.rs`: the PLANNER; its
 executor is `crates/cmdr-operations/src/rollback.rs`), `tree.rs` (+ `tree/`: the item tree's axis, roles, per-folder
-summary, and its on-demand backfill; the writer's halves are `src/writer/tree_summary.rs` and `src/writer/backfill.rs`).
+summary, its backfill, windowed view, and THE selection resolver; writer halves in `src/writer/tree_summary.rs`,
+`backfill.rs`).
 
 ## Must-knows
 
@@ -39,5 +40,7 @@ The full text of each, with its why: DETAILS § "Must-knows, in full".
 - **The tree summary moves in its rows' own transaction**, written only by the writer (❌ never an outcome by raw SQL on
   a built op: the reconcile trusts the summary). A summary failure marks the op unbuilt, ❌ never drops a row. A
   backfill aggregates on its own read connection, ❌ never on the writer thread (it would stall a running copy).
+- **❌ No interactive tree read scans an op**: O(expansion + window + toggles), gated by VM-step counts in
+  `src/tree/scale_tests.rs`. One selection resolver (`src/tree/selection.rs`) for the view AND the engine.
 
 Everything else: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

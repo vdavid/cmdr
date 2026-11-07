@@ -38,6 +38,7 @@ const engineCommands = [
   'rollback_operation',
   'get_recent_operation_log_entries',
   'get_operation_log_detail',
+  'get_operation_log_tree',
   // The folder sizes, off the engine's fold over the volume.
   'get_dir_stats',
   'get_dir_stats_batch',

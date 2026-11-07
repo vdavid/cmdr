@@ -52,7 +52,8 @@ pub struct BackfillProgress {
 }
 
 /// The backfills running now, by op id: one per op, so a second ask joins the first.
-/// The host reaches its log's one registry through `OperationLog::tree_backfills`.
+/// The host reaches its log's one registry through `OperationLog::tree_backfills` and
+/// hands it to every tree read, which answers `building` from it.
 #[derive(Debug, Default)]
 pub struct BackfillRegistry {
     running: Mutex<HashMap<String, Running>>,

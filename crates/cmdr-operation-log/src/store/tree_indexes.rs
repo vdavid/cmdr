@@ -1,6 +1,12 @@
 //! The two item indexes the item tree's folder listings read: "this folder's files of
 //! this op, in name order, from position k", on the source side and the dest side.
 //!
+//! **Files only** (`WHERE entry_type = 'file'`): a folder's DIR rows list as its child
+//! folders, off the summary. Without the condition in the index, the listing's
+//! `entry_type` filter reads the table for every row an `OFFSET` skips: the middle of
+//! a 1M-file folder took 800 ms; index-only it takes 10 ms (release, Apple Silicon,
+//! `src/tree/scale_tests.rs`, 2026-11-07).
+//!
 //! **Why outside the migration ladder**: the ladder runs inside `OperationLog::open`,
 //! which the app calls from `setup()` on its main thread, before the event loop runs
 //! and the window can show. These two indexes are the only part of the tree's schema
@@ -27,10 +33,11 @@ pub(crate) fn build_tree_item_indexes(conn: &Connection) -> Result<(), Operation
     let tx = conn.unchecked_transaction()?;
     tx.execute_batch(
         "CREATE INDEX IF NOT EXISTS operation_items_source_dir
-             ON operation_items (op_id, source_dir_id, source_name_folded);
+             ON operation_items (op_id, source_dir_id, source_name_folded)
+             WHERE entry_type = 'file';
          CREATE INDEX IF NOT EXISTS operation_items_dest_dir
              ON operation_items (op_id, dest_dir_id, dest_name_folded)
-             WHERE dest_dir_id IS NOT NULL;",
+             WHERE dest_dir_id IS NOT NULL AND entry_type = 'file';",
     )?;
     tx.commit()?;
     log::info!(

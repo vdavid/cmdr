@@ -90,12 +90,12 @@ fn a_folders_listing_is_index_served_in_name_order() {
     build_tree_item_indexes(store.conn()).expect("indexes");
     let cases = [
         (
-            "SELECT seq FROM operation_items WHERE op_id = ?1 AND source_dir_id = ?2 \
+            "SELECT seq FROM operation_items WHERE op_id = ?1 AND source_dir_id = ?2 AND entry_type = 'file' \
              ORDER BY source_name_folded LIMIT 50 OFFSET ?3",
             "operation_items_source_dir",
         ),
         (
-            "SELECT seq FROM operation_items WHERE op_id = ?1 AND dest_dir_id = ?2 \
+            "SELECT seq FROM operation_items WHERE op_id = ?1 AND dest_dir_id = ?2 AND entry_type = 'file' \
              ORDER BY dest_name_folded DESC LIMIT 50 OFFSET ?3",
             "operation_items_dest_dir",
         ),

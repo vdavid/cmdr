@@ -489,6 +489,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::operation_log::get_operation_log_detail,
                     crate::commands::operation_log::start_operation_log_tree_backfill,
                     crate::commands::operation_log::cancel_operation_log_tree_backfill,
+                    crate::commands::operation_log::get_operation_log_tree,
                     crate::commands::operation_log::rollback_operation,
                     crate::commands::operation_log::undo_operations,
                     crate::commands::agent::ask_cmdr_send_message,

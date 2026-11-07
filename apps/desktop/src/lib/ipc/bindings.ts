@@ -4171,6 +4171,44 @@ export const commands = {
   cancelOperationLogTreeBackfill: (operationId: string) =>
     __TAURI_INVOKE<void>('cancel_operation_log_tree_backfill', { operationId }),
   /**
+   *  One window of an operation's item tree: the rows under the request's expanded
+   *  folders from its offset, with its selection normalized and counted
+   *  (`cmdr_operation_log::query::operation_tree`). `None` when the operation is absent.
+   */
+  getOperationLogTree: (operationId: string, request: OperationTreeRequest) =>
+    typedError<
+      {
+        // Anything but `built` comes with no rows.
+        summary: TreeSummaryView
+        // A not-rollbackable op, or one rolling back: no checkboxes.
+        readOnly: boolean
+        /**
+         *  The folder every top row sits in; `null` for a forest (rows under several
+         *  volume roots), whose top rows carry full paths.
+         */
+        rootPath: string | null
+        // Where the other side's rows sit, when one root holds them.
+        otherRoot: string | null
+        totalRows: number
+        // Where `rows` starts.
+        offset: number
+        rows: OperationTreeRow[]
+        // The open folder rows above the window's first row, outermost first.
+        ancestors: OperationTreeRow[]
+        /**
+         *  The request's cursor row's flat index, or its nearest visible ancestor's
+         *  when it collapsed away; `null` when it's gone.
+         */
+        cursorIndex: number | null
+        tally: TreeTally
+        // The selection after normalizing: send this back with the next toggle.
+        selection: RollbackSelection
+        // Normalizing refused toggles past the cap (2,000): pick a folder instead.
+        togglesCapped: boolean
+      } | null,
+      string
+    >(__TAURI_INVOKE('get_operation_log_tree', { operationId, request })),
+  /**
    *  Roll one logged operation back, and hand the reversal to the operation queue.
    *
    *  Returns after DISPATCH, not after the reversal finishes: the inverse is a normal
@@ -15064,6 +15102,89 @@ export type OperationSnapshot = {
   startedAt: number | null
 }
 
+// What the dialog asks for.
+export type OperationTreeRequest = {
+  // Folder rows the person expanded.
+  expanded: TreeRowKey[]
+  // The selection, as the last answer normalized it; `null` means everything.
+  selection: RollbackSelection | null
+  // The cursor row, so the answer can say where it is now.
+  cursor: TreeRowKey | null
+  // The flat row index the window starts at.
+  offset: number
+  // How many rows, at most 200.
+  limit: number
+}
+
+// One row.
+export type OperationTreeRow = {
+  // Its flat row index.
+  index: number
+  key: TreeRowKey
+  /**
+   *  The name, or a compacted chain's names joined with `/`, or (a forest's top
+   *  row) the folder's full path.
+   */
+  label: string
+  // 1-based, for `aria-level`.
+  level: number
+  entryType: EntryType
+  expandable: boolean
+  expanded: boolean
+  // 1-based, for `aria-posinset`.
+  posInSet: number
+  // For `aria-setsize`.
+  setSize: number
+  // `null` for a folder no item row names.
+  role: TreeRowRole | null
+  // The row's outcome; a `contents` row shows its folder unit's.
+  outcome: ItemOutcome | null
+  skipReason: SkipReason | null
+  checkbox: TreeCheckbox
+  // A file's size as recorded.
+  size: number | null
+  // A folder's counts.
+  tally: TreeTally | null
+  fullPath: string
+  /**
+   *  The row's other end, only when it isn't where the other side's root plus this
+   *  row's relative path would put it (a conflict rename). Never for a trash.
+   */
+  otherEnd: string | null
+  unexpandable: UnexpandableReason | null
+}
+
+// One window of the tree.
+export type OperationTreeView = {
+  // Anything but `built` comes with no rows.
+  summary: TreeSummaryView
+  // A not-rollbackable op, or one rolling back: no checkboxes.
+  readOnly: boolean
+  /**
+   *  The folder every top row sits in; `null` for a forest (rows under several
+   *  volume roots), whose top rows carry full paths.
+   */
+  rootPath: string | null
+  // Where the other side's rows sit, when one root holds them.
+  otherRoot: string | null
+  totalRows: number
+  // Where `rows` starts.
+  offset: number
+  rows: OperationTreeRow[]
+  // The open folder rows above the window's first row, outermost first.
+  ancestors: OperationTreeRow[]
+  /**
+   *  The request's cursor row's flat index, or its nearest visible ancestor's
+   *  when it collapsed away; `null` when it's gone.
+   */
+  cursorIndex: number | null
+  tally: TreeTally
+  // The selection after normalizing: send this back with the next toggle.
+  selection: RollbackSelection
+  // Normalizing refused toggles past the cap (2,000): pick a folder instead.
+  togglesCapped: boolean
+}
+
 /**
  *  What one operation contributed to a multi-operation undo. `refusal` is set when
  *  the operation never ran its inverse at all (already undone, a volume gone), in
@@ -16803,6 +16924,20 @@ export type RollbackRefusal =
     }
 
 /**
+ *  Which rows a rollback takes. A row's decision is its own `Item` toggle, else the
+ *  nearest `Folder` toggle up its folder chain, else `base`. Send back the normalized
+ *  one the tree answered with; `null` where a selection is optional means everything.
+ */
+export type RollbackSelection = {
+  base: SelectionBase
+  /**
+   *  In the order they were made: a later folder toggle overrides every earlier
+   *  toggle inside it.
+   */
+  toggles: SelectionToggle[]
+}
+
+/**
  *  Whether and how the operation can be / has been reversed. Independent
  *  of [`ExecutionStatus`]. `RollingBack` is the transient in-flight guard
  *  (rollback); a fresh op sits at `NotRollbackable` until finalize proves otherwise.
@@ -18186,6 +18321,13 @@ export type SelectedRows =
    */
   | { kind: 'paths'; paths: string[] }
 
+// What a selection starts from, before its toggles.
+export type SelectionBase =
+  // Every reversible row (⌘A, and the default).
+  | 'everything'
+  // No row (⌘⇧A).
+  | 'nothing'
+
 // A single recent-selection entry, persisted verbatim.
 export type SelectionHistoryEntry = {
   id: string
@@ -18212,6 +18354,16 @@ export type SelectionSnapshot = {
   // How many of them are folders.
   folderCount: number
 }
+
+// One hand toggle: a folder (and everything under it) or one item, on or off.
+export type SelectionToggle =
+  /**
+   *  A folder row's key. A folder unit (a trashed folder) is decided by its own
+   *  folder's toggle.
+   */
+  | { kind: 'folder'; dirId: number; on: boolean }
+  // A file row's key.
+  | { kind: 'item'; seq: number; on: boolean }
 
 /**
  *  The structured selection translation handed to the frontend. Mirrors Search's
@@ -20813,10 +20965,76 @@ export type TreeBackfillStep =
   // Over; further steps answer the same.
   | { kind: 'finished'; detail: TreeBackfillEnd }
 
+// A row's checkbox.
+export type TreeCheckbox =
+  | 'on'
+  | 'off'
+  // Some of what's under this folder is selected.
+  | 'mixed'
+  // No checkbox: nothing selectable here, or the op is read-only.
+  | 'none'
+
+// A row's stable key: the same row answers to it across requests.
+export type TreeRowKey =
+  // A folder row; for a compacted chain (`a/b/c`), the deepest folder.
+  | { kind: 'folder'; dirId: number }
+  // A file row.
+  | { kind: 'item'; seq: number }
+
 export type TreeRowKind = 'file' | 'folder'
+
+// What a row is to a rollback.
+export type TreeRowRole =
+  // Awaits reversal and has a checkbox.
+  | 'selectable'
+  /**
+   *  A folder a copy or move made: no checkbox of its own; it goes when everything
+   *  under it does.
+   */
+  | 'housekeeping'
+  /**
+   *  Recorded inside a folder unit: it comes back with its folder, and shows the
+   *  folder's state.
+   */
+  | 'contents'
+  // Rolled back, or the operation's own skip or failure.
+  | 'settled'
+  // Nothing can reverse it (a permanent delete).
+  | 'notReversible'
 
 // A row's state as the view shows it, for files and folders alike.
 export type TreeRowState = 'waiting' | 'active' | 'done' | 'skipped' | 'failed'
+
+// Whether the tree can be read, and if not, why.
+export type TreeSummaryView =
+  // The rows are here.
+  | { kind: 'built' }
+  // The journal is still building its folder indexes (once, after an upgrade).
+  | { kind: 'indexesBuilding' }
+  // A backfill is building this op's summary.
+  | { kind: 'building'; progress: BackfillProgress }
+  // Not built and not building, for this reason.
+  | { kind: 'unbuilt'; reason: UnbuiltReason }
+
+// Counts for a folder, or for the whole op.
+export type TreeTally = {
+  files: number
+  bytes: number
+  // The "N" of "N of M".
+  selected: number
+  // The "M".
+  selectable: number
+  rolledBack: number
+  // Units a rollback held back (they still await reversal).
+  heldBack: number
+  // Units the operation itself never finished.
+  unfinished: number
+  /**
+   *  Folders a copy or move made that still await removal: why "Roll back the
+   *  rest" has work at 0 of 0.
+   */
+  housekeepingWaiting: number
+}
 
 // Where the window sits.
 export type TreeWindow =
@@ -20999,6 +21217,18 @@ export type UndoReport = {
   restored: number
   skipped: number
 }
+
+// Why a folder row can't unfold.
+export type UnexpandableReason =
+  // The folder was empty.
+  | 'empty'
+  // Cmdr didn't record what's inside this folder.
+  | 'notRecorded'
+  /**
+   *  Cmdr didn't record what's inside, because the operation held a folder of over
+   *  50,000 files. Op-level: the journal can't say WHICH folder it was.
+   */
+  | 'capped'
 
 /**
  *  Why an unlock or a forget didn't reach a container. A wrong password is

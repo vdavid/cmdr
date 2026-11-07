@@ -119,7 +119,7 @@ impl RowFacts {
     /// folder subtracts exactly the unit), any other row in its axis parent. A DIR row
     /// whose own folder isn't interned yet (written before the summary existed) counts
     /// in its parent until the backfill fills it.
-    fn placement(&self, axis: TreeAxis) -> i64 {
+    pub(crate) fn placement(&self, axis: TreeAxis) -> i64 {
         match (self.entry_type, self.self_dir_id) {
             (EntryType::Dir, Some(own)) => own,
             _ => self.axis_side(axis).0,

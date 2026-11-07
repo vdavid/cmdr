@@ -1000,9 +1000,10 @@ rollback is itself a journaled user op, "undo the undo" (redo) is the same query
 `query.rs` is the read side: short-lived read-only connections, index-served name search, and paged reads for the Debug
 panel / alpha dialog / MCP tools. Two kinds of caller open their own short-lived read connection and forward to
 `query.rs` (business logic — filtering, paging, dir-path resolution — lives there, never in the callers): the FE IPC
-surface is two thin pass-throughs (`commands/operation_log.rs`): `get_recent_operation_log_entries(limit, offset)` and
-`get_operation_log_detail(operation_id, item_limit, item_offset)`; the MCP `operations_list` / `operations_get` handlers
-(`tools/actions/operation_log.rs`) do the same off the MCP task.
+surface is three thin pass-throughs (`commands/operation_log.rs`): `get_recent_operation_log_entries(limit, offset)`,
+`get_operation_log_detail(operation_id, item_limit, item_offset)`, and `get_operation_log_tree(operation_id, request)`
+(§ "The tree view"); the MCP `operations_list` / `operations_get` handlers (`tools/actions/operation_log.rs`) do the
+same off the MCP task.
 
 - **Within one second, "newest first" has no defined order.** `get_recent_operation_log_entries` sorts
   `started_at DESC, op_id DESC`, and `op_id` is a random UUID, so operations that start in the same second come back in
@@ -1118,7 +1119,91 @@ subtree totals in `operation_tree_dirs`, kept exact by the writer.
   reaches 386 MB during it; the file grows 384 MB for good, about 96 bytes or 96 MB per million rows (half the seeded
   rows carry a dest). The `ALTER`s and the empty table are free. A journal at the 3 GB retention default holds about 11M
   rows, so its first launch after the upgrade journals about 13 s late. Rerun command and scaling:
-  `docs/notes/operation-log-capture-bench.md` § 5.
+  `docs/notes/operation-log-capture-bench.md` § 5. Measured before the indexes went files-only (below), so it's an upper
+  bound: DIR rows are no longer in them.
+- **The item indexes hold FILE rows only** (`WHERE entry_type = 'file'`). Decision/Why: a folder's DIR rows list as its
+  child folders off the summary, so the file listing filters them out, and a filter the index can't answer reads the
+  table for every row an `OFFSET` skips. The middle of a 1M-file folder took 800 ms that way and takes 10 ms index-only
+  (release, Apple Silicon, `src/tree/scale_tests.rs`, 2026-11-07).
+
+## The tree view (`src/tree/view.rs`, `layout.rs`, `read.rs`, `selection.rs`)
+
+`query::operation_tree(conn, op_id, request, registry)` answers one window (≤ 200 rows) of an op's item tree,
+statelessly: the request carries the frontend's hand toggles (expanded folder keys, the selection, the cursor key) and
+an offset; the answer carries every row with everything it renders, the open rows above the window (`ancestors`), the
+cursor's index, the op's tally, and the selection normalized. Both hosts answer it as `get_operation_log_tree` (the demo
+with `deny_unknown_fields` on its args and on the request). Anything but a built summary (`IndexesBuilding`,
+`Building { progress }` from the host's `BackfillRegistry`, `Unbuilt { reason }`) comes back with no rows.
+
+- **Keys**: `Folder { dir_id }` (the deepest folder of a compacted chain) and `Item { seq }` (a file row). Stable across
+  requests: compaction depends only on inserts, which a finished op no longer gets. A folder unit is a folder row keyed
+  by its own dir; its checkbox is that folder's toggle.
+- **The top**: each volume root descends while a folder holds no files and one child folder, stopping ABOVE any folder
+  an item row names (`self_seq`), so a trash of one folder shows that folder as the one top row with its checkbox. One
+  volume root: its descended folder is `root_path` and its listing is the top. Several: a forest, one top row per
+  volume, labelled with its full path, and no `root_path`.
+- **A listing**: child folders first (off the summary's child index), then files (off the item index of the op's axis),
+  each by folded name in byte order, ties by id. A dest-axis folder also lists the rows that fell back to their source
+  side: its file query is a `UNION ALL` of the two index ranges that SQLite merges in order, never sorts.
+- **Compaction**: a folder with no files and one child folder shares the child's row (`a/b/c`), unless either is a
+  folder an item row names: a trashed `A` holding only folder `B` is two rows, since `A` is what comes back.
+- **The window**: rows under an open folder = its listing + its open children's rows, summed over the expansion only;
+  the first row is found by descending through those sums (O(expansion)), then rows are read forward from the listings,
+  each at most `limit` at a time. An expanded key under a closed folder stays a hand toggle but counts nothing.
+- **Inside one folder, an `OFFSET` is O(k)**, so past a folder's midpoint the read runs from the end (`plan_range`),
+  capping the walk at half the folder. Child folders read their offset's key index-only, then keyset from it: an
+  `OFFSET` over the WITHOUT ROWID summary seeks the table for every skipped row (50 ms at the middle of 100,000 child
+  folders, 2 ms keyset). The cursor's position counts from the nearer end the same way.
+- **Rows**: label, level, `pos_in_set` / `set_size`, `role` (`TreeRowRole`, from `unit_role`), outcome and skip reason,
+  checkbox (on, off, mixed, none), a file's size, a folder's `TreeTally`, full path, and `other_end` only when the row's
+  other side isn't `other_root` + its relative path (a conflict rename), never for a trash. `other_root` is read off the
+  first of the op's first 64 rows with both sides. A `contents` row shows its folder unit's outcome and checkbox, never
+  its own `done`. A folder with nothing listed can't unfold and says why: a folder unit on a `top_level_only` op is
+  `capped` (the op held a folder of over 50,000 files: op-level, never "this folder") or `notRecorded`; anything else
+  was `empty`.
+- **Read-only**: an op that isn't `rollbackable` or `partiallyRolledBack` (so also one `rolling_back`) has no
+  checkboxes, applied here at query time.
+
+### The selection (`src/tree/selection.rs`)
+
+`RollbackSelection { base: Everything | Nothing, toggles: [Folder { dir_id, on } | Item { seq, on }] }`, `null` meaning
+everything. A row's decision is its own item toggle, else the nearest folder toggle up its folder chain (a folder unit's
+chain starts at its own dir, any other row's at its axis folder), else the base. `Selection` is THE resolver: the view's
+counts and checkboxes and the engine's per-row decision (`includes`) both go through it.
+
+- **Normalized on every read, never trusted from the wire**, in order: a toggle naming no summary row or no `Selectable`
+  row of THIS op goes (a foreign dir id, since `dirs` is global; a `search_only`, housekeeping, settled, or unknown
+  seq); an item toggle on a folder unit becomes its folder's toggle; a folder toggle strictly inside a folder unit goes
+  (contents have no checkbox); a later folder toggle covers every earlier toggle inside or on it, and a later toggle of
+  an item replaces an earlier one, so "nearest wins" equals "latest wins"; a toggle equal to what it inherits goes, as
+  does a folder toggle over no selectable unit; past 2,000 the newest go and the answer says `toggles_capped`. The
+  answer carries the normalized selection, which the frontend sends straight back.
+- **Counted by algebra, never by a scan**: the toggles' folders and their ancestors form a small forest; each folder in
+  it gets its selected (units, files, bytes) from its children's and its own item toggles, every folder outside it is
+  all-or-nothing by its decision, and the op's totals are its volume roots'. Files and bytes are a selective reversal's
+  progress totals, as `read_rollback_file_totals` counts them. Tri-state: `none` at zero selectable, else on, off, or
+  mixed by selected against selectable.
+- **The engine's decision** (`includes`): one HashMap lookup per row plus one summary read per distinct folder (cached).
+  A housekeeping folder goes along only when its decision is on AND everything selectable under it is selected, since a
+  folder still holding a file can't be emptied.
+- Pinned by `src/tree/selection_tests.rs`, including a brute force over paths that shares no code with the resolver (200
+  seeded random selections, "N of M" and every row's decision).
+
+### Scale (`src/tree/scale_tests.rs`)
+
+- **Structural gate, always on**: every statement the tree reads with runs under `EXPLAIN QUERY PLAN` with no table scan
+  and no temp b-tree, and every interactive read (open, unfold, the start, middle, and end of a big folder, the middle
+  of a folder of folders, the cursor, three "N of M" shapes, the engine's decision for 2,000 rows) keeps its SQLite VM
+  steps flat between a 3,000-row and a 30,000-row journal whose opened folders stay the same size. Why steps, not ms:
+  test builds run SQLite at `-O0`, and an O(op) read through an index `SEARCH` passes any plan check (a full count over
+  the op's rows went 10,792 → 91,679 steps and failed it).
+- **Timed, release** (`two_two_million_row_ops_answer_inside_their_budgets`, ignored; its doc comment has the command):
+  a 2M-file delete (one folder of 1M files, one of 100,000 child folders) and a 2M-file folder copy, seeded in about 40
+  s. Measured (Apple Silicon, 2026-11-07): open 0.2 ms, unfold 0.6, the middle of the 1M-file folder 15, its end 0.4,
+  the middle of 100,000 child folders 2, the cursor in the 1M-file folder 29, "N of M" with the copied folder off 0.3,
+  with three files on 0.3, with 2,000 items off 23. The engine's skip pass over 2M rows for a three-file selection took
+  1.13–1.20 s against 1.08 s to stream the rows alone: the decision is cheap, the stream is today's cost of any
+  rollback. Budgets are about three times those; the twin at 20,000 rows runs every time without budgets.
 
 ## Alpha UI — the "Operation log" dialog
 
@@ -1216,11 +1301,12 @@ the write engine, whose `OperationVolumes` is its supertrait.
 
 ### The public surface is capped
 
-`index-crate-isolation` holds the surface to 11 root promises, 7 `OperationLog` methods, seven public modules, and 79
+`index-crate-isolation` holds the surface to 11 root promises, 7 `OperationLog` methods, seven public modules, and 92
 items in them, with no headroom: measured at the extraction, re-measured when the journal API took `OperationId`,
-tightened when the test-only accessors went behind `cfg(test)`, and raised for the item tree's backfill
-(`tree_backfills`, and in `query` the backfill job, its four wire types, `BackfillRegistry`, `BackfillProgress`, and
-`UnbuiltReason`; start and cancel live on `TreeBackfill` and the registry, not the handle)
+tightened when the test-only accessors went behind `cfg(test)`, raised for the item tree's backfill (`tree_backfills`,
+and in `query` the backfill job, its four wire types, `BackfillRegistry`, `BackfillProgress`, and `UnbuiltReason`; start
+and cancel live on `TreeBackfill` and the registry, not the handle), and raised for the item tree's window (§ "The tree
+view"), whose request, answer, and selection vocabulary both hosts pass through
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). A helper only this crate's tests call stays `#[cfg(test)]`
 (`OperationLogStore::conn` and `schema_version`, `query::coverage_is_complete`), so the count promises nothing to no
 caller. By module:
@@ -1230,8 +1316,9 @@ caller. By module:
   `tree_backfills`; an `OpJournal` records, notes, and finalizes its one operation.
 - **`store`**: the DB path, `fold_name`, the error type, the row types, the migration ladder, and the low-level reads
   the IPC commands, the MCP tools, the dump tool, and the planner's app-side cells use.
-- **`query`**: the paged history read and indexed name search behind the IPC commands and MCP tools, plus the item
-  tree's backfill job and registry the hosts drive (§ "Tree summary").
+- **`query`**: the paged history read and indexed name search behind the IPC commands and MCP tools, the item tree's
+  backfill job and the registry the hosts drive (§ "Tree summary"), and its window (`operation_tree`) with its wire
+  types (§ "The tree view").
 - **`writer`** and **`capture`**: the writer thread and the journal the write engine records through.
 - **`types`**: the typed classification tokens, which cross IPC, and `OperationId` (with its `as_str`, and a
   `Borrow<str>` so an id-keyed map answers a wire row's text), which the journal API and the write engine's public verbs
