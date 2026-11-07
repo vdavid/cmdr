@@ -105,14 +105,17 @@ today: the newest inverse is then the first pass's. With partial rollback, secon
   seed the original's outcomes too. Its "inverse all skipped ⇒ rollbackable" cell contradicts `resolve_final_state` (any
   held-back skip ⇒ partial) and the new rule: it flips to partial, and the commit body says why (loud rule 2).
 
-**Redo of a move, trash, or rename skips every row (for David; NOT fixed in this effort).** `inverse_item_row`
-(`rollback/bookkeeping.rs`) records the inverse's rows with no dest, yet `inverse_kind(Move | Trash) = Move` and
-`Rename = Rename` open `rollbackable` (`capture.rs::compute_eligibility`), and `DETAILS.md` says "redo falls out".
-Rolling back such an inverse reaches `restore_move`, which answers `Skipped(Failed)` for every dest-less row. It fails
-safe (nothing moves) but the inverse lands partial with a "Failed" skip per row, and no planner test covers a move redo.
-The fix (record the original's source as the inverse row's dest) turns on a redo that has never worked, so it wants
-David's go and its own issue and tests. For this effort: `TreeAxis` is op-aware (an op with `rolls_back_op_id` reads on
-the Source axis), so every inverse op still has a tree.
+**Redo of a move, trash, or rename skips every row (resolved by David's decision 2026-11-08: no rollback of
+rollbacks).** `inverse_item_row` (`rollback/bookkeeping.rs`) records the inverse's rows with no dest, yet
+`inverse_kind(Move | Trash) = Move` and `Rename = Rename` open `rollbackable` (`capture.rs::compute_eligibility`), and
+`DETAILS.md` says "redo falls out". Rolling back such an inverse reaches `restore_move`, which answers `Skipped(Failed)`
+for every dest-less row: it fails safe, but it's a dead feature. Milestone 5b refuses it outright and takes inverse ops
+out of every list (§ "Decided" 2026-11-08, item 3). `TreeAxis::of`'s `is_inverse` arm stays as a harmless guard.
+
+**Ops a crash left mid-run read "still running" forever (fix in milestone 5b).** Nothing at startup resolves an op whose
+`execution_status` is still `queued` / `running`: its `ended_at` stays NULL, retention by age never prunes it, the
+backfill refuses it as running, and it sits at the `not_rollbackable` it opened with (NULL reason), so it can't be
+rolled back either.
 
 ### Frontend
 
@@ -329,13 +332,25 @@ the Source axis), so every inverse op still has a tree.
 1. **One leftover phrase.** The journal can't tell "left out by your selection" from "a cancelled pass never reached it"
    (both are `done` rows still awaiting reversal), so the partial notice uses one honest phrase for both ("two haven't
    been rolled back yet"), from the summary counts, not the mockup's "you left out last time".
-2. **Pay the index build at launch**, in the ladder, measured in milestone 2 (launch time AND file growth on a 4M-row
-   journal). Moving `open` off `setup()` isn't an option: operations started before it opens would go unjournaled. If
-   the measurement is bad, milestone 2 stops and the lead takes it to David (fallback on the table: build the two
-   indexes after open through the writer, with the tree answering `Building` until they exist).
+2. **The index build doesn't delay launch**: milestone 2 measured it and moved the two item indexes to a post-open
+   writer step (`4e9c079173`), the tree answering `Building` until they exist. David OK'd it (2026-11-08).
 3. **Byte order of the folded name inside a folder** (index-served), not the panes' natural sort.
 
-## Deviations from the issue (David to ack before milestone 7)
+## Decided (David, 2026-11-08)
+
+1. **The five deviations below are acked.**
+2. **Ops a crash left mid-run get an end at startup**, in this effort: milestone 5b.
+3. **No rollback of rollbacks.** Undoing an operation leaves the ORIGINAL in its `rolledBack` or `partiallyRolledBack`
+   state, and that's the whole story: no redo, no "Roll back" on an inverse op, and inverse ops never appear as their
+   own entry in the op list (or name search). The "rollback of" / "latest rollback" relation links go away with them.
+   **The inverse op's journal rows stay, internally**, because three things read them: crash reconcile (milestone 1's
+   "any inverse has a `done` row" clause, the only guard for a crash between `RunAcc::flush`'s two writer messages),
+   `OperationRow.inverse_op_id` (`store::fill_inverse_op_ids` over `operations_rolls_back`, which is how
+   `RollbackControls` finds the running reversal to pause or cancel), and retention's guard on a rolling-back op's
+   target. Owner: milestone 5b (backend) and milestone 7 (the dialog).
+4. **The post-open index build and the scaled scroll past ~1.4M rows** (milestone 6) are both fine.
+
+## Deviations from the issue (acked by David, 2026-11-08)
 
 The issue's text is the spec; these differ from it, each for a reason:
 
@@ -345,8 +360,8 @@ The issue's text is the spec; these differ from it, each for a reason:
    says the operation held a folder of over 50,000 files, never that THIS folder did.
 3. **The op list is a `grid`, not a `listbox`**: same keys and announcements, and the focus model `ColumnList` already
    has.
-4. **The Tab order includes Load more and the header's relation links** between the op list and the tree, because that's
-   where they sit.
+4. **The Tab order includes Load more** between the op list and the tree, because that's where it sits. (The header's
+   relation links were in this item too; they're gone, § "Decided" 2026-11-08, item 3.)
 5. **The leftover phrase** (§ "Decided" 1) replaces the mockup's "you left out last time".
 
 ## Milestones
@@ -357,9 +372,10 @@ Dependency graph, and what can run in parallel worktrees:
   selection) touch different files and run in two worktrees. They meet at a seam milestone 2 defines: a
   `TreeSummaryStatus` read plus a small backfill-registry type with `status(op_id)`, so 4 answers `Building` without 3's
   internals and 3 fills it in. 5 needs 4's selection resolver, and only 2's `tree_summary` column (not 3) for its
-  "summary not built" refusal.
+  "summary not built" refusal. 5b follows 5 in the same files (`rollback.rs`'s gate, the store, `query.rs`), so it runs
+  after 5 lands, not beside it.
 - **Frontend primitive**: 6 is independent of the whole backend chain. Start it on day one in its own worktree.
-- **Then serially**: 7 (needs 3, 4, 5, 6), 8 (needs 7), 9 (needs 8).
+- **Then serially**: 7 (needs 3, 4, 5, 5b, 6), 8 (needs 7), 9 (needs 8).
 
 Each milestone: one agent, one worktree branch, commits per green step, report ≤350 words incl. "what I grabbed".
 
@@ -401,8 +417,9 @@ additive. Most of the engine is already well covered (survey above): find the ga
     adds the summary-root shortcut and its own cell.
 - Pin `RollbackReport` / inverse header counts for a folder copy (exists:
   `a_folder_copy_and_its_rollback_report_the_same_item_count`; extend only if a case is missing).
-- Pin today's redo behavior for a move (rolling back its inverse skips every row as `Failed`, nothing moves), so the
-  separate redo fix, when David says go, flips a known pin rather than discovering it.
+- Pin today's redo behavior for a move (rolling back its inverse skips every row as `Failed`, nothing moves). Landed as
+  `redo_tests.rs::rolling_back_the_undo_of_a_move_or_rename_holds_every_row_back_and_moves_nothing`; milestone 5b flips
+  it to "refused" (David, 2026-11-08: no rollback of rollbacks).
 
 **Landmines.** `InMemoryVolume::rename` creates missing parents where the real FS fails `ENOENT`: restore-path pins that
 matter go on a real tempdir (`a_restore_recreates_the_folder_the_move_emptied` is the pattern). Reconcile runs before
@@ -416,6 +433,8 @@ with the fix. Verify a pin bites by breaking the behavior once locally (don't co
 `rolling_back` state machine + startup reconcile" describes the new rule.
 
 ### 2. Schema v6 and a writer-maintained summary
+
+**Status: done** (`f528193f92`, `4e9c079173`; row-shape pins `094c454abd`).
 
 **Scope.** `store/migrations.rs` (new step), `types.rs` (new token: `TreeSummaryState`), `writer.rs` (insert and outcome
 paths), `writer/prune.rs`, `store/mod.rs` reads as needed. A new `src/tree/` module holds the axis and role helpers
@@ -466,6 +485,8 @@ leaves the op unbuilt and every item row in place. A reconcile cell for the summ
 
 ### 3. Backfill for ops journaled before v6
 
+**Status: done** (`5bccc12ffc`).
+
 **Scope.** `crates/cmdr-operation-log/src/tree/backfill.rs` (new), a `WriteTreeSummary` writer message (which also
 interns and fills `self_dir_id` for the op's pre-v6 DIR rows), the host wiring in BOTH hosts (desktop: an `async`
 command that starts or joins the backfill and a progress event; demo: the same names in `history.rs`), cancel.
@@ -498,6 +519,8 @@ asked for while it still runs answers `Unbuilt`). Timing: a 20,000-row backfill 
 (shape, maintenance, backfill, why on demand).
 
 ### 4. The tree view and the selection model
+
+**Status: done** (`ae2a675c8b`).
 
 **Scope.** `crates/cmdr-operation-log/src/tree/` (`view.rs`: flatten + window; `selection.rs`: types, normalize,
 resolve, counts, tri-state), `query.rs` re-exports if the surface rule wants it (`DETAILS.md` § "The public surface is
@@ -613,7 +636,62 @@ holds); progress totals equal the frames the loop credits (files only, `MAX(size
 **DONE.** Engine, both hosts, MCP unchanged in behavior; `DETAILS.md` § "Streaming + ordering" and the state-machine
 section describe the selection; the frontend `DETAILS.md` re-entry argument mentions selections.
 
+### 5b. Interrupted ops end, and rollbacks are never rolled back
+
+**Scope.** `crates/cmdr-operation-log`: a startup step beside `reconcile_rolling_back_on_open` (called from
+`OperationLog::open`, before the journal is published), `rollback.rs`'s `check_rollbackable` and its typed refusals,
+`query.rs` (`recent_operations`, `search_operations`), the existing pins that rolled back an inverse
+(`planner_tests/redo_tests.rs`, `tag_tests.rs::undoing_the_undo_puts_the_written_tags_back`, and any other cell that
+dispatches a rollback on an inverse id: grep `rolls_back_op_id` and `inverse_op_id` in the rollback tests and
+`named_leaf_undo_tests.rs`), the refusal's frontend words (`rollbackRefusalNotice`, exhaustive), `DETAILS.md` § "Future:
+Cmd+Z" (drop "redo falls out") and § "The `rolling_back` state machine".
+
+**Intentions.**
+
+- **An op a crash left mid-run gets an end at startup** (§ "Bugs found while surveying"). Every op still `queued` or
+  `running` when the journal opens is stale (no engine runs yet), so it becomes `failed` ("Didn't finish") with
+  `ended_at = started_at` (the only time the journal knows; it never claims a duration it didn't see), and its
+  `rollback_state` is decided from its rows the way finalize would have, but failing safe where the deciding facts were
+  never written: `delete` ⇒ `not_rollbackable(permanent_delete)`; copy with any `overwrote` row ⇒
+  `not_rollbackable(overwrote)`; `move` and `archive_edit` ⇒ `not_rollbackable(journal_incomplete)` (a directory merge,
+  a staged conflict, or a compress over an existing archive is a driver note finalize never got, and guessing could
+  carry untouched files away); everything else (copy without overwrites, trash, rename, create, tag) ⇒ `rollbackable`,
+  since every inverse rechecks before it acts and the rows the crash lost simply aren't reversed. Once ended, the
+  backfill accepts it. A stale INVERSE op (its original sat `rolling_back`) is ended the same way, but its ORIGINAL's
+  state stays the reconcile's call, and the inverse is never made rollbackable.
+- **No rollback of rollbacks** (§ "Decided" 2026-11-08, item 3): `check_rollbackable` refuses any op with
+  `rolls_back_op_id` set, with a new typed refusal (for example `IsARollback`), before any other check, so MCP,
+  `undo_operations`, and the dialog all hit the same guard; old inverses stored `rollbackable` stay harmless.
+  `recent_operations` and `search_operations` leave inverse ops out (`rolls_back_op_id IS NULL`), so neither the dialog,
+  the MCP list, nor name search shows one. The inverse's journal rows stay (§ "Decided" 2026-11-08, item 3, has why).
+
+**Landmines.**
+
+- The startup step runs inside `setup()`: one indexed query over `operations` by `execution_status` (add a partial index
+  only if the measurement asks; the table is small next to `operation_items`), plus a bounded row read per stale op (the
+  `overwrote` check is an `EXISTS`). Order it AFTER `reconcile_rolling_back_on_open`, which reads a stale inverse's
+  rows.
+- `ended_at` drives retention by age and the list's time: a stale op must not jump to "now" and outlive its retention.
+- An op the app is about to journal can't exist yet at open (the engine starts after), so "running at open" is always
+  stale. Pin that ordering in a test rather than trusting it.
+- The dialog's `RollbackControls` still reads `inverseOpId` off the ORIGINAL row; filtering inverses out of the list
+  must not touch `fill_inverse_op_ids`.
+- The `TreeAxis::of` `is_inverse` arm and the tree command can stay; an inverse id simply never reaches the dialog.
+
+**Test plan.** A crashed copy (running, rows done, no overwrites) opens as `failed`, `ended_at = started_at`,
+`rollbackable`, and rolls back its recorded rows; a crashed copy with an overwrite row, a crashed move, and a crashed
+compress open `not_rollbackable` with their reasons; a crashed delete stays `permanent_delete`; a crashed op then
+backfills its tree; a stale op never moves forward in age. Rolling back an inverse (move, rename, tag, copy) is refused
+typed and changes nothing on disk or in the journal (the flipped redo and tag pins); the MCP and `undo_operations` paths
+get the same refusal; `recent_operations` and `search_operations` never return an inverse, while the original's
+`inverse_op_id` still fills.
+
+**DONE.** Both behaviors shipped with their pins; `DETAILS.md` describes the startup step and the no-redo rule; the
+frontend refusal is worded.
+
 ### 6. `ColumnList` tree mode (parallel from day one)
+
+**Status: done** (`b97b31de78`).
 
 **Scope.** `apps/desktop/src/lib/ui/ColumnList.svelte`, `column-list-types.ts`, `column-list-layout.ts` (if the height
 cap below bites), a new pure `tree-cursor.ts` beside `list-cursor.ts`, tests beside them, the tier-3 a11y test, Debug >
@@ -666,20 +744,20 @@ component tests.
 
 **Intentions.** The mockup's layout and states: left op list (a `grid`: summary, who, when, one status glyph, colored
 rollback state), right detail (header with summary, badges with "Finished" for the execution badge, route line "From X
-to Y", standing notice, relation links), the tree filling the height with a tri-state "select all" checkbox in its
-header (a `column.header` snippet on the same base flip as ⌘A / ⌘⇧A, with an accessible name), the action bar (labels
-per § "The action bar", plus "N of M selected" and `RollbackControls` while a reversal runs). ~900 × 640 default,
-resizable; under ~640 px the split stacks. Status column speaks only when it matters (Rolled back, Skipped + reason,
-Didn't finish). Middle ellipsis on names (`shorten-middle-action`), full path in the tooltip. **Reachable without a
-pointer**: the cursor row shows its tip (skip reason, "comes back with its folder", other-end path) as the mockup does,
-and the same words are the row's accessible description (`rowAria`'s `describedBy`). A rollbackable op's standing notice
-says what rolling back does, per `rollbackConfirmVariant` (the mockup's copy op: "Rolling back deletes the selected
-copies from the backup. The originals stay where they are."), extending `rowStandingNotice` exhaustively. Read-only
-tree, no checkboxes, on a not-rollbackable op AND while the op is `rolling_back` (toggles frozen). Placeholders for
-unloaded rows; spinner only past ~200 ms; backfill progress past ~10 s. The tree source is coalesced and
-generation-tagged, and the op cursor settles ~150 ms before the tree loads (§ "Design decisions"). Counts ("N of M",
-"Roll back selected (N)", folder rollups like "12 files, 3 rolled back") go through the house integer formatter
-(`formatInteger`, thousands separators) with ICU plurals.
+to Y", standing notice; no relation links, since inverse ops aren't listed), the tree filling the height with a
+tri-state "select all" checkbox in its header (a `column.header` snippet on the same base flip as ⌘A / ⌘⇧A, with an
+accessible name), the action bar (labels per § "The action bar", plus "N of M selected" and `RollbackControls` while a
+reversal runs). ~900 × 640 default, resizable; under ~640 px the split stacks. Status column speaks only when it matters
+(Rolled back, Skipped + reason, Didn't finish). Middle ellipsis on names (`shorten-middle-action`), full path in the
+tooltip. **Reachable without a pointer**: the cursor row shows its tip (skip reason, "comes back with its folder",
+other-end path) as the mockup does, and the same words are the row's accessible description (`rowAria`'s `describedBy`).
+A rollbackable op's standing notice says what rolling back does, per `rollbackConfirmVariant` (the mockup's copy op:
+"Rolling back deletes the selected copies from the backup. The originals stay where they are."), extending
+`rowStandingNotice` exhaustively. Read-only tree, no checkboxes, on a not-rollbackable op AND while the op is
+`rolling_back` (toggles frozen). Placeholders for unloaded rows; spinner only past ~200 ms; backfill progress past ~10
+s. The tree source is coalesced and generation-tagged, and the op cursor settles ~150 ms before the tree loads (§
+"Design decisions"). Counts ("N of M", "Roll back selected (N)", folder rollups like "12 files, 3 rolled back") go
+through the house integer formatter (`formatInteger`, thousands separators) with ICU plurals.
 
 **Landmines.**
 
@@ -689,8 +767,11 @@ generation-tagged, and the op cursor settles ~150 ms before the tree loads (§ "
   `CLAUDE.md` guardrail, `partiallyRolledBackNotice` ("Finishing takes another pass…"), `RollbackConfirmDialog`'s
   `finishing` wording, and the `rowRollbackAction` tests together. The re-entry argument in `DETAILS.md` stays true.
 - Keep every existing behavior the CLAUDE.md pins: the session-driven `RollbackControls`, `onEnded` re-read, the
-  journal-truth badge flip, typed refusals, `rowRollbackAction`'s gate (now on the action bar), relation links (now
-  selecting the op in the list, not scrolling an accordion).
+  journal-truth badge flip, typed refusals, `rowRollbackAction`'s gate (now on the action bar).
+- **The relation links go** (§ "Decided" 2026-11-08, item 3): delete `goToOperation`, the highlight timer, the
+  `rollbackOf` / `rollbackOfUnlisted` / `latestRollback` strings and their translations (removal, not translation), and
+  the frontend `DETAILS.md` § "Rollback links". `RollbackControls` keeps reading `inverseOpId` off the original's row:
+  that's the running reversal, not a listed op.
 - After a reversal ends, re-read the op header AND the tree (outcomes changed); toggles for rows now settled drop out in
   normalization.
 - `ModalDialog` resizing and `fillBody`: the two panes must fill, with one scroller each (the tree's own viewport).
@@ -721,8 +802,7 @@ registry wiring, the dialog's keydown, the dispatch-side route for ⌘A / ⌘⇧
 the tree; tree ↑/↓/PgUp/PgDn, → / ← through `tree-cursor.ts`, ← on a top row back to the op list, Space toggles
 (cascading), Insert toggles and moves down, ⌘A / ⌘⇧A all / none, ⌘↩ rolls back the selection (via the button's
 `keyHint`), Escape closes. All through `eventMatchesCommand` / `list-cursor.ts` / `tree-cursor.ts`. The real Tab order
-follows the DOM: op list → Load more → the header's relation links → the tree → the action bar → Close. State it in the
-docs and pin it.
+follows the DOM: op list → Load more → the tree → the action bar → Close. State it in the docs and pin it.
 
 **Landmines.**
 
@@ -786,3 +866,7 @@ unchanged.
 14. The demo refuses unknown command fields, so it can never silently ignore a selection.
 15. No interactive state is a dead end: when nothing is selectable but rows still await reversal, "Roll back the rest"
     is offered.
+16. A rollback is never itself rolled back: `check_rollbackable` refuses any op with `rolls_back_op_id`, typed, and no
+    list or search shows an inverse op. Its journal rows stay for reconcile and the running reversal's controls.
+17. No op reads "still running" after startup: every op left `queued` or `running` at open ends as `failed`, with a
+    rollback state that never guesses past the facts the journal holds.
