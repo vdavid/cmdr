@@ -8,10 +8,10 @@ disposable cache. Tauri-free; the app hosts it in `apps/desktop/src-tauri/src/op
 
 `handle.rs` (`OperationLog`: journal slot, writer, the `recording.rs` gate; `OpJournal`), `store/` (the DB, the
 migration ladder), `writer.rs` (+ `writer/prune.rs`), `capture.rs`, `types.rs` (typed tokens), `query.rs`,
-`retention.rs`, `rollback.rs` (+ `order.rs`, `skips.rs`, `runner.rs`, `self_collision.rs`, `tags.rs`: the PLANNER; its
-executor is `crates/cmdr-operations/src/rollback.rs`), `tree.rs` (+ `tree/`: the item tree's axis, roles, per-folder
-summary, its backfill, windowed view, and THE selection resolver; writer halves in `src/writer/tree_summary.rs`,
-`backfill.rs`).
+`retention.rs`, `rollback.rs` (+ `inverse.rs`, `order.rs`, `skips.rs`, `runner.rs`, `self_collision.rs`, `tags.rs`: the
+PLANNER; its executor is `crates/cmdr-operations/src/rollback.rs`), `tree.rs` (+ `tree/`: the item tree's axis, roles,
+per-folder summary, its backfill, windowed view, and THE selection resolver; writer halves in
+`src/writer/tree_summary.rs`, `backfill.rs`).
 
 ## Must-knows
 
