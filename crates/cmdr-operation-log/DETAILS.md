@@ -286,7 +286,18 @@ for any ordinary-sized op. The frontend side of this contract lives in
 Each point is where the op already stats the item, so journaling is near-zero marginal cost (no new syscalls). The row
 SHAPES below (which side each row's source and dest sit on, created-in-place folder rows, a folder unit's `size` being
 its inode length) are pinned through the real capture paths, resolved to full paths, in
-`crates/cmdr-operations/src/journal_row_shape_tests.rs`:
+`crates/cmdr-operations/src/journal_row_shape_tests.rs`. Three facts a reader of rows trips on:
+
+- **Dest presence**: every `rollback_unit` row carries a dest except a delete's (source only). A `search_only` leaf
+  carries one only when its top-level item's landing is known (a trash the OS reported no in-Trash path for records them
+  source-only).
+- **Only a batch rename writes non-`done` rows of its own** (`skipped` / `failed`, no `rollback_skip_reason`), each
+  naming the destination it was MEANT to reach, so a dest never proves a row landed. Copy, move, delete, and trash
+  journal only what landed: a file skipped on a conflict, or a folder that already existed, has no row.
+- **`search_only` rows include `dir` rows**: the drive index enumerates every descendant, folders included
+  (`apps/desktop/src-tauri/src/operations_host/index.rs`, `enumerate_from_id`).
+
+The per-kind record points:
 
 - **copy** — per-leaf `rollback_unit` rows at `transfer/copy/single_item.rs` (right where each file commits to the
   `CopyTransaction`, carrying the free source `mtime` + the overwrite flag), plus the **created-directory rows** from

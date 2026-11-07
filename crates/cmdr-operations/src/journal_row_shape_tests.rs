@@ -144,6 +144,56 @@ fn a_folder_copy_journals_leaves_across_and_its_folders_in_place_on_the_dest_sid
     );
 }
 
+/// A copy journals only what it landed: a file it skipped on a conflict gets NO row
+/// (copy, move, delete, and trash never write a `skipped` or `failed` row of their
+/// own; only a batch rename does, `rename/bulk/tests.rs`), and a folder that was
+/// already there isn't a created one.
+#[test]
+fn a_copy_journals_no_row_for_a_file_it_skipped_or_a_folder_it_found() {
+    let (engine, log) = journaled();
+    let (_keep, root) = work();
+    let src = source_tree(&root);
+    let dst = root.join("dst");
+    std::fs::create_dir_all(dst.join("src")).expect("mk dst/src");
+    std::fs::write(dst.join("src/a.txt"), b"already here").expect("blocker");
+
+    let st = state(&engine);
+    journal::open_local_op(st.scope(), "op", OpKind::Copy, Initiator::User, 0, Some("root"));
+    copy_files_with_progress_inner(
+        &CollectorEventSink::new(),
+        "op",
+        &st,
+        std::slice::from_ref(&src),
+        &dst,
+        &WriteOperationConfig {
+            conflict_resolution: super::ConflictResolution::Skip,
+            ..Default::default()
+        },
+    )
+    .expect("copy");
+    journal::finalize_op(st.scope(), OpKind::Copy, ExecutionStatus::Done);
+
+    let rows = shapes(log.db(), "op");
+    assert!(
+        rows.iter()
+            .all(|r| r.row_role == RowRole::RollbackUnit && r.dest.is_some()),
+        "{rows:#?}"
+    );
+    let mut paths: Vec<_> = rows
+        .iter()
+        .map(|r| (r.entry_type, r.dest.clone().expect("dest").1))
+        .collect();
+    paths.sort_by(|a, b| a.1.cmp(&b.1));
+    assert_eq!(
+        paths,
+        vec![
+            (EntryType::Dir, dst.join("src/sub")),
+            (EntryType::File, dst.join("src/sub/b.txt")),
+        ],
+        "{rows:#?}"
+    );
+}
+
 /// A cross-volume folder move journals like a copy: per-leaf FILE rows from the
 /// source volume to the dest volume, and the folders it made created in place on the
 /// dest volume.
@@ -262,7 +312,68 @@ fn a_folder_delete_journals_one_row_per_leaf_at_its_original_path() {
 // ── Same-FS move and trash: one folder unit plus `search_only` leaves ──────────
 //
 // The leaves come from the drive index; these install a canned enumeration (the
-// test hook `journal_capture_tests.rs` uses too).
+// test hook `journal_capture_tests.rs` uses too). The index hands out every
+// descendant, FOLDERS included (`apps/desktop/src-tauri/src/operations_host/index.rs`,
+// `enumerate_from_id`, pinned there by `a_nested_subtree_enumerates_its_folders_as_leaves_too`),
+// and capture keeps each leaf's entry type, so `search_only` rows include `dir` rows.
+
+/// [`source_tree`] as the drive index enumerates it, relative to `src`.
+const TREE_LEAVES: &[(&str, EntryType)] = &[
+    ("a.txt", EntryType::File),
+    ("sub", EntryType::Dir),
+    ("sub/b.txt", EntryType::File),
+];
+
+/// A `search_only` leaf whose top-level item's landing isn't known (a trash the OS
+/// didn't report an in-Trash path for) is recorded SOURCE-ONLY: no dest, still
+/// searchable. Folders keep their `dir` type.
+#[test]
+fn a_search_leaf_with_no_known_landing_is_recorded_source_only() {
+    use cmdr_operation_log::types::SearchCoverage;
+
+    let (engine, log) = journaled();
+    let (_keep, root) = work();
+    let src = root.join("src");
+    let leaves = TREE_LEAVES
+        .iter()
+        .map(|&(n, entry_type)| crate::journal_search::Leaf {
+            rel: PathBuf::from(n),
+            entry_type,
+            size: Some(1),
+            mtime: None,
+        })
+        .collect();
+
+    let st = state(&engine);
+    journal::open_local_op(st.scope(), "op", OpKind::Trash, Initiator::User, 0, None);
+    crate::journal_search::persist_and_note(
+        st.scope(),
+        "root",
+        &src,
+        "root",
+        None,
+        &crate::journal_search::BufferedLeaves {
+            coverage: SearchCoverage::Full,
+            reason: None,
+            leaves,
+        },
+    );
+    journal::finalize_op(st.scope(), OpKind::Trash, ExecutionStatus::Done);
+
+    let mut rows: Vec<_> = shapes(log.db(), "op")
+        .into_iter()
+        .map(|r| (r.row_role, r.entry_type, r.source, r.dest))
+        .collect();
+    rows.sort_by(|a, b| a.2.cmp(&b.2));
+    assert_eq!(
+        rows,
+        vec![
+            (RowRole::SearchOnly, EntryType::File, local(src.join("a.txt")), None),
+            (RowRole::SearchOnly, EntryType::Dir, local(src.join("sub")), None),
+            (RowRole::SearchOnly, EntryType::File, local(src.join("sub/b.txt")), None),
+        ]
+    );
+}
 
 #[cfg(target_os = "macos")]
 mod folder_units {
@@ -270,12 +381,13 @@ mod folder_units {
     use crate::transfer::move_op::move_files_with_progress_inner;
     use cmdr_operation_log::types::SearchCoverage;
 
-    fn canned_leaves(names: &[&str]) {
-        let leaves: Vec<_> = names
+    /// The index's enumeration of [`source_tree`]: its folder `sub` is a leaf too.
+    fn canned_leaves() {
+        let leaves: Vec<_> = TREE_LEAVES
             .iter()
-            .map(|n| crate::journal_search::Leaf {
+            .map(|&(n, entry_type)| crate::journal_search::Leaf {
                 rel: PathBuf::from(n),
-                entry_type: EntryType::File,
+                entry_type,
                 size: Some(1),
                 mtime: None,
             })
@@ -301,7 +413,7 @@ mod folder_units {
         std::fs::create_dir_all(&dst).expect("mk dst");
         let inode_len = std::fs::symlink_metadata(&src).expect("stat").len() as i64;
 
-        canned_leaves(&["a.txt", "sub/b.txt"]);
+        canned_leaves();
         let st = state(&engine);
         journal::open_local_op(st.scope(), "op", OpKind::Move, Initiator::User, 0, Some("root"));
         move_files_with_progress_inner(
@@ -330,14 +442,23 @@ mod folder_units {
         let mut leaves: Vec<_> = rows
             .iter()
             .filter(|r| r.row_role == RowRole::SearchOnly)
-            .map(|r| (r.source.clone(), r.dest.clone()))
+            .map(|r| (r.entry_type, r.source.clone(), r.dest.clone()))
             .collect();
-        leaves.sort();
+        leaves.sort_by(|a, b| a.1.cmp(&b.1));
         assert_eq!(
             leaves,
             vec![
-                (local(src.join("a.txt")), Some(local(dst.join("src/a.txt")))),
-                (local(src.join("sub/b.txt")), Some(local(dst.join("src/sub/b.txt")))),
+                (
+                    EntryType::File,
+                    local(src.join("a.txt")),
+                    Some(local(dst.join("src/a.txt")))
+                ),
+                (EntryType::Dir, local(src.join("sub")), Some(local(dst.join("src/sub")))),
+                (
+                    EntryType::File,
+                    local(src.join("sub/b.txt")),
+                    Some(local(dst.join("src/sub/b.txt")))
+                ),
             ],
             "{rows:#?}"
         );
@@ -353,7 +474,7 @@ mod folder_units {
         let (_keep, root) = work();
         let src = source_tree(&root);
 
-        canned_leaves(&["a.txt", "sub/b.txt"]);
+        canned_leaves();
         let _cleanup = crate::testing::TrashCleanup::of(std::slice::from_ref(&src));
         let st = state(&engine);
         journal::open_local_op(st.scope(), "op", OpKind::Trash, Initiator::User, 0, None);
@@ -372,14 +493,27 @@ mod folder_units {
         let mut leaves: Vec<_> = rows
             .iter()
             .filter(|r| r.row_role == RowRole::SearchOnly)
-            .map(|r| (r.source.clone(), r.dest.clone()))
+            .map(|r| (r.entry_type, r.source.clone(), r.dest.clone()))
             .collect();
-        leaves.sort();
+        leaves.sort_by(|a, b| a.1.cmp(&b.1));
         assert_eq!(
             leaves,
             vec![
-                (local(src.join("a.txt")), Some(local(in_trash.join("a.txt")))),
-                (local(src.join("sub/b.txt")), Some(local(in_trash.join("sub/b.txt")))),
+                (
+                    EntryType::File,
+                    local(src.join("a.txt")),
+                    Some(local(in_trash.join("a.txt")))
+                ),
+                (
+                    EntryType::Dir,
+                    local(src.join("sub")),
+                    Some(local(in_trash.join("sub")))
+                ),
+                (
+                    EntryType::File,
+                    local(src.join("sub/b.txt")),
+                    Some(local(in_trash.join("sub/b.txt")))
+                ),
             ],
             "{rows:#?}"
         );

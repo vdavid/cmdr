@@ -589,6 +589,15 @@ fn a_skipped_row_reaches_the_journal_instead_of_vanishing() {
     let rows = bed.rows();
     assert_eq!(rows.len(), 1, "the skipped row is recorded, not dropped");
     assert_eq!(rows[0].outcome, ItemOutcome::Skipped);
+    assert_eq!(
+        rows[0].rollback_skip_reason, None,
+        "the batch's own skip, not a rollback's"
+    );
+    // It names where it was MEANT to go (a path someone else holds), so a dest on a
+    // rename row doesn't prove the rename landed there: only `done` does.
+    assert_eq!(rows[0].source_name, "keep.txt");
+    assert!(rows[0].dest_dir_id.is_some(), "{rows:?}");
+    assert_eq!(rows[0].dest_name.as_deref(), Some("taken.txt"));
 }
 
 /// A case-only rename goes through a private temp name. If the temp hop isn't
