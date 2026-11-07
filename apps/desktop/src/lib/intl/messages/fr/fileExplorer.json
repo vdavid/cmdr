@@ -2146,6 +2146,62 @@
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   },
+  "fileExplorer.dropIn.sourceNameFromAppAndHost": "{name} depuis {appName} ({host})",
+  "@fileExplorer.dropIn.sourceNameFromAppAndHost": {
+    "sourceHash": "94c2e01"
+  },
+  "fileExplorer.dropIn.sourceNameFromApp": "{name} depuis {appName}",
+  "@fileExplorer.dropIn.sourceNameFromApp": {
+    "sourceHash": "c08306c"
+  },
+  "fileExplorer.dropIn.sourceNameFromHost": "{name} depuis {host}",
+  "@fileExplorer.dropIn.sourceNameFromHost": {
+    "sourceHash": "c29d126"
+  },
+  "fileExplorer.dropIn.sourceCountFromAppAndHost": "{count, plural, one {{countText} fichier} many {{countText} fichiers} other {{countText} fichiers}} depuis {appName} ({host})",
+  "@fileExplorer.dropIn.sourceCountFromAppAndHost": {
+    "sourceHash": "013a1fe"
+  },
+  "fileExplorer.dropIn.sourceCountFromApp": "{count, plural, one {{countText} fichier} many {{countText} fichiers} other {{countText} fichiers}} depuis {appName}",
+  "@fileExplorer.dropIn.sourceCountFromApp": {
+    "sourceHash": "f1434f5"
+  },
+  "fileExplorer.dropIn.sourceCountFromHost": "{count, plural, one {{countText} fichier} many {{countText} fichiers} other {{countText} fichiers}} depuis {host}",
+  "@fileExplorer.dropIn.sourceCountFromHost": {
+    "sourceHash": "8e00637"
+  },
+  "fileExplorer.dropIn.sourceCount": "{count, plural, one {{countText} fichier déposé} many {{countText} fichiers déposés} other {{countText} fichiers déposés}}",
+  "@fileExplorer.dropIn.sourceCount": {
+    "sourceHash": "ed46fe2"
+  },
+  "fileExplorer.dropIn.receiving": "{count, plural, one {Réception du fichier déposé…} many {Réception de {countText} fichiers déposés…} other {Réception de {countText} fichiers déposés…}}",
+  "@fileExplorer.dropIn.receiving": {
+    "sourceHash": "599f539"
+  },
+  "fileExplorer.dropIn.receivingFromApp": "{count, plural, one {Réception du fichier déposé depuis {appName}…} many {Réception de {countText} fichiers déposés depuis {appName}…} other {Réception de {countText} fichiers déposés depuis {appName}…}}",
+  "@fileExplorer.dropIn.receivingFromApp": {
+    "sourceHash": "c10dca2"
+  },
+  "fileExplorer.dropIn.nothingReceived": "L’app d’origine n’a pas transmis le fichier. Faites-le glisser à nouveau ou enregistrez-le d’abord depuis cette app.",
+  "@fileExplorer.dropIn.nothingReceived": {
+    "sourceHash": "6636842"
+  },
+  "fileExplorer.dropIn.nothingReceivedFromApp": "{appName} n’a pas transmis le fichier. Faites-le glisser à nouveau ou enregistrez-le d’abord depuis {appName}.",
+  "@fileExplorer.dropIn.nothingReceivedFromApp": {
+    "sourceHash": "439543b"
+  },
+  "fileExplorer.dropIn.timedOut": "Le fichier déposé n’est pas arrivé à temps. Faites-le glisser à nouveau.",
+  "@fileExplorer.dropIn.timedOut": {
+    "sourceHash": "7591ca5"
+  },
+  "fileExplorer.dropIn.noFolder": "Cmdr n’a pas pu faire de place pour le fichier déposé. Vérifiez qu’il reste de l’espace libre sur votre disque, puis réessayez.",
+  "@fileExplorer.dropIn.noFolder": {
+    "sourceHash": "ea7fb38"
+  },
+  "fileExplorer.dropIn.someMissing": "{count, plural, one {Un fichier déposé n’est pas arrivé, il ne fait donc pas partie de cette copie.} many {{countText} fichiers déposés ne sont pas arrivés, ils ne font donc pas partie de cette copie.} other {{countText} fichiers déposés ne sont pas arrivés, ils ne font donc pas partie de cette copie.}}",
+  "@fileExplorer.dropIn.someMissing": {
+    "sourceHash": "e3fbd8a"
+  },
   "fileExplorer.folderSizes.unreadable": "{count, plural, one {Lecture complète impossible pour # dossier : sa taille est donc peut-être incomplète.} many {Lecture complète impossible pour # dossiers : leurs tailles sont donc peut-être incomplètes.} other {Lecture complète impossible pour # dossiers : leurs tailles sont donc peut-être incomplètes.}}",
   "@fileExplorer.folderSizes.unreadable": {
     "sourceHash": "ad31a56"

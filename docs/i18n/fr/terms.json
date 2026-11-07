@@ -843,6 +843,12 @@
     "forms": "Asking for a direct connection to a share → Demande de connexion directe à un partage",
     "sources": "catalog (fileExplorer.pane.connectedDirectlyToast, settings.network.directSmbConnection.description)"
   },
+  "dropped-file": {
+    "accept": ["déposé"],
+    "chosen": "fichier déposé",
+    "confidence": "high",
+    "sources": "GNOME Nautilus (Dropped Image → Image déposée; the file that you dropped → déposé); matches the drag ruling's accepted déposer"
+  },
   "finder-extension": {
     "chosen": "extension du Finder",
     "accept": ["extension"],

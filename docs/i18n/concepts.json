@@ -1183,6 +1183,12 @@
     ],
     "sense": "A storage device or its volume (internal disk, USB drive, SD card)."
   },
+  "dropped-file": {
+    "distinct": ["drag"],
+    "en": "dropped file",
+    "match": ["dropped file", "dropped files"],
+    "sense": "A file the user dragged into Cmdr from another app and let go of, while or after Cmdr receives it (a browser image, a Mail attachment)."
+  },
   "duplicate": {
     "distinct": ["copy"],
     "en": "Duplicate",
@@ -1473,6 +1479,20 @@
     "distinct": ["source", "destination"],
     "en": "From / To",
     "match": ["=from", "=to", "=from:"],
+    "notMatch": [
+      {
+        "key": "fileExplorer.dropIn.sourceNameFromAppAndHost",
+        "why": "Prose “{name} from {appName} ({host})” (where a dropped file came from), not the From heading; only its placeholders strip down to a bare from."
+      },
+      {
+        "key": "fileExplorer.dropIn.sourceNameFromApp",
+        "why": "Prose “{name} from {appName}”, not the From heading."
+      },
+      {
+        "key": "fileExplorer.dropIn.sourceNameFromHost",
+        "why": "Prose “{name} from {host}”, not the From heading."
+      }
+    ],
     "sense": "The paired source and destination headings of the copy/move dialog, and the scan phase's source label."
   },
   "full-disk-access": {

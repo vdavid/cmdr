@@ -1317,6 +1317,12 @@
     "confidence": "high",
     "sources": "macOS Finder Localizable (Hard disks → Жорсткі диски), PreferencesWindow 418 (External disks → Зовнішні диски), live SystemUIServer (Disk → Диск); MS (disk → диск); TC 121 (на цільовому диску)"
   },
+  "dropped-file": {
+    "accept": ["перетягнут"],
+    "chosen": "перетягнутий файл",
+    "confidence": "tentative",
+    "sources": "GNOME Nautilus (Dropped Image → Скинуте зображення); перетягнутий follows the catalog's drag ruling (перетягнути)"
+  },
   "duplicate": {
     "chosen": "Дублювати",
     "accept": ["дублю", "дублікат", "продублю"],

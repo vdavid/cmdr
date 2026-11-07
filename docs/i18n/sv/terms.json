@@ -803,6 +803,12 @@
     "forms": "Cmdrs direktanslutning; a failure in prose → Det gick inte att ansluta direkt",
     "sources": "catalog fileExplorer.navigation.useDirectConnection, fileExplorer.network.osMountFallback.message, askCmdr.tool.upgradeSmbToDirect.doing"
   },
+  "dropped-file": {
+    "accept": ["släppt"],
+    "chosen": "släppt fil",
+    "confidence": "high",
+    "sources": "GNOME Nautilus (Dropped Image → Släppt bild; the file that you dropped → Filen som du släppte)"
+  },
   "finder-extension": {
     "chosen": "Finder-tillägg",
     "accept": ["tillägg"],

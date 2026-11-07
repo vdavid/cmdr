@@ -308,6 +308,12 @@
     "sources": "MS terminology pt-BR (badge → selo)",
     "decision": "Image index"
   },
+  "dropped-file": {
+    "accept": ["arrastad"],
+    "chosen": "arquivo arrastado",
+    "confidence": "high",
+    "sources": "GNOME Nautilus pt-BR (Dropped Image → Imagem arrastada; the file that you dropped → O arquivo que você arrastou); matches the drag ruling (arrastar)"
+  },
   "include-in-approval": {
     "chosen": "Incluir",
     "accept": ["inclu"],

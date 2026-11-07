@@ -898,6 +898,12 @@
     "confidence": "high",
     "sources": "catalog (fileExplorer.pane.connectedDirectlyToast, fileExplorer.network.osMountFallback.message)"
   },
+  "dropped-file": {
+    "accept": ["behúzott"],
+    "chosen": "behúzott fájl",
+    "confidence": "tentative",
+    "sources": "GNOME Nautilus (Dropped Image → Kép eldobva; the file that you dropped → A leejtett fájl); behúzott follows the catalog's drag ruling (accept behúz), since leejtett/eldobva read as physically dropped"
+  },
   "finder-extension": {
     "chosen": "Finder-bővítmény",
     "accept": ["bővítmény"],

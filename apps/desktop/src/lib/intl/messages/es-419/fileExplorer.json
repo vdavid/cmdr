@@ -522,5 +522,25 @@
   "fileExplorer.pane.directConnectionBlockedAfterUpdateToast": "Cmdr se actualizó y, después, macOS a veces sigue bloqueando la conexión directa de Cmdr con {server}. Para solucionarlo, desactiva y vuelve a activar Cmdr en {localNetwork}. Hasta entonces, este recurso compartido sigue usando la conexión del sistema, que es más lenta.",
   "@fileExplorer.pane.directConnectionBlockedAfterUpdateToast": {
     "sourceHash": "df84283"
+  },
+  "fileExplorer.dropIn.nothingReceived": "La app desde la que lo arrastraste no entregó el archivo. Vuelve a arrastrarlo o guárdalo primero desde allí.",
+  "@fileExplorer.dropIn.nothingReceived": {
+    "sourceHash": "401bd69"
+  },
+  "fileExplorer.dropIn.nothingReceivedFromApp": "{appName} no entregó el archivo. Vuelve a arrastrarlo o guárdalo primero desde {appName}.",
+  "@fileExplorer.dropIn.nothingReceivedFromApp": {
+    "sourceHash": "8b3e87c"
+  },
+  "fileExplorer.dropIn.timedOut": "El archivo arrastrado no llegó a tiempo. Vuelve a arrastrarlo.",
+  "@fileExplorer.dropIn.timedOut": {
+    "sourceHash": "f2579e7"
+  },
+  "fileExplorer.dropIn.noFolder": "Cmdr no pudo hacer espacio para el archivo arrastrado. Comprueba que tu disco tiene espacio libre y vuelve a intentarlo.",
+  "@fileExplorer.dropIn.noFolder": {
+    "sourceHash": "96c9bc9"
+  },
+  "fileExplorer.dropIn.someMissing": "{count, plural, one {Un archivo arrastrado no llegó, así que no está en esta copia.} many {{countText} archivos arrastrados no llegaron, así que no están en esta copia.} other {{countText} archivos arrastrados no llegaron, así que no están en esta copia.}}",
+  "@fileExplorer.dropIn.someMissing": {
+    "sourceHash": "28dcde7"
   }
 }
