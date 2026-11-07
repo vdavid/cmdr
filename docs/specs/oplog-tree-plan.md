@@ -79,15 +79,34 @@ Survey taken 2026-11-07 on `main` at `e1bbec95ad`. Re-grep before each milestone
 - **The app opens the journal synchronously in `setup()`** (`lib.rs` → `operation_log_host::start` →
   `OperationLog::open` → migrations). A slow migration step is a slow launch.
 
-### Bug found while surveying (fix it in milestone 1)
+### Bugs found while surveying
 
-`reconcile_one` resolves a crash during a SECOND pass wrongly. It reads only the newest inverse op: if that pass crashed
-before reversing anything (or before its inverse row opened), the op goes to `Rollbackable` although an earlier pass
-already reversed items. It also reads only the first 10,000 inverse rows, so `done` rows past that prefix are missed.
-With partial rollback, second passes become the normal case. Fix: decide from the ORIGINAL op's own item outcomes (any
-`rolled_back` row, or any `skipped` row with a `rollback_skip_reason`, ⇒ `partially_rolled_back`; else `rollbackable`),
-one indexed `EXISTS`. The original's outcomes and the inverse rows flush together in `RunAcc::flush`, so the original is
-the truth. Pin it red first.
+**Reconcile (fix it in milestone 1).** `reconcile_one` reads only the NEWEST inverse op, and only its first 10,000 rows.
+Two cases resolve a partly reversed op to `rollbackable`: (b) a second pass opened its inverse row and crashed before
+reversing anything (the newest inverse has no `done` row, though an earlier pass's does), and (c) an inverse whose first
+10,000 rows are skips with a `done` row past them. A second pass that crashed BEFORE its inverse row opened is fine
+today: the newest inverse is then the first pass's. With partial rollback, second passes become the normal case.
+
+- **The original alone isn't the truth either**: `RunAcc::flush` (`rollback/bookkeeping.rs`) sends two writer messages,
+  `record_items` (the inverse's rows) and THEN `set_item_outcomes` (the original's), so a crash between them leaves
+  `done` inverse rows over untouched original rows.
+- **Fix**: partial if ANY of: the original's summary root shows something rolled back or held back (built ops); an
+  `EXISTS` over the original's rows for `rolled_back` or a stored `rollback_skip_reason` (unbuilt ops; not index-served,
+  so it scans that op, which only happens for an op a crash left stuck); or ANY inverse of this original (found through
+  `operations_rolls_back`, not only the newest) has a `done` row (an `EXISTS` that stops at the first hit). Else
+  `rollbackable`.
+- **Existing pins change, on purpose**: `lifecycle_tests.rs::seed_rolling_back` seeds only inverse rows; rewrite it to
+  seed the original's outcomes too. Its "inverse all skipped ⇒ rollbackable" cell contradicts `resolve_final_state` (any
+  held-back skip ⇒ partial) and the new rule: it flips to partial, and the commit body says why (loud rule 2).
+
+**Redo of a move, trash, or rename skips every row (for David; NOT fixed in this effort).** `inverse_item_row`
+(`rollback/bookkeeping.rs`) records the inverse's rows with no dest, yet `inverse_kind(Move | Trash) = Move` and
+`Rename = Rename` open `rollbackable` (`capture.rs::compute_eligibility`), and `DETAILS.md` says "redo falls out".
+Rolling back such an inverse reaches `restore_move`, which answers `Skipped(Failed)` for every dest-less row. It fails
+safe (nothing moves) but the inverse lands partial with a "Failed" skip per row, and no planner test covers a move redo.
+The fix (record the original's source as the inverse row's dest) turns on a redo that has never worked, so it wants
+David's go and its own issue and tests. For this effort: `TreeAxis` is op-aware (an op with `rolls_back_op_id` reads on
+the Source axis), so every inverse op still has a tree.
 
 ### Frontend
 
@@ -112,42 +131,62 @@ the truth. Pin it red first.
   stale row, typed refusals, progress, pause, cancel inside a big file). Its helpers find rows by `#op-head-<id>`; the
   rewrite changes those selectors.
 
-## Design decisions (answered here; flagged ones need David)
+## Design decisions
 
-- **Tree axis per kind** (one typed helper, `TreeAxis::of(kind)`): `Dest` for copy, move, create_file, create_folder,
-  archive_edit; `Source` for trash, delete, rename, tag. **Why**: the tree shows where the thing the undo acts on lives.
-  On the dest axis a copy's and a cross-FS move's file rows AND their created-folder rows sit on one side, so folders
-  are real folders and nothing is "housekeeping on the other volume"; a same-FS move's unit and its `search_only` leaves
-  both carry a landed dest. Trash stays on source (the Trash's internal names mean nothing to a person; the header says
-  "to the Trash"). The row's other end shows as a secondary line only when it differs from `other_root + relative path`
-  (a conflict rename `name (2)`), and never for trash.
+- **Tree axis per op** (one typed helper, `TreeAxis::of(kind, is_inverse)`): `Dest` for copy, move, create_file,
+  create_folder, archive_edit; `Source` for trash, delete, rename, tag, and for EVERY inverse op (its rows carry no
+  dest; see § "Bugs found while surveying"). **Why**: the tree shows where the thing the undo acts on lives. On the dest
+  axis a copy's and a cross-FS move's file rows AND their created-folder rows sit on one side, so folders are real
+  folders and nothing is "housekeeping on the other volume"; a same-FS move's unit and its `search_only` leaves both
+  carry a landed dest. Trash stays on source (the Trash's internal names mean nothing to a person; the header says "to
+  the Trash"). The row's other end shows as a secondary line only when it differs from `other_root + relative path` (a
+  conflict rename `name (2)`), and never for trash.
 - **Rollback roles, one typed function**
   (`unit_role(kind, row_role, entry_type, created_in_place, outcome, skip_reason)` →
   `Selectable | Housekeeping | Contents | Settled | NotReversible`):
-  - `Selectable`: a `rollback_unit` that `awaits_reversal`, on a rollbackable op. Counts in "N of M".
+  - `Selectable`: a `rollback_unit` that `awaits_reversal`. Counts in "N of M".
   - `Housekeeping`: a created-in-place DIR row on a copy or move (the folder a copy made). Not counted, no checkbox of
     its own; it's the folder row, and it's included in a rollback only when its whole subtree is selected (else it can't
     be emptied, and trying would record a misleading `DirNotEmpty` skip).
   - `Contents`: a `search_only` row under a unit. Greyed, shows its unit's state, tooltip "comes back with its folder".
   - `Settled`: `rolled_back`, or the operation's own skip/failure. No checkbox; the status cell speaks.
-  - `NotReversible`: any row of a not-rollbackable op. Read-only tree, no checkboxes.
+  - **Op-level rollbackability is applied at QUERY time, never stored.** A not-rollbackable op (or one `rolling_back`)
+    renders read-only, no checkboxes. Eligibility is written at `apply_finalize`, AFTER the rows, so a summary column
+    that depended on it would be wrong for every op that finalizes `not_rollbackable`. Rule for the summary: every
+    column is a pure function of row fields (`row_role`, `entry_type`, `outcome`, `rollback_skip_reason`,
+    created-in-place).
+  - **Nothing selectable, rows still waiting**: a copied folder held back by `DirNotEmpty` is `Housekeeping`, so once
+    every file under it is settled the tree reads "0 of 0". Then the action bar offers "Roll back the rest" and sends
+    `None`, which streams the dir and removes it if it's empty now. ❌ Never a dead end.
 - **Selection encoding: base plus toggles, nearest wins.**
   `RollbackSelection { base: All | None, toggles: Vec<SelectionToggle> }`,
   `SelectionToggle = Folder { dir_id, on } | Item { seq, on }`. A row's decision is its own `Item` toggle, else the
-  nearest `Folder` toggle up its axis-dir chain, else `base`. `None` on the wire (the `Option`) means "everything", so
-  the default "undo the whole thing" and the existing callers (MCP, `undo_operations`, Finish) send nothing. Capped at
-  2,000 toggles (the transfer tree's hand-toggle cap); the backend NORMALIZES (drops toggles shadowed by a later
-  ancestor toggle, drops no-ops) and returns the normalized list with every view answer, which the frontend adopts.
-  **Why**: O(toggles) on the wire for any op size, keys the backend already hands out, and a nearest-ancestor rule is
-  what tri-state checkboxes mean.
+  nearest `Folder` toggle up its chain, else `base`. **A DIR unit's chain starts at its OWN dir** (unchecking a trashed
+  folder's row is `Folder { its dir, off }`), every other row's at its axis dir. `None` on the wire (the `Option`) means
+  "everything", so the default "undo the whole thing" and the existing callers (MCP, `undo_operations`, Finish) send
+  nothing. Capped at 2,000 toggles (the transfer tree's hand-toggle cap); past it the view answers a typed
+  `toggles_capped` and refuses the toggle, and the dialog says so ("pick a folder instead").
+  - **Normalization**, in the crate, run by the view AND re-run by the engine (❌ never trust the wire): drop toggles
+    shadowed by a later ancestor toggle, drop no-ops, drop `Folder` toggles strictly inside a DIR unit (its Contents
+    have no checkbox), drop `Item` toggles on `search_only` or Housekeeping seqs, and drop dir ids with no summary row
+    for THIS op (`dirs` is interned globally, so a foreign id could flip decisions). The view returns the normalized
+    list.
+  - **Why**: O(toggles) on the wire for any op size, keys the backend already hands out, and a nearest-ancestor rule is
+    what tri-state checkboxes mean.
 - **Summary table: subtree totals per (op, axis dir), maintained by the writer.** Recommended shape (agent may refine,
   document the final one):
   `operation_tree_dirs(op_id, dir_id, parent_dir_id, self_seq, child_dirs, direct_files, files, bytes, units_selectable, unit_files_selectable, unit_bytes_selectable, units_rolled_back, units_held_back, units_settled)`,
   `PRIMARY KEY (op_id, dir_id)` WITHOUT ROWID, plus an index on `(op_id, parent_dir_id)` for child listing. Subtree
   totals go on every ancestor up to the volume root (a handful of rows per op), so opening any folder reads one row and
   its children's rows. `files`/`bytes` count FILE rows of both roles (a folder unit's own `size` is an inode length,
-  never bytes). A DIR item row gets its own summary row (`self_seq` names it), interning its own path if no child did,
-  so a folder appears ONCE in its parent's listing (as a folder) and an empty or capped folder still has a row.
+  never bytes). A DIR item row gets its own summary row (`self_seq` names it), so a folder appears ONCE in its parent's
+  listing (as a folder) and an empty or capped folder still has a row. Its own dir id is a new nullable
+  `operation_items.self_dir_id`, interned by the writer at insert (so neither the engine nor the backfill resolves a dir
+  by name, and a read connection never has to intern); for pre-v6 DIR rows the writer fills it while applying a backfill
+  (they're few: one per trashed or moved folder, one per created folder).
+  - **A summary write that fails never drops item rows**: inside the same transaction it sets that op's `tree_summary`
+    back to NULL, and the next open backfills it exact. (`apply_record_items` drops a failing row with no savepoint, and
+    `apply_set_item_outcomes` aborts its batch on any error; the summary must not drift silently in either.)
   - **Writer, on insert**: aggregate the batch per axis dir in memory, then one upsert per touched dir and ancestor, in
     the batch's transaction.
   - **Writer, on outcome change** (`apply_set_item_outcomes`): read each row's old outcome + axis dir (indexed by
@@ -158,7 +197,8 @@ the truth. Pin it red first.
     cheap to add later.)
 - **Item indexes** (same migration): `(op_id, source_dir_id, source_name_folded)` and partial
   `(op_id, dest_dir_id, dest_name_folded) WHERE dest_dir_id IS NOT NULL`. They serve "this folder's files, in order,
-  from position k" on either axis. ❗ See question 2 on their launch cost.
+  from position k" on either axis. They're built in the ladder at launch (decided, see § "Decided"), measured in
+  milestone 2 for time AND file-size growth.
 - **Per-unit subtree coverage** (same migration): nullable `operation_items.subtree_coverage_reason`, written by the
   trash and same-FS-move record points from the per-item `BufferedLeaves` verdict they already hold. Only a unit whose
   own subtree was capped says "over 50,000 files"; an older row (NULL) in a `top_level_only` op gets a hedged line
@@ -167,18 +207,24 @@ the truth. Pin it red first.
 - **Backfill: on demand, per op, off every UI thread, cancelable, recorded.** A nullable `operations.tree_summary` token
   (`built`), set at open for every new op (the writer builds as it goes) and NULL for every pre-v6 op. Opening an
   unbuilt op's tree starts its backfill: a read connection streams the op's rows in `seq` chunks, aggregates per dir in
-  memory (dirs are few), and hands the result to the writer as one `WriteTreeSummary` message, which applies it only if
-  no outcome update touched that op since the backfill's first read (a per-op counter in the writer; a rollback racing
-  it restarts the backfill), and stamps `built`. Progress events from the start, the UI shows them past ~10 s; cancel on
-  op switch or dialog close. **Why on demand**: respects the user's resources (only ops someone opens pay), and a 2M-row
-  op backfills in seconds. Whole-journal background backfill stays a later option.
+  memory (dirs are few), and hands the result to the writer as one `WriteTreeSummary` message, which stamps `built`.
+  - **Staleness by a stored generation**: a new `operations.outcome_generation`, bumped inside every outcome
+    transaction. The backfill reads it before its first chunk; the writer applies the result only if it's unchanged,
+    else answers `Stale` and the backfill restarts. (Pre-v6 ops are all finished, so no inserts race it; only outcome
+    updates can.) A writer-side atomic would be bumped before commit and could pass a stale read.
+  - **The writer applies only to an op that still exists and isn't `built`**, else answers `Gone` / `AlreadyBuilt`:
+    retention can prune the op mid-backfill, and orphan summary rows would keep dirs alive past `gc_orphan_dirs`.
+  - Progress events from the start, the UI shows them past ~10 s; cancel on op switch or dialog close; a backfill starts
+    only for an op the op-list cursor SETTLED on. **Why on demand**: respects the user's resources (only ops someone
+    opens pay), and a 2M-row op backfills in seconds. Whole-journal background backfill stays a later option.
 - **Tree query: the transfer tree's flatten, over SQL.** Request:
   `{ expanded: Vec<RowKey>, selection, window: { offset }, limit ≤ 200 }`. Root = the deepest axis dir that holds the
-  whole op with no direct files and one child dir (descend summary rows from the volume root). Each open folder's
-  listing size = `child_dirs + direct_files`; locate the window by descending through open folders' sizes
-  (O(|expanded|)), then walk forward: child folders from the summary index, ordered by folded name; files from the item
-  index, `ORDER BY name_folded LIMIT ? OFFSET ?` within one folder. Compaction at query time (a folder whose only child
-  is a folder and that has no files shares its row, keyed by the deepest dir id). Answer: rows (key, label, level, kind,
+  whole op with no direct files and one child dir (descend summary rows from the volume root); an op whose rows sit
+  under several volume roots is a FOREST (several top rows, no shared root path). Each open folder's listing size =
+  `child_dirs + direct_files`; locate the window by descending through open folders' sizes (O(|expanded|)), then walk
+  forward: child folders from the summary index, ordered by folded name; files from the item index,
+  `ORDER BY name_folded LIMIT ? OFFSET ?` within one folder. Compaction at query time (a folder whose only child is a
+  folder and that has no files shares its row, keyed by the deepest dir id). Answer: rows (key, label, level, kind,
   expandable, expanded, pos_in_set/set_size, size or rollup, status, role, checkbox state on/off/mixed/none, full path,
   other-end path when it differs), `ancestors` (as the transfer tree's), `total_rows`, `root_path`, `other_root`,
   op-level counts (rolled back / held back / still waiting / selectable), `selected` + `selectable` ("N of M"), the
@@ -188,44 +234,60 @@ the truth. Pin it red first.
 - **"N of M" and tri-state from algebra, not scans.** Build the toggle forest by walking each toggle's dir ancestry (≤
   2,000 toggles × depth). Selected = Σ over the forest with each node's `units_selectable` from its summary row (or 1
   for an item toggle). A folder row is mixed iff some toggle strictly inside it flips a non-zero count. Rollback
-  progress totals with a selection come from the same algebra over `unit_files_selectable` / `unit_bytes_selectable` (a
-  selection only comes from a tree, so the summary is built; the command refuses a selection on an unbuilt op, typed).
-- **Engine filter: a dir-id → decision cache.** `RollbackUnit` gains its axis dir id (+ for a dir unit, its own dir id).
-  The cache walks `dirs.parent_dir_id` once per DISTINCT dir (dirs are few) to the nearest toggle; item toggles are a
-  `HashMap<seq, bool>`; housekeeping dirs check a precomputed "has an excluded descendant" set. A row filtered out
-  counts as `left_out`, is not acted on, not flushed, and not recorded.
+  progress totals with a selection come from the same algebra over `unit_files_selectable` / `unit_bytes_selectable`,
+  plus one point read per `Item` toggle (≤ 2,000) counting only FILE units with `MAX(size, 0)`, exactly as
+  `read_rollback_file_totals` and the loop's crediting do. A selection only comes from a tree, so the summary is built;
+  the command refuses a selection on an unbuilt op, typed.
+- **Engine filter: a dir-id → decision cache.** `RollbackUnit` gains its axis dir id and, for a DIR unit, its
+  `self_dir_id`. The cache walks `dirs.parent_dir_id` once per DISTINCT dir (one read per distinct dir, never per row)
+  to the nearest toggle; item toggles are a `HashMap<seq, bool>`; housekeeping dirs check a precomputed "has an excluded
+  descendant" set. A row filtered out counts as `left_out`, is not acted on, not flushed, and not recorded.
+- **Inverse summary from the selection, not by streaming.** `summarize_inverse` reads one row today; "the first SELECTED
+  unit" found by streaming is O(op) on the synchronous dispatch path. Derive it: an `on` `Item` toggle → that row (one
+  point read); else the deepest `on` `Folder` toggle → its summary row names a unit under it; base `All` with no `on`
+  toggle keeps today's newest-unit read.
 - **Final state**: `resolve_final_state` gains `left_out`: `skipped > 0 || left_out > 0 || (resuming && reversed == 0)`
-  ⇒ `PartiallyRolledBack` on a run that wasn't stopped. Update the Kani proof ("never `RolledBack` with items skipped,
-  unattempted, or left out") and its mutants file.
-- **Component: `ColumnList` tree mode, not a fork of `TransferTree`.** Having read both: `ColumnList` already owns the
-  hard parts this dialog needs (column widths, windowed source with placeholders, `heldRowOf`, a focused-root grid with
-  `aria-activedescendant`, `list-cursor.ts`). `TransferTree`'s keyboard is ~50 lines on top of slots tied to follow/pin.
-  So: `semantics: 'treegrid'` (a `grid` plus `aria-level`, `aria-expanded`, `aria-setsize`/`posinset` per row), and a
-  `tree` prop `{ levelOf(row), expandedOf(row): boolean | null, onToggle(index, expand) }` that renders indent +
-  disclosure in the first column and answers ←/→ (expand-or-enter, collapse-or-parent, with an `onLeaveTree` for ← on a
-  top row). Space/Insert/⌘A stay the consumer's (`onKeydown`). The op list also needs a listbox that owns focus: add
-  that as a `focusable` listbox (same deferred active-descendant machinery the grid uses). Moving `TransferTree` onto
-  this mode is out of scope.
+  ⇒ `PartiallyRolledBack` on a run that wasn't stopped. `rollback/proofs.rs` takes `left_out` as a `kani::any()` input
+  and asserts `RolledBack ⇒ left_out == 0`; `proofs.mutants.json` gains a mutant that drops the `left_out` term.
+- **Component: a thin `treegrid` in `ColumnList`, tree logic beside it.** Having read both: `ColumnList` already owns
+  the hard parts this dialog needs (column widths, windowed source with placeholders, `heldRowOf`, a focused-root grid
+  with `aria-activedescendant`, `list-cursor.ts`), and its grid already hands every non-cursor key to the consumer's
+  `onKeydown`. So `ColumnList` gains only `semantics: 'treegrid'`: the role, plus
+  `rowAria(row) → { level, expanded, setSize, posInSet }` on each row, and only for WINDOWED sources (no array-source
+  width demand to grow). The consumer's first-column snippet draws indent + disclosure. ←/→ live in a pure
+  `tree-cursor.ts` beside `list-cursor.ts` (expand-or-enter, collapse-or-parent through the answer's `ancestors`,
+  leave-the-tree on a top row), called from `onKeydown`. `TransferTree` can adopt `tree-cursor.ts` later; out of scope
+  here.
+- **The op list is a `grid`** (one column of cells), which already owns focus and its active descendant. **Why**: a
+  `listbox` puts its role on the viewport and gives options `tabindex=-1`, so a click focuses an option; a second focus
+  model for one list isn't worth it. (The issue says listbox; grid is the built equivalent.)
 - **Op list paging**: keep the array + offset paging (`operation-log-trigger.svelte.ts`), with "Load more" as a button
   under the list in the Tab order. **Why**: the journal has no cheap total, and a windowed source over offset paging
   buys nothing at 50 per page.
-- **Ordering inside a folder**: folders first, then files, each by folded name in index (byte) order. ❗ See question 3.
+- **Ordering inside a folder**: folders first, then files, each by folded name in index (byte) order.
+- **The tree source: one request in flight, generation-tagged** (reuse `createCoalesced` from
+  `#lib/file-operations/transfer-tree/transfer-tree-view.svelte.ts`). Each local edit bumps a generation; an answer's
+  normalized toggles are adopted only when its generation is the latest, and the pressed row's checkbox renders
+  optimistically. **Why**: Space, Space fast (or Insert on key repeat) otherwise lets answer 1 wipe toggle 2.
+- **The op-list cursor settles before it loads.** The header renders from the row at once; the tree read (and any
+  backfill) waits ~150 ms for the cursor to settle, so holding ↓ through 50 ops costs one tree read, not 50 plus 50
+  started-and-cancelled backfills.
+- **Native-menu keys reach the dialog by dispatch, not keydown.** ⌘A / ⌘⇧A fire as the menu's `selection.selectAll` /
+  `selection.deselectAll` before any webview keydown, and the dialog gate refuses both over a dialog
+  (`routes/(main)/dialog-command-gate.ts`). Route them to the open Operation log's tree when it holds focus, in the
+  shape of `handleTextRegionShortcut`. Space, Insert, and ⌘↩ aren't bar accelerators and work as dialog-scoped registry
+  commands.
 
-## Questions for David
+## Decided (lead, 2026-11-07, on the planner's recommendations)
 
-1. **The leftover wording after a partial rollback.** The mockup says "two you left out last time". The journal can't
-   tell "left out by your selection" from "a cancelled pass never reached it": both are `done` rows still awaiting
-   reversal. Recommendation: one honest phrase for both ("two haven't been rolled back yet"), from the summary counts.
-   The alternative stores the last pass's scope on the op (one more column), and still can't split a cancelled selective
-   pass.
-2. **Launch cost of the new indexes.** The migration runs inside `setup()` on launch. Building two indexes over all of
-   `operation_items` costs roughly a second or more per million rows (to be measured in milestone 2 on a 4M-row
-   journal). Recommendation: pay it once in the ladder (a one-time slower launch for people with huge journals), log it,
-   and only revisit if the measurement is bad. Moving `open` off `setup()` is NOT on the table: operations started
-   before it opens would go unjournaled.
-3. **Order inside a folder.** Byte order of the folded name (index-served, so a folder of a million files windows fast)
-   rather than the panes' natural sort (`file2` before `file10`). Recommendation: accept for the log; natural order
-   would need a materialized sort per folder.
+1. **One leftover phrase.** The journal can't tell "left out by your selection" from "a cancelled pass never reached it"
+   (both are `done` rows still awaiting reversal), so the partial notice uses one honest phrase for both ("two haven't
+   been rolled back yet"), from the summary counts, not the mockup's "you left out last time".
+2. **Pay the index build at launch**, in the ladder, measured in milestone 2 (launch time AND file growth on a 4M-row
+   journal). Moving `open` off `setup()` isn't an option: operations started before it opens would go unjournaled. If
+   the measurement is bad, milestone 2 stops and the lead takes it to David (fallback on the table: build the two
+   indexes after open through the writer, with the tree answering `Building` until they exist).
+3. **Byte order of the folded name inside a folder** (index-served), not the panes' natural sort.
 
 ## Milestones
 
@@ -256,20 +318,25 @@ additive. Most of the engine is already well covered (survey above): find the ga
 - Pin: drift and occupied-target skips record their reasons and leave the op partial; Finish retries only held-back
   rows; a stopped run keeps what it reversed; a page-read failure skips the dir sweep; the dir sweep runs deepest-first
   and only after every file (a cell where a dir row's `seq` is HIGHER than a file inside it).
-- Pin crash reconcile across a SECOND pass: (a) first pass reversed some, second pass crashed before its inverse row
-  opened ⇒ `partially_rolled_back` (red today); (b) second pass crashed after reversing nothing ⇒ still partial (red
-  today); (c) an inverse whose first 10,000 rows are skips and a later one is done ⇒ partial (red today). Then fix
-  `reconcile_one` per § "Bug found while surveying".
+- Pin crash reconcile across a SECOND pass: (a) second pass crashed before its inverse row opened ⇒ partial (green
+  today, pin it); (b) second pass opened its inverse and crashed having reversed nothing ⇒ partial (red today); (c) an
+  inverse whose first 10,000 rows are skips and a later one is `done` ⇒ partial (red today); (d) a crash between the two
+  `RunAcc::flush` messages (inverse rows `done`, original untouched) ⇒ partial. Rewrite `seed_rolling_back` to seed
+  original outcomes too, flip the "inverse all skipped ⇒ rollbackable" cell to partial with the why in the commit body,
+  then fix `reconcile_one` per § "Bugs found while surveying". Without the summary (it lands in milestone 2), the rule
+  here is the `EXISTS` pair; milestone 2 adds the summary-root shortcut.
 - Pin `RollbackReport` / inverse header counts for a folder copy (exists:
-  `a_folder_copy_and_its_rollback_report_the_ same_item_count`; extend only if a case is missing).
+  `a_folder_copy_and_its_rollback_report_the_same_item_count`; extend only if a case is missing).
+- Pin today's redo behavior for a move (rolling back its inverse skips every row as `Failed`, nothing moves), so the
+  separate redo fix, when David says go, flips a known pin rather than discovering it.
 
 **Landmines.** `InMemoryVolume::rename` creates missing parents where the real FS fails `ENOENT`: restore-path pins that
 matter go on a real tempdir (`a_restore_recreates_the_folder_the_move_emptied` is the pattern). Reconcile runs before
 the writer is published: test it through `OperationLog::open` or `reconcile_rolling_back_on_open` directly, the way
 `lifecycle_tests.rs` does.
 
-**Test plan.** Every new pin green on current code except the three reconcile cells, which go red, then green with the
-fix. Verify a pin bites by breaking the behavior once locally (don't commit that).
+**Test plan.** Every new pin green on current code except reconcile cells (b), (c), and (d), which go red, then green
+with the fix. Verify a pin bites by breaking the behavior once locally (don't commit that).
 
 **DONE.** Pins merged; reconcile decides from the original's outcomes; `crates/cmdr-operation-log/DETAILS.md` § "The
 `rolling_back` state machine + startup reconcile" describes the new rule.
@@ -283,8 +350,9 @@ points that set the per-unit coverage (`crates/cmdr-operations/src/journal.rs`, 
 (`TreeAxis::of`, `unit_role`), which the writer and later milestones share.
 
 **Intentions.** Every op opened from now on carries an exact summary, kept exact through rollback, so the tree can open
-a 2M-item op by reading a handful of rows. Shape per § "Design decisions" (summary table, item indexes,
-`subtree_coverage_reason`, `operations.tree_summary`).
+a 2M-item op by reading a handful of rows. Shape per § "Design decisions" (summary table with row-pure columns, item
+indexes, `subtree_coverage_reason`, `self_dir_id`, `operations.tree_summary`, `operations.outcome_generation`). Add the
+summary-root shortcut to milestone 1's reconcile rule.
 
 **Landmines.**
 
@@ -296,9 +364,13 @@ a 2M-item op by reading a handful of rows. Shape per § "Design decisions" (summ
 - `gc_orphan_dirs` must treat `operation_tree_dirs.dir_id` as a live reference, and prune must delete a pruned op's
   summary rows first. A dir interned only for a DIR unit's self row is referenced by nothing else.
 - Interning a dir unit's own path: use `intern_dir`, and keep `split_scheme_root` semantics (remote roots).
-- Measure the migration's index build on a seeded 4M-row v5 DB (release build) and put the number in the commit body and
-  `DETAILS.md` (evidence-anchored). Report it for question 2.
-- `retention.rs` size accounting reads the file size; the new table and indexes grow it. Note the per-row overhead.
+- A summary write that fails resets the op's `tree_summary` to NULL in the same transaction; ❌ never drop or roll back
+  item rows for it.
+- Measure the migration on a seeded 4M-row v5 DB (release build): launch time, WAL growth during the step, and the
+  file's permanent growth. Put the numbers in the commit body and `DETAILS.md` (evidence-anchored). If launch time is
+  bad, stop and report (§ "Decided" 2).
+- `retention.rs` prunes by file size, so the new indexes and table mean a big journal keeps somewhat less history after
+  the upgrade. Note the per-row overhead and the effect in `DETAILS.md` § Retention.
 - The demo journal (`cmdr-listing-wasm`) opens through the same ladder; run its smoke if the crate's checks cover it.
 
 **Test plan.** Migration: a v5 DB with rows migrates, keeps every row, has the indexes (`EXPLAIN QUERY PLAN` for "files
@@ -306,16 +378,18 @@ in dir X of op Y from position k"), and old ops read `tree_summary` NULL. Writer
 leaves, and a delete yields summaries equal to a from-scratch aggregate (write that aggregate as a test helper; the
 backfill in milestone 3 reuses the logic, so put the pure aggregation in `src/tree/` and test it once). Outcome changes
 (reverse some, skip some with reasons, Finish) keep the summary equal to the aggregate. Prune + GC leave no orphan
-summary rows and no dangling dir references.
+summary rows and no dangling dir references. A finalize that flips the op to `not_rollbackable` leaves the summary
+unchanged (row-pure columns). An injected summary-write failure leaves the op unbuilt and every item row in place. A DIR
+row's `self_dir_id` resolves to its own path, local and scheme-rooted.
 
 **DONE.** v6 shipped in the ladder; summary exact under insert, outcome change, prune;
-`crates/cmdr-operation-log/ DETAILS.md` § Schema and § "The writer" updated; the index-build measurement recorded.
+`crates/cmdr-operation-log/DETAILS.md` § Schema and § "The writer" updated; the migration measurements recorded.
 
 ### 3. Backfill for ops journaled before v6
 
-**Scope.** `crates/cmdr-operation-log/src/tree/backfill.rs` (new), a `WriteTreeSummary` writer message, the per-op
-outcome counter in the writer, the host wiring in BOTH hosts (desktop: an `async` command that starts or joins the
-backfill and a progress event; demo: the same names in `history.rs`), cancel.
+**Scope.** `crates/cmdr-operation-log/src/tree/backfill.rs` (new), a `WriteTreeSummary` writer message (which also
+interns and fills `self_dir_id` for the op's pre-v6 DIR rows), the host wiring in BOTH hosts (desktop: an `async`
+command that starts or joins the backfill and a progress event; demo: the same names in `history.rs`), cancel.
 
 **Intentions.** Opening an old op's tree just works: a spinner past ~200 ms, a real progress bar past ~10 s, cancel on
 op switch or dialog close, and never twice for the same op. Subscribe, don't poll: progress arrives as events.
@@ -324,9 +398,10 @@ op switch or dialog close, and never twice for the same op. Subscribe, don't pol
 
 - ❌ Never run the aggregation on the writer thread (a 2M-row read there blocks `record_items` and, through
   backpressure, a running copy). Read on a read connection; send the writer only the aggregated rows.
-- Race with rollback: the writer applies the result only if that op's outcome counter didn't move since the backfill
-  began; otherwise it answers "stale" and the backfill restarts. Also refuse to start on a `rolling_back` op (the
-  summary would be built mid-flight); the tree view says so.
+- Race with rollback: the writer applies the result only if `outcome_generation` is what the backfill read before its
+  first chunk; otherwise `Stale`, and the backfill restarts. Also refuse to start on a `rolling_back` op; the tree view
+  says so.
+- Race with retention: the writer applies only to an op that exists and isn't `built` (`Gone` / `AlreadyBuilt`).
 - The read connection's `busy_timeout` and chunking: stream by `seq` ranges with a cancel check per chunk, like
   `read_rollback_units_page`.
 - Threads: the crate uses `rt.rs`; the demo has none. Shape the job as a resumable chunk loop the host drives (desktop:
@@ -335,7 +410,8 @@ op switch or dialog close, and never twice for the same op. Subscribe, don't pol
 
 **Test plan.** Backfilled summary equals the writer-built one for the same rows (the milestone 2 aggregate helper).
 Cancel mid-way stamps nothing and a rerun completes. A rollback that lands during a backfill makes it restart, and the
-final summary is exact. A `built` op never backfills again. Timing: a 20,000-row backfill well under two seconds.
+final summary is exact. A prune during a backfill leaves no summary rows and no live dirs behind. A `built` op never
+backfills again. Pre-v6 DIR rows get their `self_dir_id`. Timing: a 20,000-row backfill well under two seconds.
 
 **DONE.** Old ops open their tree after one backfill; both hosts answer; `DETAILS.md` has a "Tree summary" section
 (shape, maintenance, backfill, why on demand).
@@ -363,16 +439,21 @@ resolver written here is THE resolver milestone 5's engine filter uses: one func
 - Cross-volume: every path resolves through `dirs`; a remote root renders `scheme://authority` (`reconstruct_dir_path`).
 - Full paths for 200 rows: resolve each distinct dir once per request (the window shares a few dirs).
 - The normalized toggle list is part of the answer; the frontend must be able to send it straight back.
+- An inverse op reads on the Source axis (`TreeAxis::of`); a move's inverse must still show a tree.
+- Demo arg structs: give every new one (and the changed `RollbackArgs`, milestone 5) `#[serde(deny_unknown_fields)]`, so
+  a field the demo hasn't learned fails loudly instead of being dropped.
 
 **Test plan.** Flatten cells on small fixtures (compaction, ancestors, pos/size, a window crossing open folders, a
-folder of files windowed from the middle, DIR-unit rows, contents mirroring, capped/empty units, read-only op).
-Selection cells: nearest-wins, normalize drops shadowed and no-op toggles, ⌘A/none as base flips, tri-state on nested
-on/off/on chains, "N of M" against a brute-force count over the fixture (property-style over random toggle sets is a
-good fit). **The scale test**: seed two 2M-row ops straight into a temp journal in one transaction (realistic shape: one
-a 2M-file delete across a deep tree with one folder of ~1M direct files; one a 2M-leaf trash), build their summaries
-through the real aggregation, then assert budgets per call (start at 50 ms, tighten from measurements): open the tree,
-unfold the biggest folder, window at the END of the 1M-file folder, toggle the 2M folder off and read "N of M", toggle
-2,000 scattered items and read again. Time the whole test; apply loud rule 11.
+folder of files windowed from the middle, DIR-unit rows, contents mirroring, capped/empty units, read-only op, a forest,
+an inverse op). Selection cells: nearest-wins, a DIR unit decided by its own folder toggle, every normalize rule
+(shadowed, no-op, inside a DIR unit, Contents/Housekeeping item toggles, a foreign dir id), the 2,000 cap answers
+`toggles_capped`, ⌘A/none as base flips, tri-state on nested on/off/on chains, "N of M" against a brute-force count over
+the fixture (property-style over random toggle sets is a good fit). **The scale test**: seed two 2M-row ops straight
+into a temp journal in one transaction (realistic shape: one a 2M-file delete across a deep tree with one folder of ~1M
+direct files; one a 2M-leaf trash), build their summaries through the real aggregation, then assert budgets per call
+(start at 50 ms, tighten from measurements): open the tree, unfold the biggest folder, window at the END of the 1M-file
+folder, toggle the 2M folder off and read "N of M", toggle 2,000 scattered items and read again. Time the whole test;
+apply loud rule 11.
 
 **DONE.** `get_operation_log_tree` answers on desktop and demo; the scale test (and its 20,000-row twin if needed) green
 within budget; `DETAILS.md` § "The tree view" (algorithm, keys, compaction, budgets with evidence).
@@ -391,12 +472,16 @@ agent's call) with their frontend words.
 **Landmines.**
 
 - The filter sits where the loop already decides per row, BEFORE pacing, the pause gate, and verification; a filtered
-  row costs nothing else. ❌ No per-row DB read: the dir cache plus the item map.
-- `left_out` feeds `resolve_final_state` (Kani proof + mutants updated, `pnpm check kani` if available locally, else say
-  so).
-- Progress totals with a selection come from the summary algebra (milestone 4), never from a pre-scan; with `None` keep
-  `read_rollback_file_totals`.
-- `summarize_inverse` must summarize the first SELECTED unit, not the first unit.
+  row costs nothing else. ❌ No per-row DB read: the dir cache (one read per distinct dir) plus the item map. The engine
+  re-normalizes the selection it's handed.
+- A DIR unit is decided from its `self_dir_id` (unchecking a trashed folder's own row must keep it in the Trash).
+- `left_out` feeds `resolve_final_state` (Kani proof + mutants per § "Design decisions", `pnpm check kani` if available
+  locally, else say so).
+- Progress totals with a selection come from the summary algebra plus item-toggle point reads (milestone 4), never from
+  a pre-scan; with `None` keep `read_rollback_file_totals`.
+- `summarize_inverse` derives its unit from the selection (§ "Design decisions"), ❌ never by streaming.
+- The demo's `RollbackArgs` gets `selection` AND `#[serde(deny_unknown_fields)]`; a demo cell rolls back a subset and
+  asserts the rest stayed. Without it, getcmdr.com/demo would reverse everything while the UI says "selected".
 - The inverse op's header count (`inverse_planned_item_count`, `RunAcc::totals`) is bounded by the selected units, so
   "Rolled back 3 of 400" reads as 3.
 - Housekeeping dirs under a mixed subtree are left out, never attempted (see roles).
@@ -408,40 +493,54 @@ agent's call) with their frontend words.
 **Test plan.** In `planner_tests/` (real executor): a subset of a folder copy leaves the rest on disk and the op
 partial; "the rest" then lands `rolledBack`; drift and occupied guards still skip inside a selection; a selection
 excluding a file inside a copied folder leaves that folder (no `DirNotEmpty` skip recorded); a trash with two folder
-units, one selected; a selection whose units were all already reversed elsewhere (`AlreadyGone`) lands right; crash
-reconcile mid-selective-pass (milestone 1's rule holds); progress totals equal the selected files and bytes. Every
-milestone 1 pin unchanged.
+units, one selected; unchecking a trashed folder's OWN row keeps it in the Trash and leaves the op partial; a selection
+whose units were all already reversed elsewhere (`AlreadyGone`) lands right; crash reconcile mid-selective-pass
+(milestone 1's rule holds); progress totals equal the frames the loop credits (files only, `MAX(size, 0)`), item toggles
+included; the 0-of-0 case (copy a folder, add a file into it, roll back so the folder is held back, remove the file,
+roll back with `None`) lands `rolledBack`; a wire selection with a foreign dir id or a Contents seq is normalized away.
+Every milestone 1 pin unchanged.
 
 **DONE.** Engine, both hosts, MCP unchanged in behavior; `DETAILS.md` § "Streaming + ordering" and the state-machine
 section describe the selection; the frontend `DETAILS.md` re-entry argument mentions selections.
 
 ### 6. `ColumnList` tree mode (parallel from day one)
 
-**Scope.** `apps/desktop/src/lib/ui/ColumnList.svelte`, `column-list-types.ts`, `list-cursor.ts` (if tree keys belong
-there), tests beside them, the tier-3 a11y test, Debug > Components
-(`routes/dev/components/sections/ ColumnListSection.svelte`), `docs/design-system.md`,
+**Scope.** `apps/desktop/src/lib/ui/ColumnList.svelte`, `column-list-types.ts`, `column-list-layout.ts` (if the height
+cap below bites), a new pure `tree-cursor.ts` beside `list-cursor.ts`, tests beside them, the tier-3 a11y test, Debug >
+Components (`routes/dev/components/sections/ColumnListSection.svelte`), `docs/design-system.md`,
 `apps/desktop/src/lib/ui/DETAILS.md` § ColumnList.
 
-**Intentions.** Per § "Design decisions" (component): a `treegrid` semantics with source-owned expansion, indent +
-disclosure in the first column, ←/→ tree keys, and a focus-owning listbox for the op list. Every existing consumer
-(Search, Selection, rename review, Multi-rename preview) unchanged.
+**Intentions.** Per § "Design decisions" (component): `ColumnList` gains only `semantics: 'treegrid'` with `rowAria`,
+windowed sources only; the indent and disclosure are the consumer's snippet; ←/→ are `tree-cursor.ts`. Every existing
+consumer (Search, Selection, rename review, Multi-rename preview) unchanged.
 
 **Landmines.**
 
-- Indent must not feed the width demand of the first column unmeasured: a windowed source shows fallbacks anyway, but an
-  array source's `demand` has to include level × indent, or the column clips deep rows.
+- **The browser's height cap.** Spacers are `range.start × rowHeightPx`; 2M rows × ~24 px ≈ 48M px, and WebKit's layout
+  units cap somewhere around 33.5M px (unverified on WKWebView). Measure first: a windowed `ColumnList` with
+  `count = 2_000_000` in the dev app, press End, check the last row is reachable and `scrollIndexIntoView` lands. If it
+  clamps, add a scaled scroll mapping (virtual position ↔ capped scroll height) in `column-list-layout.ts` with unit
+  tests, and add this browser-side case to the scale acceptance. File an issue if the panes' `virtual-scroll.ts` shares
+  the shape (unrelated to this card).
+- **A checkbox in a treegrid cell must not take focus.** Ark's hidden input takes focus on click, which drops the grid's
+  `aria-activedescendant`, and a focused native checkbox also toggles on Space, so the dialog's Space would flip it
+  twice. `tabindex={-1}` plus `preventDefault` on pointerdown; the click moves the cursor and toggles through the same
+  path as Space. No existing consumer has a non-tabbable checkbox in a grid; this is the first.
+- **A cursor on a placeholder row names nothing**: `activeDescendantId` returns an id for an unloaded row, which renders
+  `aria-hidden` with no id. Withhold the id until the row loads (the deferred machinery re-announces), or give the
+  placeholder the row id and a "Loading" label.
 - The disclosure is a pointer target, not a Tab stop; the row (via active descendant) is the keyboard target.
 - `aria-expanded` only on expandable rows; `aria-level` 1-based.
-- Cells holding a `Checkbox` primitive: the checkbox mustn't take Tab (one Tab stop per list) and must stay
-  `clip: false`.
 - `heldRowOf` keeps working for tree rows (a collapse removes many rows at once).
 - ❌ Never `TransferTree` changes in this milestone.
 
-**Test plan.** Component tests: levels, disclosure click toggles via the callback, → expands a shut folder and steps
-into an open one, ← collapses or goes to the parent, ← on a top row calls `onLeaveTree`, cursor keys unchanged,
-focusable listbox announces the cursor row. Tier-3 a11y test for treegrid. Existing ColumnList tests unchanged.
+**Test plan.** Component tests: `rowAria` lands on each row, `tree-cursor.ts` (→ expands a shut folder and steps into an
+open one, ← collapses or goes to the parent, ← on a top row leaves the tree), cursor keys unchanged, a checkbox click
+keeps focus on the grid and a following Space toggles exactly once more, the placeholder announcement. Tier-3 a11y test
+for treegrid. Existing ColumnList tests unchanged.
 
-**DONE.** Mode shipped with its Debug row and design-system entry; consumers untouched.
+**DONE.** Mode shipped with its Debug row and design-system entry; the 2M-row reach measured (and fixed if needed);
+consumers untouched.
 
 ### 7. The master–detail dialog
 
@@ -451,13 +550,18 @@ unexpandable reasons, the second partial notice), `#lib/tauri-commands/operation
 (`selection: 'all' | 'subset'` wording), `messages/en/operationLog.json` (+ `fileOperations.json` for the confirmation),
 component tests.
 
-**Intentions.** The mockup's layout and states: left op list (summary, who, when, one status glyph, colored rollback
-state), right detail (header with summary, badges with "Finished" for the execution badge, route line "From X to Y",
-standing notice, relation links), the tree filling the height, the action bar (**Roll back selected (N)** + "N of M
-selected", plus `RollbackControls` while a reversal runs). ~900 × 640 default, resizable; under ~640 px the split
-stacks. Status column speaks only when it matters (Rolled back, Skipped + reason, Didn't finish). Middle ellipsis on
-names (`shorten-middle-action`), full path in the tooltip. Read-only tree, no checkboxes, on a not-rollbackable op.
-Placeholders for unloaded rows; spinner only past ~200 ms; backfill progress past ~10 s.
+**Intentions.** The mockup's layout and states: left op list (a `grid`: summary, who, when, one status glyph, colored
+rollback state), right detail (header with summary, badges with "Finished" for the execution badge, route line "From X
+to Y", standing notice, relation links), the tree filling the height with a tri-state "select all" checkbox in its
+header (a `column.header` snippet on the same base flip as ⌘A / ⌘⇧A, with an accessible name), the action bar (**Roll
+back selected (N)** + "N of M selected", "Roll back the rest" when nothing selectable remains but rows still wait, plus
+`RollbackControls` while a reversal runs). ~900 × 640 default, resizable; under ~640 px the split stacks. Status column
+speaks only when it matters (Rolled back, Skipped + reason, Didn't finish). Middle ellipsis on names
+(`shorten-middle-action`), full path in the tooltip. Read-only tree, no checkboxes, on a not-rollbackable op AND while
+the op is `rolling_back` (toggles frozen). Placeholders for unloaded rows; spinner only past ~200 ms; backfill progress
+past ~10 s. The tree source is coalesced and generation-tagged, and the op cursor settles ~150 ms before the tree loads
+(§ "Design decisions"). Counts ("N of M", "Roll back selected (N)", folder rollups like "12 files, 3 rolled back") go
+through the house integer formatter (`formatInteger`, thousands separators) with ICU plurals.
 
 **Landmines.**
 
@@ -472,11 +576,15 @@ Placeholders for unloaded rows; spinner only past ~200 ms; backfill progress pas
 - Strings: English only, `@key` descriptions written for translators; delete keys that die (`moreItems`, `itemsError` if
   unused) and their translations (that's removal, not translation).
 - E2E selectors: keep `data-op-id` (or similar) stable hooks so milestone 9 can address rows without positions.
+- The toggle cap answers `toggles_capped`: word it ("That's as many separate picks as Cmdr can hold. Pick a folder
+  instead."), and keep the previous selection.
 
 **Test plan.** Component tests over a mocked tree source: default all-checked + count, folder uncheck cascades, greyed
-contents with their tooltip, read-only op shows no checkboxes, status words per role and reason, the partial notice from
-counts, confirmation says "selected" only for a subset, the dispatch carries the normalized toggles, the action bar
-reflects `rowRollbackAction`. Update `OperationLogDialog.a11y.test.ts`.
+contents with their tooltip, read-only op (and a `rolling_back` one) shows no live checkboxes, the header select-all
+tri-state, status words per role and reason, the partial notice from counts, confirmation says "selected" only for a
+subset, the dispatch carries the normalized toggles, the action bar reflects `rowRollbackAction` and the 0-of-0 "the
+rest" case, two toggles before the first answer lands both survive, ↓ ten times fast ⇒ one tree request and at most one
+backfill start, the cap's words, thousands separators. Update `OperationLogDialog.a11y.test.ts`.
 
 **DONE.** The dialog matches the mockup's three states; docs in `apps/desktop/src/lib/operation-log/` C+D updated
 (layout, the tree source, the selection flow); David gets screenshots of the three states for review.
@@ -484,19 +592,26 @@ reflects `rowRollbackAction`. Update `OperationLogDialog.a11y.test.ts`.
 ### 8. Keyboard
 
 **Scope.** `apps/desktop/src/lib/commands/sources/operation-log.ts` (new, scope `'Main window/Operation log'`), its
-registry wiring, the dialog's keydown, tests.
+registry wiring, the dialog's keydown, the dispatch-side route for ⌘A / ⌘⇧A (`routes/(main)/`), tests.
 
-**Intentions.** The mockup's keyboard map: Tab order op list → tree → action bar → Close; op list ↑/↓/Home/End/PgUp/
-PgDn with the cursor as the selection, → or ↩ into the tree; tree ↑/↓/PgUp/PgDn, → / ← from tree mode, ← on a top row
-back to the op list, Space toggles (cascading), Insert toggles and moves down, ⌘A / ⌘⇧A all / none, ⌘↩ rolls back the
-selection (via the button's `keyHint`), Escape closes. All through `eventMatchesCommand` / `list-cursor.ts`.
+**Intentions.** The mockup's keyboard map: op list ↑/↓/Home/End/PgUp/PgDn with the cursor as the selection, → or ↩ into
+the tree; tree ↑/↓/PgUp/PgDn, → / ← through `tree-cursor.ts`, ← on a top row back to the op list, Space toggles
+(cascading), Insert toggles and moves down, ⌘A / ⌘⇧A all / none, ⌘↩ rolls back the selection (via the button's
+`keyHint`), Escape closes. All through `eventMatchesCommand` / `list-cursor.ts` / `tree-cursor.ts`. The real Tab order
+follows the DOM: op list → Load more → the header's relation links → the tree → the action bar → Close. State it in the
+docs and pin it.
 
-**Landmines.** ⌘A in a dialog must not reach the panes' `selection.selectAll` (scope + `whileDialogOpen`); check the
-collision test in `command-registry.test.ts`. Insert's panes command is `selection.toggleAndDown`: a dialog-scoped twin,
-not a reuse across scopes, unless the registry supports that. Read `apps/desktop/src/lib/commands/CLAUDE.md` § Gotchas
-for every place a command touches.
+**Landmines.**
 
-**Test plan.** Keyboard component tests for each row of the map, plus the registry collision tests.
+- ⌘A / ⌘⇧A arrive as the native menu's `selection.selectAll` / `selection.deselectAll`, which the dialog gate refuses
+  over any dialog: they never reach the dialog's keydown. Route them to the Operation log's tree when it holds focus (§
+  "Design decisions"); a component keydown test passes while the real app fails, so test through the dispatch path (or
+  an E2E through the menu).
+- Insert's panes command is `selection.toggleAndDown`: a dialog-scoped twin, not a reuse across scopes, unless the
+  registry supports that. Read `apps/desktop/src/lib/commands/CLAUDE.md` § Gotchas for every place a command touches.
+
+**Test plan.** Keyboard component tests for each row of the map, the dispatch-path test for ⌘A / ⌘⇧A, the Tab order in
+`OperationLogDialog.a11y.test.ts`, plus the registry collision tests.
 
 **DONE.** Every action works without a mouse; Settings/Help list the keys.
 
@@ -530,10 +645,18 @@ specs adapted to the new selectors, assertions unchanged.
    backfill.
 5. No interactive read scans a whole op: tree pages, "N of M", tri-state, and rollback totals are O(expansion + window +
    toggles).
-6. The engine adds no per-row DB read; the writer's own outcome-delta read happens on the writer thread.
-7. Crash reconcile decides from the original op's outcomes; a second-pass crash never reverts a partly reversed op to
-   `rollbackable`.
+6. The engine adds no per-ROW DB read (one per distinct dir, for the decision cache); the writer's own outcome-delta
+   read happens on the writer thread.
+7. Crash reconcile reads the original op's outcomes, its summary, AND every inverse's rows; a crash at any point of any
+   pass never reverts a partly reversed op to `rollbackable`.
 8. Every migration step is new and appended; no shipped step changes.
 9. Both hosts (desktop, demo) answer every new or changed command with the crate's logic.
 10. The frontend never builds a tree, never words a backend string, and sends back only toggles it was handed.
 11. Copy stays count-free in the confirmation, promises no complete reversal, and never says "error" or "failed".
+12. Summary columns are pure functions of row fields; op-level rollbackability applies at query time. A summary write
+    failure marks the op unbuilt, never drops item rows.
+13. A DIR unit is decided by its own folder's toggle; selections are normalized by the crate on every read AND by the
+    engine, never trusted from the wire.
+14. The demo refuses unknown command fields, so it can never silently ignore a selection.
+15. No interactive state is a dead end: when nothing is selectable but rows still await reversal, "Roll back the rest"
+    is offered.
