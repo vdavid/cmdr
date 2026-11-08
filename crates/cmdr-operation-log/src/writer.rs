@@ -364,7 +364,7 @@ impl OperationLogWriter {
     /// gate read), as one compare-and-set on the writer thread. `Ok(true)` means
     /// this call claimed it; `Ok(false)` means another dispatch (or a state change)
     /// got there first, so the caller refuses instead of running a second reversal.
-    pub fn claim_rollback(&self, op_id: &str, from: RollbackState) -> Result<bool, OperationLogStoreError> {
+    pub(crate) fn claim_rollback(&self, op_id: &str, from: RollbackState) -> Result<bool, OperationLogStoreError> {
         let (tx, rx) = mpsc::channel();
         self.send(WriteMessage::ClaimRollback {
             op_id: op_id.to_string(),

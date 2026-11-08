@@ -524,7 +524,7 @@ fn the_engine_reads_each_folder_once_per_run() {
     assert_eq!(taken, 3);
     assert!(
         dir_reads <= folders,
-        "{dir_reads} summary reads for an op of {folders} folders"
+        "{dir_reads} summary reads for an op of {folders} folders" // allowed-pluralize-noun: a test failure message; neither count is ever one
     );
 }
 
