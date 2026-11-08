@@ -52,6 +52,15 @@ describe('treeRowStatus', () => {
     expect(treeRowStatus(folderRow(2, { tally: tally({ files: 3 }) }), 'copy')).toBeNull()
   })
 
+  it('joins the two counts through the catalog, so a language picks its own separator', () => {
+    // Regression: a hardcoded ASCII ", " left Chinese without its "，".
+    const folder = folderRow(1, { tally: tally({ files: 20, rolledBack: 3, heldBack: 2 }) })
+    expect(treeRowStatus(folder, 'copy')?.word).toBe(
+      tString('operationLog.tree.rollupBoth', { rolledBack: '3 rolled back', skipped: '2 skipped' }),
+    )
+    expect(tString('operationLog.tree.rollupBoth', { rolledBack: 'A', skipped: 'B' })).toBe('A, B')
+  })
+
   it('gives a folder that is itself a unit its own status first', () => {
     const unit = folderRow(1, { role: 'settled', outcome: 'rolledBack', tally: tally({ rolledBack: 1 }) })
     expect(treeRowStatus(unit, 'trash')?.word).toBe('Moved back')

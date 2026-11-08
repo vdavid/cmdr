@@ -3776,6 +3776,7 @@ export type MessageKey =
   | 'operationLog.tree.otherEndFrom'
   | 'operationLog.tree.otherEndTo'
   | 'operationLog.tree.rollingBack'
+  | 'operationLog.tree.rollupBoth'
   | 'operationLog.tree.rollupRolledBack'
   | 'operationLog.tree.rollupSkipped'
   | 'operationLog.tree.selectAll'

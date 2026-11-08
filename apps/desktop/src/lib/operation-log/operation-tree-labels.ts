@@ -88,23 +88,28 @@ export function treeRowStatus(row: OperationTreeRow, kind: OpKind): TreeRowStatu
   }
 }
 
-/** "3 rolled back, 2 skipped" for a folder, from its counts; `null` when nothing under it moved. */
+/**
+ * "3 rolled back, 2 skipped" for a folder, from its counts; `null` when nothing under it
+ * moved. The two counts join through `operationLog.tree.rollupBoth`, so each language
+ * picks its own separator (Chinese wants "，"), ❌ never a hardcoded ", ".
+ */
 function folderRollup(tally: TreeTally): TreeRowStatus | null {
-  const parts: string[] = []
-  if (tally.rolledBack > 0) {
-    parts.push(
-      tString('operationLog.tree.rollupRolledBack', {
-        count: tally.rolledBack,
-        countText: formatInteger(tally.rolledBack),
-      }),
-    )
+  const rolledBack =
+    tally.rolledBack > 0
+      ? tString('operationLog.tree.rollupRolledBack', {
+          count: tally.rolledBack,
+          countText: formatInteger(tally.rolledBack),
+        })
+      : null
+  const skipped =
+    tally.heldBack > 0
+      ? tString('operationLog.tree.rollupSkipped', { count: tally.heldBack, countText: formatInteger(tally.heldBack) })
+      : null
+  if (rolledBack !== null && skipped !== null) {
+    return { word: tString('operationLog.tree.rollupBoth', { rolledBack, skipped }), tone: 'rollup' }
   }
-  if (tally.heldBack > 0) {
-    parts.push(
-      tString('operationLog.tree.rollupSkipped', { count: tally.heldBack, countText: formatInteger(tally.heldBack) }),
-    )
-  }
-  return parts.length === 0 ? null : { word: parts.join(', '), tone: 'rollup' }
+  const word = rolledBack ?? skipped
+  return word === null ? null : { word, tone: 'rollup' }
 }
 
 /**

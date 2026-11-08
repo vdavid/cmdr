@@ -138,7 +138,7 @@
   },
   "operationLog.tree.rollupRolledBack": "{count, plural, one {{countText} rolled back} other {{countText} rolled back}}",
   "@operationLog.tree.rollupRolledBack": {
-    "description": "Status of a folder row in the Operation log’s item tree: how many items under it a rollback has already undone, for example \"3 rolled back\". countText is that number with the locale’s thousands separator. May be followed by \", 2 skipped\".",
+    "description": "Status of a folder row in the Operation log’s item tree: how many items under it a rollback has already undone, for example \"3 rolled back\". countText is that number with the locale’s thousands separator. May be followed by \"2 skipped\" (operationLog.tree.rollupSkipped), joined by operationLog.tree.rollupBoth.",
     "placeholders": {
       "count": {},
       "countText": {}
@@ -146,10 +146,18 @@
   },
   "operationLog.tree.rollupSkipped": "{count, plural, one {{countText} skipped} other {{countText} skipped}}",
   "@operationLog.tree.rollupSkipped": {
-    "description": "Status of a folder row in the Operation log’s item tree: how many items under it a rollback skipped because it wasn’t sure about them, for example \"2 skipped\". countText is that number with the locale’s thousands separator. May follow \"3 rolled back, \".",
+    "description": "Status of a folder row in the Operation log’s item tree: how many items under it a rollback skipped because it wasn’t sure about them, for example \"2 skipped\". countText is that number with the locale’s thousands separator. May follow \"3 rolled back\" (operationLog.tree.rollupRolledBack), joined by operationLog.tree.rollupBoth.",
     "placeholders": {
       "count": {},
       "countText": {}
+    }
+  },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "description": "Status of a folder row in the Operation log’s item tree when a rollback both undid and skipped items under it: joins the two counts, for example \"3 rolled back, 2 skipped\". rolledBack is operationLog.tree.rollupRolledBack and skipped is operationLog.tree.rollupSkipped, each already worded. Only the separator (and the order, if your language needs another) is yours: use your language’s list comma, such as \"，\" in Chinese.",
+    "placeholders": {
+      "rolledBack": {},
+      "skipped": {}
     }
   },
   "operationLog.tree.operationSkipped": "The operation skipped this one, so there’s nothing to roll back.",

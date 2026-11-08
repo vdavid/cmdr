@@ -26,9 +26,6 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - `operationLog.dialog.selectedCount` drives its plural with the TOTAL, but "selected" agrees with the checked count
   (`3 sur 12 sélectionnés`), so fr falls back to a colon form. Pass the checked count as the plural driver. Likewise
   `operationLog.tree.backfillProgress` has no plural driver at all for "Read {doneText} … items". (cs, es, fr, pt, sv)
-- `folderRollup` in `operation-tree-labels.ts` joins `operationLog.tree.rollupRolledBack` and `rollupSkipped` with a
-  hardcoded ASCII `', '`, so Chinese renders `3 个已回滚, 2 个已跳过` where it wants `，`. Make the joiner a catalog key
-  or use `Intl.ListFormat`. (zh, zh-Hant)
 - `fileOperations.rollbackConfirm.titleRest` ("Roll back the rest?") and the `rollBackRest` buttons differ only by the
   "?", so `i18n-terms` treats them as one string and forbids a question-shaped title where a style guide asks for one
   (hu: title `Visszagörgeted a többit?`, buttons `A többi visszagörgetése`; it's the one warn left). Either the check
