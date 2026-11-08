@@ -67,7 +67,7 @@
   "@operationLog.tree.columnStatus": {
     "sourceHash": "920e413"
   },
-  "operationLog.tree.selectAll": "Выделить все",
+  "operationLog.tree.selectAll": "Выбрать все",
   "@operationLog.tree.selectAll": {
     "sourceHash": "1fc9a38"
   },
