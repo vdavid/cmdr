@@ -1210,8 +1210,11 @@ subtree totals in `operation_tree_dirs`, kept exact by the writer.
   Decision/Why: `OperationLog::open` runs inside `setup()` on the app's main thread, before the event loop runs and the
   window can show, and these indexes are the only part of v6 that scales with the journal. So `open` queues
   `BuildTreeIndexes` on the writer right after the reconcile (whose writes block on their reply), and operations journal
-  behind it through the channel's backpressure. Until both exist, `read_tree_summary_status` answers `IndexesBuilding`.
-  `IF NOT EXISTS` makes later launches a schema lookup. The build logs its duration at info, as every ladder step does.
+  behind it through the channel's backpressure. Until both exist, `read_tree_summary_status` answers `IndexesBuilding`;
+  once they do, the writer tells the log's `BackfillRegistry` (`when_indexes_ready`: at once if already built, else on
+  the writer thread after the build), and each host turns that into one `operation-log-tree-indexes-ready` event, so the
+  tree reads again on it rather than polling. A failed build never fires it. `IF NOT EXISTS` makes later launches a
+  schema lookup. The build logs its duration at info, as every ladder step does.
 - **Upgrade cost** (`src/store/migration_bench.rs`, release, a seeded 4M-row v5 journal of 1,053 MB, Apple Silicon,
   2026-11-07): the migrating open on the main thread takes 1.2 ms; the writer's index build takes 4.5 s, once; the WAL
   reaches 386 MB during it; the file grows 384 MB for good, about 96 bytes or 96 MB per million rows (half the seeded

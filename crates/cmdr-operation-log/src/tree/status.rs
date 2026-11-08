@@ -2,7 +2,8 @@
 //! building one. The seam the tree view and the backfill meet at: the view asks
 //! [`read_tree_summary_status`] and answers `Building` without knowing how a backfill
 //! runs; the backfill (`backfill.rs`) claims its op here, reports its progress here,
-//! and hears a cancel here.
+//! and hears a cancel here. The registry also says when the journal's folder indexes
+//! exist, so a tree waiting on them hears it rather than asking again.
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -53,10 +54,28 @@ pub struct BackfillProgress {
 
 /// The backfills running now, by op id: one per op, so a second ask joins the first.
 /// The host reaches its log's one registry through `OperationLog::tree_backfills` and
-/// hands it to every tree read, which answers `building` from it.
+/// hands it to every tree read, which answers `building` from it. It also holds who's
+/// waiting for the folder indexes ([`Self::when_indexes_ready`]).
 #[derive(Debug, Default)]
 pub struct BackfillRegistry {
     running: Mutex<HashMap<String, Running>>,
+    indexes: Mutex<IndexesWatch>,
+}
+
+/// Whether the writer has built the folder indexes, and who waits for it until then.
+#[derive(Default)]
+struct IndexesWatch {
+    ready: bool,
+    waiting: Vec<Box<dyn FnOnce() + Send>>,
+}
+
+impl std::fmt::Debug for IndexesWatch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("IndexesWatch")
+            .field("ready", &self.ready)
+            .field("waiting", &self.waiting.len())
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -126,6 +145,35 @@ impl BackfillRegistry {
                 true
             }
             None => false,
+        }
+    }
+
+    /// Run `notify` once the journal's folder indexes exist: at once when they already
+    /// do, else on the writer thread right after it builds them (`store/tree_indexes.rs`).
+    /// The host turns it into an event, so a tree answering `indexesBuilding` reads
+    /// again when it can, ❌ never on a timer. `notify` must not block on the writer
+    /// (it runs there). A build that fails never calls it: the tree keeps saying the
+    /// indexes are building, which is what a read would answer too.
+    pub fn when_indexes_ready(&self, notify: Box<dyn FnOnce() + Send>) {
+        let mut watch = self.indexes.lock_ignore_poison();
+        if watch.ready {
+            drop(watch);
+            notify();
+            return;
+        }
+        watch.waiting.push(notify);
+    }
+
+    /// The writer built the folder indexes (or found them built): wake everyone waiting,
+    /// outside the lock, and answer every later [`Self::when_indexes_ready`] at once.
+    pub(crate) fn mark_indexes_ready(&self) {
+        let waiting = {
+            let mut watch = self.indexes.lock_ignore_poison();
+            watch.ready = true;
+            std::mem::take(&mut watch.waiting)
+        };
+        for notify in waiting {
+            notify();
         }
     }
 

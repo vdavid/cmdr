@@ -53,6 +53,8 @@ pub(crate) const SCAN_PREVIEW_CANCELLED: &str = "scan-preview-cancelled";
 
 /// `TreeBackfillEvent` (the operation log's, from `commands/history.rs`).
 pub(crate) const OPERATION_LOG_TREE_BACKFILL: &str = "operation-log-tree-backfill";
+/// [`OperationLogTreeIndexesReady`] (the app's `operation_log_host`).
+pub(crate) const OPERATION_LOG_TREE_INDEXES_READY: &str = "operation-log-tree-indexes-ready";
 
 /// `volumes-busy-changed`'s payload (`VolumesBusyChanged` in the app, which
 /// lives in the app crate).
@@ -61,6 +63,11 @@ pub(crate) const OPERATION_LOG_TREE_BACKFILL: &str = "operation-log-tree-backfil
 pub(crate) struct VolumesBusyChanged {
     pub(crate) volume_ids: Vec<String>,
 }
+
+/// `operation-log-tree-indexes-ready`'s payload (`OperationLogTreeIndexesReady` in the
+/// app, which lives in the app crate): nothing but the fact.
+#[derive(Serialize)]
+pub(crate) struct OperationLogTreeIndexesReady {}
 
 /// `payload` on the page's event channel as `name`.
 pub(crate) fn emit(sink: &dyn EventSink, name: &str, payload: &impl Serialize) {

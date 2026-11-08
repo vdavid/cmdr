@@ -25,7 +25,9 @@ pub(super) fn journal() -> Journal {
     drop(OperationLogStore::open(&path, &|_| None).expect("open store"));
     let writer = OperationLogWriter::spawn(&path).expect("spawn writer");
     // As `OperationLog::open` does.
-    writer.build_tree_indexes().expect("queue the folder indexes");
+    writer
+        .build_tree_indexes(std::sync::Arc::default())
+        .expect("queue the folder indexes");
     Journal {
         writer,
         path,

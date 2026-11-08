@@ -49,6 +49,7 @@ use super::store::{
     OperationLogStoreError, build_tree_item_indexes, fold_name, intern_child_dir, intern_dir, open_write_connection,
 };
 use super::tree::TreeAxis;
+use super::tree::status::BackfillRegistry;
 use super::tree::summary::{RowFacts, TreeDirRow};
 use super::types::{
     ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, OperationId,
@@ -251,7 +252,8 @@ enum WriteMessage {
         reply: mpsc::Sender<Option<TreeSummaryWrite>>,
     },
     Prune(PruneRequest),
-    BuildTreeIndexes,
+    /// The registry hears when they exist ([`BackfillRegistry::when_indexes_ready`]).
+    BuildTreeIndexes(Arc<BackfillRegistry>),
     Flush(mpsc::Sender<()>),
     Shutdown,
 }
@@ -396,9 +398,10 @@ impl OperationLogWriter {
 
     /// Enqueue building the item tree's folder indexes if they're missing
     /// (`store/tree_indexes.rs`). Fire-and-forget: what's sent after it waits behind
-    /// it, so call it once, right after open, off the app's main thread's path.
-    pub(crate) fn build_tree_indexes(&self) -> Result<(), OperationLogStoreError> {
-        self.send(WriteMessage::BuildTreeIndexes)
+    /// it, so call it once, right after open, off the app's main thread's path. Tells
+    /// `registry` once they exist, so a tree waiting on them hears it.
+    pub(crate) fn build_tree_indexes(&self, registry: Arc<BackfillRegistry>) -> Result<(), OperationLogStoreError> {
+        self.send(WriteMessage::BuildTreeIndexes(registry))
     }
 
     /// Block until all prior messages are committed.
@@ -526,11 +529,10 @@ fn apply_message(conn: &mut Connection, msg: WriteMessage) -> std::ops::ControlF
                 log::warn!(target: "operation_log", "prune failed: {e}");
             }
         }
-        WriteMessage::BuildTreeIndexes => {
-            if let Err(e) = build_tree_item_indexes(conn) {
-                log::warn!(target: "operation_log", "building the item tree's folder indexes failed: {e}");
-            }
-        }
+        WriteMessage::BuildTreeIndexes(registry) => match build_tree_item_indexes(conn) {
+            Ok(()) => registry.mark_indexes_ready(),
+            Err(e) => log::warn!(target: "operation_log", "building the item tree's folder indexes failed: {e}"),
+        },
         WriteMessage::Flush(done) => {
             let _ = done.send(());
         }

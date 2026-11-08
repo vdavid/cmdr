@@ -72,6 +72,45 @@ fn opening_the_journal_builds_the_folder_indexes_on_the_writer() {
     assert!(tree_item_indexes_exist(&conn).expect("lookup"));
 }
 
+/// A tree waiting on the indexes hears once when the writer has built them, and a
+/// later ask hears at once, so the host can turn it into an event instead of a poll.
+#[test]
+fn the_registry_says_once_when_the_folder_indexes_exist() {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = operation_log_db_path(dir.path());
+    seed_v5(&path);
+    let log = crate::OperationLog::detached();
+    let heard = Arc::new(AtomicUsize::new(0));
+    let count = |heard: &Arc<AtomicUsize>| {
+        let heard = Arc::clone(heard);
+        Box::new(move || {
+            heard.fetch_add(1, Ordering::SeqCst);
+        })
+    };
+
+    log.tree_backfills().when_indexes_ready(count(&heard));
+    assert_eq!(
+        heard.load(Ordering::SeqCst),
+        0,
+        "nothing is built before the journal opens"
+    );
+
+    log.open(&path, &|_| None).expect("open");
+    log.writer().expect("writer").flush_blocking().expect("flush");
+    assert_eq!(heard.load(Ordering::SeqCst), 1, "the build tells whoever waited, once");
+    let conn = open_read_connection(&path).expect("read connection");
+    assert!(
+        tree_item_indexes_exist(&conn).expect("lookup"),
+        "it says so only once they exist"
+    );
+
+    log.tree_backfills().when_indexes_ready(count(&heard));
+    assert_eq!(heard.load(Ordering::SeqCst), 2, "an ask after the build hears at once");
+}
+
 fn plan(conn: &Connection, sql: &str) -> Vec<String> {
     let mut stmt = conn.prepare(&format!("EXPLAIN QUERY PLAN {sql}")).expect("explain");
     stmt.query_map(rusqlite::params!["op", 7, 100], |row| row.get::<_, String>(3))

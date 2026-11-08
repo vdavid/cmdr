@@ -132,7 +132,7 @@ fn every_event_matches_the_generated_bindings() {
 /// with the engine type it carries (`operations_host/wire.rs`).
 #[test]
 fn every_write_event_name_matches_the_generated_bindings() {
-    use crate::operations_host::wire::{self, VolumesBusyChanged};
+    use crate::operations_host::wire::{self, OperationLogTreeIndexesReady, VolumesBusyChanged};
 
     let named = [
         (wire::WRITE_PROGRESS, "WriteProgressEvent"),
@@ -157,6 +157,7 @@ fn every_write_event_name_matches_the_generated_bindings() {
         (wire::SCAN_PREVIEW_ERROR, "ScanPreviewErrorEvent"),
         (wire::SCAN_PREVIEW_CANCELLED, "ScanPreviewCancelledEvent"),
         (wire::OPERATION_LOG_TREE_BACKFILL, "TreeBackfillEvent"),
+        (wire::OPERATION_LOG_TREE_INDEXES_READY, "OperationLogTreeIndexesReady"),
     ];
     for (event, ts) in named {
         assert_eq!(
@@ -170,5 +171,10 @@ fn every_write_event_name_matches_the_generated_bindings() {
         VolumesBusyChanged {
             volume_ids: vec!["root".into()],
         },
+    );
+    // A fact with no fields: bindings.ts types it `Record<string, never>`, which has no keys to compare.
+    assert_eq!(
+        serde_json::to_value(OperationLogTreeIndexesReady {}).expect("serialize"),
+        serde_json::json!({})
     );
 }

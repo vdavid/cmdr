@@ -76,6 +76,18 @@ export function onOperationLogTreeBackfill(handler: (event: TreeBackfillEvent) =
   })
 }
 
+/**
+ * The journal's folder indexes exist, so a tree that answered `indexesBuilding` can read
+ * again. Fires once per launch, when the writer has built them (the first launch after
+ * the upgrade that added them is the only one that waits); a listener that comes later
+ * finds them built.
+ */
+export function onOperationLogTreeIndexesReady(handler: () => void): Promise<UnlistenFn> {
+  return events.operationLogTreeIndexesReady.listen(() => {
+    handler()
+  })
+}
+
 /** One operation's header plus a page of its items, dir prefixes resolved to full paths. */
 export interface OperationLogDetail {
   operation: OperationRow

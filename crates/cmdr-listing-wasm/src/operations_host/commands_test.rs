@@ -612,6 +612,15 @@ async fn the_home_folder_and_its_holders_refuse_delete() {
     assert_eq!(events.settled(&deleted).await, "write-complete");
 }
 
+/// The demo says when the journal's folder indexes exist, as the app's host does, so a
+/// tree that answered `indexesBuilding` reads again on the event rather than a timer.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_demo_says_when_the_trees_folder_indexes_exist() {
+    let (_demo, events) = demo();
+    let ready = events.wait_for("operation-log-tree-indexes-ready", |_| true).await;
+    assert_eq!(ready, json!({}));
+}
+
 /// The tree backfill answers as the desktop's does: a fresh op is built, an unknown one
 /// is unknown, and an op journaled before the summary existed backfills on the page's
 /// event loop with its steps out as `operation-log-tree-backfill`.

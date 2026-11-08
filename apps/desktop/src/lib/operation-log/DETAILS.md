@@ -85,8 +85,10 @@ Deviations from the mockup, each for a reason:
 - **An old operation backfills.** An `unbuilt(notBuilt)` or `building` answer starts (or joins)
   `start_operation_log_tree_backfill` once per settled operation; `operation-log-tree-backfill` events carry progress (a
   progress bar only past 10 s, a spinner and a line before) and the end (`built` reads the tree). Leaving the operation
-  or closing the dialog cancels it. `indexesBuilding` (once, after an upgrade) asks again every second: the backend
-  emits nothing when the indexes land. `operationRunning` / `rollingBack` just say so.
+  or closing the dialog cancels it. `indexesBuilding` (once, after an upgrade) waits for
+  `operation-log-tree-indexes-ready`, which the backend emits once the writer built them, and reads again; ❌ no timer.
+  The event fires once per launch, so a listener that subscribes late asks once more on subscribing. `operationRunning`
+  / `rollingBack` just say so.
 - **Read-only** (`readOnly`: a not-rollbackable operation, or one rolling back) takes no toggles; neither does a row
   inside a folder unit (`contents`), whose checkbox mirrors its folder, disabled.
 

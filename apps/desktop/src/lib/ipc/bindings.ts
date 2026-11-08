@@ -6366,6 +6366,7 @@ export const events = {
   openWithCopyRefused: makeEvent<OpenWithCopyRefused>('open-with-copy-refused'),
   openWithNotOnThisMac: makeEvent<OpenWithNotOnThisMac>('open-with-not-on-this-mac'),
   operationLogTreeBackfill: makeEvent<TreeBackfillEvent>('operation-log-tree-backfill'),
+  operationLogTreeIndexesReady: makeEvent<OperationLogTreeIndexesReady>('operation-log-tree-indexes-ready'),
   operationsChanged: makeEvent<OperationsChanged>('operations-changed'),
   osLocalesChanged: makeEvent<OsLocalesChanged>('os-locales-changed'),
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
@@ -15028,6 +15029,13 @@ export type OperationItems = {
   // The folder they go to, in the same form. `None` for a delete or trash.
   to: string | null
 }
+
+/**
+ *  `operation-log-tree-indexes-ready`: the journal's folder indexes exist, so an item
+ *  tree that answered `indexesBuilding` can read again. Once per launch, at most; the
+ *  first launch after the upgrade that added them is the only one that waits.
+ */
+export type OperationLogTreeIndexesReady = Record<string, never>
 
 /**
  *  A read of one `operations` row, tokens decoded to typed enums. Doubles as the

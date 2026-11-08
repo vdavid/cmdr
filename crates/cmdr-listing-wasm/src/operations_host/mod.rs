@@ -78,6 +78,17 @@ impl DemoOperations {
         if let Err(e) = log.open(&log_db, &|_| None) {
             log::warn!(target: "operation_log", "the demo's operation log didn't open: {e}");
         }
+        // As the app's `operation_log_host::start`. The inline writer builds a fresh
+        // journal's indexes inside `open`, so this fires at once; the event keeps the
+        // wire the app's.
+        let ready_sink = Arc::clone(&sink);
+        log.tree_backfills().when_indexes_ready(Box::new(move || {
+            wire::emit(
+                &*ready_sink,
+                wire::OPERATION_LOG_TREE_INDEXES_READY,
+                &wire::OperationLogTreeIndexesReady {},
+            );
+        }));
         let mut builder = Operations::builder(volumes, events)
             .volume_host(volume_host)
             .operation_log(log)

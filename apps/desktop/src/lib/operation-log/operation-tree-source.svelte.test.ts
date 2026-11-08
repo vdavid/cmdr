@@ -20,6 +20,7 @@ const ipc = vi.hoisted(() => ({
   startOperationLogTreeBackfill: vi.fn<(id: string) => Promise<TreeBackfillStart>>(),
   cancelOperationLogTreeBackfill: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
   backfillListener: null as ((event: TreeBackfillEvent) => void) | null,
+  indexesListener: null as (() => void) | null,
 }))
 
 vi.mock('#lib/tauri-commands/operation-log.js', () => ({
@@ -30,6 +31,12 @@ vi.mock('#lib/tauri-commands/operation-log.js', () => ({
     ipc.backfillListener = handler
     return Promise.resolve(() => {
       ipc.backfillListener = null
+    })
+  },
+  onOperationLogTreeIndexesReady: (handler: () => void) => {
+    ipc.indexesListener = handler
+    return Promise.resolve(() => {
+      ipc.indexesListener = null
     })
   },
 }))
@@ -350,13 +357,28 @@ describe('an old operation backfills before its tree opens', () => {
     expect(ipc.startOperationLogTreeBackfill).not.toHaveBeenCalled()
   })
 
-  it('asks again while the journal builds its indexes, which says nothing when it’s done', async () => {
+  it('waits for the backend to say the journal built its indexes, then reads again, with no timer', async () => {
     ipc.getOperationLogTree.mockResolvedValueOnce(treeView([], { summary: { kind: 'indexesBuilding' }, totalRows: 0 }))
     await settleOn('op-1')
     expect(source.blank?.kind).toBe('indexesBuilding')
-    vi.advanceTimersByTime(1_000)
+
+    vi.advanceTimersByTime(60_000)
     await flush()
+    expect(ipc.getOperationLogTree).toHaveBeenCalledTimes(1)
+    expect(source.blank?.kind).toBe('indexesBuilding')
+
+    ipc.indexesListener?.()
+    await flush()
+    expect(ipc.getOperationLogTree).toHaveBeenCalledTimes(2)
     expect(source.blank).toBeNull()
+  })
+
+  it('reads nothing extra on the indexes event when its tree already shows', async () => {
+    await settleOn('op-1')
+    expect(ipc.getOperationLogTree).toHaveBeenCalledTimes(1)
+    ipc.indexesListener?.()
+    await flush()
+    expect(ipc.getOperationLogTree).toHaveBeenCalledTimes(1)
   })
 
   it('says the operation is gone when retention took it', async () => {

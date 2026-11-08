@@ -35,6 +35,7 @@ import {
   cancelOperationLogTreeBackfill,
   getOperationLogTree,
   onOperationLogTreeBackfill,
+  onOperationLogTreeIndexesReady,
   startOperationLogTreeBackfill,
 } from '#lib/tauri-commands/operation-log.js'
 import type { ColumnListWindowedSource } from '#lib/ui/column-list-types.js'
@@ -50,11 +51,6 @@ export const SETTLE_MS = 150
 export const SPINNER_DELAY_MS = 200
 /** A backfill shorter than this shows a spinner; a longer one earns a real progress bar. */
 export const BACKFILL_PROGRESS_DELAY_MS = 10_000
-/**
- * How often to ask again while the journal builds its folder indexes. That happens once,
- * on the first launch after an upgrade, and the backend emits no event when it's done.
- */
-export const INDEXES_RETRY_MS = 1_000
 /** Rows asked for above and below the viewport, so a short scroll lands on loaded rows. */
 export const OVERSCAN_ROWS = 20
 /** The most rows one answer carries: the backend's own cap. */
@@ -92,7 +88,6 @@ export interface OperationTreeSourceOptions {
   settleMs?: number
   spinnerDelayMs?: number
   backfillProgressDelayMs?: number
-  indexesRetryMs?: number
 }
 
 export interface OperationTreeSource {
@@ -140,7 +135,6 @@ export function createOperationTreeSource({
   settleMs = SETTLE_MS,
   spinnerDelayMs = SPINNER_DELAY_MS,
   backfillProgressDelayMs = BACKFILL_PROGRESS_DELAY_MS,
-  indexesRetryMs = INDEXES_RETRY_MS,
 }: OperationTreeSourceOptions = {}): OperationTreeSource {
   let opId = $state<string | null>(null)
   let view = $state.raw<OperationTreeView | null>(null)
@@ -169,7 +163,6 @@ export function createOperationTreeSource({
   let settleTimer: ReturnType<typeof setTimeout> | undefined
   let spinnerTimer: ReturnType<typeof setTimeout> | undefined
   let backfillTimer: ReturnType<typeof setTimeout> | undefined
-  let retryTimer: ReturnType<typeof setTimeout> | undefined
 
   function request(): { id: string; generation: number; cursor: TreeRowKey | null } | null {
     if (opId === null) return null
@@ -254,9 +247,8 @@ export function createOperationTreeSource({
         setBlank({ kind: 'backfilling', done: summary.progress.done, total: summary.progress.total })
         return
       case 'indexesBuilding':
+        // Read again when the backend says they exist (`onIndexesReady`), never on a timer.
         setBlank({ kind: 'indexesBuilding' })
-        clearTimeout(retryTimer)
-        retryTimer = setTimeout(pull, indexesRetryMs)
         return
       case 'unbuilt':
         if (summary.reason === 'notBuilt') {
@@ -345,15 +337,34 @@ export function createOperationTreeSource({
     }
   }
 
-  let unlisten: (() => void) | null = null
-  onOperationLogTreeBackfill(onBackfill)
-    .then((stop) => {
-      if (disposed) stop()
-      else unlisten = stop
-    })
-    .catch((error: unknown) => {
-      log.warn("Couldn't follow tree backfills: {error}", { error })
-    })
+  /**
+   * The journal's folder indexes exist now. Read again if this tree waits on them, or if
+   * its first answer is still on the way (it may have been asked before they existed).
+   */
+  function onIndexesReady(): void {
+    if (disposed || opId === null) return
+    if (blank?.kind === 'indexesBuilding' || blank?.kind === 'loading') pull()
+  }
+
+  const unlisteners: (() => void)[] = []
+  function follow(subscribe: Promise<() => void>, what: string, onSubscribed?: () => void): void {
+    subscribe
+      .then((stop) => {
+        if (disposed) {
+          stop()
+          return
+        }
+        unlisteners.push(stop)
+        onSubscribed?.()
+      })
+      .catch((error: unknown) => {
+        log.warn("Couldn't follow {what}: {error}", { what, error })
+      })
+  }
+  follow(onOperationLogTreeBackfill(onBackfill), 'tree backfills')
+  // The event fires once per launch, so one that fired before this listened is gone: a
+  // tree told "building" while subscribing asks once more, and finds them built.
+  follow(onOperationLogTreeIndexesReady(onIndexesReady), 'the folder indexes', onIndexesReady)
 
   function leaveOperation(): void {
     if (backfillAsked && opId !== null) {
@@ -363,7 +374,6 @@ export function createOperationTreeSource({
     }
     backfillAsked = false
     clearTimeout(backfillTimer)
-    clearTimeout(retryTimer)
     backfillSlow = false
   }
 
@@ -534,7 +544,7 @@ export function createOperationTreeSource({
       clearTimeout(settleTimer)
       clearTimeout(spinnerTimer)
       pulls.cancel()
-      unlisten?.()
+      for (const stop of unlisteners) stop()
     },
   }
 }
