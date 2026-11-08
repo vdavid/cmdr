@@ -115,6 +115,10 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}，{skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b"
+  },
   "operationLog.tree.operationSkipped": "这项操作跳过了这一项，所以没有要回滚的内容。",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -171,9 +175,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "单独勾选的项目已经达到 Cmdr 能记住的上限。请改为勾选整个文件夹。",
+  "operationLog.tree.togglesCapped": "Cmdr 能逐个选择的项目已经到上限了。请改为选择整个文件夹。",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "从 {from} 到 {to}",
   "@operationLog.route.fromTo": {
@@ -427,17 +431,17 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalNothingSelected": "请至少勾选一个要回滚的项目。",
+  "operationLog.rollback.refusalNothingSelected": "请至少选择一个要回滚的项目。",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr 还在读取这项操作的项目。请稍后重试。",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "单独勾选的项目超过了 Cmdr 能记住的上限。请改为勾选整个文件夹。",
+  "operationLog.rollback.refusalTooManyToggles": "项目数量超过了 Cmdr 能逐个选择的上限。请改为选择整个文件夹。",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr 无法开始回滚。请稍后重试。",
   "@operationLog.rollback.refusalUnexpected": {

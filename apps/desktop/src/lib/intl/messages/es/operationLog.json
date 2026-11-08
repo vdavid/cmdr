@@ -115,6 +115,11 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Spanish lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
   "operationLog.tree.operationSkipped": "La operación omitió este elemento, así que no hay nada que revertir.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -171,9 +176,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "Has llegado al máximo de elementos sueltos que Cmdr puede recordar. Marca o desmarca una carpeta entera.",
+  "operationLog.tree.togglesCapped": "Has llegado al máximo de elementos que Cmdr puede seleccionar uno a uno. Selecciona una carpeta entera.",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "Desde {from} hacia {to}",
   "@operationLog.route.fromTo": {
@@ -427,17 +432,17 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalNothingSelected": "Marca al menos un elemento para revertir.",
+  "operationLog.rollback.refusalNothingSelected": "Selecciona al menos un elemento para revertir.",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr sigue leyendo los elementos de esta operación. Inténtalo de nuevo en un momento.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "Has marcado o desmarcado más elementos sueltos de los que Cmdr puede recordar. Marca o desmarca una carpeta entera.",
+  "operationLog.rollback.refusalTooManyToggles": "Son más elementos de los que Cmdr puede seleccionar uno a uno. Selecciona una carpeta entera.",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr no ha podido iniciar la reversión. Inténtalo de nuevo en un momento.",
   "@operationLog.rollback.refusalUnexpected": {

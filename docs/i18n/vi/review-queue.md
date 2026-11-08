@@ -115,5 +115,5 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   inline field on a file name; no source names it, so this is coined. Confirm it reads naturally.
 - **`soạn tên mới`** (`askCmdr.tool.multiRename.doing`): "working out new names" has no source either; `soạn`
   ("compose") keeps the line from claiming anything got renamed. Confirm it reads naturally.
-- **`lượt chọn riêng lẻ`** (`operationLog.tree.togglesCapped`, `operationLog.rollback.refusalTooManyToggles`): "separate
-  picks" (items checked or unchecked one by one) has no source; coined. Confirm it reads naturally.
+- **`chọn từng mục một`** (`operationLog.tree.togglesCapped`, `operationLog.rollback.refusalTooManyToggles`): "select
+  one by one" has no source; coined. Confirm it reads naturally.

@@ -116,6 +116,11 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Portuguese lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
   "operationLog.tree.operationSkipped": "A operação ignorou este item, então não há nada para reverter.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -172,9 +177,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "Esse é o máximo de itens marcados um a um que o Cmdr consegue acompanhar. Marque uma pasta inteira em vez disso.",
+  "operationLog.tree.togglesCapped": "Esse é o máximo de itens que o Cmdr consegue selecionar um a um. Selecione uma pasta inteira em vez disso.",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "De {from} para {to}",
   "@operationLog.route.fromTo": {
@@ -428,17 +433,17 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalNothingSelected": "Marque pelo menos um item para reverter.",
+  "operationLog.rollback.refusalNothingSelected": "Selecione pelo menos um item para reverter.",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "O Cmdr ainda está lendo os itens desta operação. Tente novamente em instantes.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "São mais itens marcados um a um do que o Cmdr consegue acompanhar. Marque uma pasta inteira em vez disso.",
+  "operationLog.rollback.refusalTooManyToggles": "São mais itens do que o Cmdr consegue selecionar um a um. Selecione uma pasta inteira em vez disso.",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "O Cmdr não conseguiu iniciar a reversão. Tente novamente em instantes.",
   "@operationLog.rollback.refusalUnexpected": {

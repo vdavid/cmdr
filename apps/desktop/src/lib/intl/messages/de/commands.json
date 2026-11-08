@@ -708,25 +708,25 @@
   "@commands.operationLogGoToItems.label": {
     "sourceHash": "495419e"
   },
-  "commands.operationLogToggleItem.label": "Häkchen beim Objekt setzen oder entfernen",
+  "commands.operationLogToggleItem.label": "Objekt auswählen oder abwählen",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
-  "commands.operationLogToggleItemAndDown.label": "Häkchen beim Objekt setzen oder entfernen, dann nach unten",
+  "commands.operationLogToggleItemAndDown.label": "Objekt auswählen oder abwählen, dann nach unten",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
-  "commands.operationLogSelectAll.label": "Häkchen bei allen Objekten setzen",
+  "commands.operationLogSelectAll.label": "Alle Objekte auswählen",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
-  "commands.operationLogDeselectAll.label": "Häkchen bei allen Objekten entfernen",
+  "commands.operationLogDeselectAll.label": "Alle Objekte abwählen",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
-  "commands.operationLogRollBack.label": "Objekte mit Häkchen rückgängig machen",
+  "commands.operationLogRollBack.label": "Ausgewählte Objekte rückgängig machen",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "Ansehen",
   "@commands.fileView.label": {

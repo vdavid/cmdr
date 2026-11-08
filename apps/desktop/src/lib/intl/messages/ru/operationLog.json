@@ -115,6 +115,11 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Russian lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
   "operationLog.tree.operationSkipped": "Операция пропустила этот объект, поэтому откатывать нечего.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -171,9 +176,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "Больше объектов по одному Cmdr запомнить не может. Выберите папку целиком.",
+  "operationLog.tree.togglesCapped": "Больше объектов Cmdr не может выбрать по одному. Выберите папку целиком.",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "Из папки {from} в папку {to}",
   "@operationLog.route.fromTo": {
@@ -429,15 +434,15 @@
   },
   "operationLog.rollback.refusalNothingSelected": "Чтобы выполнить откат, выберите хотя бы один объект.",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr еще читает объекты этой операции. Попробуйте еще раз через мгновение.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "Объектов, выбранных или исключенных по одному, больше, чем Cmdr может запомнить. Выберите папку целиком.",
+  "operationLog.rollback.refusalTooManyToggles": "Это больше объектов, чем Cmdr может выбрать по одному. Выберите папку целиком.",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr не удалось начать откат. Попробуйте еще раз чуть позже.",
   "@operationLog.rollback.refusalUnexpected": {

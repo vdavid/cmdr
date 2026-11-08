@@ -615,14 +615,9 @@
     "confidence": "high",
     "decision": "Ein englisches Wort, ein deutsches Wort: die Drift-Prüfung",
     "exceptions": {
-      "commands.operationLogRollBack.label": "the checked items → Objekte mit Häkchen; a checkbox tick, not verifying: Häkchen setzen / entfernen, like the catalog’s „Häkchen bei ‚Geschützt‘ entfernen“ (macOS Get Info)",
-      "commands.operationLogSelectAll.label": "a checkbox tick, not verifying: Häkchen setzen / entfernen, like the catalog’s „Häkchen bei ‚Geschützt‘ entfernen“ (macOS Get Info)",
-      "commands.operationLogToggleItem.label": "a checkbox tick, not verifying: Häkchen setzen / entfernen, like the catalog’s „Häkchen bei ‚Geschützt‘ entfernen“ (macOS Get Info)",
-      "commands.operationLogToggleItemAndDown.label": "a checkbox tick, not verifying: Häkchen setzen / entfernen, like the catalog’s „Häkchen bei ‚Geschützt‘ entfernen“ (macOS Get Info)",
       "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "the check running now is der gerade laufende Durchlauf, the catalog word for a full check",
       "indexing.step.findFilesChangeCheck": "check against the index → mit dem Index verglichen, deliberately plain vergleichen over database-register abgleichen",
       "onboarding.stepOptional.updates.summary": "a tiny check → eine winzige Anfrage; the one-line summary has no room for a verb",
-      "operationLog.rollback.refusalNothingSelected": "a checkbox tick, not verifying: Häkchen setzen / entfernen, like the catalog’s „Häkchen bei ‚Geschützt‘ entfernen“ (macOS Get Info)",
       "updates.status.checking": "Checking for updates → Wird gesucht …, the macOS Software Update idiom (Nach Updates suchen)"
     },
     "forms": "Checking … (a connection, a key) → Wird geprüft …; Checking for updates → Nach Updates suchen (macOS Software Update idiom); Checking for changes → Prüfung auf Änderungen; Re-check → Erneut prüfen; Verifying before copy → Prüfung vor dem Kopieren",
@@ -645,8 +640,6 @@
     "chosen": "auswählen",
     "confidence": "high",
     "exceptions": {
-      "operationLog.rollback.refusalTooManyToggles": "a pick here is checking or unchecking an item, so the next step names the checkbox: Setze oder entferne das Häkchen",
-      "operationLog.tree.togglesCapped": "a pick here is checking or unchecking an item, so the next step names the checkbox: Setze oder entferne das Häkchen",
       "settings.operationLog.intro": "Choose how long … → Lege fest, wie lange …"
     },
     "forms": "Choose an app … → App auswählen … (App, not Apple's Programm); Choose the adb command → Den Befehl „adb“ auswählen",

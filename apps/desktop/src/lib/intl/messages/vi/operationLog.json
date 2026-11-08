@@ -115,6 +115,11 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Vietnamese lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
   "operationLog.tree.operationSkipped": "Thao tác đã bỏ qua mục này, nên không có gì để hoàn tác.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -171,9 +176,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "Đã đạt số lượt chọn riêng lẻ tối đa mà Cmdr giữ được. Hãy chọn cả một thư mục.",
+  "operationLog.tree.togglesCapped": "Đã đạt số mục tối đa mà Cmdr có thể chọn từng mục một. Hãy chọn cả một thư mục.",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "Từ {from} đến {to}",
   "@operationLog.route.fromTo": {
@@ -429,15 +434,15 @@
   },
   "operationLog.rollback.refusalNothingSelected": "Hãy chọn ít nhất một mục để hoàn tác.",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr vẫn đang đọc các mục của thao tác này. Hãy thử lại sau giây lát.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "Số lượt chọn riêng lẻ đã vượt quá mức Cmdr giữ được. Hãy chọn cả một thư mục.",
+  "operationLog.rollback.refusalTooManyToggles": "Số mục đã vượt quá mức Cmdr có thể chọn từng mục một. Hãy chọn cả một thư mục.",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr không khởi động được việc hoàn tác. Hãy thử lại sau giây lát.",
   "@operationLog.rollback.refusalUnexpected": {

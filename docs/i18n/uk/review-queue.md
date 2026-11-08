@@ -202,5 +202,5 @@ record the outcome in `terms.json` or `decisions.md`).
   `operationLog.tree.rollupRolledBack`): «Переміщено назад», «Перейменовано назад», and the lowercase rollup «відкочено
   3, пропущено 2» (lowercase to match the shipped `fileOperations.transferTree.skippedCount`, even when it stands alone
   in the cell) need a native check.
-- **Checkbox verbs** (`commands.operationLogToggleItem.label` and siblings): «Поставити або зняти позначку на елементі»
-  is long for a shortcuts row; confirm it reads naturally.
+- **Checkbox verbs** (`commands.operationLogToggleItem.label` and siblings): «Вибрати елемент або скасувати вибір»
+  follows the select and deselect rulings; confirm it reads naturally for a checkbox.

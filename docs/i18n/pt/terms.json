@@ -560,11 +560,7 @@
     "accept": ["escolh"],
     "forms": "Choose an app… → Escolher app…",
     "confidence": "high",
-    "sources": "macOS pt-BR (Choose… → Escolher…)",
-    "exceptions": {
-      "operationLog.tree.togglesCapped": "Pick here means ticking an item's checkbox: marcar (Marque uma pasta inteira).",
-      "operationLog.rollback.refusalTooManyToggles": "Pick here means ticking an item's checkbox: marcar (Marque uma pasta inteira)."
-    }
+    "sources": "macOS pt-BR (Choose… → Escolher…)"
   },
   "clean-up": {
     "chosen": "limpar",

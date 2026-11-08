@@ -115,6 +115,11 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Czech lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
   "operationLog.tree.operationSkipped": "Operace tuto položku přeskočila, takže není co vracet.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -171,9 +176,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "Víc jednotlivých výběrů už Cmdr neudrží. Vyberte místo toho celou složku.",
+  "operationLog.tree.togglesCapped": "Víc položek už Cmdr jednotlivě vybrat nedokáže. Vyberte místo toho celou složku.",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "Ze složky {from} do složky {to}",
   "@operationLog.route.fromTo": {
@@ -428,17 +433,17 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalNothingSelected": "Zaškrtněte aspoň jednu položku, u které se mají vrátit změny.",
+  "operationLog.rollback.refusalNothingSelected": "Vyberte aspoň jednu položku, u které se mají vrátit změny.",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr ještě načítá položky této operace. Zkuste to za chvíli znovu.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "Tolik jednotlivých výběrů Cmdr neudrží. Vyberte místo toho celou složku.",
+  "operationLog.rollback.refusalTooManyToggles": "Tolik položek Cmdr jednotlivě vybrat nedokáže. Vyberte místo toho celou složku.",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr nedokázal spustit vrácení změn. Zkuste to za chvíli znovu.",
   "@operationLog.rollback.refusalUnexpected": {

@@ -710,23 +710,23 @@
   },
   "commands.operationLogToggleItem.label": "Chọn hoặc bỏ chọn mục",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
   "commands.operationLogToggleItemAndDown.label": "Chọn hoặc bỏ chọn mục, rồi di chuyển xuống",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
   "commands.operationLogSelectAll.label": "Chọn tất cả các mục",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
   "commands.operationLogDeselectAll.label": "Bỏ chọn tất cả các mục",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
   "commands.operationLogRollBack.label": "Hoàn tác các mục đã chọn",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "Xem",
   "@commands.fileView.label": {

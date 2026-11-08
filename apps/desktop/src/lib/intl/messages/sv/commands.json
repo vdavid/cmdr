@@ -710,23 +710,23 @@
   },
   "commands.operationLogToggleItem.label": "Markera eller avmarkera objektet",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
   "commands.operationLogToggleItemAndDown.label": "Markera eller avmarkera objektet och flytta sedan ner",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
   "commands.operationLogSelectAll.label": "Markera alla objekt",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
   "commands.operationLogDeselectAll.label": "Avmarkera alla objekt",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
   "commands.operationLogRollBack.label": "Ångra de markerade objekten",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "Visa",
   "@commands.fileView.label": {

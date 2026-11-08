@@ -708,25 +708,25 @@
   "@commands.operationLogGoToItems.label": {
     "sourceHash": "495419e"
   },
-  "commands.operationLogToggleItem.label": "Elem kijelölése ki-be",
+  "commands.operationLogToggleItem.label": "Elem kijelölése vagy kijelölésének törlése",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
-  "commands.operationLogToggleItemAndDown.label": "Elem kijelölése ki-be és lefelé lépés",
+  "commands.operationLogToggleItemAndDown.label": "Elem kijelölése vagy kijelölésének törlése, majd lefelé lépés",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
   "commands.operationLogSelectAll.label": "Az összes elem kijelölése",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
   "commands.operationLogDeselectAll.label": "Kijelölés törlése az összes elemről",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
   "commands.operationLogRollBack.label": "A kijelölt elemek visszagörgetése",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "Megtekintés",
   "@commands.fileView.label": {

@@ -554,13 +554,6 @@
     "chosen": "controleren",
     "confidence": "high",
     "decision": "Schijfindex",
-    "exceptions": {
-      "commands.operationLogToggleItem.label": "Ticking a checkbox, not verifying: aanvinken / uitvinken (catalog suggestedOps.refusal.nothingSelected.*).",
-      "commands.operationLogToggleItemAndDown.label": "Ticking a checkbox: Vink … aan of uit.",
-      "commands.operationLogSelectAll.label": "Ticking every checkbox: Vink alle onderdelen aan.",
-      "commands.operationLogRollBack.label": "The checked items are the ticked ones: aangevinkt.",
-      "operationLog.rollback.refusalNothingSelected": "Ticking a checkbox: Vink … aan."
-    },
     "forms": "progress Controleren; Checking for changes → Controleren op wijzigingen; Re-check → Controleer opnieuw; noun controle (de volgende volledige controle)",
     "sources": "Double Commander (Controleer …), Nautilus (controleren op), Mail/SoftwareUpdate (Check Again → Controleer opnieuw)"
   },

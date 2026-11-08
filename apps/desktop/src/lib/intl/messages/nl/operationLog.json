@@ -116,6 +116,11 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Dutch lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
   "operationLog.tree.operationSkipped": "De bewerking heeft dit onderdeel overgeslagen, dus er is niets terug te draaien.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -172,9 +177,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "Meer losse keuzes kan Cmdr niet onthouden. Kies in plaats daarvan een map.",
+  "operationLog.tree.togglesCapped": "Meer onderdelen kan Cmdr niet één voor één selecteren. Selecteer in plaats daarvan een map.",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "Van {from} naar {to}",
   "@operationLog.route.fromTo": {
@@ -430,17 +435,17 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalNothingSelected": "Vink minstens één onderdeel aan om terug te draaien.",
+  "operationLog.rollback.refusalNothingSelected": "Selecteer minstens één onderdeel om terug te draaien.",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr is de onderdelen van deze bewerking nog aan het lezen. Probeer het zo meteen opnieuw.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "Dat zijn meer losse keuzes dan Cmdr kan onthouden. Kies in plaats daarvan een map.",
+  "operationLog.rollback.refusalTooManyToggles": "Dat zijn meer onderdelen dan Cmdr één voor één kan selecteren. Selecteer in plaats daarvan een map.",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr kon het terugdraaien niet starten. Probeer het zo meteen opnieuw.",
   "@operationLog.rollback.refusalUnexpected": {

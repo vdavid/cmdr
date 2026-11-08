@@ -710,25 +710,25 @@
   "@commands.operationLogGoToItems.label": {
     "sourceHash": "495419e"
   },
-  "commands.operationLogToggleItem.label": "Vink het onderdeel aan of uit",
+  "commands.operationLogToggleItem.label": "Selecteer of deselecteer het onderdeel",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
-  "commands.operationLogToggleItemAndDown.label": "Vink het onderdeel aan of uit en ga dan omlaag",
+  "commands.operationLogToggleItemAndDown.label": "Selecteer of deselecteer het onderdeel en ga dan omlaag",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
-  "commands.operationLogSelectAll.label": "Vink alle onderdelen aan",
+  "commands.operationLogSelectAll.label": "Selecteer alle onderdelen",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
-  "commands.operationLogDeselectAll.label": "Vink alle onderdelen uit",
+  "commands.operationLogDeselectAll.label": "Deselecteer alle onderdelen",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
-  "commands.operationLogRollBack.label": "Draai de aangevinkte onderdelen terug",
+  "commands.operationLogRollBack.label": "De geselecteerde onderdelen terugdraaien",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "Toon",
   "@commands.fileView.label": {

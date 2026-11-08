@@ -624,13 +624,6 @@
     "accept": ["確認", "核對", "查看", "看看", "看一下", "看過", "正在看", "驗證", "比對", "查"],
     "chosen": "檢查",
     "confidence": "high",
-    "exceptions": {
-      "commands.operationLogRollBack.label": "Check means ticking a checkbox here, not verifying: 勾選, as errors.* write 取消勾選「已鎖定」.",
-      "commands.operationLogSelectAll.label": "Ticking checkboxes: 勾選 (same as commands.operationLogRollBack.label).",
-      "commands.operationLogToggleItem.label": "Ticking a checkbox: 勾選 / 取消勾選 (same as commands.operationLogRollBack.label).",
-      "commands.operationLogToggleItemAndDown.label": "Ticking a checkbox: 勾選 / 取消勾選 (same as commands.operationLogRollBack.label).",
-      "operationLog.rollback.refusalNothingSelected": "Ticking a checkbox in the item tree: 勾選 (same as commands.operationLogRollBack.label)."
-    },
     "forms": "Re-check (button) → 重新檢查 (quoted exactly in settings.adb.install.intro); verify a fingerprint → 核對; check the details, a folder, a status page → 看看 / 查看; an AI tool line → 正在查看… / 已查看… (or 正在看… / 已看過…); verify a download or license → 驗證; check every folder against the index → 比對",
     "note": "Chinese spreads English check over several verbs by what is checked, so the drift check accepts all of them; don't force 檢查 into a line that says 看看.",
     "sources": "AP-TW = AP-HK fsck (Rechecking volume. → 重新檢查卷宗。)"

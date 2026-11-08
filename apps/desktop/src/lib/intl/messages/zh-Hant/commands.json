@@ -708,25 +708,25 @@
   "@commands.operationLogGoToItems.label": {
     "sourceHash": "495419e"
   },
-  "commands.operationLogToggleItem.label": "勾選或取消勾選這個項目",
+  "commands.operationLogToggleItem.label": "選取或取消選取這個項目",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
-  "commands.operationLogToggleItemAndDown.label": "勾選或取消勾選這個項目，然後下移",
+  "commands.operationLogToggleItemAndDown.label": "選取或取消選取這個項目，然後下移",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
-  "commands.operationLogSelectAll.label": "勾選所有項目",
+  "commands.operationLogSelectAll.label": "選取所有項目",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
-  "commands.operationLogDeselectAll.label": "取消勾選所有項目",
+  "commands.operationLogDeselectAll.label": "取消選取所有項目",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
-  "commands.operationLogRollBack.label": "復原勾選的項目",
+  "commands.operationLogRollBack.label": "復原所選項目",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "檢視",
   "@commands.fileView.label": {

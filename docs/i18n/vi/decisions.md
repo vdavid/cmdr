@@ -58,8 +58,8 @@ GNOME / Thunar / Dolphin / Total Commander; catalog consistency over a pile-idea
 
 ## Nhật ký thao tác (`operationLog.*`, `commands.logOperationLog.*`)
 
-- Every rollback state uses `hoàn tác` (`Không thể` / `Có thể` / `Đang` / `Đã` / `Đã … một phần`), so the column reads
-  as one scale.
+- Every rollback state uses `hoàn tác` (`Không thể` / `Có thể` / `Đang` / `Đã` / `Đã … một phần`), so the column is one
+  scale.
 
 ## Ask Cmdr (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)
 

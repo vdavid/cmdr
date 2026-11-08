@@ -573,13 +573,6 @@
     "chosen": "kontrollera",
     "confidence": "high",
     "decision": "Boundaries: both forms are right",
-    "exceptions": {
-      "commands.operationLogRollBack.label": "Checkbox sense (tick an item in the Operation log tree): markera / avmarkera, as commands.queueToggleSelected.label.",
-      "commands.operationLogSelectAll.label": "Checkbox sense (tick an item in the Operation log tree): markera / avmarkera, as commands.queueToggleSelected.label.",
-      "commands.operationLogToggleItem.label": "Checkbox sense (tick an item in the Operation log tree): markera / avmarkera, as commands.queueToggleSelected.label.",
-      "commands.operationLogToggleItemAndDown.label": "Checkbox sense (tick an item in the Operation log tree): markera / avmarkera, as commands.queueToggleSelected.label.",
-      "operationLog.rollback.refusalNothingSelected": "Checkbox sense (tick an item in the Operation log tree): markera / avmarkera, as commands.queueToggleSelected.label."
-    },
     "forms": "verifying → Kontrollerar / kontrollera; a casual look → kolla / titta (Kolla de tekniska detaljerna nedan, Titta på din telefon); looking for something → Söker efter (Checking for X → Söker efter X); a license or download → verifiera; Re-check → Leta igen; the drive index's full check → genomsökning; run-kind header Kontroll av ändringar",
     "sources": "macOS Finder (Kontrollerar); catalog (Sök efter uppdateringar)"
   },

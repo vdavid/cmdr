@@ -708,25 +708,25 @@
   "@commands.operationLogGoToItems.label": {
     "sourceHash": "495419e"
   },
-  "commands.operationLogToggleItem.label": "Marcar o desmarcar el elemento",
+  "commands.operationLogToggleItem.label": "Seleccionar o deseleccionar el elemento",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
-  "commands.operationLogToggleItemAndDown.label": "Marcar o desmarcar el elemento y bajar",
+  "commands.operationLogToggleItemAndDown.label": "Seleccionar o deseleccionar el elemento y bajar",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
-  "commands.operationLogSelectAll.label": "Marcar todos los elementos",
+  "commands.operationLogSelectAll.label": "Seleccionar todos los elementos",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
-  "commands.operationLogDeselectAll.label": "Desmarcar todos los elementos",
+  "commands.operationLogDeselectAll.label": "Deseleccionar todos los elementos",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
-  "commands.operationLogRollBack.label": "Revertir los elementos marcados",
+  "commands.operationLogRollBack.label": "Revertir los elementos seleccionados",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "Ver",
   "@commands.fileView.label": {

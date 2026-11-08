@@ -708,25 +708,25 @@
   "@commands.operationLogGoToItems.label": {
     "sourceHash": "495419e"
   },
-  "commands.operationLogToggleItem.label": "Cocher ou décocher l’élément",
+  "commands.operationLogToggleItem.label": "Sélectionner ou désélectionner l’élément",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
-  "commands.operationLogToggleItemAndDown.label": "Cocher ou décocher l’élément, puis descendre",
+  "commands.operationLogToggleItemAndDown.label": "Sélectionner ou désélectionner l’élément, puis descendre",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
-  "commands.operationLogSelectAll.label": "Cocher tous les éléments",
+  "commands.operationLogSelectAll.label": "Sélectionner tous les éléments",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
-  "commands.operationLogDeselectAll.label": "Décocher tous les éléments",
+  "commands.operationLogDeselectAll.label": "Désélectionner tous les éléments",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
-  "commands.operationLogRollBack.label": "Revenir en arrière sur les éléments cochés",
+  "commands.operationLogRollBack.label": "Revenir en arrière sur les éléments sélectionnés",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "Visualiser",
   "@commands.fileView.label": {

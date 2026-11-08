@@ -538,9 +538,7 @@
     "confidence": "high",
     "exceptions": {
       "errors.listing.alreadyExists.suggestion": "\"choose a different name for the new one\" reads 取个不同的名字 (give it another name).",
-      "errors.listing.alreadyExistsErrno.suggestion": "\"choose a different name for the new one\" reads 取个不同的名字 (give it another name).",
-      "operationLog.rollback.refusalTooManyToggles": "\"Pick a folder instead\" means ticking a whole folder's checkbox, so 勾选整个文件夹, matching the tree's 勾选 commands.",
-      "operationLog.tree.togglesCapped": "\"Pick a folder instead\" means ticking a whole folder's checkbox, so 勾选整个文件夹, matching the tree's 勾选 commands."
+      "errors.listing.alreadyExistsErrno.suggestion": "\"choose a different name for the new one\" reads 取个不同的名字 (give it another name)."
     },
     "forms": "a dropdown or radio choice → 选择 / 选一个; the macOS file-picker title and button → 选取 (选取 App…, 选取 adb 命令); \"choose a different X\" → 换一个 X",
     "sources": "macOS"

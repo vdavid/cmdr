@@ -114,9 +114,8 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   than "at the destination"? Fallback: `Nom refusé par la destination` (loses the `autoriser` term).
 - **Operation log item tree** (`operationLog.tree.rollupRolledBack`, `togglesCapped`, `dialog.selectedCount`): the
   folder tally `{countText} rétablis` (beside `{countText} ignorés`) is a coined participle, since `retour en arrière`
-  has none; does it read right for deleted copies too? "Pick a folder instead" →
-  `Cochez ou décochez plutôt un dossier entier` (names the checkbox). The count line is a colon form,
-  `Sélection : 3 sur 12`, because the plural driver is the total.
+  has none; does it read right for deleted copies too? The count line is a colon form, `Sélection : 3 sur 12`, because
+  the plural driver is the total.
 
 ## Overflow (check against the `en-XA` pseudolocale)
 

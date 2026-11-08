@@ -1085,7 +1085,7 @@
   "@fileOperations.rollbackConfirm.rollBackRest": {
     "sourceHash": "f954882"
   },
-  "fileOperations.rollbackConfirm.titleSelected": "Visszagörgeted a kijelölt elemeket?",
+  "fileOperations.rollbackConfirm.titleSelected": "A kijelölt elemek visszagörgetése?",
   "@fileOperations.rollbackConfirm.titleSelected": {
     "sourceHash": "94d4cad"
   },

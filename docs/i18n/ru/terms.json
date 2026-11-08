@@ -814,14 +814,7 @@
     "proseAccept": ["убед", "посмотр", "свер"],
     "forms": "progress Проверка…; Re-check → Проверить снова; Check for updates → Проверить обновления; Not checked → Не проверено; I’ve checked the key / the certificate → Ключ проверен / Сертификат проверен (impersonal, so the user isn’t gendered)",
     "confidence": "high",
-    "sources": "macOS Finder LocalizableMerged PW22 (Verifying → Проверка), BN5 (Verifying “^0” → Проверка диска «^0»); AppKit MenuCommands (Check Spelling → Проверить правописание); MS (check → проверить, verify → проверять); DC, Thunar (Проверка)",
-    "exceptions": {
-      "commands.operationLogToggleItem.label": "Ticking a checkbox in the Operation log’s item tree, not verifying anything: list-item choosing like the queue, so «выбрать». «Выбрать объект или снять выбор», mirroring `commands.queueToggleSelected.label`.",
-      "commands.operationLogToggleItemAndDown.label": "Ticking a checkbox in the Operation log’s item tree, not verifying anything: list-item choosing like the queue, so «выбрать». «Выбрать объект или снять выбор и перейти вниз».",
-      "commands.operationLogSelectAll.label": "Ticking a checkbox in the Operation log’s item tree, not verifying anything: list-item choosing like the queue, so «выбрать». «Выбрать все объекты», mirroring `commands.queueSelectAll.label`.",
-      "commands.operationLogRollBack.label": "Ticking a checkbox in the Operation log’s item tree, not verifying anything: list-item choosing like the queue, so «выбрать». «Откатить выбранные объекты».",
-      "operationLog.rollback.refusalNothingSelected": "Ticking a checkbox in the Operation log’s item tree, not verifying anything: list-item choosing like the queue, so «выбрать». «выберите хотя бы один объект»."
-    }
+    "sources": "macOS Finder LocalizableMerged PW22 (Verifying → Проверка), BN5 (Verifying “^0” → Проверка диска «^0»); AppKit MenuCommands (Check Spelling → Проверить правописание); MS (check → проверить, verify → проверять); DC, Thunar (Проверка)"
   },
   "checklist": {
     "chosen": "контрольный список",
@@ -4555,7 +4548,14 @@
       "operationLog.rollback.rollbackableNoticeDelete": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
       "operationLog.rollback.rollbackableNoticeMoveBack": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
       "operationLog.rollback.rollbackableNoticeRenameBack": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
-      "operationLog.rollback.rollbackableNoticeTagsBack": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked)."
+      "operationLog.rollback.rollbackableNoticeTagsBack": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "commands.operationLogToggleItem.label": "Ticks or unticks a checkbox in the Operation log’s item tree: list-item choosing like the queue, so «Выбрать объект или снять выбор», mirroring `commands.queueToggleSelected.label`.",
+      "commands.operationLogToggleItemAndDown.label": "Ticks or unticks a checkbox in the Operation log’s item tree, then moves down: list-item choosing like the queue, so «Выбрать объект или снять выбор и перейти вниз».",
+      "commands.operationLogSelectAll.label": "Ticks every checkbox in the Operation log’s item tree: list-item choosing like the queue, so «Выбрать все объекты», mirroring `commands.queueSelectAll.label`.",
+      "commands.operationLogRollBack.label": "Items ticked by checkbox in the Operation log’s item tree: «Откатить выбранные объекты», matching `fileOperations.rollbackConfirm.titleSelected`.",
+      "operationLog.rollback.refusalNothingSelected": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выберите хотя бы один объект».",
+      "operationLog.tree.togglesCapped": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбрать по одному» / «Выберите папку целиком».",
+      "operationLog.rollback.refusalTooManyToggles": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбрать по одному» / «Выберите папку целиком»."
     },
     "decision": "Selection: выделение"
   },

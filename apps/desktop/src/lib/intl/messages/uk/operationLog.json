@@ -115,6 +115,11 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Ukrainian lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
   "operationLog.tree.operationSkipped": "Операція пропустила цей елемент, тож відкочувати тут нічого.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -171,9 +176,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "Більше окремих позначок Cmdr не може запамʼятати. Натомість виберіть цілу папку.",
+  "operationLog.tree.togglesCapped": "Більше елементів Cmdr не може вибрати по одному. Натомість виберіть цілу папку.",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "Звідки: {from}, куди: {to}",
   "@operationLog.route.fromTo": {
@@ -429,15 +434,15 @@
   },
   "operationLog.rollback.refusalNothingSelected": "Виберіть хоча б один елемент, який треба відкотити.",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr ще читає елементи цієї операції. Спробуйте ще раз за мить.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "Стільки окремих позначок Cmdr не може запамʼятати. Натомість виберіть цілу папку.",
+  "operationLog.rollback.refusalTooManyToggles": "Це більше елементів, ніж Cmdr може вибрати по одному. Натомість виберіть цілу папку.",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr не вдалося запустити відкат. Спробуйте ще раз за мить.",
   "@operationLog.rollback.refusalUnexpected": {

@@ -157,12 +157,7 @@
       "commands.appCheckForUpdates.description": "zjistit, jestli … is the natural verb for checking availability",
       "settings.updates.autoCheck.label": "update concept: Automaticky vyhledávat aktualizace, pairs with menu.app.checkForUpdates (Vyhledat aktualizace…)",
       "settings.updates.checkForUpdates": "update concept: Vyhledat aktualizace, the menu.app.checkForUpdates label without the ellipsis",
-      "updates.failure.check": "Check for updates is the update concept: Vyhledat aktualizace (menu.app.checkForUpdates), so the failure says Cmdru se nepodařilo vyhledat aktualizace.",
-      "commands.operationLogToggleItem.label": "ticking a checkbox, not verifying: zaškrtnout / zrušit zaškrtnutí, as macOS (zrušte zaškrtnutí políčka Uzamčeno)",
-      "commands.operationLogToggleItemAndDown.label": "ticking a checkbox, not verifying: zaškrtnout / zrušit zaškrtnutí, as macOS (zrušte zaškrtnutí políčka Uzamčeno)",
-      "commands.operationLogSelectAll.label": "ticking a checkbox, not verifying: zaškrtnout, as macOS (zaškrtnuto políčko Uzamčeno)",
-      "commands.operationLogRollBack.label": "the checked items are ticked checkboxes, not verified ones: zaškrtnuté položky",
-      "operationLog.rollback.refusalNothingSelected": "ticking a checkbox, not verifying: Zaškrtněte, as macOS (zaškrtnuto políčko Uzamčeno)"
+      "updates.failure.check": "Check for updates is the update concept: Vyhledat aktualizace (menu.app.checkForUpdates), so the failure says Cmdru se nepodařilo vyhledat aktualizace."
     }
   },
   "choose": {

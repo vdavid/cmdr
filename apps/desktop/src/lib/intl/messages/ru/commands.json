@@ -710,23 +710,23 @@
   },
   "commands.operationLogToggleItem.label": "Выбрать объект или снять выбор",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
   "commands.operationLogToggleItemAndDown.label": "Выбрать объект или снять выбор и перейти вниз",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
   "commands.operationLogSelectAll.label": "Выбрать все объекты",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
   "commands.operationLogDeselectAll.label": "Снять выбор со всех объектов",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
   "commands.operationLogRollBack.label": "Откатить выбранные объекты",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "Просмотр",
   "@commands.fileView.label": {

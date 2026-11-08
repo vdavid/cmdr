@@ -708,25 +708,25 @@
   "@commands.operationLogGoToItems.label": {
     "sourceHash": "495419e"
   },
-  "commands.operationLogToggleItem.label": "Поставити або зняти позначку на елементі",
+  "commands.operationLogToggleItem.label": "Вибрати елемент або скасувати вибір",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
-  "commands.operationLogToggleItemAndDown.label": "Поставити або зняти позначку на елементі й перейти вниз",
+  "commands.operationLogToggleItemAndDown.label": "Вибрати елемент або скасувати вибір і перейти вниз",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
-  "commands.operationLogSelectAll.label": "Поставити позначки на всіх елементах",
+  "commands.operationLogSelectAll.label": "Вибрати всі елементи",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
-  "commands.operationLogDeselectAll.label": "Зняти позначки з усіх елементів",
+  "commands.operationLogDeselectAll.label": "Скасувати вибір усіх елементів",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
-  "commands.operationLogRollBack.label": "Відкотити позначені елементи",
+  "commands.operationLogRollBack.label": "Відкотити вибрані елементи",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "Перегляд",
   "@commands.fileView.label": {

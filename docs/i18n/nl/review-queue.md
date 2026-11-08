@@ -248,10 +248,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 
 ## Bewerkingenlogboek-boom (`operationLog.tree.*`, `commands.operationLog*`, `operationLog.rollback.refusal*`)
 
-- The checkbox verb is `aanvinken` / `uitvinken` (`Vink alle onderdelen aan`, `aangevinkt`), after
-  `suggestedOps.refusal.nothingSelected.*`; the state follows English's `selected` → `geselecteerd`
-  (`Selectie terugdraaien ({countText})`, `3 van 12 geselecteerd`). Confirm the split reads as one control.
-- "Separate picks … Cmdr can hold" → `losse keuzes` / `onthouden` (`togglesCapped`, `refusalTooManyToggles`);
-  `bijhouden` means record in this catalog. Confirm.
+- The checkbox verb follows English's `select` → `Selecteer` / `Deselecteer` (`Selecteer alle onderdelen`,
+  `3 van 12 geselecteerd`). `commands.operationLogRollBack.label` is the infinitive
+  `De geselecteerde onderdelen terugdraaien`, byte-identical to `fileOperations.rollbackConfirm.titleSelected` minus its
+  `?` (`i18n-terms`), against the palette's imperative. Confirm.
 - `Komt terug samen met de bovenliggende map.` for "Comes back with its folder." avoids a pronoun for an item of unknown
   gender. Confirm.

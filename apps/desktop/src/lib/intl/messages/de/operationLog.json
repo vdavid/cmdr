@@ -117,6 +117,11 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "German lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
   "operationLog.tree.operationSkipped": "Der Vorgang hat dieses Objekt übersprungen, es gibt also nichts rückgängig zu machen.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -173,9 +178,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "Mehr einzelne Objekte kann sich Cmdr nicht merken. Setze oder entferne das Häkchen stattdessen bei einem ganzen Ordner.",
+  "operationLog.tree.togglesCapped": "Mehr Objekte kann Cmdr nicht einzeln auswählen. Wähle stattdessen einen Ordner aus.",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "Von {from} nach {to}",
   "@operationLog.route.fromTo": {
@@ -431,17 +436,17 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalNothingSelected": "Setze bei mindestens einem Objekt ein Häkchen, um es rückgängig zu machen.",
+  "operationLog.rollback.refusalNothingSelected": "Wähle mindestens ein Objekt aus, um es rückgängig zu machen.",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr liest die Objekte dieses Vorgangs noch. Versuche es gleich noch einmal.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "Das sind mehr einzelne Objekte, als sich Cmdr merken kann. Setze oder entferne das Häkchen stattdessen bei einem ganzen Ordner.",
+  "operationLog.rollback.refusalTooManyToggles": "Das sind mehr Objekte, als Cmdr einzeln auswählen kann. Wähle stattdessen einen Ordner aus.",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr konnte das Rollback nicht starten. Versuche es gleich noch einmal.",
   "@operationLog.rollback.refusalUnexpected": {

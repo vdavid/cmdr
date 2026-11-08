@@ -661,14 +661,7 @@
     ],
     "forms": "progress Ellenőrzés…; Checking for changes → Változások ellenőrzése; Checking for conflicts → Ütközések keresése; Re-check button → Újraellenőrzés; I've checked the key / the certificate → Ellenőriztem a kulcsot / Ellenőriztem a tanúsítványt",
     "confidence": "high",
-    "sources": "macOS Finder (BN9 „^0” tartalmának ellenőrzése); TextToSpeech VB_CHECK_AGAIN (Check Again = Újraellenőrzés)",
-    "exceptions": {
-      "commands.operationLogToggleItem.label": "English sense: tick a checkbox, not verify. The Operation log calls checked items “selected”, so one control keeps one verb: kijelöl (macOS Finder: a „Zárolt” nincs kijelölve; catalog Kijelölés ki-be).",
-      "commands.operationLogToggleItemAndDown.label": "Checkbox sense, as commands.operationLogToggleItem.label: kijelöl.",
-      "commands.operationLogSelectAll.label": "Checkbox sense, as commands.operationLogToggleItem.label: kijelöl.",
-      "commands.operationLogRollBack.label": "Checkbox sense (the checked items), as commands.operationLogToggleItem.label: kijelölt.",
-      "operationLog.rollback.refusalNothingSelected": "Checkbox sense, as commands.operationLogToggleItem.label: Jelölj ki."
-    }
+    "sources": "macOS Finder (BN9 „^0” tartalmának ellenőrzése); TextToSpeech VB_CHECK_AGAIN (Check Again = Újraellenőrzés)"
   },
   "checklist": {
     "chosen": "ellenőrzőlista",
@@ -690,11 +683,7 @@
     "accept": ["válassz", "választ", "kiválaszt", "válaszd", "add meg"],
     "forms": "imperative Válassz …; the dropdown placeholder → Válassz; Choose an app… → App kiválasztása…",
     "confidence": "high",
-    "sources": "macOS (Choose Application… → Alkalmazás kiválasztása…); catalog",
-    "exceptions": {
-      "operationLog.tree.togglesCapped": "English sense: “pick a folder” means checking a whole folder’s checkbox, so it takes the tree’s checkbox verb: Jelölj ki.",
-      "operationLog.rollback.refusalTooManyToggles": "Checkbox sense, as operationLog.tree.togglesCapped: Jelölj ki."
-    }
+    "sources": "macOS (Choose Application… → Alkalmazás kiválasztása…); catalog"
   },
   "clean-up": {
     "chosen": "rendrakás",

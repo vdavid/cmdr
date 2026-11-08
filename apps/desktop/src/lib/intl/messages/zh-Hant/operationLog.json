@@ -115,6 +115,10 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}，{skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b"
+  },
   "operationLog.tree.operationSkipped": "這項操作略過了這個項目，所以沒有東西可以復原。",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -171,9 +175,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "個別的勾選已經到 Cmdr 能記住的上限了。請改選整個資料夾。",
+  "operationLog.tree.togglesCapped": "Cmdr 能逐一選取的項目已經到上限了。請改為選取整個資料夾。",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "從 {from} 到 {to}",
   "@operationLog.route.fromTo": {
@@ -427,17 +431,17 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalNothingSelected": "請至少勾選一個要復原的項目。",
+  "operationLog.rollback.refusalNothingSelected": "請至少選取一個要復原的項目。",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr 還在讀取這項操作的項目。請稍後再試一次。",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "個別的勾選超過 Cmdr 能記住的上限了。請改選整個資料夾。",
+  "operationLog.rollback.refusalTooManyToggles": "項目數量超過 Cmdr 能逐一選取的上限了。請改為選取整個資料夾。",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr 無法開始復原。請稍後再試一次。",
   "@operationLog.rollback.refusalUnexpected": {

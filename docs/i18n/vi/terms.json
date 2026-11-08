@@ -471,13 +471,6 @@
     "sources": "MS terminology (chat → trò chuyện)"
   },
   "check": {
-    "exceptions": {
-      "commands.operationLogToggleItem.label": "Ticking a checkbox, not verifying: `chọn` / `bỏ chọn`, as macOS writes it (`bỏ chọn “Đã khóa”`, catalog `commands.selectionDeselectAll.label`).",
-      "commands.operationLogToggleItemAndDown.label": "Same checkbox sense as `commands.operationLogToggleItem.label`: `chọn` / `bỏ chọn`.",
-      "commands.operationLogSelectAll.label": "Same checkbox sense as `commands.operationLogToggleItem.label`: `chọn`.",
-      "commands.operationLogRollBack.label": "The checked items are the ticked checkboxes, so `các mục đã chọn`; nothing is verified.",
-      "operationLog.rollback.refusalNothingSelected": "Same checkbox sense as `commands.operationLogToggleItem.label`: `chọn`."
-    },
     "accept": ["xác minh", "đối chiếu", "xem"],
     "chosen": "kiểm tra",
     "confidence": "high",

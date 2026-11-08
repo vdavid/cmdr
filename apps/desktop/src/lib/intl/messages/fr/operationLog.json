@@ -115,6 +115,11 @@
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "French lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
   "operationLog.tree.operationSkipped": "L’opération a ignoré cet élément, donc aucun retour en arrière n’est nécessaire.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
@@ -171,9 +176,9 @@
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "C’est le maximum de choix individuels que Cmdr peut retenir. Cochez ou décochez plutôt un dossier entier.",
+  "operationLog.tree.togglesCapped": "C’est le maximum d’éléments que Cmdr peut sélectionner un par un. Sélectionnez plutôt un dossier entier.",
   "@operationLog.tree.togglesCapped": {
-    "sourceHash": "80ef3b7"
+    "sourceHash": "36aa8fa"
   },
   "operationLog.route.fromTo": "De {from} vers {to}",
   "@operationLog.route.fromTo": {
@@ -428,17 +433,17 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalNothingSelected": "Cochez au moins un élément sur lequel revenir en arrière.",
+  "operationLog.rollback.refusalNothingSelected": "Sélectionnez au moins un élément sur lequel revenir en arrière.",
   "@operationLog.rollback.refusalNothingSelected": {
-    "sourceHash": "d856cd9"
+    "sourceHash": "7a3c2fa"
   },
   "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr lit encore les éléments de cette opération. Réessayez dans un instant.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "C’est plus de choix individuels que Cmdr ne peut en retenir. Cochez ou décochez plutôt un dossier entier.",
+  "operationLog.rollback.refusalTooManyToggles": "C’est plus d’éléments que Cmdr ne peut en sélectionner un par un. Sélectionnez plutôt un dossier entier.",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "sourceHash": "bdae2c7"
+    "sourceHash": "2be9bc8"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr n’a pas pu lancer le retour en arrière. Réessayez dans un instant.",
   "@operationLog.rollback.refusalUnexpected": {

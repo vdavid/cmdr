@@ -708,25 +708,25 @@
   "@commands.operationLogGoToItems.label": {
     "sourceHash": "495419e"
   },
-  "commands.operationLogToggleItem.label": "Zaškrtnout položku nebo zrušit její zaškrtnutí",
+  "commands.operationLogToggleItem.label": "Vybrat položku nebo zrušit výběr",
   "@commands.operationLogToggleItem.label": {
-    "sourceHash": "72da697"
+    "sourceHash": "1c42fe5"
   },
-  "commands.operationLogToggleItemAndDown.label": "Zaškrtnout položku nebo zrušit její zaškrtnutí a přejít dolů",
+  "commands.operationLogToggleItemAndDown.label": "Vybrat položku nebo zrušit výběr a přejít dolů",
   "@commands.operationLogToggleItemAndDown.label": {
-    "sourceHash": "04f2da6"
+    "sourceHash": "8017eef"
   },
-  "commands.operationLogSelectAll.label": "Zaškrtnout všechny položky",
+  "commands.operationLogSelectAll.label": "Vybrat všechny položky",
   "@commands.operationLogSelectAll.label": {
-    "sourceHash": "4763cbc"
+    "sourceHash": "26c94c1"
   },
-  "commands.operationLogDeselectAll.label": "Zrušit zaškrtnutí všech položek",
+  "commands.operationLogDeselectAll.label": "Zrušit výběr všech položek",
   "@commands.operationLogDeselectAll.label": {
-    "sourceHash": "53fbccb"
+    "sourceHash": "d1df115"
   },
-  "commands.operationLogRollBack.label": "Vrátit změny zaškrtnutých položek",
+  "commands.operationLogRollBack.label": "Vrátit změny vybraných položek",
   "@commands.operationLogRollBack.label": {
-    "sourceHash": "50283fb"
+    "sourceHash": "3f2a947"
   },
   "commands.fileView.label": "Zobrazit",
   "@commands.fileView.label": {

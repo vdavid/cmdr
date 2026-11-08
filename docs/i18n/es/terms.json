@@ -514,12 +514,7 @@
     "confidence": "high",
     "sources": "macOS Finder (Comprobando…), SoftwareUpdate/Mail (Check Again → Comprobar de nuevo)",
     "exceptions": {
-      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "A full index check is análisis in this catalog (el análisis que se está ejecutando ahora mismo).",
-      "commands.operationLogToggleItem.label": "Ticking a checkbox, not verifying: marcar / desmarcar, as macOS es writes it (desmarca Bloqueado, errors.write.fileLocked.suggestion.mac).",
-      "commands.operationLogToggleItemAndDown.label": "Ticking a checkbox: marcar o desmarcar (see commands.operationLogToggleItem.label).",
-      "commands.operationLogSelectAll.label": "Ticking a checkbox: marcar (see commands.operationLogToggleItem.label).",
-      "commands.operationLogRollBack.label": "The checked items are los elementos marcados (see commands.operationLogToggleItem.label).",
-      "operationLog.rollback.refusalNothingSelected": "Ticking a checkbox: Marca (see commands.operationLogToggleItem.label)."
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "A full index check is análisis in this catalog (el análisis que se está ejecutando ahora mismo)."
     },
     "decision": "Índice de unidades"
   },
@@ -547,11 +542,7 @@
     "accept": ["elig", "elij", "eleg", "seleccion", "elíg"],
     "forms": "a native picker title or button → Seleccionar (Seleccionar app…, Seleccionar el comando adb), as Apple's Seleccionar aplicación…; in prose elegir (Elige tú las carpetas, elijas lo que elijas)",
     "confidence": "high",
-    "sources": "macOS Finder (Choose Application… → Seleccionar aplicación…)",
-    "exceptions": {
-      "operationLog.tree.togglesCapped": "\"Pick\" here is checking or unchecking an item in the Operation log tree, so it takes the checkbox verb marcar o desmarcar (commands.operationLogToggleItem.label).",
-      "operationLog.rollback.refusalTooManyToggles": "Same checkbox sense as operationLog.tree.togglesCapped: marcar o desmarcar."
-    }
+    "sources": "macOS Finder (Choose Application… → Seleccionar aplicación…)"
   },
   "clean-up": {
     "chosen": "limpiar",

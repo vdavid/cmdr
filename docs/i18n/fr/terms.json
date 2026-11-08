@@ -589,10 +589,6 @@
     "confidence": "high",
     "exceptions": {
       "adb.connect.unauthorized": "The person looks up at a phone that already shows the question; Regardez, not an inspection verb.",
-      "commands.operationLogRollBack.label": "the checked items → les éléments cochés; a checkbox tick, not verifying: cocher / décocher, like the catalog’s « décochez Verrouillé » (macOS Lire les informations)",
-      "commands.operationLogSelectAll.label": "a checkbox tick, not verifying: cocher / décocher, like the catalog’s « décochez Verrouillé » (macOS Lire les informations)",
-      "commands.operationLogToggleItem.label": "a checkbox tick, not verifying: cocher / décocher, like the catalog’s « décochez Verrouillé » (macOS Lire les informations)",
-      "commands.operationLogToggleItemAndDown.label": "a checkbox tick, not verifying: cocher / décocher, like the catalog’s « décochez Verrouillé » (macOS Lire les informations)",
       "errors.listing.couldntReadUnknown.explanation": "English-sense: check the details means read them (consultez).",
       "errors.listing.diskFullErrno.suggestion": "English-sense: check how much space is left means look it up (consultez).",
       "errors.listing.temporarilyUnavailable.suggestion": "English-sense: check Activity Monitor means look at it (consultez).",
@@ -603,8 +599,7 @@
       "errors.write.readError.suggestion": "English-sense: check the technical details means read them (consultez).",
       "errors.write.trashRefused.suggestion.other": "English-sense: check the technical details means read them (consultez).",
       "errors.write.writeError.suggestion": "English-sense: check the technical details means read them (consultez).",
-      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family.",
-      "operationLog.rollback.refusalNothingSelected": "a checkbox tick, not verifying: cocher / décocher, like the catalog’s « décochez Verrouillé » (macOS Lire les informations)"
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family."
     },
     "forms": "Check that … → Vérifiez que …; Check for updates → Rechercher les mises à jour; Re-check (adb) → Rechercher à nouveau; checking (update check) → Recherche / vérification",
     "sources": "macOS AppKit (Review Changes… → Vérifier les modifications…); macOS Software Update (Check for Updates → Rechercher les mises à jour, macOS 26.6.2 build 25G83, 2026-08-30)"
