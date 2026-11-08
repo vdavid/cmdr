@@ -574,10 +574,16 @@ pub async fn execute_rollback_with_selection(
     // failed to read (the unread files may still sit inside these dirs). A trashed or
     // moved folder is a unit here too (a big trash can put 100,000 of them in this
     // sweep), so the sweep parks on a pause BEFORE each item is verified, as the file
-    // loop does, polls the stop, and credits each folder unit on the bar.
+    // loop does, polls the stop, and credits each folder unit on the bar. It flushes
+    // every `ROLLBACK_PAGE` units, as the file loop does per page: a sweep dropped
+    // mid-way (pause, then quit) must leave what it put back durable, or the next
+    // launch's reconcile reads "nothing came back" and resets the op to rollbackable.
     if !canceled && !read_failed {
         deferred_dirs.sort_by_key(|u| std::cmp::Reverse(u.source_path.components().count()));
-        for unit in &deferred_dirs {
+        for (swept, unit) in deferred_dirs.iter().enumerate() {
+            if swept > 0 && swept % ROLLBACK_PAGE as usize == 0 {
+                acc.flush(writer, inverse_op_id, &original.op_id);
+            }
             if runner.should_stop() {
                 canceled = true;
                 break;
@@ -592,6 +598,12 @@ pub async fn execute_rollback_with_selection(
                 stand.announce(runner, Some(unit));
             }
             let result = reverse_item(volumes, runner, original.kind, unit).await;
+            // As in the file loop: a skip that coincides with a stop IS the stop, so it
+            // records nothing (no held-back folder with a stored reason).
+            if matches!(result, ItemResult::Skipped(_)) && runner.should_stop() {
+                canceled = true;
+                break;
+            }
             if credits {
                 stand.credit(unit);
             }

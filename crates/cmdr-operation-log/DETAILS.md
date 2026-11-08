@@ -809,11 +809,15 @@ rows streamed before every file, shallow first, a file inside on the second page
 
 A trashed or same-FS-moved folder is ONE DIR `rollback_unit`, so it's reversed in the sweep too, and a big trash can put
 100,000 of them there. So the sweep owes each item what the file loop does: it parks on a pause BEFORE the item is
-verified, polls the stop, and credits the bar. **The bar counts every `UnitRole::Selectable` row** (each file, and each
-folder the op moved, trashed, or made on its own; `rollback.rs::credits_progress`), bytes from files only (a folder's
-`size` is an inode length). A folder a copy or move made around its files is housekeeping the sweep removes, never on
-the bar. The totals come off `store::read_rollback_progress_totals`, which counts the same rows, or off the selection's
-algebra (below). Pinned by `crates/cmdr-operations/src/rollback/planner_tests/selection_tests.rs`
+verified, polls the stop (a skip that coincides with the stop is the stop, recording nothing), credits the bar, and
+flushes every `ROLLBACK_PAGE` units: a sweep dropped mid-way (pause, then quit) leaves what it put back durable, so the
+reconcile lands `partially_rolled_back`, never `rollbackable` (`dir_sweep_tests.rs`,
+`a_sweep_dropped_midway_leaves_the_op_partly_rolled_back_after_relaunch`). **The bar counts every `UnitRole::Selectable`
+row** (each file, and each folder the op moved, trashed, or made on its own; `rollback.rs::credits_progress`), bytes
+from files only (a folder's `size` is an inode length). A folder a copy or move made around its files is housekeeping
+the sweep removes, never on the bar. The totals come off `store::read_rollback_progress_totals`, which counts the same
+rows, or off the selection's algebra (below). Pinned by
+`crates/cmdr-operations/src/rollback/planner_tests/selection_tests.rs`
 (`a_trash_of_folders_moves_the_bar_once_per_folder`,
 `the_folder_sweep_parks_before_each_folder_and_skips_the_left_out_one`).
 
