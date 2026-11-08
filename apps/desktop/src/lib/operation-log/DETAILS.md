@@ -122,7 +122,10 @@ The mockup's map, every key a fixed registry command in `Main window/Operation l
    be read), `partiallyRolledBack` earns "Roll back the rest" until the person narrows the checks, then "Roll back
    selected (N)". The other three get nothing. At N = 0 with M > 0 the button is disabled; the engine's
    `nothingSelected` refusal is the backstop. At 0 of 0 with rows still waiting (a copied folder held back, now empty)
-   the whole-operation press sweeps them: ❌ never a dead end.
+   the whole-operation press sweeps them: ❌ never a dead end. Narrowed but with no rows showing (a later tree read
+   turned unreadable), the press is DISABLED, worded from the last answer's count: `narrowed` follows the tree source
+   owning the op, never its `blank`, so ❌ an unreadable tree never falls back to the whole-op `null` and reverses what
+   the person left out. Pinned by `OperationLogDialog.test.ts` ("disables the press when the tree turns unreadable…").
 2. Pressing it captures the operation, the action, and the selection to send (`null` unless narrowed) and stacks
    `RollbackConfirmDialog` with the variant `rollbackConfirmVariant(op.kind)` picks, `finishing` on a partly reversed
    operation, and `subset` when the selection leaves some out ("Roll back the selected items?").

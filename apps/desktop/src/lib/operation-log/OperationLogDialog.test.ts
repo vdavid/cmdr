@@ -469,6 +469,32 @@ describe('rolling back', () => {
     })
   })
 
+  it('disables the press when the tree turns unreadable after the person narrowed it, never rolling back everything', async () => {
+    // Regression: an unreadable tree dropped `narrowed`, so the bar fell back to the
+    // whole-op press and sent `null`, reversing the files the person had left out.
+    const target = await mountWithTree([opRow({ opId: 'op-copy' })])
+    const narrowed = { base: 'everything' as const, toggles: [{ kind: 'item' as const, seq: 11, on: false }] }
+    ipc.getOperationLogTree.mockResolvedValue(
+      folderCopy({ selection: narrowed, tally: tally({ files: 2, selected: 1, selectable: 2 }) }),
+    )
+    rowCheckbox(target, 2)?.click()
+    await vi.waitFor(() => {
+      expect(buttonLabel(actionButton())).toBe('Roll back selected (1)')
+    })
+
+    ipc.getOperationLogTree.mockRejectedValue(new Error('busy journal'))
+    rowCheckbox(target, 1)?.click()
+    await vi.waitFor(() => {
+      expect(treeRows(target)).toHaveLength(0)
+    })
+
+    expect(actionButton()?.disabled).toBe(true)
+    actionButton()?.click()
+    await tick()
+    expect(confirmButtons()).toHaveLength(0)
+    expect(ipc.rollbackOperation).not.toHaveBeenCalled()
+  })
+
   it('offers "Roll back the rest" on a partly rolled-back operation the person hasn’t narrowed', async () => {
     await mountWithTree([opRow({ opId: 'op-part', kind: 'copy', rollbackState: 'partiallyRolledBack' })])
     expect(buttonLabel(actionButton())).toBe('Roll back the rest')

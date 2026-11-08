@@ -81,12 +81,26 @@
     const dispatching = new SvelteSet<string>()
     const refusals = new SvelteMap<string, MessageKey>()
 
-    /** The tree's answer counts only once it's this operation's. */
-    const treeIsOp = $derived(op !== undefined && tree.opId === op.opId && tree.blank === null && tree.view !== null)
+    /** The tree source holds this operation (its picks are this operation's, rows showing or not). */
+    const treeOwned = $derived(op !== undefined && tree.opId === op.opId)
+    /** The tree's answer counts only once it's this operation's and its rows are showing. */
+    const treeIsOp = $derived(treeOwned && tree.blank === null && tree.view !== null)
     const tally = $derived(treeIsOp && tree.view !== null && !tree.view.readOnly ? tree.view.tally : null)
-    const narrowed = $derived(treeIsOp && tree.narrowed)
-    /** The action bar's press for this operation, or `null` on a state the backend gate refuses. */
-    const bar = $derived(op === undefined ? null : rollbackAction(op.rollbackState, tally, narrowed))
+    /** Decoupled from `blank` on purpose: a tree that turns unreadable keeps the person's picks. */
+    const narrowed = $derived(treeOwned && tree.narrowed)
+    /**
+     * The action bar's press for this operation, or `null` on a state the backend gate refuses.
+     * Narrowed but with no rows showing (the tree turned unreadable, say), the press is
+     * disabled: the picks can't be counted or confirmed, and ❌ falling back to the
+     * whole-op press would reverse what the person left out.
+     */
+    const bar = $derived.by(() => {
+        if (op === undefined) return null
+        if (!narrowed || tally !== null) return rollbackAction(op.rollbackState, tally, narrowed)
+        const lastTally = tree.view !== null && !tree.view.readOnly ? tree.view.tally : null
+        const stale = rollbackAction(op.rollbackState, lastTally, true)
+        return stale === null ? null : { ...stale, disabled: true }
+    })
     /**
      * The detail pane shows its standing sentence (`#op-reason-…`), so the button can point
      * at it. Same rule `OperationDetail` renders by: a refusal takes the slot, unlabelled.
