@@ -860,29 +860,29 @@
     "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). In the list of operations on the left, it moves the keyboard focus to the item tree on the right, which shows the files and folders of the operation picked in the list.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.operationLogToggleItem.label": "Check or uncheck the item",
+  "commands.operationLogToggleItem.label": "Select or deselect the item",
   "@commands.operationLogToggleItem.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). In the item tree, it checks or unchecks the item under the cursor, which decides whether rolling back includes it. On a folder, everything inside follows.",
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). In the item tree, it selects or deselects the item under the cursor (its checkbox), which decides whether rolling back includes it. On a folder, everything inside follows.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.operationLogToggleItemAndDown.label": "Check or uncheck the item, then move down",
+  "commands.operationLogToggleItemAndDown.label": "Select or deselect the item, then move down",
   "@commands.operationLogToggleItemAndDown.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). In the item tree, it checks or unchecks the item under the cursor, then moves the cursor to the next item, as the same key does in the file panes.",
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). In the item tree, it selects or deselects the item under the cursor (its checkbox), then moves the cursor to the next item, as the same key does in the file panes.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.operationLogSelectAll.label": "Check every item",
+  "commands.operationLogSelectAll.label": "Select every item",
   "@commands.operationLogSelectAll.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). In the item tree, it checks every item that can still be rolled back, so rolling back takes the whole operation.",
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). In the item tree, it selects (checks the box of) every item that can still be rolled back, so rolling back takes the whole operation.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.operationLogDeselectAll.label": "Uncheck every item",
+  "commands.operationLogDeselectAll.label": "Deselect every item",
   "@commands.operationLogDeselectAll.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). In the item tree, it unchecks every item, so the person can check only the few they want to roll back.",
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). In the item tree, it deselects (unchecks the box of) every item, so the person can select only the few they want to roll back.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.operationLogRollBack.label": "Roll back the checked items",
+  "commands.operationLogRollBack.label": "Roll back the selected items",
   "@commands.operationLogRollBack.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). It does what the dialog’s main button does: asks to roll back the checked items of the picked operation. Nothing is rolled back until the person confirms.",
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Operation log dialog (View > Operation log: the list of recent file operations, each with the items it touched, which can be rolled back) is open. Read-only (the key can’t be rebound). It does what the dialog’s main button does: asks to roll back the selected (checked) items of the picked operation. Nothing is rolled back until the person confirms.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.fileView.label": "View",

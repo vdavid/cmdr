@@ -218,9 +218,9 @@
   "@operationLog.tree.unreadable": {
     "description": "Shown in the Operation log’s item tree, in place of the rows, when Cmdr couldn’t read the selected operation’s items. \"Pick it again\" means selecting the operation in the list on the left. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
   },
-  "operationLog.tree.togglesCapped": "That’s as many separate picks as Cmdr can hold. Pick a folder instead.",
+  "operationLog.tree.togglesCapped": "That’s as many items as Cmdr can select one by one. Select a folder instead.",
   "@operationLog.tree.togglesCapped": {
-    "description": "Shown under the Operation log’s item tree when the person has checked or unchecked so many individual items that Cmdr can’t keep track of one more. The last pick didn’t take. Checking or unchecking a whole folder still works. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Shown under the Operation log’s item tree when the person has selected or deselected (ticked or unticked) so many individual items that Cmdr can’t keep track of one more. The last one didn’t take. Selecting or deselecting a whole folder still works. \"Select\" is the word the Operation log uses for its checkboxes throughout. The apostrophe is a curly typographic apostrophe (U+2019)."
   },
   "operationLog.route.fromTo": "From {from} to {to}",
   "@operationLog.route.fromTo": {
@@ -607,9 +607,9 @@
     "screenshot": "operation-log-more-pages.png",
     "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
-  "operationLog.rollback.refusalNothingSelected": "Check at least one item to roll back.",
+  "operationLog.rollback.refusalNothingSelected": "Select at least one item to roll back.",
   "@operationLog.rollback.refusalNothingSelected": {
-    "description": "Shown in the Operation log when the user presses Roll back with none of the operation's items checked, or when every checked item was already rolled back by the time the press arrived. Actionable: check an item in the list and press again.",
+    "description": "Shown in the Operation log when the user presses Roll back with none of the operation's items checked, or when every checked item was already rolled back by the time the press arrived. Actionable: select an item (tick its checkbox) in the list and press again. \"Select\" is the word the Operation log uses for its checkboxes throughout.",
     "screenshot": "operation-log-more-pages.png",
     "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
@@ -619,9 +619,9 @@
     "screenshot": "operation-log-more-pages.png",
     "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
-  "operationLog.rollback.refusalTooManyToggles": "That’s more separate picks than Cmdr can hold. Pick a folder instead.",
+  "operationLog.rollback.refusalTooManyToggles": "That’s more items than Cmdr can select one by one. Select a folder instead.",
   "@operationLog.rollback.refusalTooManyToggles": {
-    "description": "Shown in the Operation log when the user presses Roll back after checking or unchecking more than 2,000 individual items one by one. Actionable: check or uncheck a whole folder instead of its items one at a time. \"Picks\" means the individual items the user checked or unchecked by hand. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "description": "Shown in the Operation log when the user presses Roll back after checking or unchecking more than 2,000 individual items one by one. Actionable: select or deselect a whole folder instead of its items one at a time. \"Select\" is the word the Operation log uses for its checkboxes throughout. The apostrophe is a curly typographic apostrophe (U+2019).",
     "screenshot": "operation-log-more-pages.png",
     "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },

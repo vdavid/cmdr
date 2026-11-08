@@ -397,7 +397,7 @@ describe('the item tree', () => {
     rowCheckbox(target, 1)?.click()
     await vi.waitFor(() => {
       expect(target.querySelector('.tree-capped')?.textContent).toBe(
-        'That’s as many separate picks as Cmdr can hold. Pick a folder instead.',
+        'That’s as many items as Cmdr can select one by one. Select a folder instead.',
       )
     })
   })
