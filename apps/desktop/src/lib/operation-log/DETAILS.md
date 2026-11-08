@@ -33,8 +33,9 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
   restored", "Skipped", "Didn't finish", a folder's "3 rolled back, 2 skipped"), its story (`treeRowTips`: skip reason,
   "comes back with its folder", why a folder won't unfold, the other end), the route line, and the blank notices.
 - `operation-tree-test-fixtures.ts`: rows and windows in the wire shape, for the component and source tests.
-- `RollbackControls.svelte`: the Pause / Resume and Cancel a row carries while its reversal runs. One per rolling-back
-  row, binding a session to the ROW'S `inverseOpId`, and reporting the reversal's end (`onEnded`) so the row re-reads.
+- `RollbackControls.svelte`: the Pause / Resume and Cancel the action bar carries while the shown operation's reversal
+  runs, binding a session to that operation's `inverseOpId`, and reporting the reversal's end (`onEnded`) so the dialog
+  re-reads the header and the tree.
 - `rollback-refusal.ts`: `RollbackRefusalFailure` / `throwRollbackRefusal` / `asRollbackRefusal`, the three-line
   `TypedFailure` family (`#lib/ipc/typed-failure.ts` is the pattern).
 - `recording.ts`: `isOperationLogRecording()`, the one check every right-after-the-operation Undo makes before offering
@@ -143,23 +144,24 @@ The mockup's map, every key a fixed registry command in `Main window/Operation l
 operations and opens the full queue on click, and someone reading their history isn't in the posture of watching a
 transfer. Handing off keeps the history dialog a history dialog.
 
-**What replaces the progress feedback.** The row's own badge, which changes under the cursor that clicked. That's honest
-rather than optimistic: `dispatch_rollback` gates and writes `rolling_back` to the journal synchronously, before it
-returns, so an `Ok` means the state is already durable. Re-reading the row to learn what we already know would cost a
-round trip and a spinner for nothing.
+**What replaces the progress feedback.** The operation's own badge (in the list and the detail), which changes under the
+press. That's honest rather than optimistic: `dispatch_rollback` gates and writes `rolling_back` to the journal
+synchronously, before it returns, so an `Ok` means the state is already durable. Re-reading the header to learn what we
+already know would cost a round trip and a spinner for nothing.
 
-**How the end arrives.** Not from the dispatch: the row's controls follow the reversal's live session, and when it ends
-the dialog re-reads that one row, so `rolledBack` versus `partiallyRolledBack` shows up in place ("Caching and
-staleness" below).
+**How the end arrives.** Not from the dispatch: the action bar's controls follow the reversal's live session, and when
+it ends the dialog re-reads that one header and its tree, so `rolledBack` versus `partiallyRolledBack` shows up in place
+("Caching and staleness" below).
 
-### Decision: the row commands the reversal, and the id for it is journal truth
+### Decision: the action bar commands the reversal, and the id for it is journal truth
 
 A rollback over a slow mount can run for a long time, and the dialog that started it is where a person looks to stop it.
 The engine has always supported both — it polls its stop flag through `StopMeans::IntentLeavesRunning` and parks on its
 pause gate once per item — so this is buttons, not machinery.
 
-**What they command.** The REVERSAL, which is its own managed operation, never the finished operation the row names.
-Pausing a row's own `op_id` would be a no-op at best; on the wrong id it would park something else entirely.
+**What they command.** The REVERSAL, which is its own managed operation, never the finished operation the dialog shows.
+Pausing the shown operation's own `op_id` would be a no-op at best; on the wrong id it would park something else
+entirely.
 
 **Where the id comes from.** `OperationRow.inverseOpId`, filled by every journal read (the backend's own
 `crates/cmdr-operation-log/DETAILS.md` holds why every reader fills it) and by the dispatch's own answer in step 4. ❌
@@ -274,9 +276,12 @@ out partial, which is the honest read today.
   really does word itself as a restore), that a wire value like `alreadyRolledBack` is one the backend actually emits,
   and that a reversal launched from this dialog reaches the disk. It also covers the engine's three live controls end to
   end: forward progress, a pause that resumes where it left off, and a cancel inside one large file. Its cancel-midway
-  spec then rolls back the rest, which is the only place the re-entry argument above is checked against a real journal
-  and real files rather than reasoned about. ❗ Its helpers still address the old accordion (`li.op`, `.op-row`); they
-  move to `[data-op-id]` and the action bar with the subset specs.
+  spec then rolls back the rest, and two subset specs prove a checkbox narrows what the real engine does (one unchecked
+  file stays, the operation reads partial with the counted notice) and that "Roll back the rest" takes exactly what a
+  subset left: the only places the re-entry argument above is checked against a real journal and real files rather than
+  reasoned about. It addresses operations by `[data-op-id]` (never by position), the detail by
+  `section[aria-labelledby="op-head-<id>"]`, the action bar's buttons by `aria-describedby~="op-head-<id>"`, and tree
+  checkboxes by their accessible name ("Roll back <name>"), so keep those hooks stable.
 
 ## Refusal notices
 

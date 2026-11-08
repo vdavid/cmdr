@@ -855,6 +855,13 @@ collision tests.
 
 ### 9. End to end, docs, close-out
 
+**Status: E2E and docs done; the closing reviews are next.** Findings that differ from the text below:
+
+- **"Existing specs adapted, assertions unchanged" didn't fully hold**: the cancel-midway spec's notice is now the
+  counted one (`partiallyRolledBackSummary`, from the tree), since the detail swaps it in once the tree answers, and
+  every press asserts the bar's real words ("Roll back selected (N)", "Roll back the rest").
+- **`tree/layout.rs` split** along its allowlist plan: the row builders went to `tree/layout/rows.rs`.
+
 **Scope.** `operation-log-rollback.spec.ts` (new selectors; a subset rollback against real files; Finish → "Roll back
 the rest"), every touched C+D.md, `docs/architecture.md` if the map changes, feature-status if relevant, wipe nothing
 yet (the lead wipes this plan after landing).

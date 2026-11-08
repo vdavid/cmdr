@@ -627,10 +627,10 @@ word, since it really is deleting the partials.
 - The in-flight cancel-rollback path is untouched on all three.
 
 **A settled operation withdraws the question** rather than leaving one that answers to nothing: the progress dialog
-gates on `operationSettled`, the queue row on `canRollback`, and the history row on the operation still reading
-`rollbackable` (a reversal started in another window, by the agent, or over MCP takes the question down with it). The
-dialog withdraws it on a BLOCKED Rollback too, which is how a move reaching its source-deletion phase with the question
-up stops promising a journey home.
+gates on `operationSettled`, the queue row on `canRollback`, and the Operation log on the operation still offering a
+rollback (`rollbackable` or `partiallyRolledBack`; a reversal started in another window, by the agent, or over MCP takes
+the question down with it). The dialog withdraws it on a BLOCKED Rollback too, which is how a move reaching its
+source-deletion phase with the question up stops promising a journey home.
 
 **The Rollback tooltip is part of this**, and it comes in the same two flavours the question does
 (`inFlightRollbackTooltipKey`): "Stop, and delete every file written so far" for a copy, "Stop, and move back every file

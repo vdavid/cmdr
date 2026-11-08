@@ -35,7 +35,7 @@
       "id": "operation-log",
       "name": "Operation log",
       "status": "alpha",
-      "note": "A durable history of every copy, move, delete, and rename, with a Roll back button on every reversible row and a plain reason on the rows that can't be reversed. Can be turned off in Settings."
+      "note": "A durable history of every copy, move, delete, and rename. Pick an operation to see every item it touched, check the ones to roll back, and roll back all of it or only some. Operations that can't be reversed say why. Can be turned off in Settings."
     },
     {
       "id": "multi-rename",

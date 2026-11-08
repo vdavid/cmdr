@@ -633,8 +633,16 @@ export async function undo(page: TauriPage): Promise<void> {
       take.markPoster()
       await hold(1800)
       take.note('Roll back the earlier copy of "Raw imports"')
+      // The newest operation is the copy just undone, so put the cursor on the first one
+      // that can still roll back; the action bar then offers it ("Roll back selected (N)").
       await page.evaluate(`(function(){
-        var b = [...document.querySelectorAll(${JSON.stringify(`${LOG_DIALOG} button`)})].find(function (x) { return (x.textContent || '').trim() === 'Roll back' });
+        var state = document.querySelector(${JSON.stringify(`${LOG_DIALOG} .op-list .op-state[data-state="rollbackable"]`)});
+        var row = state && state.closest('.column-list-row');
+        if (row) row.click();
+      })()`)
+      await hold(800)
+      await page.evaluate(`(function(){
+        var b = [...document.querySelectorAll(${JSON.stringify(`${LOG_DIALOG} .modal-footer-actions button`)})].find(function (x) { return /^Roll back/.test((x.textContent || '').trim()) });
         if (b) b.click();
       })()`)
       await page.waitForSelector('[data-dialog-id="rollback-confirmation"]', waitBudget(10000))

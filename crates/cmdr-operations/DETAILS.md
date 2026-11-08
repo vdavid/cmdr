@@ -222,7 +222,9 @@ The full top-level inventory is here:
   `overwrite_tests.rs`), `look_alike.rs` (a name a byte-exact volume holds in another Unicode spelling, and where a new
   folder, file, or rename target goes; § "Look-alike names"). Cancellation and durability: `cancellable.rs`,
   `rollback.rs`, `durability.rs`. `rollback.rs` wears two hats: the history dialog's reversal, and the executor the
-  operation-log engine injects.
+  operation-log engine injects. `dispatch_rollback` takes the Operation log tree's `RollbackSelection` (`None` = the
+  whole operation, which MCP and undo always pass) and hands it to the log's gate and its executor, which normalize it
+  and only drop rows from the stream (`crates/cmdr-operation-log/DETAILS.md` § "The selection").
 - Vocabulary and edges: `types.rs` (+ `types/events.rs`, every event payload the app broadcasts, and `types/errors.rs`,
   `WriteOperationError` with the typed payloads its variants carry — both re-exported through `types`), `event_sinks.rs`
   (the collector sinks and the event builders), `host/` (the seams the app answers, § "The engine's host"),

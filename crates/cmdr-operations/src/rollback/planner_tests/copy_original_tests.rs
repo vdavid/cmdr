@@ -135,7 +135,7 @@ async fn undoing_a_copy_whose_original_is_out_of_the_source_roots_reach_keeps_th
     assert!(exists(&disk, "/photos/a.jpg").await);
 }
 
-/// "Finish rolling back" rechecks the original: once it's back, the copy goes.
+/// "Roll back the rest" rechecks the original: once it's back, the copy goes.
 #[tokio::test]
 async fn finishing_the_rollback_removes_the_copy_once_the_original_is_back() {
     let (rig, card, disk) = copied_photo(None).await;
