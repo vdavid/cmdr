@@ -676,7 +676,7 @@ original is there, a file, at the recorded size.
 - **An original a later logged operation MOVED counts as gone.** The journal isn't consulted: a copy is only ever
   removed against an original seen in place, and a skip is the safe answer.
 - **Order.** The copy is checked first, so a copy already gone stays an idempotent `AlreadyGone` whatever happened to
-  its original. The skip is stored like any other, so "Finish rolling back" rechecks it, and an original that came back
+  its original. The skip is stored like any other, so "Roll back the rest" rechecks it, and an original that came back
   since lets the copy go.
 - Only a COPY checks: `create_file` and compress have no original, and a cross-FS move's rows restore rather than
   remove.
@@ -968,13 +968,13 @@ unbuilt op so the row clauses decide; the summary clause's cell is `src/tree/mai
 re-issued rollback resumes idempotently: every per-item inverse is a recheck-then-act, and an already-reversed item
 reads as `AlreadyGone` (counted as a no-op success).
 
-That re-entrancy is load-bearing beyond the crash path: the history dialog's **Finish rolling back** button on a
-`partially_rolled_back` row is nothing but a second `rollback_operation` call on the SAME op, which the gate admits. The
-item loop streams every row that still awaits reversal (`RollbackUnit::awaits_reversal`): `done` rows, plus `skipped`
-rows carrying a `rollback_skip_reason` (held back by an earlier run). A `skipped` row with no reason is the operation's
-own skip (a bulk rename's blocked row) and never streams. Rows already `rolled_back` aren't re-read; a crash-resumed run
-whose outcomes didn't flush re-reads them as `AlreadyGone`. ❌ So don't make `check_rollbackable` refuse
-`PartiallyRolledBack`, and ❌ don't let any inverse act without its recheck: either one turns that button into a
+That re-entrancy is load-bearing beyond the crash path: the history dialog's **Roll back the rest** button on a
+`partially_rolled_back` operation is nothing but a second `rollback_operation` call on the SAME op, which the gate
+admits. The item loop streams every row that still awaits reversal (`RollbackUnit::awaits_reversal`): `done` rows, plus
+`skipped` rows carrying a `rollback_skip_reason` (held back by an earlier run). A `skipped` row with no reason is the
+operation's own skip (a bulk rename's blocked row) and never streams. Rows already `rolled_back` aren't re-read; a
+crash-resumed run whose outcomes didn't flush re-reads them as `AlreadyGone`. ❌ So don't make `check_rollbackable`
+refuse `PartiallyRolledBack`, and ❌ don't let any inverse act without its recheck: either one turns that button into a
 double-act. The UI side is `apps/desktop/src/lib/operation-log/DETAILS.md` § "a partly-reversed operation offers "Roll
 back the rest"".
 
@@ -1000,7 +1000,7 @@ op ended):
   is the reconcile's call.
 - Search coverage becomes `top_level_only(interrupted)`: rows the op never got to write are missing, and a coverage note
   it held never reached finalize, so it can't honestly claim `full`. The tree words a folder unit with no recorded
-  contents as `NotRecorded` off the same coverage (`tree/layout.rs`).
+  contents as `NotRecorded` off the same coverage (`src/tree/layout/rows.rs`).
 - `operations` has no status index: the step scans it once per launch, as `ops_in_rolling_back` does (the table is small
   next to its items).
 
@@ -1238,6 +1238,7 @@ an offset; the answer carries every row with everything it renders, the open row
 cursor's index, the op's tally, and the selection normalized. Both hosts answer it as `get_operation_log_tree` (the demo
 with `deny_unknown_fields` on its args and on the request). Anything but a built summary (`IndexesBuilding`,
 `Building { progress }` from the host's `BackfillRegistry`, `Unbuilt { reason }`) comes back with no rows.
+`src/tree/layout.rs` is the flatten (where rows are); `src/tree/layout/rows.rs` builds each row (what it says).
 
 - **Keys**: `Folder { dir_id }` (the deepest folder of a compacted chain) and `Item { seq }` (a file row). Stable across
   requests: compaction depends only on inserts, which a finished op no longer gets. A folder unit is a folder row keyed
