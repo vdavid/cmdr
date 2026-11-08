@@ -1048,7 +1048,7 @@
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a058f98"
   },
-  "fileOperations.rollbackConfirm.titleRest": "Roll back the rest?",
+  "fileOperations.rollbackConfirm.titleRest": "Hoàn tác phần còn lại?",
   "@fileOperations.rollbackConfirm.titleRest": {
     "sourceHash": "08a5c9b"
   },
@@ -1080,31 +1080,31 @@
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
   },
-  "fileOperations.rollbackConfirm.rollBackRest": "Roll back the rest",
+  "fileOperations.rollbackConfirm.rollBackRest": "Hoàn tác phần còn lại",
   "@fileOperations.rollbackConfirm.rollBackRest": {
     "sourceHash": "f954882"
   },
-  "fileOperations.rollbackConfirm.titleSelected": "Roll back the selected items?",
+  "fileOperations.rollbackConfirm.titleSelected": "Hoàn tác các mục đã chọn?",
   "@fileOperations.rollbackConfirm.titleSelected": {
     "sourceHash": "94d4cad"
   },
-  "fileOperations.rollbackConfirm.rollBackSelected": "Roll back selected",
+  "fileOperations.rollbackConfirm.rollBackSelected": "Hoàn tác mục đã chọn",
   "@fileOperations.rollbackConfirm.rollBackSelected": {
     "sourceHash": "32a94c5"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "This deletes the selected files and folders the operation created. Cmdr skips anything it isn’t sure about, so a few may stay behind.",
+  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Việc này sẽ xóa các tệp và thư mục đã chọn mà thao tác đã tạo ra. Cmdr bỏ qua những gì nó không chắc chắn, nên có thể còn sót lại vài thứ.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
     "sourceHash": "a2ed919"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "This moves the selected files back where they came from. Cmdr skips anything it isn’t sure about, so a few may stay where they are.",
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Việc này sẽ đưa các tệp đã chọn về lại nơi chúng xuất phát. Cmdr bỏ qua những gì nó không chắc chắn, nên vài tệp có thể vẫn nằm nguyên chỗ cũ.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": {
     "sourceHash": "b90e365"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "This gives the selected files their old names back. Cmdr skips anything it isn’t sure about, so a few may keep the names they have now.",
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "Việc này sẽ trả lại tên cũ cho các tệp đã chọn. Cmdr bỏ qua những gì nó không chắc chắn, nên vài tệp có thể vẫn giữ tên hiện tại.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": {
     "sourceHash": "2d2606f"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "This gives the selected files the tags they had before. Cmdr skips any file whose tags changed since, so a few may keep the tags they have now.",
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "Việc này sẽ trả lại cho các tệp đã chọn những thẻ chúng có trước đây. Cmdr bỏ qua mọi tệp có thẻ đã thay đổi kể từ đó, nên vài tệp có thể vẫn giữ thẻ hiện tại.",
   "@fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": {
     "sourceHash": "e388f91"
   },

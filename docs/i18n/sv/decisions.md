@@ -165,7 +165,7 @@ bundle), Microsoft, file managers, the catalog.
 ## Rollback family: `ångra`, not `återställ` (`fileOperations.transferProgress.*`, `operationLog.*`, `commands.logOperationLog.*`, `fileOperations.cancelRollback.*`)
 
 - MS's `återställa` for roll back is the database sense; a rollback deletes what it wrote.
-- `Ångra klart` (Finder `kopiera klart`), ❌ stilted `Slutför ångringen`; both `finishRollBack` keys stay identical.
+- `Ångra resten` (like `Kopiera resten`), ❌ `Slutför ångringen`; both `rollBackRest` keys stay identical.
 - `lät resten ligga kvar`, ❌ `som den var`; `smbNativeNote` uses the verb `ångra`. A move's rollback `lägg tillbaka`,
   ❌ `radera` (it deletes nothing).
 

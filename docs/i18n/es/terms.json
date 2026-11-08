@@ -514,7 +514,12 @@
     "confidence": "high",
     "sources": "macOS Finder (Comprobando…), SoftwareUpdate/Mail (Check Again → Comprobar de nuevo)",
     "exceptions": {
-      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "A full index check is análisis in this catalog (el análisis que se está ejecutando ahora mismo)."
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "A full index check is análisis in this catalog (el análisis que se está ejecutando ahora mismo).",
+      "commands.operationLogToggleItem.label": "Ticking a checkbox, not verifying: marcar / desmarcar, as macOS es writes it (desmarca Bloqueado, errors.write.fileLocked.suggestion.mac).",
+      "commands.operationLogToggleItemAndDown.label": "Ticking a checkbox: marcar o desmarcar (see commands.operationLogToggleItem.label).",
+      "commands.operationLogSelectAll.label": "Ticking a checkbox: marcar (see commands.operationLogToggleItem.label).",
+      "commands.operationLogRollBack.label": "The checked items are los elementos marcados (see commands.operationLogToggleItem.label).",
+      "operationLog.rollback.refusalNothingSelected": "Ticking a checkbox: Marca (see commands.operationLogToggleItem.label)."
     },
     "decision": "Índice de unidades"
   },
@@ -542,7 +547,11 @@
     "accept": ["elig", "elij", "eleg", "seleccion", "elíg"],
     "forms": "a native picker title or button → Seleccionar (Seleccionar app…, Seleccionar el comando adb), as Apple's Seleccionar aplicación…; in prose elegir (Elige tú las carpetas, elijas lo que elijas)",
     "confidence": "high",
-    "sources": "macOS Finder (Choose Application… → Seleccionar aplicación…)"
+    "sources": "macOS Finder (Choose Application… → Seleccionar aplicación…)",
+    "exceptions": {
+      "operationLog.tree.togglesCapped": "\"Pick\" here is checking or unchecking an item in the Operation log tree, so it takes the checkbox verb marcar o desmarcar (commands.operationLogToggleItem.label).",
+      "operationLog.rollback.refusalTooManyToggles": "Same checkbox sense as operationLog.tree.togglesCapped: marcar o desmarcar."
+    }
   },
   "clean-up": {
     "chosen": "limpiar",
@@ -2056,7 +2065,10 @@
     ],
     "confidence": "high",
     "exceptions": {
-      "suggestedOps.reversible.moveBack": "move it back → devolverlo a su sitio, the catalog's undo-a-move phrasing (commands.editUndoTrash.description)"
+      "suggestedOps.reversible.moveBack": "move it back → devolverlo a su sitio, the catalog's undo-a-move phrasing (commands.editUndoTrash.description)",
+      "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "move back → devolver al lugar del que salieron, word for word from its sibling bodyUndoByMovingBack",
+      "operationLog.rollback.rollbackableNoticeMoveBack": "move back → vuelven al lugar del que salieron, the bodyUndoByMovingBack phrasing",
+      "operationLog.tree.statusMovedBack": "Moved back → Devuelto, the catalog's undo-a-move verb (devolver)"
     },
     "sources": "macOS Finder (label sense)"
   },
@@ -2166,7 +2178,8 @@
       "no ha terminado",
       "no se ha completado",
       "no terminó",
-      "sin completar"
+      "sin completar",
+      "no llegó a completar"
     ],
     "forms": "queue status No se ha podido completar; the toast title arms No se ha podido completar + the operation noun (la copia, el movimiento, la eliminación, el cambio de nombre…); operation log status No se completó (a history row); the transfer tree's tight count {countText} sin completar (no agreement with the count)",
     "avoid": [
@@ -2685,7 +2698,8 @@
     "accept": ["quit"],
     "forms": "Quitar atajo, Quitar adjunto, Quitar “{color}”, Quitar de la lista; removing FILES or data is eliminar",
     "exceptions": {
-      "main.cliCommand.takenByOther": "remove it = delete another program’s file from /usr/local/bin by hand (elimínalo), not a list edit"
+      "main.cliCommand.takenByOther": "remove it = delete another program’s file from /usr/local/bin by hand (elimínalo), not a list edit",
+      "operationLog.tree.statusRemoved": "a rollback deleted the copy or created item from disk, so it takes the delete participle Eliminado, not a list edit"
     },
     "avoid": [
       {
@@ -2713,6 +2727,9 @@
     ],
     "confidence": "high",
     "sources": "macOS Finder (Renombrar; RN1/RN2 Deshacer/Rehacer cambio de nombre)",
+    "exceptions": {
+      "operationLog.tree.statusRenamedBack": "Renamed back = the old name came back: Nombre restaurado, the put-back form for names (queue.row.reversalRenamingBack Restaurando los nombres anteriores)"
+    },
     "decision": "Palabras que se separaron"
   },
   "name-mask": {

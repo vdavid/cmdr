@@ -245,3 +245,13 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `askCmdr.toolGroup.summaryRunning`) have no pile precedent. Confirm.
 - `Stop Cmdr?` (`ui.toolAsk.quit.title`) keeps the term-consistency frame with `menu.app.quit`, where the question
   register would otherwise say `Cmdr stoppen?`. Confirm.
+
+## Bewerkingenlogboek-boom (`operationLog.tree.*`, `commands.operationLog*`, `operationLog.rollback.refusal*`)
+
+- The checkbox verb is `aanvinken` / `uitvinken` (`Vink alle onderdelen aan`, `aangevinkt`), after
+  `suggestedOps.refusal.nothingSelected.*`; the state follows English's `selected` → `geselecteerd`
+  (`Selectie terugdraaien ({countText})`, `3 van 12 geselecteerd`). Confirm the split reads as one control.
+- "Separate picks … Cmdr can hold" → `losse keuzes` / `onthouden` (`togglesCapped`, `refusalTooManyToggles`);
+  `bijhouden` means record in this catalog. Confirm.
+- `Komt terug samen met de bovenliggende map.` for "Comes back with its folder." avoids a pronoun for an item of unknown
+  gender. Confirm.

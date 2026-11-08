@@ -704,6 +704,30 @@
   "@commands.multiRenameRename.label": {
     "sourceHash": "da881fb"
   },
+  "commands.operationLogGoToItems.label": "Перейти к объектам операции",
+  "@commands.operationLogGoToItems.label": {
+    "sourceHash": "495419e"
+  },
+  "commands.operationLogToggleItem.label": "Выбрать объект или снять выбор",
+  "@commands.operationLogToggleItem.label": {
+    "sourceHash": "72da697"
+  },
+  "commands.operationLogToggleItemAndDown.label": "Выбрать объект или снять выбор и перейти вниз",
+  "@commands.operationLogToggleItemAndDown.label": {
+    "sourceHash": "04f2da6"
+  },
+  "commands.operationLogSelectAll.label": "Выбрать все объекты",
+  "@commands.operationLogSelectAll.label": {
+    "sourceHash": "4763cbc"
+  },
+  "commands.operationLogDeselectAll.label": "Снять выбор со всех объектов",
+  "@commands.operationLogDeselectAll.label": {
+    "sourceHash": "53fbccb"
+  },
+  "commands.operationLogRollBack.label": "Откатить выбранные объекты",
+  "@commands.operationLogRollBack.label": {
+    "sourceHash": "50283fb"
+  },
   "commands.fileView.label": "Просмотр",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

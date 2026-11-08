@@ -124,3 +124,7 @@ item once settled, and record the outcome in `terms.json` or `decisions.md`.
   with `suggestedOps.columnInclude`, but under the label `Пропускать скрытые файлы только для Mac` it can read as "turn
   on" (the skipping). `Не пропускать` is unambiguous; switching needs a reasoned `reviewed` entry in the
   term-consistency allowlist.
+- **`Выделить все` on the Operation log tree's header checkbox** (`operationLog.tree.selectAll`): every other checkbox
+  string in the dialog says `выбрать` / `выбранные` (list-item choosing, like the queue), but the English "Select all"
+  ties it to `menu.select.all` (`Выделить все`) through term-consistency. `Выбрать все` is the right word; switching
+  needs a reasoned `reviewed` entry in the term-consistency allowlist, or the English changing to "Check every item".

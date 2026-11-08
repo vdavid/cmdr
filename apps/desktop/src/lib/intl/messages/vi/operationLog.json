@@ -31,15 +31,15 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
-  "operationLog.dialog.rollBackRest": "Roll back the rest",
+  "operationLog.dialog.rollBackRest": "Hoàn tác phần còn lại",
   "@operationLog.dialog.rollBackRest": {
     "sourceHash": "f954882"
   },
-  "operationLog.dialog.rollBackSelected": "{count, plural, one {Roll back selected ({countText})} other {Roll back selected ({countText})}}",
+  "operationLog.dialog.rollBackSelected": "{count, plural, other {Hoàn tác mục đã chọn ({countText})}}",
   "@operationLog.dialog.rollBackSelected": {
     "sourceHash": "d28d5c7"
   },
-  "operationLog.dialog.selectedCount": "{count, plural, one {{selectedText} of {selectableText} selected} other {{selectedText} of {selectableText} selected}}",
+  "operationLog.dialog.selectedCount": "{count, plural, other {Đã chọn {selectedText} trên {selectableText}}}",
   "@operationLog.dialog.selectedCount": {
     "sourceHash": "8891bd3"
   },
@@ -47,183 +47,187 @@
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "operationLog.dialog.operations": "Operations",
+  "operationLog.dialog.operations": "Các thao tác",
   "@operationLog.dialog.operations": {
     "sourceHash": "358cc20"
   },
-  "operationLog.tree.label": "Items",
+  "operationLog.tree.label": "Mục",
   "@operationLog.tree.label": {
     "sourceHash": "fb8e7a1"
   },
-  "operationLog.tree.columnName": "Name",
+  "operationLog.tree.columnName": "Tên",
   "@operationLog.tree.columnName": {
     "sourceHash": "dcd1d52"
   },
-  "operationLog.tree.columnSize": "Size",
+  "operationLog.tree.columnSize": "Kích cỡ",
   "@operationLog.tree.columnSize": {
     "sourceHash": "1af8519"
   },
-  "operationLog.tree.columnStatus": "Status",
+  "operationLog.tree.columnStatus": "Trạng thái",
   "@operationLog.tree.columnStatus": {
     "sourceHash": "920e413"
   },
-  "operationLog.tree.selectAll": "Select all",
+  "operationLog.tree.selectAll": "Chọn tất cả",
   "@operationLog.tree.selectAll": {
     "sourceHash": "1fc9a38"
   },
-  "operationLog.tree.include": "Roll back {name}",
+  "operationLog.tree.include": "Hoàn tác {name}",
   "@operationLog.tree.include": {
     "sourceHash": "2bdcfa0"
   },
-  "operationLog.tree.comesBackWithFolder": "Comes back with its folder.",
+  "operationLog.tree.comesBackWithFolder": "Trở lại cùng thư mục chứa nó.",
   "@operationLog.tree.comesBackWithFolder": {
     "sourceHash": "e6275c5"
   },
-  "operationLog.tree.folderFiles": "{count, plural, one {{countText} file} other {{countText} files}}",
+  "operationLog.tree.folderFiles": "{count, plural, other {{countText} tệp}}",
   "@operationLog.tree.folderFiles": {
     "sourceHash": "3c08428"
   },
-  "operationLog.tree.statusRemoved": "Removed",
+  "operationLog.tree.statusRemoved": "Đã xóa",
   "@operationLog.tree.statusRemoved": {
     "sourceHash": "4118fb4"
   },
-  "operationLog.tree.statusMovedBack": "Moved back",
+  "operationLog.tree.statusMovedBack": "Đã đưa về chỗ cũ",
   "@operationLog.tree.statusMovedBack": {
     "sourceHash": "c6bc4e6"
   },
-  "operationLog.tree.statusRenamedBack": "Renamed back",
+  "operationLog.tree.statusRenamedBack": "Đã đặt lại tên cũ",
   "@operationLog.tree.statusRenamedBack": {
     "sourceHash": "769ab78"
   },
-  "operationLog.tree.statusTagsRestored": "Tags restored",
+  "operationLog.tree.statusTagsRestored": "Đã khôi phục thẻ",
   "@operationLog.tree.statusTagsRestored": {
     "sourceHash": "062e231"
   },
-  "operationLog.tree.statusSkipped": "Skipped",
+  "operationLog.tree.statusSkipped": "Đã bỏ qua",
   "@operationLog.tree.statusSkipped": {
     "sourceHash": "12698ce"
   },
-  "operationLog.tree.statusUnfinished": "Didn’t finish",
+  "operationLog.tree.statusUnfinished": "Chưa hoàn tất được",
   "@operationLog.tree.statusUnfinished": {
     "sourceHash": "59ea57b"
   },
-  "operationLog.tree.rollupRolledBack": "{count, plural, one {{countText} rolled back} other {{countText} rolled back}}",
+  "operationLog.tree.rollupRolledBack": "{count, plural, other {đã hoàn tác {countText}}}",
   "@operationLog.tree.rollupRolledBack": {
     "sourceHash": "0b93ef8"
   },
-  "operationLog.tree.rollupSkipped": "{count, plural, one {{countText} skipped} other {{countText} skipped}}",
+  "operationLog.tree.rollupSkipped": "{count, plural, other {đã bỏ qua {countText}}}",
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
-  "operationLog.tree.operationSkipped": "The operation skipped this one, so there’s nothing to roll back.",
+  "operationLog.tree.operationSkipped": "Thao tác đã bỏ qua mục này, nên không có gì để hoàn tác.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
   },
-  "operationLog.tree.operationUnfinished": "The operation didn’t finish this one, so there’s nothing to roll back.",
+  "operationLog.tree.operationUnfinished": "Thao tác chưa hoàn tất mục này, nên không có gì để hoàn tác.",
   "@operationLog.tree.operationUnfinished": {
     "sourceHash": "e07232b"
   },
-  "operationLog.tree.unexpandableEmpty": "This folder was empty.",
+  "operationLog.tree.unexpandableEmpty": "Lúc đó thư mục này trống.",
   "@operationLog.tree.unexpandableEmpty": {
     "sourceHash": "0c67a8d"
   },
-  "operationLog.tree.unexpandableNotRecorded": "Cmdr didn’t record what’s inside this folder.",
+  "operationLog.tree.unexpandableNotRecorded": "Cmdr không ghi lại nội dung bên trong thư mục này.",
   "@operationLog.tree.unexpandableNotRecorded": {
     "sourceHash": "613608a"
   },
-  "operationLog.tree.unexpandableCapped": "Cmdr didn’t record what’s inside this folder, because this operation held a folder of over 50,000 files.",
+  "operationLog.tree.unexpandableCapped": "Cmdr không ghi lại nội dung bên trong thư mục này, vì thao tác này có một thư mục chứa hơn 50.000 tệp.",
   "@operationLog.tree.unexpandableCapped": {
     "sourceHash": "6657eb0"
   },
-  "operationLog.tree.otherEndFrom": "From {path}",
+  "operationLog.tree.otherEndFrom": "Từ {path}",
   "@operationLog.tree.otherEndFrom": {
     "sourceHash": "0562430"
   },
-  "operationLog.tree.otherEndTo": "To {path}",
+  "operationLog.tree.otherEndTo": "Đến {path}",
   "@operationLog.tree.otherEndTo": {
     "sourceHash": "ea4bf38"
   },
-  "operationLog.tree.backfilling": "Reading this operation’s items…",
+  "operationLog.tree.backfilling": "Đang đọc các mục của thao tác này…",
   "@operationLog.tree.backfilling": {
     "sourceHash": "45f623f"
   },
-  "operationLog.tree.backfillProgress": "Read {doneText} of {totalText} items",
+  "operationLog.tree.backfillProgress": "Đã đọc {doneText} trên {totalText} mục",
   "@operationLog.tree.backfillProgress": {
     "sourceHash": "230eb62"
   },
-  "operationLog.tree.indexesBuilding": "Cmdr is getting your history ready after an update. The items show up in a moment.",
+  "operationLog.tree.indexesBuilding": "Cmdr đang chuẩn bị lịch sử của bạn sau khi cập nhật. Các mục sẽ xuất hiện trong giây lát.",
   "@operationLog.tree.indexesBuilding": {
     "sourceHash": "0d6f56b"
   },
-  "operationLog.tree.operationRunning": "This operation is still running. Its items show up here once it’s done.",
+  "operationLog.tree.indexesUnavailable": "Lần này Cmdr chưa chuẩn bị được lịch sử của bạn, nên chưa hiển thị được các mục này. Cmdr sẽ thử lại vào lần tới bạn mở Cmdr.",
+  "@operationLog.tree.indexesUnavailable": {
+    "sourceHash": "8d2fec7"
+  },
+  "operationLog.tree.operationRunning": "Thao tác này vẫn đang chạy. Các mục sẽ xuất hiện ở đây khi thao tác xong.",
   "@operationLog.tree.operationRunning": {
     "sourceHash": "eebeba4"
   },
-  "operationLog.tree.rollingBack": "This operation is rolling back. Its items show up here once that’s done.",
+  "operationLog.tree.rollingBack": "Thao tác này đang được hoàn tác. Các mục sẽ xuất hiện ở đây khi việc đó xong.",
   "@operationLog.tree.rollingBack": {
     "sourceHash": "35ef2b2"
   },
-  "operationLog.tree.unreadable": "Couldn’t read this operation’s items. Pick it again to try once more.",
+  "operationLog.tree.unreadable": "Không thể đọc các mục của thao tác này. Hãy chọn lại thao tác để thử thêm lần nữa.",
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "That’s as many separate picks as Cmdr can hold. Pick a folder instead.",
+  "operationLog.tree.togglesCapped": "Đã đạt số lượt chọn riêng lẻ tối đa mà Cmdr giữ được. Hãy chọn cả một thư mục.",
   "@operationLog.tree.togglesCapped": {
     "sourceHash": "80ef3b7"
   },
-  "operationLog.route.fromTo": "From {from} to {to}",
+  "operationLog.route.fromTo": "Từ {from} đến {to}",
   "@operationLog.route.fromTo": {
     "sourceHash": "6eeb9b3"
   },
-  "operationLog.route.to": "To {to}",
+  "operationLog.route.to": "Đến {to}",
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "From {from} to the Trash",
+  "operationLog.route.fromToTrash": "Từ {from} vào Thùng rác",
   "@operationLog.route.fromToTrash": {
     "sourceHash": "9eff97f"
   },
-  "operationLog.route.from": "From {from}",
+  "operationLog.route.from": "Từ {from}",
   "@operationLog.route.from": {
     "sourceHash": "5848d99"
   },
-  "operationLog.route.in": "In {path}",
+  "operationLog.route.in": "Trong {path}",
   "@operationLog.route.in": {
     "sourceHash": "b1b3028"
   },
-  "operationLog.skipReason.unverifiablePrecondition": "Cmdr couldn’t check this against what it recorded, so it left it alone.",
+  "operationLog.skipReason.unverifiablePrecondition": "Cmdr không đối chiếu được mục này với những gì đã ghi lại, nên giữ nguyên mục này.",
   "@operationLog.skipReason.unverifiablePrecondition": {
     "sourceHash": "c33ca33"
   },
-  "operationLog.skipReason.drift": "This changed since the operation, so Cmdr left it alone.",
+  "operationLog.skipReason.drift": "Mục này đã thay đổi sau thao tác, nên Cmdr giữ nguyên nó.",
   "@operationLog.skipReason.drift": {
     "sourceHash": "6768024"
   },
-  "operationLog.skipReason.restoreTargetOccupied": "Something else is at the original spot now, so Cmdr didn’t overwrite it.",
+  "operationLog.skipReason.restoreTargetOccupied": "Chỗ cũ giờ đã có thứ khác, nên Cmdr không ghi đè lên.",
   "@operationLog.skipReason.restoreTargetOccupied": {
     "sourceHash": "1b1d375"
   },
-  "operationLog.skipReason.dirNotEmpty": "This folder has something new in it, so Cmdr kept it.",
+  "operationLog.skipReason.dirNotEmpty": "Thư mục này có thứ mới bên trong, nên Cmdr giữ lại nó.",
   "@operationLog.skipReason.dirNotEmpty": {
     "sourceHash": "8fc1b3e"
   },
-  "operationLog.skipReason.alreadyGone": "This was already back the way it was.",
+  "operationLog.skipReason.alreadyGone": "Mục này đã trở lại như cũ rồi.",
   "@operationLog.skipReason.alreadyGone": {
     "sourceHash": "71176d1"
   },
-  "operationLog.skipReason.vanished": "This is gone from where the operation left it, so there’s nothing to put back.",
+  "operationLog.skipReason.vanished": "Mục này không còn ở chỗ thao tác đã để nó, nên không có gì để đưa trở lại.",
   "@operationLog.skipReason.vanished": {
     "sourceHash": "a715fb0"
   },
-  "operationLog.skipReason.originalGone": "The original is gone, so Cmdr kept this copy rather than delete the only one left.",
+  "operationLog.skipReason.originalGone": "Bản gốc không còn nữa, nên Cmdr giữ bản sao này thay vì xóa bản duy nhất còn lại.",
   "@operationLog.skipReason.originalGone": {
     "sourceHash": "014fcaa"
   },
-  "operationLog.skipReason.failed": "Cmdr couldn’t roll this one back. Its log has the details.",
+  "operationLog.skipReason.failed": "Cmdr không hoàn tác được mục này. Chi tiết có trong nhật ký.",
   "@operationLog.skipReason.failed": {
     "sourceHash": "76c2b80"
   },
-  "operationLog.skipReason.locked": "This is locked so that only an administrator can remove it, so Cmdr left it.",
+  "operationLog.skipReason.locked": "Mục này bị khóa nên chỉ quản trị viên mới xóa được, vì vậy Cmdr giữ nguyên nó.",
   "@operationLog.skipReason.locked": {
     "sourceHash": "39e4c78"
   },
@@ -303,7 +307,7 @@
   "@operationLog.status.running": {
     "sourceHash": "f4ccae2"
   },
-  "operationLog.status.finished": "Finished",
+  "operationLog.status.finished": "Đã hoàn tất",
   "@operationLog.status.finished": {
     "sourceHash": "7804f7a"
   },
@@ -335,43 +339,43 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
-  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr đã hoàn tác những gì có thể và để nguyên phần còn lại. Việc tiếp tục sẽ chạy thêm một lượt nữa và bỏ qua những gì Cmdr vẫn không chắc chắn.",
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr đã hoàn tác những gì có thể và để nguyên phần còn lại. Hoàn tác phần còn lại sẽ chạy thêm một lượt nữa và bỏ qua những gì Cmdr vẫn không chắc chắn.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
-    "sourceHash": "77e6f25"
+    "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.",
+  "operationLog.rollback.interruptedNotice": "Cmdr đã thoát trước khi thao tác này xong, nên có thể chưa ghi lại hết mọi việc thao tác đã làm. Việc hoàn tác chỉ chạm tới những gì đã được ghi lại.",
   "@operationLog.rollback.interruptedNotice": {
     "sourceHash": "642e6fc"
   },
-  "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} item is back the way it was.} other {{countText} items are back the way they were.}}",
+  "operationLog.rollback.partialRolledBack": "{count, plural, other {{countText} mục đã trở lại như cũ.}}",
   "@operationLog.rollback.partialRolledBack": {
     "sourceHash": "0202fe5"
   },
-  "operationLog.rollback.partialHeldBack": "{count, plural, one {Cmdr skipped {countText} item it wasn’t sure about.} other {Cmdr skipped {countText} items it wasn’t sure about.}}",
+  "operationLog.rollback.partialHeldBack": "{count, plural, other {Cmdr đã bỏ qua {countText} mục mà nó không chắc chắn.}}",
   "@operationLog.rollback.partialHeldBack": {
     "sourceHash": "5a43937"
   },
-  "operationLog.rollback.partialWaiting": "{count, plural, one {{countText} item hasn’t been rolled back yet.} other {{countText} items haven’t been rolled back yet.}}",
+  "operationLog.rollback.partialWaiting": "{count, plural, other {{countText} mục chưa được hoàn tác.}}",
   "@operationLog.rollback.partialWaiting": {
     "sourceHash": "0850c46"
   },
-  "operationLog.rollback.rollbackableNoticeCopy": "Rolling back deletes the selected copies. The originals stay where they are.",
+  "operationLog.rollback.rollbackableNoticeCopy": "Việc hoàn tác sẽ xóa các bản sao đã chọn. Các bản gốc vẫn ở nguyên chỗ cũ.",
   "@operationLog.rollback.rollbackableNoticeCopy": {
     "sourceHash": "6710bb4"
   },
-  "operationLog.rollback.rollbackableNoticeDelete": "Rolling back deletes the selected items this operation created.",
+  "operationLog.rollback.rollbackableNoticeDelete": "Việc hoàn tác sẽ xóa các mục đã chọn mà thao tác này đã tạo ra.",
   "@operationLog.rollback.rollbackableNoticeDelete": {
     "sourceHash": "d0e028e"
   },
-  "operationLog.rollback.rollbackableNoticeMoveBack": "Rolling back moves the selected items back where they came from.",
+  "operationLog.rollback.rollbackableNoticeMoveBack": "Việc hoàn tác sẽ đưa các mục đã chọn về lại nơi chúng xuất phát.",
   "@operationLog.rollback.rollbackableNoticeMoveBack": {
     "sourceHash": "2cf40c3"
   },
-  "operationLog.rollback.rollbackableNoticeRenameBack": "Rolling back gives the selected items their old names back.",
+  "operationLog.rollback.rollbackableNoticeRenameBack": "Việc hoàn tác sẽ trả lại tên cũ cho các mục đã chọn.",
   "@operationLog.rollback.rollbackableNoticeRenameBack": {
     "sourceHash": "8f2b884"
   },
-  "operationLog.rollback.rollbackableNoticeTagsBack": "Rolling back gives the selected items the tags they had before.",
+  "operationLog.rollback.rollbackableNoticeTagsBack": "Việc hoàn tác sẽ trả lại cho các mục đã chọn những thẻ chúng có trước đây.",
   "@operationLog.rollback.rollbackableNoticeTagsBack": {
     "sourceHash": "d45b11b"
   },
@@ -383,7 +387,7 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalIsARollback": "This one undid another operation, and an undo doesn’t get undone in turn. The operation it undid is still in the log.",
+  "operationLog.rollback.refusalIsARollback": "Thao tác này đã hoàn tác một thao tác khác, và một lần hoàn tác thì không được hoàn tác tiếp. Thao tác ban đầu vẫn còn trong nhật ký.",
   "@operationLog.rollback.refusalIsARollback": {
     "sourceHash": "37738da"
   },
@@ -423,15 +427,15 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalNothingSelected": "Check at least one item to roll back.",
+  "operationLog.rollback.refusalNothingSelected": "Hãy chọn ít nhất một mục để hoàn tác.",
   "@operationLog.rollback.refusalNothingSelected": {
     "sourceHash": "d856cd9"
   },
-  "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr is still reading this operation’s items. Try again in a moment.",
+  "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr vẫn đang đọc các mục của thao tác này. Hãy thử lại sau giây lát.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "That’s more separate picks than Cmdr can hold. Pick a folder instead.",
+  "operationLog.rollback.refusalTooManyToggles": "Số lượt chọn riêng lẻ đã vượt quá mức Cmdr giữ được. Hãy chọn cả một thư mục.",
   "@operationLog.rollback.refusalTooManyToggles": {
     "sourceHash": "bdae2c7"
   },

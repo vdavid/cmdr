@@ -704,6 +704,30 @@
   "@commands.multiRenameRename.label": {
     "sourceHash": "da881fb"
   },
+  "commands.operationLogGoToItems.label": "Đi tới các mục của thao tác",
+  "@commands.operationLogGoToItems.label": {
+    "sourceHash": "495419e"
+  },
+  "commands.operationLogToggleItem.label": "Chọn hoặc bỏ chọn mục",
+  "@commands.operationLogToggleItem.label": {
+    "sourceHash": "72da697"
+  },
+  "commands.operationLogToggleItemAndDown.label": "Chọn hoặc bỏ chọn mục, rồi di chuyển xuống",
+  "@commands.operationLogToggleItemAndDown.label": {
+    "sourceHash": "04f2da6"
+  },
+  "commands.operationLogSelectAll.label": "Chọn tất cả các mục",
+  "@commands.operationLogSelectAll.label": {
+    "sourceHash": "4763cbc"
+  },
+  "commands.operationLogDeselectAll.label": "Bỏ chọn tất cả các mục",
+  "@commands.operationLogDeselectAll.label": {
+    "sourceHash": "53fbccb"
+  },
+  "commands.operationLogRollBack.label": "Hoàn tác các mục đã chọn",
+  "@commands.operationLogRollBack.label": {
+    "sourceHash": "50283fb"
+  },
   "commands.fileView.label": "Xem",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

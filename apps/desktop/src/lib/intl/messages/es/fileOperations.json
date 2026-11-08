@@ -1049,7 +1049,7 @@
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a058f98"
   },
-  "fileOperations.rollbackConfirm.titleRest": "Roll back the rest?",
+  "fileOperations.rollbackConfirm.titleRest": "¿Revertir el resto?",
   "@fileOperations.rollbackConfirm.titleRest": {
     "sourceHash": "08a5c9b"
   },
@@ -1081,31 +1081,31 @@
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
   },
-  "fileOperations.rollbackConfirm.rollBackRest": "Roll back the rest",
+  "fileOperations.rollbackConfirm.rollBackRest": "Revertir el resto",
   "@fileOperations.rollbackConfirm.rollBackRest": {
     "sourceHash": "f954882"
   },
-  "fileOperations.rollbackConfirm.titleSelected": "Roll back the selected items?",
+  "fileOperations.rollbackConfirm.titleSelected": "¿Revertir los elementos seleccionados?",
   "@fileOperations.rollbackConfirm.titleSelected": {
     "sourceHash": "94d4cad"
   },
-  "fileOperations.rollbackConfirm.rollBackSelected": "Roll back selected",
+  "fileOperations.rollbackConfirm.rollBackSelected": "Revertir lo seleccionado",
   "@fileOperations.rollbackConfirm.rollBackSelected": {
     "sourceHash": "32a94c5"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "This deletes the selected files and folders the operation created. Cmdr skips anything it isn’t sure about, so a few may stay behind.",
+  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Esto elimina los archivos y carpetas seleccionados que ha creado la operación. Cmdr omite todo aquello de lo que no está seguro, así que puede que quede alguno.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
     "sourceHash": "a2ed919"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "This moves the selected files back where they came from. Cmdr skips anything it isn’t sure about, so a few may stay where they are.",
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Esto devuelve los archivos seleccionados al lugar del que salieron. Cmdr omite todo aquello de lo que no está seguro, así que puede que alguno se quede donde está.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": {
     "sourceHash": "b90e365"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "This gives the selected files their old names back. Cmdr skips anything it isn’t sure about, so a few may keep the names they have now.",
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "Esto devuelve a los archivos seleccionados sus nombres anteriores. Cmdr omite todo aquello de lo que no está seguro, así que puede que alguno conserve el nombre que tiene ahora.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": {
     "sourceHash": "2d2606f"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "This gives the selected files the tags they had before. Cmdr skips any file whose tags changed since, so a few may keep the tags they have now.",
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "Esto devuelve a los archivos seleccionados las etiquetas que tenían antes. Cmdr omite los archivos cuyas etiquetas hayan cambiado desde entonces, así que puede que alguno conserve las etiquetas que tiene ahora.",
   "@fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": {
     "sourceHash": "e388f91"
   },

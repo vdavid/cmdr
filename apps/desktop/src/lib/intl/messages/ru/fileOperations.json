@@ -1048,7 +1048,7 @@
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a058f98"
   },
-  "fileOperations.rollbackConfirm.titleRest": "Roll back the rest?",
+  "fileOperations.rollbackConfirm.titleRest": "Откатить остальное?",
   "@fileOperations.rollbackConfirm.titleRest": {
     "sourceHash": "08a5c9b"
   },
@@ -1080,31 +1080,31 @@
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
   },
-  "fileOperations.rollbackConfirm.rollBackRest": "Roll back the rest",
+  "fileOperations.rollbackConfirm.rollBackRest": "Откатить остальное",
   "@fileOperations.rollbackConfirm.rollBackRest": {
     "sourceHash": "f954882"
   },
-  "fileOperations.rollbackConfirm.titleSelected": "Roll back the selected items?",
+  "fileOperations.rollbackConfirm.titleSelected": "Откатить выбранные объекты?",
   "@fileOperations.rollbackConfirm.titleSelected": {
     "sourceHash": "94d4cad"
   },
-  "fileOperations.rollbackConfirm.rollBackSelected": "Roll back selected",
+  "fileOperations.rollbackConfirm.rollBackSelected": "Откатить выбранные",
   "@fileOperations.rollbackConfirm.rollBackSelected": {
     "sourceHash": "32a94c5"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "This deletes the selected files and folders the operation created. Cmdr skips anything it isn’t sure about, so a few may stay behind.",
+  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Будут удалены выбранные файлы и папки, созданные операцией. Cmdr пропускает объекты, в которых не уверен, поэтому некоторые могут остаться.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
     "sourceHash": "a2ed919"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "This moves the selected files back where they came from. Cmdr skips anything it isn’t sure about, so a few may stay where they are.",
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Выбранные файлы будут возвращены на прежние места. Cmdr пропускает объекты, в которых не уверен, поэтому некоторые могут остаться на месте.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": {
     "sourceHash": "b90e365"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "This gives the selected files their old names back. Cmdr skips anything it isn’t sure about, so a few may keep the names they have now.",
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "Выбранные файлы получат прежние имена. Cmdr пропускает объекты, в которых не уверен, поэтому некоторые могут сохранить текущие имена.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": {
     "sourceHash": "2d2606f"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "This gives the selected files the tags they had before. Cmdr skips any file whose tags changed since, so a few may keep the tags they have now.",
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "Выбранные файлы получат прежние теги. Cmdr пропускает файлы, теги которых с тех пор изменились, поэтому у некоторых могут остаться текущие теги.",
   "@fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": {
     "sourceHash": "e388f91"
   },

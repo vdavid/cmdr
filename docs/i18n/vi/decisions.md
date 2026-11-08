@@ -268,8 +268,8 @@ the catalog's drift:
 
 ## Thao tác mới hoàn tác được một nửa: làm tiếp cho hết (`operationLog.dialog.rollBackRest`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleRest`/`.rollBackRest`, `queue.row.reversalInFolder`)
 
-- `Tiếp tục hoàn tác` (Finder `Tiếp tục sao chép`) over `Hoàn tất việc hoàn tác` (one mark apart, beside
-  `Chưa hoàn tất được`). `vẫn` binds to `không chắc chắn`, not `bỏ qua`.
+- `Hoàn tác phần còn lại` over `Tiếp tục hoàn tác`: EN says "the rest" (`phần còn lại`). `vẫn` binds to
+  `không chắc chắn`. Checked items → `mục đã chọn`, never `kiểm tra`.
 
 ## Toast sau khi hoàn tác thao tác đang chạy (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`)
 

@@ -471,6 +471,13 @@
     "sources": "MS terminology (chat → trò chuyện)"
   },
   "check": {
+    "exceptions": {
+      "commands.operationLogToggleItem.label": "Ticking a checkbox, not verifying: `chọn` / `bỏ chọn`, as macOS writes it (`bỏ chọn “Đã khóa”`, catalog `commands.selectionDeselectAll.label`).",
+      "commands.operationLogToggleItemAndDown.label": "Same checkbox sense as `commands.operationLogToggleItem.label`: `chọn` / `bỏ chọn`.",
+      "commands.operationLogSelectAll.label": "Same checkbox sense as `commands.operationLogToggleItem.label`: `chọn`.",
+      "commands.operationLogRollBack.label": "The checked items are the ticked checkboxes, so `các mục đã chọn`; nothing is verified.",
+      "operationLog.rollback.refusalNothingSelected": "Same checkbox sense as `commands.operationLogToggleItem.label`: `chọn`."
+    },
     "accept": ["xác minh", "đối chiếu", "xem"],
     "chosen": "kiểm tra",
     "confidence": "high",
@@ -608,7 +615,7 @@
     "chosen": "hoàn tất",
     "confidence": "high",
     "decision": "Thao tác mới hoàn tác được một nửa: làm tiếp cho hết",
-    "forms": "a finished job → hoàn tất; an incomplete thing (a copy, a record) → chưa hoàn chỉnh / chưa đầy đủ; Finish rolling back → Tiếp tục hoàn tác",
+    "forms": "a finished job → hoàn tất; an incomplete thing (a copy, a record) → chưa hoàn chỉnh / chưa đầy đủ; Roll back the rest → Hoàn tác phần còn lại",
     "sources": "macOS Finder (Không thể hoàn tất thao tác này, LA33 không hoàn chỉnh)"
   },
   "compress": {
@@ -2020,7 +2027,10 @@
   },
   "move": {
     "exceptions": {
-      "askCmdr.tool.moveCursor.done": "Moving the file-list cursor is not the Move operation, so di chuyển stays reserved: đổi vị trí con trỏ"
+      "askCmdr.tool.moveCursor.done": "Moving the file-list cursor is not the Move operation, so di chuyển stays reserved: đổi vị trí con trỏ",
+      "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Moving back is a rollback, not the Move operation: the `đưa … về lại` frame of its shipped sibling `fileOperations.rollbackConfirm.bodyUndoByMovingBack`.",
+      "operationLog.rollback.rollbackableNoticeMoveBack": "Same `đưa … về lại` move-back frame as `fileOperations.rollbackConfirm.bodyUndoByMovingBack`.",
+      "operationLog.tree.statusMovedBack": "Done form of the `đưa … về` move-back frame: `Đã đưa về chỗ cũ`."
     },
     "accept": ["chuyển"],
     "chosen": "di chuyển",
@@ -2259,6 +2269,9 @@
     "sources": "MS terminology (organization → tổ chức); macOS live sweep 2026-10-05: SoftwareUpdateSettingsExtension (This setting is currently managed by your organization → Cài đặt này hiện được tổ chức của bạn quản lý), DMCUtilities (tổ chức của bạn ×20); catalog licensing.about.fallbackOrg"
   },
   "original": {
+    "exceptions": {
+      "operationLog.skipReason.restoreTargetOccupied": "“The original spot” is the item's old location, not an original file: `chỗ cũ`."
+    },
     "accept": ["gốc"],
     "chosen": "bản gốc",
     "confidence": "high",
@@ -2621,12 +2634,17 @@
       "menu.context.removeDownload": "Finder's own item: Remove Download → `Xóa bản tải về`; identical to `commands.cloudRemoveDownload.label`.",
       "multiRename.removeDiacritics": "Remove diacritics is a letter transform, not taking an item off a list: Vietnamese says `bỏ dấu` for stripping accents (tiếng Việt không dấu); `gỡ bỏ dấu` is not idiomatic. MS terminology: diacritic → dấu phụ.",
       "multiRename.preset.removeDiacritics": "Same letter transform as `multiRename.removeDiacritics`, so the identical `Bỏ dấu`.",
-      "commands.multiRenameRemoveDiacritics.label": "Quotes the checkbox `multiRename.removeDiacritics` byte for byte (`Bật/tắt “Bỏ dấu”`), so it carries that key's `bỏ dấu` exception."
+      "commands.multiRenameRemoveDiacritics.label": "Quotes the checkbox `multiRename.removeDiacritics` byte for byte (`Bật/tắt “Bỏ dấu”`), so it carries that key's `bỏ dấu` exception.",
+      "operationLog.tree.statusRemoved": "A rollback deleted the copy or created item for real, so `Đã xóa` (the concept excludes a rollback's removed items).",
+      "operationLog.skipReason.locked": "Removing here is deleting a copy while undoing it, so `xóa`."
     },
     "forms": "taking an item off a list while it lives on → gỡ bỏ (one form, even with an object); the tag row → Gỡ bỏ “{color}”; forget a saved item → Quên; strip diacritics → bỏ dấu",
     "sources": "Xfce Thunar (_Remove → Gỡ bỏ), GNOME Nautilus (Gỡ bỏ ổ đĩa một cách an toàn)"
   },
   "rename": {
+    "exceptions": {
+      "operationLog.tree.statusRenamedBack": "Old names coming back take the put-back form `đặt lại tên cũ` (style digest; `queue.row.reversalRenamingBack` = `Đang đặt lại tên cũ`)."
+    },
     "chosen": "đổi tên",
     "confidence": "high",
     "forms": "this rename (one row) → lần đổi tên này; the renames → các lần đổi tên; the rename of X → việc đổi tên \"{name}\"",
@@ -2725,7 +2743,7 @@
     "chosen": "hoàn tác",
     "confidence": "high",
     "decision": "Nhật ký thao tác",
-    "forms": "Roll back / Rolling back / Rolled back / Partly rolled back → Hoàn tác / Đang hoàn tác / Đã hoàn tác / Đã hoàn tác một phần; Finish rolling back → Tiếp tục hoàn tác; the rollback tooltip's Stop → Dừng lại",
+    "forms": "Roll back / Rolling back / Rolled back / Partly rolled back → Hoàn tác / Đang hoàn tác / Đã hoàn tác / Đã hoàn tác một phần; Roll back the rest → Hoàn tác phần còn lại; Roll back selected → Hoàn tác mục đã chọn; the rollback tooltip's Stop → Dừng lại",
     "sources": "macOS AppKit (Undo → Hoàn tác); catalog"
   },
   "root-folder": {

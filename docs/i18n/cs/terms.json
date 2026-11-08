@@ -23,6 +23,13 @@
     "confidence": "high",
     "sources": "macOS SystemSettings/AppKit (Přidat, Přidat do bočního panelu, Přidat do Docku); DC; MS (přidat)"
   },
+  "administrator": {
+    "chosen": "správce",
+    "accept": ["správc"],
+    "forms": "m. anim.: only an administrator → jen správce; administrator password → heslo správce; administrator rights → oprávnění správce; a server's administrator → správce systému",
+    "confidence": "high",
+    "sources": "macOS Finder (jméno a heslo správce počítače, obraťte se na správce systému); Thunar (Požádejte správce o asistenci); Cmdr catalog (oprávnění správce)"
+  },
   "advanced": {
     "chosen": "Pokročilé",
     "accept": ["pokročil"],
@@ -150,7 +157,12 @@
       "commands.appCheckForUpdates.description": "zjistit, jestli … is the natural verb for checking availability",
       "settings.updates.autoCheck.label": "update concept: Automaticky vyhledávat aktualizace, pairs with menu.app.checkForUpdates (Vyhledat aktualizace…)",
       "settings.updates.checkForUpdates": "update concept: Vyhledat aktualizace, the menu.app.checkForUpdates label without the ellipsis",
-      "updates.failure.check": "Check for updates is the update concept: Vyhledat aktualizace (menu.app.checkForUpdates), so the failure says Cmdru se nepodařilo vyhledat aktualizace."
+      "updates.failure.check": "Check for updates is the update concept: Vyhledat aktualizace (menu.app.checkForUpdates), so the failure says Cmdru se nepodařilo vyhledat aktualizace.",
+      "commands.operationLogToggleItem.label": "ticking a checkbox, not verifying: zaškrtnout / zrušit zaškrtnutí, as macOS (zrušte zaškrtnutí políčka Uzamčeno)",
+      "commands.operationLogToggleItemAndDown.label": "ticking a checkbox, not verifying: zaškrtnout / zrušit zaškrtnutí, as macOS (zrušte zaškrtnutí políčka Uzamčeno)",
+      "commands.operationLogSelectAll.label": "ticking a checkbox, not verifying: zaškrtnout, as macOS (zaškrtnuto políčko Uzamčeno)",
+      "commands.operationLogRollBack.label": "the checked items are ticked checkboxes, not verified ones: zaškrtnuté položky",
+      "operationLog.rollback.refusalNothingSelected": "ticking a checkbox, not verifying: Zaškrtněte, as macOS (zaškrtnuto políčko Uzamčeno)"
     }
   },
   "choose": {
@@ -973,7 +985,8 @@
     "confidence": "high",
     "sources": "macOS SystemSettings (protokol); Double Commander (Protokol); Total Commander (Protokol činností); MS (protokol)",
     "exceptions": {
-      "settings.operationLog.intro": "the log here is the operation log, which is historie operací"
+      "settings.operationLog.intro": "the log here is the operation log, which is historie operací",
+      "operationLog.rollback.refusalIsARollback": "the log here is the Operation log dialog, which is historie operací"
     }
   },
   "look-inside": {
@@ -3282,7 +3295,11 @@
       }
     ],
     "confidence": "high",
-    "sources": "Total Commander WCMD.LNG 662 „Odkud:“, 663 „Kam:“; Double Commander doublecmd.po „Z:“/„Do:“ (rejected)"
+    "sources": "Total Commander WCMD.LNG 662 „Odkud:“, 663 „Kam:“; Double Commander doublecmd.po „Z:“/„Do:“ (rejected)",
+    "exceptions": {
+      "operationLog.route.from": "a prose route line, not a heading: Ze složky {from}, one frame with operationLog.route.fromTo and fromToTrash (Ze složky {from} do koše)",
+      "operationLog.route.to": "a prose route line, not a heading: Do složky {to}, one frame with operationLog.route.fromTo (Ze složky {from} do složky {to})"
+    }
   },
   "git-branch": {
     "chosen": "větev",

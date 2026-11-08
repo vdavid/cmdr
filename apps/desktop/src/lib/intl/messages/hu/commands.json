@@ -704,6 +704,30 @@
   "@commands.multiRenameRename.label": {
     "sourceHash": "da881fb"
   },
+  "commands.operationLogGoToItems.label": "Ugrás a művelet elemeihez",
+  "@commands.operationLogGoToItems.label": {
+    "sourceHash": "495419e"
+  },
+  "commands.operationLogToggleItem.label": "Elem kijelölése ki-be",
+  "@commands.operationLogToggleItem.label": {
+    "sourceHash": "72da697"
+  },
+  "commands.operationLogToggleItemAndDown.label": "Elem kijelölése ki-be és lefelé lépés",
+  "@commands.operationLogToggleItemAndDown.label": {
+    "sourceHash": "04f2da6"
+  },
+  "commands.operationLogSelectAll.label": "Az összes elem kijelölése",
+  "@commands.operationLogSelectAll.label": {
+    "sourceHash": "4763cbc"
+  },
+  "commands.operationLogDeselectAll.label": "Kijelölés törlése az összes elemről",
+  "@commands.operationLogDeselectAll.label": {
+    "sourceHash": "53fbccb"
+  },
+  "commands.operationLogRollBack.label": "A kijelölt elemek visszagörgetése",
+  "@commands.operationLogRollBack.label": {
+    "sourceHash": "50283fb"
+  },
   "commands.fileView.label": "Megtekintés",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

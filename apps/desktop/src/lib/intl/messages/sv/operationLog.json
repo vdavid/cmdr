@@ -31,15 +31,15 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
-  "operationLog.dialog.rollBackRest": "Roll back the rest",
+  "operationLog.dialog.rollBackRest": "Ångra resten",
   "@operationLog.dialog.rollBackRest": {
     "sourceHash": "f954882"
   },
-  "operationLog.dialog.rollBackSelected": "{count, plural, one {Roll back selected ({countText})} other {Roll back selected ({countText})}}",
+  "operationLog.dialog.rollBackSelected": "{count, plural, one {Ångra markerade ({countText})} other {Ångra markerade ({countText})}}",
   "@operationLog.dialog.rollBackSelected": {
     "sourceHash": "d28d5c7"
   },
-  "operationLog.dialog.selectedCount": "{count, plural, one {{selectedText} of {selectableText} selected} other {{selectedText} of {selectableText} selected}}",
+  "operationLog.dialog.selectedCount": "{count, plural, one {Markerade: {selectedText} av {selectableText}} other {Markerade: {selectedText} av {selectableText}}}",
   "@operationLog.dialog.selectedCount": {
     "sourceHash": "8891bd3"
   },
@@ -47,183 +47,188 @@
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "operationLog.dialog.operations": "Operations",
+  "operationLog.dialog.operations": "Åtgärder",
   "@operationLog.dialog.operations": {
     "sourceHash": "358cc20"
   },
-  "operationLog.tree.label": "Items",
+  "operationLog.tree.label": "Objekt",
   "@operationLog.tree.label": {
     "sourceHash": "fb8e7a1"
   },
-  "operationLog.tree.columnName": "Name",
+  "operationLog.tree.columnName": "Namn",
   "@operationLog.tree.columnName": {
     "sourceHash": "dcd1d52"
   },
-  "operationLog.tree.columnSize": "Size",
+  "operationLog.tree.columnSize": "Storlek",
   "@operationLog.tree.columnSize": {
     "sourceHash": "1af8519"
   },
   "operationLog.tree.columnStatus": "Status",
   "@operationLog.tree.columnStatus": {
-    "sourceHash": "920e413"
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "status is 'status' in Swedish; byte-identical to the shipped column headings multiRename.statusColumn and servers.hub.colStatus. Deliberately identical."
   },
-  "operationLog.tree.selectAll": "Select all",
+  "operationLog.tree.selectAll": "Markera allt",
   "@operationLog.tree.selectAll": {
     "sourceHash": "1fc9a38"
   },
-  "operationLog.tree.include": "Roll back {name}",
+  "operationLog.tree.include": "Ångra {name}",
   "@operationLog.tree.include": {
     "sourceHash": "2bdcfa0"
   },
-  "operationLog.tree.comesBackWithFolder": "Comes back with its folder.",
+  "operationLog.tree.comesBackWithFolder": "Kommer tillbaka tillsammans med mappen.",
   "@operationLog.tree.comesBackWithFolder": {
     "sourceHash": "e6275c5"
   },
-  "operationLog.tree.folderFiles": "{count, plural, one {{countText} file} other {{countText} files}}",
+  "operationLog.tree.folderFiles": "{count, plural, one {{countText} fil} other {{countText} filer}}",
   "@operationLog.tree.folderFiles": {
     "sourceHash": "3c08428"
   },
-  "operationLog.tree.statusRemoved": "Removed",
+  "operationLog.tree.statusRemoved": "Raderad",
   "@operationLog.tree.statusRemoved": {
     "sourceHash": "4118fb4"
   },
-  "operationLog.tree.statusMovedBack": "Moved back",
+  "operationLog.tree.statusMovedBack": "Flyttad tillbaka",
   "@operationLog.tree.statusMovedBack": {
     "sourceHash": "c6bc4e6"
   },
-  "operationLog.tree.statusRenamedBack": "Renamed back",
+  "operationLog.tree.statusRenamedBack": "Namnet återställt",
   "@operationLog.tree.statusRenamedBack": {
     "sourceHash": "769ab78"
   },
-  "operationLog.tree.statusTagsRestored": "Tags restored",
+  "operationLog.tree.statusTagsRestored": "Taggar återställda",
   "@operationLog.tree.statusTagsRestored": {
     "sourceHash": "062e231"
   },
-  "operationLog.tree.statusSkipped": "Skipped",
+  "operationLog.tree.statusSkipped": "Överhoppad",
   "@operationLog.tree.statusSkipped": {
     "sourceHash": "12698ce"
   },
-  "operationLog.tree.statusUnfinished": "Didn’t finish",
+  "operationLog.tree.statusUnfinished": "Gick inte att slutföra",
   "@operationLog.tree.statusUnfinished": {
     "sourceHash": "59ea57b"
   },
-  "operationLog.tree.rollupRolledBack": "{count, plural, one {{countText} rolled back} other {{countText} rolled back}}",
+  "operationLog.tree.rollupRolledBack": "{count, plural, one {{countText} ångrad} other {{countText} ångrade}}",
   "@operationLog.tree.rollupRolledBack": {
     "sourceHash": "0b93ef8"
   },
-  "operationLog.tree.rollupSkipped": "{count, plural, one {{countText} skipped} other {{countText} skipped}}",
+  "operationLog.tree.rollupSkipped": "{count, plural, one {{countText} överhoppad} other {{countText} överhoppade}}",
   "@operationLog.tree.rollupSkipped": {
     "sourceHash": "3cb9b95"
   },
-  "operationLog.tree.operationSkipped": "The operation skipped this one, so there’s nothing to roll back.",
+  "operationLog.tree.operationSkipped": "Åtgärden hoppade över det här objektet, så det finns inget att ångra.",
   "@operationLog.tree.operationSkipped": {
     "sourceHash": "b883085"
   },
-  "operationLog.tree.operationUnfinished": "The operation didn’t finish this one, so there’s nothing to roll back.",
+  "operationLog.tree.operationUnfinished": "Åtgärden blev inte klar med det här objektet, så det finns inget att ångra.",
   "@operationLog.tree.operationUnfinished": {
     "sourceHash": "e07232b"
   },
-  "operationLog.tree.unexpandableEmpty": "This folder was empty.",
+  "operationLog.tree.unexpandableEmpty": "Den här mappen var tom.",
   "@operationLog.tree.unexpandableEmpty": {
     "sourceHash": "0c67a8d"
   },
-  "operationLog.tree.unexpandableNotRecorded": "Cmdr didn’t record what’s inside this folder.",
+  "operationLog.tree.unexpandableNotRecorded": "Cmdr skrev inte ner vad som fanns i den här mappen.",
   "@operationLog.tree.unexpandableNotRecorded": {
     "sourceHash": "613608a"
   },
-  "operationLog.tree.unexpandableCapped": "Cmdr didn’t record what’s inside this folder, because this operation held a folder of over 50,000 files.",
+  "operationLog.tree.unexpandableCapped": "Cmdr skrev inte ner vad som fanns i den här mappen, eftersom åtgärden omfattade en mapp med över 50 000 filer.",
   "@operationLog.tree.unexpandableCapped": {
     "sourceHash": "6657eb0"
   },
-  "operationLog.tree.otherEndFrom": "From {path}",
+  "operationLog.tree.otherEndFrom": "Från {path}",
   "@operationLog.tree.otherEndFrom": {
     "sourceHash": "0562430"
   },
-  "operationLog.tree.otherEndTo": "To {path}",
+  "operationLog.tree.otherEndTo": "Till {path}",
   "@operationLog.tree.otherEndTo": {
     "sourceHash": "ea4bf38"
   },
-  "operationLog.tree.backfilling": "Reading this operation’s items…",
+  "operationLog.tree.backfilling": "Läser in åtgärdens objekt…",
   "@operationLog.tree.backfilling": {
     "sourceHash": "45f623f"
   },
-  "operationLog.tree.backfillProgress": "Read {doneText} of {totalText} items",
+  "operationLog.tree.backfillProgress": "Har läst in {doneText} av {totalText} objekt",
   "@operationLog.tree.backfillProgress": {
     "sourceHash": "230eb62"
   },
-  "operationLog.tree.indexesBuilding": "Cmdr is getting your history ready after an update. The items show up in a moment.",
+  "operationLog.tree.indexesBuilding": "Cmdr gör i ordning din historik efter en uppdatering. Objekten dyker upp om en liten stund.",
   "@operationLog.tree.indexesBuilding": {
     "sourceHash": "0d6f56b"
   },
-  "operationLog.tree.operationRunning": "This operation is still running. Its items show up here once it’s done.",
+  "operationLog.tree.indexesUnavailable": "Cmdr kunde inte göra i ordning din historik den här gången, så objekten kan inte visas än. Cmdr försöker igen nästa gång du öppnar appen.",
+  "@operationLog.tree.indexesUnavailable": {
+    "sourceHash": "8d2fec7"
+  },
+  "operationLog.tree.operationRunning": "Den här åtgärden pågår fortfarande. Objekten dyker upp här när den är klar.",
   "@operationLog.tree.operationRunning": {
     "sourceHash": "eebeba4"
   },
-  "operationLog.tree.rollingBack": "This operation is rolling back. Its items show up here once that’s done.",
+  "operationLog.tree.rollingBack": "Den här åtgärden ångras just nu. Objekten dyker upp här när det är klart.",
   "@operationLog.tree.rollingBack": {
     "sourceHash": "35ef2b2"
   },
-  "operationLog.tree.unreadable": "Couldn’t read this operation’s items. Pick it again to try once more.",
+  "operationLog.tree.unreadable": "Det gick inte att läsa objekten i den här åtgärden. Välj åtgärden igen för att försöka på nytt.",
   "@operationLog.tree.unreadable": {
     "sourceHash": "71453e9"
   },
-  "operationLog.tree.togglesCapped": "That’s as many separate picks as Cmdr can hold. Pick a folder instead.",
+  "operationLog.tree.togglesCapped": "Det är så många enskilda val som Cmdr kan hålla reda på. Välj en hel mapp i stället.",
   "@operationLog.tree.togglesCapped": {
     "sourceHash": "80ef3b7"
   },
-  "operationLog.route.fromTo": "From {from} to {to}",
+  "operationLog.route.fromTo": "Från {from} till {to}",
   "@operationLog.route.fromTo": {
     "sourceHash": "6eeb9b3"
   },
-  "operationLog.route.to": "To {to}",
+  "operationLog.route.to": "Till {to}",
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "From {from} to the Trash",
+  "operationLog.route.fromToTrash": "Från {from} till papperskorgen",
   "@operationLog.route.fromToTrash": {
     "sourceHash": "9eff97f"
   },
-  "operationLog.route.from": "From {from}",
+  "operationLog.route.from": "Från {from}",
   "@operationLog.route.from": {
     "sourceHash": "5848d99"
   },
-  "operationLog.route.in": "In {path}",
+  "operationLog.route.in": "I {path}",
   "@operationLog.route.in": {
     "sourceHash": "b1b3028"
   },
-  "operationLog.skipReason.unverifiablePrecondition": "Cmdr couldn’t check this against what it recorded, so it left it alone.",
+  "operationLog.skipReason.unverifiablePrecondition": "Cmdr kunde inte kontrollera det här mot det som skrevs ner, så Cmdr lät det vara.",
   "@operationLog.skipReason.unverifiablePrecondition": {
     "sourceHash": "c33ca33"
   },
-  "operationLog.skipReason.drift": "This changed since the operation, so Cmdr left it alone.",
+  "operationLog.skipReason.drift": "Det här har ändrats sedan åtgärden, så Cmdr lät det vara.",
   "@operationLog.skipReason.drift": {
     "sourceHash": "6768024"
   },
-  "operationLog.skipReason.restoreTargetOccupied": "Something else is at the original spot now, so Cmdr didn’t overwrite it.",
+  "operationLog.skipReason.restoreTargetOccupied": "Något annat ligger på den ursprungliga platsen nu, så Cmdr skrev inte över det.",
   "@operationLog.skipReason.restoreTargetOccupied": {
     "sourceHash": "1b1d375"
   },
-  "operationLog.skipReason.dirNotEmpty": "This folder has something new in it, so Cmdr kept it.",
+  "operationLog.skipReason.dirNotEmpty": "Den här mappen har fått nytt innehåll, så Cmdr behöll den.",
   "@operationLog.skipReason.dirNotEmpty": {
     "sourceHash": "8fc1b3e"
   },
-  "operationLog.skipReason.alreadyGone": "This was already back the way it was.",
+  "operationLog.skipReason.alreadyGone": "Det här var redan som det var förut.",
   "@operationLog.skipReason.alreadyGone": {
     "sourceHash": "71176d1"
   },
-  "operationLog.skipReason.vanished": "This is gone from where the operation left it, so there’s nothing to put back.",
+  "operationLog.skipReason.vanished": "Det här finns inte längre där åtgärden lämnade det, så det finns inget att lägga tillbaka.",
   "@operationLog.skipReason.vanished": {
     "sourceHash": "a715fb0"
   },
-  "operationLog.skipReason.originalGone": "The original is gone, so Cmdr kept this copy rather than delete the only one left.",
+  "operationLog.skipReason.originalGone": "Originalet är borta, så Cmdr behöll den här kopian i stället för att radera den enda som finns kvar.",
   "@operationLog.skipReason.originalGone": {
     "sourceHash": "014fcaa"
   },
-  "operationLog.skipReason.failed": "Cmdr couldn’t roll this one back. Its log has the details.",
+  "operationLog.skipReason.failed": "Cmdr kunde inte ångra det här objektet. Detaljerna finns i loggfilen.",
   "@operationLog.skipReason.failed": {
     "sourceHash": "76c2b80"
   },
-  "operationLog.skipReason.locked": "This is locked so that only an administrator can remove it, so Cmdr left it.",
+  "operationLog.skipReason.locked": "Det här är låst så att bara en administratör kan radera det, så Cmdr lät det vara.",
   "@operationLog.skipReason.locked": {
     "sourceHash": "39e4c78"
   },
@@ -304,7 +309,7 @@
   "@operationLog.status.running": {
     "sourceHash": "f4ccae2"
   },
-  "operationLog.status.finished": "Finished",
+  "operationLog.status.finished": "Slutförd",
   "@operationLog.status.finished": {
     "sourceHash": "7804f7a"
   },
@@ -336,43 +341,43 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
-  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr ångrade det som gick och lät resten ligga kvar. Att ångra klart går igenom åtgärden en gång till och hoppar över allt som fortfarande är osäkert.",
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr ångrade det som gick och lät resten ligga kvar. Att ångra resten går igenom åtgärden en gång till och hoppar över allt som fortfarande är osäkert.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
-    "sourceHash": "77e6f25"
+    "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.",
+  "operationLog.rollback.interruptedNotice": "Cmdr avslutades innan den här åtgärden var klar, så Cmdr kanske inte skrev ner allt som åtgärden gjorde. En ångring når bara det som skrevs ner.",
   "@operationLog.rollback.interruptedNotice": {
     "sourceHash": "642e6fc"
   },
-  "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} item is back the way it was.} other {{countText} items are back the way they were.}}",
+  "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} objekt är tillbaka som det var.} other {{countText} objekt är tillbaka som de var.}}",
   "@operationLog.rollback.partialRolledBack": {
     "sourceHash": "0202fe5"
   },
-  "operationLog.rollback.partialHeldBack": "{count, plural, one {Cmdr skipped {countText} item it wasn’t sure about.} other {Cmdr skipped {countText} items it wasn’t sure about.}}",
+  "operationLog.rollback.partialHeldBack": "{count, plural, one {Cmdr hoppade över {countText} objekt som var osäkert.} other {Cmdr hoppade över {countText} objekt som var osäkra.}}",
   "@operationLog.rollback.partialHeldBack": {
     "sourceHash": "5a43937"
   },
-  "operationLog.rollback.partialWaiting": "{count, plural, one {{countText} item hasn’t been rolled back yet.} other {{countText} items haven’t been rolled back yet.}}",
+  "operationLog.rollback.partialWaiting": "{count, plural, one {{countText} objekt har inte ångrats än.} other {{countText} objekt har inte ångrats än.}}",
   "@operationLog.rollback.partialWaiting": {
     "sourceHash": "0850c46"
   },
-  "operationLog.rollback.rollbackableNoticeCopy": "Rolling back deletes the selected copies. The originals stay where they are.",
+  "operationLog.rollback.rollbackableNoticeCopy": "En ångring raderar de markerade kopiorna. Originalen ligger kvar där de är.",
   "@operationLog.rollback.rollbackableNoticeCopy": {
     "sourceHash": "6710bb4"
   },
-  "operationLog.rollback.rollbackableNoticeDelete": "Rolling back deletes the selected items this operation created.",
+  "operationLog.rollback.rollbackableNoticeDelete": "En ångring raderar de markerade objekten som den här åtgärden skapade.",
   "@operationLog.rollback.rollbackableNoticeDelete": {
     "sourceHash": "d0e028e"
   },
-  "operationLog.rollback.rollbackableNoticeMoveBack": "Rolling back moves the selected items back where they came from.",
+  "operationLog.rollback.rollbackableNoticeMoveBack": "En ångring flyttar tillbaka de markerade objekten dit de kom ifrån.",
   "@operationLog.rollback.rollbackableNoticeMoveBack": {
     "sourceHash": "2cf40c3"
   },
-  "operationLog.rollback.rollbackableNoticeRenameBack": "Rolling back gives the selected items their old names back.",
+  "operationLog.rollback.rollbackableNoticeRenameBack": "En ångring ger de markerade objekten tillbaka sina gamla namn.",
   "@operationLog.rollback.rollbackableNoticeRenameBack": {
     "sourceHash": "8f2b884"
   },
-  "operationLog.rollback.rollbackableNoticeTagsBack": "Rolling back gives the selected items the tags they had before.",
+  "operationLog.rollback.rollbackableNoticeTagsBack": "En ångring ger de markerade objekten tillbaka de taggar de hade förut.",
   "@operationLog.rollback.rollbackableNoticeTagsBack": {
     "sourceHash": "d45b11b"
   },
@@ -384,7 +389,7 @@
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalIsARollback": "This one undid another operation, and an undo doesn’t get undone in turn. The operation it undid is still in the log.",
+  "operationLog.rollback.refusalIsARollback": "Den här åtgärden ångrade en annan åtgärd, och en ångring går inte att ångra i sin tur. Åtgärden som ångrades finns kvar i åtgärdsloggen.",
   "@operationLog.rollback.refusalIsARollback": {
     "sourceHash": "37738da"
   },
@@ -424,15 +429,15 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalNothingSelected": "Check at least one item to roll back.",
+  "operationLog.rollback.refusalNothingSelected": "Markera minst ett objekt att ångra.",
   "@operationLog.rollback.refusalNothingSelected": {
     "sourceHash": "d856cd9"
   },
-  "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr is still reading this operation’s items. Try again in a moment.",
+  "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr läser fortfarande in åtgärdens objekt. Försök igen om en stund.",
   "@operationLog.rollback.refusalSummaryNotBuilt": {
     "sourceHash": "d23332a"
   },
-  "operationLog.rollback.refusalTooManyToggles": "That’s more separate picks than Cmdr can hold. Pick a folder instead.",
+  "operationLog.rollback.refusalTooManyToggles": "Det är fler enskilda val än Cmdr kan hålla reda på. Välj en hel mapp i stället.",
   "@operationLog.rollback.refusalTooManyToggles": {
     "sourceHash": "bdae2c7"
   },

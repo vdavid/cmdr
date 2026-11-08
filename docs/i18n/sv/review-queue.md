@@ -105,6 +105,10 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **AI-förslag batch headings and cells** (`suggestedOps.sweepWhen.*`, `.factUnknown`, `.refusal.nothingSelected.*`):
   the passive `Föreslogs nyss` has no subject to make active; `Okänt` (neuter) stands for a size or a date; ticking is
   `bocka för`. Confirm all three read naturally in the dialog.
+- **Operation log item tree** (`operationLog.tree.*`, `commands.operationLog*`): ticking is `markera` / `avmarkera` (the
+  dialog's own English says "selected"; AI-förslag uses `bocka för`); the counter is a colon form `Markerade: 3 av 12`
+  to dodge agreement; statuses `Raderad`, `Flyttad tillbaka`, `Namnet återställt`, `Taggar återställda`. Confirm they
+  read naturally side by side.
 
 ## Layout (overflow-check against the pseudolocale)
 

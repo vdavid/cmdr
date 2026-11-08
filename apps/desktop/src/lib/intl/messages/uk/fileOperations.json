@@ -1048,7 +1048,7 @@
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a058f98"
   },
-  "fileOperations.rollbackConfirm.titleRest": "Roll back the rest?",
+  "fileOperations.rollbackConfirm.titleRest": "Відкотити решту?",
   "@fileOperations.rollbackConfirm.titleRest": {
     "sourceHash": "08a5c9b"
   },
@@ -1080,31 +1080,31 @@
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
   },
-  "fileOperations.rollbackConfirm.rollBackRest": "Roll back the rest",
+  "fileOperations.rollbackConfirm.rollBackRest": "Відкотити решту",
   "@fileOperations.rollbackConfirm.rollBackRest": {
     "sourceHash": "f954882"
   },
-  "fileOperations.rollbackConfirm.titleSelected": "Roll back the selected items?",
+  "fileOperations.rollbackConfirm.titleSelected": "Відкотити вибрані елементи?",
   "@fileOperations.rollbackConfirm.titleSelected": {
     "sourceHash": "94d4cad"
   },
-  "fileOperations.rollbackConfirm.rollBackSelected": "Roll back selected",
+  "fileOperations.rollbackConfirm.rollBackSelected": "Відкотити вибрані",
   "@fileOperations.rollbackConfirm.rollBackSelected": {
     "sourceHash": "32a94c5"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "This deletes the selected files and folders the operation created. Cmdr skips anything it isn’t sure about, so a few may stay behind.",
+  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Буде видалено вибрані файли й папки, які створила операція. Cmdr пропускає все, у чому не впевнений, тож дещо може залишитися.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
     "sourceHash": "a2ed919"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "This moves the selected files back where they came from. Cmdr skips anything it isn’t sure about, so a few may stay where they are.",
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Вибрані файли буде повернуто туди, звідки їх перемістили. Cmdr пропускає все, у чому не впевнений, тож дещо може залишитися там, де є.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": {
     "sourceHash": "b90e365"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "This gives the selected files their old names back. Cmdr skips anything it isn’t sure about, so a few may keep the names they have now.",
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "Вибраним файлам буде повернуто старі назви. Cmdr пропускає все, у чому не впевнений, тож деякі файли можуть залишитися з теперішніми назвами.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": {
     "sourceHash": "2d2606f"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "This gives the selected files the tags they had before. Cmdr skips any file whose tags changed since, so a few may keep the tags they have now.",
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "Вибраним файлам буде повернуто теги, які вони мали раніше. Cmdr пропускає кожен файл, теги якого відтоді змінилися, тож деякі файли можуть залишитися з теперішніми тегами.",
   "@fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": {
     "sourceHash": "e388f91"
   },

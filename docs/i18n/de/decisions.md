@@ -309,10 +309,10 @@ Deliberate splits (don't unify):
 
 - `Die alten Namen von N Dateien zurückgesetzt.`; `Alle einblenden` / `Andere ausblenden` are macOS' app-menu words.
 
-## Ein halb zurückgenommener Vorgang: das Rollback zu Ende bringen (`operationLog.dialog.rollBackRest`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleRest`/`.rollBackRest`, `queue.row.reversalInFolder`)
+## Den Rest rückgängig machen (`operationLog.dialog.rollBack*`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.*Rest`/`.rollBackSelected`, `queue.row.reversalInFolder`)
 
-- `Rollback abschließen` (never restart; `fortsetzen` is `queue.row.resume`), identical in both keys sharing the
-  English.
+- `Rest rückgängig machen` (title adds `?`), not `Rollback abschließen` (promised a finish). `Ausgewähltes …`, never
+  `Auswahl …` (reads as deselecting).
 - The notice echoes `rollbackConfirm.bodyUndoByDeleting` and promises no complete undo. `in „{folder}“` needs quotes, or
   the folder itself reads as deleted.
 

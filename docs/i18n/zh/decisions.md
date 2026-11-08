@@ -290,8 +290,8 @@ One English word, two Chinese renderings; don't merge:
 
 ## Finish rollback (`operationLog.dialog.rollBackRest`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleRest`/`.rollBackRest`, `queue.row.reversalInFolder`, `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`/`.rollbackAlreadyLandedTooltip`)
 
-- `完成回滚` over `继续回滚` (`继续` is `queue.row.resume`; native review pending). The notice reuses `保持原样` and
-  `跳过没有把握的部分` verbatim.
+- `回滚其余项目` (title `回滚其余项目？`, byte-matched) over `继续回滚` (`queue.row.resume`). The notice reuses
+  `保持原样`, `跳过没有把握的部分`.
 - `in {folder}` is a trailing `位于 {folder}` (as `downloads.toast.inSubdir`), so the cell never reads as the folder
   being deleted; bare folder name.
 - Rolling back a move deletes nothing: `…放回原处`, ❌ `删除`.

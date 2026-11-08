@@ -60,8 +60,8 @@ The must-know rules; the rest of this file elaborates them.
     (only when EN really says pull the cable).
   - operation → `thao tác` (queue `Hàng đợi thao tác`, log `Nhật ký thao tác`); transfer → `lần truyền`, narrow
     copy-or-move only; `di chuyển` is the Move operation alone, a loose "moving files" is `chuyển tệp`.
-  - rollback and undo → `hoàn tác`; Finish rolling back → `Tiếp tục hoàn tác`; put back from the trash → `đưa trở lại`;
-    old names back → `đặt lại tên cũ`.
+  - rollback and undo → `hoàn tác`; Roll back the rest → `Hoàn tác phần còn lại`; put back from the trash →
+    `đưa trở lại`; old names back → `đặt lại tên cũ`.
   - crash report → `báo cáo sự cố`, error report → `báo cáo trục trặc`, bare "report" → `báo cáo`; `sự cố` alone is
     "problem" and never claims Cmdr quit; quit unexpectedly → `thoát bất ngờ`.
   - Back in the folder history → `Trở lại`; back to a screen or step → `Quay lại`.

@@ -200,9 +200,9 @@ and the top traps live in `style.md`; don't repeat them here.
 - A rollback DELETES what the operation wrote, so `restaurer` promises the opposite (and names real restores); `annul-`
   collides with Cancel and `Annulé`. Always with `en`: `retour arrière` is Backspace and a rewind. Pills:
   `Retour en arrière possible` / `impossible` / `en cours` / `effectué` / `partiel`.
-- Finish → `Terminer le retour en arrière` (Finder `Terminer la copie`), both `finishRollBack` keys identical. another
-  pass → `un nouveau passage` (tentative) over `reprend l’opération` and `une seconde passe`; `dans {folder}`, or the
-  folder itself seems deleted.
+- Roll back the rest → `Revenir en arrière sur le reste`, both `rollBackRest` keys identical; selected →
+  `sur la sélection`; checkbox → `cocher` / `décocher`. another pass → `un nouveau passage` (tentative);
+  `dans {folder}`, or the folder seems deleted.
 - Confirm: carries on → `continuera` (`reprendre` is resume); `Conserver les fichiers`; `Arrêter et …`, never `Annuler`.
   `Arrêter et remettre en place tous les fichiers déplacés jusqu’à présent` (undoing a move deletes nothing).
 - Interrupted: `reason.*` reuse `askCmdr.renameUndo.skipReason.*` (`{name} laissé tel quel : …`); `élément` in both

@@ -615,9 +615,14 @@
     "confidence": "high",
     "decision": "Ein englisches Wort, ein deutsches Wort: die Drift-Prüfung",
     "exceptions": {
+      "commands.operationLogRollBack.label": "the checked items → Objekte mit Häkchen; a checkbox tick, not verifying: Häkchen setzen / entfernen, like the catalog’s „Häkchen bei ‚Geschützt‘ entfernen“ (macOS Get Info)",
+      "commands.operationLogSelectAll.label": "a checkbox tick, not verifying: Häkchen setzen / entfernen, like the catalog’s „Häkchen bei ‚Geschützt‘ entfernen“ (macOS Get Info)",
+      "commands.operationLogToggleItem.label": "a checkbox tick, not verifying: Häkchen setzen / entfernen, like the catalog’s „Häkchen bei ‚Geschützt‘ entfernen“ (macOS Get Info)",
+      "commands.operationLogToggleItemAndDown.label": "a checkbox tick, not verifying: Häkchen setzen / entfernen, like the catalog’s „Häkchen bei ‚Geschützt‘ entfernen“ (macOS Get Info)",
       "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "the check running now is der gerade laufende Durchlauf, the catalog word for a full check",
       "indexing.step.findFilesChangeCheck": "check against the index → mit dem Index verglichen, deliberately plain vergleichen over database-register abgleichen",
       "onboarding.stepOptional.updates.summary": "a tiny check → eine winzige Anfrage; the one-line summary has no room for a verb",
+      "operationLog.rollback.refusalNothingSelected": "a checkbox tick, not verifying: Häkchen setzen / entfernen, like the catalog’s „Häkchen bei ‚Geschützt‘ entfernen“ (macOS Get Info)",
       "updates.status.checking": "Checking for updates → Wird gesucht …, the macOS Software Update idiom (Nach Updates suchen)"
     },
     "forms": "Checking … (a connection, a key) → Wird geprüft …; Checking for updates → Nach Updates suchen (macOS Software Update idiom); Checking for changes → Prüfung auf Änderungen; Re-check → Erneut prüfen; Verifying before copy → Prüfung vor dem Kopieren",
@@ -640,6 +645,8 @@
     "chosen": "auswählen",
     "confidence": "high",
     "exceptions": {
+      "operationLog.rollback.refusalTooManyToggles": "a pick here is checking or unchecking an item, so the next step names the checkbox: Setze oder entferne das Häkchen",
+      "operationLog.tree.togglesCapped": "a pick here is checking or unchecking an item, so the next step names the checkbox: Setze oder entferne das Häkchen",
       "settings.operationLog.intro": "Choose how long … → Lege fest, wie lange …"
     },
     "forms": "Choose an app … → App auswählen … (App, not Apple's Programm); Choose the adb command → Den Befehl „adb“ auswählen",
@@ -2252,6 +2259,9 @@
     "decision": "A move that could not be confirmed",
     "exceptions": {
       "errors.write.moveNotConfirmed.suggestion": "es points back at the move named in the title; Your originals haven’t moved → liegen noch dort, wo sie waren",
+      "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "putting files back where they were is zurücklegen (style digest), like its sibling bodyUndoByMovingBack",
+      "operationLog.rollback.rollbackableNoticeMoveBack": "putting files back where they were is zurücklegen (style digest), like rollbackConfirm.bodyUndoByMovingBack",
+      "operationLog.tree.statusMovedBack": "moved back where it came from is zurücklegen (style digest): Zurückgelegt",
       "suggestedOps.reversible.moveBack": "putting files back where they were is zurücklegen (style digest), like the trash undo's Zurücklegen"
     },
     "forms": "button Bewegen; progress Wird bewegt; the one move as a noun → die Bewegung, the act → das Bewegen; moves as an enumerated noun has no German noun, so enumerate verbs (umzubenennen, zu bewegen und aufzuräumen)",
@@ -2519,6 +2529,9 @@
     "accept": ["Originale"],
     "chosen": "Original",
     "confidence": "high",
+    "exceptions": {
+      "operationLog.skipReason.restoreTargetOccupied": "the original spot is a place, not the source files: am ursprünglichen Ort"
+    },
     "forms": "the originals → die Originale",
     "sources": "macOS Finder PE117 (…the original could not be deleted): das Original; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
   },
@@ -2946,6 +2959,9 @@
     "accept": ["umbenannt", "Umbenennung", "umbenenn", "benenne", "benenn"],
     "chosen": "umbenennen",
     "confidence": "high",
+    "exceptions": {
+      "operationLog.tree.statusRenamedBack": "old names back is zurücksetzen (style digest): Name zurückgesetzt"
+    },
     "forms": "Rename all → Alle umbenennen; progress Wird umbenannt; noun Umbenennung/Umbenennungen; rename cycle → Umbenennungszyklus",
     "sources": "macOS Finder (Umbenennen …), Double Commander, Nautilus (wird … umbenannt)"
   },
@@ -3053,7 +3069,7 @@
     "accept": ["rückgängig", "Rücknahme", "zurücknehmen", "zurückgenommen"],
     "chosen": "Rollback",
     "confidence": "high",
-    "decision": "Ein halb zurückgenommener Vorgang: das Rollback zu Ende bringen",
+    "decision": "Den Rest rückgängig machen",
     "forms": "neuter: das Rollback, ein Rollback, Teilweises Rollback; status chips Rollback möglich / Kein Rollback möglich / Rollback läuft / Rollback abgeschlossen; running prose and dialog titles → rückgängig machen (Diesen Vorgang rückgängig machen?); the confirming button → Rollback",
     "sources": "MS terminology keeps Rollback; catalog (settings.operationLog.intro Aktionen rückgängig machen)"
   },

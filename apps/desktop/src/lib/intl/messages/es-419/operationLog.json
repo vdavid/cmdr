@@ -11,12 +11,32 @@
   "@operationLog.summary.trash": {
     "sourceHash": "dc94479"
   },
-  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr revirtió lo que pudo y dejó el resto como estaba. Si terminas la reversión, Cmdr repasa la operación otra vez y vuelve a omitir todo aquello de lo que sigue sin estar seguro.",
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr revirtió lo que pudo y dejó el resto como estaba. Si reviertes el resto, Cmdr repasa la operación otra vez y vuelve a omitir todo aquello de lo que sigue sin estar seguro.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
-    "sourceHash": "aae9762"
+    "sourceHash": "84404d9"
   },
   "operationLog.rollback.refusalUnexpected": "Cmdr no pudo iniciar la reversión. Inténtalo de nuevo en un momento.",
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "80d3906"
+  },
+  "operationLog.route.fromToTrash": "Desde {from} hacia el basurero",
+  "@operationLog.route.fromToTrash": {
+    "sourceHash": "0c8c6df"
+  },
+  "operationLog.skipReason.vanished": "Esto ya no está donde lo dejó la operación, así que no hay nada que devolver a su lugar.",
+  "@operationLog.skipReason.vanished": {
+    "sourceHash": "dd4b7d5"
+  },
+  "operationLog.tree.indexesUnavailable": "Esta vez Cmdr no pudo preparar tu historial, así que estos elementos aún no se pueden mostrar. Volverá a intentarlo la próxima vez que abras Cmdr.",
+  "@operationLog.tree.indexesUnavailable": {
+    "sourceHash": "bcb695e"
+  },
+  "operationLog.tree.unreadable": "No se pudieron leer los elementos de esta operación. Vuelve a elegirla para intentarlo de nuevo.",
+  "@operationLog.tree.unreadable": {
+    "sourceHash": "edfd429"
+  },
+  "operationLog.rollback.partialHeldBack": "{count, plural, one {Cmdr omitió {countText} elemento del que no estaba seguro.} many {Cmdr omitió {countText} elementos de los que no estaba seguro.} other {Cmdr omitió {countText} elementos de los que no estaba seguro.}}",
+  "@operationLog.rollback.partialHeldBack": {
+    "sourceHash": "720e23f"
   }
 }

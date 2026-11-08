@@ -278,8 +278,7 @@ The verb agrees with the names: `Se han restaurado los nombres anteriores de N a
 
 ## Terminar la reversión (`operationLog.dialog.rollBackRest`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleRest`/`.rollBackRest`, `queue.row.reversalInFolder`)
 
-`Terminar de revertir` (never "start over"; shorter than `Completar la reversión`). `en “{folder}”` quoted, so the
-folder doesn't read as what gets removed.
+`Revertir el resto` everywhere. `en “{folder}”` quoted. A checkbox's check / uncheck → `marcar` / `desmarcar`.
 
 ## El aviso de una reversión que no lo pudo todo (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`)
 

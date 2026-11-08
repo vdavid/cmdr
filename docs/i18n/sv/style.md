@@ -56,7 +56,7 @@ The must-know rules; the rest of this file elaborates them.
 - **Top traps** (details in `terms.json`):
   - operation → `åtgärd` (queue `Åtgärdskö`, log `Åtgärdslogg`); transfer → `överföring` only for a copy/move in flight.
   - delete files → `Radera`; `Ta bort` only takes something out of a list; move to trash → `Flytta till papperskorgen`.
-  - rollback → `ångra` (`Ångra klart`), never `återställ` (that's restore; names come back with `återställa`); put back
+  - rollback → `ångra` (`Ångra resten`), never `återställ` (that's restore; names come back with `återställa`); put back
     from the trash → `Lägg tillbaka`; stopping a rollback → `Stoppa`, never `Avbryt`.
   - dismiss → `Avfärda`; close → `Stäng`; cancel → `Avbryt`.
   - hide → `Göm`, hidden → `dold`; only English Suppress keeps `Dölj`.

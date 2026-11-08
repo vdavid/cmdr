@@ -589,6 +589,10 @@
     "confidence": "high",
     "exceptions": {
       "adb.connect.unauthorized": "The person looks up at a phone that already shows the question; Regardez, not an inspection verb.",
+      "commands.operationLogRollBack.label": "the checked items → les éléments cochés; a checkbox tick, not verifying: cocher / décocher, like the catalog’s « décochez Verrouillé » (macOS Lire les informations)",
+      "commands.operationLogSelectAll.label": "a checkbox tick, not verifying: cocher / décocher, like the catalog’s « décochez Verrouillé » (macOS Lire les informations)",
+      "commands.operationLogToggleItem.label": "a checkbox tick, not verifying: cocher / décocher, like the catalog’s « décochez Verrouillé » (macOS Lire les informations)",
+      "commands.operationLogToggleItemAndDown.label": "a checkbox tick, not verifying: cocher / décocher, like the catalog’s « décochez Verrouillé » (macOS Lire les informations)",
       "errors.listing.couldntReadUnknown.explanation": "English-sense: check the details means read them (consultez).",
       "errors.listing.diskFullErrno.suggestion": "English-sense: check how much space is left means look it up (consultez).",
       "errors.listing.temporarilyUnavailable.suggestion": "English-sense: check Activity Monitor means look at it (consultez).",
@@ -599,7 +603,8 @@
       "errors.write.readError.suggestion": "English-sense: check the technical details means read them (consultez).",
       "errors.write.trashRefused.suggestion.other": "English-sense: check the technical details means read them (consultez).",
       "errors.write.writeError.suggestion": "English-sense: check the technical details means read them (consultez).",
-      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family."
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family.",
+      "operationLog.rollback.refusalNothingSelected": "a checkbox tick, not verifying: cocher / décocher, like the catalog’s « décochez Verrouillé » (macOS Lire les informations)"
     },
     "forms": "Check that … → Vérifiez que …; Check for updates → Rechercher les mises à jour; Re-check (adb) → Rechercher à nouveau; checking (update check) → Recherche / vérification",
     "sources": "macOS AppKit (Review Changes… → Vérifier les modifications…); macOS Software Update (Check for Updates → Rechercher les mises à jour, macOS 26.6.2 build 25G83, 2026-08-30)"
@@ -2049,6 +2054,9 @@
     "accept": ["journalisation", "journaux"],
     "chosen": "journal",
     "confidence": "high",
+    "exceptions": {
+      "operationLog.rollback.refusalIsARollback": "the log here is the Operation log dialog, so l’historique (operation-log ruling), not the log file"
+    },
     "forms": "logging → journalisation; log file → fichier journal (Cmdr’s log FILE, never bare journal when it points at the file); debug log → journal de débogage (the qualifier already names the file, so no fichier: Visualiser le journal de débogage, `menu.help.viewDebugLog`)",
     "sources": "MS terminology FRA"
   },
@@ -2141,14 +2149,17 @@
     "confidence": "high",
     "exceptions": {
       "commands.editUndoTrash.description": "English-sense: moving to the trash is placer dans la corbeille.",
-      "settings.dataWipe.doneMessage": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.mutation.trashRefused": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.fallback.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.ioError.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.permissionDenied.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.trashRefused.message.other": "English-sense: moving to the trash is placer dans la corbeille.",
+      "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "moving files back where they came from → replacer, like its shipped sibling bodyUndoByMovingBack",
       "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "French names what the button no longer does (le retour en arrière n'est plus possible) instead of undoing the move.",
+      "operationLog.rollback.rollbackableNoticeMoveBack": "moving files back where they came from → replacer, like rollbackConfirm.bodyUndoByMovingBack",
       "operationLog.summary.trash": "English-sense: moving to the trash is placer dans la corbeille.",
+      "operationLog.tree.statusMovedBack": "moved back where it came from → Remis en place (the put-back ruling), the outcome of a rollback, not a new move",
+      "settings.dataWipe.doneMessage": "English-sense: moving to the trash is placer dans la corbeille.",
       "suggestedOps.approve.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "suggestedOps.reversible.moveBack": "Moving files back where they were is remettre à sa place, the put-back verb Finder uses (Remettre).",
       "transfer.trash": "English-sense: moving to the trash is placer dans la corbeille."
@@ -2167,6 +2178,9 @@
     "chosen": "placer dans la corbeille",
     "confidence": "high",
     "decision": "Corbeille",
+    "exceptions": {
+      "operationLog.route.fromToTrash": "a route line naming the destination (vers la corbeille), not the command"
+    },
     "forms": "the delete dialog’s switch → Placer dans la corbeille; the queue row → Placement dans la corbeille",
     "sources": "macOS Finder (Placer ${entities} dans la corbeille; AL13/N153)"
   },
@@ -2403,6 +2417,9 @@
     "accept": ["originaux"],
     "chosen": "original",
     "confidence": "high",
+    "exceptions": {
+      "operationLog.skipReason.restoreTargetOccupied": "the original spot is a place, not the source files: l’emplacement d’origine"
+    },
     "forms": "the originals → les originaux",
     "sources": "macOS Finder PE117 (…the original could not be deleted): l’original; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
   },
@@ -2807,7 +2824,9 @@
     "confidence": "high",
     "decision": "Index d'images",
     "exceptions": {
-      "errors.git.orphanedWorktree.suggestion": "English-sense: removing a git worktree deletes it."
+      "errors.git.orphanedWorktree.suggestion": "English-sense: removing a git worktree deletes it.",
+      "operationLog.skipReason.locked": "removing here deletes the copy (undoing a copy), so supprimer, the delete term",
+      "operationLog.tree.statusRemoved": "a rollback deleted the copy, so Supprimé, the delete term"
     },
     "forms": "take off a list without deleting anything (a favorite, a folder from indexing, a tag, an attachment)",
     "sources": "catalog (Retirer la pièce jointe)"
@@ -2816,6 +2835,9 @@
     "accept": ["renomme", "renommé", "renommage"],
     "chosen": "Renommer",
     "confidence": "high",
+    "exceptions": {
+      "operationLog.tree.statusRenamedBack": "old name back → restaurer (put-back ruling’s names form, like askCmdr.renameUndo.partial): Ancien nom restauré"
+    },
     "forms": "noun renommage (queue row Renommage); batch rename → renommage par lot; mass-rename → renommage en masse (tentative); rename cycle → cycle de renommage; rotate through a cycle → permuter",
     "sources": "macOS Finder; Nautilus"
   },
@@ -2939,6 +2961,9 @@
     "chosen": "revenir en arrière",
     "confidence": "tentative",
     "decision": "Retour en arrière",
+    "exceptions": {
+      "operationLog.tree.rollupRolledBack": "a count-led folder-row tally beside {countText} ignorés: rétablis fits the participle slot where retour en arrière can’t (tentative, review-queue)"
+    },
     "forms": "verb revenir en arrière (button and confirm title); noun retour en arrière (status pills, progress title Retour en arrière..., Terminer le retour en arrière); pills Retour en arrière possible / impossible / en cours / effectué / partiel",
     "sources": "composed; MS roll back → restaurer is the database-transaction sense (trap 4 in how-to-mine.md)"
   },
@@ -3266,7 +3291,7 @@
     "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
   },
   "skip": {
-    "accept": ["ignoré", "laisse de côté", "ignore"],
+    "accept": ["ignoré", "laisse de côté", "ignore", "laissé de côté"],
     "chosen": "Ignorer",
     "confidence": "high",
     "forms": "skip all → Tout ignorer; outcome Ignoré",
@@ -3676,6 +3701,9 @@
     "chosen": "Annuler",
     "confidence": "high",
     "decision": "Corbeille",
+    "exceptions": {
+      "operationLog.rollback.refusalIsARollback": "the undo is a rollback here (retour en arrière); doesn’t get undone → ne se défait pas, since Annuler would read as Cancel"
+    },
     "forms": "text undo and the trash toast → Annuler; AI rename undo → restaurer les anciens noms; This can’t be undone → Cette opération est irréversible",
     "note": "French renders Undo and Cancel both as Annuler; macOS lives with it. Remettre (Finder’s Put Back) is the sourced fallback if a surface needs the two apart.",
     "sources": "macOS AppKit MenuCommands (Undo Smart Dash → Annuler Tirets intelligents); Nautilus"
