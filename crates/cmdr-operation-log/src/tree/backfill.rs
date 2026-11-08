@@ -208,6 +208,18 @@ impl TreeBackfill {
             self.writer.fill_self_dirs(&self.op_id, unplaced)?;
             chunk = read_facts_after(&self.conn, &self.op_id, pass.after, AGGREGATE_CHUNK)?;
             chunk.retain(|facts| facts.seq <= last);
+            // A folder row that still has no own folder can't be placed: the summary
+            // would count it in its parent with no row of its own to see or uncheck.
+            // Stay unbuilt, as the writer's insert does (`tree_summary.rs`), so the
+            // next open retries.
+            if chunk.iter().any(lacks_own_folder) {
+                log::warn!(
+                    target: "operation_log",
+                    "tree backfill({}): a folder row has no own folder, leaving the op unbuilt",
+                    self.op_id
+                );
+                return Ok(TreeBackfillStep::Finished(TreeBackfillEnd::Unreadable));
+            }
         }
         for facts in &chunk {
             pass.delta.add_row(pass.context.kind, pass.context.axis, facts, 1);

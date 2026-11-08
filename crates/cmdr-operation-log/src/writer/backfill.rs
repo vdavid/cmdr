@@ -51,8 +51,8 @@ impl OperationLogWriter {
     }
 }
 
-/// `FillSelfDirs` on the writer thread. A failure leaves the rows unfilled, which the
-/// backfill survives (see [`fill_self_dirs`]).
+/// `FillSelfDirs` on the writer thread. A failure leaves the rows unfilled, and the
+/// backfill ends unbuilt (see [`fill_self_dirs`]).
 pub(super) fn apply_fill_self_dirs(conn: &mut Connection, op_id: &str, seqs: &[i64]) {
     if let Err(e) = fill_self_dirs(conn, op_id, seqs) {
         log::warn!(target: "operation_log", "fill_self_dirs({op_id}) failed: {e}");
@@ -90,8 +90,8 @@ pub(crate) enum TreeSummaryWrite {
 /// folder on the op's axis, interned as `insert_one_item` does. Only for an op whose
 /// summary isn't built: a built summary placed such a row in its parent, and moving
 /// it now would make the writer's later deltas disagree with it. A row whose folder
-/// doesn't intern keeps none, and the aggregate places it in its parent, as
-/// `summary::aggregate_op` does.
+/// doesn't intern keeps none, and the backfill then leaves the op unbuilt
+/// (`tree::backfill`), as the writer's insert path does.
 fn fill_self_dirs(conn: &mut Connection, op_id: &str, seqs: &[i64]) -> Result<(), OperationLogStoreError> {
     let tx = conn.unchecked_transaction()?;
     let Some(context) = read_op_tree_context(&tx, op_id)? else {

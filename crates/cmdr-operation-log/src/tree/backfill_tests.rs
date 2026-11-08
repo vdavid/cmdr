@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use super::backfill::{TreeBackfill, TreeBackfillEnd, TreeBackfillStart, TreeBackfillStep};
 use super::status::{BackfillProgress, BackfillRegistry, UnbuiltReason};
-use super::summary::{TreeDirRow, read_tree_dirs};
+use super::summary::{TreeDirRow, read_op_tree_context, read_tree_dirs};
 use super::test_support::{Journal, created_dir, item, journal};
 use crate::types::{EntryType, ItemOutcome, OpKind, RollbackState, RowRole, SkipReason};
 use crate::writer::{JournalItem, PruneRequest};
@@ -203,6 +203,30 @@ fn pre_summary_folder_rows_get_their_axis_side_own_folder() {
     assert_eq!(j.self_dir_path("trash", 2), "v:/home/T/Sub", "a search-only folder too");
     assert_eq!(j.self_dir_path("trash", 4), "v:/home/Capped");
     assert_eq!(j.self_dir_path("move", 0), "v:/b/M");
+}
+
+/// A folder row whose own folder won't intern leaves the op unbuilt, as the writer's
+/// insert does. Regression: the backfill built anyway, counting that unit in its
+/// parent's "N of M" with no row of its own to see or uncheck.
+#[test]
+fn a_folder_row_that_cant_get_its_own_folder_leaves_the_op_unbuilt() {
+    let j = journal();
+    let registry = Arc::new(BackfillRegistry::default());
+    record_move(&j, "move");
+    j.finalize("move", RollbackState::Rollbackable, 5);
+    make_pre_summary(&j, "move");
+    // Stands in for the DB error that makes `intern_child_dir` fail.
+    sql(
+        &j,
+        "CREATE TRIGGER refuse_own_folder BEFORE UPDATE OF self_dir_id ON operation_items \
+         BEGIN SELECT RAISE(ABORT, 'refused'); END;",
+    );
+
+    let (end, _) = drive(&mut started(&j, &registry, "move"));
+
+    assert_eq!(end, TreeBackfillEnd::Unreadable);
+    let context = read_op_tree_context(&j.read(), "move").expect("context").expect("op");
+    assert!(!context.built, "nothing is stamped, so the next open retries");
 }
 
 #[test]

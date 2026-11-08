@@ -1197,7 +1197,9 @@ subtree totals in `operation_tree_dirs`, kept exact by the writer.
   - **Pre-v6 DIR rows get their own folder on the writer.** A read connection can't intern, so a chunk holding DIR rows
     with no `self_dir_id` sends their seqs as `FillSelfDirs` (same axis side as an insert; skipped for a built op, whose
     summary placed them in their parent), then reads the chunk again. A cancelled run keeps what it filled; it's
-    harmless and the rerun skips it.
+    harmless and the rerun skips it. A DIR row still without one after the fill ends the run `Unreadable` (op stays
+    unbuilt, as the insert path leaves it), since a summary would count that unit in its parent with no row to see or
+    uncheck (`backfill_tests.rs`, `a_folder_row_that_cant_get_its_own_folder_leaves_the_op_unbuilt`).
   - **The result applies only if nothing moved.** `WriteTreeSummary` replaces the op's summary rows and stamps `built`
     in one transaction, only if the op exists (`Gone`: retention pruned it, so no summary row keeps its dirs alive),
     isn't built (`AlreadyBuilt`), and its `outcome_generation` still equals the value read before the first chunk
