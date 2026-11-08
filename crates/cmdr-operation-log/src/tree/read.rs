@@ -174,12 +174,19 @@ fn map_file(row: &rusqlite::Row<'_>) -> Result<FileRow, OperationLogStoreError> 
     })
 }
 
+/// The summary rows an [`OpReader`] has read, by `dir_id` (`None`: the op has no row
+/// there). Its own type so a reader can be handed one that outlives it: the rollback
+/// filter lends its run-long cache to each page's reader.
+pub(crate) type DirCache = HashMap<i64, Option<TreeDirRow>>;
+
 /// One request's reads of one op, each row cached on first read.
 pub(crate) struct OpReader<'c> {
     conn: &'c Connection,
     op_id: String,
     pub(crate) context: OpTreeContext,
-    dirs: HashMap<i64, Option<TreeDirRow>>,
+    dirs: DirCache,
+    /// Summary point reads this reader made (cache misses), for the read-count gates.
+    dir_reads: u64,
     items: HashMap<i64, Option<FileRow>>,
     names: HashMap<i64, (String, Option<i64>)>,
     paths: HashMap<i64, String>,
@@ -188,11 +195,17 @@ pub(crate) struct OpReader<'c> {
 
 impl<'c> OpReader<'c> {
     pub(crate) fn new(conn: &'c Connection, op_id: &str, context: OpTreeContext) -> Self {
+        Self::with_dirs(conn, op_id, context, DirCache::new())
+    }
+
+    /// A reader that starts from `dirs`, rows an earlier reader of the same op read.
+    pub(crate) fn with_dirs(conn: &'c Connection, op_id: &str, context: OpTreeContext, dirs: DirCache) -> Self {
         OpReader {
             conn,
             op_id: op_id.to_string(),
             context,
-            dirs: HashMap::new(),
+            dirs,
+            dir_reads: 0,
             items: HashMap::new(),
             names: HashMap::new(),
             paths: HashMap::new(),
@@ -209,8 +222,19 @@ impl<'c> OpReader<'c> {
                 .query_row(rusqlite::params![self.op_id, dir_id], map_tree_dir)
                 .optional()?;
             self.dirs.insert(dir_id, row);
+            self.dir_reads += 1;
         }
         Ok(self.dirs.get(&dir_id).and_then(Option::as_ref))
+    }
+
+    /// Hand the summary rows read so far to the next reader, leaving this one empty.
+    pub(crate) fn take_dirs(&mut self) -> DirCache {
+        std::mem::take(&mut self.dirs)
+    }
+
+    /// Summary point reads this reader made, cache hits not counted.
+    pub(crate) fn dir_reads(&self) -> u64 {
+        self.dir_reads
     }
 
     /// The summary row of a dir this op is known to have (a parent of one it has).

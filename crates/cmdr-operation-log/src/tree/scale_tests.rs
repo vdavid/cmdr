@@ -375,8 +375,9 @@ fn engine_decisions(conn: &Connection, rows: i64) -> u64 {
 
 /// The rollback engine's skip pass over the copy, as `execute_rollback_with_selection`
 /// runs it: every row it streams (`read_rollback_rows_page`, a page at a time), each
-/// through the run's filter, with a three-file selection. How many it takes.
-fn engine_skip_pass(conn: &Connection) -> u64 {
+/// through the run's filter, with a three-file selection. How many it takes, and the
+/// summary point reads the run made.
+fn engine_skip_pass(conn: &Connection) -> (u64, u64) {
     let mut filter = match narrow(conn, "copy", &three_files()).expect("narrow") {
         Narrowed::Some(filter) => *filter,
         Narrowed::Everything | Narrowed::Refused(_) => panic!("three files narrow the run"),
@@ -394,7 +395,7 @@ fn engine_skip_pass(conn: &Connection) -> u64 {
             }
         }
     }
-    taken
+    (taken, filter.dir_reads())
 }
 
 /// Stream the copy's rows as [`engine_skip_pass`] does, deciding nothing: what an
@@ -504,6 +505,29 @@ fn interactive_reads_stay_flat_as_the_journal_grows() {
     }
 }
 
+/// A selective run reads each distinct folder's summary row once, not once per page:
+/// the copy's 20,000 rows span 40 pages, and every page shares folders with its
+/// neighbours and its ancestors with all of them. Regression: each page built a fresh
+/// reader, so the run re-read them page after page.
+#[test]
+fn the_engine_reads_each_folder_once_per_run() {
+    let seeded = seed(Shape::gate(20_000));
+    let conn = open_read_connection(&seeded.path).expect("read");
+    let folders: u64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM operation_tree_dirs WHERE op_id = 'copy'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("count");
+    let (taken, dir_reads) = engine_skip_pass(&conn);
+    assert_eq!(taken, 3);
+    assert!(
+        dir_reads <= folders,
+        "{dir_reads} summary reads for an op of {folders} folders"
+    );
+}
+
 /// The 2M scale test: two 2M-row ops, every interactive read timed against its
 /// release budget.
 ///
@@ -595,7 +619,7 @@ fn timed(seeded: &Seeded, shape: Shape, budgets: &HashMap<&'static str, u64>) {
         "streaming every row, no decision"
     );
     let started = Instant::now();
-    let taken = engine_skip_pass(&conn);
+    let (taken, _) = engine_skip_pass(&conn);
     let took = started.elapsed();
     eprintln!(
         "{:>45}: {took:>8.2?} (took {taken})",

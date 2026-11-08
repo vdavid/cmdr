@@ -831,9 +831,11 @@ a row the person unchecked), `nothingSelected` (`N = 0`). A selection that norma
 run, report, and bar are an unfiltered run's. The engine normalizes again before it streams.
 
 - **Decided on the RAW row, before any path resolves** (`store::read_rollback_rows_page`, then `store::rollback_unit_of`
-  only for kept rows): a left-out row costs one `HashMap` lookup plus one summary read per distinct folder for the run,
-  is never verified, acted on, flushed, or recorded, and counts as `left_out`. A selection only removes rows from the
-  stream; every row it keeps goes through every guard.
+  only for kept rows): a left-out row costs one `HashMap` lookup plus one summary read per distinct folder for the run
+  (each page's `OpReader` borrows the filter's run-long `DirCache` and hands it back; past `DIR_CACHE_CAP` folders it
+  starts over at the next page; gated by `scale_tests.rs`, `the_engine_reads_each_folder_once_per_run`), is never
+  verified, acted on, flushed, or recorded, and counts as `left_out`. A selection only removes rows from the stream;
+  every row it keeps goes through every guard.
 - **Paging stays on the raw rows**: `before` is the page's smallest raw `seq`, never a kept row's, or a page that keeps
   nothing would read again forever. A page whose summary lookup fails stops the run like a page it couldn't read (❌
   never a guessed decision).

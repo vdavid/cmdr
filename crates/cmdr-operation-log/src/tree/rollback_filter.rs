@@ -7,12 +7,14 @@
 //!
 //! The filter owns no connection: the reversal is an async task that must be `Send`,
 //! and a `&Connection` held across its awaits isn't. It borrows the run's connection
-//! for one page at a time ([`RollbackFilter::on`]); its decision cache outlives the
-//! page, so each distinct folder is still read once per run.
+//! for one page at a time ([`RollbackFilter::on`]). Its decision cache AND its summary
+//! row cache outlive the page (each page's reader borrows the run's [`DirCache`] and
+//! hands it back), so each distinct folder is read once per run, up to
+//! [`DIR_CACHE_CAP`] folders.
 
 use rusqlite::Connection;
 
-use super::read::OpReader;
+use super::read::{DirCache, OpReader};
 use super::selection::{Picked, RollbackSelection, Selection, SelectionBase};
 use super::summary::{OpTreeContext, RowFacts, read_op_tree_context};
 use crate::rollback::SelectionRefusal;
@@ -63,8 +65,16 @@ pub(crate) fn narrow(
         op_id: op_id.to_string(),
         context,
         selection,
+        dirs: DirCache::new(),
+        dir_reads: 0,
     })))
 }
+
+/// The most summary rows a run keeps between pages. Past it the cache starts over at
+/// the next page: a copy of a deep tree can hold a million folders, and the stream's
+/// `seq DESC` order keeps a folder's rows close together, so what's dropped is
+/// mostly behind the stream. About 200 bytes a row, so this bounds it near 13 MB.
+const DIR_CACHE_CAP: usize = 65_536;
 
 /// The engine's per-row filter for one run: no DB read per row, one summary read per
 /// distinct folder (cached for the run).
@@ -72,15 +82,31 @@ pub(crate) struct RollbackFilter {
     op_id: String,
     context: OpTreeContext,
     selection: Selection,
+    /// The run's summary rows, lent to each page's reader.
+    dirs: DirCache,
+    /// Summary point reads the run made so far.
+    dir_reads: u64,
 }
 
 impl RollbackFilter {
     /// The filter over `conn`, for one page's rows.
     pub(crate) fn on<'f>(&'f mut self, conn: &'f Connection) -> PageFilter<'f> {
-        PageFilter {
-            reader: OpReader::new(conn, &self.op_id, self.context),
-            selection: &mut self.selection,
+        if self.dirs.len() > DIR_CACHE_CAP {
+            self.dirs.clear();
         }
+        let dirs = std::mem::take(&mut self.dirs);
+        PageFilter {
+            reader: OpReader::with_dirs(conn, &self.op_id, self.context, dirs),
+            selection: &mut self.selection,
+            home: &mut self.dirs,
+            dir_reads: &mut self.dir_reads,
+        }
+    }
+
+    /// Summary point reads the run's pages made, for the read-count gate.
+    #[cfg(test)]
+    pub(crate) fn dir_reads(&self) -> u64 {
+        self.dir_reads
     }
 
     /// The selected units and their file bytes: the run's progress totals, the same
@@ -106,6 +132,16 @@ impl RollbackFilter {
 pub(crate) struct PageFilter<'f> {
     reader: OpReader<'f>,
     selection: &'f mut Selection,
+    /// Where the page's reader hands its summary rows back.
+    home: &'f mut DirCache,
+    dir_reads: &'f mut u64,
+}
+
+impl Drop for PageFilter<'_> {
+    fn drop(&mut self) {
+        *self.home = self.reader.take_dirs();
+        *self.dir_reads += self.reader.dir_reads();
+    }
 }
 
 impl PageFilter<'_> {
