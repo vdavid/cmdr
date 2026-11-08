@@ -1138,9 +1138,9 @@ pub fn builder() -> Builder<tauri::Wry> {
             wire::LeftoversKept,
             // A tree-summary backfill's progress and end (commands/operation_log.rs).
             wire::OperationLogTreeBackfill,
-            // The journal's folder indexes exist, so a waiting item tree reads again
+            // The journal's folder-index build settled, so a waiting item tree reads again
             // (operation_log_host/mod.rs).
-            crate::operation_log_host::OperationLogTreeIndexesReady,
+            crate::operation_log_host::OperationLogTreeIndexesSettled,
             // An "Open with" click on a file inside an archive that couldn't be copied
             // out, so no app launched (file_viewer/open_with_extract.rs).
             OpenWithCopyRefused,

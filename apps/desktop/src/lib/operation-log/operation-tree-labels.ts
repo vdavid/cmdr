@@ -217,6 +217,8 @@ export function treeBlankNotice(blank: TreeBlank): MessageKey {
       return 'operationLog.tree.backfilling'
     case 'indexesBuilding':
       return 'operationLog.tree.indexesBuilding'
+    case 'indexesUnavailable':
+      return 'operationLog.tree.indexesUnavailable'
     case 'unbuilt':
       return unbuiltNotice(blank.reason)
     case 'gone':

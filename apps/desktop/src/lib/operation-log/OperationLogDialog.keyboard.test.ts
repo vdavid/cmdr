@@ -51,7 +51,7 @@ vi.mock('#lib/tauri-commands/operation-log.js', () => ({
   startOperationLogTreeBackfill: vi.fn(() => Promise.resolve({ kind: 'started' })),
   cancelOperationLogTreeBackfill: vi.fn(() => Promise.resolve()),
   onOperationLogTreeBackfill: vi.fn(() => Promise.resolve(() => {})),
-  onOperationLogTreeIndexesReady: vi.fn(() => Promise.resolve(() => {})),
+  onOperationLogTreeIndexesSettled: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({
@@ -105,7 +105,8 @@ function folderCopy(selection: RollbackSelection | null): OperationTreeView {
   )
 }
 
-async function mountWithTree(entries: OperationRow[]): Promise<HTMLElement> {
+/** Mount over `entries` without waiting for any tree. */
+async function mountList(entries: OperationRow[]): Promise<HTMLElement> {
   operationLogState.entries = entries
   operationLogState.loading = false
   operationLogState.loadError = false
@@ -115,6 +116,11 @@ async function mountWithTree(entries: OperationRow[]): Promise<HTMLElement> {
   document.body.appendChild(target)
   mount(OperationLogDialog, { target, props: {} })
   await tick()
+  return target
+}
+
+async function mountWithTree(entries: OperationRow[]): Promise<HTMLElement> {
+  const target = await mountList(entries)
   await vi.waitFor(() => {
     expect(target.querySelector('.tree .column-list-row.is-data')).not.toBeNull()
   })
@@ -194,6 +200,48 @@ describe('the operation list', () => {
       expect(event.defaultPrevented).toBe(true)
       expect(document.activeElement).toBe(treeGrid())
     }
+  })
+
+  it('remembers → while the tree still loads, and moves in once its rows arrive', async () => {
+    let land: () => void = () => {}
+    ipc.getOperationLogTree.mockImplementation(
+      (_id, request) =>
+        new Promise((resolve) => {
+          land = () => {
+            resolve(folderCopy(request.selection))
+          }
+        }),
+    )
+    const target = await mountList([opRow('op-1')])
+    opList().focus()
+    press(opList(), 'ArrowRight')
+    expect(document.activeElement).toBe(opList())
+
+    await vi.waitFor(() => {
+      expect(ipc.getOperationLogTree).toHaveBeenCalled()
+    })
+    land()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.tree .column-list-row.is-data')).not.toBeNull()
+    })
+    await vi.waitFor(() => {
+      expect(document.activeElement).toBe(treeGrid())
+    })
+  })
+
+  it('drops the remembered → when the list cursor moves on before the tree loads', async () => {
+    const target = await mountList([opRow('op-1'), opRow('op-2')])
+    opList().focus()
+    press(opList(), 'ArrowRight')
+    press(opList(), 'ArrowDown')
+    await vi.waitFor(() => {
+      expect(ipc.getOperationLogTree.mock.calls.at(-1)?.[0]).toBe('op-2')
+    })
+    await vi.waitFor(() => {
+      expect(target.querySelector('.tree .column-list-row.is-data')).not.toBeNull()
+    })
+    await tick()
+    expect(document.activeElement).toBe(opList())
   })
 
   it('gets the focus back from ← on a top-level row of the tree', async () => {

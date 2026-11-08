@@ -33,7 +33,7 @@ vi.mock('#lib/tauri-commands/operation-log.js', () => ({
       ipc.backfillListener = null
     })
   },
-  onOperationLogTreeIndexesReady: (handler: () => void) => {
+  onOperationLogTreeIndexesSettled: (handler: () => void) => {
     ipc.indexesListener = handler
     return Promise.resolve(() => {
       ipc.indexesListener = null
@@ -371,6 +371,17 @@ describe('an old operation backfills before its tree opens', () => {
     await flush()
     expect(ipc.getOperationLogTree).toHaveBeenCalledTimes(2)
     expect(source.blank).toBeNull()
+  })
+
+  it('says the journal couldn’t prepare its indexes when the build settled without them', async () => {
+    ipc.getOperationLogTree.mockResolvedValueOnce(treeView([], { summary: { kind: 'indexesBuilding' }, totalRows: 0 }))
+    await settleOn('op-1')
+    ipc.getOperationLogTree.mockResolvedValueOnce(
+      treeView([], { summary: { kind: 'indexesUnavailable' }, totalRows: 0 }),
+    )
+    ipc.indexesListener?.()
+    await flush()
+    expect(source.blank).toEqual({ kind: 'indexesUnavailable' })
   })
 
   it('reads nothing extra on the indexes event when its tree already shows', async () => {

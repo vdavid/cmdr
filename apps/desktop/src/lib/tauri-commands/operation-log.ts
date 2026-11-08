@@ -77,13 +77,13 @@ export function onOperationLogTreeBackfill(handler: (event: TreeBackfillEvent) =
 }
 
 /**
- * The journal's folder indexes exist, so a tree that answered `indexesBuilding` can read
- * again. Fires once per launch, when the writer has built them (the first launch after
- * the upgrade that added them is the only one that waits); a listener that comes later
- * finds them built.
+ * The writer's build of the journal's folder indexes settled, built or not, so a tree that
+ * answered `indexesBuilding` reads again and finds its rows, or `indexesUnavailable`.
+ * Fires once per launch (the first launch after the upgrade that added them is the only
+ * one that waits); a listener that comes later finds it settled.
  */
-export function onOperationLogTreeIndexesReady(handler: () => void): Promise<UnlistenFn> {
-  return events.operationLogTreeIndexesReady.listen(() => {
+export function onOperationLogTreeIndexesSettled(handler: () => void): Promise<UnlistenFn> {
+  return events.operationLogTreeIndexesSettled.listen(() => {
     handler()
   })
 }

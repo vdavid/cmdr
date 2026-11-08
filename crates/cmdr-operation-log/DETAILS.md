@@ -1211,9 +1211,12 @@ subtree totals in `operation_tree_dirs`, kept exact by the writer.
   window can show, and these indexes are the only part of v6 that scales with the journal. So `open` queues
   `BuildTreeIndexes` on the writer right after the reconcile (whose writes block on their reply), and operations journal
   behind it through the channel's backpressure. Until both exist, `read_tree_summary_status` answers `IndexesBuilding`;
-  once they do, the writer tells the log's `BackfillRegistry` (`when_indexes_ready`: at once if already built, else on
-  the writer thread after the build), and each host turns that into one `operation-log-tree-indexes-ready` event, so the
-  tree reads again on it rather than polling. A failed build never fires it. `IF NOT EXISTS` makes later launches a
+  once the build settles, the writer tells the log's `BackfillRegistry` (`settle_indexes`; `when_indexes_settled`
+  answers at once if it already has, else on the writer thread after the build), and each host turns that into one
+  `operation-log-tree-indexes-settled` event, so the tree reads again on it rather than polling. A build that couldn't
+  finish (a full disk, a name in the way) settles too, and the tree answers `IndexesUnavailable` for the rest of the
+  launch; every open queues the build again (pinned by
+  `a_folder_index_build_that_cant_finish_says_so_and_runs_again_next_launch`). `IF NOT EXISTS` makes later launches a
   schema lookup. The build logs its duration at info, as every ladder step does.
 - **Upgrade cost** (`src/store/migration_bench.rs`, release, a seeded 4M-row v5 journal of 1,053 MB, Apple Silicon,
   2026-11-07): the migrating open on the main thread takes 1.2 ms; the writer's index build takes 4.5 s, once; the WAL

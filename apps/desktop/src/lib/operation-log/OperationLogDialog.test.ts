@@ -47,7 +47,7 @@ vi.mock('#lib/tauri-commands/operation-log.js', () => ({
   startOperationLogTreeBackfill: ipc.startOperationLogTreeBackfill,
   cancelOperationLogTreeBackfill: vi.fn(() => Promise.resolve()),
   onOperationLogTreeBackfill: vi.fn(() => Promise.resolve(() => {})),
-  onOperationLogTreeIndexesReady: vi.fn(() => Promise.resolve(() => {})),
+  onOperationLogTreeIndexesSettled: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 // Avoid pulling the reactive-settings chain; a stable stamp is all the header needs.

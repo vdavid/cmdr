@@ -35,7 +35,7 @@ import {
   cancelOperationLogTreeBackfill,
   getOperationLogTree,
   onOperationLogTreeBackfill,
-  onOperationLogTreeIndexesReady,
+  onOperationLogTreeIndexesSettled,
   startOperationLogTreeBackfill,
 } from '#lib/tauri-commands/operation-log.js'
 import type { ColumnListWindowedSource } from '#lib/ui/column-list-types.js'
@@ -65,6 +65,8 @@ export type TreeBlank =
   | { kind: 'loading' }
   | { kind: 'backfilling'; done: number; total: number }
   | { kind: 'indexesBuilding' }
+  /** This launch's build of the journal's folder indexes couldn't finish; the next launch tries again. */
+  | { kind: 'indexesUnavailable' }
   | { kind: 'unbuilt'; reason: UnbuiltReason }
   | { kind: 'gone' }
   | { kind: 'unreadable' }
@@ -252,8 +254,11 @@ export function createOperationTreeSource({
         setBlank({ kind: 'backfilling', done: summary.progress.done, total: summary.progress.total })
         return
       case 'indexesBuilding':
-        // Read again when the backend says they exist (`onIndexesReady`), never on a timer.
+        // Read again when the backend says the build settled (`onIndexesSettled`), never on a timer.
         setBlank({ kind: 'indexesBuilding' })
+        return
+      case 'indexesUnavailable':
+        setBlank({ kind: 'indexesUnavailable' })
         return
       case 'unbuilt':
         if (summary.reason === 'notBuilt') {
@@ -343,10 +348,10 @@ export function createOperationTreeSource({
   }
 
   /**
-   * The journal's folder indexes exist now. Read again if this tree waits on them, or if
-   * its first answer is still on the way (it may have been asked before they existed).
+   * The journal's folder-index build settled. Read again if this tree waits on it, or if
+   * its first answer is still on the way (it may have been asked before it settled).
    */
-  function onIndexesReady(): void {
+  function onIndexesSettled(): void {
     if (disposed || opId === null) return
     if (blank?.kind === 'indexesBuilding' || blank?.kind === 'loading') pull()
   }
@@ -369,7 +374,7 @@ export function createOperationTreeSource({
   follow(onOperationLogTreeBackfill(onBackfill), 'tree backfills')
   // The event fires once per launch, so one that fired before this listened is gone: a
   // tree told "building" while subscribing asks once more, and finds them built.
-  follow(onOperationLogTreeIndexesReady(onIndexesReady), 'the folder indexes', onIndexesReady)
+  follow(onOperationLogTreeIndexesSettled(onIndexesSettled), 'the folder indexes', onIndexesSettled)
 
   function leaveOperation(): void {
     if (backfillAsked && opId !== null) {

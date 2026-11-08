@@ -72,6 +72,24 @@ fn opening_the_journal_builds_the_folder_indexes_on_the_writer() {
     assert!(tree_item_indexes_exist(&conn).expect("lookup"));
 }
 
+/// A listener that counts how often it heard the index build settle.
+fn counter() -> (
+    std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    impl Fn() -> Box<dyn FnOnce() + Send>,
+) {
+    let heard = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let make = {
+        let heard = std::sync::Arc::clone(&heard);
+        move || -> Box<dyn FnOnce() + Send> {
+            let heard = std::sync::Arc::clone(&heard);
+            Box::new(move || {
+                heard.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            })
+        }
+    };
+    (heard, make)
+}
+
 /// A tree waiting on the indexes hears once when the writer has built them, and a
 /// later ask hears at once, so the host can turn it into an event instead of a poll.
 #[test]
@@ -91,7 +109,7 @@ fn the_registry_says_once_when_the_folder_indexes_exist() {
         })
     };
 
-    log.tree_backfills().when_indexes_ready(count(&heard));
+    log.tree_backfills().when_indexes_settled(count(&heard));
     assert_eq!(
         heard.load(Ordering::SeqCst),
         0,
@@ -107,7 +125,7 @@ fn the_registry_says_once_when_the_folder_indexes_exist() {
         "it says so only once they exist"
     );
 
-    log.tree_backfills().when_indexes_ready(count(&heard));
+    log.tree_backfills().when_indexes_settled(count(&heard));
     assert_eq!(heard.load(Ordering::SeqCst), 2, "an ask after the build hears at once");
 }
 
@@ -155,4 +173,61 @@ fn a_folders_listing_is_index_served_in_name_order() {
             assert!(!step.contains("TEMP B-TREE"), "a per-window sort in {sql}: {steps:?}");
         }
     }
+}
+
+/// A build that can't finish (here a table already holds one index's name) reads as
+/// "couldn't prepare", never "still building" forever, and the listener still hears it.
+/// The next launch builds the indexes again.
+#[test]
+fn a_folder_index_build_that_cant_finish_says_so_and_runs_again_next_launch() {
+    use std::sync::atomic::Ordering;
+
+    use crate::tree::status::{TreeSummaryStatus, read_tree_summary_status};
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = operation_log_db_path(dir.path());
+    seed_v5(&path);
+    cmdr_fs::sqlite_util::open(&path)
+        .expect("open")
+        .execute_batch("CREATE TABLE operation_items_dest_dir (x INTEGER);")
+        .expect("a table in the index's way");
+
+    let log = crate::OperationLog::detached();
+    let (heard, listener) = counter();
+    log.tree_backfills().when_indexes_settled(listener());
+    log.open(&path, &|_| None).expect("open");
+    let writer = log.writer().expect("writer");
+    writer.flush_blocking().expect("flush");
+    assert_eq!(
+        heard.load(Ordering::SeqCst),
+        1,
+        "a build that couldn't finish still settles"
+    );
+    let conn = open_read_connection(&path).expect("read connection");
+    assert!(!tree_item_indexes_exist(&conn).expect("lookup"));
+    assert_eq!(
+        read_tree_summary_status(&conn, "old", log.tree_backfills()).expect("status"),
+        Some(TreeSummaryStatus::IndexesUnavailable),
+        "the tree says it couldn't prepare, rather than building forever"
+    );
+    writer.shutdown();
+    drop(conn);
+
+    // Whatever was in the way is gone by the next launch, which builds them.
+    cmdr_fs::sqlite_util::open(&path)
+        .expect("open")
+        .execute_batch("DROP TABLE operation_items_dest_dir;")
+        .expect("clear the way");
+    let next = crate::OperationLog::detached();
+    next.open(&path, &|_| None).expect("reopen");
+    next.writer().expect("writer").flush_blocking().expect("flush");
+    let conn = open_read_connection(&path).expect("read connection");
+    assert!(
+        tree_item_indexes_exist(&conn).expect("lookup"),
+        "the next launch builds them"
+    );
+    assert_eq!(
+        read_tree_summary_status(&conn, "old", next.tree_backfills()).expect("status"),
+        Some(TreeSummaryStatus::Unbuilt(crate::tree::status::UnbuiltReason::NotBuilt))
+    );
 }

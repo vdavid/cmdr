@@ -13,7 +13,8 @@
 //! that scales with the journal (5.35 s on a 4M-row one, `DETAILS.md` § "Tree
 //! summary"), so the writer builds them as its first message after open instead.
 //! Operations journal behind it (the channel's backpressure), and until both exist the
-//! tree answers `IndexesBuilding`. `IF NOT EXISTS` makes it a schema lookup on every
+//! tree answers `IndexesBuilding` (`IndexesUnavailable` once a build this launch couldn't
+//! finish; every open queues it again). `IF NOT EXISTS` makes it a schema lookup on every
 //! later launch, and it's the same call on a fresh file, where it's instant.
 
 use rusqlite::Connection;

@@ -116,7 +116,8 @@ impl OperationLog {
         // after an upgrade can take seconds on a big journal, and `open` runs on the
         // app's main thread. Queued here, it runs on the writer thread, and what's
         // journaled meanwhile waits behind it (`store/tree_indexes.rs`). The registry
-        // hears when they exist, and the host tells any tree waiting on them.
+        // hears how the build settled, and the host tells any tree waiting on it. A build
+        // that couldn't finish runs again at the next open.
         if let Err(e) = writer.build_tree_indexes(Arc::clone(&self.inner.backfills)) {
             log::warn!(target: "operation_log", "couldn't queue the item tree's folder indexes: {e}");
         }

@@ -42,7 +42,7 @@ vi.mock('#lib/tauri-commands/operation-log.js', () => ({
   startOperationLogTreeBackfill: vi.fn(() => Promise.resolve({ kind: 'started' })),
   cancelOperationLogTreeBackfill: vi.fn(() => Promise.resolve()),
   onOperationLogTreeBackfill: vi.fn(() => Promise.resolve(() => {})),
-  onOperationLogTreeIndexesReady: vi.fn(() => Promise.resolve(() => {})),
+  onOperationLogTreeIndexesSettled: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 function op(opId: string, kind: OperationRow['kind']): OperationRow {

@@ -612,12 +612,12 @@ async fn the_home_folder_and_its_holders_refuse_delete() {
     assert_eq!(events.settled(&deleted).await, "write-complete");
 }
 
-/// The demo says when the journal's folder indexes exist, as the app's host does, so a
-/// tree that answered `indexesBuilding` reads again on the event rather than a timer.
+/// The demo says when the journal's folder-index build settled, as the app's host does, so
+/// a tree that answered `indexesBuilding` reads again on the event rather than a timer.
 #[tokio::test(flavor = "multi_thread")]
-async fn the_demo_says_when_the_trees_folder_indexes_exist() {
+async fn the_demo_says_when_the_trees_folder_indexes_settled() {
     let (_demo, events) = demo();
-    let ready = events.wait_for("operation-log-tree-indexes-ready", |_| true).await;
+    let ready = events.wait_for("operation-log-tree-indexes-settled", |_| true).await;
     assert_eq!(ready, json!({}));
 }
 

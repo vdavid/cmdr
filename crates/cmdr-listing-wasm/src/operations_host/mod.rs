@@ -82,11 +82,11 @@ impl DemoOperations {
         // journal's indexes inside `open`, so this fires at once; the event keeps the
         // wire the app's.
         let ready_sink = Arc::clone(&sink);
-        log.tree_backfills().when_indexes_ready(Box::new(move || {
+        log.tree_backfills().when_indexes_settled(Box::new(move || {
             wire::emit(
                 &*ready_sink,
-                wire::OPERATION_LOG_TREE_INDEXES_READY,
-                &wire::OperationLogTreeIndexesReady {},
+                wire::OPERATION_LOG_TREE_INDEXES_SETTLED,
+                &wire::OperationLogTreeIndexesSettled {},
             );
         }));
         let mut builder = Operations::builder(volumes, events)

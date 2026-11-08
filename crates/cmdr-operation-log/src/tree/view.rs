@@ -68,6 +68,8 @@ pub enum TreeSummaryView {
     Built,
     /// The journal is still building its folder indexes (once, after an upgrade).
     IndexesBuilding,
+    /// The journal couldn't build its folder indexes this launch; the next launch tries again.
+    IndexesUnavailable,
     /// A backfill is building this op's summary.
     Building { progress: BackfillProgress },
     /// Not built and not building, for this reason.
@@ -263,6 +265,7 @@ pub(crate) fn operation_tree(
     let summary = match status {
         TreeSummaryStatus::Built => TreeSummaryView::Built,
         TreeSummaryStatus::IndexesBuilding => TreeSummaryView::IndexesBuilding,
+        TreeSummaryStatus::IndexesUnavailable => TreeSummaryView::IndexesUnavailable,
         TreeSummaryStatus::Building(progress) => TreeSummaryView::Building { progress },
         TreeSummaryStatus::Unbuilt(reason) => TreeSummaryView::Unbuilt { reason },
     };

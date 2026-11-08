@@ -6366,7 +6366,7 @@ export const events = {
   openWithCopyRefused: makeEvent<OpenWithCopyRefused>('open-with-copy-refused'),
   openWithNotOnThisMac: makeEvent<OpenWithNotOnThisMac>('open-with-not-on-this-mac'),
   operationLogTreeBackfill: makeEvent<TreeBackfillEvent>('operation-log-tree-backfill'),
-  operationLogTreeIndexesReady: makeEvent<OperationLogTreeIndexesReady>('operation-log-tree-indexes-ready'),
+  operationLogTreeIndexesSettled: makeEvent<OperationLogTreeIndexesSettled>('operation-log-tree-indexes-settled'),
   operationsChanged: makeEvent<OperationsChanged>('operations-changed'),
   osLocalesChanged: makeEvent<OsLocalesChanged>('os-locales-changed'),
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
@@ -15031,11 +15031,11 @@ export type OperationItems = {
 }
 
 /**
- *  `operation-log-tree-indexes-ready`: the journal's folder indexes exist, so an item
- *  tree that answered `indexesBuilding` can read again. Once per launch, at most; the
- *  first launch after the upgrade that added them is the only one that waits.
+ *  `operation-log-tree-indexes-settled`: the writer's build of the journal's folder
+ *  indexes settled (built, or couldn't be), so an item tree that answered
+ *  `indexesBuilding` reads again and finds out which. Once per launch.
  */
-export type OperationLogTreeIndexesReady = Record<string, never>
+export type OperationLogTreeIndexesSettled = Record<string, never>
 
 /**
  *  A read of one `operations` row, tokens decoded to typed enums. Doubles as the
@@ -21060,6 +21060,8 @@ export type TreeSummaryView =
   | { kind: 'built' }
   // The journal is still building its folder indexes (once, after an upgrade).
   | { kind: 'indexesBuilding' }
+  // The journal couldn't build its folder indexes this launch; the next launch tries again.
+  | { kind: 'indexesUnavailable' }
   // A backfill is building this op's summary.
   | { kind: 'building'; progress: BackfillProgress }
   // Not built and not building, for this reason.

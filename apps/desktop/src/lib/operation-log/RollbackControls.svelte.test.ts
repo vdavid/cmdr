@@ -55,7 +55,7 @@ vi.mock('#lib/tauri-commands/operation-log.js', () => ({
   startOperationLogTreeBackfill: vi.fn(() => Promise.resolve({ kind: 'built' })),
   cancelOperationLogTreeBackfill: vi.fn(() => Promise.resolve()),
   onOperationLogTreeBackfill: vi.fn(() => Promise.resolve(() => {})),
-  onOperationLogTreeIndexesReady: vi.fn(() => Promise.resolve(() => {})),
+  onOperationLogTreeIndexesSettled: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({

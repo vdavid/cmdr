@@ -166,10 +166,35 @@
         document.querySelector<HTMLElement>('#operation-log-body .op-list [role="grid"]')?.focus()
     }
 
-    /** → or Enter in the list. A tree that has no rows yet (still loading) has nothing to focus. */
+    /**
+     * → or Enter in the list. A tree that has no rows yet (the cursor is settling, or it's
+     * loading) remembers the ask for its operation and takes focus once its rows arrive;
+     * the ask goes if the list cursor moves on first.
+     */
+    let treeFocusFor = $state<string | null>(null)
+
     function focusTree(): void {
-        treeGrid()?.focus()
+        const grid = treeGrid()
+        if (grid !== null && tree.opId === op?.opId && tree.blank === null) {
+            treeFocusFor = null
+            grid.focus()
+            return
+        }
+        treeFocusFor = op?.opId ?? null
     }
+
+    // Runs after the DOM catches up, so the rows' grid exists by the time it reads.
+    $effect(() => {
+        const wanted = treeFocusFor
+        if (wanted === null) return
+        if (op?.opId !== wanted) {
+            treeFocusFor = null
+            return
+        }
+        if (tree.opId !== wanted || tree.blank !== null) return
+        treeFocusFor = null
+        treeGrid()?.focus()
+    })
 
     function treeGrid(): HTMLElement | null {
         return document.querySelector<HTMLElement>('#operation-log-body [role="treegrid"]')

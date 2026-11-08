@@ -143,5 +143,6 @@ describe('treeBlankNotice', () => {
     expect(tString(treeBlankNotice({ kind: 'unbuilt', reason: 'rollingBack' }))).toContain('rolling back')
     expect(tString(treeBlankNotice({ kind: 'backfilling', done: 0, total: 0 }))).toContain('Reading')
     expect(tString(treeBlankNotice({ kind: 'gone' }))).toBe('This operation isn’t in your history anymore.')
+    expect(tString(treeBlankNotice({ kind: 'indexesUnavailable' }))).toContain('next time you open Cmdr')
   })
 })

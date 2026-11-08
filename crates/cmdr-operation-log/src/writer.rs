@@ -252,7 +252,7 @@ enum WriteMessage {
         reply: mpsc::Sender<Option<TreeSummaryWrite>>,
     },
     Prune(PruneRequest),
-    /// The registry hears when they exist ([`BackfillRegistry::when_indexes_ready`]).
+    /// The registry hears how the build settled ([`BackfillRegistry::when_indexes_settled`]).
     BuildTreeIndexes(Arc<BackfillRegistry>),
     Flush(mpsc::Sender<()>),
     Shutdown,
@@ -399,7 +399,7 @@ impl OperationLogWriter {
     /// Enqueue building the item tree's folder indexes if they're missing
     /// (`store/tree_indexes.rs`). Fire-and-forget: what's sent after it waits behind
     /// it, so call it once, right after open, off the app's main thread's path. Tells
-    /// `registry` once they exist, so a tree waiting on them hears it.
+    /// `registry` how the build settled, so a tree waiting on it hears it.
     pub(crate) fn build_tree_indexes(&self, registry: Arc<BackfillRegistry>) -> Result<(), OperationLogStoreError> {
         self.send(WriteMessage::BuildTreeIndexes(registry))
     }
@@ -530,8 +530,13 @@ fn apply_message(conn: &mut Connection, msg: WriteMessage) -> std::ops::ControlF
             }
         }
         WriteMessage::BuildTreeIndexes(registry) => match build_tree_item_indexes(conn) {
-            Ok(()) => registry.mark_indexes_ready(),
-            Err(e) => log::warn!(target: "operation_log", "building the item tree's folder indexes failed: {e}"),
+            Ok(()) => registry.settle_indexes(true),
+            // The next launch queues the build again (`IF NOT EXISTS`); until then the
+            // tree says it couldn't prepare, rather than "building" forever.
+            Err(e) => {
+                log::warn!(target: "operation_log", "building the item tree's folder indexes failed: {e}");
+                registry.settle_indexes(false);
+            }
         },
         WriteMessage::Flush(done) => {
             let _ = done.send(());

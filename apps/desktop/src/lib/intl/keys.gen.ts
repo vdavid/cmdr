@@ -3768,6 +3768,7 @@ export type MessageKey =
   | 'operationLog.tree.folderFiles'
   | 'operationLog.tree.include'
   | 'operationLog.tree.indexesBuilding'
+  | 'operationLog.tree.indexesUnavailable'
   | 'operationLog.tree.label'
   | 'operationLog.tree.operationRunning'
   | 'operationLog.tree.operationSkipped'

@@ -2,8 +2,9 @@
 //! building one. The seam the tree view and the backfill meet at: the view asks
 //! [`read_tree_summary_status`] and answers `Building` without knowing how a backfill
 //! runs; the backfill (`backfill.rs`) claims its op here, reports its progress here,
-//! and hears a cancel here. The registry also says when the journal's folder indexes
-//! exist, so a tree waiting on them hears it rather than asking again.
+//! and hears a cancel here. The registry also says how the writer's build of the
+//! journal's folder indexes settled, so a tree waiting on them hears it rather than asking
+//! again, and a build that couldn't finish reads as that, not as "still building".
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -20,6 +21,9 @@ pub(crate) enum TreeSummaryStatus {
     /// The writer is still building the folder indexes every tree reads (once, after
     /// the upgrade that added them; `store/tree_indexes.rs`). Ahead of any op's state.
     IndexesBuilding,
+    /// The writer's build of the folder indexes didn't finish this launch (a disk that
+    /// filled, a file it couldn't write). The next launch builds them again.
+    IndexesUnavailable,
     /// Exact: the tree reads it.
     Built,
     /// A backfill is building it: `done` of `total` rows read.
@@ -54,25 +58,26 @@ pub struct BackfillProgress {
 
 /// The backfills running now, by op id: one per op, so a second ask joins the first.
 /// The host reaches its log's one registry through `OperationLog::tree_backfills` and
-/// hands it to every tree read, which answers `building` from it. It also holds who's
-/// waiting for the folder indexes ([`Self::when_indexes_ready`]).
+/// hands it to every tree read, which answers `building` from it. It also holds how the
+/// folder indexes' build settled, and who waits for it ([`Self::when_indexes_settled`]).
 #[derive(Debug, Default)]
 pub struct BackfillRegistry {
     running: Mutex<HashMap<String, Running>>,
     indexes: Mutex<IndexesWatch>,
 }
 
-/// Whether the writer has built the folder indexes, and who waits for it until then.
+/// How the writer's build of the folder indexes settled this launch, and who waits for it.
 #[derive(Default)]
 struct IndexesWatch {
-    ready: bool,
+    /// `None` until the build ran; then whether the indexes exist.
+    built: Option<bool>,
     waiting: Vec<Box<dyn FnOnce() + Send>>,
 }
 
 impl std::fmt::Debug for IndexesWatch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("IndexesWatch")
-            .field("ready", &self.ready)
+            .field("built", &self.built)
             .field("waiting", &self.waiting.len())
             .finish()
     }
@@ -148,15 +153,14 @@ impl BackfillRegistry {
         }
     }
 
-    /// Run `notify` once the journal's folder indexes exist: at once when they already
-    /// do, else on the writer thread right after it builds them (`store/tree_indexes.rs`).
-    /// The host turns it into an event, so a tree answering `indexesBuilding` reads
-    /// again when it can, ❌ never on a timer. `notify` must not block on the writer
-    /// (it runs there). A build that fails never calls it: the tree keeps saying the
-    /// indexes are building, which is what a read would answer too.
-    pub fn when_indexes_ready(&self, notify: Box<dyn FnOnce() + Send>) {
+    /// Run `notify` once the writer's build of the journal's folder indexes has settled,
+    /// built or not: at once when it already has, else on the writer thread right after
+    /// (`store/tree_indexes.rs`). The host turns it into an event, so a tree answering
+    /// `indexesBuilding` reads again and finds the tree, or `indexesUnavailable`, ❌
+    /// never on a timer. `notify` must not block on the writer (it runs there).
+    pub fn when_indexes_settled(&self, notify: Box<dyn FnOnce() + Send>) {
         let mut watch = self.indexes.lock_ignore_poison();
-        if watch.ready {
+        if watch.built.is_some() {
             drop(watch);
             notify();
             return;
@@ -164,17 +168,23 @@ impl BackfillRegistry {
         watch.waiting.push(notify);
     }
 
-    /// The writer built the folder indexes (or found them built): wake everyone waiting,
-    /// outside the lock, and answer every later [`Self::when_indexes_ready`] at once.
-    pub(crate) fn mark_indexes_ready(&self) {
+    /// The writer's build settled: `built` when the indexes exist (it built them or found
+    /// them), `false` when it couldn't. Wakes everyone waiting, outside the lock, and
+    /// answers every later [`Self::when_indexes_settled`] at once.
+    pub(crate) fn settle_indexes(&self, built: bool) {
         let waiting = {
             let mut watch = self.indexes.lock_ignore_poison();
-            watch.ready = true;
+            watch.built = Some(built);
             std::mem::take(&mut watch.waiting)
         };
         for notify in waiting {
             notify();
         }
+    }
+
+    /// The writer tried to build the folder indexes this launch and couldn't.
+    fn indexes_unavailable(&self) -> bool {
+        self.indexes.lock_ignore_poison().built == Some(false)
     }
 
     /// Whether `op_id`'s backfill was asked to stop; if so it's forgotten in the same
@@ -191,7 +201,8 @@ impl BackfillRegistry {
 }
 
 /// Where `op_id`'s summary stands, `None` for an op with no header. In order: the
-/// journal's folder indexes still building (no tree can read a folder yet); a built
+/// journal's folder indexes still building, or this launch's build of them settled
+/// without them (no tree can read a folder either way); a built
 /// summary reads as built whatever the op is doing (every op opened since the summary
 /// existed is built from its first row); a running op or rollback says why nothing can
 /// build it yet; then a running backfill's progress; else not built.
@@ -214,7 +225,11 @@ pub(crate) fn read_tree_summary_status(
         return Ok(None);
     };
     if !tree_item_indexes_exist(conn)? {
-        return Ok(Some(TreeSummaryStatus::IndexesBuilding));
+        return Ok(Some(if registry.indexes_unavailable() {
+            TreeSummaryStatus::IndexesUnavailable
+        } else {
+            TreeSummaryStatus::IndexesBuilding
+        }));
     }
     if let Some(value) = summary {
         return match TreeSummaryState::from_token(&value) {

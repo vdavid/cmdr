@@ -69,7 +69,8 @@ The mockup's map, every key a fixed registry command in `Main window/Operation l
 `eventMatchesCommand`, beside the two pure cursor modules:
 
 - **The list**: ↑ ↓ Home End PgUp PgDn are the grid's own (`list-cursor.ts`), the cursor IS the pick. → and Enter
-  (`operationLog.goToItems`) focus the tree; a tree with no rows yet (still loading) has nothing to focus.
+  (`operationLog.goToItems`) focus the tree. A tree with no rows yet (settling, loading, backfilling) remembers the ask
+  for that operation (`treeFocusFor`) and takes focus when its rows arrive; moving the list cursor drops it.
 - **The tree**: ↑ ↓ PgUp PgDn the grid's; → / ← through `tree-cursor.ts`, and ← on a top row focuses the list. Space
   (`toggleItem`) checks the cursor row, a folder as one pick; Insert (`toggleItemAndDown`, the panes' key) checks it and
   steps down. A checkbox click toggles through the same `toggleChecked` and leaves focus on the grid.
@@ -106,9 +107,10 @@ The mockup's map, every key a fixed registry command in `Main window/Operation l
   `start_operation_log_tree_backfill` once per settled operation; `operation-log-tree-backfill` events carry progress (a
   progress bar only past 10 s, a spinner and a line before) and the end (`built` reads the tree). Leaving the operation
   or closing the dialog cancels it. `indexesBuilding` (once, after an upgrade) waits for
-  `operation-log-tree-indexes-ready`, which the backend emits once the writer built them, and reads again; ❌ no timer.
-  The event fires once per launch, so a listener that subscribes late asks once more on subscribing. `operationRunning`
-  / `rollingBack` just say so.
+  `operation-log-tree-indexes-settled`, which the backend emits once the writer's build of them settled, and reads
+  again; ❌ no timer. The event fires once per launch, so a listener that subscribes late asks once more on subscribing.
+  A build that couldn't finish answers `indexesUnavailable` ("couldn't get your history ready", and the next launch
+  builds again). `operationRunning` / `rollingBack` just say so.
 - **Read-only** (`readOnly`: a not-rollbackable operation, or one rolling back) takes no toggles; neither does a row
   inside a folder unit (`contents`), whose checkbox mirrors its folder, disabled.
 

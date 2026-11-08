@@ -202,6 +202,10 @@
   "@operationLog.tree.indexesBuilding": {
     "description": "Shown in the Operation log’s item tree, in place of the rows, on the first launch after an update while Cmdr prepares its history. It clears by itself."
   },
+  "operationLog.tree.indexesUnavailable": "Cmdr couldn’t get your history ready this time, so these items can’t show yet. It tries again the next time you open Cmdr.",
+  "@operationLog.tree.indexesUnavailable": {
+    "description": "Shown in the Operation log’s item tree, in place of the rows, when Cmdr couldn’t prepare its history after an update (for example, the disk was full). The operation list still shows; only the items of each operation can’t be listed. Cmdr tries again by itself at its next start. Keep it calm and plain: no blame, no technical words."
+  },
   "operationLog.tree.operationRunning": "This operation is still running. Its items show up here once it’s done.",
   "@operationLog.tree.operationRunning": {
     "description": "Shown in the Operation log’s item tree, in place of the rows, when the selected operation hasn’t finished yet. The apostrophe is a curly typographic apostrophe (U+2019)."

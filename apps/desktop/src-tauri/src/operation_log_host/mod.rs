@@ -96,20 +96,20 @@ pub fn start(app: &AppHandle, log: &OperationLog) {
     }
 }
 
-/// `operation-log-tree-indexes-ready`: the journal's folder indexes exist, so an item
-/// tree that answered `indexesBuilding` can read again. Once per launch, at most; the
-/// first launch after the upgrade that added them is the only one that waits.
+/// `operation-log-tree-indexes-settled`: the writer's build of the journal's folder
+/// indexes settled (built, or couldn't be), so an item tree that answered
+/// `indexesBuilding` reads again and finds out which. Once per launch.
 #[derive(Debug, Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
-pub struct OperationLogTreeIndexesReady {}
+pub struct OperationLogTreeIndexesSettled {}
 
-/// Emit [`OperationLogTreeIndexesReady`] once the writer has built the folder indexes
-/// (at once when they already exist), so the Operation log's tree subscribes rather than
-/// polls. Runs on the writer thread: an emit, nothing that waits on the writer.
+/// Emit [`OperationLogTreeIndexesSettled`] once the writer's index build settled (at once
+/// when it already has), so the Operation log's tree subscribes rather than polls. Runs
+/// on the writer thread: an emit, nothing that waits on the writer.
 fn announce_tree_indexes(app: &AppHandle, log: &OperationLog) {
     let app = app.clone();
-    log.tree_backfills().when_indexes_ready(Box::new(move || {
-        if let Err(e) = (OperationLogTreeIndexesReady {}).emit(&app) {
-            log::warn!(target: "operation_log", "couldn't say the item tree's folder indexes are ready: {e}");
+    log.tree_backfills().when_indexes_settled(Box::new(move || {
+        if let Err(e) = (OperationLogTreeIndexesSettled {}).emit(&app) {
+            log::warn!(target: "operation_log", "couldn't say the item tree's folder indexes settled: {e}");
         }
     }));
 }
