@@ -820,6 +820,15 @@ cap's words, thousands separators. Update `OperationLogDialog.a11y.test.ts`.
 
 ### 8. Keyboard
 
+**Status: done** (`2d19e16092`, `6d4b81e0a8`). Findings that differ from the text below:
+
+- **⌘A / ⌘⇧A are a menu CLAIM**, the Multi-rename F2 pattern, not a new branch beside `handleTextRegionShortcut`: a
+  claim may now answer `false` to pass the fire on, so the dialog takes them only while its tree holds focus.
+- **The Tab order is list → Load more → tree → Close → Roll back**: the footer puts the primary button last (macOS).
+- **`ModalDialog` swallowed ⌘↩ on a focused button** (it returned early for any Enter on a button); it now forwards a
+  modified Enter, which fixes Multi-rename's ⌘↩ from a focused button too.
+- **The tree re-reads on an `operation-log-tree-indexes-ready` event** (both hosts) instead of a one-second poll.
+
 **Scope.** `apps/desktop/src/lib/commands/sources/operation-log.ts` (new, scope `'Main window/Operation log'`), its
 registry wiring, the dialog's keydown, the dispatch-side route for ⌘A / ⌘⇧A (`routes/(main)/`), tests.
 
