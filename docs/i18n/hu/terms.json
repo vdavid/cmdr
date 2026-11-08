@@ -816,7 +816,7 @@
   "complete": {
     "chosen": "befejezés",
     "accept": ["befejez", "befejeződ", "elkészül", "kész", "hiányos", "félbe"],
-    "forms": "Finish rolling back → Visszagörgetés befejezése; to complete the operation → a művelet befejezéséhez",
+    "forms": "the rest of a rollback → A többi visszagörgetése (no befejezés); to complete the operation → a művelet befejezéséhez",
     "confidence": "high",
     "sources": "macOS Finder (NE108 Másolás befejezése, AR4 Tömörítés befejezése)"
   },
@@ -3381,7 +3381,7 @@
   "rollback": {
     "chosen": "visszagörgetés",
     "accept": ["visszagörget", "görgethető vissza"],
-    "forms": "the button → Visszagörgetés; the progress title → Visszagörgetés…; status cells: Visszagörgethető / Nem görgethető vissza / Visszagörgetés folyamatban / Visszagörgetve / Részben visszagörgetve; Finish rolling back → Visszagörgetés befejezése",
+    "forms": "the button → Visszagörgetés; the progress title → Visszagörgetés…; status cells: Visszagörgethető / Nem görgethető vissza / Visszagörgetés folyamatban / Visszagörgetve / Részben visszagörgetve; Roll back the rest → A többi visszagörgetése",
     "avoid": [
       {
         "form": "visszavonás",

@@ -254,8 +254,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   untouched. ❗ It used to run unconditionally, which made every F2 on an SFTP / WebDAV / ADB pane fail with a
   `NotFound` naming the scheme-prefixed path (ERR-KVERS).
 - **`operation_log.rs`**: the journal's read side (`get_recent_operation_log_entries`, `get_operation_log_detail`, and
-  the item tree's window `get_operation_log_tree`, all thin pass-throughs over `operation_log::query` on a short-lived read-only connection) plus two write entries over the
-  same rollback engine. `rollback_operation` reverses ONE and returns after DISPATCH, so the history dialog's Roll back
+  the item tree's window `get_operation_log_tree`, all thin pass-throughs over `operation_log::query` on a short-lived
+  read-only connection) plus two write entries over the same rollback engine. `rollback_operation` reverses ONE and returns after DISPATCH, so the history dialog's Roll back
   button hands the reversal to the operation queue, and its optional `selection` (the item tree's, `null` for
   everything) narrows the run to what's checked; `undo_operations` reverses SEVERAL and awaits each, because Ask
   Cmdr's rename undo has to report a tally. Both refuse with the typed `RollbackRefusal`, never a sentence. The item

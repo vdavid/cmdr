@@ -777,15 +777,7 @@
   "complete": {
     "distinct": ["done", "not-finished"],
     "en": "complete",
-    "match": [
-      "complete",
-      "completed",
-      "incomplete",
-      "unfinished",
-      "finish rolling back",
-      "finishing compression",
-      "finishing transfer"
-    ],
+    "match": ["complete", "completed", "incomplete", "unfinished", "finishing compression", "finishing transfer"],
     "notMatch": [
       "and complete",
       "is complete",

@@ -764,7 +764,7 @@
     "chosen": "terminer",
     "confidence": "high",
     "decision": "Retour en arrière",
-    "forms": "Finish rolling back → Terminer le retour en arrière (Apple’s `Terminer + <nom>`); an active final phase → Finalisation de…; unfinished copy/move → copie incomplète / déplacement incomplet",
+    "forms": "the rest of a rollback → Revenir en arrière sur le reste (no Terminer); an active final phase → Finalisation de…; unfinished copy/move → copie incomplète / déplacement incomplet",
     "sources": "macOS Finder (Finish Copying → Terminer la copie; LA33 « endommagée ou incomplète »)"
   },
   "compress": {

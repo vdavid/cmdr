@@ -675,7 +675,7 @@
   "complete": {
     "chosen": "concluir",
     "accept": ["conclu", "incomplet"],
-    "forms": "Finish rolling back → Concluir a reversão; unfinished copy → cópia incompleta; unfinished move → movimentação incompleta",
+    "forms": "the rest of a rollback → Reverter o restante (no concluir); unfinished copy → cópia incompleta; unfinished move → movimentação incompleta",
     "avoid": [
       {
         "form": "inacabada",
@@ -2683,7 +2683,7 @@
   "rollback": {
     "chosen": "Reverter",
     "accept": ["revert", "reversão"],
-    "forms": "operation Revertida (fem), item Revertido (masc), progress Revertendo; noun a reversão; Finish rolling back → Concluir a reversão",
+    "forms": "operation Revertida (fem), item Revertido (masc), progress Revertendo; noun a reversão; Roll back the rest → Reverter o restante",
     "confidence": "confirmed",
     "sources": "shipped pt catalog",
     "decision": "Rollback confirm and finish"

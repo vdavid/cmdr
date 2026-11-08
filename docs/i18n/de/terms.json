@@ -785,7 +785,7 @@
     ],
     "chosen": "abgeschlossen",
     "confidence": "high",
-    "forms": "Copying complete → Kopieren abgeschlossen; Finish rolling back → Rollback abschließen; incomplete → unvollständig (Cmdr's own unvollständige Kopie); unfinished (a move) → nicht abgeschlossen",
+    "forms": "Copying complete → Kopieren abgeschlossen; the rest of a rollback → Rest rückgängig machen (no abschließen); incomplete → unvollständig (Cmdr's own unvollständige Kopie); unfinished (a move) → nicht abgeschlossen",
     "sources": "macOS Finder (Der Vorgang kann nicht abgeschlossen werden., LA33 … beschädigt oder unvollständig ist.)"
   },
   "compress": {

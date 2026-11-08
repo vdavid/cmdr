@@ -683,7 +683,7 @@
   "complete": {
     "chosen": "completar",
     "accept": ["complet", "termin", "parcial"],
-    "forms": "Couldn't finish → No se pudo completar; Finish rolling back → Terminar de revertir; an unfinished copy → copia parcial; an unfinished move → un movimiento sin terminar",
+    "forms": "Couldn't finish → No se pudo completar; the rest of a rollback → Revertir el resto (no terminar); an unfinished copy → copia parcial; an unfinished move → un movimiento sin terminar",
     "confidence": "high",
     "sources": "macOS Finder (NE111 una copia parcial), catalog",
     "decision": "Terminar la reversión"

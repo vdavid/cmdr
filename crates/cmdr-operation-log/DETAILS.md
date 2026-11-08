@@ -552,12 +552,13 @@ The runner carries the loop's three live answers as well as its hands:
   "verified unchanged" and "delete" would let a ten-minute-stale verification authorize a destructive act, so the order
   is a data-safety property, not a style choice. The deferred-directory phase polls the stop too (it once polled
   nothing, so a click during a long sweep kept removing folders).
-- **Progress.** `report_progress()` once per FILE item, with totals read from the journal
-  (`store::read_rollback_file_totals`, one indexed aggregate) before the first act — so a reversal has no scanning phase
-  and its bar means something from the first frame. Directory rows are excluded: that phase sweeps empty leftovers
-  rather than moving anything. `ReversalRunner` throttles frames to the operation's progress interval and always sends
-  the first one and the one that lands on the total; a cross-volume restore also reports its bytes mid-file, off the
-  same callback that carries the stop down to the backend.
+- **Progress.** `report_progress()` once per credited item (`rollback.rs::credits_progress`: every file, and every
+  folder unit; housekeeping folders aren't counted), with totals read from the journal
+  (`store::read_rollback_progress_totals`, one indexed aggregate) or the selection's algebra before the first act, so a
+  reversal has no scanning phase and its bar means something from the first frame (§ "Streaming + ordering" has the
+  sweep's share). `ReversalRunner` throttles frames to the operation's progress interval and always sends the first one
+  and the one that lands on the total; a cross-volume restore also reports its bytes mid-file, off the same callback
+  that carries the stop down to the backend.
 
 The inverse operation's **history header** keeps the original operation's user-facing count unit rather than counting
 every row the rollback engine walks. It plans against the original's completed count, falling back to its planned count
@@ -856,8 +857,8 @@ Rollback eligibility is narrow at both boundaries: mutation code journals rollba
 `read_rollback_units_page` streams only rows that await reversal (`done`, or `skipped` with a stored
 `rollback_skip_reason`, § "The `rolling_back` state machine"). `restore_move` also refuses a unit that doesn't await
 reversal. A row the operation itself skipped (no reason) must never make an untouched destination eligible for
-rename-back, and a `rolled_back` row never streams again: Finish can't touch a file someone later put at a reversed
-copy's path (`planner_tests/resume_tests.rs::finishing_never_touches_a_row_an_earlier_pass_reversed`).
+rename-back, and a `rolled_back` row never streams again: "Roll back the rest" can’t touch a file someone later put at a
+reversed copy's path (`planner_tests/resume_tests.rs::finishing_never_touches_a_row_an_earlier_pass_reversed`).
 
 ### The E2E pacing hook in the item loop
 
@@ -913,8 +914,8 @@ and its caller polls). It exists for the Ask Cmdr rename rail, where one run can
   every read surfaces that as `None` / `null` (`OperationItemRow`, `OperationItemView`, so MCP `operations_get` too) —
   "reason not recorded", never a stand-in. The frontend falls back to naming the reason class for exactly this case, and
   still reports the count. Retention and the startup reconcile only ever read `outcome`, so both behave identically
-  whether the column is set or NULL. "Finish" does read it: a pre-v2 held-back row is indistinguishable from the
-  operation's own skip, so it isn't retried, and the op stays `partially_rolled_back` (see below).
+  whether the column is set or NULL. "Roll back the rest" does read it: a pre-v2 held-back row is indistinguishable from
+  the operation's own skip, so it isn't retried, and the op stays `partially_rolled_back` (see below).
 
 ### The `rolling_back` state machine + startup reconcile
 
@@ -924,8 +925,8 @@ and its caller polls). It exists for the Ask Cmdr rename rail, where one run can
 `rolling_back` **as late as possible** (right before the spawn) and hands the plan to the injected `spawn`. The
 double-rollback guard is automatic: a second request reads `rolling_back` and refuses. On a **synchronous spawn
 failure** (a volume dropped between the gate and the spawn, so the inverse never starts) it resets `rolling_back` back
-to the state the op held (`rollbackable`, or `partially_rolled_back` for a Finish) in the same call before returning the
-typed error, so a retry isn't wedged.
+to the state the op held (`rollbackable`, or `partially_rolled_back` for "Roll back the rest") in the same call before
+returning the typed error, so a retry isn't wedged.
 
 `rollback_operation` is `rollback_operation_with_selection` with `None`; a selection is refused typed here too, before
 `rolling_back` is set (§ "Streaming + ordering").
@@ -957,8 +958,9 @@ resolves partial. Why every source:
 - **The original alone misses a crash mid-flush**: `RunAcc::flush` sends the inverse's rows (`record_items`) and THEN
   the original's outcomes (`set_item_outcomes`), so a crash between them leaves `done` inverse rows over untouched
   original rows.
-- **The newest inverse alone misses a crashed second pass**: Finish (and partial rollback) open a fresh inverse per
-  pass, and one that crashed before reversing anything holds no `done` row while an earlier pass's inverse does.
+- **The newest inverse alone misses a crashed second pass**: "Roll back the rest" (and partial rollback) open a fresh
+  inverse per pass, and one that crashed before reversing anything holds no `done` row while an earlier pass's inverse
+  does.
 - **An inverse alone misses a dropped row**: the writer drops a row it can't insert and `flush` still sends the
   original's outcomes.
 - **No prefix cap**: an inverse whose first 10,000 rows are skips can hold its `done` row past them.
@@ -1149,7 +1151,7 @@ subtree totals in `operation_tree_dirs`, kept exact by the writer.
   `(op_id, parent_dir_id, name_folded)` so a folder's child folders come off the index in order. Columns:
   `parent_dir_id`, `name_folded`, `self_seq`, `child_dirs` (child rows in this op), `direct_files` (FILE rows directly
   inside), and the subtree totals `files` / `bytes` (FILE rows of both roles, `MAX(size, 0)`), `units_selectable`,
-  `unit_files_selectable` / `unit_bytes_selectable` (the reversal's progress totals, as `read_rollback_file_totals`
+  `unit_files_selectable` / `unit_bytes_selectable` (the reversal's progress totals, as `read_rollback_progress_totals`
   counts them), `units_rolled_back`, `units_held_back`, `units_unfinished` (all over `rollback_unit` rows, housekeeping
   included), and `housekeeping_waiting` (why "Roll back the rest" still has work at 0 of 0). Per-skip-reason counts are
   NOT stored per folder; a row carries its own.
@@ -1314,9 +1316,10 @@ counts and checkboxes and the engine's per-row decision (`includes`) both go thr
 ## Alpha UI — the "Operation log" dialog
 
 The read API's one user-facing consumer: a menu- and shortcut-triggered soft dialog listing recent operations, newest
-first, each expandable to its per-item rows. It lives entirely in the frontend (`apps/desktop/src/lib/operation-log/`)
-over the existing read commands, so nothing on this side changes when the dialog does. Its state, paging, item caching,
-typed-enum labels, and rollback flow: `apps/desktop/src/lib/operation-log/DETAILS.md`.
+first, master–detail: the picked operation's item tree (§ "The tree view") with a checkbox on everything a rollback can
+still take. It lives entirely in the frontend (`apps/desktop/src/lib/operation-log/`) over the read, tree, and rollback
+commands, so nothing on this side changes when the dialog does. Its state, paging, tree source, typed-enum labels, and
+rollback flow: `apps/desktop/src/lib/operation-log/DETAILS.md`.
 
 **Debugging/demo quality by design** (it may become a sidebar later), so it is deliberately un-gold-plated — but i18n,
 style-guide copy, and a11y basics are not optional. It wears the ALPHA badge off the `operation-log` entry in the
@@ -1332,9 +1335,9 @@ The wiring with a foot on this side:
   (`apps/desktop/src/lib/shortcuts/CLAUDE.md`), so it fires through the in-app dispatch and not only via the native
   accelerator. ⌥⌘O is already `file.showInFinder`, so `L` (for "log") is the mnemonic; a collision test in
   `command-registry.test.ts` guards it.
-- **The two read commands are the whole backend surface** (§ "Query API + search").
-  `#lib/tauri-commands/operation-log.ts` unwraps them for the dialog; the Debug panel calls the raw bindings instead
-  (dev-only, bindings-import-exempt).
+- **The backend surface**: the two read commands (§ "Query API + search"), the tree and its backfill (§ "The tree view",
+  § "Tree summary"), and `rollback_operation` with its selection. `#lib/tauri-commands/operation-log.ts` unwraps them
+  for the dialog; the Debug panel calls the raw bindings instead (dev-only, bindings-import-exempt).
 
 **Convergence with the agent log.** The dialog is the mutation half of a future unified timeline: when the in-app agent
 ships, its decision log (`agent_log`) joins the same user-facing surface, and whether that merged surface is later
