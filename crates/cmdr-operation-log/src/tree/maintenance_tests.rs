@@ -120,7 +120,7 @@ fn reversing_holding_back_and_finishing_keep_the_summary_exact() {
         ],
     );
     j.assert_exact("op");
-    // Finish: the held-back file comes back, then the folder.
+    // Roll back the rest: the held-back file comes back, then the folder.
     j.outcomes("op", &[(1, ItemOutcome::RolledBack, None)]);
     j.outcomes("op", &[(3, ItemOutcome::RolledBack, None)]);
     j.assert_exact("op");

@@ -147,21 +147,21 @@ export function rollbackStateLabel(state: RollbackState): string {
 /**
  * What the row's own button offers, or `null` when the row offers nothing to press.
  *
- * `finish` is a `partiallyRolledBack` row picking a reversal back up. The engine
+ * `rest` is a `partiallyRolledBack` row picking a reversal back up. The engine
  * admits that state through the same gate as `rollbackable`
  * (`crates/cmdr-operation-log/src/rollback.rs`, `check_rollbackable`) and re-attempts every item
  * an earlier pass held back, with a fresh recheck (`RollbackUnit::awaits_reversal`).
  * ❌ Never widen this to a state the backend gate
  * refuses: the row would offer a press that can only come back as a refusal.
  */
-export type RowRollbackAction = 'start' | 'finish'
+export type RowRollbackAction = 'start' | 'rest'
 
 export function rowRollbackAction(state: RollbackState): RowRollbackAction | null {
   switch (state) {
     case 'rollbackable':
       return 'start'
     case 'partiallyRolledBack':
-      return 'finish'
+      return 'rest'
     // Nothing to reverse, or a reversal is already running.
     case 'notRollbackable':
     case 'rollingBack':
@@ -180,7 +180,7 @@ export function rowRollbackActionLabel(action: RowRollbackAction): string {
   switch (action) {
     case 'start':
       return tString('operationLog.dialog.rollBack')
-    case 'finish':
+    case 'rest':
       return tString('operationLog.dialog.rollBackRest')
   }
 }
@@ -200,7 +200,7 @@ export type ActionTally = Pick<TreeTally, 'selected' | 'selectable' | 'housekeep
 export type RollbackAction =
   | { kind: 'all' }
   | { kind: 'rest' }
-  | { kind: 'selected'; count: number; finishing: boolean; subset: boolean }
+  | { kind: 'selected'; count: number; rest: boolean; subset: boolean }
 
 /**
  * The action bar's press, or `null` on a state the backend gate refuses
@@ -226,12 +226,12 @@ export function rollbackAction(
   if (tally === null || tally.selectable === 0) return { action: whole, disabled: false }
   // A partly reversed op the person hasn't narrowed rolls back "the rest", never a fresh
   // reversal, whatever its count.
-  if (base === 'finish' && !narrowed) return { action: whole, disabled: false }
+  if (base === 'rest' && !narrowed) return { action: whole, disabled: false }
   return {
     action: {
       kind: 'selected',
       count: tally.selected,
-      finishing: base === 'finish',
+      rest: base === 'rest',
       subset: narrowed && tally.selected < tally.selectable,
     },
     disabled: tally.selected === 0,

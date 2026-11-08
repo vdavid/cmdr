@@ -332,7 +332,7 @@ struct RunTally {
 /// partial. A run that attempted every item resolves by outcome: no skips ⇒
 /// `RolledBack` (including a vacuously-empty op); any skip (drift, unverifiable,
 /// occupied target) ⇒ `PartiallyRolledBack`, even if nothing could be reversed, and
-/// "Finish" re-attempts those items with a fresh recheck. The one exception is an
+/// "Roll back the rest" re-attempts those items with a fresh recheck. The one exception is an
 /// empty pass over a partial op: it found nothing to retry, which proves nothing
 /// came back, so the op stays partial.
 ///

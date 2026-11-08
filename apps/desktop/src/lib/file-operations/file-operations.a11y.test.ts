@@ -203,7 +203,7 @@ describe('ToolRollbackDialog a11y', () => {
       initiator: 'agent',
       guard: true,
       kind: 'copy',
-      finishing: false,
+      rest: false,
     })
     flushSync()
     await tick()

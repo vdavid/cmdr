@@ -28,9 +28,9 @@ type DoneUndoState =
   | { kind: 'none' }
   /** The journal isn't readable yet. */
   | { kind: 'waiting' }
-  /** The journal admits a rollback. `opKind` words the question; `finishing`
+  /** The journal admits a rollback. `opKind` words the question; `rest`
    *  picks up a reversal someone stopped partway. */
-  | { kind: 'ready'; opKind: OpKind; finishing: boolean }
+  | { kind: 'ready'; opKind: OpKind; rest: boolean }
   /** The journal says no, and why when it says so. */
   | { kind: 'blocked'; reason: MessageKey | null }
 
@@ -65,7 +65,7 @@ export function createDoneUndo(inputs: DoneUndoInputs) {
       read =
         action === null
           ? { kind: 'blocked', reason: rowStandingNotice(row.rollbackState, row.notRollbackableReason, row.kind) }
-          : { kind: 'ready', opKind: row.kind, finishing: action === 'finish' }
+          : { kind: 'ready', opKind: row.kind, rest: action === 'rest' }
     } catch (e) {
       log.warn("Couldn't read op={operationId} from the operation log for Undo: {error}", { operationId, error: e })
       read = { kind: 'none' }

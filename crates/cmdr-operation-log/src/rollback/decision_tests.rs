@@ -167,7 +167,7 @@ fn pure_mapping_helpers() {
         resolve_final_state(ran(2, 1), false, fresh),
         RollbackState::PartiallyRolledBack
     );
-    // A full pass, all skipped ⇒ partial ("Finish" retries the skips).
+    // A full pass, all skipped ⇒ partial ("Roll back the rest" retries the skips).
     assert_eq!(
         resolve_final_state(ran(0, 3), false, fresh),
         RollbackState::PartiallyRolledBack

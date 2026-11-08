@@ -33,11 +33,11 @@ const log = getAppLogger('fileOperations')
 /** What the tool knows to ask about, off `mcp-rollback-dialog`. */
 export type ToolRollbackFacts = { operationId: string; initiator: Initiator; guard: boolean } & (
   | { target: 'live' }
-  | { target: 'logged'; kind: OpKind; finishing: boolean }
+  | { target: 'logged'; kind: OpKind; rest: boolean }
 )
 
 /** The question up in `ToolRollbackDialog.svelte`. */
-export type ToolRollbackQuestion = ToolRollbackFacts & { variant: RollbackConfirmVariant; finishing: boolean }
+export type ToolRollbackQuestion = ToolRollbackFacts & { variant: RollbackConfirmVariant; rest: boolean }
 
 /** What came of asking for the question, as `mcp-response` carries it. */
 export type ToolRollbackRaise =
@@ -126,7 +126,7 @@ export function raiseToolRollback(facts: ToolRollbackFacts): ToolRollbackRaise {
   question = {
     ...facts,
     variant: inFlightRollbackVariant(opKindForWireType(row.snapshot.operationType)),
-    finishing: false,
+    rest: false,
   }
   return { ok: true }
 }

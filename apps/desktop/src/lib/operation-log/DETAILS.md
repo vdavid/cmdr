@@ -127,7 +127,7 @@ The mockup's map, every key a fixed registry command in `Main window/Operation l
    owning the op, never its `blank`, so ❌ an unreadable tree never falls back to the whole-op `null` and reverses what
    the person left out. Pinned by `OperationLogDialog.test.ts` ("disables the press when the tree turns unreadable…").
 2. Pressing it captures the operation, the action, and the selection to send (`null` unless narrowed) and stacks
-   `RollbackConfirmDialog` with the variant `rollbackConfirmVariant(op.kind)` picks, `finishing` on a partly reversed
+   `RollbackConfirmDialog` with the variant `rollbackConfirmVariant(op.kind)` picks, `rest` on a partly reversed
    operation, and `subset` when the selection leaves some out ("Roll back the selected items?").
 3. `rollbackAsked` re-resolves the operation out of `operationLogState.entries` on every read and yields `null` once it
    stops offering a rollback. A reversal started elsewhere while the question is up therefore takes the question down,

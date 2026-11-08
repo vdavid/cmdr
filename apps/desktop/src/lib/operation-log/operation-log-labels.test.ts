@@ -249,9 +249,9 @@ describe('rowRollbackAction', () => {
   it('offers a press on exactly the states the backend gate admits', () => {
     // Mirrors `check_rollbackable` (`crates/cmdr-operation-log/src/rollback.rs`) arm for arm. Offering
     // one on any other state would be a button whose only possible answer is a refusal.
-    const cases: Record<RollbackState, 'start' | 'finish' | null> = {
+    const cases: Record<RollbackState, 'start' | 'rest' | null> = {
       rollbackable: 'start',
-      partiallyRolledBack: 'finish',
+      partiallyRolledBack: 'rest',
       notRollbackable: null,
       rollingBack: null,
       rolledBack: null,
@@ -263,7 +263,7 @@ describe('rowRollbackAction', () => {
 
   it('names what THIS press does, so a half-undone operation never promises a fresh reversal', () => {
     expect(rowRollbackActionLabel('start')).toBe('Roll back')
-    expect(rowRollbackActionLabel('finish')).toBe('Roll back the rest')
+    expect(rowRollbackActionLabel('rest')).toBe('Roll back the rest')
   })
 })
 
@@ -282,11 +282,11 @@ describe('rollbackAction', () => {
 
   it('counts the checked items on a fresh rollback, untouched or narrowed', () => {
     expect(rollbackAction('rollbackable', tally(12, 12), false)).toEqual({
-      action: { kind: 'selected', count: 12, finishing: false, subset: false },
+      action: { kind: 'selected', count: 12, rest: false, subset: false },
       disabled: false,
     })
     expect(rollbackAction('rollbackable', tally(3, 12), true)).toEqual({
-      action: { kind: 'selected', count: 3, finishing: false, subset: true },
+      action: { kind: 'selected', count: 3, rest: false, subset: true },
       disabled: false,
     })
   })
@@ -297,7 +297,7 @@ describe('rollbackAction', () => {
       disabled: false,
     })
     expect(rollbackAction('partiallyRolledBack', tally(1, 4), true)).toEqual({
-      action: { kind: 'selected', count: 1, finishing: true, subset: true },
+      action: { kind: 'selected', count: 1, rest: true, subset: true },
       disabled: false,
     })
   })
@@ -327,7 +327,7 @@ describe('rollbackActionLabel and selectedCountText', () => {
   it('words each press, with thousands separators on the count', () => {
     expect(rollbackActionLabel({ kind: 'all' })).toBe('Roll back')
     expect(rollbackActionLabel({ kind: 'rest' })).toBe('Roll back the rest')
-    expect(rollbackActionLabel({ kind: 'selected', count: 1_234, finishing: false, subset: true })).toBe(
+    expect(rollbackActionLabel({ kind: 'selected', count: 1_234, rest: false, subset: true })).toBe(
       'Roll back selected (1,234)',
     )
   })

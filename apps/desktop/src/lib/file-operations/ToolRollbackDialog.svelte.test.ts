@@ -61,7 +61,7 @@ const LOGGED = {
   initiator: 'aiClient',
   guard: false,
   kind: 'move',
-  finishing: false,
+  rest: false,
 } as const
 
 /** The real store's rows are reactive, and so are these. */

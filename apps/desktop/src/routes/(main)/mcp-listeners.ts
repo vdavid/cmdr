@@ -186,8 +186,8 @@ export function parseToolRollbackFacts(raw: Record<string, unknown>): ToolRollba
   const startedBy = parseStartedBy(raw)
   if (raw.target === 'live') return { target: 'live', operationId, ...startedBy }
   const kind = OP_KINDS.find((known) => known === raw.kind)
-  if (raw.target !== 'logged' || kind === undefined || typeof raw.finishing !== 'boolean') return undefined
-  return { target: 'logged', operationId, kind, finishing: raw.finishing, ...startedBy }
+  if (raw.target !== 'logged' || kind === undefined || typeof raw.rest !== 'boolean') return undefined
+  return { target: 'logged', operationId, kind, rest: raw.rest, ...startedBy }
 }
 
 /** Selection count: a number, or the `'all'` sentinel. */

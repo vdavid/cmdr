@@ -357,7 +357,7 @@
     {@const question = rollbackAsked}
     <RollbackConfirmDialog
         variant={rollbackConfirmVariant(question.op.kind)}
-        finishing={question.op.rollbackState === 'partiallyRolledBack'}
+        rest={question.op.rollbackState === 'partiallyRolledBack'}
         subset={question.action.kind === 'selected' && question.action.subset}
         onConfirm={() => confirmRollback(question.opId, question.selection)}
         onCancel={() => (asked = null)}

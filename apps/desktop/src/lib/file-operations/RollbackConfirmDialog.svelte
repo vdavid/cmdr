@@ -32,11 +32,11 @@
          * confirming button; the body stays whatever `variant` says, because what
          * happens to the files is the same either way.
          */
-        finishing?: boolean
+        rest?: boolean
         /**
          * The press takes only SOME of the operation's items (the Operation log's tree
          * left some unchecked). The title, the button, and the body then speak of "the
-         * selected" items, whether or not `finishing` is set. Only an undo variant
+         * selected" items, whether or not `rest` is set. Only an undo variant
          * has a narrowed body; a running operation's stop is never a subset.
          */
         subset?: boolean
@@ -49,7 +49,7 @@
         startedBy?: ToolInitiator
     }
 
-    const { variant, finishing = false, subset = false, onConfirm, onCancel, startedBy }: Props = $props()
+    const { variant, rest = false, subset = false, onConfirm, onCancel, startedBy }: Props = $props()
 
     onMount(() => registerRollbackConfirmer(() => onConfirm()))
 
@@ -118,14 +118,14 @@
     const titleKey: MessageKey = $derived(
         subset
             ? 'fileOperations.rollbackConfirm.titleSelected'
-            : finishing
+            : rest
               ? 'fileOperations.rollbackConfirm.titleRest'
               : 'fileOperations.rollbackConfirm.title',
     )
     const confirmLabel: MessageKey = $derived(
         subset
             ? 'fileOperations.rollbackConfirm.rollBackSelected'
-            : finishing
+            : rest
               ? 'fileOperations.rollbackConfirm.rollBackRest'
               : 'fileOperations.rollbackConfirm.rollBack',
     )

@@ -845,7 +845,7 @@
 {#if doneUndo.confirming && undoState.kind === 'ready'}
     <RollbackConfirmDialog
         variant={rollbackConfirmVariant(undoState.opKind)}
-        finishing={undoState.finishing}
+        rest={undoState.rest}
         onConfirm={() => doneUndo.confirm()}
         onCancel={doneUndo.dismiss}
     />

@@ -513,7 +513,7 @@ pub(crate) fn awaits_reversal(outcome: ItemOutcome, skip_reason: Option<SkipReas
 
 /// The rows a reversal streams, as SQL over `operation_items` (binds `?3` = `done`,
 /// `?4` = `skipped`): see [`RollbackUnit::awaits_reversal`]. Retrying a held-back
-/// row is what lets "Finish" pick a partial rollback back up; the per-item recheck
+/// row is what lets "Roll back the rest" pick a partial rollback back up; the per-item recheck
 /// keeps that idempotent. A held-back row recorded before the journal kept a reason
 /// (pre-v2) reads like the operation's own skip and isn't retried, which is why an
 /// empty pass over a partial op stays partial (`rollback.rs`, `resolve_final_state`).

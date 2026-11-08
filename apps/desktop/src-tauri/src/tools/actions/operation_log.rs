@@ -177,7 +177,7 @@ enum RollbackQuestion {
     Logged {
         kind: OpKind,
         /// It's already partly rolled back, so a yes picks that up.
-        finishing: bool,
+        rest: bool,
     },
 }
 
@@ -197,7 +197,7 @@ fn logged_question(row: Option<OperationRow>, volumes: &dyn VolumeLookup) -> Res
     check_rollbackable(volumes, &row).map_err(|refusal| refusal_error(&refusal))?;
     Ok(RollbackQuestion::Logged {
         kind: row.kind,
-        finishing: row.rollback_state == RollbackState::PartiallyRolledBack,
+        rest: row.rollback_state == RollbackState::PartiallyRolledBack,
     })
 }
 
