@@ -23,6 +23,13 @@ describe('menu claims', () => {
     expect(runMenuClaim('file.copy')).toBe(false)
   })
 
+  it('passes the fire on when the claim answers false, so the command runs as if unclaimed', () => {
+    const run = vi.fn(() => false)
+    releases.push(claimMenuCommand('selection.selectAll', run))
+    expect(runMenuClaim('selection.selectAll')).toBe(false)
+    expect(run).toHaveBeenCalledOnce()
+  })
+
   it('the newest claim wins, and releasing a superseded one keeps it', () => {
     const older = vi.fn()
     const newer = vi.fn()

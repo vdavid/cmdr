@@ -4,7 +4,8 @@
      * (`ColumnList`), whose cursor IS the selection the detail pane shows. Each row
      * carries the summary, who and when, a glyph when the operation didn't run to its
      * end, and its rollback state in that state's color. "Load more" sits under the
-     * list, in the Tab order between the list and the tree.
+     * list, in the Tab order between the list and the tree. ↑ ↓ Home End PgUp PgDn are the
+     * grid's own; → and Enter (`operationLog.goToItems`) go into the picked one's items.
      */
     import ColumnList from '#lib/ui/ColumnList.svelte'
     import { columnListProps, type ColumnListColumn } from '#lib/ui/column-list-types.js'
@@ -12,6 +13,8 @@
     import StatusGlyph from '#lib/ui/StatusGlyph.svelte'
     import type { IconName } from '#lib/ui/icons/icon-map.js'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import { claimKey } from '#lib/shortcuts/claim-key.js'
+    import { eventMatchesCommand } from '#lib/shortcuts/index.js'
     import { formatDateTime } from '#lib/settings/reactive-settings.svelte.js'
     import type { ExecutionStatus } from '#lib/ipc/bindings.js'
     import type { OperationRow } from '#lib/tauri-commands/index.js'
@@ -24,9 +27,18 @@
         hasMore: boolean
         loadingMore: boolean
         onLoadMore: () => void
+        /** → or Enter: focus goes into the picked operation's items. */
+        onGoToItems?: () => void
     }
 
-    const { entries, cursorIndex, onCursorChange, hasMore, loadingMore, onLoadMore }: Props = $props()
+    const { entries, cursorIndex, onCursorChange, hasMore, loadingMore, onLoadMore, onGoToItems }: Props = $props()
+
+    /** The grid hands over every key that isn't a cursor key. */
+    function onKeydown(event: KeyboardEvent): void {
+        if (event.isComposing || !eventMatchesCommand(event, 'operationLog.goToItems')) return
+        claimKey(event)
+        onGoToItems?.()
+    }
 
     /** The glyph an operation that didn't run to its end carries; a finished one needs none. */
     function statusGlyph(status: ExecutionStatus): IconName | null {
@@ -80,6 +92,7 @@
             ariaLabel: tString('operationLog.dialog.operations'),
             cursorIndex,
             onCursorChange,
+            onKeydown,
             rowHeight: 'calc(var(--font-size-sm) * 1.4 + var(--font-size-xs) * 1.4 + 2 * var(--spacing-sm))',
             rowClass: 'op-row',
         })}

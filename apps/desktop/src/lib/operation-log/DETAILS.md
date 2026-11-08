@@ -19,8 +19,8 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
 - `OperationDetail.svelte`: the right pane's header (`#op-head-<id>`, badges, the route line, the standing notice or
   refusal as `#op-reason-<id>` / `.op-refusal`) over `OperationTree.svelte`.
 - `OperationTree.svelte`: a `ColumnList` `treegrid` (name with indent, disclosure, checkbox; size; status), the header's
-  select-all box, the cursor row's story under the tree, ← / → through `#lib/ui/tree-cursor.ts`, and the blank states
-  (loading, backfilling, indexes building, a running operation, gone).
+  select-all box, the cursor row's story under the tree, ← / → through `#lib/ui/tree-cursor.ts`, the tree's registry
+  keys (§ "Keyboard"), and the blank states (loading, backfilling, indexes building, a running operation, gone).
 - `operation-tree-source.svelte.ts`: § "The tree source" below.
 - `operation-log-labels.ts`: pure, no I/O. Summary formatting (ICU plural over `kind` + a count: the planned
   `itemCount`, or for a canceled or stopped operation the `itemsDone` it got to, wrapped in "then canceled (N planned)",
@@ -51,7 +51,9 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
 ~900 × 640 by default, resizable (`fillBody`): the list takes 300 px on the left, the detail the rest, each with one
 scroller (the list's and the tree's own `ColumnList` viewports). Under 640 px the list stacks above the detail, measured
 with `useInlineSize` (Cmdr's WebKit floor predates container queries; `.stylelintrc.mjs` bans them). The Tab order
-follows the DOM: the list, Load more, the tree, the action bar.
+follows the DOM: the list, Load more, the tree, then the footer's Close and the rollback button (primary last, the macOS
+order), pinned in `OperationLogDialog.a11y.test.ts`. Checkboxes, the disclosure, and the header box are pointer targets
+only (`tabindex=-1`): the grids keep focus.
 
 Deviations from the mockup, each for a reason:
 
@@ -59,8 +61,26 @@ Deviations from the mockup, each for a reason:
   windowed row clips at the viewport and covers the rows below. The same words are each row's `aria-describedby`.
 - **A small fresh tree opens its top folders by itself** (up to eight, when the whole tree fits one window), so the
   mockup's open folders read at a glance; anything bigger opens shut.
-- **The tree's ↑ ↓ and ← / → work; Space, Insert, ⌘A, ⌘↩, and leaving the list by → are the keyboard pass's**, as is the
-  `keyHint` on the rollback button.
+
+## Keyboard
+
+The mockup's map, every key a fixed registry command in `Main window/Operation log`
+(`#lib/commands/sources/operation-log.ts`, so Settings and the Help window list them) read through
+`eventMatchesCommand`, beside the two pure cursor modules:
+
+- **The list**: ↑ ↓ Home End PgUp PgDn are the grid's own (`list-cursor.ts`), the cursor IS the pick. → and Enter
+  (`operationLog.goToItems`) focus the tree; a tree with no rows yet (still loading) has nothing to focus.
+- **The tree**: ↑ ↓ PgUp PgDn the grid's; → / ← through `tree-cursor.ts`, and ← on a top row focuses the list. Space
+  (`toggleItem`) checks the cursor row, a folder as one pick; Insert (`toggleItemAndDown`, the panes' key) checks it and
+  steps down. A checkbox click toggles through the same `toggleChecked` and leaves focus on the grid.
+- **⌘A / ⌘⇧A** (`selectAll` / `deselectAll`, `setAll`): Edit > Select all / Deselect all's accelerators, which fire
+  before the page sees the key, and the dialog gate refuses both over a dialog. So the dialog also claims
+  `selection.selectAll` / `selection.deselectAll` (`#lib/commands/menu-claims.ts`) and takes them only while the tree
+  holds focus; elsewhere the claim answers `false` and the gate decides as for any dialog. `setAll` is idempotent, so a
+  keyboard + menu double fire lands as one pick. Pinned through the real `handleCommandExecute` in
+  `OperationLogDialog.keyboard.test.ts`: a keydown cell alone passes while the app fails.
+- **Anywhere**: ⌘↩ (`rollBack`) is the action bar's press (it asks first), with the button's `keyHint`; Escape closes.
+  ModalDialog hands a modified Enter on a focused button to the dialog, so ⌘↩ works from Close too.
 
 ## The tree source
 
@@ -240,7 +260,8 @@ out partial, which is the honest read today.
   "selected", and the refusal notice. `operation-tree-source.svelte.test.ts` owns the request rules (generations, the
   settling cursor, backfill, the cap); `operation-log-labels.test.ts` and `operation-tree-labels.test.ts` own the
   exhaustive maps, so the component tests don't re-enumerate every state. `OperationLogDialog.a11y.test.ts` audits the
-  dialog and each pane on its own.
+  dialog and each pane on its own, and pins the Tab order. `OperationLogDialog.keyboard.test.ts` walks the keyboard map
+  row by row (§ "Keyboard").
 - `RollbackControls.svelte.test.ts` mounts the dialog over a REAL session registry, fed the way the backend feeds one,
   and pins which control shows for which lifecycle status, that each press names the INVERSE operation, that a second
   press is refused while the first is out, and that a paused reversal says so. Two ordering traps it documents in place:

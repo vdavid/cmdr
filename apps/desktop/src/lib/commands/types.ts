@@ -24,6 +24,7 @@ export type CommandScope =
   | 'Main window/Favorites menu' // The ⌃D favorites menu, the volume dropdown's sibling
   | 'Main window/Error screen' // The full-pane error screen (ErrorPane)
   | 'Main window/Multi-rename' // The ⌃M Multi-rename sheet
+  | 'Main window/Operation log' // The ⌥⌘L Operation log dialog
   | 'Main window/Ask Cmdr' // The Ask Cmdr rail, while it has focus
   | 'About window' // About window commands
   | 'Operation queue window' // The operation queue window's own keys

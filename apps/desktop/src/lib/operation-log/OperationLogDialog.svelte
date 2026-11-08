@@ -25,7 +25,10 @@
     import { rollbackOperation, type OperationRow } from '#lib/tauri-commands/index.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import { SvelteMap, SvelteSet } from 'svelte/reactivity'
-    import { onDestroy } from 'svelte'
+    import { onDestroy, onMount } from 'svelte'
+    import { claimMenuCommand } from '#lib/commands/menu-claims.js'
+    import { claimKey } from '#lib/shortcuts/claim-key.js'
+    import { eventMatchesCommand } from '#lib/shortcuts/index.js'
     import { useInlineSize } from '#lib/utils/inline-size-action.js'
     import RollbackControls from './RollbackControls.svelte'
     import OperationList from './OperationList.svelte'
@@ -162,6 +165,48 @@
     function focusOperationList(): void {
         document.querySelector<HTMLElement>('#operation-log-body .op-list [role="grid"]')?.focus()
     }
+
+    /** → or Enter in the list. A tree that has no rows yet (still loading) has nothing to focus. */
+    function focusTree(): void {
+        treeGrid()?.focus()
+    }
+
+    function treeGrid(): HTMLElement | null {
+        return document.querySelector<HTMLElement>('#operation-log-body [role="treegrid"]')
+    }
+
+    /**
+     * ⌘A and ⌘⇧A are Edit > Select all / Deselect all's accelerators, which fire before the
+     * page sees the key, and the dialog gate refuses both over a dialog. So the dialog claims
+     * those two menu commands, and takes them only while its tree holds focus; anywhere else
+     * the fire passes on and the gate decides, as for any dialog. The tree's keydown answers
+     * the same keys (`operationLog.selectAll` / `deselectAll`); both halves of a double fire
+     * land as one pick, since `setAll` is idempotent.
+     */
+    function claimForTree(on: boolean): () => boolean {
+        return () => {
+            const grid = treeGrid()
+            if (grid === null || document.activeElement !== grid) return false
+            tree.setAll(on)
+            return true
+        }
+    }
+
+    onMount(() => {
+        const releaseAll = claimMenuCommand('selection.selectAll', claimForTree(true))
+        const releaseNone = claimMenuCommand('selection.deselectAll', claimForTree(false))
+        return () => {
+            releaseAll()
+            releaseNone()
+        }
+    })
+
+    /** ⌘↩ from anywhere in the dialog: the action bar's press, which asks first. */
+    function handleKeydown(event: KeyboardEvent): void {
+        if (event.isComposing || !eventMatchesCommand(event, 'operationLog.rollBack')) return
+        claimKey(event)
+        askRollback()
+    }
 </script>
 
 <ModalDialog
@@ -169,6 +214,7 @@
     dialogId="operation-log"
     role="dialog"
     onclose={closeOperationLog}
+    onkeydown={handleKeydown}
     ariaDescribedby="operation-log-body"
     containerStyle="width: 900px; height: 640px; max-width: calc(100vw - 2 * var(--spacing-xl)); max-height: calc(100vh - 2 * var(--spacing-xl))"
     fillBody
@@ -209,6 +255,7 @@
                         hasMore={operationLogState.hasMore}
                         loadingMore={operationLogState.loadingMore}
                         onLoadMore={() => void loadMoreOperations()}
+                        onGoToItems={focusTree}
                     />
                 </div>
                 {#if op !== undefined}
@@ -253,6 +300,7 @@
             {#if op !== undefined && bar !== null}
                 <Button
                     variant="primary"
+                    keyHint={{ commandId: 'operationLog.rollBack' }}
                     disabled={bar.disabled || dispatching.has(op.opId)}
                     aria-describedby={reasonShown ? `op-head-${op.opId} op-reason-${op.opId}` : `op-head-${op.opId}`}
                     onclick={askRollback}

@@ -118,8 +118,13 @@ export interface OperationTreeSource {
   checkboxOf: (row: OperationTreeRow) => TreeCheckbox
   toggleExpanded: (row: OperationTreeRow) => void
   toggleChecked: (row: OperationTreeRow) => void
-  /** The header box (and later ⌘A / ⌘⇧A): everything, or nothing when everything is on. */
+  /** The header box: everything, or nothing when everything is on. */
   toggleAll: () => void
+  /**
+   * ⌘A (`true`) or ⌘⇧A (`false`): everything, or nothing. Idempotent, so the two halves of a
+   * keyboard + menu double fire land as one pick; `false` when there's nothing to pick.
+   */
+  setAll: (on: boolean) => boolean
   setCursor: (index: number) => void
   /** The flat index of a loaded row's parent, `null` on a top-level row or one the window doesn't place. */
   parentIndexOf: (index: number) => number | null
@@ -435,6 +440,18 @@ export function createOperationTreeSource({
     return selected === selectable ? 'on' : 'mixed'
   }
 
+  function setAll(on: boolean): boolean {
+    if (allCheckbox() === 'none') return false
+    const base = on ? 'everything' : 'nothing'
+    const current = selection ?? { base: 'everything', toggles: [] }
+    if (current.base === base && current.toggles.length === 0) return true
+    optimistic.clear()
+    optimisticAll = on ? 'on' : 'off'
+    selection = { base, toggles: [] }
+    edit()
+    return true
+  }
+
   const rows: ColumnListWindowedSource<OperationTreeRow> = {
     get count() {
       return view === null || blank !== null ? 0 : view.totalRows
@@ -513,12 +530,9 @@ export function createOperationTreeSource({
     },
     toggleAll() {
       const current = allCheckbox()
-      if (current === 'none') return
-      const on = current !== 'on'
-      optimisticAll = on ? 'on' : 'off'
-      selection = { base: on ? 'everything' : 'nothing', toggles: [] }
-      edit()
+      if (current !== 'none') setAll(current !== 'on')
     },
+    setAll,
     setCursor(index) {
       cursorIndex = index
       cursorKey = rowAt(index)?.key ?? null

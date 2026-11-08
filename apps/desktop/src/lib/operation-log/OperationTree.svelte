@@ -23,6 +23,8 @@
     import ProgressBar from '#lib/ui/ProgressBar.svelte'
     import { useShortenMiddle } from '#lib/utils/shorten-middle-action.js'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
+    import { eventMatchesCommand } from '#lib/shortcuts/index.js'
+    import type { CommandId } from '#lib/commands/index.js'
     import { nextTreeCursor, treeCursorKeyOf } from '#lib/ui/tree-cursor.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { formatInteger } from '#lib/intl/number-format.js'
@@ -57,10 +59,50 @@
         }
     }
 
-    /** ← and → through `tree-cursor.ts`; the grid already answered ↑ ↓ and the page keys. */
+    /** Move the cursor to row `index` and bring it into view. */
+    function moveCursor(index: number): void {
+        source.setCursor(index)
+        list?.scrollIndexIntoView(index)
+    }
+
+    /**
+     * The tree's registry keys (`Main window/Operation log`): Space and Insert check the
+     * cursor row (Insert then steps down, as in the panes), ⌘A and ⌘⇧A check everything or
+     * nothing. Each is claimed even where it does nothing, so Space never scrolls the page.
+     * ⌘A and ⌘⇧A also arrive by the menu road (`OperationLogDialog.svelte`'s claims).
+     */
+    const TREE_COMMANDS: { id: CommandId; run: () => void }[] = [
+        {
+            id: 'operationLog.toggleItem',
+            run: () => {
+                const row = source.rows.getRow(source.cursorIndex)
+                if (row !== undefined) source.toggleChecked(row)
+            },
+        },
+        {
+            id: 'operationLog.toggleItemAndDown',
+            run: () => {
+                const from = source.cursorIndex
+                const row = source.rows.getRow(from)
+                if (row !== undefined) source.toggleChecked(row)
+                if (from + 1 < source.rows.count) moveCursor(from + 1)
+            },
+        },
+        { id: 'operationLog.selectAll', run: () => source.setAll(true) },
+        { id: 'operationLog.deselectAll', run: () => source.setAll(false) },
+    ]
+
+    /** ← and → through `tree-cursor.ts`, then the registry keys; the grid already answered ↑ ↓ and the page keys. */
     function onKeydown(event: KeyboardEvent): void {
         const key = treeCursorKeyOf(event)
-        if (key === null) return
+        if (key === null) {
+            if (event.isComposing) return
+            const command = TREE_COMMANDS.find(({ id }) => eventMatchesCommand(event, id))
+            if (command === undefined) return
+            claimKey(event)
+            command.run()
+            return
+        }
         claimKey(event)
         const from = source.cursorIndex
         const row = source.rows.getRow(from)
@@ -77,8 +119,7 @@
                 source.toggleExpanded(row)
                 return
             case 'move':
-                source.setCursor(action.index)
-                list?.scrollIndexIntoView(action.index)
+                moveCursor(action.index)
                 return
             case 'leave':
                 onLeave?.()

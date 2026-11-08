@@ -159,7 +159,7 @@ async function mountDialog(entries: JournalRow[]): Promise<void> {
 function control(label: string): HTMLButtonElement | null {
   return (
     [...document.querySelectorAll<HTMLButtonElement>('.op-actions button')].find(
-      (b) => b.textContent.trim() === label,
+      (b) => (b.querySelector('.btn-label') ?? b).textContent.trim() === label,
     ) ?? null
   )
 }

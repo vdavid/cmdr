@@ -133,6 +133,29 @@ describe('OperationLogDialog a11y', () => {
     await expectNoA11yViolations(target)
   })
 
+  it('tabs through the list, Load more, the tree, and the action bar, in that order', async () => {
+    resetState([op('op-1', 'copy')])
+    operationLogState.hasMore = true
+    const target = mountDialog()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.tree .column-list-row.is-data')).not.toBeNull()
+    })
+    await tick()
+    const dialog = document.querySelector('[data-dialog-id="operation-log"]')
+    if (dialog === null) throw new Error('no dialog')
+    // The Tab order is the DOM order of what takes focus: no stop sets a positive tabindex.
+    const stops = [
+      ...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex]'),
+    ].filter((element) => element.tabIndex >= 0)
+    expect(stops.every((element) => element.tabIndex === 0)).toBe(true)
+    const names = stops.map((element) => {
+      const role = element.getAttribute('role')
+      if (role === 'grid' || role === 'treegrid') return role
+      return (element.querySelector('.btn-label') ?? element).textContent.trim() || element.getAttribute('aria-label')
+    })
+    expect(names).toEqual(['grid', 'Load 50 more', 'treegrid', 'Close', 'Roll back selected (1)'])
+  })
+
   it('a populated list with its item tree has no a11y violations', async () => {
     const target = await mountWithTree([op('op-1', 'move'), op('op-2', 'copy')])
     expect(target.querySelector('[role="grid"]')).not.toBeNull()

@@ -23,6 +23,7 @@ import { appCommands } from './sources/app'
 import { mainWindowCommands } from './sources/main-window'
 import { fileListCommands } from './sources/file-list'
 import { multiRenameCommands } from './sources/multi-rename'
+import { operationLogCommands } from './sources/operation-log'
 import { browsersCommands } from './sources/browsers'
 import { mcpCommands } from './sources/mcp'
 import { aboutWindowCommands } from './sources/about-window'
@@ -87,6 +88,12 @@ export const FIXED_KEY_COMMAND_IDS = [
   'multiRename.moveRowUp',
   'multiRename.moveRowDown',
   'multiRename.rename',
+  'operationLog.goToItems',
+  'operationLog.toggleItem',
+  'operationLog.toggleItemAndDown',
+  'operationLog.selectAll',
+  'operationLog.deselectAll',
+  'operationLog.rollBack',
   'network.selectHost',
   'share.back',
   'share.selectShare',
@@ -134,6 +141,7 @@ const commandSources: CommandSource[] = [
   ...mainWindowCommands,
   ...fileListCommands,
   ...multiRenameCommands,
+  ...operationLogCommands,
   ...browsersCommands,
   ...mcpCommands,
   ...aboutWindowCommands,

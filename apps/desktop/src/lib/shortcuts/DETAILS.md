@@ -144,9 +144,9 @@ The chains mirror what renders together in the app:
   stay siblings (neither chain contains the other), so they don't conflict with each other — the registry binds `←`/`→`
   in both on purpose, and the modes never coexist.
 - `Main window/Servers`, `Main window/Places`, `Main window/Volume chooser`, `Main window/Favorites menu`,
-  `Main window/Multi-rename` → siblings of `Main window/File list` (under `Main window` → `App`, but not under the file
-  list). A pane shows one of them INSTEAD of the file list, or — for the two header menus — OVER it while central
-  dispatch is suppressed, so their keys don't collide with File-list keys.
+  `Main window/Multi-rename`, `Main window/Operation log` → siblings of `Main window/File list` (under `Main window` →
+  `App`, but not under the file list). A pane shows one of them INSTEAD of the file list, or — for the two header menus
+  — OVER it while central dispatch is suppressed, so their keys don't collide with File-list keys.
 - `Command palette` → inherits `Main window` → `App` (it overlays the main window).
 - `About window` and `Onboarding` → inherit `App` only (standalone/modal contexts).
 

@@ -750,6 +750,27 @@ describe('ModalDialog Enter key', () => {
     target.remove()
   })
 
+  it('hands ⌘Enter on a focused button to the dialog, which may claim it as its own key', async () => {
+    const onkeydown = vi.fn()
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ModalDialog, {
+      target,
+      props: { titleId: 't', title: titleSnippet, children: bodyWithControls, onkeydown },
+    })
+    await tick()
+
+    const cancelBtn = target.querySelector<HTMLButtonElement>('#cancel-btn')
+    if (!cancelBtn) throw new Error('cancel button not rendered')
+    cancelBtn.focus()
+    cancelBtn.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true, cancelable: true }),
+    )
+
+    expect(onkeydown).toHaveBeenCalledTimes(1)
+    target.remove()
+  })
+
   it('still fires the default action when Enter is pressed on a non-button element', async () => {
     const onkeydown = vi.fn()
     const target = document.createElement('div')

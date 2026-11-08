@@ -39,5 +39,7 @@ journal and the tree itself are `crates/cmdr-operation-log/CLAUDE.md`.
   only for a subset. ❌ No copy may promise a complete reversal.
 - **A refusal is typed.** Catch it with `asRollbackRefusal`, word it with `rollbackRefusalNotice`.
 - **`entries.length` is the paging offset**, one source of truth.
+- **Keys are registry commands** (`Main window/Operation log`) read by `eventMatchesCommand`. ⌘A / ⌘⇧A fire as the
+  native menu's Select all / Deselect all first, so the dialog's menu claims carry them; ❌ never keydown alone.
 
 Layout, the tree source, the selection flow, and the copy contract: `DETAILS.md`.

@@ -128,10 +128,15 @@ function rowCheckbox(target: HTMLElement, index: number): HTMLInputElement | nul
   return treeRows(target)[index]?.querySelector<HTMLInputElement>('input[type="checkbox"]') ?? null
 }
 
+/** A button's words, without the key chip a `keyHint` draws beside them. */
+function buttonLabel(button: HTMLButtonElement | null): string | undefined {
+  return (button?.querySelector('.btn-label') ?? button)?.textContent.trim()
+}
+
 /** The action bar's rollback button (the primary one beside Close). */
 function actionButton(): HTMLButtonElement | null {
   const buttons = [...document.querySelectorAll<HTMLButtonElement>('.op-actions button.btn')]
-  return buttons.find((b) => b.textContent.trim().startsWith('Roll back')) ?? null
+  return buttons.find((b) => buttonLabel(b)?.startsWith('Roll back')) ?? null
 }
 
 function confirmButtons(): HTMLButtonElement[] {
@@ -291,7 +296,7 @@ describe('the item tree', () => {
     expect(lastTreeRequest().selection).toBeNull()
     expect(rowCheckbox(target, 1)?.checked).toBe(true)
     expect(document.querySelector('.selected-count')?.textContent).toBe('2 of 2 selected')
-    expect(actionButton()?.textContent.trim()).toBe('Roll back selected (2)')
+    expect(buttonLabel(actionButton())).toBe('Roll back selected (2)')
   })
 
   it('unchecks a folder as one pick, and the answer cascades to what’s under it', async () => {
@@ -447,7 +452,7 @@ describe('rolling back', () => {
     )
     rowCheckbox(target, 2)?.click()
     await vi.waitFor(() => {
-      expect(actionButton()?.textContent.trim()).toBe('Roll back selected (1)')
+      expect(buttonLabel(actionButton())).toBe('Roll back selected (1)')
     })
 
     actionButton()?.click()
@@ -466,7 +471,7 @@ describe('rolling back', () => {
 
   it('offers "Roll back the rest" on a partly rolled-back operation the person hasn’t narrowed', async () => {
     await mountWithTree([opRow({ opId: 'op-part', kind: 'copy', rollbackState: 'partiallyRolledBack' })])
-    expect(actionButton()?.textContent.trim()).toBe('Roll back the rest')
+    expect(buttonLabel(actionButton())).toBe('Roll back the rest')
     actionButton()?.click()
     await tick()
     expect(document.querySelector('#rollback-confirmation-title')?.textContent.trim()).toBe('Roll back the rest?')
@@ -487,7 +492,7 @@ describe('rolling back', () => {
       }),
     )
     await mountWithTree([opRow({ opId: 'op-copy' })])
-    expect(actionButton()?.textContent.trim()).toBe('Roll back')
+    expect(buttonLabel(actionButton())).toBe('Roll back')
     expect(actionButton()?.disabled).toBe(false)
   })
 
