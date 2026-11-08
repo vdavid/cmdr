@@ -17,7 +17,7 @@ GNOME / Thunar / Dolphin / Total Commander; catalog consistency over a pile-idea
   `Đã xảy ra sự cố không mong muốn`, and the bureaucratic `Vui lòng`. "Try again?" stays a bare `Thử lại?`. "fixes" →
   `việc khắc phục`, except David's `sửa lỗi` (`onboarding.stepBeta.openBeta`).
 
-## Trạng thái hàng đợi (`queue.row.status`, `operationLog.status.*`, `operationLog.outcome.*`, `operationLog.initiator.*`, `indexing.eta.*`)
+## Trạng thái hàng đợi (`queue.row.status`, `operationLog.status.*`, `operationLog.tree.status*`, `operationLog.initiator.*`, `indexing.eta.*`)
 
 - Queue and log share the queue's status set; "Couldn't finish" → `Chưa hoàn tất được` (macOS `thao tác chưa hoàn tất`).
   AI client → `Máy khách AI` (pairs with `máy chủ`); "Ns left" → `còn Ns`.
@@ -266,7 +266,7 @@ the catalog's drift:
   prefer a token where one exists.
 - Sample email → `ban@` (like MS `ai_do@`). Old names back → `Đã đặt lại tên cũ cho …`: only the name changes.
 
-## Thao tác mới hoàn tác được một nửa: làm tiếp cho hết (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)
+## Thao tác mới hoàn tác được một nửa: làm tiếp cho hết (`operationLog.dialog.rollBackRest`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleRest`/`.rollBackRest`, `queue.row.reversalInFolder`)
 
 - `Tiếp tục hoàn tác` (Finder `Tiếp tục sao chép`) over `Hoàn tất việc hoàn tác` (one mark apart, beside
   `Chưa hoàn tất được`). `vẫn` binds to `không chắc chắn`, not `bỏ qua`.

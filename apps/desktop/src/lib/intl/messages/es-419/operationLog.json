@@ -7,10 +7,6 @@
   "@operationLog.dialog.loadError": {
     "sourceHash": "e8f023d"
   },
-  "operationLog.dialog.itemsError": "No se pudieron cargar estos elementos.",
-  "@operationLog.dialog.itemsError": {
-    "sourceHash": "b1d6b1b"
-  },
   "operationLog.summary.trash": "{count, plural, one {Se movió {countText} elemento al basurero} many {Se movieron {countText} elementos al basurero} other {Se movieron {countText} elementos al basurero}}",
   "@operationLog.summary.trash": {
     "sourceHash": "dc94479"

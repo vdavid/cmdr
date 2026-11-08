@@ -13,7 +13,6 @@
 
 import type {
   Initiator,
-  ItemOutcome,
   NotRollbackableReason,
   OpKind,
   ArchiveSubkind,
@@ -22,10 +21,12 @@ import type {
   RollbackRefusal,
   RollbackState,
   SelectionRefusal,
+  TreeTally,
 } from '#lib/ipc/bindings.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { formatInteger } from '#lib/intl/number-format.js'
+import { rollbackConfirmVariant } from '#lib/file-operations/reversal-wording.js'
 
 function summaryKey(kind: OpKind, subkind: ArchiveSubkind | null): MessageKey {
   switch (kind) {
@@ -118,7 +119,7 @@ export function executionStatusLabel(status: ExecutionStatus): string {
     case 'running':
       return tString('operationLog.status.running')
     case 'done':
-      return tString('operationLog.status.done')
+      return tString('operationLog.status.finished')
     case 'failed':
       return tString('operationLog.status.failed')
     case 'canceled':
@@ -169,58 +170,174 @@ export function rowRollbackAction(state: RollbackState): RowRollbackAction | nul
 }
 
 /**
- * The button's words, which name what THIS press does: starting a reversal and
- * picking a stopped one back up are different promises, and a row that offers
- * "Roll back" on an operation already half reversed would be making the wrong one.
+ * The button's words when no item tree narrows the press (the transfer dialog's
+ * Undo, an operation whose tree can't be read yet): starting a reversal and picking
+ * a stopped one back up are different promises, and "Roll back" on an operation
+ * already half reversed would be making the wrong one.
  */
 export function rowRollbackActionLabel(action: RowRollbackAction): string {
   switch (action) {
     case 'start':
       return tString('operationLog.dialog.rollBack')
     case 'finish':
-      return tString('operationLog.dialog.finishRollBack')
+      return tString('operationLog.dialog.rollBackRest')
   }
 }
 
+/** The facts of an op's item tree the action bar reads: the "N of M" and why 0 of 0 may still have work. */
+export type ActionTally = Pick<TreeTally, 'selected' | 'selectable' | 'housekeepingWaiting'>
+
 /**
- * The sentence a row carries ON SIGHT, with no press to earn it, or `null` when the
- * badge says everything there is to say.
+ * What the action bar's button does, as `rollbackAction` decides it.
  *
- * Two states need one. A `notRollbackable` row never offers the button whose refusal
- * would otherwise carry its reason, so the reason has no other way to reach the
- * reader. A `partiallyRolledBack` row DOES offer a button, but its badge alone leaves
- * a person who cancelled a reversal unable to tell what became of their files.
+ * - `all`: "Roll back", the whole operation, sending no selection.
+ * - `rest`: "Roll back the rest" of a partly reversed one, sending no selection.
+ * - `selected`: "Roll back selected (N)". It sends the tree's selection only when the
+ *   person `narrowed` it; untouched, every check is on and no selection says the same.
+ *   `subset` words the confirmation ("the selected items") when it leaves some out.
+ */
+export type RollbackAction =
+  | { kind: 'all' }
+  | { kind: 'rest' }
+  | { kind: 'selected'; count: number; finishing: boolean; subset: boolean }
+
+/**
+ * The action bar's press, or `null` on a state the backend gate refuses
+ * (`rowRollbackAction`, ❌ never wider).
+ *
+ * `tally` is `null` while the tree can't be read (an old operation backfilling, the
+ * journal building its indexes): the press then works exactly as it did before there
+ * was a tree, on everything. `disabled` is only ever set at "0 of M" with M > 0, the
+ * one state a press can't help; the engine's `nothingSelected` refusal is the backstop.
+ *
+ * ❌ No dead end: at "0 of 0" with rows still waiting (a copied folder held back, now
+ * empty), `rollbackable` offers "Roll back" and `partiallyRolledBack` "Roll back the
+ * rest", both sending no selection, which sweeps the folders that can go.
+ */
+export function rollbackAction(
+  state: RollbackState,
+  tally: ActionTally | null,
+  narrowed: boolean,
+): { action: RollbackAction; disabled: boolean } | null {
+  const base = rowRollbackAction(state)
+  if (base === null) return null
+  const whole: RollbackAction = base === 'start' ? { kind: 'all' } : { kind: 'rest' }
+  if (tally === null || tally.selectable === 0) return { action: whole, disabled: false }
+  // A partly reversed op the person hasn't narrowed rolls back "the rest", never a fresh
+  // reversal, whatever its count.
+  if (base === 'finish' && !narrowed) return { action: whole, disabled: false }
+  return {
+    action: {
+      kind: 'selected',
+      count: tally.selected,
+      finishing: base === 'finish',
+      subset: narrowed && tally.selected < tally.selectable,
+    },
+    disabled: tally.selected === 0,
+  }
+}
+
+/** The action bar button's words. */
+export function rollbackActionLabel(action: RollbackAction): string {
+  switch (action.kind) {
+    case 'all':
+      return tString('operationLog.dialog.rollBack')
+    case 'rest':
+      return tString('operationLog.dialog.rollBackRest')
+    case 'selected':
+      return tString('operationLog.dialog.rollBackSelected', {
+        count: action.count,
+        countText: formatInteger(action.count),
+      })
+  }
+}
+
+/** "3 of 12 selected", beside the action bar's button. */
+export function selectedCountText(tally: Pick<TreeTally, 'selected' | 'selectable'>): string {
+  return tString('operationLog.dialog.selectedCount', {
+    count: tally.selectable,
+    selectedText: formatInteger(tally.selected),
+    selectableText: formatInteger(tally.selectable),
+  })
+}
+
+/**
+ * The sentence an operation carries ON SIGHT, with no press to earn it, or `null` when
+ * the badge says everything there is to say.
+ *
+ * - `notRollbackable`: its stored reason. It never offers the button whose refusal
+ *   would otherwise carry the reason, so this is the only way it reaches the reader.
+ * - `rollbackable`: what rolling back DOES, worded by the same reversal the
+ *   confirmation names (`rollbackConfirmVariant`), so the checkboxes read as "these
+ *   come back" or "these go".
+ * - `partiallyRolledBack`: what became of the files. This is the fallback sentence;
+ *   the dialog says it with counts when the item tree has them
+ *   (`partiallyRolledBackSummary`).
  *
  * Exhaustive over `RollbackState`, so a new state has to decide whether it explains
  * itself rather than falling silent by default.
  */
-export function rowStandingNotice(state: RollbackState, reason: NotRollbackableReason | null): MessageKey | null {
+export function rowStandingNotice(
+  state: RollbackState,
+  reason: NotRollbackableReason | null,
+  kind: OpKind,
+): MessageKey | null {
   switch (state) {
     case 'notRollbackable':
       // A NULL reason is an operation still running, which opens `not_rollbackable`
       // until finalize decides. A dangling label would be worse than silence.
       return reason === null ? null : notRollbackableNotice(reason)
+    case 'rollbackable':
+      return rollbackableNotice(kind)
     case 'partiallyRolledBack':
       return 'operationLog.rollback.partiallyRolledBackNotice'
-    case 'rollbackable':
     case 'rollingBack':
     case 'rolledBack':
       return null
   }
 }
 
-/** A per-item outcome shown in the expanded item list. */
-export function itemOutcomeLabel(outcome: ItemOutcome): string {
-  switch (outcome) {
-    case 'done':
-      return tString('operationLog.outcome.done')
-    case 'skipped':
-      return tString('operationLog.outcome.skipped')
-    case 'failed':
-      return tString('operationLog.outcome.failed')
-    case 'rolledBack':
-      return tString('operationLog.outcome.rolledBack')
+/** What rolling back an operation of this kind does to the checked items. */
+function rollbackableNotice(kind: OpKind): MessageKey {
+  // A copy's reversal deletes, like a new folder's, but only a copy has originals
+  // elsewhere to reassure someone about.
+  if (kind === 'copy') return 'operationLog.rollback.rollbackableNoticeCopy'
+  switch (rollbackConfirmVariant(kind)) {
+    case 'undoByDeleting':
+    case 'stopAndDelete':
+      return 'operationLog.rollback.rollbackableNoticeDelete'
+    case 'undoByMovingBack':
+    case 'stopAndMoveBack':
+      return 'operationLog.rollback.rollbackableNoticeMoveBack'
+    case 'undoByRenamingBack':
+      return 'operationLog.rollback.rollbackableNoticeRenameBack'
+    case 'undoByRestoringTags':
+      return 'operationLog.rollback.rollbackableNoticeTagsBack'
   }
+}
+
+/**
+ * A partly reversed operation's notice from the item tree's counts ("4 items are back
+ * the way they were. Cmdr skipped 2 items it wasn't sure about. 2 items haven't been
+ * rolled back yet."), or `null` when there's nothing to count, which leaves the fixed
+ * sentence of {@link rowStandingNotice}.
+ *
+ * ❗ "haven't been rolled back yet" covers two things the journal can't tell apart: an
+ * item someone left unchecked, and one a cancelled pass never reached. Both wait for the
+ * next pass, and one honest phrase is better than a guess at which.
+ */
+export function partiallyRolledBackSummary(
+  tally: Pick<TreeTally, 'rolledBack' | 'heldBack' | 'selectable'>,
+): string | null {
+  const waiting = Math.max(0, tally.selectable - tally.heldBack)
+  const parts: string[] = []
+  const counted = (key: MessageKey, count: number) => {
+    if (count > 0) parts.push(tString(key, { count, countText: formatInteger(count) }))
+  }
+  counted('operationLog.rollback.partialRolledBack', tally.rolledBack)
+  counted('operationLog.rollback.partialHeldBack', tally.heldBack)
+  counted('operationLog.rollback.partialWaiting', waiting)
+  return parts.length === 0 ? null : parts.join(' ')
 }
 
 /**
@@ -249,6 +366,10 @@ export function rollbackRefusalNotice(refusal: RollbackRefusal | null): MessageK
       return 'operationLog.rollback.refusalVolumeUnavailable'
     case 'selection':
       return selectionRefusalNotice(refusal.detail)
+    // ❗ The backend's refusal to roll back a rollback (inverse operations aren't listed,
+    // so only MCP or a stale window can ask) lands as a new variant: word it here, next to
+    // `alreadyRolledBack`, which says the same thing to the person ("already back the way
+    // it was"). The switch is exhaustive, so the build fails until it's mapped.
   }
 }
 

@@ -608,10 +608,6 @@
     "chosen": "hoàn tất",
     "confidence": "high",
     "decision": "Thao tác mới hoàn tác được một nửa: làm tiếp cho hết",
-    "exceptions": {
-      "fileOperations.rollbackConfirm.finishRollBack": "Finish rolling back is `Tiếp tục hoàn tác`: `Hoàn tất việc hoàn tác` puts two words one mark apart side by side.",
-      "operationLog.dialog.finishRollBack": "Finish rolling back is `Tiếp tục hoàn tác`: `Hoàn tất việc hoàn tác` puts two words one mark apart side by side."
-    },
     "forms": "a finished job → hoàn tất; an incomplete thing (a copy, a record) → chưa hoàn chỉnh / chưa đầy đủ; Finish rolling back → Tiếp tục hoàn tác",
     "sources": "macOS Finder (Không thể hoàn tất thao tác này, LA33 không hoàn chỉnh)"
   },

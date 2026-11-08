@@ -27,12 +27,19 @@
     interface Props {
         variant: RollbackConfirmVariant
         /**
-         * The operation is already PARTLY rolled back, so this press carries on from
-         * where the reversal stopped instead of starting a fresh one. It swaps the
-         * title and the confirming button; the body stays whatever `variant` says,
-         * because what happens to the files is the same either way.
+         * The operation is already PARTLY rolled back, so this press rolls back the
+         * rest instead of starting a fresh reversal. It swaps the title and the
+         * confirming button; the body stays whatever `variant` says, because what
+         * happens to the files is the same either way.
          */
         finishing?: boolean
+        /**
+         * The press takes only SOME of the operation's items (the Operation log's tree
+         * left some unchecked). The title, the button, and the body then speak of "the
+         * selected" items, whether or not `finishing` is set. Only an undo variant
+         * has a narrowed body; a running operation's stop is never a subset.
+         */
+        subset?: boolean
         /** Go ahead: reverse the operation. A host undoing a finished operation returns what
          *  came of it; one stopping a running operation returns nothing. */
         onConfirm: () => RollbackConfirmResult
@@ -42,7 +49,7 @@
         startedBy?: ToolInitiator
     }
 
-    const { variant, finishing = false, onConfirm, onCancel, startedBy }: Props = $props()
+    const { variant, finishing = false, subset = false, onConfirm, onCancel, startedBy }: Props = $props()
 
     onMount(() => registerRollbackConfirmer(() => onConfirm()))
 
@@ -53,7 +60,10 @@
      * away. That's why a running move takes `stopAndMoveBack` rather than sharing
      * the running copy's arm — its reversal removes nothing.
      */
-    function wording(v: RollbackConfirmVariant): { body: MessageKey; cancel: MessageKey; destructive: boolean } {
+    function wording(
+        v: RollbackConfirmVariant,
+        selected: boolean,
+    ): { body: MessageKey; cancel: MessageKey; destructive: boolean } {
         switch (v) {
             case 'stopAndDelete':
                 return {
@@ -69,32 +79,56 @@
                 }
             case 'undoByDeleting':
                 return {
-                    body: 'fileOperations.rollbackConfirm.bodyUndoByDeleting',
+                    body: selected
+                        ? 'fileOperations.rollbackConfirm.bodyUndoByDeletingSelected'
+                        : 'fileOperations.rollbackConfirm.bodyUndoByDeleting',
                     cancel: 'fileOperations.rollbackConfirm.leaveAsIs',
                     destructive: true,
                 }
             case 'undoByMovingBack':
                 return {
-                    body: 'fileOperations.rollbackConfirm.bodyUndoByMovingBack',
+                    body: selected
+                        ? 'fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected'
+                        : 'fileOperations.rollbackConfirm.bodyUndoByMovingBack',
                     cancel: 'fileOperations.rollbackConfirm.leaveAsIs',
                     destructive: false,
                 }
             case 'undoByRenamingBack':
                 return {
-                    body: 'fileOperations.rollbackConfirm.bodyUndoByRenamingBack',
+                    body: selected
+                        ? 'fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected'
+                        : 'fileOperations.rollbackConfirm.bodyUndoByRenamingBack',
                     cancel: 'fileOperations.rollbackConfirm.leaveAsIs',
                     destructive: false,
                 }
             case 'undoByRestoringTags':
                 return {
-                    body: 'fileOperations.rollbackConfirm.bodyUndoByRestoringTags',
+                    body: selected
+                        ? 'fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected'
+                        : 'fileOperations.rollbackConfirm.bodyUndoByRestoringTags',
                     cancel: 'fileOperations.rollbackConfirm.leaveAsIs',
                     destructive: false,
                 }
         }
     }
 
-    const words = $derived(wording(variant))
+    const words = $derived(wording(variant, subset))
+
+    /** Title and confirming button: a subset first (it's what the press takes), then the rest of a partial one. */
+    const titleKey: MessageKey = $derived(
+        subset
+            ? 'fileOperations.rollbackConfirm.titleSelected'
+            : finishing
+              ? 'fileOperations.rollbackConfirm.titleRest'
+              : 'fileOperations.rollbackConfirm.title',
+    )
+    const confirmLabel: MessageKey = $derived(
+        subset
+            ? 'fileOperations.rollbackConfirm.rollBackSelected'
+            : finishing
+              ? 'fileOperations.rollbackConfirm.rollBackRest'
+              : 'fileOperations.rollbackConfirm.rollBack',
+    )
 </script>
 
 <ModalDialog
@@ -105,9 +139,7 @@
     onclose={onCancel}
     containerStyle="max-width: 440px"
 >
-    {#snippet title()}{tString(
-            finishing ? 'fileOperations.rollbackConfirm.titleFinish' : 'fileOperations.rollbackConfirm.title',
-        )}{/snippet}
+    {#snippet title()}{tString(titleKey)}{/snippet}
 
     <p id="rollback-confirmation-body" class="rollback-confirm-body">
         {tString(words.body)}
@@ -121,11 +153,7 @@
             onclick={() => {
                 void onConfirm()
             }}
-            >{tString(
-                finishing
-                    ? 'fileOperations.rollbackConfirm.finishRollBack'
-                    : 'fileOperations.rollbackConfirm.rollBack',
-            )}</Button
+            >{tString(confirmLabel)}</Button
         >
     {/snippet}
 </ModalDialog>

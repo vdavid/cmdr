@@ -35,9 +35,9 @@ worth keeping).
 - **temperature** (an AI sampling setting): no ruling yet. Every Traditional source lacks the sense, and MS's
   `temperature` entry is `色溫` (colour temperature), so don't take it.
 - **`除錯`** (`debug`): inherited, unsourced; the Android option stays `「USB 偵錯」` either way.
-- **`完成復原`** (Finish rolling back, `operationLog.dialog.finishRollBack` =
-  `fileOperations.rollbackConfirm.finishRollBack`): `繼續復原` would be blunter about not restarting, but `繼續` is
-  spent on `queue.row.resume`.
+- **`完成復原`** (Finish rolling back, `operationLog.dialog.rollBackRest` =
+  `fileOperations.rollbackConfirm.rollBackRest`): `繼續復原` would be blunter about not restarting, but `繼續` is spent
+  on `queue.row.resume`.
 - **`警告標記`** for the title-bar badge (`errors.write.trashRefused.suggestion.noFullDiskAccess`): descriptive.
 - **`僅存在雲端`** (`online-only`; prose says `只存在雲端`) and the three `fileOperations.delete.cloudOnlineOnly*` rows:
   a draft never read by a human; check the long warning bar for overflow too.
@@ -57,9 +57,6 @@ worth keeping).
 - **`以 {username} 身分登入` / `以訪客身分登入`** (`servers.hub.shareAccount` / `.guestAccount`) and the buttons
   `以其他身分登入⋯` / `以訪客身分瀏覽` (`fileExplorer.network.share.*`): composed; check the quiet suffix reads well
   after a name and fits the share-list header.
-- **`復原的對象：{time} 的「…」` / `最近一次復原：{time} 的「…」`** (`operationLog.dialog.rollbackOf`,
-  `.latestRollback`, `.rollbackOfUnlisted`): composed colon frames for "Rollback of … from {time}"; check they read well
-  as quiet sub-lines.
 - **`開啟或關閉「…」`** (`commands.multiRename{MatchCase,FirstMatchOnly,…}.label`): "Turn X on or off" rows quote the
   checkbox label verbatim; the older toggle commands say `切換…`. Check the two styles sit well side by side in the
   Keyboard shortcuts list. **`起始值`** and **`依序編號 {first}、{second}、{third}⋯，顯示為 …`**

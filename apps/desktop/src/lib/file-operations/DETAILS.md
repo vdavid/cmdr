@@ -535,13 +535,15 @@ different name — the dialog holds a `TransferOperationType`, the queue row and
 snapshot's `WriteOperationType` — so `op-kind.ts` maps both onto `OpKind`, the operation log's vocabulary, with a
 `Record` over each source type so a new operation type is a compile error rather than a silent "worded as a copy".
 
-**A second axis, orthogonal to `variant`: `finishing`.** An operation that's already PARTLY rolled back offers to pick
-its reversal back up rather than to start one, so the dialog swaps its title
-(`fileOperations.rollbackConfirm.titleFinish`, "Finish rolling this back?") and its confirming button
-(`…finishRollBack`, matching the words on the row's own button). The BODY doesn't change: what the reversal does to the
-files is the same either way, and its second sentence already says Cmdr skips what it isn't sure about, which is exactly
-what a second pass does again. So `variant` keeps answering "what does this do to my files" and `finishing` answers "is
-this a fresh reversal or the rest of one", and neither has to know about the other. Which rows offer which:
+**Two more axes, orthogonal to `variant`: `finishing` and `subset`.** An operation that's already PARTLY rolled back
+offers to roll back the rest rather than start a fresh reversal, so the dialog swaps its title
+(`fileOperations.rollbackConfirm.titleRest`, "Roll back the rest?") and its confirming button (`…rollBackRest`, matching
+the Operation log's own button). The BODY doesn't change: what the reversal does to the files is the same either way,
+and its second sentence already says Cmdr skips what it isn't sure about, which is exactly what a second pass does
+again. `subset` (the Operation log's tree left some items unchecked) wins over `finishing`: the title, the button, and
+the undo variant's body speak of "the selected" items (`…titleSelected`, `…rollBackSelected`, `…bodyUndoBy*Selected`).
+So `variant` keeps answering "what does this do to my files", `finishing` "a fresh reversal or the rest of one", and
+`subset` "all of it or some", and none has to know about the others. Which operations offer which:
 `#lib/operation-log/DETAILS.md` § "The rollback flow".
 
 **What it deliberately doesn't say.** ❌ No file count, tempting as one is: the running counter includes files the

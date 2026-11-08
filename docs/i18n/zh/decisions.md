@@ -288,7 +288,7 @@ One English word, two Chinese renderings; don't merge:
 - Regex: chip `正则`, tooltip or accessible name `正则表达式`. Running: a local server `运行中`, a task `进行中`.
   Scanning: progress `正在扫描…`, step `扫描` (AppKit). Select: command `选择`, unset dropdown `请选择`.
 
-## Finish rollback (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`/`.rollbackAlreadyLandedTooltip`)
+## Finish rollback (`operationLog.dialog.rollBackRest`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleRest`/`.rollBackRest`, `queue.row.reversalInFolder`, `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`/`.rollbackAlreadyLandedTooltip`)
 
 - `完成回滚` over `继续回滚` (`继续` is `queue.row.resume`; native review pending). The notice reuses `保持原样` and
   `跳过没有把握的部分` verbatim.

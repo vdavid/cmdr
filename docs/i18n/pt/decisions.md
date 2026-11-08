@@ -69,7 +69,7 @@ The non-obvious why behind `terms.json` rulings. Forms: `terms.json`; voice: `st
 - log → `registro` everywhere (changelog, log files). `Revertida` (the operation) vs `Revertido` (an item) agree with
   different subjects; never unify. Status words copy `queue.row.status`.
 
-## Rollback confirm and finish (`fileOperations.rollbackConfirm.*`, `operationLog.dialog.finishRollBack`, `queue.row.statusAwaitingAnswer`)
+## Rollback confirm and finish (`fileOperations.rollbackConfirm.*`, `operationLog.dialog.rollBackRest`, `queue.row.statusAwaitingAnswer`)
 
 - `Precisa de resposta` over `Aguardando resposta`, which echoes the `queued` arm.
 - `Manter os arquivos` over `Mantê-los`: the prior sentence names REPLACED files. `Concluir a reversão` pairs with

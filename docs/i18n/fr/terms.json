@@ -1175,7 +1175,7 @@
     "chosen": "Terminé",
     "confidence": "high",
     "forms": "status Terminé (masculine, agreeing with the implied operation); almost done → bientôt terminé",
-    "sources": "catalog (queue.row.status, operationLog.status.done)"
+    "sources": "catalog (queue.row.status)"
   },
   "double-click": {
     "accept": ["double-cliqu"],

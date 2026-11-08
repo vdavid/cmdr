@@ -64,7 +64,7 @@ export function createDoneUndo(inputs: DoneUndoInputs) {
       const action = rowRollbackAction(row.rollbackState)
       read =
         action === null
-          ? { kind: 'blocked', reason: rowStandingNotice(row.rollbackState, row.notRollbackableReason) }
+          ? { kind: 'blocked', reason: rowStandingNotice(row.rollbackState, row.notRollbackableReason, row.kind) }
           : { kind: 'ready', opKind: row.kind, finishing: action === 'finish' }
     } catch (e) {
       log.warn("Couldn't read op={operationId} from the operation log for Undo: {error}", { operationId, error: e })

@@ -39,6 +39,26 @@ describe('commands.rollbackOperation', () => {
     ])
   })
 
+  it('sends the item tree’s selection under the `selection` key, toggles intact', async () => {
+    // "Roll back selected" must reach the engine as the tree normalized it: a dropped or
+    // renamed key here would roll back EVERYTHING while the dialog said "selected".
+    const ipc = installIpcMock()
+    ipc.mock('rollback_operation', () => ({ inverseOpId: 'op-inverse-1' }))
+    const selection = {
+      base: 'everything' as const,
+      toggles: [
+        { kind: 'folder' as const, dirId: 7, on: false },
+        { kind: 'item' as const, seq: 12, on: true },
+      ],
+    }
+
+    await commands.rollbackOperation('op-1', 'user', selection)
+
+    expect(ipc.calls).toEqual([
+      { command: 'rollback_operation', payload: { operationId: 'op-1', initiator: 'user', selection } },
+    ])
+  })
+
   it('reaches IPC exactly once per press, so a confirmed rollback never double-dispatches', async () => {
     const ipc = installIpcMock()
     ipc.mock('rollback_operation', () => ({ inverseOpId: 'op-inverse-1' }))

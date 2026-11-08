@@ -1,34 +1,47 @@
 /**
  * Tier 3 a11y tests for `OperationLogDialog.svelte`.
  *
- * The alpha "Operation log" dialog: a newest-first list of file operations, each an
- * expandable button (`aria-expanded` + `aria-controls`) that reveals its per-item
- * rows, and each reversible one carrying a Roll back button beside it. Covers the
- * empty state, a populated collapsed list, an expanded operation (whose revealed
- * region must satisfy the `aria-controls` reference), the confirmation stacked over
- * the log, the refusal notice a lost race leaves on a row, and the stored reason a
- * not-rollbackable row explains itself with.
+ * The master–detail Operation log: a `grid` of operations on the left, the picked one's
+ * header and `treegrid` of items on the right, and the action bar. Covers the empty
+ * state, a populated list with its tree, a tree with folder units and skipped rows (row
+ * descriptions must point at rendered elements), a read-only tree, the confirmation
+ * stacked over the log, the refusal notice a lost race leaves, and the stored reason a
+ * not-rollbackable operation explains itself with.
  */
 
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import OperationLogDialog from './OperationLogDialog.svelte'
+import OperationList from './OperationList.svelte'
+import OperationDetail from './OperationDetail.svelte'
+import OperationTree from './OperationTree.svelte'
+import { createOperationTreeSource } from './operation-tree-source.svelte'
 import { operationLogState } from './operation-log-trigger.svelte'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
-import type { OperationRow, OperationItemView } from '#lib/ipc/bindings.js'
+import type { OperationRow, OperationTreeView } from '#lib/ipc/bindings.js'
 import { RollbackRefusalFailure } from './rollback-refusal'
+import { fileRow, folderRow, treeView } from './operation-tree-test-fixtures'
 
-const getDetailMock = vi.fn((_id: string, _limit: number, _offset: number) =>
-  Promise.resolve({ operation: op('op-1', 'move'), items: [item(0), item(1)], totalItems: 2 }),
+const rollbackMock = vi.fn((_id: string, _initiator: string, _selection: unknown) =>
+  Promise.resolve({ inverseOpId: 'op-inverse' }),
 )
-const rollbackMock = vi.fn((_id: string) => Promise.resolve({ inverseOpId: 'op-inverse' }))
+const treeMock = vi.fn((_id: string, _request: unknown): Promise<OperationTreeView | null> =>
+  Promise.resolve(treeView([fileRow(1)])),
+)
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   getRecentOperationLogEntries: vi.fn(() => Promise.resolve([])),
-  getOperationLogDetail: (id: string, limit: number, offset: number) => getDetailMock(id, limit, offset),
-  rollbackOperation: (id: string) => rollbackMock(id),
+  getOperationLogDetail: vi.fn(() => Promise.resolve(null)),
+  rollbackOperation: (id: string, initiator: string, selection: unknown) => rollbackMock(id, initiator, selection),
+}))
+
+vi.mock('#lib/tauri-commands/operation-log.js', () => ({
+  getOperationLogTree: (id: string, request: unknown) => treeMock(id, request),
+  startOperationLogTreeBackfill: vi.fn(() => Promise.resolve({ kind: 'started' })),
+  cancelOperationLogTreeBackfill: vi.fn(() => Promise.resolve()),
+  onOperationLogTreeBackfill: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 function op(opId: string, kind: OperationRow['kind']): OperationRow {
@@ -55,23 +68,6 @@ function op(opId: string, kind: OperationRow['kind']): OperationRow {
   }
 }
 
-function item(seq: number): OperationItemView {
-  return {
-    seq,
-    entryType: 'file',
-    rowRole: 'rollbackUnit',
-    sourceVolumeId: 'root',
-    sourcePath: `/Users/me/Documents/report-${String(seq)}.pdf`,
-    destVolumeId: 'root',
-    destPath: `/Volumes/Backup/report-${String(seq)}.pdf`,
-    size: 2048,
-    mtime: 1_700_000_000_000,
-    outcome: 'done',
-    overwrote: false,
-    rollbackSkipReason: null,
-  }
-}
-
 function resetState(entries: OperationRow[]): void {
   operationLogState.open = true
   operationLogState.entries = entries
@@ -80,6 +76,11 @@ function resetState(entries: OperationRow[]): void {
   operationLogState.hasMore = false
   operationLogState.loadingMore = false
 }
+
+beforeEach(() => {
+  treeMock.mockReset()
+  treeMock.mockResolvedValue(treeView([fileRow(1)]))
+})
 
 afterEach(() => {
   document.body.innerHTML = ''
@@ -94,6 +95,35 @@ function mountDialog(): HTMLElement {
   return target
 }
 
+async function mountWithTree(entries: OperationRow[]): Promise<HTMLElement> {
+  resetState(entries)
+  const target = mountDialog()
+  await vi.waitFor(() => {
+    expect(target.querySelector('.tree .column-list-row.is-data')).not.toBeNull()
+  })
+  await tick()
+  return target
+}
+
+/** The action bar's rollback button. */
+function rollbackButton(): HTMLButtonElement | null {
+  return (
+    [...document.querySelectorAll<HTMLButtonElement>('.op-actions button.btn')].find((b) =>
+      b.textContent.trim().startsWith('Roll back'),
+    ) ?? null
+  )
+}
+
+async function openConfirmation(): Promise<void> {
+  const button = rollbackButton()
+  if (button === null) throw new Error('expected a Roll back button on a rollbackable operation')
+  button.click()
+  await vi.waitFor(() => {
+    expect(document.querySelector('[data-dialog-id="rollback-confirmation"]')).not.toBeNull()
+  })
+  await tick()
+}
+
 describe('OperationLogDialog a11y', () => {
   it('the empty state has no a11y violations', async () => {
     resetState([])
@@ -102,45 +132,52 @@ describe('OperationLogDialog a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it('a populated, collapsed list has no a11y violations', async () => {
-    resetState([op('op-1', 'move'), op('op-2', 'copy')])
-    const target = mountDialog()
-    await tick()
+  it('a populated list with its item tree has no a11y violations', async () => {
+    const target = await mountWithTree([op('op-1', 'move'), op('op-2', 'copy')])
+    expect(target.querySelector('[role="grid"]')).not.toBeNull()
+    expect(target.querySelector('[role="treegrid"]')).not.toBeNull()
     await expectNoA11yViolations(target)
   })
 
-  /** The row's Roll back button: the one control on a row that isn't the row itself. */
-  function rollbackButton(target: HTMLElement): HTMLButtonElement | null {
-    return target.querySelector<HTMLButtonElement>('.op-row button.btn')
-  }
+  it('a tree with folder units, contents, and skipped rows has no a11y violations', async () => {
+    treeMock.mockResolvedValue(
+      treeView([
+        folderRow(1, { label: 'Invoices', role: 'selectable', expanded: true }),
+        fileRow(10, { level: 2, role: 'contents' }),
+        fileRow(11, { level: 2, role: 'contents' }),
+        fileRow(12, { outcome: 'skipped', skipReason: 'drift' }),
+        folderRow(2, { expandable: false, unexpandable: 'capped', role: 'selectable' }),
+      ]),
+    )
+    const target = await mountWithTree([op('op-trash', 'trash')])
+    // Every row description names an element that's really there.
+    for (const row of target.querySelectorAll('.tree [aria-describedby]')) {
+      const id = row.getAttribute('aria-describedby') ?? ''
+      for (const part of id.split(' ')) expect(document.getElementById(part)).not.toBeNull()
+    }
+    await expectNoA11yViolations(target)
+  })
 
-  /** Press Roll back and let the stacked confirmation mount. */
-  async function openConfirmation(target: HTMLElement): Promise<void> {
-    const button = rollbackButton(target)
-    if (button === null) throw new Error('expected a Roll back button on a rollbackable row')
-    button.click()
-    await vi.waitFor(() => {
-      expect(document.querySelector('[data-dialog-id="rollback-confirmation"]')).not.toBeNull()
-    })
-    await tick()
-  }
+  it('a read-only tree has no a11y violations', async () => {
+    treeMock.mockResolvedValue(treeView([fileRow(1, { checkbox: 'none' })], { readOnly: true }))
+    const target = await mountWithTree([
+      { ...op('op-del', 'delete'), rollbackState: 'notRollbackable', notRollbackableReason: 'permanentDelete' },
+    ])
+    await expectNoA11yViolations(target)
+  })
 
   it('the rollback confirmation stacked over the log has no a11y violations', async () => {
-    resetState([op('op-1', 'move')])
-    mountDialog()
-    await tick()
+    await mountWithTree([op('op-1', 'move')])
     // Both dialogs are in the document at once, so audit the whole body: a stacked
     // dialog is exactly where duplicate ids and orphaned `aria-describedby` show up.
-    await openConfirmation(document.body)
+    await openConfirmation()
     await expectNoA11yViolations(document.body)
   })
 
-  it('a refusal notice on a row has no a11y violations', async () => {
+  it('a refusal notice has no a11y violations', async () => {
     rollbackMock.mockRejectedValueOnce(new RollbackRefusalFailure({ kind: 'alreadyRollingBack' }))
-    resetState([op('op-1', 'copy')])
-    const target = mountDialog()
-    await tick()
-    await openConfirmation(document.body)
+    const target = await mountWithTree([op('op-1', 'copy')])
+    await openConfirmation()
 
     const confirm = [...document.querySelectorAll<HTMLButtonElement>('[data-dialog-id="rollback-confirmation"] button')]
     const rollBack = confirm.find((b) => b.textContent.trim() === 'Roll back')
@@ -153,45 +190,69 @@ describe('OperationLogDialog a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it('a row explaining why it can’t be rolled back has no a11y violations, and the row points at it', async () => {
+  it('an operation explaining why it can’t be rolled back has no a11y violations', async () => {
     const merged = { ...op('op-merge', 'move'), rollbackState: 'notRollbackable' as const }
-    resetState([{ ...merged, notRollbackableReason: 'directoryMerge' as const }])
-    const target = mountDialog()
-    await tick()
-
-    // The explanation is `aria-describedby` from the row's own button, so a screen
-    // reader hears "Can't roll back" and the reason together instead of meeting an
-    // orphaned paragraph after the row it belongs to.
-    const head = target.querySelector<HTMLButtonElement>('.op-head')
-    expect(head?.getAttribute('aria-describedby')).toBe('op-reason-op-merge')
+    treeMock.mockResolvedValue(treeView([fileRow(1, { checkbox: 'none' })], { readOnly: true }))
+    const target = await mountWithTree([{ ...merged, notRollbackableReason: 'directoryMerge' as const }])
     expect(target.querySelector('#op-reason-op-merge')).not.toBeNull()
     await expectNoA11yViolations(target)
   })
 
-  it('a row with no recorded reason leaves no dangling description behind', async () => {
-    resetState([{ ...op('op-fresh', 'copy'), rollbackState: 'notRollbackable' as const }])
-    const target = mountDialog()
-    await tick()
+  it('a rollback button names its operation, and the sentence beside it when there is one', async () => {
+    await mountWithTree([op('op-copy', 'copy')])
+    // The rollbackable notice says what the press does; the button is heard with it.
+    expect(rollbackButton()?.getAttribute('aria-describedby')).toBe('op-head-op-copy op-reason-op-copy')
+  })
+})
 
-    // An `aria-describedby` pointing at an element that was never rendered is exactly
-    // the violation the axe run below catches; the attribute has to be absent, not empty.
-    expect(target.querySelector('.op-head')?.hasAttribute('aria-describedby')).toBe(false)
+/** The panes on their own, as a host other than this dialog would mount them. */
+describe('the Operation log panes a11y', () => {
+  function host(): HTMLElement {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    return target
+  }
+
+  it('the operation list alone has no a11y violations', async () => {
+    const target = host()
+    mount(OperationList, {
+      target,
+      props: {
+        entries: [op('op-1', 'copy'), { ...op('op-2', 'move'), executionStatus: 'canceled' }],
+        cursorIndex: 0,
+        onCursorChange: () => {},
+        hasMore: true,
+        loadingMore: false,
+        onLoadMore: () => {},
+      },
+    })
+    await tick()
     await expectNoA11yViolations(target)
   })
 
-  it('an expanded operation (with revealed item rows) has no a11y violations', async () => {
-    resetState([op('op-1', 'move')])
-    const target = mountDialog()
-    await tick()
-
-    const head = target.querySelector<HTMLButtonElement>('.op-head')
-    if (head === null) throw new Error('expected an .op-head button to be rendered')
-    head.click()
+  it('the detail pane and its tree alone have no a11y violations', async () => {
+    const source = createOperationTreeSource({ settleMs: 0 })
+    const row = op('op-1', 'copy')
+    source.show(row)
+    const target = host()
+    mount(OperationDetail, { target, props: { op: row, source, refusal: null } })
     await vi.waitFor(() => {
-      expect(target.querySelector('.item-list')).not.toBeNull()
+      expect(target.querySelector('.tree .column-list-row.is-data')).not.toBeNull()
     })
-    await tick()
-
     await expectNoA11yViolations(target)
+    source.dispose()
+  })
+
+  it('the tree alone, still loading, has no a11y violations', async () => {
+    treeMock.mockReturnValue(new Promise(() => {}))
+    const source = createOperationTreeSource({ settleMs: 0, spinnerDelayMs: 0 })
+    source.show(op('op-1', 'copy'))
+    const target = host()
+    mount(OperationTree, { target, props: { source, kind: 'copy' } })
+    await vi.waitFor(() => {
+      expect(target.querySelector('.tree-blank .spinner')).not.toBeNull()
+    })
+    await expectNoA11yViolations(target)
+    source.dispose()
   })
 })

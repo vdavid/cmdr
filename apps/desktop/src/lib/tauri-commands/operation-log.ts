@@ -1,18 +1,24 @@
-// Operation log: the recent-operations feed, one operation's detail, and undo.
+// Operation log: the recent-operations feed, one operation's detail, its item tree, and undo.
 // Thin wrappers over the typed `commands.*` bindings, unwrapping `Result<T, string>`.
 // The alpha dialog and any future surface consume these; the Debug panel reads the
 // same backend commands directly (dev-only, bindings-import-exempt).
 
+import { type UnlistenFn } from '@tauri-apps/api/event'
 import {
   commands,
+  events,
   type Initiator,
   type OperationRow,
   type OperationItemView,
+  type OperationTreeRequest,
+  type OperationTreeView,
   type OperationUndoOutcome,
   type RollbackDispatch,
   type RollbackSelection,
   type SkipBreakdown,
   type SkipReason,
+  type TreeBackfillEvent,
+  type TreeBackfillStart,
   type UndoReport,
 } from '#lib/ipc/bindings.js'
 import { throwRollbackRefusal } from '#lib/operation-log/rollback-refusal.js'
@@ -21,11 +27,53 @@ import { throwIpcError } from './ipc-types'
 export type {
   OperationRow,
   OperationItemView,
+  OperationTreeRequest,
+  OperationTreeView,
   OperationUndoOutcome,
   RollbackDispatch,
   SkipBreakdown,
   SkipReason,
+  TreeBackfillEvent,
+  TreeBackfillStart,
   UndoReport,
+}
+
+/**
+ * One window of an operation's item tree: the rows under the request's expanded
+ * folders from its offset, with the selection normalized and counted by the backend.
+ * `null` when the operation is absent (pruned by retention since the list was read).
+ */
+export async function getOperationLogTree(
+  operationId: string,
+  request: OperationTreeRequest,
+): Promise<OperationTreeView | null> {
+  const res = await commands.getOperationLogTree(operationId, request)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * Ask for an operation's tree summary: start the backfill of an operation journaled
+ * before the summary existed, join the one running, or learn why none is needed or
+ * possible. Returns at once; a started or joined backfill reports each step through
+ * {@link onOperationLogTreeBackfill}.
+ */
+export async function startOperationLogTreeBackfill(operationId: string): Promise<TreeBackfillStart> {
+  const res = await commands.startOperationLogTreeBackfill(operationId)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** Ask an operation's running tree backfill to stop (the dialog closed, or moved to another operation). */
+export function cancelOperationLogTreeBackfill(operationId: string): Promise<void> {
+  return commands.cancelOperationLogTreeBackfill(operationId)
+}
+
+/** Every step of every tree backfill (progress, then one `finished`), for whichever operation it names. */
+export function onOperationLogTreeBackfill(handler: (event: TreeBackfillEvent) => void): Promise<UnlistenFn> {
+  return events.operationLogTreeBackfill.listen((event) => {
+    handler(event.payload)
+  })
 }
 
 /** One operation's header plus a page of its items, dir prefixes resolved to full paths. */

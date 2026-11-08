@@ -195,7 +195,7 @@ and the top traps live in `style.md`; don't repeat them here.
 - `statistiques d’usage` `relié à` `un identifiant aléatoire`, over `anonymes` (false) and `pseudonyme` (jargon the
   English avoids); `identifiant` over MS `identificateur`.
 
-## Retour en arrière (`transferProgress.rollback*`, `transferProgress.conflictRollback`, `transferProgress.titleRollingBack`, `operationLog.rollback.*`, `operationLog.outcome.rolledBack`, `operationLog.dialog.rollBack`, `operationLog.dialog.finishRollBack`, `commands.logOperationLog.description`, `settings.operationLog.intro`, `fileOperations.rollbackConfirm.*`, `fileOperations.cancelRollback.*`, `queue.row.reversalInFolder`)
+## Retour en arrière (`transferProgress.rollback*`, `transferProgress.conflictRollback`, `transferProgress.titleRollingBack`, `operationLog.rollback.*`, `operationLog.tree.rollupRolledBack`, `operationLog.dialog.rollBack`, `operationLog.dialog.rollBackRest`, `commands.logOperationLog.description`, `settings.operationLog.intro`, `fileOperations.rollbackConfirm.*`, `fileOperations.cancelRollback.*`, `queue.row.reversalInFolder`)
 
 - A rollback DELETES what the operation wrote, so `restaurer` promises the opposite (and names real restores); `annul-`
   collides with Cancel and `Annulé`. Always with `en`: `retour arrière` is Backspace and a rewind. Pills:

@@ -94,9 +94,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   over the pile’s `Fabricant`; `média` for the button; `{field} : aucune valeur` and `Champ inséré : {field}`, and
   `dans le masque` for `insertedMark`, all phrased so no participle agrees with a field name of unknown gender.
 - **Transfer tree row states** (`fileOperations.transferTree.state.*`, `failedCount`): `Non terminé` /
-  `{n} non terminés` for a file that couldn’t be transferred (reuses `operationLog.outcome.failed`; does it read as "not
-  attempted yet"?); `Compression` stays bare to match `transferProgress.stageCompressing`, while the siblings say
-  `Copie en cours` / `Déplacement en cours` because a bare `Copie` reads as "a copy" to a screen reader.
+  `{n} non terminés` for a file that couldn’t be transferred (reuses `operationLog.tree.statusUnfinished`; does it read
+  as "not attempted yet"?); `Compression` stays bare to match `transferProgress.stageCompressing`, while the siblings
+  say `Copie en cours` / `Déplacement en cours` because a bare `Copie` reads as "a copy" to a screen reader.
 - **Damaged-state notices** (`stateRecovery.*`, `transfer.durabilityUnconfirmed*`): `historique d’annulation` for "undo
   history" (the UI elsewhere says `Historique des opérations`); `vous repartez donc de zéro` for the chats (the people
   restart, not the chats); `Cmdr a conservé l’ancien fichier sous {path}` (`sous` because {path} ends in the file name);

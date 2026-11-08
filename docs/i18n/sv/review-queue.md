@@ -77,9 +77,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   hand only; confirm it reads as update checks, or whether `Bara när du söker själv` is clearer.
 - **`din organisation håller den här Macen på {ceiling} eller tidigare`** (`updates.status.heldByPolicy`): confirm
   `håller … på` reads naturally for a version cap.
-- **`Ångrade ”…” från {time}` / `Ångrades senast av ”…” från {time}`** (`operationLog.dialog.rollbackOf`,
-  `.latestRollback`): verbs over the stilted noun `ångring`; confirm the past tense reads right on a row whose rollback
-  is still running, and that `från {time}` reads as dated.
 
 - **`Varje Ord Med Versal`** (`multiRename.case.words`): title-case demo, which Swedish never writes; TC's
   `Versal Först I Varje Ord` is the attested alternative. Confirm it reads as an option, not a typo.

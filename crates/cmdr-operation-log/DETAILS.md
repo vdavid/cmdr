@@ -975,8 +975,8 @@ rows carrying a `rollback_skip_reason` (held back by an earlier run). A `skipped
 own skip (a bulk rename's blocked row) and never streams. Rows already `rolled_back` aren't re-read; a crash-resumed run
 whose outcomes didn't flush re-reads them as `AlreadyGone`. ❌ So don't make `check_rollbackable` refuse
 `PartiallyRolledBack`, and ❌ don't let any inverse act without its recheck: either one turns that button into a
-double-act. The UI side is `apps/desktop/src/lib/operation-log/DETAILS.md` § "a partly-reversed operation offers to
-finish".
+double-act. The UI side is `apps/desktop/src/lib/operation-log/DETAILS.md` § "a partly-reversed operation offers "Roll
+back the rest"".
 
 ### Operations a crash interrupted
 
