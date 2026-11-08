@@ -78,6 +78,22 @@ pub(super) fn apply_set_rollback_state(
     Ok(())
 }
 
+/// Flip an op to `rolling_back` only while it still holds `from`, the state the
+/// gate read: the compare-and-set that lets exactly one of two simultaneous
+/// dispatches through. Answers whether this call made the flip.
+pub(super) fn apply_claim_rollback(
+    conn: &Connection,
+    op_id: &str,
+    from: RollbackState,
+) -> Result<bool, OperationLogStoreError> {
+    let changed = conn.execute(
+        "UPDATE operations SET rollback_state = ?2, not_rollbackable_reason = NULL
+         WHERE op_id = ?1 AND rollback_state = ?3",
+        rusqlite::params![op_id, RollbackState::RollingBack.as_token(), from.as_token()],
+    )?;
+    Ok(changed == 1)
+}
+
 /// End an interrupted op in one statement: `failed`, `ended_at = started_at`, search
 /// coverage `top_level_only(interrupted)` (rows it never wrote are missing), and the
 /// rollback state `eligibility` names (`None` keeps what it stored). Only while it's

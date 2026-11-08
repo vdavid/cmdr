@@ -230,6 +230,11 @@ enum WriteMessage {
         reason: Option<NotRollbackableReason>,
         reply: mpsc::Sender<()>,
     },
+    ClaimRollback {
+        op_id: String,
+        from: RollbackState,
+        reply: mpsc::Sender<Result<bool, OperationLogStoreError>>,
+    },
     SetItemOutcomes {
         op_id: String,
         updates: Vec<ItemOutcomeUpdate>,
@@ -353,6 +358,20 @@ impl OperationLogWriter {
             reply: tx,
         })?;
         rx.recv().map_err(writer_gone)
+    }
+
+    /// Flip an op to `rolling_back` only while it still holds `from` (the state the
+    /// gate read), as one compare-and-set on the writer thread. `Ok(true)` means
+    /// this call claimed it; `Ok(false)` means another dispatch (or a state change)
+    /// got there first, so the caller refuses instead of running a second reversal.
+    pub fn claim_rollback(&self, op_id: &str, from: RollbackState) -> Result<bool, OperationLogStoreError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::ClaimRollback {
+            op_id: op_id.to_string(),
+            from,
+            reply: tx,
+        })?;
+        rx.recv().map_err(writer_gone)?
     }
 
     /// Set the per-item terminal outcomes of an op, by `seq`. The rollback engine marks
@@ -495,6 +514,9 @@ fn apply_message(conn: &mut Connection, msg: WriteMessage) -> std::ops::ControlF
                 log::warn!(target: "operation_log", "set_rollback_state({op_id}) failed: {e}");
             }
             let _ = reply.send(());
+        }
+        WriteMessage::ClaimRollback { op_id, from, reply } => {
+            let _ = reply.send(apply_claim_rollback(conn, &op_id, from));
         }
         WriteMessage::SetItemOutcomes { op_id, updates, reply } => {
             if let Err(e) = apply_set_item_outcomes(conn, &op_id, &updates) {
@@ -739,7 +761,7 @@ use backfill::{apply_fill_self_dirs, apply_write_tree_summary};
 
 /// How an op ended and its rollback state transitions: the header's state writes.
 mod op_state;
-use op_state::{apply_end_interrupted, apply_finalize, apply_set_rollback_state};
+use op_state::{apply_claim_rollback, apply_end_interrupted, apply_finalize, apply_set_rollback_state};
 
 /// The tree summary's delta, written in the same transaction as the rows it counts.
 mod tree_summary;

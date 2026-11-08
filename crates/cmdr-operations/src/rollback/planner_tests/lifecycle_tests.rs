@@ -132,6 +132,50 @@ async fn double_rollback_is_refused_with_already_rolling_back() {
 }
 
 #[tokio::test]
+async fn simultaneous_dispatches_spawn_exactly_one_reversal() {
+    // The flip to `rolling_back` is a compare-and-set in the writer, so two
+    // dispatches that both read `rollbackable` (a dialog's narrowed press and an
+    // agent's whole-op call landing together) can't both run: the loser gets the
+    // same typed refusal a later dispatch gets. Before, a read-then-write let both
+    // through, and the whole-op run reversed the rows the person left out.
+    const DISPATCHERS: usize = 8;
+    const ROUNDS: usize = 20;
+    for round in 0..ROUNDS {
+        let op_id = format!("op-{round}");
+        let rig = rig_with_rollbackable_op(&op_id).await;
+        let spawned = std::sync::atomic::AtomicUsize::new(0);
+        let start = std::sync::Barrier::new(DISPATCHERS);
+        let refusals: Vec<_> = std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..DISPATCHERS)
+                .map(|_| {
+                    scope.spawn(|| {
+                        start.wait();
+                        rollback_operation(&rig.vm, &rig.writer, &op_id, |_plan| {
+                            spawned.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                            Ok(())
+                        })
+                        .err()
+                    })
+                })
+                .collect();
+            handles
+                .into_iter()
+                .filter_map(|h| h.join().expect("dispatcher"))
+                .collect()
+        });
+        assert_eq!(
+            spawned.load(std::sync::atomic::Ordering::SeqCst),
+            1,
+            "round {round}: exactly one dispatch runs"
+        );
+        assert!(
+            refusals.iter().all(|r| *r == RollbackRefusal::AlreadyRollingBack),
+            "round {round}: every other dispatch is refused typed: {refusals:?}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn synchronous_spawn_failure_resets_to_rollbackable_and_a_retry_is_accepted() {
     let rig = rig_with_rollbackable_op("op").await;
     // The spawn fails synchronously (a volume dropped between the gate and spawn).

@@ -927,10 +927,14 @@ and its caller polls). It exists for the Ask Cmdr rename rail, where one run can
 (first, § "No rollback of a rollback") / `AlreadyRollingBack` / `NotRollbackable(reason)` /
 `VolumeUnavailable{volume_id}` — the cross-volume gate is computed from live mount state, never stored), then sets
 `rolling_back` **as late as possible** (right before the spawn) and hands the plan to the injected `spawn`. The
-double-rollback guard is automatic: a second request reads `rolling_back` and refuses. On a **synchronous spawn
-failure** (a volume dropped between the gate and the spawn, so the inverse never starts) it resets `rolling_back` back
-to the state the op held (`rollbackable`, or `partially_rolled_back` for "Roll back the rest") in the same call before
-returning the typed error, so a retry isn't wedged.
+double-rollback guard is automatic: a second request reads `rolling_back` and refuses. The flip itself is a
+compare-and-set on the writer thread (`OperationLogWriter::claim_rollback`,
+`WHERE rollback_state = <what the gate read>`), so two dispatches that both passed the gate in the same instant (a
+narrowed dialog press and an agent's whole-op call) can't both run: the loser gets `AlreadyRollingBack`
+(`lifecycle_tests.rs`, `simultaneous_dispatches_spawn_exactly_one_reversal`). On a **synchronous spawn failure** (a
+volume dropped between the gate and the spawn, so the inverse never starts) it resets `rolling_back` back to the state
+the op held (`rollbackable`, or `partially_rolled_back` for "Roll back the rest") in the same call before returning the
+typed error, so a retry isn't wedged.
 
 `rollback_operation` is `rollback_operation_with_selection` with `None`; a selection is refused typed here too, before
 `rolling_back` is set (§ "Streaming + ordering").

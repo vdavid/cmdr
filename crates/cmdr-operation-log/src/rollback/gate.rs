@@ -153,7 +153,8 @@ where
 /// never starts), reset `rolling_back → rollbackable` in the SAME call before
 /// returning the error, so the op isn't wedged behind the `AlreadyRollingBack`
 /// guard and an immediate retry is accepted. The double-rollback guard is
-/// automatic: a second call reads the op as `rolling_back` and refuses.
+/// automatic: a second call reads the op as `rolling_back` and refuses, and the
+/// flip is a compare-and-set, so a second call racing the first is refused too.
 ///
 /// `selection` narrows the run to the rows it takes (`None`: every row). The gate
 /// normalizes it (❌ never trusted from the wire) and refuses it typed
@@ -204,9 +205,18 @@ where
     };
     // Set `rolling_back` as late as possible — right before the spawn — to shrink
     // the window in which a crash leaves it set with no inverse row (the reconcile
-    // resolves that anyway, straight back to rollbackable).
-    if let Err(e) = writer.set_rollback_state(op_id, RollbackState::RollingBack, None) {
-        log::warn!(target: "operation_log", "rollback: set rolling_back failed: {e}");
+    // resolves that anyway, straight back to rollbackable). A compare-and-set against
+    // the state the gate read: of two dispatches that both passed the gate (a
+    // narrowed dialog press and an agent's whole-op call), only one flips it, and
+    // the other is refused like any later dispatch, so it can't reverse the rows
+    // the person left out.
+    match writer.claim_rollback(op_id, plan.original.rollback_state) {
+        Ok(true) => {}
+        Ok(false) => return Err(RollbackRefusal::AlreadyRollingBack),
+        Err(e) => {
+            log::warn!(target: "operation_log", "rollback: set rolling_back failed: {e}");
+            return Err(RollbackRefusal::UnknownOperation);
+        }
     }
     match spawn(&plan) {
         Ok(()) => Ok(plan),
