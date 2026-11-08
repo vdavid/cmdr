@@ -339,6 +339,10 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "77e6f25"
   },
+  "operationLog.rollback.interruptedNotice": "Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.",
+  "@operationLog.rollback.interruptedNotice": {
+    "sourceHash": "642e6fc"
+  },
   "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} item is back the way it was.} other {{countText} items are back the way they were.}}",
   "@operationLog.rollback.partialRolledBack": {
     "sourceHash": "0202fe5"
@@ -378,6 +382,10 @@
   "operationLog.rollback.refusalAlreadyRolledBack": "这项已经回到原来的样子了。",
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalIsARollback": "This one undid another operation, and an undo doesn’t get undone in turn. The operation it undid is still in the log.",
+  "@operationLog.rollback.refusalIsARollback": {
+    "sourceHash": "37738da"
   },
   "operationLog.rollback.refusalOverwrote": "这项操作替换了原本就在那里的文件。Cmdr 不会保留被替换文件的副本，所以原来的文件回不来了。",
   "@operationLog.rollback.refusalOverwrote": {

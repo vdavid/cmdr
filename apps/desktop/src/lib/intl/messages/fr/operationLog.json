@@ -340,6 +340,10 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "77e6f25"
   },
+  "operationLog.rollback.interruptedNotice": "Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.",
+  "@operationLog.rollback.interruptedNotice": {
+    "sourceHash": "642e6fc"
+  },
   "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} item is back the way it was.} other {{countText} items are back the way they were.}}",
   "@operationLog.rollback.partialRolledBack": {
     "sourceHash": "0202fe5"
@@ -379,6 +383,10 @@
   "operationLog.rollback.refusalAlreadyRolledBack": "Celle-ci est déjà revenue à son état d’origine.",
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalIsARollback": "This one undid another operation, and an undo doesn’t get undone in turn. The operation it undid is still in the log.",
+  "@operationLog.rollback.refusalIsARollback": {
+    "sourceHash": "37738da"
   },
   "operationLog.rollback.refusalOverwrote": "Cette opération a remplacé des fichiers qui étaient déjà là. Cmdr ne garde aucune copie de ce qu’il remplace, donc les originaux ne peuvent pas revenir.",
   "@operationLog.rollback.refusalOverwrote": {

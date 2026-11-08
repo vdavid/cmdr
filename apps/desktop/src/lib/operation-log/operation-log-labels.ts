@@ -20,6 +20,7 @@ import type {
   OperationRow,
   RollbackRefusal,
   RollbackState,
+  SearchCoverageReason,
   SelectionRefusal,
   TreeTally,
 } from '#lib/ipc/bindings.js'
@@ -341,6 +342,28 @@ export function partiallyRolledBackSummary(
 }
 
 /**
+ * A second sentence about what the journal holds of an operation, or `null` when it
+ * holds all of it (as far as rolling back cares). Only an operation a crash cut off
+ * speaks: the rows it never wrote are rows a rollback can't reach, and the tree shows
+ * only what was recorded. The other reasons are about name search coverage (an index
+ * that wasn't live, a capped folder), which the tree already words per folder or which
+ * a rollback doesn't depend on.
+ */
+export function coverageNotice(reason: SearchCoverageReason | null): MessageKey | null {
+  switch (reason) {
+    case 'interrupted':
+      return 'operationLog.rollback.interruptedNotice'
+    case 'capped':
+    case 'indexAbsent':
+    case 'indexStale':
+    case 'volumeNotLive':
+    case 'searchRowIncomplete':
+    case null:
+      return null
+  }
+}
+
+/**
  * The sentence for a refused rollback. `null` covers the press that never reached the
  * backend at all, which carries no reason to report.
  *
@@ -366,10 +389,6 @@ export function rollbackRefusalNotice(refusal: RollbackRefusal | null): MessageK
       return 'operationLog.rollback.refusalVolumeUnavailable'
     case 'selection':
       return selectionRefusalNotice(refusal.detail)
-    // ❗ The backend's refusal to roll back a rollback (inverse operations aren't listed,
-    // so only MCP or a stale window can ask) lands as a new variant: word it here, next to
-    // `alreadyRolledBack`, which says the same thing to the person ("already back the way
-    // it was"). The switch is exhaustive, so the build fails until it's mapped.
   }
 }
 

@@ -31,6 +31,7 @@ import {
   rollbackActionLabel,
   selectedCountText,
   partiallyRolledBackSummary,
+  coverageNotice,
 } from './operation-log-labels'
 
 /** A finished operation that did everything it planned. */
@@ -378,6 +379,24 @@ describe('rowStandingNotice', () => {
     expect(sentence).toContain('skips')
     for (const banned of ['error', 'failed', 'will finish', 'completely']) {
       expect(sentence).not.toContain(banned)
+    }
+  })
+})
+
+describe('coverageNotice', () => {
+  it('says an interrupted operation may not be fully recorded, and stays quiet on search-only gaps', () => {
+    expect(tString(coverageNotice('interrupted') as MessageKey)).toBe(
+      'Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.',
+    )
+    for (const reason of [
+      'capped',
+      'indexAbsent',
+      'indexStale',
+      'volumeNotLive',
+      'searchRowIncomplete',
+      null,
+    ] as const) {
+      expect(coverageNotice(reason)).toBeNull()
     }
   })
 })

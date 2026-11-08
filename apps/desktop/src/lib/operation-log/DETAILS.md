@@ -273,6 +273,11 @@ same reversal the confirmation names, so the checkboxes read as "these go" or "t
 `partiallyRolledBack` (counted from the tree when it can be). The action bar's button points its `aria-describedby` at
 the detail's heading and, when there is one, that line.
 
+**An interrupted operation says so too** (`coverageNotice`, exhaustive over `SearchCoverageReason`): one a crash cut off
+ends at the next launch with `top_level_only(interrupted)` coverage, so the detail adds that Cmdr may not have recorded
+everything and a rollback reaches only what it did. The other coverage reasons are name-search gaps a rollback doesn't
+depend on, and stay quiet.
+
 **The DETAIL is where those sentences actually land.** The button renders only on a state the gate admits, so a
 `notRollbackable` operation never offers a press to refuse: routed only through the refusal path, every reason above
 would be unreachable, and the user would face a bare "Can't roll back" badge. So the detail renders

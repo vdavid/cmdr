@@ -13,6 +13,7 @@
     import { formatDateTime } from '#lib/settings/reactive-settings.svelte.js'
     import type { OperationRow } from '#lib/tauri-commands/index.js'
     import {
+        coverageNotice,
         executionStatusLabel,
         initiatorLabel,
         operationSummary,
@@ -51,6 +52,8 @@
         const key = rowStandingNotice(op.rollbackState, op.notRollbackableReason, op.kind)
         return key === null ? null : tString(key)
     })
+    /** What the journal may be missing of this operation (a crash cut it off), beside the notice. */
+    const coverage = $derived(coverageNotice(op.searchCoverageReason))
 </script>
 
 <section class="detail" aria-labelledby="op-head-{op.opId}">
@@ -77,6 +80,7 @@
                  Which states speak, and when they stay quiet: `rowStandingNotice`. -->
             <p class="op-reason" id="op-reason-{op.opId}">{notice}</p>
         {/if}
+        {#if coverage !== null}<p class="op-coverage">{tString(coverage)}</p>{/if}
     </header>
     <OperationTree {source} kind={op.kind} onLeave={onLeaveTree} />
 </section>
@@ -154,6 +158,7 @@
     }
 
     .op-route,
+    .op-coverage,
     .op-reason,
     .op-refusal {
         margin: 0;

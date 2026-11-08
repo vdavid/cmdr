@@ -246,6 +246,18 @@ describe('the detail header', () => {
     )
   })
 
+  it('says an operation a crash cut off may not be fully recorded', async () => {
+    const target = await mountWithTree([
+      opRow({
+        opId: 'op-cut',
+        executionStatus: 'failed',
+        searchCoverage: 'topLevelOnly',
+        searchCoverageReason: 'interrupted',
+      }),
+    ])
+    expect(target.querySelector('.op-coverage')?.textContent).toContain('may not have recorded everything')
+  })
+
   it('tells the person why an operation can’t be rolled back', async () => {
     ipc.getOperationLogTree.mockResolvedValue(folderCopy({ readOnly: true }))
     const target = await mountWithTree([

@@ -484,6 +484,10 @@
     "description": "Shown under the Operation log’s detail header for an operation that is partly rolled back, when Cmdr can’t count its items yet. Two jobs: tell the person what happened to their files (some came back, the rest are where the operation left them), and say what the \"Roll back the rest\" button does. Deliberately doesn’t promise a complete reversal: the leftovers may be files Cmdr can’t match against what it recorded, and those get skipped again. \"Takes another pass\" means it goes over the operation once more. Reassuring and matter-of-fact; avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",
     "screenshot": "operation-log-more-pages.png"
   },
+  "operationLog.rollback.interruptedNotice": "Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.",
+  "@operationLog.rollback.interruptedNotice": {
+    "description": "Shown under the Operation log’s detail header for an operation that Cmdr (or the Mac) stopped mid-way, for example in a crash, so it never finished. Two facts: Cmdr’s record of it may be incomplete, and a rollback can only undo what was recorded. Calm and factual; it isn’t the person’s fault. Avoid the words error, failed, and crash."
+  },
   "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} item is back the way it was.} other {{countText} items are back the way they were.}}",
   "@operationLog.rollback.partialRolledBack": {
     "description": "First sentence of the notice for a partly rolled-back operation in the Operation log: how many items a rollback already undid. countText is the count with the locale’s thousands separator. It may be followed by sentences about skipped items and items still waiting; each stands on its own.",

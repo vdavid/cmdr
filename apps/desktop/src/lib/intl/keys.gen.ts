@@ -3690,6 +3690,7 @@ export type MessageKey =
   | 'operationLog.initiator.agentEdited'
   | 'operationLog.initiator.aiClient'
   | 'operationLog.initiator.user'
+  | 'operationLog.rollback.interruptedNotice'
   | 'operationLog.rollback.notRollbackable'
   | 'operationLog.rollback.partialHeldBack'
   | 'operationLog.rollback.partialRolledBack'
