@@ -1361,12 +1361,15 @@ the oldest whole ops until the DB fits the budget) → **dir GC** → **reclaim*
 
 - **Prune whole operations only.** Never orphan an item from a kept op; never leave a dangling `rolls_back_op_id` (null
   a surviving op's link to a pruned op BEFORE the delete, or the self-FK rejects it). A rolled-back pair prunes together
-  (`rollback_pair_component` pulls in the seed's inverse/original), and any protected partner is excluded with its link
-  nulled.
-- **Never prune an in-flight rollback's rows.** `protected_ops_fragment` excludes any op in `rolling_back` (the
-  original, which a live rollback streams across successive read connections) and its `rolls_back_op_id` target; the
-  unfinished inverse is separately excluded by the `ended_at IS NOT NULL` gate. This closes the
-  prune-versus-live-rollback race (§ "The retention race it closes") without a long read transaction.
+  by age AND by size (`prune_by_age` widens its set with each aged op's finished inverses and each aged inverse's
+  original; `rollback_pair_component` does the same for the size seed), and any protected partner is excluded with its
+  link nulled. Why by age too: an inverse ends after its original, so age always takes the original first, and an
+  inverse with a nulled link reads as an ordinary op (listed, and past the gate's `IsARollback`), whose rollback would
+  redo the undone change. Rollbacks aren't tracked as ops of their own.
+- **Never prune an in-flight rollback's rows.** `prunable_ops_fragment` excludes any op in `rolling_back` (the original,
+  which a live rollback streams across successive read connections) and its `rolls_back_op_id` target; the unfinished
+  inverse is separately excluded by the `ended_at IS NOT NULL` gate. This closes the prune-versus-live-rollback race (§
+  "The retention race it closes") without a long read transaction.
 - **Size budget is measured as live bytes.** `live_size_bytes = (page_count - freelist) * page_size` — the size the file
   would have after a full vacuum — so the delete loop makes progress before pages are physically reclaimed (each delete
   grows the freelist). It stops when under budget or nothing prunable remains (everything left protected).
