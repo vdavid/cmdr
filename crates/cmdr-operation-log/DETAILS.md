@@ -1241,7 +1241,7 @@ subtree totals in `operation_tree_dirs`, kept exact by the writer.
   bound: DIR rows are no longer in them.
 - **The item indexes hold FILE rows only** (`WHERE entry_type = 'file'`). Decision/Why: a folder's DIR rows list as its
   child folders off the summary, so the file listing filters them out, and a filter the index can't answer reads the
-  table for every row an `OFFSET` skips. The middle of a 1M-file folder took 800 ms that way and takes 10 ms index-only
+  table for every row an `OFFSET` skips. The middle of a 1M-file folder took 800 ms that way and takes 15 ms index-only
   (release, Apple Silicon, `src/tree/scale_tests.rs`, 2026-11-07).
 
 ## The tree view (`src/tree/view.rs`, `layout.rs`, `read.rs`, `selection.rs`)
