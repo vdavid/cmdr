@@ -188,7 +188,8 @@ var rustWorkspaceConfigInputs = []string{
 // The app's menu tests read the menu bar's definition and ids from `cmdr-menu`
 // (`menu/menu_items_test.rs`, `menu/context_menu_icons_test.rs`, `menu/macos_appkit.rs`).
 // The space poller's band tests read the free-percent case list the TS formatter shares
-// (`space_poller/readout.rs`). Three are read at test time rather than embedded, which makes
+// (`space_poller/readout.rs`). The error report's triage-settings test reads the settings'
+// typed index (`error_reporter/triage_settings.rs`). Three are read at test time rather than embedded, which makes
 // them inputs all the same: the native-string resolver's tests read the message catalogs
 // (`intl/resolve.rs`), the agent view tests the tool-label key list
 // (`tools/tests/agent_view_tests.rs`), and the encoding-inspect tests their fixtures
@@ -208,6 +209,7 @@ var rustEmbeddedInputs = []string{
 	"apps/desktop/src/lib/ipc/bindings.ts",
 	"apps/desktop/src/lib/logging/bridge-redaction-cases.json",
 	"apps/desktop/src/lib/logging/log-markers.json",
+	"apps/desktop/src/lib/settings/types.ts",
 	"apps/desktop/src/lib/units/drive-figure-cases.json",
 	"apps/desktop/src/lib/units/free-percent-cases.json",
 	"apps/desktop/test/fixtures/encodings/**",
