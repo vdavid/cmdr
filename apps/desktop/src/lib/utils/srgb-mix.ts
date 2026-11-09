@@ -116,3 +116,84 @@ export function contrastRatio(a: string, b: string): number {
 export function readableFgOn(bgHex: string): '#000000' | '#ffffff' {
   return contrastRatio('#000000', bgHex) >= contrastRatio('#ffffff', bgHex) ? '#000000' : '#ffffff'
 }
+
+/** WCAG 1.4.11 for the fill against its field, and 1.4.3 for the text drawn on it. */
+const SELECTION_VS_FIELD = 3
+const SELECTION_VS_TEXT = 4.5
+/** Aim this far inside the window, so the Go checker's mirror (a hair different threshold) agrees. */
+const SELECTION_MARGIN = 0.0003
+
+/**
+ * The opaque text-selection fill for an accent: the accent shaded toward black or white until it
+ * clears 3:1 against the field and 4.5:1 under the field's text. Mirrored in
+ * `scripts/check-a11y-contrast/accent_matrix.go`, which gates both ratios for every accent.
+ *
+ * The two ratios bound the fill's luminance from both sides. Dark text on a light field leaves a
+ * roomy window; light text on a dark field leaves one narrower than one 8-bit step of green, so
+ * the rounded hex is searched for around the mix rather than trusted. When no shade clears both,
+ * the text wins: a selection you can read beats one you can see.
+ */
+export function textSelectionFill(accentHex: string, on: { field: string; text: string }): string {
+  const field = relativeLuminance(on.field)
+  const text = relativeLuminance(on.text)
+  const lightField = field >= text
+  // Luminance bounds from each ratio. On a light field the fill sits below the field and above the
+  // text; on a dark field, the other way round.
+  const fromField = lightField ? (field + 0.05) / SELECTION_VS_FIELD - 0.05 : SELECTION_VS_FIELD * (field + 0.05) - 0.05
+  const fromText = lightField ? SELECTION_VS_TEXT * (text + 0.05) - 0.05 : (text + 0.05) / SELECTION_VS_TEXT - 0.05
+  let min = Math.min(fromField, fromText) + SELECTION_MARGIN
+  let max = Math.max(fromField, fromText) - SELECTION_MARGIN
+  const reachable = lightField ? fromText <= fromField : fromField <= fromText
+  if (!reachable || min > max) {
+    // Only the text's bound, from its own side.
+    ;[min, max] = lightField ? [fromText + SELECTION_MARGIN, 1] : [0, fromText - SELECTION_MARGIN]
+  }
+  const target = (min + max) / 2
+  const shaded = shadeToLuminance(accentHex, target)
+  return nearestInWindow(shaded, min, max, target)
+}
+
+/** The accent mixed toward black or white until its luminance is `target`. */
+function shadeToLuminance(hex: string, target: number): { r: number; g: number; b: number } {
+  const c = parseHex(hex)
+  const towardWhite = relativeLuminance(hex) < target
+  const end = towardWhite ? 255 : 0
+  const at = (t: number) => ({ r: c.r + (end - c.r) * t, g: c.g + (end - c.g) * t, b: c.b + (end - c.b) * t })
+  let lo = 0
+  let hi = 1
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2
+    const { r, g, b } = at(mid)
+    const overshot = towardWhite
+      ? relativeLuminance(toHex(r, g, b)) >= target
+      : relativeLuminance(toHex(r, g, b)) <= target
+    if (overshot) hi = mid
+    else lo = mid
+  }
+  return at(hi)
+}
+
+/** The rounded color nearest `c` whose luminance is in `[min, max]`, closest to `target` on ties. */
+function nearestInWindow(c: { r: number; g: number; b: number }, min: number, max: number, target: number): string {
+  const rounded = toHex(c.r, c.g, c.b)
+  const l = relativeLuminance(rounded)
+  if (l >= min && l <= max) return rounded
+  let best = rounded
+  let bestScore = Infinity
+  for (let dr = -3; dr <= 3; dr++) {
+    for (let dg = -3; dg <= 3; dg++) {
+      for (let db = -3; db <= 3; db++) {
+        const candidate = toHex(c.r + dr, c.g + dg, c.b + db)
+        const cl = relativeLuminance(candidate)
+        if (cl < min || cl > max) continue
+        // Smallest nudge first (keeps the hue), then the luminance nearest the window's middle.
+        const score = dr * dr + dg * dg + db * db + Math.abs(cl - target)
+        if (score < bestScore) {
+          best = candidate
+          bestScore = score
+        }
+      }
+    }
+  }
+  return best
+}

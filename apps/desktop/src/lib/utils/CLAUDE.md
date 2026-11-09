@@ -37,8 +37,8 @@ exact CJK), `display-path.ts` (`displayPath`: a twin's pick and an S3 access key
 - **Two `color-mix()` safety nets must both stay**: the `@supports not` fallbacks in `app.css`, and the runtime JS mixes
   (`mixSrgb` / `withAlpha`) in `accent-color.ts` / `volume-tint.svelte.ts`. Safari < 16.2 (still on macOS 12) can't
   parse `color-mix()`, so ❌ never use it for accent-derived tokens.
-- **`readableFgOn` is mirrored in `scripts/check-a11y-contrast/accent_matrix.go`.** Keep both in sync, or the
-  design-time contrast checker tests a different fg than the app renders.
+- **`readableFgOn` and `textSelectionFill` are mirrored in `scripts/check-a11y-contrast/accent_matrix.go`.** Keep them
+  in sync, or the contrast check tests colors the app doesn't render.
 - **A debounce does NOT bound concurrency: use `createCoalesced`** when a repeated async call can outlast its own delay.
   Stacked calls once took the backend's whole blocking pool (image-index badge fetch) and froze the app. `cancel()` on
   teardown.

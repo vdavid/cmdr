@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { parseHex, toHex, mixSrgb, withAlpha, relativeLuminance, contrastRatio, readableFgOn } from './srgb-mix'
+import {
+  parseHex,
+  toHex,
+  mixSrgb,
+  withAlpha,
+  relativeLuminance,
+  contrastRatio,
+  readableFgOn,
+  textSelectionFill,
+} from './srgb-mix'
 
 describe('parseHex', () => {
   it('parses 6-digit hex', () => {
@@ -124,5 +133,51 @@ describe('readableFgOn', () => {
     expect(readableFgOn('#8b8c8c')).toBe('#000000')
     expect(readableFgOn('#f74f9f')).toBe('#000000')
     expect(readableFgOn('#ff5157')).toBe('#000000')
+  })
+})
+
+describe('textSelectionFill', () => {
+  // The eight macOS accents plus both Cmdr golds (`accent_matrix.go` lists the same).
+  const ACCENTS = [
+    '#d4a006',
+    '#ffc206',
+    '#087aff',
+    '#a54fa7',
+    '#f74f9f',
+    '#ff5157',
+    '#f6821b',
+    '#ffc601',
+    '#61bb46',
+    '#8b8c8c',
+  ]
+
+  it('clears 3:1 on the light field and 4.5:1 under its text for every accent', () => {
+    for (const accent of ACCENTS) {
+      const fill = textSelectionFill(accent, { field: '#ffffff', text: '#1a1a1a' })
+      expect(contrastRatio(fill, '#ffffff'), accent).toBeGreaterThanOrEqual(3)
+      expect(contrastRatio(fill, '#1a1a1a'), accent).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  // Light text on a dark field leaves a luminance window narrower than one 8-bit step of green,
+  // so the rounded hex has to be searched for, not just mixed.
+  it('fits the narrow dark-mode window for every accent', () => {
+    for (const accent of ACCENTS) {
+      const fill = textSelectionFill(accent, { field: '#1e1e1e', text: '#e8e8e8' })
+      expect(contrastRatio(fill, '#1e1e1e'), accent).toBeGreaterThanOrEqual(3)
+      expect(contrastRatio(fill, '#e8e8e8'), accent).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it('keeps the hue: a red accent gives a reddish fill', () => {
+    const { r, g, b } = parseHex(textSelectionFill('#ff5157', { field: '#ffffff', text: '#1a1a1a' }))
+    expect(r).toBeGreaterThan(g)
+    expect(r).toBeGreaterThan(b)
+  })
+
+  it('favors the text when no shade clears both', () => {
+    // Mid-gray text on a mid-gray field: nothing clears both, so the text keeps its 4.5:1.
+    const fill = textSelectionFill('#087aff', { field: '#777777', text: '#888888' })
+    expect(contrastRatio(fill, '#888888')).toBeGreaterThanOrEqual(4.5)
   })
 })

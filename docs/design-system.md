@@ -687,10 +687,12 @@ for `--color-error`; the caution state swaps both for `--color-warning`.
 Two conventions the fields establish app-wide, both global rules in `app.css`:
 
 - **Accent caret**: `caret-color: var(--color-accent)` on every `input` / `textarea`, including the Ark-rendered ones.
-- **Accent selection**: `::selection` fills with `--color-accent-selection` (the accent at 30%, heavier than
-  `--color-accent-subtle`, which is a surface tint) and keeps `--color-text-primary` on top. A selection a field must
-  show while unfocused (WebKit paints none there) is drawn in `--color-text-selection-inactive`, macOS's inactive gray
-  (`#dcdcdc` light, `#464646` dark), under `--color-text-primary`: the range editor's text box does this
+- **Accent selection**: `::selection` fills with `--color-accent-selection`, an opaque accent shade at 3:1 on
+  `--color-bg-primary` and 4.5:1 under `--color-text-primary`, which stays on top. `accent-color.ts` derives it per
+  accent (`srgb-mix.ts:textSelectionFill`), and the contrast check gates both ratios for every accent. In dark mode the
+  light text leaves almost no room, so the fill sits right at those minimums. A selection a field must show while
+  unfocused (WebKit paints none there) is drawn in `--color-text-selection-inactive`, macOS's inactive gray (`#dcdcdc`
+  light, `#464646` dark), under `--color-text-primary`: the range editor's text box does this
   (`lib/multi-rename/DETAILS.md` § Range editor).
 
 `Combobox` and `NumberInput` render Ark UI's own input, so they can't delegate to `TextInput` without losing Ark's

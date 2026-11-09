@@ -12,14 +12,15 @@ Depth and rationale for inline rename. `CLAUDE.md` holds the must-knows.
 - **RenameOverlay.svelte**: where the editor lives. The renamed row renders an empty slot (`.rename-slot` in Brief,
   `.col-rename` in Full, the box the name cells had) and registers it with the view; the view renders the overlay as the
   `.listbox-region`'s sibling inside its scroller (`position: relative`), absolutely placed over the slot in
-  scroll-content coordinates, so scrolling moves it for free. It re-measures on a resize of the slot or scroller, a DOM
-  change in the listbox (a diff shifting rows, the virtual window moving), and frame by frame only while a CSS
-  transition runs (Brief's column width, Full's grid columns, 300 ms). Decision/Why: inside the row the field was an
-  interactive child of an `option` (axe `nested-interactive`; VoiceOver may fold it into the option's flat string), and
-  between the rows it would be a non-option child of the listbox (`aria-required-children`). `{#key}` on the slot keeps
-  the editor's lifecycle what it was in the row: a chained step to the next row mounts a fresh editor (its
-  `openedForSession` and its focus-and-select), and a slot scrolled out of the window unmounts the field, which blurs
-  and discards.
+  scroll-content coordinates, so scrolling moves it for free. It reaches `FIELD_BLEED_PX` (3px) past the row above and
+  below: the 2px border otherwise left the text selection a sliver, and growing evenly keeps the text on the row. It
+  re-measures on a resize of the slot or scroller, a DOM change in the listbox (a diff shifting rows, the virtual window
+  moving), and frame by frame only while a CSS transition runs (Brief's column width, Full's grid columns, 300 ms).
+  Decision/Why: inside the row the field was an interactive child of an `option` (axe `nested-interactive`; VoiceOver
+  may fold it into the option's flat string), and between the rows it would be a non-option child of the listbox
+  (`aria-required-children`). `{#key}` on the slot keeps the editor's lifecycle what it was in the row: a chained step
+  to the next row mounts a fresh editor (its `openedForSession` and its focus-and-select), and a slot scrolled out of
+  the window unmounts the field, which blurs and discards.
 - **RenameConflictDialog.svelte**: side-by-side file comparison (size, modified) when a conflict is detected. Options:
   "Overwrite and trash old file" (`NSFileManager.trashItem`), "Overwrite and delete old file" (permanent), "Cancel",
   "Continue renaming". The two ways out sit in `ModalDialog`'s `footerLeading`, the two overwrites in its `footer` with
