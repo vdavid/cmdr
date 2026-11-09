@@ -55,6 +55,7 @@ fn manifest(id: &str) -> BundleManifest {
             full_disk_access_choice: "allow".to_string(),
             os_full_disk_access: true,
         },
+        triage_settings: std::collections::BTreeMap::new(),
         log_levels: LogLevelSnapshot {
             stdout_default: "info".to_string(),
             stdout_current: "info".to_string(),

@@ -1,6 +1,9 @@
 package main
 
-import "maps"
+import (
+	"maps"
+	"math"
+)
 
 // Accent matrix: the runtime value of `--color-accent` is overridden by
 // `apps/desktop/src/lib/accent-color.ts:applyAccentForCurrentSetting` to one
@@ -82,7 +85,7 @@ var accentSensitiveDeps = func() map[string]bool {
 	// here is belt-and-braces in case a token reference is added that
 	// doesn't go through the mix (for example, a future direct alias).
 	for _, name := range []string{
-		"color-accent-hover", "color-accent-subtle", "color-accent-text",
+		"color-accent-hover", "color-accent-subtle", "color-accent-text", "color-accent-selection",
 		"color-cursor-active", "color-cursor-inactive",
 		"color-age-fresh", "color-age-recent", "color-age-aging", "color-age-old",
 		"color-size-bytes", "color-size-kb", "color-size-mb", "color-size-gb", "color-size-tb",
@@ -159,8 +162,113 @@ func withAccentOverride(v *VarTable, variant AccentVariant) *VarTable {
 		} else {
 			bucket["color-accent-text"] = mixSrgbHex(accentHex, "#000000", 0.65)
 		}
+		field, okField := resolveVar(out, mode, "color-bg-primary")
+		text, okText := resolveVar(out, mode, "color-text-primary")
+		if okField && okText {
+			bucket["color-accent-selection"] = textSelectionFillHex(accentHex, field, text)
+		}
 	}
 	return out
+}
+
+// Mirrors `srgb-mix.ts:textSelectionFill`'s targets and margin; keep the two in sync.
+const (
+	selectionVsField = 3.0
+	selectionVsText  = 4.5
+	selectionMargin  = 0.0003
+)
+
+// textSelectionFillHex mirrors `srgb-mix.ts:textSelectionFill`: the accent shaded toward black or
+// white into the luminance window where it clears 3:1 on the field and 4.5:1 under the text, the
+// rounded hex searched for when the window is narrower than an 8-bit step. The text wins when no
+// shade clears both.
+func textSelectionFillHex(accentHex string, field, text RGBA) string {
+	accent, ok := ParseColor(accentHex)
+	if !ok {
+		return accentHex
+	}
+	lo, hi := selectionWindow(RelativeLuminance(field), RelativeLuminance(text))
+	target := (lo + hi) / 2
+	return nearestInWindowHex(shadeToLuminance(accent, target), lo, hi, target)
+}
+
+// selectionWindow is the luminance range a fill may take between the field and its text, or
+// only the text's side of it when the two bounds cross.
+func selectionWindow(field, text float64) (lo, hi float64) {
+	lightField := field >= text
+	fromField := selectionVsField*(field+0.05) - 0.05
+	fromText := (text+0.05)/selectionVsText - 0.05
+	if lightField {
+		fromField = (field+0.05)/selectionVsField - 0.05
+		fromText = selectionVsText*(text+0.05) - 0.05
+	}
+	reachable := fromField <= fromText
+	if lightField {
+		reachable = fromText <= fromField
+	}
+	lo, hi = min(fromField, fromText)+selectionMargin, max(fromField, fromText)-selectionMargin
+	if reachable && lo <= hi {
+		return lo, hi
+	}
+	if lightField {
+		return fromText + selectionMargin, 1
+	}
+	return 0, fromText - selectionMargin
+}
+
+// roundedLuminance is the luminance of `c` once rounded to the 8-bit hex the app writes.
+func roundedLuminance(c RGBA) float64 {
+	rounded, _ := ParseColor(c.Hex())
+	return RelativeLuminance(rounded)
+}
+
+// shadeToLuminance mixes `accent` toward black or white until its luminance is `target`.
+func shadeToLuminance(accent RGBA, target float64) RGBA {
+	end := 0.0
+	towardWhite := RelativeLuminance(accent) < target
+	if towardWhite {
+		end = 255
+	}
+	at := func(t float64) RGBA {
+		return RGBA{R: accent.R + (end-accent.R)*t, G: accent.G + (end-accent.G)*t, B: accent.B + (end-accent.B)*t, A: 1}
+	}
+	a, b := 0.0, 1.0
+	for range 40 {
+		mid := (a + b) / 2
+		l := roundedLuminance(at(mid))
+		if (towardWhite && l >= target) || (!towardWhite && l <= target) {
+			b = mid
+		} else {
+			a = mid
+		}
+	}
+	return at(b)
+}
+
+// nearestInWindowHex is the rounded color nearest `shaded` whose luminance is in `[lo, hi]`,
+// smallest nudge first, then closest to `target`.
+func nearestInWindowHex(shaded RGBA, lo, hi, target float64) string {
+	if l := roundedLuminance(shaded); l >= lo && l <= hi {
+		return shaded.Hex()
+	}
+	lum := roundedLuminance
+	best, bestScore := shaded.Hex(), math.Inf(1)
+	for dr := -3; dr <= 3; dr++ {
+		for dg := -3; dg <= 3; dg++ {
+			for db := -3; db <= 3; db++ {
+				candidate := RGBA{R: math.Round(shaded.R) + float64(dr), G: math.Round(shaded.G) + float64(dg), B: math.Round(shaded.B) + float64(db), A: 1}
+				l := lum(candidate)
+				if l < lo || l > hi {
+					continue
+				}
+				score := float64(dr*dr+dg*dg+db*db) + math.Abs(l-target)
+				if score < bestScore {
+					best, bestScore = candidate.Hex(), score
+				}
+			}
+		}
+	}
+	return best
 }
 
 // mixSrgbHex mirrors `srgb-mix.ts:mixSrgb`: linear sRGB interpolation,

@@ -52,6 +52,7 @@ pub(crate) mod bundle_capper;
 pub mod preview_file;
 mod state_history;
 mod tail_walker;
+mod triage_settings;
 
 #[cfg(test)]
 mod auto_dispatcher_tests;
@@ -347,6 +348,11 @@ pub struct BundleManifest {
     pub os_version: String,
     pub arch: String,
     pub active_settings: ResolvedSettings,
+    /// The hand-picked settings that change what Cmdr does (type-to-jump mode, conflict policy,
+    /// SMB direct connection, …), keyed by setting id, at their effective values. A short list on
+    /// purpose, ❌ never the heartbeat's whole config shape: see `triage_settings.rs`.
+    #[serde(default)]
+    pub triage_settings: std::collections::BTreeMap<String, serde_json::Value>,
     /// Effective log thresholds at bundle-build time. Lets a triager tell whether the
     /// absence of a debug line in the file means "didn't happen" or "filtered out."
     pub log_levels: LogLevelSnapshot,
@@ -753,6 +759,15 @@ pub mod settings_defaults {
         } else {
             None
         }
+    }
+
+    /// The default as JSON, whatever its shape, for a reader that ships the value as-is.
+    pub(super) fn lookup_json(key: &str) -> Option<serde_json::Value> {
+        Some(match get(key)? {
+            SettingValue::Bool(b) => serde_json::Value::Bool(b),
+            SettingValue::Integer(n) => serde_json::Value::from(n),
+            SettingValue::String(s) => serde_json::Value::String(s),
+        })
     }
 
     pub(super) fn lookup_u64(key: &str) -> Option<u64> {

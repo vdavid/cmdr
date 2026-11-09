@@ -24,8 +24,8 @@ Builds a redacted zip of recent logs plus a manifest for `POST /error-report`. F
   (`../logging/provenance.rs`), and both pipelines filter on that tag, continuations following their header. ❌ Never
   decide provenance from the target column: our short targets can equal a third-party crate's. DETAILS § "Only our own
   debug output ships".
-- **Never widen what we send.** No license keys, device IDs, raw paths, volume names, SMB creds, settings beyond the
-  resolved flags, or anything outside the log dir. `manifest.system` is the one PII-reviewed exception (sizes and
+- **Never widen what we send.** No license keys, device IDs, raw paths, volume names, SMB creds, settings off
+  `triage_settings.rs`'s list, or anything outside the log dir. `manifest.system` is the one PII-reviewed exception (sizes and
   coarse machine identity). Add nothing naming a drive, path, or person.
 - **Diagnostic state stays typed and process-local** (at most eight captures). Raw identities never enter logs or
   disk; bundle assembly transforms them with that report's context.

@@ -295,6 +295,8 @@ var rustTestScopeRules = []rustScopeRule{
 		Why: "the frontend-bridge redaction test embeds the shared case table (`redact/fe_bridge_tests.rs`)"},
 	{Glob: "apps/desktop/src/lib/logging/log-markers.json", Effect: scopeReaders, Readers: []string{"cmdr"},
 		Why: "the frontend-bridge redaction test embeds the marker vocabulary (`redact/fe_bridge_tests.rs`)"},
+	{Glob: "apps/desktop/src/lib/settings/types.ts", Effect: scopeReaders, Readers: []string{"cmdr"},
+		Why: "the error report's triage-settings test checks every listed key is a setting id (`error_reporter/triage_settings.rs`)"},
 	{Glob: "apps/desktop/src/lib/units/drive-figure-cases.json", Effect: scopeReaders, Readers: []string{"cmdr"},
 		Why: "the space poller's tests embed the shared drive-figure table (`space_poller/readout.rs`)"},
 	{Glob: "apps/desktop/src/lib/units/free-percent-cases.json", Effect: scopeReaders, Readers: []string{"cmdr"},

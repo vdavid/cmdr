@@ -124,6 +124,7 @@ pub async fn build_bundle<R: tauri::Runtime>(
         os_version: crate::platform::os_version(),
         arch: std::env::consts::ARCH.to_string(),
         active_settings: cached_active_settings(app),
+        triage_settings: super::triage_settings::current(app),
         log_levels: build_log_level_snapshot(),
         breadcrumbs: breadcrumbs::snapshot(),
         state_history: super::state_history::for_report(&redaction),

@@ -156,11 +156,13 @@
   ); /* Darkened accent for a11y when used as foreground text (≥4.5:1 on --color-bg-secondary) */
   --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
   --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
-  /* Text-selection fill inside text fields (see the global `::selection` rule
-     below). Heavier than `--color-accent-subtle`, which is a surface tint, so
-     selected characters read as selected while `--color-text-primary` on top
-     stays legible. */
-  --color-accent-selection: color-mix(in oklch, var(--color-accent), transparent 70%);
+  /* Text-selection fill inside text fields (the global `::selection` rule in
+     `app-field.css`): an opaque accent shade at 3:1 on `--color-bg-primary` and
+     4.5:1 under `--color-text-primary`. First paint only: `accent-color.ts`
+     writes the active accent's shade (`textSelectionFill`), and the contrast
+     check gates both ratios for every accent. This is Cmdr gold's (dark
+     override in the prefers-color-scheme block below). */
+  --color-accent-selection: #b08505;
   /* A text selection drawn while its field is unfocused: macOS's quiet inactive-selection gray,
      under `--color-text-primary` (dark override in the prefers-color-scheme block below). Used by
      the range editor's text box, whose selection matters with the box unfocused. */
@@ -785,6 +787,9 @@
     --color-bg-tertiary: #333333;
     /* Inactive text selection (see `:root`): macOS's dark unfocused-selection gray. */
     --color-text-selection-inactive: #464646;
+    /* Text-selection fill (see `:root`): Cmdr gold's dark shade. Light text on a dark field
+       leaves a narrow window, so it sits right at 3:1 and 4.5:1. */
+    --color-accent-selection: #836403;
     /* Checkerboard pair for dark mode: lifted off `--color-bg-primary` so the stage
        reads as a distinct surface, tile ~1.7:1 against base. */
     --color-checkerboard-base: #262626;

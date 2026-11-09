@@ -31,6 +31,13 @@
     /** Longer than the lists' own transitions (Brief's column width, Full's grid columns: 300 ms). */
     const TRANSITION_FOLLOW_MS = 400
 
+    /**
+     * How far the field reaches past its row, above and below. The field's 2px border eats a row
+     * height's worth of room, which left the text selection a sliver; growing evenly keeps the
+     * text on the row's baseline, and the overlay may cover the neighbors' edges.
+     */
+    const FIELD_BLEED_PX = 3
+
     interface Box {
         top: number
         left: number
@@ -57,10 +64,10 @@
             const a = slot.getBoundingClientRect()
             const s = host.getBoundingClientRect()
             const next: Box = {
-                top: a.top - s.top - host.clientTop + host.scrollTop,
+                top: a.top - s.top - host.clientTop + host.scrollTop - FIELD_BLEED_PX,
                 left: a.left - s.left - host.clientLeft + host.scrollLeft,
                 width: a.width,
-                height: a.height,
+                height: a.height + 2 * FIELD_BLEED_PX,
             }
             // Only a real move writes: the overlay's own style change must not feed the observers.
             if (sameBox(placed, next)) return
@@ -83,10 +90,14 @@
         }
 
         place()
-        const resizes = new ResizeObserver(schedule)
+        // A resize or a DOM change re-places right away, ❌ never through a frame: WebKit holds
+        // frames back from a window that isn't showing, so a column that got its measured width
+        // then (an editor opened at the provisional 260 px) kept the field at its old size for good.
+        // Both observers already report once per layout, so this reads no more often than a frame.
+        const resizes = new ResizeObserver(place)
         resizes.observe(slot)
         resizes.observe(host)
-        const mutations = new MutationObserver(schedule)
+        const mutations = new MutationObserver(place)
         mutations.observe(listbox, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] })
         listbox.addEventListener('transitionrun', followTransition)
         listbox.addEventListener('transitionend', schedule)

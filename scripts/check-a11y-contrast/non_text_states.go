@@ -20,9 +20,11 @@ type nonTextScenario struct {
 	MarkVar string
 	// Surfaces are the bg tokens the mark sits on.
 	Surfaces []string
-	// Gated looks are held to 3:1; Measured looks are only reported (a cue
+	// Gated looks are held to Threshold; Measured looks are only reported (a cue
 	// kept subtle there by design). A look in neither isn't painted.
 	Gated, Measured []rowContrastTier
+	// Threshold is the ratio a gated look must clear; 0 means the non-text 3:1.
+	Threshold float64
 }
 
 // fieldSurfaces are the backgrounds a text field sits on: the main window, a
@@ -64,6 +66,29 @@ var nonTextScenarios = []nonTextScenario{
 		Gated:    []rowContrastTier{tierDifferentiate},
 		Measured: []rowContrastTier{tierDefault},
 	},
+	// A text selection in a field (`::selection` in `app-field.css`). The page walker skips
+	// pseudo-elements, so both of its pairs live here: the fill against the field it's drawn in,
+	// and the field's text on top of it. Read-only fields (`--color-bg-secondary`) are measured
+	// only: in dark mode, light text leaves no shade that clears both there.
+	{
+		Selector: "text selection fill in a field",
+		MarkVar:  "color-accent-selection",
+		Surfaces: []string{"color-bg-primary"},
+		Gated:    []rowContrastTier{tierDefault, tierIncrease},
+	},
+	{
+		Selector: "text selection fill in a read-only field",
+		MarkVar:  "color-accent-selection",
+		Surfaces: []string{"color-bg-secondary"},
+		Measured: []rowContrastTier{tierDefault},
+	},
+	{
+		Selector:  "selected text in a field",
+		MarkVar:   "color-text-primary",
+		Surfaces:  []string{"color-accent-selection"},
+		Gated:     []rowContrastTier{tierDefault, tierIncrease},
+		Threshold: 4.5,
+	},
 	// The unfocused pane's band, at half the accent: faint on purpose.
 	{
 		Selector: "unfocused pane's tab accent band",
@@ -104,7 +129,11 @@ func (a *Analyzer) nonTextFindings(sc nonTextScenario, tier rowContrastTier) []F
 // failure, not a skip: a renamed token must not turn the gate green.
 func (a *Analyzer) worstNonText(base *VarTable, sc nonTextScenario, surface string, mode Mode, tier rowContrastTier) Finding {
 	selector := fmt.Sprintf("%s on %s%s", sc.Selector, surface, tierTag(tier))
-	worst := Finding{File: syntheticNonTextPath(), Selector: selector, Mode: mode, Threshold: 3.0, Ratio: -1}
+	threshold := sc.Threshold
+	if threshold == 0 {
+		threshold = 3.0
+	}
+	worst := Finding{File: syntheticNonTextPath(), Selector: selector, Mode: mode, Threshold: threshold, Ratio: -1}
 	for _, accent := range AccentVariants {
 		vars := base
 		if !accent.IsDefault {

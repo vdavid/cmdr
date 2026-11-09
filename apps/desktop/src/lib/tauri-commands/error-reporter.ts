@@ -29,6 +29,8 @@ export interface BundleManifest {
   osVersion: string
   arch: string
   activeSettings: ActiveSettingsSnapshot
+  /** Hand-picked behavior settings by id, at their effective values (`error_reporter/triage_settings.rs`). */
+  triageSettings: Record<string, boolean | number | string>
   breadcrumbs: Array<{ at: string; event: BreadcrumbEvent }>
   userNote?: string
   /** The `diag_<uuid>` diagnostics id. Never the `anal_` analytics id. */

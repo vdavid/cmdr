@@ -4,7 +4,7 @@
     import { dependOn } from '#lib/utils/reactivity.js'
     import type { RenameSessionId } from './rename-state.svelte'
     import { renameStepDirection, type RenameStepDirection } from './rename-step'
-    import { nextRenameSelection, renameSelectionStages, wordStopSelection } from './rename-selection'
+    import { nextRenameSelection, renameSelectionStages, stageDirection, wordStopSelection } from './rename-selection'
     import type { NameKind } from '#lib/utils/file-extension.js'
     import {
         attachStartedElsewhereGuard,
@@ -89,14 +89,14 @@
         if (!inputElement) return
         inputElement.focus()
         const first = renameSelectionStages(value, nameKind).at(0) ?? { start: 0, end: 0 }
-        inputElement.setSelectionRange(first.start, first.end)
+        inputElement.setSelectionRange(first.start, first.end, stageDirection(first))
     }
 
     /** `file.rename` pressed again: step the selection through name, whole name, extension. */
     function cycleSelection(input: HTMLInputElement) {
         const current = { start: input.selectionStart ?? 0, end: input.selectionEnd ?? 0 }
         const next = nextRenameSelection(input.value, nameKind, current)
-        input.setSelectionRange(next.start, next.end)
+        input.setSelectionRange(next.start, next.end, stageDirection(next))
     }
 
     /**

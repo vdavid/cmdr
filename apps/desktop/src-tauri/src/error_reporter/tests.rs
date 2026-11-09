@@ -42,6 +42,7 @@ fn sample_manifest() -> BundleManifest {
             full_disk_access_choice: "unanswered".to_string(),
             os_full_disk_access: false,
         },
+        triage_settings: BTreeMap::new(),
         log_levels: LogLevelSnapshot {
             stdout_default: "info".to_string(),
             stdout_current: "info".to_string(),

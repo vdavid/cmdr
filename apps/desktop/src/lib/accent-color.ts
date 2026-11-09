@@ -17,7 +17,7 @@ import { getAccentColor, onAccentColorChanged } from '#lib/tauri-commands/index.
 import { getAppLogger } from '#lib/logging/logger.js'
 import { clearDirectoryIconCache } from '#lib/icon-cache.js'
 import { getSetting, onSpecificSettingChange } from '#lib/settings/index.js'
-import { mixSrgb, readableFgOn, withAlpha } from '#lib/utils/srgb-mix.js'
+import { mixSrgb, readableFgOn, textSelectionFill, withAlpha } from '#lib/utils/srgb-mix.js'
 
 const log = getAppLogger('accent-color')
 
@@ -100,6 +100,24 @@ function applyDerivedAccentTokens(): void {
   //     leaving the already-bright accents readable. Stays gold-ish
   //     for gold, paler-but-still-purple for purple, etc.
   root.setProperty('--color-accent-text', dark ? mixSrgb(accent, '#ffffff', 0.45) : mixSrgb(accent, '#000000', 0.65))
+  // Text selection in fields: an opaque accent shade at 3:1 on the field and 4.5:1 under its text.
+  root.setProperty('--color-accent-selection', textSelectionFill(accent, fieldColors(dark)))
+}
+
+/** `--color-bg-primary` / `--color-text-primary` per scheme. Must mirror `app.css`. */
+const FIELD_COLORS = {
+  light: { field: '#ffffff', text: '#1a1a1a' },
+  dark: { field: '#1e1e1e', text: '#e8e8e8' },
+}
+
+/** The field and text colors a text selection sits between: what `app.css` resolves to now. */
+function fieldColors(dark: boolean): { field: string; text: string } {
+  const fallback = dark ? FIELD_COLORS.dark : FIELD_COLORS.light
+  const css = getComputedStyle(document.documentElement)
+  const field = css.getPropertyValue('--color-bg-primary').trim()
+  const text = css.getPropertyValue('--color-text-primary').trim()
+  const isHex = (v: string) => /^#[0-9a-f]{6}$/i.test(v)
+  return { field: isHex(field) ? field : fallback.field, text: isHex(text) ? text : fallback.text }
 }
 
 function applyAccentForCurrentSetting(): void {
