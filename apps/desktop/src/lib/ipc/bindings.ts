@@ -19374,7 +19374,7 @@ export type SkipBreakdown = {
  *
  *  WHICH variant is stored is reporting fidelity only: no variant may change
  *  whether an item is skipped, retried, or forced. That a reason is stored at all
- *  is load-bearing: it tells a row a rollback held back (which "Finish" retries)
+ *  is load-bearing: it tells a row a rollback held back (which "Roll back the rest" retries)
  *  from the operation's own skip (`RollbackUnit::awaits_reversal`).
  */
 export type SkipReason =

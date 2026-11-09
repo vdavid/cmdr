@@ -53,6 +53,7 @@ mod interrupted;
 mod recording;
 mod rt;
 mod tree;
+mod tree_backfill;
 
 pub use handle::{OpJournal, OpenError, OperationLog};
 

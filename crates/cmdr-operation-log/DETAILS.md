@@ -1185,9 +1185,11 @@ subtree totals in `operation_tree_dirs`, kept exact by the writer.
   `read_tree_summary_status` answers `IndexesBuilding` (below), `Built`, `Unbuilt(OperationRunning | RollingBack)` (a
   backfill can't start: inserts don't bump the generation, and a rollback would make it restart on every batch),
   `Building(progress)` from the `BackfillRegistry`, or `Unbuilt(NotBuilt)`.
-- **The backfill** (`src/tree/backfill.rs`, writer half `src/writer/backfill.rs`): on demand, the first time someone
+- **The backfill** (`src/tree_backfill.rs`, writer half `src/writer/backfill.rs`): on demand, the first time someone
   opens an unbuilt op's tree. Decision/Why on demand: only ops someone opens pay, and a whole-journal background pass
-  stays a later option.
+  stays a later option. Decision/Why outside `tree/`: it drives the writer, and the writer builds on `tree/`, so inside
+  it the two would depend on each other in a circle (`module-cycles`). The same layering keeps the planner's inverse
+  table (`src/rollback/action_table.rs`) and the tree's wire types (`src/tree/wire.rs`) in leaves of their own.
   - **A chunk loop the host drives.** `TreeBackfill::start(&log, op_id)` answers `TreeBackfillStart` (`Started` with the
     job, `Joined`, `Built`, `Unbuilt(reason)`, `UnknownOperation`); each `step()` reads one `seq` chunk (4,096 rows) on
     the job's own read connection into an in-memory per-folder delta and answers `Progress { done, total }`, until
@@ -1244,7 +1246,7 @@ subtree totals in `operation_tree_dirs`, kept exact by the writer.
   table for every row an `OFFSET` skips. The middle of a 1M-file folder took 800 ms that way and takes 15 ms index-only
   (release, Apple Silicon, `src/tree/scale_tests.rs`, 2026-11-07).
 
-## The tree view (`src/tree/view.rs`, `layout.rs`, `read.rs`, `selection.rs`)
+## The tree view (`src/tree/view.rs`, `wire.rs`, `layout.rs`, `read.rs`, `selection.rs`)
 
 `query::operation_tree(conn, op_id, request, registry)` answers one window (≤ 200 rows) of an op's item tree,
 statelessly: the request carries the frontend's hand toggles (expanded folder keys, the selection, the cursor key) and

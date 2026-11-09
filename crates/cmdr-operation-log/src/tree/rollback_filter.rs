@@ -17,8 +17,26 @@ use rusqlite::Connection;
 use super::read::{DirCache, OpReader};
 use super::selection::{Picked, RollbackSelection, Selection, SelectionBase};
 use super::summary::{OpTreeContext, RowFacts, read_op_tree_context};
-use crate::rollback::SelectionRefusal;
 use crate::store::{OperationItemRow, OperationLogStoreError};
+
+// Defined here, where it's decided, and public as `rollback::SelectionRefusal`, beside
+// the refusal that carries it.
+/// Why a rollback refuses the selection it was sent. The dialog keeps its button off
+/// at "0 of M" and refuses toggles past the cap itself, so each of these is a backstop.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+#[allow(
+    missing_docs,
+    reason = "a wire type: every `///` here reaches `bindings.ts` as JSDoc, so its fields and variants stay as they ship"
+)]
+pub enum SelectionRefusal {
+    /// It takes no unit that still awaits reversal ("0 of M").
+    NothingSelected,
+    /// The op's tree summary isn't built yet, and a selection is decided off it.
+    SummaryNotBuilt,
+    /// It holds more hand toggles than a selection may.
+    TooManyToggles,
+}
 
 /// What a wire selection comes to for one op.
 pub(crate) enum Narrowed {

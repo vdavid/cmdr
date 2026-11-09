@@ -23,10 +23,12 @@ use std::sync::Arc;
 
 use rusqlite::Connection;
 
-use super::status::{BackfillProgress, BackfillRegistry, Claim, UnbuiltReason};
-use super::summary::{AGGREGATE_CHUNK, OpTreeContext, RowFacts, TreeDelta, read_facts_after, read_op_tree_context};
 use crate::OperationLog;
 use crate::store::{OperationLogStoreError, open_read_connection};
+use crate::tree::status::{BackfillProgress, BackfillRegistry, Claim, UnbuiltReason};
+use crate::tree::summary::{
+    AGGREGATE_CHUNK, OpTreeContext, RowFacts, TreeDelta, read_facts_after, read_op_tree_context,
+};
 use crate::types::{EntryType, RollbackState};
 use crate::writer::{OperationLogWriter, TreeSummaryWrite};
 

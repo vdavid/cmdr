@@ -9,9 +9,11 @@ disposable cache. Tauri-free; the app hosts it in `apps/desktop/src-tauri/src/op
 `handle.rs` (`OperationLog`: journal slot, writer, the `recording.rs` gate; `OpJournal`; at open, the rollback
 reconcile, then `interrupted.rs` ends every op a crash left running), `store/` (the DB, the migration ladder),
 `writer.rs` (+ `writer/prune.rs`), `capture.rs`, `types.rs` (typed tokens), `query.rs`, `retention.rs`, `rollback.rs` (+
-`gate.rs`, `inverse.rs`, `order.rs`, `skips.rs`, `runner.rs`, `self_collision.rs`, `tags.rs`: the PLANNER; its executor
-is `crates/cmdr-operations/src/rollback.rs`), `tree.rs` (+ `tree/`: the item tree's axis, roles, per-folder summary, its
-backfill, windowed view, and THE selection resolver; writer halves in `src/writer/tree_summary.rs`, `backfill.rs`).
+`gate.rs`, `inverse.rs`, `order.rs`, `skips.rs`, `runner.rs`, `self_collision.rs`, `tags.rs`, plus the leaves
+`action_table.rs` and `target.rs`: the PLANNER; its executor is `crates/cmdr-operations/src/rollback.rs`), `tree.rs` (+
+`tree/`: the item tree's axis, roles, per-folder summary, windowed view, and THE selection resolver), `tree_backfill.rs`
+(the summary backfill, outside `tree/` because it drives the writer); writer halves in `src/writer/tree_summary.rs`,
+`backfill.rs`.
 
 ## Must-knows
 

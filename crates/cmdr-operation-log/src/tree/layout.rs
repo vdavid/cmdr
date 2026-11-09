@@ -24,7 +24,7 @@ use super::TreeAxis;
 use super::read::{FileRow, OpReader};
 use super::selection::Selection;
 use super::summary::TreeDirRow;
-use super::view::{OperationTreeRow, TreeCheckbox, TreeRowKey, TreeTally};
+use super::wire::{OperationTreeRow, TreeCheckbox, TreeRowKey, TreeTally};
 use crate::store::{OperationLogStoreError, OperationRow, fold_name};
 use crate::types::{EntryType, ItemOutcome, OpKind, SearchCoverage, SearchCoverageReason, SkipReason};
 

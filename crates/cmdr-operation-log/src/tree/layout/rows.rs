@@ -6,7 +6,7 @@
 use super::super::read::{FileRow, OpReader, join_path};
 use super::super::selection::{Selection, owns_contents};
 use super::super::summary::{RowFacts, TreeDirRow};
-use super::super::view::{self, OperationTreeRow, TreeCheckbox, TreeRowKey, TreeTally, UnexpandableReason};
+use super::super::wire::{self, OperationTreeRow, TreeCheckbox, TreeRowKey, TreeTally, UnexpandableReason};
 use super::super::{TreeAxis, UnitRole};
 use super::{Governor, Layout, Top, count, only_child_compacts, size_of};
 use crate::store::OperationLogStoreError;
@@ -120,15 +120,15 @@ impl Layout {
             None => None,
         };
         let row = OperationTreeRow {
-            index: view::clamp_u32(index),
+            index: wire::clamp_u32(index),
             key: TreeRowKey::Folder { dir_id: dir },
             label,
             level,
             entry_type: EntryType::Dir,
             expandable: listing > 0,
             expanded: self.rows_under.contains_key(&dir),
-            pos_in_set: view::clamp_u32(pos + 1),
-            set_size: view::clamp_u32(set_size),
+            pos_in_set: wire::clamp_u32(pos + 1),
+            set_size: wire::clamp_u32(set_size),
             role: role.map(Into::into),
             outcome,
             skip_reason,
@@ -176,15 +176,15 @@ impl Layout {
             skip_reason = g.skip_reason;
         }
         Ok(OperationTreeRow {
-            index: view::clamp_u32(index),
+            index: wire::clamp_u32(index),
             key: TreeRowKey::Item { seq: facts.seq },
             label: name,
             level,
             entry_type: EntryType::File,
             expandable: false,
             expanded: false,
-            pos_in_set: view::clamp_u32(pos + 1),
-            set_size: view::clamp_u32(set_size),
+            pos_in_set: wire::clamp_u32(pos + 1),
+            set_size: wire::clamp_u32(set_size),
             role: Some(role.into()),
             outcome: Some(outcome),
             skip_reason,

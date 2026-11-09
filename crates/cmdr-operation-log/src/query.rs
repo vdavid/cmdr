@@ -44,10 +44,8 @@ use super::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, R
 // The item tree: its summary status and backfill, which the hosts drive and wire, and
 // its windowed view with the rollback selection (`crate::tree`, `DETAILS.md` § "Tree
 // summary" and § "The tree view").
-pub use super::tree::backfill::{
-    TreeBackfill, TreeBackfillEnd, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep,
-};
 pub use super::tree::status::{BackfillProgress, BackfillRegistry, UnbuiltReason};
+pub use super::tree_backfill::{TreeBackfill, TreeBackfillEnd, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep};
 
 pub use crate::tree::selection::{RollbackSelection, SelectionBase, SelectionToggle};
 pub use crate::tree::view::{

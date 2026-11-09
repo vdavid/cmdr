@@ -1,4 +1,4 @@
-//! The writer's half of a tree-summary backfill (`crate::tree::backfill`): the two
+//! The writer's half of a tree-summary backfill (`crate::tree_backfill`): the two
 //! writes a backfill can't make on its read connection. The aggregation itself never
 //! runs here: a 2M-row read on this thread would block `record_items` and, through
 //! backpressure, a running copy.
@@ -91,7 +91,7 @@ pub(crate) enum TreeSummaryWrite {
 /// summary isn't built: a built summary placed such a row in its parent, and moving
 /// it now would make the writer's later deltas disagree with it. A row whose folder
 /// doesn't intern keeps none, and the backfill then leaves the op unbuilt
-/// (`tree::backfill`), as the writer's insert path does.
+/// (`crate::tree_backfill`), as the writer's insert path does.
 fn fill_self_dirs(conn: &mut Connection, op_id: &str, seqs: &[i64]) -> Result<(), OperationLogStoreError> {
     let tx = conn.unchecked_transaction()?;
     let Some(context) = read_op_tree_context(&tx, op_id)? else {

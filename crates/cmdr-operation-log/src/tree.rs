@@ -8,17 +8,18 @@
 //!   writer's transactions, and the from-scratch aggregate they must always equal.
 //! - `status`: whether an op's summary is built, and the backfill registry the tree
 //!   view asks about one that isn't.
-//! - `backfill`: building the summary of an op journaled before it existed, as a
-//!   chunk loop the host drives.
-//! - `view` (+ `layout`, `read`): one window of an op's tree, read off the summary
-//!   and the item indexes; `selection`: the rollback selection, normalized and
-//!   counted, and THE per-row decision the engine shares.
+//! - `view` (+ `layout`, `read`, `wire`): one window of an op's tree, read off the
+//!   summary and the item indexes; `selection`: the rollback selection, normalized
+//!   and counted, and THE per-row decision the engine shares.
+//!
+//! The backfill (building the summary of an op journaled before it existed) is
+//! `crate::tree_backfill`, outside this module: it drives the writer, and the writer
+//! builds on this module, so keeping it here would weld the two together.
 
-use crate::rollback::has_inverse;
+use crate::rollback::action_table::has_inverse;
 use crate::store::awaits_reversal;
 use crate::types::{EntryType, ItemOutcome, OpKind, RowRole, SkipReason};
 
-pub(crate) mod backfill;
 pub(crate) mod status;
 pub(crate) mod summary;
 
@@ -27,6 +28,7 @@ pub(crate) mod read;
 pub(crate) mod rollback_filter;
 pub(crate) mod selection;
 pub(crate) mod view;
+mod wire;
 
 #[cfg(test)]
 mod backfill_tests;

@@ -4,10 +4,10 @@
 
 use std::sync::Arc;
 
-use super::backfill::{TreeBackfill, TreeBackfillEnd, TreeBackfillStart, TreeBackfillStep};
 use super::status::{BackfillProgress, BackfillRegistry, UnbuiltReason};
 use super::summary::{TreeDirRow, read_op_tree_context, read_tree_dirs};
 use super::test_support::{Journal, created_dir, item, journal};
+use crate::tree_backfill::{TreeBackfill, TreeBackfillEnd, TreeBackfillStart, TreeBackfillStep};
 use crate::types::{EntryType, ItemOutcome, OpKind, RollbackState, RowRole, SkipReason};
 use crate::writer::{JournalItem, PruneRequest};
 
