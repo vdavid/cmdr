@@ -3,8 +3,8 @@
 Image-ML enrichment: makes a volume's images searchable by their content. This doc covers what's SUBSYSTEM-WIDE (the
 numbered decision log, the port rationale, the GC safety argument, the coverage/scope model) plus the top-level files no
 area subdir owns; each area documents itself. What's still unbuilt is in GitHub issues: faces
-[#223](https://github.com/vdavid/cmdr/issues/223) and [#224](https://github.com/vdavid/cmdr/issues/224), captions
-[#225](https://github.com/vdavid/cmdr/issues/225).
+[#223](https://github.com/getcmdr/cmdr/issues/223) and [#224](https://github.com/getcmdr/cmdr/issues/224), captions
+[#225](https://github.com/getcmdr/cmdr/issues/225).
 
 Read this before any non-trivial work here: editing, planning, reorganizing, or advising.
 
@@ -84,7 +84,7 @@ on `file_id` (`store/DETAILS.md`), and the staleness key is `(path, mtime, size)
 Everything the models compute (OCR text, tags, embeddings, detections, computed clusters) is disposable and lives in
 `media.db`. Human work (face names and merge/split/"not this person" corrections, once faces exist) must survive a
 `media.db` wipe, so it goes in a SEPARATE durable store. That store and its conservative re-attach rules are unbuilt;
-their design is in [#224](https://github.com/vdavid/cmdr/issues/224).
+their design is in [#224](https://github.com/getcmdr/cmdr/issues/224).
 
 - **The compatibility key is an enrichment-provenance stamp, not a bare model id:**
   `{model id + version, Core ML / OS version, tag-taxonomy version}`. A `.mlmodelc` recompiles per OS version and Neural
@@ -148,7 +148,7 @@ zip-slip guard, SHA-256 verification BEFORE unpacking, and a gate distinct from 
 ### Decision 10: the cloud sees image-derived text only through the agent's consent gate
 
 Everything runs on-device by default. The one planned cloud path (optional LLM captions) goes through the shipped
-`agent/` stack behind its own explicit egress consent ([#225](https://github.com/vdavid/cmdr/issues/225)).
+`agent/` stack behind its own explicit egress consent ([#225](https://github.com/getcmdr/cmdr/issues/225)).
 
 - **Image-derived text is sensitive content, not metadata:** a passport scan's OCR snippet IS the passport number. So
   the photo-search agent and MCP tools return a text-only DTO that structurally can't carry image bytes (enforced by a
@@ -728,8 +728,8 @@ than code):
 
 ❗ `media_index Decision N` (and a bare `Decision N` inside `media_index/`) is a different scheme: § "Key decisions"
 above. A spelled-out `M4a` / `M4b` means faces and `M5` means LLM captions, both open (faces
-[#223](https://github.com/vdavid/cmdr/issues/223) and [#224](https://github.com/vdavid/cmdr/issues/224), captions
-[#225](https://github.com/vdavid/cmdr/issues/225)).
+[#223](https://github.com/getcmdr/cmdr/issues/223) and [#224](https://github.com/getcmdr/cmdr/issues/224), captions
+[#225](https://github.com/getcmdr/cmdr/issues/225)).
 
 The durable account of everything those milestones built is this file and the `CLAUDE.md` / `DETAILS.md` pairs beneath
 it; neither wiped plan is needed to understand any of it. ❌ Don't add a new bare `plan M<n>` comment: name the thing
@@ -750,7 +750,7 @@ listener. Fine at a few-volumes scale, but it scales per mounted volume — note
   the text tower stays fp (~184 MB; its 8-bit inference NaNs). Down from ~392 MB non-palettized. Numbers:
   `clip/install.rs`.
 - **Later:** faces (detect/embed/cluster/name), the durable identity store, LLM captions, and MTP on-demand enrichment:
-  [#223](https://github.com/vdavid/cmdr/issues/223) to [#226](https://github.com/vdavid/cmdr/issues/226).
+  [#223](https://github.com/getcmdr/cmdr/issues/223) to [#226](https://github.com/getcmdr/cmdr/issues/226).
 
 ## Testing
 

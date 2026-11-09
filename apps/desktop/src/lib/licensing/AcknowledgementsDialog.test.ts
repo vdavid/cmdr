@@ -39,7 +39,7 @@ vi.mock('./load-third-party-packages', () => ({
   ),
 }))
 
-const NOTICES_URL = 'https://github.com/vdavid/cmdr/blob/main/THIRD-PARTY-NOTICES.md'
+const NOTICES_URL = 'https://github.com/getcmdr/cmdr/blob/main/THIRD-PARTY-NOTICES.md'
 
 /**
  * Mounts the dialog and waits for the dynamic package-list import to resolve.

@@ -5,12 +5,12 @@
 // line. Best-effort: any failure (rate limit, network, timeout) yields `null`, and callers drop the
 // number rather than show a wrong one.
 
-export const GITHUB_REPO_URL = 'https://github.com/vdavid/cmdr'
+export const GITHUB_REPO_URL = 'https://github.com/getcmdr/cmdr'
 
 /** Stars Homebrew wants before it accepts a developer's own cask into the main catalog. */
 export const HOMEBREW_STAR_GOAL = 225
 
-const API_URL = 'https://api.github.com/repos/vdavid/cmdr'
+const API_URL = 'https://api.github.com/repos/getcmdr/cmdr'
 const TIMEOUT_MS = 5_000
 
 let cached: Promise<number | null> | null = null

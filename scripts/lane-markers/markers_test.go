@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	repo   = "vdavid/cmdr"
+	repo   = "getcmdr/cmdr"
 	prRef  = "refs/pull/12/merge"
 	main_  = "refs/heads/main"
 	hashA  = "aaaa"

@@ -362,7 +362,7 @@ func (r *registryReleaseTimes) getJSON(target string, into any) bool {
 		return false
 	}
 	// crates.io refuses requests without a User-Agent that names who's asking.
-	req.Header.Set("User-Agent", "cmdr-check-runner (https://github.com/vdavid/cmdr)")
+	req.Header.Set("User-Agent", "cmdr-check-runner (https://github.com/getcmdr/cmdr)")
 	resp, err := r.client.Do(req)
 	if err != nil || resp == nil {
 		return false

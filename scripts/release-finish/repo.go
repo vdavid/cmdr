@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// The repo's name isn't pinned: it's `vdavid/cmdr` today and may become `getcmdr/cmdr` (#476).
+// The repo's name isn't pinned: the repo moved from `vdavid/cmdr` to `getcmdr/cmdr` (#476).
 // `gh repo view` answers with GitHub's current name even through a remote that still names the
 // old one, so the first release after a move needs no code change here.
 

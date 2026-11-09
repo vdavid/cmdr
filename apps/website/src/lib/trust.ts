@@ -343,13 +343,13 @@ export const complianceBadges: ComplianceBadge[] = [
     name: 'OpenChain ISO/IEC 5230',
     qualifier: 'Self-certified: open source license compliance',
     image: '/images/badges/openchain-iso-iec-5230.webp',
-    href: 'https://github.com/vdavid/cmdr/blob/main/docs/open-source-policy.md',
+    href: 'https://github.com/getcmdr/cmdr/blob/main/docs/open-source-policy.md',
   },
   {
     name: 'OpenChain ISO/IEC 18974',
     qualifier: 'Self-certified: open source security assurance',
     image: '/images/badges/openchain-iso-iec-18974.webp',
-    href: 'https://github.com/vdavid/cmdr/blob/main/docs/open-source-policy.md',
+    href: 'https://github.com/getcmdr/cmdr/blob/main/docs/open-source-policy.md',
   },
 ]
 
@@ -376,7 +376,7 @@ export const trustDocuments: TrustDocument[] = [
     name: 'Threat model',
     detail: 'What Cmdr protects, from whom, and the risks that remain',
     action: 'Read it',
-    href: 'https://github.com/vdavid/cmdr/blob/main/docs/threat-model.md',
+    href: 'https://github.com/getcmdr/cmdr/blob/main/docs/threat-model.md',
   },
   {
     name: 'Subprocessors',
@@ -394,19 +394,19 @@ export const trustDocuments: TrustDocument[] = [
     name: 'Vulnerability disclosure policy',
     detail: 'Reports are acknowledged within five business days',
     action: 'Read it',
-    href: 'https://github.com/vdavid/cmdr/blob/main/SECURITY.md',
+    href: 'https://github.com/getcmdr/cmdr/blob/main/SECURITY.md',
   },
   {
     name: 'Open source policy',
     detail: 'How Cmdr meets its open source licenses and keeps components free of known vulnerabilities',
     action: 'Read it',
-    href: 'https://github.com/vdavid/cmdr/blob/main/docs/open-source-policy.md',
+    href: 'https://github.com/getcmdr/cmdr/blob/main/docs/open-source-policy.md',
   },
   {
     name: 'SBOMs and build provenance',
     detail: 'Signed, attached to every release',
     action: 'See them',
-    href: 'https://github.com/vdavid/cmdr/releases/latest',
+    href: 'https://github.com/getcmdr/cmdr/releases/latest',
   },
   {
     name: 'Accessibility conformance report',

@@ -168,7 +168,7 @@ class ChangelogRefLinkTest : BasePlatformTestCase() {
             .filter { it.forcedTextAttributesKey == ChangelogRefAnnotator.HYPERLINK }
             .map { text.substring(it.startOffset, it.endOffset) }
 
-    private fun commitUrl(hash: String) = "https://github.com/vdavid/cmdr/commit/$hash"
+    private fun commitUrl(hash: String) = "https://github.com/getcmdr/cmdr/commit/$hash"
 
     /** Stands in for the IDE's browser so the assertion is "we asked for this URL", with nothing actually opening. */
     private class RecordingBrowserLauncher : BrowserLauncher() {

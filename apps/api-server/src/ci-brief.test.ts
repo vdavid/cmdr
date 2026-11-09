@@ -61,7 +61,7 @@ function fakeGitHub(lands: FakeLand[], options: { cacheBytes?: number; down?: bo
   fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
     const url = new URL(input as string)
     if (options.down) return Promise.resolve(new Response('{}', { status: 503 }))
-    if (url.pathname === '/repos/vdavid/cmdr/pulls') {
+    if (url.pathname === '/repos/getcmdr/cmdr/pulls') {
       return Promise.resolve(
         Response.json([
           ...lands.map((land) => ({ merged_at: minutesAgo(land.mergedMinutesAgo), head: { sha: land.sha } })),
@@ -69,7 +69,7 @@ function fakeGitHub(lands: FakeLand[], options: { cacheBytes?: number; down?: bo
         ]),
       )
     }
-    if (url.pathname === '/repos/vdavid/cmdr/actions/workflows/ci.yml/runs') {
+    if (url.pathname === '/repos/getcmdr/cmdr/actions/workflows/ci.yml/runs') {
       const land = lands.find((candidate) => candidate.sha === url.searchParams.get('head_sha'))
       return Promise.resolve(Response.json({ workflow_runs: land?.runs.map((entry) => entry.run) ?? [] }))
     }
@@ -78,7 +78,7 @@ function fakeGitHub(lands: FakeLand[], options: { cacheBytes?: number; down?: bo
       const entry = lands.flatMap((land) => land.runs).find((candidate) => candidate.run.id === Number(jobs[1]))
       return Promise.resolve(Response.json({ jobs: entry?.jobs ?? [] }))
     }
-    if (url.pathname === '/repos/vdavid/cmdr/actions/cache/usage') {
+    if (url.pathname === '/repos/getcmdr/cmdr/actions/cache/usage') {
       return Promise.resolve(Response.json({ active_caches_size_in_bytes: options.cacheBytes ?? 0 }))
     }
     return Promise.resolve(new Response('unexpected', { status: 418 }))
@@ -88,7 +88,7 @@ function fakeGitHub(lands: FakeLand[], options: { cacheBytes?: number; down?: bo
 let db: SqliteD1
 
 function env(overrides: Partial<Bindings> = {}): Bindings {
-  return { TELEMETRY_DB: db.d1, CI_HEALTH_REPO: 'vdavid/cmdr', ...overrides } as Bindings
+  return { TELEMETRY_DB: db.d1, CI_HEALTH_REPO: 'getcmdr/cmdr', ...overrides } as Bindings
 }
 
 function saveState(signal: string, state: string) {

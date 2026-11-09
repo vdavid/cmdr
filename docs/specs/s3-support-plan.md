@@ -1,8 +1,8 @@
 # S3 support: any S3-compatible bucket as a volume
 
-Tracks [#119](https://github.com/vdavid/cmdr/issues/119). Why: people keep files in AWS S3, Cloudflare R2, Backblaze B2,
-Wasabi, and Hetzner Object Storage, and today Cmdr can't reach any of them. This adds `crates/cmdr-s3`, one backend for
-every S3-compatible service, on the rails SFTP and WebDAV laid down (account → place → pin, the sign-in sheet, the
+Tracks [#119](https://github.com/getcmdr/cmdr/issues/119). Why: people keep files in AWS S3, Cloudflare R2, Backblaze
+B2, Wasabi, and Hetzner Object Storage, and today Cmdr can't reach any of them. This adds `crates/cmdr-s3`, one backend
+for every S3-compatible service, on the rails SFTP and WebDAV laid down (account → place → pin, the sign-in sheet, the
 reconnect cycle, the transfer engine, the conformance cells).
 
 Evidence this plan stands on, read before touching the matching milestone:

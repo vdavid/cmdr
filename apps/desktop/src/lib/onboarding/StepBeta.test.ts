@@ -289,7 +289,7 @@ describe('StepBeta', () => {
   it('renders the checklist: the two link rows, their reasons, and the email field', async () => {
     mounted = mountStep()
     await waitForAsync()
-    const star = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/vdavid/cmdr"]')
+    const star = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/getcmdr/cmdr"]')
     expect(star?.textContent).toContain('Star the repo on GitHub')
     const like = mounted.target.querySelector<HTMLAnchorElement>(
       'a[href="https://alternativeto.net/software/cmdr/about/"]',
@@ -312,7 +312,7 @@ describe('StepBeta', () => {
     try {
       mounted = mountStep()
       await waitForAsync()
-      const star = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/vdavid/cmdr"]')
+      const star = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/getcmdr/cmdr"]')
       const box = getChecklistCheckbox(mounted.target, 'Star the repo on GitHub')
       expect(box.checked).toBe(false)
       star?.click()
@@ -333,7 +333,7 @@ describe('StepBeta', () => {
       openExternalUrlMock.mockRejectedValue(new Error('no default browser'))
       mounted = mountStep()
       await waitForAsync()
-      mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/vdavid/cmdr"]')?.click()
+      mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/getcmdr/cmdr"]')?.click()
       await waitForAsync()
       vi.advanceTimersByTime(3_000)
       flushSync()

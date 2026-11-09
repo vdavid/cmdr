@@ -1,6 +1,6 @@
 # The viewer crate and the demo's viewer window
 
-Issue [#302](https://github.com/vdavid/cmdr/issues/302), round two, steps 5 and 6. Pull the file viewer's core out of
+Issue [#302](https://github.com/getcmdr/cmdr/issues/302), round two, steps 5 and 6. Pull the file viewer's core out of
 `apps/desktop/src-tauri/src/file_viewer/` (about 23,000 lines with tests) into a Tauri-free crate, then build that crate
 into the demo's WASM engine and open the real viewer window in the browser demo: text, Markdown, hex/binary, images, and
 PDF, the same kinds the app covers (`ViewerContentKind` is `Text | Image | Pdf | Markdown`; the app has no video or

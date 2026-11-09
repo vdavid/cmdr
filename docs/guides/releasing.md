@@ -14,7 +14,7 @@ Related guides for the signing and distribution steps: `apple-signing-and-notari
 
 ## Signing secrets
 
-The secrets that sign, notarize, and updater-sign a build live in the `release` environment on `vdavid/cmdr`, and only
+The secrets that sign, notarize, and updater-sign a build live in the `release` environment on `getcmdr/cmdr`, and only
 the `sign` and `pkg` jobs declare `environment: release` (`compile`, which runs the third-party build code, doesn't: §
 How a release build is split). The environment's deployment policy admits `v*` tags only, with no required reviewers
 (releases run unattended), and no signing secret exists at repo level, so a workflow on a branch can't reach them. Where
@@ -23,7 +23,7 @@ each value comes from: the vault note `projects/Cmdr/workflow/Cmdr signing keys.
 - **The eight secrets**: `APPLE_API_KEY`, `APPLE_API_KEY_BASE64`, `APPLE_API_ISSUER`, `APPLE_SIGNING_IDENTITY`,
   `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_INSTALLER_CERTIFICATE`, and
   `APPLE_INSTALLER_CERTIFICATE_PASSWORD`. The `.p12` files and their passwords come from Bitwarden, which agents can't
-  reach; set or replace one with `gh secret set <NAME> --env release -R vdavid/cmdr` (it prompts for the value).
+  reach; set or replace one with `gh secret set <NAME> --env release -R getcmdr/cmdr` (it prompts for the value).
 - ❌ **Never add a signing secret at repo level.** `release.yml` calls the pipeline with `secrets: inherit`, so a
   repo-level copy reaches every job, and any branch workflow could read it. (The repo-level copies were deleted on
   2026-10-08, after v0.51.0 signed and notarized from the environment alone.)
@@ -133,7 +133,7 @@ The repository variable `RELEASE_UPDATE_SIGNING` picks where it signs, read by t
 - **`local`**: the key never leaves this laptop. Decided 2026-10-06; the threat-model discussion is private issue
   `vdavid/cmdr-reports#39`.
 
-Read it with `gh variable get RELEASE_UPDATE_SIGNING -R vdavid/cmdr` (an error means unset, so `ci`). Any other value
+Read it with `gh variable get RELEASE_UPDATE_SIGNING -R getcmdr/cmdr` (an error means unset, so `ci`). Any other value
 fails the guard. Both modes stay implemented in the same files (`release-pipeline.yml`, `release.yml`), so switching is
 the variable alone.
 
@@ -183,9 +183,9 @@ verified against the app's pubkey; the default pin refused the same archives; th
 signatures and rejected one swapped across arches.)
 
 `release-finish.sh` asks `gh repo view` for the repo's current name instead of pinning it, and verifies an attestation
-against the repo its signer workflow names. So the first release after a move to the `getcmdr` org (#476) needs no code
-change, and a dry run of a pre-move release passes
-`-signer-workflow vdavid/cmdr/.github/workflows/release-pipeline.yml`.
+against the repo its signer workflow names. The repo moved from `vdavid/cmdr` to the `getcmdr` org (#476) after v0.60.0
+with no code change here, and a dry run of v0.60.0 or an earlier release passes
+`-signer-workflow vdavid/cmdr/.github/workflows/release-pipeline.yml` (or `release.yml`, above).
 
 ### What `local` mode protects, and what it doesn't
 
@@ -208,12 +208,12 @@ is its own proof of origin.
 
 ### Switching modes
 
-- **To `local`**: `gh variable set RELEASE_UPDATE_SIGNING -R vdavid/cmdr --body local`, before pushing the tag.
+- **To `local`**: `gh variable set RELEASE_UPDATE_SIGNING -R getcmdr/cmdr --body local`, before pushing the tag.
 - **Back to `ci`** (the revert):
-  1. `gh variable set RELEASE_UPDATE_SIGNING -R vdavid/cmdr --body ci` (or `gh variable delete`).
+  1. `gh variable set RELEASE_UPDATE_SIGNING -R getcmdr/cmdr --body ci` (or `gh variable delete`).
   2. Put the key back in the `release` environment from sops, piped so the values never reach the shell history or the
      screen:
-     `secret CMDR_TAURI_SIGNING_PRIVATE_KEY | gh secret set TAURI_SIGNING_PRIVATE_KEY --env release -R vdavid/cmdr`,
+     `secret CMDR_TAURI_SIGNING_PRIVATE_KEY | gh secret set TAURI_SIGNING_PRIVATE_KEY --env release -R getcmdr/cmdr`,
      then the same for `CMDR_TAURI_SIGNING_PRIVATE_KEY_PASSWORD` into `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
   3. Release as usual. § The release procedure reads the variable and skips `release-finish.sh` in `ci` mode.
 
@@ -264,7 +264,7 @@ check.
 ## The release procedure
 
 1. **Check the prerequisites**: find out who signs the update archives,
-   `gh variable get RELEASE_UPDATE_SIGNING -R vdavid/cmdr` (an error means unset, which is `ci`; § Who signs the update
+   `gh variable get RELEASE_UPDATE_SIGNING -R getcmdr/cmdr` (an error means unset, which is `ci`; § Who signs the update
    archives).
    - **`ci`**: run `gh secret list --env release` and verify that `TAURI_SIGNING_PRIVATE_KEY` and
      `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` both exist. If either is missing, warn the user and stop (§ Switching modes
@@ -361,7 +361,7 @@ check.
 10. **Monitor the build.** Tell the user their laptop is free (the build runs on GitHub's hardware). Poll `gh run view`
     every few minutes in the background and report progress (which jobs are done, which are still running). Report when
     all jobs complete; if one fails, show the failure details and advise how to fix it. Suggest the user also track it
-    at https://github.com/vdavid/cmdr/actions.
+    at https://github.com/getcmdr/cmdr/actions.
 11. **Merge the release back into `main`** once it's published: `./scripts/release.sh X.Y.Z` again, as a background
     command (§ Merging the release back into `main`). Its land puts the version bump and the changelog on `main`, and
     `main`'s push run that follows deploys the roadmap, feature-status, and landing-page changes (the release workflow
@@ -436,7 +436,7 @@ with these differences. The procedure pre-approves building and publishing it, s
 
 **Before tagging:**
 
-- Containment may have disabled the release workflow. Re-enable it: `gh workflow enable release.yml -R vdavid/cmdr`.
+- Containment may have disabled the release workflow. Re-enable it: `gh workflow enable release.yml -R getcmdr/cmdr`.
 - CI red for reasons outside the fix? Use the emergency bypass in § The CI gate, and clear `RELEASE_SKIP_CI_GATE_TAG`
   afterwards.
 - If the updater key itself leaked, make the fix release the rotation release too: § Rotating to the backup updater key,
@@ -453,7 +453,7 @@ hours.
 
 - Update an installed copy (**Cmdr > Check for updates**) and confirm it reaches the new version. For a key rotation,
   confirm the new build's `tauri.conf.json` pubkey is the new one.
-- Confirm no release or tag exists that we didn't make (`gh release list -R vdavid/cmdr`), and that `latest.json` names
+- Confirm no release or tag exists that we didn't make (`gh release list -R getcmdr/cmdr`), and that `latest.json` names
   ours.
 - Clear any bypass variable you set, and log the release with its UTC time in the `INCIDENT:` issue.
 
@@ -642,7 +642,9 @@ readers, and why it's never `latest.json`: `apps/desktop/src-tauri/src/security_
   `https://getcmdr.com/changelog#v<fixedIn>`, like `#v0.58.0`; `desktop-security-advisories` fails any other changelog
   form). For a dependency's flaw, `severity` is the upstream rating from the CHANGELOG line and `url` is the changelog
   entry (the app's link allowlist admits only Cmdr's own advisories); an `(unrated)` one gets no entry. Nothing else:
-  the app shows generic, translated text.
+  the app shows generic, translated text. Write a GitHub advisory's link as
+  `https://github.com/vdavid/cmdr/security/advisories/<id>` (it redirects): builds before v0.55.0 only admit that name
+  (`apps/desktop/src-tauri/src/security_advisories/DETAILS.md` § The link allowlist).
 - **Append, never prune.** The list is cumulative, which is how an install that skips releases still hears about every
   fix it jumped over.
 - **Leave it uncommitted for `release.sh`**, which lets it through its dirty-tree guard and puts it in the release
@@ -678,7 +680,7 @@ registered, and nothing needs one.
   where that's no longer true.
 
 **If a self-hosted runner ever earns its keep again**, it's a from-scratch setup: register one with a token from
-`gh api -X POST repos/vdavid/cmdr/actions/runners/registration-token`, run `./config.sh` and `./svc.sh install`, then
+`gh api -X POST repos/getcmdr/cmdr/actions/runners/registration-token`, run `./config.sh` and `./svc.sh install`, then
 set `runs-on: [self-hosted, macOS, ARM64]` on both jobs. Fix the Finder Automation grant before the first run, or the
 DMG step hangs ~2 minutes and fails every job. Mind the runner version too: the pinned actions declare
 `runs.using: node24` (`actions/checkout` and `actions/download-artifact` at their pinned commits, read 2026-10-15),
@@ -720,7 +722,7 @@ once.
 - **CodeQL, on the same commit**: a green `codeql.yml` run on it, and no open high or critical CodeQL alert on `main`
   (`scripts/release-codeql-gate.sh`, `docs/tooling/ci.md` § CodeQL).
 - **It fails fast**: a wait prints each job as it moves and stops at the first red job, naming it, its log
-  (`gh api --allow-escape-sequences repos/vdavid/cmdr/actions/jobs/<job id>/logs`, which works mid-run;
+  (`gh api --allow-escape-sequences repos/getcmdr/cmdr/actions/jobs/<job id>/logs`, which works mid-run;
   `gh run view --log-failed` waits for the whole run), and the two ways on:
   - **A flake**: `gh run rerun <run id> --failed`, then re-run the command that stopped (`release-finish.sh` or
     `release-ci-gate.sh`). Its wait picks up the new attempt.
@@ -855,7 +857,7 @@ set up again.
 How a self-hosted build looks from the outside: exactly one `Compile (...)` job goes `in_progress` and the other stays
 `queued` (one machine, serialized), at ~5 min each on a warm cache, so the user keeps the laptop open for the whole
 build. If both are still `queued` after ~30 s, the runner is down: confirm with `launchctl list | grep cmdr` (look for
-`actions.runner.vdavid-cmdr.*`) and restart with `cd ~/actions-runner && ./svc.sh start`, falling back to
+`actions.runner.getcmdr-cmdr.*`) and restart with `cd ~/actions-runner && ./svc.sh start`, falling back to
 `launchctl bootout` + `bootstrap` if `svc.sh` errors with "Load failed: 5: Input/output error". Queued jobs pick up
 automatically once the runner reports in; no re-trigger or re-tag needed.
 
@@ -1061,15 +1063,20 @@ Checking a release (step 12 of § The release procedure runs both through `relea
 the tag and its commit):
 
 ```bash
-gh attestation verify Cmdr_X.Y.Z_aarch64.dmg --repo vdavid/cmdr --format json \
-  --signer-workflow vdavid/cmdr/.github/workflows/release-pipeline.yml
-gh attestation verify Cmdr_X.Y.Z_aarch64.dmg --repo vdavid/cmdr --format json \
+gh attestation verify Cmdr_X.Y.Z_aarch64.dmg --repo getcmdr/cmdr --format json \
+  --signer-workflow getcmdr/cmdr/.github/workflows/release-pipeline.yml
+gh attestation verify Cmdr_X.Y.Z_aarch64.dmg --repo getcmdr/cmdr --format json \
   --predicate-type https://cyclonedx.org/bom
 ```
 
 The first checks provenance and that the reusable workflow signed it, the second the SBOM binding. Earlier releases were
 signed by `release.yml` itself, so check those with `--signer-workflow` pointing at `release.yml`. The public
-instruction on `/trust` is the shorter `gh attestation verify <file> --repo vdavid/cmdr`.
+instruction on `/trust` is the shorter `gh attestation verify <file> --repo getcmdr/cmdr`.
+
+**Two repo names, for good.** An attestation's signing certificate names the repo that built it, so releases up to and
+including v0.60.0 verify with `--repo vdavid/cmdr` and
+`--signer-workflow vdavid/cmdr/.github/workflows/release-pipeline.yml`, and later ones with `getcmdr/cmdr`. `/trust` and
+`/trust/development` show both.
 
 **Gotcha**: without `--format json`, `gh attestation verify` prints nothing when its output isn't a terminal (an agent's
 shell, a pipe), only exit 0. Read the exit code, or keep the flag to see what it verified (`gh` 2.x, 2026-10-08).
@@ -1132,7 +1139,7 @@ Managed Macs get each new version as a pkg pushed from the MDM, and setting `Dis
 every file it copies, which nothing can strip (verified on macOS 27.0, 2026-10-07, building from 0.50.0).
 
 **Not verified yet**: a signed, notarized build (no certificate), and an install through a real MDM. Both are open on
-`vdavid/cmdr#118`.
+`getcmdr/cmdr#118`.
 
 ### Setting up the installer certificate
 
@@ -1140,8 +1147,8 @@ every file it copies, which nothing can strip (verified on macOS 27.0, 2026-10-0
    key (My Certificates), then File › Export Items… as `developer-id-installer.p12` with a new password. Same steps as
    the application certificate: `docs/guides/apple-signing-and-notarization.md` § 1.5.
 2. Add both to the `release` environment, with the values never on screen or in shell history:
-   `base64 -i developer-id-installer.p12 | gh secret set APPLE_INSTALLER_CERTIFICATE --env release -R vdavid/cmdr`, then
-   `gh secret set APPLE_INSTALLER_CERTIFICATE_PASSWORD --env release -R vdavid/cmdr` (it prompts).
+   `base64 -i developer-id-installer.p12 | gh secret set APPLE_INSTALLER_CERTIFICATE --env release -R getcmdr/cmdr`,
+   then `gh secret set APPLE_INSTALLER_CERTIFICATE_PASSWORD --env release -R getcmdr/cmdr` (it prompts).
 3. Back up the `.p12` and its password where the other signing keys live (vault note
    `projects/Cmdr/workflow/Cmdr signing keys.md`), then delete the file.
 4. Optional local proof before a release:
@@ -1173,8 +1180,8 @@ Full Disk Access profile.
      `developer-id-installer.p12` with `-passout env:PW` (without `-legacy`, macOS `security import` in CI may reject an
      OpenSSL 3 file). Check with `openssl pkcs12 -in developer-id-installer.p12 -passin env:PW -info -noout -legacy`.
    - Set both:
-     `base64 -i developer-id-installer.p12 | gh secret set APPLE_INSTALLER_CERTIFICATE --env release -R vdavid/cmdr`,
-     then `printf %s "$PW" | gh secret set APPLE_INSTALLER_CERTIFICATE_PASSWORD --env release -R vdavid/cmdr`. Delete
+     `base64 -i developer-id-installer.p12 | gh secret set APPLE_INSTALLER_CERTIFICATE --env release -R getcmdr/cmdr`,
+     then `printf %s "$PW" | gh secret set APPLE_INSTALLER_CERTIFICATE_PASSWORD --env release -R getcmdr/cmdr`. Delete
      `all.p12` and the PEM files.
 5. David stores the `.p12` and its password in Bitwarden, then deletes the file.
 6. Delete the previous certificate (and its private key) from the login keychain, and let it expire. The portal has no

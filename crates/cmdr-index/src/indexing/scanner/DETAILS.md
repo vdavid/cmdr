@@ -151,7 +151,7 @@ image or an NFS share mounted in the home folder, an rclone / sshfs / macFUSE mo
 other mount point.
 
 - **Decision/Why: macOS cuts every mount, Linux only the ones that aren't a local disk** (`BOOT_TREE_CUT`,
-  [#731](https://github.com/vdavid/cmdr/issues/731)). On Linux, cutting every mount would also cut a separate `/home`
+  [#731](https://github.com/getcmdr/cmdr/issues/731)). On Linux, cutting every mount would also cut a separate `/home`
   partition (Fedora Workstation mounts `/home` as its own btrfs subvolume), and nothing else indexes it, since only
   `/mnt` and `/media` mounts get their own indexes. Cutting none crawled an NFS or CIFS share under the home folder at
   local-walker speed: slow, chatty on the network, and its sizes went stale. So Linux asks `MountPoint::is_local_disk`

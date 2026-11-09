@@ -70,7 +70,7 @@ current). Both are cumulative over skipped releases.
 - `https://getcmdr.com/changelog`, or anything below it, fragment included. The allowlist stays this wide because it's
   a safety rule, and a list entry's exact form (§ The file) is the check's job.
 
-**Decision**: both repo names pass. **Why**: the repo may move to the `getcmdr` org (#476), and the update toast vets a
+**Decision**: both repo names pass. **Why**: the repo moved to the `getcmdr` org (#476), and the update toast vets a
 staged list's links with the RUNNING app's allowlist, so a build that only knows `vdavid/cmdr` drops a `getcmdr/cmdr`
 link. The org name has to ship in a release before any advisory uses it, and after a move, keep writing `vdavid/cmdr`
 links (they redirect) until the pre-move versions age out.

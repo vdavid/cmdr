@@ -38,7 +38,7 @@ Release date: ${latestRelease.pub_date.split('T')[0]}
 - [Blog](${site}/blog/): Updates and news
 - [Changelog](${site}/changelog/): Release notes
 - [Roadmap](${site}/roadmap/): What's coming next
-- [GitHub](https://github.com/vdavid/cmdr): Source code and issues
+- [GitHub](https://github.com/getcmdr/cmdr): Source code and issues
 - [RSS feed](${site}/rss.xml): Subscribe to blog updates
 - [Privacy policy](${site}/privacy-policy/): How we handle your data
 - [Terms and conditions](${site}/terms-and-conditions/): Terms of use
@@ -120,7 +120,7 @@ Not during the beta: Cmdr AI is free for everyone right now. It runs on an API k
 
 ### Can I see the source code?
 
-Yes! Cmdr is source-available on GitHub at https://github.com/vdavid/cmdr. You can view, learn from, and modify the code. The license (BSL 1.1) converts to AGPL-3.0 after three years.
+Yes! Cmdr is source-available on GitHub at https://github.com/getcmdr/cmdr. You can view, learn from, and modify the code. The license (BSL 1.1) converts to AGPL-3.0 after three years.
 
 ### What if I regret the purchase?
 

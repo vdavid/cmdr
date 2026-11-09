@@ -15,7 +15,7 @@ test.describe('Changelog', () => {
     // PER LINK, and the changelog only grows: at 1 606 links that loop blew the
     // 30 s test timeout. The assertions below are unchanged and still cover every
     // link — this only stops the test from racing the clock as we ship releases.
-    const links = await page.$$eval('a[href^="https://github.com/vdavid/cmdr/commit/"]', (nodes) =>
+    const links = await page.$$eval('a[href^="https://github.com/getcmdr/cmdr/commit/"]', (nodes) =>
       nodes.map((node) => ({ text: (node.textContent ?? '').trim(), href: node.getAttribute('href') ?? '' })),
     )
 
@@ -24,7 +24,7 @@ test.describe('Changelog', () => {
     // Every commit link shows the bare hash and points at that same hash.
     for (const link of links) {
       expect(link.text).toMatch(/^[0-9a-f]{6,40}$/)
-      expect(link.href).toBe(`https://github.com/vdavid/cmdr/commit/${link.text}`)
+      expect(link.href).toBe(`https://github.com/getcmdr/cmdr/commit/${link.text}`)
     }
   })
 
@@ -33,7 +33,7 @@ test.describe('Changelog', () => {
     const body = (await page.textContent('body')) ?? ''
 
     // A raw URL anywhere in the visible text means a link was rendered as text. Any owner
-    // matches, so the guard keeps guarding if the repo moves to the `getcmdr` org (#476).
+    // matches, so the guard covers both repo names (#476).
     expect(body).not.toMatch(/https:\/\/github\.com\/[A-Za-z0-9-]+\/cmdr\/commit\//)
     // Prose that merely ends in a parenthetical must survive untouched.
     expect(body).toContain('(~40x speed-up!)')

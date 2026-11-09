@@ -163,7 +163,7 @@ once. What the index does with a decoded record is its own policy, in `decode_ba
   by its length. The decoder can't locate anything past a record it doesn't believe, and a `read_dir` re-read is
   complete and correct, so the conservative answer costs only speed on a record no measured filesystem writes.
 - **Decision/Why `EINTR` re-reads the directory whole, ❌ never resumes the fd** (David, 2026-10-28,
-  [#708](https://github.com/vdavid/cmdr/issues/708)). The man page doesn't say where an interrupted call leaves the
+  [#708](https://github.com/getcmdr/cmdr/issues/708)). The man page doesn't say where an interrupted call leaves the
   directory stream: if the kernel advanced the fd's offset past a batch before the interrupt surfaced, a retry on the
   same fd continues after it, and that batch silently goes missing. For the walk that's an unlisted child; for the
   reconcile it's worse, since `diff_dir_against_db` DELETES every row the listing lacks. So the read comes back

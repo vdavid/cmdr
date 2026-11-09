@@ -1,6 +1,6 @@
 # Backlog board
 
-Open work lives on the "Cmdr backlog" GitHub project (owner `vdavid`, project 2). It holds cards from `vdavid/cmdr`,
+Open work lives on the "Cmdr backlog" GitHub project (owner `vdavid`, project 2). It holds cards from `getcmdr/cmdr`,
 `vdavid/cmdr-reports`, `vdavid/smb2`, and `vdavid/mtp-rs`. Each field option carries its definition as its GitHub
 description too.
 

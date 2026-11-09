@@ -865,7 +865,7 @@ mod streaming_tests {
     }
 
     /// Flow A's default scope reaches five hours back: a stuck moment is often an hour or
-    /// more before the user gets to reporting it (vdavid/cmdr#605).
+    /// more before the user gets to reporting it (getcmdr/cmdr#605).
     #[test]
     fn flow_a_default_scope_keeps_the_past_five_hours() {
         let BundleScope::Recent { window } = BundleScope::flow_a_default() else {

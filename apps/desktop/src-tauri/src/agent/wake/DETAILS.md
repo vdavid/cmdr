@@ -60,7 +60,7 @@ one pathological folder cannot out-shout every other bundle in the inbox.
 which reports `Floored` and `Unscored` as the same `0.0`. `UNKNOWN_IMPORTANCE_WEIGHT` is 0.35: above zero so a folder
 the scorer has not reached stays visible, below any folder actually scored as mattering.
 
-**Both numbers are tuning knobs, not settled design** (GitHub [#215](https://github.com/vdavid/cmdr/issues/215)). The importance weight and the hot/warm
+**Both numbers are tuning knobs, not settled design** (GitHub [#215](https://github.com/getcmdr/cmdr/issues/215)). The importance weight and the hot/warm
 thresholds stay guesses; what the user gets to move is the CADENCE.
 
 ## The three tiers, and the one number the user moves

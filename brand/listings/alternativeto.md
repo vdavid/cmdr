@@ -94,7 +94,7 @@ AI features (optional, off by default, can stay 100% local with a built-in LLM):
   renders a single price rather than a range: v0.46.0 retired the $59/year subscription and the $199 perpetual, leaving
   Commercial at $59 paid once (a year of updates included, $39/year after that to keep getting them). Enterprise
   publishes no number, so it contributes none here.
-- **Is Opensource?**: checked. License `Other`. Source URL `https://github.com/vdavid/cmdr`
+- **Is Opensource?**: checked. License `Other`. Source URL `https://github.com/getcmdr/cmdr`
 
 ## Tags
 

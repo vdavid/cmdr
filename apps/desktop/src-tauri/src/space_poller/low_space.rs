@@ -355,7 +355,7 @@ mod tests {
     }
 
     /// The warning set to 30% to hear about it early mustn't pause indexing at 30%
-    /// free (vdavid/cmdr#1002): the index reads only its own threshold.
+    /// free (getcmdr/cmdr#1002): the index reads only its own threshold.
     #[test]
     fn the_index_pauses_on_its_own_threshold_not_the_warnings() {
         const GIB: u64 = 1024 * 1024 * 1024;

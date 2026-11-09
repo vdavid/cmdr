@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The land-time cutover of the API server's D1 database and error-report bucket to their `eu`
-# twins (vdavid/cmdr#805). The runbook that says when to run each phase is
+# twins (getcmdr/cmdr#805). The runbook that says when to run each phase is
 # `docs/notes/eu-data-moves-2026-11.md` § "A2 cutover"; `worker.js` beside this is the tool it drives.
 #
 #   cutover.sh snapshot <file>   /validate answers for every license the server knows (no device id,
@@ -92,7 +92,7 @@ land_gate() {
   sha=$(git -C "$server_dir" rev-parse HEAD)
   [[ $(git -C "$server_dir" ls-remote origin "refs/heads/$(git -C "$server_dir" branch --show-current)" | cut -f1) == "$sha" ]] ||
     die "origin doesn't have HEAD ($sha) yet: push it with the land label first"
-  conclusion=$(gh api "repos/vdavid/cmdr/commits/$sha/check-runs?check_name=CI%20OK" \
+  conclusion=$(gh api "repos/getcmdr/cmdr/commits/$sha/check-runs?check_name=CI%20OK" \
     --jq '.check_runs | sort_by(.id) | last | .conclusion // "none"')
   [[ $conclusion == success ]] ||
     die "HEAD $sha has no green \`CI OK\` (latest: $conclusion). Add the land label and wait for a land run."

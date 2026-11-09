@@ -1,7 +1,7 @@
 /**
  * The F7 dialog must be typeable the instant it opens: `NewEntryNameField` focuses
  * (and selects) the name box on mount, and nothing in `ModalDialog` may take that
- * focus back to the scrim. Reported as vdavid/cmdr#84.
+ * focus back to the scrim. Reported as getcmdr/cmdr#84.
  */
 
 import { describe, it, expect, vi } from 'vitest'

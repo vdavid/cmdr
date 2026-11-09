@@ -31,9 +31,9 @@ then four cards closed in one command with no note, and three questions plus a f
 
 - **Map every ask before drafting.** List each question and bug the person raised, from the card notes AND the whole
   email thread (follow-ups and later emails included), and show David which line of the draft answers each one. An ask
-  with no line gets one anyway: "tracked in vdavid/cmdr#N" or "not yet, here's why".
+  with no line gets one anyway: "tracked in getcmdr/cmdr#N" or "not yet, here's why".
 - **Close a card only with a closing note.** A card with a reply-to closes with a comment like
-  `Replied 2026-10-20: answered A, B; still open: C → vdavid/cmdr#N`. Take `needs-reply` off only once every ask in the
+  `Replied 2026-10-20: answered A, B; still open: C → getcmdr/cmdr#N`. Take `needs-reply` off only once every ask in the
   note has an answer the person actually received; an open ask keeps the card open or moves to a linked issue named in
   the note.
 

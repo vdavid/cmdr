@@ -5,7 +5,7 @@
 //! A keep cell asserts the class lands. A cell still pinning a bug or a loss
 //! asserts today's outcome and names what would flip it. Every cell that flipped
 //! was first written against the target and seen red for the documented reason
-//! (the Locked moves: <https://github.com/vdavid/cmdr/issues/408>).
+//! (the Locked moves: <https://github.com/getcmdr/cmdr/issues/408>).
 //!
 //! The fixture is `cmdr_fs::testing::metadata_fixture` (macOS). Elsewhere: the
 //! extract cell in `volume/copy_extract_out_tests.rs`, the APFS → HFS+ cell in

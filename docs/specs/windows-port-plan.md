@@ -4,7 +4,7 @@
 refactors that make the codebase better on their own (platform seams, decoupling, typed errors), each landable on a Mac,
 so the Windows-only work at the end shrinks to filling in arms behind seams that already exist.
 
-Status: planned 2026-11-04 at `7a199a9705`. Tracking issue: [#942](https://github.com/vdavid/cmdr/issues/942). Evidence
+Status: planned 2026-11-04 at `7a199a9705`. Tracking issue: [#942](https://github.com/getcmdr/cmdr/issues/942). Evidence
 (static reads, no Windows compile yet):
 
 - `docs/notes/windows-port/crates-audit.md`: every crate under `crates/`, per concern, with the Windows API per site.
@@ -121,7 +121,7 @@ Settled:
 - **Linux: image indexing writes invented data.** Off macOS the production media backend is `FakeVisionBackend`
   (`crates/cmdr-index/src/media_index/scheduler/lifecycle.rs:231`), and the setting isn't hidden
   (`apps/desktop/src/lib/settings/definitions/indexing.ts:91`), so turning it on fills `media.db` with OCR text and tags
-  derived from file names. Fixed in [#943](https://github.com/vdavid/cmdr/issues/943) (task 1): off macOS the scheduler
+  derived from file names. Fixed in [#943](https://github.com/getcmdr/cmdr/issues/943) (task 1): off macOS the scheduler
   doesn't start, and the Image indexing settings page is gone.
 - **Linux: dialog backdrops leave a 29px strip live** at the top (`--titlebar-height` is unconditional, the title bar
   renders only on macOS). Task 24.
@@ -129,7 +129,7 @@ Settled:
 - **api-server titles Linux reports "macOS Ubuntu …"** (`apps/api-server/src/report-cards.ts:140`). Task 2.
 - **Off macOS the updater skips the advisory list and trust checks** (`lib/updates/updater.svelte.ts:390-430`). Fine for
   an unadvertised Linux alpha, a blocker for any Windows release. Task 33.
-- **Linux licenses carried no device id.** Fixed in [#980](https://github.com/vdavid/cmdr/issues/980): Linux now hashes
+- **Linux licenses carried no device id.** Fixed in [#980](https://github.com/getcmdr/cmdr/issues/980): Linux now hashes
   `/etc/machine-id`, the precedent task 38's `MachineGuid` arm follows.
 
 ## Task list
@@ -140,9 +140,9 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 
 ### Phase 0: quick fixes
 
-1. [XS] Win. **Done** ([#943](https://github.com/vdavid/cmdr/issues/943)). Media ML off macOS is unavailable: no backend
-   (`platform_backends` answers `None`), so the scheduler doesn't start, an older build's invented `media.db` rows go at
-   launch ([#1001](https://github.com/vdavid/cmdr/issues/1001)), and the image-indexing settings carry
+1. [XS] Win. **Done** ([#943](https://github.com/getcmdr/cmdr/issues/943)). Media ML off macOS is unavailable: no
+   backend (`platform_backends` answers `None`), so the scheduler doesn't start, an older build's invented `media.db`
+   rows go at launch ([#1001](https://github.com/getcmdr/cmdr/issues/1001)), and the image-indexing settings carry
    `needsImageIndexing`, which drops their page from the sidebar. The Linux E2E build keeps a fake engine
    (`cmdr-index/playwright-e2e`) so its specs still run. Task 25's capability set can take over the frontend half
    (`imageIndexingAvailable()`) later.

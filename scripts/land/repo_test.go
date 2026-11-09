@@ -8,7 +8,7 @@ func TestParseRepoName(t *testing.T) {
 		ok       bool
 	}{
 		{"vdavid/cmdr\n", "vdavid/cmdr", true},
-		// The org the repo may move to (#476).
+		// The org the repo moved to (#476).
 		{"getcmdr/cmdr", "getcmdr/cmdr", true},
 		{"", "", false},
 		{"cmdr", "", false},

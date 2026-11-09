@@ -20,7 +20,7 @@
 
 import { Marked } from 'marked'
 
-const REPO_URL = 'https://github.com/vdavid/cmdr'
+const REPO_URL = 'https://github.com/getcmdr/cmdr'
 
 /** A group of hashes closing a logical entry. Group 1 is the comma-separated list. */
 const trailingHashGroupPattern = /\(([0-9a-f]{6,40}(?:,\s*[0-9a-f]{6,40})*)\)$/

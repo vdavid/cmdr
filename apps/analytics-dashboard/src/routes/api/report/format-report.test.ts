@@ -182,7 +182,7 @@ const richData: DashboardData = {
       totalStars: 310,
       repos: [
         {
-          repo: 'vdavid/cmdr',
+          repo: 'getcmdr/cmdr',
           // One star day inside 7d, one inside 30d only, one outside both.
           totalStars: 300,
           daily: [
@@ -430,7 +430,7 @@ Downloads by client (last 30 days), by User-Agent family:
 - getprvw.com visitors: 90 (+100.0% vs prior period)
 
 GitHub stars: 310 total
-  vdavid/cmdr: 300 (last 7d: +10, last 30d: +50)
+  getcmdr/cmdr: 300 (last 7d: +10, last 30d: +50)
   vdavid/mtp-rs: 10 (last 7d: +0, last 30d: +0)
 
 Top referrers (getcmdr.com):

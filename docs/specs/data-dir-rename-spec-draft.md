@@ -5,7 +5,7 @@ Status: **not started**, still a draft. Nothing has moved: `com.veszelovszki.cmd
 `logging/startup.rs`, `secrets/mod.rs`, and `settings/loader.rs`.
 
 **Provenance, read this first.** This draft was written by an AI agent at the end of a design session mostly about a
-different feature (the in-app agent, now tracked in [#203](https://github.com/vdavid/cmdr/issues/203) and its
+different feature (the in-app agent, now tracked in [#203](https://github.com/getcmdr/cmdr/issues/203) and its
 `ai`-labelled siblings), without a fresh look at the code. A 2026-08-27 audit checked every claim in it against the
 tree: §3's four mechanisms all hold, and three of the open questions are answered below from the code rather than
 guessed. **The two go/no-go questions (§6.1 and §6.2) are still open**, and they are the whole risk. Treat this as an
@@ -118,7 +118,7 @@ Still open, in the order that matters:
 4. Symlink compatibility window: needed at all, and for how long?
 5. Does anything outside the repo (user scripts, third-party tools, support docs) reference the old path in ways worth a
    release-note warning?
-6. Sequencing with the index relocation ([#203](https://github.com/vdavid/cmdr/issues/203)): one combined migration or
+6. Sequencing with the index relocation ([#203](https://github.com/getcmdr/cmdr/issues/203)): one combined migration or
    two separate ones? Both are unstarted, so either order is still available.
 
 Answered by the 2026-08-27 audit, kept so nobody re-asks: single-instance enforcement exists (§3.3), Linux derives from

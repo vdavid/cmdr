@@ -476,7 +476,7 @@ growing its own near-miss.
 
 ## The transfer session
 
-Canonical home for the share's transfer session (`crates/cmdr-smb/src/volume/transfer_session.rs`, vdavid/cmdr#133).
+Canonical home for the share's transfer session (`crates/cmdr-smb/src/volume/transfer_session.rs`, getcmdr/cmdr#133).
 
 One SMB connection is strictly ordered both ways: a listing response waits behind every READ response queued ahead of
 it, a listing request waits behind every WRITE frame already in the send queue, and the server serializes per connection
@@ -797,8 +797,8 @@ is the invariant the anchor is built on.
 A share can hold an `msdfs:` link to a folder on another server (one to a different host only with a person's consent: §
 "Signing in through a link"). smb2 follows one on every `SmbClient` call that takes a path (0.27.0, vdavid/smb2#15), but
 Cmdr drives the lock-free `Tree` API on cloned connections, which doesn't, and the `SmbClient` calls take
-`&mut SmbClient`. `dfs_links.rs` bridges it for every call that takes a path (vdavid/cmdr#133 for the transfers,
-vdavid/cmdr#815 for the rest):
+`&mut SmbClient`. `dfs_links.rs` bridges it for every call that takes a path (getcmdr/cmdr#133 for the transfers,
+getcmdr/cmdr#815 for the rest):
 
 - **A known link goes straight to its target; any other path, Tree first.** Every path a call followed a link from is
   remembered by its link folder (`LinkPaths`). A call under one asks smb2's resolver (`SmbClient::resolve_dfs_link`,
@@ -848,7 +848,7 @@ vdavid/cmdr#815 for the rest):
   client (and so every listing) for as long as the file takes. The hinted compound read refused at a link falls through
   to it.
 - **The server-side copy** answers `NotSupported` through a link (`handle_copy_result`), and the engine streams.
-- ❗ **A link is watched only while a pane shows a folder behind it** (`link_watch.rs`, vdavid/cmdr#822). The share's
+- ❗ **A link is watched only while a pane shows a folder behind it** (`link_watch.rs`, getcmdr/cmdr#822). The share's
   `CHANGE_NOTIFY` runs on the share's own server, and a link's target never reports to it. So every path a call followed
   a link from is remembered (`LinkPaths`, one entry per link a person walked into, kept for the share's life), and:
   - **The listing engine holds a watch per open listing** through `Volume::watch_listing` (taken on open, dropped on

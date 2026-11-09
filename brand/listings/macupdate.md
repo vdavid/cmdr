@@ -20,7 +20,7 @@ never goes stale and downloads count toward MacUpdate. Their guidelines ask for 
 that doesn't end in `.dmg` (verified 2026-09-18). The two submissions that used it went unreviewed, but so did
 everything until a reviewer got pinged, so the missing ping, not the redirect, is the likely cause. If MacUpdate ever
 refuses it, fall back to the version-pinned GitHub Releases URL
-(`https://github.com/vdavid/cmdr/releases/download/vX.Y.Z/Cmdr_X.Y.Z_universal.dmg`), bumped per release.
+(`https://github.com/getcmdr/cmdr/releases/download/vX.Y.Z/Cmdr_X.Y.Z_universal.dmg`), bumped per release.
 
 "Version changes" covers the release being submitted (the whole minor line, patches included, once patches start getting
 skipped here); the Description carries everything older.
@@ -39,7 +39,7 @@ the Price field and the note to the review team instead.
   the Download URL note at the top)
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
-- **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
+- **Developer support URL**: `https://github.com/getcmdr/cmdr/issues`
 - **Version number**: `0.55.0`
 - **Price**: leave empty (their hint says empty means free). Cmdr is free for personal use; commercial licenses are sold
   on the purchase URL and explained to the review team below.
@@ -151,7 +151,7 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
     need to approve/reject.
   </li>
 </ul>
-<p>Cmdr is source-available under the Business Source License 1.1: https://github.com/vdavid/cmdr</p>
+<p>Cmdr is source-available under the Business Source License 1.1: https://github.com/getcmdr/cmdr</p>
 ```
 
 ### Version changes
@@ -264,7 +264,7 @@ I've submitted Cmdr twice before (most recently on 2026-07-29 I think) and didn'
 My notes:
 - The download URL points straight at the signed DMG on GitHub Releases. The app is dev ID signed and notarized by Rymdskottkärra AB (my Swedish company), and ships as a universal binary.
 - I left the price empty because, as I said above, Cmdr is free for personal use. Work use needs a license ($59 once, 1 year of updates), see https://getcmdr.com/pricing.
-- Source is available under BSL 1.1 at https://github.com/vdavid/cmdr.
+- Source is available under BSL 1.1 at https://github.com/getcmdr/cmdr.
 - Anything you need from me, write to me at hello@getcmdr.com and I'll answer usually the same day.
 
 Thanks for the review!

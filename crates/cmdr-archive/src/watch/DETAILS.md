@@ -109,7 +109,7 @@ key plus this watch's `cache.clear()` guarantee the post-rename read re-parses t
 **Normal latency is one debounce.** With the watch armed and settled, ONE rewrite reaches the seam in 240–880 ms (20 of
 20 tries, 2026-11-03, macOS 27.0, load average about 37, scratch cell timing a single rewrite): the 200 ms debounce plus
 its tick. There's no size or mtime filter, and `notify`'s FSEvents stream runs with zero latency and `NoDefer`. So the
-"about 15 rewrites" once seen in the seam tests (vdavid/cmdr#432) was a starved `fseventsd` on that day, not a delay
+"about 15 rewrites" once seen in the seam tests (getcmdr/cmdr#432) was a starved `fseventsd` on that day, not a delay
 built into the watch.
 
 ## Testing, split at the seam

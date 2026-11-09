@@ -235,7 +235,7 @@ func TestRunChangelogCommitLinks_RejectsLinkedForm(t *testing.T) {
 	// The changelog carries bare hashes; the renderers (website, in-app What's new)
 	// linkify them. A hand-written markdown link is the deprecated form and must fail
 	// loudly rather than bloat the file again.
-	// Either repo owner: the repo may move to the `getcmdr` org (#476), and the guard
+	// Either repo owner: the repo moved to the `getcmdr` org (#476), and the guard
 	// must not go quiet when commit URLs start naming it.
 	for _, owner := range []string{"vdavid", "getcmdr"} {
 		t.Run(owner, func(t *testing.T) {

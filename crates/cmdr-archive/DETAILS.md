@@ -348,7 +348,7 @@ double-extension split. The reading-core, mutation, and watch tests live with th
 `ArchiveVolume` (browse + extract + `scan_for_copy`) and backend routing (§ "Routing and lifecycle") are landed:
 `VolumeManager::resolve`, the shared `src/boundary.rs` detector, the archive LRU, the read-only write guards, the live
 content watch, and zip mutation (browse + extract + edit, local and remote-hosted). What's still ahead is tracked in
-GitHub issues [#258](https://github.com/vdavid/cmdr/issues/258) and [#260](https://github.com/vdavid/cmdr/issues/260);
+GitHub issues [#258](https://github.com/getcmdr/cmdr/issues/258) and [#260](https://github.com/getcmdr/cmdr/issues/260);
 the settled design for the fast zip tail-add in #258 is `docs/notes/m-append-spike.md`.
 
 "Open with" on a file inside an archive launches the app on a fresh read-only copy, with its own

@@ -33,7 +33,7 @@ if [[ ! "${DEMO_IMAGE_DIGEST:-}" =~ ^[0-9a-f]{64}$ ]]; then
     echo "=== ERROR: the webhook payload carries no browser demo digest ==="
     exit 1
 fi
-echo "Browser demo: ghcr.io/vdavid/cmdr-demo@sha256:$DEMO_IMAGE_DIGEST (release ${DEMO_VERSION:-unknown})"
+echo "Browser demo: ghcr.io/getcmdr/cmdr-demo@sha256:$DEMO_IMAGE_DIGEST (release ${DEMO_VERSION:-unknown})"
 cd apps/website
 docker compose build --no-cache --build-arg DEMO_IMAGE_DIGEST="$DEMO_IMAGE_DIGEST"
 

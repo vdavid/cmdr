@@ -1,7 +1,7 @@
 # Transfer tree (frontend): details
 
 Must-knows: `CLAUDE.md`. The view command's contract: `crates/cmdr-operations/src/transfer_tree/DETAILS.md` § "The
-view". Issue: [#382](https://github.com/vdavid/cmdr/issues/382).
+view". Issue: [#382](https://github.com/getcmdr/cmdr/issues/382).
 
 ## What it promises
 

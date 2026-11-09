@@ -282,7 +282,7 @@
         <ExternalLinks
             links={[
                 { label: 'View in Cloudflare', href: 'https://dash.cloudflare.com' },
-                { label: 'View on GitHub', href: 'https://github.com/vdavid/cmdr/releases' },
+                { label: 'View on GitHub', href: 'https://github.com/getcmdr/cmdr/releases' },
             ]}
         />
     {/if}

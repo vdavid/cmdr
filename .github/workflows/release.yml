@@ -30,7 +30,7 @@ jobs:
       security-events: read # `ci-gate` lists open CodeQL alerts
       id-token: write # `attest` and `demo` request the Sigstore signing certificate
       attestations: write # `attest` and `demo` store the attestations
-      packages: write # `demo` pushes the browser demo image to ghcr.io/vdavid/cmdr-demo
+      packages: write # `demo` pushes the browser demo image to ghcr.io/getcmdr/cmdr-demo
     # The repo-level secrets (`DEPLOY_WEBHOOK_SECRET`, `HOMEBREW_TAP_DEPLOY_KEY`, and the signing secrets
     # still held at repo level). The `build` job's `release` environment secrets don't pass through
     # here; that job reads them itself, and they win over a same-named secret passed from here.

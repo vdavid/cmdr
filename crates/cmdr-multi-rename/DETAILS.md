@@ -1,7 +1,7 @@
 # cmdr-multi-rename details
 
 Total Commander's Multi-Rename Tool, the semantics taken from its help (TOTALCMD.CHM, TC 11.58) and wiki. Proposed
-upstream in vdavid/cmdr#372. The desktop host (its files, IPC deadlines, and volume reads) is
+upstream in getcmdr/cmdr#372. The desktop host (its files, IPC deadlines, and volume reads) is
 `apps/desktop/src-tauri/src/multi_rename/DETAILS.md`; the browser host is `crates/cmdr-listing-wasm/DETAILS.md` §
 Multi-Rename.
 

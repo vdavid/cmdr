@@ -214,7 +214,7 @@ describe('handleMorningBrief', () => {
   it('carries the CI line, saying what GitHub would not answer (`ci-brief.test.ts` covers the numbers)', async () => {
     fakeGitHub([], { down: true })
 
-    await handleMorningBrief(testEnv({ CI_HEALTH_REPO: 'vdavid/cmdr' }))
+    await handleMorningBrief(testEnv({ CI_HEALTH_REPO: 'getcmdr/cmdr' }))
 
     expect(lastEmail().html).toContain(
       'CI: main not checked yet · nightly not checked yet · couldn&#39;t read lands from GitHub · cache size unknown',

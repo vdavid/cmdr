@@ -37,7 +37,7 @@ const changelogRefLength = 9
 // changelogCommitURLPattern matches the deprecated `…/commit/<sha>` URL form in any
 // shape (bare, or wrapped in a markdown link). The changelog stores bare hashes and
 // lets the renderers linkify them, so any URL here is a regression to catch. Any
-// owner matches, so the guard keeps guarding if the repo moves to the `getcmdr` org.
+// owner matches, so the guard covers both repo names (#476).
 var changelogCommitURLPattern = regexp.MustCompile(`https://github\.com/[A-Za-z0-9-]+/cmdr/commit/`)
 
 // changelogBulletMarkers are the list markers that open a logical entry at column zero.

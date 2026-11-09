@@ -69,7 +69,7 @@ passed for the v0.52.0 aarch64, x64, and universal archives (macOS 27.0, 2026-10
 requirement, the flags, or the extraction:
 
 ```sh
-gh release download v0.52.0 -R vdavid/cmdr -p 'Cmdr_0.52.0_aarch64.app.tar.gz' -D <scratch>
+gh release download v0.52.0 -R getcmdr/cmdr -p 'Cmdr_0.52.0_aarch64.app.tar.gz' -D <scratch>
 CMDR_UPDATER_RELEASE_TARBALL=<scratch>/Cmdr_0.52.0_aarch64.app.tar.gz \
   cargo test -p cmdr-update-trust --lib -- --ignored a_published_release_passes_and_its_doctored_copies_dont
 ```

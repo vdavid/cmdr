@@ -19,7 +19,7 @@ import (
 // in `target/debug/deps`. Each recompile of a unit writes a full new GENERATION
 // of those objects under a new session suffix, and neither cargo nor rustc ever
 // removes the old one. A worktree reached 457k entries there in a few days
-// (vdavid/cmdr#357), and that alone stalled the Rust lanes: the first NSURL call
+// (getcmdr/cmdr#357), and that alone stalled the Rust lanes: the first NSURL call
 // in a test process (`CFBundleGetMainBundle`) `readdir`s the binary's own
 // directory, and 16 test processes doing that at once missed their 5 s waits.
 //

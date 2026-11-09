@@ -1049,7 +1049,7 @@ jobs:
   #
   # The browser demo reaches the server as a prebuilt image, so the shared box never compiles
   # Rust: the site serves the LAST RELEASE's demo, which the release pipeline built from the tagged
-  # sources, pushed as `ghcr.io/vdavid/cmdr-demo:<tag>`, and attested. `scripts/released-demo.sh`
+  # sources, pushed as `ghcr.io/getcmdr/cmdr-demo:<tag>`, and attested. `scripts/released-demo.sh`
   # resolves the release GitHub marks "Latest" to that image's digest and checks its provenance
   # (the same lookup the website lane tested /demo/ with), and the signed webhook payload carries
   # the digest the Dockerfile pins. `apps/website/DETAILS.md` § Browser demo.

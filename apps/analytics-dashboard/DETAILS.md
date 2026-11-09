@@ -330,7 +330,7 @@ All env vars are CF Pages secrets, never in code:
 One color means one property everywhere it appears (metric dots, chart strokes and fills), so a reader can carry the
 association from one section to the next:
 
-- Gold (`#ffc206`): getcmdr.com / vdavid/cmdr, the primary product.
+- Gold (`#ffc206`): getcmdr.com / getcmdr/cmdr, the primary product.
 - Purple (`#a78bfa`): vdavid/mtp-rs, the library repo.
 - Autumn green (`#8faa3b`): veszelovszki.com, the personal site.
 - Cyan (`#22d3ee`): getprvw.com, the Prvw product site.

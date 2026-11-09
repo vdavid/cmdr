@@ -1,6 +1,6 @@
 # The `cmdr` terminal command: architecture and decisions
 
-Up: `CLAUDE.md`. Issue: [#95](https://github.com/vdavid/cmdr/issues/95).
+Up: `CLAUDE.md`. Issue: [#95](https://github.com/getcmdr/cmdr/issues/95).
 
 ## What it does
 

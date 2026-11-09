@@ -135,7 +135,7 @@ func TestCheckManifestAcceptsOneNamingTheMirror(t *testing.T) {
 
 func TestCheckManifestRefusesAnyURLOffTheMirror(t *testing.T) {
 	for name, body := range map[string]string{
-		"github":        strings.Replace(mirroredManifest, "https://download.getcmdr.com/v0.60.0/Cmdr_0.60.0_x64", "https://github.com/vdavid/cmdr/releases/download/v0.60.0/Cmdr_0.60.0_x64", 1),
+		"github":        strings.Replace(mirroredManifest, "https://download.getcmdr.com/v0.60.0/Cmdr_0.60.0_x64", "https://github.com/getcmdr/cmdr/releases/download/v0.60.0/Cmdr_0.60.0_x64", 1),
 		"wrong arch":    strings.Replace(mirroredManifest, "Cmdr_0.60.0_x64.app", "Cmdr_0.60.0_aarch64.app", 1),
 		"wrong version": strings.Replace(mirroredManifest, `"version": "0.60.0"`, `"version": "0.59.0"`, 1),
 		"no platform":   strings.Replace(mirroredManifest, `"darwin-x86_64"`, `"linux-x86_64"`, 1),

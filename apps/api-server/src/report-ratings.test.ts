@@ -147,7 +147,7 @@ function fakeGitHub(options: {
         {
           node_id: 'PVTI_public',
           content_type: 'Issue',
-          content: { number: 1, repository_url: 'https://api.github.com/repos/vdavid/cmdr' },
+          content: { number: 1, repository_url: 'https://api.github.com/repos/getcmdr/cmdr' },
         },
       ])
     }

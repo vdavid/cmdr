@@ -80,7 +80,7 @@ holds nothing but the authored entries, so the file that grows per tool is pure 
 
 ## Adding a tool: #871's sync as the worked example
 
-[#871](https://github.com/vdavid/cmdr/issues/871) (Synchronize folders) wants two tools, `compare_folders` and
+[#871](https://github.com/getcmdr/cmdr/issues/871) (Synchronize folders) wants two tools, `compare_folders` and
 `propose_sync`, and it's the acceptance test for one table.
 
 **What one entry gives you, with no other edit**: `ToolId` with `KNOWN`, the wire names, and serde; `tools/list` with its

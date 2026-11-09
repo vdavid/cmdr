@@ -535,7 +535,7 @@ vendored fork is an ordinary member.
   frontend calls and what each answer means: `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend". Its
   guardrails and which side a test lives on: `crates/cmdr-webdav/CLAUDE.md`. Its Docker servers:
   `apps/desktop/test/webdav-servers/README.md`. What it still owes: GitHub issues
-  [#173](https://github.com/vdavid/cmdr/issues/173)–[#178](https://github.com/vdavid/cmdr/issues/178).
+  [#173](https://github.com/getcmdr/cmdr/issues/173)–[#178](https://github.com/getcmdr/cmdr/issues/178).
 - `crates/cmdr-s3/`: everything Cmdr says to an S3-compatible object store (AWS, Cloudflare R2, Backblaze B2, Wasabi,
   Hetzner, Google Cloud Storage, DigitalOcean Spaces, any other). Our own SigV4 signer, one request builder per S3 call,
   `quick-xml` parsers and typed `S3Error`s, the provider profiles, a `reqwest` transport, and an `S3Volume` per place (a
@@ -621,8 +621,8 @@ vendored fork is an ordinary member.
     (priority-gated via `priority/`, bandwidth-bounded byte-fetch through the app's own smb2 session for Direct volumes
     with an OS-mount fallback; disconnect pauses without losing coverage; MTP never background-sweeps). Off by default.
     See its `crates/cmdr-index/src/media_index/CLAUDE.md`; faces are GitHub
-    [#223](https://github.com/vdavid/cmdr/issues/223) and [#224](https://github.com/vdavid/cmdr/issues/224), captions
-    [#225](https://github.com/vdavid/cmdr/issues/225)
+    [#223](https://github.com/getcmdr/cmdr/issues/223) and [#224](https://github.com/getcmdr/cmdr/issues/224), captions
+    [#225](https://github.com/getcmdr/cmdr/issues/225)
 - `crates/index-query/`: developer CLI that queries the index DB with the `platform_case` collation `sqlite3` can't
   supply, plus the three importance measurement binaries. Depends on `cmdr-index` alone. See
   `docs/tooling/index-query.md`

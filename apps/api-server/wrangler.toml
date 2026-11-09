@@ -243,7 +243,7 @@ R2_ERROR_REPORTS_JURISDICTION = "eu"
 # The PUBLIC repo whose GitHub Actions health the cron watches (`ci-health.ts`: red/green changes and
 # silence, into the digest) and the morning brief sums up (`ci-brief.ts`). `owner/name`; remove to
 # turn both off. Reads are public; `GITHUB_PROJECT_TOKEN` rides along for the rate limit when set.
-CI_HEALTH_REPO = "vdavid/cmdr"
+CI_HEALTH_REPO = "getcmdr/cmdr"
 
 # Listmonk. The signup routes (POST /beta-signup, /newsletter-signup, /subprocessor-updates-signup) subscribe by list UUID through
 # Listmonk's public endpoint, which needs no credentials; the UUIDs are public anyway (Listmonk's own
@@ -332,7 +332,7 @@ GITHUB_TRIAGE_AUTHOR = "vdavid"
 #                                   and the route records an ops alert when an add fails, which is what an
 #                                   expired token looks like.)
 # - GITHUB_WEBHOOK_SECRET          (HMAC secret GitHub signs `issues` deliveries with; the webhook on
-#                                   vdavid/cmdr holds the same value. Unset disables the route.)
+#                                   getcmdr/cmdr holds the same value. Unset disables the route.)
 # - GITHUB_ISSUES_TOKEN            (fine-grained PAT, scoped to the ONE repo in GITHUB_ISSUES_REPO,
 #                                   with Issues: read and write plus the mandatory Metadata: read.
 #                                   ❌ Never a classic PAT: `repo` scope would make this Worker's env

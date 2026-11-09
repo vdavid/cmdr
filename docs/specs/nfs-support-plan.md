@@ -1,6 +1,6 @@
 # NFS support: direct NFSv3 connections
 
-Tracks [#304](https://github.com/vdavid/cmdr/issues/304). Why: a stock Linux NAS export (QNAP, Synology, TrueNAS) is
+Tracks [#304](https://github.com/getcmdr/cmdr/issues/304). Why: a stock Linux NAS export (QNAP, Synology, TrueNAS) is
 `secure`, so macOS mounts it only as root, and Finder and `mount_nfs` both fail for a normal user. Cmdr's own Connect to
 Server refuses `nfs://` outright. This adds `crates/cmdr-nfs`, our own user-space NFSv3 client, on the rails SFTP,
 WebDAV, and S3 laid down (saved place → pin, the reconnect cycle, the transfer engine, the conformance cells). An
@@ -133,7 +133,7 @@ Each is a recommendation for David to confirm or overturn; the plan is built on 
 ## The "pane stuck after a dead OS mount" bug: already fixed
 
 The issue's third bullet (the listing hung with no error, and stayed empty after the server came back) was filed as
-[#305](https://github.com/vdavid/cmdr/issues/305), closed 2026-10-02 by `b38d9c6e5` ("a folder on a server that stopped
+[#305](https://github.com/getcmdr/cmdr/issues/305), closed 2026-10-02 by `b38d9c6e5` ("a folder on a server that stopped
 answering reports itself stalled, keeps retrying, and lands on its own"). The mechanism is
 `crates/cmdr-listing/DETAILS.md` § "Stalled listings": an 8 s stall watch, a "still waiting" screen, a re-ask after a
 stuck read's refusal, and a fresh probe beside a stuck read on a `BackendKind::Local` volume. Verified by reading the

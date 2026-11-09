@@ -41,7 +41,7 @@ func TestParseCargoDenyDiagnostics(t *testing.T) {
 	}
 }
 
-// The rustls case from vdavid/cmdr#433: 0.23.46 fixed four advisories on 2026-10-14 09:54 UTC,
+// The rustls case from getcmdr/cmdr#433: 0.23.46 fixed four advisories on 2026-10-14 09:54 UTC,
 // so it's adoptable from 2026-10-17 09:54 and fails from 2026-10-20 09:54.
 func TestCargoDenyAdvisoriesFollowTheFixAgePolicy(t *testing.T) {
 	released := time.Date(2026, 10, 14, 9, 54, 0, 0, time.UTC)

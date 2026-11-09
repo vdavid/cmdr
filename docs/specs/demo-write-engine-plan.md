@@ -1,7 +1,7 @@
 # Demo write engine plan
 
-Issues: [#929](https://github.com/vdavid/cmdr/issues/929) (file operations in the browser demo through the real write
-engine), part of [#302](https://github.com/vdavid/cmdr/issues/302) round two, steps 3 and 4 (file operations, then the
+Issues: [#929](https://github.com/getcmdr/cmdr/issues/929) (file operations in the browser demo through the real write
+engine), part of [#302](https://github.com/getcmdr/cmdr/issues/302) round two, steps 3 and 4 (file operations, then the
 transfer queue window). Plan written 2026-11-04 against `49aad7f793`.
 
 **Goal.** In getcmdr.com/demo, F5 copy, F6 move, Shift+F6 rename, F7 new folder, F8 delete, and Cmd+Z undo run through

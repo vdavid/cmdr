@@ -158,7 +158,7 @@ func advisoryField(value *string) string {
 }
 
 // advisoryRepoPrefixes are the GitHub advisory paths a link may sit under: the
-// repo today and the org name it may move to (#476), mirroring the app's
+// repo's old name and the org it moved to (#476), mirroring the app's
 // `ALLOWED_ADVISORY_PLACES`.
 var advisoryRepoPrefixes = []string{
 	"/vdavid/cmdr/security/advisories/",

@@ -547,7 +547,7 @@
       "name": "cmdr-fsevent-stream",
       "version": "0.3.0",
       "license": "MIT",
-      "url": "https://github.com/vdavid/cmdr"
+      "url": "https://github.com/getcmdr/cmdr"
     },
     {
       "name": "cmov",

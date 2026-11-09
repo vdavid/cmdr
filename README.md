@@ -1,7 +1,7 @@
 # Cmdr
 
 ![License](https://img.shields.io/badge/license-BSL--1.1-blue)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/vdavid/cmdr/badge)](https://scorecard.dev/viewer/?uri=github.com/vdavid/cmdr)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/getcmdr/cmdr/badge)](https://scorecard.dev/viewer/?uri=github.com/getcmdr/cmdr)
 
 An extremely fast, keyboard-driven two-pane file manager for macOS, written in Rust. Source-available, free for personal
 use. With fully optional, privacy-first AI features.
@@ -52,7 +52,7 @@ brew install --cask vdavid/tap/cmdr
 ```
 
 Naming the cask in full is your okay for Homebrew to tap Cmdr's third-party tap and trust that one cask. A star, watch,
-or fork on [the repo](https://github.com/vdavid/cmdr) helps Cmdr reach Homebrew's notability bar (225 stars), which
+or fork on [the repo](https://github.com/getcmdr/cmdr) helps Cmdr reach Homebrew's notability bar (225 stars), which
 unlocks a tap-free `brew install --cask cmdr`.
 
 Windows and Linux users: sorry, you'll need to wait. The Rust+Tauri stack allows for cross-platform deployment, but the
@@ -106,7 +106,7 @@ then, you can view, modify, and learn from the code, but not use it commercially
 ## Contributing
 
 Contributions are welcome! Report issues and feature requests in the
-[issue tracker](https://github.com/vdavid/cmdr/issues).
+[issue tracker](https://github.com/getcmdr/cmdr/issues).
 
 By submitting a contribution, you agree to license your contribution under the same terms as the project (BSL 1.1,
 converting to AGPL-3.0) and grant the project owner the right to use your contribution under any commercial license

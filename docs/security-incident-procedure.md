@@ -21,7 +21,7 @@ because this list wasn't in front of anyone.
    time, the deadlines, the source, and what's known. Everything after this gets logged there with UTC times.
 4. **Contain.**
    - Update channel or release pipeline affected: disable the release workflow
-     (`gh workflow disable release.yml -R vdavid/cmdr`), set any affected GitHub release back to draft, and point
+     (`gh workflow disable release.yml -R getcmdr/cmdr`), set any affected GitHub release back to draft, and point
      `latest.json` back at the last good release (`docs/guides/releasing.md` § The tag guard, and rolling back).
    - Credentials exposed: rotate at the provider first, then in the repo and sops, and revoke sessions. Delete secrets
      from GitHub rather than waiting to learn how they leaked.
@@ -117,8 +117,8 @@ How the backup gets alerted:
 
 ## Where reports come in
 
-`security@getcmdr.com`, GitHub private vulnerability reporting on `vdavid/cmdr`, `vdavid/smb2`, and `vdavid/mtp-rs`, and
-public signals: an advisory naming a dependency, a news report, a user's error report or feedback, GitGuardian,
+`security@getcmdr.com`, GitHub private vulnerability reporting on `getcmdr/cmdr`, `vdavid/smb2`, and `vdavid/mtp-rs`,
+and public signals: an advisory naming a dependency, a news report, a user's error report or feedback, GitGuardian,
 Dependabot, or a Cloudflare or GitHub security notice. David checks `security@` and GitHub notifications at least once a
 day, holidays included.
 

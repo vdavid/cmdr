@@ -69,7 +69,7 @@ import (
 )
 
 // repo is GitHub's current name for this repo (`resolveRepo`), set once in `main` before anything
-// talks to GitHub. Not a constant, so a move to the `getcmdr` org (#476) needs no change here.
+// talks to GitHub. Not a constant, so the move to the `getcmdr` org (#476) needed no change here.
 var repo string
 
 const (

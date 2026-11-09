@@ -122,7 +122,7 @@ pub fn fixed_between<'a>(advisories: &'a [Advisory], after: &Version, upto: &Ver
 /// Where a notice may link: the host, and the path the link must sit under. A GitHub advisory
 /// needs an id after its prefix; the changelog may be the page itself or anything below it.
 ///
-/// Both repo names pass: `vdavid/cmdr` today, `getcmdr/cmdr` if the repo moves to the org (#476).
+/// Both repo names pass: the repo moved from `vdavid/cmdr` to `getcmdr/cmdr` (#476).
 /// The update toast vets links with the RUNNING app's list, so a name has to ship here before any
 /// advisory uses it.
 const ALLOWED_ADVISORY_PLACES: [(&str, &str, AllowedPath); 3] = [

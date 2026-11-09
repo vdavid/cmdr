@@ -88,7 +88,7 @@ async function stubbedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
   if (url.startsWith('https://api.paddle.com/customers/')) {
     return Response.json({ data: paddleCustomer })
   }
-  if (url.startsWith('https://api.github.com/repos/vdavid/cmdr/')) return greenGitHub(url)
+  if (url.startsWith('https://api.github.com/repos/getcmdr/cmdr/')) return greenGitHub(url)
   unexpectedOutbound.push(url)
   return Response.json({ error: 'This host is not stubbed' }, { status: 502 })
 }
@@ -107,7 +107,7 @@ function greenGitHub(url: string): Response {
     workflow_runs: [
       {
         id: 1,
-        html_url: 'https://github.com/vdavid/cmdr/actions/runs/1',
+        html_url: 'https://github.com/getcmdr/cmdr/actions/runs/1',
         head_sha: head,
         event: new URL(url).searchParams.get('event') ?? 'schedule',
         status: 'completed',

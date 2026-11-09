@@ -44,7 +44,7 @@ import (
 )
 
 // repo is GitHub's current name for this repo (`gh repo view`), set in `main`. Not a constant, so
-// a move to the `getcmdr` org (#476) needs no change here. A release built before the move still
+// the move to the `getcmdr` org (#476) needed no change here. A release built before the move still
 // verifies under the name it was built under (`builtin.go`).
 var repo string
 

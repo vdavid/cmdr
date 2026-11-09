@@ -1,7 +1,7 @@
 # Transfer outages and cleanup plan
 
-Issues: [#489](https://github.com/vdavid/cmdr/issues/489) (copies to session volumes fail after a successful reconnect,
-and the error blames a file) and [#490](https://github.com/vdavid/cmdr/issues/490) (a failed SMB copy leaves temps and
+Issues: [#489](https://github.com/getcmdr/cmdr/issues/489) (copies to session volumes fail after a successful reconnect,
+and the error blames a file) and [#490](https://github.com/getcmdr/cmdr/issues/490) (a failed SMB copy leaves temps and
 open handles). Incident: `ERR-VEZUB` (0.54.0). Plan written 2026-10-19 against `8e3891a89`.
 
 ## Status and decisions for David

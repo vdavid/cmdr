@@ -35,8 +35,8 @@ minutes, not an hour.
 5. **Day-1 audit-log checks**, read-only, per § Day 1. Run what the CLI and APIs reach, with the access recipes in the
    vault's `agents/tooling/` notes (`cloudflare.md`, `paddle.md`, `posthog.md`), and since the earliest plausible leak:
    - GitHub: recent Actions runs, tags, releases, deploy keys, webhooks, repo variables, and the `release` environment's
-     secrets on `vdavid/cmdr` (`gh run list`, `gh release list`, `gh api repos/vdavid/cmdr/keys`,
-     `gh api repos/vdavid/cmdr/hooks`, `gh variable list`, `gh secret list --env release`).
+     secrets on `getcmdr/cmdr` (`gh run list`, `gh release list`, `gh api repos/getcmdr/cmdr/keys`,
+     `gh api repos/getcmdr/cmdr/hooks`, `gh variable list`, `gh secret list --env release`).
    - Cloudflare: the account audit log through the API (D1, R2, Workers, Pages, and token changes).
    - Paddle, PostHog, and SMTP2Go: whatever their APIs expose about key use and account activity.
    - For what no API reaches (the GitHub account security log, dashboard-only logs), give David the exact pages to open.

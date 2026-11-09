@@ -843,7 +843,7 @@ On macOS the dev profile keeps debuginfo unpacked: a test binary carries only a 
 files beside it in `target/debug/deps`. Every recompile of a unit writes a full new generation of them under a new
 session suffix, and nothing ever deletes the old one. A worktree reached 457k entries there, and the Rust lanes stalled
 on it: the first NSURL call in each test process (`CFBundleGetMainBundle`) `readdir`s the binary's own directory, and
-~16 processes doing that at once blew 5 s test waits (vdavid/cmdr#357).
+~16 processes doing that at once blew 5 s test waits (getcmdr/cmdr#357).
 
 `pruneStaleRcguIfNeeded` (`rcgu_prune.go`) runs after the cache plan, before any lane starts, and only when a cache-miss
 lane holds `ResourceCargoBuildDir`. It groups the objects by unit (`<crate>-<hash>`) and generation (the session suffix,

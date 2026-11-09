@@ -716,7 +716,7 @@ addresses nothing, and a folder copy writes it at the destination. Loud and loss
 The escape hatch, if it bites: vendor `openssh-sftp-protocol` plus `ssh_format` under `crates/` as a **path** dependency
 and make `NameEntry::filename` byte-backed (1 594 and 1 162 lines of `src/` at the pinned 0.24.2 and 0.14.1, `wc -l`,
 2026-08-23). ❌ Not `git =`: `deny.toml`'s `unknown-git = "deny"` forbids it. Tracked in GitHub
-[#193](https://github.com/vdavid/cmdr/issues/193). `a_name_that_is_not_utf8_takes_the_whole_session_down` pins the
+[#193](https://github.com/getcmdr/cmdr/issues/193). `a_name_that_is_not_utf8_takes_the_whole_session_down` pins the
 current behaviour so the day it changes is a visible day.
 
 ## Host-key trust

@@ -79,8 +79,8 @@ describe('GET /download: EU mirror or GitHub', () => {
     ['0.59.0', 'universal', 'https://download.getcmdr.com/v0.59.0/Cmdr_0.59.0_universal.dmg'],
     ['0.60.0', 'x86_64', 'https://download.getcmdr.com/v0.60.0/Cmdr_0.60.0_x64.dmg'],
     ['0.100.0', 'aarch64', 'https://download.getcmdr.com/v0.100.0/Cmdr_0.100.0_aarch64.dmg'],
-    ['0.58.0', 'universal', 'https://github.com/vdavid/cmdr/releases/download/v0.58.0/Cmdr_0.58.0_universal.dmg'],
-    ['0.9.0', 'aarch64', 'https://github.com/vdavid/cmdr/releases/download/v0.9.0/Cmdr_0.9.0_aarch64.dmg'],
+    ['0.58.0', 'universal', 'https://github.com/getcmdr/cmdr/releases/download/v0.58.0/Cmdr_0.58.0_universal.dmg'],
+    ['0.9.0', 'aarch64', 'https://github.com/getcmdr/cmdr/releases/download/v0.9.0/Cmdr_0.9.0_aarch64.dmg'],
   ])('sends %s %s to %s', async (version, arch, location) => {
     const res = await app.request(`/download/${version}/${arch}`, { headers: browserUa }, createBindings())
 
@@ -90,7 +90,7 @@ describe('GET /download: EU mirror or GitHub', () => {
 
   it.each([
     ['0.59.0', 'https://download.getcmdr.com/v0.59.0/checksums.txt'],
-    ['0.58.0', 'https://github.com/vdavid/cmdr/releases/download/v0.58.0/checksums.txt'],
+    ['0.58.0', 'https://github.com/getcmdr/cmdr/releases/download/v0.58.0/checksums.txt'],
   ])('sends the checksums of %s to %s', async (version, location) => {
     const res = await app.request(`/download/${version}/checksums`, { headers: browserUa }, createBindings())
 
@@ -379,7 +379,7 @@ describe('GET /download/latest/:arch', () => {
 
     expect(res.status).toBe(302)
     expect(res.headers.get('location')).toBe(
-      'https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
+      'https://github.com/getcmdr/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
     )
   })
 
@@ -390,7 +390,7 @@ describe('GET /download/latest/:arch', () => {
     const res = await app.request('/download/latest/x86_64', { headers: browserUa }, bindings)
 
     expect(res.headers.get('location')).toBe(
-      'https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_x64.dmg',
+      'https://github.com/getcmdr/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_x64.dmg',
     )
   })
 
@@ -413,7 +413,7 @@ describe('GET /download/latest/:arch', () => {
     const res = await app.request('/download/latest/universal', { headers: browserUa }, bindings)
 
     expect(res.headers.get('location')).toBe(
-      'https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
+      'https://github.com/getcmdr/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
     )
   })
 
@@ -424,7 +424,7 @@ describe('GET /download/latest/:arch', () => {
     const res = await app.request('/download/latest/universal', { headers: browserUa }, bindings)
 
     expect(res.headers.get('location')).toBe(
-      'https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
+      'https://github.com/getcmdr/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
     )
   })
 
@@ -436,7 +436,7 @@ describe('GET /download/latest/:arch', () => {
     const res = await app.request('/download/latest/universal', { headers: browserUa }, bindings)
 
     expect(res.status).toBe(302)
-    expect(res.headers.get('location')).toBe('https://github.com/vdavid/cmdr/releases/latest')
+    expect(res.headers.get('location')).toBe('https://github.com/getcmdr/cmdr/releases/latest')
     expect(prepareMock).not.toHaveBeenCalled()
   })
 
@@ -448,7 +448,7 @@ describe('GET /download/latest/:arch', () => {
     const res = await app.request('/download/latest/universal', { headers: { 'user-agent': 'Slackbot 1.0' } }, bindings)
 
     expect(res.headers.get('location')).toBe(
-      'https://github.com/vdavid/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
+      'https://github.com/getcmdr/cmdr/releases/download/v0.36.2/Cmdr_0.36.2_universal.dmg',
     )
     expect(prepareMock).not.toHaveBeenCalled()
   })

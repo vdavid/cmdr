@@ -203,12 +203,12 @@
 {#snippet deny(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
 {#snippet restart(children: Snippet)}<strong>{@render children()}</strong>{/snippet}
 {#snippet sourceLink(children: Snippet)}<LinkButton
-        href="https://github.com/vdavid/cmdr"
+        href="https://github.com/getcmdr/cmdr"
         target="_blank"
         rel="noopener noreferrer"
         onclick={(event: MouseEvent) => {
             event.preventDefault()
-            void openExternalUrl('https://github.com/vdavid/cmdr')
+            void openExternalUrl('https://github.com/getcmdr/cmdr')
         }}>{@render children()}</LinkButton
     >{/snippet}
 

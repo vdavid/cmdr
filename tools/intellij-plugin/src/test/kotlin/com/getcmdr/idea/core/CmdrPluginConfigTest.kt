@@ -11,7 +11,7 @@ class CmdrPluginConfigTest : TestCase() {
 
         assertNotNull("the shipped config no longer has a changelog section", changelog)
         assertEquals(listOf("CHANGELOG.md"), changelog!!.files)
-        assertEquals("https://github.com/vdavid/cmdr/commit/751214190", changelog.commitUrl("751214190"))
+        assertEquals("https://github.com/getcmdr/cmdr/commit/751214190", changelog.commitUrl("751214190"))
     }
 
     fun testAFeatureIsOffWhenItsSectionIsAbsent() {

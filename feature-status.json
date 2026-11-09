@@ -42,7 +42,7 @@
       "name": "Multi-rename tool",
       "status": "alpha",
       "note": "Rename a whole selection at once, Total Commander style: name and extension masks, search and replace, case changes, counters, and photo and music details like capture dates and track numbers, with a live preview of every row before anything changes. One Undo reverses the whole batch.",
-      "issueUrl": "https://github.com/vdavid/cmdr/issues/372"
+      "issueUrl": "https://github.com/getcmdr/cmdr/issues/372"
     },
     {
       "id": "ask-cmdr",

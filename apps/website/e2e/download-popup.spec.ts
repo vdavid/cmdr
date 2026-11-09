@@ -17,7 +17,7 @@ test.describe('Download popup', () => {
     await expect(dialog).toBeVisible()
     await expect(dialog.getByRole('link', { name: /Star Cmdr on GitHub/ })).toHaveAttribute(
       'href',
-      'https://github.com/vdavid/cmdr',
+      'https://github.com/getcmdr/cmdr',
     )
     await expect(dialog.locator('input[type="email"]')).toBeVisible()
     await expect(dialog.getByRole('link', { name: 'Discord' })).toBeVisible()

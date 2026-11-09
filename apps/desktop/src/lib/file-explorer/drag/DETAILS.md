@@ -37,11 +37,11 @@ takes (threaded from the FE drag-start path; `null` defaults to local), and from
     [wry#1723](https://github.com/tauri-apps/wry/pull/1723) for the upstream fix. Drop this once wry ships a release
     containing the fix and we bump our `tauri-runtime-wry`.
   - NO `public.utf8-plain-text`. Finder publishes none, and the extra path-text item made some browser upload widgets
-    treat a Cmdr drop as text rather than a file ([issue #28](https://github.com/vdavid/cmdr/issues/28)): a file dragged
-    into a `<input type="file">` was ignored where the same file from Finder worked. Terminals (Warp, etc.) read the
-    file URL / filenames and insert the path themselves, exactly as for a Finder drag, so dropping the text item costs
-    nothing there. Verified with a browser drop probe: Finder/Forklift expose `types: ["Files"]`, Cmdr-with-text exposed
-    `["text/plain", "Files"]`.
+    treat a Cmdr drop as text rather than a file ([issue #28](https://github.com/getcmdr/cmdr/issues/28)): a file
+    dragged into a `<input type="file">` was ignored where the same file from Finder worked. Terminals (Warp, etc.) read
+    the file URL / filenames and insert the path themselves, exactly as for a Finder drag, so dropping the text item
+    costs nothing there. Verified with a browser drop probe: Finder/Forklift expose `types: ["Files"]`, Cmdr-with-text
+    exposed `["text/plain", "Files"]`.
 - **Virtual sessions** (MTP, search-results, archive-inner paths — no local backing) advertise NOTHING external apps can
   materialize: no file-url, no text, no filenames, across EVERY item. A virtual path's `file://` URL is bogus and the
   legacy types are exactly what Finder turned into the `.textClipping` junk file. Promise-only items still fire wry's
@@ -215,8 +215,8 @@ clipboard paste use, so all three entry points prepare a transfer identically. O
 A drag from an app that has no file on disk to offer (an image in Chrome or Safari, a Mail attachment, a Photos item)
 puts a file PROMISE on the pasteboard, often with the image bytes and a URL, and no `public.file-url`. wry reads file
 URLs only, so its `enter` / `over` / `drop` fire with empty `paths`. Before
-[issue #1035](https://github.com/vdavid/cmdr/issues/1035) folders lit up, the drop did nothing, and analytics counted it
-as a `transfer`.
+[issue #1035](https://github.com/getcmdr/cmdr/issues/1035) folders lit up, the drop did nothing, and analytics counted
+it as a `transfer`.
 
 How it works now (backend: `apps/desktop/src-tauri/src/drop_in/CLAUDE.md`; frontend: `../pane/promise-drop.ts` and
 `../pane/promise-drop-controller.ts`):
@@ -344,7 +344,7 @@ Key files:
   - **Why**: Publishing the file path as `public.utf8-plain-text` (a "drop into terminal" affordance) maps to a
     `text/plain` item in a browser's `DataTransfer`. Some upload widgets branch on that and treat the drop as text, not
     a file, so a file dragged from Cmdr into a `<input type="file">` was ignored where the same file from Finder worked
-    ([issue #28](https://github.com/vdavid/cmdr/issues/28)). Finder and Forklift publish files only, and terminals read
+    ([issue #28](https://github.com/getcmdr/cmdr/issues/28)). Finder and Forklift publish files only, and terminals read
     the file URL / filenames and insert the path themselves (a Finder drag into Warp inserts the path with no text
     item), so the text representation bought nothing and broke browser uploads.
   - **Guardrail**: don't re-add `public.utf8-plain-text` to local drags. If a future terminal genuinely needs it, scope

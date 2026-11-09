@@ -1041,7 +1041,7 @@ jobs:
   # the website built around it with the full demo suite run against it (`website-demo-e2e`), and
   # both wasm engines with the listing engine's Node smoke run and golden traces
   # (`desktop-rust-*-wasm`; no land runs these, the nightly CI run does), then pushed as
-  # `ghcr.io/vdavid/cmdr-demo:<tag>` and attested, so `scripts/released-demo.sh` can refuse a tag
+  # `ghcr.io/getcmdr/cmdr-demo:<tag>` and attested, so `scripts/released-demo.sh` can refuse a tag
   # moved by anyone else. `publish` needs it: a release whose demo doesn't build doesn't ship.
   # Every run of this workflow runs it (the tag push in both modes builds beside `compile`, since
   # an unpublished tag's image is never served; `local` mode's dispatch finds that image and only
@@ -1053,7 +1053,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read # check out the tagged sources
-      packages: write # push to ghcr.io/vdavid/cmdr-demo
+      packages: write # push to ghcr.io/getcmdr/cmdr-demo
       id-token: write # request the Sigstore signing certificate for the image's provenance
       attestations: write # store that provenance, and push it beside the image
     outputs:
@@ -1086,9 +1086,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          ref="ghcr.io/vdavid/cmdr-demo:$TAG"
+          ref="ghcr.io/getcmdr/cmdr-demo:$TAG"
           if digest=$(docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}' 2>/dev/null) &&
-            gh attestation verify "oci://ghcr.io/vdavid/cmdr-demo@$digest" --repo "$GITHUB_REPOSITORY" \
+            gh attestation verify "oci://ghcr.io/getcmdr/cmdr-demo@$digest" --repo "$GITHUB_REPOSITORY" \
               --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-pipeline.yml" >/dev/null; then
             echo "found=true" >>"$GITHUB_OUTPUT"
             echo "$ref ($digest) is already published and attested."
@@ -1129,28 +1129,28 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          docker build -f apps/website/demo-image.Dockerfile -t "ghcr.io/vdavid/cmdr-demo:$TAG" apps/desktop/build-demo
-          docker push "ghcr.io/vdavid/cmdr-demo:$TAG"
+          docker build -f apps/website/demo-image.Dockerfile -t "ghcr.io/getcmdr/cmdr-demo:$TAG" apps/desktop/build-demo
+          docker push "ghcr.io/getcmdr/cmdr-demo:$TAG"
 
       - name: Read the image digest
         id: digest
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          digest=$(docker buildx imagetools inspect "ghcr.io/vdavid/cmdr-demo:$TAG" --format '{{.Manifest.Digest}}')
+          digest=$(docker buildx imagetools inspect "ghcr.io/getcmdr/cmdr-demo:$TAG" --format '{{.Manifest.Digest}}')
           if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-            echo "::error::Couldn't read the digest of ghcr.io/vdavid/cmdr-demo:$TAG (got '$digest')."
+            echo "::error::Couldn't read the digest of ghcr.io/getcmdr/cmdr-demo:$TAG (got '$digest')."
             exit 1
           fi
           echo "digest=${digest#sha256:}" >>"$GITHUB_OUTPUT"
-          echo "ghcr.io/vdavid/cmdr-demo:$TAG is $digest"
+          echo "ghcr.io/getcmdr/cmdr-demo:$TAG is $digest"
 
       # Signed SLSA provenance naming this workflow, stored on the repo and pushed beside the image.
       - name: Attest the demo image
         if: steps.existing.outputs.found != 'true'
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
-          subject-name: ghcr.io/vdavid/cmdr-demo
+          subject-name: ghcr.io/getcmdr/cmdr-demo
           subject-digest: sha256:${{ steps.digest.outputs.digest }}
           push-to-registry: true
 
@@ -1161,8 +1161,8 @@ jobs:
           DIGEST: ${{ steps.digest.outputs.digest }}
         run: |
           docker logout ghcr.io
-          if ! docker manifest inspect "ghcr.io/vdavid/cmdr-demo@sha256:$DIGEST" >/dev/null; then
-            echo "::error::The demo image isn't publicly readable. Set the cmdr-demo package's visibility to public: github.com/users/vdavid/packages/container/cmdr-demo/settings."
+          if ! docker manifest inspect "ghcr.io/getcmdr/cmdr-demo@sha256:$DIGEST" >/dev/null; then
+            echo "::error::The demo image isn't publicly readable. Set the cmdr-demo package's visibility to public: github.com/orgs/getcmdr/packages/container/cmdr-demo/settings."
             exit 1
           fi
 
@@ -1404,9 +1404,10 @@ jobs:
 
   # Signed SLSA build provenance for every asset on the release, and signed SBOM attestations
   # binding each SBOM to the builds it describes. Anyone can then check a download with
-  # `gh attestation verify <file> --repo vdavid/cmdr`. Because this runs inside a reusable
+  # `gh attestation verify <file> --repo getcmdr/cmdr`. Because this runs inside a reusable
   # workflow, the signing certificate names `release-pipeline.yml` as the signer, so
-  # `--signer-workflow vdavid/cmdr/.github/workflows/release-pipeline.yml` pins it.
+  # `--signer-workflow getcmdr/cmdr/.github/workflows/release-pipeline.yml` pins it. Releases up to
+  # and including v0.60.0 were built before the move to the org, so their attestations name `vdavid/cmdr`.
   #
   # ❗ In `ci` mode it runs AFTER `publish`, and nothing waits on it. Two reasons:
   # - It attests the assets AS PUBLISHED, downloaded back from the release, ❌ never the

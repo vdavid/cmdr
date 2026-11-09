@@ -7,7 +7,7 @@ import (
 )
 
 // repo is GitHub's current name for this repo, set once in `main` before anything talks to
-// GitHub. Not a constant: it's `vdavid/cmdr` today and may become `getcmdr/cmdr` (#476), and
+// GitHub. Not a constant: the repo moved from `vdavid/cmdr` to `getcmdr/cmdr` (#476), and
 // `gh repo view` answers with the current name even through a remote that still names the old one.
 var repo string
 

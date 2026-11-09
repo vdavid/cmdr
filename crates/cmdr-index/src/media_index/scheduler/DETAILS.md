@@ -108,7 +108,7 @@ preview.
 **Symlink rows never qualify** (`is_symlink = 0` in the SQL, the same filter in `walk_image_entries_in_dirs`). The
 privacy exclusion judges the LINK's path while a read follows it, so `scan.jpg -> ~/Documents/IDs/passport.jpg` would
 store an excluded file's OCR text, tags, and embedding under an included path, and a link can reach another volume
-entirely ([#532](https://github.com/vdavid/cmdr/issues/532)). The rows drop BEFORE `qualify_dir`, so a linked `DSC.jpg`
+entirely ([#532](https://github.com/getcmdr/cmdr/issues/532)). The rows drop BEFORE `qualify_dir`, so a linked `DSC.jpg`
 beside a real `DSC.cr2` leaves the RAW to qualify alone. A symlink row stored before the filter existed is absent from
 the walk, so the next completed pass's whole-store GC (or a tick's scoped GC over its dir) collects it. The local read
 refuses a link too, as a backstop: `../backend/DETAILS.md` § FFI discipline and hostile input.

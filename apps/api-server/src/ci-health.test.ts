@@ -21,7 +21,7 @@ function run(conclusion: string | null, overrides: Partial<WorkflowRun> = {}): W
   const id = nextRunId++
   return {
     id,
-    html_url: `https://github.com/vdavid/cmdr/actions/runs/${String(id)}`,
+    html_url: `https://github.com/getcmdr/cmdr/actions/runs/${String(id)}`,
     head_sha: `${String(id)}abcdef0123456789`,
     event: 'push',
     status: conclusion === null ? 'in_progress' : 'completed',
@@ -58,7 +58,7 @@ function fakeGitHub(ci: FakeCi) {
     }
     const jobs = /^\/repos\/vdavid\/cmdr\/actions\/runs\/(\d+)\/jobs$/.exec(url.pathname)
     if (jobs) return Promise.resolve(Response.json({ jobs: ci.jobs?.[Number(jobs[1])] ?? [] }))
-    if (url.pathname === '/repos/vdavid/cmdr/commits/main') {
+    if (url.pathname === '/repos/getcmdr/cmdr/commits/main') {
       const newestPush = ci.runs['ci.yml:push']?.[0]
       const head = ci.head ?? { sha: newestPush?.head_sha ?? 'deadbeef', date: hoursAgo(2) }
       return Promise.resolve(Response.json({ sha: head.sha, commit: { committer: { date: head.date } } }))
@@ -82,7 +82,7 @@ function healthy(overrides: Partial<FakeCi['runs']> = {}): FakeCi['runs'] {
 let db: SqliteD1
 
 function env(overrides: Partial<Bindings> = {}): Bindings {
-  return { TELEMETRY_DB: db.d1, CI_HEALTH_REPO: 'vdavid/cmdr', ...overrides } as Bindings
+  return { TELEMETRY_DB: db.d1, CI_HEALTH_REPO: 'getcmdr/cmdr', ...overrides } as Bindings
 }
 
 function opsEvents(): { kind: string; message: string }[] {

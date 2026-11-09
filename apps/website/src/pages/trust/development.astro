@@ -19,7 +19,7 @@ import {
     window,
 } from '../../lib/trust-development'
 
-const repo = 'https://github.com/vdavid/cmdr'
+const repo = 'https://github.com/getcmdr/cmdr'
 const fmt = (n: number) => n.toLocaleString('en-US')
 // Rounded, because the counts come from a pattern match over the source (see the data module).
 const approx = (n: number) => fmt(Math.round(n / 100) * 100)
@@ -170,7 +170,7 @@ const toc = [
         <li>
             <strong>OpenSSF Scorecard</strong> grades the repo's supply-chain practices on every push to
             <code>main</code>, and the
-            <a href="https://scorecard.dev/viewer/?uri=github.com/vdavid/cmdr">results are public</a>.
+            <a href="https://scorecard.dev/viewer/?uri=github.com/getcmdr/cmdr">results are public</a>.
         </li>
         <li>
             <strong>Static analysis (CodeQL)</strong> scans the GitHub workflows, the TypeScript, and the Rust code:
@@ -369,7 +369,9 @@ const toc = [
             the update signatures come from the maintainer's Mac). It also publishes CycloneDX
             SBOMs (software bills of materials) for the Rust and JavaScript dependencies, signed and tied to the builds
             they describe. Check any download with
-            <code>gh attestation verify &lt;file&gt; --repo vdavid/cmdr</code>.
+            <code>gh attestation verify &lt;file&gt; --repo getcmdr/cmdr</code>, or
+            <code>--repo vdavid/cmdr</code> for releases up to and including v0.60.0, built before the repository
+            moved.
         </li>
         <li>
             <strong>Where downloads come from</strong>: the release workflow copies each release's files to

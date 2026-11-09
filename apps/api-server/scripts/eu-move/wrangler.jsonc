@@ -1,4 +1,4 @@
-// The EU move tool (vdavid/cmdr#805). ❗ Never `wrangler deploy` this: it runs only as
+// The EU move tool (getcmdr/cmdr#805). ❗ Never `wrangler deploy` this: it runs only as
 // `wrangler dev --config scripts/eu-move/wrangler.jsonc --ip 127.0.0.1 --port <random>`, with every
 // binding remote, so it reads and writes the REAL production resources from the laptop and nothing
 // public exists. `worker.js` says what it does; `docs/notes/eu-data-moves-2026-11.md` is the runbook.

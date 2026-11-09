@@ -8,7 +8,7 @@ func TestParseRepoName(t *testing.T) {
 		ok       bool
 	}{
 		{"vdavid/cmdr\n", "vdavid/cmdr", true},
-		// The org the repo may move to (#476): `gh repo view` names it even through a remote
+		// The org the repo moved to (#476): `gh repo view` names it even through a remote
 		// that still says `vdavid/cmdr`, since GitHub redirects the old name.
 		{"getcmdr/cmdr", "getcmdr/cmdr", true},
 		{"", "", false},

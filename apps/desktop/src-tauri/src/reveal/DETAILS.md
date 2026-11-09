@@ -1,6 +1,6 @@
 # Reveal in Cmdr: architecture and decisions
 
-Up: `CLAUDE.md`. What's still open: the onboarding offer ([#272](https://github.com/vdavid/cmdr/issues/272)), and per-app coverage ([#273](https://github.com/vdavid/cmdr/issues/273)).
+Up: `CLAUDE.md`. What's still open: the onboarding offer ([#272](https://github.com/getcmdr/cmdr/issues/272)), and per-app coverage ([#273](https://github.com/getcmdr/cmdr/issues/273)).
 
 ## The mechanism
 
@@ -117,7 +117,7 @@ that command.
 A file navigates the focused pane to its parent and puts the cursor on it. A folder is navigated INTO. So a reveal of a
 folder becomes an open of it; Finder parity isn't the goal, landing where the user asked about is.
 
-Which tab, per origin (decided by David, 2026-11-02, in [#853](https://github.com/vdavid/cmdr/issues/853)):
+Which tab, per origin (decided by David, 2026-11-02, in [#853](https://github.com/getcmdr/cmdr/issues/853)):
 
 - **A revealed file keeps the current tab.** A reveal points at something. Other files in its directory are selected too;
   files elsewhere are dropped with a log line saying how many, since one pane shows one directory.
@@ -326,10 +326,10 @@ the once-ever notice the first time a reveal actually lands.
 
 ## What's not built
 
-An onboarding offer: GitHub [#272](https://github.com/vdavid/cmdr/issues/272).
+An onboarding offer: GitHub [#272](https://github.com/getcmdr/cmdr/issues/272).
 
 **Decision: no `public.folder` LaunchServices handler** (so `open .` and Spotlight folder hits would land in Cmdr). David
-closed [#271](https://github.com/vdavid/cmdr/issues/271) on 2026-11-02: reveal and "Open in Cmdr" cover most of the need,
+closed [#271](https://github.com/getcmdr/cmdr/issues/271) on 2026-11-02: reveal and "Open in Cmdr" cover most of the need,
 and the only route left is the fragile `defaults write` recipe.
 
 **The folder handler has no official route on macOS 27.** `NSWorkspace.setDefaultApplication(at:toOpen:)` and

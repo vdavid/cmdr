@@ -822,7 +822,7 @@ stayed attached (API-driven ejects of APFS media can do that: `NSWorkspace` ejec
 the image attached, `docs/notes/diskarbitration-unmount-evidence-2026-09.md`), the eject answers `Ok` with an `info`
 line: the person's files are safe to unplug, and `diskutil` gives no typed signal to tell the case apart. Revisit when
 someone reports a drive still powered after Cmdr's eject, or when the DA teardown lands, whose `DADiskEject` status
-would make it a typed outcome (GitHub [#249](https://github.com/vdavid/cmdr/issues/249)).
+would make it a typed outcome (GitHub [#249](https://github.com/getcmdr/cmdr/issues/249)).
 
 **One eject at a time per volume.** `eject` hands the pipeline to `in_flight::join_or_start`: a request for a volume
 whose eject is still running JOINS that flight and gets its answer, with no second teardown. A slow `diskutil` (10.5 s

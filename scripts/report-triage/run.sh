@@ -19,7 +19,7 @@ if [[ -d "$work/cmdr/.git" ]]; then
   git -C "$work/cmdr" fetch --quiet --depth 1 origin main
   git -C "$work/cmdr" reset --quiet --hard origin/main
 else
-  git clone --quiet --depth 1 https://github.com/vdavid/cmdr "$work/cmdr"
+  git clone --quiet --depth 1 https://github.com/getcmdr/cmdr "$work/cmdr"
 fi
 # The agent's two tools, fresh every run so nothing it did yesterday carries over. settings.json denies the sandbox
 # writes to both, so a run can't rewrite them (or unzip a bundle over them) mid-run.

@@ -597,7 +597,7 @@ runs most-actionable first over `holders.named`:
    the scan found nobody. A `diskimagesiod` is the exception: it's invisible to the walk too, but the backend names its
    image as a `DiskImage` holder, so that refusal reads rule 2. The other ways to land here (a holder that let go before
    the scan ran, a memory-map-only holder) are served by "wait, then try again" too. Naming the daemon itself is the
-   deferred DiskArbitration teardown (GitHub [#249](https://github.com/vdavid/cmdr/issues/249)).
+   deferred DiskArbitration teardown (GitHub [#249](https://github.com/getcmdr/cmdr/issues/249)).
 7. Otherwise (an `incomplete` scan that named nobody) the unnamed `errors.eject.unmountRefused` line.
 
 ❗ **`Unclassified` is worded as a PROCESS, ❌ never an app or a tool.** It means "named, but nothing said what kind"

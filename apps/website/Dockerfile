@@ -2,7 +2,7 @@
 # global ARG, because `COPY --from` can't expand one. The placeholder default names no image, so a
 # build that forgets the digest fails on the pull.
 ARG DEMO_IMAGE_DIGEST=0000000000000000000000000000000000000000000000000000000000000000
-FROM ghcr.io/vdavid/cmdr-demo@sha256:${DEMO_IMAGE_DIGEST} AS demo-bundle
+FROM ghcr.io/getcmdr/cmdr-demo@sha256:${DEMO_IMAGE_DIGEST} AS demo-bundle
 
 # Build stage
 FROM node:26-alpine@sha256:143494b1da2945f061539253adc65e4f1569ddf07da2d384c022c791a9d90a4a AS builder
@@ -38,7 +38,7 @@ COPY CHANGELOG.md feature-status.json ./
 # it (Rust to WASM, then the desktop frontend) and publishes it as an image, so this box never
 # compiles Rust. The deploy passes `DEMO_IMAGE_DIGEST`, the digest CI pushed and signed into the
 # webhook payload (`infra/deploy-webhook/deploy-website.sh`); a local build passes a dir instead, with
-# `--build-context ghcr.io/vdavid/cmdr-demo=apps/desktop/build-demo`.
+# `--build-context ghcr.io/getcmdr/cmdr-demo=apps/desktop/build-demo`.
 # `CMDR_WEBSITE_DEMO=1` makes an empty bundle fail too, so a deploy never drops /demo/ silently.
 # `apps/website/DETAILS.md` § Browser demo.
 COPY --from=demo-bundle / ./apps/desktop/build-demo/

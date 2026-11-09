@@ -2,7 +2,7 @@
 
 The drive search's core. The host side (routing one volume per search, loading and caching arenas, live runs over
 unindexed ground, history, AI translation) is `apps/desktop/src-tauri/src/search/DETAILS.md`. Extracted under
-[#302](https://github.com/vdavid/cmdr/issues/302) (`docs/specs/search-crate-plan.md`, now retired).
+[#302](https://github.com/getcmdr/cmdr/issues/302) (`docs/specs/search-crate-plan.md`, now retired).
 
 ## Why a crate
 

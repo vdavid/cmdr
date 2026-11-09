@@ -122,7 +122,7 @@
                 >
             {/if}
             <span class="separator">•</span>
-            <a href="https://github.com/vdavid/cmdr" onclick={handleLinkClick('https://github.com/vdavid/cmdr')}
+            <a href="https://github.com/getcmdr/cmdr" onclick={handleLinkClick('https://github.com/getcmdr/cmdr')}
                 >{tString('licensing.about.linkGithub')}</a
             >
             <span class="separator">•</span>

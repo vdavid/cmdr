@@ -32,7 +32,7 @@ Current version: ${version}
 - [Blog](${site}/blog/): Updates and news
 - [Changelog](${site}/changelog/): Release notes
 - [Roadmap](${site}/roadmap/): What's coming next
-- [GitHub](https://github.com/vdavid/cmdr): Source code and issues
+- [GitHub](https://github.com/getcmdr/cmdr): Source code and issues
 - [RSS feed](${site}/rss.xml): Subscribe to blog updates
 
 ## Features

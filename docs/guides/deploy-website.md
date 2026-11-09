@@ -42,7 +42,7 @@ sudo chown deploy-cmdr:deploy-cmdr /opt/cmdr
 ### 2. Clone the repository
 
 ```bash
-sudo -u deploy-cmdr git clone https://github.com/vdavid/cmdr.git /opt/cmdr
+sudo -u deploy-cmdr git clone https://github.com/getcmdr/cmdr.git /opt/cmdr
 ```
 
 ### 3. Install the webhook listener
@@ -141,7 +141,7 @@ docker compose restart caddy
 
 ### 7. Add secrets to GitHub
 
-Go to https://github.com/vdavid/cmdr/settings/secrets/actions → **New repository secret**
+Go to https://github.com/getcmdr/cmdr/settings/secrets/actions → **New repository secret**
 
 Add this secret:
 
@@ -242,8 +242,8 @@ cd apps/website
 # Build first so the old container keeps serving during the build (avoids ~15s downtime).
 # The latest release's demo image, pinned by its digest. Off the box, `scripts/released-demo.sh` does this
 # and also checks the image's provenance (it needs `gh`); its header names the demo of releases up to 0.59.0.
-TAG=$(curl -fsSL https://api.github.com/repos/vdavid/cmdr/releases/latest | jq -r .tag_name)
-DIGEST=$(docker buildx imagetools inspect "ghcr.io/vdavid/cmdr-demo:$TAG" --format '{{.Manifest.Digest}}')
+TAG=$(curl -fsSL https://api.github.com/repos/getcmdr/cmdr/releases/latest | jq -r .tag_name)
+DIGEST=$(docker buildx imagetools inspect "ghcr.io/getcmdr/cmdr-demo:$TAG" --format '{{.Manifest.Digest}}')
 docker compose build --no-cache --build-arg DEMO_IMAGE_DIGEST="${DIGEST#sha256:}"
 docker compose down
 docker compose up -d

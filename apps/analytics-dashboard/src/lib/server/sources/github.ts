@@ -22,7 +22,7 @@ export interface GitHubStarsData {
   combinedDaily: DailyStarCount[]
 }
 
-const TRACKED_REPOS = ['vdavid/cmdr', 'vdavid/mtp-rs']
+const TRACKED_REPOS = ['getcmdr/cmdr', 'vdavid/mtp-rs']
 
 interface RawStargazer {
   starred_at: string
@@ -185,7 +185,7 @@ export async function fetchGitHubData(env: GitHubEnv): Promise<SourceResult<GitH
       headers.Authorization = `Bearer ${env.GITHUB_TOKEN}`
     }
 
-    const response = await fetch('https://api.github.com/repos/vdavid/cmdr/releases', { headers })
+    const response = await fetch('https://api.github.com/repos/getcmdr/cmdr/releases', { headers })
     if (!response.ok) {
       throw new Error(`GitHub API returned ${String(response.status)}`)
     }

@@ -15,7 +15,7 @@ Email **[security@getcmdr.com](mailto:security@getcmdr.com)**. Please don't open
 pull request for a security problem.
 
 You can also use GitHub's private reporting: the **Report a vulnerability** button on the repository's
-[Security tab](https://github.com/vdavid/cmdr/security/advisories/new).
+[Security tab](https://github.com/getcmdr/cmdr/security/advisories/new).
 
 A good report has:
 
@@ -82,7 +82,7 @@ Where the note goes:
 
 - **Fixes in the app** go in the `### Security` section of the [changelog](CHANGELOG.md), in the release that fixes
   them. Hardening that fixes no flaw goes under "Changed", so every Security line is a fixed vulnerability.
-- **A [GitHub security advisory](https://github.com/vdavid/cmdr/security/advisories) with a CVE ID** comes on top for a
+- **A [GitHub security advisory](https://github.com/getcmdr/cmdr/security/advisories) with a CVE ID** comes on top for a
   flaw in Cmdr's own code when someone can exploit it without already running code on the user's Mac (for example
   through a file, a network server, a web page, or the update channel), or when it exposes passwords, keys, or user data
   to someone other than the user. Fixes that only guard against an attacker who already runs code on the Mac get the

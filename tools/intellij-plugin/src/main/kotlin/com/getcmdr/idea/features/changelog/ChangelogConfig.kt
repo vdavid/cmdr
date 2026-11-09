@@ -17,7 +17,7 @@ data class ChangelogConfig(
 
     companion object : FeatureConfig<ChangelogConfig>("changelog") {
         private const val HASH_PLACEHOLDER = "{hash}"
-        private const val DEFAULT_COMMIT_URL = "https://github.com/vdavid/cmdr/commit/$HASH_PLACEHOLDER"
+        private const val DEFAULT_COMMIT_URL = "https://github.com/getcmdr/cmdr/commit/$HASH_PLACEHOLDER"
 
         private val log = logger<ChangelogConfig>()
 

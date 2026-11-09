@@ -10,7 +10,7 @@
     import { loadThirdPartyPackages, type AttributedPackage } from './load-third-party-packages'
 
     /** The repo's notices file on GitHub; the full license texts also ship inside the app bundle. */
-    const NOTICES_URL = 'https://github.com/vdavid/cmdr/blob/main/THIRD-PARTY-NOTICES.md'
+    const NOTICES_URL = 'https://github.com/getcmdr/cmdr/blob/main/THIRD-PARTY-NOTICES.md'
 
     interface Props {
         onClose: () => void

@@ -20,7 +20,7 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
 
 - **Pasteboard layout is decided ONCE per drag session by the source volume's locality, never per item.** Local sessions
   match Finder: file-url + `NSFilenamesPboardType`, NO `public.utf8-plain-text` (the path-text item made browser upload
-  widgets read the drop as text: [issue #28](https://github.com/vdavid/cmdr/issues/28); don't re-add it). Virtual
+  widgets read the drop as text: [issue #28](https://github.com/getcmdr/cmdr/issues/28); don't re-add it). Virtual
   sessions (MTP, search-results, archive-inner — ❌ NOT direct SMB, whose share stays OS-mounted) offer only an
   `NSFilePromiseProvider`, which nothing but Finder reads. The policy is pure in
   `native_drag/type_plan.rs::plan_pasteboard_items`.

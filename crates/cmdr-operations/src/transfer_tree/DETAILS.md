@@ -2,7 +2,7 @@
 
 Read this before any non-trivial work here. Must-knows: `CLAUDE.md`. What the tree promises the person watching it, and
 the frontend half: `apps/desktop/src/lib/file-operations/transfer-tree/DETAILS.md`. Issue:
-[#382](https://github.com/vdavid/cmdr/issues/382).
+[#382](https://github.com/getcmdr/cmdr/issues/382).
 
 **Budget for a million-file job**: ≤ 64 B per node in memory (below), freed when its dialog closes after the operation
 settles (at most 10 minutes later); ≤ 200 rows per view answer and ≤ 2,000 hand toggles each way per request; O(depth)

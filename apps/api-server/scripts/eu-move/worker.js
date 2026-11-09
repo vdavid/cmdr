@@ -1,5 +1,5 @@
 /**
- * The EU move tool (vdavid/cmdr#805): copies the error-report bucket and reconciles the telemetry
+ * The EU move tool (getcmdr/cmdr#805): copies the error-report bucket and reconciles the telemetry
  * database between the old (unlocked) Cloudflare resources and their `eu`-jurisdiction twins.
  *
  * ❗ It runs ONLY under `wrangler dev` with remote bindings (`wrangler.jsonc` beside this file),

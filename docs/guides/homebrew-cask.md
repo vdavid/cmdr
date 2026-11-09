@@ -20,7 +20,7 @@ tap, trust, install, and a follow-up `brew upgrade` all succeeded, 2026-10-16.)
   that chain dies on its first step, while the single install works there and auto-updates Homebrew first.
 - A bare `brew install --cask cmdr` after `brew tap` doesn't trust anything, so it hits the untrusted-tap refusal.
 - Homebrew 7.0.0 and 7.0.1 loaded every cask while tapping, so auto-tapping an untrusted tap died with
-  `Cannot tap vdavid/tap: invalid syntax in tap!` (vdavid/cmdr#102; fixed in 7.0.2 by Homebrew/brew#23972).
+  `Cannot tap vdavid/tap: invalid syntax in tap!` (getcmdr/cmdr#102; fixed in 7.0.2 by Homebrew/brew#23972).
   `brew install` auto-updates Homebrew before tapping, which moves those users past it.
 
 The cask file in this repo, `apps/desktop/packaging/homebrew/cmdr.rb`, is the source of truth for the cask's **shape**:
@@ -38,15 +38,15 @@ lines, and pushes a `cmdr <version>` commit. Releases need zero extra work for b
 
 ### `HOMEBREW_TAP_DEPLOY_KEY` setup
 
-The bump job pushes to the tap over SSH with the `HOMEBREW_TAP_DEPLOY_KEY` Actions secret (stored in `vdavid/cmdr`): the
-private half of a deploy key that can write to `vdavid/homebrew-tap` and nothing else. `smb2` and `mtp-rs` push their
-formulas with their own keys of the same kind. The job skips cleanly when the secret is absent, so a missing key never
-fails a release. To replace it:
+The bump job pushes to the tap over SSH with the `HOMEBREW_TAP_DEPLOY_KEY` Actions secret (stored in `getcmdr/cmdr`):
+the private half of a deploy key that can write to `vdavid/homebrew-tap` and nothing else. `smb2` and `mtp-rs` push
+their formulas with their own keys of the same kind. The job skips cleanly when the secret is absent, so a missing key
+never fails a release. To replace it:
 
 1. `ssh-keygen -t ed25519 -f key -N "" -C "cmdr release workflow (tap bump)"`
 2. Add `key.pub` at `vdavid/homebrew-tap` > Settings > Deploy keys, with "Allow write access" on, and delete the old
    one.
-3. `gh secret set HOMEBREW_TAP_DEPLOY_KEY -R vdavid/cmdr < key`, then delete both key files.
+3. `gh secret set HOMEBREW_TAP_DEPLOY_KEY -R getcmdr/cmdr < key`, then delete both key files.
 
 ❌ Don't go back to a personal access token: even a fine-grained one is tied to your account, and a deploy key can only
 ever touch the tap.
@@ -125,7 +125,7 @@ install. Full install testing needs a clean machine or a VM.
 
 ## Resubmitting to Homebrew/homebrew-cask
 
-The tap is the live channel until `vdavid/cmdr` clears Homebrew's notability bar. Then the goal is a tap-free
+The tap is the live channel until `getcmdr/cmdr` clears Homebrew's notability bar. Then the goal is a tap-free
 `brew install --cask cmdr` straight from `Homebrew/homebrew-cask`.
 
 The self-submission bar is 90 forks / 90 watchers / 225 stars; for a non-owner submitter it's 30 forks / 30 watchers /

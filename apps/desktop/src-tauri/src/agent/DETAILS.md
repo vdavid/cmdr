@@ -3,7 +3,7 @@
 Pull-tier docs for `src-tauri/src/agent/`. Must-knows live in `CLAUDE.md`.
 
 The agent is the app's AI agent. Its design principles and its numbered decision log are at the end of this file
-(§ Principles, § Decision log); what's designed and unbuilt is in [GitHub issues labelled `ai`](https://github.com/vdavid/cmdr/issues?q=is%3Aopen+label%3Aai). Its first
+(§ Principles, § Decision log); what's designed and unbuilt is in [GitHub issues labelled `ai`](https://github.com/getcmdr/cmdr/issues?q=is%3Aopen+label%3Aai). Its first
 shipped slice is **Ask Cmdr**:
 a chat rail where the user talks to a BYO-key LLM that can see what Cmdr already knows (the drive index, importance, the
 operation log, live app state), answers questions about their files, and works the app on a turn the user started.
@@ -208,7 +208,7 @@ These govern anything the decision log below doesn't answer. `(principle 3)` cit
 
 The agent's design decisions, numbered. **The numbers are load-bearing**: code comments and docs cite them as
 `agent decision D49`, so a number is never reused or renumbered. Each entry: the decision, its why, and its state today
-(built, superseded, or unbuilt). Unbuilt work lives in [GitHub issues labelled `ai`](https://github.com/vdavid/cmdr/issues?q=is%3Aopen+label%3Aai).
+(built, superseded, or unbuilt). Unbuilt work lives in [GitHub issues labelled `ai`](https://github.com/getcmdr/cmdr/issues?q=is%3Aopen+label%3Aai).
 
 Vocabulary: "the agent" is this feature; external MCP clients are "outside clients" or "AI clients"; any future sub-entity is a
 "subagent". "AI" stays the umbrella for capabilities (the settings section, provider config, one-shot features).

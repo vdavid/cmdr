@@ -1,6 +1,6 @@
 # Log redaction markers plan
 
-Issue: [#491](https://github.com/vdavid/cmdr/issues/491) (error-report bundles keep leaking file and folder names).
+Issue: [#491](https://github.com/getcmdr/cmdr/issues/491) (error-report bundles keep leaking file and folder names).
 Evidence: `ERR-VEZUB` and `ERR-VUFQZ` (0.54.0), both already redacted; the leaks are what survived. Plan written
 2026-10-19 against `ac4f12335` (#487 landed: every FE value renders through `describeForLog`). "Leak N" below means item
 N of the issue's "What's wrong" list (1 paren in a segment, 2 FE-flattened typed error, 3 smb2 positional path, 4

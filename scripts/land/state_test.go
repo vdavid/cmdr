@@ -475,7 +475,7 @@ func TestCIVerdictAcrossReRuns(t *testing.T) {
 func TestLeftoverRuns(t *testing.T) {
 	ours := func(id int64, status string) workflowRun {
 		run := workflowRun{ID: id, Status: status}
-		// The org the repo may move to (#476): the match follows the resolved name, not a pin.
+		// The org the repo moved to (#476): the match follows the resolved name, not a pin.
 		run.HeadRepository.FullName = "getcmdr/cmdr"
 		return run
 	}

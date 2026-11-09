@@ -387,7 +387,7 @@ The release workflow runs on a self-hosted macOS runner and can save a bunch of 
 
 To set one up:
 
-1. Go to [repo](https://github.com/vdavid/cmdr) → **Settings** → **Actions** → **Runners** → **New self-hosted runner**
+1. Go to [repo](https://github.com/getcmdr/cmdr) → **Settings** → **Actions** → **Runners** → **New self-hosted runner**
 2. Select **macOS** and **ARM64**
 3. Follow GitHub's instructions to download, configure, and register the runner, and run it to test it works.
 4. Quit it, then install it as a launchd service so it starts on boot:

@@ -2,7 +2,7 @@ name: Scorecard
 
 # OpenSSF Scorecard: grades the repo's supply-chain hygiene (pinned actions, token permissions,
 # branch protection, signed releases, and more) and publishes the result to the public Scorecard
-# API, which backs the README badge and https://scorecard.dev/viewer/?uri=github.com/vdavid/cmdr.
+# API, which backs the README badge and https://scorecard.dev/viewer/?uri=github.com/getcmdr/cmdr.
 # The SARIF also lands in the repo's code-scanning tab, one alert per failing check.
 #
 # ❗ `publish_results: true` makes the API verify this workflow before accepting a result: no

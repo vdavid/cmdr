@@ -3,7 +3,7 @@
  * See the "Consistent color coding" decision in CLAUDE.md.
  */
 
-/** getcmdr.com / vdavid/cmdr (the primary product). */
+/** getcmdr.com / getcmdr/cmdr (the primary product). */
 export const COLOR_GOLD = '#ffc206'
 /** vdavid/mtp-rs (the library repo). */
 export const COLOR_PURPLE = '#a78bfa'

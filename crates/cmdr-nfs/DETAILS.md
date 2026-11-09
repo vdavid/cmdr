@@ -2,7 +2,7 @@
 
 Read this before any non-trivial work here: editing, planning, reorganizing, or advising. Must-knows and the module map:
 `CLAUDE.md`. Where the design came from: `docs/specs/nfs-support-plan.md` (issue
-[#304](https://github.com/vdavid/cmdr/issues/304)).
+[#304](https://github.com/getcmdr/cmdr/issues/304)).
 
 ## The model
 

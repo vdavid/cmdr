@@ -173,7 +173,7 @@ paths, never by position (`mapping::self_entry_index`). When no href matches, a 
 Nextcloud served under a path prefix it doesn't know about answers without the prefix), so the self entry is the one
 that carries the collection's name and that every other entry sits directly inside; a lone entry counts, so a rewritten
 empty folder doesn't list itself. Two such candidates, or none, drop nothing. Unit-tested only: no fixture puts a
-rewriting proxy in front of a server (vdavid/cmdr#176). With redirects off, a PROPFIND on a slash-less collection that
+rewriting proxy in front of a server (getcmdr/cmdr#176). With redirects off, a PROPFIND on a slash-less collection that
 answers 3xx (nginx and some NAS firmware) is retried once WITH the slash.
 
 ## New names go out composed

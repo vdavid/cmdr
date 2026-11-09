@@ -455,8 +455,8 @@ function cappedUserAgent(userAgent: string | undefined): string | null {
 }
 
 const latestManifestUrl = 'https://getcmdr.com/latest.json'
-const githubLatestReleaseUrl = 'https://api.github.com/repos/vdavid/cmdr/releases/latest'
-const releasesPageUrl = 'https://github.com/vdavid/cmdr/releases/latest'
+const githubLatestReleaseUrl = 'https://api.github.com/repos/getcmdr/cmdr/releases/latest'
+const releasesPageUrl = 'https://github.com/getcmdr/cmdr/releases/latest'
 
 /** Five minutes of edge caching: a download burst costs one origin fetch, and a release goes live fast. */
 const latestVersionCacheSeconds = 300
@@ -553,7 +553,7 @@ function isMirrored(version: string): boolean {
 function releaseFileUrl(version: string, file: string): string {
   return isMirrored(version)
     ? `https://download.getcmdr.com/v${version}/${file}`
-    : `https://github.com/vdavid/cmdr/releases/download/v${version}/${file}`
+    : `https://github.com/getcmdr/cmdr/releases/download/v${version}/${file}`
 }
 
 telemetry.get('/download/:version/:arch', async (c) => {

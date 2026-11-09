@@ -6,8 +6,8 @@ edition = "2024"
 description = "Stream-based macOS FSEvents bindings for Cmdr, forked from `fsevent-stream` and maintained in the Cmdr monorepo."
 license = "MIT"
 keywords = ["filesystem", "events", "watch", "notify", "macos"]
-repository = "https://github.com/vdavid/cmdr"
-homepage = "https://github.com/vdavid/cmdr/tree/main/crates/fsevent-stream"
+repository = "https://github.com/getcmdr/cmdr"
+homepage = "https://github.com/getcmdr/cmdr/tree/main/crates/fsevent-stream"
 # No `publish = false`: cargo-about's `[private] ignore` would then drop the crate,
 # and with it the upstream MIT credit `THIRD-PARTY-NOTICES.md` must keep.
 

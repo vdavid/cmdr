@@ -580,7 +580,7 @@ Every statement is idempotent: each `WHERE` excludes what it already cleared, so
 Two repos feed the Cmdr backlog project (`https://github.com/users/vdavid/projects/2`), by two different routes, and the
 split is forced by how GitHub scopes project access.
 
-- **`vdavid/cmdr` (PUBLIC)** → `POST /webhook/github` (`webhook-github.ts` + `project-board.ts`). An `issues`/`opened`
+- **`getcmdr/cmdr` (PUBLIC)** → `POST /webhook/github` (`webhook-github.ts` + `project-board.ts`). An `issues`/`opened`
   delivery adds the issue and sets Status to Triage.
 - **`vdavid/cmdr-reports` (PRIVATE)** → the project's own built-in "Auto-add to project" workflow, configured in
   GitHub's UI.
@@ -749,7 +749,7 @@ comment with a line, and `applyCardRatings` (`report-ratings.ts`) copies that on
 
 David has GitHub's Actions failure emails OFF, so the Worker is how a red `main` reaches him. Code: `ci-health.ts` (the
 three-hour job), `ci-brief.ts` (the brief's line), `ci-github.ts` (the reads). Off when the `CI_HEALTH_REPO` var
-(`vdavid/cmdr`) is unset; every test env leaves it unset except the ones about it.
+(`getcmdr/cmdr`) is unset; every test env leaves it unset except the ones about it.
 
 - **Watched**: `ci.yml` push runs on `main` and its nightly `schedule` runs (two signals), `ci-upkeep.yml` (skipped
   while the file 404s), `slow-checks.yml`, `advisories.yml`. Per signal, the newest run that decided something:
@@ -770,7 +770,7 @@ three-hour job), `ci-brief.ts` (the brief's line), `ci-github.ts` (the reads). O
   `cmdr-m1`. Cache: `actions/cache/usage`. A part GitHub won't answer reads as unknown.
 - **API budget**: the job makes six reads a tick (five run listings and `main`'s head), plus one jobs read per red
   transition. The brief makes one PR listing, up to 30 lands times (one run listing plus at most three jobs reads), and
-  one cache read: about 25 calls on a 10-land day (verified live against `vdavid/cmdr`, 2026-11-05: 21 lands, 48 s).
+  one cache read: about 25 calls on a 10-land day (verified live against `getcmdr/cmdr`, 2026-11-05: 21 lands, 48 s).
 - **Token**: every read works unauthenticated on a public repo, but Workers share Cloudflare's egress IPs and their
   60-an-hour budget, so `GITHUB_PROJECT_TOKEN` rides along when set (a classic PAT reads public repos whatever its
   scope). Only sent, never widened.

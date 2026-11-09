@@ -22,7 +22,7 @@ import (
 // the demo off, so the check never needs the registry or a Rust build.
 // websiteDemoImagePlaceholder is the image the Dockerfile's `demo-bundle` stage names when no
 // `DEMO_IMAGE_DIGEST` is passed (its placeholder default), so a named build context can stand in.
-const websiteDemoImagePlaceholder = "ghcr.io/vdavid/cmdr-demo@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+const websiteDemoImagePlaceholder = "ghcr.io/getcmdr/cmdr-demo@sha256:0000000000000000000000000000000000000000000000000000000000000000"
 
 func RunWebsiteDockerBuild(ctx *CheckContext) (CheckResult, error) {
 	if !CommandExists("docker") {

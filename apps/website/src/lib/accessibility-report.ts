@@ -63,7 +63,7 @@ export interface CriterionRow {
   /** For a `'see-other'` row: the level column's text, like "See WCAG 2.2 tables". */
   seeLabel?: string
   remark: string
-  /** GitHub issues in `vdavid/cmdr` that track this row's gaps. */
+  /** GitHub issues in `getcmdr/cmdr` that track this row's gaps. */
   issues?: number[]
 }
 

@@ -16,7 +16,7 @@ desktop app both read it, so a status change in one place updates every surface.
       "name": "Search",
       "status": "alpha",
       "note": "One honest line about where the feature stands.",
-      "issueUrl": "https://github.com/vdavid/cmdr/issues/123"
+      "issueUrl": "https://github.com/getcmdr/cmdr/issues/123"
     }
   ]
 }

@@ -198,7 +198,7 @@ impl BundleScope {
 /// Default window for Flow A's manual-send path (and feedback with logs attached). Picked
 /// from "what would a user mean when they click 'send error report'?": a stuck moment is
 /// often an hour or more before the user gets to reporting it, so one hour missed the
-/// interesting part (vdavid/cmdr#605), while 24 h dilutes triage signal more than it adds
+/// interesting part (getcmdr/cmdr#605), while 24 h dilutes triage signal more than it adds
 /// context. The tail walker makes the width cheap, and [`FLOW_A_BUNDLE_CAP_MB`] still bounds
 /// the bundle: it fills newest-first, so a busy five hours loses its oldest lines, never the
 /// newest. The dialogs' copy says "the past five hours"; change both together.

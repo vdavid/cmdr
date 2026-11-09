@@ -161,7 +161,7 @@ describe('opener plugin', () => {
   it('opens a web or email link in a new browser tab, cut off from this page', () => {
     const opened = vi.spyOn(window, 'open').mockImplementation(() => null)
     try {
-      for (const url of ['https://github.com/vdavid/cmdr', 'http://example.com/', 'mailto:hello@getcmdr.com']) {
+      for (const url of ['https://github.com/getcmdr/cmdr', 'http://example.com/', 'mailto:hello@getcmdr.com']) {
         expect(call('plugin:opener|open_url', { url })).toBeNull()
         expect(opened).toHaveBeenLastCalledWith(url, '_blank', 'noopener,noreferrer')
       }

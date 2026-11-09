@@ -357,7 +357,7 @@ embeds it (below), and `/demo/` is a page of its own too, in the sitemap and `ll
 - **Decision: CI builds it, the server only copies it.** The Hetzner box also runs Caddy, Umami, Photato, and the
   grocery apps, and the demo's Vite build alone peaks around 1.7 GB RSS (with 2.6 GB free and no swap, 2026-11-04), so a
   Rust or Vite build there risks OOM-killing them. The release pipeline pushes the bundle as a `FROM scratch` image
-  (`demo-image.Dockerfile`) to `ghcr.io/vdavid/cmdr-demo`, with `GITHUB_TOKEN` and `packages: write` (no new secret).
+  (`demo-image.Dockerfile`) to `ghcr.io/getcmdr/cmdr-demo`, with `GITHUB_TOKEN` and `packages: write` (no new secret).
   The deploy keeps `--no-cache`.
 - **Decision: the demo ships at release cadence.** The site serves the LAST RELEASE's demo, not `main`'s. Building it
   per land put ~4 min of wasm builds in the Rust lane and a demo build in the website lane on every land run, for a page
@@ -378,18 +378,18 @@ embeds it (below), and `/demo/` is a page of its own too, in the sitemap and `ll
   would need a land of its own. Releases up to 0.59.0 published no image: the script maps them to the demo `main`
   deployed at the cutover, pinned by digest in the script.
 - **Decision: the build pins the image by digest.** The Dockerfile's `demo-bundle` stage is
-  `FROM ghcr.io/vdavid/cmdr-demo@sha256:${DEMO_IMAGE_DIGEST}` (a tag can be moved, and Scorecard's Pinned-Dependencies
+  `FROM ghcr.io/getcmdr/cmdr-demo@sha256:${DEMO_IMAGE_DIGEST}` (a tag can be moved, and Scorecard's Pinned-Dependencies
   accepts this `@sha256:${ARG}` form). The deploy sends the digest, with the release tag for the log, in the HMAC-signed
   webhook payload (the signature covers the whole body); `hooks.json` passes them to `deploy-website.sh` as
   `DEMO_IMAGE_DIGEST` and `DEMO_VERSION`. Two senders: `ci.yml`'s `deploy-website` (a land that touched the site; it
   runs `released-demo.sh`) and the release pipeline's `publish` (the new release's `latest.json` and demo, by the digest
   its `demo` job pushed).
 - **The image must be public**: the server pulls anonymously. GHCR may create the `cmdr-demo` package private on its
-  first push; then David sets it public once at github.com/users/vdavid/packages/container/cmdr-demo/settings. The
+  first push; then David sets it public once at github.com/orgs/getcmdr/packages/container/cmdr-demo/settings. The
   release's `demo` job checks an anonymous pull before the release can publish and names that page when it fails.
 - **Local builds**: `CMDR_WEBSITE_DEMO=1 pnpm build` reads `apps/desktop/build-demo/` directly. A local Docker build
   passes that dir as a named build context for the placeholder ref the Dockerfile names without a digest:
-  `--build-context ghcr.io/vdavid/cmdr-demo@sha256:<64 zeros>=apps/desktop/build-demo` (what `website-docker-build`
+  `--build-context ghcr.io/getcmdr/cmdr-demo@sha256:<64 zeros>=apps/desktop/build-demo` (what `website-docker-build`
   does; without a local demo it uses an empty dir and `CMDR_WEBSITE_DEMO=0`).
 - **Changing the webhook**: the listener reads `hooks.json` only at start (no `-hotreload`), so a change to it takes a
   `sudo systemctl restart deploy-webhook` on the server after it lands, then a redeploy (`workflow_dispatch`).

@@ -27,7 +27,7 @@
         starChartXMin: number
     } = $props()
 
-    const repoColors: Record<string, string> = { 'vdavid/cmdr': COLOR_GOLD, 'vdavid/mtp-rs': COLOR_PURPLE }
+    const repoColors: Record<string, string> = { 'getcmdr/cmdr': COLOR_GOLD, 'vdavid/mtp-rs': COLOR_PURPLE }
 
     // A site with no configured website ID drops out rather than linking to a broken dashboard.
     const umamiLinks = $derived(
@@ -114,7 +114,7 @@
         <ExternalLinks
             links={[
                 ...umamiLinks,
-                { label: 'cmdr on GitHub', href: 'https://github.com/vdavid/cmdr' },
+                { label: 'cmdr on GitHub', href: 'https://github.com/getcmdr/cmdr' },
                 { label: 'mtp-rs on GitHub', href: 'https://github.com/vdavid/mtp-rs' },
             ]}
         />

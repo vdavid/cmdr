@@ -50,7 +50,7 @@ func main() {
 
 func run() error {
 	var cfg config
-	flag.StringVar(&cfg.repo, "repo", envOr("GITHUB_REPOSITORY", "vdavid/cmdr"), "the GitHub repo the release is on")
+	flag.StringVar(&cfg.repo, "repo", envOr("GITHUB_REPOSITORY", "getcmdr/cmdr"), "the GitHub repo the release is on")
 	flag.StringVar(&cfg.host, "host", defaultHost, "the mirror's public host")
 	flag.StringVar(&cfg.bucket, "bucket", defaultBucket, "the R2 bucket (jurisdiction eu)")
 	flag.StringVar(&cfg.dir, "dir", "", "where to download the release's files (default: a temp dir)")

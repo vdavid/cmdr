@@ -680,10 +680,10 @@ Each of these was decided against with a reason, and a reason nobody can find ge
 whichever doc owns the item now; ❌ nothing here restates a mechanism.
 
 - **`~/.ssh/config` host aliases as address-field completions**: GitHub
-  [#194](https://github.com/vdavid/cmdr/issues/194). It is a backend parser with its own edge cases, and the add form is
-  usable without it.
-- **One switcher row per phone** rather than one per protocol: GitHub [#192](https://github.com/vdavid/cmdr/issues/192).
-  The "(ADB)" name suffix is the stopgap.
+  [#194](https://github.com/getcmdr/cmdr/issues/194). It is a backend parser with its own edge cases, and the add form
+  is usable without it.
+- **One switcher row per phone** rather than one per protocol: GitHub
+  [#192](https://github.com/getcmdr/cmdr/issues/192). The "(ADB)" name suffix is the stopgap.
 - **A property-testing library on the frontend.** `proptest` stays Rust-only, and `address-parser.test.ts`'s example
   table is the contract instead (§ "Add mode, protocol first").
 - **A separate pane tint per server protocol.** `appearance.tintSmb` covers all four ("Tint server panes (SMB, SFTP,

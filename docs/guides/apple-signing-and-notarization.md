@@ -109,7 +109,7 @@ The API key approach is better than Apple ID: no MFA issues, no app-specific pas
 
 ### 3.1. Add the six secrets
 
-Go to https://github.com/vdavid/cmdr/settings/secrets/actions and add these:
+Go to https://github.com/getcmdr/cmdr/settings/secrets/actions and add these:
 
 - [x] `APPLE_CERTIFICATE`: base64-encoded `.p12` (from 1.5)
 - [x] `APPLE_CERTIFICATE_PASSWORD`: the password you set when exporting the `.p12`

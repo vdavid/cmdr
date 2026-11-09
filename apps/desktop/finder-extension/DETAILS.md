@@ -1,7 +1,7 @@
 # Finder extension: architecture and decisions
 
 Must-knows: `CLAUDE.md`. The service it calls and the delivery behind it: `src-tauri/src/reveal/DETAILS.md` § "Open in
-Cmdr". Why it exists and David's decisions: [#853](https://github.com/vdavid/cmdr/issues/853).
+Cmdr". Why it exists and David's decisions: [#853](https://github.com/getcmdr/cmdr/issues/853).
 
 ## Why it calls the service
 

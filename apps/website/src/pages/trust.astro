@@ -60,7 +60,7 @@ const toc = [
     <p>
         This page is for security and IT teams deciding whether to allow Cmdr, a file manager for macOS. It describes
         Cmdr version {verifiedAgainst.version} as of {verifiedAgainst.date}. The source code is public on
-        <a href="https://github.com/vdavid/cmdr">GitHub</a>, so you can check every statement here. If something is
+        <a href="https://github.com/getcmdr/cmdr">GitHub</a>, so you can check every statement here. If something is
         missing or unclear, write to <a href="mailto:security@getcmdr.com">security@getcmdr.com</a>.
     </p>
 
@@ -114,7 +114,7 @@ const toc = [
         <li>
             <strong>Self-certified to OpenChain</strong> ISO/IEC 5230 (open source license compliance) and ISO/IEC
             18974 (open source security assurance). The program is the
-            <a href="https://github.com/vdavid/cmdr/blob/main/docs/open-source-policy.md">open source policy</a>.
+            <a href="https://github.com/getcmdr/cmdr/blob/main/docs/open-source-policy.md">open source policy</a>.
         </li>
     </ul>
 
@@ -166,7 +166,7 @@ const toc = [
             A self-assessment, not an audit.
         </li>
         <li>
-            <strong>The <a href="https://github.com/vdavid/cmdr/blob/main/docs/threat-model.md">threat model</a></strong>:
+            <strong>The <a href="https://github.com/getcmdr/cmdr/blob/main/docs/threat-model.md">threat model</a></strong>:
             what Cmdr protects, from whom, and the risks that remain.
         </li>
         <li>
@@ -379,7 +379,7 @@ const toc = [
         <li>
             <strong>Installing</strong>: each release includes a signed, notarized installer package,
             <code>Cmdr_X.Y.Z_universal.pkg</code>, on its
-            <a href="https://github.com/vdavid/cmdr/releases/latest">GitHub release page</a>. It installs Cmdr to
+            <a href="https://github.com/getcmdr/cmdr/releases/latest">GitHub release page</a>. It installs Cmdr to
             <code>/Applications</code>, owned by the system, and runs no scripts. Cmdr also ships as a disk image (DMG)
             and a Homebrew cask.
         </li>
@@ -666,8 +666,10 @@ const toc = [
             attestation (<a href="https://slsa.dev/spec/v1.0/levels#build-l3">SLSA Build Level 3</a>) saying which
             commit and which GitHub workflow built it. The update signatures (<code>.sig</code>) are made offline (see
             "Signing keys" below), so they carry none. To check a download, run
-            <code>gh attestation verify &lt;file&gt; --repo vdavid/cmdr</code> with the
-            <a href="https://cli.github.com/">GitHub CLI</a>. The same provenance is attached to each release as a file
+            <code>gh attestation verify &lt;file&gt; --repo getcmdr/cmdr</code> with the
+            <a href="https://cli.github.com/">GitHub CLI</a>. Releases up to and including v0.60.0 were built
+            before the repository moved to the <code>getcmdr</code> organization, and their attestations name the old
+            repository, so check those with <code>--repo vdavid/cmdr</code>. The same provenance is attached to each release as a file
             ending in <code>.intoto.jsonl</code>.
         </li>
         <li>
@@ -852,7 +854,7 @@ const toc = [
             second-person code review.
         </li>
         <li>
-            A whole-app <a href="https://github.com/vdavid/cmdr/blob/main/docs/threat-model.md">threat model</a> on
+            A whole-app <a href="https://github.com/getcmdr/cmdr/blob/main/docs/threat-model.md">threat model</a> on
             GitHub lists what Cmdr protects, from whom, where the trust boundaries run, what stops each threat, and the
             risks that remain.
         </li>
@@ -898,7 +900,7 @@ const toc = [
             response times (<a href="#report">Report a vulnerability</a>).
         </li>
         <li>
-            <strong>License</strong>: <a href="https://github.com/vdavid/cmdr/blob/main/LICENSE">Business Source
+            <strong>License</strong>: <a href="https://github.com/getcmdr/cmdr/blob/main/LICENSE">Business Source
             License 1.1</a>. Free for personal use; commercial use needs a paid license. Each version converts to
             AGPL-3.0-or-later three years after its release, on the Change Date in its LICENSE file.
         </li>
@@ -922,9 +924,9 @@ const toc = [
         <li>
             <strong>Open source</strong>: how Cmdr meets the licenses of the open source it ships and keeps those
             components free of known vulnerabilities is the
-            <a href="https://github.com/vdavid/cmdr/blob/main/docs/open-source-policy.md">open source policy</a> on
+            <a href="https://github.com/getcmdr/cmdr/blob/main/docs/open-source-policy.md">open source policy</a> on
             GitHub. Every component and its license is in
-            <a href="https://github.com/vdavid/cmdr/blob/main/THIRD-PARTY-NOTICES.md">THIRD-PARTY-NOTICES.md</a>.
+            <a href="https://github.com/getcmdr/cmdr/blob/main/THIRD-PARTY-NOTICES.md">THIRD-PARTY-NOTICES.md</a>.
             For license and open-source questions, write to <a href="mailto:legal@getcmdr.com">legal@getcmdr.com</a>.
         </li>
         <li>
@@ -937,17 +939,17 @@ const toc = [
     <h2 id="report">Report a vulnerability</h2>
     <p>
         Email <a href="mailto:security@getcmdr.com">security@getcmdr.com</a>, or use GitHub's private reporting (the
-        <a href="https://github.com/vdavid/cmdr/security/advisories/new">Report a vulnerability</a> button on the
+        <a href="https://github.com/getcmdr/cmdr/security/advisories/new">Report a vulnerability</a> button on the
         repository's Security tab). There's no PGP key, by choice: send details you'd rather not email through GitHub's
         private reporting. Please don't open a public GitHub issue. The full policy, including scope and safe harbor, is
-        <a href="https://github.com/vdavid/cmdr/blob/main/SECURITY.md">SECURITY.md</a> on GitHub, also linked from
+        <a href="https://github.com/getcmdr/cmdr/blob/main/SECURITY.md">SECURITY.md</a> on GitHub, also linked from
         <a href="/.well-known/security.txt">security.txt</a>. Only the latest version gets fixes. Each fixed vulnerability
         gets a public note in the Security section of the <a href="/changelog">changelog</a>, as
-        <a href="https://github.com/vdavid/cmdr/blob/main/SECURITY.md#how-fixed-vulnerabilities-are-published"
+        <a href="https://github.com/getcmdr/cmdr/blob/main/SECURITY.md#how-fixed-vulnerabilities-are-published"
             >SECURITY.md</a
         > describes. No GitHub security advisories have been published so far. An actively exploited vulnerability or a
         severe incident gets reported to CERT-SE and ENISA, as the EU Cyber Resilience Act requires, following the public
-        <a href="https://github.com/vdavid/cmdr/blob/main/docs/security-incident-procedure.md">incident procedure</a>.
+        <a href="https://github.com/getcmdr/cmdr/blob/main/docs/security-incident-procedure.md">incident procedure</a>.
         What to expect:
     </p>
     <ul>
@@ -977,7 +979,7 @@ const toc = [
         <li>
             <strong>Reporting a vulnerability</strong>: <a href="mailto:security@getcmdr.com">security@getcmdr.com</a>
             is the single point of contact. The coordinated disclosure policy is
-            <a href="https://github.com/vdavid/cmdr/blob/main/SECURITY.md">SECURITY.md</a>, summed up under
+            <a href="https://github.com/getcmdr/cmdr/blob/main/SECURITY.md">SECURITY.md</a>, summed up under
             <a href="#report">Report a vulnerability</a>.
         </li>
         <li>
@@ -1038,13 +1040,13 @@ const toc = [
             </ul>
             What Cmdr doesn't do is under <a href="#gaps">Known limitations</a>, and the remaining risks, ranked, are
             in the
-            <a href="https://github.com/vdavid/cmdr/blob/main/docs/threat-model.md#residual-risks-ranked">threat model</a
+            <a href="https://github.com/getcmdr/cmdr/blob/main/docs/threat-model.md#residual-risks-ranked">threat model</a
             >.
         </li>
         <li>
             <strong>Support period</strong>: how long each version gets security fixes is under
             <a href="#report">Report a vulnerability</a> and in
-            <a href="https://github.com/vdavid/cmdr/blob/main/SECURITY.md#supported-versions">SECURITY.md</a>.
+            <a href="https://github.com/getcmdr/cmdr/blob/main/SECURITY.md#supported-versions">SECURITY.md</a>.
         </li>
         <li>
             <strong>EU declaration of conformity</strong>: the Act's main requirements apply from 2027-12-11. Cmdr's
@@ -1059,7 +1061,7 @@ const toc = [
             <ul>
                 <li>
                     Download Cmdr only from getcmdr.com, its
-                    <a href="https://github.com/vdavid/cmdr/releases/latest">GitHub releases</a>, or the Homebrew
+                    <a href="https://github.com/getcmdr/cmdr/releases/latest">GitHub releases</a>, or the Homebrew
                     cask. Downloads from getcmdr.com and Homebrew come from <code>download.getcmdr.com</code>. To check a download, see "Build provenance" under <a href="#signing">signing</a>.
                 </li>
                 <li>

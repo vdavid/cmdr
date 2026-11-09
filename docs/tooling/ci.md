@@ -340,7 +340,7 @@ silent** (a warning, not a red job):
 
 rust-cache keys per-job, so these are independent caches and each prunes itself. The shared risk is GitHub's **10 GB
 per-repo ceiling**, and lane markers are the first LRU victims, since nothing ever restores one (#981). On 2026-11-05
-the repo sat at ~9.5 GB (`gh api repos/vdavid/cmdr/actions/caches`): `desktop-rust-macos` 3.6, `desktop-rust` 2.7,
+the repo sat at ~9.5 GB (`gh api repos/getcmdr/cmdr/actions/caches`): `desktop-rust-macos` 3.6, `desktop-rust` 2.7,
 `light-go` 1.6, `docker-e2e` ~1.2, four mise entries ~0.9 between `main` and one PR, `light-*` `node_modules` 0.27, and
 the pnpm store 0.2. The fixes above put `desktop-rust` at ~1.1, `light-go` at ~0.23, and `light-node-modules` at ~0.19,
 `desktop-rust-macos` at ~1.3 (estimated; § The M1 runner), and PRs no longer add mise. Every PR saves only its markers
@@ -543,8 +543,8 @@ tests 154 s, module cycles 174 s). Hosted, the same lane took 29–50 min, media
   run gets the M1 when the repo's runners API lists a `cmdr-m1` runner that's online and not busy; else hosted. Trusted
   is an allowlist like the light lane's: a push (only `main`), a dispatch, or a PR whose head is in this repo and whose
   author isn't a bot. Listing runners needs Administration: read, which `GITHUB_TOKEN` can't get, so it reads the
-  `RUNNER_STATUS_TOKEN` secret (a fine-grained PAT on `vdavid/cmdr` only, Administration read-only). No secret (a fork's
-  run gets none) or a failed lookup routes hosted, so the worst case is the old behavior.
+  `RUNNER_STATUS_TOKEN` secret (a fine-grained PAT on `getcmdr/cmdr` only, Administration read-only). No secret (a
+  fork's run gets none) or a failed lookup routes hosted, so the worst case is the old behavior.
 - **Always hosted, on purpose**: a full run (the release gate's `run_all`, the nightly). The M1 runs macOS 27, so these
   runs are our only macOS 26 coverage, and a release is gated on the release builder's own image and SDK. A test that
   depends on the OS version can pass on one and fail on the other; the nightly and the release gate catch the hosted
@@ -583,10 +583,10 @@ The CI failure history that motivated it: `docs/notes/ci-health-2026-10.md`.
 ## OpenSSF Scorecard
 
 `scorecard.yml` runs `ossf/scorecard-action` and publishes to the public API that backs the README badge and
-`https://scorecard.dev/viewer/?uri=github.com/vdavid/cmdr`; the SARIF lands in the repo's code-scanning tab. The API
+`https://scorecard.dev/viewer/?uri=github.com/getcmdr/cmdr`; the SARIF lands in the repo's code-scanning tab. The API
 verifies the workflow before accepting a result, so keep it minimal (the header comment lists the rules). Run it locally
 with the `scorecard` release binary:
-`GITHUB_AUTH_TOKEN=$(gh auth token) scorecard --repo=github.com/vdavid/cmdr --show-details` (the `gcr.io` image needs a
+`GITHUB_AUTH_TOKEN=$(gh auth token) scorecard --repo=github.com/getcmdr/cmdr --show-details` (the `gcr.io` image needs a
 billed GCP project).
 
 Where the score stands (public API, 2026-10-13: 7.6, with Vulnerabilities at 5 and SAST at 7; the fixes for both landed

@@ -113,7 +113,7 @@ fn a_downgrade_or_no_change_has_no_window() {
 fn allowed_advisory_links_pass() {
     for url in [
         "https://github.com/vdavid/cmdr/security/advisories/GHSA-aaaa-bbbb-cccc",
-        // The org name the repo may move to (#476). Builds shipped before a move vet links with
+        // The org name the repo moved to (#476). Builds shipped before the move vet links with
         // their own allowlist, so this one has to be in a release before any advisory uses it.
         "https://github.com/getcmdr/cmdr/security/advisories/GHSA-aaaa-bbbb-cccc",
         "https://getcmdr.com/changelog",

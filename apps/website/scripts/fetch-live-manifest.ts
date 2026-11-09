@@ -13,7 +13,7 @@
  */
 import { writeFileSync } from 'node:fs'
 
-const manifestUrl = 'https://github.com/vdavid/cmdr/releases/latest/download/latest.json'
+const manifestUrl = 'https://github.com/getcmdr/cmdr/releases/latest/download/latest.json'
 const target = new URL('../public/latest.json', import.meta.url)
 const platformKeys = ['darwin-aarch64', 'darwin-x86_64', 'darwin-universal']
 

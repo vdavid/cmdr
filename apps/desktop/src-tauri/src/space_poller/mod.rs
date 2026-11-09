@@ -517,7 +517,7 @@ mod tests {
             .contains_key(LOW_SPACE_BOOT_WATCHER_ID)
     }
 
-    /// The index takes its own readings, so an off warning polls nothing (vdavid/cmdr#1002).
+    /// The index takes its own readings, so an off warning polls nothing (getcmdr/cmdr#1002).
     #[test]
     fn the_boot_volume_is_watched_only_while_the_warning_is_on() {
         configure_low_disk_space(false, 5);
