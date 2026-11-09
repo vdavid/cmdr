@@ -21,7 +21,7 @@ var excludedPaths = []exclusion{
 	{"apps/website/src/content/blog/**", "published blog posts stay as published (their links redirect)"},
 	{"docs/notes/**", "dated notes and evidence describe the repo as it was, and the move runbook names both"},
 	{"docs/hackathon-submission.md", "a dated submission record whose commit permalinks redirect"},
-	{"apps/website/public/latest.json", "the next release rewrites it from `github.repository`"},
+	{"apps/website/public/latest.json", "a frozen dev copy that production builds overwrite with the live manifest (`apps/website/scripts/fetch-live-manifest.ts`); its release URLs redirect"},
 	{"apps/desktop/src-tauri/src/security_advisories/**", "the advisory link allowlist admits both names on purpose"},
 	{"scripts/check/checks/desktop-security-advisories*.go", "the Go mirror of the advisory link allowlist"},
 	{"scripts/land/**", "asks `gh repo view` for the name; its tests cover both names"},
@@ -61,9 +61,12 @@ var literalSwaps = []literalSwap{
 	{"actions.runner.vdavid-cmdr.", "actions.runner.getcmdr-cmdr."},
 	// A regex literal escapes the slashes, so the generic swap can't see the name there.
 	{`\/vdavid\/cmdr\/`, `\/getcmdr\/cmdr\/`},
-	// The browser demo image is a package of the account that owns the repo. Packages don't move
-	// with a transfer, so the released images are copied to the org on transfer day (the runbook).
-	{"ghcr.io/vdavid/cmdr-demo", "ghcr.io/getcmdr/cmdr-demo"},
+	// Container images are packages of the account that owns the repo, and every registry path this
+	// repo names is Cmdr's: the browser demo, the E2E base image, and the owner-level
+	// `E2E_BASE_REGISTRY` (`ghcr.io/${{ github.repository_owner }}`). Packages don't move with a
+	// transfer, so the released demo images are copied to the org on transfer day (the runbook), and
+	// CI rebuilds the E2E base under the org when the registry lacks its tag.
+	{"ghcr.io/vdavid", "ghcr.io/getcmdr"},
 	{"github.com/users/vdavid/packages/container/cmdr-demo", "github.com/orgs/getcmdr/packages/container/cmdr-demo"},
 }
 

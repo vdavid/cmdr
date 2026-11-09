@@ -23,6 +23,8 @@ func TestSwapContent(t *testing.T) {
 		{"Scorecard badge", "api.scorecard.dev/projects/github.com/vdavid/cmdr/badge", "api.scorecard.dev/projects/github.com/getcmdr/cmdr/badge", 1},
 		{"runner service name", "look for `actions.runner.vdavid-cmdr.*`", "look for `actions.runner.getcmdr-cmdr.*`", 1},
 		{"demo image", `ref="ghcr.io/vdavid/cmdr-demo:$TAG"`, `ref="ghcr.io/getcmdr/cmdr-demo:$TAG"`, 1},
+		{"E2E base image", "ghcr.io/vdavid/cmdr-e2e-base:3f2a", "ghcr.io/getcmdr/cmdr-e2e-base:3f2a", 1},
+		{"owner-level registry", "(E2E_BASE_REGISTRY, for example ghcr.io/vdavid) under", "(E2E_BASE_REGISTRY, for example ghcr.io/getcmdr) under", 1},
 		{"demo package settings", "github.com/users/vdavid/packages/container/cmdr-demo/settings", "github.com/orgs/getcmdr/packages/container/cmdr-demo/settings", 1},
 		{"regex-escaped API path", `/^\/repos\/vdavid\/cmdr\/actions\/runs$/`, `/^\/repos\/getcmdr\/cmdr\/actions\/runs$/`, 1},
 		{"regex-escaped other repo", `/^\/repos\/vdavid\/cmdr-reports\/issues$/`, `/^\/repos\/vdavid\/cmdr-reports\/issues$/`, 0},
