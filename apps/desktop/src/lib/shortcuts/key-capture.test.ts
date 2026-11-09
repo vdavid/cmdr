@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   formatKeyCombo,
   physicalKeyCombo,
+  latinKeyCombo,
   toPlatformShortcut,
   isTypingKeyCombo,
   typingRefusal,
@@ -288,7 +289,44 @@ describe('typedCharacterCombo', () => {
   })
 })
 
+// Regression: on a Russian layout, File List bindings (dispatched from JS) were dead,
+// while Main Window ones (native menu accelerators) worked (GitHub #1044).
+describe('latinKeyCombo', () => {
+  it('names a non-Latin letter by its key position, with any modifiers', () => {
+    setMacOS(true)
+    expect(latinKeyCombo(makeKeyEvent({ key: 'в', code: 'KeyD' }))).toBe('D')
+    expect(latinKeyCombo(makeKeyEvent({ key: 'В', code: 'KeyD', shiftKey: true }))).toBe('⇧D')
+    expect(latinKeyCombo(makeKeyEvent({ key: 'с', code: 'KeyC', ctrlKey: true }))).toBe('⌃C')
+    expect(latinKeyCombo(makeKeyEvent({ key: 'с', code: 'KeyC', metaKey: true }))).toBe('⌘C')
+    expect(latinKeyCombo(makeKeyEvent({ key: 'ψ', code: 'KeyC', metaKey: true, shiftKey: true }))).toBe('⌘⇧C')
+    expect(latinKeyCombo(makeKeyEvent({ key: 'ש', code: 'KeyA', ctrlKey: true }))).toBe('⌃A')
+  })
+
+  it('leaves Latin layouts alone, Dvorak and ⌥-typed letters included', () => {
+    setMacOS(true)
+    // Dvorak's J sits on KeyC: the user reads J, so J it stays.
+    expect(latinKeyCombo(makeKeyEvent({ key: 'j', code: 'KeyC', metaKey: true }))).toBeNull()
+    expect(latinKeyCombo(makeKeyEvent({ key: 'å', code: 'KeyA', altKey: true, metaKey: true }))).toBeNull()
+    expect(latinKeyCombo(makeKeyEvent({ key: 'a', code: 'KeyA' }))).toBeNull()
+  })
+
+  it('stays out of bare ⌥ (typing), non-letter keys, and non-letter characters', () => {
+    setMacOS(true)
+    // US ⌥P types π: that's typing, like ⌥A → å.
+    expect(latinKeyCombo(makeKeyEvent({ key: 'π', code: 'KeyP', altKey: true }))).toBeNull()
+    expect(latinKeyCombo(makeKeyEvent({ key: 'х', code: 'BracketLeft' }))).toBeNull()
+    expect(latinKeyCombo(makeKeyEvent({ key: '.', code: 'KeyU' }))).toBeNull()
+    expect(latinKeyCombo(makeKeyEvent({ key: 'Enter', code: 'Enter' }))).toBeNull()
+  })
+})
+
 describe('keyComboCandidates', () => {
+  it('falls back to the Latin key position for a non-Latin letter', () => {
+    setMacOS(true)
+    expect(keyComboCandidates(makeKeyEvent({ key: 'В', code: 'KeyD', shiftKey: true }))).toEqual(['⇧В', '⇧D'])
+    expect(keyComboCandidates(makeKeyEvent({ key: 'с', code: 'KeyC', metaKey: true }))).toEqual(['⌘С', '⌘C'])
+  })
+
   it('lists the exact combo, then the physical key, then the typed character, without repeats', () => {
     setMacOS(true)
     expect(keyComboCandidates(makeKeyEvent({ key: '±', code: 'Equal', altKey: true, shiftKey: true }))).toEqual([
@@ -309,6 +347,12 @@ describe('capturedKeyCombo', () => {
     expect(capturedKeyCombo(makeKeyEvent({ key: '±', code: 'Equal', altKey: true, shiftKey: true }))).toBe('⌥⇧=')
     expect(capturedKeyCombo(makeKeyEvent({ key: 'Help', code: 'Help' }))).toBe('Insert')
     expect(capturedKeyCombo(makeKeyEvent({ key: 'Delete', code: 'Delete' }))).toBe('Delete')
+  })
+
+  it('records a non-Latin letter by its Latin key position, so the binding works on every layout', () => {
+    setMacOS(true)
+    expect(capturedKeyCombo(makeKeyEvent({ key: 'В', code: 'KeyD', shiftKey: true }))).toBe('⇧D')
+    expect(capturedKeyCombo(makeKeyEvent({ key: 'с', code: 'KeyC', ctrlKey: true }))).toBe('⌃C')
   })
 })
 

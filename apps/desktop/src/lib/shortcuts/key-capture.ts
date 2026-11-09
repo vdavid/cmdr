@@ -302,6 +302,30 @@ export function physicalKeyCombo(event: KeyboardEvent): string | null {
 }
 
 /**
+ * The combo a non-Latin letter makes, named by its Latin key position, or `null`.
+ * On a Russian, Greek, Hebrew, or other non-Latin layout, `event.key` is that
+ * script's letter (`⇧D` reports `⇧В`), so every letter binding was dead in the
+ * JS-dispatched scopes while the native menu's accelerators worked (GitHub #1044).
+ * The `KeyA`–`KeyZ` code is the US keycap, which is what these users' shortcuts
+ * are spelled by, as in every macOS app.
+ *
+ * Only for non-Latin SCRIPTS: a Latin layout's letter is the identity (Dvorak's J
+ * is J, wherever it sits), and so is an ⌥-typed `å`. Bare ⌥ (no ⌘ / ⌃) is typing,
+ * as in `physicalKeyCombo`: US ⌥P types `π`.
+ */
+export function latinKeyCombo(event: KeyboardEvent): string | null {
+  if (event.altKey && !hasCommandModifier(event)) return null
+  const letter = /^Key([A-Z])$/.exec(event.code)?.[1]
+  if (letter === undefined || !isNonLatinLetter(event.key)) return null
+  return formatKeyCombo({ ...eventModifiers(event), key: letter, code: event.code } as KeyboardEvent)
+}
+
+/** True for one letter of a script other than Latin: `в`, `ψ`, `ש`. Not `å`, not `.`. */
+function isNonLatinLetter(key: string): boolean {
+  return Array.from(key).length === 1 && /\p{L}/u.test(key) && !/\p{Script=Latin}/u.test(key)
+}
+
+/**
  * The bare character an Option keypress typed, or `null`. On a Mac, Option is
  * the PC's AltGr: plenty of layouts type `*`, `+`, or `-` with it. So a binding
  * on that character works for that user too, the way it does for a Shift-typed
@@ -318,25 +342,27 @@ export function typedCharacterCombo(event: KeyboardEvent): string | null {
 
 /**
  * Every combo this keypress may mean, most specific first: the exact combo, then
- * the physical key (`physicalKeyCombo`), then the bare typed character
+ * the physical key (`physicalKeyCombo`), then the Latin key position of a
+ * non-Latin letter (`latinKeyCombo`), then the bare typed character
  * (`typedCharacterCombo`). No repeats. ❗ The ONE answer to "which bindings can
  * this keypress trigger?": the document dispatcher and every local handler
  * (`eventMatchesCommand`) resolve through it, so a binding can't work in one place
  * and be dead in another.
  */
 export function keyComboCandidates(event: KeyboardEvent): string[] {
-  const candidates = [formatKeyCombo(event), physicalKeyCombo(event), typedCharacterCombo(event)]
+  const candidates = [formatKeyCombo(event), physicalKeyCombo(event), latinKeyCombo(event), typedCharacterCombo(event)]
   return candidates.filter((combo, i): combo is string => combo !== null && candidates.indexOf(combo) === i)
 }
 
 /**
  * The combo the Settings capture field (and its key-filter box) records for a
  * keypress: the physical key where a modifier retyped it (a rebind persists `⌥⇧=`,
- * not the `⌥⇧±` macOS reports), the canonical combo otherwise. Always the first or
- * second of `keyComboCandidates`, so whatever gets recorded also dispatches.
+ * not the `⌥⇧±` macOS reports), a non-Latin letter by its Latin key position (`⇧D`,
+ * not `⇧В`, so the binding survives a layout switch), the canonical combo otherwise.
+ * Always one of `keyComboCandidates`, so whatever gets recorded also dispatches.
  */
 export function capturedKeyCombo(event: KeyboardEvent): string {
-  return physicalKeyCombo(event) ?? formatKeyCombo(event)
+  return physicalKeyCombo(event) ?? latinKeyCombo(event) ?? formatKeyCombo(event)
 }
 
 /** Modifier symbols used in macOS shortcut format */

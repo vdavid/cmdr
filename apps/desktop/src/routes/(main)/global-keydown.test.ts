@@ -302,6 +302,9 @@ describe('resolveGlobalKeyAction', () => {
       ['numpad ⌥+', { key: '+', code: 'NumpadAdd', altKey: true }, 'selection.selectSameKind'],
       ['forward delete ⌦', { key: 'Delete', code: 'Delete' }, 'file.delete'],
       ['PC Insert (macOS says Help)', { key: 'Help', code: 'Help' }, 'selection.toggleAndDown'],
+      // GitHub #1044: a Russian layout reports the Cyrillic letter, so these were dead.
+      ['Russian ⌘T (types е)', { key: 'е', code: 'KeyT', metaKey: true }, 'tab.new'],
+      ['Russian ⌃D (types в)', { key: 'в', code: 'KeyD', ctrlKey: true }, 'favorites.open'],
     ])('%s dispatches %s', (_name, init, commandId) => {
       expect(resolveGlobalKeyAction(key(init), NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId })
     })
@@ -313,6 +316,8 @@ describe('resolveGlobalKeyAction', () => {
         { key: '*', code: 'Slash', altKey: true },
         { key: '±', code: 'Equal', altKey: true, shiftKey: true },
         { key: 'Delete', code: 'Delete' },
+        { key: 'В', code: 'KeyD', shiftKey: true },
+        { key: 'в', code: 'KeyD' },
       ]) {
         expect(resolveGlobalKeyAction(key(init), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
       }

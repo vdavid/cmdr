@@ -207,12 +207,19 @@ A keypress can mean more than one combo, and `keyComboCandidates(event)` lists t
    the character rule above. Only the digit row and the punctuation `codeToKey` names, plus letters when ⌘ / ⌃ is held
    too: ⌘⌥R reports `®` and ⌘⌥F `ƒ` on US, so the key position is the only name they have (the Multi-rename sheet's
    option keys rely on it). A bare ⌥ + letter is typing (`å`), so it never counts.
-3. `typedCharacterCombo(event)`: the bare character an ⌥ keypress typed, with no ⌘ / ⌃. On a Mac, Option is the PC's
+3. `latinKeyCombo(event)`: a letter of a non-Latin SCRIPT (Cyrillic, Greek, Hebrew, …) on a `KeyA`–`KeyZ` key, named by
+   that Latin key position, with any modifiers but bare ⌥ (typing). A Russian layout reports `⇧В` for `⇧D`, so before
+   this every letter binding was dead in the JS-dispatched scopes (the File List section) while the native menu's
+   accelerators worked (GitHub #1044). Latin layouts never reach it: Dvorak's J is J wherever it sits, and an ⌥-typed
+   `å` stays typing.
+4. `typedCharacterCombo(event)`: the bare character an ⌥ keypress typed, with no ⌘ / ⌃. On a Mac, Option is the PC's
    AltGr, and plenty of layouts type `*` or `-` with it, so a `*` binding reaches those users too.
 
-`capturedKeyCombo(event)` (physical, else exact) is what the Settings capture field and its key-filter box record. It's
-always candidate 1 or 2, so whatever a user records also dispatches. How dispatch picks among the candidates is under
-"Local handlers" below (`resolveKeyCombo`).
+`capturedKeyCombo(event)` (physical, else Latin position, else exact) is what the Settings capture field and its
+key-filter box record, so a Russian-layout rebind persists `⇧D` and keeps working after a layout switch. It's always one
+of the candidates, so whatever a user records also dispatches. In a focused text input the dispatcher reads only the
+exact combo, so a Cyrillic letter there still types. How dispatch picks among the candidates is under "Local handlers"
+below (`resolveKeyCombo`).
 
 `toCanonicalShortcut(combo)` is the inverse of `toDisplayShortcut`, and only three places call it: `initializeShortcuts`
 (healing a `shortcuts.json` written before the vocabulary was unified) and `setShortcut` / `addShortcut` (canonicalizing
