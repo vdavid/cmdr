@@ -84,19 +84,26 @@
     let guard: StartedElsewhereGuard | null = null
     let armed = $state(false)
 
+    /**
+     * Every selection this editor sets moves at its END. A directionless one ('none') lets macOS
+     * pick the moving end from the first arrow, and ⇧← picks the START, so ⇧⌥← on the pre-selected
+     * name would grow it left from 0 (nothing) instead of dropping its last word.
+     */
+    const SELECTION_DIRECTION = 'forward'
+
     /** Focuses the input and selects the filename excluding the extension (the cycle's first stage). */
     function focusAndSelect() {
         if (!inputElement) return
         inputElement.focus()
         const first = renameSelectionStages(value, nameKind).at(0) ?? { start: 0, end: 0 }
-        inputElement.setSelectionRange(first.start, first.end)
+        inputElement.setSelectionRange(first.start, first.end, SELECTION_DIRECTION)
     }
 
     /** `file.rename` pressed again: step the selection through name, whole name, extension. */
     function cycleSelection(input: HTMLInputElement) {
         const current = { start: input.selectionStart ?? 0, end: input.selectionEnd ?? 0 }
         const next = nextRenameSelection(input.value, nameKind, current)
-        input.setSelectionRange(next.start, next.end)
+        input.setSelectionRange(next.start, next.end, SELECTION_DIRECTION)
     }
 
     /**

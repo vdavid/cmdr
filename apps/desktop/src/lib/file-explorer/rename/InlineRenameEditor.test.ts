@@ -222,6 +222,16 @@ describe('InlineRenameEditor keyboard and focus', () => {
     expect(input.selectionEnd).toBe('report'.length)
   })
 
+  // Regression: a directionless selection lets macOS move its START on ⇧←, so ⇧⌥← from the
+  // pre-selected name did nothing instead of dropping the name's last word.
+  it('puts the moving end of the pre-selection at its end, so ⇧⌥← shrinks it from the right', async () => {
+    const { input } = setup({ value: 'my report.md', onInput: noop })
+    await tick()
+    await tick()
+
+    expect(input.selectionDirection).toBe('forward')
+  })
+
   it('pre-selects the whole name when what follows the dot is not an extension', async () => {
     const { input } = setup({ value: 'Smlouva v. 2 final', onInput: noop })
     await tick()
@@ -255,6 +265,7 @@ describe('InlineRenameEditor selection keys', () => {
     for (let i = 0; i < 3; i++) {
       expect(press(input, { key: 'F2' }).defaultPrevented).toBe(true)
       seen.push([input.selectionStart ?? -1, input.selectionEnd ?? -1])
+      expect(input.selectionDirection).toBe('forward')
     }
 
     expect(seen).toEqual([

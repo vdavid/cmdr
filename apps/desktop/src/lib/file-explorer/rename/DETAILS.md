@@ -52,6 +52,10 @@ fully selected; `Cmdr.app` opens with `Cmdr` selected.
 - **⌥← / ⌥→ (and with ⇧) stop once at the extension's dot**: the extension's start going left, the name's end going
   right, so ⇧⌥← from the end selects exactly the extension and ⇧⌥→ from the start exactly the name. The system's word
   boundaries treat `report.pdf` as one word, which is why the stop is needed.
+- **Every selection the editor sets is `'forward'`** (its moving end at the end). Gotcha/Why: a directionless
+  `setSelectionRange` lets macOS pick the moving end from the first arrow, and ⇧← picks the START, so ⇧⌥← on the
+  pre-selected name grew it left from 0 and seemed to do nothing (a TC user's first reflex is to drop the last word that
+  way). `wordStopSelection` reads `'none'` as forward too, so the two now agree.
 
 **Decision: answer the word move only where the system's would certainly cross the dot, and leave everything else to the
 system.** `wordStopSelection` answers when the text between the caret and the stop is one hop for the native move: going
