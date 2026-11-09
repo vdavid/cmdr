@@ -503,28 +503,32 @@ pub(crate) fn read_tree_dirs(conn: &Connection, op_id: &str) -> Result<Vec<TreeD
             units_held_back, units_unfinished, housekeeping_waiting \
          FROM operation_tree_dirs WHERE op_id = ?1 ORDER BY dir_id",
     )?;
-    let rows = stmt.query_map(rusqlite::params![op_id], |row| {
-        Ok(TreeDirRow {
-            dir_id: row.get(0)?,
-            parent_dir_id: row.get(1)?,
-            name_folded: row.get(2)?,
-            self_seq: row.get(3)?,
-            child_dirs: row.get(4)?,
-            direct_files: row.get(5)?,
-            totals: SubtreeTotals {
-                files: row.get(6)?,
-                bytes: row.get(7)?,
-                units_selectable: row.get(8)?,
-                unit_files_selectable: row.get(9)?,
-                unit_bytes_selectable: row.get(10)?,
-                units_rolled_back: row.get(11)?,
-                units_held_back: row.get(12)?,
-                units_unfinished: row.get(13)?,
-                housekeeping_waiting: row.get(14)?,
-            },
-        })
-    })?;
+    let rows = stmt.query_map(rusqlite::params![op_id], map_tree_dir)?;
     Ok(rows.collect::<Result<_, _>>()?)
+}
+
+/// Maps one `operation_tree_dirs` row selected as its 15 columns in declaration order
+/// (`dir_id` … `housekeeping_waiting`), the shape every summary read selects.
+pub(crate) fn map_tree_dir(row: &rusqlite::Row<'_>) -> rusqlite::Result<TreeDirRow> {
+    Ok(TreeDirRow {
+        dir_id: row.get(0)?,
+        parent_dir_id: row.get(1)?,
+        name_folded: row.get(2)?,
+        self_seq: row.get(3)?,
+        child_dirs: row.get(4)?,
+        direct_files: row.get(5)?,
+        totals: SubtreeTotals {
+            files: row.get(6)?,
+            bytes: row.get(7)?,
+            units_selectable: row.get(8)?,
+            unit_files_selectable: row.get(9)?,
+            unit_bytes_selectable: row.get(10)?,
+            units_rolled_back: row.get(11)?,
+            units_held_back: row.get(12)?,
+            units_unfinished: row.get(13)?,
+            housekeeping_waiting: row.get(14)?,
+        },
+    })
 }
 
 /// Whether a BUILT summary shows that a rollback already reversed or held back any
