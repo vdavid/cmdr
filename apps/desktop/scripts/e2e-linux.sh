@@ -300,7 +300,7 @@ label_cache_volumes
 #     that file changes (or with --build, which forces a --no-cache rebuild for
 #     refreshing stale apt content).
 #   - In CI, the base lives in a container registry (E2E_BASE_REGISTRY, for
-#     example ghcr.io/vdavid) under the same content-hash tag. ci.yml's
+#     example ghcr.io/getcmdr) under the same content-hash tag. ci.yml's
 #     `e2e-base-image` job runs --base-only, which builds it only when the
 #     registry lacks that tag and hands the job the ref to push
 #     (E2E_BASE_PUSH_REF_FILE), and every other run pulls it. A registry, because the Actions cache it used to live in
