@@ -4,7 +4,7 @@
 //!
 //! Every column is a pure function of item-row fields, so the writer keeps the rows
 //! exact by applying each batch's DELTA in the batch's own transaction ([`TreeDelta`],
-//! [`apply_delta`]), and a from-scratch [`aggregate_op`] over the same rows must
+//! [`apply_delta`]), and a from-scratch `aggregate_op` over the same rows must
 //! always produce the same table. The backfill for ops journaled before the summary
 //! existed is that aggregate.
 
@@ -424,7 +424,7 @@ pub(crate) fn mark_unbuilt(conn: &Connection, op_id: &str) -> Result<(), Operati
     Ok(())
 }
 
-/// How many rows [`aggregate_op`] and a backfill read per query.
+/// How many rows `aggregate_op` (test-only) and a backfill read per query.
 pub(crate) const AGGREGATE_CHUNK: i64 = 4_096;
 
 /// The summary `op_id`'s rows add up to, from scratch: what the writer-maintained

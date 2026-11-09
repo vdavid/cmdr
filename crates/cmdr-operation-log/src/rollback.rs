@@ -20,7 +20,7 @@
 //!   collision, so it proceeds ([`is_self_collision`]).
 //!
 //! Undoing a copy also proves the copy's original is still there before it
-//! deletes the copy ([`original_stays`]): never remove the only copy left.
+//! deletes the copy (`inverse::original_stays`): never remove the only copy left.
 //!
 //! A skipped item leaves the operation `partially_rolled_back`; a fully reversed
 //! one lands `rolled_back`; one that reversed nothing (all skipped, or canceled

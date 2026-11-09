@@ -2,7 +2,7 @@
 //! its restore target, and only when both hold hand the decided act to the runner
 //! (`DETAILS.md` § "The two data-safety guards"). Each is an
 //! `async fn(volumes, runner, unit) -> ItemResult`, reached through one `match` on
-//! [`InverseAction`](super::InverseAction) in [`reverse_item`].
+//! [`InverseAction`] in [`reverse_item`].
 //!
 //! **Data-safety-critical**: every act here fails safe. Drift, an unverifiable
 //! precondition, an occupied target, or a gone original is a SKIP, never an act.

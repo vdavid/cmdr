@@ -377,7 +377,7 @@ impl crate::Operations {
     }
 
     /// Register the inverse operation with the manager. Runs synchronously inside
-    /// [`rollback_operation`]'s spawn hook: a volume that dropped between the gate and
+    /// [`rollback_operation_with_selection`]'s spawn hook: a volume that dropped between the gate and
     /// here is a synchronous spawn failure — returned typed so the entry
     /// resets `rolling_back`.
     fn spawn_managed_inverse(
