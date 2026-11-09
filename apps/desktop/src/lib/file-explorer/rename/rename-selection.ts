@@ -37,6 +37,16 @@ export function renameSelectionStages(value: string, kind: NameKind): TextRange[
   return stages
 }
 
+/**
+ * Which end of a stage moves under ⇧← / ⇧⌥←, where a person likely grows it: the name and the
+ * whole name at their END (drop the last word), the extension alone at its START (grow into the
+ * name). Never 'none': a directionless selection lets macOS move the START on ⇧←, so ⇧⌥← on the
+ * pre-selected name would grow it left from 0, which does nothing.
+ */
+export function stageDirection(range: TextRange): 'forward' | 'backward' {
+  return range.start > 0 ? 'backward' : 'forward'
+}
+
 /** The stage after the one `current` is, or the first one when it's none of them. */
 export function nextRenameSelection(value: string, kind: NameKind, current: TextRange): TextRange {
   const stages = renameSelectionStages(value, kind)

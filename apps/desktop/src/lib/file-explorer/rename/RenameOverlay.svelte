@@ -90,10 +90,14 @@
         }
 
         place()
-        const resizes = new ResizeObserver(schedule)
+        // A resize or a DOM change re-places right away, ❌ never through a frame: WebKit holds
+        // frames back from a window that isn't showing, so a column that got its measured width
+        // then (an editor opened at the provisional 260 px) kept the field at its old size for good.
+        // Both observers already report once per layout, so this reads no more often than a frame.
+        const resizes = new ResizeObserver(place)
         resizes.observe(slot)
         resizes.observe(host)
-        const mutations = new MutationObserver(schedule)
+        const mutations = new MutationObserver(place)
         mutations.observe(listbox, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] })
         listbox.addEventListener('transitionrun', followTransition)
         listbox.addEventListener('transitionend', schedule)

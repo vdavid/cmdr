@@ -265,7 +265,9 @@ describe('InlineRenameEditor selection keys', () => {
     for (let i = 0; i < 3; i++) {
       expect(press(input, { key: 'F2' }).defaultPrevented).toBe(true)
       seen.push([input.selectionStart ?? -1, input.selectionEnd ?? -1])
-      expect(input.selectionDirection).toBe('forward')
+      // The extension alone moves at its START (where a selection grows into the name);
+      // the name and the whole name move at their end.
+      expect(input.selectionDirection).toBe(input.selectionStart === 0 ? 'forward' : 'backward')
     }
 
     expect(seen).toEqual([

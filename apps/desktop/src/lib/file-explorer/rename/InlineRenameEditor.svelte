@@ -4,7 +4,7 @@
     import { dependOn } from '#lib/utils/reactivity.js'
     import type { RenameSessionId } from './rename-state.svelte'
     import { renameStepDirection, type RenameStepDirection } from './rename-step'
-    import { nextRenameSelection, renameSelectionStages, wordStopSelection } from './rename-selection'
+    import { nextRenameSelection, renameSelectionStages, stageDirection, wordStopSelection } from './rename-selection'
     import type { NameKind } from '#lib/utils/file-extension.js'
     import {
         attachStartedElsewhereGuard,
@@ -84,26 +84,19 @@
     let guard: StartedElsewhereGuard | null = null
     let armed = $state(false)
 
-    /**
-     * Every selection this editor sets moves at its END. A directionless one ('none') lets macOS
-     * pick the moving end from the first arrow, and ⇧← picks the START, so ⇧⌥← on the pre-selected
-     * name would grow it left from 0 (nothing) instead of dropping its last word.
-     */
-    const SELECTION_DIRECTION = 'forward'
-
     /** Focuses the input and selects the filename excluding the extension (the cycle's first stage). */
     function focusAndSelect() {
         if (!inputElement) return
         inputElement.focus()
         const first = renameSelectionStages(value, nameKind).at(0) ?? { start: 0, end: 0 }
-        inputElement.setSelectionRange(first.start, first.end, SELECTION_DIRECTION)
+        inputElement.setSelectionRange(first.start, first.end, stageDirection(first))
     }
 
     /** `file.rename` pressed again: step the selection through name, whole name, extension. */
     function cycleSelection(input: HTMLInputElement) {
         const current = { start: input.selectionStart ?? 0, end: input.selectionEnd ?? 0 }
         const next = nextRenameSelection(input.value, nameKind, current)
-        input.setSelectionRange(next.start, next.end, SELECTION_DIRECTION)
+        input.setSelectionRange(next.start, next.end, stageDirection(next))
     }
 
     /**
