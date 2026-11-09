@@ -345,6 +345,15 @@ describe('resolveGlobalKeyAction', () => {
       expect(resolveGlobalKeyAction(cmd('v'), DIALOG_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.paste' })
     })
 
+    it('claims a Russian-layout ⌘V in a text input too, so the clipboard text lands once', () => {
+      // The menu's Paste fires by key position on any layout; left unclaimed, the `⌘М`
+      // keydown would let WebKit paste a second time.
+      cleanupFocus = focus('input')
+      const russianCmdV = new KeyboardEvent('keydown', { key: 'м', code: 'KeyV', metaKey: true })
+      expect(resolveGlobalKeyAction(russianCmdV, DIALOG_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.paste' })
+      expect(resolveGlobalKeyAction(russianCmdV, NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.paste' })
+    })
+
     it('dispatches the rest of the text-editing family from a focused text input', () => {
       cleanupFocus = focus('textarea')
       expect(resolveGlobalKeyAction(cmd('c'), DIALOG_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.copy' })

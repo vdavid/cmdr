@@ -15,7 +15,7 @@
  *   `preventDefault`s the browser's own action: Tab still moves focus inside a
  *   dialog instead of reaching `pane.switch` behind it.
  */
-import { formatKeyCombo, isTypingKeyCombo } from '#lib/shortcuts/key-capture.js'
+import { formatKeyCombo, isTypingKeyCombo, latinKeyCombo } from '#lib/shortcuts/key-capture.js'
 import { lookupCommand, resolveKeyCombo } from '#lib/shortcuts/shortcut-dispatch.js'
 import { isTextInputFocused, isTextInputTarget } from '#lib/utils/text-input-focus.js'
 import { paneChromeOwnsKey } from '#lib/file-explorer/pane/pane-chrome.js'
@@ -109,9 +109,16 @@ function commandForCombo(combo: string): CommandId | undefined {
  * live in the pane and dead here. In a text input only the exact combo counts: a
  * key a modifier retyped (`⌥⇧=` → `±`, AltGr → `*`) typed a character there, and
  * typing wins.
+ *
+ * The one fallback a text input also tries is a non-Latin letter's Latin key
+ * position (`latinKeyCombo`), through the same bails, so `⇧В` still types while a
+ * Russian `⌘V` is claimed like any `⌘V`. Unclaimed, the menu's Paste (which macOS
+ * matches by key position) and WebKit's native paste would BOTH insert.
  */
 function commandForEvent(event: KeyboardEvent, combo: string): CommandId | undefined {
-  return commandForCombo(isTextInputFocused() ? combo : resolveKeyCombo(event))
+  if (!isTextInputFocused()) return commandForCombo(resolveKeyCombo(event))
+  const latin = latinKeyCombo(event)
+  return commandForCombo(combo) ?? (latin === null ? undefined : commandForCombo(latin))
 }
 
 /**

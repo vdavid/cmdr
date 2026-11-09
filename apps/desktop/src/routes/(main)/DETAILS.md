@@ -517,6 +517,10 @@ dispatch path can't rely on the keydown bail.
   unclaimed, both ran and the clipboard text landed TWICE, in every dialog with a text field. The dedup can't catch
   that: only one command dispatch happens, and the other insertion is a browser default action it never sees.
 
+  Non-Latin layouts are the same shape: macOS matches the menu's ⌘V by key position, but the keydown reports `⌘М` on
+  Russian. So in a text input `commandForEvent` also tries `latinKeyCombo` after the exact combo, through the same bails
+  (the typing guard keeps `⇧В` typing), and claims the key. Pinned by the Russian ⌘V case in `global-keydown.test.ts`.
+
   Two shapes that look like fixes and aren't: adding ⌘V to the suppress list makes paste depend on a native menu
   existing (it breaks in the dev browser, and on any platform whose menu lacks the item), and refusing everything the
   `execute-command` listener carries while a dialog is up breaks paste wherever AppKit consumes the key outright and the

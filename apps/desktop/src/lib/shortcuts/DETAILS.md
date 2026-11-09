@@ -217,9 +217,10 @@ A keypress can mean more than one combo, and `keyComboCandidates(event)` lists t
 
 `capturedKeyCombo(event)` (physical, else Latin position, else exact) is what the Settings capture field and its
 key-filter box record, so a Russian-layout rebind persists `⇧D` and keeps working after a layout switch. It's always one
-of the candidates, so whatever a user records also dispatches. In a focused text input the dispatcher reads only the
-exact combo, so a Cyrillic letter there still types. How dispatch picks among the candidates is under "Local handlers"
-below (`resolveKeyCombo`).
+of the candidates, so whatever a user records also dispatches. In a focused text input the global dispatcher reads the
+exact combo, then only the Latin position (through the same typing guard), so `⇧В` still types while a Russian `⌘V`
+claims like any `⌘V` (`routes/(main)/DETAILS.md` § Native-menu and input-focus interactions). How dispatch picks among
+the candidates is under "Local handlers" below (`resolveKeyCombo`).
 
 `toCanonicalShortcut(combo)` is the inverse of `toDisplayShortcut`, and only three places call it: `initializeShortcuts`
 (healing a `shortcuts.json` written before the vocabulary was unified) and `setShortcut` / `addShortcut` (canonicalizing
