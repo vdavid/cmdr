@@ -28,7 +28,7 @@
     "land": "./scripts/land.sh"
   },
   "devDependencies": {
-    "oxfmt": "^0.74.0",
+    "oxfmt": "^0.76.0",
     "svgo": "4.1.0",
     "typescript": "~6.0.3"
   },
