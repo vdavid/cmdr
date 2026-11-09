@@ -1281,11 +1281,13 @@
         display: flex;
     }
 
-    /* Takes the box the name and tags had, so the rename field laid over it gets the same. */
+    /* Takes the box the name and tags had, plus the row's right padding, so the rename field laid
+       over it reaches the cursor row's edge instead of stopping 8px short. */
     .rename-slot {
         flex: 1;
         align-self: stretch;
         min-width: 0;
+        margin-right: calc(-1 * var(--spacing-sm));
     }
 
     .virtual-window {
