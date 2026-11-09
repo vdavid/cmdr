@@ -82,15 +82,15 @@ var edits = []edit{
 		find:  `<code>gh attestation verify &lt;file&gt; --repo vdavid/cmdr</code> with the <a href="https://cli.github.com/">GitHub CLI</a>.`,
 		replace: `<code>gh attestation verify &lt;file&gt; --repo getcmdr/cmdr</code> with the
             <a href="https://cli.github.com/">GitHub CLI</a>. Releases up to and including {cutoff} were built
-            before the repository moved to the <code>getcmdr</code> organization, and their attestations name the old
-            repository, so check those with <code>--repo vdavid/cmdr</code>.`,
+            before the repository moved to the <code>getcmdr</code> organization, and their attestations stayed with the
+            old account, so check those with <code>--owner vdavid</code>.`,
 		why: "/trust shows both attestation repos, with the cutoff",
 	},
 	{
 		files: []string{"apps/website/src/pages/trust/development.astro"},
 		find:  `<code>gh attestation verify &lt;file&gt; --repo vdavid/cmdr</code>.`,
 		replace: `<code>gh attestation verify &lt;file&gt; --repo getcmdr/cmdr</code>, or
-            <code>--repo vdavid/cmdr</code> for releases up to and including {cutoff}, built before the repository
+            <code>--owner vdavid</code> for releases up to and including {cutoff}, built before the repository
             moved.`,
 		why: "/trust/development shows both attestation repos, with the cutoff",
 	},
@@ -115,9 +115,13 @@ var edits = []edit{
 		find:  "The public instruction on `/trust` is the shorter `gh attestation verify <file> --repo vdavid/cmdr`.",
 		replace: "The public instruction on `/trust` is the shorter `gh attestation verify <file> --repo getcmdr/cmdr`.\n\n" +
 			"**Two repo names, for good.** An attestation's signing certificate names the repo that built it, so " +
-			"releases up to and including {cutoff} verify with `--repo vdavid/cmdr` and " +
+			"releases up to and including {cutoff} verify with `--owner vdavid` and " +
 			"`--signer-workflow vdavid/cmdr/.github/workflows/release-pipeline.yml`, and later ones with " +
-			"`getcmdr/cmdr`. `/trust` and `/trust/development` show both.",
+			"`getcmdr/cmdr`. `/trust` and `/trust/development` show both. **Gotcha**: GitHub keeps an attestation " +
+			"with the account that owned the repo when it was made, so `--repo vdavid/cmdr` finds nothing for those " +
+			"(it resolves to the moved repo and 404s); `--owner vdavid` or `--bundle Cmdr_X.Y.Z.intoto.jsonl` works. " +
+			"The release tools and `scripts/released-demo.sh` look up by owner for that reason (verified on " +
+			"v0.60.0's archive with `gh attestation verify`, 2026-11-09).",
 		why: "the release guide explains the two attestation repos",
 	},
 	{

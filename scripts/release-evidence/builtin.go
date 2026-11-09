@@ -1,17 +1,54 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 )
 
-// formerRepos are the names this repo had before it moved to the `getcmdr` org (#476). A
-// release's attestations name the repo that built it, for good, so one built under a former name
-// verifies under that name.
-var formerRepos = []string{"vdavid/cmdr"}
+// formerRepos are the names this repo had before it moved to the `getcmdr` org (#476), each with
+// the last release built under it. A release's attestations name the repo that built it, for
+// good, so one built under a former name verifies under that name.
+var formerRepos = []formerRepo{{name: "vdavid/cmdr", lastRelease: "0.60.0"}}
+
+type formerRepo struct{ name, lastRelease string }
+
+func isFormerRepo(name string) bool {
+	return slices.ContainsFunc(formerRepos, func(f formerRepo) bool { return f.name == name })
+}
+
+// repoAtRelease is the repo that built `version`: the first former name whose last release is
+// at or after it, else the current one.
+func repoAtRelease(version, current string) string {
+	for _, f := range formerRepos {
+		if compareVersions(version, f.lastRelease) <= 0 {
+			return f.name
+		}
+	}
+	return current
+}
+
+// compareVersions compares dotted numeric versions like 0.60.0 field by field.
+func compareVersions(a, b string) int {
+	as, bs := strings.Split(a, "."), strings.Split(b, ".")
+	for i := 0; i < max(len(as), len(bs)); i++ {
+		var x, y int
+		if i < len(as) {
+			x, _ = strconv.Atoi(as[i])
+		}
+		if i < len(bs) {
+			y, _ = strconv.Atoi(bs[i])
+		}
+		if x != y {
+			return cmp.Compare(x, y)
+		}
+	}
+	return 0
+}
 
 var releaseURLRepoRE = regexp.MustCompile(`^https://github\.com/([A-Za-z0-9-]+/[A-Za-z0-9._-]+)/releases/download/`)
 
@@ -23,8 +60,7 @@ const mirrorHost = "https://download.getcmdr.com/"
 // release: up to the EU mirror the pipeline wrote `github.repository` into every URL there, and
 // only our pipeline and maintainers upload to our releases. It must be the current name or a
 // former one, so a lookalike repo can never become the one an attestation is checked against.
-// A mirror URL carries no repo name, so it reads as the current repo: right until the repo
-// moves (#476), and evidence is collected right after each release, before any move.
+// A mirror URL carries no repo name, so the version decides (`repoAtRelease`).
 func builtInRepo(manifest []byte, version, current string) (string, error) {
 	var m struct {
 		Version   string `json:"version"`
@@ -41,7 +77,7 @@ func builtInRepo(manifest []byte, version, current string) (string, error) {
 	var repos []string
 	for _, p := range m.Platforms {
 		if strings.HasPrefix(p.URL, mirrorHost) {
-			repos = append(repos, current)
+			repos = append(repos, repoAtRelease(version, current))
 			continue
 		}
 		match := releaseURLRepoRE.FindStringSubmatch(p.URL)
@@ -59,7 +95,7 @@ func builtInRepo(manifest []byte, version, current string) (string, error) {
 		return "", fmt.Errorf("the release's latest.json names more than one repo: %s", strings.Join(repos, ", "))
 	}
 	built := repos[0]
-	if built != current && !slices.Contains(formerRepos, built) {
+	if built != current && !isFormerRepo(built) {
 		return "", fmt.Errorf("the release's latest.json names %s, which is neither this repo (%s) nor a former name of it", built, current)
 	}
 	return built, nil

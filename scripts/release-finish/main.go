@@ -336,10 +336,13 @@ func downloadAndVerifyProvenance(cfg config, dir string, names []string, commit 
 	if err != nil {
 		return err
 	}
+	// By owner, not `--repo`: GitHub keeps an attestation with the account that owned the repo
+	// when it was made, so `--repo vdavid/cmdr` 404s after the move. The signer workflow pins the repo.
+	attestedOwner, _, _ := strings.Cut(attestedRepo, "/")
 	step("Verifying build provenance (%s at %.9s)", cfg.signerWorkflow, commit)
 	for _, name := range names {
 		if _, err := output(cfg.root, nil, "gh", "attestation", "verify", filepath.Join(dir, name),
-			"--repo", attestedRepo,
+			"--owner", attestedOwner,
 			"--signer-workflow", cfg.signerWorkflow,
 			"--signer-digest", commit,
 			"--source-ref", "refs/tags/"+cfg.tag,

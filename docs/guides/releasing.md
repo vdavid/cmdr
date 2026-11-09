@@ -1074,9 +1074,12 @@ signed by `release.yml` itself, so check those with `--signer-workflow` pointing
 instruction on `/trust` is the shorter `gh attestation verify <file> --repo getcmdr/cmdr`.
 
 **Two repo names, for good.** An attestation's signing certificate names the repo that built it, so releases up to and
-including v0.60.0 verify with `--repo vdavid/cmdr` and
+including v0.60.0 verify with `--owner vdavid` and
 `--signer-workflow vdavid/cmdr/.github/workflows/release-pipeline.yml`, and later ones with `getcmdr/cmdr`. `/trust` and
-`/trust/development` show both.
+`/trust/development` show both. **Gotcha**: GitHub keeps an attestation with the account that owned the repo when it was
+made, so `--repo vdavid/cmdr` finds nothing for those (it resolves to the moved repo and 404s); `--owner vdavid` or
+`--bundle Cmdr_X.Y.Z.intoto.jsonl` works. The release tools and `scripts/released-demo.sh` look up by owner for that
+reason (verified on v0.60.0's archive with `gh attestation verify`, 2026-11-09).
 
 **Gotcha**: without `--format json`, `gh attestation verify` prints nothing when its output isn't a terminal (an agent's
 shell, a pipe), only exit 0. Read the exit code, or keep the flag to see what it verified (`gh` 2.x, 2026-10-08).

@@ -62,7 +62,9 @@ fi
 # Only the release pipeline signs these, so a tag someone moved by hand fails here.
 verified=""
 for signer_repo in "$REPO" "$PRE_MOVE_REPO"; do
-    if gh attestation verify "oci://$IMAGE@$digest" --repo "$signer_repo" \
+    # By owner: an attestation stays with the account that owned the repo when it was made, so
+    # `--repo vdavid/cmdr` 404s after the move. The signer workflow pins the repo.
+    if gh attestation verify "oci://$IMAGE@$digest" --owner "${signer_repo%%/*}" \
         --signer-workflow "$signer_repo/.github/workflows/release-pipeline.yml" >/dev/null; then
         verified="$signer_repo"
         break

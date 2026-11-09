@@ -43,9 +43,9 @@ import (
 	"time"
 )
 
-// repo is GitHub's current name for this repo (`gh repo view`), set in `main`. Not a constant, so
-// the move to the `getcmdr` org (#476) needed no change here. A release built before the move still
-// verifies under the name it was built under (`builtin.go`).
+// repo is GitHub's current name for this repo (`gh repo view`), set in `main`. A release built
+// before the move to the `getcmdr` org (#476) still verifies under the name it was built under
+// (`builtin.go`), looked up by owner (`verifyAttestations`).
 var repo string
 
 const (
@@ -397,7 +397,11 @@ func verifyAttestations(cfg config, built, commit, work string) (string, error) 
 	if _, err := output("", "gh", "release", "download", cfg.tag, "-R", repo, "-p", dmg, "-D", work, "--clobber"); err != nil {
 		return "", err
 	}
-	pinned := []string{"--repo", built, "--format", "json",
+	// By owner, not `--repo`: GitHub keeps an attestation with the account that owned the repo
+	// when it was made, so `--repo vdavid/cmdr` 404s on a pre-move release (it resolves to the
+	// moved repo). The signer workflow still pins the repo. `docs/guides/releasing.md` § Provenance.
+	owner, _, _ := strings.Cut(built, "/")
+	pinned := []string{"--owner", owner, "--format", "json",
 		"--signer-workflow", built + "/" + pipelineWorkflow, "--signer-digest", commit,
 		"--source-ref", "refs/tags/" + cfg.tag, "--source-digest", commit, "--deny-self-hosted-runners"}
 	checks := []struct {
