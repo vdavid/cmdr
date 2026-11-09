@@ -24,6 +24,8 @@ func TestSwapContent(t *testing.T) {
 		{"runner service name", "look for `actions.runner.vdavid-cmdr.*`", "look for `actions.runner.getcmdr-cmdr.*`", 1},
 		{"demo image", `ref="ghcr.io/vdavid/cmdr-demo:$TAG"`, `ref="ghcr.io/getcmdr/cmdr-demo:$TAG"`, 1},
 		{"demo package settings", "github.com/users/vdavid/packages/container/cmdr-demo/settings", "github.com/orgs/getcmdr/packages/container/cmdr-demo/settings", 1},
+		{"regex-escaped API path", `/^\/repos\/vdavid\/cmdr\/actions\/runs$/`, `/^\/repos\/getcmdr\/cmdr\/actions\/runs$/`, 1},
+		{"regex-escaped other repo", `/^\/repos\/vdavid\/cmdr-reports\/issues$/`, `/^\/repos\/vdavid\/cmdr-reports\/issues$/`, 0},
 		{"other repo: reports", "vdavid/cmdr-reports#55", "vdavid/cmdr-reports#55", 0},
 		{"other repo: fsevent fork", "https://github.com/vdavid/cmdr-fsevent-stream", "https://github.com/vdavid/cmdr-fsevent-stream", 0},
 		{"local path", "~/projects-git/vdavid/cmdr/target", "~/projects-git/vdavid/cmdr/target", 0},

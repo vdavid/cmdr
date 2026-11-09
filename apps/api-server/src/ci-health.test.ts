@@ -48,7 +48,7 @@ function fakeGitHub(ci: FakeCi) {
   fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input: RequestInfo | URL) => {
     const url = new URL(input as string)
     if (ci.down) return Promise.resolve(new Response('{}', { status: ci.down }))
-    const workflowRuns = /^\/repos\/vdavid\/cmdr\/actions\/workflows\/([^/]+)\/runs$/.exec(url.pathname)
+    const workflowRuns = /^\/repos\/getcmdr\/cmdr\/actions\/workflows\/([^/]+)\/runs$/.exec(url.pathname)
     if (workflowRuns) {
       const workflow = workflowRuns[1]
       const event = url.searchParams.get('event')
@@ -56,7 +56,7 @@ function fakeGitHub(ci: FakeCi) {
       if (!runs) return Promise.resolve(new Response('{"message":"Not Found"}', { status: 404 }))
       return Promise.resolve(Response.json({ total_count: runs.length, workflow_runs: runs }))
     }
-    const jobs = /^\/repos\/vdavid\/cmdr\/actions\/runs\/(\d+)\/jobs$/.exec(url.pathname)
+    const jobs = /^\/repos\/getcmdr\/cmdr\/actions\/runs\/(\d+)\/jobs$/.exec(url.pathname)
     if (jobs) return Promise.resolve(Response.json({ jobs: ci.jobs?.[Number(jobs[1])] ?? [] }))
     if (url.pathname === '/repos/getcmdr/cmdr/commits/main') {
       const newestPush = ci.runs['ci.yml:push']?.[0]

@@ -59,6 +59,8 @@ type literalSwap struct{ from, to string }
 var literalSwaps = []literalSwap{
 	// A self-hosted runner's launchd service is named after the repo it registered with.
 	{"actions.runner.vdavid-cmdr.", "actions.runner.getcmdr-cmdr."},
+	// A regex literal escapes the slashes, so the generic swap can't see the name there.
+	{`\/vdavid\/cmdr\/`, `\/getcmdr\/cmdr\/`},
 	// The browser demo image is a package of the account that owns the repo. Packages don't move
 	// with a transfer, so the released images are copied to the org on transfer day (the runbook).
 	{"ghcr.io/vdavid/cmdr-demo", "ghcr.io/getcmdr/cmdr-demo"},

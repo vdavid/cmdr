@@ -73,7 +73,7 @@ function fakeGitHub(lands: FakeLand[], options: { cacheBytes?: number; down?: bo
       const land = lands.find((candidate) => candidate.sha === url.searchParams.get('head_sha'))
       return Promise.resolve(Response.json({ workflow_runs: land?.runs.map((entry) => entry.run) ?? [] }))
     }
-    const jobs = /^\/repos\/vdavid\/cmdr\/actions\/runs\/(\d+)\/jobs$/.exec(url.pathname)
+    const jobs = /^\/repos\/getcmdr\/cmdr\/actions\/runs\/(\d+)\/jobs$/.exec(url.pathname)
     if (jobs) {
       const entry = lands.flatMap((land) => land.runs).find((candidate) => candidate.run.id === Number(jobs[1]))
       return Promise.resolve(Response.json({ jobs: entry?.jobs ?? [] }))
