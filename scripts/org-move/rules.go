@@ -196,7 +196,7 @@ var edits = []edit{
 		why:     "past tense after the move",
 	},
 	{
-		files:   []string{"scripts/release-evidence/main.go", "scripts/release-finish/main.go"},
+		files:   []string{"scripts/release-finish/main.go"},
 		find:    "a move to the `getcmdr` org (#476) needs no change here.",
 		replace: "the move to the `getcmdr` org (#476) needed no change here.",
 		why:     "past tense after the move",
