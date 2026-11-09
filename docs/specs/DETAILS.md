@@ -17,7 +17,7 @@ Read this before adding, wiping, or reorganizing a spec.
 - `oplog-tree-plan.md`: **The Operation log shows a flat, capped list and can only undo a whole operation.** A
   master–detail dialog over a backend-owned, windowed item tree with checkboxes, partial rollback through the real
   engine, full keyboard, and a writer-maintained summary so two 2M-item operations stay fast. Issue:
-  [#1033](https://github.com/vdavid/cmdr/issues/1033).
+  [#1033](https://github.com/getcmdr/cmdr/issues/1033).
 - `demo-write-engine-plan.md`: **The browser demo can't copy, move, rename, delete, or undo.** The real write engine and
   operation log compiled to WASM behind a local-disk facade and the `cmdr_fs::rt` seam, SQLite built with a mise-pinned
   LLVM clang, then the transfer queue window. Issues: [#929](https://github.com/getcmdr/cmdr/issues/929),

@@ -1,6 +1,6 @@
 # Operation log: a selectable item tree and partial rollback
 
-Issue [#1033](https://github.com/vdavid/cmdr/issues/1033) is the spec: read it with its comments first (David's
+Issue [#1033](https://github.com/getcmdr/cmdr/issues/1033) is the spec: read it with its comments first (David's
 decisions, the Scale acceptance criteria). Design mockup (private): the issue's artifact link. This file is the
 just-in-time execution plan over it.
 

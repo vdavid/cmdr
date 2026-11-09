@@ -272,7 +272,11 @@
             <p class="notice recording-off" role="status">{tString('operationLog.dialog.recordingOff')}</p>
         {/if}
         {#if operationLogState.loading}
-            <div class="centered"><Spinner size="md" label={tString('operationLog.dialog.loading')} /></div>
+            <!-- A row like the notices around it, so it lines up with the title (`dialog-inset.spec.ts`). -->
+            <div class="notice loading" role="status">
+                <Spinner size="sm" />
+                <span>{tString('operationLog.dialog.loading')}</span>
+            </div>
         {:else if operationLogState.loadError}
             <p class="notice">{tString('operationLog.dialog.loadError')}</p>
         {:else if entries.length === 0}
@@ -402,10 +406,10 @@
         border-bottom: 1px solid var(--color-border-subtle);
     }
 
-    .centered {
+    .loading {
         display: flex;
-        justify-content: center;
-        padding: var(--spacing-2xl) 0;
+        align-items: center;
+        gap: var(--spacing-sm);
     }
 
     .notice {
