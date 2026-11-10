@@ -10,8 +10,9 @@ the agent makes that call, fixes or reruns, and David hears about it only when a
 
 ## Flow
 
-1. A launchd daemon (hourly at minute 17, `UserName` `agents`) runs `run.sh` through a login `zsh`, so it has the
-   `agents` user's environment (`gh`, `gh-app-token`, `secret`, mise, `claude`).
+1. A system LaunchDaemon, `com.vdavid.agents.slow-checks-fixer` (hourly at minute 17, `UserName` `agents`), runs
+   `run.sh` through a login `zsh`, so it has the `agents` user's environment (`gh`, `gh-app-token`, `secret`, mise,
+   `claude`).
 2. `run.sh` mints an App token (§ Credentials) and exits at once unless an open `slow-checks` issue by
    `app/github-actions` names a red run that isn't in `~/.local/state/slow-checks-fixer/handled-runs`. The run id is the
    body's first `actions/runs/<id>` link, or the newest `github-actions` comment that says "went red".
@@ -41,9 +42,11 @@ All under `/Users/agents/` (`$HOME`); the infra role creates the first two.
 
 The Rule of Two: the agent takes untrusted input and can change Cmdr, so it holds nothing else.
 
-- **The user**: `agents`, which can't read David's home (bar the warm `target/`), keychain, vault, or SSH keys.
-- **Secrets**: `secret NAME` reads the `agents` store, which holds only what the two M1 agents need. This one uses
-  `CLAUDE_CODE_OAUTH_TOKEN`, and `gh-app-token` uses `CMDR_AGENTS_APP_ID` and `CMDR_AGENTS_APP_PRIVATE_KEY`.
+- **The user**: `agents`, which can't read David's home (bar the warm `target/`), keychain, vault, or SSH keys, nor the
+  report triager's `agents-readers` home, whose personal-data tokens stay out of reach of a run that can change Cmdr
+  (`scripts/report-triage/DETAILS.md` § One account per job shape).
+- **Secrets**: `secret NAME` reads the `agents` store, which holds only what this job needs: `CLAUDE_CODE_OAUTH_TOKEN`,
+  and `gh-app-token`'s `CMDR_AGENTS_APP_ID` and `CMDR_AGENTS_APP_PRIVATE_KEY`.
 - **GitHub**: the Cmdr agents GitHub App, installed on `getcmdr/cmdr` only, with Contents, Pull requests, Issues, and
   Actions read-write and Metadata read. No Workflows, no Administration. `gh-app-token` prints a one-hour installation
   token. `run.sh` keeps it in a private temp dir as `hosts.yml` (`GH_CONFIG_DIR`, which `gh` rereads on every call;
@@ -91,5 +94,10 @@ land it. How hard each part holds:
 Installed on the M1 by the infra repo's Ansible role `slow_checks_fixer`, which copies `run.sh` and `prompt.md` from a
 cmdr checkout (`-e slow_checks_fixer_src=<dir>/`) into `/Users/agents/.local/share/slow-checks-fixer/` and loads the
 launchd daemon: `cd m1mbp/ansible && mise exec -- ansible-playbook site.yml --tags slow_checks_fixer`. Re-run that after
-editing either file. A manual run:
-`ssh m1mbp 'sudo -u agents -i zsh -lc /Users/agents/.local/share/slow-checks-fixer/run.sh'`.
+editing either file.
+
+A manual run: start the daemon itself, in its own environment, with
+`ssh -t m1mbp sudo launchctl kickstart system/com.vdavid.agents.slow-checks-fixer`, then read
+`/Users/agents/slow-checks-fixer/logs/`. The account's login shell is `/usr/bin/false` on purpose, so
+`sudo -u agents -i` doesn't work; a debug shell (which is NOT the daemon's environment) is
+`ssh -t m1mbp sudo -u agents -H /bin/zsh`.

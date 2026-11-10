@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
-# The morning report triager, run headless on the M1 box as the restricted `agents` user at 05:30 Stockholm time by a
-# launchd daemon, an hour before the API server's morning brief. See CLAUDE.md here for what it does and how it's
+# The morning report triager, run headless on the M1 box as the restricted `agents-readers` user at 05:30 Stockholm time
+# by a launchd daemon, an hour before the API server's morning brief. See CLAUDE.md here for what it does and how it's
 # locked down.
 #
-# Secrets come from the `agents` user's `secret` store, resolved BEFORE `env -i`, so the agent's process holds exactly
-# two scoped credentials and nothing else from the user's environment. No board token, on purpose: the agent writes its
-# rating as the last line of its triage comment and the API server's cron applies it (scripts/report-triage/DETAILS.md).
-#   TRIAGE_GH_TOKEN           fine-grained PAT: vdavid/cmdr-reports ONLY, Issues read+write, Metadata read
+# Secrets come from the `agents-readers` user's `secret` store (it holds only these three plus CLAUDE_CODE_OAUTH_TOKEN),
+# resolved BEFORE `env -i`, so the agent's process holds exactly two scoped credentials and nothing else from the
+# user's environment. No board token, on purpose: the agent writes its rating as the last line of its triage comment and
+# the API server's cron applies it (scripts/report-triage/DETAILS.md).
+#   TRIAGE_GH_TOKEN           fine-grained PAT owned by `getcmdr`: getcmdr/cmdr-reports ONLY, Issues read+write, Metadata read
 #   TRIAGE_R2_ACCESS_KEY_ID   R2 API token: Object Read on the cmdr-error-reports-eu bucket ONLY
 #   TRIAGE_R2_SECRET_ACCESS_KEY
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
-work="$HOME/report-triage" # /Users/agents/report-triage: logs/ (launchd's), cmdr/, bundles/, and the two tools
+work="$HOME/report-triage" # /Users/agents-readers/report-triage: logs/ (launchd's), cmdr/, bundles/, and the two tools
 mkdir -p "$work"
 
 # A fresh, shallow, public checkout of Cmdr for code research, kept apart from any clone David works in.
@@ -34,7 +35,7 @@ gh_token="$(secret TRIAGE_GH_TOKEN)"
 r2_key_id="$(secret TRIAGE_R2_ACCESS_KEY_ID)"
 r2_secret="$(secret TRIAGE_R2_SECRET_ACCESS_KEY)"
 # Claude Code's own login. Over SSH and under launchd the login keychain isn't reliably unlocked, so the headless
-# run authenticates with the `agents` store's OAuth token. settings.json strips it from every sandboxed command's environment
+# run authenticates with the store's OAuth token. settings.json strips it from every sandboxed command's environment
 # (`sandbox.credentials.envVars`), so only the claude process itself holds it.
 claude_token="$(secret CLAUDE_CODE_OAUTH_TOKEN)"
 prompt="$(cat "$here/prompt.md")"

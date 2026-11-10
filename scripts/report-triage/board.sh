@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The triage agent's only way to touch the reports board: a curl wrapper over a fixed set of GitHub API calls on
-# vdavid/cmdr-reports. It exists because `gh` (Go) can't verify TLS inside the macOS sandbox, and it enforces in code what
+# getcmdr/cmdr-reports. It exists because `gh` (Go) can't verify TLS inside the macOS sandbox, and it enforces in code what
 # the prompt only asks for, since card text is untrusted and the prompt is the layer an injection can argue with.
 #
 # Usage:
@@ -17,13 +17,13 @@
 #     `size:*`: a card's rating is the last line of its triage comment, which the API server's cron copies onto the
 #     board, so this script holds no board token at all.
 #   - Titles are one line, 1–200 chars. Card numbers are positive integers. Search can't add its own scope qualifiers.
-#   - Host api.github.com, repo vdavid/cmdr-reports, and the HTTP calls below are hardcoded; nothing else is reachable.
+#   - Host api.github.com, repo getcmdr/cmdr-reports, and the HTTP calls below are hardcoded; nothing else is reachable.
 #
 # Reads GH_TOKEN from the environment (run.sh hands it a PAT scoped to this repo). It reaches curl through a config on
 # a pipe, so it never shows in argv, and the script never prints it. Written for macOS's bash 3.2.
 set -euo pipefail
 
-readonly repo="vdavid/cmdr-reports"
+readonly repo="getcmdr/cmdr-reports"
 readonly api="https://api.github.com"
 # The API server's rating job only reads comments that start with this (apps/api-server/src/report-ratings.ts).
 readonly marker="<!-- cmdr:triage -->"

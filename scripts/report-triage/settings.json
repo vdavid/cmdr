@@ -18,39 +18,7 @@
           "mode": "deny"
         },
         {
-          "name": "CLOUDFLARE_API_TOKEN",
-          "mode": "deny"
-        },
-        {
-          "name": "GH_PROJECT_TOKEN",
-          "mode": "deny"
-        },
-        {
-          "name": "CARGO_REGISTRY_TOKEN",
-          "mode": "deny"
-        },
-        {
-          "name": "OPENAI_API_KEY",
-          "mode": "deny"
-        },
-        {
           "name": "SOPS_AGE_KEY_FILE",
-          "mode": "deny"
-        },
-        {
-          "name": "FIRECRAWL_API_KEY",
-          "mode": "deny"
-        },
-        {
-          "name": "FIRECRAWL_API_KEY_N",
-          "mode": "deny"
-        },
-        {
-          "name": "CMDR_AGENTS_APP_ID",
-          "mode": "deny"
-        },
-        {
-          "name": "CMDR_AGENTS_APP_PRIVATE_KEY",
           "mode": "deny"
         }
       ]
@@ -78,12 +46,8 @@
       "Read(~/.zshrc)",
       "Read(~/.gnupg/**)",
       "Read(~/Library/**)",
-      "Read(~/projects-git/**)",
-      "Read(~/Dropbox/**)",
       "Read(~/.claude/**)",
-      "Read(~/.gmail-mcp/**)",
-      "Read(~/.local/**)",
-      "Read(~/slow-checks-fixer/**)"
+      "Read(~/.local/**)"
     ]
   }
 }
