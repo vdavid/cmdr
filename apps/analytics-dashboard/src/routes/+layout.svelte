@@ -64,14 +64,16 @@
     }
 </script>
 
-<div class="mx-auto max-w-[1800px] px-6 pt-14 pb-8">
-    <!-- Header (sticky): brand, page nav, and the range/day picker -->
-    <header
-        class="fixed inset-x-0 top-0 z-40 flex items-center justify-between gap-4 border-b border-border bg-surface/90 px-6 py-2 backdrop-blur-sm"
-    >
-        <div class="flex items-center gap-6">
+<!-- Header (sticky, outside the width-capped container so it spans the viewport): brand, page nav, and the
+     range/day picker. It wraps on narrow screens, and sticky (rather than fixed) lets the content flow below
+     whatever height that gives, so nothing gets cut off or covered. Wrapped on a phone it's ~190px tall, so it
+     only pins from `sm` up and scrolls away on a phone. -->
+<header
+    class="relative top-0 z-40 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-surface/90 px-6 py-2 backdrop-blur-sm sm:sticky"
+>
+        <div class="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-1">
             <h1 class="text-lg font-bold text-text-primary">Cmdr analytics</h1>
-            <nav class="flex items-center gap-1">
+            <nav class="flex flex-wrap items-center gap-1">
                 {#each navItems as item (item.href)}
                     {@const active = pathname === item.href}
                     <!-- eslint-disable svelte/no-navigation-without-resolve -- every `navItems` href is built with resolve() above; the rule can't follow it through the array -->
@@ -89,7 +91,7 @@
         </div>
 
         {#if showPicker}
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <div class="flex rounded-lg border border-border bg-surface p-0.5">
                     {#each rangeButtons as r (r)}
                         <button
@@ -119,7 +121,8 @@
                 {/if}
             </div>
         {/if}
-    </header>
+</header>
 
+<div class="mx-auto max-w-[1800px] px-6 pt-4 pb-8">
     {@render children()}
 </div>

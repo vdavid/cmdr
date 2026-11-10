@@ -27,12 +27,15 @@ to company policies (#118).
 
 ## Wire contract: `POST /heartbeat`
 
-Existing fields unchanged (`analId`, `appVersion`, `osVersion`, `arch`, `buildMode`, `config`). New, both optional so
-old clients (hourly, no events) keep working for as long as they exist:
+Existing fields unchanged (`analId`, `appVersion`, `osVersion`, `arch`, `buildMode`, `config`). New, all optional so old
+clients (hourly, no events) keep working for as long as they exist:
 
 - `uptimeSeconds`: integer ≥ 0. App runtime this beat accounts for, not yet reported by an earlier successful beat.
   Unreported uptime is persisted (updated every few minutes), so a short session that ended before its beat still counts
   on the next one. Server clamps to a sane max (7 days) and stores it.
+- `installChannel`: `"homebrew" | "direct" | null`. How the app was installed (app side:
+  `apps/desktop/src-tauri/src/analytics/install_channel.rs`). The server stores an unrecognized value as NULL, and the
+  install's channel is the first non-NULL one it reports (`apps/api-server/src/admin/DETAILS.md` § Install summary).
 - `events`: array, max 500 items. Each item:
   - `event`: string, 1–100 chars, `^[a-z0-9_$]+$`-ish (match what the app sends today).
   - `timestamp`: RFC 3339 UTC string, the moment the event fired on the client.
