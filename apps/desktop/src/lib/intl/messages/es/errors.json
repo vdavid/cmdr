@@ -1653,6 +1653,14 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "@errors.write.trashRefused.message.ownedByAnotherUser": {
+    "sourceHash": "50f2ce6"
+  },
+  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "@errors.write.trashRefused.message.trashNotWritable": {
+    "sourceHash": "024ef04"
+  },
   "errors.write.trashRefused.message.noTrashForVolume": "macOS no ha encontrado una papelera para {count} de los elementos que has elegido.",
   "@errors.write.trashRefused.message.noTrashForVolume": {
     "sourceHash": "702ae17"
@@ -1672,6 +1680,14 @@
   "errors.write.trashRefused.suggestion.folderNotWritable": "Para moverlos, necesitas permiso para cambiar su carpeta. El Finder muestra quién puede hacerlo en Obtener información de la carpeta, en la sección “Compartir y permisos”.",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
+  },
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
+    "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "@errors.write.trashRefused.suggestion.trashNotWritable": {
+    "sourceHash": "abaf265"
   },
   "errors.write.trashRefused.suggestion.noTrashForVolume": "Algunos sitios no tienen papelera propia, como las carpetas en la nube y la mayoría de las unidades de red. Aun así puedes eliminar los elementos permanentemente con Shift+F8.",
   "@errors.write.trashRefused.suggestion.noTrashForVolume": {

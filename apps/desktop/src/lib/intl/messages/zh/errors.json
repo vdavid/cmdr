@@ -1652,6 +1652,14 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "@errors.write.trashRefused.message.ownedByAnotherUser": {
+    "sourceHash": "50f2ce6"
+  },
+  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "@errors.write.trashRefused.message.trashNotWritable": {
+    "sourceHash": "024ef04"
+  },
   "errors.write.trashRefused.message.noTrashForVolume": "你选中的项目里有 {count} 个，macOS 找不到对应的废纸篓。",
   "@errors.write.trashRefused.message.noTrashForVolume": {
     "sourceHash": "702ae17"
@@ -1671,6 +1679,14 @@
   "errors.write.trashRefused.suggestion.folderNotWritable": "要移动它们，你需要有修改所在文件夹的权限。在 Finder 里打开这个文件夹的“显示简介”，在“共享与权限”下能看到谁有这个权限。",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
+  },
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
+    "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "@errors.write.trashRefused.suggestion.trashNotWritable": {
+    "sourceHash": "abaf265"
   },
   "errors.write.trashRefused.suggestion.noTrashForVolume": "有些位置没有自己的废纸篓，比如云端文件夹和大多数网络驱动器。你还是可以用 Shift+F8 把这些项目彻底删除。",
   "@errors.write.trashRefused.suggestion.noTrashForVolume": {

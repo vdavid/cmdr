@@ -1653,6 +1653,14 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "@errors.write.trashRefused.message.ownedByAnotherUser": {
+    "sourceHash": "50f2ce6"
+  },
+  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "@errors.write.trashRefused.message.trashNotWritable": {
+    "sourceHash": "024ef04"
+  },
   "errors.write.trashRefused.message.noTrashForVolume": "macOS kon voor {count} van de onderdelen die je koos geen prullenmand vinden.",
   "@errors.write.trashRefused.message.noTrashForVolume": {
     "sourceHash": "702ae17"
@@ -1672,6 +1680,14 @@
   "errors.write.trashRefused.suggestion.folderNotWritable": "Om ze te verplaatsen, heb je de bevoegdheid nodig om hun map te wijzigen. Finder toont wie dat mag in ‘Toon info’ van de map, onder ‘Delen en bevoegdheden’.",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
+  },
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
+    "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "@errors.write.trashRefused.suggestion.trashNotWritable": {
+    "sourceHash": "abaf265"
   },
   "errors.write.trashRefused.suggestion.noTrashForVolume": "Sommige plekken hebben geen eigen prullenmand, waaronder cloudmappen en de meeste netwerkschijven. Je kunt de onderdelen wel definitief verwijderen met Shift+F8.",
   "@errors.write.trashRefused.suggestion.noTrashForVolume": {
