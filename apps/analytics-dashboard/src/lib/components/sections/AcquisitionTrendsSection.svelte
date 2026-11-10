@@ -42,7 +42,10 @@
         formatRelativeChange,
     } from '#lib/format.js'
     import { COLOR_GOLD, COLOR_HOMEBREW, COLOR_UNKNOWN } from '#lib/colors.js'
+    import { aggregateChannels, aggregateReferers, aggregateUaFamilies, type ChannelCount } from '#lib/funnel.js'
+    import { foldSlices, type PieInput } from '#lib/pie-slices.js'
     import DailyChart from '../DailyChart.svelte'
+    import DonutChart from '../DonutChart.svelte'
     import StatsGrid from '../StatsGrid.svelte'
     import TrendRow from '../TrendRow.svelte'
     import InfoPopover from '../InfoPopover.svelte'
@@ -188,6 +191,72 @@
      * their own slice on an ordinary day.
      */
     const stackedChartHeight = 360
+
+    /** A ranked breakdown as pie entries, naming the no-value bucket so it can't pass for a channel. */
+    function pieEntries(counts: ChannelCount[]): PieInput[] {
+        return counts.map((c) => ({ key: c.ref, label: c.ref === '(none)' ? '(none / unknown)' : c.ref, count: c.count }))
+    }
+
+    /**
+     * The three download breakdowns under the clicks chart, over the same days the charts show (the
+     * picker's range plus today). The per-day maps arrive with the 181-day funnel, so switching range
+     * re-slices in the browser.
+     */
+    const breakdowns = $derived.by(() => {
+        const inRange = rows.slice(start)
+        const ua = aggregateUaFamilies(inRange)
+        return [
+            {
+                title: 'Channels',
+                info:
+                    "Which channels drove server downloads: a download's ref is the channel the visitor first arrived " +
+                    'from (a UTM source or campaign, else the referring site). Ref is first-touch per browser visit and ' +
+                    'comes from the URL only, so return visits and cross-device journeys (read on the phone, download on ' +
+                    'the Mac) carry no ref and land in "(none / unknown)". Homebrew and direct links have none too, and ' +
+                    'rows before 2026-06-12 predate the column, so read it as "channel unknown", not "direct". From the ' +
+                    'api-server\'s download log; all days UTC.',
+                empty: 'No downloads with a channel in this range.',
+                headline: null,
+                slices: foldSlices(pieEntries(aggregateChannels(inRange)), { neutral: ['(none)'] }),
+            },
+            {
+                title: 'Download referrers',
+                info:
+                    'The Referer host of each /download request. Unlike the first-touch channel (set only by the ' +
+                    'website button), this is captured on every hit, so it shows where the direct, no-ref downloads came ' +
+                    'from: a link on AlternativeTo, a directory, GitHub, Reddit, or a forum. "(none / unknown)" means no ' +
+                    'usable referer: a typed URL, a privacy browser, a referrer-policy strip, Homebrew or curl, or rows ' +
+                    'before 2026-06-25 that predate the column. A download counts here and in Channels, sliced ' +
+                    "differently. From the api-server's download log; all days UTC.",
+                empty: 'No downloads with a referer in this range.',
+                headline: null,
+                slices: foldSlices(pieEntries(aggregateReferers(inRange)), { neutral: ['(none)'] }),
+            },
+            {
+                title: 'Downloads by client',
+                info:
+                    "The /download request's user-agent family. Cmdr is macOS-only, so a Windows, Android, or Linux " +
+                    'client downloading the .dmg can\'t install it: that\'s the "bot / impossible" slice, the one ' +
+                    'high-confidence exclusion. "Human installs" is every download minus those. The scraper spoofs Mac ' +
+                    'browser UAs too, so "human" (a Mac browser, Homebrew, or curl/wget) means "could be a real install", not proof of one. "Unknown" (no or ' +
+                    'unrecognized UA, including rows before UA capture) stays counted because we can\'t tell. From the ' +
+                    "api-server's download log; all days UTC.",
+                empty: 'No downloads to classify in this range.',
+                headline:
+                    ua.total > 0
+                        ? `Human installs: ${formatNumber(ua.humanInstalls)} of ${formatNumber(ua.total)} server downloads`
+                        : null,
+                slices: foldSlices(
+                    [
+                        { key: 'human', label: 'Human', count: ua.human },
+                        { key: 'bot', label: 'Bot / impossible', count: ua.bot },
+                        { key: 'unknown', label: 'Unknown', count: ua.unknown },
+                    ],
+                    { neutral: ['unknown'], minShare: 0 },
+                ),
+            },
+        ]
+    })
 </script>
 
 <section class="mb-6 rounded-xl border border-border bg-surface p-4 sm:p-6">
@@ -354,6 +423,29 @@
                 <StatsGrid stats={countStatsAll(inputs.clicks)} formatValue={formatAverage} formatChange={formatRelativeChange} />
             {/snippet}
         </TrendRow>
+
+        <!-- Where the range's server downloads came from: three pies over the charts' window -->
+        {@const breakdownReason =
+            workerReason ??
+            (country ? "Not available for one country: the api-server doesn't split these by country." : null)}
+        <div class="grid grid-cols-1 gap-6 border-t border-border-subtle py-5 md:grid-cols-3">
+            {#each breakdowns as b (b.title)}
+                <div class="min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-6">
+                    <h3 class="mb-3 flex items-center gap-2 text-sm font-medium text-text-primary">
+                        {b.title}
+                        <InfoPopover topic={b.title}>{b.info}</InfoPopover>
+                    </h3>
+                    {#if breakdownReason}
+                        <p class="text-sm text-text-tertiary">{breakdownReason}</p>
+                    {:else if b.slices.length === 0}
+                        <p class="text-sm text-text-tertiary">{b.empty}</p>
+                    {:else}
+                        {#if b.headline}<p class="mb-3 text-xs text-text-secondary">{b.headline}</p>{/if}
+                        <DonutChart slices={b.slices} label={b.title} unit="downloads" />
+                    {/if}
+                </div>
+            {/each}
+        </div>
 
         <!-- 4. Click → install conversion -->
         <TrendRow title="Click → install conversion" unavailable={bothReason}>

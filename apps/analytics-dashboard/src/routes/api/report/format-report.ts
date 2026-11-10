@@ -28,7 +28,7 @@ import {
   tallyErrorReportsByField,
   errorReportsByDay,
 } from '../../../lib/feedback-and-errors.js'
-import { aggregateChannels, aggregateReferers, aggregateUaFamilies, funnelTableDays } from '../../../lib/funnel.js'
+import { aggregateChannels, aggregateReferers, aggregateUaFamilies } from '../../../lib/funnel.js'
 import { boundsByDay, formatBound, largestUnseenShare, latestBound } from '../../../lib/active-installs.js'
 import {
   formatShare,
@@ -152,11 +152,14 @@ function writeShares(
 
 // ── 0. Daily funnel (always the last 30 UTC days, independent of the selected range) ──────────────
 
+/** How many trailing days the report's funnel section shows. */
+const reportFunnelDays = 30
+
 function writeFunnelRows(w: ReportWriter, rows: FunnelRow[]): void {
   const dash = (n: number | null) => (n === null ? '-' : num(n))
   const pctOrDash = (f: number | null) => (f === null ? '-' : `${(f * 100).toFixed(0)}%`)
   w.line('day | visitors | dl clicks | server dls | installs | D7 | signups | purchases')
-  // Most recent day first, to match the dashboard table.
+  // Most recent day first.
   for (const r of [...rows].reverse()) {
     w.line(
       `${r.date} | ${dash(r.visitors)} | ${dash(r.downloadClicks)} | ${dash(r.serverDownloads)} | ` +
@@ -221,7 +224,7 @@ function writeFunnelSection(w: ReportWriter, funnel: SourceResult<FunnelData>): 
     return
   }
   // The source carries 180 days for the trend charts; the report keeps its 30-day table.
-  const rows = funnel.data.rows.slice(-funnelTableDays)
+  const rows = funnel.data.rows.slice(-reportFunnelDays)
   writeFunnelRows(w, rows)
   writeFunnelChannels(w, rows)
   writeFunnelReferers(w, rows)

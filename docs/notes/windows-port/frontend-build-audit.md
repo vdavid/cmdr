@@ -285,9 +285,9 @@ the shape; this doc points at them where they apply and only adds what Windows c
   (`apps/api-server/src/telemetry/telemetry.ts:378,553-556`). Add `/download/:version/:os/:arch` (keep the old route as
   the macOS alias, since published links point at it).
 - The funnel's UA classifier treats any `Windows`/`Linux`/`X11` UA as a provably impossible `bot`
-  (`apps/api-server/src/user-agent.ts:17`, mirrored in `apps/analytics-dashboard/src/lib/funnel.ts:58` and
-  `FunnelTable.svelte:158`). Correct today; wrong the day a non-mac artifact exists. Make it artifact-aware: a UA is
-  "impossible" only for an artifact of another OS.
+  (`apps/api-server/src/user-agent.ts:17`, mirrored in `apps/analytics-dashboard/src/lib/funnel.ts:58` and the
+  "Downloads by client" pie in `AcquisitionTrendsSection.svelte`). Correct today; wrong the day a non-mac artifact
+  exists. Make it artifact-aware: a UA is "impossible" only for an artifact of another OS.
 - Telemetry rows carry `os_version` and `arch` but no `os` (`heartbeat.ts:18`, `feedback.ts:56`, error and crash
   reports). The OS is only implicit in the free-form `osVersion` string. Add an explicit `os` field (D1 migration +
   client), so dashboards can split by platform without parsing strings (and without breaking the no-string-match

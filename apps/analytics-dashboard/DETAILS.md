@@ -12,14 +12,13 @@ sections and pass their loaded data down.
 
 - `/` — Acquisition (`routes/+page.svelte`), in render order:
   - Acquisition trends (`components/sections/AcquisitionTrendsSection.svelte`): country chips (filtering in the browser)
-    and one `TrendRow` per funnel metric (chart left, `StatsGrid` right). The charts' window follows the picker. §
-    "Acquisition trends".
+    and one `TrendRow` per funnel metric (chart left, `StatsGrid` right), plus a row of three download breakdown pies
+    under the clicks chart. The charts' and pies' window follows the picker. § "Acquisition trends".
   - By country, last N days (`components/sections/CountryFunnelSection.svelte`): the world map and the country table. §
     "The country map and table".
   - Awareness (`components/sections/AwarenessSection.svelte`).
   - Interest (`components/sections/InterestSection.svelte`).
   - Download (`components/sections/DownloadSection.svelte`), with `CountryTable.svelte` and the per-day pie tooltip.
-  - Old daily table + Channels (`components/FunnelTable.svelte`), a collapsed `<details>`: the last 30 UTC days.
 - `/product` — Product (`routes/product/+page.svelte`):
   - Active use (`ActiveUseSection.svelte`), Payment (`PaymentSection.svelte`), Retention (`RetentionSection.svelte`),
     Feedback & errors (`FeedbackErrorsSection.svelte`).
@@ -188,16 +187,16 @@ runtime values live outside `#lib/server`: `#lib/funnel.ts`, `#lib/feedback-and-
 - `src/lib/server/cache.ts`: CF Cache API wrapper with an in-memory Map fallback for local dev, `wrangler pages dev`
   included (it doesn't emulate the Cache API).
 - `src/lib/server/sources/`: data source modules (one per external API).
-- `src/lib/components/sections/`: one component per dashboard section. `src/lib/components/`: shared UI (FunnelTable,
-  CountryTable, MetricRow/MetricTable, ErrorState/EmptyState/BetaEmptyState, SectionDescription, Methodology,
-  ExternalLinks, Chart, StackedBarChart, MiniTimeline, PieChart).
+- `src/lib/components/sections/`: one component per dashboard section. `src/lib/components/`: shared UI (CountryTable,
+  MetricRow/MetricTable, ErrorState/EmptyState/BetaEmptyState, SectionDescription, Methodology, ExternalLinks, Chart,
+  StackedBarChart, MiniTimeline, PieChart (the Download section's tiny per-day pie), DonutChart (the breakdown pies)).
 - `src/lib/{format,colors,chart-helpers}.ts`: client-safe formatters, color tokens, chart data-shaping helpers.
 - `src/lib/acquisition-stats.ts` (the stats grid, rolling rates, axis ticks), `acquisition-series.ts` (funnel rows →
   each chart's numerator and denominator), `acquisition-countries.ts` (country table join), `acquisition-by-country.ts`
-  (client-side country rows, stacks, split bar), `country-colors.ts`, and `daily-chart.ts` (`DailyChart.svelte`
-  geometry): client-safe, each with its Vitest file. Same for the country section's `count-color-scale.ts`,
-  `country-table.ts`, `country-geo.ts`, and `world-map-shapes.ts` (§ "The country map and table"), drawn by
-  `WorldMap.svelte`.
+  (client-side country rows, stacks, split bar), `country-colors.ts`, `daily-chart.ts` (`DailyChart.svelte` geometry),
+  and `pie-slices.ts` (`DonutChart.svelte` folding, colors, ring geometry): client-safe, each with its Vitest file. Same
+  for the country section's `count-color-scale.ts`, `country-table.ts`, `country-geo.ts`, and `world-map-shapes.ts` (§
+  "The country map and table"), drawn by `WorldMap.svelte`.
 - `DailyChart.svelte` (SVG day columns or rate dots + rolling line), `StatsGrid.svelte`, `TrendRow.svelte`, and
   `InfoPopover.svelte` (the (i): hover, focus, or tap; Escape closes).
 - `src/lib/link-codes.ts`: client-safe `?r=` helpers (validation mirroring the api-server, row flattening, example
@@ -229,11 +228,12 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
 - `feedback-and-errors.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): in-app feedback + error-report bundle metadata
   from `/admin/feedback` and `/admin/error-reports`. Pure helpers + row types in client-safe
   `#lib/feedback-and-errors.ts`.
-- `funnel.ts` (Bearer + Umami + Paddle): the per-UTC-day funnel behind the trend charts and the old table (181 days,
-  independent of the picker), joining `/admin/funnel` with Umami per-day visitors, pageviews, and clicks, and Paddle
-  purchases, plus per-country slices for the top 20 (§ "Acquisition trends"). Per-day `downloadsByRef` feeds the
-  "Channels" breakdown (rolled up by `aggregateChannels` in `#lib/funnel.ts`). Cache: `funnel-v3` once for everyone,
-  `funnel-extra-v1` per non-top `?country=`.
+- `funnel.ts` (Bearer + Umami + Paddle): the per-UTC-day funnel behind the trend charts, the breakdown pies, and the
+  report's daily funnel (181 days, independent of the picker), joining `/admin/funnel` with Umami per-day visitors,
+  pageviews, and clicks, and Paddle purchases, plus per-country slices for the top 20 (§ "Acquisition trends"). Per-day
+  `downloadsByRef`, `downloadsByReferer`, and `downloadsByUaFamily` feed the three pies (rolled up by
+  `aggregateChannels` / `aggregateReferers` / `aggregateUaFamilies` in `#lib/funnel.ts`). Cache: `funnel-v3` once for
+  everyone, `funnel-extra-v1` per non-top `?country=`.
 - `funnel-countries.ts` (Bearer + Umami): the per-country map and table over the picker's window (`days` = 7/30/90,
   cached per window as `funnel-countries-v2`). Three parallel calls: Umami `metrics?type=country` for visitors, Umami
   `/events?event=download` (paginated, 1,000 a page) tallied by each row's country for every country's clicks, and
@@ -365,6 +365,7 @@ association from one section to the next:
 - Countries: eight fixed colors in `#lib/country-colors.ts` (`countryColor(code)`), assigned once to the 90-day top
   eight and never reshuffled by rank; every other country, and "Other", is the grey. The file's header carries the
   validator run and the near-pair caveat. Add a color deliberately when an uncolored country climbs into the top 20.
+- Breakdown pies: four hues of their own plus two greys, in `#lib/pie-slices.ts` (§ "Acquisition trends").
 - Status bands (`COLOR_BAND`): the app's success / warning / danger tokens, only as faint backgrounds behind rate
   charts.
 
@@ -418,7 +419,19 @@ grids stay on fixed 90/30/7 columns.
 - **Plain SVG over uPlot** for these charts: discrete days, an exact number on each column where it fits, a faded today,
   and an exact-values tooltip. The chart is a `role="slider"` over days: arrow keys walk them and each day's readout is
   the `aria-valuetext`.
-- The methodology that used to sit under the old table now lives in each metric's (i) popover.
+- Each metric's methodology lives in its (i) popover.
+- **Download breakdown pies** (Channels, Download referrers, Downloads by client), in one row of three 1/3 cards under
+  the clicks chart (one column below `md`). They sum the funnel rows' per-day maps over the charts' window (the picker's
+  days plus today), so switching range re-slices in the browser with no new fetch. Filtered to one country they say "Not
+  available for one country": the worker's per-country slice carries none of the three maps.
+  - `foldSlices` (`#lib/pie-slices.ts`) ranks the slices, names at most four colored ones at 3% or more, and folds the
+    rest into "Other" (a lone would-be fold stays named). Neutral keys (`(none)`, `unknown`) wear the unknown grey and
+    don't use a hue; "Other" is a lighter grey (`COLOR_PIE_OTHER`) so the two read apart.
+  - Colors follow the key (FNV-1a hash to a slot, collisions probed in alphabetical key order), never the rank. Four
+    hues, because the slices' neighbors change with the counts, so the palette must pass the dataviz validator's
+    all-pairs check, and no fifth hue does against these four (validator run in the file header).
+  - `DonutChart.svelte`: a ring with the total inside and a legend of every slice's count and share (the table view).
+    Hover, focus, or tap a slice for its tooltip; a tap or Enter pins it; "Other"'s lists what folded in.
 
 ## The country map and table
 
@@ -574,9 +587,9 @@ have a happy-path test carrying the real `type: 'app'` stamp, so the discriminat
 
 - **Metrics organized by acquisition stage, not as a cohort funnel.** Tracking is cookieless and anonymous, so there's
   no way to follow an individual from blog visit to download to payment. Stages show independent aggregate numbers.
-- **The old "Daily funnel" table lines stages up per UTC day** (last 30 days, newest first, today partial, collapsed
-  under the trend charts that replaced it), independent of the picker, to answer "what happened on day Y across the
-  whole path". It's NOT a true cohort funnel across columns (still no cross-site identity); each column is its own
+- **The `/api/report` "Daily funnel" lines stages up per UTC day** (last 30 days, newest first, today partial),
+  independent of the picker, to answer "what happened on day Y across the whole path"; the page shows the same days as
+  trend charts. It's NOT a true cohort funnel across columns (still no cross-site identity); each column is its own
   per-day aggregate. Clicks won't equal server downloads (clicks are in-browser; server downloads also include Homebrew,
   direct links, GitHub-page traffic, bots filtered imperfectly). D7 needs a cohort ≥8 days old that had installs, so
   recent/empty days show a dash. The api-server owns the funnel contract and the D7 definition

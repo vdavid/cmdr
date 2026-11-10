@@ -19,7 +19,7 @@ import {
 import { fetchPaddlePurchasesByDay } from './paddle.js'
 
 /**
- * The per-UTC-day funnel behind the Acquisition page's trend charts and the old daily table: web-side
+ * The per-UTC-day funnel behind the Acquisition page's trend charts and download breakdown pies: web-side
  * signals (Umami) joined with server-side telemetry (the api-server `/admin/funnel` endpoint) and purchases
  * (Paddle). Independent of the page's range picker. It carries the totals plus a per-country slice for the
  * top countries, so the page switches countries in the browser without asking the server again. Every

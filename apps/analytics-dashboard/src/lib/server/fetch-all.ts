@@ -46,7 +46,7 @@ export interface UmamiSiteUrls {
 export interface AcquisitionData extends SelectionEnvelope {
   /** The `?country=` filter the trend charts are scoped to, or `null` for all countries. */
   country: string | null
-  /** The last 180 UTC days, independent of `selection`, scoped to `country`: the trend charts and old table. */
+  /** The last 180 UTC days, independent of `selection`, scoped to `country`: the trend charts and the download breakdown pies. */
   funnel: SourceResult<FunnelData>
   /** The per-country 30-day table and the country chips. Never scoped to `country`. */
   funnelCountries: SourceResult<FunnelCountriesData>

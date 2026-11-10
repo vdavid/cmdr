@@ -1,18 +1,14 @@
 <!--
   Acquisition page (`/`): the trend charts (one row per funnel metric, scoped by the country chips), the
-  per-country table, the awareness, interest, and download sections, and the old daily table, collapsed.
+  per-country table, and the awareness, interest, and download sections.
   The shared range picker and nav live in the layout. Each section is its own component.
 -->
 <script lang="ts">
     import type { PageProps } from './$types'
-    import type { FunnelData } from '#lib/server/sources/funnel.js'
-    import type { SourceResult } from '#lib/server/types.js'
     import { rangeDays } from '#lib/time-range.js'
-    import { rowsForCountry } from '#lib/acquisition-by-country.js'
     import { page } from '$app/state'
     import { goto } from '$app/navigation'
     import { resolve } from '$app/paths'
-    import FunnelTable from '#lib/components/FunnelTable.svelte'
     import AcquisitionTrendsSection from '#lib/components/sections/AcquisitionTrendsSection.svelte'
     import CountryFunnelSection from '#lib/components/sections/CountryFunnelSection.svelte'
     import AwarenessSection from '#lib/components/sections/AwarenessSection.svelte'
@@ -53,12 +49,6 @@
         return query ? `${resolve('/')}?${query}` : resolve('/')
     }
 
-    /** The funnel as the selected country saw it, for the old daily table. */
-    const scopedFunnel = $derived.by((): SourceResult<FunnelData> => {
-        const funnel = data.funnel
-        if (!funnel.ok || !country) return funnel
-        return { ok: true, data: { ...funnel.data, rows: rowsForCountry(funnel.data, country) } }
-    })
 </script>
 
 <AcquisitionTrendsSection
@@ -91,5 +81,3 @@
     <InterestSection umami={data.umami} posthog={data.posthog} selection={data.selection} />
     <DownloadSection cloudflare={data.cloudflare} github={data.github} selection={data.selection} />
 </div>
-
-<FunnelTable funnel={scopedFunnel} selection={data.selection} {todayIso} />

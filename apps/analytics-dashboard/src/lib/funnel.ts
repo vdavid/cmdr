@@ -1,7 +1,7 @@
 /**
- * Client-safe pure helpers for the "Daily funnel" section. Lives outside `#lib/server` so both the
- * page (client bundle) and the server source/report code can import them; the server-only fetching
- * lives in `#lib/server/sources/funnel.ts`, which re-exports these.
+ * Client-safe pure helpers for the funnel (the trend charts, the download breakdown pies, and the report).
+ * Lives outside `#lib/server` so both the page (client bundle) and the server source/report code can
+ * import them; the server-only fetching lives in `#lib/server/sources/funnel.ts`, which re-exports these.
  */
 
 /** One entry in a ranked breakdown: a key (ref or referer host) and its total download count. */
@@ -81,9 +81,6 @@ export function aggregateUaFamilies(rows: { downloadsByUaFamily: UaFamilyCounts 
   }
   return { human, bot, unknown, total: human + bot + unknown, humanInstalls: human + unknown }
 }
-
-/** How many trailing days the old daily table (and the report's funnel section) show. */
-export const funnelTableDays = 30
 
 /** That day's server downloads by where they came from (the worker's `downloads.source`). */
 export interface DownloadsBySource {
