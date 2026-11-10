@@ -12,17 +12,15 @@ A local-FS walker, a volume walker (every backend), and OS-native trash.
   `../local_start.rs`. The volume scan asks `authoritative_listing` before every `list_directory`; deletes batch per
   `delete_batch_size`. DETAILS § "Volume-delete internals".
 - **`outage.rs`**: waits out a dropped share. ❗ A re-run re-checks the entry (kind, size); a mismatch stops the delete
-  (`ChangedWhileDisconnected`); `NotFound` means deleted ONLY after a wait. ❌ No `through_outages` around a delete.
-  DETAILS § "Waiting out a dropped share".
+  (`ChangedWhileDisconnected`). ❌ No `through_outages` around a delete. DETAILS § "Waiting out a dropped share".
 - **`trash.rs`**: `move_to_trash_sync()`, `trash_files_with_progress()` (batch, per-item progress, cancel), and
   `trash_dir_for_path()` (❌ keep its ancestor walk, DETAILS § Where a trash is). Each item it can't take emits a
   `Failed` source-item event.
 - **`cloud_trash.rs`**: `routing_for_selection()` behind the `trash_routing_for_paths` command. DETAILS § "A trash of
   online-only cloud content becomes a delete".
-- **`volume_start.rs`**: a volume delete's managed lifecycle (an `async` body). DETAILS § "The volume delete's own
-  lifecycle".
-- **`already_gone.rs`**: an already-gone item counts as done, ❌ never `SourceNotFound`. DETAILS § "An item that's
-  already gone is done".
+- **`volume_start.rs`**: a volume delete's managed `async` lifecycle. DETAILS § "The volume delete's own lifecycle".
+- **`already_gone.rs`**: an already-gone item is done, ❌ never `SourceNotFound`: top-level, past a preview
+  (`MissingSource`), mid-walk (only a POSITIVE `NotFound`). DETAILS § "An item that's already gone is done".
 
 ## Must-knows
 

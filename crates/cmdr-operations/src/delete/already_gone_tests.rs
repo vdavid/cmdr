@@ -14,10 +14,11 @@ use std::time::Duration;
 
 use super::super::OperationEventSink;
 use super::super::event_sinks::CollectorEventSink;
+use super::super::scan_cache::{ScanOutcome, ScanPreviewState};
 use super::super::state::{CachedScanResult, FileInfo};
 use super::super::testing::TestOperations;
 use super::super::types::{
-    AlreadyGone, ScanPreviewPurpose, SourceItemOutcome, WriteCompleteEvent, WriteOperationConfig,
+    AlreadyGone, ScanPreviewPurpose, SourceItemOutcome, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
 };
 use super::walker::delete_files_with_progress_inner;
 use cmdr_fs::entry::FileEntry;
@@ -415,4 +416,290 @@ async fn a_volume_delete_probes_each_selected_item_once() {
         "{:?}",
         volume.probes.lock_ignore_poison()
     );
+}
+
+// ============================================================================
+// The confirming dialog's preview found the item gone
+// ============================================================================
+
+fn unique_preview_id(label: &str) -> String {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static N: AtomicU64 = AtomicU64::new(0);
+    format!(
+        "already-gone-{label}-{}-{}",
+        N.fetch_add(1, Ordering::Relaxed),
+        std::process::id()
+    )
+}
+
+/// A preview still walking when the person confirms, as the dialog leaves it.
+fn register_walking_preview(engine: &TestOperations, preview_id: &str) {
+    engine.stores().previews().register_preview(
+        preview_id.to_string(),
+        Arc::new(ScanPreviewState {
+            cancelled: std::sync::atomic::AtomicBool::new(false),
+            progress_interval: Duration::from_millis(50),
+            mac_only: cmdr_fs::mac_only_files::MacOnlyFiles::Include,
+        }),
+    );
+}
+
+fn settle_as_not_found(engine: &TestOperations, preview_id: &str, path: &Path) {
+    engine.stores().previews().settle_preview(
+        preview_id,
+        ScanOutcome::Error(WriteOperationError::SourceNotFound {
+            path: path.display().to_string(),
+        }),
+        None,
+    );
+}
+
+/// Regression anchor (ERR-7YG5T, 2026-11-07): two deletes of one SMB file four
+/// seconds apart. The first removed it; the second's preview then settled with
+/// `NotFound`, and the scan wait failed the op on it before `split_on` ran, so a
+/// delete of an already-gone file auto-sent an error report.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_volume_delete_whose_preview_found_the_item_gone_completes() {
+    let volume = Arc::new(InMemoryVolume::new("naspi"));
+    let engine = TestOperations::new();
+    let volume_id = format!("already-gone-preview-volume-{}", std::process::id());
+    engine.volumes().register(&volume_id, volume as Arc<dyn Volume>);
+    let preview_id = unique_preview_id("volume");
+    register_walking_preview(&engine, &preview_id);
+    let gone = PathBuf::from("/notes/gone.json");
+    let events = Arc::new(CollectorEventSink::new());
+
+    engine
+        .delete_files_start(
+            Arc::clone(&events) as Arc<dyn OperationEventSink>,
+            vec![gone.clone()],
+            WriteOperationConfig {
+                preview_id: Some(preview_id.clone()),
+                ..WriteOperationConfig::default()
+            },
+            Some(volume_id),
+            Initiator::User,
+            None,
+        )
+        .await
+        .expect("start delete");
+    settle_as_not_found(&engine, &preview_id, &gone);
+
+    let complete = settled_completion(&events).await;
+    assert_eq!(
+        complete.already_gone,
+        Some(AlreadyGone {
+            item_count: 1,
+            total_count: 1,
+            name: Some("gone.json".to_string()),
+        })
+    );
+}
+
+/// The local twin of the anchor above: the local delete waits on the same
+/// preview bridge.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_local_delete_whose_preview_found_the_item_gone_completes() {
+    let root = TestDir::new("already-gone-preview-local");
+    let gone = root.join("gone.json");
+    let engine = TestOperations::new();
+    let preview_id = unique_preview_id("local");
+    register_walking_preview(&engine, &preview_id);
+    let events = Arc::new(CollectorEventSink::new());
+
+    engine
+        .delete_files_start(
+            Arc::clone(&events) as Arc<dyn OperationEventSink>,
+            vec![gone.clone()],
+            WriteOperationConfig {
+                preview_id: Some(preview_id.clone()),
+                ..WriteOperationConfig::default()
+            },
+            None,
+            Initiator::User,
+            None,
+        )
+        .await
+        .expect("start delete");
+    settle_as_not_found(&engine, &preview_id, &gone);
+
+    let complete = settled_completion(&events).await;
+    assert_eq!(complete.already_gone.map(|gone| gone.item_count), Some(1));
+}
+
+/// The preview's "missing" steps aside only for an operation whose goal is the
+/// absence. A copy of a missing source still fails on it.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_whose_preview_found_a_source_missing_still_fails() {
+    let engine = TestOperations::new();
+    let (events, _op_id, preview_id, dir) =
+        crate::scan_bridge_tests::start_copy_awaiting_preview(&engine, "already-gone-copy").await;
+    settle_as_not_found(&engine, &preview_id, &dir.join("src"));
+
+    wait_until_async(WAIT, "the write-error event", || {
+        !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
+    let errors = events.errors.lock_ignore_poison();
+    assert!(
+        matches!(errors[0].error, WriteOperationError::SourceNotFound { .. }),
+        "{:?}",
+        errors[0].error
+    );
+}
+
+// ============================================================================
+// The race inside a volume walk
+// ============================================================================
+
+/// An `InMemoryVolume` with someone else at work on it.
+struct RacingVolume {
+    inner: InMemoryVolume,
+    /// Another app removes this right after the walk lists its parent.
+    vanishes_after_listing: Option<PathBuf>,
+    /// Answers `NotFound` to its delete yet stays put, as a backend whose
+    /// delete follows a dangling link does.
+    delete_answers_not_found: Option<PathBuf>,
+}
+
+impl Volume for RacingVolume {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(cmdr_fs::volume::ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let listing = self.inner.list_directory(path, on_progress).await;
+            if let Some(vanishes) = &self.vanishes_after_listing
+                && vanishes.parent() == Some(path)
+                && self.inner.exists(vanishes).await
+            {
+                self.inner.delete(vanishes).await.expect("another app takes it");
+            }
+            listing
+        })
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        self.inner.get_metadata(path)
+    }
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        self.inner.exists(path)
+    }
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        self.inner.is_directory(path)
+    }
+    fn entry_kind<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<EntryKind, VolumeError>> + Send + 'a>> {
+        self.inner.entry_kind(path)
+    }
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        if self.delete_answers_not_found.as_deref() == Some(path) {
+            return Box::pin(async move { Err(VolumeError::NotFound(path.display().to_string())) });
+        }
+        self.inner.delete(path)
+    }
+}
+
+async fn racing_folder(vanishes: Option<&str>, answers_not_found: Option<&str>) -> Arc<RacingVolume> {
+    let volume = Arc::new(RacingVolume {
+        inner: InMemoryVolume::new("naspi"),
+        vanishes_after_listing: vanishes.map(PathBuf::from),
+        delete_answers_not_found: answers_not_found.map(PathBuf::from),
+    });
+    volume
+        .inner
+        .create_directory(Path::new("/folder"))
+        .await
+        .expect("folder");
+    for name in ["/folder/a.txt", "/folder/b.txt"] {
+        volume.inner.create_file(Path::new(name), b"x").await.expect("file");
+    }
+    volume
+}
+
+async fn delete_on(volume: &Arc<RacingVolume>, label: &str) -> Arc<CollectorEventSink> {
+    let engine = TestOperations::new();
+    let volume_id = format!("already-gone-{label}-{}", std::process::id());
+    engine
+        .volumes()
+        .register(&volume_id, Arc::clone(volume) as Arc<dyn Volume>);
+    let events = Arc::new(CollectorEventSink::new());
+    engine
+        .delete_files_start(
+            Arc::clone(&events) as Arc<dyn OperationEventSink>,
+            vec![PathBuf::from("/folder")],
+            WriteOperationConfig::default(),
+            Some(volume_id),
+            Initiator::User,
+            None,
+        )
+        .await
+        .expect("start delete");
+    wait_until_async(WAIT, "the operation to settle", || {
+        !events.settled.lock_ignore_poison().is_empty()
+    })
+    .await;
+    events
+}
+
+/// The volume twin of `already-gone-race`: a file the walk listed vanishes
+/// before its delete. Its absence is what the delete was for, so the walk
+/// carries on and the folder goes with the rest.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_volume_delete_carries_on_past_a_file_that_vanished_after_the_walk() {
+    let volume = racing_folder(Some("/folder/b.txt"), None).await;
+
+    let events = delete_on(&volume, "volume-race").await;
+
+    let complete = settled_completion(&events).await;
+    assert_eq!(complete.files_processed, 2, "the vanished file counts as done");
+    assert!(
+        !volume.inner.exists(Path::new("/folder")).await,
+        "the folder is deleted"
+    );
+    let sources = events.source_items_done.lock_ignore_poison();
+    assert!(
+        sources
+            .iter()
+            .any(|event| event.source_path == "/folder" && event.source_removed),
+        "{sources:?}"
+    );
+}
+
+/// Only a POSITIVE absence counts: a delete that answers `NotFound` for an
+/// entry the link-aware probe still sees (a dangling link on a backend whose
+/// delete follows it) stays a failure, ❌ never a silent "done".
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_volume_delete_answering_not_found_for_an_entry_still_there_fails() {
+    let volume = racing_folder(None, Some("/folder/b.txt")).await;
+
+    let events = delete_on(&volume, "volume-false-not-found").await;
+
+    {
+        let errors = events.errors.lock_ignore_poison();
+        assert_eq!(errors.len(), 1, "{errors:?}");
+        assert!(
+            matches!(errors[0].error, WriteOperationError::SourceNotFound { .. }),
+            "{:?}",
+            errors[0].error
+        );
+    }
+    assert!(volume.inner.exists(Path::new("/folder/b.txt")).await, "it stays");
 }

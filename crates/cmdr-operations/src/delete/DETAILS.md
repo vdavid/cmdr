@@ -132,8 +132,8 @@ A volume delete on a server (SMB, SFTP, WebDAV, S3) or a phone over ADB waits fo
   twice blind: the drop may have swallowed the reply of a delete that went through, and during the outage another client
   may have put a different file at that path. So every attempt after a wait first re-checks the entry against what the
   walk listed (`Listed`: its `EntryKind`, and a file's size). Gone means done: the cut-off delete went through, and it
-  counts as deleted. ❗ Only after a wait: a first try's `NotFound` fails the delete as it always did. Another kind,
-  another size, or a size the walk never learned means someone else's file: it stays, and the delete stops on
+  counts as deleted. A first try's `NotFound` is someone else's doing: § "An item that's already gone is done". Another
+  kind, another size, or a size the walk never learned means someone else's file: it stays, and the delete stops on
   `WriteOperationError::ChangedWhileDisconnected` (stopping rather than carrying on, since the evidence says someone is
   changing that tree right now, and a delete has no rollback). The same entry is deleted again with the same
   non-recursive `delete`, ❌ never a recursive one.
@@ -230,10 +230,19 @@ for.
   All gone: a completion with nothing done (`complete_all_gone`). Some gone: `AlreadyGoneSink` wraps the sink and stamps
   the note on the walk's own completion, so the walkers know nothing of it.
 - **Logged at info**: an expected outcome, and warn reaches error-report bundles.
+- **The confirming dialog's preview found it gone**: the scan wait (`../scan_bridge.rs::await_claimed_preview`) steps
+  past a preview that settled with `SourceNotFound` for a delete or trash (`MissingSource::IsTheGoal`), drops the
+  preview, and lets the op's own probe above decide; the walk then re-scans on its cache miss. Any other preview failure
+  still fails the op, and a copy or move still fails on `SourceNotFound`. **Why**: ERR-7YG5T (2026-11-07): a second
+  delete of an SMB file the first had just removed failed on its preview's `NotFound` before `split_on` ran. An in-zip
+  delete (`ArchiveEdit`) still fails there: it has no probe to defer to, and it would rewrite the zip to remove nothing.
 - **The race inside a walk**: the LOCAL walker treats a `NotFound` from `remove_file` (a file the scan listed, gone
-  before its unlink) as done, with no journal row. The volume walker's outage re-check already does the same after a
-  wait (`outage.rs`). An SMB delete that took a `._` sidecar the walk also listed answers that walk's later delete of it
-  `Ok` itself: `crates/cmdr-smb/DETAILS.md` § "AppleDouble sidecars".
+  before its unlink) as done, with no journal row. The VOLUME walker does the same (`outage::Removed::AlreadyGone`): a
+  first try's `NotFound` counts as done, unjournaled, once the link-aware `entry_kind` agrees nothing is there (a
+  backend whose delete follows a dangling link answers `NotFound` for a link that stays, and that stays a failure). One
+  extra request, only on that failure path. After an outage wait, the re-check's gone still counts as DELETED
+  (journaled): the cut-off delete may have been ours (`outage.rs`). An SMB delete that took a `._` sidecar the walk also
+  listed answers that walk's later delete of it `Ok` itself: `crates/cmdr-smb/DETAILS.md` § "AppleDouble sidecars".
 - Frontend counterpart (the "already gone" toast and its setting):
   `apps/desktop/src/lib/file-operations/delete/DETAILS.md`.
 

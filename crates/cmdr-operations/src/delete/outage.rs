@@ -9,8 +9,9 @@
 //! against what the walk listed:
 //!
 //! - **Gone**: the delete that the drop cut off went through (or someone else
-//!   removed it). It counts as deleted. ❗ Only after a wait: a first try's
-//!   `NotFound` keeps meaning what it always did.
+//!   removed it). It counts as deleted. A first try's `NotFound`, with no wait
+//!   before it, is someone else's doing: [`Removed::AlreadyGone`], done but
+//!   unjournaled, and only once the link-aware probe agrees (`already_gone.rs`).
 //! - **Not what the walk listed** (another kind, or a file of another size, or
 //!   a size the walk never learned): someone else's file. It stays, and the
 //!   delete stops on [`WriteOperationError::ChangedWhileDisconnected`].
@@ -72,6 +73,18 @@ impl EntryStop {
     }
 }
 
+/// How an entry's delete ended well.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Removed {
+    /// Deleted: by this attempt, or by one an outage cut off (a re-check after
+    /// the wait found it gone).
+    Deleted,
+    /// Already gone before this delete's first try, with no outage between
+    /// the walk and it: someone else removed it (`already_gone.rs`). This
+    /// operation removed nothing, so it gets no journal row.
+    AlreadyGone,
+}
+
 /// Deletes the entry at `path`, which the walk listed as `listed`, waiting out
 /// any outage of `volume` on the way.
 ///
@@ -84,7 +97,7 @@ pub(super) async fn delete_entry(
     path: &Path,
     listed: Listed,
     cut_off: Option<(VolumeError, StartedOn)>,
-) -> Result<(), EntryStop> {
+) -> Result<Removed, EntryStop> {
     let volumes = [volume];
     let mut outages = 0;
     let mut pending = cut_off;
@@ -94,12 +107,15 @@ pub(super) async fn delete_entry(
             None => {
                 let started_on = StartedOn::now(&volumes);
                 match attempt(volume, state, path, listed, outages > 0).await {
-                    Ok(()) => return Ok(()),
+                    Ok(()) => return Ok(Removed::Deleted),
                     Err(AttemptStop::Changed) => return Err(EntryStop::Changed),
                     Err(AttemptStop::Failed(error)) => (error, started_on),
                 }
             }
         };
+        if outages == 0 && matches!(error, VolumeError::NotFound(_)) && is_gone(volume.as_ref(), path).await {
+            return Ok(Removed::AlreadyGone);
+        }
         if matches!(error, VolumeError::Cancelled(_)) {
             return Err(EntryStop::Cancelled);
         }
@@ -112,6 +128,14 @@ pub(super) async fn delete_entry(
             }
         }
     }
+}
+
+/// Whether a first try's `NotFound` is a POSITIVE absence: the link-aware
+/// probe agrees nothing is there. A backend whose delete follows a link answers
+/// `NotFound` for a dangling one that's still there, and that link must stay
+/// reported, ❌ never counted as done. One request, only on the failure path.
+async fn is_gone(volume: &dyn Volume, path: &Path) -> bool {
+    matches!(volume.entry_kind(path).await, Err(VolumeError::NotFound(_)))
 }
 
 enum AttemptStop {

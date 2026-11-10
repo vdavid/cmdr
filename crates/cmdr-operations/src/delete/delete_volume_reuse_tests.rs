@@ -395,7 +395,12 @@ async fn delete_mid_scan_listing_close() {
 
     let vol = Arc::new(CountingVolume::new("mid-scan-vol", true));
     // Real backend content for the subfolder so the fallthrough produces a
-    // sensible delete (one real file).
+    // sensible delete (one real file). The folders are real entries, as on a
+    // real backend: a folder delete that answers `NotFound` costs one more
+    // probe, the already-gone check (`outage::Removed::AlreadyGone`).
+    for folder in ["/root", "/root/sub"] {
+        vol.inner.create_directory(Path::new(folder)).await.unwrap();
+    }
     vol.inner
         .create_file(Path::new("/root/sub/real.bin"), b"abcdef")
         .await

@@ -16,7 +16,9 @@
 //!
 //! It runs BEFORE the source binding and the queue check, so a queued delete
 //! whose items left meanwhile completes instead of asking "delete the rest?"
-//! about items whose absence is the goal.
+//! about items whose absence is the goal. The scan wait before it steps past a
+//! preview that found a source missing (`scan_bridge::MissingSource`), so this
+//! probe gets the last word (ERR-7YG5T).
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};

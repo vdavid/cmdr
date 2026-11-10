@@ -30,6 +30,7 @@
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, OnceLock};
 
+use cmdr_fs::log_private::LogPrivate;
 use cmdr_operation_log::types::OperationId;
 
 use super::Operations;
@@ -39,7 +40,8 @@ use super::scan_cache::{ScanOutcome, ScanPreviewState, ScanPreviews};
 use super::scan_watchdog::ScanWatchdog;
 use super::state::WriteOperationState;
 use super::types::{
-    CancelRollback, WriteCancelledEvent, WriteErrorEvent, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    CancelRollback, WriteCancelledEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent,
 };
 
 /// What the wait concluded, in the operation's own vocabulary.
@@ -66,6 +68,40 @@ impl ScanWait {
     }
 }
 
+/// What a preview that found a source missing means to the operation waiting
+/// on it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MissingSource {
+    /// The operation needs its sources (a copy, a move, a compress), so the
+    /// preview's `SourceNotFound` is the operation's failure.
+    Fails,
+    /// The operation removes its sources (a delete, a trash), so their absence
+    /// is its goal. The wait steps aside and the operation's own top-level
+    /// probe decides, reporting a gone item as done (`delete/already_gone.rs`).
+    /// ERR-7YG5T: a second delete of an SMB file the first had just removed
+    /// failed on its preview's `NotFound` before that probe ever ran.
+    IsTheGoal,
+}
+
+impl MissingSource {
+    /// The answer for an operation of `operation_type`. An in-zip delete is an
+    /// `ArchiveEdit` and keeps failing: it has no already-gone probe to defer
+    /// to, and it would rewrite the whole zip to remove nothing.
+    fn of(operation_type: WriteOperationType) -> Self {
+        match operation_type {
+            WriteOperationType::Delete | WriteOperationType::Trash => Self::IsTheGoal,
+            WriteOperationType::Copy
+            | WriteOperationType::Move
+            | WriteOperationType::Rename
+            | WriteOperationType::CreateFolder
+            | WriteOperationType::CreateFile
+            | WriteOperationType::Tag
+            | WriteOperationType::ArchiveEdit
+            | WriteOperationType::Compress => Self::Fails,
+        }
+    }
+}
+
 /// Waits for this operation's claimed scan preview and emits its own terminal
 /// event if the wait ends without a usable result.
 ///
@@ -75,9 +111,11 @@ impl ScanWait {
 ///
 /// The wait ends four ways. A completed preview leaves its result in the cache
 /// for the ordinary `take_cached_scan_result` a few lines later. A preview that
-/// errored fails the operation with the walk's own typed failure. A cancelled
-/// preview, or a cancel issued against the OPERATION while it waits, cancels
-/// the operation. And a preview nobody knows about is simply not waited on.
+/// errored fails the operation with the walk's own typed failure, except a
+/// missing source for an operation whose goal that is ([`MissingSource`]). A
+/// cancelled preview, or a cancel issued against the OPERATION while it waits,
+/// cancels the operation. And a preview nobody knows about is simply not
+/// waited on.
 pub(super) async fn await_claimed_preview(
     engine: &Operations,
     events: &dyn OperationEventSink,
@@ -85,6 +123,7 @@ pub(super) async fn await_claimed_preview(
     operation_type: WriteOperationType,
     state: &WriteOperationState,
 ) -> ScanWait {
+    let missing = MissingSource::of(operation_type);
     let Some(preview_id) = engine.manager().claimed_preview_of(operation_id) else {
         return ScanWait::Proceed;
     };
@@ -115,6 +154,19 @@ pub(super) async fn await_claimed_preview(
                 rollback: CancelRollback::none(),
             });
             ScanWait::Stopped
+        }
+        // The preview's result goes with the claim, so the operation walks for
+        // itself (on a miss, every walker re-scans) after its own probe.
+        ScanOutcome::Error(WriteOperationError::SourceNotFound { path }) if missing == MissingSource::IsTheGoal => {
+            previews.abandon_claim(&preview_id);
+            engine.manager().end_scan_wait(operation_id);
+            // Info, not warn: an expected outcome, and warn reaches error-report bundles.
+            log::info!(
+                target: "already_gone",
+                "op={operation_id}: its preview found {} missing; the operation's own probe decides",
+                LogPrivate::path(&path)
+            );
+            ScanWait::Proceed
         }
         ScanOutcome::Error(error) => {
             previews.abandon_claim(&preview_id);

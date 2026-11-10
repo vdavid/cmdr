@@ -1881,7 +1881,9 @@ path. Both workers' arms match.
 watchdog's timeout names the first source (`ScanTarget`). ❌ Don't flatten it back to a string: that's what sent
 `ERR-VETBX` to the user as `Copy error: Path: ; Error: No such file or directory`, a missing file reported as a nameless
 I/O failure. The dialog's `scan-preview-error` reads only `timed_out`; its `message` is the failure's technical form,
-for the log. Pinned by `scan_failure_tests.rs`.
+for the log. Pinned by `scan_failure_tests.rs`. One exception: a delete or trash steps past its preview's
+`SourceNotFound` (`scan_bridge::MissingSource`) and lets its own probe decide, since the absence is its goal:
+`delete/DETAILS.md` § "An item that's already gone is done".
 
 ## The park
 

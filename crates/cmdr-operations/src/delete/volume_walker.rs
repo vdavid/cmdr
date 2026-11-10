@@ -13,8 +13,9 @@ use super::super::types::{
     CancelRollback, DryRunResult, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
-use super::outage::{EntryStop, Listed, delete_entry};
+use super::outage::{EntryStop, Listed, Removed, delete_entry};
 use super::volume_scan::{VolumeDeleteEntry, VolumeScanTracker, listed_in_parent_listing, scan_volume_recursive};
+use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{EntryKind, Volume};
 
 /// Counts each top-level source's entries down as the delete removes them, so
@@ -104,7 +105,7 @@ async fn delete_batch(
     volume: &Arc<dyn Volume>,
     state: &Arc<WriteOperationState>,
     batch: &[&VolumeDeleteEntry],
-) -> Vec<Result<(), EntryStop>> {
+) -> Vec<Result<Removed, EntryStop>> {
     let paths: Vec<PathBuf> = batch.iter().map(|entry| entry.path.clone()).collect();
     let started_on = StartedOn::now(&[volume]);
     let answers = volume.delete_files(&paths).await;
@@ -112,7 +113,7 @@ async fn delete_batch(
     let mut stopped = false;
     for (entry, answer) in batch.iter().zip(answers) {
         let result = match answer {
-            Ok(()) => Ok(()),
+            Ok(()) => Ok(Removed::Deleted),
             Err(error) if stopped => Err(EntryStop::Failed { error, lost: None }),
             Err(error) => {
                 delete_entry(
@@ -129,6 +130,24 @@ async fn delete_batch(
         results.push(result);
     }
     results
+}
+
+/// Journals a deleted leaf under the REAL volume id so "when did I delete
+/// dog.jpg" is searchable for SMB / MTP too. Delete is never rollbackable (the
+/// op finalizes `permanent_delete`), so these rows exist purely for search —
+/// one per leaf, deliberately.
+fn record_deleted_leaf(state: &Arc<WriteOperationState>, volume_id: &str, entry: &VolumeDeleteEntry) {
+    super::super::journal::record_volume_leaf(
+        state.scope(),
+        cmdr_operation_log::types::EntryType::File,
+        volume_id,
+        &entry.path,
+        None,
+        Some(entry.progress_bytes as i64),
+        None,
+        false,
+        cmdr_operation_log::types::ItemOutcome::Done,
+    );
 }
 
 /// Emits `write-cancelled` when `result` is `Err(Cancelled)`. Use this after
@@ -510,7 +529,15 @@ pub(super) async fn delete_volume_files_with_progress_probed(
         let mut first_failure: Option<WriteOperationError> = None;
         for (entry, result) in batch.iter().zip(results) {
             match result {
-                Ok(()) => {}
+                Ok(Removed::Deleted) => record_deleted_leaf(state, volume_id, entry),
+                // Gone between the scan and its delete: its absence is what this
+                // delete is for, so it counts as done (`already_gone.rs`), with no
+                // journal row: we removed nothing.
+                Ok(Removed::AlreadyGone) => log::info!(
+                    target: "already_gone",
+                    "op={operation_id}: {} vanished before its delete; counting it as done",
+                    LogPrivate::path(&entry.path)
+                ),
                 // Cancel landed mid-iteration (during the throttle sleep, an
                 // outage wait, or inside delete_with_cancel itself). The
                 // top-of-loop cancel check only catches cancels that land
@@ -536,22 +563,6 @@ pub(super) async fn delete_volume_files_with_progress_probed(
                     continue;
                 }
             }
-
-            // Journal the deleted leaf under the REAL volume id so "when did I
-            // delete dog.jpg" is searchable for SMB / MTP too. Delete is never
-            // rollbackable (the op finalizes `permanent_delete`), so these rows
-            // exist purely for search — one per leaf, deliberately.
-            super::super::journal::record_volume_leaf(
-                state.scope(),
-                cmdr_operation_log::types::EntryType::File,
-                volume_id,
-                &entry.path,
-                None,
-                Some(entry.progress_bytes as i64),
-                None,
-                false,
-                cmdr_operation_log::types::ItemOutcome::Done,
-            );
 
             files_done += 1;
             // `progress_bytes` (not `size`) so the numerator stays in lockstep
@@ -610,7 +621,10 @@ pub(super) async fn delete_volume_files_with_progress_probed(
         }
 
         match delete_entry(&volume, state, &entry.path, entry.listed, None).await {
-            Ok(()) => countdown.entry_done(events, operation_id, &entry.path, true),
+            // A folder already gone is as removed as one we took.
+            Ok(Removed::Deleted | Removed::AlreadyGone) => {
+                countdown.entry_done(events, operation_id, &entry.path, true)
+            }
             Err(EntryStop::Cancelled) => {
                 events.emit_cancelled(WriteCancelledEvent {
                     operation_id: operation_id.to_string(),
