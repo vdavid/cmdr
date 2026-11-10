@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
     import type { PageProps } from './$types'
-    import { rangeDays } from '#lib/time-range.js'
+    import { rangeDays, viewWindow } from '#lib/time-range.js'
     import { page } from '$app/state'
     import { goto } from '$app/navigation'
     import { resolve } from '$app/paths'
@@ -20,9 +20,12 @@
     /** Today's UTC day as YYYY-MM-DD (the charts fade it and the stats leave it out: it's partial). */
     const todayIso = new Date().toISOString().slice(0, 10)
 
-    /** The selected range's length in days: the trend charts' window and the star charts' default zoom. */
+    /** The selected range's length in days: the country section's title and the star charts' default zoom. */
     const days = $derived(rangeDays[data.selection.range])
     const starChartXMin = $derived(Date.now() / 1000 - days * 86400)
+
+    /** The days the trend charts, pies, and country section show: the range ending today, or a stepped-back one. */
+    const shown = $derived(viewWindow(data.selection.range, data.selection.end, todayIso))
 
     /**
      * The country filter. It starts from `?country=` and follows a navigation that changes it (a link from
@@ -55,7 +58,7 @@
     funnel={data.funnel}
     {country}
     onselectcountry={selectCountry}
-    viewDays={days}
+    window={shown}
     selection={data.selection}
     {todayIso}
 />
@@ -66,10 +69,16 @@
     selection={data.selection}
     {countryHref}
     {days}
+    pastWindow={shown.current ? null : shown}
     onselectcountry={selectCountry}
 />
 
-<!-- Acquisition sections -->
+<!-- Acquisition sections. They read sources that only answer windows ending now, so they don't step back. -->
+{#if !shown.current}
+    <p class="mb-3 text-sm text-text-tertiary">
+        Awareness, interest, and downloads below still cover the last {days} days ending today.
+    </p>
+{/if}
 <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
     <AwarenessSection
         umami={data.umami}

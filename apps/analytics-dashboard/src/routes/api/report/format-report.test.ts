@@ -19,7 +19,7 @@ const site = (pv: number, prevPv: number, visitors: number, prevVisitors: number
 
 /** Every source loaded, with enough shape to reach each breakdown. */
 const richData: DashboardData = {
-  selection: { range: '90d' },
+  selection: { range: '90d', end: null },
   updatedAt: '2026-08-02T03:04:05.000Z',
   funnel: {
     ok: true,
@@ -354,7 +354,7 @@ const richData: DashboardData = {
 
 /** Every source down. */
 const allFailedData: DashboardData = {
-  selection: { range: '7d' },
+  selection: { range: '7d', end: null },
   updatedAt: '2026-08-02T03:04:05.000Z',
   funnel: { ok: false, error: 'Funnel: timed out after 20s' },
   umami: { ok: false, error: 'Umami: not configured (missing env vars)' },
@@ -370,7 +370,7 @@ const allFailedData: DashboardData = {
 
 /** Every source loaded, every collection empty: the "present but nothing in it" shape. */
 const emptyData: DashboardData = {
-  selection: { range: '30d' },
+  selection: { range: '30d', end: null },
   updatedAt: '2026-08-02T03:04:05.000Z',
   funnel: {
     ok: true,
@@ -402,7 +402,7 @@ const emptyData: DashboardData = {
 
 /** Half the sources down: the sections that read two sources have to degrade one at a time. */
 const mixedData: DashboardData = {
-  selection: { range: '7d' },
+  selection: { range: '7d', end: null },
   updatedAt: '2026-08-02T03:04:05.000Z',
   funnel: { ok: false, error: 'Funnel: offline' },
   umami: { ok: false, error: 'Umami: offline' },

@@ -137,7 +137,7 @@ describe('fetchCloudflareData', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchCloudflareData(mockEnv, { range: '7d' })
+    const result = await fetchCloudflareData(mockEnv, { range: '7d', end: null })
     expect(result.ok).toBe(true)
     if (!result.ok) return
 
@@ -155,14 +155,14 @@ describe('fetchCloudflareData', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) })
     vi.stubGlobal('fetch', fetchMock)
 
-    await fetchCloudflareData(mockEnv, { range: '7d' })
+    await fetchCloudflareData(mockEnv, { range: '7d', end: null })
     const downloadUrl = fetchMock.mock.calls[0][0] as string
     const heartbeatUrl = fetchMock.mock.calls[1][0] as string
     expect(downloadUrl).toContain('range=7d')
     expect(heartbeatUrl).toContain('range=7d')
 
     fetchMock.mockClear()
-    await fetchCloudflareData(mockEnv, { range: '30d' })
+    await fetchCloudflareData(mockEnv, { range: '30d', end: null })
     const downloadUrl30 = fetchMock.mock.calls[0][0] as string
     const heartbeatUrl30 = fetchMock.mock.calls[1][0] as string
     expect(downloadUrl30).toContain('range=30d')
@@ -196,7 +196,7 @@ describe('fetchCloudflareData', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchCloudflareData(mockEnv, { range: '90d' })
+    const result = await fetchCloudflareData(mockEnv, { range: '90d', end: null })
     vi.useRealTimers()
     const urls = fetchMock.mock.calls.map((c) => c[0])
     expect(urls.find((u) => u.includes('/admin/downloads'))).toContain('range=all')
@@ -216,7 +216,7 @@ describe('fetchCloudflareData', () => {
       vi.fn().mockResolvedValue({ ok: false, status: 403, text: () => Promise.resolve('Forbidden') }),
     )
 
-    const result = await fetchCloudflareData(mockEnv, { range: '7d' })
+    const result = await fetchCloudflareData(mockEnv, { range: '7d', end: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('Cloudflare')
@@ -226,7 +226,7 @@ describe('fetchCloudflareData', () => {
   it('returns error on network failure', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('DNS resolution failed')))
 
-    const result = await fetchCloudflareData(mockEnv, { range: '7d' })
+    const result = await fetchCloudflareData(mockEnv, { range: '7d', end: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('DNS resolution failed')

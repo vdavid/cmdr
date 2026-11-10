@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
     import type { SourceResult, DashboardSelection } from '#lib/server/types.js'
+    import { rollingDays, type ViewWindow } from '#lib/time-range.js'
     import type { FunnelData, FunnelRow } from '#lib/server/sources/funnel.js'
     import type { ColumnSeries, TooltipRow } from '#lib/daily-chart.js'
     import {
@@ -57,15 +58,16 @@
         country: string | null
         /** Switch the chip: the page filters in the browser and keeps `?country=` in sync. */
         onselectcountry: (country: string | null) => void
-        /** How many complete days the charts show (the picker's range); today is drawn after them, faded. */
-        viewDays: number
+        /**
+         * The days the charts and pies show (`viewWindow`): the picker's range plus today (drawn faded), or a
+         * past window. The stats grids ignore it and stay on the windows ending today.
+         */
+        window: ViewWindow
         selection: DashboardSelection
         todayIso: string
     }
 
-    const { funnel, country, onselectcountry, viewDays, selection, todayIso }: Props = $props()
-
-    const rollingDays = 7
+    const { funnel, country, onselectcountry, window: shown, selection, todayIso }: Props = $props()
     const tentativeColor = '#8a8a93'
 
     const data = $derived(funnel.ok ? funnel.data : null)
@@ -97,9 +99,16 @@
     }
 
     const inputs = $derived(buildTrendInputs(rows, todayIso))
-    /** The first row the charts show: `viewDays` complete days, plus today when it's there. */
-    const start = $derived(Math.max(0, rows.length - (viewDays + (rows.at(-1)?.date === todayIso ? 1 : 0))))
-    const days = $derived(inputs.days.slice(start))
+    /**
+     * The rows in `shown`, as indexes into the full history (oldest first, one row per day): `start` is the
+     * first drawn, `stop` one past the last. Series index with `start + i` from there.
+     */
+    const start = $derived.by(() => {
+        const i = rows.findIndex((r) => r.date >= shown.start)
+        return i === -1 ? rows.length : i
+    })
+    const stop = $derived(rows.findLastIndex((r) => r.date <= shown.end) + 1)
+    const days = $derived(inputs.days.slice(start, stop))
     const rolling = $derived({
         visitorToClick: rollingComplete(inputs.visitorToClick),
         clickToInstall: rollingComplete(inputs.clickToInstall),
@@ -111,7 +120,7 @@
 
     /** The visible slice of a full-history series. */
     function view<T>(values: T[]): T[] {
-        return values.slice(start)
+        return values.slice(start, stop)
     }
 
     function cell(value: number | null, format: (n: number) => string = formatNumber): string {
@@ -198,12 +207,11 @@
     }
 
     /**
-     * The three download breakdowns under the clicks chart, over the same days the charts show (the
-     * picker's range plus today). The per-day maps arrive with the 181-day funnel, so switching range
-     * re-slices in the browser.
+     * The three download breakdowns under the clicks chart, over the same days the charts show (`shown`).
+     * The per-day maps arrive with the funnel's rows, so the country filter re-slices in the browser.
      */
     const breakdowns = $derived.by(() => {
-        const inRange = rows.slice(start)
+        const inRange = rows.slice(start, stop)
         const ua = aggregateUaFamilies(inRange)
         return [
             {
@@ -265,7 +273,8 @@
             Acquisition trends
             <InfoPopover topic="reading these charts">
                 Every day is a UTC day. Today is still going, so it's drawn faded and left out of every stat. The
-                charts show the picker's range; the stats always cover the last 90, 30, and 7 complete days, and "vs.
+                charts show the dates in the header (step back with ‹ and ›); the stats always cover the last 90, 30,
+                and 7 complete days, even on an earlier period, and "vs.
                 previous" compares with the same-length window before it. Columns carry their exact number where it
                 fits; hover or focus a chart (then use the arrow keys) for each day's exact values. Rates pool as a
                 ratio of sums (all clicks ÷ all visitors), never an average of daily rates; the median is the one

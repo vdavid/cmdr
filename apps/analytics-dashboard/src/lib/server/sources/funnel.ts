@@ -17,6 +17,7 @@ import {
   fetchUmamiVisitorsByCountry,
 } from './umami.js'
 import { fetchPaddlePurchasesByDay } from './paddle.js'
+import { funnelFetchDays } from '../../time-range.js'
 
 /**
  * The per-UTC-day funnel behind the Acquisition page's trend charts and download breakdown pies: web-side
@@ -25,12 +26,6 @@ import { fetchPaddlePurchasesByDay } from './paddle.js'
  * top countries, so the page switches countries in the browser without asking the server again. Every
  * cell is either a real number or `null` ("couldn't get this"), so a blank is never confused with a zero.
  */
-
-/**
- * How many UTC days we fetch: 180 complete days plus today (partial), so the 90-day stats column has a
- * full previous 90 days to compare against.
- */
-export const funnelFetchDays = 181
 
 /**
  * The most an older worker accepts (`?days=` capped at 90 before the trend charts). We retry at this when
@@ -398,12 +393,18 @@ export function rankTopCountries(
 /**
  * The funnel for every country plus the slices for the top countries, and for `country` too when it's
  * outside them (a link from the country table). The base is cached once for every country; the extra
- * country's slices are cached on their own, so switching chips never refetches.
+ * country's slices are cached on their own, so switching chips never refetches. `days` (ending today) is
+ * `funnelFetchDays`, or the deeper `funnelMaxFetchDays` for a window stepped back past it (`funnelDaysFor`),
+ * each cached on its own, so the usual page never pays for the deep history.
  */
-export async function fetchFunnelData(env: FunnelEnv, country: string | null): Promise<SourceResult<FunnelData>> {
-  const base = await fetchFunnelBase(env)
+export async function fetchFunnelData(
+  env: FunnelEnv,
+  country: string | null,
+  days: number = funnelFetchDays,
+): Promise<SourceResult<FunnelData>> {
+  const base = await fetchFunnelBase(env, days)
   if (!base.ok || !country || base.data.countries.top.includes(country)) return base
-  const extra = await fetchExtraCountry(env, country).catch(() => null)
+  const extra = await fetchExtraCountry(env, country, days).catch(() => null)
   if (!extra) return base
   const rows = base.data.rows.map((row) => {
     const slices = extra.get(row.date)
@@ -412,19 +413,19 @@ export async function fetchFunnelData(env: FunnelEnv, country: string | null): P
   return { ok: true, data: { ...base.data, rows, countries: { ...base.data.countries, extra: country } } }
 }
 
-async function fetchFunnelBase(env: FunnelEnv): Promise<SourceResult<FunnelData>> {
-  const cacheKey = `days:${String(funnelFetchDays)}`
+async function fetchFunnelBase(env: FunnelEnv, days: number): Promise<SourceResult<FunnelData>> {
+  const cacheKey = `days:${String(days)}`
   const cached = await cacheGet<FunnelData>('funnel-v3', cacheKey)
   if (cached) return { ok: true, data: cached }
 
   const now = new Date()
-  const dates = buildFunnelDateList(funnelFetchDays, now)
+  const dates = buildFunnelDateList(days, now)
   const sinceDate = dates[0]
   const rankingSince = dates[dates.length - rankingDays]
 
   // Each side is best-effort and independent: one failing degrades its columns, never the whole page.
   const [worker, umami, purchases] = await Promise.all([
-    fetchWorkerFunnel(env, now).catch(() => null),
+    fetchWorkerFunnel(env, now, days).catch(() => null),
     fetchUmamiFunnel(env, sinceDate, rankingSince, now, (visitors) =>
       // Umami's own ranking decides the top countries; the worker can only stand in when Umami is down.
       rankTopCountries(visitors, null, rankingSince),
@@ -472,15 +473,19 @@ export function assembleFunnelData(
  * One country outside the top ones, by day: its worker slice and its Umami series. Throws when the worker
  * fails; Umami failing leaves that side out (the client then shows its columns as unknown).
  */
-async function fetchExtraCountry(env: FunnelEnv, country: string): Promise<Map<string, Record<string, CountrySlice>>> {
+async function fetchExtraCountry(
+  env: FunnelEnv,
+  country: string,
+  days: number,
+): Promise<Map<string, Record<string, CountrySlice>>> {
   type Cached = [string, Record<string, CountrySlice>][]
-  const cached = await cacheGet<Cached>('funnel-extra-v1', `days:${String(funnelFetchDays)}`, `country=${country}`)
+  const cached = await cacheGet<Cached>('funnel-extra-v1', `days:${String(days)}`, `country=${country}`)
   if (cached) return new Map(cached)
 
   const now = new Date()
-  const dates = buildFunnelDateList(funnelFetchDays, now)
+  const dates = buildFunnelDateList(days, now)
   const [worker, umami] = await Promise.all([
-    fetchWorkerFunnel(env, now),
+    fetchWorkerFunnel(env, now, days),
     (async () => {
       const token = await authenticateUmami(env.UMAMI_API_URL, env.UMAMI_USERNAME, env.UMAMI_PASSWORD)
       const series = await fetchUmamiCountrySeries(env, token, window(dates[0], now), country)
@@ -488,7 +493,7 @@ async function fetchExtraCountry(env: FunnelEnv, country: string): Promise<Map<s
     })().catch(() => null),
   ])
   const byDay: Cached = dates.map((date) => [date, countrySlices([country], date, worker.byDay.get(date), umami)])
-  await cacheSet('funnel-extra-v1', `days:${String(funnelFetchDays)}`, byDay, `country=${country}`)
+  await cacheSet('funnel-extra-v1', `days:${String(days)}`, byDay, `country=${country}`)
   return new Map(byDay)
 }
 
@@ -496,7 +501,7 @@ async function fetchExtraCountry(env: FunnelEnv, country: string): Promise<Map<s
  * Fetch the api-server funnel and index it by day. Asks for the full window first and falls back to the
  * older worker's 90-day cap if that's refused. Throws when both fail (caller catches).
  */
-async function fetchWorkerFunnel(env: FunnelEnv, now: Date): Promise<WorkerFunnel> {
+async function fetchWorkerFunnel(env: FunnelEnv, now: Date, fetchDays: number): Promise<WorkerFunnel> {
   const get = (days: number) =>
     fetchWorkerEndpoint<WorkerFunnelDay[]>(
       env.LICENSE_SERVER_ADMIN_TOKEN,
@@ -504,7 +509,7 @@ async function fetchWorkerFunnel(env: FunnelEnv, now: Date): Promise<WorkerFunne
       env.WORKER_BASE_URL,
     )
   try {
-    return indexWorkerFunnel(await get(funnelFetchDays), buildFunnelDateList(funnelFetchDays, now)[0])
+    return indexWorkerFunnel(await get(fetchDays), buildFunnelDateList(fetchDays, now)[0])
   } catch {
     return indexWorkerFunnel(await get(legacyWorkerMaxDays), buildFunnelDateList(legacyWorkerMaxDays, now)[0])
   }

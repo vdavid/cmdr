@@ -1,4 +1,4 @@
-import { defaultRange, rangeDays, timeRanges, type TimeRange } from '../time-range.js'
+import { defaultRange, normalizeEnd, rangeDays, timeRanges, type TimeRange } from '../time-range.js'
 
 export { defaultRange, rangeDays, timeRanges, type TimeRange }
 
@@ -8,12 +8,24 @@ export { defaultRange, rangeDays, timeRanges, type TimeRange }
  */
 export interface DashboardSelection {
   range: TimeRange
+  /**
+   * The last day of a past window the Acquisition funnel sections step back to (`?end=`), or null for the
+   * window ending today. Only the funnel sources read it; every other source covers the range ending now.
+   */
+  end: string | null
 }
 
-/** Resolve the URL's `range` param into a `DashboardSelection`, defaulting to `defaultRange`. */
-export function resolveSelection(rangeParam: string | null): DashboardSelection {
+/**
+ * Resolve the URL's `range` and `end` params into a `DashboardSelection`: `range` defaults to
+ * `defaultRange`, and `end` goes through `normalizeEnd` (null for anything that isn't a past window).
+ */
+export function resolveSelection(
+  rangeParam: string | null,
+  endParam: string | null = null,
+  today: string = new Date().toISOString().slice(0, 10),
+): DashboardSelection {
   const range = timeRanges.find((r) => r === rangeParam) ?? defaultRange
-  return { range }
+  return { range, end: normalizeEnd(range, endParam, today) }
 }
 
 /** Converts a selection to a start/end timestamp pair (milliseconds, UTC): a rolling window ending now. */
@@ -22,7 +34,7 @@ export function toTimeWindow(selection: DashboardSelection): { startAt: number; 
   return { startAt: now - rangeDays[selection.range] * 86_400_000, endAt: now }
 }
 
-/** A stable cache key for a selection: the range name. */
+/** A stable cache key for a selection: the range name (the sources reading it ignore `end`). */
 export function selectionCacheKey(selection: DashboardSelection): string {
   return selection.range
 }

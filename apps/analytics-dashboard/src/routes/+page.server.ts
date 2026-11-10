@@ -8,6 +8,6 @@ export type { AcquisitionData } from '#lib/server/fetch-all.js'
 
 /** Loads only the Acquisition page's sources; `?country=XX` scopes the trend charts to one country. */
 export const load: PageServerLoad = async ({ url }) => {
-  const selection = resolveSelection(url.searchParams.get('range'))
+  const selection = resolveSelection(url.searchParams.get('range'), url.searchParams.get('end'))
   return fetchAcquisitionData(dashboardEnv(), selection, normalizeCountry(url.searchParams.get('country')))
 }

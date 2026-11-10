@@ -1,10 +1,11 @@
 <!-- A "couldn't load this data" panel with a "Try again" link that re-requests the same selection. -->
 <script lang="ts">
     import type { DashboardSelection } from '#lib/server/types.js'
+    import { selectionQuery } from '#lib/time-range.js'
 
     const { error, selection }: { error: string; selection: DashboardSelection } = $props()
 
-    const tryAgainHref = $derived(`?range=${selection.range}`)
+    const tryAgainHref = $derived(selectionQuery(selection, null))
 </script>
 
 <div class="rounded-lg border border-border-subtle bg-surface-elevated px-4 py-6 text-center">

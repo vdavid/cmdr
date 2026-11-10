@@ -26,7 +26,7 @@ const emptyEnv: DashboardEnv = {
   WORKER_BASE_URL: undefined,
 }
 
-const selection = { range: '7d' } as const
+const selection = { range: '7d', end: null } as const
 
 /**
  * Source keys: everything in the result except the shared envelope and the plain-config fields.

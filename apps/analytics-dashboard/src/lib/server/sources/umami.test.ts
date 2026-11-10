@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fetchUmamiData, fetchUmamiEventCountsByCountry, parseUmamiStats, parseUmamiMetrics } from './umami.js'
+import {
+  fetchUmamiDailyTraffic,
+  fetchUmamiData,
+  fetchUmamiEventCountsByCountry,
+  parseUmamiStats,
+  parseUmamiMetrics,
+  umamiDaySpans,
+  umamiMaxDaySpanDays,
+} from './umami.js'
 import { clearMemoryCache } from '../cache.js'
 
 const mockEnv = {
@@ -81,7 +89,7 @@ describe('fetchUmamiData', () => {
 
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchUmamiData(mockEnv, { range: '7d' })
+    const result = await fetchUmamiData(mockEnv, { range: '7d', end: null })
     expect(result.ok).toBe(true)
     if (!result.ok) return
 
@@ -102,7 +110,7 @@ describe('fetchUmamiData', () => {
   it('returns error when auth fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 401 }))
 
-    const result = await fetchUmamiData(mockEnv, { range: '7d' })
+    const result = await fetchUmamiData(mockEnv, { range: '7d', end: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('Umami')
@@ -121,14 +129,14 @@ describe('fetchUmamiData', () => {
 
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchUmamiData(mockEnv, { range: '30d' })
+    const result = await fetchUmamiData(mockEnv, { range: '30d', end: null })
     expect(result.ok).toBe(false)
   })
 
   it('returns error on network failure', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('Network error')))
 
-    const result = await fetchUmamiData(mockEnv, { range: '7d' })
+    const result = await fetchUmamiData(mockEnv, { range: '7d', end: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('Network error')
@@ -182,5 +190,39 @@ describe('fetchUmamiEventCountsByCountry', () => {
     await expect(
       fetchUmamiEventCountsByCountry('https://u', 'tok', 'site', { startAt: 1, endAt: 2 }, 'download', 2),
     ).rejects.toThrow('500')
+  })
+})
+
+describe('the daily series over a long window', () => {
+  const day = 86_400_000
+  const startAt = Date.UTC(2025, 9, 7)
+
+  it('splits a window into back-to-back spans short enough for `unit=day`', () => {
+    expect(umamiDaySpans({ startAt, endAt: startAt + 181 * day - 1 })).toEqual([
+      { startAt, endAt: startAt + 181 * day - 1 },
+    ])
+    expect(umamiDaySpans({ startAt, endAt: startAt + 400 * day - 1 })).toEqual([
+      { startAt, endAt: startAt + umamiMaxDaySpanDays * day - 1 },
+      { startAt: startAt + umamiMaxDaySpanDays * day, endAt: startAt + 400 * day - 1 },
+    ])
+  })
+
+  it('asks once per span and merges the days, so Umami never falls back to monthly buckets', async () => {
+    const fetchMock = vi.fn((url: string) => {
+      const from = Number(new URL(url).searchParams.get('startAt'))
+      const iso = new Date(from).toISOString().slice(0, 10)
+      const point = (y: number) => [{ x: `${iso} 00:00:00`, y }]
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ sessions: point(1), pageviews: point(2) }) })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const traffic = await fetchUmamiDailyTraffic('https://umami.example.com', 'tok', 'site', {
+      startAt,
+      endAt: startAt + 400 * day - 1,
+      country: 'DE',
+    })
+    vi.unstubAllGlobals()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect([...traffic.visitors.keys()]).toEqual(['2025-10-07', '2026-04-25'])
+    expect(traffic.pageviews.get('2026-04-25')).toBe(2)
   })
 })

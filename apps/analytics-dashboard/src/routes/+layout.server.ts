@@ -9,6 +9,6 @@ import { resolveSelection } from '#lib/server/types.js'
  */
 export const load: LayoutServerLoad = ({ url }) => {
   return {
-    selection: resolveSelection(url.searchParams.get('range')),
+    selection: resolveSelection(url.searchParams.get('range'), url.searchParams.get('end')),
   }
 }

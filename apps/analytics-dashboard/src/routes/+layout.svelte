@@ -1,8 +1,9 @@
 <!--
   Shared shell for the whole dashboard: a sticky top bar with the page nav (Acquisition, Product,
-  Licenses, Link codes) and the range picker (7d / 30d / 90d). The picker drives the shared time selection via
-  `?range=` and stays on the current page when you switch, so Acquisition and Product share
-  selection state. It's hidden on the two ledger pages (Licenses, Link codes), where a time range is
+  Licenses, Link codes) and the range picker (7d / 30d / 90d) beside the dates in view. The picker drives the
+  shared time selection via `?range=` and stays on the current page when you switch, so Acquisition and Product
+  share selection state. On Acquisition, ‹ and › step the window by its length (`?end=`, the window math in
+  `#lib/time-range.ts`); everywhere else the window ends today. It's hidden on the two ledger pages (Licenses, Link codes), where a time range is
   irrelevant. The selection comes from the layout load; `updatedAt` comes from whichever data page is
   active.
 -->
@@ -12,7 +13,14 @@
     import { page } from '$app/state'
     import { resolve } from '$app/paths'
     import { formatTime } from '#lib/format.js'
-    import { timeRanges, type TimeRange } from '#lib/time-range.js'
+    import {
+        formatWindow,
+        selectionQuery,
+        stepEnd,
+        timeRanges,
+        viewWindow,
+        type TimeRange,
+    } from '#lib/time-range.js'
 
     const { children, data }: LayoutProps = $props()
 
@@ -36,12 +44,27 @@
     /** The freshness stamp, set by the active data page's load (absent on Link codes). */
     const updatedAt = $derived(page.data.updatedAt as string | undefined)
 
-    /** Navigate to a range on the current page, keeping the Acquisition page's `?country=` filter. */
-    function selectRange(range: TimeRange) {
-        if (data.selection.range === range) return
+    /** Pages whose sections step back through earlier windows (`?end=`); elsewhere every window ends today. */
+    const pathsWithSteps = ['/']
+    const canStep = $derived(pathsWithSteps.includes(pathname))
+
+    /** Today's UTC day. A load re-renders the layout, so a page open across midnight catches up on the next step. */
+    const today = new Date().toISOString().slice(0, 10)
+
+    /** The past window's last day in view, or null for the window ending today. */
+    const end = $derived(canStep ? data.selection.end : null)
+    const shown = $derived(viewWindow(data.selection.range, end, today))
+    const backEnd = $derived(stepEnd(data.selection.range, end, today, 'back'))
+    const forwardEnd = $derived(stepEnd(data.selection.range, end, today, 'forward'))
+
+    /** Navigate to a range and window on the current page, keeping the Acquisition page's `?country=` filter. */
+    function go(range: TimeRange, nextEnd: string | null) {
+        if (range === data.selection.range && nextEnd === end) return
         // Read the live URL: the country chips update it shallowly, which `page.url` doesn't follow.
         const country = new URL(window.location.href).searchParams.get('country')
-        window.location.href = `${pathname}?range=${range}${country ? `&country=${encodeURIComponent(country)}` : ''}`
+        // Switching range keeps a past window's last day; `normalizeEnd` on the server pulls it up if a
+        // longer range would start before the history.
+        window.location.href = `${pathname}${selectionQuery({ range, end: canStep ? nextEnd : null }, country)}`
     }
 </script>
 
@@ -72,11 +95,42 @@
         </div>
 
         {#if showPicker}
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <div class="flex items-center gap-1">
+                    {#if canStep}
+                        <button
+                            onclick={() => { if (backEnd !== undefined) go(data.selection.range, backEnd); }}
+                            disabled={backEnd === undefined}
+                            aria-label="Previous {data.selection.range}"
+                            title="Previous {data.selection.range}"
+                            class="rounded-md px-2.5 py-0.5 text-lg leading-none font-medium text-text-secondary transition-colors
+                                hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40
+                                disabled:hover:text-text-secondary"
+                        >
+                            ‹
+                        </button>
+                    {/if}
+                    <span class="text-sm whitespace-nowrap text-text-secondary tabular-nums" aria-live="polite">
+                        {formatWindow(shown)}
+                    </span>
+                    {#if canStep}
+                        <button
+                            onclick={() => { if (forwardEnd !== undefined) go(data.selection.range, forwardEnd); }}
+                            disabled={forwardEnd === undefined}
+                            aria-label="Next {data.selection.range}"
+                            title="Next {data.selection.range}"
+                            class="rounded-md px-2.5 py-0.5 text-lg leading-none font-medium text-text-secondary transition-colors
+                                hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40
+                                disabled:hover:text-text-secondary"
+                        >
+                            ›
+                        </button>
+                    {/if}
+                </div>
                 <div class="flex rounded-lg border border-border bg-surface p-0.5">
                     {#each timeRanges as r (r)}
                         <button
-                            onclick={() => { selectRange(r); }}
+                            onclick={() => { go(r, end); }}
                             aria-pressed={data.selection.range === r}
                             class="rounded-md px-3 py-1 text-sm font-medium transition-colors
                                 {data.selection.range === r

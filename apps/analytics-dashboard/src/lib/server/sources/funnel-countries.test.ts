@@ -11,10 +11,14 @@ const env = {
   UMAMI_WEBSITE_ID: 'site',
 }
 
-const json = (body: unknown) => ({ ok: true, json: () => Promise.resolve(body) })
+const json = (body: unknown, headers: Record<string, string> = {}) => ({
+  ok: true,
+  headers: new Headers(headers),
+  json: () => Promise.resolve(body),
+})
 
-/** Answers each upstream by URL, so the test doesn't depend on call order. */
-function stubUpstreams(workerCountry: string) {
+/** Answers each upstream by URL, so the test doesn't depend on call order. `window` is the worker's `X-Window`. */
+function stubUpstreams(workerCountry: string, window?: string) {
   const fetchMock = vi.fn((url: string) => {
     if (url.endsWith('/api/auth/login')) return Promise.resolve(json({ token: 'tok' }))
     if (url.includes('/metrics?') && url.includes('type=country'))
@@ -28,9 +32,19 @@ function stubUpstreams(workerCountry: string) {
       return Promise.resolve(json({ data: [{ country: 'US' }, { country: 'SE' }, { country: 'US' }], count: 3 }))
     if (url.includes('/admin/funnel/countries'))
       return Promise.resolve(
-        json([
-          { country: workerCountry, serverDownloads: 2, humanInstalls: 1, newInstalls: 1, d7Cohort: 1, d7Retained: 0 },
-        ]),
+        json(
+          [
+            {
+              country: workerCountry,
+              serverDownloads: 2,
+              humanInstalls: 1,
+              newInstalls: 1,
+              d7Cohort: 1,
+              d7Retained: 0,
+            },
+          ],
+          window ? { 'X-Window': window } : {},
+        ),
       )
     return Promise.reject(new Error(`unexpected ${url}`))
   })
@@ -69,6 +83,26 @@ describe('fetchFunnelCountriesData', () => {
     const installs = (rows: typeof week.data.rows) => rows.find((r) => r.country === 'SE')?.newInstalls
     expect(installs(week.data.rows)).toBe(0)
     expect(installs(quarter.data.rows)).toBe(1)
+  })
+
+  it('asks for a past window ending `end`, Umami included, and keeps the worker side when it confirms the window', async () => {
+    const fetchMock = stubUpstreams('US', '2026-10-04..2026-10-10')
+    const result = await fetchFunnelCountriesData(env, 7, '2026-10-10')
+    if (!result.ok) throw new Error(result.error)
+    expect(result.data.workerAvailable).toBe(true)
+    const urls = fetchMock.mock.calls.map(([url]) => url)
+    expect(urls.some((u) => u.includes('/admin/funnel/countries?days=7&end=2026-10-10'))).toBe(true)
+    const umami = urls.filter((u) => u.includes('/api/websites/'))
+    expect(umami.every((u) => u.includes(`startAt=${String(Date.UTC(2026, 9, 4))}`))).toBe(true)
+    expect(umami.every((u) => u.includes(`endAt=${String(Date.UTC(2026, 9, 11) - 1)}`))).toBe(true)
+  })
+
+  it("drops the worker side for a past window when the worker doesn't confirm it (an older worker ignores `end`)", async () => {
+    stubUpstreams('US')
+    const result = await fetchFunnelCountriesData(env, 7, '2026-10-10')
+    if (!result.ok) throw new Error(result.error)
+    expect(result.data.workerAvailable).toBe(false)
+    expect(result.data.umamiAvailable).toBe(true)
   })
 
   it('fills clicks for every country from one events listing', async () => {

@@ -133,7 +133,7 @@ describe('fetchFeedbackAndErrorsData', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchFeedbackAndErrorsData(mockEnv, { range: '7d' })
+    const result = await fetchFeedbackAndErrorsData(mockEnv, { range: '7d', end: null })
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.data.feedback).toEqual(sampleFeedback)
@@ -145,8 +145,8 @@ describe('fetchFeedbackAndErrorsData', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) })
     vi.stubGlobal('fetch', fetchMock)
 
-    await fetchFeedbackAndErrorsData(mockEnv, { range: '7d' })
-    await fetchFeedbackAndErrorsData(mockEnv, { range: '7d' })
+    await fetchFeedbackAndErrorsData(mockEnv, { range: '7d', end: null })
+    await fetchFeedbackAndErrorsData(mockEnv, { range: '7d', end: null })
     const urls = fetchMock.mock.calls.map((c) => String(c[0]))
     expect(urls.filter((u) => u.includes('/admin/feedback')).length).toBe(2)
     expect(urls.filter((u) => u.includes('/admin/error-reports')).length).toBe(1)
@@ -156,7 +156,7 @@ describe('fetchFeedbackAndErrorsData', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) })
     vi.stubGlobal('fetch', fetchMock)
 
-    await fetchFeedbackAndErrorsData(mockEnv, { range: '90d' })
+    await fetchFeedbackAndErrorsData(mockEnv, { range: '90d', end: null })
     const urls = fetchMock.mock.calls.map((c) => String(c[0]))
     expect(urls.some((u) => u.includes('/admin/feedback?range=90d'))).toBe(true)
     expect(urls.some((u) => u.includes('/admin/error-reports?range=90d'))).toBe(true)
@@ -166,7 +166,7 @@ describe('fetchFeedbackAndErrorsData', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) })
     vi.stubGlobal('fetch', fetchMock)
 
-    await fetchFeedbackAndErrorsData(mockEnv, { range: '30d' })
+    await fetchFeedbackAndErrorsData(mockEnv, { range: '30d', end: null })
     const urls = fetchMock.mock.calls.map((c) => String(c[0]))
     expect(urls.every((u) => u.includes('range=30d'))).toBe(true)
   })
@@ -176,7 +176,7 @@ describe('fetchFeedbackAndErrorsData', () => {
       'fetch',
       vi.fn().mockResolvedValue({ ok: false, status: 401, text: () => Promise.resolve('Unauthorized') }),
     )
-    const result = await fetchFeedbackAndErrorsData(mockEnv, { range: '7d' })
+    const result = await fetchFeedbackAndErrorsData(mockEnv, { range: '7d', end: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('Feedback & errors')
@@ -185,7 +185,7 @@ describe('fetchFeedbackAndErrorsData', () => {
 
   it('returns an error on network failure', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('DNS resolution failed')))
-    const result = await fetchFeedbackAndErrorsData(mockEnv, { range: '7d' })
+    const result = await fetchFeedbackAndErrorsData(mockEnv, { range: '7d', end: null })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('DNS resolution failed')

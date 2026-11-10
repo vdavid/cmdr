@@ -139,6 +139,32 @@ function countryFilter(country: string | null): string {
   return country ? `&country=${encodeURIComponent(country)}` : ''
 }
 
+/**
+ * The longest span one `unit=day` series call may cover. Past roughly seven months Umami ignores
+ * `unit=day` and answers monthly buckets with the same shape, which would read as a handful of huge days
+ * (verified on anal.veszelovszki.com, Umami v3, curl: 210 days came back daily, 230 monthly, 2026-11-10).
+ * At 200, the usual 181-day funnel stays one call and the deepest (400 days) takes two.
+ */
+export const umamiMaxDaySpanDays = 200
+
+/**
+ * Split `[startAt, endAt]` into back-to-back spans of at most `umamiMaxDaySpanDays` days, each starting
+ * where the last stopped, so a day never lands in two spans (`startAt` is a UTC midnight). Pure for testing.
+ */
+export function umamiDaySpans(window: { startAt: number; endAt: number }): { startAt: number; endAt: number }[] {
+  const step = umamiMaxDaySpanDays * 86_400_000
+  const spans: { startAt: number; endAt: number }[] = []
+  for (let start = window.startAt; start <= window.endAt; start += step) {
+    spans.push({ startAt: start, endAt: Math.min(start + step - 1, window.endAt) })
+  }
+  return spans
+}
+
+/** Merge per-span day maps (their days never overlap). */
+function mergeDays(maps: Map<string, number>[]): Map<string, number> {
+  return new Map(maps.flatMap((m) => [...m]))
+}
+
 /** Per-day getcmdr.com traffic: unique visitors and pageviews, each a `Map<YYYY-MM-DD, count>`. */
 export interface UmamiDailyTraffic {
   visitors: Map<string, number>
@@ -148,9 +174,21 @@ export interface UmamiDailyTraffic {
 /**
  * Per-day visitors (Umami's "sessions" series, what its own daily chart labels visitors) and pageviews for
  * `websiteId`, optionally scoped to one country. Uses `/pageviews?unit=day&timezone=UTC` so the day buckets
- * line up with the rest of the funnel (all UTC); one call returns both arrays.
+ * line up with the rest of the funnel (all UTC); one call per `umamiDaySpans` span returns both arrays.
  */
 export async function fetchUmamiDailyTraffic(
+  apiUrl: string,
+  token: string,
+  websiteId: string,
+  window: { startAt: number; endAt: number; country: string | null },
+): Promise<UmamiDailyTraffic> {
+  const spans = await Promise.all(
+    umamiDaySpans(window).map((span) => fetchUmamiDailyTrafficSpan(apiUrl, token, websiteId, { ...window, ...span })),
+  )
+  return { visitors: mergeDays(spans.map((s) => s.visitors)), pageviews: mergeDays(spans.map((s) => s.pageviews)) }
+}
+
+async function fetchUmamiDailyTrafficSpan(
   apiUrl: string,
   token: string,
   websiteId: string,
@@ -173,8 +211,24 @@ export async function fetchUmamiDailyTraffic(
  * Per-day counts of a named custom event (for example `download`) for `websiteId`, optionally scoped to one
  * country, as a `Map<YYYY-MM-DD, count>`. Uses `/events/series?unit=day&timezone=UTC`, which returns one
  * point per (event name, day); we keep only the rows whose `x` matches `eventName` and bucket by `t`'s day.
+ * One call per `umamiDaySpans` span.
  */
 export async function fetchUmamiDailyEventSeries(
+  apiUrl: string,
+  token: string,
+  websiteId: string,
+  window: { startAt: number; endAt: number; country: string | null },
+  eventName: string,
+): Promise<Map<string, number>> {
+  const spans = await Promise.all(
+    umamiDaySpans(window).map((span) =>
+      fetchUmamiDailyEventSeriesSpan(apiUrl, token, websiteId, { ...window, ...span }, eventName),
+    ),
+  )
+  return mergeDays(spans)
+}
+
+async function fetchUmamiDailyEventSeriesSpan(
   apiUrl: string,
   token: string,
   websiteId: string,

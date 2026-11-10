@@ -24,11 +24,25 @@
         countryHref: (country: string | null) => string
         /** The window the numbers cover, for the title. */
         days?: number
+        /** A past window's first and last day (`selection.end` set), or null for the last `days` ending today. */
+        pastWindow?: { start: string; end: string } | null
         /** Switch the page's country filter in place. Without it, a country link does a full page load. */
         onselectcountry?: (country: string | null) => void
     }
 
-    const { funnelCountries, country, selection, countryHref, days = 30, onselectcountry }: Props = $props()
+    const {
+        funnelCountries,
+        country,
+        selection,
+        countryHref,
+        days = 30,
+        pastWindow = null,
+        onselectcountry,
+    }: Props = $props()
+
+    /** The window in words: "last 30 days", or "2026-09-11 – 2026-10-10" for a past one. */
+    const period = $derived(pastWindow ? `${pastWindow.start} – ${pastWindow.end}` : `last ${String(days)} days`)
+    const inPeriod = $derived(pastWindow ? `from ${period}` : `in the ${period}`)
 
     /** A plain click switches the filter in place; a modified click (new tab) keeps the link's own behavior. */
     function handleCountryClick(event: MouseEvent, code: string) {
@@ -110,9 +124,9 @@
 
 <section class="mb-6 rounded-xl border border-border bg-surface p-4 sm:p-6">
     <h2 class="mb-1 flex items-center gap-2 text-lg font-semibold text-text-primary">
-        By country, last {days} days
+        By country, {period}
         <InfoPopover topic="the country table">
-            The last {days} UTC days including today. Visitors and clicks come from Umami, by the visitor's IP country;
+            {pastWindow ? `The ${String(days)} UTC days ${inPeriod}.` : `The last ${String(days)} UTC days including today.`} Visitors and clicks come from Umami, by the visitor's IP country;
             downloads, installs, D7, and D28 come from the api-server (downloads by the request's country, installs by
             the country on the install's heartbeat). "(unknown)" is everything without a usable country. Rates pool as ratios of sums. Counts
             are colored on a fixed log scale: red is 1, yellow 10, cyan 100, and purple {scaleTop}.
@@ -152,7 +166,7 @@
         {/if}
 
         {#if table.top.length === 0 && !table.unknown}
-            <p class="text-sm text-text-tertiary">No visitors or downloads in the last {days} days.</p>
+            <p class="text-sm text-text-tertiary">No visitors or downloads {inPeriod}.</p>
         {:else}
             <div class="grid grid-cols-1 items-start gap-6 2xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
                 <!-- Stacked, the map caps its width so it doesn't push the table a screen down. -->
@@ -175,7 +189,7 @@
                                     {/each}
                                 </dl>
                             {:else}
-                                <p>No visitors or downloads in the last {days} days.</p>
+                                <p>No visitors or downloads {inPeriod}.</p>
                             {/if}
                         {/snippet}
                     </WorldMap>

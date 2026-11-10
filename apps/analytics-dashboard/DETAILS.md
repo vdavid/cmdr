@@ -36,8 +36,12 @@ switching range on `/product` stays on `/product`. It's hidden on the two ledger
 The "Updated HH:MM" stamp reads `page.data.updatedAt` (set by whichever data page is active; absent on both ledger
 pages).
 
-The ranges live in client-safe `#lib/time-range.ts` (`timeRanges`, `defaultRange`, `rangeDays`), which
-`#lib/server/types.ts` re-exports, so the layout can import them without crossing the boundary gotcha below.
+Beside the picker the header shows the dates in view (`formatWindow`, like "2026-09-11 – 2026-10-10"), and on `/` only
+(`pathsWithSteps`) a ‹ and › that step the window by the range's length. § "Selection state" has the window math.
+
+The ranges and the window math live in client-safe `#lib/time-range.ts` (`timeRanges`, `rangeDays`, `viewWindow`,
+`stepEnd`, `normalizeEnd`, `funnelDaysFor`, `selectionQuery`), which `#lib/server/types.ts` re-exports in part, so the
+layout can import them without crossing the boundary gotcha below.
 
 ## Data-loading split
 
@@ -52,11 +56,12 @@ The ranges live in client-safe `#lib/time-range.ts` (`timeRanges`, `defaultRange
 3. **`fetchDashboardData`**: all ten sources, used by the report endpoint (`api/report/+server.ts`) which dumps every
    section at once. Unchanged contract.
 
-The funnel is always the last 181 UTC days (180 complete plus today), ignoring the selection (a non-top `?country=` adds
-that country's slices); it's still gated on the worker admin token, with Umami and Paddle degrading to dashes inside. It
-needs no env vars of its own, reusing the worker admin token, the Umami credentials, and the Paddle key already present
-(Listmonk signups arrive via the api-server, so no Listmonk secret reaches the dashboard). Each source returns
-`SourceResult<T>` (ok+data, or an error string the UI shows as "Couldn't load this data").
+The funnel is the last 181 UTC days (180 complete plus today), or 400 when a stepped-back window and its rolling line
+reach further (`funnelDaysFor`), each length cached on its own (a non-top `?country=` adds that country's slices); it's
+still gated on the worker admin token, with Umami and Paddle degrading to dashes inside. It needs no env vars of its
+own, reusing the worker admin token, the Umami credentials, and the Paddle key already present (Listmonk signups arrive
+via the api-server, so no Listmonk secret reaches the dashboard). Each source returns `SourceResult<T>` (ok+data, or an
+error string the UI shows as "Couldn't load this data").
 
 `AcquisitionData` also carries `umamiSiteUrls`, which is **config, not a source**: the per-site Umami dashboard deep
 links, built from the `UMAMI_*_WEBSITE_ID` env vars so the IDs live in exactly one place instead of being hardcoded in a
@@ -142,12 +147,30 @@ knows only about the one license in front of it. The api-server owns the contrac
 
 ## Selection state
 
-The shared `DashboardSelection` (`{ range }`) is resolved from `?range=` in `+layout.server.ts` (for the picker UI) and
-again in each `+page.server.ts` (for that page's fetch); both call the same `resolveSelection`, so they agree. An
-unknown or retired range (`today`, `24h`, an old `?day=` link) falls back to `30d`. Each source maps the range to its
-own API's window; the one gap is the worker's `/admin/downloads` and `/admin/update-activity`, which take no `90d`, so
-`cloudflare.ts` asks for `all` and trims to the window (`sinceDay`). On `/`, `?country=` is separate client state (§
-"Acquisition trends").
+The shared `DashboardSelection` (`{ range, end }`) is resolved from `?range=` and `?end=` in `+layout.server.ts` (for
+the picker UI) and again in each `+page.server.ts` (for that page's fetch); both call the same `resolveSelection`, so
+they agree. An unknown or retired range (`today`, `24h`, an old `?day=` link) falls back to `30d`.
+
+**Stepping back (`?end=`).** `end` is the last day (inclusive) of a past window; no `end` is the window ending today.
+The URL shape leaves room for a custom period later (a `?start=` beside `end`), and a link to a past period reloads onto
+it.
+
+- **The current window** is the range's complete days plus today, partial (`viewWindow(range, null)`: 31 columns for
+  30d), as the charts always drew it. A past window is exactly the range. Back from today lands on the range just before
+  the current window's complete days, so consecutive windows tile with no gap or overlap.
+- **Forward stops at today's window**: a step whose `end` would reach yesterday or later drops `end` (`stepEnd` → null),
+  so the today-is-partial handling applies unchanged. `normalizeEnd` reads the same way, plus a malformed or impossible
+  day as today's window, and pulls a day too old up to the oldest window that fits.
+- **The floor is `earliestStart`**: the 400-day fetch (the worker's `?days=` ceiling, about a year) minus the six days
+  the 7-day rolling line needs before the window. ‹ is disabled past it.
+- **Switching range keeps `end`**, so 30d → 7d shows that window's last seven days.
+- **What follows `end`**: the trend charts, the breakdown pies, and the country map and table, the funnel sections. The
+  stats grids stay on their fixed windows ending today (David's call to revisit, 2026-11-10), and so does every other
+  source (Awareness, Interest, Download, all of `/product`): they read APIs that answer windows ending now (Umami stats,
+  PostHog intervals, the worker's range names), so `/` says so in a line above them, and `/product` shows today's dates
+  with no ‹ ›. Each source maps the range to its own API's window; the one gap is the worker's `/admin/downloads` and
+  `/admin/update-activity`, which take no `90d`, so `cloudflare.ts` asks for `all` and trims to the window (`sinceDay`).
+  On `/`, `?country=` is separate client state (§ "Acquisition trends").
 
 ## Componentization
 
@@ -213,7 +236,10 @@ runtime values live outside `#lib/server`: `#lib/funnel.ts`, `#lib/feedback-and-
 Each source under `src/lib/server/sources/` exports a typed fetch returning `SourceResult<T>`:
 
 - `umami.ts` (JWT login): page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com,
-  getprvw.com.
+  getprvw.com. The daily series (`fetchUmamiDailyTraffic`, `fetchUmamiDailyEventSeries`) split a long window into spans
+  of at most `umamiMaxDaySpanDays` (`umamiDaySpans`): past about seven months Umami ignores `unit=day` and answers
+  monthly buckets in the same shape, which read as a few huge days (210 days came back daily, 230 monthly; Umami v3,
+  curl, 2026-11-10).
 - `cloudflare.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): downloads (by version/arch/country/source, raw +
   same-day-deduped), true per-day DAU + app hours from the heartbeat, per-day update-check activity by version, from
   worker endpoints (`/admin/downloads`, `/admin/heartbeat-dau`, `/admin/update-activity`).
@@ -229,18 +255,18 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
   from `/admin/feedback` and `/admin/error-reports`. Pure helpers + row types in client-safe
   `#lib/feedback-and-errors.ts`.
 - `funnel.ts` (Bearer + Umami + Paddle): the per-UTC-day funnel behind the trend charts, the breakdown pies, and the
-  report's daily funnel (181 days, independent of the picker), joining `/admin/funnel` with Umami per-day visitors,
-  pageviews, and clicks, and Paddle purchases, plus per-country slices for the top 20 (§ "Acquisition trends"). Per-day
-  `downloadsByRef`, `downloadsByReferer`, and `downloadsByUaFamily` feed the three pies (rolled up by
+  report's daily funnel (181 days, or 400 for a deep stepped-back window), joining `/admin/funnel` with Umami per-day
+  visitors, pageviews, and clicks, and Paddle purchases, plus per-country slices for the top 20 (§ "Acquisition
+  trends"). Per-day `downloadsByRef`, `downloadsByReferer`, and `downloadsByUaFamily` feed the three pies (rolled up by
   `aggregateChannels` / `aggregateReferers` / `aggregateUaFamilies` in `#lib/funnel.ts`). Cache: `funnel-v3` once for
-  everyone, `funnel-extra-v1` per non-top `?country=`.
-- `funnel-countries.ts` (Bearer + Umami): the per-country map and table over the picker's window (`days` = 7/30/90,
-  cached per window as `funnel-countries-v2`). Three parallel calls: Umami `metrics?type=country` for visitors, Umami
-  `/events?event=download` (paginated, 1,000 a page) tallied by each row's country for every country's clicks, and
-  `/admin/funnel/countries?days=N` for downloads, installs, and pooled D7/D28. No Umami aggregate groups a custom event
-  by country: `metrics?type=country&event=` and `/breakdown` count pageviews only and answer `[]` (verified on
-  anal.veszelovszki.com, Umami v3, curl, 2026-11-10); the listing's tallies matched the per-country
-  `metrics?type=event&country=XX` there.
+  everyone per fetch length, `funnel-extra-v1` per non-top `?country=`.
+- `funnel-countries.ts` (Bearer + Umami): the per-country map and table over the selection's window (`days` = 7/30/90,
+  plus `end` for a past one, cached per window as `funnel-countries-v2`). Three parallel calls: Umami
+  `metrics?type=country` for visitors, Umami `/events?event=download` (paginated, 1,000 a page) tallied by each row's
+  country for every country's clicks, and `/admin/funnel/countries?days=N&end=` for downloads, installs, and pooled
+  D7/D28. No Umami aggregate groups a custom event by country: `metrics?type=country&event=` and `/breakdown` count
+  pageviews only and answer `[]` (verified on anal.veszelovszki.com, Umami v3, curl, 2026-11-10); the listing's tallies
+  matched the per-country `metrics?type=event&country=XX` there.
 - `settings-adoption.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): per-setting adoption from `/admin/config-shape`,
   resolved against the per-version defaults manifest before it leaves the server (§ Settings adoption).
 - `worker-endpoint.ts` (shared helper): `fetchWorkerEndpoint(token, path)`, used by the worker-backed sources.
@@ -373,8 +399,9 @@ association from one section to the next:
 
 The top of `/` answers "is each funnel step getting better?" with one row per metric: visitors, visitor → click,
 download clicks, click → install, new installs, D7 retention, D28 retention, and the bot meter (server downloads ÷ new
-installs; a spike means a scraper changed). The charts show the picker's range (7/30/90 days, plus today); the stats
-grids stay on fixed 90/30/7 columns.
+installs; a spike means a scraper changed). The charts show the window in view (the picker's 7/30/90 days plus today, or
+a stepped-back one, § "Selection state"), sliced by date out of the funnel's rows; the stats grids stay on fixed 90/30/7
+columns ending today.
 
 - **Today is a partial UTC day**: drawn faded, given no rolling point, and excluded from every stat, which all take an
   exclusive `end` day.
@@ -421,9 +448,9 @@ grids stay on fixed 90/30/7 columns.
   the `aria-valuetext`.
 - Each metric's methodology lives in its (i) popover.
 - **Download breakdown pies** (Channels, Download referrers, Downloads by client), in one row of three 1/3 cards under
-  the clicks chart (one column below `md`). They sum the funnel rows' per-day maps over the charts' window (the picker's
-  days plus today), so switching range re-slices in the browser with no new fetch. Filtered to one country they say "Not
-  available for one country": the worker's per-country slice carries none of the three maps.
+  the clicks chart (one column below `md`). They sum the funnel rows' per-day maps over the charts' window, so the
+  country filter re-slices in the browser with no new fetch. Filtered to one country they say "Not available for one
+  country": the worker's per-country slice carries none of the three maps.
   - `foldSlices` (`#lib/pie-slices.ts`) ranks the slices, names at most four colored ones at 3% or more, and folds the
     rest into "Other" (a lone would-be fold stays named). Neutral keys (`(none)`, `unknown`) wear the unknown grey and
     don't use a hue; "Other" is a lighter grey (`COLOR_PIE_OTHER`) so the two read apart.
@@ -436,8 +463,14 @@ grids stay on fixed 90/30/7 columns.
 ## The country map and table
 
 `CountryFunnelSection` shows a world map of visitors beside the table from 2xl up, and above it (capped at `max-w-3xl`)
-below that. It takes `days` (7, 30, or 90, default 30) for its title; the page passes the picker's range, and
-`fetchFunnelCountriesSource` fetches that same window, so title and numbers can't drift apart.
+below that. It takes `days` (7, 30, or 90, default 30) and, for a stepped-back window, `pastWindow` for its title; the
+page passes the selection's, and `fetchFunnelCountriesSource` fetches that same window, so title and numbers can't drift
+apart. Today's window is the last `days` days including today (one day shorter than the charts' window, which adds a
+full range before today).
+
+- **A past window** asks the worker for `?days=N&end=` and Umami for that span. An older worker ignores `end` and would
+  answer today's window, so the source keeps the worker side only when the `X-Window` header confirms the days;
+  otherwise those columns are dashes ("worker unavailable"), never today's numbers under a past title.
 
 - **The table**: Visitors, Visitor → click, Clicks, Server downloads, Click → install, Installs, D7 (pooled), D28
   (pooled). The top 20 real countries, then one "Other (N countries)" row summing the rest, then "(unknown)" on its own
@@ -594,9 +627,10 @@ have a happy-path test carrying the real `type: 'app'` stamp, so the discriminat
   direct links, GitHub-page traffic, bots filtered imperfectly). D7 needs a cohort ≥8 days old that had installs, so
   recent/empty days show a dash. The api-server owns the funnel contract and the D7 definition
   (`apps/api-server/src/admin/DETAILS.md` § "Per-day funnel").
-- **Time selection is three rolling windows, `7d` / `30d` / `90d`, carried in `?range=`.** The trend charts answer "how
-  was a given day", so a single-day or today-only selection (and its custom-date input) went away; the windows every
-  source answers natively are what's left, and the trend charts' visible window follows the picker.
+- **Time selection is three windows, `7d` / `30d` / `90d`, carried in `?range=`, plus `?end=` to step back.** The trend
+  charts answer "how was a given day", so a single-day or today-only selection (and its custom-date input) went away;
+  the windows every source answers natively are what's left. Stepping back covers only the funnel sections, whose
+  sources take a window (§ "Selection state").
 - **Every section carries a "what insight + how reliable" blurb** (`sectionDescription`) plus per-chart `methodology`
   notes, because an opaque analytics number is worse than none. They state real caveats (Umami under/double-counts;
   clicks vs server downloads differ; new installs miss opt-outs and debug builds; heartbeat DAU is the trustworthy one;

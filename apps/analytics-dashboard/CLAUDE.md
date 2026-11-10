@@ -5,8 +5,8 @@ Pages at `analdash.getcmdr.com`, behind Cloudflare Access plus an in-app JWT gat
 
 ## Pages
 
-Four routes share `routes/+layout.svelte` (header: nav, range picker). The picker writes `?range=` (7d / 30d / 90d),
-hidden on the ledger pages (`/licenses`, `/links`).
+Four routes share `routes/+layout.svelte` (header: nav, dates, range picker). The picker writes `?range=` (7d / 30d /
+90d), hidden on `/licenses` and `/links`; on `/`, ‹ › step back via `?end=` (`DETAILS.md` § Selection state).
 
 - `/` (Acquisition, `routes/+page.svelte`): funnel trend charts (`?country=` scoped), country table, more sections.
 - `/product` (`routes/product/`): active use, settings adoption, payment, retention, feedback & errors.
@@ -24,8 +24,7 @@ All API keys stay server-side, behind `+server.ts` / `+page.server.ts`.
 
 ## Checks
 
-`pnpm check dashboard` runs all nine (eslint, stylelint, svelte-check, import-cycles, knip, tests, build,
-settings-defaults, `svelte-kit sync`). Don't judge a change by raw `pnpm lint`: the runner owns ordering.
+`pnpm check dashboard` runs all nine checks. Don't judge a change by raw `pnpm lint`: the runner owns ordering.
 
 ## Must-knows
 
@@ -56,6 +55,5 @@ settings-defaults, `svelte-kit sync`). Don't judge a change by raw `pnpm lint`: 
   `DETAILS.md` § "The country map and table".
 
 Local dev: `pnpm dev:dashboard` serves on port 4830, reading `.env` (copy `.env.example`; escape a literal `$` as `\$`).
-Env resolution and the variables: `DETAILS.md`.
 
 Everything else (structure, data loading, sources, auth, env vars, local QA, deployment): `DETAILS.md`.
