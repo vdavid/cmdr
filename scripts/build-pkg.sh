@@ -2,8 +2,8 @@
 # Builds the installer package (`.pkg`) for MDM deployment from a finished, signed `Cmdr.app`:
 # a component package that installs the app to /Applications (not relocatable), wrapped in a
 # distribution package. Optionally signs it with a Developer ID Installer identity, notarizes, and
-# staples it. Then it checks what it built. The release pipeline's `pkg` job calls it on the app
-# from the published universal DMG; run it locally on any build to test the packaging itself.
+# staples it. Then it checks what it built. The release pipeline's universal `sign` job calls it on the app
+# from its own universal DMG; run it locally on any build to test the packaging itself.
 # Design and decisions: `docs/guides/releasing.md` § The installer package.
 #
 # Usage: ./scripts/build-pkg.sh [--app PATH] [--out DIR] [--sign IDENTITY [--keychain PATH]] [--notarize]

@@ -7,7 +7,7 @@
 //! Each archive is unpacked with the installer's own extraction and checked with the app's own
 //! code-signature check, then for the release's version. Exits 1 if any archive is refused, 2 on
 //! bad usage. `scripts/release-finish` runs it before signing; the release pipeline's
-//! `vet-update-archives` job runs it before publishing.
+//! `vet-update-archives` job runs it in whichever run publishes.
 
 #![allow(
     clippy::print_stdout,

@@ -15,14 +15,14 @@ Related guides for the signing and distribution steps: `apple-signing-and-notari
 ## Signing secrets
 
 The secrets that sign, notarize, and updater-sign a build live in the `release` environment on `getcmdr/cmdr`, and only
-the `sign` and `pkg` jobs declare `environment: release` (`compile`, which runs the third-party build code, doesn't: §
-How a release build is split). The environment's deployment policy admits `v*` tags only and requires David's approval,
-with admin bypass off, so every release pauses at `sign` and again at `pkg` (each job that enters the environment asks)
-until he approves it under "Review deployments" on the build run's page. A hijacked agent or a stolen token can start a
-release build but can't get it signed. No signing secret exists at repo level, so a workflow on a branch can't reach
-them. A waiting job doesn't burn its `timeout-minutes` (the clock starts when it runs), and `release-finish.sh` prints
-it as "waiting for David's approval" (`scripts/release-finish/ci.go`, `ciJob.state`). Where each value comes from: the
-vault note `projects/Cmdr/workflow/Cmdr signing keys.md`.
+only the `sign` jobs declare `environment: release` (`compile`, which runs the third-party build code, doesn't: § How a
+release build is split). The environment's deployment policy admits `v*` tags only and requires David's approval, with
+admin bypass off, so every release pauses once, at `sign` (one approval covers its three jobs), until he approves it
+under "Review deployments" on the build run's page. A hijacked agent or a stolen token can start a release build but
+can't get it signed. No signing secret exists at repo level, so a workflow on a branch can't reach them. A waiting job
+doesn't burn its `timeout-minutes` (the clock starts when it runs), and `release-finish.sh` prints it as "waiting for
+David's approval" (`scripts/release-finish/ci.go`, `ciJob.state`). Where each value comes from: the vault note
+`projects/Cmdr/workflow/Cmdr signing keys.md`.
 
 - **The eight secrets**: `APPLE_API_KEY`, `APPLE_API_KEY_BASE64`, `APPLE_API_ISSUER`, `APPLE_SIGNING_IDENTITY`,
   `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_INSTALLER_CERTIFICATE`, and
@@ -54,14 +54,19 @@ script, Vite plugin, and crate `build.rs`, and the 2026-10-15 incident tabletop 
   `pnpm install --ignore-scripts`, and fetches llama-server again (pinned by SHA-256). Only then does it set up the
   signing keychain and the notarization key, sign the llama-server binaries (`download-llama-server.go sign`, since the
   bundler signs the app but not the resources it copies in), and run `tauri bundle`, which bundles, signs, notarizes,
-  staples, and updater-signs. It deletes the signing material, runs the macOS floor checks on the bundled binary, and
-  uploads.
+  staples, and updater-signs. The universal job then builds the installer package from its own DMG (§ The installer
+  package). It deletes the signing material, runs the macOS floor checks on the bundled binary, and uploads, checking
+  each asset's SHA-256 on GitHub against the local file.
+- **Why the pkg lives in `sign`**: every macOS job waits for its own hosted runner. On v0.60.0 (2026-11-06) a separate
+  `pkg` job twice found no runner in 15 minutes, which stalled the release by half an hour, and the separate tag-push
+  `vet-update-archives` job queued 10 minutes. The universal `sign` job already holds a runner, the secrets, and the
+  bundle, and the pkg adds about 2.5 minutes to it.
 - **Why two jobs, not two steps**: code from one step can leave a process or a patched tool behind on its runner and
   read a later step's environment or keychain. A new job is a new machine.
 - **What still runs next to the secrets**: the Tauri CLI (it's the signer), pnpm and node to start it, Go running our
-  stdlib-only script, `cargo metadata`, Apple's tools, and the pinned actions. `tauri bundle` runs no
-  `beforeBuildCommand` and no cargo build (verified on Tauri CLI 2.12.1 by reading the `bundle` command's source in the
-  tauri repo, 2026-10-15).
+  stdlib-only script, our `build-pkg.sh` (bash, `jq`, and Apple's tools), `cargo metadata`, Apple's tools, and the
+  pinned actions. `tauri bundle` runs no `beforeBuildCommand` and no cargo build (verified on Tauri CLI 2.12.1 by
+  reading the `bundle` command's source in the tauri repo, 2026-10-15).
 - **What it doesn't protect**: the binary itself. A malicious dependency can still change what `compile` produces, and
   `sign` signs it. The split keeps the keys out of its reach, not the build.
 - **The upload** names the assets `Cmdr_<version>_<arch>.dmg` and `Cmdr_<version>_<arch>.app.tar.gz[.sig]` (the bundler
@@ -97,9 +102,11 @@ be the release's.
 
 - **On the laptop**, `release-finish.sh` runs it after the provenance check and before signing, dry runs included, and
   refuses to sign if any archive fails.
-- **On GitHub**, the `vet-update-archives` job (macOS) runs it on the release's three archives, and `publish` needs it,
-  in `ci` and `local` mode alike. In a `local` tag push it runs right after `sign`, so a bad build shows up before the
-  laptop is asked to sign it.
+- **On GitHub**, the `vet-update-archives` job (macOS) runs it on the release's three archives in whichever run
+  publishes (a `ci` mode tag push, or the `local` finishing dispatch), and `publish` needs it. A `local` tag push skips
+  it: the laptop runs the same check on the same archives before signing, so the job would only cost a macOS runner. ❌
+  Don't fold it into `sign`: it compiles `cmdr-vet-update`, whose crates' build scripts would then run in the job
+  holding the signing secrets (§ How a release build is split).
 - **By hand**: `cargo run --release -p cmdr-update-trust --bin cmdr-vet-update -- --version X.Y.Z <archives>`.
 
 ## Testing the pipeline without releasing
@@ -149,9 +156,9 @@ the variable alone.
    (three parallel jobs each looking for a draft by tag could each create one; drafts can't be fetched by tag).
    `ci-gate` skips: nothing here is public, and CI is still running beside it. The two `compile` jobs and then the three
    `sign` jobs (which wait at `waiting` for David's approval of the `release` environment, § Signing secrets; one
-   approval covers all three, and `pkg` asks again later) build into it: the DMGs and `.app.tar.gz` archives, no `.sig`
-   files. `sbom` runs beside them, and `attest` attests the draft's assets. `publish` and `bump-tap` skip, so
-   `latest.json` doesn't move and nothing is public.
+   approval covers all three) build into it: the DMGs, the `.app.tar.gz` archives, and the pkg, no `.sig` files. `sbom`
+   runs beside them, and `attest` attests the draft's assets. `publish` and `bump-tap` skip, so `latest.json` doesn't
+   move and nothing is public.
    - The Tauri CLI won't bundle without an updater key once the config has a pubkey, and the archive must still come out
      of the bundler in the shape `ci` mode ships. So each `sign` job makes a throwaway key (a mismatch the bundler only
      warns about) and keeps its signatures on the runner (its upload step skips `.sig` files in `local` mode).
@@ -364,8 +371,8 @@ check.
 9. **Confirm the build started**: wait ~30 seconds, then run `gh run view <release-run-id> --json jobs` and check the
    `Compile (...)` jobs. On GitHub-hosted runners both should be `in_progress` together; the three
    `Sign and notarize (...)` jobs then sit at `waiting` until David approves the `release` environment ("Review
-   deployments" on the run's page), and `pkg` asks once more after them (§ Signing secrets). Tell David the run's link
-   so he can approve. Self-hosted: see § Keep the Mac awake during the build.
+   deployments" on the run's page; once per release, § Signing secrets). Tell David the run's link so he can approve.
+   Self-hosted: see § Keep the Mac awake during the build.
 10. **Monitor the build.** Tell the user their laptop is free (the build runs on GitHub's hardware). Poll `gh run view`
     every few minutes in the background and report progress (which jobs are done, which are still running). A job at
     `waiting` is paused for David's approval, not stuck: remind him once, with the run's link, rather than treating it
@@ -441,8 +448,8 @@ with these differences. The procedure pre-approves building and publishing it, s
 - **The laptop awake and online for about an hour after `release.sh`**, while `release-finish.sh` waits for the build
   and CI, signs, and waits for the finishing run. Run it as `caffeinate -i ./scripts/release-finish.sh X.Y.Z`, on power
   with the lid open. If it stops, re-run it: it's resumable.
-- **David's approval of `sign` and then `pkg`** in the build run ("Review deployments"), since the `release` environment
-  requires it with no bypass (§ Signing secrets). Tell him the run's link as soon as the tag is pushed.
+- **David's approval of `sign`** in the build run ("Review deployments"), since the `release` environment requires it
+  with no bypass (§ Signing secrets). Tell him the run's link as soon as the tag is pushed.
 - MFA, Bitwarden, and the phone aren't needed: everything else runs on GitHub with credentials already in place.
 
 **Before tagging:**
@@ -1098,12 +1105,15 @@ shell, a pipe), only exit 0. Read the exit code, or keep the flag to see what it
 ## The installer package
 
 MDMs deploy software as flat, signed, notarized `.pkg` installers, so each release can carry
-`Cmdr_<version>_universal.pkg` beside the DMGs. The `pkg` job in `release-pipeline.yml` builds it; the packaging itself
-lives in `scripts/build-pkg.sh`, which also runs locally. Admin-facing side (deploying it, the Full Disk Access
-profile): `/trust#mdm-deploy`.
+`Cmdr_<version>_universal.pkg` beside the DMGs. The universal `sign` job in `release-pipeline.yml` builds it (§ How a
+release build is split says why there and not in a job of its own); the packaging itself lives in
+`scripts/build-pkg.sh`, which also runs locally. Admin-facing side (deploying it, the Full Disk Access profile):
+`/trust#mdm-deploy`.
 
-**How it's built.** The job downloads the universal DMG from the release, as uploaded, takes `Cmdr.app` out of it, and
-checks it's stapled and Gatekeeper-accepted. So the pkg wraps exactly the app people download. `build-pkg.sh` then:
+**How it's built.** Right after bundling, while the signing material is still on the runner and before any third-party
+code runs, the job takes `Cmdr.app` out of its own universal DMG and checks it's stapled and Gatekeeper-accepted. It
+uploads the pkg last, only after GitHub's SHA-256 of the uploaded DMG matches the local file, so the pkg wraps exactly
+the app people download. `build-pkg.sh` then:
 
 - runs `pkgbuild` with a component plist: **not relocatable** (otherwise Installer "upgrades" whatever copy with the
   same bundle id it finds, in Downloads or a dev build, instead of installing to `/Applications`), **not
@@ -1125,12 +1135,20 @@ which does no harm.
 `codesign --verify --deep --strict` and `spctl` passing, Full Disk Access intact after relaunch (verified on macOS
 27.0.1, the M1 enrolled in David's Fleet test rig, 2026-10-22). Cmdr wasn't running during the install.
 
-**Skips until the certificate exists.** Without `APPLE_INSTALLER_CERTIFICATE` in the `release` environment, the job logs
-a notice and ends green, and the release ships without a pkg. `publish` and `attest` wait for the job (so
-`checksums.txt` and the provenance cover the pkg) but don't need it to succeed: in `ci` mode a red `pkg` job never holds
-up the release. In `local` mode it does, since `release-finish.sh` waits for a fully green tag-push run: re-run the
-failed job, or, if the pkg can't be fixed now, delete `APPLE_INSTALLER_CERTIFICATE` from the environment and re-run it,
-which makes it skip.
+**Skips until the certificate exists.** Without `APPLE_INSTALLER_CERTIFICATE` in the `release` environment, the pkg
+steps log a notice and the release ships without a pkg. `publish` and `attest` wait for `sign`, so `checksums.txt` and
+the provenance cover the pkg.
+
+**A failed pkg never stops the build upload** (its steps are `continue-on-error`). The job's last step, "Account for the
+installer package", then decides by mode:
+
+- **`ci`**: a warning, and the release ships without the pkg. `release-evidence.sh verify` (step 12) flags the missing
+  asset.
+- **`local`**: the universal `sign` job goes red, so `release-finish.sh` stops before signing. Fix the cause and re-run
+  the failed jobs (this rebuilds the universal bundle; its notarization comes back fast for the same binary), or, if the
+  pkg can't be fixed now, delete `APPLE_INSTALLER_CERTIFICATE` from the environment and re-run, which makes it skip.
+  Stopping is the point: once published, a pkg can't join a release cleanly, since `checksums.txt` and the provenance
+  are already taken.
 
 **Signed in CI in both modes.** `RELEASE_UPDATE_SIGNING=local` keeps the updater key off GitHub because whoever holds it
 can ship an update to every installed Cmdr, for good. The installer certificate can't: a pkg reaches a Mac only when an

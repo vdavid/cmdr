@@ -113,7 +113,7 @@ func TestJobChangesPrintsEachJobOncePerState(t *testing.T) {
 	}
 }
 
-// Regression anchor: the `release` environment requires David's approval, so `sign` and `pkg`
+// Regression anchor: the `release` environment requires David's approval, so the `sign` jobs
 // sit at `waiting` until he approves. The wait must say so, or a paused release looks stuck.
 func TestJobChangesNamesTheApprovalAJobWaitsFor(t *testing.T) {
 	got := jobChanges(map[string]string{}, []ciJob{job("sign", "waiting", "")})

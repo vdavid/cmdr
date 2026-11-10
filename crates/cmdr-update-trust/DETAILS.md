@@ -55,8 +55,9 @@ Two callers, so a refused archive can't reach `latest.json` by either path:
 
 - `scripts/release-finish` (`vet.go`) runs it on the downloaded draft archives after the provenance check and before
   signing, in real runs and dry runs.
-- The release pipeline's `vet-update-archives` job (macOS) runs it on the release's archives, and `publish` needs it, in
-  `ci` and `local` mode alike. In a `local` tag push it runs too, so a bad build shows before the laptop signs.
+- The release pipeline's `vet-update-archives` job (macOS) runs it on the release's archives in whichever run publishes
+  (a `ci` mode tag push, or the `local` finishing dispatch), and `publish` needs it. A `local` tag push skips it, since
+  the laptop vets before signing.
 
 How it fits the release: `docs/guides/releasing.md` § The release gate.
 

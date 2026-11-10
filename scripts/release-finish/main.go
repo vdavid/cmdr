@@ -530,7 +530,7 @@ func waitForBuildAndCI(cfg config, commit string) error {
 		}
 	}
 	build, _ := newest(runs)
-	step("Waiting for the build run (%s), roughly an hour on hosted macOS runners, plus David's approval of `sign` and then `pkg` (the `release` environment) on that page", runURL(build.ID))
+	step("Waiting for the build run (%s), roughly an hour on hosted macOS runners, plus David's approval of `sign` (the `release` environment) on that page", runURL(build.ID))
 	seen := map[string]string{}
 	buildDone := false
 	for {

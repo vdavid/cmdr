@@ -79,7 +79,7 @@ func main() {
 	sub := flag.Arg(0)
 	fs := flag.NewFlagSet(sub, flag.ExitOnError)
 	cfg := config{root: *root}
-	noPkg := fs.Bool("no-pkg", false, "accept a release without the installer package (the pkg job skips when the installer certificate is missing)")
+	noPkg := fs.Bool("no-pkg", false, "accept a release without the installer package (the sign job skips it when the installer certificate is missing)")
 	fs.DurationVar(&cfg.manifestWait, "manifest-wait", 2*time.Minute, "how long to wait for getcmdr.com/latest.json to name the version")
 	if sub == "evidence" {
 		fs.StringVar(&cfg.outDir, "out", "", "where to collect (into OUT/vX.Y.Z; default: a fresh temp dir)")
