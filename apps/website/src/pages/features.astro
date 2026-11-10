@@ -3,259 +3,365 @@ import Layout from '../layouts/Layout.astro'
 import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import DownloadButton from '../components/DownloadButton.astro'
+import FeatureCards from '../components/FeatureCards.astro'
 import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
 import PageHeader from '../components/PageHeader.astro'
+import ProductClip from '../components/ProductClip.astro'
+import ShowcaseClipRow from '../components/ShowcaseClipRow.astro'
+import ShowcaseSection from '../components/ShowcaseSection.astro'
 import StatusPill from '../components/StatusPill.astro'
 import Icon from '../components/icons/Icon.astro'
-import type { IconName } from '../components/icons/icon-map'
-import { features, type Feature } from '../lib/feature-status'
+import { cardsByChapter, chapterLabels } from '../lib/features-page'
+import { statusToDefinitionMap, type FeatureStatus } from '../lib/feature-status'
 
 /**
- * Presentation map over the repo-root `feature-status.json`: four tiers (Core, Connect,
- * Indexing, AI), each a bento grid. Each card carries a cyan status pill, plus a yellow sub-category
- * chip when it says something the tier heading doesn't; flagship cards span two columns
- * with a trimmed blurb, the rest render the JSON's honest one-line note. The completeness
- * check below fails the build when the JSON and this map drift, so a new feature can't
- * silently miss the page.
+ * The feature tour: one chapter per area, each a `ShowcaseSection` with its clips (every slug in
+ * `CLIP_SLUGS` appears once, next to the feature it shows), then that area's cards from
+ * `feature-status.json`. Card placement and the JSON completeness check: `src/lib/features-page.ts`.
  */
-const tierOrder = ['Core', 'Connect', 'Indexing', 'AI'] as const
-type Tier = (typeof tierOrder)[number]
-
-const tierMeta: Record<Tier, { id: string; title: string; description: string }> = {
-    Core: {
-        id: 'core',
-        title: 'Core',
-        description: 'The file manager itself: two panes, safe file operations, and everything you reach for daily.',
-    },
-    Connect: {
-        id: 'connect',
-        title: 'Connect',
-        description: 'Network shares, servers, and phones open like any local folder, with the same fast file operations.',
-    },
-    Indexing: {
-        id: 'indexing',
-        title: 'Indexing',
-        description: 'Cmdr knows your whole drive, so finding a file takes a second instead of a coffee break.',
-    },
-    AI: {
-        id: 'ai',
-        title: 'AI',
-        description: 'A model that runs on your Mac, plus your own cloud keys when you want a smarter one.',
-    },
-}
-
-interface CardSpec {
-    id: string
-    tier: Tier
-    /** Sub-category chip; skipped when it just repeats the tier heading. */
-    category: 'Find stuff' | 'AI' | 'Core' | 'Keyboard' | 'Connect' | 'Extras' | 'Indexing'
-    icon: IconName
-    flagship?: boolean
-    /** Marketing title override; defaults to the JSON name. */
-    title?: string
-    /** Flagship-only: 2-3 sentence blurb. Non-flagship cards render the JSON note. */
-    blurb?: string
-}
-
-const cards: CardSpec[] = [
-    // Core: the flagship up top, then files, navigation, keyboard, extras.
-    {
-        id: 'file-explorer',
-        tier: 'Core',
-        category: 'Core',
-        icon: 'folder',
-        flagship: true,
-        title: 'Dual-pane file explorer',
-        blurb: 'Two panes, virtual scrolling through 100k+ files, live file watching, and Quick Look. The heart of the app.',
-    },
-    { id: 'file-operations', tier: 'Core', category: 'Core', icon: 'copy' },
-    { id: 'file-viewer', tier: 'Core', category: 'Core', icon: 'eye' },
-    { id: 'tabs', tier: 'Core', category: 'Core', icon: 'app-window' },
-    { id: 'drag-and-drop', tier: 'Core', category: 'Core', icon: 'pointer' },
-    { id: 'operation-log', tier: 'Core', category: 'Core', icon: 'history' },
-    { id: 'multi-rename', tier: 'Core', category: 'Core', icon: 'replace-all' },
-    { id: 'archives', tier: 'Core', category: 'Core', icon: 'file-archive' },
-    { id: 'select-files', tier: 'Core', category: 'Core', icon: 'list-checks' },
-    { id: 'go-to-path', tier: 'Core', category: 'Core', icon: 'navigation' },
-    { id: 'keyboard-shortcuts', tier: 'Core', category: 'Keyboard', icon: 'keyboard' },
-    { id: 'command-palette', tier: 'Core', category: 'Keyboard', icon: 'square-chevron-right' },
-    { id: 'git-browser', tier: 'Core', category: 'Extras', icon: 'git-branch' },
-    { id: 'download-notifications', tier: 'Core', category: 'Extras', icon: 'bell' },
-    { id: 'plugins', tier: 'Core', category: 'Extras', icon: 'puzzle' },
-    { id: 'windows-linux', tier: 'Core', category: 'Extras', icon: 'monitor' },
-    // Connect: network shares, then servers, then phones, then what's planned.
-    { id: 'network-drives', tier: 'Connect', category: 'Connect', icon: 'server' },
-    { id: 'sftp', tier: 'Connect', category: 'Connect', icon: 'square-terminal' },
-    { id: 'webdav', tier: 'Connect', category: 'Connect', icon: 'globe' },
-    { id: 'nfs', tier: 'Connect', category: 'Connect', icon: 'folder' },
-    { id: 's3', tier: 'Connect', category: 'Connect', icon: 'container' },
-    { id: 'restic-backups', tier: 'Connect', category: 'Connect', icon: 'database' },
-    { id: 'android-devices', tier: 'Connect', category: 'Connect', icon: 'smartphone' },
-    { id: 'android-adb', tier: 'Connect', category: 'Connect', icon: 'usb' },
-    { id: 'more-file-systems', tier: 'Connect', category: 'Connect', icon: 'cloud' },
-    // Indexing: two flagships, each paired with a small card that fills the third column.
-    {
-        id: 'full-disk-index',
-        tier: 'Indexing',
-        category: 'Indexing',
-        icon: 'database',
-        flagship: true,
-        title: 'Live full-disk index',
-        blurb: "Indexes your whole drive in 2–4 minutes, then stays current by watching real-time file system events. Folder sizes show right in the listing, and a background verifier makes sure they don't drift.",
-    },
-    { id: 'image-search', tier: 'Indexing', category: 'Find stuff', icon: 'scan-text' },
-    {
-        id: 'search',
-        tier: 'Indexing',
-        category: 'Find stuff',
-        icon: 'search',
-        flagship: true,
-        title: 'Smart search',
-        blurb: 'Find files like "that PDF contract from last month". AI turns it into filters, see hits in a second.',
-    },
-    { id: 'disk-space-visualizer', tier: 'Indexing', category: 'Indexing', icon: 'chart-pie' },
-    // AI: the local model up top, then what it powers.
-    {
-        id: 'local-ai',
-        tier: 'AI',
-        category: 'AI',
-        icon: 'sparkles',
-        flagship: true,
-        title: 'Private LLM included',
-        blurb: 'Download a free 3B language model (about 2 GB) that runs on your Mac. Nothing leaves your machine. For a smarter AI, connect OpenAI/Anthropic/Google/etc., or any OpenAI-compatible endpoint.',
-    },
-    { id: 'ask-cmdr', tier: 'AI', category: 'AI', icon: 'messages-square' },
-    { id: 'ai-rename', tier: 'AI', category: 'AI', icon: 'brain' },
-    { id: 'ai-batch', tier: 'AI', category: 'AI', icon: 'zap' },
-    { id: 'ai-tell-me', tier: 'AI', category: 'AI', icon: 'message-circle-question-mark' },
+const jumpLinks = [
+    { href: '#file-ops', label: 'File operations' },
+    { href: '#browse', label: 'Browsing' },
+    { href: '#connect', label: 'Connections' },
+    { href: '#rename-and-view', label: 'Rename and view' },
+    { href: '#find', label: 'Search' },
+    { href: '#ai', label: 'AI' },
+    { href: '#polish', label: 'Polish' },
+    { href: '#planned', label: 'Coming next' },
 ]
 
-// Completeness check: the page must place every JSON feature exactly once.
-const placedIds = cards.map((card) => card.id)
-const jsonIds = features.map((feature) => feature.id)
-const missing = jsonIds.filter((id) => !placedIds.includes(id))
-const unknown = placedIds.filter((id) => !jsonIds.includes(id))
-const dupes = placedIds.filter((id, i) => placedIds.indexOf(id) !== i)
-if (missing.length || unknown.length || dupes.length) {
-    throw new Error(
-        `features page out of sync with feature-status.json. Missing: [${missing.join(', ')}], unknown: [${unknown.join(', ')}], duplicated: [${dupes.join(', ')}]`,
-    )
-}
+const statuses: FeatureStatus[] = ['stable', 'beta', 'alpha', 'planned']
 
-const idToFeatureMap = new Map<string, Feature>(features.map((feature) => [feature.id, feature]))
-const resolved = cards.map((card) => {
-    const feature = idToFeatureMap.get(card.id)!
-    return { ...card, feature, title: card.title ?? feature.name }
-})
-
-const tiers = tierOrder.map((tier) => ({
-    ...tierMeta[tier],
-    cards: resolved.filter((card) => card.tier === tier),
-}))
+const extras = [
+    { title: 'Compare folders', text: 'Press ⇧F2 and each pane selects the files the other lacks, plus the newer copies.' },
+    { title: 'Quick Look', text: 'Press ⇧Space for the macOS preview of any file.' },
+    { title: 'Favorites', text: 'Pin folders in the volume switcher and the Dock menu, on servers and phones too.' },
+    { title: 'From the terminal', text: 'Type `cmdr <path>` to open a folder in Cmdr, in either pane or a new tab.' },
+    { title: 'No Mac clutter', text: 'Leave `.DS_Store` and `._` files behind when you copy, move, or compress.' },
+]
 ---
 
 <Layout
     title="Features - Cmdr"
-    description="Everything Cmdr does and how solid each feature is, in one honest list. Full-disk indexing, on-device AI, keyboard-first navigation, and more."
+    description="Everything Cmdr does, with short clips of the app at work: safe file operations with rollback, SMB, NFS, S3, and phones, multi-rename, a fast viewer, instant search, and optional, private AI. Every feature says how solid it is."
 >
     <Header />
-    <main class="mx-auto max-w-6xl px-6 pt-32 pb-24">
-        <!-- Hero -->
-        <PageHeader title="What Cmdr can do" class="mb-6">
-            Built in Rust, designed around your keyboard. Cmdr is in open beta: every feature carries an honest status
-            pill, and hovering a pill explains what the status means.
-        </PageHeader>
+    <main>
+        <div class="mx-auto max-w-6xl px-6 pt-32">
+            <PageHeader title="Everything Cmdr does" class="mb-8">
+                A fast, keyboard-first two-pane file manager for macOS, built in Rust. Here's the whole tour, with short
+                clips of the app at work. Cmdr is in open beta, so every feature also says how solid it is.
+            </PageHeader>
 
-        <!-- Total Commander switcher callout -->
-        <p class="mb-14 text-sm text-text-tertiary">
-            Switching from Total Commander? See <a href="/blog/total-commander-for-macos" class="link-muted"
-                >how Cmdr compares</a
-            >.
-        </p>
+            <nav aria-label="Feature areas" class="mb-10">
+                <ul class="flex flex-wrap gap-2">
+                    {
+                        jumpLinks.map((link) => (
+                            <li>
+                                <a
+                                    href={link.href}
+                                    class="inline-flex rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm font-medium text-text-secondary no-underline transition-colors hover:border-accent/40 hover:text-text-primary"
+                                >
+                                    {link.label}
+                                </a>
+                            </li>
+                        ))
+                    }
+                </ul>
+            </nav>
 
-        <!-- Four tiers, one bento each: every feature, one card -->
-        {
-            tiers.map((tier) => (
-                <section id={tier.id} class="mb-14 scroll-mt-24 last:mb-0">
-                    <h2 class="text-2xl font-bold tracking-tight text-text-primary">{tier.title}</h2>
-                    <p class="mt-2 mb-6 text-text-secondary">{tier.description}</p>
-                    <div class="grid grid-flow-dense grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {tier.cards.map((card) => (
-                            <article
-                                id={card.id}
-                                class:list={[
-                                    'flex scroll-mt-24 flex-col gap-2 rounded-2xl border bg-surface p-5',
-                                    card.flagship && 'md:col-span-2',
-                                    card.feature.status === 'planned'
-                                        ? 'border-dashed border-border'
-                                        : 'border-border',
-                                ]}
-                            >
-                                <div class="flex items-center gap-2.5">
-                                    <Icon name={card.icon} size={24} />
-                                    <h3 class="text-base font-semibold text-text-primary">
-                                        {card.title}
-                                    </h3>
-                                </div>
-                                <p class="flex-1 text-sm text-text-secondary">
-                                    {card.flagship ? card.blurb : card.feature.note}
-                                </p>
-                                <div class="mt-1 flex flex-wrap items-center gap-2">
-                                    {card.category !== card.tier && (
-                                        <span class="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-accent-text">
-                                            {card.category}
-                                        </span>
-                                    )}
-                                    <StatusPill status={card.feature.status} link={false} />
-                                    {card.feature.issueUrl && (
-                                        <a
-                                            href={card.feature.issueUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            class="text-xs text-accent-text underline underline-offset-2 hover:text-accent-hover"
-                                        >
-                                            Track on GitHub
-                                        </a>
-                                    )}
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                </section>
-            ))
-        }
+            <section aria-labelledby="status-legend-heading" class="rounded-2xl border border-border-subtle bg-surface p-5">
+                <h2 id="status-legend-heading" class="mb-3 text-sm font-semibold text-text-primary">
+                    What the status pills mean
+                </h2>
+                <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {
+                        statuses.map((status) => (
+                            <div class="flex items-start gap-2.5">
+                                <dt class="w-20 shrink-0">
+                                    <StatusPill status={status} link={false} />
+                                </dt>
+                                <dd class="text-sm/snug text-text-secondary">{statusToDefinitionMap[status]}</dd>
+                            </div>
+                        ))
+                    }
+                </dl>
+            </section>
 
-        <p class="mt-10 text-center text-sm text-text-tertiary">
-            Found something rough that's not listed? <a
-                href="https://github.com/getcmdr/cmdr/issues"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-accent-text underline underline-offset-2 hover:text-accent-hover"
-                >Report an issue</a
-            > and it gets fixed faster. For timing, see the <a
-                href="/roadmap"
-                class="text-accent-text underline underline-offset-2 hover:text-accent-hover"
-                >roadmap</a
-            >.
-        </p>
-
-        <!-- Download CTA -->
-        <div class="mt-20 text-center">
-            <h2 class="mb-4 text-2xl font-bold text-text-primary">
-                Wanna see it for yourself? Get Cmdr now.
-            </h2>
-            <p class="mb-8 text-text-secondary">
-                Free for personal use. No signup, no trial period.
+            <p class="mt-6 text-sm text-text-tertiary">
+                Switching from Total Commander? See <a href="/blog/total-commander-for-macos" class="link-muted"
+                    >how Cmdr compares</a
+                >.
             </p>
-            <div class="mx-auto max-w-xs">
-                <DownloadButton variant="card" class="w-full" />
-            </div>
-            <p class="mt-3 text-sm text-text-tertiary">macOS only · Source-available (BSL 1.1)</p>
         </div>
 
-        <!-- Newsletter -->
-        <div class="mt-16">
-            <NewsletterInlineWrapper label="Get notified about new features and releases:" />
+        <ShowcaseSection id="file-ops" eyebrow={chapterLabels['file-ops']} title="Move big folders without the worry" layout="stacked">
+            <p>
+                Accurate progress, honest ETAs, and pause, resume, or cancel at any moment. Cmdr logs every copy, move,
+                delete, and rename, so you can roll one back, even days later.
+            </p>
+            <p class="text-base text-text-tertiary">
+                Details: <a href="/data-safety">How Cmdr keeps your files safe</a>
+            </p>
+            <div slot="media" class="space-y-16 md:space-y-20">
+                <ShowcaseClipRow title="Pause, resume, roll back">
+                    <p>
+                        Pause a big copy, resume it when you're ready, and when you change your mind, roll the whole
+                        thing back from the operation log.
+                    </p>
+                    <ProductClip
+                        slot="clip"
+                        slug="copy-rollback"
+                        label="Copying a folder in Cmdr: the copy pauses, resumes, finishes, and then gets rolled back from the operation log."
+                        caption="Copy, pause, resume, then roll back"
+                    />
+                </ShowcaseClipRow>
+                <ShowcaseClipRow title="Queue them up" flip>
+                    <p>
+                        Send a transfer to the background and keep browsing. Start another, and another: Cmdr runs them
+                        one after the other, and you can pause, resume, and reorder the queue.
+                    </p>
+                    <ProductClip
+                        slot="clip"
+                        slug="ops-queue"
+                        label="Five folder copies queued in Cmdr's Operations window, running in the background one after the other until all are done."
+                        caption="Five backgrounded copies finishing in turn"
+                    />
+                </ShowcaseClipRow>
+            </div>
+            <FeatureCards slot="after" cards={cardsByChapter['file-ops']} class="mt-16" />
+        </ShowcaseSection>
+
+        <ShowcaseSection id="browse" eyebrow={chapterLabels.browse} title="Two panes, built around your keyboard" layout="stacked">
+            <p>
+                Total Commander keys work out of the box (F5 copies, F6 moves, F8 deletes), and every shortcut is yours
+                to remap. Cmdr lists 50,000 files near-instantly, and the mouse works everywhere, too.
+            </p>
+            <p>
+                <a
+                    href="/demo/"
+                    class="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-2 text-base font-medium text-accent-text! no-underline! transition-colors hover:bg-accent/20"
+                >
+                    <Icon name="play" size={18} />
+                    Try it in your browser
+                </a>
+            </p>
+            <div slot="after" class="mx-auto max-w-6xl">
+                <FeatureCards cards={cardsByChapter.browse} />
+                <h3 class="mt-12 mb-4 text-lg font-semibold text-text-primary">Also in the box</h3>
+                <ul class="grid gap-x-8 gap-y-3 text-sm/relaxed text-text-secondary sm:grid-cols-2 lg:grid-cols-3">
+                    {
+                        extras.map((extra) => (
+                            <li class="flex gap-2.5">
+                                <Icon name="star" size={16} class="mt-1 shrink-0" />
+                                <span>
+                                    <strong class="font-semibold text-text-primary">{extra.title}:</strong>{' '}
+                                    {extra.text.split('`').map((part, i) => (i % 2 ? <code>{part}</code> : part))}
+                                </span>
+                            </li>
+                        ))
+                    }
+                </ul>
+            </div>
+        </ShowcaseSection>
+
+        <ShowcaseSection
+            id="connect"
+            eyebrow={chapterLabels.connect}
+            title="Your NAS, servers, and phone, like any folder"
+            layout="stacked"
+        >
+            <p>
+                SMB, NFS, SFTP, WebDAV, S3 buckets, Android phones, Git repos, restic backups, and archives all open in
+                a pane, with the same fast file operations as your local disk.
+            </p>
+            <div slot="media" class="space-y-16 md:space-y-20">
+                <ShowcaseClipRow title="NAS, NFS shares, and S3 buckets">
+                    <p>
+                        Cmdr has its own SMB client, 4–200x faster than the one macOS uses. NFS shares open with no
+                        system mount, and Cmdr tells you what an S3 upload will cost before you copy.
+                    </p>
+                    <ProductClip
+                        slot="clip"
+                        slug="reach-network"
+                        label="Adding an SMB server, an NFS share, and an S3 bucket in Cmdr, then browsing each one in a pane."
+                        caption="Adding an SMB server, then browsing an NFS share and an S3 bucket"
+                    />
+                </ShowcaseClipRow>
+                <ShowcaseClipRow title="Git repos, backups, and phones" flip>
+                    <p>
+                        Browse a repo's history, branches, and stashes as folders, copy files out of any restic snapshot,
+                        and open your Android phone over USB, up to 4x faster than Android File Transfer.
+                    </p>
+                    <ProductClip
+                        slot="clip"
+                        slug="reach-devices"
+                        label="Browsing a git repo's history, a restic backup's snapshots, and an Android phone over MTP, each as folders in Cmdr."
+                        caption="Git history, restic snapshots, and an Android phone"
+                    />
+                </ShowcaseClipRow>
+            </div>
+            <FeatureCards slot="after" cards={cardsByChapter.connect} class="mt-16" />
+        </ShowcaseSection>
+
+        <ShowcaseSection id="rename-and-view" eyebrow={chapterLabels['rename-and-view']} title="Rename in bulk, open anything" layout="stacked">
+            <p>
+                Rename a whole batch with a live preview, and look inside any file, however big, without leaving the
+                keyboard.
+            </p>
+            <div slot="media" class="space-y-16 md:space-y-20">
+                <ShowcaseClipRow title="Multi-rename">
+                    <p>
+                        Patterns, counters, search and replace, case changes, and photo and music details like capture
+                        dates. Every row previews live before anything changes, and one Undo reverses the whole batch.
+                    </p>
+                    <ProductClip
+                        slot="clip"
+                        slug="multi-rename"
+                        label="Cmdr's multi-rename window: a pattern with a counter renames a batch of photos, with the new names previewed live."
+                        caption="Renaming a batch of photos with a pattern and a counter"
+                    />
+                </ShowcaseClipRow>
+                <ShowcaseClipRow title="The viewer" flip>
+                    <p>
+                        Text, Markdown, images, PDFs, and binary and hex views, with search and word wrap. It opens a 10
+                        GB file in about a second.
+                    </p>
+                    <ProductClip
+                        slot="clip"
+                        slug="viewer"
+                        label="Cmdr's viewer opening an image file and a Markdown file in different views."
+                        caption="Opening an image, then a Markdown file"
+                    />
+                </ShowcaseClipRow>
+            </div>
+            <FeatureCards slot="after" cards={cardsByChapter['rename-and-view']} columns={2} class="mt-16" />
+        </ShowcaseSection>
+
+        <ShowcaseSection id="find" eyebrow={chapterLabels.find} title="Find any file in a second">
+            <p>
+                Cmdr indexes your drive in the background, starting with the folders you use most, and stays current
+                through file system events. That's why folder sizes show right in the listing, and why search answers in
+                well under a second.
+            </p>
+            <p>
+                Search by name, filters, or regex. With AI on, type “my tax report from last year” and Cmdr turns it into
+                filters.
+            </p>
+            <ProductClip
+                slot="media"
+                slug="search"
+                label="Searching in Cmdr by typing a plain-language request, which turns into filters and a list of matching files."
+                caption="Searching with AI off, then on"
+            />
+            <FeatureCards slot="after" cards={cardsByChapter.find} class="mt-16" />
+        </ShowcaseSection>
+
+        <ShowcaseSection id="ai" eyebrow={chapterLabels.ai} title="AI that helps, only if you want it" flip>
+            <p>
+                Chat with Cmdr about your files, rename by describing what you want, or say “clean up my Downloads
+                folder” and go through each suggested move.
+            </p>
+            <p>
+                The agent suggests, you decide: anything that changes, opens, or deletes files waits for your yes, and
+                you can roll it back later.
+            </p>
+            <ul
+                slot="media"
+                class="space-y-5 rounded-2xl border border-border bg-surface p-6 text-base/relaxed text-text-secondary md:p-8"
+            >
+                <li class="flex gap-3">
+                    <Icon name="toggle-left" size={22} class="mt-0.5 shrink-0" />
+                    <span
+                        ><strong class="font-semibold text-text-primary">Off by default.</strong> With AI off, Cmdr is a
+                        complete two-pane file manager, nothing more.</span
+                    >
+                </li>
+                <li class="flex gap-3">
+                    <Icon name="laptop-minimal-check" size={22} class="mt-0.5 shrink-0" />
+                    <span
+                        ><strong class="font-semibold text-text-primary">Can stay 100% on your Mac.</strong> Download a
+                        free 3B model (about 2 GB) that runs on Apple Silicon. Nothing leaves your machine.</span
+                    >
+                </li>
+                <li class="flex gap-3">
+                    <Icon name="sparkles" size={22} class="mt-0.5 shrink-0" />
+                    <span
+                        ><strong class="font-semibold text-text-primary">Or bring your own key.</strong> OpenAI,
+                        Anthropic, Google Gemini, Mistral, OpenRouter, and more, or any OpenAI-compatible endpoint like
+                        Ollama or LM Studio. Nothing reaches a cloud AI until you allow it.</span
+                    >
+                </li>
+            </ul>
+            <FeatureCards slot="after" cards={cardsByChapter.ai} columns={2} class="mt-16" />
+        </ShowcaseSection>
+
+        <ShowcaseSection id="polish" eyebrow="Polish" title="Feels at home on your Mac" layout="stacked">
+            <p>
+                Cmdr follows your Mac's theme, accent color, and accessibility settings like motion, zoom, and contrast.
+                It works with VoiceOver, with the keyboard only or the mouse only, and keeps WCAG AA contrast everywhere.
+            </p>
+            <p class="text-base text-text-tertiary">
+                Details: <a href="/trust/accessibility-guide">Accessibility guide</a>
+            </p>
+            <div slot="media" class="space-y-16 md:space-y-20">
+                <ShowcaseClipRow title="Speaks your language">
+                    <p>Translated into 17 languages. Pick one in Settings and the whole app switches on the spot.</p>
+                    <ProductClip
+                        slot="clip"
+                        slug="language-switch"
+                        label="Switching Cmdr's language in Settings: the whole interface changes language on the spot."
+                        caption="Switching languages on the fly"
+                    />
+                </ShowcaseClipRow>
+                <ShowcaseClipRow title="Make it yours" flip>
+                    <p>
+                        Tune zoom and density, how file and folder sizes show, navigation, drive indexing, your AI
+                        provider, and network shares, all in one Settings window.
+                    </p>
+                    <ProductClip
+                        slot="clip"
+                        slug="settings"
+                        label="Paging through Cmdr's Settings window: zoom and density, file and folder sizes, navigation, drive indexing, the AI provider, Ask Cmdr, and network shares."
+                        caption="A quick tour of Settings"
+                    />
+                </ShowcaseClipRow>
+            </div>
+        </ShowcaseSection>
+
+        <ShowcaseSection id="planned" eyebrow={chapterLabels.planned} title="On the roadmap" layout="stacked">
+            <p>
+                Not built yet, but on the way. The <a href="/roadmap">roadmap</a> has the timing, and a thumbs-up on a <a
+                    href="https://github.com/getcmdr/cmdr/issues?q=is%3Aopen+label%3Aenhancement+sort%3Areactions-%2B1-desc"
+                    target="_blank"
+                    rel="noopener noreferrer">GitHub issue</a
+                > counts as a vote.
+            </p>
+            <FeatureCards slot="after" cards={cardsByChapter.planned} />
+        </ShowcaseSection>
+
+        <div class="mx-auto max-w-6xl px-6 pb-24">
+            <p class="text-center text-sm text-text-tertiary">
+                Found something rough that's not listed? <a
+                    href="https://github.com/getcmdr/cmdr/issues"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-accent-text underline underline-offset-2 hover:text-accent-hover">Report an issue</a
+                > and it gets fixed faster.
+            </p>
+
+            <div class="mt-20 text-center">
+                <h2 class="mb-4 text-2xl font-bold text-text-primary">Wanna see it for yourself? Get Cmdr now.</h2>
+                <p class="mb-8 text-text-secondary">Free for personal use. No signup, no trial period.</p>
+                <div class="mx-auto max-w-xs">
+                    <DownloadButton variant="card" class="w-full" />
+                </div>
+                <p class="mt-3 text-sm text-text-tertiary">macOS only · Source-available (BSL 1.1)</p>
+            </div>
+
+            <div class="mt-16">
+                <NewsletterInlineWrapper label="Get notified about new features and releases:" />
+            </div>
         </div>
     </main>
     <Footer />

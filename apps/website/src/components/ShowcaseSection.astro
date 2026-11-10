@@ -46,6 +46,17 @@ const headingId = `${id}-heading`
 </section>
 
 <style>
+    /* A hairline between consecutive sections, faded at the edges, so a run of them reads as one tour. */
+    .showcase + .showcase::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: linear-gradient(to right, transparent, var(--color-border), transparent);
+    }
+
     /* Inline links in the pitch: muted, with the accent on hover, like `.link-muted`. */
     .showcase-body :global(a) {
         color: var(--color-text-primary);

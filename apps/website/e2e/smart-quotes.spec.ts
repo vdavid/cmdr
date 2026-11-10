@@ -8,8 +8,9 @@ import { test, expect } from '@playwright/test'
 // page.textContent decodes entities, so a straight ASCII quote in the assertions below means the
 // integration missed it; a curly quote means it caught it.
 
-const STRAIGHT = 'Find files like "that PDF contract from last month"'
-const CURLY = 'Find files like “that PDF contract from last month”'
+// The AI file organization card's note, from `feature-status.json`, rendered by `FeatureCards.astro`.
+const STRAIGHT = 'Say "clean up my Downloads folder" and approve'
+const CURLY = 'Say “clean up my Downloads folder” and approve'
 
 test.describe('Smart quotes', () => {
   test('/features curls quotes that reached the HTML as entities', async ({ page }) => {

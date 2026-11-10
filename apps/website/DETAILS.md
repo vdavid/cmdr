@@ -207,9 +207,14 @@ was deleted.)
   owns.
 - **RSS autodiscovery**: `<link>` tag in `Layout.astro`
 - **Agent-facing endpoints**: `src/pages/llms.txt.ts` (concise) and `llms-full.txt.ts` (detailed) describe Cmdr for AI
-  agents; each blog post also has a Markdown mirror at `/blog/{slug}/index.md`. Keep the llms files in sync when product
-  facts (pricing, features, system requirements) change. nginx serves `.md` as `text/markdown` via a dedicated location
-  block in `nginx.conf`.
+  agents; each blog post also has a Markdown mirror at `/blog/{slug}/index.md`. `llms-full.txt`'s feature list is
+  generated from `feature-status.json` (grouped by `src/lib/features-page.ts`), so it follows the JSON on its own; keep
+  the rest of both files in sync by hand when product facts (pricing, features, system requirements) change.
+- **`/features`**: one `ShowcaseSection` chapter per area, each with its product clips (every `CLIP_SLUGS` slug once)
+  and then that area's `FeatureCards` (masonry columns, since the notes run from one line to ten). Chapter placement and
+  the JSON completeness check live in `src/lib/features-page.ts`; the hairline between chapters comes from
+  `ShowcaseSection` itself, so the landing tour and this page share it. nginx serves `.md` as `text/markdown` via a
+  dedicated location block in `nginx.conf`.
 - **Sample MDM files**: `public/mdm/` holds the sample `.mobileconfig` profile and the bare `.plist` linked from
   `/trust#mdm`. nginx's `/mdm/` location gives them `application/x-apple-aspen-config` and `application/x-plist` (the
   default mime table knows neither). The page's key list renders from `managedPreferenceKeys` in `src/lib/trust-mdm.ts`.
@@ -238,8 +243,9 @@ Using it:
 
 - `<Icon name="rocket" size={40} />`. Default gold comes from `.icon { color: var(--color-accent) }` plus Lucide's
   `currentColor` stroke; recolor by passing a `class` (e.g. a Tailwind `text-text-secondary`).
-- When a data array feeds `<Icon name={…}>` (the `features.astro` grid, the `Showcase.astro` reach strip), type its
-  `icon` field as `IconName` via `satisfies { …; icon: IconName }[]` so a bad name is a compile error at the data site.
+- When a data array feeds `<Icon name={…}>` (the `src/lib/features-page.ts` card map, the `Showcase.astro` reach strip),
+  type its `icon` field as `IconName` via `satisfies { …; icon: IconName }[]` so a bad name is a compile error at the
+  data site.
 - **Size is applied as CSS `width`/`height`, never as width/height attributes.** Lucide glyphs already ship
   `width="1.2em" height="1.2em"`; passing width/height props too emits duplicate attributes, which `html-validate`'s
   `no-dup-attr` rejects (it runs over `dist/**/*.html`). `Icon.astro` sizes via a scoped `.icon :global(svg)` rule.

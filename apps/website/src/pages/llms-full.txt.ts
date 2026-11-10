@@ -1,6 +1,7 @@
 import type { APIContext } from 'astro'
 import { getCollection } from 'astro:content'
 import { version, dmgUrls } from '../lib/release'
+import { CHAPTER_IDS, cardsByChapter, chapterLabels } from '../lib/features-page'
 import latestRelease from '../../public/latest.json'
 
 export async function GET(context: APIContext) {
@@ -11,6 +12,14 @@ export async function GET(context: APIContext) {
   const blogLines = sortedPosts
     .map((post) => `- [${post.data.title}](${site}/blog/${post.id}/): ${post.data.description}`)
     .join('\n')
+
+  // Generated from `feature-status.json`, grouped like the features page, so it can't go stale.
+  const featureLines = CHAPTER_IDS.map((chapter) => {
+    const items = cardsByChapter[chapter].map(
+      (card) => `- **${card.title}** (${card.feature.status}): ${card.feature.note}`,
+    )
+    return `### ${chapterLabels[chapter]}\n\n${items.join('\n')}`
+  }).join('\n\n')
 
   const releaseNotes = latestRelease.notes
     .replace(/\[([a-f0-9]{7})\]\(https:\/\/github\.com\/[^)]+\)/g, '$1')
@@ -23,7 +32,7 @@ export async function GET(context: APIContext) {
 
 > The fastest two-pane file manager for macOS. Every folder sized. Every file found.
 
-Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS (Linux in alpha), built with Rust, Tauri 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search and keyboard-driven everything. AI features (smart search, natural language rename, batch operations) are in active development. Free for personal use, source-available under BSL 1.1.
+Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS (Linux in alpha), built with Rust, Tauri 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search and keyboard-driven everything. Optional AI features (natural-language search, Ask Cmdr chat, AI rename, and AI file organization) are off by default and can run fully on-device. Free for personal use, source-available under BSL 1.1.
 
 Current version: ${version}
 Release date: ${latestRelease.pub_date.split('T')[0]}
@@ -47,27 +56,9 @@ Release date: ${latestRelease.pub_date.split('T')[0]}
 
 ## Features
 
-### Core features
+Every feature with its status (stable, beta, alpha, or planned) and an honest one-line note, the same list the [features page](${site}/features/) shows beside its product clips. AI features are optional and off by default.
 
-- **Live full-disk index**: Indexes your entire drive once in 2–4 minutes. Then stays current forever, even across restarts. Shows precise, up-to-date folder sizes. Instant search.
-- **Blazing fast**: Built in Rust. Opens a 100k-file folder in 4 seconds with icons, sizes, and dates. Startup is near-instant.
-- **Keyboard-first**: Navigate, select, copy, move without touching your mouse. Two panes, tabs, command palette. Every action has a keyboard shortcut, and you can customize them all.
-
-### AI features (in active development)
-
-- **Smart search** (rough around the edges): Find files by describing them in plain English: "that PDF contract from last month" or "screenshots with error messages." No need to remember exact file names.
-- **Natural language rename** (coming soon): Type "make these lowercase and add date prefix" and watch it happen. No regex, no scripts, just words. Cmdr understands your intent and renames files accordingly.
-- **AI batch operations** (coming soon): Organize hundreds of files with a single command. Tell Cmdr to "sort these into folders by project name" and it figures out the rest.
-- **Tabs**: Multiple tabs per pane with pinning, persistence, and per-tab sorting.
-- **File viewer**: Built-in viewer for text files with search, syntax highlighting, and support for very large files.
-- **Drive indexing**: Index your drives for fast search with an efficient integer-keyed database schema.
-- **Clipboard**: Full clipboard support with Finder interop. Copy, cut, and paste files between Cmdr and Finder.
-- **Delete and trash**: Trash by default, permanent delete with confirmation. Batch operations with progress and cancellation.
-- **Network shares**: Connect to SMB network shares with saved credentials, mDNS discovery, and timeout protection.
-- **Disk space display**: See free space per volume in the status bar and volume dropdown.
-- **Custom tooltips**: Glass-effect tooltips with shortcut badges and smart positioning.
-- **Accent color**: Choose between macOS system accent or Cmdr gold, with optional gold folder icons.
-- **Command palette**: Quick access to every action in the app.
+${featureLines}
 
 ## Tech stack
 

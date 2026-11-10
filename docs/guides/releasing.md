@@ -325,8 +325,9 @@ check.
      notes to one honest line, website voice (no "I"/"we"). Schema and consumers: `docs/feature-status.md`. Graduating
      `search` or `select-files` out of `alpha` also means updating the pinned assertion in
      `apps/desktop/src/lib/feature-status.test.ts`. A new feature id also needs its card in
-     `apps/website/src/pages/features.astro`, or the page fails to build; `release.sh` lets that file ride the release
-     commit too. Present the diff for review.
+     `apps/website/src/lib/features-page.ts`, and a `planned` → `alpha` flip moves its card out of the `planned`
+     chapter, or the page fails to build; `release.sh` lets that file (and `features.astro`) ride the release commit
+     too. Present the diff for review.
    - **If either file changed, start the website for David** so he can check `/roadmap` and `/features` live: stop any
      running one first (`lsof -ti tcp:4829 -sTCP:LISTEN | xargs kill`; `astro dev stop` can't see it, since
      `--ignore-lock` skips the lock file), then run `pnpm dev:website` as a background command, confirm the URL answers,

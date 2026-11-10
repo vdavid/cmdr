@@ -1,0 +1,54 @@
+---
+/**
+ * One `/features` chapter's feature cards: icon, name, the JSON's honest one-line note, and the
+ * status pill. Each card carries its feature id as the anchor (`/features#s3`), which the blog and
+ * the landing link to. Planned cards get a dashed border. Placement: `src/lib/features-page.ts`.
+ */
+import Icon from './icons/Icon.astro'
+import StatusPill from './StatusPill.astro'
+import type { PlacedCard } from '../lib/features-page'
+
+interface Props {
+    cards: PlacedCard[]
+    /** Columns from `lg` up; `2` for a chapter whose few cards would look lost in three. */
+    columns?: 2 | 3
+    class?: string
+}
+
+const { cards, columns = 3, class: className } = Astro.props
+---
+
+<!-- Masonry columns rather than a grid: the notes run from one line to ten, and grid rows would
+     leave a short card stranded beside a tall one. -->
+<ul class:list={['mx-auto max-w-6xl gap-4 md:columns-2', columns === 3 && 'lg:columns-3', className]}>
+    {
+        cards.map((card) => (
+            <li
+                id={card.feature.id}
+                class:list={[
+                    'mb-4 flex scroll-mt-24 break-inside-avoid flex-col gap-2.5 rounded-2xl border bg-surface p-5',
+                    card.feature.status === 'planned' ? 'border-dashed border-border' : 'border-border',
+                ]}
+            >
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <Icon name={card.icon} size={22} class="shrink-0" />
+                        <h3 class="text-base font-semibold text-text-primary">{card.title}</h3>
+                    </div>
+                    <StatusPill status={card.feature.status} link={false} />
+                </div>
+                <p class="text-sm/relaxed text-text-secondary">{card.feature.note}</p>
+                {card.feature.issueUrl && (
+                    <a
+                        href={card.feature.issueUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="self-start pt-1 text-xs text-accent-text underline underline-offset-2 hover:text-accent-hover"
+                    >
+                        Track on GitHub
+                    </a>
+                )}
+            </li>
+        ))
+    }
+</ul>

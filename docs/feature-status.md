@@ -39,7 +39,7 @@ bugs; stable: well-tested, mature; planned: not built yet). Surface rules:
 
 - `alpha` / `beta`: uppercase badge in the app (dialog titles, command palette rows) and a pill on the website.
 - `stable`: **no badge in the app** (`getBadgeStatus` returns nothing). The website DOES show a quiet "Stable" pill on
-  feature cards and in the `/features#status` list.
+  feature cards on `/features`.
 - `planned`: website only; the app never references planned features.
 
 The whole app is in open beta; these statuses are relative to that baseline. "Stable" means stable within the open beta,
@@ -51,8 +51,11 @@ not "1.0 frozen".
   - `src/lib/feature-status.ts`: typed loader + pill labels + `getStatusTooltip`.
   - `src/components/StatusPill.astro`: the shared pill (label + definition tooltip), used on the homepage feature cards
     and the features page.
-  - `src/pages/features.astro`: rich feature sections with pills, plus the compact full list at `#status`. The old
-    `/feature-status` page merged into it; `astro.config.mjs` redirects the old URL.
+  - `src/pages/features.astro`: the feature tour, one chapter per area with its product clips, then that area's cards
+    (name, note, pill) from `FeatureCards.astro`. Which feature sits in which chapter is
+    `apps/website/src/lib/features-page.ts`, whose build-time check fails on a feature that's missing, unknown,
+    duplicated, or planned outside the "Coming next" chapter (so a `planned` → `alpha` flip means moving its card). The
+    old `/feature-status` page merged into it; `astro.config.mjs` redirects the old URL.
 - **Desktop app** (`apps/desktop/`):
   - `src/lib/feature-status.ts`: `getFeatureStatus(id)` + `getBadgeStatus(id)` (alpha/beta only; stable and planned
     return no badge).

@@ -37,12 +37,16 @@ Current version: ${version}
 
 ## Features
 
-- **Live full-disk index**: Indexes your entire drive once in 2–4 minutes. Then stays current forever, even across restarts.
-- **Blazing fast**: Built in Rust. Opens a 100k-file folder in 4 seconds with icons, sizes, and dates.
-- **Keyboard-first**: Navigate, select, copy, move without touching your mouse. Two panes, tabs, command palette.
-- **Smart search** (rough around the edges): Find files by describing them: "that PDF contract from last month" or "screenshots with error messages."
-- **Natural language rename** (coming soon): Type "make these lowercase and add date prefix" and watch it happen. No regex, no scripts.
-- **AI batch operations** (coming soon): Organize hundreds of files with a single command. "Sort these into folders by project name."
+The full tour, with clips and an honest status (stable, beta, alpha, planned) per feature: ${site}/features/
+
+- **File operations**: Copy, move, delete, and rename with accurate progress and ETAs, pause, resume, cancel, and a background queue. An operation log records every operation, and any of them can be rolled back, even days later.
+- **Keyboard-first two panes**: Tabs, a command palette, Total Commander keys (F5 copy, F6 move, F8 delete), every shortcut remappable, full mouse support too.
+- **Connections**: SMB network drives over Cmdr's own client, NFS without a system mount, SFTP, WebDAV, S3-compatible buckets with cost estimates, Android phones over MTP and ADB, Git history as folders, restic backups, and zip, tar, and 7z archives, all browsable like local folders.
+- **Multi-rename**: Patterns, counters, search and replace, case changes, and photo and music details, with a live preview and one-step Undo.
+- **File viewer**: Text, Markdown, images, PDFs, binary, and hex views, with search; opens 10+ GB files instantly.
+- **Full-disk index and search**: A live local index powers folder sizes in the listing and search that answers in well under a second, plus on-device image search.
+- **Optional AI** (off by default): A free on-device model or your own provider key. Natural-language search, Ask Cmdr chat about your files, AI rename, and AI file organization; anything that changes files waits for approval.
+- **Polish**: Follows macOS theme and accessibility settings, works with VoiceOver, translated into 17 languages.
 
 ## Pricing
 

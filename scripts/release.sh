@@ -44,13 +44,14 @@ RELEASE_BRANCH="release/$TAG"
 RELEASE_SUBJECT="chore(release): $TAG"
 # The release-prep edits (docs/guides/releasing.md § The release procedure, steps 3–5), left
 # uncommitted for this script: the changelog, the roadmap (content in roadmap.ts, layout in
-# roadmap.astro), the feature-status source of truth (plus the features page, which needs a card for
-# every new feature id or it fails the build), and the security advisory list (its new entry names
+# roadmap.astro), the feature-status source of truth (plus the features page's card map, which needs a
+# card for every new feature id or the page fails the build), and the security advisory list (its new entry names
 # this version, which the `desktop-security-advisories` check only accepts once the bump lands), and
 # the trust pages, whose review stamps `verifiedAgainst` with this version (docs/guides/trust-page-review.md).
 PREP_FILES=(
   CHANGELOG.md
   feature-status.json
+  apps/website/src/lib/features-page.ts
   apps/website/src/pages/features.astro
   apps/website/src/lib/roadmap.ts
   apps/website/src/pages/roadmap.astro

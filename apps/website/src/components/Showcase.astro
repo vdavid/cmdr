@@ -1,8 +1,8 @@
 ---
 /**
   * The landing page's clip-led tour: trust first (nothing else does rollback), then reach, multi-rename,
-  * the viewer, optional AI, and the craft. Every `/features#…` link targets a card id that
-  * `src/pages/features.astro` renders.
+  * the viewer, optional AI, and the craft. Every `/features#…` link targets a feature id (a card
+  * that `FeatureCards.astro` renders) or a chapter id from `src/lib/features-page.ts`.
   */
 import ProductClip from './ProductClip.astro'
 import ShowcaseClipRow from './ShowcaseClipRow.astro'
@@ -224,7 +224,7 @@ const reach = [
     <ShowcaseSection id="follows-your-preferences" eyebrow="Nice and polished" title="Follows your preferences" flip>
         <p>Cmdr respects your Mac’s look (color, theme, etc.) and accessibility (motion, zoom, contrast, etc.) settings.</p>
         <p>It lets you use VoiceOver, works with keyboard only, mouse only, and has WCAG AA+ contrast levels everywhere.</p>
-        <p>Translated to 14 languages. Switch between them without restarting.</p>
+        <p>Translated into 17 languages. Switch between them without restarting.</p>
         <p class="text-base"><a href="/trust/accessibility-guide">Accessibility guide</a></p>
         <ProductClip
                 slot="media"
@@ -234,16 +234,3 @@ const reach = [
         />
     </ShowcaseSection>
 </div>
-
-<style>
-    /* A hairline between sections, faded at the edges so the page reads as one tour. */
-    .showcase-tour > :global(section + section)::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 10%;
-        right: 10%;
-        height: 1px;
-        background: linear-gradient(to right, transparent, var(--color-border), transparent);
-    }
-</style>
