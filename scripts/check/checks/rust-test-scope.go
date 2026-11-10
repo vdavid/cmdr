@@ -266,6 +266,7 @@ var rustTestScopeRules = []rustScopeRule{
 	{Glob: ".github/actions/tauri-linux-deps/**", Effect: scopeAll, Why: "a composite action the Rust lanes use (the system libraries they link)"},
 	{Glob: ".github/actions/wasm-toolchain/**", Effect: scopeAll, Why: "a composite action the Rust lanes use"},
 	{Glob: ".github/actions/rust-test-scope/**", Effect: scopeAll, Why: "computes this very scope in the Rust lanes"},
+	{Glob: ".github/actions/install-mise/**", Effect: scopeAll, Why: "a composite action the Rust lanes use (installs the `.mise.toml` tools they run with)"},
 	{Glob: ".github/actions/lane-marker/**", Effect: scopeNothing, Why: "saves the lane's marker after its last check; no test reads it"},
 	{Glob: "clippy.toml", Effect: scopeNothing, Why: "clippy's config; it changes lints, never a test's outcome"},
 	{Glob: "rustfmt.toml", Effect: scopeNothing, Why: "rustfmt's config; it changes formatting checks, never a test's outcome"},
