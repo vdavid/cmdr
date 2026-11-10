@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { bandSegments, columnPath, lineRuns, shortDay } from './daily-chart.js'
+import { bandSegments, columnPath, lineRuns, shortDay, stackGap } from './daily-chart.js'
+
+describe('stackGap', () => {
+  it('keeps a thin slice at its full, honest height', () => {
+    expect(stackGap(2.5)).toBe(0)
+    expect(stackGap(3.9)).toBe(0)
+  })
+
+  it('separates a slice tall enough to spare a pixel, by one pixel only', () => {
+    expect(stackGap(4)).toBe(1)
+    expect(stackGap(80)).toBe(1)
+  })
+})
 
 describe('lineRuns', () => {
   it('breaks the line at unknown days', () => {

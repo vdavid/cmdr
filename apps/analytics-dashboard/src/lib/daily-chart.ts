@@ -60,6 +60,16 @@ export function shortDay(date: string): string {
   return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
+/**
+ * The surface gap (px) a stacked segment of `height` px gives up to separate it from the one below: 1px,
+ * and only once the segment is at least 4px tall. Regression anchor: a flat 2px gap per segment ate whole
+ * one-visitor slices on a small day (20 countries at ~2.5px each), so the one big grey "Other" slice on top
+ * read as most of the bar while the tooltip said 29%.
+ */
+export function stackGap(height: number): number {
+  return height >= 4 ? 1 : 0
+}
+
 /** An SVG path for a column with 4px-rounded top corners and a square base (the dataviz mark spec). */
 export function columnPath(x: number, y: number, w: number, h: number, radius = 4): string {
   if (h <= 0 || w <= 0) return ''

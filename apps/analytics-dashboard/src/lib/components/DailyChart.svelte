@@ -14,6 +14,7 @@
         labelWidth,
         lineRuns,
         shortDay,
+        stackGap,
         type ColumnSeries,
         type LegendItem,
         type RateBands,
@@ -121,7 +122,7 @@
     }
 
     /**
-     * Stacked segments for column `i`, bottom up, with a 2px surface gap between neighbors. A split column
+     * Stacked segments for column `i`, bottom up, separated by `stackGap`. A split column
      * draws `series` as its left half and `splitSeries` as its right half, 2px apart.
      */
     function segments(i: number): { key: string; fill: string; path: string }[] {
@@ -140,7 +141,7 @@
         known.forEach((s, k) => {
             const value = s.values[i] ?? 0
             const top = y(base + value)
-            const bottom = y(base) - (k > 0 ? 2 : 0)
+            const bottom = y(base) - (k > 0 ? stackGap(y(base) - top) : 0)
             const isTop = k === known.length - 1
             const h = Math.max(0, bottom - top)
             out.push({
