@@ -38,8 +38,12 @@ export const funnelFetchDays = 181
  */
 const legacyWorkerMaxDays = 90
 
-/** How many countries get their own slice (and chip, and color): the top ones by 90-day visitors. */
-export const topCountryCount = 8
+/**
+ * How many countries get their own slice and chip: the top ones by 90-day visitors. At eight, "Other" was
+ * over half of most days, so it's 20; `#lib/country-colors.ts` colors a few more than this, so a country
+ * climbing into the top 20 usually already has its color. Each costs two Umami calls on a cold load.
+ */
+export const topCountryCount = 20
 
 /** The window the top countries are ranked over. */
 const rankingDays = 90

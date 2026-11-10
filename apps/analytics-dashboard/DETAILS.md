@@ -231,7 +231,7 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
   `#lib/feedback-and-errors.ts`.
 - `funnel.ts` (Bearer + Umami + Paddle): the per-UTC-day funnel behind the trend charts and the old table (181 days,
   independent of the picker), joining `/admin/funnel` with Umami per-day visitors, pageviews, and clicks, and Paddle
-  purchases, plus per-country slices for the top eight (§ "Acquisition trends"). Per-day `downloadsByRef` feeds the
+  purchases, plus per-country slices for the top 20 (§ "Acquisition trends"). Per-day `downloadsByRef` feeds the
   "Channels" breakdown (rolled up by `aggregateChannels` in `#lib/funnel.ts`). Cache: `funnel-v3` once for everyone,
   `funnel-extra-v1` per non-top `?country=`.
 - `funnel-countries.ts` (Bearer + Umami): the per-country 30-day table and the chips. Umami `metrics?type=country` for
@@ -360,7 +360,7 @@ association from one section to the next:
   lightness-band and chroma checks on purpose (gold is the house color, grey means "no identity").
 - Countries: eight fixed colors in `#lib/country-colors.ts` (`countryColor(code)`), assigned once to the 90-day top
   eight and never reshuffled by rank; every other country, and "Other", is the grey. The file's header carries the
-  validator run and the near-pair caveat. Re-assign deliberately if the top eight drift far from that list.
+  validator run and the near-pair caveat. Add a color deliberately when an uncolored country climbs into the top 20.
 - Status bands (`COLOR_BAND`): the app's success / warning / danger tokens, only as faint backgrounds behind rate
   charts.
 
@@ -394,21 +394,21 @@ grids stay on fixed 90/30/7 columns.
   section says "Not available yet" in place of zeros. An older worker refuses `?days=181` (400): the source retries at
   90 days. Without `byCountry`, a country view's worker rows say "Not available yet for one country"
   (`countries.worker: false`) rather than show global numbers as one country's.
-- **Country switching is client-side.** `funnel.ts` loads the totals plus a sparse per-country slice for the top eight
+- **Country switching is client-side.** `funnel.ts` loads the totals plus a sparse per-country slice for the top 20
   countries by 90-day Umami visitors (worker installs when Umami is down) in one cached fetch: the worker's per-day
   `byCountry`, and per country one `/pageviews?country=` and one `/events/series?country=` (18 Umami calls with the
   totals and the ranking). The chips are buttons; `#lib/acquisition-by-country.ts` (`rowsForCountry`) derives the rows
   in the browser and the page updates `?country=` with a shallow `goto`, so a reload or a shared link lands on the same
   view. ❌ `page.url` doesn't follow a shallow navigation, so code that rebuilds the URL (the picker, `countryHref`)
-  reads `window.location`. A `?country=` outside the top eight (a link from the country table) is a normal load: the
-  server adds that country's slices (`countries.extra`, cached on its own).
-- **Country stacks.** For all countries, visitors and clicks stack the top eight plus grey "Other" (total minus their
-  sum, so a stack always sums to the day's total; `stackByCountry`), and the tooltip shows each count and its share of
-  the day. New installs draw a split bar: the left half stacks by channel, the right half by channel group first and
-  country within it (`installSplit`), so the channel boundaries line up across both halves. A country's Homebrew segment
-  is a lighter tint of its color (`homebrewTint`), its unknown-channel segment that tint striped. Per-country installs
-  count only installs whose first beat carried a country, so "Other" also holds the ones with none. Filtered to one
-  country, every chart is a single series in that country's color.
+  reads `window.location`. A `?country=` outside the top 20 (a link from the country table) is a normal load: the server
+  adds that country's slices (`countries.extra`, cached on its own).
+- **Country stacks.** For all countries, visitors and clicks stack the top 20 plus grey "Other" (total minus their sum,
+  so a stack always sums to the day's total; `stackByCountry`), and the tooltip shows each count and its share of the
+  day. New installs draw a split bar: the left half stacks by channel, the right half by channel group first and country
+  within it (`installSplit`), so the channel boundaries line up across both halves. A country's Homebrew segment is a
+  lighter tint of its color (`homebrewTint`), its unknown-channel segment that tint striped. Per-country installs count
+  only installs whose first beat carried a country, so "Other" also holds the ones with none. Filtered to one country,
+  every chart is a single series in that country's color.
 - **Plain SVG over uPlot** for these charts: discrete days, an exact number on each column where it fits, a faded today,
   and an exact-values tooltip. The chart is a `role="slider"` over days: arrow keys walk them and each day's readout is
   the `aria-valuetext`.
