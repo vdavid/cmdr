@@ -547,10 +547,12 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                     }
                     None => {
                         drain_promoted(&scope, &mut live_pending_events, &mut reconciler, &writer);
-                        process_live_batch(
-                            &mut live_pending_events, &mut reconciler, &space, &conn,
-                            &writer, &mut live_pending_origins, observers.with_raw_total(live_count),
-                        );
+                        tokio::task::block_in_place(|| {
+                            process_live_batch(
+                                &mut live_pending_events, &mut reconciler, &space, &conn,
+                                &writer, &mut live_pending_origins, observers.with_raw_total(live_count),
+                            );
+                        });
                         if !live_pending_origins.is_empty() {
                             let changed = mark_pending_and_drain(&volume_id, &mut live_pending_origins);
                             lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
@@ -611,10 +613,12 @@ pub(in crate::indexing) async fn run_replay_event_loop(
                 }
 
                 drain_promoted(&scope, &mut live_pending_events, &mut reconciler, &writer);
-                process_live_batch(
-                    &mut live_pending_events, &mut reconciler, &space, &conn,
-                    &writer, &mut live_pending_origins, observers.with_raw_total(live_count),
-                );
+                tokio::task::block_in_place(|| {
+                    process_live_batch(
+                        &mut live_pending_events, &mut reconciler, &space, &conn,
+                        &writer, &mut live_pending_origins, observers.with_raw_total(live_count),
+                    );
+                });
                 if !live_pending_origins.is_empty() {
                     let changed = mark_pending_and_drain(&volume_id, &mut live_pending_origins);
                     lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
