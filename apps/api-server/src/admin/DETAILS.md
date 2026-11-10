@@ -148,7 +148,10 @@ header). The upsert, `julianday` offsets, and the three-window UNION retention q
 
 ## Per-country funnel (`GET /admin/funnel/countries`)
 
-`?days=N` (same bounds as `/admin/funnel`). Returns
+`?days=N` (same bounds as `/admin/funnel`) and an optional `?end=YYYY-MM-DD` (inclusive, no later than today; a
+malformed or future one is a 400): the N UTC days ending `end`, or ending today (partial) without it. That's how the
+dashboard's back/forward steps reach a past window. The `X-Window: since..end` response header names the days answered;
+an older worker ignores `end`, and the missing header is how the dashboard tells. Returns
 `[{ country, serverDownloads, humanInstalls, newInstalls, d7Cohort, d7Retained, d28Cohort, d28Retained }]` over the
 whole window:
 
@@ -156,8 +159,8 @@ whole window:
   family exactly as `FunnelDay.humanInstalls` does.
 - `newInstalls`: installs whose first beat fell in the window, by `install_summary.first_beat_country`.
 - `d7Cohort` / `d7Retained`: of those, the installs in cohorts at least eight days old (first beat before today minus
-  seven), and the ones among them retained at D7. The dashboard divides the two; a young cohort counts in `newInstalls`
-  only.
+  seven, and inside the window), and the ones among them retained at D7. The dashboard divides the two; a young cohort
+  counts in `newInstalls` only.
 - `d28Cohort` / `d28Retained`: the same for D28, cohorts at least 29 days old (first beat before today minus 28). One
   query reads both retention windows.
 - `country` is ISO-2, or `"(unknown)"` for anything else: a NULL install country, and the `unknown` / `XX` / `T1` values

@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { verifyAdminAuth } from '../admin-auth'
 import type { Bindings } from '../types'
 import { resolveUaFamily } from '../user-agent'
-import { buildDateList, invalidDaysMessage, normalizeCountry, parseDays, shiftDate, unknownCountry } from './funnel'
+import { invalidDaysMessage, normalizeCountry, parseDays, shiftDate, unknownCountry } from './funnel'
 
 /**
  * `/admin/funnel/countries`: the funnel's window summed per country, for the dashboard's country table
@@ -60,16 +60,20 @@ export interface CountryRows {
 }
 
 /**
- * The three per-country row sets over `[sinceDate, today]`. A cohort's D7 is knowable once its first
- * beat is before today minus seven (`?2`), its D28 once before today minus 28 (`?3`).
+ * The three per-country row sets over `[sinceDate, endDate]` (`endDate` defaults to `today`). A cohort's
+ * D7 is knowable once its first beat is before today minus seven (`?2`), its D28 once before today minus
+ * 28 (`?3`); both cutoffs also stop at the window's end (`?4`, exclusive), so a past window's cohorts stay
+ * inside it.
  */
 export async function queryCountryRows(
   db: D1Database,
-  window: { sinceDate: string; today: string },
+  window: { sinceDate: string; today: string; endDate?: string },
 ): Promise<CountryRows> {
   const { sinceDate, today } = window
-  const d7Cutoff = shiftDate(today, -7)
-  const d28Cutoff = shiftDate(today, -28)
+  const until = shiftDate(window.endDate ?? today, 1)
+  const earlier = (a: string, b: string) => (a < b ? a : b)
+  const d7Cutoff = earlier(shiftDate(today, -7), until)
+  const d28Cutoff = earlier(shiftDate(today, -28), until)
   const horizon = (offset: number, cutoff: string) =>
     `SELECT s.anal_id, s.first_beat_country AS country, ${String(offset)} AS dayOffset
        FROM install_summary s
@@ -82,10 +86,10 @@ export async function queryCountryRows(
       .prepare(
         `SELECT country, ua_family AS uaFamily, user_agent AS userAgent, COUNT(*) AS count
            FROM downloads
-           WHERE date(created_at) >= ?1
+           WHERE date(created_at) >= ?1 AND date(created_at) < ?2
            GROUP BY country, ua_family, user_agent`,
       )
-      .bind(sinceDate)
+      .bind(sinceDate, until)
       .all<DownloadCountryRow>(),
     db
       .prepare(
@@ -93,10 +97,10 @@ export async function queryCountryRows(
                 SUM(CASE WHEN first_beat_at < ?2 THEN 1 ELSE 0 END) AS d7Cohort,
                 SUM(CASE WHEN first_beat_at < ?3 THEN 1 ELSE 0 END) AS d28Cohort
            FROM install_summary
-           WHERE first_beat_at >= ?1
+           WHERE first_beat_at >= ?1 AND first_beat_at < ?4
            GROUP BY first_beat_country`,
       )
-      .bind(sinceDate, d7Cutoff, d28Cutoff)
+      .bind(sinceDate, d7Cutoff, d28Cutoff, until)
       .all<InstallCountryRow>(),
     db
       .prepare(
@@ -161,16 +165,37 @@ export function assembleCountries(rows: CountryRows): FunnelCountry[] {
   )
 }
 
-/** GET /admin/funnel/countries?days=N: `FunnelCountry[]` over the last N UTC days (default 30, 1..400). */
+/**
+ * `?end=` as a real `YYYY-MM-DD` day no later than `today`, `undefined` when absent, or null when malformed
+ * or in the future.
+ */
+export function parseEndDate(raw: string | undefined, today: string): string | undefined | null {
+  if (raw === undefined) return undefined
+  // `Date.parse` rejects month 13 outright but rolls 02-30 into March, so the round trip catches both.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || Number.isNaN(Date.parse(`${raw}T00:00:00Z`))) return null
+  if (shiftDate(raw, 0) !== raw) return null
+  return raw <= today ? raw : null
+}
+
+/**
+ * GET /admin/funnel/countries?days=N&end=YYYY-MM-DD: `FunnelCountry[]` over the N UTC days ending `end`
+ * (default today, partial; N defaults to 30, 1..400). The `X-Window` header (`since..end`) names the days
+ * answered, so the dashboard can tell a past window from an older worker that ignored `end`.
+ */
 funnelCountries.get('/admin/funnel/countries', async (c) => {
   const authError = await verifyAdminAuth(c)
   if (authError) return authError
 
   const days = parseDays(c.req.query('days'))
   if (days === null) return c.json({ error: invalidDaysMessage }, 400)
+  const today = new Date().toISOString().slice(0, 10)
+  const endDate = parseEndDate(c.req.query('end'), today)
+  if (endDate === null) return c.json({ error: 'Invalid end. Use a YYYY-MM-DD day no later than today (UTC)' }, 400)
 
-  const dates = buildDateList(days, new Date())
-  const rows = await queryCountryRows(c.env.TELEMETRY_DB, { sinceDate: dates[0], today: dates[dates.length - 1] })
+  const end = endDate ?? today
+  const sinceDate = shiftDate(end, -(days - 1))
+  const rows = await queryCountryRows(c.env.TELEMETRY_DB, { sinceDate, today, endDate: end })
+  c.header('X-Window', `${sinceDate}..${end}`)
   return c.json(assembleCountries(rows))
 })
 

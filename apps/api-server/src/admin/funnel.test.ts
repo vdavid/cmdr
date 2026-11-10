@@ -131,6 +131,24 @@ describe('GET /admin/funnel/countries (route)', () => {
     expect(res.status).toBe(400)
   })
 
+  it('returns 400 for a malformed or future `end`', async () => {
+    const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
+    for (const end of ['2026-13-01', '2026-02-30', 'yesterday', tomorrow]) {
+      const res = await app.request(`/admin/funnel/countries?days=7&end=${end}`, { headers: authHeaders }, baseBindings)
+      expect(res.status, end).toBe(400)
+    }
+  })
+
+  it('echoes the window it answered in `X-Window`, so a caller can tell an older worker ignored `end`', async () => {
+    const bindings = { ...baseBindings, TELEMETRY_DB: createMockD1({}) }
+    const past = await app.request('/admin/funnel/countries?days=7&end=2026-06-07', { headers: authHeaders }, bindings)
+    expect(past.status).toBe(200)
+    expect(past.headers.get('X-Window')).toBe('2026-06-01..2026-06-07')
+    const current = await app.request('/admin/funnel/countries?days=1', { headers: authHeaders }, bindings)
+    const today = new Date().toISOString().slice(0, 10)
+    expect(current.headers.get('X-Window')).toBe(`${today}..${today}`)
+  })
+
   it('returns one entry per country, unknowns folded together', async () => {
     const bindings = {
       ...baseBindings,

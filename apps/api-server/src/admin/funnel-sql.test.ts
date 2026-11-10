@@ -287,6 +287,35 @@ describe('the per-country funnel against real SQLite', () => {
     })
   })
 
+  it('stops at an `endDate` before today, so a past window counts only its own days', async () => {
+    // Window 2026-05-30..2026-06-01: `anal_d` (2026-06-20) and the 2026-06-02 download fall after it.
+    const countries = assembleCountries(
+      await queryCountryRows(seeded(), { sinceDate: '2026-05-30', today, endDate: '2026-06-01' }),
+    )
+    expect(countries).toEqual([
+      {
+        country: 'SE',
+        serverDownloads: 2,
+        humanInstalls: 1,
+        newInstalls: 1,
+        d7Cohort: 1,
+        d7Retained: 1,
+        d28Cohort: 1,
+        d28Retained: 1,
+      },
+      {
+        country: '(unknown)',
+        serverDownloads: 1,
+        humanInstalls: 1,
+        newInstalls: 1,
+        d7Cohort: 1,
+        d7Retained: 0,
+        d28Cohort: 1,
+        d28Retained: 0,
+      },
+    ])
+  })
+
   it('counts an install from before the window nowhere', async () => {
     const countries = assembleCountries(await queryCountryRows(seeded(), { sinceDate: '2026-06-01', today }))
     // `anal_c` (no country, first beat 2026-05-20) would otherwise add to "(unknown)", which holds only `anal_b`.
