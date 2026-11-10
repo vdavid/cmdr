@@ -148,6 +148,18 @@
       "groupName": null
     },
     {
+      "description": "`zbus` stays on 5 while the Linux keyring does: `zbus-secret-service-keyring-store` 1.0.1 and its `secret-service` 5.1 both depend on zbus 5 (checked 2026-11-10), so a zbus 6 here ships a second D-Bus stack in the Linux build. Lift this when `cargo tree -i zbus` shows the keyring store on 6.",
+      "matchPackageNames": ["zbus"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "TypeScript stays on 6 until the toolchain that loads it in-process can take 7: 7.0 ships a `tsc` binary with no JS compiler API, and `typescript-eslint` (`<6.1.0`), `svelte-check` and `svelte2tsx` (`^5 || ^6`), and `@sveltejs/kit` (`^6`) all cap below it (checked 2026-11-10). Lift this once those peer ranges cover 7.",
+      "matchPackageNames": ["typescript"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "The desktop's direct `@cyclonedx/cyclonedx-library` must equal the exact version `rollup-plugin-sbom` pins (10.3.0 as of rollup-plugin-sbom 5.0.1): `Component` has private fields, so a second copy makes `vite-frontend-sbom.ts` a type error. Move it by hand when rollup-plugin-sbom bumps its pin (`npm view rollup-plugin-sbom dependencies`).",
       "matchFileNames": ["apps/desktop/package.json"],
       "matchPackageNames": ["@cyclonedx/cyclonedx-library"],

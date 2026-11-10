@@ -54,9 +54,16 @@ Work in a worktree. Take npm and Cargo in **separate commits**, so a bisect can 
    - **The 3-day window is yours to enforce here.** crates.io has no equivalent of pnpm's gate:
      `curl -s https://crates.io/api/v1/crates/<name>/versions | jq -r '.versions[] | "\(.num) \(.created_at)"'` and take
      the newest one older than three days.
-   - ❗ Skip `--precise` when the lockfile already has that version: the no-op call re-picks duplicate-version edges
-     across the graph (`windows-sys` 0.61 → 0.52, `getrandom` 0.4 → 0.3; cargo 1.99.1, 2026-10-27). Read the
-     `Cargo.lock` diff after each bump; only the crates you named should move.
+   - ❗ Any `--precise` call can re-pick duplicate-version edges on crates you never named, a no-op one most of all
+     (`windows-sys` 0.61 → 0.52, `getrandom` 0.4 → 0.3, `proc-macro-crate` 3 → 1; cargo 1.99.1, 2026-10-27 and
+     2026-11-10). Editing `Cargo.toml` and letting cargo resolve once doesn't; it picks the newest match, so follow it
+     with `--precise` only to step a too-young version back. Read the `Cargo.lock` diff
+     (`git diff Cargo.lock | grep '^[-+] "'`): only the bumped crates' own dependency lists should change. To repair
+     drift, put back `main`'s dependency list on every package whose name and version didn't change (the old target
+     still exists in the lock), then confirm with `cargo metadata --locked`. Check `fuzz/Cargo.lock` the same way.
+   - Exact-pinned or vendored crates: a crate under `vendor/` moves by re-vendoring (its `CMDR-PATCH.md` has the recipe
+     and the drop condition; first check whether upstream shipped the fix). A crate whose minor must match another's
+     (`muda` follows Tauri's) stays put; its `Cargo.toml` comment says so.
    - Verifying a risky bump: download both `.crate` files from `static.crates.io` (the crates.io API refuses
      unauthenticated downloads) and `diff -ru` them, so you review what cargo actually installs rather than a GitHub
      compare.
