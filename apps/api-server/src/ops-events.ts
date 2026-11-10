@@ -146,9 +146,14 @@ export interface CspViolationInfo {
   blockedUrl: string
   documentUrl: string
   sourceFile?: string
+  /** How many different visitors reported it within a day, which is what made it an alert. */
+  visitors: number
 }
+
+const SPELLED_COUNTS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
 
 export function cspViolationMessage(info: CspViolationInfo): string {
   const source = info.sourceFile ? ` Script: ${info.sourceFile}.` : ''
-  return `getcmdr.com's CSP (${info.directive}) blocked ${info.blockedUrl} on ${info.documentUrl}.${source} Visitors' browsers are refusing this request, so whatever feature makes it is broken for them. Allow the origin in apps/website/nginx-security-headers.conf if it's ours. This pair stays quiet for 24 hours.`
+  const visitors = SPELLED_COUNTS[info.visitors] ?? info.visitors.toLocaleString('en-US')
+  return `getcmdr.com's CSP (${info.directive}) blocked ${info.blockedUrl} on ${info.documentUrl}.${source} ${visitors} different visitors hit this within a day, so it's likely our own site rather than one browser's extension, and whatever feature makes the request is broken for them. Allow the origin in apps/website/nginx-security-headers.conf if it's ours. This pair stays quiet for the rest of the day.`
 }

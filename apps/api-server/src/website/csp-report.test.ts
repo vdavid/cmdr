@@ -5,14 +5,19 @@ import { createSqliteD1 } from '../sqlite-d1-test-helper'
 
 function createKv() {
   const store = new Map<string, string>()
+  const ttls = new Map<string, number | undefined>()
   const kv = {
-    get: (key: string) => Promise.resolve(store.get(key) ?? null),
-    put: (key: string, value: string) => {
+    get: (key: string, type?: string) => {
+      const value = store.get(key) ?? null
+      return Promise.resolve(type === 'json' && value !== null ? (JSON.parse(value) as unknown) : value)
+    },
+    put: (key: string, value: string, options?: { expirationTtl?: number }) => {
       store.set(key, value)
+      ttls.set(key, options?.expirationTtl)
       return Promise.resolve()
     },
   } as unknown as KVNamespace
-  return { kv, store }
+  return { kv, store, ttls }
 }
 
 function createBindings(overrides: Record<string, unknown> = {}) {
@@ -45,13 +50,21 @@ function reportingApiReport(body: Record<string, string>) {
   return JSON.stringify([{ type: 'csp-violation', age: 10, url: body.documentURL, body }])
 }
 
-function post(body: string, bindings: ReturnType<typeof createBindings>, contentType = 'application/csp-report') {
+function post(
+  body: string,
+  bindings: ReturnType<typeof createBindings>,
+  contentType = 'application/csp-report',
+  ip = '203.0.113.7',
+) {
   return app.request(
     '/csp-report',
-    { method: 'POST', headers: { 'content-type': contentType, 'cf-connecting-ip': '203.0.113.7' }, body },
+    { method: 'POST', headers: { 'content-type': contentType, 'cf-connecting-ip': ip }, body },
     bindings,
   )
 }
+
+/** A second visitor, so a violation counts as the site's own rather than one browser's. */
+const otherVisitor = '198.51.100.23'
 
 const likeButtonViolation = {
   'document-uri': 'https://getcmdr.com/blog/total-commander-for-macos/?utm_source=x',
@@ -193,18 +206,37 @@ describe('isActionableViolation', () => {
     expect(isActionableViolation({ ...retain, directive: 'connect-src' })).toBe(true)
     expect(isActionableViolation({ ...retain, blockedUrl: 'https://public.profitwell.com/js/other.js' })).toBe(true)
   })
+
+  it("ignores a same-origin block under a directive our policies give 'self', which only a sandboxed page can raise", () => {
+    // Regression anchor: `frame-src` "blocked" the home page's own /demo/ embed, which `'self'` allows.
+    const demo = {
+      documentUrl: 'https://getcmdr.com/',
+      blockedUrl: 'https://getcmdr.com/demo/',
+      directive: 'frame-src',
+    }
+    expect(isActionableViolation(demo)).toBe(false)
+    expect(isActionableViolation({ ...demo, directive: 'script-src-elem' })).toBe(false)
+    expect(isActionableViolation({ ...demo, directive: 'connect-src' })).toBe(false)
+    // `www.` is a different origin, so the block may be real.
+    expect(isActionableViolation({ ...demo, documentUrl: 'https://www.getcmdr.com/' })).toBe(true)
+    // The demo's `object-src` and `form-action` don't include `'self'`, so a same-origin block there is real.
+    expect(isActionableViolation({ ...demo, directive: 'object-src' })).toBe(true)
+    expect(isActionableViolation({ ...demo, directive: 'form-action' })).toBe(true)
+  })
 })
 
 describe('POST /csp-report', () => {
-  it('raises one ops alert per directive and blocked origin, and answers 204', async () => {
+  it('raises one ops alert per directive and blocked origin once two visitors report it, and answers 204', async () => {
     const { kv, store } = createKv()
     const bindings = createBindings({ CSP_ALERTS: kv })
 
-    const first = await post(legacyReport(likeButtonViolation), bindings)
-    const second = await post(
+    // Two paths on one origin count as one pair; the alert carries the report that tipped it.
+    const first = await post(
       legacyReport({ ...likeButtonViolation, 'blocked-uri': 'https://api.getcmdr.com/likes/other-post' }),
       bindings,
     )
+    const second = await post(legacyReport(likeButtonViolation), bindings, 'application/csp-report', otherVisitor)
+    await post(legacyReport(likeButtonViolation), bindings, 'application/csp-report', '192.0.2.99')
 
     expect(first.status).toBe(204)
     expect(second.status).toBe(204)
@@ -213,23 +245,48 @@ describe('POST /csp-report', () => {
     expect(alerts[0]).toContain('connect-src')
     expect(alerts[0]).toContain('https://api.getcmdr.com/likes/total-commander-for-macos')
     expect(alerts[0]).toContain('https://getcmdr.com/blog/total-commander-for-macos/')
+    expect(alerts[0]).toContain('two different visitors')
     // Query strings can carry anything (tracking params, tokens), so they never reach the alert.
     expect(alerts[0]).not.toContain('utm_source')
     expect([...store.keys()]).toEqual(['csp:connect-src:https://api.getcmdr.com'])
   })
 
+  it("never alerts on one visitor's reports, however many: that's their browser, not our site", async () => {
+    const { kv, store, ttls } = createKv()
+    const bindings = createBindings({ CSP_ALERTS: kv })
+
+    for (let i = 0; i < 5; i++) await post(legacyReport(likeButtonViolation), bindings)
+
+    expect(cspAlerts(bindings)).toHaveLength(0)
+    const entry = store.get('csp:connect-src:https://api.getcmdr.com') ?? ''
+    // Only a peppered pseudonym is kept, never the address, and only for the day's window.
+    expect(entry).not.toContain('203.0.113.7')
+    expect((JSON.parse(entry) as { visitors: string[] }).visitors).toHaveLength(1)
+    expect(ttls.get('csp:connect-src:https://api.getcmdr.com')).toBeLessThanOrEqual(24 * 60 * 60)
+  })
+
+  it('forgets the visitor pseudonyms once the alert fires', async () => {
+    const { kv, store } = createKv()
+    const bindings = createBindings({ CSP_ALERTS: kv })
+
+    await post(legacyReport(likeButtonViolation), bindings)
+    await post(legacyReport(likeButtonViolation), bindings, 'application/csp-report', otherVisitor)
+
+    const entry = JSON.parse(store.get('csp:connect-src:https://api.getcmdr.com') ?? '{}') as Record<string, unknown>
+    expect(entry.alerted).toBe(true)
+    expect(entry).not.toHaveProperty('visitors')
+  })
+
   it('accepts the Reporting API content type', async () => {
     const bindings = createBindings()
+    const report = reportingApiReport({
+      documentURL: 'https://getcmdr.com/',
+      blockedURL: 'https://api.getcmdr.com/r-codes.json',
+      effectiveDirective: 'connect-src',
+    })
 
-    const res = await post(
-      reportingApiReport({
-        documentURL: 'https://getcmdr.com/',
-        blockedURL: 'https://api.getcmdr.com/r-codes.json',
-        effectiveDirective: 'connect-src',
-      }),
-      bindings,
-      'application/reports+json',
-    )
+    const res = await post(report, bindings, 'application/reports+json')
+    await post(report, bindings, 'application/reports+json', otherVisitor)
 
     expect(res.status).toBe(204)
     expect(cspAlerts(bindings)).toHaveLength(1)

@@ -20,11 +20,11 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   and `isValidCode` are unit-tested.
 - **`csp-report.ts`**: `POST /csp-report` (plus its `OPTIONS` preflight) — getcmdr.com's CSP violation reports, our own
   breakage raised as a `csp-violation` ops alert.
-- Tests: `csp-report.test.ts` (both report formats, the noise filter, the daily dedupe, query stripping, the size cap,
-  the rate limit, CORS), `listmonk-signup.test.ts` (every signup route: the Listmonk call, the failed-send 502, no
-  enumeration, the no-install-id invariant, rate limit, the signup count, the site routes' CORS), `likes.test.ts` (the
-  slug gate, the rate limit, the salt requirement, and the pseudonym's per-salt/per-slug/per-IP separation),
-  `link-codes.test.ts` (the public map, CORS, cache, admin CRUD auth, and the validators).
+- Tests: `csp-report.test.ts` (both report formats, the noise filter, the two-visitor window and its daily dedupe, query
+  stripping, the size cap, the rate limit, CORS), `listmonk-signup.test.ts` (every signup route: the Listmonk call, the
+  failed-send 502, no enumeration, the no-install-id invariant, rate limit, the signup count, the site routes' CORS),
+  `likes.test.ts` (the slug gate, the rate limit, the salt requirement, and the pseudonym's per-salt/per-slug/per-IP
+  separation), `link-codes.test.ts` (the public map, CORS, cache, admin CRUD auth, and the validators).
 
 ## Signups (beta, newsletter, and subprocessor updates)
 
@@ -109,9 +109,21 @@ font is self-hosted, so a blocked one is always an extension's or a browser's (P
 some arrive attributed to our own PostHog recorder, which re-applies injected styles. Paddle Retain's `profitwell.js`
 never alerts either (only that script URL, only under `script-src*`): Paddle.js loads it on every live checkout page
 with no setting to stop it, we pass no `pwCustomer` so Retain has no work there, and allowing it would add a tracker the
-privacy policy doesn't cover. The ops alert then fires once per `(directive, blocked origin)` a day, deduped in
-`CSP_ALERTS`. Every actionable report also goes to the Workers log (`console.warn`), so the count is there even when the
-alert stays quiet.
+privacy policy doesn't cover. A same-origin block under a directive where both nginx policies allow `'self'`
+(`selfAllowedDirectives`) never alerts either: the policy can't have raised it, so the page ran with an opaque origin (a
+sandboxed preview, proxy, or translator; regression anchor: `frame-src` "blocking" the home page's own `/demo/` embed on
+2026-11-06). Keep that set in sync with both nginx files.
+
+**Decision: alert only once two different visitors hit the same `(directive, blocked origin)` within a day.** Our own
+breakage hits everyone who loads the page; an extension or browser feature that sends no `source-file` hits one browser
+(regression anchors, 2026-11-08 and 11-09: `frame-src https://div.show/` and Google's dictionary pop-up playing a
+`ssl.gstatic.com` MP3 under `media-src`, each from one visitor). The pair's `CSP_ALERTS` entry
+(`csp:<directive>:<origin>`) holds `firstSeenMs` and one 16-hex pseudonym per visitor (`hashCallerIp`, salted with the
+key, so it can't join telemetry's daily hash). The second distinct visitor fires the ops alert and replaces the list
+with `alerted: true`, which keeps the pair quiet until the window ends; each put asks only for the window's remaining
+TTL, because a KV put resets it. The cost: a real breakage alerts only once a second visitor hits it, so a rarely
+visited page could break unnoticed for a day or more. Every actionable report still goes to the Workers log
+(`console.warn`), so the count is there even when the alert stays quiet.
 
 **Decision: report-only violations are logged, never alerted.** The site also sends a stricter
 `Content-Security-Policy-Report-Only` (inline scripts only by build-time hash, `apps/website/DETAILS.md` § Security
@@ -123,8 +135,10 @@ message `CSP report-only violation on getcmdr.com`. Known noise: Astro's `<Clien
 `data:application/javascript,` script on its first client-side navigation (a timing marker), which both policies block
 harmlessly.
 
-**Privacy:** nothing about the visitor is stored. The KV key holds a directive and an origin, the IP only feeds the rate
-limiter, and page and blocked URLs lose their query strings before they reach the log or the alert.
+**Privacy:** the only thing kept about a visitor is that pair-salted, peppered pseudonym, for at most a day and only
+until the alert fires. The privacy policy states it ("Blocked-request reports"), so changing the window or what the
+entry holds means editing `apps/website/src/pages/privacy-policy.astro` in the same commit. Page and blocked URLs lose
+their query strings before they reach the log or the alert.
 
 The route always answers 204 (a malformed body too: a browser never sends one and there's nothing to tell the sender),
 except 413 over the 32 KB cap and 429 from `CSP_REPORT_LIMITER`. `OPTIONS` answers the Reporting API's CORS preflight

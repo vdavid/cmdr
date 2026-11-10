@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono'
-import { enforceIpRateLimit, readCappedBody, scheduleBackground, type Bindings } from '../types'
+import { callerIp, enforceIpRateLimit, hashCallerIp, readCappedBody, scheduleBackground, type Bindings } from '../types'
 import { cspViolationMessage, recordOpsEvent } from '../ops-events'
 
 /**
@@ -11,15 +11,47 @@ import { cspViolationMessage, recordOpsEvent } from '../ops-events'
  * like button was blocked that way for six months with no trace anywhere.
  *
  * Browsers send violations from every visitor, including ones caused by extensions, so only
- * violations that look like OUR breakage alert, and each (directive, blocked origin) pair alerts at
- * most once a day. Nothing about the visitor is stored: the dedupe key holds only the directive and
- * an origin, and URLs lose their query strings before they reach the ops event.
+ * violations that look like OUR breakage count, and a (directive, blocked origin) pair alerts once
+ * two different visitors have reported it within a day, at most once a day. Our own breakage hits
+ * everyone who loads the page; an extension or a sandboxed preview hits one browser. To tell two
+ * visitors apart, the pair's KV entry holds a peppered pseudonym per visitor until the alert fires
+ * or the day runs out, never the address. URLs lose their query strings before they reach the event.
  */
 const cspReport = new Hono<{ Bindings: Bindings }>()
 
 /** A single report is well under 2 KB; Chromium batches a few. */
 const maxCspReportBytes = 32 * 1024
-const alertDedupeSeconds = 24 * 60 * 60
+/** How long a pair's window runs: two visitors within it alert, and then it stays quiet until it ends. */
+const alertWindowSeconds = 24 * 60 * 60
+/** Distinct visitors a pair needs within its window before it alerts. */
+const visitorsToAlert = 2
+/** KV's floor for `expirationTtl`. */
+const minKvTtlSeconds = 60
+
+/**
+ * The directives under which BOTH of the site's policies allow `'self'` (`nginx-security-headers.conf`
+ * and `nginx-demo-security-headers.conf`; `media-src` and the rest fall back to `default-src 'self'`).
+ * A same-origin block under one of them can't be the policy talking: the page ran with an opaque
+ * origin (a sandboxed preview, a proxy, a translator). Not here: the demo's `object-src blob:` and
+ * `form-action 'none'`, where a same-origin block is real. Keep in sync with those two files.
+ */
+const selfAllowedDirectives = new Set([
+  'default-src',
+  'script-src',
+  'script-src-elem',
+  'script-src-attr',
+  'style-src',
+  'style-src-elem',
+  'style-src-attr',
+  'img-src',
+  'font-src',
+  'connect-src',
+  'worker-src',
+  'frame-src',
+  'child-src',
+  'media-src',
+  'manifest-src',
+])
 
 const ourPageHosts = new Set(['getcmdr.com', 'www.getcmdr.com'])
 const reportAllowedOrigins = new Set(['https://getcmdr.com', 'https://www.getcmdr.com'])
@@ -111,6 +143,8 @@ function parseHttpUrl(value: string | undefined): URL | null {
  * Paddle Retain's script is blocked on purpose: Paddle.js on a live account loads it on every page
  * that initializes checkout, with no setting to stop it, and we pass no `pwCustomer`, so Retain has
  * nothing to do there. Allowing it would add a tracker the privacy policy doesn't cover.
+ *
+ * A same-origin block under a directive that allows `'self'` never alerts (`selfAllowedDirectives`).
  */
 export function isActionableViolation(v: CspViolation): boolean {
   if (v.disposition === 'report') return false
@@ -118,7 +152,9 @@ export function isActionableViolation(v: CspViolation): boolean {
   if (v.directive.startsWith('script-src') && withoutQuery(v.blockedUrl) === paddleRetainScriptUrl) return false
   const page = parseHttpUrl(v.documentUrl)
   if (!page || page.protocol !== 'https:' || !ourPageHosts.has(page.hostname)) return false
-  if (!parseHttpUrl(v.blockedUrl)) return false
+  const blocked = parseHttpUrl(v.blockedUrl)
+  if (!blocked) return false
+  if (blocked.origin === page.origin && selfAllowedDirectives.has(v.directive)) return false
   if (v.sourceFile && !parseHttpUrl(v.sourceFile)) return false
   return true
 }
@@ -163,21 +199,52 @@ function reportCors(c: Context<{ Bindings: Bindings }>) {
   }
 }
 
-/** Alert once per (directive, blocked origin) per day. Returns whether this call claimed the alert. */
-async function claimAlert(kv: KVNamespace, v: CspViolation): Promise<boolean> {
+/**
+ * One (directive, blocked origin) pair's window, under `csp:<directive>:<origin>`. `visitors` holds
+ * a pseudonym per visitor who reported it; once the alert fires they're dropped for `alerted`, which
+ * keeps the pair quiet until the window ends.
+ */
+type PairWindow = { firstSeenMs: number; visitors: string[] } | { firstSeenMs: number; alerted: true }
+
+/**
+ * Count this visitor toward the pair's window. Returns whether this report tipped it into an alert.
+ *
+ * The pseudonym goes through the shared `hashCallerIp`, salted with the KV key, so it means nothing
+ * outside this one pair (it can't be joined with telemetry's daily hash). A read-then-write KV can
+ * race two reports past each other; the digest folds a duplicate alert into one line.
+ */
+async function claimAlert(env: Bindings, v: CspViolation, ip: string): Promise<boolean> {
   const blockedOrigin = parseHttpUrl(v.blockedUrl)?.origin ?? v.blockedUrl
   const key = `csp:${v.directive}:${blockedOrigin}`
-  if ((await kv.get(key)) !== null) return false
-  await kv.put(key, '1', { expirationTtl: alertDedupeSeconds })
-  return true
+  const now = Date.now()
+  const stored = await env.CSP_ALERTS.get<PairWindow>(key, 'json')
+  const window = stored && now - stored.firstSeenMs < alertWindowSeconds * 1000 ? stored : null
+  if (window && 'alerted' in window) return false
+
+  const firstSeenMs = window?.firstSeenMs ?? now
+  // A put resets the TTL, so each write asks only for what's left of the window.
+  const expirationTtl = Math.max(minKvTtlSeconds, alertWindowSeconds - Math.floor((now - firstSeenMs) / 1000))
+  const visitor = (await hashCallerIp(ip, key, env.IP_HASH_PEPPER)).slice(0, 16)
+  const visitors = window?.visitors ?? []
+  if (visitors.includes(visitor)) return false
+  visitors.push(visitor)
+
+  const alerts = visitors.length >= visitorsToAlert
+  const next: PairWindow = alerts ? { firstSeenMs, alerted: true } : { firstSeenMs, visitors }
+  await env.CSP_ALERTS.put(key, JSON.stringify(next), { expirationTtl })
+  return alerts
 }
 
-async function alertActionable(env: Bindings, violations: CspViolation[]): Promise<void> {
+async function alertActionable(env: Bindings, violations: CspViolation[], ip: string): Promise<void> {
   for (const v of violations) {
     const clean = cleanViolation(v)
     console.warn('CSP violation on getcmdr.com', clean)
-    if (!(await claimAlert(env.CSP_ALERTS, v))) continue
-    await recordOpsEvent(env.TELEMETRY_DB, 'csp-violation', cspViolationMessage(clean))
+    if (!(await claimAlert(env, v, ip))) continue
+    await recordOpsEvent(
+      env.TELEMETRY_DB,
+      'csp-violation',
+      cspViolationMessage({ ...clean, visitors: visitorsToAlert }),
+    )
   }
 }
 
@@ -208,7 +275,7 @@ cspReport.post('/csp-report', async (c) => {
   }
   const actionable = violations.filter(isActionableViolation)
   if (actionable.length > 0) {
-    await scheduleBackground(c, alertActionable(c.env, actionable))
+    await scheduleBackground(c, alertActionable(c.env, actionable, callerIp(c.req)))
   }
   return c.body(null, 204)
 })

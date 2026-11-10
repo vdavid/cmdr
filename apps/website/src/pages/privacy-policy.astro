@@ -5,7 +5,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 <LegalLayout
     title="Privacy policy"
     description="How Cmdr collects, uses, and protects your personal data. GDPR compliant."
-    lastUpdated="2026-11-05"
+    lastUpdated="2026-11-10"
 >
     <p>
         Your privacy matters to us a lot. This policy explains what data we collect, why, and how we protect it. We've
@@ -65,6 +65,14 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             downloads from bots, and a one-way hash of your IP address, to count distinct downloaders per day. That hash
             mixes in the date and a secret only we hold, so it can't become your IP address again or follow you across
             days. The file itself comes from <code>download.getcmdr.com</code>, our storage at Cloudflare, which sees your IP address like any web server.
+        </li>
+        <li>
+            <strong>Blocked-request reports</strong>: when our site's security policy blocks something on a page you're
+            viewing, your browser tells us the page and the address it blocked, so we notice when we've broken the
+            site. Both lose any query string before we keep them. To tell our mistake from one browser's extension, we
+            wait for a second visitor to hit the same block, so we keep a one-way hash of your IP address for up to a
+            day. That hash mixes in a secret only we hold and means nothing outside that one blocked address, and we
+            delete it as soon as a second visitor shows up or the day ends.
         </li>
         <li>
             <strong>Payment info</strong>: if you buy a license, payment is handled by Paddle. We see your email address
@@ -343,6 +351,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>
             <strong>Downloads</strong>: the hashed IP address and user agent go after 90 days. What's left (version,
             architecture, country, and where the download came from) points to no one, and we keep it while it's useful.
+        </li>
+        <li>
+            <strong>Blocked-request reports</strong>: the hashed IP address goes within a day.
         </li>
         <li>
             <strong>Update checks</strong>: individual records go after seven days, leaving the daily totals per version.
