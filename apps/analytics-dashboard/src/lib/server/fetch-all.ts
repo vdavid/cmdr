@@ -1,6 +1,6 @@
 import type { DashboardEnv, DashboardSelection, SourceResult } from './types.js'
-import { rangeDays, resolveSelection } from './types.js'
-import { funnelDaysFor, funnelFetchDays, viewWindow } from '../time-range.js'
+import { resolveSelection } from './types.js'
+import { funnelDaysFor, funnelFetchDays, viewWindow, windowDays } from '../time-range.js'
 import type { UmamiData } from './sources/umami.js'
 import type { CloudflareData } from './sources/cloudflare.js'
 import type { PaddleData } from './sources/paddle.js'
@@ -188,7 +188,8 @@ export function fetchFunnelCountriesSource(
         UMAMI_PASSWORD: env.UMAMI_PASSWORD,
         UMAMI_WEBSITE_ID: env.UMAMI_WEBSITE_ID,
       },
-      rangeDays[selection.range],
+      // The charts' days: for today's window that's the range's complete days plus today.
+      windowDays(viewWindow(selection.range, selection.end, new Date().toISOString().slice(0, 10))),
       selection.end,
     ),
   )

@@ -126,7 +126,7 @@
     <h2 class="mb-1 flex items-center gap-2 text-lg font-semibold text-text-primary">
         By country, {period}
         <InfoPopover topic="the country table">
-            {pastWindow ? `The ${String(days)} UTC days ${inPeriod}.` : `The last ${String(days)} UTC days including today.`} Visitors and clicks come from Umami, by the visitor's IP country;
+            {pastWindow ? `The ${String(days)} UTC days ${inPeriod}.` : `The last ${String(days)} complete UTC days plus today, the days the charts above draw.`} Visitors and clicks come from Umami, by the visitor's IP country;
             downloads, installs, D7, and D28 come from the api-server (downloads by the request's country, installs by
             the country on the install's heartbeat). "(unknown)" is everything without a usable country. Rates pool as ratios of sums. Counts
             are colored on a fixed log scale: red is 1, yellow 10, cyan 100, and purple {scaleTop}.

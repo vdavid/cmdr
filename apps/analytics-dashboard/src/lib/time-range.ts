@@ -56,6 +56,11 @@ export function viewWindow(range: TimeRange, end: string | null, today: string):
   return { start: shiftDay(end, -(days - 1)), end, current: false }
 }
 
+/** How many days `window` spans, both ends included: the range plus today for the current window. */
+export function windowDays(window: ViewWindow): number {
+  return daysBetween(window.start, window.end) + 1
+}
+
 /** The window as the header shows it, like "2026-09-11 – 2026-10-10". */
 export function formatWindow(window: ViewWindow): string {
   return `${window.start} – ${window.end}`

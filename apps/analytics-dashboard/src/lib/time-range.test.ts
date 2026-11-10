@@ -7,6 +7,7 @@ import {
   selectionQuery,
   stepEnd,
   viewWindow,
+  windowDays,
 } from './time-range.js'
 
 const today = '2026-11-10'
@@ -20,6 +21,18 @@ describe('viewWindow', () => {
   it('draws exactly the range, ending `end`, for a past window', () => {
     expect(viewWindow('30d', '2026-10-10', today)).toEqual({ start: '2026-09-11', end: '2026-10-10', current: false })
     expect(viewWindow('7d', '2026-11-02', today)).toEqual({ start: '2026-10-27', end: '2026-11-02', current: false })
+  })
+})
+
+describe('windowDays', () => {
+  it('counts the current window as the range plus today, so the country table covers what the charts draw', () => {
+    expect(windowDays(viewWindow('7d', null, today))).toBe(8)
+    expect(windowDays(viewWindow('30d', null, today))).toBe(31)
+    expect(windowDays(viewWindow('90d', null, today))).toBe(91)
+  })
+
+  it('counts a past window as exactly the range', () => {
+    expect(windowDays(viewWindow('30d', '2026-10-10', today))).toBe(30)
   })
 })
 

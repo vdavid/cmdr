@@ -465,8 +465,8 @@ columns ending today.
 `CountryFunnelSection` shows a world map of visitors beside the table from 2xl up, and above it (capped at `max-w-3xl`)
 below that. It takes `days` (7, 30, or 90, default 30) and, for a stepped-back window, `pastWindow` for its title; the
 page passes the selection's, and `fetchFunnelCountriesSource` fetches that same window, so title and numbers can't drift
-apart. Today's window is the last `days` days including today (one day shorter than the charts' window, which adds a
-full range before today).
+apart. It covers exactly the charts' days (`windowDays`): for today's window, the range's complete days plus today
+(`?days=31` for 30d), so the title's "last 30 days" means the same 30 complete days as the charts above.
 
 - **A past window** asks the worker for `?days=N&end=` and Umami for that span. An older worker ignores `end` and would
   answer today's window, so the source keeps the worker side only when the `X-Window` header confirms the days;
