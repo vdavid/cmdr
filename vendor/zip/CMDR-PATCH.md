@@ -1,6 +1,6 @@
-# zip 9.2.0, patched
+# zip 9.4.1, patched
 
-The crates.io release of `zip` 9.2.0 (upstream `zip-rs/zip2` at tag `v9.2.0`), swapped in through the root
+The crates.io release of `zip` 9.4.1 (upstream `zip-rs/zip2` at tag `v9.4.1`), swapped in through the root
 `Cargo.toml`'s `[patch.crates-io]`. Everything here is the published package byte for byte, apart from the change below
 and the files left out:
 
@@ -31,7 +31,7 @@ Encrypted entries (#592), in `src/write.rs` and `src/types.rs`:
   it for raw entries, as `add_prepared_file` already works around).
 - Upstream drops both flags, because `ZipFile::options()` carries no ZipCrypto state, so a kept ZipCrypto entry reads
   back as ciphertext (verified by reading `raw_copy_file_rename_internal` and `start_entry` in the 9.2.0 package,
-  2026-11-03). Bit 3 matters on its own: it picks ZipCrypto's password check byte (the DOS time's high byte under it,
+  2026-11-03, and again in 9.4.1, 2026-11-10). Bit 3 matters on its own: it picks ZipCrypto's password check byte (the DOS time's high byte under it,
   which is how Info-ZIP's `zip -e` writes, else the CRC's).
 - An AES entry gets its extra field (`0x9901`) once: upstream's `raw_copy_options` skips the stored one, as `options()`
   already carries it.
@@ -41,7 +41,7 @@ Encrypted entries (#592), in `src/write.rs` and `src/types.rs`:
   at the end of `src/write.rs`'s `tests` module, and Cmdr's `crates/cmdr-archive/src/mutation/mutator_encrypted_test.rs`.
   The package leaves out upstream's `tests/data/` fixtures, so the vendored crate's own tests don't build here: clone
   `zip-rs/zip2` at the tag (its `src/` equals the package's), copy this `src/` over it, and run `cargo test --tests`
-  (passed on 9.2.0 at `4100a7d1`, 196 lib tests plus the integration suites, 2026-11-03).
+  (passed on 9.4.1 at `96e8cce`, 200 lib tests plus the integration suites, 2026-11-10; ported from 9.2.0 by a three-way merge whose only conflict was both sides appending tests, and the patch's changed lines are identical to the 9.2.0 port).
 
 Known limit, upstream too: a raw copy re-encodes a non-ASCII entry COMMENT as UTF-8 (the reader keeps no raw comment
 bytes), so a CP437 comment under a clear flag reads back garbled. Entry comments are rare; names were the data loss.
@@ -55,4 +55,4 @@ edit (deleting or renaming a sibling) left it undecryptable. The change isn't dr
 
 When upstream ships a raw copy that keeps an encrypted entry's flags (and its data descriptor), delete this folder, its
 `[patch.crates-io]` lines (root `Cargo.toml` and `fuzz/Cargo.toml`), and its `exclude` entry, and keep the tests.
-`desktop-rust-vendor-patch-applied` fails as soon as a bump past 9.2.0 makes cargo resolve crates.io again.
+`desktop-rust-vendor-patch-applied` fails as soon as a bump past 9.4.1 makes cargo resolve crates.io again.

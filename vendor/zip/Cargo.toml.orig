@@ -1,6 +1,6 @@
 [package]
 name = "zip"
-version = "9.2.0"
+version = "9.4.1"
 authors = [
     "Mathijs van de Nes <git@mathijs.vd-nes.nl>",
     "Marli Frost <marli@frost.red>",
@@ -10,7 +10,7 @@ authors = [
 license = "MIT"
 repository = "https://github.com/zip-rs/zip2"
 keywords = ["zip", "archive", "compression"]
-# Any change to rust-version must be reflected also in `README.md` and `.github/workflows/ci.yaml`.
+# Any change to rust-version must be reflected also in `README.md` and `.github/workflows/ci-impl.yaml`.
 # The MSRV policy is documented in `README.md`.
 rust-version = "1.88"
 categories = ["compression", "filesystem", "parser-implementations"]
@@ -42,7 +42,7 @@ zeroize = { version = "1.9", optional = true }
 zstd = { version = "^0.14.2", optional = true, default-features = false }
 zopfli = { version = "^0.8.3", optional = true }
 deflate64 = { version = "^0.1.10", optional = true }
-lzma-rust2 = { version = "^0.23.0", optional = true, default-features = false, features = ["std", "encoder", "optimization", "xz"] }
+lzma-rust2 = { version = "^0.25.0", optional = true, default-features = false, features = ["std", "encoder", "optimization", "xz"] }
 bitstream-io = { version = "4.9", optional = true }
 # Only the path parsing is used, which doesn't need std.
 typed-path = { version = "0.13", default-features = false }
@@ -50,6 +50,9 @@ rayon = { version = "1.11", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [target.'cfg(any(target_os = "macos", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd", target_os = "dragonfly"))'.dependencies]
 nix = { version = "^0.31.3", features = ["fs"], default-features = false }

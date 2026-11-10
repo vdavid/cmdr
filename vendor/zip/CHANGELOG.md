@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [9.4.1](https://github.com/zip-rs/zip2/compare/v9.4.0...v9.4.1) - 2026-11-06
+
+### <!-- 1 -->🐛 Bug Fixes
+
+- Add a OwnedZipFileEntry for #177 ([#1270](https://github.com/zip-rs/zip2/pull/1270))
+
+### <!-- 2 -->🚜 Refactor
+
+- Use boxed slices instead of Vec when growability isn't needed ([#1271](https://github.com/zip-rs/zip2/pull/1271))
+
+## [9.4.0](https://github.com/zip-rs/zip2/compare/v9.3.0...v9.4.0) - 2026-11-05
+
+### <!-- 0 -->🚀 Features
+
+- Implement ZipIterable::files_with_reader ([#1267](https://github.com/zip-rs/zip2/pull/1267))
+
+## [9.3.0](https://github.com/zip-rs/zip2/compare/v9.2.3...v9.3.0) - 2026-11-03
+
+### <!-- 0 -->🚀 Features
+
+- *(write)* implement TryFrom<ZipFileBuilder> for PreparedZipFile ([#1258](https://github.com/zip-rs/zip2/pull/1258))
+
+## [9.2.3](https://github.com/zip-rs/zip2/compare/v9.2.2...v9.2.3) - 2026-11-03
+
+### <!-- 1 -->🐛 Bug Fixes
+
+- *(ci)* resolve typos false-positive, fix upath smuggling test, and add Turkish tests ([#1256](https://github.com/zip-rs/zip2/pull/1256))
+
+### <!-- 2 -->🚜 Refactor
+
+- Replace std:: with core:: where possible ([#1253](https://github.com/zip-rs/zip2/pull/1253))
+
+## [9.2.2](https://github.com/zip-rs/zip2/compare/v9.2.0...v9.2.2) - 2026-11-01
+
+### <!-- 2 -->🚜 Refactor
+
+- Eliminate the use of SwitchWriterFunction (a Box<dyn FnOnce<_>>) ([#1235](https://github.com/zip-rs/zip2/pull/1235))
+
+### <!-- 7 -->⚙️ Miscellaneous Tasks
+
+- Fix build error (can't convert getrandom::Error to io::Error without getrandom/std) ([#1240](https://github.com/zip-rs/zip2/pull/1240))
+
 ## [9.2.0](https://github.com/zip-rs/zip2/compare/v9.1.3...v9.2.0) - 2026-10-31
 
 ### <!-- 0 -->🚀 Features

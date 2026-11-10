@@ -233,7 +233,13 @@ impl<R: Read + ?Sized> Read for ZipFileReader<'_, R> {
             ZipFileReader::Raw(r) => r.read_exact(buf),
             ZipFileReader::Stored(r) => r.read_exact(buf),
             ZipFileReader::Compressed(r) => r.read_exact(buf),
-            ZipFileReader::CompressedAes(r) => r.read_exact(buf),
+            ZipFileReader::CompressedAes(r) => {
+                r.read_exact(buf)?;
+                if r.is_at_limit() {
+                    self.finish_aes()?;
+                }
+                Ok(())
+            }
         }
     }
 }
@@ -274,7 +280,7 @@ impl<'a, R: Read + ?Sized> ZipFileReader<'a, R> {
     /// is left in the `NoReader` state, so later reads keep failing instead of
     /// reporting a clean EOF.
     fn finish_aes(&mut self) -> io::Result<()> {
-        let ZipFileReader::CompressedAes(r) = std::mem::replace(self, ZipFileReader::NoReader)
+        let ZipFileReader::CompressedAes(r) = core::mem::replace(self, ZipFileReader::NoReader)
         else {
             return Ok(());
         };
@@ -383,10 +389,10 @@ mod tests {
         use super::Crc32Reader;
         use super::CryptoReader;
         use super::ZipFileReader;
+        use core::mem::size_of;
         use std::io::BufReader;
         use std::io::Cursor;
         use std::io::Take;
-        use std::mem::size_of;
 
         type R = Cursor<Vec<u8>>;
         let enum_size = size_of::<ZipFileReader<'_, R>>();

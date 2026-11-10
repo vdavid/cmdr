@@ -45,7 +45,7 @@ pub enum ExtraField {
 /// Extra fields list
 #[derive(Debug, Clone, Default)]
 pub struct ExtraFields {
-    pub(crate) inner: Vec<ExtraField>,
+    pub(crate) inner: Box<[ExtraField]>,
 }
 
 impl ExtraFields {
@@ -64,7 +64,7 @@ impl ExtraFields {
             extra_fields.push(parsed_extra_field);
         }
         Ok(Self {
-            inner: extra_fields,
+            inner: extra_fields.into_boxed_slice(),
         })
     }
 
@@ -261,7 +261,7 @@ impl ZipFileData {
         let mut orig_name_crc = None;
         let mut orig_comment_crc = None;
 
-        for one_extra_field in &self.extra_fields.inner {
+        for one_extra_field in self.extra_fields.inner.as_ref() {
             match one_extra_field {
                 // Zip64 extended information extra field
                 ExtraField::Zip64ExtendedInformation(zip64_block) => {
@@ -312,6 +312,8 @@ impl ZipFileData {
                     // the File Name field in the header SHOULD be used instead.
                     let crc = *orig_name_crc.get_or_insert_with(|| crc32fast::hash(file_name_raw));
                     if unicode.crc32 == crc && std::str::from_utf8(&unicode.content).is_ok() {
+                        self.overridden_header_name
+                            .get_or_insert_with(|| file_name_raw.clone().into_boxed_slice());
                         *file_name_raw = unicode.content.to_vec();
                         self.flags |= ZipFlags::LanguageEncoding.as_u16();
                     }

@@ -83,7 +83,7 @@ usearch = "=2.26.6"
 # macOS-gated: the query path tokenizes everywhere, only inference is Core ML.
 instant-clip-tokenizer = "0.1.0"
 # The CLIP model package ships as a zip; `install.rs` unpacks it. Decode only.
-zip = { version = "9.2.0", default-features = false, features = ["deflate"] }
+zip = { version = "9.4.1", default-features = false, features = ["deflate"] }
 # Checksum for the downloaded CLIP model package.
 sha2 = "0.11"
 # Optional, and switched on ONLY by the `testing` feature: the index's

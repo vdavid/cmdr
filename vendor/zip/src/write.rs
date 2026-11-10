@@ -4,7 +4,6 @@ use crate::ExtraField;
 use crate::compression::CompressionMethod;
 use crate::datetime::DateTime;
 use crate::extra_fields::DataStreamAlignment;
-use crate::extra_fields::ExtraFields;
 use crate::extra_fields::Zip64ExtendedInformation;
 use crate::format::blocks::{
     FixedSizeBlock, Zip32CDEBlock, Zip32CentralDirectoryEnd, Zip64CentralDirectoryEnd,
@@ -21,7 +20,7 @@ use crate::write::options::EncryptWith;
 
 use core::default::Default;
 use core::fmt::{Debug, Formatter};
-use core::mem::{self, offset_of, size_of};
+use core::mem::{self, offset_of, replace, size_of, take};
 use core::str::{Utf8Error, from_utf8};
 use crc32fast::Hasher;
 use indexmap::IndexMap;
@@ -155,6 +154,28 @@ enum GenericZipWriter<W: Write + Seek> {
     Ppmd(Box<ppmd_rust::Ppmd8Encoder<MaybeEncrypted<W>>>),
 }
 
+enum NextWriter {
+    Stored,
+    #[cfg(feature = "deflate-flate2")]
+    Deflate(u32),
+    #[cfg(feature = "deflate-zopfli")]
+    Zopfli {
+        options: zopfli::Options,
+        buffer_size: Option<usize>,
+    },
+    #[cfg(feature = "_bzip2_any")]
+    Bzip2(u32),
+    #[cfg(feature = "zstd")]
+    Zstd(i32),
+    #[cfg(feature = "xz")]
+    Xz(u32),
+    #[cfg(feature = "ppmd")]
+    Ppmd {
+        order: u32,
+        memory_size: u32,
+    },
+}
+
 impl<W: Write + Seek> Debug for GenericZipWriter<W> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
@@ -182,12 +203,9 @@ impl<W: Write + Seek> Debug for GenericZipWriter<W> {
 pub(crate) mod zip_writer {
     #[cfg(feature = "deflate-flate2")]
     use super::DeflateCache;
-    use crate::{
-        types::ZipFileData,
-        write::{GenericZipWriter, ZipWriterStats},
-    };
+    use crate::types::FilesByNameMap;
+    use crate::write::{GenericZipWriter, ZipWriterStats};
     use core::fmt::{Debug, Formatter};
-    use indexmap::IndexMap;
     use std::io::{Seek, Write};
 
     /// ZIP archive generator
@@ -225,7 +243,7 @@ pub(crate) mod zip_writer {
     /// ```
     pub struct ZipWriter<W: Write + Seek> {
         pub(super) inner: GenericZipWriter<W>,
-        pub(super) files: IndexMap<Box<[u8]>, ZipFileData>,
+        pub(super) files: FilesByNameMap,
         pub(super) stats: ZipWriterStats,
         pub(super) writing_to_file: bool,
         pub(super) writing_raw: bool,
@@ -392,14 +410,14 @@ impl<A: Read + Write + Seek> ZipWriter<A> {
     /// This uses the given read configuration to initially read the archive.
     pub fn new_append_with_config(config: Config, mut readwriter: A) -> ZipResult<ZipWriter<A>> {
         readwriter.seek(SeekFrom::Start(0))?;
-        let shared = ZipArchive::get_metadata(config, &mut readwriter)?;
+        let metadata = ZipArchive::get_metadata(config, &mut readwriter)?;
         Ok(ZipWriter {
             inner: GenericZipWriter::Storer(MaybeEncrypted::Unencrypted(readwriter)),
-            files: shared.files,
+            files: metadata.shared.files,
             stats: ZipWriterStats::default(),
             writing_to_file: false,
-            comment: shared.comment,
-            zip64_extensible_data_sector: shared.zip64_extensible_data_sector,
+            comment: metadata.comment,
+            zip64_extensible_data_sector: metadata.zip64_extensible_data_sector,
             writing_raw: true, // avoid recomputing the last file's header
             flush_on_finish_file: false,
             seek_possible: true,
@@ -777,9 +795,7 @@ impl<W: Write + Seek> ZipWriter<W> {
             &options,
             &raw_values,
             header_start,
-            ExtraFields {
-                inner: extra_fields,
-            },
+            extra_fields,
         );
         if let Some(comment) = options.extended_options.take_file_comment() {
             if comment.len() > u16::MAX as usize {
@@ -795,9 +811,7 @@ impl<W: Write + Seek> ZipWriter<W> {
                 .set(ZipFlags::LanguageEncoding, language_encoding);
         }
         if (!self.seek_possible || matches!(options.encrypt_with, Some(EncryptWith::ZipCrypto(..))))
-            && file
-                .unix_mode()
-                .is_some_and(|p| p & ffi::S_IFDIR != ffi::S_IFDIR)
+            && file.is_non_dir_based_on_unix_mode()
         {
             file.flags |= ZipFlags::UsingDataDescriptor.as_u16();
         }
@@ -840,7 +854,6 @@ impl<W: Write + Seek> ZipWriter<W> {
             }
             Some(EncryptWith::ZipCrypto(keys, ..)) => {
                 let writer = self.close_writer()?;
-                let file = &mut self.files[index];
                 // With ZipCrypto, we _need_ to use a data descriptor so that
                 // we can initialize the stream properly.
                 let mut zipwriter = crate::zipcrypto::ZipCryptoWriter {
@@ -851,6 +864,10 @@ impl<W: Write + Seek> ZipWriter<W> {
                 self.stats.start = zipwriter.writer.stream_position()?;
                 // crypto_header is counted as part of the data
                 let mut crypto_header = [0u8; 12];
+                let rand_result = getrandom::fill(&mut crypto_header[0..10])
+                    .map_err(|e| invalid!("getrandom returned error: {}", e));
+                self.ok_or_abort_file(rand_result)?;
+                let file = &mut self.files[index];
                 // The last two bytes of the header should either be the CRC of
                 // the file _OR_ the last timepart of the last modified time if
                 // a data descriptor is used.
@@ -886,24 +903,29 @@ impl<W: Write + Seek> ZipWriter<W> {
         Ok(())
     }
 
-    fn insert_file_data(&mut self, file_name_raw: &[u8], file: ZipFileData) -> ZipResult<usize> {
+    fn insert_file_data(
+        &mut self,
+        file_name_raw: &[u8],
+        mut file: ZipFileData,
+    ) -> ZipResult<usize> {
         if self.files.contains_key(file_name_raw) {
             return Err(invalid!(
                 "Duplicate filename: {:?}",
                 file_name_raw.escape_ascii()
             ));
         }
+        file.overridden_header_name = None;
         let (index, _) = self.files.insert_full(file_name_raw.into(), file);
         Ok(index)
     }
 
     /// [`GenericZipWriter::switch_to`] with this writer's DEFLATE encoder cache.
-    fn switch_inner(&mut self, make_new_self: SwitchWriterFunction<W>) -> ZipResult<()> {
+    fn switch_inner(&mut self, next_writer: NextWriter) -> ZipResult<()> {
         #[cfg(feature = "deflate-flate2")]
         let cache = &mut self.deflate_cache;
         #[cfg(not(feature = "deflate-flate2"))]
         let cache = &mut DeflateCache::default();
-        self.inner.switch_to(cache, make_new_self)
+        self.inner.switch_to(cache, next_writer)
     }
 
     fn finish_file(&mut self) -> ZipResult<()> {
@@ -1176,7 +1198,7 @@ impl<W: Write + Seek> ZipWriter<W> {
     /// # Ok(())
     /// # }
     ///```
-    pub fn merge_archive<R>(&mut self, mut source: ZipArchive<R>) -> ZipResult<()>
+    pub fn merge_archive<R>(&mut self, source: ZipArchive<R>) -> ZipResult<()>
     where
         R: Read + Seek,
     {
@@ -2166,11 +2188,6 @@ impl<W: Write + Seek> Drop for ZipWriter<W> {
     }
 }
 
-/// Builds the next writer around the bare inner writer. The [`DeflateCache`] may hold an idle
-/// DEFLATE encoder recycled from the previous entry.
-type SwitchWriterFunction<W> =
-    Box<dyn FnOnce(MaybeEncrypted<W>, &mut DeflateCache<W>) -> ZipResult<GenericZipWriter<W>>>;
-
 /// Keeps the `flate2` DEFLATE encoder alive between entries, so that consecutive Deflated entries
 /// at the same level reuse its compressor state (several hundred KiB) and output buffer instead of
 /// reallocating them (#633).
@@ -2282,7 +2299,7 @@ impl<W: Write + Seek> GenericZipWriter<W> {
         compression: CompressionMethod,
         compression_level: Option<i64>,
         #[cfg(feature = "deflate-zopfli")] zopfli_buffer_size: Option<usize>,
-    ) -> ZipResult<SwitchWriterFunction<W>> {
+    ) -> ZipResult<NextWriter> {
         if let GenericZipWriter::Closed = self {
             return Err(
                 io::Error::new(io::ErrorKind::BrokenPipe, "ZipWriter was already closed").into(),
@@ -2294,7 +2311,7 @@ impl<W: Write + Seek> GenericZipWriter<W> {
                 if compression_level.is_some() {
                     Err(UnsupportedArchive("Unsupported compression level"))
                 } else {
-                    Ok(Box::new(|bare, _| Ok(GenericZipWriter::Storer(bare))))
+                    Ok(NextWriter::Stored)
                 }
             }
             #[allow(unreachable_code)]
@@ -2336,27 +2353,10 @@ impl<W: Write + Seek> GenericZipWriter<W> {
                                 })?,
                                 ..Default::default()
                             };
-                            Ok(Box::new(move |bare, _| {
-                                Ok(match zopfli_buffer_size {
-                                    Some(size) => GenericZipWriter::BufferedZopfliDeflater(
-                                        std::io::BufWriter::with_capacity(
-                                            size,
-                                            zopfli::DeflateEncoder::new(
-                                                options,
-                                                Default::default(),
-                                                bare,
-                                            ),
-                                        ),
-                                    ),
-                                    None => GenericZipWriter::ZopfliDeflater(
-                                        zopfli::DeflateEncoder::new(
-                                            options,
-                                            Default::default(),
-                                            bare,
-                                        ),
-                                    ),
-                                })
-                            }))
+                            Ok(NextWriter::Zopfli {
+                                options,
+                                buffer_size: zopfli_buffer_size,
+                            })
                         }};
                     }
 
@@ -2375,9 +2375,7 @@ impl<W: Write + Seek> GenericZipWriter<W> {
                 }
                 #[cfg(feature = "deflate-flate2")]
                 {
-                    Ok(Box::new(move |bare, cache: &mut DeflateCache<W>| {
-                        Ok(GenericZipWriter::Deflater(cache.encoder(bare, level)?))
-                    }))
+                    Ok(NextWriter::Deflate(level))
                 }
                 #[cfg(not(feature = "deflate-flate2"))]
                 {
@@ -2395,12 +2393,7 @@ impl<W: Write + Seek> GenericZipWriter<W> {
                     bzip2_compression_level_range(),
                 )
                 .ok_or(UnsupportedArchive("Unsupported compression level"))?;
-                Ok(Box::new(move |bare, _| {
-                    Ok(GenericZipWriter::Bzip2(bzip2::write::BzEncoder::new(
-                        bare,
-                        bzip2::Compression::new(level),
-                    )))
-                }))
+                Ok(NextWriter::Bzip2(level))
             }
             CompressionMethod::AES => Err(UnsupportedArchive(
                 "AES encryption is enabled through FileOptions::with_aes_encryption",
@@ -2412,12 +2405,7 @@ impl<W: Write + Seek> GenericZipWriter<W> {
                     zstd::compression_level_range(),
                 )
                 .ok_or(UnsupportedArchive("Unsupported compression level"))?;
-                Ok(Box::new(move |bare, _| {
-                    Ok(GenericZipWriter::Zstd(
-                        zstd::stream::write::Encoder::new(bare, level as i32)
-                            .map_err(ZipError::Io)?,
-                    ))
-                }))
+                Ok(NextWriter::Zstd(level as i32))
             }
             #[cfg(feature = "legacy-zip")]
             CompressionMethod::Shrink => Err(ZipError::UnsupportedArchive(
@@ -2439,12 +2427,7 @@ impl<W: Write + Seek> GenericZipWriter<W> {
             CompressionMethod::Xz => {
                 let level = validate_value_in_range(compression_level.unwrap_or(6), 0_u32..=9_u32)
                     .ok_or(UnsupportedArchive("Unsupported compression level"))?;
-                Ok(Box::new(move |bare, _| {
-                    Ok(GenericZipWriter::Xz(Box::new(
-                        lzma_rust2::XzWriter::new(bare, lzma_rust2::XzOptions::with_preset(level))
-                            .map_err(ZipError::Io)?,
-                    )))
-                }))
+                Ok(NextWriter::Xz(level))
             }
             #[cfg(feature = "ppmd")]
             CompressionMethod::Ppmd => {
@@ -2455,38 +2438,8 @@ impl<W: Write + Seek> GenericZipWriter<W> {
 
                 let order = ORDERS[level as usize];
                 let memory_size = 1 << (level + 19);
-                let memory_size_mb = memory_size / 1024 / 1024;
 
-                Ok(Box::new(move |mut bare, _| {
-                    let parameter: u16 = (order as u16 - 1)
-                        + ((memory_size_mb - 1) << 4) as u16
-                        + ((ppmd_rust::RestoreMethod::Restart as u16) << 12);
-
-                    bare.write_all(&parameter.to_le_bytes())
-                        .map_err(ZipError::Io)?;
-
-                    let encoder = ppmd_rust::Ppmd8Encoder::new(
-                        bare,
-                        order,
-                        memory_size,
-                        ppmd_rust::RestoreMethod::Restart,
-                    )
-                    .map_err(|error| match error {
-                        ppmd_rust::Error::RangeDecoderInitialization => ZipError::InvalidArchive(
-                            "PPMd range coder initialization failed".into(),
-                        ),
-                        ppmd_rust::Error::InvalidParameter => {
-                            ZipError::InvalidArchive("Invalid PPMd parameter".into())
-                        }
-                        ppmd_rust::Error::IoError(io_error) => ZipError::Io(io_error),
-                        ppmd_rust::Error::MemoryAllocation => ZipError::Io(io::Error::new(
-                            ErrorKind::OutOfMemory,
-                            "PPMd could not allocate memory",
-                        )),
-                    })?;
-
-                    Ok(GenericZipWriter::Ppmd(Box::new(encoder)))
-                }))
+                Ok(NextWriter::Ppmd { order, memory_size })
             }
             #[allow(deprecated)]
             CompressionMethod::Unsupported(..) => {
@@ -2498,8 +2451,10 @@ impl<W: Write + Seek> GenericZipWriter<W> {
     fn switch_to(
         &mut self,
         deflate_cache: &mut DeflateCache<W>,
-        make_new_self: SwitchWriterFunction<W>,
+        next_writer: NextWriter,
     ) -> ZipResult<()> {
+        #[cfg(not(feature = "deflate-flate2"))]
+        let _ = deflate_cache;
         let bare = match mem::replace(self, GenericZipWriter::Closed) {
             GenericZipWriter::Storer(w) => w,
             #[cfg(feature = "deflate-flate2")]
@@ -2530,7 +2485,76 @@ impl<W: Write + Seek> GenericZipWriter<W> {
                 .into());
             }
         };
-        *self = make_new_self(bare, deflate_cache)?;
+        *self = match next_writer {
+            NextWriter::Stored => GenericZipWriter::Storer(bare),
+            #[cfg(feature = "deflate-flate2")]
+            NextWriter::Deflate(level) => {
+                GenericZipWriter::Deflater(deflate_cache.encoder(bare, level)?)
+            }
+            #[cfg(feature = "deflate-zopfli")]
+            NextWriter::Zopfli {
+                options,
+                buffer_size,
+            } => match buffer_size {
+                Some(size) => {
+                    GenericZipWriter::BufferedZopfliDeflater(std::io::BufWriter::with_capacity(
+                        size,
+                        zopfli::DeflateEncoder::new(options, Default::default(), bare),
+                    ))
+                }
+                None => GenericZipWriter::ZopfliDeflater(zopfli::DeflateEncoder::new(
+                    options,
+                    Default::default(),
+                    bare,
+                )),
+            },
+            #[cfg(feature = "_bzip2_any")]
+            NextWriter::Bzip2(level) => GenericZipWriter::Bzip2(bzip2::write::BzEncoder::new(
+                bare,
+                bzip2::Compression::new(level),
+            )),
+            #[cfg(feature = "zstd")]
+            NextWriter::Zstd(level) => GenericZipWriter::Zstd(
+                zstd::stream::write::Encoder::new(bare, level).map_err(ZipError::Io)?,
+            ),
+            #[cfg(feature = "xz")]
+            NextWriter::Xz(level) => GenericZipWriter::Xz(Box::new(
+                lzma_rust2::XzWriter::new(bare, lzma_rust2::XzOptions::with_preset(level))
+                    .map_err(ZipError::Io)?,
+            )),
+            #[cfg(feature = "ppmd")]
+            NextWriter::Ppmd { order, memory_size } => {
+                let memory_size_mb = memory_size / 1024 / 1024;
+                let parameter: u16 = (order as u16 - 1)
+                    + ((memory_size_mb - 1) << 4) as u16
+                    + ((ppmd_rust::RestoreMethod::Restart as u16) << 12);
+
+                let mut bare = bare;
+                bare.write_all(&parameter.to_le_bytes())
+                    .map_err(ZipError::Io)?;
+
+                let encoder = ppmd_rust::Ppmd8Encoder::new(
+                    bare,
+                    order,
+                    memory_size,
+                    ppmd_rust::RestoreMethod::Restart,
+                )
+                .map_err(|error| match error {
+                    ppmd_rust::Error::RangeDecoderInitialization => {
+                        ZipError::InvalidArchive("PPMd range coder initialization failed".into())
+                    }
+                    ppmd_rust::Error::InvalidParameter => {
+                        ZipError::InvalidArchive("Invalid PPMd parameter".into())
+                    }
+                    ppmd_rust::Error::IoError(io_error) => ZipError::Io(io_error),
+                    ppmd_rust::Error::MemoryAllocation => ZipError::Io(io::Error::new(
+                        ErrorKind::OutOfMemory,
+                        "PPMd could not allocate memory",
+                    )),
+                })?;
+                GenericZipWriter::Ppmd(Box::new(encoder))
+            }
+        };
         Ok(())
     }
 
@@ -2708,10 +2732,8 @@ impl ZipFileBuilder {
     /// Finishes compressing the file, and returns a [`PreparedZipFile`] that can be appended to
     /// an archive with [`ZipWriter::add_prepared_file`].
     pub fn finish(mut self) -> ZipResult<PreparedZipFile> {
-        self.compressor.switch_to(
-            &mut DeflateCache::default(),
-            Box::new(|bare, _| Ok(GenericZipWriter::Storer(bare))),
-        )?;
+        self.compressor
+            .switch_to(&mut DeflateCache::default(), NextWriter::Stored)?;
         let GenericZipWriter::Storer(MaybeEncrypted::Unencrypted(cursor)) = self.compressor else {
             return Err(ZipError::Io(io::Error::other(
                 "Compressor was in an unexpected state",
@@ -2842,6 +2864,18 @@ impl PreparedZipFile {
     }
 }
 
+impl TryFrom<ZipFileBuilder> for PreparedZipFile {
+    type Error = ZipError;
+
+    /// Converts a [`ZipFileBuilder`] into a [`PreparedZipFile`] by finishing compression.
+    ///
+    /// This is equivalent to calling [`ZipFileBuilder::finish`].
+    #[inline]
+    fn try_from(builder: ZipFileBuilder) -> Result<Self, Self::Error> {
+        builder.finish()
+    }
+}
+
 #[cfg(feature = "_deflate-any")]
 fn deflate_compression_level_range() -> std::ops::RangeInclusive<u32> {
     #[cfg(not(any(feature = "deflate-zopfli", feature = "deflate-flate2")))]
@@ -2957,6 +2991,57 @@ fn update_aes_extra_field<W: Write + Seek>(
 }
 
 impl ZipFileData {
+    fn replace_zip64_extra_field(&mut self, zip64: Option<ExtraField>) {
+        if let Some(ExtraField::Zip64ExtendedInformation(new_zip64)) = zip64.as_ref() {
+            let new_zip64 = *new_zip64;
+            if self.extra_fields.inner.is_empty() {
+                self.extra_fields.inner =
+                    Box::new([ExtraField::Zip64ExtendedInformation(new_zip64)]);
+                return;
+            }
+            if let Some(ExtraField::Zip64ExtendedInformation(old_zip64)) =
+                self.extra_fields.inner.first_mut()
+            {
+                *old_zip64 = new_zip64;
+                return;
+            }
+            if let Some(zip64_index) =
+                self.extra_fields
+                    .inner
+                    .iter()
+                    .enumerate()
+                    .skip(1)
+                    .find_map(|(index, field)| {
+                        matches!(field, ExtraField::Zip64ExtendedInformation(_)).then_some(index)
+                    })
+            {
+                let moved_field = replace(
+                    &mut self.extra_fields.inner[0],
+                    ExtraField::Zip64ExtendedInformation(new_zip64),
+                );
+                self.extra_fields.inner[zip64_index] = moved_field;
+                return;
+            }
+        }
+
+        if zip64.is_none()
+            && !self
+                .extra_fields
+                .inner
+                .iter()
+                .any(|field| matches!(field, ExtraField::Zip64ExtendedInformation(_)))
+        {
+            return;
+        }
+
+        let mut inner = take(&mut self.extra_fields.inner).into_vec();
+        inner.retain(|field| !matches!(field, ExtraField::Zip64ExtendedInformation(_)));
+        if let Some(zip64) = zip64 {
+            inner.insert(0, zip64);
+        }
+        self.extra_fields.inner = inner.into_boxed_slice();
+    }
+
     pub(crate) fn update_local_file_header<T: Write + Seek>(
         &mut self,
         writer: &mut T,
@@ -3030,19 +3115,14 @@ impl ZipFileData {
         // first stored value (a size) as the offset. Recomputing (instead of editing in place)
         // also makes repeated writes of this header identical, which `finalize` relies on when it
         // writes the central directory and then rewrites it at the end of the file.
-        self.extra_fields
-            .inner
-            .retain(|field| !matches!(field, ExtraField::Zip64ExtendedInformation(_)));
-        if let Some(zip64_block) = Zip64ExtendedInformation::central_header(
+        let zip64 = Zip64ExtendedInformation::central_header(
             self.large_file,
             self.uncompressed_size,
             self.compressed_size,
             self.header_start,
-        ) {
-            self.extra_fields
-                .inner
-                .insert(0, ExtraField::Zip64ExtendedInformation(zip64_block));
-        }
+        )
+        .map(ExtraField::Zip64ExtendedInformation);
+        self.replace_zip64_extra_field(zip64);
         // The ZIP64 field stores the two sizes together, so when it carries them both size
         // fields of the header must hold the sentinel, not only the one that overflowed;
         // otherwise the field has one more value than the header marks.
@@ -3129,18 +3209,13 @@ impl ZipFileData {
         file_name_raw: &[u8],
         alignment_opt: Option<(u16, u16)>,
     ) -> ZipResult<()> {
-        self.extra_fields
-            .inner
-            .retain(|field| !matches!(field, ExtraField::Zip64ExtendedInformation { .. }));
-        if let Some(zip64) = Zip64ExtendedInformation::local_header(
+        let zip64 = Zip64ExtendedInformation::local_header(
             self.large_file,
             self.uncompressed_size,
             self.compressed_size,
-        ) {
-            self.extra_fields
-                .inner
-                .insert(0, ExtraField::Zip64ExtendedInformation(zip64));
-        }
+        )
+        .map(ExtraField::Zip64ExtendedInformation);
+        self.replace_zip64_extra_field(zip64);
         let (compressed_size, uncompressed_size) = if self.is_using_data_descriptor() {
             (0, 0)
         } else {
@@ -5519,8 +5594,8 @@ mod tests {
     fn test_max_len_extra_field() {
         use crate::format::blocks::ZipLocalEntryBlock;
         use crate::format::magic::Magic;
-        assert_eq!(std::mem::size_of::<Magic>(), 4);
-        assert_eq!(std::mem::size_of::<ZipLocalEntryBlock>(), 26);
+        assert_eq!(core::mem::size_of::<Magic>(), 4);
+        assert_eq!(core::mem::size_of::<ZipLocalEntryBlock>(), 26);
     }
 
     #[test]
@@ -5822,6 +5897,31 @@ mod tests {
             .count();
         assert_eq!(aes_fields, 2);
         assert_eq!(decrypted(bytes, b"Password")?, RT_TEST_TEXT.as_bytes());
+        Ok(())
+    }
+
+    #[test]
+    fn test_try_from_zip_file_builder() -> ZipResult<()> {
+        use super::{PreparedZipFile, ZipFileBuilder};
+
+        let mut builder = ZipFileBuilder::new(
+            "test_try_from.txt",
+            SimpleFileOptions::default().compression_method(Stored),
+        )?;
+        builder.write_all(b"Hello TryFrom")?;
+
+        let prepared: PreparedZipFile = builder.try_into()?;
+        assert_eq!(prepared.file_name_raw(), b"test_try_from.txt");
+        assert_eq!(prepared.uncompressed_size(), 13);
+        assert_eq!(prepared.compressed_size(), 13);
+
+        let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+        writer.add_prepared_file(prepared)?;
+        let mut archive = ZipArchive::new(Cursor::new(writer.finish()?.into_inner()))?;
+        let mut file = archive.by_name("test_try_from.txt")?;
+        let mut content = Vec::new();
+        std::io::Read::read_to_end(&mut file, &mut content)?;
+        assert_eq!(content, b"Hello TryFrom");
         Ok(())
     }
 }

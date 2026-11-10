@@ -8,10 +8,11 @@ use crate::format::blocks::{CentralDirectoryEndInfo, DataAndPosition, ZipCentral
 use crate::format::flags::{ZipFileFlags, ZipFlags};
 use crate::format::system::System;
 use crate::result::{ZipError, ZipResult, invalid};
-use crate::types::ZipFileData;
+use crate::types::{FilesByNameMap, ZipFileData};
 use indexmap::IndexMap;
 use std::io::{self, Read, Seek};
 use std::sync::OnceLock;
+use typed_path::{Utf8Component, Utf8WindowsComponent, Utf8WindowsPath};
 
 mod config;
 pub use config::{ArchiveOffset, Config};
@@ -31,7 +32,9 @@ pub(crate) mod readers;
 pub(crate) mod zip_iterable;
 
 pub(crate) mod zipfile;
-pub use zipfile::{ZipFile, ZipFileEntry, ZipFileEntryWithDataDescriptor, ZipFileSeek};
+pub use zipfile::{
+    OwnedZipFileEntry, ZipFile, ZipFileEntry, ZipFileEntryWithDataDescriptor, ZipFileSeek,
+};
 
 pub(crate) mod zip_archive;
 pub use zip_archive::{ZipArchive, ZipArchiveMetadata};
@@ -99,14 +102,12 @@ impl<'a> TryFrom<&'a CentralDirectoryEndInfo> for CentralDirectoryInfo {
 }
 
 impl<R: Read + Seek> ZipArchive<R> {
-    pub(crate) fn merge_contents<W: std::io::Write + Seek>(
-        &mut self,
-        mut w: W,
-    ) -> ZipResult<IndexMap<Box<[u8]>, ZipFileData>> {
-        if self.shared.files.is_empty() {
+    pub(crate) fn merge_contents<W: io::Write + Seek>(self, mut w: W) -> ZipResult<FilesByNameMap> {
+        let Self { mut reader, shared } = self;
+        if shared.files.is_empty() {
             return Ok(IndexMap::new());
         }
-        let mut new_files = self.shared.files.clone();
+
         /* The first file header will probably start at the beginning of the file, but zip doesn't
          * enforce that, and executable zips like PEX files will have a shebang line so will
          * definitely be greater than 0.
@@ -114,32 +115,52 @@ impl<R: Read + Seek> ZipArchive<R> {
          * assert_eq!(0, new_files[0].header_start); // Avoid this.
          */
 
-        let first_new_file_header_start = w.stream_position()?;
-
-        /* Push back file header starts for all entries in the covered files. */
-        new_files.values_mut().try_for_each(|f| {
-            /* This is probably the only really important thing to change. */
-            f.header_start = f
-                .header_start
-                .checked_add(first_new_file_header_start)
-                .ok_or(invalid!(
-                    "new header start from merge would have been too large"
-                ))?;
-            /* This is only ever used internally to cache metadata lookups (it's not part of the
-             * zip spec), and 0 is the sentinel value. */
-            f.central_header_start = 0;
-            /* This is an atomic variable so it can be updated from another thread in the
-             * implementation (which is good!). */
-            if let Some(old_data_start) = f.data_start.take() {
-                let new_data_start = old_data_start
+        fn prepare_merge_files<I>(
+            files: I,
+            first_new_file_header_start: u64,
+        ) -> ZipResult<FilesByNameMap>
+        where
+            I: Iterator<Item = (Box<[u8]>, ZipFileData)>,
+        {
+            let mut new_files = IndexMap::with_capacity(files.size_hint().0);
+            for (name, file) in files {
+                let mut file = file;
+                file.header_start = file
+                    .header_start
                     .checked_add(first_new_file_header_start)
                     .ok_or(invalid!(
-                        "new data start from merge would have been too large"
+                        "new header start from merge would have been too large"
                     ))?;
-                f.data_start.get_or_init(|| new_data_start);
+                file.central_header_start = 0;
+                if let Some(old_data_start) = file.data_start.take() {
+                    let new_data_start = old_data_start
+                        .checked_add(first_new_file_header_start)
+                        .ok_or(invalid!(
+                            "new data start from merge would have been too large"
+                        ))?;
+                    file.data_start.get_or_init(|| new_data_start);
+                }
+                new_files.insert(name, file);
             }
-            Ok::<_, ZipError>(())
-        })?;
+            Ok(new_files)
+        }
+
+        let (new_files, dir_start) = match std::sync::Arc::try_unwrap(shared) {
+            Ok(metadata) => (
+                prepare_merge_files(metadata.files.into_iter(), w.stream_position()?)?,
+                metadata.dir_start,
+            ),
+            Err(shared) => (
+                prepare_merge_files(
+                    shared
+                        .files
+                        .iter()
+                        .map(|(name, file)| (name.clone(), file.clone())),
+                    w.stream_position()?,
+                )?,
+                shared.dir_start,
+            ),
+        };
 
         /* Rewind to the beginning of the file.
          *
@@ -152,15 +173,11 @@ impl<R: Read + Seek> ZipArchive<R> {
          * specifically for that purpose (and therefore are unlikely to have a shebang or other
          * preface). Finally, this preserves any data that might actually be useful.
          */
-        self.reader.rewind()?;
+        reader.rewind()?;
         /* Find the end of the file data. */
-        let length_to_read = self.shared.dir_start;
-        /* Produce a Read that reads bytes up until the start of the central directory header.
-         * This "as &mut dyn Read" trick is used elsewhere to avoid having to clone the underlying
-         * handle, which it really shouldn't need to anyway. */
-        let mut limited_raw = (&mut self.reader as &mut dyn Read).take(length_to_read);
+        let length_to_read = dir_start;
         /* Copy over file data from source archive directly. */
-        io::copy(&mut limited_raw, &mut w)?;
+        io::copy(&mut reader.take(length_to_read), &mut w)?;
 
         /* Return the files we've just written to the data stream. */
         Ok(new_files)
@@ -247,6 +264,8 @@ fn central_header_to_zip_file_inner<R: Read>(
         external_attributes: external_file_attributes,
         large_file: false,
         extra_fields,
+        overridden_header_name: None,
+        header_language_encoding: ZipFlags::matching(flags, ZipFlags::LanguageEncoding),
     };
     result.apply_extra_fields(&mut file_name_raw)?;
 
@@ -266,7 +285,7 @@ pub trait HasZipMetadata {
 }
 
 /// Options for reading a file from an archive.
-#[derive(Default)]
+#[derive(Clone, Default, Debug)]
 #[non_exhaustive]
 pub struct ZipReadOptions<'a> {
     /// The password to use when decrypting the file.  This is ignored if not required.
@@ -399,9 +418,12 @@ impl HeaderDataDescriptorMetadata {
 
 /// Unified header metadata used to validate consistency between Local and Central headers.
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct HeaderConsistencyMetadata<T: AsRef<[u8]>, U: AsRef<[u8]> = T> {
+pub(crate) struct HeaderConsistencyMetadata<T: AsRef<[u8]>> {
     pub(crate) name: T,
-    pub(crate) upath: Option<U>,
+    pub(crate) overridden_header_name: Option<T>,
+    pub(crate) is_directory: bool,
+    pub(crate) has_language_encoding: bool,
+    pub(crate) upath: Option<T>,
     pub(crate) upath_crc32: Option<u32>,
     pub(crate) compression_method: u16,
     pub(crate) is_encrypted: bool,
@@ -418,6 +440,9 @@ impl HeaderConsistencyMetadata<&[u8]> {
     pub(crate) fn into_owned(self) -> HeaderConsistencyMetadata<Box<[u8]>> {
         HeaderConsistencyMetadata {
             name: self.name.into(),
+            overridden_header_name: self.overridden_header_name.map(Into::into),
+            is_directory: self.is_directory,
+            has_language_encoding: self.has_language_encoding,
             upath: self.upath.map(Into::into),
             upath_crc32: self.upath_crc32,
             compression_method: self.compression_method,
@@ -432,11 +457,11 @@ impl HeaderConsistencyMetadata<&[u8]> {
     }
 }
 
-impl<T: AsRef<[u8]>, U: AsRef<[u8]>> HeaderConsistencyMetadata<T, U> {
+impl<T: AsRef<[u8]>> HeaderConsistencyMetadata<T> {
     /// Validates header identity (filename, UnicodePath, compression method, and flags).
-    pub(crate) fn validate_identity_matches<T2: AsRef<[u8]>, U2: AsRef<[u8]>>(
+    pub(crate) fn validate_identity_matches<T2: AsRef<[u8]>>(
         &self,
-        central: &HeaderConsistencyMetadata<T2, U2>,
+        central: &HeaderConsistencyMetadata<T2>,
     ) -> ZipResult<()> {
         let local_effective = self
             .upath
@@ -457,6 +482,39 @@ impl<T: AsRef<[u8]>, U: AsRef<[u8]>> HeaderConsistencyMetadata<T, U> {
             return Err(invalid!(
                 "header inconsistency detected: Local file header filename mismatch (does not match central directory)"
             ));
+        }
+
+        validate_language_encoding_upath(
+            self.has_language_encoding,
+            self.name.as_ref(),
+            self.overridden_header_name.as_ref().map(AsRef::as_ref),
+            self.upath.as_ref().map(AsRef::as_ref),
+        )?;
+        validate_language_encoding_upath(
+            central.has_language_encoding,
+            central.name.as_ref(),
+            central.overridden_header_name.as_ref().map(AsRef::as_ref),
+            central.upath.as_ref().map(AsRef::as_ref),
+        )?;
+
+        if let (Some(upath), Some(overridden_header_name)) =
+            (self.upath.as_ref(), self.overridden_header_name.as_ref())
+        {
+            validate_unicode_path_name(
+                overridden_header_name.as_ref(),
+                upath.as_ref(),
+                self.is_directory && central.is_directory,
+            )?;
+        }
+        if let (Some(upath), Some(overridden_header_name)) = (
+            central.upath.as_ref(),
+            central.overridden_header_name.as_ref(),
+        ) {
+            validate_unicode_path_name(
+                overridden_header_name.as_ref(),
+                upath.as_ref(),
+                self.is_directory && central.is_directory,
+            )?;
         }
 
         if self.compression_method != central.compression_method {
@@ -505,20 +563,355 @@ impl<T: AsRef<[u8]>, U: AsRef<[u8]>> HeaderConsistencyMetadata<T, U> {
     }
 
     /// Validates data descriptor and payload consistency.
-    pub(crate) fn validate_data_matches<T2: AsRef<[u8]>, U2: AsRef<[u8]>>(
+    pub(crate) fn validate_data_matches<T2: AsRef<[u8]>>(
         &self,
-        central: &HeaderConsistencyMetadata<T2, U2>,
+        central: &HeaderConsistencyMetadata<T2>,
     ) -> ZipResult<()> {
         self.data.validate_matches(&central.data)
     }
 
     /// Validates that local header metadata matches central directory metadata.
-    pub(crate) fn validate_matches<T2: AsRef<[u8]>, U2: AsRef<[u8]>>(
+    pub(crate) fn validate_matches<T2: AsRef<[u8]>>(
         &self,
-        central: &HeaderConsistencyMetadata<T2, U2>,
+        central: &HeaderConsistencyMetadata<T2>,
     ) -> ZipResult<()> {
         self.validate_identity_matches(central)?;
         self.validate_data_matches(central)?;
         Ok(())
     }
+}
+
+fn validate_language_encoding_upath(
+    has_language_encoding: bool,
+    file_name: &[u8],
+    overridden_header_name: Option<&[u8]>,
+    upath: Option<&[u8]>,
+) -> ZipResult<()> {
+    if has_language_encoding
+        && let Some(upath) = upath
+        && overridden_header_name.unwrap_or(file_name) != upath
+    {
+        return Err(invalid!(
+            "header inconsistency detected: UnicodePath (0x7075) does not match UTF-8 file name"
+        ));
+    }
+    Ok(())
+}
+
+fn validate_unicode_path_name(
+    main_name: &[u8],
+    unicode_path: &[u8],
+    is_directory: bool,
+) -> ZipResult<()> {
+    // 1. Null-byte poisoning check
+    if main_name.contains(&0) || unicode_path.contains(&0) {
+        return Err(invalid!(
+            "header inconsistency detected: filename contains null byte"
+        ));
+    }
+
+    // 2. Directory trailing separator parity
+    let main_has_trailing = main_name.ends_with(b"/") || main_name.ends_with(b"\\");
+    let unicode_has_trailing = unicode_path.ends_with(b"/") || unicode_path.ends_with(b"\\");
+    if main_has_trailing != unicode_has_trailing {
+        return Err(invalid!(
+            "header inconsistency detected: UnicodePath (0x7075) directory status differs from file name"
+        ));
+    }
+
+    let main_name_str = String::from_utf8_lossy(main_name);
+    let unicode_path_str = std::str::from_utf8(unicode_path).map_err(|_| {
+        invalid!("header inconsistency detected: UnicodePath (0x7075) is not valid UTF-8")
+    })?;
+
+    // 3. Prohibit dangerous Unicode control characters & homoglyph delimiters:
+    // - Bidirectional overrides: U+202A..=U+202E, U+2066..=U+2069
+    // - Fullwidth dots and slashes: U+FF0E, U+FF0F, U+FF3C, U+2044, U+2215
+    // - ASCII control characters (< 0x20)
+    for ch in unicode_path_str.chars() {
+        if matches!(
+            ch,
+            '\u{202A}'..='\u{202E}'
+                | '\u{2066}'..='\u{2069}'
+                | '\u{FF0E}'
+                | '\u{FF0F}'
+                | '\u{FF3C}'
+                | '\u{2044}'
+                | '\u{2215}'
+                | '\0'..='\x1F'
+                | '\x7F'
+        ) {
+            return Err(invalid!(
+                "header inconsistency detected: UnicodePath (0x7075) contains illegal control or homoglyph character"
+            ));
+        }
+    }
+
+    let main_components: Vec<_> = Utf8WindowsPath::new(&main_name_str).components().collect();
+    let unicode_components: Vec<_> = Utf8WindowsPath::new(unicode_path_str)
+        .components()
+        .collect();
+
+    if main_components.len() != unicode_components.len() {
+        return Err(invalid!(
+            "header inconsistency detected: UnicodePath (0x7075) changes file name path components"
+        ));
+    }
+
+    for (main, unicode) in main_components.iter().zip(&unicode_components) {
+        if core::mem::discriminant(main) != core::mem::discriminant(unicode) {
+            return Err(invalid!(
+                "header inconsistency detected: UnicodePath (0x7075) changes file name path components"
+            ));
+        }
+
+        let (main_str, unicode_str) = (main.as_str(), unicode.as_str());
+
+        // 4. Windows trailing dot/space spoofing check
+        let main_trimmed = main_str.trim_end_matches(['.', ' ']);
+        let unicode_trimmed = unicode_str.trim_end_matches(['.', ' ']);
+        if (main_trimmed != main_str) != (unicode_trimmed != unicode_str) {
+            return Err(invalid!(
+                "header inconsistency detected: UnicodePath (0x7075) has divergent trailing dots or spaces"
+            ));
+        }
+
+        // Exception: DOS 8.3 alias compatibility (e.g. LONGFI~1.TXT for LongFileName.txt).
+        // Tools in the 1990s wrote 8.3 aliases in the main header and long names in 0x7075.
+        if let Some(prefix) = parse_dos_8_3_alias(main_trimmed) {
+            let unicode_stem = match unicode_trimmed.rsplit_once('.') {
+                Some((stem, _)) => stem,
+                None => unicode_trimmed,
+            };
+            if is_ascii_subsequence(prefix, unicode_stem) {
+                continue;
+            }
+        }
+
+        if main_str.is_ascii() && unicode_str.is_ascii() {
+            // Case-insensitive ASCII comparison: handles uppercase fallback tools (e.g. README.TXT vs readme.txt).
+            if !main_str.eq_ignore_ascii_case(unicode_str) {
+                return Err(invalid!(
+                    "header inconsistency detected: UnicodePath (0x7075) changes file name path components"
+                ));
+            }
+        } else {
+            // When either component has non-ASCII characters, the raw main_name must represent a valid
+            // fallback (transliteration / lossy representation). ASCII characters in either component
+            // must appear in the other in relative order (subsequence match).
+            let matches = is_ascii_subsequence(unicode_str, main_str)
+                || is_ascii_subsequence(main_str, unicode_str);
+
+            if !matches {
+                return Err(invalid!(
+                    "header inconsistency detected: UnicodePath (0x7075) changes file name path components"
+                ));
+            }
+        }
+    }
+
+    if !is_directory {
+        let unicode_extension = file_extension(unicode_path_str);
+        let main_extension = file_extension(&main_name_str);
+        let extensions_consistent = match (main_extension, unicode_extension) {
+            (None, None) => true,
+            (Some(main_ext), Some(unicode_ext)) => {
+                if main_ext.eq_ignore_ascii_case(unicode_ext) {
+                    true
+                } else {
+                    // Legitimate non-ASCII extension with ASCII fallback (e.g. Cyrillic/Greek transliteration)
+                    main_ext.is_ascii() && !unicode_ext.is_ascii()
+                }
+            }
+            _ => false,
+        };
+        if !extensions_consistent {
+            return Err(invalid!(
+                "header inconsistency detected: UnicodePath (0x7075) file extension differs from file name"
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn to_subsequence_ascii(c: char) -> Option<char> {
+    match c {
+        // Turkish dotted capital İ (U+0130) and dotless lowercase ı (U+0131)
+        '\u{0130}' | '\u{0131}' => Some('i'),
+        c if c.is_ascii() => Some(c.to_ascii_lowercase()),
+        _ => None,
+    }
+}
+
+fn is_ascii_subsequence(sub: &str, full: &str) -> bool {
+    let mut sub_iter = sub.chars().filter_map(to_subsequence_ascii);
+
+    let mut target = match sub_iter.next() {
+        Some(c) => c,
+        None => return true,
+    };
+
+    for ch in full.chars().filter_map(to_subsequence_ascii) {
+        if ch == target {
+            match sub_iter.next() {
+                Some(next_c) => target = next_c,
+                None => return true,
+            }
+        }
+    }
+    false
+}
+
+fn parse_dos_8_3_alias(component: &str) -> Option<&str> {
+    let stem = match component.rsplit_once('.') {
+        Some((s, _)) => s,
+        None => component,
+    };
+    if stem.len() > 8 || !stem.contains('~') {
+        return None;
+    }
+    let tilde_idx = stem.rfind('~')?;
+    let (prefix, suffix) = stem.split_at(tilde_idx);
+    let digits = &suffix[1..];
+    if !prefix.is_empty() && !digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit()) {
+        Some(prefix)
+    } else {
+        None
+    }
+}
+
+fn file_extension(path: &str) -> Option<&str> {
+    let Utf8WindowsComponent::Normal(file_name) =
+        Utf8WindowsPath::new(path).components().next_back()?
+    else {
+        return None;
+    };
+    let dot_idx = file_name.rfind('.')?;
+    let stem = &file_name[..dot_idx];
+    let ext = &file_name[dot_idx + 1..];
+    if stem.is_empty() || ext.is_empty() {
+        return None;
+    }
+    Some(ext)
+}
+
+#[test]
+fn test_multiple_file_extension() {
+    assert_eq!(file_extension("archive.tar.gz"), Some("gz"));
+    assert_eq!(file_extension("archive.résumé.gz"), Some("gz"));
+    assert_eq!(file_extension("file.txt"), Some("txt"));
+    assert_eq!(file_extension(".gitignore"), None);
+    assert_eq!(file_extension("no_extension"), None);
+}
+
+#[test]
+fn test_validate_unicode_path_name_compatibility() {
+    // 1. German ß / ss & CP437
+    assert!(validate_unicode_path_name(b"strasse.txt", "straße.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"STRASSE.TXT", "straße.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"Stra\xe1e.txt", "straße.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"strae.txt", "straße.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"stra_e.txt", "straße.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"stra?e.txt", "straße.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"M\x81ller.txt", "Müller.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"caf\x82.txt", "café.txt".as_bytes(), false).is_ok());
+
+    // 2. Turkish I / İ / ı (including Windows-1254 encodings)
+    assert!(validate_unicode_path_name(b"ISTANBUL.TXT", "İstanbul.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"istanbul.txt", "İstanbul.txt".as_bytes(), false).is_ok());
+    assert!(
+        validate_unicode_path_name(b"\xddSTANBUL.TXT", "İstanbul.txt".as_bytes(), false).is_ok()
+    );
+    assert!(
+        validate_unicode_path_name(b"DIYARBAKIR.TXT", "Diyarbakır.txt".as_bytes(), false).is_ok()
+    );
+    assert!(
+        validate_unicode_path_name(b"D\xfdYARBAKIR.TXT", "Diyarbakır.txt".as_bytes(), false)
+            .is_ok()
+    );
+    assert!(
+        validate_unicode_path_name(b"diyarbak\xfdr.txt", "Diyarbakır.txt".as_bytes(), false)
+            .is_ok()
+    );
+    assert!(validate_unicode_path_name(b"ATATURK.TXT", "Atatürk.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"ataturk.txt", "Atatürk.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"TURKIYE.TXT", "Türkiye.txt".as_bytes(), false).is_ok());
+    assert!(
+        validate_unicode_path_name(b"CANAKKALE.TXT", "Çanakkale.txt".as_bytes(), false).is_ok()
+    );
+
+    // 3. DOS & OS/2 8.3 Aliases and Fallbacks
+    assert!(
+        validate_unicode_path_name(b"LONGFI~1.TXT", "LongFileName.txt".as_bytes(), false).is_ok()
+    );
+    assert!(
+        validate_unicode_path_name(
+            b"DOCUME~2.PDF",
+            "DocumentSpecialReport.pdf".as_bytes(),
+            false
+        )
+        .is_ok()
+    );
+    assert!(
+        validate_unicode_path_name(b"ISTANB~1.DOC", "İstanbulReport.doc".as_bytes(), false).is_ok()
+    );
+    // DOS 8.3 aliases with prefix matching:
+    assert!(
+        validate_unicode_path_name(
+            b"VERYLO~1.TXT",
+            "VeryLongDocumentName.txt".as_bytes(),
+            false
+        )
+        .is_ok()
+    );
+    // Adversarial: arbitrary 8.3 ASCII names cannot cloak divergent Unicode paths:
+    assert!(
+        validate_unicode_path_name(b"MYDOC.TXT", "VeryLongDocumentName.txt".as_bytes(), false)
+            .is_err()
+    );
+    assert!(validate_unicode_path_name(b"readme.txt", "malwaré.txt".as_bytes(), false).is_err());
+    // Adversarial: both 8.3 ASCII but divergent names must be blocked:
+    assert!(validate_unicode_path_name(b"safe.txt", "evil.txt".as_bytes(), false).is_err());
+    assert!(validate_unicode_path_name(b"SAFE.TXT", "safe.txt".as_bytes(), false).is_ok());
+    assert!(
+        validate_unicode_path_name(b"LONGFI~1.EXE", "LongFileName.pdf".as_bytes(), false).is_err()
+    );
+
+    // 4. Non-ASCII Extensions with ASCII Fallback
+    assert!(validate_unicode_path_name(b"document.doc", "document.дос".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"report.pdf", "report.рdf".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"document.txt", "document.exe".as_bytes(), false).is_err());
+
+    // 5. Latin and Non-Latin alphabets / Hungarian diacritics & dropped characters
+    assert!(validate_unicode_path_name(b"arxeio.txt", "αρχείο.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"document.txt", "документ.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"dok.txt", "документ.txt".as_bytes(), false).is_ok());
+    assert!(
+        validate_unicode_path_name(b"arvizturo.txt", "árvíztűrő.txt".as_bytes(), false).is_ok()
+    );
+    assert!(validate_unicode_path_name(b"ervnyes.txt", "érvényes.txt".as_bytes(), false).is_ok());
+    assert!(validate_unicode_path_name(b"rvztr.txt", "árvíztűrő.txt".as_bytes(), false).is_ok());
+    assert!(
+        validate_unicode_path_name(b"?rv?zt?r?.txt", "árvíztűrő.txt".as_bytes(), false).is_ok()
+    );
+    assert!(
+        validate_unicode_path_name(b"\xA0rv\xA1zturo.txt", "árvíztűrő.txt".as_bytes(), false)
+            .is_ok()
+    );
+    assert!(
+        validate_unicode_path_name(b"\xA0rv\xA1ztr.txt", "árvíztűrő.txt".as_bytes(), false).is_ok()
+    );
+    assert!(
+        validate_unicode_path_name(b"\xA0rv\xA1zt?r?.txt", "árvíztűrő.txt".as_bytes(), false)
+            .is_ok()
+    );
+    assert!(
+        validate_unicode_path_name(
+            b"\xA0rv\xA1zt\x81r\x94.txt",
+            "árvíztűrő.txt".as_bytes(),
+            false
+        )
+        .is_ok()
+    );
 }

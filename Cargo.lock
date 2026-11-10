@@ -13494,7 +13494,7 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "9.2.0"
+version = "9.4.1"
 dependencies = [
  "aes 0.9.3",
  "constant_time_eq 0.6.1",
@@ -13503,6 +13503,7 @@ dependencies = [
  "getrandom 0.4.3",
  "hmac 0.13.0",
  "indexmap 2.14.0",
+ "libc",
  "memchr",
  "nix",
  "pbkdf2 0.13.0",

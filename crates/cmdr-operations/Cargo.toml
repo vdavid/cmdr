@@ -90,7 +90,7 @@ uuid = { version = "1.29.1", features = ["v4", "v7"] }
 walkdir = "2"
 # Fresh compression's writer. The features match the app's copy, so the graph
 # links one `zip`.
-zip = { version = "9.2.0", default-features = false, features = ["deflate", "aes-crypto", "unreserved"] }
+zip = { version = "9.4.1", default-features = false, features = ["deflate", "aes-crypto", "unreserved"] }
 
 # Everything that needs the host's own disk, which the browser build (the demo's
 # `wasm32-unknown-unknown` engine) doesn't have. The local-engine modules that use
