@@ -148,6 +148,12 @@
       "groupName": null
     },
     {
+      "description": "The desktop's direct `@cyclonedx/cyclonedx-library` must equal the exact version `rollup-plugin-sbom` pins (10.3.0 as of rollup-plugin-sbom 5.0.1): `Component` has private fields, so a second copy makes `vite-frontend-sbom.ts` a type error. Move it by hand when rollup-plugin-sbom bumps its pin (`npm view rollup-plugin-sbom dependencies`).",
+      "matchFileNames": ["apps/desktop/package.json"],
+      "matchPackageNames": ["@cyclonedx/cyclonedx-library"],
+      "enabled": false
+    },
+    {
       "description": "The specta trio stays on rc.24 / 0.0.11. rc.25 types every plain `f32`/`f64` as `number | null`. On return values that's defensible (serde_json renders NaN/Infinity as null), but it does the same to PARAMETERS, where it's wrong: `viewer_get_lines(target_value: f64)` and the four `media_index_*_threshold` commands take non-Option floats and serde rejects a JSON null for them. Adopting it trades a latent, never-observed hazard for a live one, plus ~25 sites of null-handling. Rationale: `apps/desktop/src-tauri/DETAILS.md` § Number types over IPC. Re-evaluate on the next rc; bump all three together or not at all.",
       "matchPackageNames": ["specta", "tauri-specta", "specta-typescript"],
       "enabled": false

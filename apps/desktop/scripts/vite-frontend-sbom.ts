@@ -22,6 +22,8 @@
  * The output is `build/sbom/frontend.cdx.json`. `saveTimestamp` is off so the file depends only on
  * the commit. How it's published: `docs/guides/releasing.md` § Provenance and SBOM attestations.
  */
+// `@cyclonedx/cyclonedx-library` must be the exact version `rollup-plugin-sbom` pins: `Component` has
+// private fields, so two copies make `bom.components.add()` a type error. Move them together.
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { Enums, Models } from '@cyclonedx/cyclonedx-library'
