@@ -1,5 +1,53 @@
 import { describe, it, expect } from 'vitest'
-import { bandSegments, columnPath, lineRuns, shortDay, stackGap } from './daily-chart.js'
+import {
+  bandSegments,
+  columnPath,
+  foldedColumn,
+  lineRuns,
+  shortDay,
+  stackGap,
+  type ColumnSeries,
+} from './daily-chart.js'
+
+describe('foldedColumn', () => {
+  const layer = (key: string, values: (number | null)[], foldInto?: string): ColumnSeries => ({
+    key,
+    label: key,
+    color: '#000000',
+    values,
+    ...(foldInto ? { foldInto } : {}),
+  })
+
+  it('moves a segment under the threshold into its fold target, keeping the column total', () => {
+    const layers = [layer('US', [20]), layer('DE', [3], 'other'), layer('HU', [7], 'other'), layer('other', [5])]
+    // 5% of a 150 axis is 7.5: DE (3) and HU (7) fold, US (20) stays.
+    expect(foldedColumn(layers, 0, 7.5).map((s) => [s.series.key, s.value])).toEqual([
+      ['US', 20],
+      ['other', 15],
+    ])
+  })
+
+  it('gives a fold target that had nothing of its own a segment of what it absorbed', () => {
+    const layers = [layer('US', [20]), layer('DE', [2], 'other'), layer('other', [0])]
+    expect(foldedColumn(layers, 0, 7.5).map((s) => [s.series.key, s.value])).toEqual([
+      ['US', 20],
+      ['other', 2],
+    ])
+  })
+
+  it('leaves a thin segment alone when it has no fold target in the stack', () => {
+    const layers = [layer('direct', [2]), layer('homebrew', [1], 'missing')]
+    expect(foldedColumn(layers, 0, 7.5).map((s) => [s.series.key, s.value])).toEqual([
+      ['direct', 2],
+      ['homebrew', 1],
+    ])
+  })
+
+  it('drops zero and unknown values', () => {
+    const layers = [layer('US', [0]), layer('DE', [null], 'other'), layer('other', [4])]
+    expect(foldedColumn(layers, 0, 7.5).map((s) => [s.series.key, s.value])).toEqual([['other', 4]])
+  })
+})
 
 describe('stackGap', () => {
   it('keeps a thin slice at its full, honest height', () => {

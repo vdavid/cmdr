@@ -8,6 +8,38 @@ export interface ColumnSeries {
   values: (number | null)[]
   /** Draw the segment as 45° stripes of `color` instead of a solid fill (the "unknown channel" texture). */
   hatch?: boolean
+  /**
+   * The `key` of the layer that absorbs this one's segment on a day it's too thin to read (under
+   * `foldShareOfAxis` of the axis max), like a country into "Other". Drawing only: the tooltip keeps it.
+   */
+  foldInto?: string
+}
+
+/** A segment under this share of the y-axis max draws as part of its `foldInto` layer. */
+export const foldShareOfAxis = 0.05
+
+/**
+ * Column `i`'s drawn segments, bottom up: each layer's value that day, except that a value under `minValue`
+ * moves into its `foldInto` layer (when that layer is in `layers`). Zero and unknown values drop out. Pure.
+ */
+export function foldedColumn(
+  layers: ColumnSeries[],
+  i: number,
+  minValue: number,
+): { series: ColumnSeries; value: number }[] {
+  const keys = new Set(layers.map((s) => s.key))
+  const moved = new Map<string, number>()
+  const folds = (s: ColumnSeries, v: number) => s.foldInto !== undefined && keys.has(s.foldInto) && v < minValue
+  for (const s of layers) {
+    const v = s.values[i] ?? 0
+    if (v > 0 && folds(s, v)) moved.set(s.foldInto as string, (moved.get(s.foldInto as string) ?? 0) + v)
+  }
+  return layers
+    .map((s) => {
+      const v = s.values[i] ?? 0
+      return { series: s, value: (folds(s, v) ? 0 : v) + (moved.get(s.key) ?? 0) }
+    })
+    .filter((seg) => seg.value > 0)
 }
 
 /** A legend entry, for charts whose layers are too many to list one by one. */

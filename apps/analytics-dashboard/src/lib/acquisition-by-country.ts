@@ -27,6 +27,7 @@ export function countrySeries(layers: CountryLayer[]): ColumnSeries[] {
     label: countryLabel(l.code),
     color: l.code === otherCountries ? COLOR_OTHER_COUNTRIES : countryColor(l.code),
     values: l.values,
+    ...(l.code === otherCountries ? {} : { foldInto: otherCountries }),
   }))
 }
 
@@ -43,6 +44,8 @@ export function splitSeries(layers: SplitLayer[]): ColumnSeries[] {
       color: l.channel === 'direct' ? base : tint(base, homebrewTint),
       values: l.values,
       hatch: l.channel === 'unknown',
+      // A thin country segment folds into its own channel's "Other", so the channel groups stay aligned.
+      ...(l.code === otherCountries ? {} : { foldInto: `${l.channel}-${otherCountries}` }),
     }
   })
 }

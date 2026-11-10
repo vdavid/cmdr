@@ -11,6 +11,8 @@
     import {
         bandSegments,
         columnPath,
+        foldedColumn,
+        foldShareOfAxis,
         labelWidth,
         lineRuns,
         shortDay,
@@ -137,9 +139,8 @@
     function stack(i: number, layers: ColumnSeries[], x: number, w: number): { key: string; fill: string; path: string }[] {
         const out: { key: string; fill: string; path: string }[] = []
         let base = 0
-        const known = layers.filter((s) => (s.values[i] ?? 0) > 0)
-        known.forEach((s, k) => {
-            const value = s.values[i] ?? 0
+        const known = foldedColumn(layers, i, foldShareOfAxis * yMax)
+        known.forEach(({ series: s, value }, k) => {
             const top = y(base + value)
             const bottom = y(base) - (k > 0 ? stackGap(y(base) - top) : 0)
             const isTop = k === known.length - 1

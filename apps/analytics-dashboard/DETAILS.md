@@ -404,11 +404,13 @@ grids stay on fixed 90/30/7 columns.
   adds that country's slices (`countries.extra`, cached on its own).
 - **Country stacks.** For all countries, visitors and clicks stack the top 20 plus grey "Other" (total minus their sum,
   so a stack always sums to the day's total; `stackByCountry`), and the tooltip shows each count and its share of the
-  day. New installs draw a split bar: the left half stacks by channel, the right half by channel group first and country
-  within it (`installSplit`), so the channel boundaries line up across both halves. A country's Homebrew segment is a
-  lighter tint of its color (`homebrewTint`), its unknown-channel segment that tint striped. Per-country installs count
-  only installs whose first beat carried a country, so "Other" also holds the ones with none. Filtered to one country,
-  every chart is a single series in that country's color.
+  day. A country segment under 5% of the axis max (`foldShareOfAxis`) draws as part of "Other" that day (its channel's
+  "Other" in the split bar), so a bar holds only readable slices; the tooltip still lists every country (`foldedColumn`,
+  David's call 2026-11-10). New installs draw a split bar: the left half stacks by channel, the right half by channel
+  group first and country within it (`installSplit`), so the channel boundaries line up across both halves. A country's
+  Homebrew segment is a lighter tint of its color (`homebrewTint`), its unknown-channel segment that tint striped.
+  Per-country installs count only installs whose first beat carried a country, so "Other" also holds the ones with none.
+  Filtered to one country, every chart is a single series in that country's color.
 - **Plain SVG over uPlot** for these charts: discrete days, an exact number on each column where it fits, a faded today,
   and an exact-values tooltip. The chart is a `role="slider"` over days: arrow keys walk them and each day's readout is
   the `aria-valuetext`.
