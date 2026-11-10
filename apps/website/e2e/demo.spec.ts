@@ -159,6 +159,14 @@ test.describe('Browser demo', () => {
       expect(errors.map((error) => error.message)).toEqual([])
     })
 
+    /**
+     * The rolled-back operation's state in the Operation log's list. The picked operation's detail
+     * header badges the same state, by design (`apps/desktop/src/lib/operation-log/DETAILS.md`), so
+     * an unscoped "Rolled back" matches twice.
+     */
+    const rolledBackInList = (page: Page) =>
+      page.getByRole('grid', { name: 'Operations' }).getByText('Rolled back', { exact: true })
+
     test('the operation log rolls a copy back', async ({ page }) => {
       const errors = collectPageErrors(page)
       await openDemo(page)
@@ -170,7 +178,7 @@ test.describe('Browser demo', () => {
       await page.getByRole('button', { name: 'Roll back', exact: true }).click()
       const confirm = page.locator('[role=dialog], [role=alertdialog]').filter({ hasText: 'Roll this operation back?' })
       await confirm.getByRole('button', { name: 'Roll back', exact: true }).click()
-      await expect(page.getByText('Rolled back', { exact: true })).toBeVisible()
+      await expect(rolledBackInList(page)).toBeVisible()
       await expect(row(right(page), 'notes')).toHaveCount(0)
       expect(errors.map((error) => error.message)).toEqual([])
     })
@@ -220,7 +228,7 @@ test.describe('Browser demo', () => {
       await page.getByRole('button', { name: 'Roll back', exact: true }).first().click()
       const confirm = page.locator('[role=dialog], [role=alertdialog]').filter({ hasText: 'Roll this operation back?' })
       await confirm.getByRole('button', { name: 'Roll back', exact: true }).click()
-      await expect(page.getByText('Rolled back', { exact: true })).toBeVisible()
+      await expect(rolledBackInList(page)).toBeVisible()
       await expect(row(left(page), 'Annual report_01')).toHaveCount(0)
       await expect(row(left(page), 'Annual report')).toBeVisible()
       expect((await unanswered(page)).filter((name) => name.includes('multi_rename'))).toEqual([])
