@@ -117,6 +117,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 | GET     | `/admin/crashes`               | Bearer token  | Aggregated crash data by day/crash site/signal                                                     |
 | GET     | `/admin/heartbeat-dau`         | Bearer token  | Per-day DAU (distinct `anal_id`) + app hours (`uptime_seconds`, an hour per legacy beat)           |
 | GET     | `/admin/funnel`                | Bearer token  | Per-UTC-day acquisition funnel for the last N days (downloads, installs, DAU, D7, signups)         |
+| GET     | `/admin/funnel/countries`      | Bearer token  | The funnel window summed per country (downloads, installs, D7 cohort and retained)                 |
 | GET     | `/admin/feedback`              | Bearer token  | In-app feedback rows from D1 (full text, reply-to email, `answeredAt`), newest first               |
 | PUT     | `/admin/feedback/:id/answered` | Bearer token  | Mark one feedback row answered (`{ answered: true }`) or back to awaiting a reply (`false`)        |
 | GET     | `/admin/error-reports`         | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first  |
@@ -315,18 +316,20 @@ back to the OAuth login).
 
 **D1 for telemetry and fulfillment:** crash reports, downloads, update checks, heartbeats, relayed feature events,
 feedback, and the `license_issuance` record all live in D1 (binding `TELEMETRY_DB`, database `cmdr-telemetry-eu`, in the
-`eu` jurisdiction). Migrations live in `migrations/` (latest: `0026_feedback_error_report_id.sql`, the logs a feedback
-message came with, § The reports repo; `0023_card_ratings.sql`, the triage comments the rating job has applied or
-flagged, § Card ratings; `0022_report_outbox.sql`, the report outbox: `error_reports`, `error_report_amendments`,
-`ops_events`, and `issue_number` on crashes and feedback, § The reports repo; `0021_license_adjustments.sql` is the
-refund and chargeback record `/webhook/paddle` keeps beside the ledger (`src/licensing/DETAILS.md` § Refunds);
-`0020_heartbeat_uptime_and_events.sql` is `heartbeat.uptime_seconds` and the `analytics_event` table `/heartbeat` relays
-feature events into; `0017_manual_licenses.sql` is the `source` / `organization_name` / `expires_at` / `revoked_at` /
-`note` columns that turn `license_issuance` into the ledger for hand-issued licenses as well as purchases;
-`0016_feedback_notified_at.sql` is the `feedback.notified_at` column the report digest reads, which also stamps the
-pre-existing rows so the first tick doesn't mail the backlog; `0015_crash_app_fate.sql` adds the nullable `app_fate`
-column the crash email ranks rows by; `0014_downloads_daily_unique.sql` is the distinct-downloader rollup the retention
-sweep writes; `0013_minimize_stored_identifiers.sql` adds `downloads.ua_family` and erases the crash-table IP hashes;
+`eu` jurisdiction). Migrations live in `migrations/` (latest: `0031_install_country_channel_summary.sql`, the
+heartbeat's `country` / `install_channel` and the `install_summary` table, `src/admin/DETAILS.md` § Install summary;
+`0026_feedback_error_report_id.sql`, the logs a feedback message came with, § The reports repo; `0023_card_ratings.sql`,
+the triage comments the rating job has applied or flagged, § Card ratings; `0022_report_outbox.sql`, the report outbox:
+`error_reports`, `error_report_amendments`, `ops_events`, and `issue_number` on crashes and feedback, § The reports
+repo; `0021_license_adjustments.sql` is the refund and chargeback record `/webhook/paddle` keeps beside the ledger
+(`src/licensing/DETAILS.md` § Refunds); `0020_heartbeat_uptime_and_events.sql` is `heartbeat.uptime_seconds` and the
+`analytics_event` table `/heartbeat` relays feature events into; `0017_manual_licenses.sql` is the `source` /
+`organization_name` / `expires_at` / `revoked_at` / `note` columns that turn `license_issuance` into the ledger for
+hand-issued licenses as well as purchases; `0016_feedback_notified_at.sql` is the `feedback.notified_at` column the
+report digest reads, which also stamps the pre-existing rows so the first tick doesn't mail the backlog;
+`0015_crash_app_fate.sql` adds the nullable `app_fate` column the crash email ranks rows by;
+`0014_downloads_daily_unique.sql` is the distinct-downloader rollup the retention sweep writes;
+`0013_minimize_stored_identifiers.sql` adds `downloads.ua_family` and erases the crash-table IP hashes;
 `0012_license_issuance.sql` is the fulfillment record; `0011_crash_panic_message.sql` adds the nullable `panic_message`
 column; `0007_feedback.sql` adds the `feedback` table; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email`
 columns; `0005_heartbeat.sql` adds the `heartbeat` table). Apply with `wrangler d1 migrations apply TELEMETRY_DB` before
@@ -560,7 +563,10 @@ triage value live in the other columns, and there's no privacy reason to lose th
 - **`license_adjustments`**: never swept, for the same audit reason; it's how we know a license was revoked by a refund.
   It holds no personal data (ids, amount, Paddle's reason), only purchase details the policy already covers.
 - **`heartbeat`**: rows DELETED after two years. Two years covers every window the dashboard computes (DAU, new
-  installs, D7 retention) with room to spare.
+  installs, D7 retention) with room to spare. Each row's `country` is Cloudflare's per-request ISO-2 code; no IP.
+- **`install_summary`**: a row lives while its install has any beat left; the sweep deletes it right after the heartbeat
+  delete takes the last one (`deleteOrphanInstallSummariesSql`). So it holds nothing the `heartbeat` promise doesn't
+  already cover: the same `anal_id`, its first-beat time, and its first country and channel.
 - **`analytics_event`**: rows DELETED after two years, the same "desktop usage stats" promise as `heartbeat`. Aged by
   `received_at` (our clock), never `occurred_at`: that's the client's clock, and a wrong one would keep a row forever.
 - **Error report bundles**: 90-day R2 lifecycle (`error-reports/` prefix only, rule details in
@@ -813,9 +819,9 @@ One qualifying beat vouches for that id's whole history, so a real user's launch
 save survive. `instr`, never `LIKE`: SQLite's `_` is a single-character wildcard, so `LIKE '%"_schemaVersion"%'` would
 let an unrelated `"xschemaVersion"` key vouch for a synthetic install.
 
-**Events go first.** The classifier reads `heartbeat`, so deleting the beats first would leave that install's events
-with nothing marking them synthetic, until retention. In this order a failure between the two statements is harmless:
-tomorrow's run finds the same beats.
+**Events and install summaries go first.** The classifier reads `heartbeat`, so deleting the beats first would leave
+that install's events and `install_summary` row with nothing marking them synthetic, until retention. In this order a
+failure between the statements is harmless: tomorrow's run finds the same beats.
 
 **Why the grace period is the delicate part.** A genuinely brand-new user has no `settings.json` either, so for their
 first minutes they look exactly like a test shard. Deleting on the classifier alone would erase real first-day installs.

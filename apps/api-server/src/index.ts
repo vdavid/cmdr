@@ -3,6 +3,7 @@ import type { Bindings } from './types'
 import { licensing } from './licensing/licensing'
 import { admin } from './admin/admin'
 import { funnel } from './admin/funnel'
+import { funnelCountries } from './admin/funnel-countries'
 import { telemetry } from './telemetry/telemetry'
 import { heartbeat } from './telemetry/heartbeat'
 import { errorReport } from './telemetry/error-report'
@@ -46,6 +47,7 @@ app.get('/', (c) => {
 app.route('/', licensing)
 app.route('/', admin)
 app.route('/', funnel)
+app.route('/', funnelCountries)
 app.route('/', telemetry)
 app.route('/', heartbeat)
 app.route('/', likes)

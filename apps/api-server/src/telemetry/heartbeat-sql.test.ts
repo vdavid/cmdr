@@ -3,32 +3,66 @@
  * mock D1 and can only prove which values were bound; only an engine can prove the `json_each`
  * unpacking puts each value in the right column. `node:sqlite` ships with Node, so this costs no dependency.
  */
-/* eslint-disable-next-line no-restricted-imports -- Reads the real migration files, Node-side; what's under test is the SQL string imported from `heartbeat.ts`. */
-import { readFileSync } from 'node:fs'
-/* eslint-disable-next-line no-restricted-imports -- The engine lives on the Node side of the test and never reaches the Worker bundle. */
-import { DatabaseSync } from 'node:sqlite'
 import { describe, expect, it } from 'vitest'
-import { insertEventsSql, insertHeartbeatSql } from './heartbeat'
+import { applyMigrationsFrom, createSqliteD1, type SqliteD1 } from '../sqlite-d1-test-helper'
+import { insertEventsSql, insertHeartbeatSql, upsertInstallSummarySql } from './heartbeat'
 
 function openDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:')
-  for (const file of ['0005_heartbeat.sql', '0020_heartbeat_uptime_and_events.sql']) {
-    db.exec(readFileSync(new URL(`../../migrations/${file}`, import.meta.url), 'utf8'))
-  }
-  return db
+  return createSqliteD1().sqlite
 }
+
+type DatabaseSync = SqliteD1['sqlite']
 
 const analId = 'anal_0123456789abcdef0123456789abcdef0123'
 const eventId = '3b241101-e2bb-4255-8caf-4136c566a962'
 
+interface BeatFacts {
+  at: string
+  country?: string | null
+  channel?: string | null
+}
+
+/** Store one beat the way the route does: the beat row, then the summary upsert, same timestamp. */
+function beat(db: DatabaseSync, id: string, facts: BeatFacts): void {
+  const { at, country = null, channel = null } = facts
+  db.prepare(insertHeartbeatSql).run(id, '1.2.3', 'macOS 26.0', 'aarch64', 'release', null, null, country, channel, at)
+  db.prepare(upsertInstallSummarySql).run(id, at, country, channel)
+}
+
+function summary(db: DatabaseSync, id: string): Record<string, unknown> {
+  return {
+    ...(db
+      .prepare(`SELECT first_beat_at, country, install_channel FROM install_summary WHERE anal_id = ?`)
+      .get(id) as Record<string, unknown>),
+  }
+}
+
 describe('the heartbeat INSERTs against real SQLite', () => {
-  it('stores the beat with its uptime', () => {
+  it('stores the beat with its uptime, country, channel, and our timestamp', () => {
     const db = openDb()
-    db.prepare(insertHeartbeatSql).run(analId, '1.2.3', 'macOS 26.0', 'aarch64', 'release', '{"a":1}', 5_400)
-    expect(db.prepare(`SELECT anal_id, uptime_seconds, config_json FROM heartbeat`).get()).toEqual({
+    db.prepare(insertHeartbeatSql).run(
+      analId,
+      '1.2.3',
+      'macOS 26.0',
+      'aarch64',
+      'release',
+      '{"a":1}',
+      5_400,
+      'SE',
+      'homebrew',
+      '2026-11-10 12:00:00',
+    )
+    expect({
+      ...db
+        .prepare(`SELECT anal_id, uptime_seconds, config_json, country, install_channel, created_at FROM heartbeat`)
+        .get(),
+    }).toEqual({
       anal_id: analId,
       uptime_seconds: 5_400,
       config_json: '{"a":1}',
+      country: 'SE',
+      install_channel: 'homebrew',
+      created_at: '2026-11-10 12:00:00',
     })
     db.close()
   })
@@ -92,5 +126,65 @@ describe('the heartbeat INSERTs against real SQLite', () => {
     const row = db.prepare(`SELECT properties_json FROM analytics_event`).get() as { properties_json: string }
     expect(JSON.parse(row.properties_json)).toEqual({ label: '[1,2]' })
     db.close()
+  })
+})
+
+describe('the install-summary upsert against real SQLite', () => {
+  it("records an install's first beat with what that beat knew", () => {
+    const db = openDb()
+    beat(db, analId, { at: '2026-11-08 09:00:00', country: 'SE', channel: 'direct' })
+    expect(summary(db, analId)).toEqual({
+      first_beat_at: '2026-11-08 09:00:00',
+      country: 'SE',
+      install_channel: 'direct',
+    })
+    db.close()
+  })
+
+  it('keeps the first beat and the first non-NULL country and channel', () => {
+    const db = openDb()
+    beat(db, analId, { at: '2026-11-08 09:00:00' })
+    beat(db, analId, { at: '2026-11-08 12:00:00', country: 'HU' })
+    beat(db, analId, { at: '2026-11-08 15:00:00', country: 'SE', channel: 'homebrew' })
+    beat(db, analId, { at: '2026-11-09 09:00:00', country: 'DE', channel: 'direct' })
+    expect(summary(db, analId)).toEqual({
+      first_beat_at: '2026-11-08 09:00:00',
+      country: 'HU',
+      install_channel: 'homebrew',
+    })
+    db.close()
+  })
+
+  it('writes nothing for a beat that changes nothing, and leaves other installs alone', () => {
+    const db = openDb()
+    const other = 'anal_ffffffffffffffffffffffffffffffffffff'
+    beat(db, analId, { at: '2026-11-08 09:00:00', country: 'SE', channel: 'direct' })
+    beat(db, other, { at: '2026-11-08 10:00:00' })
+    const result = db.prepare(upsertInstallSummarySql).run(analId, '2026-11-09 09:00:00', 'DE', 'homebrew')
+    expect(Number(result.changes)).toBe(0)
+    expect(summary(db, other)).toMatchObject({ first_beat_at: '2026-11-08 10:00:00', country: null })
+    db.close()
+  })
+})
+
+describe('migration 0031 backfills the install summary', () => {
+  it('gives every existing install its first beat, with no country or channel', () => {
+    const { sqlite } = createSqliteD1({ before: '0031' })
+    const insert = sqlite.prepare(
+      `INSERT INTO heartbeat (anal_id, created_at, app_version, os_version, arch) VALUES (?, ?, '1.0.0', '26.0', 'aarch64')`,
+    )
+    insert.run('anal_a', '2026-10-02 08:00:00')
+    insert.run('anal_a', '2026-10-01 08:00:00')
+    insert.run('anal_b', '2026-10-05 08:00:00')
+    applyMigrationsFrom(sqlite, '0031')
+    const rows = sqlite
+      .prepare(`SELECT * FROM install_summary ORDER BY anal_id`)
+      .all()
+      .map((r) => ({ ...r }))
+    expect(rows).toEqual([
+      { anal_id: 'anal_a', first_beat_at: '2026-10-01 08:00:00', country: null, install_channel: null },
+      { anal_id: 'anal_b', first_beat_at: '2026-10-05 08:00:00', country: null, install_channel: null },
+    ])
+    sqlite.close()
   })
 })

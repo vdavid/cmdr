@@ -11,15 +11,29 @@ import { resolveUaFamily } from '../user-agent'
  * Everything is bucketed by UTC day (D1 `date()` is UTC, and the Listmonk dates are normalized to UTC
  * here), so a "day" means the same window across every column.
  *
+ * Per-install facts (first beat, country, channel) come from `install_summary`, one row
+ * per install, rather than from grouping every heartbeat: `DETAILS.md` § Install summary.
+ *
  * Auth: the shared ADMIN_API_TOKEN, same pattern as the other admin endpoints.
  */
 
 const funnel = new Hono<{ Bindings: Bindings }>()
 
-/** Bounds on `?days=`: at least 1, at most 90 (keeps the Listmonk page count and SQL scans small). */
+/** Bounds on `?days=`: at least 1, at most 400 (a bit over a year, for year-over-year views). */
 const minDays = 1
-const maxDays = 90
+const maxDays = 400
 const defaultDays = 30
+
+/** The bucket for a download or install with no usable country. */
+export const unknownCountry = '(unknown)'
+/** Cloudflare's codes that aren't countries: `XX` (no country) and `T1` (Tor). */
+const nonCountryCodes = new Set(['XX', 'T1'])
+const countryPattern = /^[A-Z]{2}$/
+
+/** A stored country as the dashboard shows it: ISO-2 as-is, anything else (`unknown`, `XX`, NULL) under `(unknown)`. */
+export function normalizeCountry(value: string | null): string {
+  return value !== null && countryPattern.test(value) && !nonCountryCodes.has(value) ? value : unknownCountry
+}
 
 /** One UTC day of funnel data. `null` (not 0) means "we can't know this yet", e.g. retention too young. */
 export interface FunnelDay {
@@ -60,13 +74,27 @@ export interface FunnelDay {
   humanInstalls: number
   /** Installs whose very first heartbeat ever landed that day (a true new-install count). */
   newInstalls: number
+  /**
+   * `newInstalls` split by the install's channel (its first non-NULL `installChannel`), summing to
+   * `newInstalls`. `unknown` holds installs from clients older than the field.
+   */
+  newInstallsByChannel: { homebrew: number; direct: number; unknown: number }
   /** Distinct install ids that beat at all that day (true DAU from the heartbeat). */
   dau: number
   /** D7 retention for this cohort: `null` until the cohort is >= 8 days old, else a 0..1 fraction. */
   d7Retention: number | null
   /** Raw count behind `d7Retention` (cohort installs that beat again in [day+7, day+8)). `null` if too young. */
   d7Retained: number | null
-  /** Newsletter + beta-list subscribers created that day (Listmonk). `null` when Listmonk is unconfigured. */
+  /**
+   * The tentative stand-in for D7 while the cohort is 2–7 days old: `day` is the latest fully passed day
+   * index n (1..6) and `retained` the cohort installs that beat in [day+n, day+n+1). `null` otherwise,
+   * and for a day with no new installs.
+   */
+  retentionSoFar: { day: number; retained: number } | null
+  /**
+   * Newsletter + beta-list subscribers created that day (Listmonk). `null` when Listmonk is unconfigured,
+   * and under a `country` filter (Listmonk has no country).
+   */
   newsletterSignups: number | null
 }
 
@@ -97,9 +125,11 @@ interface DownloadByUaRow {
   count: number
 }
 
-interface InstallDayRow {
+interface InstallsByChannelRow {
   date: string
-  newInstalls: number
+  /** The install's stored channel; NULL when it never reported one. */
+  channel: string | null
+  count: number
 }
 
 interface DauRow {
@@ -107,9 +137,22 @@ interface DauRow {
   dau: number
 }
 
-interface D7Row {
+interface RetentionRow {
   cohortDate: string
+  /** Whole days from the cohort day to the beat's day, 1..7. */
+  dayOffset: number
   retained: number
+}
+
+/** Every D1 row set the per-day funnel is assembled from. */
+export interface FunnelRows {
+  downloadsBySource: DownloadBySourceRow[]
+  downloadsByRef: DownloadByRefRow[]
+  downloadsByReferer: DownloadByRefererRow[]
+  downloadsByUa: DownloadByUaRow[]
+  installsByChannel: InstallsByChannelRow[]
+  dau: DauRow[]
+  retention: RetentionRow[]
 }
 
 /**
@@ -127,19 +170,44 @@ export function buildDateList(days: number, now: Date): string[] {
 }
 
 /**
+ * `?days=` as an integer in range, or null when malformed. Shared with `/admin/funnel/countries`.
+ * `parseInt` alone would read `7abc` as 7, hence the digits-only check.
+ */
+export function parseDays(raw: string | undefined): number | null {
+  if (raw === undefined) return defaultDays
+  if (!/^\d+$/.test(raw)) return null
+  const days = parseInt(raw, 10)
+  return days >= minDays && days <= maxDays ? days : null
+}
+
+export const invalidDaysMessage = `Invalid days. Use an integer ${String(minDays)}..${String(maxDays)}`
+
+/** `?country=` as an uppercase ISO-2 code, `null` when absent, or `undefined` when malformed. */
+function parseCountryFilter(raw: string | undefined): string | null | undefined {
+  if (raw === undefined || raw === '') return null
+  const country = raw.toUpperCase()
+  return countryPattern.test(country) ? country : undefined
+}
+
+/**
  * Per-day server downloads, split by source. Bots are filtered at write time, so this is the raw
  * request count of real DMG fetches. The `source` column is NULL for rows written before migration
- * 0008; those COALESCE to `other`.
+ * 0008; those COALESCE to `other`. `?2` is the country filter, NULL for every country (the same in
+ * every query below).
  */
-async function queryDownloadsBySource(db: D1Database, sinceDate: string): Promise<DownloadBySourceRow[]> {
+async function queryDownloadsBySource(
+  db: D1Database,
+  sinceDate: string,
+  country: string | null,
+): Promise<DownloadBySourceRow[]> {
   const { results } = await db
     .prepare(
       `SELECT date(created_at) AS date, COALESCE(source, 'other') AS source, COUNT(*) AS count
          FROM downloads
-         WHERE date(created_at) >= ?1
+         WHERE date(created_at) >= ?1 AND (?2 IS NULL OR country = ?2)
          GROUP BY date, source`,
     )
-    .bind(sinceDate)
+    .bind(sinceDate, country)
     .all<DownloadBySourceRow>()
   return results
 }
@@ -151,15 +219,19 @@ async function queryDownloadsBySource(db: D1Database, sinceDate: string): Promis
  * (consistent with how it shows other unknowns). The value was already sanitized at write time, so
  * grouping is on the stored value as-is.
  */
-async function queryDownloadsByRef(db: D1Database, sinceDate: string): Promise<DownloadByRefRow[]> {
+async function queryDownloadsByRef(
+  db: D1Database,
+  sinceDate: string,
+  country: string | null,
+): Promise<DownloadByRefRow[]> {
   const { results } = await db
     .prepare(
       `SELECT date(created_at) AS date, COALESCE(ref, '(none)') AS ref, COUNT(*) AS count
          FROM downloads
-         WHERE date(created_at) >= ?1
+         WHERE date(created_at) >= ?1 AND (?2 IS NULL OR country = ?2)
          GROUP BY date, ref`,
     )
-    .bind(sinceDate)
+    .bind(sinceDate, country)
     .all<DownloadByRefRow>()
   return results
 }
@@ -172,15 +244,19 @@ async function queryDownloadsByRef(db: D1Database, sinceDate: string): Promise<D
  * signal from `ref`: `ref` is the website's first-touch attribution; `referer` is the raw request host,
  * which is what reveals where the direct (no-`ref`) downloads came from.
  */
-async function queryDownloadsByReferer(db: D1Database, sinceDate: string): Promise<DownloadByRefererRow[]> {
+async function queryDownloadsByReferer(
+  db: D1Database,
+  sinceDate: string,
+  country: string | null,
+): Promise<DownloadByRefererRow[]> {
   const { results } = await db
     .prepare(
       `SELECT date(created_at) AS date, COALESCE(referer, '(none)') AS referer, COUNT(*) AS count
          FROM downloads
-         WHERE date(created_at) >= ?1
+         WHERE date(created_at) >= ?1 AND (?2 IS NULL OR country = ?2)
          GROUP BY date, referer`,
     )
-    .bind(sinceDate)
+    .bind(sinceDate, country)
     .all<DownloadByRefererRow>()
   return results
 }
@@ -194,75 +270,106 @@ async function queryDownloadsByReferer(db: D1Database, sinceDate: string): Promi
  * Grouping on both columns keeps cardinality low (one row per distinct UA per day over a few hundred
  * downloads) and collapses to one row per family per day once the sweep has cleared the raw UAs.
  */
-async function queryDownloadsByUa(db: D1Database, sinceDate: string): Promise<DownloadByUaRow[]> {
+async function queryDownloadsByUa(
+  db: D1Database,
+  sinceDate: string,
+  country: string | null,
+): Promise<DownloadByUaRow[]> {
   const { results } = await db
     .prepare(
       `SELECT date(created_at) AS date, ua_family AS uaFamily, user_agent AS userAgent, COUNT(*) AS count
          FROM downloads
-         WHERE date(created_at) >= ?1
+         WHERE date(created_at) >= ?1 AND (?2 IS NULL OR country = ?2)
          GROUP BY date, ua_family, user_agent`,
     )
-    .bind(sinceDate)
+    .bind(sinceDate, country)
     .all<DownloadByUaRow>()
   return results
 }
 
 /**
- * New installs per day: the count of install ids whose FIRST-EVER heartbeat fell on that day. We take
- * `MIN(created_at)` per `anal_id` across the WHOLE table (no date filter on the inner query, so an
- * install that first beat months ago never counts as "new" inside the window), then bucket those first
- * beats by UTC day and keep the ones inside the window.
+ * New installs per day and channel: installs whose FIRST-EVER beat (`install_summary.first_beat_at`)
+ * fell inside the window. The summary holds one row per install, so this reads installs, not beats,
+ * and an install that first beat months ago never counts as "new" here. `first_beat_at >= 'YYYY-MM-DD'`
+ * compares as text against `YYYY-MM-DD HH:MM:SS`, which keeps the index usable.
  */
-async function queryNewInstalls(db: D1Database, sinceDate: string): Promise<InstallDayRow[]> {
+async function queryInstallsByChannel(
+  db: D1Database,
+  sinceDate: string,
+  country: string | null,
+): Promise<InstallsByChannelRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT date(firstBeat) AS date, COUNT(*) AS newInstalls
-         FROM (SELECT anal_id, MIN(created_at) AS firstBeat FROM heartbeat GROUP BY anal_id)
-         WHERE date(firstBeat) >= ?1
-         GROUP BY date`,
+      `SELECT date(first_beat_at) AS date, install_channel AS channel, COUNT(*) AS count
+         FROM install_summary
+         WHERE first_beat_at >= ?1 AND (?2 IS NULL OR country = ?2)
+         GROUP BY date, install_channel`,
     )
-    .bind(sinceDate)
-    .all<InstallDayRow>()
+    .bind(sinceDate, country)
+    .all<InstallsByChannelRow>()
   return results
 }
 
-/** Distinct install ids that beat per day (true DAU). */
-async function queryDau(db: D1Database, sinceDate: string): Promise<DauRow[]> {
+/** Distinct install ids that beat per day (true DAU); under a country filter, installs from that country. */
+async function queryDau(db: D1Database, sinceDate: string, country: string | null): Promise<DauRow[]> {
   const { results } = await db
     .prepare(
       `SELECT date(created_at) AS date, COUNT(DISTINCT anal_id) AS dau
          FROM heartbeat
-         WHERE date(created_at) >= ?1
+         WHERE created_at >= ?1
+           AND (?2 IS NULL OR anal_id IN (SELECT anal_id FROM install_summary WHERE country = ?2))
          GROUP BY date`,
     )
-    .bind(sinceDate)
+    .bind(sinceDate, country)
     .all<DauRow>()
   return results
 }
 
 /**
- * D7 retained count per cohort day. For each install whose first heartbeat was on cohort day X, count
- * it as retained if it has ANY heartbeat in the window [X+7d, X+8d) (i.e. exactly the 7th day after
- * install). The join pairs each install's first-beat day against its later beats; we bucket by the
- * cohort (first-beat) day. Cohorts younger than 8 days are filled with `null` later, not here.
+ * Retained installs per cohort day and day offset 1..7. An install whose first beat was on day X is
+ * retained at offset n if it has ANY beat in [X+n, X+n+1). Offset 7 is D7; offsets 1..6 feed the
+ * tentative `retentionSoFar` for cohorts too young for D7. `idx_heartbeat_anal_created` bounds each
+ * install's lookup to its first week.
  */
-async function queryD7Retained(db: D1Database, sinceDate: string): Promise<D7Row[]> {
+async function queryRetention(db: D1Database, sinceDate: string, country: string | null): Promise<RetentionRow[]> {
   const { results } = await db
     .prepare(
-      `WITH firsts AS (
-           SELECT anal_id, date(MIN(created_at)) AS cohortDate FROM heartbeat GROUP BY anal_id
-         )
-         SELECT f.cohortDate AS cohortDate, COUNT(DISTINCT f.anal_id) AS retained
-           FROM firsts f
-           JOIN heartbeat h ON h.anal_id = f.anal_id
-            AND date(h.created_at) >= date(f.cohortDate, '+7 days')
-            AND date(h.created_at) <  date(f.cohortDate, '+8 days')
-          WHERE f.cohortDate >= ?1
-          GROUP BY f.cohortDate`,
+      `SELECT date(s.first_beat_at) AS cohortDate,
+              CAST(julianday(date(h.created_at)) - julianday(date(s.first_beat_at)) AS INTEGER) AS dayOffset,
+              COUNT(DISTINCT s.anal_id) AS retained
+         FROM install_summary s
+         JOIN heartbeat h ON h.anal_id = s.anal_id
+          AND h.created_at >= date(s.first_beat_at, '+1 day')
+          AND h.created_at <  date(s.first_beat_at, '+8 days')
+        WHERE s.first_beat_at >= ?1 AND (?2 IS NULL OR s.country = ?2)
+        GROUP BY cohortDate, dayOffset`,
     )
-    .bind(sinceDate)
-    .all<D7Row>()
+    .bind(sinceDate, country)
+    .all<RetentionRow>()
   return results
+}
+
+/** Every D1 query the per-day funnel needs, run in parallel. */
+export async function queryFunnelRows(db: D1Database, sinceDate: string, country: string | null): Promise<FunnelRows> {
+  const [downloadsBySource, downloadsByRef, downloadsByReferer, downloadsByUa, installsByChannel, dau, retention] =
+    await Promise.all([
+      queryDownloadsBySource(db, sinceDate, country),
+      queryDownloadsByRef(db, sinceDate, country),
+      queryDownloadsByReferer(db, sinceDate, country),
+      queryDownloadsByUa(db, sinceDate, country),
+      queryInstallsByChannel(db, sinceDate, country),
+      queryDau(db, sinceDate, country),
+      queryRetention(db, sinceDate, country),
+    ])
+  return {
+    downloadsBySource,
+    downloadsByRef,
+    downloadsByReferer,
+    downloadsByUa,
+    installsByChannel,
+    dau,
+    retention,
+  }
 }
 
 /** Resolved Listmonk config for the read-only subscriber query; `null` when any piece is missing. */
@@ -330,53 +437,95 @@ async function fetchListmonkSignupsByDay(config: ListmonkReadConfig, sinceDate: 
   return byDay
 }
 
+/** Fold rows into one entry per day, created by `empty` and filled by `add`. The shape every breakdown below shares. */
+function byDay<Row extends { date: string }, Entry>(
+  rows: Row[],
+  empty: () => Entry,
+  add: (args: { entry: Entry; row: Row }) => void,
+): Map<string, Entry> {
+  const map = new Map<string, Entry>()
+  for (const row of rows) {
+    const entry = map.get(row.date) ?? empty()
+    add({ entry, row })
+    map.set(row.date, entry)
+  }
+  return map
+}
+
+/** A day's D7 and tentative retention, from its cohort size and age. `retained(n)` looks up offset n. */
+function cohortRetention(
+  installs: number,
+  cohortAgeDays: number,
+  retained: (dayOffset: number) => number,
+): Pick<FunnelDay, 'd7Retention' | 'd7Retained' | 'retentionSoFar'> {
+  // D7 retention is knowable only when BOTH (a) the [day+7, day+8) window has fully passed (cohort day
+  // is at least 8 days before today) AND (b) the day actually had a cohort (installs > 0). A day with no
+  // new installs has no cohort to retain, so its retention is genuinely undefined (null -> dash), not 0%.
+  if (installs === 0) return { d7Retention: null, d7Retained: null, retentionSoFar: null }
+  if (cohortAgeDays >= 8) {
+    const d7Retained = retained(7)
+    return { d7Retention: d7Retained / installs, d7Retained, retentionSoFar: null }
+  }
+  // Too young for D7 but old enough for day 1: the latest day index whose window has fully passed.
+  const day = cohortAgeDays - 1
+  const retentionSoFar = day >= 1 ? { day, retained: retained(day) } : null
+  return { d7Retention: null, d7Retained: null, retentionSoFar }
+}
+
 /**
  * Assemble the per-day funnel array from the raw query rows. Pure so it's unit-testable: pass the date
- * list, the D1 rows, the Listmonk per-day map (or `null` when unconfigured), and `now`. Days with no
- * rows get zeros (not `null`) for the count metrics, because a real query covering the day returned no
- * matches. D7 is `null` for cohorts younger than 8 days (we can't know yet), else the fraction.
+ * list, the D1 rows, the Listmonk per-day map (or `null` when unconfigured or filtered by country), and
+ * `now`. Days with no rows get zeros (not `null`) for the count metrics, because a real query covering
+ * the day returned no matches. D7 is `null` for cohorts younger than 8 days (we can't know yet), else
+ * the fraction.
  */
 export function assembleFunnel(
   dates: string[],
-  downloadsBySource: DownloadBySourceRow[],
-  downloadsByRef: DownloadByRefRow[],
-  downloadsByReferer: DownloadByRefererRow[],
-  downloadsByUa: DownloadByUaRow[],
-  newInstalls: InstallDayRow[],
-  dau: DauRow[],
-  d7Retained: D7Row[],
+  rows: FunnelRows,
   signupsByDay: Map<string, number> | null,
   now: Date,
 ): FunnelDay[] {
-  const downloadsMap = new Map<string, { website: number; homebrew: number; other: number }>()
-  for (const row of downloadsBySource) {
-    const entry = downloadsMap.get(row.date) ?? { website: 0, homebrew: 0, other: 0 }
-    if (row.source === 'website') entry.website += row.count
-    else if (row.source === 'homebrew') entry.homebrew += row.count
-    else entry.other += row.count
-    downloadsMap.set(row.date, entry)
-  }
-  const refMap = new Map<string, Record<string, number>>()
-  for (const row of downloadsByRef) {
-    const entry = refMap.get(row.date) ?? {}
-    entry[row.ref] = (entry[row.ref] ?? 0) + row.count
-    refMap.set(row.date, entry)
-  }
-  const refererMap = new Map<string, Record<string, number>>()
-  for (const row of downloadsByReferer) {
-    const entry = refererMap.get(row.date) ?? {}
-    entry[row.referer] = (entry[row.referer] ?? 0) + row.count
-    refererMap.set(row.date, entry)
-  }
-  const uaFamilyMap = new Map<string, { human: number; bot: number; unknown: number }>()
-  for (const row of downloadsByUa) {
-    const entry = uaFamilyMap.get(row.date) ?? { human: 0, bot: 0, unknown: 0 }
-    entry[resolveUaFamily(row)] += row.count
-    uaFamilyMap.set(row.date, entry)
-  }
-  const newInstallsMap = new Map(newInstalls.map((r) => [r.date, r.newInstalls]))
-  const dauMap = new Map(dau.map((r) => [r.date, r.dau]))
-  const d7Map = new Map(d7Retained.map((r) => [r.cohortDate, r.retained]))
+  const downloadsMap = byDay(
+    rows.downloadsBySource,
+    () => ({ website: 0, homebrew: 0, other: 0 }),
+    ({ entry, row }) => {
+      if (row.source === 'website') entry.website += row.count
+      else if (row.source === 'homebrew') entry.homebrew += row.count
+      else entry.other += row.count
+    },
+  )
+  const refMap = byDay(
+    rows.downloadsByRef,
+    (): Record<string, number> => ({}),
+    ({ entry, row }) => {
+      entry[row.ref] = (entry[row.ref] ?? 0) + row.count
+    },
+  )
+  const refererMap = byDay(
+    rows.downloadsByReferer,
+    (): Record<string, number> => ({}),
+    ({ entry, row }) => {
+      entry[row.referer] = (entry[row.referer] ?? 0) + row.count
+    },
+  )
+  const uaFamilyMap = byDay(
+    rows.downloadsByUa,
+    () => ({ human: 0, bot: 0, unknown: 0 }),
+    ({ entry, row }) => {
+      entry[resolveUaFamily(row)] += row.count
+    },
+  )
+  const channelMap = byDay(
+    rows.installsByChannel,
+    () => ({ homebrew: 0, direct: 0, unknown: 0 }),
+    ({ entry, row }) => {
+      if (row.channel === 'homebrew') entry.homebrew += row.count
+      else if (row.channel === 'direct') entry.direct += row.count
+      else entry.unknown += row.count
+    },
+  )
+  const dauMap = new Map(rows.dau.map((r) => [r.date, r.dau]))
+  const retentionMap = new Map(rows.retention.map((r) => [`${r.cohortDate}:${String(r.dayOffset)}`, r.retained]))
 
   const todayUtcMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
 
@@ -384,16 +533,15 @@ export function assembleFunnel(
     const bySource = downloadsMap.get(date) ?? { website: 0, homebrew: 0, other: 0 }
     const downloads = bySource.website + bySource.homebrew + bySource.other
     const uaFamily = uaFamilyMap.get(date) ?? { human: 0, bot: 0, unknown: 0 }
-    const installs = newInstallsMap.get(date) ?? 0
+    const byChannel = channelMap.get(date) ?? { homebrew: 0, direct: 0, unknown: 0 }
+    const installs = byChannel.homebrew + byChannel.direct + byChannel.unknown
 
-    // D7 retention is knowable only when BOTH (a) the [day+7, day+8) window has fully passed (cohort day
-    // is at least 8 days before today) AND (b) the day actually had a cohort (installs > 0). A day with no
-    // new installs has no cohort to retain, so its retention is genuinely undefined (null -> dash), not 0%.
-    const cohortMs = Date.parse(`${date}T00:00:00Z`)
-    const cohortAgeDays = Math.round((todayUtcMs - cohortMs) / 86_400_000)
-    const d7Knowable = cohortAgeDays >= 8 && installs > 0
-    const retained = d7Knowable ? (d7Map.get(date) ?? 0) : null
-    const d7Retention = d7Knowable ? (retained as number) / installs : null
+    const cohortAgeDays = Math.round((todayUtcMs - Date.parse(`${date}T00:00:00Z`)) / 86_400_000)
+    const retention = cohortRetention(
+      installs,
+      cohortAgeDays,
+      (dayOffset) => retentionMap.get(`${date}:${String(dayOffset)}`) ?? 0,
+    )
 
     return {
       date,
@@ -404,50 +552,42 @@ export function assembleFunnel(
       downloadsByUaFamily: uaFamily,
       humanInstalls: uaFamily.human + uaFamily.unknown,
       newInstalls: installs,
+      newInstallsByChannel: byChannel,
       dau: dauMap.get(date) ?? 0,
-      d7Retention,
-      d7Retained: retained,
+      ...retention,
       newsletterSignups: signupsByDay ? (signupsByDay.get(date) ?? 0) : null,
     }
   })
 }
 
 /**
- * GET /admin/funnel?days=N
+ * GET /admin/funnel?days=N&country=CC
  *
- * Returns `FunnelDay[]`, oldest day first, for the last N UTC days (default 30, clamped to 1..90),
- * including today (a partial day). See `FunnelDay` for the per-column meaning and reliability notes.
- * Listmonk signups degrade to `null` (not 0) when Listmonk is unconfigured or its query fails, so the
- * dashboard can tell "no signups" from "couldn't ask".
+ * Returns `FunnelDay[]`, oldest day first, for the last N UTC days (default 30, 1..400), including today
+ * (a partial day). See `FunnelDay` for the per-column meaning and reliability notes. With `country`
+ * (ISO-2), downloads filter on the download's country and installs, DAU, and retention on the install's;
+ * signups are then `null`. Listmonk signups also degrade to `null` (not 0) when Listmonk is unconfigured
+ * or its query fails, so the dashboard can tell "no signups" from "couldn't ask".
  */
 funnel.get('/admin/funnel', async (c) => {
   const authError = await verifyAdminAuth(c)
   if (authError) return authError
 
-  const rawDays = parseInt(c.req.query('days') ?? String(defaultDays), 10)
-  if (!Number.isFinite(rawDays) || rawDays < minDays || rawDays > maxDays) {
-    return c.json({ error: `Invalid days. Use an integer ${String(minDays)}..${String(maxDays)}` }, 400)
-  }
+  const days = parseDays(c.req.query('days'))
+  if (days === null) return c.json({ error: invalidDaysMessage }, 400)
+  const country = parseCountryFilter(c.req.query('country'))
+  if (country === undefined) return c.json({ error: 'Invalid country. Use an ISO 3166-1 alpha-2 code' }, 400)
 
   const now = new Date()
-  const dates = buildDateList(rawDays, now)
+  const dates = buildDateList(days, now)
   const sinceDate = dates[0]
 
-  const db = c.env.TELEMETRY_DB
-  const [downloadsBySource, downloadsByRef, downloadsByReferer, downloadsByUa, newInstalls, dau, d7Retained] =
-    await Promise.all([
-      queryDownloadsBySource(db, sinceDate),
-      queryDownloadsByRef(db, sinceDate),
-      queryDownloadsByReferer(db, sinceDate),
-      queryDownloadsByUa(db, sinceDate),
-      queryNewInstalls(db, sinceDate),
-      queryDau(db, sinceDate),
-      queryD7Retained(db, sinceDate),
-    ])
+  const rows = await queryFunnelRows(c.env.TELEMETRY_DB, sinceDate, country)
 
   // Listmonk is best-effort: a failure or missing config makes signups `null`, never breaks the funnel.
+  // It has no country, so a country view has no signups to show.
   let signupsByDay: Map<string, number> | null = null
-  const listmonk = resolveListmonkRead(c.env)
+  const listmonk = country === null ? resolveListmonkRead(c.env) : null
   if (listmonk) {
     try {
       signupsByDay = await fetchListmonkSignupsByDay(listmonk, sinceDate)
@@ -457,19 +597,7 @@ funnel.get('/admin/funnel', async (c) => {
     }
   }
 
-  const funnelDays = assembleFunnel(
-    dates,
-    downloadsBySource,
-    downloadsByRef,
-    downloadsByReferer,
-    downloadsByUa,
-    newInstalls,
-    dau,
-    d7Retained,
-    signupsByDay,
-    now,
-  )
-  return c.json(funnelDays)
+  return c.json(assembleFunnel(dates, rows, signupsByDay, now))
 })
 
 export { funnel }

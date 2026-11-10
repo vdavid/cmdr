@@ -146,6 +146,16 @@ const deleteSyntheticHeartbeatsSql = `DELETE FROM heartbeat WHERE anal_id IN (${
  */
 const deleteSyntheticEventsSql = `DELETE FROM analytics_event WHERE anal_id IN (${syntheticInstallIdsSql})`
 
+/** Their `install_summary` rows, for the same reason also BEFORE the beats go. */
+const deleteSyntheticInstallSummariesSql = `DELETE FROM install_summary WHERE anal_id IN (${syntheticInstallIdsSql})`
+
+/**
+ * Summary rows whose install has no beat left, after the retention delete. An install that still
+ * beats keeps its row, `first_beat_at` included, even once its first beat ages out: the summary is
+ * what remembers the real install day.
+ */
+const deleteOrphanInstallSummariesSql = `DELETE FROM install_summary WHERE anal_id NOT IN (SELECT anal_id FROM heartbeat)`
+
 /**
  * The `created_at` cutoff `days` back, snapped to MIDNIGHT UTC so a day is always swept whole.
  * That matters for `downloads`: the rollup captures a day's distinct-downloader count and the clear
@@ -226,6 +236,7 @@ async function handleRetentionSweep(env: Bindings): Promise<void> {
     .run()
 
   await db.prepare(`DELETE FROM heartbeat WHERE created_at < ?1`).bind(cutoff(heartbeatRetentionDays)).run()
+  await db.prepare(deleteOrphanInstallSummariesSql).run()
 
   // Relayed feature events are the same usage stats under the same promise. Aged by `received_at`,
   // OUR clock: `occurred_at` is the client's, and a wrong one could keep a row forever.
@@ -281,6 +292,7 @@ async function handlePersonalCommentSweep(env: Bindings): Promise<void> {
 async function handleSyntheticHeartbeatSweep(env: Bindings): Promise<void> {
   const graceCutoff = cutoff(syntheticHeartbeatGraceDays)
   await env.TELEMETRY_DB.prepare(deleteSyntheticEventsSql).bind(graceCutoff).run()
+  await env.TELEMETRY_DB.prepare(deleteSyntheticInstallSummariesSql).bind(graceCutoff).run()
   const result = await env.TELEMETRY_DB.prepare(deleteSyntheticHeartbeatsSql).bind(graceCutoff).run()
 
   if (result.meta.changes > 0) {
@@ -423,6 +435,8 @@ export {
   handleSyntheticHeartbeatSweep,
   deleteSyntheticHeartbeatsSql,
   deleteSyntheticEventsSql,
+  deleteSyntheticInstallSummariesSql,
+  deleteOrphanInstallSummariesSql,
   syntheticHeartbeatGraceDays,
   downloadIdentifierRetentionDays,
   crashIdentifierRetentionDays,

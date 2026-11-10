@@ -103,7 +103,7 @@ describe('POST /heartbeat', () => {
 
     await postHeartbeat(validBeat, bindings)
 
-    expect(prepareMock).toHaveBeenCalledOnce()
+    expect(prepareMock).toHaveBeenCalledTimes(2) // the beat, then the install summary
     const sql = prepareMock.mock.calls[0][0] as string
     expect(sql).toContain('INSERT INTO heartbeat')
     expect(sql).not.toContain('hashed_ip')
@@ -369,9 +369,9 @@ describe('POST /heartbeat: events', () => {
     )
     expect(res.status).toBe(204)
     expect(batchMock).toHaveBeenCalledOnce()
-    expect(batched().map((s) => s.sql.includes('INSERT INTO heartbeat'))).toEqual([true, false])
+    expect(batched().map((s) => s.sql.includes('INSERT INTO heartbeat'))).toEqual([true, false, false])
 
-    const eventStatement = batched()[1]
+    const eventStatement = batched()[2]
     expect(eventStatement.sql).toContain('INSERT OR IGNORE INTO analytics_event')
     expect(eventStatement.sql).not.toContain('ip')
     expect(eventStatement.args[0]).toBe(validBeat.analId)
@@ -391,21 +391,21 @@ describe('POST /heartbeat: events', () => {
     const { db, batched } = createMockD1()
     const res = await postHeartbeat(validBeat, createBindings({ TELEMETRY_DB: db }))
     expect(res.status).toBe(204)
-    expect(batched()).toHaveLength(1)
+    expect(batched()).toHaveLength(2) // the beat and its install-summary upsert
   })
 
   it('writes only the heartbeat for an empty events array', async () => {
     const { db, batched } = createMockD1()
     const res = await postHeartbeat({ ...validBeat, events: [] }, createBindings({ TELEMETRY_DB: db }))
     expect(res.status).toBe(204)
-    expect(batched()).toHaveLength(1)
+    expect(batched()).toHaveLength(2)
   })
 
   it('accepts null events (upgrade-window compat)', async () => {
     const { db, batched } = createMockD1()
     const res = await postHeartbeat({ ...validBeat, events: null }, createBindings({ TELEMETRY_DB: db }))
     expect(res.status).toBe(204)
-    expect(batched()).toHaveLength(1)
+    expect(batched()).toHaveLength(2)
   })
 
   it('returns 400 when events is not an array', async () => {
@@ -534,5 +534,77 @@ describe('POST /heartbeat: no third party', () => {
     )
     expect(res.status).toBe(204)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+/** A beat as it arrives through Cloudflare, which stamps the request's country on `request.cf`. */
+function postHeartbeatFrom(cf: Record<string, unknown> | undefined, body: unknown, bindings: Record<string, unknown>) {
+  const request = new Request('http://localhost/heartbeat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (cf) Object.defineProperty(request, 'cf', { value: cf })
+  return app.request(request, undefined, bindings)
+}
+
+/** The install-summary upsert's bind args: `[anal_id, first_beat_at, country, channel]`. */
+function summaryArgs(batched: () => RecordedStatement[]): unknown[] {
+  const statement = batched().find((s) => s.sql.includes('INTO install_summary'))
+  expect(statement).toBeDefined()
+  return (statement as RecordedStatement).args
+}
+
+describe('POST /heartbeat: country and install channel', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it("stores the request's country on the beat and in the install summary", async () => {
+    const { db, batched } = createMockD1()
+    const res = await postHeartbeatFrom({ country: 'SE' }, validBeat, createBindings({ TELEMETRY_DB: db }))
+    expect(res.status).toBe(204)
+    expect(heartbeatArgs(batched)[7]).toBe('SE')
+    expect(summaryArgs(batched)[2]).toBe('SE')
+  })
+
+  it.each([
+    ['absent', undefined],
+    ['Cloudflare has no country', { country: 'XX' }],
+    ['a Tor exit', { country: 'T1' }],
+    ['lowercase', { country: 'se' }],
+  ])('stores NULL country when %s', async (_label, cf) => {
+    const { db, batched } = createMockD1()
+    await postHeartbeatFrom(cf, validBeat, createBindings({ TELEMETRY_DB: db }))
+    expect(heartbeatArgs(batched)[7]).toBeNull()
+    expect(summaryArgs(batched)[2]).toBeNull()
+  })
+
+  it('stores the install channel', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-10T12:00:00Z'))
+    const { db, batched } = createMockD1()
+    const res = await postHeartbeat({ ...validBeat, installChannel: 'homebrew' }, createBindings({ TELEMETRY_DB: db }))
+    expect(res.status).toBe(204)
+    expect(heartbeatArgs(batched).slice(8)).toEqual(['homebrew', '2026-11-10 12:00:00'])
+    // The summary's first beat is the very timestamp the beat row got.
+    expect(summaryArgs(batched)).toEqual([validBeat.analId, '2026-11-10 12:00:00', null, 'homebrew'])
+  })
+
+  it.each([
+    ['absent (an older client)', {}],
+    ['null', { installChannel: null }],
+  ])('stores NULL channel when %s', async (_label, extra) => {
+    const { db, batched } = createMockD1()
+    const res = await postHeartbeat({ ...validBeat, ...extra }, createBindings({ TELEMETRY_DB: db }))
+    expect(res.status).toBe(204)
+    expect(heartbeatArgs(batched)[8]).toBeNull()
+  })
+
+  it('stores an unknown channel as NULL rather than failing the beat', async () => {
+    const { db, batched } = createMockD1()
+    const res = await postHeartbeat({ ...validBeat, installChannel: 'mas' }, createBindings({ TELEMETRY_DB: db }))
+    expect(res.status).toBe(204)
+    expect(heartbeatArgs(batched)[8]).toBeNull()
   })
 })

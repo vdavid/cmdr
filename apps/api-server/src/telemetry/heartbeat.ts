@@ -42,6 +42,14 @@ interface Heartbeat {
   uptimeSeconds?: number | null
   /** Optional. Feature events since the last successful beat; validated item by item. */
   events?: unknown[] | null
+  /** Optional. `"homebrew"` or `"direct"`, how the app was installed. Anything else is stored as NULL. */
+  installChannel?: unknown
+}
+
+/** The per-install facts one beat contributes, each NULL when this beat doesn't know it. */
+export interface BeatInstallFacts {
+  country: string | null
+  installChannel: 'homebrew' | 'direct' | null
 }
 
 /** One feature event that passed validation, with its timestamp normalized to UTC. */
@@ -55,8 +63,30 @@ interface RelayedEvent {
   id: string | null
 }
 
-const insertHeartbeatSql = `INSERT INTO heartbeat (anal_id, app_version, os_version, arch, build_mode, config_json, uptime_seconds)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+/**
+ * `created_at` is bound, never left to the column default: the same value lands in
+ * `install_summary.first_beat_at` on an install's first beat, so the two can't straddle a midnight.
+ */
+const insertHeartbeatSql = `INSERT INTO heartbeat (anal_id, app_version, os_version, arch, build_mode, config_json, uptime_seconds, country, install_channel, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+/**
+ * Keeps `install_summary` in step with the beat, in the beat's own batch. The first beat inserts the
+ * row; a later one only fills a still-NULL country or channel (the first non-NULL value wins). The
+ * `WHERE` makes a beat that changes nothing a no-op rather than a row write, which is almost every
+ * beat. `src/admin/DETAILS.md` § Install summary.
+ */
+const upsertInstallSummarySql = `INSERT INTO install_summary (anal_id, first_beat_at, country, install_channel)
+     VALUES (?1, ?2, ?3, ?4)
+     ON CONFLICT(anal_id) DO UPDATE SET
+       country = COALESCE(install_summary.country, excluded.country),
+       install_channel = COALESCE(install_summary.install_channel, excluded.install_channel)
+     WHERE (install_summary.country IS NULL AND excluded.country IS NOT NULL)
+        OR (install_summary.install_channel IS NULL AND excluded.install_channel IS NOT NULL)`
+
+/** Cloudflare's codes that aren't countries: `XX` (no country) and `T1` (Tor). */
+const nonCountryCodes = new Set(['XX', 'T1'])
+const countryPattern = /^[A-Z]{2}$/
 
 /**
  * Inserts a whole beat's events in ONE statement: they travel as a single JSON parameter
@@ -193,6 +223,26 @@ function parseEvents(raw: unknown[] | null | undefined, beatAppVersion: string):
   return kept
 }
 
+/** The request's ISO-2 country as Cloudflare derived it, or null when absent or not a country. */
+export function parseCountry(cfCountry: unknown): string | null {
+  if (typeof cfCountry !== 'string' || !countryPattern.test(cfCountry) || nonCountryCodes.has(cfCountry)) return null
+  return cfCountry
+}
+
+/**
+ * `"homebrew"` or `"direct"`, or null for absent and for any value this server doesn't know yet. An
+ * unknown value only unsets the field: it's an enrichment, and failing the beat would make the client
+ * resend it forever.
+ */
+export function parseInstallChannel(value: unknown): 'homebrew' | 'direct' | null {
+  return value === 'homebrew' || value === 'direct' ? value : null
+}
+
+/** `YYYY-MM-DD HH:MM:SS`, the format `datetime('now')` writes, so bound and defaulted rows compare alike. */
+function sqliteTimestamp(now: Date): string {
+  return now.toISOString().slice(0, 19).replace('T', ' ')
+}
+
 /** Read and parse the request body, enforcing the size cap. Returns the parsed object or an error. */
 async function readHeartbeatBody(c: Context<{ Bindings: Bindings }>): Promise<Record<string, unknown> | Response> {
   // A cheap fast-fail for an honest client; `readCappedBody` is the actual cap.
@@ -250,11 +300,30 @@ heartbeat.post('/heartbeat', async (c) => {
       ? Math.min(beat.uptimeSeconds, maxUptimeSeconds)
       : null
 
+  // The country comes from Cloudflare's view of the request, never from the IP itself.
+  const createdAt = sqliteTimestamp(new Date())
+  const facts: BeatInstallFacts = {
+    country: parseCountry((c.req.raw.cf as { country?: unknown } | undefined)?.country),
+    installChannel: parseInstallChannel(beat.installChannel),
+  }
+
   const db = c.env.TELEMETRY_DB
   const statements = [
     db
       .prepare(insertHeartbeatSql)
-      .bind(beat.analId, beat.appVersion, beat.osVersion, beat.arch, beat.buildMode ?? null, configJson, uptimeSeconds),
+      .bind(
+        beat.analId,
+        beat.appVersion,
+        beat.osVersion,
+        beat.arch,
+        beat.buildMode ?? null,
+        configJson,
+        uptimeSeconds,
+        facts.country,
+        facts.installChannel,
+        createdAt,
+      ),
+    db.prepare(upsertInstallSummarySql).bind(beat.analId, createdAt, facts.country, facts.installChannel),
   ]
   if (events.length > 0) {
     const rows = events.map((e) => [e.event, e.timestamp, JSON.stringify(e.properties), e.appVersion, e.id])
@@ -274,4 +343,4 @@ heartbeat.post('/heartbeat', async (c) => {
   return c.body(null, 204)
 })
 
-export { heartbeat, insertEventsSql, insertHeartbeatSql, maxEventsPerBeat }
+export { heartbeat, insertEventsSql, insertHeartbeatSql, maxEventsPerBeat, upsertInstallSummarySql }

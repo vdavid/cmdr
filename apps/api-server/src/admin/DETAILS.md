@@ -16,10 +16,13 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   `PUT /admin/feedback/:id/answered` (§ below), `/admin/error-reports` (per-bundle R2 metadata via `list` + custom
   metadata, newest first; `.amend.json` sidecars share the prefix and are skipped, since an amendment is part of its
   report rather than a second one).
-- **`funnel.ts`**: `/admin/funnel`, plus the pure `buildDateList` / `assembleFunnel` / `aggregateUaFamilies` helpers.
+- **`funnel.ts`**: `/admin/funnel`, its queries (`queryFunnelRows`), and the pure `buildDateList` / `parseDays` /
+  `normalizeCountry` / `assembleFunnel` helpers. **`funnel-countries.ts`**: `/admin/funnel/countries`
+  (`queryCountryRows` + the pure `assembleCountries`), reusing those helpers.
 - Tests: `admin-stats.test.ts`, `admin-endpoints.test.ts`, `funnel.test.ts` (route auth/validation plus the pure date
-  math, zero-fill, and D7-knowability rules), `heartbeat-dau-sql.test.ts` (the DAU and app-hours query on real SQLite),
-  `feedback-answered.test.ts` (the feedback list and the mark-answered toggle through the app on real SQLite).
+  math, zero-fill, channel, D7-knowability, and retention-so-far rules), `funnel-sql.test.ts` (both funnels' SQL on real
+  SQLite, seeded through the `/heartbeat` INSERTs), `heartbeat-dau-sql.test.ts` (the DAU and app-hours query on real
+  SQLite), `feedback-answered.test.ts` (the feedback list and the mark-answered toggle through the app on real SQLite).
 
 Consumer: the private SvelteKit dashboard in `apps/analytics-dashboard/`.
 
@@ -65,10 +68,19 @@ explains): `../licensing/DETAILS.md` § The licenses listing.
 ## Per-day funnel (`GET /admin/funnel`)
 
 One admin endpoint the dashboard uses to render its top "Daily funnel" table in a single call, instead of stitching
-per-metric endpoints together. Param `?days=N` (default 30, clamped to 1..90, else 400). Returns `FunnelDay[]`, oldest
-UTC day first, **including today** (a partial day). Every column is bucketed by UTC day (`date()` in D1 is UTC; Listmonk
-timestamps are normalized to UTC here), so a "day" means the same window across all columns. `null` (not 0) means
-"unknown", which the dashboard renders as a dash.
+per-metric endpoints together. Params: `?days=N` (default 30, an integer 1..400, else 400) and an optional `?country=CC`
+(ISO-2, case-insensitive, else 400). Returns `FunnelDay[]`, oldest UTC day first, **including today** (a partial day).
+Every column is bucketed by UTC day (`date()` in D1 is UTC; Listmonk timestamps are normalized to UTC here), so a "day"
+means the same window across all columns. `null` (not 0) means "unknown", which the dashboard renders as a dash.
+
+**The contract only grows.** Every field below stays; new ones are additive, and the dashboard tells an older Worker
+apart by a field it lacks (an old Worker ignores `country` and answers the global rows, so the dashboard must not
+present those as a country's).
+
+**With `country`**, the download columns filter on `downloads.country` (the download's own request), while
+`newInstalls*`, `dau`, `d7*`, and `retentionSoFar` filter on the install's country (`install_summary.country`, its first
+non-NULL one; `dau` counts the beats of installs from that country). `newsletterSignups` is `null` for every day:
+Listmonk has no country, and Listmonk isn't asked.
 
 Per-day columns and how each is derived:
 
@@ -86,15 +98,20 @@ Per-day columns and how each is derived:
   rows. `humanInstalls = human + unknown`: it drops only the provably-impossible downloads and keeps every ambiguous
   one, so it never overclaims. The classification rules and why `human` is NOT a clean count: `../telemetry/DETAILS.md`
   § Download tracking.
-- `newInstalls`: count of `anal_id`s whose **first-ever** heartbeat (`MIN(created_at)` over the whole `heartbeat` table,
-  no window filter on the inner query) fell on that UTC day. So an install that first beat months ago never counts as
-  "new" inside the window.
+- `newInstalls` + `newInstallsByChannel` (`{ homebrew, direct, unknown }`, summing to `newInstalls`): installs whose
+  **first-ever** beat (`install_summary.first_beat_at`) fell on that UTC day, so an install that first beat months ago
+  never counts as "new" inside the window. The channel is the install's first non-NULL `install_channel`; NULL (clients
+  older than the field) and any value the server doesn't know land in `unknown`.
 - `dau`: `COUNT(DISTINCT anal_id)` beating that day (true DAU, same definition as `/admin/heartbeat-dau`).
 - `d7Retention` (0..1 fraction) + `d7Retained` (raw count): **D7 definition** — for a cohort whose first heartbeat was
   on day X, an install is "D7 retained" if it has ANY heartbeat in the half-open window `[X+7d, X+8d)` (exactly the 7th
   day after install). `d7Retained` is the distinct count of such installs; `d7Retention = d7Retained / newInstalls(X)`.
   Both are `null` for cohorts younger than 8 days (the window hasn't fully passed, so it's genuinely unknown, not 0). An
   old cohort with installs but no retained beats is `0`, not `null`.
+- `retentionSoFar` (`{ day, retained } | null`): the dashboard's grey "tentative" D7 point. For a cohort 2–7 days old
+  with installs, `day` is the latest fully passed day index n = age − 1 (1..6) and `retained` the cohort installs with a
+  beat in `[X+n, X+n+1)`, the D7 definition with n in place of 7. `null` for younger cohorts, for D7-knowable ones, and
+  for a day with no installs. One query (`queryRetention`) returns every offset 1..7 per cohort; D7 is offset 7.
 - `newsletterSignups`: Listmonk subscribers (newsletter list `LISTMONK_NEWSLETTER_LIST_ID`, default 3, **plus** beta
   list `LISTMONK_BETA_LIST_ID`) whose `created_at` falls on that UTC day, via one read-only
   `GET /api/subscribers?query=...` filtered by `created_at >= sinceDate`, paginated, then bucketed in code. Caveat:
@@ -105,8 +122,54 @@ Per-day columns and how each is derived:
   checks `typeof === 'number'`); a string drops that list from the count.
 
 `buildDateList` and `assembleFunnel` are pure and exported so the date math, zero-fill, and D7-knowability logic are
-unit-tested without a live D1 (`funnel.test.ts`); the SQL semantics are verified against a real local D1 with
-`../../scripts/seed-funnel-local.sql` (hand-computed expectations are in that file's header).
+unit-tested without a live D1 (`funnel.test.ts`); the SQL is proved on real SQLite by `funnel-sql.test.ts`, and can be
+eyeballed against a local D1 with `../../scripts/seed-funnel-local.sql` (hand-computed expectations are in that file's
+header). The upsert, `julianday` offsets, and the retention join ran clean on a local D1 (wrangler 4.151.0, a probe
+script, 2026-11-10); the remote D1 can't run them until migration 0031 is applied.
+
+## Per-country funnel (`GET /admin/funnel/countries`)
+
+`?days=N` (same bounds as `/admin/funnel`). Returns
+`[{ country, serverDownloads, humanInstalls, newInstalls, d7Cohort, d7Retained }]` over the whole window:
+
+- `serverDownloads` / `humanInstalls`: `downloads` rows by their own `country`, `humanInstalls` dropping the `bot`
+  family exactly as `FunnelDay.humanInstalls` does.
+- `newInstalls`: installs whose first beat fell in the window, by `install_summary.country`.
+- `d7Cohort` / `d7Retained`: of those, the installs in cohorts at least eight days old (first beat before today minus
+  seven), and the ones among them retained at D7. The dashboard divides the two; a young cohort counts in `newInstalls`
+  only.
+- `country` is ISO-2, or `"(unknown)"` for anything else: a NULL install country, and the `unknown` / `XX` / `T1` values
+  `downloads.country` can hold (`normalizeCountry`).
+- Sorted by `newInstalls`, then `serverDownloads`, both descending; on a full tie `(unknown)` goes last, then by code.
+
+## Install summary
+
+`install_summary` (migration `0031`) is one row per install: `anal_id`, `first_beat_at`, and the install's first
+non-NULL `country` and `install_channel`.
+
+**Decision: maintain it at ingest rather than aggregate at query time.** Why:
+
+- D1 bills rows READ, and every per-install fact (first beat, country, channel) needs a `GROUP BY anal_id` over the
+  whole `heartbeat` table, which is every beat ever (about eight a day per active install, kept two years). The funnel
+  did that twice per load, the new columns would add more, and `/admin/funnel/countries` three. The summary is one row
+  per install (a few hundred), with `first_beat_at` indexed.
+- "First non-NULL" is awkward at query time (window functions or correlated subqueries per load) and trivial at write
+  time.
+- The write cost is one upsert per beat in the beat's own `batch`, so beat and summary commit together. Its `WHERE`
+  makes the common case (nothing new to fill) a no-op rather than a row write.
+- It also stays right where the beats don't: once retention deletes an install's two-year-old first beat, `MIN()` over
+  `heartbeat` would move its "install day" forward, while `first_beat_at` keeps the real one.
+
+Keeping it in step is three call sites: `/heartbeat` (`upsertInstallSummarySql`, `../telemetry/heartbeat.ts`), the
+synthetic sweep (`deleteSyntheticInstallSummariesSql`, BEFORE the beats go, since the classifier reads `heartbeat`), and
+the retention sweep (`deleteOrphanInstallSummariesSql`, AFTER the heartbeat delete). A SQL trigger would make it one,
+but `CREATE TRIGGER` bodies are known to fail in D1 migrations (`workers-sdk` issue 4998, "incomplete input" on remote),
+so the logic stays in code where tests reach it. A raw `INSERT INTO heartbeat` (a seed script, a test) leaves the
+summary behind; build it with the migration's backfill `SELECT`. `/heartbeat` binds `created_at` explicitly, so the
+summary's `first_beat_at` is the beat row's `created_at` to the second.
+
+The retention join reads `idx_heartbeat_anal_created` (`anal_id, created_at`), so each cohort install's lookup touches
+its first week of beats only; that index replaced `idx_heartbeat_anal`, whose every use it covers.
 
 ## Config shape (`GET /admin/config-shape`)
 

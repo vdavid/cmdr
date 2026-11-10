@@ -99,16 +99,30 @@ app spooled since its last successful one. Identity is the random `anal_<uuid>` 
 `docs/specs/network-chatter-plan.md` § Wire contract.
 
 **The beat.** Required: `analId`, `appVersion` (semver), `osVersion`, `arch`. Optional: `buildMode`, `config` (an
-arbitrary object stored verbatim as `config_json`), `uptimeSeconds`, and `events`. The config is a single JSON blob, not
-per-field columns, so new settings absorb without a migration: DAU/engagement queries never touch it. Caps: 256 KB whole
-body (read through `readCappedBody`), 16 KB config blob. No UNIQUE/dedup constraint: every beat is kept, and DAU
-(`COUNT(DISTINCT anal_id)`) and app hours are computed at query time by `/admin/heartbeat-dau`.
+arbitrary object stored verbatim as `config_json`), `uptimeSeconds`, `events`, and `installChannel`. The config is a
+single JSON blob, not per-field columns, so new settings absorb without a migration: DAU/engagement queries never touch
+it. Caps: 256 KB whole body (read through `readCappedBody`), 16 KB config blob. No UNIQUE/dedup constraint: every beat
+is kept, and DAU (`COUNT(DISTINCT anal_id)`) and app hours are computed at query time by `/admin/heartbeat-dau`.
 
 **`uptimeSeconds`** is the app runtime this beat accounts for that no earlier successful beat reported, so summing it
 per day gives app hours regardless of how often the app beats. A non-negative integer or 400; clamped to seven days
 (`maxUptimeSeconds`) rather than rejected, since a beat that big is a client bug and the beat is still worth its DAU.
 Old clients send none and the row stores NULL, which the engagement query reads as one hour (they beat hourly):
 `SUM(COALESCE(uptime_seconds, 3600)) / 3600`. See `../admin/DETAILS.md`.
+
+**Where the install came from** (migration `0031`). Two per-beat columns, each NULL when unknown, and neither can fail
+the beat (they're enrichments; a 400 would make the client resend forever):
+
+- `country`: `request.cf.country` when it's an ISO-2 code, NULL when absent, `XX` (Cloudflare has none), or `T1` (Tor).
+  Cloudflare derives it per request; the IP is still never stored.
+- `install_channel`: `installChannel` when it's `"homebrew"` or `"direct"`; anything else, `null`, or absent is NULL.
+
+There's no download date: the macOS quarantine stamp it would come from is zeroed when the app is copied out of the DMG,
+so the client can't know it.
+
+The same batch upserts the install's `install_summary` row (`upsertInstallSummarySql`): first beat, and first non-NULL
+country and channel. The beat binds its own `created_at` so the summary's `first_beat_at` matches it exactly. Why the
+table exists and what else keeps it in step: `../admin/DETAILS.md` § Install summary.
 
 **Events** (`analytics_event`): each is `{ event, timestamp, properties }`. The name matches `^[a-z0-9_$]{1,100}$`, the
 timestamp is RFC 3339 with a `Z` or an offset, between 2025-01-01 and a day past our clock, normalized to UTC, and
@@ -122,12 +136,13 @@ and every server-side "when" use `received_at`. `event_id` has a unique index an
 beat retried after its 204 got lost stores each event once; events without an id can't be deduped and are stored each
 time.
 
-**One batch, awaited.** The heartbeat row and the events go in ONE `db.batch` (a transaction), and the route awaits it:
-a 204 tells the app both are stored, which is its signal to truncate the spool; a D1 failure answers a soft 502 so it
-keeps them. The events travel as ONE bound JSON parameter unpacked by `json_each` (`insertEventsSql`), because one
-statement per event puts up to 500 statements in the batch against D1's per-invocation query limit, and a multi-row
-`VALUES` hits D1's 100-bound-parameter cap at 16 events. `json_each` in D1 was verified with a read-only
-`wrangler d1 execute --remote` (2026-09-24); `heartbeat-sql.test.ts` proves the columns land right on real SQLite.
+**One batch, awaited.** The heartbeat row, the install-summary upsert, and the events go in ONE `db.batch` (a
+transaction), and the route awaits it: a 204 tells the app both are stored, which is its signal to truncate the spool; a
+D1 failure answers a soft 502 so it keeps them. The events travel as ONE bound JSON parameter unpacked by `json_each`
+(`insertEventsSql`), because one statement per event puts up to 500 statements in the batch against D1's per-invocation
+query limit, and a multi-row `VALUES` hits D1's 100-bound-parameter cap at 16 events. `json_each` in D1 was verified
+with a read-only `wrangler d1 execute --remote` (2026-09-24); `heartbeat-sql.test.ts` proves the columns land right on
+real SQLite.
 
 **D1 is the only destination.** The relayed events stop at `analytics_event`; the Worker calls no third party for them
 (`heartbeat.test.ts` § "no third party" pins it). PostHog only sees the website's own in-browser events.

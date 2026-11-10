@@ -136,12 +136,14 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         </li>
         <li>
             <strong>Usage stats</strong> (open beta): which features you use, basic preferences (like light or dark
-            mode), and your app version, macOS version, and Mac architecture. The app sends these about once every
-            three hours while it's open. They're tied to a random id created on your Mac, never to your name, email, or
-            license. That id stays the same between launches, which is how we tell 100 people opening the app once from
-            one person opening it 100 times. That makes these stats pseudonymous rather than truly anonymous: we can't
-            work out who you are, but the records do link to each other. No file names, contents, paths, search terms,
-            or prompts. On by default during the beta, off anytime in Settings &gt; Updates &amp; privacy.
+            mode), your app version, macOS version, and Mac architecture, and whether you installed Cmdr with Homebrew
+            or downloaded it directly. Cloudflare, our host, also tells us which country each connection comes from. We
+            store that country and don't keep your IP address. The app sends these about once every three hours while
+            it's open. They're tied to a random id created on your Mac, never to your name, email, or license. That id
+            stays the same between launches, which is how we tell 100 people opening the app once from one person
+            opening it 100 times. That makes these stats pseudonymous rather than truly anonymous: we can't work out who
+            you are, but the records do link to each other. No file names, contents, paths, search terms, or prompts. On
+            by default during the beta, off anytime in Settings &gt; Updates &amp; privacy.
         </li>
         <li>
             <strong>Beta contact email</strong> (optional): if you share it, it's stored on your Mac and sent only to our
@@ -435,8 +437,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <strong>What we collect</strong>, in the categories these laws name (section 2 has the details):
             identifiers (your email address if you give it to us, and your name if you buy a license), commercial
             information (what you bought), internet activity (website visits and the app's usage stats, without your
-            name), coarse location (the country a download came from), and the content of reports and feedback you
-            choose to send. We don't collect sensitive personal information as these laws define it.
+            name), coarse location (the country a download or the app's usage stats came from), and the content of
+            reports and feedback you choose to send. We don't collect sensitive personal information as these laws
+            define it.
         </li>
         <li>
             <strong>Where it comes from</strong>: from you, when you buy, sign up, or write to us, and from the app and

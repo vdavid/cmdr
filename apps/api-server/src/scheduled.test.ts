@@ -74,11 +74,12 @@ describe('handleSyntheticHeartbeatSweep', () => {
 
     await handleSyntheticHeartbeatSweep(env as never)
 
-    expect(calls).toHaveLength(2)
-    // Events first: the classifier reads `heartbeat`, so deleting the beats first would leave the
-    // events with nothing to identify them by, for good.
+    expect(calls).toHaveLength(3)
+    // Events and install summaries first: the classifier reads `heartbeat`, so deleting the beats
+    // first would leave them with nothing to identify them by, for good.
     expect(calls[0].sql).toContain('DELETE FROM analytics_event')
-    expect(calls[1].sql).toContain('DELETE FROM heartbeat')
+    expect(calls[1].sql).toContain('DELETE FROM install_summary')
+    expect(calls[2].sql).toContain('DELETE FROM heartbeat')
     // The cutoff has to be BOUND, never inlined: an unbounded delete would take the brand-new
     // installs that have not saved a setting yet. What the predicate does with it is proved
     // against a real SQLite in `synthetic-heartbeats.test.ts`.
@@ -137,6 +138,15 @@ describe('handleRetentionSweep', () => {
     const { sql } = await runSweep()
 
     expect(sql.some((s) => s.includes('DELETE FROM heartbeat'))).toBe(true)
+  })
+
+  it("drops an install's summary once its last beat is gone, after the heartbeat delete", async () => {
+    const { sql } = await runSweep()
+
+    const heartbeatIndex = sql.findIndex((s) => s.includes('DELETE FROM heartbeat'))
+    const summaryIndex = sql.findIndex((s) => s.includes('DELETE FROM install_summary'))
+    expect(summaryIndex).toBeGreaterThan(heartbeatIndex)
+    // What the predicate keeps and drops is proved against a real SQLite in `synthetic-heartbeats.test.ts`.
   })
 
   it('deletes relayed feature events on the same two-year window, by OUR receive time', async () => {

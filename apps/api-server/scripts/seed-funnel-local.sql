@@ -48,6 +48,10 @@ INSERT INTO heartbeat (anal_id, created_at, app_version, os_version, arch) VALUE
  -- D0 cohort: today (too young)
  ('anal_today', datetime('now'), '0.25.0','15.5','aarch64');
 
+-- `/heartbeat` keeps `install_summary` in step; a raw seed has to build it, the way migration 0031 backfills.
+INSERT OR IGNORE INTO install_summary (anal_id, first_beat_at)
+ SELECT anal_id, MIN(created_at) FROM heartbeat GROUP BY anal_id;
+
 INSERT INTO downloads (created_at, app_version, arch, country, continent, hashed_ip, source, ref) VALUES
  (datetime('now','-2 days'),'0.25.0','aarch64','US','NA','a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1','website','hn'),
  (datetime('now','-2 days'),'0.25.0','aarch64','DE','EU','a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2','website','reddit'),
