@@ -1653,11 +1653,11 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Выделенные объекты принадлежат другой учетной записи на этом Mac, а в их папке перемещать объект может только его владелец (объектов: {count}).",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "50f2ce6"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "errors.write.trashRefused.message.trashNotWritable": "Cmdr не может ничего положить в Корзину на этом диске, поэтому выделенные объекты остались на месте (объектов: {count}).",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "024ef04"
   },
@@ -1669,9 +1669,9 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "6f71e12"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "Возможно, объекты находятся там, куда macOS никого не пускает.",
+  "errors.write.trashRefused.suggestion.notPermitted": "Возможно, объекты находятся там, куда macOS никого не пускает. Finder иногда все же может их переместить, потому что умеет запрашивать ваш пароль.",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "f544942"
+    "sourceHash": "2ef3e96"
   },
   "errors.write.trashRefused.suggestion.locked": "Чтобы переместить объекты, сначала снимите с них защиту в Finder: откройте «Свойства» и снимите флажок «Защита».",
   "@errors.write.trashRefused.suggestion.locked": {
@@ -1681,11 +1681,11 @@
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder все же может их переместить, запросив пароль администратора.",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "Так бывает, когда меняются права доступа к папке Корзины, например после переезда на новый Mac. Объекты можно удалить безвозвратно сочетанием Shift+F8.",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "abaf265"
   },

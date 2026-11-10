@@ -31,3 +31,5 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   (hu: title `Visszagörgeted a többit?`, buttons `A többi visszagörgetése`; it's the one warn left). Either the check
   should ignore a trailing "?" split, or hu needs an allowlist entry. The `titleRest` description should name the
   constraint either way. (hu, sv, zh, zh-Hant)
+- `errors.write.trashRefused.message.ownedByAnotherUser`: "their folder" can read as the other ACCOUNT's folder rather
+  than the folder holding the items; "the folder holding them" (as in `message.folderNotWritable`) is clearer. (all)

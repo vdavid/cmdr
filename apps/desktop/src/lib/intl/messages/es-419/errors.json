@@ -463,6 +463,14 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "4034e16"
   },
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Otra cuenta de este Mac posee {count} de los elementos que elegiste, y en su carpeta solo el propietario de un elemento puede moverlo.",
+  "@errors.write.trashRefused.message.ownedByAnotherUser": {
+    "sourceHash": "c03f055"
+  },
+  "errors.write.trashRefused.message.trashNotWritable": "Cmdr no puede poner nada en el basurero de esta unidad, así que dejó en su lugar {count} de los elementos que elegiste.",
+  "@errors.write.trashRefused.message.trashNotWritable": {
+    "sourceHash": "efef3e6"
+  },
   "errors.write.trashRefused.message.noTrashForVolume": "macOS no encontró un basurero para {count} de los elementos que elegiste.",
   "@errors.write.trashRefused.message.noTrashForVolume": {
     "sourceHash": "e7da662"
@@ -471,9 +479,13 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "866cfc2"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "Puede que los elementos estén en un lugar que macOS se reserva.",
+  "errors.write.trashRefused.suggestion.notPermitted": "Puede que los elementos estén en un lugar que macOS se reserva. A veces el Finder sí puede moverlos, porque puede pedirte la contraseña.",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "39161ee"
+    "sourceHash": "be011a2"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritable": "Esto puede pasar cuando cambian los permisos de la carpeta del basurero, por ejemplo, después de pasarte a un Mac nuevo. Aun así puedes eliminar los elementos permanentemente con Shift+F8.",
+  "@errors.write.trashRefused.suggestion.trashNotWritable": {
+    "sourceHash": "555739b"
   },
   "errors.write.trashRefused.suggestion.noTrashForVolume": "Algunos lugares no tienen basurero propio, como las carpetas en la nube y la mayoría de las unidades de red. Aun así puedes eliminar los elementos permanentemente con Shift+F8.",
   "@errors.write.trashRefused.suggestion.noTrashForVolume": {

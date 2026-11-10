@@ -1653,11 +1653,11 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Ett annat konto på den här Macen äger {count} av objekten du valde, och deras mapp låter bara ett objekts ägare flytta det.",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "50f2ce6"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "errors.write.trashRefused.message.trashNotWritable": "Papperskorgen på den här enheten låter inte Cmdr lägga något i den, så {count} av objekten du valde stannade där de var.",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "024ef04"
   },
@@ -1669,9 +1669,9 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "6f71e12"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "Objekten kan ligga på ett ställe som macOS håller för sig själv.",
+  "errors.write.trashRefused.suggestion.notPermitted": "Objekten kan ligga på ett ställe som macOS håller för sig själv. Finder kan ibland ändå flytta dem, eftersom Finder kan be om ditt lösenord.",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "f544942"
+    "sourceHash": "2ef3e96"
   },
   "errors.write.trashRefused.suggestion.locked": "För att flytta dem låser du först upp dem i Finder: välj Visa info och avmarkera Låst.",
   "@errors.write.trashRefused.suggestion.locked": {
@@ -1681,11 +1681,11 @@
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder kan ändå flytta dem efter att ha bett om ett administratörslösenord.",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "Det här kan hända när behörigheterna för papperskorgsmappen ändras, till exempel efter ett byte till en ny Mac. Du kan ändå radera objekten permanent med Shift+F8.",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "abaf265"
   },

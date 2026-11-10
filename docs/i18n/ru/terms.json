@@ -399,7 +399,7 @@
   "ask": {
     "chosen": "Спрашивать",
     "accept": ["спрашива"],
-    "proseAccept": ["спрос", "запрос"],
+    "proseAccept": ["спрос", "запрос", "запрашива"],
     "forms": "the option label (ask every time) → Спрашивать, imperfective; Always ask → Всегда спрашивать; running prose → Cmdr спросит",
     "avoid": [
       {

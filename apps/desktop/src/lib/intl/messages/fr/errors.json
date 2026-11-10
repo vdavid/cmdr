@@ -1653,11 +1653,11 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Un autre compte de ce Mac est propriétaire de {count} des éléments que vous avez choisis, et leur dossier ne permet qu’au propriétaire d’un élément de le déplacer.",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "50f2ce6"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "errors.write.trashRefused.message.trashNotWritable": "Cmdr ne peut rien placer dans la corbeille de ce disque, et a donc laissé en place {count} des éléments que vous avez choisis.",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "024ef04"
   },
@@ -1669,9 +1669,9 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "6f71e12"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "Les éléments se trouvent peut-être à un endroit que macOS garde pour lui.",
+  "errors.write.trashRefused.suggestion.notPermitted": "Les éléments se trouvent peut-être à un endroit que macOS garde pour lui. Le Finder peut parfois quand même les déplacer, car il peut vous demander votre mot de passe.",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "f544942"
+    "sourceHash": "2ef3e96"
   },
   "errors.write.trashRefused.suggestion.locked": "Pour les déplacer, déverrouillez-les d’abord dans le Finder : Lire les informations, puis décochez Verrouillé.",
   "@errors.write.trashRefused.suggestion.locked": {
@@ -1681,11 +1681,11 @@
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Le Finder peut quand même les déplacer après avoir demandé un mot de passe d’administrateur.",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "Cela peut arriver quand les autorisations du dossier de la corbeille changent, par exemple après le passage à un nouveau Mac. Vous pouvez quand même supprimer définitivement les éléments avec Shift+F8.",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "abaf265"
   },

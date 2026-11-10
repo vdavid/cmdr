@@ -1653,11 +1653,11 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Jiný účet na tomto Macu vlastní {count} z vybraných položek a jejich složka dovoluje přesunout položku jen jejímu vlastníkovi.",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "50f2ce6"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "errors.write.trashRefused.message.trashNotWritable": "Do koše na tomto disku nemůže Cmdr nic vložit, a proto zůstalo na místě {count} z vybraných položek.",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "024ef04"
   },
@@ -1669,9 +1669,9 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "6f71e12"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "Položky můžou být na místě, které si macOS hlídá jen pro sebe.",
+  "errors.write.trashRefused.suggestion.notPermitted": "Položky můžou být na místě, které si macOS hlídá jen pro sebe. Finder je někdy přesto dokáže přesunout, protože vás může požádat o heslo.",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "f544942"
+    "sourceHash": "2ef3e96"
   },
   "errors.write.trashRefused.suggestion.locked": "Pokud je chcete přesunout, nejdřív je ve Finderu odemkněte: Informace, pak zrušte zaškrtnutí políčka Zamčeno.",
   "@errors.write.trashRefused.suggestion.locked": {
@@ -1681,11 +1681,11 @@
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder je přesto dokáže přesunout, když si nejdřív vyžádá heslo správce.",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "To se může stát, když se změní oprávnění složky koše, třeba po přechodu na nový Mac. Pořád můžete položky trvale smazat zkratkou Shift+F8.",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "abaf265"
   },

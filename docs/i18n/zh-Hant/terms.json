@@ -351,7 +351,8 @@
     "forms": "the option label → 詢問; Don’t ask again → 別再詢問",
     "sources": "AP-TW (詢問, 2) + MS zh-Hant (詢問, 7) + TC; catalog settings.archives.opt.ask, search.coverage.dontAskAgain",
     "exceptions": {
-      "askCmdr.tool.upgradeSmbToDirect.tried": "“Ask for” a connection is a request: 要求, the request ruling’s form."
+      "askCmdr.tool.upgradeSmbToDirect.tried": "“Ask for” a connection is a request: 要求, the request ruling’s form.",
+      "errors.write.trashRefused.suggestion.notPermitted": "Finder “can ask for your password” is a request: 要求你輸入密碼, the request ruling’s form."
     }
   },
   "ask-cmdr": {

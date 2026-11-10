@@ -341,7 +341,8 @@
     "exceptions": {
       "askCmdr.tool.upgradeSmbToDirect.tried": "English sense: “ask for a direct connection” is requesting one (kér), not asking a question",
       "askCmdr.tool.outcome.inBackground": "English sense: “for you to ask” is the person requesting something, not Cmdr asking a question",
-      "servers.sheet.nfsIdentityHelp": "English sense: “ask for a password” is requesting one, not asking a question, so it takes kér (nem kér jelszót)"
+      "servers.sheet.nfsIdentityHelp": "English sense: “ask for a password” is requesting one, not asking a question, so it takes kér (nem kér jelszót)",
+      "errors.write.trashRefused.suggestion.notPermitted": "English sense: Finder “can ask for your password” is requesting it (elkéri a jelszavadat), not asking a question"
     }
   },
   "ask-cmdr": {

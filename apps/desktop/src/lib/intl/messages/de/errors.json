@@ -1653,11 +1653,11 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Ein anderes Konto auf diesem Mac besitzt {count} der ausgewählten Objekte, und in deren Ordner darf nur der Eigentümer ein Objekt bewegen.",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "50f2ce6"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "errors.write.trashRefused.message.trashNotWritable": "Cmdr darf nichts in den Papierkorb auf diesem Laufwerk legen und hat deshalb {count} der ausgewählten Objekte an Ort und Stelle gelassen.",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "024ef04"
   },
@@ -1669,9 +1669,9 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "6f71e12"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "Die Objekte liegen vielleicht an einem Ort, den macOS für sich behält.",
+  "errors.write.trashRefused.suggestion.notPermitted": "Die Objekte liegen vielleicht an einem Ort, den macOS für sich behält. Der Finder kann sie manchmal trotzdem bewegen, weil er nach deinem Passwort fragen kann.",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "f544942"
+    "sourceHash": "2ef3e96"
   },
   "errors.write.trashRefused.suggestion.locked": "Um sie zu bewegen, hebe zuerst den Schutz im Finder auf: „Informationen“, dann das Häkchen bei „Geschützt“ entfernen.",
   "@errors.write.trashRefused.suggestion.locked": {
@@ -1681,11 +1681,11 @@
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Der Finder kann sie trotzdem bewegen, nachdem er nach einem Administratorpasswort gefragt hat.",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "Das kann passieren, wenn sich die Zugriffsrechte des Papierkorbordners ändern, zum Beispiel nach dem Umstieg auf einen neuen Mac. Endgültig löschen kannst du die Objekte trotzdem mit Shift+F8.",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "abaf265"
   },

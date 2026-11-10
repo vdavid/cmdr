@@ -1652,11 +1652,11 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "你选中的项目里有 {count} 个属于这台 Mac 上的另一个账户，而它们所在的文件夹只允许项目的所有者移动它。",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "50f2ce6"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "errors.write.trashRefused.message.trashNotWritable": "你选中的项目里有 {count} 个，因为这个驱动器上的废纸篓不让 Cmdr 放入任何东西，所以它们留在了原处。",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "024ef04"
   },
@@ -1668,9 +1668,9 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "6f71e12"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "这些项目可能放在 macOS 自己留着的地方。",
+  "errors.write.trashRefused.suggestion.notPermitted": "这些项目可能放在 macOS 自己留着的地方。Finder 有时还是能移动它们，因为它可以问你要密码。",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "f544942"
+    "sourceHash": "2ef3e96"
   },
   "errors.write.trashRefused.suggestion.locked": "要移动它们，先在 Finder 里解锁：选取“显示简介”，然后取消勾选“已锁定”。",
   "@errors.write.trashRefused.suggestion.locked": {
@@ -1680,11 +1680,11 @@
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder 问你要管理员密码之后，还是可以移动它们。",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "如果废纸篓文件夹的权限变了，就可能出现这种情况，比如换到新的 Mac 之后。你还是可以用 Shift+F8 把这些项目彻底删除。",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "abaf265"
   },

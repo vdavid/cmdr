@@ -1653,11 +1653,11 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Een ander account op deze Mac is eigenaar van {count} van de onderdelen die je koos, en hun map laat alleen de eigenaar van een onderdeel het verplaatsen.",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "50f2ce6"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "errors.write.trashRefused.message.trashNotWritable": "Cmdr mag niets in de prullenmand op deze schijf zetten en liet daarom {count} van de onderdelen die je koos gewoon staan.",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "024ef04"
   },
@@ -1669,9 +1669,9 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "6f71e12"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "De onderdelen staan misschien op een plek die macOS voor zichzelf houdt.",
+  "errors.write.trashRefused.suggestion.notPermitted": "De onderdelen staan misschien op een plek die macOS voor zichzelf houdt. Finder kan ze soms toch verplaatsen, want Finder kan om je wachtwoord vragen.",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "f544942"
+    "sourceHash": "2ef3e96"
   },
   "errors.write.trashRefused.suggestion.locked": "Om ze te verplaatsen, hef je eerst de beveiliging op in Finder: ‘Toon info’, en deselecteer dan ‘Beveiligd’.",
   "@errors.write.trashRefused.suggestion.locked": {
@@ -1681,11 +1681,11 @@
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder kan ze toch verplaatsen door eerst om een beheerderswachtwoord te vragen.",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "Dit kan gebeuren als de bevoegdheden van de prullenmandmap veranderen, bijvoorbeeld na de overstap naar een nieuwe Mac. Je kunt de onderdelen wel definitief verwijderen met Shift+F8.",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "abaf265"
   },

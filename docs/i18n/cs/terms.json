@@ -2019,7 +2019,8 @@
     "note": "The negative imperfective neptat (Už se neptat, the Don't ask again button) has no long á, so ptá/ptát miss it.",
     "exceptions": {
       "askCmdr.tool.outcome.inBackground": "the person asks the assistant to do something (požádat), not a question (zeptat se)",
-      "askCmdr.tool.upgradeSmbToDirect.tried": "asking Cmdr for a connection is a request (vyžádat), not a question (zeptat se)"
+      "askCmdr.tool.upgradeSmbToDirect.tried": "asking Cmdr for a connection is a request (vyžádat), not a question (zeptat se)",
+      "errors.write.trashRefused.suggestion.notPermitted": "Finder asking FOR your password is a request (požádat o heslo), not a question (zeptat se)"
     }
   },
   "byte": {
