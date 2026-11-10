@@ -47,8 +47,8 @@ Drivers: `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
   concurrent driver's first failure fire `state.stop_work` (it DRAINS, ❌ never drops); only the intent tells them
   apart. DETAILS § "Two tiers of cancel".
 - **Retry is per-FILE** (`retry.rs`): ❌ never higher, ❌ never on a `Cancelled`; a cut-off landing RESUMES, as does a
-  write both ends can carry on (`CarryOn`). A `Disconnected` volume is WAITED for (`volume_outage.rs`); ❌ only
-  re-runnable calls use `through_outages`. **The stall watchdog is GATED** (liveness `Dead`, SMB only, AND
-  `STALL_ABORT_AFTER`): ❌ never collapse the AND.
+  `CarryOn` write. A `Disconnected` volume is WAITED for (`volume_outage.rs`); ❌ only re-runnable calls use
+  `through_outages`. **The stall watchdog is GATED** (liveness `Dead`, SMB only, AND `STALL_ABORT_AFTER`, late ticks
+  forgiven): ❌ never collapse the AND.
 
 Read `DETAILS.md` before non-trivial work.

@@ -892,6 +892,74 @@ fn the_watchdog_acts_once_a_still_task_s_connection_reads_dead() {
     );
 }
 
+/// Time the watchdog itself never got to observe is not stillness it can act
+/// on (ERR-P4GWB). There, the whole async runtime went unscheduled for about
+/// ten minutes; `smb2`'s own clocks, starved too, read the session `Dead` on
+/// the first beat back, and the stillness half of the gate passed on minutes
+/// that piled up while nobody was watching, so the first tick after the gap
+/// abandoned two healthy reads and filed an error report.
+///
+/// The late tick FORGIVES, it never exonerates: the stillness seen before the
+/// gap still counts, and a task that stays still once the watchdog is running
+/// again is ended one window later, exactly as without the gap.
+#[test]
+fn a_tick_that_arrives_minutes_late_does_not_spend_the_abort_budget() {
+    let events = Arc::new(TableWatchingEvents::default());
+    let engine = Operations::builder(Arc::new(FakeVolumes::default()), Arc::clone(&events) as _).build();
+    let state = Arc::new(engine.new_operation_state(Duration::from_millis(100)));
+    let probe = probe_with_abort_window("probe-late-tick", &state, Duration::from_secs(5));
+    events.probe.set(Arc::downgrade(&probe)).expect("set once");
+    let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
+    task.probe().set_phase(TaskPhase::Streaming);
+    task.probe().set_bytes(4_194_304, 13_421_021);
+    let signal = task.probe().arm_stall_abort();
+
+    let mut watchdog = WatchdogState::new();
+    for tick in 1..=3 {
+        probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+    }
+    // The runtime goes unscheduled for nearly ten minutes.
+    probe.watchdog_step(&mut watchdog, Duration::from_secs(600));
+    probe.watchdog_step(&mut watchdog, Duration::from_secs(601));
+    assert!(
+        !signal.is_cancelled(),
+        "minutes the watchdog couldn't see must not end a task's wait"
+    );
+    assert_eq!(events.reports.load(Ordering::SeqCst), 0, "nor file an error report");
+
+    // Watched again, and still not moving: the window runs out as usual.
+    for tick in 602..=604 {
+        probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+    }
+    assert!(
+        signal.is_cancelled(),
+        "a task that stays still once the watchdog runs again is still ended"
+    );
+    assert_eq!(events.reports.load(Ordering::SeqCst), 1);
+}
+
+/// The other side of the late-tick rule: a runtime that is merely busy, with
+/// ticks arriving a second or two late, is not a gap. Forgiving every bit of
+/// jitter would let a real wedge on a loaded machine dodge the abort forever.
+#[test]
+fn ticks_that_run_a_little_late_still_spend_the_abort_budget() {
+    let engine = TestOperations::new();
+    let guard = engine.register("probe-jittery-ticks");
+    let state = guard.state();
+    let probe = probe_with_abort_window(guard.id().as_str(), state, Duration::from_secs(5));
+    let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
+    task.probe().set_phase(TaskPhase::Streaming);
+    let signal = task.probe().arm_stall_abort();
+
+    let mut watchdog = WatchdogState::new();
+    // Every tick lands a full second (or two) after it was due.
+    for tick in [2, 4, 7, 9, 12] {
+        probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
+    }
+
+    assert!(signal.is_cancelled(), "a slow tick is still a tick the watchdog saw");
+}
+
 /// Engine events that note, at each error report, whether the probe's task
 /// table was locked at that moment.
 #[derive(Default)]

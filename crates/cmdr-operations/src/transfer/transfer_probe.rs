@@ -91,6 +91,22 @@ pub(super) const STALL_AFTER: Duration = Duration::from_secs(20);
 /// § "The watchdog ACTS").
 pub(super) const STALL_ABORT_AFTER: Duration = Duration::from_secs(180);
 
+/// How far past its due time a watchdog tick may land before the gap reads as
+/// "the watchdog wasn't running" rather than "the runtime is busy".
+///
+/// A tick that lands this late says the async runtime (or the whole process)
+/// went unscheduled: a starved worker pool, a system sleep, App Nap. Nothing
+/// the watchdog could see happened in that gap, so it is forgiven
+/// ([`OperationProbe::forgive_unseen_time`]) and logged, which also makes the
+/// watchdog the runtime-stall witness for as long as a transfer runs.
+///
+/// 5 s mirrors `smb2`'s own cadence rule (`forgive_scheduling_stall`: a gap
+/// of `KEEPALIVE_AFTER` on top of its tick), so the two layers agree on what a
+/// stall is. ❌ Don't lower it toward the tick: forgiving a busy runtime's
+/// second-or-two jitter would let a real wedge on a loaded Mac dodge
+/// [`STALL_ABORT_AFTER`] indefinitely.
+pub(super) const LATE_TICK_AFTER: Duration = Duration::from_secs(5);
+
 /// The stall-abort window in force, honoring a test override.
 ///
 /// Read once per operation at registration, on the CALLER's thread (the copy
@@ -449,6 +465,11 @@ impl OperationProbe {
     /// without waiting on wall-clock seconds. `still_for` is how long BOTH
     /// progress counters have been unchanged.
     fn watchdog_step(&self, watchdog: &mut WatchdogState, now: Duration) {
+        // First, before any branch reads a clock: time the watchdog never got
+        // to observe is not stillness it may act on.
+        if let Some(unseen) = watchdog.unseen_since_last_tick(now) {
+            self.forgive_unseen_time(unseen, now);
+        }
         // A transfer waiting for a volume to come back isn't stalled either: it
         // knows exactly what it's waiting on, and says so. It still heartbeats,
         // which is how the UI learns the wait started at all (a waiting
@@ -557,6 +578,44 @@ impl OperationProbe {
                 .store(task.bytes_done.load(Ordering::Relaxed), Ordering::Relaxed);
             task.still_since_ms.store(now_ms, Ordering::Relaxed);
         }
+    }
+
+    /// Move every in-flight task's stillness clock forward by `unseen`, a stretch
+    /// the watchdog itself spent unscheduled, and say so in the log.
+    ///
+    /// The abort gate's two halves both assume someone was watching. When the
+    /// whole runtime starves, `smb2`'s liveness clocks starve with it and can read
+    /// `Dead` on the first beat back, while the stillness half passes on minutes
+    /// that piled up unobserved: ERR-P4GWB abandoned two healthy reads and filed
+    /// an error report exactly that way, on its first tick after ~10 minutes.
+    ///
+    /// Shifted, never reset (the same rule as `smb2`'s
+    /// `forgive_scheduling_stall`): stillness seen BEFORE the gap still counts,
+    /// so this forgives without exonerating, and a task that is still wedged once
+    /// the watchdog runs again is ended one window later.
+    ///
+    /// The operation-level stillness (`still_since`, which the UI and the dump
+    /// read) is deliberately NOT shifted: the bar really sat still that long,
+    /// and saying so is the truth. Only the clock that decides to ACT forgives.
+    ///
+    /// The log line is the runtime-stall probe: INFO (it never auto-sends a
+    /// report), and it rides the tick a transfer already pays for, so it costs
+    /// nothing at idle.
+    fn forgive_unseen_time(&self, unseen: Duration, now: Duration) {
+        let unseen_ms = u64::try_from(unseen.as_millis()).unwrap_or(u64::MAX);
+        let now_ms = u64::try_from(now.as_millis()).unwrap_or(u64::MAX);
+        for task in self.tasks.lock_ignore_poison().iter() {
+            let since = task.still_since_ms.load(Ordering::Relaxed);
+            task.still_since_ms
+                .store(since.saturating_add(unseen_ms).min(now_ms), Ordering::Relaxed);
+        }
+        log::info!(
+            "transfer watchdog: op={} was not scheduled for {:.1}s (a starved async runtime, App Nap, or a \
+             system sleep). Nothing could be observed in that time, so it doesn't count toward ending a \
+             still task's wait",
+            self.operation_id,
+            unseen.as_secs_f64()
+        );
     }
 
     /// The watchdog ACTING rather than only reporting: track each in-flight task's
@@ -957,6 +1016,9 @@ struct WatchdogState {
     last_reported: Duration,
     /// The source connection's recent received-byte readings, one per tick.
     inbound: InboundWindow,
+    /// When the previous tick ran: the cadence witness that tells a late tick
+    /// from a still transfer. `None` before the first.
+    last_tick: Option<Duration>,
 }
 
 impl WatchdogState {
@@ -967,7 +1029,17 @@ impl WatchdogState {
             still_since: Duration::ZERO,
             last_reported: Duration::ZERO,
             inbound: InboundWindow::default(),
+            last_tick: None,
         }
+    }
+
+    /// Record this tick, and return how long the watchdog went unscheduled
+    /// before it, when that's at least [`LATE_TICK_AFTER`] past the tick's due
+    /// time. Measured past the due time, so a healthy cadence reads zero.
+    fn unseen_since_last_tick(&mut self, now: Duration) -> Option<Duration> {
+        let previous = self.last_tick.replace(now)?;
+        let unseen = now.saturating_sub(previous).saturating_sub(STALL_TICK);
+        (unseen >= LATE_TICK_AFTER).then_some(unseen)
     }
 }
 

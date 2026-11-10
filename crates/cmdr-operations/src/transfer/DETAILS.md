@@ -2439,6 +2439,17 @@ KB/s.
 - **Re-armed per attempt** (`TaskProbe::arm_stall_abort`, which also restarts the stillness clock). One task copies one
   top-level source, which for a directory is many files with their own attempts; a token that stayed tripped would abort
   every remaining child instantly and turn the retry budget into three no-ops.
+- **Only time the watchdog SAW counts** (`OperationProbe::forgive_unseen_time`). A tick landing `LATE_TICK_AFTER` (5 s)
+  or more past its due time means the runtime or the process went unscheduled, and every task's stillness clock moves
+  forward by the gap. ERR-P4GWB is why: the whole async runtime starved for ~10 minutes mid-move, `smb2`'s clocks
+  starved with it and read `Dead` on the first beat back, and the stillness half passed on minutes nobody watched, so
+  the first tick after the gap abandoned two healthy reads and filed an error report. Shifted, never reset (`smb2`'s
+  `forgive_scheduling_stall` rule): it forgives without exonerating, so a task still wedged afterwards is ended one
+  window later. The UI's and the dump's stillness are NOT shifted (the bar really sat still). ❌ Don't lower the
+  threshold toward the tick: forgiving a busy runtime's jitter would let a real wedge dodge the abort forever. Pinned by
+  `transfer_probe::tests::{a_tick_that_arrives_minutes_late_does_not_spend_the_abort_budget, ticks_that_run_a_little_late_still_spend_the_abort_budget}`.
+  The INFO line it logs ("transfer watchdog: op=… was not scheduled for …") is also the app's runtime-stall witness
+  while a transfer runs, at no idle cost; read it beside `smb2`'s "this process was not scheduled" lines.
 
 **Residual risk, accepted (an abandoned write handle).** Ending the wait drops the destination's `write_from_stream`
 future mid-write, so an SMB `FileWriter` goes away without `finish()` or `abort()` and its handle leaks until the server
