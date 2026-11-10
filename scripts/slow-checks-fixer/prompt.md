@@ -46,16 +46,15 @@ it. `gh` and git over HTTPS are signed in as the Cmdr agents GitHub App.
 
 ### Sensitive paths
 
-A fix touching any of these never auto-lands, however small:
+A fix touching any of these never auto-lands, however small. CI holds it too: on a PR of yours that touches one, the
+`CI OK` step "Sensitive paths need David's approval" stays red until David approves, so `pnpm land` can't land it. If
+you see that step red, that's the gate, not a bug to fix: stop, and do the sensitive-path steps above.
 
-- `.github/**` (workflows, rulesets, release signers, actions)
-- `scripts/land/**`, `scripts/land.sh`
-- The release pipeline: `scripts/release*`, `scripts/release-*/**`, `scripts/trust-review*`, `scripts/build-pkg.sh`
-- Update signing and trust: `crates/cmdr-update-trust/**`, `apps/desktop/src-tauri/src/updater/**`,
-  `apps/desktop/src-tauri/updater-backup.pub`, `apps/desktop/src-tauri/tauri.conf.json`
-- Dependencies and toolchains: any `Cargo.toml`, `Cargo.lock`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`,
-  `.mise.toml`, `rust-toolchain.toml`, `vendor/**`, `deny.toml`, `osv-scanner.toml`
-- The headless agents themselves: `scripts/slow-checks-fixer/**`, `scripts/report-triage/**`
+The list (`.github/workflows/sensitive-paths.txt`, the file CI's gate reads):
+
+```text
+{{SENSITIVE_PATHS}}
+```
 
 ## 3. Report
 

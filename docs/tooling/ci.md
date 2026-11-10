@@ -5,20 +5,21 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 
 ## Workflow inventory
 
-| Workflow                | Trigger                                 | What it does                                                                                        |
-| ----------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `ci.yml`                | PRs, pushes to main, nightly, manual    | Main suite: change detection, one `uses:` job per lane (§ Lane files), the deploy, and `CI OK`      |
-| `<lane>-lane.yml`       | Called by `ci.yml`                      | One lane's steps each: `rust`, `rust-fixtures`, `macos`, `svelte`, `e2e-linux`, `website`, `light`  |
-| `ci-upkeep.yml`         | CI finished on a `main` push            | Warms `main`'s build caches, then drops superseded ones. § CI upkeep                                |
-| `slow-checks.yml`       | Nightly (3 AM UTC), manual              | osv-scanner, cargo-deny/udeps, govulncheck, website Docker build, 30-min SMB soak                   |
-| `advisories.yml`        | Daily (4:17 AM UTC), manual             | osv-scanner (every lockfile) and cargo-deny (no compile): new advisories surface in a day           |
-| `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                      |
-| `deploy-dashboard.yml`  | Push to main touching the dashboard     | Builds and deploys the analytics dashboard to Cloudflare Pages.                                     |
-| `release.yml`           | `v*` tags                               | Only calls `release-pipeline.yml` (so attestations name the reusable workflow as signer).           |
-| `release-pipeline.yml`  | Called by `release.yml`                 | Builds, signs, and publishes the app, and the site's browser demo. `docs/guides/releasing.md`       |
-| `scorecard.yml`         | Push to main, weekly, rule edits        | OpenSSF Scorecard: publishes the score (README badge) and SARIF to code scanning. § below           |
-| `codeql.yml`            | PRs, push to main, weekly, manual       | CodeQL (Actions, JS/TS, Rust); a high or critical finding fails it and blocks releases. § below     |
-| `gradle-wrapper.yml`    | Push to main, wrapper PRs, weekly       | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard |
+| Workflow                      | Trigger                                 | What it does                                                                                        |
+| ----------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `ci.yml`                      | PRs, pushes to main, nightly, manual    | Main suite: change detection, one `uses:` job per lane (§ Lane files), the deploy, and `CI OK`      |
+| `<lane>-lane.yml`             | Called by `ci.yml`                      | One lane's steps each: `rust`, `rust-fixtures`, `macos`, `svelte`, `e2e-linux`, `website`, `light`  |
+| `ci-upkeep.yml`               | CI finished on a `main` push            | Warms `main`'s build caches, then drops superseded ones. § CI upkeep                                |
+| `slow-checks.yml`             | Nightly (3 AM UTC), manual              | osv-scanner, cargo-deny/udeps, govulncheck, website Docker build, 30-min SMB soak                   |
+| `advisories.yml`              | Daily (4:17 AM UTC), manual             | osv-scanner (every lockfile) and cargo-deny (no compile): new advisories surface in a day           |
+| `deploy-api-server.yml`       | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                      |
+| `deploy-dashboard.yml`        | Push to main touching the dashboard     | Builds and deploys the analytics dashboard to Cloudflare Pages.                                     |
+| `release.yml`                 | `v*` tags                               | Only calls `release-pipeline.yml` (so attestations name the reusable workflow as signer).           |
+| `release-pipeline.yml`        | Called by `release.yml`                 | Builds, signs, and publishes the app, and the site's browser demo. `docs/guides/releasing.md`       |
+| `scorecard.yml`               | Push to main, weekly, rule edits        | OpenSSF Scorecard: publishes the score (README badge) and SARIF to code scanning. § below           |
+| `codeql.yml`                  | PRs, push to main, weekly, manual       | CodeQL (Actions, JS/TS, Rust); a high or critical finding fails it and blocks releases. § below     |
+| `gradle-wrapper.yml`          | Push to main, wrapper PRs, weekly       | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard |
+| `sensitive-path-approval.yml` | David approves a PR                     | Reruns `CI OK` where the sensitive-path gate waited for that approval. § Branch protection          |
 
 `slow-checks.yml` also runs the long fuzz job (20 minutes per target, findings uploaded as `fuzz-artifacts`;
 `fuzz/DETAILS.md` § "Running and reproducing"), Miri, property mutants, and the pre-release gates. Kani and Shuttle run
@@ -712,6 +713,11 @@ job in `ci.yml` except the post-land deploy (`deploy-website`), `changes` includ
 `success` or `skipped` and `changes` is `success`. A lane skipped by change detection passes; a failed `changes`, which
 skips every lane, is red. A lane that calls a lane file reports its whole file's result, so a red job inside it fails
 the gate.
+
+One more condition, for the headless fixer's GitHub App only: a change it authored or dispatched that touches a path in
+`.github/workflows/sensitive-paths.txt` keeps `CI OK` red until David approves the PR's head, and his approval reruns
+the job by itself (`sensitive-path-approval.yml`). Everyone else's runs pass that step untouched.
+`scripts/slow-checks-fixer/DETAILS.md` § The sensitive-path gate.
 
 One exception: on a `main` push, a `cancelled` `desktop-rust-macos` passes when `main` has moved past the commit (the
 current head differs from it and `compare/{sha}...{head}` reads `ahead`), because a newer push replaced it in the lane's

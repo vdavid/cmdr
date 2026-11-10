@@ -113,6 +113,16 @@ func TestJobChangesPrintsEachJobOncePerState(t *testing.T) {
 	}
 }
 
+// Regression anchor: the `release` environment requires David's approval, so `sign` and `pkg`
+// sit at `waiting` until he approves. The wait must say so, or a paused release looks stuck.
+func TestJobChangesNamesTheApprovalAJobWaitsFor(t *testing.T) {
+	got := jobChanges(map[string]string{}, []ciJob{job("sign", "waiting", "")})
+	want := []string{"sign: waiting for David's approval (the `release` environment; approve it in the run's page)"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+}
+
 func TestCIRedMessageSaysWhyAndWhatNext(t *testing.T) {
 	failed := []ciJob{{ID: 77, Name: "hygiene", Status: "completed", Conclusion: "failure", URL: "https://example/job/77"}}
 	msg := ciRedMessage("vdavid/cmdr", ciRun{ID: 42}, failed, "0.56.0")

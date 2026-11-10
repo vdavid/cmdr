@@ -446,6 +446,9 @@ echo "  CI on it:   https://github.com/$REPO/actions/workflows/ci.yml?query=bran
 echo "  The build:  https://github.com/$REPO/actions/workflows/release.yml?query=branch%3A$TAG"
 echo "  Watch CI alone (stops on the first red job): ./scripts/release-ci-gate.sh $VERSION"
 echo "  Drop it (red CI, a broken build): ./scripts/release.sh -abort $VERSION"
+# The `release` environment requires David's approval, so the build pauses before it signs.
+# docs/guides/releasing.md § Signing secrets.
+echo "  The build pauses at 'sign' and again at 'pkg' until David approves them (Review deployments, on the build's page)."
 if [[ "$MODE" == test ]]; then
   echo "Pipeline test: once both are green, ./scripts/release-finish.sh -dry-run -out <dir> $VERSION, then clean up with -abort."
 elif [[ "$SIGNING" == local ]]; then

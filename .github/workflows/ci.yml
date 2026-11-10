@@ -1164,6 +1164,7 @@ jobs:
     permissions:
       contents: read # check out the code, compare commits
       actions: read # list the lane markers (`lane-markers verify`)
+      pull-requests: read # the sensitive-path gate: list the PR's files and reviews
     steps:
       - name: Check all jobs passed
         env:
@@ -1202,6 +1203,112 @@ jobs:
           if [[ "$EVENT" == "pull_request" && "$(jq -r '.changes.outputs.land' <<<"$NEEDS")" != "true" ]]; then
             echo "A light run: the Rust lanes and Linux E2E wait for 'pnpm land', so this gate is 'CI light', never the 'CI OK' main requires."
           fi
+
+      # A change by the Cmdr M1 agents GitHub App (the headless slow-checks fixer) that touches a
+      # path in `sensitive-paths.txt` (beside this file) stays red until `vdavid` approves the
+      # PR's head; everyone else's runs pass straight through. It runs before the checkout, so no
+      # PR code runs ahead of it, and it reads the list from the BASE commit, so a PR can't loosen
+      # it for itself. The App can't push `.github/workflows/**` (no Workflows permission), so it
+      # can change neither this step nor the list. An App-dispatched run on a branch is gated too
+      # (with no approval path), since its green `CI OK` would otherwise let the App push that SHA
+      # to `main`. David's approval reruns this job by itself (`sensitive-path-approval.yml`).
+      # `scripts/slow-checks-fixer/DETAILS.md` § The sensitive-path gate.
+      - name: Sensitive paths need David's approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          ACTOR_ID: ${{ github.actor_id }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR_ID: ${{ github.event.pull_request.user.id }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          APP_BOT_ID: '354849018' # cmdr-m1-agents[bot], the user of App 5695385
+          DAVID_ID: '2552265' # vdavid
+          LIST: .github/workflows/sensitive-paths.txt
+        run: |
+          gated=false
+          case "$EVENT" in
+            pull_request) [[ "$AUTHOR_ID" == "$APP_BOT_ID" || "$ACTOR_ID" == "$APP_BOT_ID" ]] && gated=true ;;
+            workflow_dispatch) [[ "$ACTOR_ID" == "$APP_BOT_ID" && "$REF" != refs/heads/main ]] && gated=true ;;
+          esac
+          if [[ "$gated" != true ]]; then
+            echo "Not a change by the Cmdr M1 agents App, so nothing to gate."
+            exit 0
+          fi
+
+          # Every lookup fails closed: `set -e` stops the step on any API error.
+          if [[ "$EVENT" == pull_request ]]; then
+            base="$BASE_SHA"
+            files=$(gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" \
+              --jq '.[] | .filename, (.previous_filename // empty)')
+            listed=$(gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" --jq '.[] | .filename' | wc -l)
+            expected=$(gh api "repos/$REPO/pulls/$PR" --jq .changed_files)
+            if ((listed < expected)); then
+              echo "GitHub listed $listed of the PR's $expected files, so the gate can't see them all."
+              exit 1
+            fi
+          else
+            base=$(gh api "repos/$REPO/commits/main" --jq .sha)
+            compare=$(gh api "repos/$REPO/compare/$base...$SHA")
+            files=$(jq -r '.files[] | .filename, (.previous_filename // empty)' <<<"$compare")
+            if (($(jq '.files | length' <<<"$compare") >= 300)); then
+              echo "The compare API caps its file list at 300, so the gate can't see them all."
+              exit 1
+            fi
+          fi
+
+          patterns=$(gh api -H "Accept: application/vnd.github.raw" "repos/$REPO/contents/$LIST?ref=$base" |
+            sed -e 's/#.*//' -e 's/[[:space:]]*$//' -e '/^$/d')
+          if [[ -z "$patterns" ]]; then
+            echo "$LIST at $base is empty, so the gate fails closed."
+            exit 1
+          fi
+
+          # `dir/**`: under dir. `**/name`: name at any depth. Else a glob whose `*` crosses `/`.
+          # shellcheck disable=SC2053 # the unquoted right-hand sides are the patterns, matched as globs on purpose
+          matches() {
+            local path="$1" pattern="$2" rest dir
+            case "$pattern" in
+              '**/'*) rest="${pattern#\*\*/}" && [[ "$path" == $rest || "$path" == */$rest ]] ;;
+              *'/**') dir="${pattern%/\*\*}" && [[ "$path" == "$dir"/* ]] ;;
+              *) [[ "$path" == $pattern ]] ;;
+            esac
+          }
+          hits=()
+          while IFS= read -r path; do
+            [[ -n "$path" ]] || continue
+            while IFS= read -r pattern; do
+              if matches "$path" "$pattern"; then
+                hits+=("$path (matches $pattern)")
+                break
+              fi
+            done <<<"$patterns"
+          done <<<"$files"
+          if ((${#hits[@]} == 0)); then
+            echo "A change by the Cmdr M1 agents App, touching no sensitive path."
+            exit 0
+          fi
+          echo "A change by the Cmdr M1 agents App touches sensitive paths:"
+          printf '  %s\n' "${hits[@]}"
+
+          if [[ "$EVENT" != pull_request ]]; then
+            echo "Only a pull request David approves can carry these, so this run stays red."
+            exit 1
+          fi
+          # David's newest review that decides anything; a comment-only review doesn't.
+          verdict=$(gh api --paginate "repos/$REPO/pulls/$PR/reviews?per_page=100" --jq ".[]
+            | select(.user.id == $DAVID_ID and (.state == \"APPROVED\" or .state == \"CHANGES_REQUESTED\" or .state == \"DISMISSED\"))
+            | \"\(.state) \(.commit_id)\"" | tail -n 1)
+          if [[ "$verdict" == "APPROVED $HEAD_SHA" ]]; then
+            echo "vdavid approved head $HEAD_SHA, so it may land."
+            exit 0
+          fi
+          echo "Waiting for David's approval of head $HEAD_SHA (his newest verdict: ${verdict:-none})."
+          echo "An approval reruns this job by itself (sensitive-path-approval.yml)."
+          exit 1
 
       # The check above passes any skipped lane. This one re-proves every skip of a lane whose
       # filter was on: it must be a marker skip the plan made, with the key this job recomputes

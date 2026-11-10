@@ -41,10 +41,16 @@ type ciJob struct {
 	URL        string `json:"html_url"`
 }
 
-// state is the job's conclusion once it has one, else its status.
+// state is the job's conclusion once it has one, else its status. GitHub's `waiting` means a
+// deployment protection rule holds the job: in this repo only the `release` environment's
+// required reviewer (David), which pauses `sign` and `pkg` (`docs/guides/releasing.md` §
+// Signing secrets), so the wait names it instead of looking stuck.
 func (j ciJob) state() string {
 	if j.Conclusion != "" {
 		return j.Conclusion
+	}
+	if j.Status == "waiting" {
+		return "waiting for David's approval (the `release` environment; approve it in the run's page)"
 	}
 	return j.Status
 }

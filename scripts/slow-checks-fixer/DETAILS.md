@@ -13,9 +13,11 @@ the agent makes that call, fixes or reruns, and David hears about it only when a
 1. A system LaunchDaemon, `com.vdavid.agents.slow-checks-fixer` (hourly at minute 17, `UserName` `agents`), runs
    `run.sh` through a login `zsh`, so it has the `agents` user's environment (`gh`, `gh-app-token`, `secret`, mise,
    `claude`).
-2. `run.sh` mints an App token (§ Credentials) and exits at once unless an open `slow-checks` issue by
-   `app/github-actions` names a red run that isn't in `~/.local/state/slow-checks-fixer/handled-runs`. The run id is the
-   body's first `actions/runs/<id>` link, or the newest `github-actions` comment that says "went red".
+2. `run.sh` exits at once unless an open `slow-checks` issue by `github-actions[bot]` names a red run that isn't in
+   `~/.local/state/slow-checks-fixer/handled-runs`. The run id is the body's first `actions/runs/<id>` link, or the
+   newest `github-actions[bot]` comment that says "went red". This lookup is anonymous REST through curl (the repo is
+   public; `gh` won't call the API signed out), so an idle hour mints no token. Only then does it mint an App token (§
+   Credentials).
 3. It appends the run id to `handled-runs`, then readies the run under `~/slow-checks-fixer/` (§ Paths): it syncs its
    own clone to `origin/main`, adds a worktree on `fixer/run-<id>`, writes the failing jobs' logs to a file, clones the
    warm `target/`, runs `pnpm install`, and times one warm-up `pnpm check clippy`.
@@ -61,20 +63,40 @@ The Rule of Two: the agent takes untrusted input and can change Cmdr, so it hold
 
 ## The sensitive-path gate
 
-A fix touching the paths in `prompt.md` § Sensitive paths goes to a PR labeled `sensitive-path` and waits for David to
-land it. How hard each part holds:
+A fix touching a path in `.github/workflows/sensitive-paths.txt` goes to a PR labeled `sensitive-path` and waits for
+David. GitHub has no path rule that could hold this (push rulesets are refused on public repos, and branch rulesets take
+no path restriction; `scripts/land/DETAILS.md` § The rulesets), so CI holds it:
 
-- `.github/workflows/**`: GitHub refuses the App's push outright, since it has no Workflows permission.
-- Everything else on the list: **prompt-level only**. GitHub has no path rule that could hold it: push rulesets are
-  refused on public repos and branch rulesets take no path restriction (`scripts/land/DETAILS.md` § The rulesets). A
-  hijacked or confused run with a green `CI OK` could land one. What still holds then: CI, signed commits, no
-  force-push, and no release tag, so nothing ships to users until David tags a release.
+- **The list**: `.github/workflows/sensitive-paths.txt`, one pattern per line (format in its header). `run.sh` pastes it
+  into the prompt (`{{SENSITIVE_PATHS}}`), and the gate reads it, so the two can't drift. Why the groups: CI, rulesets,
+  and release signers (`.github/**`); landing; the release pipeline; update signing and trust; dependencies and
+  toolchains (a supply-chain change); the three apps that deploy on every merge to `main` (`apps/api-server/**`,
+  `apps/website/**`, `apps/analytics-dashboard/**`), since for those a merge IS a release to users; and the headless
+  agents themselves.
+- **The gate**: `ci.yml`'s `ci-ok` step "Sensitive paths need David's approval". On a pull request authored by
+  `cmdr-m1-agents[bot]` (user id 354849018), or pushed to by it (`github.actor_id`), it lists the PR's files (both sides
+  of a rename) and fails `CI OK` on a match unless `vdavid`'s newest deciding review is an approval of the tested head
+  SHA. A new push needs a new approval. A `workflow_dispatch` the App starts on a branch is gated too, with no approval
+  path: its green `CI OK` would otherwise let the App push that SHA straight to `main` (it's a bypass actor on the PR
+  rule). Every lookup fails closed, including a file list GitHub truncates.
+- **Why the App can't change it**: the step is inline in `ci.yml` and the list sits beside it, and GitHub refuses any
+  App push under `.github/workflows/` (no Workflows permission). The step reads the list from the PR's BASE commit, so a
+  PR can't loosen it for itself, and it runs before `ci-ok` checks out any code.
+- **After David approves**: `sensitive-path-approval.yml` (on `pull_request_review`) reruns just the `CI OK` job of each
+  finished CI run on that head whose gate step failed; the other jobs keep their results, so it's one small job. A run
+  still going reads the approval itself when `ci-ok` runs. If he approves in the seconds while `ci-ok` itself is
+  running, that one run needs a manual rerun of `CI OK` (or `pnpm land`, which starts a fresh run).
+- **Everyone else passes straight through**: David, his interactive agents, Renovate, and outside contributors see the
+  step print "Not a change by the Cmdr M1 agents App" and exit 0.
+- **What it doesn't cover**: an App commit pushed onto someone else's PR whose later pushes come from them (the actor
+  check sees the newest pusher only), and the code the lanes run (`scripts/check/**`, `scripts/lane-markers/**`), which
+  the App could weaken to turn a lane green; neither reaches users without a release David tags.
 
 ## Decisions
 
 - **Hourly polling, not a push.** The box has no inbound path, and a GitHub-side trigger would need a token on GitHub
-  that can start work on the M1. An idle tick is a token mint and two `gh` calls. The nightly run usually finishes
-  around 12:00 UTC, so the fixer starts within an hour of that.
+  that can start work on the M1. An idle tick is one or two anonymous API calls and no token. The nightly run usually
+  finishes around 12:00 UTC, so the fixer starts within an hour of that.
 - **Logs in a file, comments never.** The issue's comments are public input, so `run.sh` reads them only through an
   author filter for run ids, and the agent gets the run id, the issue number, and the logs file. It still edits the
   issue body, which only the workflow and maintainers can write.

@@ -196,9 +196,9 @@ inventory). Desktop-specific test, MCP, and E2E mechanics live in `apps/desktop/
 - Commits: nobody reads PRs, so the message explains the change. Conventional-commits style, leading with impact: the
   title says what the change achieves and why, which feeds our release notes. No title length cap, comprehensive bodies
   fine, no wraps, entities in backticks. Never `Co-Authored-By`.
-- **The delivery pipeline is fully wired; don't re-audit it.** Releases are agent-automated end to end (tag → CI
-  build/sign/notarize → `latest.json` → website deploy → FDA-preserving silent update), and the feedback loops are live
-  (every crash, error report, and feedback → a card on the private reports board plus one three-hour digest email; usage
-  stats → D1). `docs/guides/releasing.md`.
+- **The delivery pipeline is fully wired; don't re-audit it.** Releases are agent-automated (tag → CI build → David
+  approves → sign/notarize → `latest.json` → deploy → silent update), and the feedback loops are live (every crash,
+  error report, and feedback → a card on the private reports board plus one three-hour digest email; usage stats → D1).
+  `docs/guides/releasing.md`.
 
 Happy coding! 🦀✨
