@@ -45,6 +45,12 @@ vendor/**
 **/deny.toml
 **/osv-scanner.toml
 
+# The checks that judge every change: a fix that weakens one could land anything after it. `CI OK` runs them, and
+# lane markers record which of them passed.
+scripts/check/**
+scripts/check.sh
+scripts/lane-markers/**
+
 # Apps that deploy on every merge to `main`
 apps/api-server/**
 apps/website/**

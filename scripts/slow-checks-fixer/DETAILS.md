@@ -89,8 +89,9 @@ no path restriction; `scripts/land/DETAILS.md` § The rulesets), so CI holds it:
 - **Everyone else passes straight through**: David, his interactive agents, Renovate, and outside contributors see the
   step print "Not a change by the Cmdr M1 agents App" and exit 0.
 - **What it doesn't cover**: an App commit pushed onto someone else's PR whose later pushes come from them (the actor
-  check sees the newest pusher only), and the code the lanes run (`scripts/check/**`, `scripts/lane-markers/**`), which
-  the App could weaken to turn a lane green; neither reaches users without a release David tags.
+  check sees the newest pusher only); it doesn't reach users without a release David tags. The code the lanes run
+  (`scripts/check/**`, `scripts/lane-markers/**`) IS on the list, so the App can't weaken a check to turn a lane green;
+  the cost is that a slow-checks failure whose fix sits in the check runner itself waits for David's approval.
 
 ## Decisions
 
