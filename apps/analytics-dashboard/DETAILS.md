@@ -227,7 +227,7 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
   pageviews, and clicks, and Paddle purchases. Per-day `downloadsByRef` feeds the "Channels" breakdown (rolled up by
   `aggregateChannels` in `#lib/funnel.ts`). Cache key: days + country.
 - `funnel-countries.ts` (Bearer + Umami): the per-country 30-day table and the chips. Umami `metrics?type=country` for
-  visitors, one `metrics?type=event&country=XX` per top-20 country for clicks (Umami can't group events by country in
+  visitors, one `metrics?type=event&country=XX` per top-12 country for clicks (Umami can't group events by country in
   one call), and `/admin/funnel/countries?days=30` for downloads, installs, and pooled D7.
 - `settings-adoption.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): per-setting adoption from `/admin/config-shape`,
   resolved against the per-version defaults manifest before it leaves the server (§ Settings adoption).

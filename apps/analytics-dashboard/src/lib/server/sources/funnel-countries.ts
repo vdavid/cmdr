@@ -16,9 +16,10 @@ export const countryWindowDays = 30
 
 /**
  * How many countries get a per-country click count. Umami can't group events by country in one call, so
- * each one is its own request; past the top visitor countries the numbers are noise anyway.
+ * each one is its own request; past the top visitor countries the numbers are noise anyway. Kept small because
+ * a cold Acquisition load shares one Workers subrequest budget (50 on the free plan) across every source.
  */
-const clickLookupCountries = 20
+const clickLookupCountries = 12
 
 export interface FunnelCountriesData {
   rows: CountryFunnelRow[]

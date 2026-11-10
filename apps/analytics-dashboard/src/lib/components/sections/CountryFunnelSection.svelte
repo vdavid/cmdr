@@ -33,7 +33,7 @@
         <InfoPopover topic="the country table">
             The last 30 UTC days including today. Visitors and clicks come from Umami, by the visitor's IP country;
             downloads, installs, and D7 come from the api-server (downloads by the request's country, installs by the
-            country on the install's heartbeat). Clicks are looked up for the top 20 visitor countries only, so the rest
+            country on the install's heartbeat). Clicks are looked up for the top 12 visitor countries only, so the rest
             show a dash. "(unknown)" is everything without a usable country. Rates pool as ratios of sums.
         </InfoPopover>
     </h2>
