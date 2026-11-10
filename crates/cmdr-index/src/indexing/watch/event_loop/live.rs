@@ -317,12 +317,10 @@ pub(in crate::indexing) async fn run_live_event_loop(
                     None => {
                         // Channel closed: process remaining events before exit
                         drain_promoted(&scope, &mut pending_events, &mut reconciler, &writer);
-                        tokio::task::block_in_place(|| {
-                            process_live_batch(
-                                &mut pending_events, &mut reconciler, &space, &conn,
-                                &writer, &mut pending_origins, observers.with_raw_total(event_count),
-                            );
-                        });
+                        process_live_batch(
+                            &mut pending_events, &mut reconciler, &space, &conn,
+                            &writer, &mut pending_origins, observers.with_raw_total(event_count),
+                        );
                         if !pending_origins.is_empty() {
                             let changed = mark_pending_and_drain(&volume_id, &mut pending_origins);
                             lifecycle_bus::publish_dirs_changed(&volume_id, &changed.origins);
@@ -399,12 +397,10 @@ pub(in crate::indexing) async fn run_live_event_loop(
                 drain_promoted(&scope, &mut pending_events, &mut reconciler, &writer);
                 let batch_size = pending_events.len() as u64;
                 let batch_start = Instant::now();
-                tokio::task::block_in_place(|| {
-                    process_live_batch(
-                        &mut pending_events, &mut reconciler, &space, &conn,
-                        &writer, &mut pending_origins, observers.with_raw_total(event_count),
-                    );
-                });
+                process_live_batch(
+                    &mut pending_events, &mut reconciler, &space, &conn,
+                    &writer, &mut pending_origins, observers.with_raw_total(event_count),
+                );
                 let batch_ms = batch_start.elapsed().as_millis();
                 batches_since_heartbeat += 1;
                 events_since_heartbeat += batch_size;
@@ -503,13 +499,36 @@ pub(in crate::indexing) async fn run_live_event_loop(
 /// skipped ("parent not in DB"). Without Phase 1.5, renames are processed as
 /// delete+insert, which clears the renamed dir's `dir_stats`.
 ///
-/// **Blocking.** A batch `lstat`s each path and reads SQLite (a busy read waits
-/// up to the 5 s `busy_timeout`), so the async loops in this module call it
-/// inside `tokio::task::block_in_place`: a slow batch hands its worker's core to
-/// another thread instead of pinning a runtime worker. ERR-P4GWB logged batches
-/// of 3.6 s and 6.3 s under download churn while the whole runtime starved.
-/// ❌ Don't call it bare from async code.
+/// **Blocking, so it runs inside `tokio::task::block_in_place`.** A batch
+/// `lstat`s each path and reads SQLite (a busy read waits up to the 5 s
+/// `busy_timeout`), and its callers are async loops on the shared runtime: a slow
+/// batch hands its worker's core to another thread instead of pinning a runtime
+/// worker. ERR-P4GWB logged batches of 3.6 s and 6.3 s under download churn while
+/// the whole runtime starved. Wrapping it here, not at each call site, means no
+/// loop can forget it.
 pub(in crate::indexing) fn process_live_batch(
+    pending_events: &mut HashMap<String, watcher::FsChangeEvent>,
+    reconciler: &mut EventReconciler,
+    space: &IndexPathSpace,
+    conn: &Connection,
+    writer: &IndexWriter,
+    pending_origins: &mut HashSet<String>,
+    observers: &mut BatchObservers,
+) {
+    tokio::task::block_in_place(|| {
+        process_live_batch_blocking(
+            pending_events,
+            reconciler,
+            space,
+            conn,
+            writer,
+            pending_origins,
+            observers,
+        );
+    });
+}
+
+fn process_live_batch_blocking(
     pending_events: &mut HashMap<String, watcher::FsChangeEvent>,
     reconciler: &mut EventReconciler,
     space: &IndexPathSpace,

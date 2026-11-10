@@ -40,13 +40,13 @@ post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.
   `process_live_batch` / `run_replay_event_loop` so external callers (`lifecycle/manager.rs`, `scan_completion.rs`, the
   stress tests) keep stable paths.
 - **event_loop/live.rs** — `run_live_event_loop` (real-time processing after scan completes), `process_live_batch`
-  (three-phase; below), and the live-path helper `mark_pending_and_drain`. **Decision/Why `block_in_place` around every
-  loop's `process_live_batch` call:** a batch is sync `lstat`s plus SQLite reads that can each wait out the 5 s
-  `busy_timeout`, and the loops are tokio tasks on the app's shared runtime. Run bare, a slow batch pinned a worker for
-  its whole length (ERR-P4GWB logged 3.6 s and 6.3 s batches under download churn while the runtime starved); inside
-  `block_in_place` the worker's core moves to another thread and the runtime keeps scheduling. One handoff per batch, at
-  most about once a second per volume. The nested `block_in_place(flush_blocking)` calls inside the batch are no-ops on
-  an already-handed-off thread.
+  (three-phase; below), and the live-path helper `mark_pending_and_drain`. **Decision/Why `process_live_batch` runs its
+  body inside `block_in_place`** (the wrapper lives in the function, so no loop can call it bare): a batch is sync
+  `lstat`s plus SQLite reads that can each wait out the 5 s `busy_timeout`, and the loops are tokio tasks on the app's
+  shared runtime. Run bare, a slow batch pinned a worker for its whole length (ERR-P4GWB logged 3.6 s and 6.3 s batches
+  under download churn while the runtime starved); inside `block_in_place` the worker's core moves to another thread and
+  the runtime keeps scheduling. One handoff per batch, at most about once a second per volume. The nested
+  `block_in_place(flush_blocking)` calls inside the batch are no-ops on an already-handed-off thread.
 - **event_loop/rename_detect.rs** — `detect_renames_by_inode` (the pre-pass `process_live_batch` runs between its
   dir-creation phase and everything else) and the `split_parent_and_name` helper it needs.
 - **event_loop/replay.rs** — `run_replay_event_loop` (cold-start journal replay, two-phase, boot disk only; hands off to

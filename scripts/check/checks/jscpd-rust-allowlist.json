@@ -48,6 +48,10 @@
       "lines": 14,
       "reason": "TODO: the per-image decision ladder shared by `run_sequential` and `run_parallel`'s dispatcher: the cancel and idle checks, `os_join`, the `is_excluded` / `should_enrich` skip, the `done` and `bytes_done` bump, and the `needs_enrichment` / `needs_clip` staleness pair. Extract a pure `fn classify_image(...) -\u003e ImageStep` beside them, with `ImageStep::{Pause(PauseReason), Skip, Enrich { want_vision, want_clip, os_path }}`, and let each arm keep only its own exit shape: the sequential one returns `finish_paused(...)`, the dispatcher sets `reason` and breaks so it can join its workers. Which images a pass touches and when it pauses is the data-safety contract written in `network/CLAUDE.md`, so the two arms agreeing should be a property of the code rather than of two copies staying in step."
     },
+    "crates/cmdr-local/src/local_posix.rs ↔ crates/cmdr-smb/src/volume/volume_impl.rs": {
+      "lines": 16,
+      "reason": "`Volume` trait boilerplate: the `continues_writes() == true` flag and the `continue_write_from_stream` one-line delegation, the same signature every backend that carries a write on repeats. Same trade as the backend `volume_impl.rs` pairs: a macro emitting trait methods costs more lines than it removes and hides them from `codegraph_search` and go-to-definition. Revisit when either body stops being a one-line delegation."
+    },
     "crates/cmdr-mtp/src/volume/volume_impl.rs ↔ crates/cmdr-smb/src/volume/volume_impl.rs": {
       "lines": 19,
       "reason": "`Volume` trait-method signatures, not logic: `supported_dates` (both answer `SupportedDates::CREATED`, each documenting where its own mapping reads the date), `supports_export`, and `scan_for_copy` delegating to its `*_impl`. The trait default is deliberately `NONE`, so every backend states its own claim and the shared dates conformance cell holds each to it; folding the constant into a default would let a new backend inherit a date it never maps. Same trade as the `cmdr-sftp` ↔ `cmdr-webdav` entry: a macro emitting trait methods costs more than it saves and hides them from symbol search."
