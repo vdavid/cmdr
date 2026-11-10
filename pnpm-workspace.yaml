@@ -103,3 +103,14 @@ allowBuilds:
   esbuild: false
   sharp: true
   workerd: true
+
+# Peer ranges that lag a major we've verified. Drop an entry once its package
+# publishes a range that covers the version (then `pnpm peers check` stays clean
+# without it).
+peerDependencyRules:
+  allowedVersions:
+    # 3.0.0 asks for `stylelint ^17`, but it only calls `createPlugin` and the
+    # rule utils that 18 keeps; its rule still reports on 18 (checked
+    # 2026-11-10 by linting a probe `.svelte` file with `width` under
+    # `display: inline`).
+    stylelint-declaration-block-no-ignored-properties>stylelint: '18'
