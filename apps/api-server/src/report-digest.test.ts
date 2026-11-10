@@ -29,6 +29,9 @@ function lastEmail(): SentEmail {
 
 let db: SqliteD1
 
+/** The cron tick the digest runs on; the subject carries it so Gmail never threads two digests together. */
+const TICK = new Date('2026-11-10T03:00:00Z')
+
 function testEnv(overrides: Partial<Bindings> = {}): Bindings {
   return {
     TELEMETRY_DB: db.d1,
@@ -133,7 +136,7 @@ beforeEach(() => {
 
 describe('when the digest goes out', () => {
   it('sends nothing when nothing arrived', async () => {
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     expect(mockSend).not.toHaveBeenCalled()
   })
 
@@ -144,18 +147,21 @@ describe('when the digest goes out', () => {
     insertAmendment()
     for (let i = 0; i < 4; i++) insertFeedback()
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     expect(mockSend).toHaveBeenCalledTimes(1)
     const email = lastEmail()
     expect(email.to).toBe('david@example.com')
-    expect(email.subject).toBe('Cmdr digest: 1 crash, 2 errors, 1 note added, 4 feedback in the past 3h')
+    expect(email.subject).toBe(
+      'Cmdr digest: 1 crash, 2 errors, 1 note added, 4 feedback in the past 3h (2026-11-10 03:00 UTC)',
+    )
   })
 
   it('names only the kinds that arrived', async () => {
     insertFeedback()
-    await handleReportDigest(testEnv())
-    expect(lastEmail().subject).toBe('Cmdr digest: 1 feedback in the past 3h')
+    await handleReportDigest(testEnv(), TICK)
+    expect(lastEmail().subject).toBe('Cmdr digest: 1 feedback in the past 3h (2026-11-10 03:00 UTC)')
+    expect(lastEmail().html).toContain('Every entry is also on the reports board.')
   })
 
   it('leaves debug builds out entirely', async () => {
@@ -164,27 +170,27 @@ describe('when the digest goes out', () => {
     insertAmendment({ env: 'dev' })
     insertFeedback({ build_mode: 'debug' })
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     expect(mockSend).not.toHaveBeenCalled()
   })
 
   it('counts a crash from a client too old to send a build mode as a release build', async () => {
     insertCrash({ build_mode: null })
-    await handleReportDigest(testEnv())
-    expect(lastEmail().subject).toBe('Cmdr digest: 1 crash in the past 3h')
+    await handleReportDigest(testEnv(), TICK)
+    expect(lastEmail().subject).toBe('Cmdr digest: 1 crash in the past 3h (2026-11-10 03:00 UTC)')
   })
 
   it('prefers FEEDBACK_NOTIFICATION_EMAIL over the crash recipient', async () => {
     insertFeedback()
-    await handleReportDigest(testEnv({ FEEDBACK_NOTIFICATION_EMAIL: 'inbox@example.com' }))
+    await handleReportDigest(testEnv({ FEEDBACK_NOTIFICATION_EMAIL: 'inbox@example.com' }), TICK)
     expect(lastEmail().to).toBe('inbox@example.com')
   })
 
   it('stays quiet without a recipient or an SMTP2Go key', async () => {
     insertFeedback()
-    await handleReportDigest(testEnv({ CRASH_NOTIFICATION_EMAIL: undefined }))
-    await handleReportDigest(testEnv({ SMTP2GO_API_KEY: undefined }))
+    await handleReportDigest(testEnv({ CRASH_NOTIFICATION_EMAIL: undefined }), TICK)
+    await handleReportDigest(testEnv({ SMTP2GO_API_KEY: undefined }), TICK)
     expect(mockSend).not.toHaveBeenCalled()
     expect(unnotified('feedback')).toBe(1)
   })
@@ -197,8 +203,8 @@ describe('stamping', () => {
     insertAmendment()
     insertFeedback()
 
-    await handleReportDigest(testEnv())
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
+    await handleReportDigest(testEnv(), TICK)
 
     expect(mockSend).toHaveBeenCalledTimes(1)
     for (const table of ['crash_reports', 'error_reports', 'error_report_amendments', 'feedback']) {
@@ -211,7 +217,7 @@ describe('stamping', () => {
     insertCrash()
     insertFeedback()
 
-    await expect(handleReportDigest(testEnv())).rejects.toThrow()
+    await expect(handleReportDigest(testEnv(), TICK)).rejects.toThrow()
 
     expect(unnotified('crash_reports')).toBe(1)
     expect(unnotified('feedback')).toBe(1)
@@ -222,21 +228,21 @@ describe('reply-to', () => {
   it('sets replyTo when exactly one person in the whole digest left an address', async () => {
     insertCrash({ email: 'tester@example.com' })
     insertFeedback()
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     expect(lastEmail().replyTo).toBe('tester@example.com')
   })
 
   it('treats the same person twice as one person', async () => {
     insertErrorReport({ email: 'same@example.com' })
     insertAmendment({ email: 'same@example.com' })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     expect(lastEmail().replyTo).toBe('same@example.com')
   })
 
   it('omits replyTo with several addresses, and links each one instead', async () => {
     insertCrash({ email: 'one@example.com' })
     insertFeedback({ email: 'two@example.com' })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     const email = lastEmail()
     expect(email.replyTo).toBeUndefined()
     expect(email.html).toContain('mailto:one@example.com')
@@ -250,7 +256,7 @@ describe('board links', () => {
     insertErrorReport({ issue_number: null })
     insertFeedback()
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     const { html } = lastEmail()
     expect(html).toContain('https://github.com/getcmdr/cmdr-reports/issues/57')
@@ -262,7 +268,7 @@ describe('board links', () => {
     insertAmendment()
     db.sqlite.exec(`UPDATE error_reports SET notified_at = 'x'`)
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     expect(lastEmail().html).toContain('https://github.com/getcmdr/cmdr-reports/issues/61')
   })
@@ -272,7 +278,7 @@ describe('the crash section', () => {
   it('surfaces the panic message, and renders a signal crash without "null"', async () => {
     insertCrash({ signal: 'panic', panic_message: 'there is no reactor running' })
     insertCrash({ short_id: 'CRASH-B6789' })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     const { html } = lastEmail()
     expect(html).toContain('there is no reactor running')
     expect(html).not.toContain('>null<')
@@ -280,7 +286,7 @@ describe('the crash section', () => {
 
   it('shows the image base only when nothing better explains the crash', async () => {
     insertCrash({ image_base: '0x104870000' })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     expect(lastEmail().html).toContain('image base 0x104870000')
   })
 
@@ -291,7 +297,7 @@ describe('the crash section', () => {
       os_exception: 'EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x10',
       os_frames: JSON.stringify(frames),
     })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     const { html } = lastEmail()
     expect(html).toContain('KERN_INVALID_ADDRESS at 0x10')
     expect(html).toContain('WebKit frame5 + 0')
@@ -302,13 +308,13 @@ describe('the crash section', () => {
 
   it('survives an os_frames value truncated mid-array at write time', async () => {
     insertCrash({ os_frames: '["frame one", "frame tw' })
-    await handleReportDigest(testEnv())
-    expect(lastEmail().subject).toBe('Cmdr digest: 1 crash in the past 3h')
+    await handleReportDigest(testEnv(), TICK)
+    expect(lastEmail().subject).toBe('Cmdr digest: 1 crash in the past 3h (2026-11-10 03:00 UTC)')
   })
 
   it('escapes HTML in the panic message', async () => {
     insertCrash({ panic_message: '<script>alert(1)</script>' })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     const { html } = lastEmail()
     expect(html).not.toContain('<script>alert(1)</script>')
     expect(html).toContain('&lt;script&gt;')
@@ -317,28 +323,28 @@ describe('the crash section', () => {
   it('names a survived panic apart from a crash, in the subject too', async () => {
     insertCrash({ app_fate: 'ended' })
     insertCrash({ app_fate: 'keptRunning' })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     const { html, subject } = lastEmail()
-    expect(subject).toBe('Cmdr digest: 2 crashes (1 kept running) in the past 3h')
+    expect(subject).toBe('Cmdr digest: 2 crashes (1 kept running) in the past 3h (2026-11-10 03:00 UTC)')
     expect(html).toContain('kept running')
     expect(html).toContain('crashed')
   })
 
   it('says so when the app kept running through every crash', async () => {
     insertCrash({ app_fate: 'keptRunning' })
-    await handleReportDigest(testEnv())
-    expect(lastEmail().subject).toBe('Cmdr digest: 1 crash, app kept running in the past 3h')
+    await handleReportDigest(testEnv(), TICK)
+    expect(lastEmail().subject).toBe('Cmdr digest: 1 crash, app kept running in the past 3h (2026-11-10 03:00 UTC)')
   })
 
   it('claims nothing about a row whose fate is unknown', async () => {
     insertCrash({ app_fate: null })
-    await handleReportDigest(testEnv())
-    expect(lastEmail().subject).toBe('Cmdr digest: 1 crash in the past 3h')
+    await handleReportDigest(testEnv(), TICK)
+    expect(lastEmail().subject).toBe('Cmdr digest: 1 crash in the past 3h (2026-11-10 03:00 UTC)')
   })
 
   it('keeps the table rectangular: header cells, row cells, and the detail colspan agree', async () => {
     insertCrash({ panic_message: 'boom' })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     const { html } = lastEmail()
     const headers = (html.match(/<th /g) ?? []).length
     const firstRow = /<tbody>\s*<tr>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
@@ -350,7 +356,7 @@ describe('the crash section', () => {
 describe('the error report and amendment sections', () => {
   it('shows the note, the kind, and the machine facts', async () => {
     insertErrorReport()
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     const { html } = lastEmail()
     expect(html).toContain('Copying into a zip stalls')
     expect(html).toContain('ERR-AB7PV')
@@ -360,7 +366,7 @@ describe('the error report and amendment sections', () => {
 
   it('says an auto-send carries no note', async () => {
     insertErrorReport({ kind: 'auto', user_note: null })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     const { html } = lastEmail()
     expect(html).toContain('auto-sent')
     expect(html).toContain('Auto-sent, so no note.')
@@ -368,19 +374,19 @@ describe('the error report and amendment sections', () => {
 
   it('escapes HTML in the note', async () => {
     insertErrorReport({ user_note: '<img src=x onerror=alert(1)>' })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     expect(lastEmail().html).not.toContain('<img src=x')
   })
 
   it('says plainly when no download link could be minted', async () => {
     insertErrorReport()
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     expect(lastEmail().html).toContain('No download link this time')
   })
 
   it("shows an amendment's note and which amendment it is", async () => {
     insertAmendment({ amendment_count: 3 })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     const { html } = lastEmail()
     expect(html).toContain('It also happens on a local disk')
     expect(html).toContain('amendment 3 on this report')
@@ -392,10 +398,10 @@ describe('feedback with logs', () => {
     insertFeedback({ error_report_id: 'ERR-AB7PV' })
     insertErrorReport({ short_id: 'ERR-AB7PV', user_note: 'Logs sent with in-app feedback' })
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     const email = lastEmail()
-    expect(email.subject).toBe('Cmdr digest: 1 feedback in the past 3h')
+    expect(email.subject).toBe('Cmdr digest: 1 feedback in the past 3h (2026-11-10 03:00 UTC)')
     expect(email.html).toContain('Please add a Date added column')
     expect(email.html).toContain('Logs: ERR-AB7PV')
     expect(email.html).toContain('2.00 KB')
@@ -408,7 +414,7 @@ describe('feedback with logs', () => {
   it("says so when the logs hadn't arrived yet", async () => {
     insertFeedback({ error_report_id: 'ERR-AB7PV' })
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     expect(lastEmail().html).toContain('Logs: ERR-AB7PV')
     expect(lastEmail().html).toContain("hadn't arrived")
@@ -416,12 +422,12 @@ describe('feedback with logs', () => {
 
   it('still mails logs on their own when their feedback went out in an earlier digest', async () => {
     insertFeedback({ error_report_id: 'ERR-AB7PV' })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     insertErrorReport({ short_id: 'ERR-AB7PV', user_note: 'Logs sent with in-app feedback' })
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
-    expect(lastEmail().subject).toBe('Cmdr digest: 1 error in the past 3h')
+    expect(lastEmail().subject).toBe('Cmdr digest: 1 error in the past 3h (2026-11-10 03:00 UTC)')
   })
 })
 
@@ -434,18 +440,37 @@ describe('ops alerts', () => {
     insertOpsEvent('eviction-blocked', 'Error report intake is PAUSED.')
     insertFeedback()
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     const { subject, html } = lastEmail()
-    expect(subject).toBe('Cmdr digest: 1 feedback, 1 ops alert in the past 3h')
+    expect(subject).toBe('Cmdr digest: 1 feedback, 1 ops alert in the past 3h (2026-11-10 03:00 UTC)')
     expect(html).toContain('Error report intake is PAUSED.')
     expect(unnotified('ops_events')).toBe(0)
+  })
+
+  it("says in the footer that ops alerts aren't on the board, while the reports are", async () => {
+    insertOpsEvent('eviction-blocked', 'Error report intake is PAUSED.')
+    insertFeedback()
+
+    await handleReportDigest(testEnv(), TICK)
+
+    expect(lastEmail().html).toContain('Reports and feedback are also on the reports board; ops alerts are only here.')
+  })
+
+  it('claims no board for a digest of ops alerts alone', async () => {
+    insertOpsEvent('eviction-blocked', 'Error report intake is PAUSED.')
+
+    await handleReportDigest(testEnv(), TICK)
+
+    const { html } = lastEmail()
+    expect(html).toContain('Ops alerts are only here, not on the reports board.')
+    expect(html).not.toContain('also on the reports board')
   })
 
   it('leaves signups for the morning brief: no email for them alone, and no stamp', async () => {
     insertOpsEvent('beta-signup', 'beta')
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     expect(mockSend).not.toHaveBeenCalled()
     expect(unnotified('ops_events')).toBe(1)
@@ -461,10 +486,10 @@ describe('ops alerts', () => {
     insertRejections('admin-auth-rejected', 'GET /admin/stats was turned away.', 1)
     insertRejections('admin-auth-rejected', 'GET /admin/crashes was turned away.', 4)
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     const { subject, html } = lastEmail()
-    expect(subject).toBe('Cmdr digest: 2 ops alerts in the past 3h')
+    expect(subject).toBe('Cmdr digest: 2 ops alerts in the past 3h (2026-11-10 03:00 UTC)')
     expect(html).toContain('GET /admin/stats was turned away.')
     expect(html).toContain('4 times')
     expect(unnotified('ops_events')).toBe(0)
@@ -473,7 +498,7 @@ describe('ops alerts', () => {
   it('keeps quiet about one or two bad webhook signatures in a window, and closes the window on them', async () => {
     insertRejections('webhook-signature-rejected', 'A Paddle webhook signature did not verify.', 2)
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     expect(mockSend).not.toHaveBeenCalled()
     // Stamped anyway, so two now and two next window never add up to an alert.
@@ -484,7 +509,7 @@ describe('ops alerts', () => {
     insertRejections('webhook-signature-rejected', 'A Paddle webhook signature did not verify.', 2)
     insertRejections('webhook-signature-rejected', 'A GitHub webhook signature did not verify.', 1)
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     const { html } = lastEmail()
     expect(html).toContain('A Paddle webhook signature did not verify.')
@@ -497,10 +522,10 @@ describe('ops alerts', () => {
     insertOpsEvent('csp-violation', 'CSP (frame-src) blocked https://div.show/.')
     insertOpsEvent('csp-violation', 'CSP (frame-src) blocked https://div.show/.')
 
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
 
     const { subject, html } = lastEmail()
-    expect(subject).toBe('Cmdr digest: 1 ops alert in the past 3h')
+    expect(subject).toBe('Cmdr digest: 1 ops alert in the past 3h (2026-11-10 03:00 UTC)')
     expect(html.split('blocked https://div.show/.').length - 1).toBe(1)
     expect(html).toContain('2 times')
     expect(unnotified('ops_events')).toBe(0)
@@ -508,7 +533,7 @@ describe('ops alerts', () => {
 
   it('escapes an alert message, which can quote a URL a stranger chose', async () => {
     insertOpsEvent('csp-violation', 'blocked https://x.test/<script>')
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     expect(lastEmail().html).not.toContain('<script>')
   })
 })
@@ -516,7 +541,7 @@ describe('ops alerts', () => {
 describe('the feedback section', () => {
   it('keeps the line breaks, escapes HTML, and carries non-Latin text intact', async () => {
     insertFeedback({ feedback: 'Line one\nLine two <b>bold</b> — köszönöm, 谢谢' })
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     const { html } = lastEmail()
     expect(html).toContain('white-space: pre-wrap')
     expect(html).toContain('&lt;b&gt;bold&lt;/b&gt;')
@@ -525,7 +550,7 @@ describe('the feedback section', () => {
 
   it('says so plainly when there is no reply-to address', async () => {
     insertFeedback()
-    await handleReportDigest(testEnv())
+    await handleReportDigest(testEnv(), TICK)
     expect(lastEmail().html).toContain('No reply-to address')
   })
 })

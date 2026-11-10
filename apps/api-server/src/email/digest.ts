@@ -67,11 +67,12 @@ function counted(count: number, singular: string, plural: string): string | null
 }
 
 /**
- * `Cmdr digest: 1 crash, 2 errors, 4 feedback in the past 3h`. Only the kinds that arrived are
- * named. A survived panic is lower severity than a crash, so the mix is named too: the subject is
- * all a phone notification shows.
+ * `Cmdr digest: 1 crash, 2 errors, 4 feedback in the past 3h (2026-11-10 03:00 UTC)`. Only the kinds
+ * that arrived are named. A survived panic is lower severity than a crash, so the mix is named too:
+ * the subject is all a phone notification shows. The tick closes it because Gmail threads mails that
+ * share a subject, and two digests with the same counts aren't one conversation.
  */
-export function digestSubject(content: DigestContent): string {
+export function digestSubject(content: DigestContent, tick: Date): string {
   const keptRunning = content.crashes.filter((crash) => crash.fate === 'kept running').length
   let crashes = counted(content.crashes.length, 'crash', 'crashes')
   if (crashes && keptRunning > 0) {
@@ -84,7 +85,20 @@ export function digestSubject(content: DigestContent): string {
     counted(content.feedback.length, 'feedback', 'feedback'),
     counted(content.opsAlerts.length, 'ops alert', 'ops alerts'),
   ].filter((part): part is string => part !== null)
-  return `Cmdr digest: ${parts.join(', ')} in the past 3h`
+  const iso = tick.toISOString()
+  return `Cmdr digest: ${parts.join(', ')} in the past 3h (${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC)`
+}
+
+/**
+ * The closing line. Reports, notes, and feedback each have a card on the board; ops alerts have no
+ * card, so the line says where each kind lives instead of promising a card for everything.
+ */
+function signoffLine(content: DigestContent): string {
+  const sends = 'The Cmdr API server sends this every three hours when something new arrived.'
+  const onTheBoard = digestSize(content) - content.opsAlerts.length
+  if (content.opsAlerts.length === 0) return `${sends} Every entry is also on the reports board.`
+  if (onTheBoard === 0) return `${sends} Ops alerts are only here, not on the reports board.`
+  return `${sends} Reports and feedback are also on the reports board; ops alerts are only here.`
 }
 
 /**
@@ -123,20 +137,22 @@ function renderBody(subject: string, content: DigestContent): string {
     `    <h2 style="color: #111827;">${escapeHtml(subject)}</h2>
 ${sections.join('\n')}
 
-    ${signoffParagraph('The Cmdr API server sends this every three hours when something new arrived. Every entry is also on the reports board.')}`,
+    ${signoffParagraph(signoffLine(content))}`,
     CARD_BODY_STYLE,
   )
 }
 
 interface DigestParams {
   content: DigestContent
+  /** The cron tick this digest runs on, which the subject carries. */
+  tick: Date
   to: string
   smtp2goApiKey: string
 }
 
 /** Send one digest. The caller skips the call when {@link digestSize} is zero. */
 export async function sendReportDigestEmail(params: DigestParams): Promise<void> {
-  const subject = digestSubject(params.content)
+  const subject = digestSubject(params.content, params.tick)
   const replyTo = soleReplyTo(params.content)
 
   await sendEmail(

@@ -34,6 +34,10 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   - **`smtp2go-test-helpers.ts`**: SMTP2Go at the socket for the runtime lanes below, answering in SMTP2Go's own shapes
     (including the 200 that reports a failed send) and decoding each send back into an `EmailMessage`. The node tests
     mock `sendEmail` itself.
+  - **`plain-text.ts`**: `htmlToText`, which `sendEmail` uses for the `text/plain` part of any message without a
+    hand-written `text`. Without one SMTP2Go sends an EMPTY part, a blank mail in plain-text clients that rspamd also
+    scores (`R_PARTS_DIFFER`). It covers our own templates' vocabulary (blocks, lists, tables, links, pre-wrap prose),
+    not arbitrary HTML.
   - **`layout.ts`**: the HTML vocabulary. `escapeHtml`, `documentShell` (the `<!DOCTYPE>`…`<body>` wrapper),
     `bodyStyle`, the card constants, `replyToLine`, `boardLine` (an entry's link to its card), and the table cell styles
     (`CELL_STYLE`, `headCellStyle`, `TABLE_STYLE`). Everything is inline style with explicit hex: mail clients strip
@@ -379,8 +383,14 @@ failure from the rest and raises the alarm for it (§ Cron alarms):
    (hand-written and auto-sent), amendment, and feedback message whose `notified_at` is NULL, then stamps exactly those
    rows. Rendering is `src/email/digest.ts`, composing `crash.ts` (a table), `error-report.ts` and `feedback.ts`
    (cards). Recipient is `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL` (`david@getcmdr.com`).
-   - **The subject IS the alert**: `Cmdr digest: 1 crash, 2 errors, 1 note added, 4 feedback in the past 3h`, naming
-     only the kinds that arrived. A phone notification shows nothing else, so it's built for "is anything urgent?".
+   - **The subject IS the alert**:
+     `Cmdr digest: 1 crash, 2 errors, 1 note added, 4 feedback in the past 3h (2026-11-10 03:00 UTC)`, naming only the
+     kinds that arrived. A phone notification shows nothing else, so it's built for "is anything urgent?". The cron tick
+     (`event.scheduledTime`) closes it because Gmail threads mails that share a subject, and `mail-alert` relays each
+     digest to Gmail; without it, two digests with the same counts joined one thread. The morning brief ends on its
+     Stockholm date for the same reason.
+   - **The footer says where each kind lives**: reports, notes, and feedback have board cards; ops alerts don't, so
+     `signoffLine` never promises a card for them.
    - **One email for all four kinds, on purpose**: per-kind emails at intake trained David to ignore them, and an
      instant mail per report meant a flood of auto-sends would bury the one that needs an answer. Three hours is fine
      because the board, not the inbox, is where a report waits.
@@ -444,7 +454,8 @@ failure from the rest and raises the alarm for it (§ Cron alarms):
 10. **Morning brief** (the morning trigger, on the tick that is 06:xx in Stockholm): `handleMorningBrief`
     (`morning-brief.ts`, rendered by `src/email/morning-brief.ts`) sends one email every day, quiet days included, an
     hour after the triage agent runs. Subject:
-    `Cmdr morning: 2 waiting on a reply, 1 unprocessed; in the last day 1 crash, 2 errors`.
+    `Cmdr morning: 2 waiting on a reply, 1 unprocessed; in the last day 1 crash, 2 errors (2026-11-10)`, dated in
+    Stockholm.
     - **Why two UTC times**: Cloudflare crons are UTC and Stockholm moves between UTC+1 and UTC+2, so the trigger fires
       at 04:30 AND 05:30 UTC and `isMorningBriefTick` keeps the one that is 06:30 local. `morning-brief.test.ts` pins
       both seasons and that `MORNING_CRON` matches `wrangler.toml`.

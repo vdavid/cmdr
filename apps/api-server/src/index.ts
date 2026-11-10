@@ -124,7 +124,7 @@ export default {
     // the check's period is the three-hour tick, and a success ping here would only blur that.
     if (event.cron === MORNING_CRON) {
       if (!isMorningBriefTick(new Date(event.scheduledTime))) return
-      await run('Morning brief', () => handleMorningBrief(env))
+      await run('Morning brief', () => handleMorningBrief(env, new Date(event.scheduledTime)))
       if (env.HEALTHCHECKS_PING_URL && failedJobs.length) await pingCronHealth(env.HEALTHCHECKS_PING_URL, failedJobs)
       return
     }
@@ -139,7 +139,7 @@ export default {
     await runEveryTick('Card ratings', () => applyCardRatings(env))
     // Also before the digest, so a CI change seen on this tick is in it. Never throws on GitHub.
     await runEveryTick('CI health', () => handleCiHealth(env))
-    await runEveryTick('Report digest', () => handleReportDigest(env))
+    await runEveryTick('Report digest', () => handleReportDigest(env, new Date(event.scheduledTime)))
 
     // Daily jobs: only run on the 00:00 UTC invocation
     if (new Date(event.scheduledTime).getUTCHours() === 0) {

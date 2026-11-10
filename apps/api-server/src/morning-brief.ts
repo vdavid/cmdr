@@ -145,8 +145,11 @@ function toBriefCards(cards: { number: number; title: string; url: string; creat
   return cards.map((card) => ({ ...card, openedOn: card.createdAt.slice(0, 10) }))
 }
 
-/** Send the brief. A silent no-op without a recipient or an SMTP2Go key. */
-export async function handleMorningBrief(env: Bindings): Promise<void> {
+/**
+ * Send the brief. A silent no-op without a recipient or an SMTP2Go key. `tick` is the cron's
+ * scheduled time, which dates the subject.
+ */
+export async function handleMorningBrief(env: Bindings, tick: Date): Promise<void> {
   const to = humanReportRecipient(env)
   if (!to || !env.SMTP2GO_API_KEY) return
 
@@ -186,6 +189,7 @@ export async function handleMorningBrief(env: Bindings): Promise<void> {
       tripwires,
       ci: await readCiBriefLine(env),
     },
+    tick,
     to,
     smtp2goApiKey: env.SMTP2GO_API_KEY,
   })

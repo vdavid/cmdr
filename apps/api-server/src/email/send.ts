@@ -5,6 +5,7 @@
  */
 
 import type { Bindings } from '../types'
+import { htmlToText } from './plain-text'
 
 /**
  * Where the report digest lands (every crash, error report, amendment, and feedback message).
@@ -30,7 +31,10 @@ export interface EmailMessage {
   to: string
   subject: string
   html: string
-  /** A plain-text alternative, for the mails whose reader must copy something out. */
+  /**
+   * A hand-written plain-text alternative, for the mails whose reader must copy something out.
+   * Without one, `sendEmail` derives it from `html` (`plain-text.ts`).
+   */
   text?: string
   replyTo?: string
 }
@@ -109,7 +113,8 @@ export async function sendEmail(apiKey: string, message: EmailMessage, label: st
       to: [message.to],
       subject: message.subject,
       html_body: message.html,
-      ...(message.text !== undefined ? { text_body: message.text } : {}),
+      // SMTP2Go fills a missing one with an EMPTY part, which plain-text readers show as a blank mail.
+      text_body: message.text ?? htmlToText(message.html),
       ...(message.replyTo ? { custom_headers: [{ header: 'Reply-To', value: message.replyTo }] } : {}),
       fastaccept: false,
     },

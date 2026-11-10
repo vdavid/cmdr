@@ -72,11 +72,11 @@ describe('sendEmail', () => {
     })
   })
 
-  it('leaves out the optional fields a message has no value for', async () => {
-    await sendEmail(apiKey, { from: message.from, to: message.to, subject: 'S', html: '<p>x</p>' }, 'digest')
+  it('derives the plain-text part from the HTML when the message has none, so no client shows a blank mail', async () => {
+    await sendEmail(apiKey, { from: message.from, to: message.to, subject: 'S', html: '<p>x &amp; y</p>' }, 'digest')
 
     const body = lastRequest().body
-    expect(body).not.toHaveProperty('text_body')
+    expect(body.text_body).toBe('x & y')
     expect(body).not.toHaveProperty('custom_headers')
   })
 

@@ -229,7 +229,9 @@ describe('mailing the report digest from the Worker runtime', () => {
 
     expect(smtp2go.sent).toHaveLength(1)
     expect(email.to).toBe(crashRecipient)
-    expect(email.subject).toBe('Cmdr digest: 1 crash, 1 error, 1 note added, 1 feedback in the past 3h')
+    expect(email.subject).toBe(
+      'Cmdr digest: 1 crash, 1 error, 1 note added, 1 feedback in the past 3h (2026-09-16 03:00 UTC)',
+    )
     // One person left an address (twice), so a plain reply reaches them.
     expect(email.replyTo).toBe('reporter@example.com')
     expect(email.html).toContain('Copying to the NAS stalls at 99%')

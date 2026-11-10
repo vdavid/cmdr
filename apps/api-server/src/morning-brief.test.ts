@@ -65,6 +65,9 @@ function fakeBucket(keys: string[] = []): R2Bucket {
 
 let db: SqliteD1
 
+/** The morning tick: 06:30 in Stockholm (CET). The subject carries its date. */
+const TICK = new Date('2026-11-10T05:30:00Z')
+
 function testEnv(overrides: Partial<Bindings> = {}): Bindings {
   return {
     TELEMETRY_DB: db.d1,
@@ -124,11 +127,11 @@ describe('handleMorningBrief', () => {
       },
     ])
 
-    await handleMorningBrief(testEnv())
+    await handleMorningBrief(testEnv(), TICK)
 
     const { subject, html, to } = lastEmail()
     expect(to).toBe('david@example.com')
-    expect(subject).toBe('Cmdr morning: 2 waiting on a reply, 1 unprocessed')
+    expect(subject).toBe('Cmdr morning: 2 waiting on a reply, 1 unprocessed (2026-11-10)')
     expect(html).toContain('Zip copy loses the file')
     expect(html).toContain('https://github.com/getcmdr/cmdr-reports/issues/56')
     expect(html).toContain('Crash in cmdr::x')
@@ -152,10 +155,10 @@ describe('handleMorningBrief', () => {
                ('${hoursAgo(4)}', 'subprocessor-updates-signup', 'x');
     `)
 
-    await handleMorningBrief(testEnv())
+    await handleMorningBrief(testEnv(), TICK)
 
     const { subject, html } = lastEmail()
-    expect(subject).toBe('Cmdr morning: nothing waiting; in the last day 1 crash, 2 errors, 1 feedback')
+    expect(subject).toBe('Cmdr morning: nothing waiting; in the last day 1 crash, 2 errors, 1 feedback (2026-11-10)')
     expect(html).toContain('1 hand-written, 1 auto-sent')
     expect(html).toContain('2 beta signups')
     expect(html).toContain('1 newsletter signup')
@@ -167,9 +170,18 @@ describe('handleMorningBrief', () => {
   it('says plainly when the day was quiet, and still sends: the numbers are the point', async () => {
     fakeGitHub([])
 
-    await handleMorningBrief(testEnv())
+    await handleMorningBrief(testEnv(), TICK)
 
-    expect(lastEmail().subject).toBe('Cmdr morning: nothing waiting, and a quiet day')
+    expect(lastEmail().subject).toBe('Cmdr morning: nothing waiting, and a quiet day (2026-11-10)')
+  })
+
+  it("dates the subject in Stockholm, David's day, even where the UTC date differs", async () => {
+    fakeGitHub([])
+
+    // 00:30 on 2026-11-10 in Stockholm, still 2026-11-09 in UTC.
+    await handleMorningBrief(testEnv(), new Date('2026-11-09T23:30:00Z'))
+
+    expect(lastEmail().subject).toBe('Cmdr morning: nothing waiting, and a quiet day (2026-11-10)')
   })
 
   it('names reports still not on the board, the tripwire for a stuck outbox', async () => {
@@ -179,7 +191,7 @@ describe('handleMorningBrief', () => {
         VALUES ('${hoursAgo(50)}', 'old and unfiled', '0.52.0', '27.0', 'release');
     `)
 
-    await handleMorningBrief(testEnv())
+    await handleMorningBrief(testEnv(), TICK)
 
     expect(lastEmail().html).toContain('1 report still waiting for its card')
   })
@@ -198,7 +210,7 @@ describe('handleMorningBrief', () => {
         VALUES ('ERR-AAAAA', '${day} 10:00:00', 'user', 'release', '0.52.0', '27.0', 'aarch64', 1, 'k');
     `)
 
-    await handleMorningBrief(testEnv({ ERROR_REPORTS_BUCKET: bucket }))
+    await handleMorningBrief(testEnv({ ERROR_REPORTS_BUCKET: bucket }), TICK)
 
     expect(lastEmail().html).toContain(`R2 holds 2 bundles from ${day}, but only 1 reached the outbox`)
   })
@@ -206,7 +218,7 @@ describe('handleMorningBrief', () => {
   it('still sends, saying so, when GitHub is unreachable', async () => {
     fakeGitHub([], { down: true })
 
-    await handleMorningBrief(testEnv())
+    await handleMorningBrief(testEnv(), TICK)
 
     expect(lastEmail().html).toContain("Couldn't read the board")
   })
@@ -214,7 +226,7 @@ describe('handleMorningBrief', () => {
   it('carries the CI line, saying what GitHub would not answer (`ci-brief.test.ts` covers the numbers)', async () => {
     fakeGitHub([], { down: true })
 
-    await handleMorningBrief(testEnv({ CI_HEALTH_REPO: 'getcmdr/cmdr' }))
+    await handleMorningBrief(testEnv({ CI_HEALTH_REPO: 'getcmdr/cmdr' }), TICK)
 
     expect(lastEmail().html).toContain(
       'CI: main not checked yet · nightly not checked yet · couldn&#39;t read lands from GitHub · cache size unknown',
@@ -223,13 +235,13 @@ describe('handleMorningBrief', () => {
 
   it('leaves the CI line out without CI_HEALTH_REPO', async () => {
     fakeGitHub([])
-    await handleMorningBrief(testEnv())
+    await handleMorningBrief(testEnv(), TICK)
     expect(lastEmail().html).not.toContain('CI: main')
   })
 
   it('stays quiet without a recipient or an SMTP2Go key', async () => {
     fakeGitHub([])
-    await handleMorningBrief(testEnv({ SMTP2GO_API_KEY: undefined }))
+    await handleMorningBrief(testEnv({ SMTP2GO_API_KEY: undefined }), TICK)
     expect(mockSend).not.toHaveBeenCalled()
   })
 })

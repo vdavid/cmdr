@@ -51,12 +51,25 @@ function errorCount(arrivals: BriefArrivals): number {
   return arrivals.handWrittenErrors + arrivals.autoSentErrors
 }
 
+/** `YYYY-MM-DD` in Stockholm, where the brief's morning is. `en-CA` is the locale that formats ISO. */
+const stockholmDate = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Stockholm',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
 /**
- * `Cmdr morning: 2 waiting on a reply, 1 unprocessed; in the last day 1 crash, 2 errors`. The subject
- * is all a phone notification shows, so it carries the two numbers that need a person, then the
- * day's arrivals when there were any.
+ * `Cmdr morning: 2 waiting on a reply, 1 unprocessed; in the last day 1 crash, 2 errors (2026-11-10)`.
+ * The subject is all a phone notification shows, so it carries the two numbers that need a person,
+ * then the day's arrivals when there were any. The date closes it because Gmail threads mails that
+ * share a subject, and every quiet morning would otherwise join one thread.
  */
-export function briefSubject(content: BriefContent): string {
+export function briefSubject(content: BriefContent, tick: Date): string {
+  return `${briefHeadline(content)} (${stockholmDate.format(tick)})`
+}
+
+function briefHeadline(content: BriefContent): string {
   let waiting: string
   if (content.needsReply === null || content.unprocessed === null) {
     waiting = "couldn't read the board"
@@ -126,10 +139,12 @@ function renderBody(subject: string, content: BriefContent): string {
 
 export async function sendMorningBriefEmail(params: {
   content: BriefContent
+  /** The cron tick the brief runs on, which dates the subject. */
+  tick: Date
   to: string
   smtp2goApiKey: string
 }): Promise<void> {
-  const subject = briefSubject(params.content)
+  const subject = briefSubject(params.content, params.tick)
   await sendEmail(
     params.smtp2goApiKey,
     {

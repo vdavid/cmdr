@@ -311,8 +311,11 @@ async function stamp(db: D1Database, table: string, ids: number[], now: string):
     .run()
 }
 
-/** Mail whatever arrived since the last digest. A silent no-op without a recipient or an SMTP2Go key. */
-export async function handleReportDigest(env: Bindings): Promise<void> {
+/**
+ * Mail whatever arrived since the last digest. A silent no-op without a recipient or an SMTP2Go key.
+ * `tick` is the cron's scheduled time, which dates the subject.
+ */
+export async function handleReportDigest(env: Bindings, tick: Date): Promise<void> {
   const to = humanReportRecipient(env)
   if (!to || !env.SMTP2GO_API_KEY) return
 
@@ -326,7 +329,7 @@ export async function handleReportDigest(env: Bindings): Promise<void> {
     return
   }
 
-  await sendReportDigestEmail({ content, to, smtp2goApiKey: env.SMTP2GO_API_KEY })
+  await sendReportDigestEmail({ content, tick, to, smtp2goApiKey: env.SMTP2GO_API_KEY })
 
   const now = new Date().toISOString()
   await stamp(
