@@ -39,7 +39,7 @@ jobs:
           df -h /
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
 
       - name: Install tools with mise
         run: mise install
@@ -140,7 +140,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
 
       - name: Install tools with mise
         run: mise install
@@ -210,7 +210,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
 
       - name: Install tools with mise
         run: mise install
@@ -253,7 +253,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
 
       - name: Install tools with mise
         run: mise install
@@ -297,7 +297,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
 
       - name: Install tools with mise
         run: mise install
@@ -339,7 +339,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
 
       - name: Install tools with mise
         run: mise install
@@ -374,7 +374,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
 
       - name: Install tools with mise
         run: mise install
@@ -412,7 +412,9 @@ jobs:
   # 2026-11-05); the API server's digest now flags a red run too (`docs/tooling/ci.md`). The board's
   # "Auto-add to project" workflow puts the issue on the backlog board. A cancelled run says
   # nothing (`!cancelled()`); a timed-out job reads as `failure`. Branch dispatches stay out
-  # (`refs/heads/main`), since a branch's red says nothing about `main`.
+  # (`refs/heads/main`), since a branch's red says nothing about `main`. Each new issue is picked up
+  # by the slow-checks fixer agent on the M1 (`scripts/slow-checks-fixer/CLAUDE.md`), which writes
+  # its notes into the issue body so they cost no email either.
   report:
     name: Open or close the red-run issue
     needs: [dependency-checks, fuzz, miri, property-mutants, pre-release, website-docker, smb-soak]
@@ -446,7 +448,13 @@ jobs:
               gh issue create --title "Slow checks are red on main" --label bug,claude-created,slow-checks --body "$body"
             fi
           elif [[ -n "$open" ]]; then
-            gh issue close "$open" --comment "Every slow-checks job passed: $RUN_URL"
+            # The green run's link goes into the body, not a comment: a body edit emails nobody, and a
+            # close with `--comment` sent two emails at once on top of the close itself.
+            body=$(gh issue view "$open" --json body --jq .body)
+            gh issue edit "$open" --body "$body
+
+          Every slow-checks job passed: $RUN_URL"
+            gh issue close "$open" --reason completed
             echo "Closed #$open."
           else
             echo "Green, and no issue is open."

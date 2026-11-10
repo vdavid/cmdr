@@ -313,7 +313,8 @@ jobs:
       #   The three Rust lanes share their inputs through the `rust-inputs` anchor and add their
       #   own lane file each.
       # - `.mise.toml` (toolchain versions) and this workflow file are in every filter:
-      #   changing either can change any job's behavior, so everything reruns.
+      #   changing either can change any job's behavior, so everything reruns. Every lane that
+      #   installs mise also lists `.github/actions/install-mise/**` beside `.mise.toml`.
       # - `pnpm-lock.yaml` is in every Node-based filter so lockfile-only bumps
       #   (pnpm dedupe, transitive updates) still run the affected apps' checks.
       # - The light lane's gated hygiene checks (`termbase`, `changelog`, `scorecard`) carry
@@ -383,6 +384,7 @@ jobs:
               - 'scripts/check/**'
               - '!scripts/check/**/*_test.go'
               - '.mise.toml'
+              - '.github/actions/install-mise/**'
               - '.github/workflows/ci.yml'
               # The composite actions all three Rust lane files use.
               - '.github/actions/lane-marker/**'
@@ -423,6 +425,7 @@ jobs:
               - '.github/actions/pinned-rust-toolchain/**'
               - '.github/actions/rust-test-scope/**'
               - '.mise.toml'
+              - '.github/actions/install-mise/**'
               - '.github/workflows/ci.yml'
               - '!**/CLAUDE.md'
               - '!**/DETAILS.md'
@@ -461,6 +464,7 @@ jobs:
               - 'scripts/check/**'
               - '!scripts/check/**/*_test.go'
               - '.mise.toml'
+              - '.github/actions/install-mise/**'
               - '.github/workflows/ci.yml'
               - '.github/workflows/svelte-lane.yml'
               - '.github/actions/lane-marker/**'
@@ -497,6 +501,7 @@ jobs:
               - 'CHANGELOG.md'
               - 'pnpm-lock.yaml'
               - '.mise.toml'
+              - '.github/actions/install-mise/**'
               - '.github/workflows/ci.yml'
               - '.github/workflows/website-lane.yml'
               - '.github/actions/lane-marker/**'
@@ -527,6 +532,7 @@ jobs:
               - 'scripts/check/**'
               - '!scripts/check/**/*_test.go'
               - '.mise.toml'
+              - '.github/actions/install-mise/**'
               - '.github/workflows/ci.yml'
               - '.github/workflows/light-lane.yml'
               - '.github/actions/light-cache/**'
@@ -538,6 +544,7 @@ jobs:
               - 'scripts/check/**'
               - '!scripts/check/**/*_test.go'
               - '.mise.toml'
+              - '.github/actions/install-mise/**'
               - '.github/workflows/ci.yml'
               - '.github/workflows/light-lane.yml'
               - '.github/actions/light-cache/**'
@@ -547,6 +554,7 @@ jobs:
               - 'scripts/**'
               - 'apps/desktop/scripts/**'
               - '.mise.toml'
+              - '.github/actions/install-mise/**'
               - '.github/workflows/ci.yml'
               - '.github/workflows/light-lane.yml'
               - '.github/actions/light-cache/**'
@@ -582,6 +590,7 @@ jobs:
               - 'scripts/check/checks/test-log.go'
               - 'scripts/check/checks/webdav_ports.go'
               - '.mise.toml'
+              - '.github/actions/install-mise/**'
               - '.github/workflows/ci.yml'
               - '.github/workflows/light-lane.yml'
               - '.github/actions/light-cache/**'
@@ -608,6 +617,7 @@ jobs:
               - 'scripts/check/checks/test-log.go'
               - 'scripts/check/checks/webdav_ports.go'
               - '.mise.toml'
+              - '.github/actions/install-mise/**'
               - '.github/workflows/ci.yml'
               - '.github/workflows/light-lane.yml'
               - '.github/actions/light-cache/**'

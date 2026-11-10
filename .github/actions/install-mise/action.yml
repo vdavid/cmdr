@@ -1,0 +1,47 @@
+name: Install mise
+description: >-
+  `jdx/mise-action` with one retry. Every job that needs the `.mise.toml` toolchain installs it through here, so the
+  pinned SHA lives in one place.
+
+# Why: mise-action downloads the mise binary with a single `curl`, and a blip on that download fails the whole job before
+# anything is checked. On 2026-11-08 all six slow-checks jobs died at "Install mise" (`curl` exit 22 and 56, run
+# 42469156732), which opened a red-run issue for an outage that proved nothing about the code. A second attempt 30 s
+# later rides out a blip; a real outage still fails, on the second try. `docs/tooling/ci.md` § Build caching.
+inputs:
+  cache:
+    description: Restore mise's tool cache (mise-action's `cache`). Off on the self-hosted M1, which keeps its tools.
+    default: 'true'
+  cache_save:
+    description:
+      Save that cache after the job (mise-action's `cache_save`). Pass `main`-only from anything a PR reaches.
+    default: 'true'
+  install_args:
+    description:
+      Limit `mise install` to these tools (mise-action's `install_args`), for example `go`. Empty installs all.
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Install mise
+      id: first
+      continue-on-error: true
+      uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+      with:
+        cache: ${{ inputs.cache }}
+        cache_save: ${{ inputs.cache_save }}
+        install_args: ${{ inputs.install_args }}
+
+    - name: Wait before retrying the mise install
+      if: steps.first.outcome == 'failure'
+      shell: bash
+      run: |
+        echo "::warning::The mise install failed; retrying once in 30 s."
+        sleep 30
+
+    - name: Install mise (retry)
+      if: steps.first.outcome == 'failure'
+      uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+      with:
+        cache: ${{ inputs.cache }}
+        cache_save: ${{ inputs.cache_save }}
+        install_args: ${{ inputs.install_args }}
