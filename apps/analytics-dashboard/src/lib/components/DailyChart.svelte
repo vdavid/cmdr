@@ -12,7 +12,7 @@
         bandSegments,
         columnPath,
         foldedColumn,
-        foldShareOfAxis,
+        foldBelowPx,
         labelWidth,
         lineRuns,
         shortDay,
@@ -139,7 +139,7 @@
     function stack(i: number, layers: ColumnSeries[], x: number, w: number): { key: string; fill: string; path: string }[] {
         const out: { key: string; fill: string; path: string }[] = []
         let base = 0
-        const known = foldedColumn(layers, i, foldShareOfAxis * yMax)
+        const known = foldedColumn(layers, i, (foldBelowPx * yMax) / plotH)
         known.forEach(({ series: s, value }, k) => {
             const top = y(base + value)
             const bottom = y(base) - (k > 0 ? stackGap(y(base) - top) : 0)

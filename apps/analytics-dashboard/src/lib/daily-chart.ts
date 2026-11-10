@@ -10,13 +10,13 @@ export interface ColumnSeries {
   hatch?: boolean
   /**
    * The `key` of the layer that absorbs this one's segment on a day it's too thin to read (under
-   * `foldShareOfAxis` of the axis max), like a country into "Other". Drawing only: the tooltip keeps it.
+   * `foldBelowPx` tall), like a country into "Other". Drawing only: the tooltip keeps it.
    */
   foldInto?: string
 }
 
-/** A segment under this share of the y-axis max draws as part of its `foldInto` layer. */
-export const foldShareOfAxis = 0.05
+/** A segment shorter than this many pixels draws as part of its `foldInto` layer; it adapts as the axis grows. */
+export const foldBelowPx = 4
 
 /**
  * Column `i`'s drawn segments, bottom up: each layer's value that day, except that a value under `minValue`
