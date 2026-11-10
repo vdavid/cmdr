@@ -28,7 +28,7 @@ import {
   tallyErrorReportsByField,
   errorReportsByDay,
 } from '../../../lib/feedback-and-errors.js'
-import { aggregateChannels, aggregateReferers, aggregateUaFamilies } from '../../../lib/funnel.js'
+import { aggregateChannels, aggregateReferers, aggregateUaFamilies, funnelTableDays } from '../../../lib/funnel.js'
 import { boundsByDay, formatBound, largestUnseenShare, latestBound } from '../../../lib/active-installs.js'
 import {
   formatShare,
@@ -220,7 +220,8 @@ function writeFunnelSection(w: ReportWriter, funnel: SourceResult<FunnelData>): 
     w.line(`Couldn't load: ${funnel.error}`)
     return
   }
-  const { rows } = funnel.data
+  // The source carries 180 days for the trend charts; the report keeps its 30-day table.
+  const rows = funnel.data.rows.slice(-funnelTableDays)
   writeFunnelRows(w, rows)
   writeFunnelChannels(w, rows)
   writeFunnelReferers(w, rows)

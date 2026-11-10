@@ -45,16 +45,22 @@
     /** Today's UTC day as YYYY-MM-DD, the max selectable day (no future days). */
     const todayIso = new Date().toISOString().slice(0, 10)
 
+    /** The Acquisition page's `?country=` filter, carried across picker changes so a range switch keeps it. */
+    const countrySuffix = $derived.by(() => {
+        const country = page.url.searchParams.get('country')
+        return country ? `&country=${encodeURIComponent(country)}` : ''
+    })
+
     /** Navigate to a relative range on the current page, clearing any specific-day selection. */
     function selectRange(range: string) {
         if (!(data.selection.range === range && !data.selection.day)) {
-            window.location.href = `${pathname}?range=${range}`
+            window.location.href = `${pathname}?range=${range}${countrySuffix}`
         }
     }
 
     /** Navigate to a single specific UTC day on the current page (or back to the default range when cleared). */
     function selectDay(day: string) {
-        window.location.href = day ? `${pathname}?day=${day}` : `${pathname}?range=7d`
+        window.location.href = day ? `${pathname}?day=${day}${countrySuffix}` : `${pathname}?range=7d${countrySuffix}`
     }
 </script>
 

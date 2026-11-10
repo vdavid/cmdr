@@ -11,10 +11,13 @@ sections and pass their loaded data down.
 ### Routes and sections
 
 - `/` — Acquisition (`routes/+page.svelte`), in render order:
-  - Daily funnel + Channels (`components/FunnelTable.svelte`) — always the last 30 UTC days, independent of the picker.
+  - Acquisition trends (`components/sections/AcquisitionTrendsSection.svelte`): country chips, a 30/90-day toggle, and
+    one `TrendRow` per funnel metric (chart left, `StatsGrid` right). Independent of the picker. § "Acquisition trends".
+  - By country, last 30 days (`components/sections/CountryFunnelSection.svelte`).
   - Awareness (`components/sections/AwarenessSection.svelte`).
   - Interest (`components/sections/InterestSection.svelte`).
   - Download (`components/sections/DownloadSection.svelte`), with `CountryTable.svelte` and the per-day pie tooltip.
+  - Old daily table + Channels (`components/FunnelTable.svelte`), a collapsed `<details>`: the last 30 UTC days.
 - `/product` — Product (`routes/product/+page.svelte`):
   - Active use (`ActiveUseSection.svelte`), Payment (`PaymentSection.svelte`), Retention (`RetentionSection.svelte`),
     Feedback & errors (`FeedbackErrorsSection.svelte`).
@@ -47,11 +50,11 @@ range on `/product` stays on `/product`. It's hidden on the two ledger pages, li
 3. **`fetchDashboardData`**: all ten sources, used by the report endpoint (`api/report/+server.ts`) which dumps every
    section at once. Unchanged contract.
 
-The funnel is always 30 days (`fetchFunnelData` ignores the selection); it's still gated on the worker admin token, with
-Umami and Paddle degrading to dashes inside. It needs no env vars of its own, reusing the worker admin token, the Umami
-credentials, and the Paddle key already present (Listmonk signups arrive via the api-server, so no Listmonk secret
-reaches the dashboard). Each source returns `SourceResult<T>` (ok+data, or an error string the UI shows as "Couldn't
-load this data").
+The funnel is always the last 181 UTC days (180 complete plus today), ignoring the selection but honoring `?country=`;
+it's still gated on the worker admin token, with Umami and Paddle degrading to dashes inside. It needs no env vars of
+its own, reusing the worker admin token, the Umami credentials, and the Paddle key already present (Listmonk signups
+arrive via the api-server, so no Listmonk secret reaches the dashboard). Each source returns `SourceResult<T>` (ok+data,
+or an error string the UI shows as "Couldn't load this data").
 
 `AcquisitionData` also carries `umamiSiteUrls`, which is **config, not a source**: the per-site Umami dashboard deep
 links, built from the `UMAMI_*_WEBSITE_ID` env vars so the IDs live in exactly one place instead of being hardcoded in a
@@ -185,6 +188,11 @@ runtime values live outside `#lib/server`: `#lib/funnel.ts`, `#lib/feedback-and-
   CountryTable, MetricRow/MetricTable, ErrorState/EmptyState/BetaEmptyState, SectionDescription, Methodology,
   ExternalLinks, Chart, StackedBarChart, MiniTimeline, PieChart).
 - `src/lib/{format,colors,chart-helpers}.ts`: client-safe formatters, color tokens, chart data-shaping helpers.
+- `src/lib/acquisition-stats.ts` (the stats grid, rolling rates, axis ticks), `acquisition-series.ts` (funnel rows →
+  each chart's numerator and denominator), `acquisition-countries.ts` (country join + chips), and `daily-chart.ts`
+  (`DailyChart.svelte` geometry): client-safe, each with its Vitest file.
+- `DailyChart.svelte` (SVG day columns or rate dots + rolling line), `StatsGrid.svelte`, `TrendRow.svelte`, and
+  `InfoPopover.svelte` (the (i): hover, focus, or tap; Escape closes).
 - `src/lib/link-codes.ts`: client-safe `?r=` helpers (validation mirroring the api-server, row flattening, example
   link), shared by the `/links` page, its server action, and tests.
 - `src/lib/licenses.ts`: client-safe license-ledger helpers (response types, badge labels, source filter, the
@@ -214,9 +222,13 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
 - `feedback-and-errors.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): in-app feedback + error-report bundle metadata
   from `/admin/feedback` and `/admin/error-reports`. Pure helpers + row types in client-safe
   `#lib/feedback-and-errors.ts`.
-- `funnel.ts` (Bearer + Umami + Paddle): feeds the top "Daily funnel" table (per-UTC-day, last 30 days, always 30 days
-  independent of the picker), joining `/admin/funnel` with Umami per-day visitors/clicks and Paddle purchases. Per-day
-  `downloadsByRef` feeds the "Channels" breakdown (rolled up by `aggregateChannels` in `#lib/funnel.ts`).
+- `funnel.ts` (Bearer + Umami + Paddle): the per-UTC-day funnel behind the trend charts and the old table (181 days,
+  independent of the picker, optionally `?country=`-scoped), joining `/admin/funnel` with Umami per-day visitors,
+  pageviews, and clicks, and Paddle purchases. Per-day `downloadsByRef` feeds the "Channels" breakdown (rolled up by
+  `aggregateChannels` in `#lib/funnel.ts`). Cache key: days + country.
+- `funnel-countries.ts` (Bearer + Umami): the per-country 30-day table and the chips. Umami `metrics?type=country` for
+  visitors, one `metrics?type=event&country=XX` per top-20 country for clicks (Umami can't group events by country in
+  one call), and `/admin/funnel/countries?days=30` for downloads, installs, and pooled D7.
 - `settings-adoption.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): per-setting adoption from `/admin/config-shape`,
   resolved against the per-version defaults manifest before it leaves the server (§ Settings adoption).
 - `worker-endpoint.ts` (shared helper): `fetchWorkerEndpoint(token, path)`, used by the worker-backed sources.
@@ -334,6 +346,40 @@ association from one section to the next:
 - Purple (`#a78bfa`): vdavid/mtp-rs, the library repo.
 - Autumn green (`#8faa3b`): veszelovszki.com, the personal site.
 - Cyan (`#22d3ee`): getprvw.com, the Prvw product site.
+- Blue (`#4a90e2`): Homebrew as an install channel. Grey (`#6b6b73`): an unknown value in a breakdown. The trend charts'
+  single-series metrics are all getcmdr.com, so gold; "direct" installs are the getcmdr.com DMG, so gold too. The
+  gold/blue/grey stack passes the dataviz validator's CVD and normal-vision checks on the dark surface; it fails its
+  lightness-band and chroma checks on purpose (gold is the house color, grey means "no identity").
+
+## Acquisition trends
+
+The top of `/` answers "is each funnel step getting better?" with one row per metric: visitors, visitor → click,
+download clicks, click → install, new installs (stacked by channel), D7 retention, and the bot meter (server downloads ÷
+new installs; a spike means a scraper changed).
+
+- **Today is a partial UTC day**: drawn faded, given no rolling point, and excluded from every stat, which all take an
+  exclusive `end` day.
+- **Every rate is a ratio of sums** (Σ clicks ÷ Σ visitors), in the stats, the 7-day rolling line, and the country
+  table. An average of daily ratios lets a one-visitor 100% day weigh as much as a busy one. The median is the one
+  per-day rate stat, by definition. A rate's "vs. previous" is the difference in percentage points; a count's is
+  relative.
+- **The stats grid is one shape everywhere** (`StatsGrid`): 90/30/7 complete days × average, median, weekday and weekend
+  averages, and change vs. the previous same-length window. A window the data doesn't fully cover is a dash: that's why
+  we fetch 181 days, and why the 90d change is a dash against a worker capped at 90.
+- **D7 windows count final cohorts.** A cohort is final at eight days old (the api-server's definition,
+  `apps/api-server/src/admin/DETAILS.md` § "Per-day funnel"), so the D7 stats anchor at `today - 7` and "7d" means the
+  seven newest final cohorts; a 7d window ending today would always be empty. Young cohorts draw grey `retentionSoFar`
+  points ("D3 so far").
+- **Compatible with an older worker.** Every new `FunnelDay` field is optional and maps to `null` when absent, so the
+  section says "Not available yet" in place of zeros. An older worker refuses `?days=181` (400) and ignores `?country=`:
+  the source retries at 90 days, and under a country filter it drops worker numbers that carry none of the new fields
+  (`workerStatus: 'country-unsupported'`) rather than show global numbers as one country's.
+- **Country chips** are links (`?country=XX`, kept across picker changes), the top eight by 30-day visitors. The
+  per-country table never filters, and its "(unknown)" row is the worker's bucket for no usable country.
+- **Plain SVG over uPlot** for these charts: discrete days, an exact number on each column where it fits, a faded today,
+  and an exact-values tooltip. The chart is a `role="slider"` over days: arrow keys walk them and each day's readout is
+  the `aria-valuetext`.
+- The methodology that used to sit under the old table now lives in each metric's (i) popover.
 
 ## Write `{#if source.ok}`, never `{#if !source.ok}`
 
@@ -445,12 +491,13 @@ have a happy-path test carrying the real `type: 'app'` stamp, so the discriminat
 
 - **Metrics organized by acquisition stage, not as a cohort funnel.** Tracking is cookieless and anonymous, so there's
   no way to follow an individual from blog visit to download to payment. Stages show independent aggregate numbers.
-- **A top "Daily funnel" table lines stages up per UTC day** (last 30 days, newest first, today partial), independent of
-  the picker, to answer "what happened on day Y across the whole path". It's NOT a true cohort funnel across columns
-  (still no cross-site identity); each column is its own per-day aggregate. Clicks won't equal server downloads (clicks
-  are in-browser; server downloads also include Homebrew, direct links, GitHub-page traffic, bots filtered imperfectly).
-  D7 needs a cohort ≥8 days old that had installs, so recent/empty days show a dash. The api-server owns the funnel
-  contract and the D7 definition (`apps/api-server/src/admin/DETAILS.md` § "Per-day funnel").
+- **The old "Daily funnel" table lines stages up per UTC day** (last 30 days, newest first, today partial, collapsed
+  under the trend charts that replaced it), independent of the picker, to answer "what happened on day Y across the
+  whole path". It's NOT a true cohort funnel across columns (still no cross-site identity); each column is its own
+  per-day aggregate. Clicks won't equal server downloads (clicks are in-browser; server downloads also include Homebrew,
+  direct links, GitHub-page traffic, bots filtered imperfectly). D7 needs a cohort ≥8 days old that had installs, so
+  recent/empty days show a dash. The api-server owns the funnel contract and the D7 definition
+  (`apps/api-server/src/admin/DETAILS.md` § "Per-day funnel").
 - **Time selection is a `DashboardSelection` (`{ range, day }`) carried in the URL,** not a bare `TimeRange`: David
   needs "today" and any single specific day, not just rolling windows. A valid `?day=YYYY-MM-DD` forces `range: 'day'`
   (so a single-day link is shareable/stable). Worker-backed and PostHog sources can't isolate one day cheaply, so they

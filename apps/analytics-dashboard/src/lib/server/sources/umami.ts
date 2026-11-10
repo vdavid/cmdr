@@ -134,46 +134,56 @@ function dayOfUmamiTimestamp(ts: string): string {
   return ts.slice(0, 10)
 }
 
+/** `&country=XX` for a country-scoped Umami query, or nothing. Umami filters every endpoint this way. */
+function countryFilter(country: string | null): string {
+  return country ? `&country=${encodeURIComponent(country)}` : ''
+}
+
+/** Per-day getcmdr.com traffic: unique visitors and pageviews, each a `Map<YYYY-MM-DD, count>`. */
+export interface UmamiDailyTraffic {
+  visitors: Map<string, number>
+  pageviews: Map<string, number>
+}
+
 /**
- * Per-day visitor counts (Umami "sessions" series, what Umami's own daily chart labels visitors) for
- * `websiteId`, as a `Map<YYYY-MM-DD, count>`. Uses `/pageviews?unit=day&timezone=UTC` so the day
- * buckets line up with the rest of the funnel (all UTC). The endpoint returns `pageviews` and
- * `sessions` arrays; we take `sessions`.
+ * Per-day visitors (Umami's "sessions" series, what its own daily chart labels visitors) and pageviews for
+ * `websiteId`, optionally scoped to one country. Uses `/pageviews?unit=day&timezone=UTC` so the day buckets
+ * line up with the rest of the funnel (all UTC); one call returns both arrays.
  */
-export async function fetchUmamiDailySeries(
+export async function fetchUmamiDailyTraffic(
   apiUrl: string,
   token: string,
   websiteId: string,
-  startAt: number,
-  endAt: number,
-): Promise<Map<string, number>> {
-  const url = `${apiUrl}/api/websites/${websiteId}/pageviews?startAt=${String(startAt)}&endAt=${String(endAt)}&unit=day&timezone=UTC`
+  window: { startAt: number; endAt: number; country: string | null },
+): Promise<UmamiDailyTraffic> {
+  const url =
+    `${apiUrl}/api/websites/${websiteId}/pageviews?startAt=${String(window.startAt)}&endAt=${String(window.endAt)}` +
+    `&unit=day&timezone=UTC${countryFilter(window.country)}`
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   if (!response.ok) {
     throw new Error(`Umami pageviews series returned ${String(response.status)}`)
   }
-  const body = (await response.json()) as { sessions?: UmamiDailyPoint[] }
-  const byDay = new Map<string, number>()
-  for (const point of body.sessions ?? []) {
-    byDay.set(dayOfUmamiTimestamp(point.x), point.y)
-  }
-  return byDay
+  const body = (await response.json()) as { sessions?: UmamiDailyPoint[]; pageviews?: UmamiDailyPoint[] }
+  const byDay = (points: UmamiDailyPoint[] | undefined) =>
+    new Map((points ?? []).map((point) => [dayOfUmamiTimestamp(point.x), point.y]))
+  return { visitors: byDay(body.sessions), pageviews: byDay(body.pageviews) }
 }
 
 /**
- * Per-day counts of a named custom event (for example `download`) for `websiteId`, as a
- * `Map<YYYY-MM-DD, count>`. Uses `/events/series?unit=day&timezone=UTC`, which returns one point per
- * (event name, day); we keep only the rows whose `x` matches `eventName` and bucket by `t`'s day.
+ * Per-day counts of a named custom event (for example `download`) for `websiteId`, optionally scoped to one
+ * country, as a `Map<YYYY-MM-DD, count>`. Uses `/events/series?unit=day&timezone=UTC`, which returns one
+ * point per (event name, day); we keep only the rows whose `x` matches `eventName` and bucket by `t`'s day.
  */
 export async function fetchUmamiDailyEventSeries(
   apiUrl: string,
   token: string,
   websiteId: string,
-  startAt: number,
-  endAt: number,
+  window: { startAt: number; endAt: number; country: string | null },
   eventName: string,
 ): Promise<Map<string, number>> {
-  const url = `${apiUrl}/api/websites/${websiteId}/events/series?startAt=${String(startAt)}&endAt=${String(endAt)}&unit=day&timezone=UTC`
+  const url =
+    `${apiUrl}/api/websites/${websiteId}/events/series?startAt=${String(window.startAt)}&endAt=${String(window.endAt)}` +
+    `&unit=day&timezone=UTC${countryFilter(window.country)}`
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   if (!response.ok) {
     throw new Error(`Umami events series returned ${String(response.status)}`)
@@ -186,6 +196,44 @@ export async function fetchUmamiDailyEventSeries(
     byDay.set(day, (byDay.get(day) ?? 0) + point.y)
   }
   return byDay
+}
+
+/**
+ * Unique visitors per country (`metrics?type=country`) over the window, as `Map<ISO-2, visitors>`.
+ * Umami returns the codes uppercase already; they're normalized anyway so they join the worker's.
+ */
+export async function fetchUmamiVisitorsByCountry(
+  apiUrl: string,
+  token: string,
+  websiteId: string,
+  startAt: number,
+  endAt: number,
+): Promise<Map<string, number>> {
+  const items = await fetchMetrics(apiUrl, token, websiteId, startAt, endAt, 'country')
+  return new Map(items.map((item) => [item.x.toUpperCase(), item.y]))
+}
+
+/**
+ * How many `eventName` events one country fired over the window. Umami can't group events by country in
+ * one call (`metrics?type=country` ignores the event filter, verified on anal.veszelovszki.com, curl,
+ * 2026-11-10), so this asks per country: `metrics?type=event&country=XX`.
+ */
+export async function fetchUmamiEventCountForCountry(
+  apiUrl: string,
+  token: string,
+  websiteId: string,
+  window: { startAt: number; endAt: number; country: string },
+  eventName: string,
+): Promise<number> {
+  const url =
+    `${apiUrl}/api/websites/${websiteId}/metrics?startAt=${String(window.startAt)}&endAt=${String(window.endAt)}` +
+    `&type=event${countryFilter(window.country)}`
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  if (!response.ok) {
+    throw new Error(`Umami metrics (event, ${window.country}) returned ${String(response.status)}`)
+  }
+  const items = (await response.json()) as UmamiMetricItem[]
+  return items.find((item) => item.x === eventName)?.y ?? 0
 }
 
 export function parseUmamiStats(raw: unknown): UmamiSiteStats {

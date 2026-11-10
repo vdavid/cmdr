@@ -81,3 +81,36 @@ export function aggregateUaFamilies(rows: { downloadsByUaFamily: UaFamilyCounts 
   }
   return { human, bot, unknown, total: human + bot + unknown, humanInstalls: human + unknown }
 }
+
+/** How many trailing days the old daily table (and the report's funnel section) show. */
+export const funnelTableDays = 30
+
+/** That day's server downloads by where they came from (the worker's `downloads.source`). */
+export interface DownloadsBySource {
+  website: number
+  homebrew: number
+  other: number
+}
+
+/** That day's new installs by the channel the app reported on its first beat. */
+export interface InstallsByChannel {
+  homebrew: number
+  direct: number
+  unknown: number
+}
+
+/** A cohort too young for D7: how many of it came back so far, as of which day after install. */
+export interface RetentionSoFar {
+  day: number
+  retained: number
+}
+
+/**
+ * The `?country=` filter as an uppercase ISO-3166 alpha-2 code, or `null` for "all countries". Anything
+ * else is dropped rather than passed on: the worker answers a non-ISO code with a 400.
+ */
+export function normalizeCountry(param: string | null | undefined): string | null {
+  if (!param) return null
+  const upper = param.trim().toUpperCase()
+  return /^[A-Z]{2}$/.test(upper) ? upper : null
+}

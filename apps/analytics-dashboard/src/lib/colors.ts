@@ -11,3 +11,8 @@ export const COLOR_PURPLE = '#a78bfa'
 export const COLOR_GREEN = '#8faa3b'
 /** getprvw.com (Prvw product site). */
 export const COLOR_CYAN = '#22d3ee'
+
+/** Homebrew as an install channel (new installs stacked by channel). */
+export const COLOR_HOMEBREW = '#4a90e2'
+/** An unknown value in a breakdown: deliberately gray, so it reads as "no identity". */
+export const COLOR_UNKNOWN = '#6b6b73'

@@ -5,6 +5,8 @@ import {
   aggregateUaFamilies,
   assembleFunnelRows,
   buildFunnelDateList,
+  indexWorkerFunnel,
+  workerStatusOf,
 } from './funnel.js'
 import type { UaFamilyCounts } from './funnel.js'
 
@@ -18,8 +20,8 @@ interface WorkerDay {
   newsletterSignups: number | null
 }
 
-function workerMap(days: WorkerDay[]): Map<string, WorkerDay> {
-  return new Map(days.map((d) => [d.date, d]))
+function workerMap(days: WorkerDay[]) {
+  return indexWorkerFunnel(days, '2026-06-11')
 }
 
 describe('buildFunnelDateList', () => {
@@ -52,7 +54,7 @@ describe('assembleFunnelRows', () => {
         newsletterSignups: null,
       },
     ])
-    const rows = assembleFunnelRows(dates, worker, null, null, null)
+    const rows = assembleFunnelRows(dates, { worker, visitors: null, pageviews: null, clicks: null, purchases: null })
     expect(rows[0]).toMatchObject({
       date: '2026-06-11',
       serverDownloads: 10,
@@ -71,7 +73,13 @@ describe('assembleFunnelRows', () => {
   })
 
   it('makes the whole worker-derived columns null when the worker source failed', () => {
-    const rows = assembleFunnelRows(dates, null, new Map([['2026-06-11', 7]]), null, null)
+    const rows = assembleFunnelRows(dates, {
+      worker: null,
+      visitors: new Map([['2026-06-11', 7]]),
+      pageviews: null,
+      clicks: null,
+      purchases: null,
+    })
     expect(rows[0].serverDownloads).toBeNull()
     expect(rows[0].newInstalls).toBeNull()
     expect(rows[0].d7Retention).toBeNull()
@@ -95,7 +103,13 @@ describe('assembleFunnelRows', () => {
         newsletterSignups: 0,
       },
     ])
-    const rows = assembleFunnelRows(dates, worker, null, null, new Map([['2026-06-11', 1]]))
+    const rows = assembleFunnelRows(dates, {
+      worker,
+      visitors: null,
+      pageviews: null,
+      clicks: null,
+      purchases: new Map([['2026-06-11', 1]]),
+    })
     // 2026-06-12 has no worker row but the worker source is present -> downloads 0 (real), not null.
     expect(rows[1].serverDownloads).toBe(0)
     // A day with no worker row but a present worker source has an empty ref breakdown, not null.
@@ -103,6 +117,75 @@ describe('assembleFunnelRows', () => {
     // Purchases source present, no row for 2026-06-12 -> real 0.
     expect(rows[1].purchases).toBe(0)
     expect(rows[0].purchases).toBe(1)
+  })
+})
+
+describe('trend-chart worker fields', () => {
+  const dates = ['2026-06-10', '2026-06-11', '2026-06-12']
+  const base = { downloads: 1, downloadsByRef: {}, newInstalls: 1, d7Retention: null, d7Retained: null }
+  const none = { visitors: null, pageviews: null, clicks: null, purchases: null }
+
+  it('leaves the new fields null on an older worker, never zero', () => {
+    const worker = indexWorkerFunnel([{ date: '2026-06-11', ...base, newsletterSignups: null }], '2026-06-10')
+    expect(worker.hasTrendFields).toBe(false)
+    const rows = assembleFunnelRows(dates, { worker, ...none })
+    expect(rows[1].newInstallsByChannel).toBeNull()
+    expect(rows[2].newInstallsByChannel).toBeNull() // an empty day on an older worker stays unknown too
+  })
+
+  it('passes the new fields through and zero-fills an empty day on a new worker', () => {
+    const worker = indexWorkerFunnel(
+      [
+        {
+          date: '2026-06-11',
+          ...base,
+          newsletterSignups: null,
+          newInstallsByChannel: { homebrew: 1, direct: 0, unknown: 0 },
+          downloadsBySource: { website: 0, homebrew: 1, other: 0 },
+          retentionSoFar: { day: 1, retained: 1 },
+        },
+      ],
+      '2026-06-10',
+    )
+    const rows = assembleFunnelRows(dates, { worker, ...none })
+    expect(rows[1].newInstallsByChannel).toEqual({ homebrew: 1, direct: 0, unknown: 0 })
+    expect(rows[1].retentionSoFar).toEqual({ day: 1, retained: 1 })
+    expect(rows[2].newInstallsByChannel).toEqual({ homebrew: 0, direct: 0, unknown: 0 })
+  })
+
+  it('treats days before a capped worker window as unknown, not zero', () => {
+    // Asked from 2026-06-10, but the worker only answered from 2026-06-11 (an older 90-day cap).
+    const worker = indexWorkerFunnel([{ date: '2026-06-11', ...base, newsletterSignups: null }], '2026-06-10')
+    expect(worker.since).toBe('2026-06-11')
+    const rows = assembleFunnelRows(dates, { worker, ...none })
+    expect(rows[0].newInstalls).toBeNull()
+    expect(rows[1].newInstalls).toBe(1)
+  })
+})
+
+describe('workerStatusOf', () => {
+  const base = {
+    downloads: 1,
+    downloadsByRef: {},
+    newInstalls: 1,
+    d7Retention: null,
+    d7Retained: null,
+    newsletterSignups: null,
+  }
+  const oldWorker = indexWorkerFunnel([{ date: '2026-06-11', ...base }], '2026-06-11')
+  const newWorker = indexWorkerFunnel(
+    [{ date: '2026-06-11', ...base, newInstallsByChannel: { homebrew: 0, direct: 1, unknown: 0 } }],
+    '2026-06-11',
+  )
+
+  it("refuses an older worker's numbers under a country filter: they'd be global numbers", () => {
+    expect(workerStatusOf(oldWorker, 'SE')).toBe('country-unsupported')
+    expect(workerStatusOf(newWorker, 'SE')).toBe('ok')
+  })
+
+  it("keeps an older worker's numbers for all countries", () => {
+    expect(workerStatusOf(oldWorker, null)).toBe('ok')
+    expect(workerStatusOf(null, null)).toBe('unavailable')
   })
 })
 

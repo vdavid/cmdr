@@ -32,6 +32,40 @@ export function formatDelta(current: number, previous: number): { text: string; 
   return { text: `${sign}${pct.toFixed(1)}%`, positive: pct >= 0 }
 }
 
+/** A count that may be fractional (an average), with one decimal under 100 and none above. */
+export function formatAverage(n: number): string {
+  return n.toLocaleString('en-US', { maximumFractionDigits: Math.abs(n) < 100 ? 1 : 0 })
+}
+
+/** A 0..1+ fraction as a percent: one decimal under 10%, none above. Rates can pass 100%. */
+export function formatPercent(fraction: number): string {
+  const pct = fraction * 100
+  return `${pct.toLocaleString('en-US', { maximumFractionDigits: Math.abs(pct) < 10 ? 1 : 0 })}%`
+}
+
+/** A ratio as a multiple, like "3.2×". */
+export function formatMultiple(ratio: number): string {
+  return `${ratio.toLocaleString('en-US', { maximumFractionDigits: ratio < 10 ? 1 : 0 })}×`
+}
+
+/** A relative change (0.5 = +50%), signed. Under 1% rounds to "±0%". */
+export function formatRelativeChange(change: number): string {
+  const pct = Math.round(change * 100)
+  return pct === 0 ? '±0%' : `${pct > 0 ? '+' : '−'}${String(Math.abs(pct))}%`
+}
+
+/** An absolute change of two rates (0.012 = +1.2 percentage points), signed, in "pp". */
+export function formatPointChange(change: number): string {
+  const pp = Math.round(change * 1000) / 10
+  return pp === 0 ? '±0 pp' : `${pp > 0 ? '+' : '−'}${String(Math.abs(pp))} pp`
+}
+
+/** An absolute change of two multiples (+0.4×), signed. */
+export function formatMultipleChange(change: number): string {
+  const rounded = Math.round(change * 10) / 10
+  return rounded === 0 ? '±0×' : `${rounded > 0 ? '+' : '−'}${String(Math.abs(rounded))}×`
+}
+
 /** A short local time-of-day (e.g. "09:41 AM") from an ISO timestamp. */
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })

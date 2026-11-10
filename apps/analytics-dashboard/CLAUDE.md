@@ -8,7 +8,7 @@ Pages at `analdash.getcmdr.com`, behind Cloudflare Access plus an in-app JWT gat
 Four routes share `routes/+layout.svelte` (sticky header: brand, page nav, range/day picker). The picker writes
 `?range=` / `?day=` and is hidden on the two ledger pages (`/licenses`, `/links`).
 
-- `/` (Acquisition, `routes/+page.svelte`): daily funnel + channels, awareness, interest, download.
+- `/` (Acquisition, `routes/+page.svelte`): funnel trend charts (`?country=` scoped), country table, more sections.
 - `/product` (`routes/product/`): active use, settings adoption, payment, retention, feedback & errors.
 - `/licenses` (`routes/licenses/`): every license we've issued, from `/admin/licenses`, with an editable note each.
 - `/links` (`routes/links/`): CRUD for the `?r=` short codes, proxied to the api-server admin endpoints.
@@ -33,9 +33,8 @@ settings-defaults, `svelte-kit sync`). Don't judge a change by raw `pnpm lint`: 
   same deployment around it, so `src/hooks.server.ts` verifies the Access JWT on every server-handled request; every
   failure path must fail closed. ❌ Never gate on the spoofable `cf-access-authenticated-user-email` header. People and
   service tokens both pass, so `locals.identity` is a `user | service` union. Why and how: `DETAILS.md` § Auth.
-- **Write `{#if source.ok}` with the error state in `{:else}`, never the inverse.** Inverted, the Svelte ESLint parser
-  loses the narrowing and every read off `source.data` becomes an unsafe-member-access error that looks like missing
-  prop types. Flipping the branch is the fix, not an `any`. Why: `DETAILS.md`.
+- **Write `{#if source.ok}` with the error state in `{:else}`, never the inverse.** Inverted, ESLint loses the narrowing
+  and every `source.data` read looks like missing prop types; flip the branch, never add an `any`.
 - **Don't import `#lib/server/*` as a runtime value into browser-bundled code** (components, route `.svelte` files);
   type-only imports are fine. It trips `vite-plugin-sveltekit-guard` at BUILD time and **`svelte-check` does NOT catch
   it**, so run `pnpm build` after touching imports across the boundary. `DETAILS.md` lists the client-shared values.
@@ -48,12 +47,12 @@ settings-defaults, `svelte-kit sync`). Don't judge a change by raw `pnpm lint`: 
 - **❌ Nothing on `/licenses` may say a Paddle subscription is live.** `active` on a `paddle` row means we fulfilled
   that purchase; only `/validate` knows whether it still runs. Labels live in `#lib/licenses.ts`; the vocabulary is
   owned by `apps/api-server/src/licensing/DETAILS.md` § The licenses listing.
-- **`caches.default` / `caches.open()` aren't emulated in `wrangler pages dev`.** `cache.ts` falls back to an in-memory
-  Map, so don't assume the CF Cache API works locally.
+- **`wrangler pages dev` doesn't emulate the CF Cache API**; `cache.ts` falls back to an in-memory Map.
 - **A `null` cell renders as a dash (`–`), never a 0** in the metric tables: "couldn't get this" and "this was zero"
   differ, and every source is best-effort and independent.
-- **One color means one property across the whole dashboard** (metric dots, chart strokes and fills). Keep it when
-  adding UI; the palette is in `DETAILS.md`.
+- **Trend stats skip today and pool rates as ratios of sums**, only in `#lib/acquisition-stats.ts`. A missing worker
+  field reads "Not available yet", never 0. `DETAILS.md` § Acquisition trends.
+- **One color means one property across the whole dashboard** (dots, strokes, fills). Palette: `DETAILS.md`.
 
 Local dev: `pnpm dev:dashboard` serves on port 4830, reading `.env` (copy `.env.example`; escape a literal `$` as `\$`).
 Env resolution and the variables: `DETAILS.md`.

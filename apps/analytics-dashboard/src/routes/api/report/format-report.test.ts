@@ -39,6 +39,10 @@ const richData: DashboardData = {
           d7Retained: 2,
           newsletterSignups: 3,
           purchases: 1,
+          pageviews: null,
+          downloadsBySource: null,
+          newInstallsByChannel: null,
+          retentionSoFar: null,
         },
         {
           // A day where the web side is unknown (null) but the server side is a real zero.
@@ -55,6 +59,10 @@ const richData: DashboardData = {
           d7Retained: null,
           newsletterSignups: null,
           purchases: 0,
+          pageviews: null,
+          downloadsBySource: null,
+          newInstallsByChannel: null,
+          retentionSoFar: null,
         },
         {
           date: '2026-08-01',
@@ -70,8 +78,14 @@ const richData: DashboardData = {
           d7Retained: 3,
           newsletterSignups: 2,
           purchases: 2,
+          pageviews: null,
+          downloadsBySource: null,
+          newInstallsByChannel: null,
+          retentionSoFar: null,
         },
       ],
+      country: null,
+      workerStatus: 'ok',
     },
   },
   umami: {
@@ -346,7 +360,7 @@ const allFailedData: DashboardData = {
 const emptyData: DashboardData = {
   selection: { range: '30d', day: null },
   updatedAt: '2026-08-02T03:04:05.000Z',
-  funnel: { ok: true, data: { rows: [] } },
+  funnel: { ok: true, data: { rows: [], country: null, workerStatus: 'ok' } },
   umami: {
     ok: true,
     data: {

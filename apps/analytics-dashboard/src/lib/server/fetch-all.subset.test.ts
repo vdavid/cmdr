@@ -33,7 +33,7 @@ const selection = { range: '7d', day: null } as const
  * `umamiSiteUrls` is derived from env, not fetched, so it has no `SourceResult` shape and isn't a
  * source; it's asserted separately below.
  */
-const nonSourceKeys = new Set(['selection', 'updatedAt', 'umamiSiteUrls'])
+const nonSourceKeys = new Set(['selection', 'updatedAt', 'umamiSiteUrls', 'country'])
 
 function sourceKeys(data: object): string[] {
   return Object.keys(data)
@@ -51,7 +51,15 @@ describe('per-page data-loading split', () => {
 
   it('Acquisition loads exactly the funnel, awareness, interest, and download sources', async () => {
     const data = await fetchAcquisitionData(emptyEnv, selection)
-    expect(sourceKeys(data)).toEqual(['cloudflare', 'funnel', 'github', 'githubStars', 'posthog', 'umami'])
+    expect(sourceKeys(data)).toEqual([
+      'cloudflare',
+      'funnel',
+      'funnelCountries',
+      'github',
+      'githubStars',
+      'posthog',
+      'umami',
+    ])
     // It must NOT carry the Product-only sources.
     expect(data).not.toHaveProperty('paddle')
     expect(data).not.toHaveProperty('license')

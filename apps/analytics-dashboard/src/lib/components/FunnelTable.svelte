@@ -1,16 +1,15 @@
 <!--
-  The "Daily funnel" section: a full-width table, one row per UTC day for the last 30 days (newest
-  first), plus the "Channels" breakdown rolled up over the window. Always the last 30 days, independent
-  of the range picker. Clicking a row filters the rest of the dashboard to that day via `onselectday`.
+  The old "Daily funnel" table, kept collapsed under the trend charts: one row per UTC day for the last
+  30 days (newest first), plus the channel, referrer, and client breakdowns over that window. Independent
+  of the range picker, scoped by the country filter. Clicking a row filters the sections below to that day.
 -->
 <script lang="ts">
     import type { SourceResult } from '#lib/server/types.js'
     import type { FunnelData } from '#lib/server/sources/funnel.js'
-    import { aggregateChannels, aggregateReferers, aggregateUaFamilies } from '#lib/funnel.js'
+    import { aggregateChannels, aggregateReferers, aggregateUaFamilies, funnelTableDays } from '#lib/funnel.js'
     import { formatNumber } from '#lib/format.js'
     import ErrorState from './ErrorState.svelte'
     import MetricTable from './MetricTable.svelte'
-    import Methodology from './Methodology.svelte'
     import SectionDescription from './SectionDescription.svelte'
     import type { DashboardSelection } from '#lib/server/types.js'
 
@@ -41,11 +40,11 @@
     }
 </script>
 
-<section class="mb-6 rounded-xl border border-border bg-surface p-6">
-    <div class="mb-1">
-        <h2 class="text-lg font-semibold text-text-primary">Daily funnel</h2>
-        <p class="text-sm text-text-tertiary">The last 30 days, one row per UTC day, newest first.</p>
-    </div>
+<details class="group mb-6 rounded-xl border border-border bg-surface p-6">
+    <summary class="cursor-pointer text-lg font-semibold text-text-primary">
+        Old daily table <span class="text-sm font-normal text-text-tertiary">(replaced by the charts above)</span>
+    </summary>
+    <p class="my-1 text-sm text-text-tertiary">The last 30 days, one row per UTC day, newest first.</p>
     <SectionDescription
         insight={'Use this to watch the whole acquisition path day by day: site visitors, download clicks, real server ' +
             'downloads, new installs, week-one retention, signups, and purchases, all lined up so you can spot where ' +
@@ -54,7 +53,7 @@
             '(not a zero). Click a day to filter the sections below to it.'}
     />
     {#if funnel.ok}
-        {@const rows = funnel.data.rows}
+        {@const rows = funnel.data.rows.slice(-funnelTableDays)}
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
@@ -99,13 +98,6 @@
                 </tbody>
             </table>
         </div>
-        <Methodology
-            text={'Visitors and download clicks come from Umami (cookieless, in-browser). Server downloads, new installs, ' +
-                "DAU, and D7 come from the app's own telemetry (D1); signups from Listmonk; purchases from Paddle. " +
-                "Clicks and server downloads won't match: server downloads also include Homebrew, direct links, and " +
-                'GitHub-page traffic, and bot user agents are filtered but imperfectly. D7 needs a cohort at least 8 ' +
-                'days old, so recent rows show a dash there.'}
-        />
 
         <!-- Channels: server downloads rolled up by first-touch ref over the whole 30-day window. -->
         {@const channels = aggregateChannels(rows)}
@@ -192,4 +184,4 @@
     {:else}
         <ErrorState error={funnel.error} {selection} />
     {/if}
-</section>
+</details>

@@ -8,6 +8,7 @@ import type { PostHogData } from './sources/posthog.js'
 import type { LicenseData } from './sources/license.js'
 import type { FeedbackAndErrorsData } from './sources/feedback-and-errors.js'
 import type { FunnelData } from './sources/funnel.js'
+import type { FunnelCountriesData } from './sources/funnel-countries.js'
 import type { SettingsAdoption } from './settings-defaults.js'
 import { fetchUmamiData } from './sources/umami.js'
 import { fetchCloudflareData } from './sources/cloudflare.js'
@@ -17,6 +18,7 @@ import { fetchPostHogData } from './sources/posthog.js'
 import { fetchLicenseData } from './sources/license.js'
 import { fetchFeedbackAndErrorsData } from './sources/feedback-and-errors.js'
 import { fetchFunnelData } from './sources/funnel.js'
+import { fetchFunnelCountriesData } from './sources/funnel-countries.js'
 import { fetchSettingsAdoptionData } from './sources/settings-adoption.js'
 
 /** The shared time selection + freshness stamp every page load carries (resolved in `+layout.server.ts`). */
@@ -42,8 +44,12 @@ export interface UmamiSiteUrls {
 }
 
 export interface AcquisitionData extends SelectionEnvelope {
-  /** Always the last 30 UTC days, independent of `selection` (the funnel section's own window). */
+  /** The `?country=` filter the trend charts are scoped to, or `null` for all countries. */
+  country: string | null
+  /** The last 180 UTC days, independent of `selection`, scoped to `country`: the trend charts and old table. */
   funnel: SourceResult<FunnelData>
+  /** The per-country 30-day table and the country chips. Never scoped to `country`. */
+  funnelCountries: SourceResult<FunnelCountriesData>
   umami: SourceResult<UmamiData>
   umamiSiteUrls: UmamiSiteUrls
   cloudflare: SourceResult<CloudflareData>
@@ -63,7 +69,7 @@ export interface ProductData extends SelectionEnvelope {
 
 /** Every source, used by the agent-readable report endpoint (which dumps all sections at once). */
 export interface DashboardData extends SelectionEnvelope {
-  /** Always the last 30 UTC days, independent of `selection` (the funnel section's own window). */
+  /** The last 180 UTC days, independent of `selection`, all countries (the report prints the last 30). */
   funnel: SourceResult<FunnelData>
   umami: SourceResult<UmamiData>
   cloudflare: SourceResult<CloudflareData>
@@ -137,17 +143,34 @@ function umamiSiteUrls(env: DashboardEnv): UmamiSiteUrls {
 // lets those degrade to dashes inside. `fetchCloudflareSource` is shared by both pages: it's cached
 // per selection (`cache.ts`), so the Acquisition and Product loads hit one cache entry, not two fetches.
 
-/** The funnel table source: always the last 30 UTC days, independent of the selection. */
-export function fetchFunnelSource(env: DashboardEnv): Promise<SourceResult<FunnelData>> {
+/** The per-day funnel source: the last 180 UTC days, independent of the selection, optionally per country. */
+export function fetchFunnelSource(env: DashboardEnv, country: string | null = null): Promise<SourceResult<FunnelData>> {
   return guardedFetch(env.LICENSE_SERVER_ADMIN_TOKEN, 'Funnel', () =>
-    fetchFunnelData({
+    fetchFunnelData(
+      {
+        LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN,
+        WORKER_BASE_URL: env.WORKER_BASE_URL,
+        UMAMI_API_URL: env.UMAMI_API_URL,
+        UMAMI_USERNAME: env.UMAMI_USERNAME,
+        UMAMI_PASSWORD: env.UMAMI_PASSWORD,
+        UMAMI_WEBSITE_ID: env.UMAMI_WEBSITE_ID,
+        PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE,
+      },
+      country,
+    ),
+  )
+}
+
+/** The per-country 30-day funnel (table + chips). Gated on the worker token like the funnel itself. */
+export function fetchFunnelCountriesSource(env: DashboardEnv): Promise<SourceResult<FunnelCountriesData>> {
+  return guardedFetch(env.LICENSE_SERVER_ADMIN_TOKEN, 'Countries', () =>
+    fetchFunnelCountriesData({
       LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN,
       WORKER_BASE_URL: env.WORKER_BASE_URL,
       UMAMI_API_URL: env.UMAMI_API_URL,
       UMAMI_USERNAME: env.UMAMI_USERNAME,
       UMAMI_PASSWORD: env.UMAMI_PASSWORD,
       UMAMI_WEBSITE_ID: env.UMAMI_WEBSITE_ID,
-      PADDLE_API_KEY_LIVE: env.PADDLE_API_KEY_LIVE,
     }),
   )
 }
@@ -243,9 +266,14 @@ export function fetchFeedbackAndErrorsSource(
 // --- Per-page composers -----------------------------------------------------------------------
 
 /** Fetches only the sources the Acquisition page (`/`) renders, in parallel. */
-export async function fetchAcquisitionData(env: DashboardEnv, selection: DashboardSelection): Promise<AcquisitionData> {
-  const [funnel, umami, cloudflare, github, githubStars, posthog] = await Promise.all([
-    fetchFunnelSource(env),
+export async function fetchAcquisitionData(
+  env: DashboardEnv,
+  selection: DashboardSelection,
+  country: string | null = null,
+): Promise<AcquisitionData> {
+  const [funnel, funnelCountries, umami, cloudflare, github, githubStars, posthog] = await Promise.all([
+    fetchFunnelSource(env, country),
+    fetchFunnelCountriesSource(env),
     fetchUmamiSource(env, selection),
     fetchCloudflareSource(env, selection),
     fetchGitHubSource(env),
@@ -255,7 +283,9 @@ export async function fetchAcquisitionData(env: DashboardEnv, selection: Dashboa
   return {
     selection,
     updatedAt: new Date().toISOString(),
+    country,
     funnel,
+    funnelCountries,
     umami,
     umamiSiteUrls: umamiSiteUrls(env),
     cloudflare,
