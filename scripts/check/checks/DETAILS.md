@@ -2461,7 +2461,10 @@ doubles as production code.
 - **Analytics dashboard / Svelte**: svelte-kit-sync, eslint, stylelint, svelte-check, import-cycles, knip, tests, build,
   settings-defaults (regenerates the defaults manifest from the desktop settings registry and diffs it). Stylelint,
   knip, and import-cycles run through the same `runStylelintCheck` / `runKnipCheck` / `runImportCyclesCheck` helpers the
-  desktop lanes use, parameterized by app dir. `dashboard-build` is NOT redundant with `dashboard-svelte-check`: the
+  desktop lanes use, parameterized by app dir. `runStylelintCheck` first runs `probeStylelintCSSCoverage`: a known-bad
+  `.css` piped on stdin must come back with a `declaration-no-important` finding (read from a `--output-file` JSON
+  report, since stylelint prints to stderr only when it finds problems), or the lane fails. It catches a config that
+  silently stops linting plain `.css` (#1056). `dashboard-build` is NOT redundant with `dashboard-svelte-check`: the
   `#lib/server` boundary guard trips only at build time, so it's the only check standing between a stray runtime import
   and shipping a server-side API key into the browser bundle. The dashboard deliberately has no css-unused (Tailwind
   supplies every utility class, so "undefined class" would fire on all of them), no a11y-contrast (that tool models

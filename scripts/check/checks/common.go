@@ -2,6 +2,7 @@ package checks
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -554,6 +555,10 @@ func runESLintCheck(ctx *CheckContext, dir string, extensions []string, requireC
 // runStylelintCheck lints (and locally fixes) CSS and Svelte `<style>` blocks in a given app dir.
 // The app supplies the globs via its own `stylelint` / `stylelint:fix` package scripts.
 func runStylelintCheck(ctx *CheckContext, dir string) (CheckResult, error) {
+	if err := probeStylelintCSSCoverage(dir); err != nil {
+		return CheckResult{}, err
+	}
+
 	findCmd := exec.Command("find", "src", "-type", "f", "-name", "*.css")
 	findCmd.Dir = dir
 	findOutput, _ := RunCommand(findCmd, true)
@@ -583,6 +588,63 @@ func runStylelintCheck(ctx *CheckContext, dir string) (CheckResult, error) {
 		return result, nil
 	}
 	return Success("All CSS valid"), nil
+}
+
+// stylelintProbeCSS breaks `declaration-no-important`, a rule both apps' configs enable.
+const stylelintProbeCSS = "a { color: red !important; }\n"
+
+// probeStylelintCSSCoverage proves the app's stylelint config really lints a plain `.css` file:
+// it lints a known-bad snippet as `src/stylelint-coverage-probe.css` (stdin, nothing written)
+// and requires the finding. A config-wide `customSyntax: 'postcss-html'` once parsed every
+// `.css` as HTML, found no `<style>`, and passed all of them silently (#1056).
+func probeStylelintCSSCoverage(dir string) error {
+	// Stylelint prints its report to stderr when it finds problems and to stdout when not, so
+	// the report goes to a file of its own.
+	reportDir, err := os.MkdirTemp("", "stylelint-probe-")
+	if err != nil {
+		return fmt.Errorf("stylelint coverage probe: %w", err)
+	}
+	defer os.RemoveAll(reportDir)
+	reportPath := filepath.Join(reportDir, "report.json")
+
+	cmd := exec.Command("pnpm", "exec", "stylelint",
+		"--stdin-filename", filepath.Join("src", "stylelint-coverage-probe.css"),
+		"--formatter", "json", "--output-file", reportPath)
+	cmd.Dir = dir
+	cmd.Stdin = strings.NewReader(stylelintProbeCSS)
+	// Stylelint exits 2 on the (wanted) finding, so the verdict comes from the report alone.
+	output, _ := RunCommand(cmd, true)
+	report, _ := os.ReadFile(reportPath)
+	found, err := stylelintReportHasRule(report, "declaration-no-important")
+	if err != nil {
+		return fmt.Errorf("stylelint coverage probe: couldn't read stylelint's JSON report: %w\n%s", err, indentOutput(output))
+	}
+	if !found {
+		return fmt.Errorf("stylelint doesn't lint plain .css files: a probe .css with `!important` passed. " +
+			"Is `customSyntax: 'postcss-html'` set for every file instead of scoped to `**/*.svelte` in `.stylelintrc.mjs`?")
+	}
+	return nil
+}
+
+// stylelintReportHasRule reports whether stylelint's `--formatter json` output carries a warning
+// from the given rule.
+func stylelintReportHasRule(report []byte, rule string) (bool, error) {
+	var results []struct {
+		Warnings []struct {
+			Rule string `json:"rule"`
+		} `json:"warnings"`
+	}
+	if err := json.Unmarshal(report, &results); err != nil {
+		return false, err
+	}
+	for _, r := range results {
+		for _, w := range r.Warnings {
+			if w.Rule == rule {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 // runKnipCheck finds unused files, exports, and dependencies in a given app dir.
