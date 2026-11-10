@@ -8,7 +8,8 @@ outside blip, lands a clear fix through `pnpm land`, or writes up what needs Dav
 
 - `run.sh`: the launcher (finds the issue and run, claims it, mints the App token, readies a worktree with a warm
   `target/` and the failing jobs' logs, starts `claude -p`, removes it all after). `prompt.md`: the agent's
-  instructions, with `{{ISSUE}}`, `{{RUN_ID}}`, `{{FAILED_LOG}}`, and `{{BRANCH}}` filled in by `run.sh`.
+  instructions, with `{{ISSUE}}`, `{{RUN_ID}}`, `{{FAILED_LOG}}`, `{{BRANCH}}`, and `{{SENSITIVE_PATHS}}` filled in by
+  `run.sh`.
 
 ## Must-knows
 
@@ -18,9 +19,11 @@ outside blip, lands a clear fix through `pnpm land`, or writes up what needs Dav
 - **It never reads issue or PR comments**: the repo is public, so anyone can write there. `run.sh` reads the issue's
   comments only to find run ids, from `github-actions` alone, and hands the agent a log file. Only an issue authored by
   `app/github-actions` counts; anyone with triage rights can add a label.
-- **Sensitive paths never auto-land** (the list: `prompt.md` § Sensitive paths): it opens a PR labeled `sensitive-path`
-  and waits for David. That gate is prompt-level only, except `.github/workflows/`, which the App can't push (DETAILS §
-  The sensitive-path gate).
+- **Sensitive paths never auto-land**: it opens a PR labeled `sensitive-path` and waits for David. CI enforces it:
+  `CI OK` stays red on an App PR touching the list until `vdavid` approves its head. The list,
+  `.github/workflows/sensitive-paths.txt`, feeds both the gate and the prompt, and lives where the App can't push. ❌
+  Don't move it or the gate out of `.github/workflows/` (DETAILS § The sensitive-path gate).
+- **The idle check runs before the token mint**, anonymously (the repo is public), so an idle hour holds no token.
 - **Its notes go in the issue BODY, never a comment**, so a fixed or rerun night costs David no extra email. It comments
   only when something needs his call. Keep that split if you touch the prompt.
 - **It never loosens anything to go green**: no skipped or ignored checks, tests, advisories, or allowlists, no deleted

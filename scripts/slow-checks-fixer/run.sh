@@ -4,7 +4,8 @@
 # has handled yet, it readies a worktree and starts a headless Claude Code run to diagnose and fix it. See CLAUDE.md
 # here for what the agent may and may not do, and DETAILS.md for the credentials and the paths.
 #
-# Hourly and cheap: with no open issue, or one whose newest red run was already handled, a run is two `gh` calls.
+# Hourly and cheap: with no open issue, or one whose newest red run was already handled, a run is one or two anonymous
+# GitHub API calls (the repo is public) and mints no token.
 # launchd never starts a second copy while one is still going, and `handled-runs` stops a red run being picked up twice.
 set -euo pipefail
 
@@ -73,21 +74,38 @@ remove_run() {
   if [[ -n "$branch" ]]; then git -C "$clone" branch -D --quiet "$branch" 2>/dev/null || true; fi
 }
 
-mint_token || { log "gh-app-token printed no token; not starting"; exit 1; }
+# The lookup needs no token (the repo is public), so an idle hour mints none. Anonymous REST is 60 calls an hour per IP,
+# far above our one or two. `gh` won't call the API signed out, so this is curl.
+public_api() {
+  curl --fail --silent --show-error --max-time 30 --proto =https \
+    --header "Accept: application/vnd.github+json" --header "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/repos/$repo/$1"
+}
 
 # Only an issue the workflow itself opened. Anyone with triage rights can add a label, so the label alone proves nothing.
-issue=$(gh issue list -R "$repo" --label slow-checks --state open --limit 1 --json number,author \
-  --jq '.[] | select(.author.login == "app/github-actions") | .number')
+issue=$(public_api "issues?labels=slow-checks&state=open&per_page=100" |
+  jq -r '[.[] | select(.pull_request == null and .user.login == "github-actions[bot]")] | first | .number // empty')
 [[ -n "$issue" ]] || exit 0
 
 # The newest red run the workflow reported: its body's FIRST link names the first red run (the fixer's notes, appended
 # below, may link more), and each later red night adds a "went red" comment. Comments from anyone but the workflow are
 # ignored, for the same reason as the author check above. Only this script reads comments; the agent never does.
-run_id=$(gh issue view "$issue" -R "$repo" --json body,comments --jq '
-  [.body, (.comments[] | select(.author.login == "github-actions" and (.body | test("went red"))) | .body)]
+body=$(public_api "issues/$issue")
+comments="[]"
+for page in 1 2 3 4 5; do
+  chunk=$(public_api "issues/$issue/comments?per_page=100&page=$page")
+  comments=$(jq -s '.[0] + .[1]' <(printf '%s' "$comments") <(printf '%s' "$chunk"))
+  [[ "$(jq 'length' <<<"$chunk")" -lt 100 ]] && break
+done
+run_id=$(jq -rn --argjson issue "$body" --argjson comments "$comments" '
+  [$issue.body // "", ($comments[] | select(.user.login == "github-actions[bot]" and ((.body // "") | test("went red")))
+    | .body)]
   | map([scan("actions/runs/([0-9]+)") | .[0]] | first) | map(select(. != null)) | last // empty')
 [[ -n "$run_id" ]] || { log "#$issue names no run; nothing to do"; exit 0; }
 grep -qx "$run_id" "$handled" && exit 0
+
+# Work to do: only now does the run hold a token.
+mint_token || { log "gh-app-token printed no token; not starting"; exit 1; }
 
 # Claim it before starting, so a crash or a stopped run doesn't make every following hour retry it. A run that needs
 # another look gets one from the next red night, which names a new run.
@@ -146,6 +164,13 @@ log "warm-up build (pnpm check clippy) took $((SECONDS - started)) s, exit $buil
 
 prompt="$(sed -e "s/{{ISSUE}}/$issue/g" -e "s/{{RUN_ID}}/$run_id/g" -e "s|{{FAILED_LOG}}|$failed_log|g" \
   -e "s|{{BRANCH}}|fixer/run-$run_id|g" "$here/prompt.md")"
+# The sensitive-path list is the one CI's gate reads (`ci.yml`'s `ci-ok`), from this run's `origin/main` checkout, so
+# the prompt and the gate can't drift. Without it the agent would work blind, so a missing file stops the run.
+sensitive_list="$wt/.github/workflows/sensitive-paths.txt"
+[[ -s "$sensitive_list" ]] || { log "$sensitive_list is missing; not starting the agent"; exit 1; }
+sensitive_paths="$(cat "$sensitive_list")"
+# The quoted replacement keeps bash 5.2's `&` (the matched text) out of it.
+prompt="${prompt//\{\{SENSITIVE_PATHS\}\}/"$sensitive_paths"}"
 claude_token="$(secret CLAUDE_CODE_OAUTH_TOKEN)"
 
 # Three hours, then SIGALRM stops it (perl's `alarm` survives the `exec`; macOS ships no `timeout`). A fix plus a

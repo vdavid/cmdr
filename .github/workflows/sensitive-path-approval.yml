@@ -1,0 +1,62 @@
+name: Sensitive-path approval
+
+# When David approves a PR, rerun the `CI OK` job of every finished CI run on its head whose
+# sensitive-path gate is what turned it red, so the gate reads the approval and nobody has to
+# remember a manual rerun. Rerunning one job keeps every other job's result, so it costs one
+# small job, not a CI run. A run still going needs nothing: its `CI OK` runs last and reads the
+# approval itself. `scripts/slow-checks-fixer/DETAILS.md` § The sensitive-path gate.
+#
+# `pull_request_review` (never `pull_request_target`) runs the PR's own copy of this file, which
+# the Cmdr M1 agents App can't change (no Workflows permission). A fork PR's run gets a read-only
+# token, so it can rerun nothing; the job also requires a same-repo head.
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+
+jobs:
+  rerun-gate:
+    name: Rerun the sensitive-path gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: >-
+      github.event.review.state == 'approved' && github.event.review.user.id == 2552265 &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      actions: write # rerun the `CI OK` job
+    steps:
+      - name: Rerun CI OK where the gate waited for this approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REVIEW_SHA: ${{ github.event.review.commit_id }}
+          GATE_STEP: Sensitive paths need David's approval
+        run: |
+          if [[ "$REVIEW_SHA" != "$HEAD_SHA" ]]; then
+            echo "The approval is for $REVIEW_SHA, not the head $HEAD_SHA, so the gate wouldn't accept it."
+            exit 0
+          fi
+          runs=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=30" \
+            --jq '.workflow_runs[] | "\(.id) \(.status)"')
+          reran=0
+          while read -r run status; do
+            [[ -n "$run" ]] || continue
+            if [[ "$status" != completed ]]; then
+              echo "Run $run is still going; its CI OK reads the approval when it gets there."
+              continue
+            fi
+            # The gate's job is `CI OK` on a land run and `CI light` on a light one (ci.yml § ci-ok).
+            jobs=$(gh api --paginate "repos/$REPO/actions/runs/$run/jobs?filter=latest&per_page=100" \
+              --jq ".jobs[] | select((.name == \"CI OK\" or .name == \"CI light\") and .conclusion == \"failure\")
+                | select(any(.steps[]; .name == \"$GATE_STEP\" and .conclusion == \"failure\")) | .id")
+            for job in $jobs; do
+              gh api -X POST "repos/$REPO/actions/jobs/$job/rerun" >/dev/null
+              echo "Reran CI OK (job $job) in run $run."
+              reran=$((reran + 1))
+            done
+          done <<<"$runs"
+          echo "Reran $reran gate job(s) for $HEAD_SHA."

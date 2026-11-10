@@ -1,0 +1,55 @@
+# Paths a change by the Cmdr M1 agents GitHub App (the headless slow-checks fixer) never lands without David's approval.
+#
+# One source for two readers:
+#   - `ci.yml`'s `ci-ok` job (step "Sensitive paths need David's approval") reads this file from the PR's BASE commit
+#     and fails `CI OK` for an App-authored PR that touches a match, until `vdavid` approves its head.
+#   - `scripts/slow-checks-fixer/run.sh` pastes it into the fixer's prompt, so the agent knows before it pushes.
+#
+# It lives under `.github/workflows/` because the App has no Workflows permission, so GitHub refuses any push of it
+# here, and the gate reads it from the base, so a PR can't loosen it for itself.
+# Why each group is here and how the gate works: `scripts/slow-checks-fixer/DETAILS.md` § The sensitive-path gate.
+#
+# Format: one pattern per line, matched against repo-relative paths (both sides of a rename). `#` starts a comment.
+#   - `dir/**`: everything under `dir/`.
+#   - `**/name`: `name` at the root or in any directory.
+#   - Otherwise a shell glob where `*` also crosses `/` (bash `[[ == ]]`), so `scripts/release*` covers
+#     `scripts/release-finish/ci.go` too.
+
+# CI, rulesets, release signers, and actions
+.github/**
+
+# Landing
+scripts/land/**
+scripts/land.sh
+
+# The release pipeline
+scripts/release*
+scripts/trust-review*
+scripts/build-pkg.sh
+
+# Update signing and trust
+crates/cmdr-update-trust/**
+apps/desktop/src-tauri/src/updater/**
+apps/desktop/src-tauri/updater-backup.pub
+apps/desktop/src-tauri/tauri.conf.json
+
+# Dependencies and toolchains
+**/Cargo.toml
+**/Cargo.lock
+**/package.json
+**/pnpm-lock.yaml
+**/pnpm-workspace.yaml
+**/.mise.toml
+**/rust-toolchain.toml
+vendor/**
+**/deny.toml
+**/osv-scanner.toml
+
+# Apps that deploy on every merge to `main`
+apps/api-server/**
+apps/website/**
+apps/analytics-dashboard/**
+
+# The headless agents themselves
+scripts/slow-checks-fixer/**
+scripts/report-triage/**
