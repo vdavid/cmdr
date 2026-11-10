@@ -154,7 +154,7 @@
       "enabled": false
     },
     {
-      "description": "TypeScript stays on 6 until the toolchain that loads it in-process can take 7: 7.0 ships a `tsc` binary with no JS compiler API, and `typescript-eslint` (`<6.1.0`), `svelte-check` and `svelte2tsx` (`^5 || ^6`), and `@sveltejs/kit` (`^6`) all cap below it (checked 2026-11-10). Lift this once those peer ranges cover 7.",
+      "description": "The `typescript` package stays on 6, because the toolchain that loads it in-process can't take 7: 7.0 ships a `tsc` binary with no JS compiler API, and `typescript-eslint` (`<6.1.0`), `svelte-check` and `svelte2tsx` (`^5 || ^6`), and `@sveltejs/kit` (`^6`) all cap below it (checked 2026-11-10). TS 7's speed is reachable beside it anyway: Microsoft's side-by-side setup (`@typescript/native` as `npm:typescript@7`, read by `svelte-check --tsgo`). Lift this once those peer ranges cover 7.",
       "matchPackageNames": ["typescript"],
       "matchUpdateTypes": ["major"],
       "enabled": false
