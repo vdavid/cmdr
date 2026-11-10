@@ -9,11 +9,11 @@
  * - The first eight (US through PL) were validated with the dataviz skill's `validate_palette.js --mode dark
  *   --surface #1a1917` in stack order: worst adjacent CVD ΔE 11.9, worst adjacent normal-vision ΔE 16.8, all
  *   ≥ 3:1 on the surface, each ≥ 15 ΔE from gold, Homebrew blue, and grey.
- * - The next 16 (ES through FI) were picked greedily from an OKLCH grid (L 0.58/0.68/0.78, C 0.10/0.14, hue
- *   every 15°) for the largest OKLab distance from every color already taken plus the dashboard's property
- *   colors (`colors.ts`), keeping ≥ 3:1 on the surface. With 24 hues on one dark surface, any two now sit
- *   ≥ 7.3 ΔE apart and neighbors in the 2026-11-10 rank order ≥ 10.8; the tooltip names each slice, so a
- *   near pair never stays ambiguous.
+ * - The rest (ES through TR, in the order added) were picked greedily from an OKLCH grid for the largest
+ *   OKLab distance from every color already taken plus the dashboard's property colors (`colors.ts`),
+ *   keeping ≥ 3:1 on the surface. With 32 colors on one dark surface, any two sit ≥ 7.3 ΔE apart and
+ *   neighbors in the 2026-11-10 rank order ≥ 10.8; the tooltip names each slice, so a near pair never stays
+ *   ambiguous. Append new ones the same way, never re-pick old ones.
  */
 import { COLOR_UNKNOWN } from './colors.js'
 
@@ -42,6 +42,14 @@ export const countryColors = {
   JP: '#ae6256',
   RO: '#c5bc42',
   FI: '#0fd4bb',
+  IN: '#e0c2e7',
+  SK: '#a8e363',
+  DK: '#a0dbd6',
+  NO: '#b25ec5',
+  KR: '#2f6dd3',
+  BR: '#89a0c4',
+  PT: '#888a5f',
+  TR: '#4aefa7',
 } as const satisfies Record<string, string>
 
 /** Every country without its own color, and the "Other" bucket of a breakdown: grey means "no identity". */
