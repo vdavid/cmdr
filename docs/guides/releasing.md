@@ -16,9 +16,13 @@ Related guides for the signing and distribution steps: `apple-signing-and-notari
 
 The secrets that sign, notarize, and updater-sign a build live in the `release` environment on `getcmdr/cmdr`, and only
 the `sign` and `pkg` jobs declare `environment: release` (`compile`, which runs the third-party build code, doesn't: §
-How a release build is split). The environment's deployment policy admits `v*` tags only, with no required reviewers
-(releases run unattended), and no signing secret exists at repo level, so a workflow on a branch can't reach them. Where
-each value comes from: the vault note `projects/Cmdr/workflow/Cmdr signing keys.md`.
+How a release build is split). The environment's deployment policy admits `v*` tags only and requires David's approval,
+with admin bypass off, so every release pauses at `sign` and again at `pkg` (each job that enters the environment asks)
+until he approves it under "Review deployments" on the build run's page. A hijacked agent or a stolen token can start a
+release build but can't get it signed. No signing secret exists at repo level, so a workflow on a branch can't reach
+them. A waiting job doesn't burn its `timeout-minutes` (the clock starts when it runs), and `release-finish.sh` prints
+it as "waiting for David's approval" (`scripts/release-finish/ci.go`, `ciJob.state`). Where each value comes from: the
+vault note `projects/Cmdr/workflow/Cmdr signing keys.md`.
 
 - **The eight secrets**: `APPLE_API_KEY`, `APPLE_API_KEY_BASE64`, `APPLE_API_ISSUER`, `APPLE_SIGNING_IDENTITY`,
   `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_INSTALLER_CERTIFICATE`, and
@@ -144,9 +148,10 @@ the variable alone.
 2. **The tag push's run** builds without publishing: `guard`, then `draft`, which creates the draft release up front
    (three parallel jobs each looking for a draft by tag could each create one; drafts can't be fetched by tag).
    `ci-gate` skips: nothing here is public, and CI is still running beside it. The two `compile` jobs and then the three
-   `sign` jobs build into it: the DMGs and `.app.tar.gz` archives, no `.sig` files. `sbom` runs beside them, and
-   `attest` attests the draft's assets. `publish` and `bump-tap` skip, so `latest.json` doesn't move and nothing is
-   public.
+   `sign` jobs (which wait at `waiting` for David's approval of the `release` environment, § Signing secrets; one
+   approval covers all three, and `pkg` asks again later) build into it: the DMGs and `.app.tar.gz` archives, no `.sig`
+   files. `sbom` runs beside them, and `attest` attests the draft's assets. `publish` and `bump-tap` skip, so
+   `latest.json` doesn't move and nothing is public.
    - The Tauri CLI won't bundle without an updater key once the config has a pubkey, and the archive must still come out
      of the bundler in the shape `ci` mode ships. So each `sign` job makes a throwaway key (a mismatch the bundler only
      warns about) and keeps its signatures on the runner (its upload step skips `.sig` files in `local` mode).
@@ -357,11 +362,14 @@ check.
    step 10.
 9. **Confirm the build started**: wait ~30 seconds, then run `gh run view <release-run-id> --json jobs` and check the
    `Compile (...)` jobs. On GitHub-hosted runners both should be `in_progress` together; the three
-   `Sign and notarize (...)` jobs start once both are green. Self-hosted: see § Keep the Mac awake during the build.
+   `Sign and notarize (...)` jobs then sit at `waiting` until David approves the `release` environment ("Review
+   deployments" on the run's page), and `pkg` asks once more after them (§ Signing secrets). Tell David the run's link
+   so he can approve. Self-hosted: see § Keep the Mac awake during the build.
 10. **Monitor the build.** Tell the user their laptop is free (the build runs on GitHub's hardware). Poll `gh run view`
-    every few minutes in the background and report progress (which jobs are done, which are still running). Report when
-    all jobs complete; if one fails, show the failure details and advise how to fix it. Suggest the user also track it
-    at https://github.com/getcmdr/cmdr/actions.
+    every few minutes in the background and report progress (which jobs are done, which are still running). A job at
+    `waiting` is paused for David's approval, not stuck: remind him once, with the run's link, rather than treating it
+    as a hang or re-running anything. Report when all jobs complete; if one fails, show the failure details and advise
+    how to fix it. Suggest the user also track it at https://github.com/getcmdr/cmdr/actions.
 11. **Merge the release back into `main`** once it's published: `./scripts/release.sh X.Y.Z` again, as a background
     command (§ Merging the release back into `main`). Its land puts the version bump and the changelog on `main`, and
     `main`'s push run that follows deploys the roadmap, feature-status, and landing-page changes (the release workflow
@@ -432,6 +440,8 @@ with these differences. The procedure pre-approves building and publishing it, s
 - **The laptop awake and online for about an hour after `release.sh`**, while `release-finish.sh` waits for the build
   and CI, signs, and waits for the finishing run. Run it as `caffeinate -i ./scripts/release-finish.sh X.Y.Z`, on power
   with the lid open. If it stops, re-run it: it's resumable.
+- **David's approval of `sign` and then `pkg`** in the build run ("Review deployments"), since the `release` environment
+  requires it with no bypass (§ Signing secrets). Tell him the run's link as soon as the tag is pushed.
 - MFA, Bitwarden, and the phone aren't needed: everything else runs on GitHub with credentials already in place.
 
 **Before tagging:**

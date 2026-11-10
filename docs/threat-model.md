@@ -268,9 +268,10 @@ risk.
     there's no second-person approval. High impact, low likelihood. Already listed on `/trust`.
   - **The tag-signature check catches mistakes, not someone who already holds tag rights.** A tag push runs the workflow
     and reads `.github/release-signers` from the tagged commit itself, so whoever can push a `v*` tag controls both.
-    What stops an attacker is who holds that right (admins only, behind hardware-key 2FA). Stronger options (a required
-    approval on the `release` environment, or a deployment-protection rule that verifies the signature outside the
-    tagged commit) would close this; neither is in place yet.
+    What stops an attacker is who holds that right (admins only, behind hardware-key 2FA). The `release` environment
+    requires David's approval with admin bypass off, so a pushed tag alone can't reach the signing keys: someone also
+    needs David's account to approve `sign` (`docs/guides/releasing.md` § Signing secrets). A deployment-protection rule
+    that verifies the tag signature outside the tagged commit would close the rest; it isn't in place yet.
   - **No reproducible builds**, so a reviewer can't rebuild and compare a release.
   - **A malicious build from inside the release pipeline still gets signed.** Signing locally checks where an archive
     was built, not what went into it, so a compromised third-party action or dependency in the compile job still ships
