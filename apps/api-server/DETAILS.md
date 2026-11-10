@@ -190,23 +190,23 @@ until the live Worker has it (`.github/workflows/deploy-api-server.yml`, `Check 
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
 
-| Binding                      | Type         | Purpose                                                                                                               |
-| ---------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `ERROR_REPORTS_BUCKET`       | R2 bucket    | Error report zips and license backups (`cmdr-error-reports-eu`, `eu` jurisdiction)                                    |
-| `ERROR_REPORT_META`          | KV namespace | Eviction bookkeeping + intake admission counters (key list below)                                                     |
-| `LINK_CODES`                 | KV namespace | One key (`codes`) holds the whole `?r=<code>` → UTM map (see the note below)                                          |
-| `HEARTBEAT_LIMITER`          | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)                                         |
-| `SIGNUP_LIMITER`             | Rate limit   | Gates every signup route at 5 req/min/IP, one shared window (signups are rare)                                        |
-| `FEEDBACK_LIMITER`           | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)                                     |
-| `ERROR_REPORT_LIMITER`       | Rate limit   | Gates `POST /error-report` at 3 req/min/IP (tightest: each request stores up to 10 MB)                                |
-| `ERROR_REPORT_AMEND_LIMITER` | Rate limit   | Gates `POST /error-report/:id/amend` at 10 req/min/IP (a note, not a bundle)                                          |
-| `CRASH_REPORT_LIMITER`       | Rate limit   | Gates `POST /crash-report` at 10 req/min/IP (a crashing app flushes a small burst)                                    |
-| `LIKES_LIMITER`              | Rate limit   | Gates `POST`/`DELETE /likes/:slug` at 20 req/min/IP (bounds unauthenticated KV growth)                                |
-| `BLOG_LIKES`                 | KV namespace | One key per post (`likes:<slug>`) holding the count and the caller pseudonyms                                         |
-| `CSP_REPORT_LIMITER`         | Rate limit   | Gates `POST /csp-report` at 30 req/min/IP (a violating page load sends a handful)                                     |
-| `ACTIVATE_LIMITER`           | Rate limit   | Gates `POST /activate` at 10 req/min/IP (keeps license-code guessing slow)                                            |
-| `VALIDATE_LIMITER`           | Rate limit   | Gates `POST /validate` at 60 req/min/IP (loose for company NATs; a 429 keeps the cache)                               |
-| `CSP_ALERTS`                 | KV namespace | CSP alert window: `csp:<directive>:<blocked origin>`, 24 h TTL, a pair-salted visitor pseudonym until the alert fires |
+| Binding                      | Type         | Purpose                                                                                 |
+| ---------------------------- | ------------ | --------------------------------------------------------------------------------------- |
+| `ERROR_REPORTS_BUCKET`       | R2 bucket    | Error report zips and license backups (`cmdr-error-reports-eu`, `eu` jurisdiction)      |
+| `ERROR_REPORT_META`          | KV namespace | Eviction bookkeeping + intake admission counters (key list below)                       |
+| `LINK_CODES`                 | KV namespace | One key (`codes`) holds the whole `?r=<code>` → UTM map (see the note below)            |
+| `HEARTBEAT_LIMITER`          | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)           |
+| `SIGNUP_LIMITER`             | Rate limit   | Gates every signup route at 5 req/min/IP, one shared window (signups are rare)          |
+| `FEEDBACK_LIMITER`           | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)       |
+| `ERROR_REPORT_LIMITER`       | Rate limit   | Gates `POST /error-report` at 3 req/min/IP (tightest: each request stores up to 10 MB)  |
+| `ERROR_REPORT_AMEND_LIMITER` | Rate limit   | Gates `POST /error-report/:id/amend` at 10 req/min/IP (a note, not a bundle)            |
+| `CRASH_REPORT_LIMITER`       | Rate limit   | Gates `POST /crash-report` at 10 req/min/IP (a crashing app flushes a small burst)      |
+| `LIKES_LIMITER`              | Rate limit   | Gates `POST`/`DELETE /likes/:slug` at 20 req/min/IP (bounds unauthenticated KV growth)  |
+| `BLOG_LIKES`                 | KV namespace | One key per post (`likes:<slug>`) holding the count and the caller pseudonyms           |
+| `CSP_REPORT_LIMITER`         | Rate limit   | Gates `POST /csp-report` at 30 req/min/IP (a violating page load sends a handful)       |
+| `ACTIVATE_LIMITER`           | Rate limit   | Gates `POST /activate` at 10 req/min/IP (keeps license-code guessing slow)              |
+| `VALIDATE_LIMITER`           | Rate limit   | Gates `POST /validate` at 60 req/min/IP (loose for company NATs; a 429 keeps the cache) |
+| `CSP_ALERTS`                 | KV namespace | CSP alert windows, `csp:<directive>:<blocked origin>`, 24 h (`src/website/DETAILS.md`)  |
 
 **Rate limits are per data center, not global.** Cloudflare's rate-limit bindings count per colo
 ([docs](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)), so each one bounds a single
