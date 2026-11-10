@@ -697,8 +697,13 @@ describe('ColumnList measured columns', () => {
     ]
     const target = await render({ columns, rows: items(12) })
     const header = target.querySelector<HTMLElement>('.column-list-header')
+    // The measurers arrive through a dynamic `import()` of the mocked pretext, which takes a
+    // runner-dependent number of turns (vitest 5.1 needs more than `render`'s fixed ticks), so wait
+    // for the measured layout itself.
     // Name: widest "item-10" = 70 + 2 pad. Id: header "Id" (20) beats "11" (20), + 2 pad.
-    expect(header?.style.gridTemplateColumns).toBe('72px minmax(40px, 1fr) 22px')
+    await vi.waitFor(() => {
+      expect(header?.style.gridTemplateColumns).toBe('72px minmax(40px, 1fr) 22px')
+    })
     for (const row of target.querySelectorAll<HTMLElement>('.column-list-row.is-data')) {
       expect(row.style.gridTemplateColumns).toBe(header?.style.gridTemplateColumns)
     }
