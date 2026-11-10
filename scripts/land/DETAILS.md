@@ -10,11 +10,11 @@ GitHub by name and leaves every other ruleset alone.
 - `main-pr-required.json` ("main: PR with approval"): a PR with one approval, stale approvals dismissed, last-push
   approval. Bypass: the repository admin role (`RepositoryRole` 5, David) and the Renovate app (`Integration` 2740, the
   `renovate` app that opens and merges our Renovate PRs). These are the settings Scorecard's Branch-Protection tier 2
-  looks for; the bypass actors cost only tier 5. The third entry, the Cmdr agents GitHub App the headless M1 agents land
-  as (`scripts/slow-checks-fixer/DETAILS.md` § Credentials), still reads `"CMDR_AGENTS_APP_ID"`: a placeholder for the
-  App's numeric id (its App id, not the installation id; `secret CMDR_AGENTS_APP_ID` on the M1). `pnpm land rulesets`
-  skips a file with a string `actor_id` and says so, so `-apply` never half-applies. That's this ruleset's only bypass
-  the App gets: CI, signed commits, no force-push, and release tags keep it out.
+  looks for; the bypass actors cost only tier 5. The third entry is the "Cmdr M1 agents" GitHub App the headless M1
+  agents land as (`Integration` 5695385, its App id, not the installation id; `scripts/slow-checks-fixer/DETAILS.md` §
+  Credentials). `pnpm land rulesets` skips a file with a string `actor_id` (a placeholder) and says so, so `-apply`
+  never half-applies. That's this ruleset's only bypass the App gets: CI, signed commits, no force-push, and release
+  tags keep it out.
 - `main-ci-required.json` ("main: CI OK required"): the `CI OK` check (job `ci-ok` in `.github/workflows/ci.yml`),
   pinned to the GitHub Actions app (`integration_id` 15368) so no other app can post a passing `CI OK`. `strict` is off,
   so GitHub merges a PR whose head is green even when `main` moved since (§ Decision: merge a green PR onto a moved
