@@ -181,6 +181,13 @@
             perCountry.map((c) => ({ code: c.code, channels: view(c.rows.map((r) => r.newInstallsByChannel)) })),
         )
     })
+
+    /**
+     * The country-stacked bar charts (visitors, clicks, new installs) draw twice the default 180px: a slice
+     * under 4px folds into "Other" (`foldBelowPx`), so the extra height is what lets more countries keep
+     * their own slice on an ordinary day.
+     */
+    const stackedChartHeight = 360
 </script>
 
 <section class="mb-6 rounded-xl border border-border bg-surface p-4 sm:p-6">
@@ -255,6 +262,7 @@
             {/snippet}
             {#snippet chart()}
                 <DailyChart
+                    height={stackedChartHeight}
                     {days}
                     today={todayIso}
                     label="Daily visitors"
@@ -328,6 +336,7 @@
             {/snippet}
             {#snippet chart()}
                 <DailyChart
+                    height={stackedChartHeight}
                     {days}
                     today={todayIso}
                     label="Daily download clicks"
@@ -407,6 +416,7 @@
                 {@const channelSplit = view(inputs.installsByChannel)}
                 {@const right = installRight ? splitSeries(installRight) : undefined}
                 <DailyChart
+                    height={stackedChartHeight}
                     {days}
                     today={todayIso}
                     label="Daily new installs by channel{right ? ' and by country' : ''}"
