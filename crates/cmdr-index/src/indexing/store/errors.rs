@@ -180,6 +180,16 @@ impl IndexStoreError {
         matches!(self.sqlite_code(), Some((rusqlite::ErrorCode::DiskFull, _)))
     }
 
+    /// Whether SQLite reported an I/O error (`SQLITE_IOERR*`, any extended code).
+    ///
+    /// Fatal on its own, but on a disk that's nearly out of room it's far more
+    /// likely the environment than a dying drive (cmdr-reports#105: a WAL truncate
+    /// failed `SQLITE_IOERR_TRUNCATE` at 0.2% free), so `IndexFailureSignal::note`
+    /// asks the host about free space before calling it a failure.
+    pub fn is_io_error(&self) -> bool {
+        matches!(self.sqlite_code(), Some((rusqlite::ErrorCode::SystemIoFailure, _)))
+    }
+
     /// Whether this is TRANSIENT lock contention: another connection (or another
     /// process) held the lock, or the WAL locking protocol needs another attempt.
     /// The DB itself is fine, so the only correct response is to back off and try

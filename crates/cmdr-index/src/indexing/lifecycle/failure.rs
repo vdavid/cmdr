@@ -26,7 +26,12 @@
 //! it does for a dead DB, but the supervisor pauses the volume and restarts it once
 //! space returns (`state/space_pause.rs`), and the stop is logged at warn with no
 //! `IndexEvent::Error`: it's the environment, not a bug, so it must not auto-report
-//! (cmdr-reports#100 did).
+//! (cmdr-reports#100 did). So does an `SQLITE_IOERR*` while the host says the disk
+//! is low (cmdr-reports#105).
+//!
+//! **Maintenance never stops the index on its own** ([`note_maintenance`](IndexFailureSignal::note_maintenance)):
+//! a failed checkpoint or vacuum logs, and the next tick retries. Only proven
+//! corruption escalates.
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -134,10 +139,20 @@ impl IndexFailureSignal {
     ///
     /// Only ever called from an error branch, so the `context` format never runs on
     /// the hot success path.
+    ///
+    /// An `SQLITE_IOERR*` while the host says the index's disk is below its
+    /// free-space threshold pauses instead of failing (cmdr-reports#105): on a disk
+    /// that full, an I/O error is the environment far more often than a dying drive.
+    /// The pause doesn't hide a dying drive: once space returns the volume restarts,
+    /// and the same error with room to spare fails it as usual.
     pub(crate) fn note(&self, err: &IndexStoreError, context: &str) -> bool {
         self.notes.fetch_add(1, Ordering::Relaxed);
         if err.is_disk_full() {
             self.trip_for_space(SpaceStop::DiskFull, context, err);
+            return true;
+        }
+        if err.is_io_error() && crate::indexing::host::policy::current().index_storage_low() {
+            self.trip_for_space(SpaceStop::BelowThreshold, context, err);
             return true;
         }
         let Some(failure) = err.as_index_failure() else {
@@ -155,6 +170,26 @@ impl IndexFailureSignal {
             self.notify.notify_one();
         }
         true
+    }
+
+    /// Note an error from MAINTENANCE: a WAL checkpoint, an incremental vacuum, or
+    /// the freelist read that sizes one. Maintenance writes nothing the index
+    /// answers from, and the next 30 s tick retries it, so its failure alone never
+    /// stops the index: it logs at warn and the writer carries on (cmdr-reports#105:
+    /// a checkpoint's `SQLITE_IOERR_TRUNCATE` on a nearly full disk failed a healthy
+    /// index, which cost a full rebuild). A disk that's really dying still stops the
+    /// index at the next real write, through [`note`](Self::note).
+    ///
+    /// The one exception is proven corruption ([`IndexStoreError::indicates_corruption`]):
+    /// the file is unusable no matter which statement found out, so it goes
+    /// through [`note`](Self::note) and fails the index.
+    pub(crate) fn note_maintenance(&self, err: &IndexStoreError, context: &str) {
+        if err.indicates_corruption() {
+            self.note(err, context);
+            return;
+        }
+        self.notes.fetch_add(1, Ordering::Relaxed);
+        log::warn!("{context}: {err}; maintenance retries on the next tick");
     }
 
     /// Whether a fatal storage error has been recorded. Polled by the writer loop
@@ -199,23 +234,35 @@ mod tests {
     use super::*;
 
     fn ioerr() -> IndexStoreError {
-        IndexStoreError::Sqlite(rusqlite::Error::SqliteFailure(
-            rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_IOERR),
-            None,
-        ))
+        sqlite(rusqlite::ffi::SQLITE_IOERR)
     }
 
     use crate::indexing::events::RecordingSink;
 
     fn busy() -> IndexStoreError {
-        IndexStoreError::Sqlite(rusqlite::Error::SqliteFailure(
-            rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_BUSY),
-            None,
-        ))
+        sqlite(rusqlite::ffi::SQLITE_BUSY)
+    }
+
+    use crate::indexing::host::policy::{FakeHostPolicy, HostPolicy, TestPolicyGuard, install_for_test};
+
+    /// Install a host whose disk is as full as `storage_low` says, holding the
+    /// process-wide test lock: `note` asks the installed host about an I/O error,
+    /// so a test that notes one must pin the answer.
+    fn host_with_storage_low(storage_low: bool) -> (std::sync::MutexGuard<'static, ()>, TestPolicyGuard) {
+        let serialized = crate::indexing::handle::test_lock();
+        let host = FakeHostPolicy::shared();
+        host.note_index_storage_low(storage_low);
+        let installed = install_for_test(host as Arc<dyn HostPolicy>);
+        (serialized, installed)
+    }
+
+    fn sqlite(code: std::os::raw::c_int) -> IndexStoreError {
+        IndexStoreError::Sqlite(rusqlite::Error::SqliteFailure(rusqlite::ffi::Error::new(code), None))
     }
 
     #[test]
     fn a_fatal_error_trips_once_and_records_the_reason() {
+        let _host = host_with_storage_low(false);
         let signal = IndexFailureSignal::new(crate::NoopEventSink::shared());
         assert!(!signal.is_tripped());
 
@@ -244,6 +291,7 @@ mod tests {
         // pipeline: a subsystem can't call the crate-root `log_error!` macro. And
         // "once" is the whole point of the signal — a flood is what it exists to
         // stop, so a second fatal error must add nothing.
+        let _host = host_with_storage_low(false);
         let events = Arc::new(RecordingSink::new());
         let signal = IndexFailureSignal::new(Arc::clone(&events) as Arc<dyn crate::EventSink>);
 
@@ -267,10 +315,7 @@ mod tests {
     }
 
     fn full() -> IndexStoreError {
-        IndexStoreError::Sqlite(rusqlite::Error::SqliteFailure(
-            rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_FULL),
-            None,
-        ))
+        sqlite(rusqlite::ffi::SQLITE_FULL)
     }
 
     /// cmdr-reports#100: a replay filled a nearly full disk, SQLite said
@@ -304,6 +349,61 @@ mod tests {
         assert!(signal.note_low_disk_space("writer"));
         assert_eq!(signal.stop(), Some(IndexStop::OutOfSpace(SpaceStop::BelowThreshold)));
         assert!(events.events().is_empty());
+    }
+
+    /// cmdr-reports#105: a WAL truncate failed `SQLITE_IOERR_TRUNCATE` at 0.2% free.
+    /// With the host saying the disk is below the threshold, an I/O error pauses
+    /// like a full disk and reports nothing.
+    #[test]
+    fn an_io_error_on_a_nearly_full_disk_pauses_and_reports_nothing() {
+        let _host = host_with_storage_low(true);
+        let events = Arc::new(RecordingSink::new());
+        let signal = IndexFailureSignal::new(Arc::clone(&events) as Arc<dyn crate::EventSink>);
+
+        assert!(signal.note(&sqlite(rusqlite::ffi::SQLITE_IOERR_TRUNCATE), "upsert entry"));
+        assert_eq!(signal.stop(), Some(IndexStop::OutOfSpace(SpaceStop::BelowThreshold)));
+        assert!(events.events().is_empty(), "the environment isn't an error report");
+    }
+
+    /// The low-disk answer only excuses an I/O error: corruption on a nearly full
+    /// disk is still corruption.
+    #[test]
+    fn corruption_on_a_nearly_full_disk_still_fails() {
+        let _host = host_with_storage_low(true);
+        let signal = IndexFailureSignal::new(crate::NoopEventSink::shared());
+        assert!(signal.note(&sqlite(rusqlite::ffi::SQLITE_CORRUPT), "read entry"));
+        assert_eq!(signal.reason().map(|r| r.code), Some(rusqlite::ffi::SQLITE_CORRUPT));
+    }
+
+    /// cmdr-reports#105: a maintenance failure, even an I/O error with room to
+    /// spare, logs and leaves the index running; the next tick retries.
+    #[test]
+    fn a_maintenance_error_never_stops_the_index() {
+        let _host = host_with_storage_low(false);
+        let events = Arc::new(RecordingSink::new());
+        let signal = IndexFailureSignal::new(Arc::clone(&events) as Arc<dyn crate::EventSink>);
+
+        for code in [
+            rusqlite::ffi::SQLITE_IOERR_TRUNCATE,
+            rusqlite::ffi::SQLITE_FULL,
+            rusqlite::ffi::SQLITE_READONLY,
+            rusqlite::ffi::SQLITE_BUSY,
+        ] {
+            signal.note_maintenance(&sqlite(code), "wal_checkpoint");
+        }
+        assert!(!signal.is_tripped());
+        assert_eq!(signal.note_count(), 4, "each one is still noted");
+        assert!(events.events().is_empty());
+    }
+
+    /// Proven corruption is the exception: the file is unusable whichever
+    /// statement found out.
+    #[test]
+    fn corruption_found_by_maintenance_still_fails_the_index() {
+        let _host = host_with_storage_low(false);
+        let signal = IndexFailureSignal::new(crate::NoopEventSink::shared());
+        signal.note_maintenance(&sqlite(rusqlite::ffi::SQLITE_CORRUPT), "incremental_vacuum");
+        assert_eq!(signal.reason().map(|r| r.code), Some(rusqlite::ffi::SQLITE_CORRUPT));
     }
 
     #[tokio::test]

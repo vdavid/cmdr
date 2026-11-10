@@ -796,7 +796,7 @@ pub(super) fn handle_truncate_data(
             );
             // Reclaim free pages from the truncation
             if let Err(e) = cmdr_fs::sqlite_util::run_incremental_vacuum(conn, None) {
-                log::warn!("Writer: incremental_vacuum after truncate failed: {e}");
+                signal.note_maintenance(&IndexStoreError::from(e), "incremental_vacuum after truncate");
             }
         }
         Err(e) => {

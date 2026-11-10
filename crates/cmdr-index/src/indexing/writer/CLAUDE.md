@@ -17,7 +17,8 @@ each.
   in the channel, so a read double-assigns). A drifted counter SELF-HEALS on a PK conflict (extended `1555` →
   `fetch_max` + retry). ❌ Never extend the heal to UNIQUE `2067`: that retry IS the duplicate row.
 - **A fatal storage error STOPS the writer, ❌ never retries** (12,700 warnings in 8 min once), typed via
-  `IndexFailureSignal`; `BUSY`/`LOCKED` retry. A full or low disk (`space_guard.rs`) stops it too, as a pause.
+  `IndexFailureSignal`; `BUSY`/`LOCKED` retry. A full or low disk (`space_guard.rs`) pauses it. Maintenance errors
+  retry: `note_maintenance`, ❌ never `note`.
 - **`dir_stats` ledger, four hard rules:** (1) ❌ never clamp a negative delta — it's drift, escalate to
   `repair_dir_stats_upward`; (2) a failed `dir_stats` read OR write is drift too, so queue the id to
   `repair/deferred.rs`, ❌ never warn-and-continue, ❌ never read `Err` as "no row"; (3) structural rewrites repair

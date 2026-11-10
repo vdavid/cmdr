@@ -66,6 +66,28 @@ fn extended_ioerr_codes_are_still_fatal_and_preserved() {
     );
 }
 
+/// cmdr-reports#105: an I/O error is the one fatal class that a nearly full disk
+/// can also produce, so it's told apart (extended codes included) for the
+/// free-space check in `IndexFailureSignal::note`. Corruption and the rest aren't.
+#[test]
+fn io_errors_are_told_apart_from_the_other_fatal_classes() {
+    for code in [
+        rusqlite::ffi::SQLITE_IOERR,
+        rusqlite::ffi::SQLITE_IOERR_TRUNCATE,
+        rusqlite::ffi::SQLITE_IOERR_WRITE,
+    ] {
+        assert!(sqlite_err(code).is_io_error(), "result code {code} is an I/O error");
+    }
+    for code in [
+        rusqlite::ffi::SQLITE_CORRUPT,
+        rusqlite::ffi::SQLITE_READONLY,
+        rusqlite::ffi::SQLITE_FULL,
+        rusqlite::ffi::SQLITE_BUSY,
+    ] {
+        assert!(!sqlite_err(code).is_io_error(), "result code {code} isn't an I/O error");
+    }
+}
+
 #[test]
 fn transient_contention_is_not_fatal() {
     // BUSY/LOCKED are routine contention the busy handler already retries; failing

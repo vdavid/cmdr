@@ -3,7 +3,9 @@
 //! Incremental vacuum reclaims free pages from deletes/rescans, and the WAL
 //! checkpoint truncates the WAL file once readers permit. Both are fired by a
 //! background timer (and the WAL checkpoint also right after a full scan); they
-//! mutate no `entries` rows, so they don't bump the writer generation.
+//! mutate no `entries` rows, so they don't bump the writer generation. Their
+//! errors go through `IndexFailureSignal::note_maintenance`, never `note`: a
+//! failed housekeeping pass is retried next tick, not a reason to stop the index.
 
 use std::cell::Cell;
 use std::time::{Duration, Instant};
@@ -168,7 +170,7 @@ pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection, signal: &In
     let free = match conn.pragma_query_value(None, "freelist_count", |row| row.get::<_, i64>(0)) {
         Ok(n) => n,
         Err(e) => {
-            signal.note(&IndexStoreError::from(e), "freelist_count query");
+            signal.note_maintenance(&IndexStoreError::from(e), "freelist_count query");
             return;
         }
     };
@@ -178,7 +180,7 @@ pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection, signal: &In
     };
 
     if let Err(e) = cmdr_fs::sqlite_util::run_incremental_vacuum(conn, Some(cap)) {
-        signal.note(&IndexStoreError::from(e), "incremental_vacuum");
+        signal.note_maintenance(&IndexStoreError::from(e), "incremental_vacuum");
     } else {
         log::debug!(
             "Writer: incremental_vacuum reclaimed up to {cap} of {}",
@@ -273,8 +275,10 @@ fn handle_wal_checkpoint(conn: &rusqlite::Connection, signal: &IndexFailureSigna
                 pluralize(log_size as u64, "page")
             );
         }
+        // Maintenance: an error here logs and the next tick retries; only proven
+        // corruption stops the index (cmdr-reports#105).
         Err(e) => {
-            signal.note(&IndexStoreError::from(e), "wal_checkpoint");
+            signal.note_maintenance(&IndexStoreError::from(e), "wal_checkpoint");
         }
     }
 }

@@ -232,7 +232,9 @@ those off). `as_index_failure()` builds the typed `IndexFailure { code, extended
 (`is_disk_full()`): it stops the writer the same way, but as `IndexStop::OutOfSpace`, which the lifecycle PAUSES and
 resumes, logged at warn with no error report; so does `space_guard.rs` when the host says the disk is below the index's
 own free-space threshold (`advanced.indexPauseFreeSpacePercent`, separate from the low-disk-space warning's; the host
-answers on demand, `space_poller/low_space.rs`; `../lifecycle/DETAILS.md` § "Pausing for disk space").
+answers on demand, `space_poller/low_space.rs`; `../lifecycle/DETAILS.md` § "Pausing for disk space"). An
+`SQLITE_IOERR*` (`is_io_error()`) while that same host answer is true pauses too, in `note`. Maintenance errors take
+their own door, `note_maintenance` (§ "Decision: a failed maintenance pass never stops the index").
 
 **Detection lives here (`../failure.rs::IndexFailureSignal`).** A one-shot per-volume `Arc<IndexFailureSignal>` created
 in `IndexWriter::spawn_for`, cloned into the writer thread, exposed via `IndexWriter::failure_signal()`. Every
@@ -747,10 +749,19 @@ with `SQLITE_LOCKED` whenever a transaction is open, and a bulk run (a replay, a
 time, so the 30 s tick would fail on nearly every tick (a warn per tick naming a non-error, and no checkpoint when write
 volume was highest). `request_wal_checkpoint` checks `conn.is_autocommit()` and parks the tick (`deferred_checkpoint`,
 debug-logged); `run_deferred_wal_checkpoint` runs it right after the `CommitTransaction` handler's COMMIT and re-checks
-`is_autocommit` first. A real SQLite error from a checkpoint that DID run still routes to `signal.note`. ⚠️ This only
-bounds the WAL if the bulk run COMMITS along the way: a replay that held one transaction for its whole run parked every
-checkpoint until the end and filled a nearly full disk (cmdr-reports#100), which is why the replay commits in chunks
-(`../watch/DETAILS.md` § "A replay commits in chunks").
+`is_autocommit` first. A real SQLite error from a checkpoint that DID run goes to `signal.note_maintenance` (§
+"Decision: a failed maintenance pass never stops the index"). ⚠️ This only bounds the WAL if the bulk run COMMITS along
+the way: a replay that held one transaction for its whole run parked every checkpoint until the end and filled a nearly
+full disk (cmdr-reports#100), which is why the replay commits in chunks (`../watch/DETAILS.md` § "A replay commits in
+chunks").
+
+**Decision: a failed maintenance pass never stops the index.** Every maintenance error (the checkpoint, both vacuums,
+the `freelist_count` read) goes through `IndexFailureSignal::note_maintenance`, ❌ never `note`: it logs at warn and the
+next 30 s tick retries. Only proven corruption (`indicates_corruption`) escalates to `note`, since the file is unusable
+whichever statement found out. Why: cmdr-reports#105, a checkpoint's `SQLITE_IOERR_TRUNCATE` at 0.2% free failed a
+healthy index and cost a full rebuild. Maintenance writes nothing the index answers from, so a dying disk still stops
+the index at the next real write. A wrong guess costs at most two warn lines a minute while the writer idles. Pinned by
+`failure.rs::tests::a_maintenance_error_never_stops_the_index`.
 
 **A checkpoint with nothing to do says nothing.** `handle_wal_checkpoint`'s `(busy, log_size, checkpointed) = (0, 0, 0)`
 row means the WAL was already empty, which on a quiet machine is every 30 s tick (~160 lines an hour across the three
