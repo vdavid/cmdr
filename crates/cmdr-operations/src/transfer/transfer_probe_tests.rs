@@ -13,13 +13,16 @@ use super::super::transfer_driver::LeafProgressLedger;
 use super::*;
 use crate::Operations;
 use crate::event_sinks::CollectorEventSink;
+use crate::host::OperationErrorReport;
 use crate::host::testing::FakeVolumes;
 use crate::host::{EngineEvents, InstantMutationFact};
 use crate::test_support::placeholder_conflict;
 use crate::testing::TestOperations;
+use crate::types::WriteOperationPhase;
 use crate::types::{LeftoversKeptEvent, OperationsChanged};
 use crate::types::{WriteOperationType, WriteProgressEvent};
 use cmdr_fs::volume::{ConnectionLiveness, Volume, VolumeReadStream};
+use std::sync::Weak;
 
 /// A probe whose stall-abort window is `window` AND whose connection is proven
 /// dead, so a test can drive the watchdog past the window in a handful of

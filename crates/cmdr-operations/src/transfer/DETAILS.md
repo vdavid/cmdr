@@ -54,8 +54,9 @@ included, § "One-pass sequential extract"). Only the layout facts that none of 
 - **`transfer_probe_vocabulary.rs` is the probe's value half**, a `#[path]` child re-exported by `transfer_probe.rs`, so
   every caller still writes `transfer_probe::<item>`. It holds what a row and a driver can SAY (`TaskPhase`,
   `DriverPhase`, `TaskRole`, `TaskRow`) with each one's `label` and its round trip out of the `AtomicU8` it is stored
-  in; the live table, the registry, and the watchdog stay in `transfer_probe.rs`. The seam is that nothing in the
-  vocabulary takes a lock, holds an `Arc`, or reads the registry. ❌ Don't put a probe field or a counter here.
+  in; the live table stays in `transfer_probe.rs`, the registry and the watchdog in their own children (below). The seam
+  is that nothing in the vocabulary takes a lock, holds an `Arc`, or reads the registry. ❌ Don't put a probe field or a
+  counter here.
 - **`volume_outage.rs` is the wait for a volume that went away** (§ "Waiting out a volume that went away"), with
   `volume_outage_tests.rs` beside it and `outage_volume_test_support.rs`'s `OutageVolume` as the double: a volume whose
   session a test drops and restores, like the SMB share in `#398` (its arming API there, the `impl Volume` that fires it
@@ -70,10 +71,16 @@ included, § "One-pass sequential extract"). Only the layout facts that none of 
   `InboundWindow` (the receive rate across the last few ticks, pure and tested on its own).
   `transfer_probe_opening_tests.rs` pins what a transfer says before its first byte and while a response is still
   arriving.
-- **`transfer_probe_unseen.rs` is time the watchdog couldn't see**, another `#[path]` child: `LATE_TICK_AFTER` and `gap`
-  (when a tick counts as late), and `CpuWitness`, the per-thread CPU census a late tick logs so a bundle can tell
-  workers parked in blocking calls from a spinning task or an outbid runtime (§ "The watchdog ACTS", the late-tick
-  guard).
+- **`transfer_probe_watchdog.rs` is the stall watchdog**, a `#[path]` child of `transfer_probe.rs` that reaches the live
+  table's private fields: the cadence and patience constants (`STALL_TICK`, `STALL_AFTER`, `STALL_ABORT_AFTER`,
+  `HEARTBEAT_AFTER_SECS`, the test-only `StallAbortGuard`), `WatchdogState`, `spawn_watchdog`, and the
+  `impl OperationProbe` block that ticks, heartbeats, dumps, and (gated) aborts. The recorder half (atomics a phase
+  transition writes, `activity`, `render_dump`) stays in the parent: the seam is "who writes the table" against "the one
+  reader that acts on it".
+- **`transfer_probe_unseen.rs` is time the watchdog couldn't see**, the watchdog's own `#[path]` child:
+  `LATE_TICK_AFTER` and `gap` (when a tick counts as late), and `CpuWitness`, the per-thread CPU census a late tick logs
+  so a bundle can tell workers parked in blocking calls from a spinning task or an outbid runtime (§ "The watchdog
+  ACTS", the late-tick guard).
 - **`transfer_probe_registry.rs` is the engine's table of live transfers**, a third `#[path]` child: `Probes` (one per
   engine, in its `EngineStores`, reached through the op's scope), `register_operation`, and the guard that leaves the
   table. The watchdog holds the table weakly and ends at the first tick after the guard removes its probe.
@@ -2413,17 +2420,17 @@ prevent, one layer up.
 The stillness window is what makes the pair sound. A NAS that drops a probe because it is busy writing has not ALSO
 moved zero bytes for `STALL_ABORT_AFTER`; a genuinely dead session has done both. Each condition covers the other's
 false positive. ❌ **Never collapse this to "trust the `Dead` verdict"** — the comment at the conjunction in
-`transfer_probe.rs` carries the same warning, and `transfer_probe::tests::a_task_that_keeps_moving_is_never_aborted`
-pins it (its probe reports `Dead` on every tick and the moving task is still never touched; removing the movement check
-turns that test red).
+`transfer_probe_watchdog.rs` carries the same warning, and
+`transfer_probe::tests::a_task_that_keeps_moving_is_never_aborted` pins it (its probe reports `Dead` on every tick and
+the moving task is still never touched; removing the movement check turns that test red).
 
 **Why 180 s for the second condition.** It is a LAST resort even once armed: a backend that can bound its own waits gets
 there first, so a dead SMB session errors on its own and the file's retry picks it up without the watchdog being
 involved. Which `smb2` deadline actually does that, and why `SEND_TIMEOUT` is not the one: the doc comment on
-`STALL_ABORT_AFTER` in `transfer_probe.rs`. What is left is the case with no deadline anywhere: an OS-mounted share, a
-USB stack, a future backend that forgot. The number clears the slowest HEALTHY gap between two byte reports, which is
-one chunk: a 1 MiB SMB read window needs a link under 6 KB/s to take this long, an 8 MiB MTP window needs USB at 45
-KB/s.
+`STALL_ABORT_AFTER` in `transfer_probe_watchdog.rs`. What is left is the case with no deadline anywhere: an OS-mounted
+share, a USB stack, a future backend that forgot. The number clears the slowest HEALTHY gap between two byte reports,
+which is one chunk: a 1 MiB SMB read window needs a link under 6 KB/s to take this long, an 8 MiB MTP window needs USB
+at 45 KB/s.
 
 **The guards, each load-bearing** (the liveness verdict above is the first and most important; these are the rest):
 
@@ -2525,13 +2532,13 @@ backend; the intent, not the token, says which of the two it was.
 
 **Tier 2, hard abort (`state.backend_abort`).** What tier 1 cannot do is bound the WAIT. A write that never calls
 `on_progress` never sees the cancel, and `smb2`'s own deadline for a chunk is 30 s of server silence, stretching to 180
-s while an ECHO keeps proving the connection alive (see the `STALL_ABORT_AFTER` doc comment in `transfer_probe.rs`), so
-one chunk can hold a quit for minutes. Tier 2 is a deadline holder's answer: `volume/stream_pipe.rs::stream_pipe_file`
-races the source open and the destination write against it, so the wait ends on our clock whether or not the backend
-comes back. Fired only by `state::abort_write_operation` / `abort_all_write_operations`, which today means the quit
-deadline and nothing else. Both fire tier 1 first — an abort is a cancel that ran out of patience, never a cancel with a
-shorter fuse — and both work on an already-`Stopped` operation, which is the real sequence (cancel, wait a beat, abort
-what's left).
+s while an ECHO keeps proving the connection alive (see the `STALL_ABORT_AFTER` doc comment in
+`transfer_probe_watchdog.rs`), so one chunk can hold a quit for minutes. Tier 2 is a deadline holder's answer:
+`volume/stream_pipe.rs::stream_pipe_file` races the source open and the destination write against it, so the wait ends
+on our clock whether or not the backend comes back. Fired only by `state::abort_write_operation` /
+`abort_all_write_operations`, which today means the quit deadline and nothing else. Both fire tier 1 first — an abort is
+a cancel that ran out of patience, never a cancel with a shorter fuse — and both work on an already-`Stopped` operation,
+which is the real sequence (cancel, wait a beat, abort what's left).
 
 **What tier 2 costs, and where the cleanup goes instead.** The backend runs none of its own cleanup, and ❌ nothing may
 go back through that connection to tidy up: the delete would hold the very deadline the tier exists to keep, a second

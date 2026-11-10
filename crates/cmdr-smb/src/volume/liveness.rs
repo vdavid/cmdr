@@ -88,7 +88,7 @@ impl LiveConnection {
 ///   arrive strictly after that error and add nothing.
 ///
 /// ❌ Don't read this verdict alone: the watchdog ANDs it with its own stillness
-/// window (`transfer_probe.rs`), because `Unresponsive` flips back to `Alive` the
+/// window (`transfer_probe_watchdog.rs`), because `Unresponsive` flips back to `Alive` the
 /// moment a byte lands.
 pub(super) fn verdict_for(liveness: Liveness) -> Option<ConnectionLiveness> {
     match liveness {

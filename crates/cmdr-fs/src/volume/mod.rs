@@ -2029,7 +2029,7 @@ pub trait Volume: Send + Sync {
     /// to answer?
     ///
     /// This is one of the two gates on the transfer watchdog's aggressive action:
-    /// ending the wait on a task that has stopped moving (`transfer_probe.rs`).
+    /// ending the wait on a task that has stopped moving (`transfer_probe_watchdog.rs`).
     /// ❌ Elapsed silence is NOT an answer to this question and must never be
     /// dressed up as one: a large write to a loaded spinning-disk NAS is
     /// legitimately slow, and killing it trades a rare wedge for frequent
@@ -2072,7 +2072,7 @@ pub trait Volume: Send + Sync {
     /// Only ever compared against an earlier reading of the same volume, and it
     /// can drop: a rebuilt session starts counting from zero. The transfer
     /// watchdog reads a drop as "no rate this tick"
-    /// (`crates/cmdr-operations/src/transfer/transfer_probe.rs`).
+    /// (`crates/cmdr-operations/src/transfer/transfer_probe_watchdog.rs`).
     fn connection_bytes_received(&self) -> Option<u64> {
         None
     }

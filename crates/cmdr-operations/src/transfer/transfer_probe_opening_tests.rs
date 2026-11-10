@@ -10,6 +10,7 @@ use super::super::liveness_test_support::ScriptedConnectionVolume;
 use super::*;
 use crate::event_sinks::CollectorEventSink;
 use crate::testing::TestOperations;
+use crate::types::WriteOperationPhase;
 use crate::types::WriteOperationType;
 use cmdr_fs::volume::Volume;
 

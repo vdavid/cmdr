@@ -705,7 +705,7 @@ impl WriteOperationState {
     /// published, without cloning the event: the number on the user's screen.
     ///
     /// `None` before the first emit. This is what the stall watchdog judges
-    /// movement by (`transfer/transfer_probe.rs`), so the log, the dialog's
+    /// movement by (`transfer/transfer_probe_watchdog.rs`), so the log, the dialog's
     /// stall notice, and the progress bar can't disagree about whether a
     /// transfer is moving. Every emit site funnels through
     /// [`enrich_progress`](Self::enrich_progress), so no driver has to remember
