@@ -40,7 +40,7 @@ specta = { version = "=2.0.0-rc.24", features = ["derive"] }
 # `fold_name`: the NFC half of the case-folded name column search matches on.
 unicode-normalization = "0.1"
 # Operation ids. UUIDv7, never v4 (`new_operation_id` says why).
-uuid = { version = "1.29.0", features = ["v7"] }
+uuid = { version = "1.29.1", features = ["v7"] }
 
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target and

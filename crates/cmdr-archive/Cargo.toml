@@ -34,7 +34,7 @@ tokio = { version = "1", features = ["rt"] }
 # silence it.
 notify-debouncer-full = "0.7.0"
 # The unique suffix a mutation's same-directory temp ends in.
-uuid = { version = "1.29.0", features = ["v4"] }
+uuid = { version = "1.29.1", features = ["v4"] }
 # The zip WRITE side (temp+rename mutation), plus the read side's decrypt path:
 # rc-zip parses the central directory but does NOT decrypt, so an encrypted entry's
 # bytes go through this crate's `by_index_decrypt`. `aes-crypto` adds WinZip AES
@@ -56,12 +56,12 @@ tar = "0.4"
 flate2 = "1"
 bzip2 = "0.6.1"
 ruzstd = "0.9.0"
-lzma-rust2 = "0.23.0"
+lzma-rust2 = "0.25.0"
 # 7z: metadata-only index, then per-block streaming. LZMA/LZMA2 decode is built in
 # (via `lzma-rust2`); `bzip2`/`deflate`/`ppmd` add the other common 7z codecs.
 # `aes256` decrypts a password-protected 7z. `compress` (the encoders) stays off
 # except under the `testing` feature, which fixtures need.
-sevenz-rust2 = { version = "0.24.2", default-features = false, features = [
+sevenz-rust2 = { version = "0.25.0", default-features = false, features = [
   "aes256",
   "bzip2",
   "deflate",
@@ -89,7 +89,7 @@ xattr = "1"
 # wasm helper module only with `compress`, and its AES needs the browser's
 # randomness (`aes256_wasm`). `crates/cmdr-fs/DETAILS.md` § "The browser build".
 [target.'cfg(target_family = "wasm")'.dependencies]
-sevenz-rust2 = { version = "0.24.2", default-features = false, features = ["compress", "aes256_wasm"] }
+sevenz-rust2 = { version = "0.25.0", default-features = false, features = ["compress", "aes256_wasm"] }
 
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target and
@@ -103,7 +103,7 @@ tempfile = "3"
 # `#[tokio::test]` needs `macros`; the watch tests need a multi-threaded runtime.
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # Unique fixture paths under the system temp dir.
-uuid = { version = "1.29.0", features = ["v4"] }
+uuid = { version = "1.29.1", features = ["v4"] }
 # The zstd ENCODER for `.tar.zst` fixtures (the shipped path decodes with the
 # pure-Rust `ruzstd`). Dev-only, so no C dependency reaches a shipped build.
 zstd = "0.14"

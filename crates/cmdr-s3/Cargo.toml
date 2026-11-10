@@ -81,7 +81,7 @@ tokio-util = { version = "0.7.18", default-features = false }
 # `testing` only: the per-process token that keeps two concurrent suites' key
 # prefixes apart on the machine-wide fixtures. Optional, so a shipped build
 # never links it; the version `cmdr-fs` pins.
-uuid = { version = "1.29.0", features = ["v4"], optional = true }
+uuid = { version = "1.29.1", features = ["v4"], optional = true }
 
 [features]
 # "This is a test build." Widens `volume::testing` (the Docker fixture

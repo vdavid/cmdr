@@ -207,7 +207,7 @@ mime_guess = "2"
 base64 = "0.23.0"
 rayon = "1.11.0"
 regex = "1"
-uuid = { version = "1.29.0", features = ["v4", "v7"] }
+uuid = { version = "1.29.1", features = ["v4", "v7"] }
 tauri-plugin-clipboard-manager = "2"
 notify-debouncer-full = "0.7.0"
 bincode2 = "2"
@@ -229,7 +229,7 @@ reqwest = { version = "0.13", features = ["cookies", "json", "rustls", "stream",
 # The one door every HTTP client is built through: proxy routing the way macOS decides it.
 cmdr-http = { path = "../../../crates/cmdr-http" }
 # MCP server. `rmcp` is the official Rust SDK; ❌ never its `local` feature (its handlers would stop being `Send`).
-rmcp = { version = "=3.8.0", default-features = false, features = ["server", "transport-streamable-http-server"] }
+rmcp = { version = "=3.9.0", default-features = false, features = ["server", "transport-streamable-http-server"] }
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros", "process"] }
 futures-util = "0.3"
@@ -314,7 +314,7 @@ cmdr-mtp = { path = "../../../crates/cmdr-mtp" }
 # mDNS discovery for network host browsing (pure Rust, cross-platform).
 # 0.21.5 is the floor: older releases retry a failed multicast join every 5 s forever
 # on Macs with VM or container bridges. See `src/network/DETAILS.md`.
-mdns-sd = { version = "0.21.6", features = ["logging"] }
+mdns-sd = { version = "0.21.7", features = ["logging"] }
 # SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
 # When bumping: also re-vendor the test containers per
 # apps/desktop/test/smb-servers/.compose/VENDORED.md

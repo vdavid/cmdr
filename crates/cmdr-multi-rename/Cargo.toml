@@ -41,7 +41,7 @@ serde = { version = "1", features = ["derive"] }
 specta = { version = "=2.0.0-rc.24", features = ["derive"] }
 unicode-normalization = "0.1"
 # Preset and history ids. In the browser, `cmdr-fs` turns on uuid's `js` feature.
-uuid = { version = "1.29.0", features = ["v4"] }
+uuid = { version = "1.29.1", features = ["v4"] }
 
 [target.'cfg(unix)'.dependencies]
 # The Results file's private folder (`geteuid`), `O_NOFOLLOW`, and the orphan sweep's `kill(pid, 0)`.

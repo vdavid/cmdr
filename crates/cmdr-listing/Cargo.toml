@@ -72,7 +72,7 @@ cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # `#[tokio::test]` with a multi-threaded flavor, and `start_paused` clocks.
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "test-util"] }
 # Unique volume and listing ids for the tests that share a real registry slot.
-uuid = { version = "1.29.0", features = ["v4"] }
+uuid = { version = "1.29.1", features = ["v4"] }
 # The stall probe's symlink cells need a real directory to resolve through.
 tempfile = "3"
 # The `errno`s a stalled network read fails with (`ENOTCONN`, `ETIMEDOUT`).

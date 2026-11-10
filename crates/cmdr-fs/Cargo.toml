@@ -80,7 +80,7 @@ dirs = "7"
 # The unique suffix every staged scratch name ends in (`staging`). A caller can
 # also supply one, so the type is part of the mint API rather than an internal
 # detail: a safe-overwrite gives its temp and its aside the same UUID.
-uuid = { version = "1.29.0", features = ["v4"] }
+uuid = { version = "1.29.1", features = ["v4"] }
 # `staging::names`: a scratch name too long for the destination keeps only the
 # whole grapheme clusters of the original name that fit, so a cut never strands a
 # combining accent or splits an emoji. Already in the graph through the app.
@@ -139,13 +139,13 @@ tokio = { version = "1", features = ["rt-multi-thread"] }
 [target.'cfg(target_family = "wasm")'.dependencies]
 # A browser's randomness source (`crypto.getRandomValues`) for the scratch-name
 # UUIDs; without it `uuid` refuses to compile for `wasm32-unknown-unknown`.
-uuid = { version = "1.29.0", features = ["js"] }
+uuid = { version = "1.29.1", features = ["js"] }
 # The browser build's executor and clock (`src/rt/wasm.rs`): `performance.now()`
 # behind `std`-shaped `Instant` / `SystemTime` (`std`'s panic on
 # `wasm32-unknown-unknown`), `spawn_local` for tasks, and `setTimeout` for sleeps.
 web-time = "1.1.0"
-wasm-bindgen = "0.2.126"
-wasm-bindgen-futures = "0.4.76"
+wasm-bindgen = "0.2.130"
+wasm-bindgen-futures = "0.4.80"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Linux keeps mimalloc without the feature: glibc malloc's per-thread arenas are

@@ -80,11 +80,11 @@ tokio = { version = "1", features = ["rt", "sync", "time", "macros", "io-util"] 
 # The interleaving tests only (`shuttle`): Shuttle's sync primitives and threads,
 # which `sync_primitives.rs` swaps in for std's so its scheduler can choose who runs
 # next at every lock and send. Off in every shipped build and every other test run.
-shuttle = { version = "0.9.9", optional = true }
+shuttle = { version = "0.9.10", optional = true }
 # `CancellationToken`, one per operation, which every backend call hears.
 tokio-util = { version = "0.7.18", features = ["rt"] }
 # Operation and preview ids.
-uuid = { version = "1.29.0", features = ["v4", "v7"] }
+uuid = { version = "1.29.1", features = ["v4", "v7"] }
 # Walking a local tree for the compress estimate and a copy into a zip (the archive
 # edits compile in the browser build too, where they refuse before any walk).
 walkdir = "2"
@@ -111,7 +111,7 @@ libc = "0.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Moving to the freedesktop trash.
-trash = "5.2"
+trash = "5.3"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # Moving to the Trash through `NSFileManager`, and asking it which trash a volume

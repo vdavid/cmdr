@@ -78,7 +78,7 @@ log = "0.4"
 # under `testing` the per-process token that keeps two concurrent suites' scratch
 # directories apart on the one machine-wide Nextcloud fixture. Same version
 # `cmdr-fs` already pins, so no second copy enters the graph.
-uuid = { version = "1.29.0", features = ["v4"] }
+uuid = { version = "1.29.1", features = ["v4"] }
 
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target and

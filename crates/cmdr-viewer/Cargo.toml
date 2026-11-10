@@ -34,7 +34,7 @@ url = "2"
 urlencoding = "2"
 # Media tokens (128-bit, CSPRNG) and session ids.
 rand = "0.10"
-uuid = { version = "1.29.0", features = ["v4"] }
+uuid = { version = "1.29.1", features = ["v4"] }
 # Header-only image dimensions. The app's feature set, so both builds read the same formats.
 image = { version = "0.25.10", default-features = false, features = [
   "bmp",
