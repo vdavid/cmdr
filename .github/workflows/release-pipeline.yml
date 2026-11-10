@@ -118,7 +118,7 @@ jobs:
       # fail `publish` after the hour-long build, so prove it here, in seconds (one small fixed
       # object, overwritten each time). `docs/guides/releasing.md` § Where downloads are served from.
       - name: Install Go for the download mirror check
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
         with:
           install_args: go
 
@@ -162,7 +162,7 @@ jobs:
         run: git fetch --force --no-tags origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
 
       - name: Install Go for the gate
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
         with:
           install_args: go
 
@@ -302,7 +302,7 @@ jobs:
           fi
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
         # Caching left at the action's default (on). A hosted runner is ephemeral, so there's no
         # local ~/.local/share/mise to persist and the cache is what keeps `mise install` cheap.
         # ❌ Don't set `cache: false` here without also moving back to the self-hosted runner;
@@ -398,7 +398,7 @@ jobs:
           persist-credentials: false
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
 
       - name: Install tools with mise
         run: mise install
@@ -903,7 +903,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
 
       - name: Install tools with mise
         run: mise install
@@ -1064,7 +1064,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
         with:
           # A tag's cache entries are readable by that tag alone, so saving here only spends budget.
           cache_save: false
@@ -1224,7 +1224,7 @@ jobs:
       # `release-finish.sh` ran before uploading. `ci` mode's signatures come from its own build.
       # Go is also what the download mirror step below runs, in both modes.
       - name: Install Go to verify the signatures and mirror the downloads
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: ./.github/actions/install-mise
         with:
           install_args: go
 
