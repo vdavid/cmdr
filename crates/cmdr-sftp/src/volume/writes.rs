@@ -344,12 +344,7 @@ impl SftpVolume {
             // ❗ Cancellation arrives ONLY here. There is no token on this path:
             // the transfer engine says stop by answering `Break`, and a backend
             // that never called back would be uncancelable.
-            if on_progress(StreamWriteProgress {
-                bytes_written: written,
-                expected_length: length,
-            })
-            .is_break()
-            {
+            if on_progress(StreamWriteProgress::new(written, length)).is_break() {
                 return Err(VolumeError::Cancelled(remote.to_string().into()));
             }
         }

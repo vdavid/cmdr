@@ -277,12 +277,7 @@ impl AdbVolume {
                 session.send_chunk(piece).await.map_err(map)?;
                 written += piece.len() as u64;
             }
-            if on_progress(StreamWriteProgress {
-                bytes_written: written,
-                expected_length: length,
-            })
-            .is_break()
-            {
+            if on_progress(StreamWriteProgress::new(written, length)).is_break() {
                 return Err(VolumeError::Cancelled(device.to_string().into()));
             }
         }

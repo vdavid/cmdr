@@ -23,13 +23,10 @@ keychain, mounts, and human-facing words stay in the app's `network/`.
   the replaced instance (both act on the SHARED session).
 - **`paths_are_os_visible()` tracks the MOUNT**. ❌ Never hardcode `true`: smb2 browses on past a dead mount, so a drag
   fails silently.
-- **`write_from_stream` drives an OWNED `FileWriter` on a cloned `Connection`** (❌ never borrowed under the session
-  mutex: the QNAP deadlock); unknown lengths stream, counted by `finish`; on error, `abort()` then delete the partial.
-- **A copy stamps dates on the writer's OWN handle before `finish()`**; ❌ never by path (its close re-stamps).
-- **A forced file rename is one atomic `ReplaceIfExists` swap**; ❌ never clear a destination that's the source
-  re-cased.
-- **One-frame fast paths stop at `quick_read_limit()` / `quick_write_limit()`**. ❌ A refused one-frame write to a
-  non-scratch name never streams (`one_frame_write_limit`).
+- **The write path** (DETAILS § Decisions, § "Dates on copies", § "Carrying an upload on"): an OWNED `FileWriter` on a
+  cloned `Connection` (❌ never under the session mutex: the QNAP deadlock); dates on the writer's own handle before
+  `finish()`, ❌ never by path; a carry-on point is a FLUSH checkpoint, ❌ never `bytes_written`; a refused one-frame
+  write to a non-scratch name ❌ never streams; a forced rename is one `ReplaceIfExists` swap.
 - **A streamed read ends at its last byte**: ❌ don't wait for `None` to drop `chunk_tx`.
 - **`scan_recursive` asks its `ScanBoundary` per entry, `dir()` BEFORE the listing** (`DETAILS.md` § "Scanning").
 - **Bulk work rides EXTRA sessions** (scans: `scan_pool.rs`; bytes: `transfer_session.rs`; a shown DFS link's watch:

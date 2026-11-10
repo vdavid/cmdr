@@ -53,8 +53,8 @@ pub(super) struct Opened {
 pub(super) struct CarryOn {
     version: SourceVersion,
     remembered: Remembered,
-    /// The destination's last progress count: a contiguous prefix of the temp,
-    /// by `Volume::continues_writes`' promise.
+    /// The destination's last `StreamWriteProgress::continues_from`: a
+    /// contiguous prefix of the temp, by `Volume::continues_writes`' promise.
     confirmed: Arc<AtomicU64>,
     size: u64,
     lost: MetadataClasses,
@@ -418,12 +418,14 @@ impl FileRun<'_> {
         // the write future. No allocation, no timer, no syscall, and no change to
         // any backend.
         let on_file_progress = self.on_file_progress;
-        // The destination's count, from the start of the file either way, is
-        // also how far a write that fails can be carried on from (`CarryOn`).
+        // The destination's proven prefix, from the start of the file either
+        // way, is how far a write that fails can be carried on from
+        // (`CarryOn`). ❌ Never its live count: SMB's runs ahead of what it
+        // has proven.
         let confirmed = carry.as_ref().map(|carry| Arc::clone(&carry.confirmed));
         let write_progress = |progress: cmdr_fs::volume::StreamWriteProgress| {
             if let Some(confirmed) = &confirmed {
-                confirmed.store(progress.bytes_written, Ordering::Release);
+                confirmed.store(progress.continues_from, Ordering::Release);
             }
             on_file_progress(progress.bytes_written, size)
         };

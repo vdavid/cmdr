@@ -2240,12 +2240,13 @@ pub trait Volume: Send + Sync {
     /// Whether [`continue_write_from_stream`](Self::continue_write_from_stream)
     /// carries a write on here. ❗ Saying yes is a promise about
     /// [`write_from_stream`](Self::write_from_stream) too: its
-    /// [`StreamWriteProgress::bytes_written`] counts a CONTIGUOUS prefix of
+    /// [`StreamWriteProgress::continues_from`] names a CONTIGUOUS prefix of
     /// the target, every byte before it on disk, and a write that fails
-    /// leaves that prefix in place. The engine continues from the last count
-    /// it heard, so a backend whose writes land out of order (SMB's pipelined
-    /// WRITEs, counted as they're answered) must say no until it can name a
-    /// proven offset.
+    /// leaves that prefix in place. The engine continues from the last one it
+    /// heard. A backend whose writes land in order reports its count
+    /// ([`StreamWriteProgress::in_order`]); one whose writes land out of order
+    /// reports a checkpoint it proved (SMB: a FLUSH after every WRITE before
+    /// it was answered), and ❌ never its live count.
     ///
     /// Default `false`.
     fn continues_writes(&self) -> bool {
@@ -2261,8 +2262,9 @@ pub trait Volume: Send + Sync {
     ///   transport fault, `NotSupported` by convention) a target that's gone
     ///   or shorter than `at`. The engine then runs the file again from its
     ///   first byte.
-    /// - Cuts the target to `at` first: a byte past the last progress count
-    ///   is one nobody confirmed.
+    /// - Writes from `at` on, and leaves nothing past the file's last byte: a
+    ///   byte past the last `continues_from` is one nobody proved (cut first,
+    ///   or overwritten and the tail trimmed at the end, as SMB does).
     /// - Progress and the returned byte count are from the start of the file,
     ///   `at` included, and the metadata goes on exactly as
     ///   `write_from_stream` puts it.
@@ -2479,6 +2481,7 @@ mod transfer_hold;
 mod transport_fault;
 mod types;
 mod usb_speed;
+mod write_progress;
 mod xattr_read_mode;
 
 // Docs live in the file's own `//!` header. ❌ Never add an outer `///` here on
@@ -2541,6 +2544,7 @@ pub use transfer_hold::TransferHold;
 pub use transport_fault::{TransportFault, is_transport_errno};
 pub use types::*;
 pub use usb_speed::UsbSpeed;
+pub use write_progress::{StreamLength, StreamWriteProgress};
 pub use xattr_read_mode::{XattrAnswer, XattrReadMode};
 
 #[cfg(test)]

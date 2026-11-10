@@ -338,10 +338,7 @@ impl Volume for WebdavVolume {
         Box::pin(async move {
             self.noting(
                 self.write_from_stream_impl(dest, mode, size, stream, &|bytes_written, _| {
-                    on_progress(StreamWriteProgress {
-                        bytes_written,
-                        expected_length: StreamLength::Known(size),
-                    })
+                    on_progress(StreamWriteProgress::new(bytes_written, StreamLength::Known(size)))
                 }),
             )
             .await

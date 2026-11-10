@@ -399,10 +399,7 @@ impl LocalPosixVolume {
 
                 bytes_written += chunk_len;
 
-                if on_progress(StreamWriteProgress {
-                    bytes_written,
-                    expected_length: length,
-                }) == std::ops::ControlFlow::Break(())
+                if on_progress(StreamWriteProgress::in_order(bytes_written, length)) == std::ops::ControlFlow::Break(())
                 {
                     // Drop the file handle and try to clean up the partial file.
                     drop(file);

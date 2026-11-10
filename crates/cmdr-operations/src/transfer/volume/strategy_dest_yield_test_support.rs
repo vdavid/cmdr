@@ -202,12 +202,7 @@ impl Volume for ForegroundBusyDest {
                 } else {
                     written.lock_ignore_poison().extend_from_slice(&chunk);
                 }
-                if on_progress(StreamWriteProgress {
-                    bytes_written,
-                    expected_length: StreamLength::Known(size),
-                })
-                .is_break()
-                {
+                if on_progress(StreamWriteProgress::new(bytes_written, StreamLength::Known(size))).is_break() {
                     return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                 }
             }
@@ -300,12 +295,7 @@ impl Volume for PanicIfProbedDest {
                 let chunk = chunk?;
                 written.lock_ignore_poison().extend_from_slice(&chunk);
                 bytes_written += chunk.len() as u64;
-                if on_progress(StreamWriteProgress {
-                    bytes_written,
-                    expected_length: StreamLength::Known(size),
-                })
-                .is_break()
-                {
+                if on_progress(StreamWriteProgress::new(bytes_written, StreamLength::Known(size))).is_break() {
                     return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                 }
             }

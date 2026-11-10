@@ -767,12 +767,8 @@ impl Volume for MtpVolume {
             return Box::pin(async { Err(VolumeError::NotSupported) });
         };
         Box::pin(async move {
-            let report_progress = |bytes_written, _| {
-                on_progress(StreamWriteProgress {
-                    bytes_written,
-                    expected_length: StreamLength::Known(size),
-                })
-            };
+            let report_progress =
+                |bytes_written, _| on_progress(StreamWriteProgress::new(bytes_written, StreamLength::Known(size)));
             // A new name: a pick on it means nothing (see `rename`).
             let dest = cmdr_fs::twin_path::unpicked(dest);
             let dest = dest.as_ref();

@@ -404,12 +404,7 @@ impl Volume for IncrementalDest {
                 data.extend_from_slice(&chunk);
                 self.publish(dest, &data).await?;
                 self.written.store(data.len() as u64, Ordering::SeqCst);
-                if on_progress(StreamWriteProgress {
-                    bytes_written: data.len() as u64,
-                    expected_length: StreamLength::Known(size),
-                })
-                .is_break()
-                {
+                if on_progress(StreamWriteProgress::new(data.len() as u64, StreamLength::Known(size))).is_break() {
                     // What every real backend does on cancel: drop the handle and
                     // remove the partial at the WRITE path.
                     let _ = self.inner.delete(dest).await;

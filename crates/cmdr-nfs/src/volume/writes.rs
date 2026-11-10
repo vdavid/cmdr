@@ -137,12 +137,7 @@ impl Progress<'_> {
         self.reported = upto;
         // ❗ Cancellation arrives ONLY here: the engine says stop by answering
         // `Break`, and a backend that never called back would be uncancelable.
-        if (self.on_progress)(StreamWriteProgress {
-            bytes_written: upto,
-            expected_length: self.length,
-        })
-        .is_break()
-        {
+        if (self.on_progress)(StreamWriteProgress::new(upto, self.length)).is_break() {
             return Err(VolumeError::Cancelled(ErrorDetail::path(remote)));
         }
         Ok(())

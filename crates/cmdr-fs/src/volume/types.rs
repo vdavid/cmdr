@@ -87,39 +87,6 @@ impl WriteMode {
     }
 }
 
-/// Whether a stream's final byte length is known before writing starts.
-///
-/// Real files carry [`Known`](Self::Known). Generated streams may carry
-/// [`Unknown`](Self::Unknown), so callers never disguise an absent length as
-/// zero. A backend must explicitly opt into unknown-length writes before it can
-/// receive one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StreamLength {
-    /// The stream must contain exactly this many bytes.
-    Known(u64),
-    /// The final byte count is unavailable until the stream reaches EOF.
-    Unknown,
-}
-
-impl StreamLength {
-    /// Returns the exact byte count when one was declared.
-    pub const fn known(self) -> Option<u64> {
-        match self {
-            Self::Known(bytes) => Some(bytes),
-            Self::Unknown => None,
-        }
-    }
-}
-
-/// One progress update from a streaming write.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct StreamWriteProgress {
-    /// Bytes accepted by the destination so far.
-    pub bytes_written: u64,
-    /// The declared final length, or unknown for generated output.
-    pub expected_length: StreamLength,
-}
-
 /// The modified time [`Volume::get_metadata`](super::Volume::get_metadata)
 /// answers for a file a write just landed, when the write knows it without
 /// asking.

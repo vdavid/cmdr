@@ -25,6 +25,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize};
 
 mod apple_double;
 mod attributes;
+mod checkpointed_write;
 mod closing_reads;
 mod copy;
 mod copy_xattrs;
@@ -345,6 +346,9 @@ struct SmbVolumeInner {
     /// Whether this share keeps AppleDouble `._` files, and the ones a delete
     /// took (`apple_double.rs`).
     sidecars: apple_double::Sidecars,
+    /// The checkpoints failed uploads left in their temps, each waiting for its
+    /// continuation (`checkpointed_write.rs`).
+    write_checkpoints: checkpointed_write::WriteCheckpoints,
     /// The connection the current `client` owns, readable without the client
     /// mutex, so the transfer watchdog can ask whether the server is still talking
     /// (`Volume::connection_liveness`) and how many bytes it has sent. Swapped in
@@ -427,6 +431,7 @@ impl SmbVolume {
                 link_watches: Arc::default(),
                 closing_reads: Arc::default(),
                 sidecars: apple_double::Sidecars::default(),
+                write_checkpoints: checkpointed_write::WriteCheckpoints::default(),
                 live_connection,
                 transfer,
                 active_mount_path: Arc::new(StdRwLock::new(mount_path)),
@@ -706,6 +711,8 @@ mod apple_double_integration_test;
 mod attributes_integration_test;
 #[cfg(test)]
 mod black_hole_proxy;
+#[cfg(test)]
+mod checkpointed_write_integration_test;
 #[cfg(test)]
 mod conformance_test;
 #[cfg(test)]

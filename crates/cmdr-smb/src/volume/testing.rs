@@ -289,6 +289,13 @@ pub fn client_lock_tickets_issued() -> u64 {
     super::session::CLIENT_LOCK_TICKET.load(Ordering::Relaxed)
 }
 
+/// Makes this share's streamed uploads into a staging temp take a FLUSH
+/// checkpoint every `bytes` (64 MiB otherwise), so a suite can carry a
+/// few-MiB upload on after an outage, or measure what a checkpoint costs.
+pub fn set_checkpoint_every(vol: &SmbVolume, bytes: u64) {
+    vol.inner.write_checkpoints.set_every(bytes);
+}
+
 /// A whole buffer as a one-chunk [`VolumeReadStream`], for a suite that needs to
 /// drive `write_from_stream` without a second volume behind it. It carries no
 /// date, so the written file keeps the server's own.

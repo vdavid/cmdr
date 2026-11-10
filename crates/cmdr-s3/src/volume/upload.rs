@@ -75,10 +75,7 @@ impl<'a> Progress<'a> {
     /// whether the caller wants to stop.
     pub(super) fn at(&self, sent: u64) -> ControlFlow<()> {
         let shown = self.shown.fetch_max(sent, Ordering::Relaxed).max(sent);
-        (self.report)(StreamWriteProgress {
-            bytes_written: shown,
-            expected_length: self.expected,
-        })
+        (self.report)(StreamWriteProgress::new(shown, self.expected))
     }
 }
 

@@ -181,16 +181,17 @@ on", not by watching a number.
   volume-relative paths and the share-relative ones smb2 speaks; `query` reads the share without changing it (listings,
   metadata, existence, space); `mutation` changes it and patches the listings that showed it; then `session`,
   `session_build` (opens a fresh smb2 session, for every owner of one), `reconnect`, `state`, `read_stream` (a file read
-  as chunks), `write_stream` (a stream written into a file), `random_reader` (one held-open `FileReader` read by offset,
-  which the file viewer keeps for a whole session, #303), `resume` (how a held handle waits for the session after the
-  one it lost), `scan`, `scan_pool`, `transfer_session` (the extra session byte-moving calls ride), `dfs_links` (any
-  call through a DFS link inside the share), `link_watch` (a shown link's own watch), `watcher`, `foreground_yield`,
-  `links` (what a stat reads as through a link), `slow_calls` (the rolled-up `warn` for a metadata call the server held
-  over a second), `attributes` (Hidden and Locked by path), `xattrs` (`Volume`'s xattr methods, over named streams),
-  `apple_double` (a deleted file's `._` sidecar), and the stateless `mapping`. Splitting further needs a responsibility
-  you can name the same way; a line count is not one. `e5ea10d02` reverted four splits invented to satisfy the counter,
-  and every one of them had widened a visibility or torn a struct from its trait impl to do it. These carry the same
-  `pub(super)` the crate already used and leave no module reaching into another's internals.
+  as chunks), `write_stream` (a stream written into a file), `checkpointed_write` (the streamed upload a long outage
+  carries on, § "Carrying an upload on"), `random_reader` (one held-open `FileReader` read by offset, which the file
+  viewer keeps for a whole session, #303), `resume` (how a held handle waits for the session after the one it lost),
+  `scan`, `scan_pool`, `transfer_session` (the extra session byte-moving calls ride), `dfs_links` (any call through a
+  DFS link inside the share), `link_watch` (a shown link's own watch), `watcher`, `foreground_yield`, `links` (what a
+  stat reads as through a link), `slow_calls` (the rolled-up `warn` for a metadata call the server held over a second),
+  `attributes` (Hidden and Locked by path), `xattrs` (`Volume`'s xattr methods, over named streams), `apple_double` (a
+  deleted file's `._` sidecar), and the stateless `mapping`. Splitting further needs a responsibility you can name the
+  same way; a line count is not one. `e5ea10d02` reverted four splits invented to satisfy the counter, and every one of
+  them had widened a visibility or torn a struct from its trait impl to do it. These carry the same `pub(super)` the
+  crate already used and leave no module reaching into another's internals.
 - **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" from the WORK, not the transport.**
   MTP has an explicit holder for its single scarce USB pipe; SMB frames just interleave over a connection, so there is
   nothing on the transport to count. It survives the transfer session because the copy and the pane still share the link
@@ -1243,6 +1244,58 @@ deletes `._<name>` beside it when that file's first four bytes are AppleDouble's
 - **Not verified on the QNAP itself**: the fixture is the guest share playing one (visible `._` files plus a forced
   `stores_xattrs`), since `smb-consumer-fruit` vetoes `._` names (`fruit:veto_appledouble`'s default).
 
+## Carrying an upload on
+
+**Decision**: a streamed write into a staging temp (`.cmdr-tmp-*`) takes smb2's `FileWriter::flush_checkpoint` every
+`CHECKPOINT_EVERY` (64 MiB) and reports the checkpoint's offset as `StreamWriteProgress::continues_from`, so
+`SmbVolume::continues_writes` says yes and the engine carries an upload on after a long outage rather than sending it
+again (`crates/cmdr-operations/src/transfer/DETAILS.md` § "Carrying a file on after a long outage"). Code:
+`src/volume/checkpointed_write.rs`; `write_stream.rs` hands its streaming path to it.
+
+**Why a checkpoint, not the count.** `FileWriter::bytes_written` adds WRITEs up as they're answered, out of order, so it
+isn't a contiguous prefix, and an answered WRITE isn't durable until a FLUSH: a NAS that reboots can come back with a
+hole. A checkpoint is a drained window plus a FLUSH, so every byte before it is on the server's disk. The progress bar
+still shows the live count; only the carry-on point is the checkpoint.
+
+**How:**
+
+- **Kept as it's taken.** Each checkpoint goes into `SmbVolumeInner::write_checkpoints` by share path, so a write future
+  the engine drops (the stall watchdog) still leaves one. A transport fault (a write, the FLUSH, the source, `finish`)
+  closes the handle and keeps the temp; a source fault takes one more checkpoint first, since the share is up. Any other
+  failure, and a cancel, deletes the temp and forgets its checkpoint, as before. A landed write, a delete of the path
+  (`delete_impl`, which the engine's `abandon_attempt` reaches), and a fresh write to it forget it too.
+- **❗ Proven before a byte goes out.** `continue_write_from_stream` takes the kept checkpoint (refusing an `at` past
+  it; an earlier `at` is fine, every byte before it is flushed), stats the temp, and requires the same `FileIdentity`
+  AND the creation time read at the temp's first checkpoint, then opens it with smb2's `resume_file_writer`, which
+  checks identity and length again. The rest streams through the same loop, checkpointing as it goes, and smb2's
+  `finish` cuts what the failed write left past the last byte.
+- **Why the creation time too.** `FileIdentity` is the volume serial plus the server's index number, which on Samba is
+  the inode, and a filesystem hands an inode out again (ext4 does at once). A temp deleted and recreated at its name
+  could wear the old identity and pass smb2's check with someone else's bytes; it can't wear the old birth. Pinned by
+  the "reborn" cell, which fails with the check removed.
+- **Falls back, never splices.** A refusal (no checkpoint, past it, gone, replaced, reborn, shorter, `ResumeRefused`,
+  any server error) answers `NotSupported`, and the engine deletes the temp and runs the file from its first byte. A
+  transport fault before the reopen answers puts the checkpoint back for the next try.
+- **Bytes the dead session still had on their way** can land after the continuation's: they're the same source version
+  (the engine proved it) at the same offsets, so they rewrite identical bytes, and none sits past the file's end.
+- **Out of scope**: the one-frame compound path (a temp up to `max_write`, 8 MiB on Samba once the uplink is measured)
+  has nothing to carry on; a temp behind a DFS link fails the stat on the share's own tree, so it never checkpoints; a
+  server that won't identify the file never checkpoints either. An in-place rewrite of the temp that keeps its identity,
+  birth, and length is undetectable short of reading it back; nothing but Cmdr writes a `.cmdr-tmp-*` name.
+
+**What a checkpoint costs** (verified on the Docker guest share, Samba 4.23.8 on Alpine over overlayfs, macOS 27.0.1
+loopback, debug build, `smb_integration_checkpoint_cost` with 256 MiB × 5 rounds interleaved, two runs, 2026-11-11):
+with none 867–975 MB/s; every 1 MiB 301–340 MB/s (+2.0–2.3 ms per checkpoint); every 4 MiB 739–762 MB/s (+0.8–1.2 ms);
+every 16 MiB 961–1,084 MB/s; every 64 MiB 1,243–1,259 MB/s. From 16 MiB up the checkpointed write was FASTER than the
+unflushed one: the FLUSH keeps the server's dirty data bounded instead of leaving it all to the last `finish`. So a
+checkpoint costs about 2 ms of loopback time, a LAN adds about one round trip to that, and at 64 MiB that's well under 1
+% even at gigabit speed (64 MiB is about 0.6 s there). 64 MiB keeps what an outage sends again to at most 64 MiB plus a
+window; smaller buys little and costs more round trips on a slow link. Not measured on a real NAS's disks.
+
+**smb2 gaps worth closing upstream** (not blocking): `FileWriter` could hand out the CREATE response's creation time
+beside `identity()`, saving the stat at the first checkpoint, and `WriteCheckpoint` / `resume_file_writer` could carry
+and check it, so the reborn-inode case is closed inside smb2 for every consumer.
+
 ## Server-side copy (copychunk)
 
 `copy.rs` implements `Volume::copy_within` and `copy_on_server` with `FSCTL_SRV_COPYCHUNK`, so duplicating a file inside
@@ -1856,6 +1909,11 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
     shape (server-confirmed, never queued), cancel and mid-write cancel, multi-chunk sources, and the error /
     partial-cleanup path with the `ErroringReadStream` double. The cross-volume streaming copy is here because every
     assertion it makes is about what arrived on the share, even though its source is an `InMemoryVolume`.
+  - `checkpointed_write_integration_test.rs` — `continue_write_from_stream` (§ "Carrying an upload on"): a temp cut on
+    the transport carries on from its checkpoint, or from an earlier one, byte for byte; a tail past the checkpoint is
+    overwritten and trimmed; a temp past its checkpoint, truncated, replaced, reborn (same identity, another creation
+    time), gone, or never checkpointed is refused with nothing created; a refusal that isn't the transport keeps
+    nothing. Plus `smb_integration_checkpoint_cost`, the interval measurement (`--nocapture`).
   - `wire_shape_integration_test.rs` — what a byte-path op COSTS, which neither of the above asks: the hinted read's ONE
     compound frame and the `quick_read_limit` boundary where it gives way to streaming (on a cold connection `(1, 3)` at
     512 KiB, `(1, 8)` one byte over (the open is a compound carrying its version), in two chunks; after a measuring

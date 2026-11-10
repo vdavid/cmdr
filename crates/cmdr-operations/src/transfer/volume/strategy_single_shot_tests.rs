@@ -142,12 +142,7 @@ impl Volume for SingleShotDest {
             let mut written = 0u64;
             while let Some(chunk) = stream.next_chunk().await {
                 written += chunk?.len() as u64;
-                if on_progress(StreamWriteProgress {
-                    bytes_written: written,
-                    expected_length: StreamLength::Known(size),
-                })
-                .is_break()
-                {
+                if on_progress(StreamWriteProgress::new(written, StreamLength::Known(size))).is_break() {
                     return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                 }
             }

@@ -6,13 +6,14 @@
 //! a file as a stream is `read_stream`.
 
 use super::SmbVolume;
+use super::checkpointed_write::{Kept, Streamed};
 use super::dfs_links::is_behind_dfs_link;
 use super::session::{LeaseOn, SessionLease, TransferLease};
 use super::stamping::{source_times, stamped};
 use super::state::RanOn;
 use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::metadata::{ClassOutcome, MetadataClasses, Xattr};
+use cmdr_fs::metadata::{CarriedMetadata, ClassOutcome, MetadataClasses, Xattr};
 use cmdr_fs::pluralize::pluralize_grouped;
 use cmdr_fs::volume::{MutationEvent, StreamLength, StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode};
 use log::debug;
@@ -75,20 +76,36 @@ pub(super) fn one_frame_write_limit(dest_is_scratch: bool, max_write: u64, quick
     }
 }
 
+/// What a write learned closing its file, for its report.
+pub(super) struct ClosedWriter {
+    pub(super) xattrs_kept: ClassOutcome,
+    /// The server refused the dates.
+    pub(super) times_refused: bool,
+    /// The bytes the server acknowledged once `finish()` drained the window.
+    pub(super) confirmed: u64,
+}
+
+/// What a write puts on its file beside the bytes, asked of the source stream
+/// once, before its first chunk.
+pub(super) struct CarriedForWrite {
+    carried: CarriedMetadata,
+    times: Option<smb2::FileTimes>,
+}
+
+/// What [`SmbVolume::close_writer`] puts on a streamed-into file, and the
+/// session it does that on beside the writer.
+pub(super) struct WriteCarries<'a> {
+    pub(super) tree: &'a smb2::client::Tree,
+    /// For the xattrs beside the writer, which owns its own connection.
+    pub(super) side_conn: &'a mut smb2::client::Connection,
+    pub(super) carried: &'a CarriedForWrite,
+}
+
 /// A source that yielded `got` bytes after declaring `StreamLength::Known(declared)`,
 /// refused the way the other backends' uploads refuse it. The copy engine holds
 /// its streams to the same promise before this sees them
 /// (`crates/cmdr-operations/src/transfer/volume/source_reads.rs`); this is the
 /// backend's own guard for every other caller.
-/// What [`SmbVolume::close_writer`] learned closing a streamed write.
-struct ClosedWriter {
-    xattrs_kept: ClassOutcome,
-    /// The server refused the dates.
-    times_refused: bool,
-    /// The bytes the server acknowledged once `finish()` drained the window.
-    confirmed: u64,
-}
-
 fn source_broke_its_length(smb_path: &str, got: u64, declared: u64) -> VolumeError {
     VolumeError::IoError {
         message: ErrorDetail::path_then(
@@ -213,21 +230,22 @@ impl SmbVolume {
     /// bump on `streams_xattr` (`DETAILS.md` § "Xattrs on copies"). On any
     /// failure it closes the handle first (`abort()`, or `finish()` already
     /// consumed it) and then runs `delete_partial`, so a half-written file never
-    /// keeps the user's name.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "one write's context, used by its two streaming paths"
-    )]
-    async fn close_writer<F: Future<Output = ()>>(
+    /// keeps the user's name, unless `kept` lets a transport fault leave it
+    /// for a continuation (`SmbVolume::settle_partial`).
+    pub(super) async fn close_writer<F: Future<Output = ()>>(
         &self,
         mut writer: smb2::client::stream::FileWriter,
-        (tree, side_conn): (&smb2::client::Tree, &mut smb2::client::Connection),
         smb_path: &str,
         ran_on: RanOn,
-        xattrs: &[Xattr],
-        times: Option<smb2::FileTimes>,
+        WriteCarries {
+            tree,
+            side_conn,
+            carried,
+        }: WriteCarries<'_>,
+        kept: Option<Kept>,
         delete_partial: &impl Fn() -> F,
     ) -> Result<ClosedWriter, VolumeError> {
+        let xattrs: &[Xattr] = &carried.carried.xattrs;
         let xattrs_kept = match self
             .put_copied_xattrs(tree, side_conn, smb_path, ran_on, xattrs, false)
             .await
@@ -235,19 +253,19 @@ impl SmbVolume {
             Ok(kept) => kept,
             Err(ve) => {
                 let _ = writer.abort().await;
-                delete_partial().await;
+                self.settle_partial(&ve, kept, smb_path, delete_partial).await;
                 return Err(ve);
             }
         };
         let mut times_refused = false;
-        if let Some(times) = times {
+        if let Some(times) = carried.times {
             match self.stamp_writer(&mut writer, times, smb_path, ran_on).await {
                 Ok(took) => times_refused = !took,
                 Err(ve) => {
                     // The connection died under the stamp: the same cleanup as
                     // a failed chunk.
                     let _ = writer.abort().await;
-                    delete_partial().await;
+                    self.settle_partial(&ve, kept, smb_path, delete_partial).await;
                     return Err(ve);
                 }
             }
@@ -260,10 +278,95 @@ impl SmbVolume {
                 confirmed,
             }),
             Err(ve) => {
-                delete_partial().await;
+                self.settle_partial(&ve, kept, smb_path, delete_partial).await;
                 Err(ve)
             }
         }
+    }
+
+    /// What the write takes from the stream beside its bytes. The creation
+    /// date and Hidden ride the dates' frame; Read-only waits for the landing
+    /// (the copy's `apply_metadata`). The xattrs go on as named streams before
+    /// the dates, on a share that has them (`copy_xattrs.rs`). A share has no
+    /// mode.
+    pub(super) fn carried_for_write(&self, stream: &dyn VolumeReadStream) -> CarriedForWrite {
+        let wanted = self
+            .metadata_caps()
+            .stores
+            .intersection(MetadataClasses::CREATED | MetadataClasses::FLAGS | MetadataClasses::XATTRS);
+        let carried = stream.metadata(wanted);
+        let times = source_times(stream.modified_at(), carried.created, carried.flags);
+        CarriedForWrite { carried, times }
+    }
+
+    /// Best-effort delete of a partial file on a FRESH cloned session.
+    ///
+    /// Once a `FileWriter` is open and bytes have streamed into it, an early
+    /// error (source read error, `write_chunk` / `finish` failure) would
+    /// otherwise leave a half-written file at the real destination name
+    /// (AGENTS.md principle #4: a failed copy must not leave corrupt bytes under
+    /// the user's intended name). The delete runs on a fresh session because the
+    /// writer's own connection may be gone. The caller MUST close the leaked
+    /// write handle first (`writer.abort()` where the writer is still owned),
+    /// else this delete hits a sharing violation against the still-open handle.
+    pub(super) fn partial_deleter<'a>(
+        &'a self,
+        smb_path: &'a str,
+    ) -> impl Fn() -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> + 'a {
+        move || {
+            Box::pin(async move {
+                if let Ok(SessionLease {
+                    tree,
+                    mut conn,
+                    generation,
+                }) = self.clone_session().await
+                {
+                    match tree.delete_file(&mut conn, smb_path).await {
+                        Ok(()) => self.delete_apple_double_sidecar(&tree, &conn, smb_path).await,
+                        Err(e) if is_behind_dfs_link(&e) => {
+                            let _ = self
+                                .inner
+                                .link_delete_file(generation.into(), &LeaseOn::Main, &tree, smb_path)
+                                .await;
+                        }
+                        Err(_) => {}
+                    }
+                }
+            })
+        }
+    }
+
+    /// A write's last step: the listing patch, then its report.
+    ///
+    /// The patch comes from local knowledge so the destination pane sees the
+    /// new file without waiting for a CHANGE_NOTIFY round-trip. The SMB watcher
+    /// has a loss window between consecutive `next_events()` calls; relying on
+    /// it alone left bulk cross-volume copies showing only a subset of the
+    /// just-copied files until the user navigated away and back.
+    pub(super) async fn written(
+        &self,
+        dest: &Path,
+        closed: ClosedWriter,
+        carried: &CarriedForWrite,
+        modified_at: Option<std::time::SystemTime>,
+    ) -> StreamWritten {
+        if let (Some(parent), Some(name)) = (dest.parent(), dest.file_name())
+            && let Some(parent_display) = self.display_path_for(parent)
+        {
+            self.notify_mutation(
+                &self.inner.volume_id,
+                &parent_display,
+                MutationEvent::Created(name.to_string_lossy().to_string()),
+            )
+            .await;
+        }
+        stamped(
+            closed.confirmed,
+            &carried.carried,
+            modified_at,
+            closed.times_refused,
+            closed.xattrs_kept,
+        )
     }
 
     /// Inherent body for the `write_is_single_shot` trait method (thin delegator
@@ -323,50 +426,11 @@ impl SmbVolume {
                 ran_on,
                 on,
             } = self.transfer_lease().await?;
-            // The creation date and Hidden ride the dates' frame; Read-only
-            // waits for the landing (the copy's `apply_metadata`). The xattrs
-            // go on as named streams before the dates, on a share that has
-            // them (`copy_xattrs.rs`). A share has no mode.
-            let wanted = self
-                .metadata_caps()
-                .stores
-                .intersection(MetadataClasses::CREATED | MetadataClasses::FLAGS | MetadataClasses::XATTRS);
-            let carried = stream.metadata(wanted);
-            let times = source_times(stream.modified_at(), carried.created, carried.flags);
-            // Set when the server refuses `times`, for the write's report.
-            let mut times_refused = false;
-            // What became of the xattrs, for the write's report.
-            let xattrs_kept: ClassOutcome;
-
-            // Best-effort delete of a partial file on a FRESH cloned session.
-            // Once a `FileWriter` is open and bytes have streamed into it, an
-            // early error (source read error, `write_chunk` / `finish`
-            // failure) would otherwise leave a half-written file at the real
-            // destination name (AGENTS.md principle #4: a failed copy must not
-            // leave corrupt bytes under the user's intended name). The delete
-            // runs on a fresh session because the writer's own connection may
-            // be gone. The caller MUST close the leaked write handle first
-            // (`writer.abort()` where the writer is still owned), else this
-            // delete hits a sharing violation against the still-open handle.
-            let delete_partial = || async {
-                if let Ok(SessionLease {
-                    tree,
-                    mut conn,
-                    generation,
-                }) = self.clone_session().await
-                {
-                    match tree.delete_file(&mut conn, &smb_path).await {
-                        Ok(()) => self.delete_apple_double_sidecar(&tree, &conn, &smb_path).await,
-                        Err(e) if is_behind_dfs_link(&e) => {
-                            let _ = self
-                                .inner
-                                .link_delete_file(generation.into(), &LeaseOn::Main, &tree, &smb_path)
-                                .await;
-                        }
-                        Err(_) => {}
-                    }
-                }
-            };
+            let carried = self.carried_for_write(&*stream);
+            let delete_partial = self.partial_deleter(&smb_path);
+            // A temp of a staged write: never left behind by a checkpoint it
+            // didn't reach, and carried on past one (`checkpointed_write.rs`).
+            self.inner.write_checkpoints.forget(&smb_path);
 
             // Compound fast-path: when the caller promised a size that fits
             // in one WRITE, drain the source stream into a buffer and send
@@ -393,7 +457,7 @@ impl SmbVolume {
             // limit as it is now, the user's real name keeps the limit any
             // promise could have been made under.
             let dest_is_scratch = is_scratch_name(dest);
-            let bytes_written = 'write: {
+            let closed = 'write: {
                 let max_write = conn
                     .params()
                     .map(|p| p.max_write_size as u64)
@@ -419,11 +483,8 @@ impl SmbVolume {
                         // as the streaming fallback below. Cancel here aborts
                         // before the compound WRITE touches the wire: the
                         // destination never sees a partial file.
-                        if on_progress(cmdr_fs::volume::StreamWriteProgress {
-                            bytes_written: buffer.len() as u64,
-                            expected_length: length,
-                        })
-                        .is_break()
+                        if on_progress(cmdr_fs::volume::StreamWriteProgress::new(buffer.len() as u64, length))
+                            .is_break()
                         {
                             return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                         }
@@ -479,9 +540,17 @@ impl SmbVolume {
                         // Before the dates: a stream write moves the file's
                         // date on `streams_xattr`. A lost connection fails the
                         // write with no cleanup, as the stamp's does below.
-                        xattrs_kept = self
-                            .put_copied_xattrs(&tree, &mut conn, &smb_path, ran_on, &carried.xattrs, through_link)
+                        let xattrs_kept = self
+                            .put_copied_xattrs(
+                                &tree,
+                                &mut conn,
+                                &smb_path,
+                                ran_on,
+                                &carried.carried.xattrs,
+                                through_link,
+                            )
                             .await?;
+                        let mut times_refused = false;
                         // The frame's CLOSE already stamped the server's own
                         // dates, so these go by path, after it. A refusal
                         // keeps the server's; a lost connection fails the
@@ -489,7 +558,7 @@ impl SmbVolume {
                         // CLOSE already ran and the name may be the user's
                         // real one, so the transfer settles it
                         // (`settle_unanswered_create`).
-                        if let Some(times) = times {
+                        if let Some(times) = carried.times {
                             let stamp = match through_link {
                                 false => tree.set_times(&mut conn, &smb_path, times).await,
                                 true => match self.inner.link_set_times(ran_on, &on, &tree, &smb_path, times).await {
@@ -502,7 +571,11 @@ impl SmbVolume {
                             };
                             times_refused = !self.stamp_taken(&smb_path, ran_on, stamp)?;
                         }
-                        break 'write written;
+                        break 'write ClosedWriter {
+                            xattrs_kept,
+                            times_refused,
+                            confirmed: written,
+                        };
                     }
                     // The window shrank after the limit was read, and smb2
                     // refused the frame before anything reached the wire. A
@@ -537,20 +610,20 @@ impl SmbVolume {
                     }
                     // The source signalled end-of-stream by returning None
                     // above (we exited the drain loop). No further chunks.
+                    // One frame's worth: no checkpoint to keep, so nothing
+                    // for a continuation.
+                    let carries = WriteCarries {
+                        tree: &tree,
+                        side_conn: &mut side_conn,
+                        carried: &carried,
+                    };
                     let closed = self
-                        .close_writer(
-                            writer,
-                            (&tree, &mut side_conn),
-                            &smb_path,
-                            ran_on,
-                            &carried.xattrs,
-                            times,
-                            &delete_partial,
-                        )
+                        .close_writer(writer, &smb_path, ran_on, carries, None, &delete_partial)
                         .await?;
-                    xattrs_kept = closed.xattrs_kept;
-                    times_refused = closed.times_refused;
-                    break 'write buffer.len() as u64;
+                    break 'write ClosedWriter {
+                        confirmed: buffer.len() as u64,
+                        ..closed
+                    };
                 }
 
                 // Streaming path for large / unknown-size writes. Drives the
@@ -560,124 +633,27 @@ impl SmbVolume {
                 // For the xattrs beside the writer, which owns `conn`.
                 let mut side_conn = conn.clone();
                 let writer_result = self.open_writer(&tree, conn, (ran_on, &on), &smb_path, mode).await;
-                let mut writer = self.handle_smb_result("write_from_stream(open)", &smb_path, ran_on, writer_result)?;
-
-                loop {
-                    let chunk = match stream.next_chunk().await {
-                        None => break,
-                        Some(Ok(chunk)) => chunk,
-                        Some(Err(e)) => {
-                            // Source read error with the writer already open:
-                            // abort (closes the leaked handle), delete the
-                            // partial, then propagate the original error.
-                            let _ = writer.abort().await;
-                            delete_partial().await;
-                            return Err(e);
-                        }
-                    };
-                    if chunk.is_empty() {
-                        continue;
-                    }
-
-                    let write_result = writer.write_chunk(&chunk).await;
-                    if let Err(ve) =
-                        self.handle_smb_result("write_from_stream(write_chunk)", &smb_path, ran_on, write_result)
-                    {
-                        let _ = writer.abort().await;
-                        delete_partial().await;
-                        return Err(ve);
-                    }
-
-                    // `bytes_written()` is what the SERVER has acknowledged, not what
-                    // we handed to the pipeline. `write_chunk` returns as soon as the
-                    // chunk's WRITEs are on the wire, inside smb2's write-behind window,
-                    // so the two numbers differ by up to a full window per file (up to
-                    // 4 MiB, or 32 WRITEs on a fixed window) — and by
-                    // `concurrency x window` across an operation.
-                    //
-                    // Gotcha/Why: reporting the accepted count here made progress a
-                    // lie that compounded. In ERR-9WZRR (10-wide copy of 66 MB files
-                    // to a NAS over a 6.7 MB/s link) ~320 MiB sat queued client-side,
-                    // so the bar raced ahead by ~48 s of wire time, then flatlined
-                    // while the queue drained; the transfer watchdog read the flatline
-                    // as "no byte movement for 20s" on a perfectly healthy copy, and
-                    // the ETA was built on bytes nothing had committed. The staging
-                    // rename is the only durability signal that matters, and it lands
-                    // on the acknowledged count. ❌ Don't report accepted bytes to make
-                    // the bar move sooner: the wait is real and hiding it is what cost
-                    // us the diagnosis.
-                    //
-                    // Called on EVERY chunk even when the count hasn't moved, because
-                    // this is also the cancel poll (`ControlFlow::Break` below).
-                    if on_progress(cmdr_fs::volume::StreamWriteProgress {
-                        bytes_written: writer.bytes_written(),
-                        expected_length: length,
-                    }) == std::ops::ControlFlow::Break(())
-                    {
-                        // Abort drains in-flight WRITE responses and closes the
-                        // handle without the server-side fsync that `finish()`
-                        // would force (we're about to delete the partial file
-                        // anyway). Dropping directly would leave stale responses
-                        // on the connection and poison the next op.
-                        let _ = writer.abort().await;
-                        // Best-effort delete of the partial file on its own
-                        // cloned connection (the writer's connection is gone).
-                        delete_partial().await;
-                        return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
-                    }
-                }
-
-                let closed = self
-                    .close_writer(
-                        writer,
-                        (&tree, &mut side_conn),
-                        &smb_path,
-                        ran_on,
-                        &carried.xattrs,
-                        times,
-                        &delete_partial,
-                    )
-                    .await?;
-                xattrs_kept = closed.xattrs_kept;
-                times_refused = closed.times_refused;
-                let confirmed = closed.confirmed;
-
-                // `finish()` drains the whole window, so the last chunks are confirmed
-                // only now. Without this call the file's progress would stop up to a
-                // window short of its size and never reach 100%. Its `ControlFlow` is
-                // deliberately ignored: the bytes are committed and the handle closed,
-                // so there is nothing left here for a cancel to stop.
-                let _ = on_progress(cmdr_fs::volume::StreamWriteProgress {
-                    bytes_written: confirmed,
-                    expected_length: length,
-                });
-
-                confirmed
+                let writer = self.handle_smb_result("write_from_stream(open)", &smb_path, ran_on, writer_result)?;
+                let streamed = Streamed {
+                    smb_path: &smb_path,
+                    ran_on,
+                    length,
+                    on_progress,
+                    // A temp checkpoints so an outage can carry it on; the
+                    // user's real name never streams a partial worth keeping.
+                    continuable: dest_is_scratch,
+                    created: None,
+                };
+                let carries = WriteCarries {
+                    tree: &tree,
+                    side_conn: &mut side_conn,
+                    carried: &carried,
+                };
+                self.stream_into_writer(writer, &streamed, &mut *stream, carries, &delete_partial)
+                    .await?
             };
 
-            // Patch the listing cache from local knowledge so the destination
-            // pane sees the new file without waiting for a CHANGE_NOTIFY
-            // round-trip. The SMB watcher has a loss window between
-            // consecutive `next_events()` calls; relying on it alone left
-            // bulk cross-volume copies showing only a subset of the just-
-            // copied files until the user navigated away and back.
-            if let (Some(parent), Some(name)) = (dest.parent(), dest.file_name())
-                && let Some(parent_display) = self.display_path_for(parent)
-            {
-                self.notify_mutation(
-                    &self.inner.volume_id,
-                    &parent_display,
-                    MutationEvent::Created(name.to_string_lossy().to_string()),
-                )
-                .await;
-            }
-            Ok(stamped(
-                bytes_written,
-                &carried,
-                stream.modified_at(),
-                times_refused,
-                xattrs_kept,
-            ))
+            Ok(self.written(dest, closed, &carried, stream.modified_at()).await)
         })
     }
 }

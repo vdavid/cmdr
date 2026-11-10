@@ -505,10 +505,7 @@ impl Volume for BufferingDest {
             }
             self.inner.create_file(dest, &bytes).await?;
             let written = bytes.len() as u64;
-            let _ = on_progress(StreamWriteProgress {
-                bytes_written: written,
-                expected_length: length,
-            });
+            let _ = on_progress(StreamWriteProgress::new(written, length));
             Ok(StreamWritten::nothing_refused(written))
         })
     }

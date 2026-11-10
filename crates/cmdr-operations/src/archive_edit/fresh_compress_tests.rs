@@ -291,12 +291,7 @@ impl Volume for GatedDestination {
                         raw_os_error: None,
                     });
                 }
-                if on_progress(StreamWriteProgress {
-                    bytes_written: written,
-                    expected_length: length,
-                })
-                .is_break()
-                {
+                if on_progress(StreamWriteProgress::new(written, length)).is_break() {
                     self.stopped_by_break.store(true, Ordering::SeqCst);
                     return Err(VolumeError::Cancelled(dest.display().to_string().into()));
                 }

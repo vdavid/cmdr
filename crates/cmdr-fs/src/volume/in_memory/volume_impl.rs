@@ -845,10 +845,8 @@ impl Volume for InMemoryVolume {
                     data.push(&chunk);
                     self.breathe().await;
 
-                    if on_progress(StreamWriteProgress {
-                        bytes_written,
-                        expected_length: StreamLength::Known(size),
-                    }) == std::ops::ControlFlow::Break(())
+                    if on_progress(StreamWriteProgress::in_order(bytes_written, StreamLength::Known(size)))
+                        == std::ops::ControlFlow::Break(())
                     {
                         // `Cancelled`, as every real backend answers a stopped stream:
                         // an `IoError` here made a cancelled copy end in `write-error`.

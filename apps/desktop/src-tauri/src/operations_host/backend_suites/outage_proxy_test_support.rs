@@ -30,6 +30,8 @@ struct Shared {
     live: Mutex<Vec<JoinHandle<()>>>,
     /// Every byte the server sent the client, across every connection.
     to_client: AtomicU64,
+    /// Every byte the client sent the server, likewise.
+    to_server: AtomicU64,
 }
 
 impl OutageProxy {
@@ -43,6 +45,7 @@ impl OutageProxy {
             up: AtomicBool::new(true),
             live: Mutex::new(Vec::new()),
             to_client: AtomicU64::new(0),
+            to_server: AtomicU64::new(0),
         });
         let accepting = Arc::clone(&shared);
         let listener = tokio::spawn(async move {
@@ -88,6 +91,12 @@ impl OutageProxy {
     pub(crate) fn bytes_to_client(&self) -> u64 {
         self.shared.to_client.load(Ordering::SeqCst)
     }
+
+    /// Every byte the client has sent through the proxy so far: a file
+    /// uploaded twice shows.
+    pub(crate) fn bytes_to_server(&self) -> u64 {
+        self.shared.to_server.load(Ordering::SeqCst)
+    }
 }
 
 impl Drop for OutageProxy {
@@ -100,29 +109,36 @@ impl Drop for OutageProxy {
 }
 
 async fn forward(client: TcpStream, target_port: u16, shared: Arc<Shared>) {
-    use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
     let Ok(server) = TcpStream::connect(("127.0.0.1", target_port)).await else {
         return;
     };
     let (mut client_reads, mut client_writes) = client.into_split();
     let (mut server_reads, mut server_writes) = server.into_split();
-    let up = tokio::io::copy(&mut client_reads, &mut server_writes);
     // Counted as it goes, so a connection `cut` aborts still counts.
-    let down = async {
-        let mut buf = vec![0u8; 64 * 1024];
-        loop {
-            let n = server_reads.read(&mut buf).await?;
-            if n == 0 {
-                return Ok::<(), std::io::Error>(());
-            }
-            client_writes.write_all(&buf[..n]).await?;
-            shared.to_client.fetch_add(n as u64, Ordering::SeqCst);
-        }
-    };
+    let up = pump(&mut client_reads, &mut server_writes, &shared.to_server);
+    let down = pump(&mut server_reads, &mut client_writes, &shared.to_client);
     // Ends when either side closes, or when `cut` aborts this task, which drops
     // both sockets.
     tokio::select! {
         _ = up => {}
         _ = down => {}
+    }
+}
+
+/// Copies `from` into `to` until either closes, adding each byte to `count`.
+async fn pump(
+    from: &mut (impl tokio::io::AsyncRead + Unpin),
+    to: &mut (impl tokio::io::AsyncWrite + Unpin),
+    count: &AtomicU64,
+) -> std::io::Result<()> {
+    use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
+    let mut buf = vec![0u8; 64 * 1024];
+    loop {
+        let n = from.read(&mut buf).await?;
+        if n == 0 {
+            return Ok(());
+        }
+        to.write_all(&buf[..n]).await?;
+        count.fetch_add(n as u64, Ordering::SeqCst);
     }
 }

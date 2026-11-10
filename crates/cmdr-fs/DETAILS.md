@@ -1136,10 +1136,13 @@ publishes every write whole (an object store's PUT). Only the transfer engine's 
 and what it does NOT promise are on the trait method, the engine side in
 `crates/cmdr-operations/src/transfer/volume/DETAILS.md` § "Whole-publish destinations".
 
-Write callbacks receive one `StreamWriteProgress { bytes_written, expected_length }` value. The structured payload keeps
-cumulative progress and its denominator named rather than relying on two confusable positional `u64`s. For a known
-write, every update carries the original `Known` length and existing mismatch and cancellation behavior remains
-unchanged.
+Write callbacks receive one `StreamWriteProgress` value (`src/volume/write_progress.rs`, beside `StreamLength`). The
+structured payload keeps cumulative progress and its denominator named rather than relying on two confusable positional
+`u64`s. For a known write, every update carries the original `Known` length. Its third field, `continues_from`, is the
+proven contiguous prefix a failed write can be carried on from (`Volume::continues_writes`), kept apart from
+`bytes_written` because a pipelined destination's live count runs ahead of what it has proven (SMB's checkpoints:
+`crates/cmdr-smb/DETAILS.md` § "Carrying an upload on"). Build it with `new` (proves nothing, `0`) or `in_order` (the
+count is the prefix); a backend that proves its prefix separately adds `continuing_from`.
 
 `supports_atomic_replace_rename()` is a separate publication capability. It means `rename(from, to, force = true)`
 replaces `to` in one atomic filesystem operation, not that rename merely accepts a force flag. Local POSIX opts in. SMB

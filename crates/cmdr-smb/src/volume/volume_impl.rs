@@ -711,6 +711,24 @@ impl Volume for SmbVolume {
         self.write_from_stream_impl(dest, mode, length, stream, on_progress)
     }
 
+    /// Yes: a streamed write into a staging temp takes a FLUSH checkpoint every
+    /// `CHECKPOINT_EVERY` bytes and reports it as `continues_from`, and a
+    /// transport fault keeps the temp at it (`checkpointed_write.rs`).
+    fn continues_writes(&self) -> bool {
+        true
+    }
+
+    fn continue_write_from_stream<'a>(
+        &'a self,
+        target: &'a Path,
+        at: u64,
+        length: StreamLength,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<StreamWritten, VolumeError>> + Send + 'a>> {
+        self.continue_write_from_stream_impl(target, at, length, stream, on_progress)
+    }
+
     fn connection_state(&self) -> Option<cmdr_fs::volume::ConnectionState> {
         // Always `Some`: the switcher dot and the reconnect manager both key off
         // this value. The internal state machine is binary; the outer `OsMount`

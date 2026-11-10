@@ -147,6 +147,8 @@ impl SmbVolume {
         // A read of this file may still be closing on the transfer session, and a
         // delete overtaking that leaves the file listed (`closing_reads.rs`).
         self.inner.closing_reads.settled(&smb_path).await;
+        // A failed upload's temp the engine gives up on, rather than carries on.
+        self.inner.write_checkpoints.forget(&smb_path);
 
         // `delete_link` opens the entry's reparse point itself with no
         // file-or-directory condition, so one round trip takes a file, an empty

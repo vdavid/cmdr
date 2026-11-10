@@ -1034,3 +1034,120 @@ async fn smb_integration_a_download_carries_on_after_a_long_outage_instead_of_st
     );
     ensure_clean(&direct, &base).await;
 }
+
+/// The upload in [`smb_integration_an_upload_carries_on_after_a_long_outage_instead_of_starting_over`]:
+/// well past Samba's 8 MiB `max_write`, so it streams rather than going as one
+/// compound frame.
+const UPLOAD_BYTES: usize = 32 * 1024 * 1024;
+
+/// An upload to the share loses the network half-way and stays out past what
+/// the SMB backend bridges by itself, so the operation's own outage wait
+/// carries it. Once the network is back the temp carries on from its last
+/// FLUSH checkpoint (`crates/cmdr-smb/DETAILS.md` § "Carrying an upload on"):
+/// it lands byte for byte, and the file goes up about once rather than half of
+/// it twice.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_an_upload_carries_on_after_a_long_outage_instead_of_starting_over() {
+    let direct = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&direct, &base).await;
+    direct
+        .create_directory(Path::new(&base))
+        .await
+        .expect("the scratch dir");
+    let data = content(2).into_iter().cycle().take(UPLOAD_BYTES).collect::<Vec<u8>>();
+    let local = tempfile::TempDir::new().expect("a local source dir");
+    std::fs::write(local.path().join("big.bin"), &data).expect("the file on the local disk");
+    let disk: Arc<dyn Volume> = Arc::new(cmdr_local::LocalPosixVolume::local_folder(
+        "source",
+        local.path().to_path_buf(),
+        crate::volume_host::host(),
+    ));
+
+    let proxy = Arc::new(OutageProxy::start(guest_port()).await);
+    let through = make_docker_volume_through(proxy.port(), crate::volume_host::host()).await;
+    // Small enough that half the file holds several checkpoints.
+    set_checkpoint_every(&through, 2 * 1024 * 1024);
+    let share: Arc<dyn Volume> = Arc::new(through);
+
+    let engine = TestOperations::new();
+    let state = Arc::new(
+        new_operation_state(&engine, Duration::from_millis(50)).with_outage_policy(OutagePolicy {
+            budget: Duration::from_secs(60),
+            cadence: CADENCE,
+            poll_every: Duration::from_millis(20),
+            attempt_timeout: Duration::from_secs(5),
+        }),
+    );
+    let op = engine.register_state("smb-outage-upload-resume", Arc::clone(&state));
+    let events = Arc::new(CollectorEventSink::new());
+    // Cuts the network half-way through the file, from the copy's own emit.
+    let cutting = Arc::clone(&proxy);
+    let cut = std::sync::atomic::AtomicBool::new(false);
+    let sink: Arc<dyn OperationEventSink> = Arc::new(ProgressTap {
+        inner: Arc::clone(&events),
+        tap: Box::new(move |event| {
+            let due =
+                matches!(event.phase, WriteOperationPhase::Copying) && event.bytes_done >= UPLOAD_BYTES as u64 / 2;
+            if due && !cut.swap(true, Ordering::SeqCst) {
+                cutting.cut();
+            }
+        }),
+    });
+
+    let copy_state = Arc::clone(&state);
+    let op_id = op.id().to_owned();
+    let dest = PathBuf::from(&base);
+    let copy = tokio::spawn(async move {
+        copy_volumes_with_progress(
+            sink,
+            op_id.as_str(),
+            &copy_state,
+            disk,
+            &[PathBuf::from("big.bin")],
+            share,
+            &dest,
+            &VolumeCopyConfig {
+                progress_interval_ms: 0,
+                ..VolumeCopyConfig::default()
+            },
+        )
+        .await
+        .map_err(|failure| format!("{:?}", failure.error))
+    });
+
+    // Past the backend's own reconnect tries (about 15 s), the operation waits.
+    wait_until_async(Duration::from_secs(45), "the copy to wait for the share", || {
+        state.outage.waiting_for().is_some()
+    })
+    .await;
+    proxy.restore();
+    let clock = CellClock::start();
+    while_copying(&clock, &events, "the copy to finish once the network is back", || {
+        copy.is_finished()
+    })
+    .await;
+    copy.await
+        .expect("the copy task itself must not panic")
+        .expect("a share that comes back within the budget must not fail the copy");
+
+    let landed = PathBuf::from(&base).join("big.bin");
+    assert_eq!(
+        hash_volume_file(&*direct, &landed).await,
+        hash_bytes(&data),
+        "the upload lands byte for byte"
+    );
+    assert!(
+        temps_in(&direct, &base).await.is_empty(),
+        "the carried-on temp is the one that landed"
+    );
+    // A restart would send the first half twice: at least 1.5 times the file.
+    // Carried on, only what was past the last checkpoint at the cut goes again.
+    let sent = proxy.bytes_to_server();
+    assert!(
+        sent < UPLOAD_BYTES as u64 * 13 / 10,
+        "the copy sent {sent} bytes for a {UPLOAD_BYTES}-byte file: the upload started over" // allowed-pluralize-noun: a test failure message, never a count shown to a person
+    );
+    ensure_clean(&direct, &base).await;
+}

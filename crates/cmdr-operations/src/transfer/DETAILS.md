@@ -2322,16 +2322,19 @@ big file from ever finishing. The backend's own reconnect (SMB's `resume.rs`, ab
 is what the engine's 15-minute wait now hands back to.
 
 **How** (`volume/stream_pipe.rs`, `volume/stream_pipe_steps.rs`): `write` builds a `CarryOn` (the version, the confirmed
-byte count fed by the destination's own progress, and what the landing needs), and a `Fault::Write` carries it.
-`FileRun::carry_on_or_clear` turns it into a `Continuation` instead of `abandon_attempt` wherever the file would run
-again. The next pass's `continue_write` asks `Volume::resume_read_stream(path, version, at)`, wraps the stream as an
-open does (`remember`ed metadata, `source_reads::watch` held to the bytes LEFT, quarantine), and streams into
+byte count fed by the destination's `StreamWriteProgress::continues_from`, and what the landing needs), and a
+`Fault::Write` carries it. `FileRun::carry_on_or_clear` turns it into a `Continuation` instead of `abandon_attempt`
+wherever the file would run again. The next pass's `continue_write` asks
+`Volume::resume_read_stream(path, version, at)`, wraps the stream as an open does (`remember`ed metadata,
+`source_reads::watch` held to the bytes LEFT, quarantine), and streams into
 `Volume::continue_write_from_stream(temp, at, ...)`, through the same `stream_into` a fresh write takes (yield, stall
 watchdog, tier 2), then lands as usual.
 
-- **Every byte once.** The carry-on point is the destination's last progress count, which `continues_writes` promises is
-  a contiguous prefix of the target; the destination cuts the temp to it before writing. A destination whose writes land
-  out of order (SMB's pipelined WRITEs are counted as they're answered) says no until it can name a proven offset.
+- **Every byte once.** The carry-on point is the destination's last `continues_from`, which `continues_writes` promises
+  is a contiguous prefix of the target, ❌ never its live count (`bytes_written`, what the bar shows). The destination
+  writes from it and leaves nothing past the file's end. An in-order destination reports its count
+  (`StreamWriteProgress::in_order`); SMB, whose pipelined WRITEs are answered out of order, reports its last FLUSH
+  checkpoint.
 - **❗ Proof before bytes, ❌ never a splice.** The source's backend checks the version before reading: a file that
   changed meanwhile is `VolumeError::SourceChanged`, the temp goes (`abandon`), and the file fails as the source having
   changed, which the person reads as such. ❌ Not a quiet restart either: a copy that silently took a different version
@@ -2341,8 +2344,8 @@ watchdog, tier 2), then lands as usual.
   first chunk, and stamps the answers after its last, so the resumed stream replays the first one's answers by what was
   asked, and no backend has to learn them again.
 - **Falls back, never fails, on "can't".** `NotSupported` from either end (a source that named a version another backend
-  can't read, a destination temp that's gone or shorter than the count) clears the temp and runs the file again from its
-  first byte. A transport fault while reopening keeps the continuation and takes the outage wait again.
+  can't read, a destination temp that's gone, replaced, or shorter than the point) clears the temp and runs the file
+  again from its first byte. A transport fault while reopening keeps the continuation and takes the outage wait again.
 
 **Where each backend stands.** A backend whose offset open already learns the version names it
 `SourceVersion::comparable` (its own "same file" rule) and takes the trait's default `resume_read_stream`: the offset
@@ -2352,16 +2355,22 @@ compound small-file read names none), S3 and WebDAV (`cmdr_fs::volume::HttpEntit
 and the length; a weak ETag never counts), NFS (`fsid`, `fileid`, length, both times), SFTP (length and date,
 best-effort: a same-size rewrite inside the second passes), a local disk (device, inode, length, both times to the
 nanosecond), and `InMemoryVolume`. MTP, ADB, archives, and the git portal name no version and start over. Destinations
-that continue: a local disk (`write_all` in order, so its progress is a prefix) and
-`InMemoryVolume::with_continuable_writes`. So today a DOWNLOAD to the Mac carries on; an UPLOAD still starts over until
-a remote destination can name a proven offset (SMB could, with a periodic `FileWriter::flush_checkpoint`).
+that continue: a local disk (`write_all` in order, so its progress is a prefix), SMB (a FLUSH checkpoint every 64 MiB,
+proven by identity and creation time before it carries on: `crates/cmdr-smb/DETAILS.md` § "Carrying an upload on",
+measurements included), and `InMemoryVolume::with_continuable_writes`. So a DOWNLOAD to the Mac and an UPLOAD to an SMB
+share carry on. SFTP, WebDAV, NFS, and S3 destinations say no until one can name a proven offset (S3: a multipart
+upload's completed parts could be).
 
 Pinned by `volume/copy_resume_tests.rs` (server-free, through the real pipeline: carried on from ~320 KiB with the
 source read once over, a file rewritten during the outage refused with nothing left, a destination that can't continue
 starting over), each backend's resume cell against its Docker fixture, and the app's live
 `operations_host/backend_suites/smb_outage_test.rs::smb_integration_a_download_carries_on_after_a_long_outage_instead_of_starting_over`
 (a 32 MiB SMB → local download cut half-way and kept out past the backend's own tries: under 1.3× the file sent, where
-starting over sent 1.58×).
+starting over sent 1.58×), and its upload twin
+`smb_integration_an_upload_carries_on_after_a_long_outage_instead_of_starting_over` (local → SMB with 2 MiB checkpoints:
+under 1.3× sent, where starting over sent 1.50×, verified 2026-11-11). The SMB destination's hostile cases (a temp
+truncated, replaced, reborn, or holding a tail past the checkpoint) are
+`crates/cmdr-smb/src/volume/checkpointed_write_integration_test.rs`.
 
 ### The watchdog ACTS
 

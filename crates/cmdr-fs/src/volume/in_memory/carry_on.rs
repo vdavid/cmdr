@@ -92,10 +92,8 @@ impl InMemoryVolume {
                 bytes_written += chunk.len() as u64;
                 data.push(&chunk);
                 self.breathe().await;
-                if on_progress(StreamWriteProgress {
-                    bytes_written,
-                    expected_length: StreamLength::Known(size),
-                }) == std::ops::ControlFlow::Break(())
+                if on_progress(StreamWriteProgress::in_order(bytes_written, StreamLength::Known(size)))
+                    == std::ops::ControlFlow::Break(())
                 {
                     return Err(VolumeError::Cancelled("Operation cancelled".into()));
                 }
