@@ -348,6 +348,7 @@ pub async fn execute_ai_search<R: tauri::Runtime>(app: &tauri::AppHandle<R>, par
     log::debug!("MCP ai_search: running search...");
     let t = std::time::Instant::now();
     let answer = run_search(query.clone(), None, budget).await.inspect_err(|e| {
+        // allowed-log-private: a `ToolError`'s agent-facing `String`, no typed value left to mark
         crate::log_error!("MCP ai_search: the search couldn't run: {}", e.message);
     })?;
     log::info!(
@@ -383,6 +384,7 @@ pub async fn execute_ai_search<R: tauri::Runtime>(app: &tauri::AppHandle<R>, par
         let answer = run_search(fallback_query.clone(), None, remaining)
             .await
             .inspect_err(|e| {
+                // allowed-log-private: a `ToolError`'s agent-facing `String`, no typed value left to mark
                 crate::log_error!("MCP ai_search: the fallback search couldn't run: {}", e.message);
             })?;
         log::info!(

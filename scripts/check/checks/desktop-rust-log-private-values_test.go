@@ -311,3 +311,88 @@ func TestReadsAsIdentity(t *testing.T) {
 		}
 	}
 }
+
+// pathErrorTypes declares two path-carrying errors the way the tree does, one
+// through `ErrorLogText` and one through `log_detail`, plus the struct that
+// holds the second, in a file of their own: the logging file never names them.
+const pathErrorTypes = `
+pub enum VolumeError { NotFound(String) }
+impl ErrorLogText for VolumeError {
+    fn write_log_text(&self, out: &mut ErrorText<'_>) -> fmt::Result { Ok(()) }
+}
+impl<T: ErrorLogText + ?Sized> ErrorLogText for &T {
+    fn write_log_text(&self, out: &mut ErrorText<'_>) -> fmt::Result { Ok(()) }
+}
+pub enum WriteOperationError { PermissionDenied { path: String } }
+impl WriteOperationError {
+    pub fn log_detail(&self) -> WriteErrorDetail { todo!() }
+}
+pub struct WriteFailure {
+    pub error: WriteOperationError,
+    pub attempt: u32,
+}
+`
+
+// The shape that shipped a file name holding ", " (cmdr-reports#103): a derived
+// `{:?}` of a `WriteOperationError` field, declared in another file.
+func TestLogPrivateValues_FlagsAPathCarryingErrorPrintedPlainly(t *testing.T) {
+	_, err := runLogPrivateOn(t, map[string]string{
+		"types.rs": pathErrorTypes,
+		"site.rs": `
+fn f(op_id: &str, failure: WriteFailure, e: &VolumeError) {
+    log::warn!(target: "move", "move operation {} failed: {:?}", op_id, failure.error);
+    log::warn!("couldn't delete: {}", e);
+    log::warn!("couldn't delete: {e}");
+    log::warn!("couldn't delete: {:?}", e.clone());
+}
+`,
+	})
+	if err == nil {
+		t.Fatal("expected the plainly printed errors to fail")
+	}
+	for _, want := range []string{
+		"site.rs:3 [path-carrying error: error]", "site.rs:4 [path-carrying error: e]",
+		"site.rs:5 [path-carrying error: e]", "site.rs:6 [path-carrying error: e]",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("expected %q, got:\n%s", want, err.Error())
+		}
+	}
+	if got := strings.Count(err.Error(), "  apps/desktop/src-tauri/src/site.rs:"); got != 4 {
+		t.Errorf("expected 4 findings, got %d:\n%s", got, err.Error())
+	}
+}
+
+// Marked, a scalar beside the error, a method (whose return type the scanner
+// can't see), and a generic named like the blanket impl's `T` all pass.
+func TestLogPrivateValues_PassesAPathCarryingErrorLoggedMarked(t *testing.T) {
+	expectLogPrivateClean(t, map[string]string{
+		"types.rs": pathErrorTypes,
+		"site.rs": `
+fn f(op_id: &str, failure: WriteFailure, e: &VolumeError, report: &Report, data: T) {
+    log::warn!("move operation {} failed: detail={:?}", op_id, failure.error.log_detail());
+    log::warn!("couldn't delete: {}", LogError(e));
+    log::warn!("couldn't delete: {e}", e = LogError(&e));
+    log::warn!("attempt {}", failure.attempt);
+    log::warn!("{}", report.error());
+    log::warn!("{:?}", data);
+}
+`,
+	})
+}
+
+func TestOuterTypeName(t *testing.T) {
+	for ty, want := range map[string]string{
+		"WriteOperationError":                               "WriteOperationError",
+		"&'a VolumeError":                                   "VolumeError",
+		"Option<cmdr_fs::volume::VolumeError>":              "VolumeError",
+		"Arc<Mutex<VolumeError>>":                           "Mutex",
+		"Result<PathBuf, VolumeError>":                      "PathBuf",
+		"VolumeError::NotSupported":                         "NotSupported",
+		"&mut Vec<Box<cmdr_fs::error_detail::ErrorDetail>>": "ErrorDetail",
+	} {
+		if got := outerTypeName(ty); got != want {
+			t.Errorf("outerTypeName(%q) = %q, want %q", ty, got, want)
+		}
+	}
+}

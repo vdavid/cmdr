@@ -68,6 +68,26 @@ impl ErrorText<'_> {
     pub fn error<E: ErrorLogText + ?Sized>(&mut self, inner: &E) -> fmt::Result {
         inner.write_log_text(self)
     }
+
+    /// Write a value as its JSON, for an error whose text IS the JSON IPC carries
+    /// (`WriteOperationError`): the plain JSON in plain text, and in a log line the same JSON
+    /// with each field marked by `kind_of` ([`log_json`](crate::log_json::log_json)).
+    pub fn json<T: serde::Serialize + ?Sized>(
+        &mut self,
+        value: &T,
+        kind_of: impl Fn(&str) -> crate::log_json::JsonField,
+    ) -> fmt::Result {
+        if self.marking {
+            // `log_json` replaced every reserved char that isn't one of its own marks.
+            self.out
+                .write_str(crate::log_json::log_json(value, kind_of).as_marked_text())
+        } else {
+            match serde_json::to_string(value) {
+                Ok(text) => self.out.write_str(&text),
+                Err(e) => write!(self.out, "(the value didn't serialize: {e})"),
+            }
+        }
+    }
 }
 
 /// The error's own words, and any foreign text it carries (an OS or server message). In a log

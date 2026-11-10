@@ -18,7 +18,7 @@ use super::super::types::{
     WriteSourceItemDoneEvent,
 };
 use cmdr_fs::error_detail::ErrorDetail;
-use cmdr_fs::log_error::{ErrorLogText, ErrorText, write_plain};
+use cmdr_fs::log_error::{ErrorLogText, ErrorText, LogError, write_plain};
 use cmdr_fs::log_private::LogPrivate;
 
 // ============================================================================
@@ -395,7 +395,7 @@ fn refused_summary(errors: &[TrashItemError]) -> ErrorDetail {
 }
 
 /// [`refused_summary`]'s cause: each refused item's path and the OS's words about it.
-struct RefusedSummary(Vec<(PathBuf, String)>);
+struct RefusedSummary(Vec<(PathBuf, ErrorDetail)>);
 
 impl std::fmt::Display for RefusedSummary {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -411,7 +411,8 @@ impl ErrorLogText for RefusedSummary {
                 out.write_str("; ")?;
             }
             out.value(LogPrivate::path(path))?;
-            write!(out, ": {message}")?;
+            out.write_str(": ")?;
+            out.error(message)?;
         }
         Ok(())
     }
@@ -421,7 +422,8 @@ impl ErrorLogText for RefusedSummary {
 #[derive(Debug, Clone)]
 pub(crate) struct TrashItemError {
     pub path: PathBuf,
-    pub message: String,
+    /// The OS's words, or the typed refusal, which marks its own paths in a log line.
+    pub message: ErrorDetail,
     /// Why the OS refused this one, kept as a value so the batch's terminal error can
     /// carry it. Without it the whole batch collapses to one sentence and the dialog
     /// has nothing to offer but "try again".
@@ -486,7 +488,7 @@ pub(crate) fn trash_files_with_progress(
             Err(error) => {
                 errors.push(TrashItemError {
                     path: source.clone(),
-                    message: "no longer exists".to_string(),
+                    message: "no longer exists".into(),
                     // A vanished source is not a permission problem; offering a grant
                     // as the fix would send the user somewhere useless.
                     reason: TrashRefusalKind::Other,
@@ -588,9 +590,9 @@ pub(crate) fn trash_files_with_progress(
                         _ => TrashRefusalKind::Other,
                     },
                     // The batch path reports through `WriteOperationError`, whose
-                    // own typed variant carries the words; this string is the
-                    // technical detail beside it, so `Display` is right here.
-                    message: e.to_string(),
+                    // own typed variant carries the words; this is the
+                    // technical detail beside it, kept typed so a log line marks its paths.
+                    message: ErrorDetail::of(e.clone()),
                     // `trashItemAtURL` is atomic, so a refusal left the item
                     // exactly where it was and its flags are still readable.
                     online_only: super::cloud_trash::is_online_only(source),
@@ -696,7 +698,11 @@ pub(crate) fn trash_files_with_progress(
             items_total
         );
         for error in &errors {
-            log::warn!("  Failed: {}: {}", LogPrivate::path(&error.path), error.message);
+            log::warn!(
+                "  Failed: {}: {}",
+                LogPrivate::path(&error.path),
+                LogError(&error.message)
+            );
         }
     }
 

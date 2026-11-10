@@ -344,7 +344,7 @@ async fn route_archive_create(
             .archive_edit_start(events, request, 200)
             .await
             .map_err(|e| MutationError::ArchiveEditCouldntStart {
-                detail: format!("{e:?}"),
+                detail: cmdr_fs::error_detail::ErrorDetail::of(e),
             })?;
     Ok(started.operation_id)
 }

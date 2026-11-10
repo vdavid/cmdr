@@ -195,11 +195,11 @@ pub async fn paste_clipboard_as_file(
         let _ = tx.send(data);
     })
     .map_err(|e| MutationError::Unexpected {
-        detail: format!("the main-thread hop didn't run: {e}"),
+        detail: format!("the main-thread hop didn't run: {e}").into(),
     })?;
 
     let data = rx.recv().map_err(|e| MutationError::Unexpected {
-        detail: format!("the pasteboard read didn't come back: {e}"),
+        detail: format!("the pasteboard read didn't come back: {e}").into(),
     })?;
 
     // 2. Pick the highest-intent flavor OFF the main thread, in a blocking task —
@@ -208,7 +208,7 @@ pub async fn paste_clipboard_as_file(
     let payload = tokio::task::spawn_blocking(move || clipboard::pick_clipboard_payload(data))
         .await
         .map_err(|e| MutationError::Unexpected {
-            detail: format!("the clipboard decode task didn't finish: {e}"),
+            detail: format!("the clipboard decode task didn't finish: {e}").into(),
         })?;
 
     // Tilde-expand for the local `root` volume only; volume paths are volume-relative.

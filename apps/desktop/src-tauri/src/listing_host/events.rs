@@ -223,6 +223,7 @@ impl ListingWire for tauri::AppHandle {
             batches,
         };
         if let Err(e) = diff.emit(self) {
+            // allowed-log-private: Tauri's emit error, which names no path
             log::warn!("diff_emitter: couldn't emit batched event: {}", e);
         }
     }
@@ -233,6 +234,7 @@ impl ListingWire for tauri::AppHandle {
             path: path.to_string_lossy().into_owned(),
         };
         if let Err(e) = event.emit(self) {
+            // allowed-log-private: Tauri's emit error, which names no path
             log::warn!("respell_listing: couldn't emit listing-respelled: {e}");
         }
     }
@@ -381,6 +383,7 @@ impl<W: ListingWire, E: ListingEndEffects> TauriListingEvents<W, E> {
         // answers "why did this listing fail" without reading code.
         log::debug!(
             "listing {listing_id} on volume {volume_id} ended in error: {:?} ({:?}){}",
+            // allowed-log-private: a `ListingErrorReason`, a closed enum of our own
             listing_error.reason,
             listing_error.category,
             e.errno_field(),

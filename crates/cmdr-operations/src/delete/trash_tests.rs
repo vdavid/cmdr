@@ -344,7 +344,7 @@ fn a_batch_the_os_took_in_full_reports_nothing_left_behind() {
 fn test_trash_item_error_captures_path_and_message() {
     let error = TrashItemError {
         path: PathBuf::from("/some/file.txt"),
-        message: "Permission denied".to_string(),
+        message: "Permission denied".into(),
         reason: TrashRefusalKind::NotPermitted,
         online_only: false,
     };
@@ -361,7 +361,7 @@ fn a_refused_batch_summary_marks_each_path() {
 
     let item = |path: &str, message: &str| TrashItemError {
         path: PathBuf::from(path),
-        message: message.to_string(),
+        message: message.into(),
         reason: TrashRefusalKind::NotPermitted,
         online_only: false,
     };
@@ -387,7 +387,7 @@ fn a_refused_batch_summary_marks_each_path() {
 fn a_batch_reports_the_reason_that_offers_the_user_the_most() {
     let item = |reason| TrashItemError {
         path: PathBuf::from("/some/file.txt"),
-        message: String::new(),
+        message: String::new().into(),
         reason,
         online_only: false,
     };
@@ -482,7 +482,7 @@ fn an_item_in_a_folder_that_takes_no_writes_refuses_as_folder_not_writable() {
 fn a_batch_ranks_the_item_level_refusals_between_permission_and_no_trash() {
     let item = |reason| TrashItemError {
         path: PathBuf::from("/some/file.txt"),
-        message: String::new(),
+        message: String::new().into(),
         reason,
         online_only: false,
     };

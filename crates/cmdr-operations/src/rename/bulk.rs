@@ -77,12 +77,23 @@ pub enum RenameStartError {
 }
 
 impl std::fmt::Display for RenameStartError {
-    /// ❗ For logs and debugging only.
+    /// ❗ For logs and debugging only. A log line prints it through `LogError`.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        cmdr_fs::log_error::write_plain(self, f)
+    }
+}
+
+/// The one text behind `Display` and `LogError`: the engine's refusal marks its own paths.
+impl cmdr_fs::log_error::ErrorLogText for RenameStartError {
+    fn write_log_text(&self, out: &mut cmdr_fs::log_error::ErrorText<'_>) -> std::fmt::Result {
+        use std::fmt::Write as _;
         match self {
-            Self::NothingToRename => f.write_str("no rename left to run"),
-            Self::NotInOneFolder => f.write_str("a row would change folders"),
-            Self::Engine { error } => write!(f, "the engine refused: {error:?}"),
+            Self::NothingToRename => out.write_str("no rename left to run"),
+            Self::NotInOneFolder => out.write_str("a row would change folders"),
+            Self::Engine { error } => {
+                out.write_str("the engine refused: ")?;
+                out.error(error)
+            }
         }
     }
 }

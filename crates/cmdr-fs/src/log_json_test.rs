@@ -85,3 +85,54 @@ fn a_reserved_char_in_an_unmarked_field_is_replaced() {
         logged.as_marked_text()
     );
 }
+
+/// An error whose text is its own JSON (`ErrorText::json`), the way `WriteOperationError` is.
+struct JsonError(Refusal);
+
+impl fmt::Display for JsonError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        crate::log_error::write_plain(self, f)
+    }
+}
+
+impl crate::log_error::ErrorLogText for JsonError {
+    fn write_log_text(&self, out: &mut crate::log_error::ErrorText<'_>) -> fmt::Result {
+        out.json(&self.0, kinds)
+    }
+}
+
+#[derive(Serialize)]
+struct Nested {
+    first: ErrorDetail,
+    message: ErrorDetail,
+}
+
+/// A detail holding an error whose text is its own JSON runs a `log_json` inside the outer
+/// one. The outer keeps marking after it: a detail that came AFTER the nested one would
+/// otherwise serialize plain, its path bare.
+#[test]
+fn a_nested_log_json_leaves_the_outer_one_marking() {
+    let value = Nested {
+        first: ErrorDetail::of(JsonError(refusal("try again"))),
+        message: ErrorDetail::of(VolumeError::NotFound(PATH.to_string())),
+    };
+    let logged = log_json(&value, |key| match key {
+        "first" | "message" => JsonField::Detail,
+        _ => JsonField::Words,
+    });
+    let text = logged.as_marked_text();
+    let path_span = LogPrivate::path(PATH).to_string();
+    assert!(
+        text.contains(&format!("\"message\":\"Path not found: {path_span}\"")),
+        "{text}"
+    );
+    // The nested JSON marks its own fields, and its plain text is the plain JSON.
+    assert!(
+        text.contains(&LogPrivate::volume("Family Photos").to_string()),
+        "{text}"
+    );
+    assert_eq!(
+        value.first.to_string(),
+        serde_json::to_string(&refusal("try again")).expect("serializes")
+    );
+}

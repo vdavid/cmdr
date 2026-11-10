@@ -166,6 +166,33 @@ fn test_map_volume_error_permission_denied() {
     );
 }
 
+/// cmdr-reports#103: an SMB server refused the staged temp, and `message` carried
+/// its path as plain text, so a report's fallback read it only up to a `, ` in the
+/// name. The path rides typed: the frontend's text is unchanged, and the log text
+/// marks it as one span.
+#[test]
+fn a_refused_temps_path_rides_marked_in_the_message() {
+    let temp = "/Volumes/Share/Contracts/.cmdr-tmp-1a2b-Lease, Kovács Anna.pdf";
+    let err = map_volume_error(
+        "/Volumes/Share/Contracts/Lease, Kovács Anna.pdf",
+        PathRole::Destination,
+        VolumeError::PermissionDenied {
+            path: temp.to_string(),
+            raw_os_error: None,
+        },
+    );
+    let WriteOperationError::PermissionDenied { message, .. } = &err else {
+        panic!("expected PermissionDenied, got {err:?}");
+    };
+    assert_eq!(message, temp);
+    let logged = format!("{}", cmdr_fs::log_error::LogError(message));
+    assert_eq!(
+        logged,
+        format!("{}", cmdr_fs::log_private::LogPrivate::path(temp)),
+        "the whole path is one span"
+    );
+}
+
 /// ❗ A phone's or a server's refusal gets its own advice whichever errno rides along:
 /// NFS's `NFS3ERR_ACCES` carries `EACCES`, which read as `FolderPermissions` would send
 /// someone to Finder for a folder on a server. The errno stays for the details block.

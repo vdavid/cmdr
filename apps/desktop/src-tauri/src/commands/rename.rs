@@ -52,7 +52,7 @@ pub async fn move_to_trash(path: String, initiator: cmdr_operation_log::types::I
     {
         Ok(Ok(result)) => result.map(|_in_trash| ()),
         Ok(Err(join_err)) => Err(MutationError::Unexpected {
-            detail: format!("the trash task didn't finish: {join_err}"),
+            detail: format!("the trash task didn't finish: {join_err}").into(),
         }),
         Err(_) => Err(MutationError::TimedOut),
     }
@@ -78,7 +78,7 @@ pub async fn get_trash_dir(path: String) -> Result<Option<String>, MutationError
     {
         Ok(Ok(dir)) => Ok(dir.map(|p| p.to_string_lossy().into_owned())),
         Ok(Err(join_err)) => Err(MutationError::Unexpected {
-            detail: format!("the trash-directory lookup didn't finish: {join_err}"),
+            detail: format!("the trash-directory lookup didn't finish: {join_err}").into(),
         }),
         Err(_) => Err(MutationError::TimedOut),
     }
@@ -106,7 +106,7 @@ pub async fn check_rename_permission(path: String, volume_id: Option<String>) ->
     timeout_detached_typed(
         Duration::from_secs(2),
         || MutationError::TimedOut,
-        |detail| MutationError::Unexpected { detail },
+        |detail| MutationError::Unexpected { detail: detail.into() },
         engine.check_rename_permission_for_volume(path_buf, volume_id_str),
     )
     .await
@@ -160,7 +160,7 @@ async fn check_rename_validity_with(
     timeout_detached_typed(
         io_budget_for_volume(&volume_id_str, Duration::from_secs(2)),
         || MutationError::TimedOut,
-        |detail| MutationError::Unexpected { detail },
+        |detail| MutationError::Unexpected { detail: detail.into() },
         async move {
             // Priced inside the budget, as before: the estimate reads the cached price table.
             let check = engine

@@ -278,7 +278,7 @@ impl PathedVolumeError {
             path: path.to_path_buf(),
             role: PathRole::Destination,
             error: VolumeError::IoError {
-                message: format!("{refusal:?}").into(),
+                message: ErrorDetail::of(refusal.clone()),
                 raw_os_error: None,
             },
             aftermath: None,
@@ -417,14 +417,18 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
         // words its own refusals has none and keeps the generic sentence. `message`
         // is for the details block, which already shows the path: the OS's
         // sentence when there's an errno, else whatever the backend carried if
-        // it isn't that same path (MTP carries its own words). No folder: ❌
-        // naming one we didn't prove with `access(W_OK)` is what the local path
-        // exists to avoid.
+        // it isn't that same path (MTP carries its own words). That one is
+        // usually the staged temp beside the file, so it rides marked as a path,
+        // ❌ never as text: a name holding ", " shipped through the report's
+        // fallback (cmdr-reports#103). Failing closed costs MTP's words a token
+        // in a report; the details block still shows them. No folder: ❌ naming
+        // one we didn't prove with `access(W_OK)` is what the local path exists
+        // to avoid.
         VolumeError::PermissionDenied { path, raw_os_error } => {
-            let message = match raw_os_error {
-                Some(errno) => std::io::Error::from_raw_os_error(errno).to_string(),
-                None if path != context_path => path,
-                None => "Permission denied".to_string(),
+            let message: ErrorDetail = match raw_os_error {
+                Some(errno) => std::io::Error::from_raw_os_error(errno).to_string().into(),
+                None if path != context_path => ErrorDetail::path(path),
+                None => "Permission denied".into(),
             };
             let side = Some(match role {
                 PathRole::Source => PermissionSide::Source,

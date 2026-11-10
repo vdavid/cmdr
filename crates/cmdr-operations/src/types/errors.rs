@@ -640,7 +640,7 @@ impl WriteOperationError {
     /// read on the share) on a refusal under `/Volumes`, and nothing elsewhere.
     pub fn permission_denied(
         path: String,
-        message: String,
+        message: impl Into<cmdr_fs::error_detail::ErrorDetail>,
         errno: Option<i32>,
         refused_folder: Option<String>,
         side: Option<PermissionSide>,
@@ -653,7 +653,7 @@ impl WriteOperationError {
     /// so a test needs no live share.
     fn permission_denied_on(
         path: String,
-        message: String,
+        message: impl Into<cmdr_fs::error_detail::ErrorDetail>,
         errno: Option<i32>,
         refused_folder: Option<String>,
         side: Option<PermissionSide>,
@@ -683,7 +683,7 @@ impl WriteOperationError {
     /// local paths.
     pub fn refused_by(
         path: String,
-        message: String,
+        message: impl Into<cmdr_fs::error_detail::ErrorDetail>,
         errno: Option<i32>,
         refuser: cmdr_fs::volume::RemoteRefuser,
         side: Option<PermissionSide>,

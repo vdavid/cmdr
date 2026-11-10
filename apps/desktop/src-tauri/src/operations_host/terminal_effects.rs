@@ -64,14 +64,17 @@ impl TerminalEffects for AppTerminalEffects<'_> {
         // 60s" threshold on its own. The file target is always Debug, so a warn
         // still lands in every bundle.
         //
-        // `{:?}` over a hand-written sentence: the variant carries the path and
-        // the message in named fields, and Debug can't drift from them.
+        // The typed variant's JSON over a hand-written sentence: it carries the
+        // path and the message in named fields and can't drift from them, and
+        // `log_detail` marks each value, so a report hashes a name exactly
+        // instead of guessing where it ends (a derived `{:?}` shipped most of a
+        // file name holding ", ", cmdr-reports#103).
         log::warn!(
             target: "write_operations",
-            "op {} ({:?}) failed: {:?}",
+            "op {} ({:?}) failed: detail={:?}",
             event.operation_id,
             event.operation_type,
-            event.error
+            event.error.log_detail()
         );
     }
 

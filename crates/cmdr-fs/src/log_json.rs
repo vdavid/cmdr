@@ -65,19 +65,25 @@ pub(crate) fn is_marking() -> bool {
     MARKING.with(Cell::get)
 }
 
-/// Resets the flag however the serialization ends.
-struct MarkingScope;
+/// Restores the flag however the serialization ends. It restores what it found, not `false`:
+/// a `log_json` can nest (a `WriteOperationError` whose message holds another one's detail
+/// writes that one's JSON mid-serialization), and the outer one must keep marking after the
+/// inner one ends.
+struct MarkingScope {
+    was: bool,
+}
 
 impl MarkingScope {
     fn enter() -> Self {
-        MARKING.with(|flag| flag.set(true));
-        Self
+        Self {
+            was: MARKING.with(|flag| flag.replace(true)),
+        }
     }
 }
 
 impl Drop for MarkingScope {
     fn drop(&mut self) {
-        MARKING.with(|flag| flag.set(false));
+        MARKING.with(|flag| flag.set(self.was));
     }
 }
 

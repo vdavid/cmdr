@@ -188,6 +188,45 @@ fn os_junk_names_ship_verbatim() {
     );
 }
 
+/// A failed move's two WARN lines (`move` and `write_operations`) printed its
+/// `WriteOperationError::PermissionDenied` through the derived `Debug`, unmarked. The fallback
+/// ends a prose path at `, ` after its last separator, so a file name holding a comma-space
+/// shipped its tail in clear (cmdr-reports#103, ERR-KU8UY). Both lines log `log_detail()`.
+#[test]
+fn a_failed_move_ships_no_part_of_a_file_name_holding_a_comma() {
+    use cmdr_fs::error_detail::ErrorDetail;
+    use cmdr_operations::WriteOperationError;
+
+    // A home path, so the constructor's mounted-share probe has nothing to `statfs`.
+    let path = "/Users/me/Shared/Contracts/2026/Lease, Kovács Anna.pdf";
+    // The server refused the staged temp beside it, which `message` names
+    // (`map_volume_error`, as `ErrorDetail::path`).
+    let temp = "/Users/me/Shared/Contracts/2026/.cmdr-tmp-1a2b3c-Lease, Kovács Anna.pdf";
+    let error = WriteOperationError::permission_denied(path.to_string(), ErrorDetail::path(temp), None, None, None);
+    let private = ["Lease", "Kovács", "Anna", "Contracts"];
+    let lines = [
+        format!("WARN move: move operation op-1 failed: detail={:?}", error.log_detail()),
+        format!(
+            "WARN write_operations: op op-1 (Move) failed: detail={:?}",
+            error.log_detail()
+        ),
+        // A `MutationError` that wraps it keeps it typed, so its log text marks the path too.
+        format!(
+            "WARN rename: {}",
+            cmdr_fs::log_error::LogError(&cmdr_operations::MutationError::ArchiveEditCouldntStart {
+                detail: ErrorDetail::of(error.clone()),
+            })
+        ),
+    ];
+    for line in &lines {
+        assert_ships_none(line, &private);
+    }
+    // The shape it replaced: the derived `Debug` reaches the fallback unmarked, which reads the
+    // path only up to the `, `. Pinned so the site fix stays the fix.
+    let derived = format!("WARN move: move operation op-1 failed: {error:?}");
+    assert!(r(&derived).contains("Anna"), "{}", r(&derived));
+}
+
 #[test]
 fn leak_shapes_redact_idempotently() {
     let context = context();

@@ -766,20 +766,26 @@ both sides read (`LogKind`, `CLOSER`, `RESERVED`, and `markers`, the lexer).
   `ConsecutiveFailures` keeps the last error typed for this), `ScanError`, `WatcherError`, `NotWalkable`, and
   `SizeError` (a root outside the index or a refused watch rides as a typed path, ❌ never a `format!`),
   `cmdr-operations`' `MutationError`, conflict `VolumeScanError`, and `FlushFailure`, `MtpConnectionError`,
-  `cmdr-archive`'s `ArchiveError` and `MutationError`, and the app's `ReconnectError` and `ViewerError`. A log site
-  formats them through `LogError`; the type system refuses `LogError` of anything else. `WriteOperationError` (~50
-  variants, all IPC) logs as `error.log_detail()` instead: the frontend's JSON with its fields marked (`log_json`,
-  below), in a `detail=` field.
+  `cmdr-archive`'s `ArchiveError` and `MutationError`, `cmdr-operations`' `RenameStartError`, and the app's
+  `ReconnectError` and `ViewerError`. A log site formats them through `LogError`; the type system refuses `LogError` of
+  anything else, and `log-private-values` fails on one printed plainly (`{}` or a derived `{:?}`). `WriteOperationError`
+  (~50 variants, all IPC) writes its text as its JSON (`ErrorText::json`: the plain JSON in `Display`, each field marked
+  by its `log_detail` table in a log line), so a `MutationError` detail or a `VolumeError` message that wraps one holds
+  it as `ErrorDetail::of(e)`. A site logging the error itself uses `error.log_detail()`, in a `detail=` field (capped,
+  keyed the way the frontend's lines are). **Why**: its derived `Debug`, flattened with `format!("{e:?}")` into a detail
+  or logged as `{:?}`, shipped most of a file name holding `, ` (cmdr-reports#103).
 - **Finding the sites**: compile the workspace with a converted type's `Display` (and `Error`) removed; every error left
   is a site that formats it plainly. A log site switches to `LogError`; a site building IPC or technical-detail text
   stays plain on purpose.
 - **`ErrorDetail` (`error_detail.rs`) is the message field that stays typed**: an error wrapping another one's text
   holds `ErrorDetail::of(cause)` where it held `cause.to_string()`, and a backend's own words about a path take
-  `ErrorDetail::at_path` / `path_then` / `around` / `path`, which mark the path and keep the words as text. Its
-  `Display`, `Debug`, JSON, and specta type are that plain string (a stored one deserializes as text; equality compares
-  the text), so IPC and bindings don't change; its `ErrorLogText` writes the cause's own, values marked. Text from the
-  OS or a third-party crate goes in with `.into()` and stays foreign text. Every `VolumeError` and `WriteOperationError`
-  message field carries one, as do `ViewerError::{Io, Archive}` and `ArchiveError::Io`.
+  `ErrorDetail::at_path` / `path_then` / `around` / `path`, which mark the path and keep the words as text (a path a
+  backend handed back where its words might be, as `VolumeError::PermissionDenied` does, goes in as `path`: failing
+  closed costs the words a token). Our own words about which step failed, then a typed cause, take `ErrorDetail::after`.
+  Its `Display`, `Debug`, JSON, and specta type are that plain string (a stored one deserializes as text; equality
+  compares the text), so IPC and bindings don't change; its `ErrorLogText` writes the cause's own, values marked. Text
+  from the OS or a third-party crate goes in with `.into()` and stays foreign text. Every `VolumeError` and
+  `WriteOperationError` message field carries one, as do `ViewerError::{Io, Archive}` and `ArchiveError::Io`.
 - **`log_json` (`log_json.rs`) is a value's JSON for a log line, each field marked by kind**: the caller's table maps a
   key to `Mark(kind)`, `Detail` (an `ErrorDetail`, which serializes its marked log text while `log_json` runs, a
   thread-local mode nothing else sets), or `Words` (reserved chars replaced, so another party's text can't forge a
@@ -788,6 +794,9 @@ both sides read (`LogKind`, `CLOSER`, `RESERVED`, and `markers`, the lexer).
   are JSON escapes too, so the text stays JSON, and stripped of its markers it IS the plain JSON (pinned by
   `the_logged_json_is_the_ipc_json_once_its_markers_are_gone`). `LoggedJson`'s `Debug` is `LoggedText`'s, so its spans
   sit at depth 1. `WriteOperationError::log_detail`'s table fails closed: an unnamed string key is marked as a path.
+  `log_json` nests (a detail holding a `WriteOperationError` runs one mid-serialization), so its marking scope restores
+  the mode it found, ❌ never `false`, or every detail after the nested one would serialize plain (pinned by
+  `a_nested_log_json_leaves_the_outer_one_marking`).
 - **A typed failure crosses an `io`-only seam inside the `io::Error`**: a byte source hands `io::Error::other(e)` (a
   `VolumeError`) or `io::Error::other(ErrorDetail::of(e))` (a crate that mustn't name `VolumeError`), and
   `VolumeError::io_detail` / `ErrorDetail::from_io` take it back out typed (`from_io_without_path` uses it). Its

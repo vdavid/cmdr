@@ -322,7 +322,7 @@ async fn rename_managed_inner(
                     })
                     .await
                     .map_err(|e| MutationError::Unexpected {
-                        detail: format!("the rename task didn't finish: {e}"),
+                        detail: format!("the rename task didn't finish: {e}").into(),
                     })??;
 
                 // Notify the listing cache about the rename (the volume path does
@@ -391,7 +391,7 @@ async fn start_rename_as_move(
         .host()
         .operation_sink()
         .ok_or_else(|| MutationError::Unexpected {
-            detail: "the operation manager isn't ready to start a move".to_string(),
+            detail: "the operation manager isn't ready to start a move".into(),
         })?;
     let parent = to.parent().ok_or(MutationError::CantRenameVolumeRoot)?;
     let config = super::types::VolumeCopyConfig {
@@ -422,7 +422,7 @@ async fn start_rename_as_move(
             );
         })
         .map_err(|e| MutationError::Unexpected {
-            detail: format!("the move a rename runs as couldn't start: {e:?}"),
+            detail: cmdr_fs::error_detail::ErrorDetail::after("the move a rename runs as couldn't start: ", e),
         })
 }
 
@@ -519,7 +519,7 @@ async fn route_archive_rename(
         .archive_edit_start(events, request, 200)
         .await
         .map_err(|e| MutationError::ArchiveEditCouldntStart {
-            detail: format!("{e:?}"),
+            detail: cmdr_fs::error_detail::ErrorDetail::of(e),
         })?;
     Ok(())
 }
@@ -662,7 +662,7 @@ impl crate::Operations {
         let result = match checked.await {
             Ok(result) => result,
             Err(join_err) => Err(MutationError::Unexpected {
-                detail: format!("the permission check didn't finish: {join_err}"),
+                detail: format!("the permission check didn't finish: {join_err}").into(),
             }),
         };
         if let Err(error) = &result {

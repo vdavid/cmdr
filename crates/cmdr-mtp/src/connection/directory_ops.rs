@@ -300,7 +300,9 @@ impl MtpConnectionManager {
                         // single unreadable object doesn't abort the folder.
                         debug!(
                             "list_directory_for_scan: {device_id}:{storage_id} handle {} unreadable: {}",
-                            skipped.handle.0, skipped.error
+                            skipped.handle.0,
+                            // allowed-log-private: mtp-rs's per-handle protocol error, which names no path
+                            skipped.error
                         );
                     }
                     Some(Err(e)) => {
@@ -591,7 +593,10 @@ impl MtpConnectionManager {
                     // `Storage::collect_objects`), so we no longer guess.
                     debug!(
                         "MTP list_directory_with_progress [req#{}]: handle {} unreadable: {}",
-                        request_id, skipped.handle.0, skipped.error
+                        request_id,
+                        skipped.handle.0,
+                        // allowed-log-private: mtp-rs's per-handle protocol error, which names no path
+                        skipped.error
                     );
                     continue;
                 }

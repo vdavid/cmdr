@@ -277,8 +277,11 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
 - **`types/errors.rs` splits the same way**: `WriteOperationError` and the types that exist only as one of its variants'
   payloads (`ReadOnlySide`, `TransferRole`, `DisconnectedSide`, `TrashRefusalKind`, `RecoveredOriginal`,
   `OversizedFile`). `RecoveredOriginal` itself sits in `types.rs`, and its `new` is `pub(crate)`: its callers are the
-  transfer engines. How an error reads in a log line (`log_detail`, its per-key marking table) is the
-  `src/types/errors/log_detail.rs` child's.
+  transfer engines. How an error reads in a log line (`log_detail`, its per-key marking table, and the `ErrorLogText`
+  - `Display` that make its text its JSON) is the `src/types/errors/log_detail.rs` child's. A log site prints it as
+    `detail={:?}` with `log_detail()`, ❌ never `{:?}` of the error (its derived `Debug` marks nothing;
+    cmdr-reports#103), and an error that wraps one (`MutationError`'s `detail`, a refusal folded into a `VolumeError`)
+    holds `ErrorDetail::of(e)`, ❌ never a `format!("{e:?}")`.
 - **`error_classification.rs` classifies from `errno` / `ErrorKind` only, never the message**. The native copy calls on
   both platforms (`macos_copy`, `linux_copy`) share `classify_copy_io_error`, which also picks the path: a refused write
   names the destination, anything else the source. One table, so the platforms can't drift apart again. A dropped link's

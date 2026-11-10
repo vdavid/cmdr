@@ -68,20 +68,36 @@ func RunLogPrivateValues(ctx *CheckContext) (CheckResult, error) {
 		scanned, Pluralize(scanned, "file", "files"))), nil
 }
 
+// scanLogPrivateRoots reads every non-test Rust file under the roots, indexes the
+// path-carrying errors across all of them (a field's type is declared in one file
+// and logged in another), then scans each file.
 func scanLogPrivateRoots(rootDir string, roots []string) (logPrivateFileFindings, int, error) {
-	var all logPrivateFileFindings
-	scanned := 0
+	var sources []rustSourceFile
 	for _, root := range roots {
-		rootFindings, rootScanned, err := scanForLogPrivateValues(rootDir, root)
+		rootSources, err := readLogPrivateSources(rootDir, root)
 		if err != nil {
 			return logPrivateFileFindings{}, 0, fmt.Errorf("failed to scan Rust files: %w", err)
 		}
-		all.sites = append(all.sites, rootFindings.sites...)
-		all.conversions = append(all.conversions, rootFindings.conversions...)
-		all.orphans = append(all.orphans, rootFindings.orphans...)
-		scanned += rootScanned
+		sources = append(sources, rootSources...)
 	}
-	return all, scanned, nil
+	index := indexPathErrors(sources)
+	var all logPrivateFileFindings
+	for _, src := range sources {
+		findings := scanRustSourceForLogPrivate(src, index)
+		all.sites = append(all.sites, findings.sites...)
+		all.conversions = append(all.conversions, findings.conversions...)
+		all.orphans = append(all.orphans, findings.orphans...)
+	}
+	return all, len(sources), nil
+}
+
+// rustSourceFile is one scanned file: its repo-relative path, its source, and
+// its masked twin (`maskRustSource`) with the string literals it found.
+type rustSourceFile struct {
+	relPath  string
+	source   string
+	masked   string
+	literals []rustLiteral
 }
 
 // logPrivateFailures returns the report sections that fail the check: unmarked
@@ -139,10 +155,9 @@ func formatMarkedStringSites(sites []markedStringSite) string {
 		len(sites), Pluralize(len(sites), "value", "values"), strings.TrimRight(sb.String(), "\n"))
 }
 
-func scanForLogPrivateValues(rootDir, srcDir string) (logPrivateFileFindings, int, error) {
-	var all logPrivateFileFindings
-	scanned := 0
-	err := filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
+func readLogPrivateSources(rootDir, srcDir string) ([]rustSourceFile, error) {
+	var sources []rustSourceFile
+	err := corpus.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -159,16 +174,13 @@ func scanForLogPrivateValues(rootDir, srcDir string) (logPrivateFileFindings, in
 		if isRustTestPath(relPath, d.Name()) {
 			return nil
 		}
-		scanned++
-		data, readErr := os.ReadFile(path)
+		source, readErr := corpus.ReadFile(path)
 		if readErr != nil {
 			return readErr
 		}
-		findings := scanRustSourceForLogPrivate(string(data), relPath)
-		all.sites = append(all.sites, findings.sites...)
-		all.conversions = append(all.conversions, findings.conversions...)
-		all.orphans = append(all.orphans, findings.orphans...)
+		masked, literals := maskRustSource(source)
+		sources = append(sources, rustSourceFile{relPath: relPath, source: source, masked: masked, literals: literals})
 		return nil
 	})
-	return all, scanned, err
+	return sources, err
 }

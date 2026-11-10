@@ -82,6 +82,34 @@ impl ErrorDetail {
     pub fn path(path: impl Into<String>) -> Self {
         Self::at_path(String::new(), path)
     }
+
+    /// Our own words about which step failed, then the typed cause (`"the move couldn't start: "`
+    /// + the error): the words stay text, the cause marks its own values.
+    pub fn after(words: impl Into<String>, cause: impl ErrorLogText + fmt::Display + Send + Sync + 'static) -> Self {
+        Self::of(After {
+            words: words.into(),
+            cause: Self::of(cause),
+        })
+    }
+}
+
+/// [`ErrorDetail::after`]'s cause: our words, then a typed error.
+struct After {
+    words: String,
+    cause: ErrorDetail,
+}
+
+impl fmt::Display for After {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write_plain(self, f)
+    }
+}
+
+impl ErrorLogText for After {
+    fn write_log_text(&self, out: &mut ErrorText<'_>) -> fmt::Result {
+        fmt::Write::write_str(out, &self.words)?;
+        out.error(&self.cause)
+    }
 }
 
 /// [`ErrorDetail::at_path`]'s and [`ErrorDetail::path_then`]'s cause: a backend's words around

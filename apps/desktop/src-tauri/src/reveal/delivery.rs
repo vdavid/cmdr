@@ -455,6 +455,7 @@ async fn run_moves<R: Runtime>(app: &AppHandle<R>, pane: PaneChoice, plans: &[Re
     for (index, plan) in plans.iter().enumerate() {
         let tab_opened = !plan.new_tab
             || crate::tools::open_tab_in_pane(app, pane).await.unwrap_or_else(|err| {
+                // allowed-log-private: a `ToolError`'s agent-facing `String`, no typed value left to mark
                 log::warn!(target: "reveal", "Couldn't open a new tab: {}", err.message);
                 false
             });
@@ -475,6 +476,7 @@ async fn run_moves<R: Runtime>(app: &AppHandle<R>, pane: PaneChoice, plans: &[Re
                 log::warn!(
                     target: "reveal",
                     "Couldn't show {dir}: {}",
+                    // allowed-log-private: a `ToolError`'s agent-facing `String`, no typed value left to mark
                     failure.error().message,
                     dir = cmdr_fs::log_private::LogPrivate::dir_path(&dir)
                 );

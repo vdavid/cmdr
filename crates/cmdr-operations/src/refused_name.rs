@@ -175,6 +175,7 @@ fn arm_and_emit(
     log::info!(
         "refused name: {} can't be stored at the destination ({:?}); asking",
         LogPrivate::path(item.dest_path),
+        // allowed-log-private: a `RefusedNameReason`, a closed enum of our own
         item.reason
     );
     state.announce_human_wait(events);

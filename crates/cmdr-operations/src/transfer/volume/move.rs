@@ -301,7 +301,7 @@ impl crate::Operations {
                         log::info!("move_between_volumes: operation {} cancelled", op_id);
                     }
                     Err(failure) => {
-                        log::warn!(target: "move", "move operation {} failed: {:?}", op_id, failure.error);
+                        log::warn!(target: "move", "move operation {} failed: detail={:?}", op_id, failure.error.log_detail());
                         events.emit_error(write_error_event_from(
                             &state,
                             op_id.to_string(),

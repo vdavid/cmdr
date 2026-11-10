@@ -155,7 +155,7 @@ fn flatten_join<T>(joined: Result<Result<T, MutationError>, cmdr_fs::rt::JoinErr
     match joined {
         Ok(result) => result,
         Err(join_err) => Err(MutationError::Unexpected {
-            detail: join_err.to_string(),
+            detail: join_err.to_string().into(),
         }),
     }
 }

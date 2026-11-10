@@ -42,6 +42,10 @@ type logPrivateFile struct {
 	masked     string
 	literals   map[int]rustLiteral // keyed by start offset
 	lineStarts []int
+	// errors is the tree's path-carrying error index; errorBindings the names this
+	// file declares with one of those types (`e: &VolumeError`).
+	errors        *pathErrorIndex
+	errorBindings map[string]bool
 }
 
 func (f *logPrivateFile) lineOf(offset int) int { return lineForOffset(f.lineStarts, offset) }
@@ -54,10 +58,13 @@ func (f *logPrivateFile) snippet(start, end int) string {
 // scanRustSourceForLogPrivate scans one file's source: the log macros for
 // unmarked values, the rest for marked strings, and the opt-out directives for
 // orphans.
-func scanRustSourceForLogPrivate(source, relPath string) logPrivateFileFindings {
-	masked, literals := maskRustSource(source)
-	file := &logPrivateFile{source: source, masked: masked, literals: map[int]rustLiteral{}, lineStarts: lineStartOffsets(source)}
-	for _, lit := range literals {
+func scanRustSourceForLogPrivate(src rustSourceFile, index *pathErrorIndex) logPrivateFileFindings {
+	source, masked, relPath := src.source, src.masked, src.relPath
+	file := &logPrivateFile{
+		source: source, masked: masked, literals: map[int]rustLiteral{}, lineStarts: lineStartOffsets(source),
+		errors: index, errorBindings: index.bindingsIn(masked),
+	}
+	for _, lit := range src.literals {
 		file.literals[lit.start] = lit
 	}
 	testRegions := findRustTestRegions(masked)
@@ -184,11 +191,20 @@ func (f *logPrivateFile) judgeCaptures(lit rustLiteral, named map[string]bool) [
 			name = spec[:colon]
 		}
 		name = strings.TrimSpace(name)
-		if name != "" && !named[name] && !(name[0] >= 'A' && name[0] <= 'Z') && readsAsIdentity(name) {
-			at := lit.contentStart + i
-			sites = append(sites, logPrivateSite{
-				line: f.lineOf(at), what: "capture", text: content[i : i+end+1],
-			})
+		if name != "" && !named[name] && !(name[0] >= 'A' && name[0] <= 'Z') {
+			what := ""
+			switch {
+			case readsAsIdentity(name):
+				what = "capture"
+			case f.errorBindings[name]:
+				what = "path-carrying error: " + name
+			}
+			if what != "" {
+				at := lit.contentStart + i
+				sites = append(sites, logPrivateSite{
+					line: f.lineOf(at), what: what, text: content[i : i+end+1],
+				})
+			}
 		}
 		i += end
 	}
@@ -233,7 +249,10 @@ func (f *logPrivateFile) judgeArg(start, end int) []logPrivateSite {
 		return sites
 	}
 	if ident := firstIdentityIdent(string(expr)); ident != "" {
-		sites = append(sites, logPrivateSite{line: line, what: "name: " + ident, text: text})
+		return append(sites, logPrivateSite{line: line, what: "name: " + ident, text: text})
+	}
+	if name := f.pathCarryingError(string(expr)); name != "" {
+		sites = append(sites, logPrivateSite{line: line, what: "path-carrying error: " + name, text: text})
 	}
 	return sites
 }

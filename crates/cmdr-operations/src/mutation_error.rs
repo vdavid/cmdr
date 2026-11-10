@@ -14,6 +14,7 @@
 
 use super::host::{self, UnregisteredVolume};
 use super::types::{HomeFolderRelation, TrashRefusalKind};
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, write_plain};
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::VolumeError;
@@ -79,8 +80,9 @@ pub enum MutationError {
     ArchiveEditNotReady,
     /// The archive edit refused to start.
     ArchiveEditCouldntStart {
-        /// The driver's own words, for the technical-details disclosure.
-        detail: String,
+        /// Why the driver refused (its `WriteOperationError`, kept typed so a log line marks
+        /// its paths), for the technical-details disclosure.
+        detail: ErrorDetail,
     },
     /// Something already holds that name.
     AlreadyExists {
@@ -115,8 +117,9 @@ pub enum MutationError {
     /// went wrong" message and shows `detail` only as technical detail; ❌ it
     /// never renders `detail` as the message itself.
     Unexpected {
-        /// What the layer below reported, for the log and the details disclosure.
-        detail: String,
+        /// What the layer below reported, for the log and the details disclosure. Typed when
+        /// it wraps an error of ours, so a log line marks that error's paths.
+        detail: ErrorDetail,
     },
 }
 
@@ -162,7 +165,10 @@ impl ErrorLogText for MutationError {
             Self::RenameOutOfArchive => out.write_str("rename out of an archive"),
             Self::RenameAcrossArchives => out.write_str("rename across archives"),
             Self::ArchiveEditNotReady => out.write_str("archive-edit driver not ready"),
-            Self::ArchiveEditCouldntStart { detail } => write!(out, "archive edit didn't start: {detail}"),
+            Self::ArchiveEditCouldntStart { detail } => {
+                out.write_str("archive edit didn't start: ")?;
+                out.error(detail)
+            }
             Self::AlreadyExists { name } => {
                 out.write_str("already exists: ")?;
                 out.value(LogPrivate::name(name))
@@ -174,7 +180,10 @@ impl ErrorLogText for MutationError {
                 out.error(error)
             }
             Self::TimedOut => out.write_str("timed out"),
-            Self::Unexpected { detail } => write!(out, "unexpected: {detail}"),
+            Self::Unexpected { detail } => {
+                out.write_str("unexpected: ")?;
+                out.error(detail)
+            }
         }
     }
 }

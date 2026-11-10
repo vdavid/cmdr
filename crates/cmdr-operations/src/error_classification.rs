@@ -129,13 +129,9 @@ impl WriteOperationError {
                 refused_folder,
                 side: None,
                 ..
-            } if is_locked_item(source) => Self::permission_denied(
-                path,
-                message.to_string(),
-                errno,
-                refused_folder,
-                Some(PermissionSide::Source),
-            ),
+            } if is_locked_item(source) => {
+                Self::permission_denied(path, message, errno, refused_folder, Some(PermissionSide::Source))
+            }
             other => other,
         }
     }

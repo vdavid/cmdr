@@ -2859,8 +2859,20 @@ one, an argument is ONE unmarked value when it isn't built through a wrapper (`L
 
 An inline capture (`{path:?}`) counts the same way by name, unless it names a `name = …` argument (judged through the
 argument) or a constant (`{STATE_FILE_PATH}`). A `format!` nested in an argument is judged as its own invocation, once.
-In-file `#[cfg(test)]` / `#[test]` items and dedicated test files are skipped. Errors logged as `{e}` are out of scope:
-they render their paths through `Display`, which the `LogError` wrapper takes on.
+In-file `#[cfg(test)]` / `#[test]` items and dedicated test files are skipped.
+
+**Decision**: a path-carrying error printed plainly (`{}` or a derived `{:?}`) is one unmarked value too
+(`desktop-rust-log-private-values-errors.go`). **Why**: a `WriteOperationError` logged as `{:?}` shipped most of a file
+name holding `, ` (cmdr-reports#103): the fallback ends a prose path there, and no name rule saw `failure.error`. The
+scanner has no types, so it indexes them first, across every scanned file: a path-carrying type is one with an
+`impl ErrorLogText for X` (not the blanket `&T`) or an inherent `fn log_detail(`, and a path-carrying name is any
+`name: Type` (field, parameter, `let`) whose type, references and `Option`/`Vec`/`Box`/`Arc`/`Rc`/`Result`/`Cow` peeled,
+is one. A field access (`failure.error`) counts when ANY file declares that field name so; a bare name (`e`, `&e`,
+`e.clone()`) when its own file does. A method's result (`report.error()`) doesn't count: its type is invisible. Neither
+is an `Err(e)` binding's or a holder's (`{:?}` of a whole `WriteFailure`), so this catches the shape, not every
+instance. Indexing holders too (structs that contain one, to a fixpoint) flagged ~80 counters and states that merely sit
+beside an error; field-name collisions (`message` is an `ErrorDetail` on `VolumeError` and a `String` on `ToolError`)
+cost about ten opt-outs. Fix a hit with `LogError(&e)` or `e.log_detail()`; opt out a same-named value that isn't one.
 
 **Decision**: strict, with no allowlist: any unmarked value fails. **Why**: the migration ran it as a per-file ratchet
 from 908 values in 278 files down to zero, and a budget left in place would only invite the next one back. A value that

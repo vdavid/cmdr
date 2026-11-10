@@ -112,7 +112,10 @@ impl VolumeMedia {
                 .source
                 .read_at(start + filled as u64, &mut body[filled..])
                 .map_err(|e: ViewerError| {
-                    log::debug!("viewer media: a read from the volume failed: {e:?}");
+                    log::debug!(
+                        "viewer media: a read from the volume failed: {}",
+                        cmdr_fs::log_error::LogError(&e)
+                    );
                     MediaReadFailure::Unreadable
                 })?;
             body.truncate(filled + read);

@@ -215,6 +215,7 @@ pub fn report_skips<R: tauri::Runtime>(app: &tauri::AppHandle<R>, skipped: &[Tag
         log::warn!(
             target: "tags",
             "left the tags on {path:?} unchanged: {}",
+            // allowed-log-private: a `TagReadError`, whose `Display` writes its volume error through `LogError`
             skip.reason,
             path = cmdr_fs::log_private::LogPrivate::path(&skip.path)
         );

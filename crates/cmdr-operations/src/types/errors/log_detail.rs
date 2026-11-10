@@ -15,6 +15,25 @@ impl WriteOperationError {
     }
 }
 
+/// The one text behind `Display` and `LogError`: the JSON IPC carries, each field marked in a
+/// log line. It's what lets an error that WRAPS a `WriteOperationError` (a `MutationError`'s
+/// detail, a refusal folded into a `VolumeError`) keep it typed as an `ErrorDetail`, so its
+/// paths stay marked. A log site printing the error itself uses `log_detail()`, whose
+/// `detail=` field is capped and keyed the way the frontend's lines are.
+impl cmdr_fs::log_error::ErrorLogText for WriteOperationError {
+    fn write_log_text(&self, out: &mut cmdr_fs::log_error::ErrorText<'_>) -> std::fmt::Result {
+        out.json(self, log_field)
+    }
+}
+
+/// The plain JSON, for technical details and tests. ❗ Never prose: the frontend words every
+/// variant (`transfer-error-messages.ts`).
+impl std::fmt::Display for WriteOperationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        cmdr_fs::log_error::write_plain(self, f)
+    }
+}
+
 /// [`WriteOperationError::log_detail`]: a log line's `detail={:?}` value, never data.
 pub struct WriteErrorDetail(cmdr_fs::log_json::LoggedJson);
 
