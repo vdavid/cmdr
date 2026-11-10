@@ -40,8 +40,23 @@ function decodeEntities(text: string): string {
   })
 }
 
+/**
+ * Applies `pattern` until nothing matches, so a removal can't splice a new match together
+ * (`<scr<script>ipt>`). The output is plain text, but CodeQL's
+ * `js/incomplete-multi-character-sanitization` rightly can't know that, and a fixpoint costs nothing.
+ */
+function removeAll(text: string, pattern: RegExp): string {
+  let previous: string
+  let current = text
+  do {
+    previous = current
+    current = current.replace(pattern, '')
+  } while (current !== previous)
+  return current
+}
+
 function stripTags(html: string): string {
-  return html.replace(/<[^>]*>/g, '')
+  return removeAll(html, /<[^>]*>/g)
 }
 
 /** `label (address)`, or the bare address when the label already is it (a `mailto:` included). */
@@ -63,9 +78,7 @@ function layOutLine(line: string): string {
 
 /** The readable text of one of our emails, paragraphs apart, links spelled out. */
 export function htmlToText(html: string): string {
-  const text = html
-    .replace(/<head[\s\S]*?<\/head>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
+  const text = removeAll(removeAll(html, /<head[\s\S]*?<\/head>/gi), /<style[\s\S]*?<\/style>/gi)
     // A person's message keeps its line breaks (the cards render it `white-space: pre-wrap`).
     .replace(
       /(<div [^>]*white-space: pre-wrap[^>]*>)([\s\S]*?)(<\/div>)/gi,
