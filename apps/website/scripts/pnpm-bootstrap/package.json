@@ -1,0 +1,8 @@
+{
+  "name": "cmdr-website-pnpm-bootstrap",
+  "private": true,
+  "description": "pnpm for update-visual-baselines.sh, installed by `npm ci` inside the Playwright image (no corepack on Node 26). Its version equals the root `packageManager`; the `website-pnpm-bootstrap-in-step` check enforces it.",
+  "dependencies": {
+    "pnpm": "12.11.2"
+  }
+}

@@ -140,6 +140,11 @@
       "groupName": null
     },
     {
+      "description": "pnpm moves as one PR wherever it's pinned: the root `packageManager`, `.mise.toml`, and `apps/website/scripts/pnpm-bootstrap/` (the hash-locked manifest the baseline refresh script `npm ci`s inside the Playwright image, whose Node 26 has no corepack). The `website-pnpm-bootstrap-in-step` check fails a PR that moves the bootstrap manifest apart from `packageManager`. Placed after the per-app, major, and security rules so its `groupName` wins over theirs; it sets nothing else, so a major still waits for dashboard approval.",
+      "matchPackageNames": ["pnpm"],
+      "groupName": "pnpm"
+    },
+    {
       "description": "First-party crates (David's own). Stricter pre-release gate than the 3-day window protects against, so no age gate. In Cmdr they still wait for dashboard approval (the desktop rule's, since this rule doesn't override it): a bump renames the version in the committed third-party notices, which a bot PR can't regenerate. The weekly pass takes them.",
       "matchPackageNames": ["smb2", "mtp-rs"],
       "minimumReleaseAge": "0 days",

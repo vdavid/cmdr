@@ -2067,6 +2067,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunE2ERustImagePin,
 	},
 	{
+		ID:          "website-pnpm-bootstrap-in-step",
+		Nickname:    "pnpm-bootstrap",
+		DisplayName: "Baseline script's pnpm matches packageManager",
+		App:         AppOther,
+		Tech:        "📏 Metrics",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      pnpmBootstrapInputs,
+		Run:         RunWebsitePnpmBootstrapInStep,
+	},
+	{
 		ID:          "workflows-rustup",
 		Nickname:    "rustup-add",
 		DisplayName: "workflows / rustup add",

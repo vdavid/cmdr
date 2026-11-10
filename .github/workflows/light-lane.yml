@@ -153,7 +153,7 @@ jobs:
       - name: Check the cross-app guards and the workflows
         if: ${{ !cancelled() && steps.ready.outcome == 'success' }}
         run: |
-          ./scripts/check/check --ci --check desktop-rust-property-mutant-records,analytics-event-catalog,analytics-settings-defaults,desktop-pluralize-noun,go-version-single-source,e2e-rust-image-pin,workflows-hardening,workflows-rustup,ci-coverage
+          ./scripts/check/check --ci --check desktop-rust-property-mutant-records,analytics-event-catalog,analytics-settings-defaults,desktop-pluralize-noun,go-version-single-source,e2e-rust-image-pin,website-pnpm-bootstrap-in-step,workflows-hardening,workflows-rustup,ci-coverage
 
       # ---- Repo hygiene: only when their inputs changed ----
 

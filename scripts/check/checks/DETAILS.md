@@ -2482,7 +2482,9 @@ doubles as production code.
   wider than 100 chars in agent-facing docs), changelog-commit-links, workflows-rustup (forbids
   `rustup target/component add` in workflows), e2e-rust-image-pin (errors when the Linux E2E `Dockerfile.base`'s `rust:`
   image or `RUSTUP_TOOLCHAIN` names a version other than `rust-toolchain.toml`'s channel; a stale image made rustup
-  re-download the toolchain in every container), ci-coverage (registry-to-workflows contract)
+  re-download the toolchain in every container), website-pnpm-bootstrap-in-step (errors when the hash-locked pnpm
+  manifest `apps/website/scripts/update-visual-baselines.sh` installs from, or its lockfile, names a version other than
+  the root `packageManager`), ci-coverage (registry-to-workflows contract)
 - **Other / Go**: go-version-single-source (errors when anything but `.mise.toml` names a Go toolchain version, when the
   `go.mod` floors disagree with each other, or when a floor exceeds the pinned toolchain)
 - **Other / Security**: workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`,

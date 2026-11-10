@@ -84,10 +84,16 @@ else
   echo "==> committed baselines (container: $IMAGE): compare, refresh only failures"
 fi
 
-# Runs as root so corepack can write its pnpm shim, but the container's install and build go
-# into anonymous volumes (the `-v /repo/...` with no host side) so the main clone's macOS
-# node_modules and dist are never overwritten. Only the snapshots dir is a real bind-mount
-# write; we chown it back to the host user before exiting.
+# pnpm comes from `npm ci` on `scripts/pnpm-bootstrap/` (copied out of the bind mount first, so
+# its node_modules stays in the container): the image's Node 26 has no corepack, and `npm ci`
+# from a lockfile is hash-pinned where `npm install --global pnpm@<v>` isn't (OpenSSF Scorecard's
+# Pinned-Dependencies flags that). The manifest holds the root `packageManager` version; the
+# `website-pnpm-bootstrap-in-step` check keeps the two equal.
+#
+# Runs as root, but the container's install and build go into anonymous volumes (the
+# `-v /repo/...` with no host side) so the main clone's macOS node_modules and dist are never
+# overwritten. Only the snapshots dir is a real bind-mount write; we chown it back to the host
+# user before exiting.
 docker run --rm \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
   -e CI=1 \
@@ -100,7 +106,10 @@ docker run --rm \
   "$IMAGE" \
   bash -lc '
     set -e
-    corepack enable
+    mkdir -p /opt/pnpm-bootstrap
+    cp apps/website/scripts/pnpm-bootstrap/package.json apps/website/scripts/pnpm-bootstrap/package-lock.json /opt/pnpm-bootstrap/
+    npm ci --prefix /opt/pnpm-bootstrap --no-audit --no-fund
+    export PATH="/opt/pnpm-bootstrap/node_modules/.bin:$PATH"
     pnpm install --frozen-lockfile --filter @cmdr/website
     pnpm --filter @cmdr/website build
     cd apps/website
