@@ -26,7 +26,15 @@ vi.mock('#lib/onboarding/fda-status.svelte.js', () => ({
 
 import { getUserFriendlyMessage, mayBeAPermissionGrantAway } from './transfer-error-messages'
 
-const ALL_REASONS: TrashRefusalKind[] = ['notPermitted', 'locked', 'folderNotWritable', 'noTrashForVolume', 'other']
+const ALL_REASONS: TrashRefusalKind[] = [
+  'notPermitted',
+  'locked',
+  'folderNotWritable',
+  'ownedByAnotherUser',
+  'trashNotWritable',
+  'noTrashForVolume',
+  'other',
+]
 
 function refused(reason: TrashRefusalKind, itemCount = 7, onlineOnly = false) {
   return getUserFriendlyMessage({ type: 'trash_refused', itemCount, reason, message: 'os words', onlineOnly }, 'trash')
@@ -62,20 +70,30 @@ describe('a refused trash', () => {
     }
   })
 
-  it('offers a permanent delete only where the location, not a permission, is what refused', () => {
+  // A refusing trash folder blocks only the trash: a permanent delete never goes
+  // near it, so it's the one way through Cmdr still has (cmdr-reports#104).
+  it('offers a permanent delete only where the trash, not the item, is what refused', () => {
     expect(refused('noTrashForVolume').suggestion).toContain('Shift+F8')
+    expect(refused('trashNotWritable').suggestion).toContain('Shift+F8')
   })
 
   // A permanent delete needs the same permission the trash was refused, so offering it
   // there sends the user into a second refusal. Regression anchor: ERR-JQK62.
   it('never offers a permanent delete for a permission refusal', () => {
-    for (const reason of ['notPermitted', 'locked', 'folderNotWritable'] as const) {
+    for (const reason of ['notPermitted', 'locked', 'folderNotWritable', 'ownedByAnotherUser'] as const) {
       expect(refused(reason).suggestion).not.toContain('Shift+F8')
     }
   })
 
   it('tells the user how to unlock a Locked item', () => {
     expect(refused('locked').suggestion).toContain('Get Info')
+  })
+
+  // The reporter of ERR-KKQHK had Full Disk Access and an ordinary file, and Finder
+  // trashed it. With nothing more specific to say, pointing at Finder is the next step.
+  it('points an unexplained permission refusal at Finder', () => {
+    expect(refused('notPermitted').suggestion).toContain('Finder')
+    expect(refused('ownedByAnotherUser').suggestion).toContain('Finder')
   })
 
   describe('the Full Disk Access line', () => {

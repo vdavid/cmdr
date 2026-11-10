@@ -2415,11 +2415,15 @@
   "errors.write.trashRefused.message.notPermitted": "macOS wouldn’t let Cmdr touch {count} of the items you picked.",
   "errors.write.trashRefused.message.locked": "macOS won’t move locked items, and that kept {count} of the items you picked where they were.",
   "errors.write.trashRefused.message.folderNotWritable": "Cmdr isn’t allowed to change the folder holding {count} of the items you picked, so they stayed where they were.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
+  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
   "errors.write.trashRefused.message.noTrashForVolume": "macOS couldn’t find a trash for {count} of the items you picked.",
   "errors.write.trashRefused.message.other": "macOS wouldn’t move {count} of the items you picked to the trash.",
-  "errors.write.trashRefused.suggestion.notPermitted": "The items may sit somewhere macOS keeps to itself.",
+  "errors.write.trashRefused.suggestion.notPermitted": "The items may sit somewhere macOS keeps to itself. Finder can sometimes still move them, since it can ask for your password.",
   "errors.write.trashRefused.suggestion.locked": "To move them, unlock them first in Finder: Get Info, then uncheck Locked.",
   "errors.write.trashRefused.suggestion.folderNotWritable": "To move them, you need permission to change their folder. Finder shows who can in the folder’s Get Info, under Sharing & Permissions.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
   "errors.write.trashRefused.suggestion.noTrashForVolume": "Some places have no trash of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.",
   "errors.write.trashRefused.suggestion.other": "Check the technical details below for what macOS reported.",
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr also doesn’t have full disk access on this Mac, which is a common cause. The “No full disk access” badge in the title bar takes you to that choice.",
@@ -2450,6 +2454,22 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "@errors.write.trashRefused.message.ownedByAnotherUser": {
+    "description": "Explanation when macOS refused because another user account on the same Mac owns the items, and the folder holding them is a shared kind (like the system's temporary folder) that lets only each item's owner move it. Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"Mac\" is Apple's product name and stays as-is.",
+    "placeholders": {
+      "count": "how many top-level items were refused, already formatted for the locale (for example 7)"
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.trashRefused.message.trashNotWritable": {
+    "description": "Explanation when the items themselves were fine, but the trash folder of the drive they're on doesn't let the app add anything to it (its permissions are wrong). Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"Cmdr\" is the app name and stays as-is. Word \"trash\" the way your locale's macOS names it.",
+    "placeholders": {
+      "count": "how many top-level items were refused, already formatted for the locale (for example 7)"
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.write.trashRefused.message.noTrashForVolume": {
     "description": "Explanation when macOS said it couldn't find a trash for the items' location. Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"macOS\" stays as-is.",
     "placeholders": {
@@ -2467,7 +2487,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "description": "Recovery suggestion for a permission-shaped trash refusal that isn't a Locked item or an unchangeable folder (those have their own suggestions). Plain text. Deliberately does NOT say \"try again\": retrying cannot change a permission refusal. \"somewhere macOS keeps to itself\" means a location behind the operating system's own privacy protection; keep it plain rather than naming a macOS feature.",
+    "description": "Recovery suggestion for a permission-shaped trash refusal that Cmdr couldn't pin on anything more specific (a Locked item, an unchangeable folder, and the other known causes have their own suggestions). Plain text. Deliberately does NOT say \"try again\": retrying cannot change a permission refusal. \"somewhere macOS keeps to itself\" means a location behind the operating system's own privacy protection; keep it plain rather than naming a macOS feature. The second sentence points at Finder because Finder can ask for the user's password to move an item, which Cmdr can't. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
     "screenshot": "transfer-error-trash_refused.png"
   },
   "@errors.write.trashRefused.suggestion.locked": {
@@ -2477,6 +2497,16 @@
   },
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "description": "Recovery suggestion when the user may not change the folder holding the items. Plain text. Apple localizes \"Get Info\" (the Finder menu command) and \"Sharing & Permissions\" (a section of its Info window), so use your locale's Finder wording for both. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
+    "description": "Recovery suggestion when another user account owns the items and their folder lets only an item's owner move it. Plain text. Finder can do it after the user types in an administrator account's password, which Cmdr can't ask for. \"Finder\" is the app name: use whatever your locale's macOS calls it. Deliberately does NOT say \"try again\".",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.trashRefused.suggestion.trashNotWritable": {
+    "description": "Recovery suggestion when the drive's trash folder doesn't let the app add anything to it. Plain text. The first sentence says how that usually happens (moving to a new Mac is one example); the second offers deleting permanently instead, which doesn't need the trash. Shift+F8 is a keyboard shortcut and stays as-is.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },

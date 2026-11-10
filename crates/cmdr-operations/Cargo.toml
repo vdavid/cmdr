@@ -117,7 +117,14 @@ trash = "5.3"
 # Moving to the Trash through `NSFileManager`, and asking it which trash a volume
 # uses.
 objc2 = { version = "0.6", features = ["std", "exception"] }
-objc2-foundation = { version = "0.3", features = ["NSURL", "NSString", "NSError", "NSFileManager", "NSPathUtilities"] }
+objc2-foundation = { version = "0.3", features = [
+  "NSURL",
+  "NSString",
+  "NSError",
+  "NSFileManager",
+  "NSPathUtilities",
+  "NSDictionary",
+] }
 # Reading the quarantine an extracted archive carries onto what it extracts.
 # Linux has no quarantine, so the shipped engine reads no xattr there.
 xattr = "1"

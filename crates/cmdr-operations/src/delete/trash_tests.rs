@@ -505,6 +505,86 @@ fn a_batch_ranks_the_item_level_refusals_between_permission_and_no_trash() {
         strongest_refusal(&[item(TrashRefusalKind::Locked), item(TrashRefusalKind::NotPermitted)]),
         TrashRefusalKind::NotPermitted
     );
+    assert_eq!(
+        strongest_refusal(&[
+            item(TrashRefusalKind::NoTrashForVolume),
+            item(TrashRefusalKind::TrashNotWritable),
+            item(TrashRefusalKind::OwnedByAnotherUser),
+        ]),
+        TrashRefusalKind::OwnedByAnotherUser
+    );
+    assert_eq!(
+        strongest_refusal(&[
+            item(TrashRefusalKind::TrashNotWritable),
+            item(TrashRefusalKind::FolderNotWritable)
+        ]),
+        TrashRefusalKind::FolderNotWritable
+    );
+    assert_eq!(
+        strongest_refusal(&[
+            item(TrashRefusalKind::NoTrashForVolume),
+            item(TrashRefusalKind::TrashNotWritable)
+        ]),
+        TrashRefusalKind::TrashNotWritable
+    );
+}
+
+/// The refusal's technical detail carries the `NSError` codes beside the OS's words,
+/// so a report can tell refusals with the same sentence apart. Regression anchor:
+/// ERR-KKQHK (cmdr-reports#104), whose bundle held only the sentence.
+#[cfg(target_os = "macos")]
+#[test]
+fn a_refusal_names_its_error_codes() {
+    let tmp = create_test_dir("trash_refusal_codes");
+    let file = tmp.join("locked.txt");
+    fs::write(&file, "content").unwrap();
+    set_locked(&file, true);
+
+    let result = move_to_trash_sync(&file);
+    set_locked(&file, false);
+
+    let Err(MutationError::TrashRefused { detail, .. }) = result else {
+        panic!("expected a refusal, got {result:?}");
+    };
+    assert!(
+        detail.ends_with("]") && detail.contains("[NSCocoaErrorDomain 513"),
+        "the codes ride along: {detail}"
+    );
+}
+
+/// A sticky folder (`/tmp`'s `+t`) refuses a move of an item someone else owns even
+/// though the folder itself is writable (cmdr-reports#104's repro on macOS 27.0: a
+/// root-owned file in `/private/tmp` refuses as 513).
+#[test]
+fn a_sticky_folder_keeps_only_what_someone_else_owns() {
+    const STICKY_WRITABLE: u32 = 0o41777;
+    let facts = |folder_mode, folder_owner, item_owner, us| StickyFacts {
+        folder_mode,
+        folder_owner,
+        item_owner,
+        us,
+    };
+
+    assert!(
+        sticky_rule_refuses(facts(STICKY_WRITABLE, 0, 0, 501)),
+        "root's file in /tmp"
+    );
+    assert!(
+        !sticky_rule_refuses(facts(STICKY_WRITABLE, 0, 501, 501)),
+        "our own file"
+    );
+    assert!(
+        !sticky_rule_refuses(facts(STICKY_WRITABLE, 501, 0, 501)),
+        "our own folder"
+    );
+    assert!(
+        !sticky_rule_refuses(facts(STICKY_WRITABLE, 0, 0, 0)),
+        "root may move anything"
+    );
+    assert!(
+        !sticky_rule_refuses(facts(0o40777, 0, 0, 501)),
+        "a folder that isn't sticky"
+    );
 }
 
 #[test]

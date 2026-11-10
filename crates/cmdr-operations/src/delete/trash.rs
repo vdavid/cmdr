@@ -67,7 +67,10 @@ pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, MutationError>
             .trashItemAtURL_resultingItemURL_error(&url, Some(&mut resulting))
             .map_err(|e| MutationError::TrashRefused {
                 reason: refine_permission_refusal(path, classify_trash_refusal(&e)),
-                detail: e.to_string(),
+                // The codes ride along with the words: the words are the user's, but the
+                // codes (the underlying one most of all) are what a report needs to tell
+                // two refusals with the same sentence apart (cmdr-reports#104).
+                detail: format!("{e} [{}]", error_codes(&e)),
             })?;
         let in_trash = resulting.and_then(|u| u.path()).map(|p| PathBuf::from(p.to_string()));
         #[cfg(any(test, feature = "testing"))]
@@ -114,13 +117,43 @@ fn classify_trash_refusal(error: &objc2_foundation::NSError) -> TrashRefusalKind
     }
 }
 
-/// Narrow a [`TrashRefusalKind::NotPermitted`] down to what the item and its folder
-/// say about themselves, since the `NSError` can't: a Locked item and an item in a
-/// folder that takes no writes both refuse as 513 (verified on macOS 27.0 with
-/// `trashItemAtURL` on a `chflags uchg` file and on a file in a `0555` folder,
-/// 2026-10-14). Neither is a grant away, and a permanent delete refuses them too, so
-/// each gets its own advice. Asked right after the refusal: `trashItemAtURL` is
-/// atomic, so the item is still where it was.
+/// An `NSError`'s domain and code, then each `NSUnderlyingErrorKey` below it, as
+/// `NSCocoaErrorDomain 513 < NSOSStatusErrorDomain -5000`. Capped at four levels
+/// so a cyclic or very deep chain can't run away.
+#[cfg(target_os = "macos")]
+fn error_codes(error: &objc2_foundation::NSError) -> String {
+    use objc2::Message;
+    use objc2_foundation::{NSError, NSUnderlyingErrorKey};
+
+    // SAFETY: `NSUnderlyingErrorKey` is an immutable `NSString` constant Foundation
+    // exports and initializes before any code of ours runs.
+    let key = unsafe { NSUnderlyingErrorKey };
+    let mut codes = Vec::new();
+    let mut current = Some(error.retain());
+    while let Some(level) = current.take() {
+        codes.push(format!("{} {}", level.domain(), level.code()));
+        if codes.len() == 4 {
+            break;
+        }
+        current = level
+            .userInfo()
+            .objectForKey(key)
+            .and_then(|underlying| underlying.downcast::<NSError>().ok());
+    }
+    codes.join(" < ")
+}
+
+/// Narrow a [`TrashRefusalKind::NotPermitted`] down to what the item, its folder,
+/// and its Trash say about themselves, since the `NSError` can't: each of these
+/// refuses as 513, the same code a spot behind macOS's privacy protection gives.
+/// None is a grant away, so each gets its own advice. Asked right after the
+/// refusal: `trashItemAtURL` is atomic, so the item is still where it was.
+///
+/// (verified on macOS 27.0 with `trashItemAtURL`: a `chflags uchg` file and a file
+/// in a `0555` folder, 2026-10-14; a root-owned file in `/private/tmp` and a file
+/// on a disk image whose `.Trashes/<uid>` is `0500`, both 513 over
+/// `NSOSStatusErrorDomain -5000`, 2026-11-10. `NSWorkspace.recycleURLs` refuses
+/// both of the latter with the same 513, so it's no fallback.)
 #[cfg(target_os = "macos")]
 fn refine_permission_refusal(path: &Path, reason: TrashRefusalKind) -> TrashRefusalKind {
     use super::super::error_classification::is_locked_item;
@@ -132,13 +165,57 @@ fn refine_permission_refusal(path: &Path, reason: TrashRefusalKind) -> TrashRefu
     if is_locked_item(path) {
         return TrashRefusalKind::Locked;
     }
-    if path
-        .parent()
-        .is_some_and(|folder| folder_write_refusal(folder).is_some())
-    {
-        return TrashRefusalKind::FolderNotWritable;
+    if let Some(folder) = path.parent() {
+        if folder_write_refusal(folder).is_some() {
+            return TrashRefusalKind::FolderNotWritable;
+        }
+        if sticky_folder_keeps_it(path, folder) {
+            return TrashRefusalKind::OwnedByAnotherUser;
+        }
+    }
+    if trash_dir_for_path(path).is_some_and(|trash| folder_write_refusal(&trash).is_some()) {
+        return TrashRefusalKind::TrashNotWritable;
     }
     reason
+}
+
+/// Whether `folder` is sticky and keeps `item` from us: a sticky folder lets only
+/// the item's owner, the folder's owner, or root move an item out, however
+/// writable the folder is.
+#[cfg(target_os = "macos")]
+fn sticky_folder_keeps_it(item: &Path, folder: &Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+
+    let (Ok(item_meta), Ok(folder_meta)) = (fs::symlink_metadata(item), fs::metadata(folder)) else {
+        return false;
+    };
+    // SAFETY: `geteuid` takes no arguments, touches no memory of ours, and can't fail.
+    let euid = unsafe { libc::geteuid() };
+    sticky_rule_refuses(StickyFacts {
+        folder_mode: folder_meta.mode(),
+        folder_owner: folder_meta.uid(),
+        item_owner: item_meta.uid(),
+        us: euid,
+    })
+}
+
+/// What the sticky-folder rule looks at, as plain numbers so the rule is testable
+/// without a second account on the machine.
+#[cfg(any(target_os = "macos", test))]
+#[derive(Debug, Clone, Copy)]
+struct StickyFacts {
+    folder_mode: u32,
+    folder_owner: u32,
+    item_owner: u32,
+    us: u32,
+}
+
+/// The kernel's sticky-folder rule (`S_ISVTX`, sticky(7)): it refuses a rename
+/// unless we're root or own the item or the folder.
+#[cfg(any(target_os = "macos", test))]
+fn sticky_rule_refuses(facts: StickyFacts) -> bool {
+    const S_ISVTX: u32 = 0o1000;
+    facts.folder_mode & S_ISVTX != 0 && facts.us != 0 && facts.item_owner != facts.us && facts.folder_owner != facts.us
 }
 
 /// Moves `path` to the trash via the `trash` crate. Returns `Ok(None)`: the crate
@@ -635,13 +712,16 @@ pub(crate) fn trash_files_with_progress(
 /// Takes the one that opens the most doors for the user rather than the most common:
 /// a batch of nine items where one was refused for permission is still a batch where
 /// granting a permission might help, and the majority answer would hide that. The
-/// two reasons read from the item itself (Locked, a folder that takes no writes) come
-/// next: each names a concrete fix the user can make.
+/// reasons read from the item and where it sits (Locked, a folder that takes no
+/// writes, a sticky folder, a Trash that takes no writes) come next: each names a
+/// concrete fix the user can make.
 fn strongest_refusal(errors: &[TrashItemError]) -> TrashRefusalKind {
-    const RANKED: [TrashRefusalKind; 4] = [
+    const RANKED: [TrashRefusalKind; 6] = [
         TrashRefusalKind::NotPermitted,
         TrashRefusalKind::Locked,
         TrashRefusalKind::FolderNotWritable,
+        TrashRefusalKind::OwnedByAnotherUser,
+        TrashRefusalKind::TrashNotWritable,
         TrashRefusalKind::NoTrashForVolume,
     ];
     RANKED

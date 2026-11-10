@@ -303,13 +303,34 @@ is one, comes from sizes computed before the batch started, never from the trash
 - **Some taken, some refused** → `write-complete` with `refused: Some(TrashRefusedItems { item_count, reason })`, the
   same `strongest_refusal`, so the mixed ending explains itself exactly as the total one does.
 
-**A permission refusal is narrowed by the item, at the refusal** (`trash.rs::refine_permission_refusal`). A Locked item
-and an item in a folder we can't write both come back as the same 513 a TCC-protected spot does (verified on macOS 27.0
-with `trashItemAtURL` on a `chflags uchg` file and on a file in a `0555` folder, 2026-10-14), so the `NSError` can't
-tell them apart, but the item can: a lock flag makes it `Locked`, else a parent failing `access(W_OK)` makes it
-`FolderNotWritable`, else it stays `NotPermitted`. Each gets its own fix-it advice, and none of the three is offered a
-permanent delete, which the same permission refuses. Rank in `strongest_refusal`: `NotPermitted` (may be a grant away),
-`Locked`, `FolderNotWritable`, `NoTrashForVolume`, `Other`. Regression anchor: ERR-JQK62.
+**A permission refusal is narrowed by the item, at the refusal** (`trash.rs::refine_permission_refusal`). Each of these
+comes back as the same 513 a TCC-protected spot does, so the `NSError` can't tell them apart, but the item and where it
+sits can, asked in this order:
+
+- **A lock flag** (`uchg`, `schg`, append-only) → `Locked`.
+- **A parent failing `access(W_OK)`** → `FolderNotWritable`.
+- **A sticky parent (`+t`) where neither the item nor the folder is ours** → `OwnedByAnotherUser`. `access(W_OK)` passes
+  there, so only the ownership rule (`sticky_rule_refuses`) sees it. Finder gets through by asking for an admin password
+  (its usual prompt, not re-tested for this case).
+- **The item's trash folder (`trash_dir_for_path`) failing `access(W_OK)`** → `TrashNotWritable`, as after a migration
+  leaves `~/.Trash` owned by someone else. The only one offered a permanent delete: the source folder is fine.
+- **Else** it stays `NotPermitted`.
+
+(verified on macOS 27.0 with `trashItemAtURL`: a `chflags uchg` file and a file in a `0555` folder, 2026-10-14; a
+root-owned file hard-linked into `/private/tmp`, and a file on a disk image whose `.Trashes/501` is `0500`, both 513
+over `NSOSStatusErrorDomain -5000`, 2026-11-10.) Rank in `strongest_refusal`: `NotPermitted` (may be a grant away),
+`Locked`, `FolderNotWritable`, `OwnedByAnotherUser`, `TrashNotWritable`, `NoTrashForVolume`, `Other`. Regression
+anchors: ERR-JQK62, ERR-KKQHK.
+
+**The refusal's `detail` carries the `NSError` codes**, underlying chain included (`error_codes`:
+`[NSCocoaErrorDomain 513 < NSOSStatusErrorDomain -5000]`), after the OS's sentence. The sentence is identical across
+every cause above; the codes are what a report can tell apart.
+
+**Decision/Why no `NSWorkspace.recycleURLs` fallback.** It looked like a way through for an unexplained 513 ("it goes
+via Finder"), but on macOS 27.0 it refused both reproducible 513 cases above with the same 513, while plain files with
+`com.apple.macl`, quarantine, and provenance attributes trashed fine through `trashItemAtURL` (2026-11-10, a Swift probe
+calling both APIs). Finder's edge is that it can ask for an admin password, which no in-process API gives us, so the
+copy points there instead (cmdr-reports#104).
 
 **Why `refused` exists as its own field.** The mixed ending used to emit a bare completion with `files_skipped: 0` and
 nothing else: two items in, one trashed, and the terminal event said "1 file, 0 skipped" while the refused one sat

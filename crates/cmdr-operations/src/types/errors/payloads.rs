@@ -233,6 +233,16 @@ pub enum TrashRefusalKind {
     /// takes no writes from us (`access(W_OK)` on the parent), which a move to the
     /// Trash needs. Same 513 again; read from the folder, at the refusal.
     FolderNotWritable,
+    /// A permission refusal where another account owns the item and its folder is
+    /// sticky (`chmod +t`, like `/tmp`): such a folder lets only each item's owner
+    /// (or the folder's) move it, which `access(W_OK)` on the folder can't see.
+    /// Finder gets past it with an administrator's password; we can't.
+    OwnedByAnotherUser,
+    /// A permission refusal where the item and its folder are fine but the Trash
+    /// the item would land in takes no writes from us (`access(W_OK)` on
+    /// `trash_dir_for_path`), as after a migration leaves `~/.Trash` owned by
+    /// someone else. A permanent delete still works, since it never touches the Trash.
+    TrashNotWritable,
     /// macOS couldn't find a Trash for the item's volume
     /// (`NSFeatureUnsupportedError`). It reads as "this volume doesn't have one",
     /// and that is what it says for a File Provider folder the app can't reach,
