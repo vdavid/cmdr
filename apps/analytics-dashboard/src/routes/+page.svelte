@@ -70,7 +70,14 @@
     {todayIso}
 />
 
-<CountryFunnelSection funnelCountries={data.funnelCountries} {country} selection={data.selection} {countryHref} />
+<CountryFunnelSection
+    funnelCountries={data.funnelCountries}
+    {country}
+    selection={data.selection}
+    {countryHref}
+    {days}
+    onselectcountry={selectCountry}
+/>
 
 <!-- Acquisition sections -->
 <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">

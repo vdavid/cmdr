@@ -425,6 +425,9 @@ below that. It takes `days` (7, 30, or 90, default 30) for its title; the data w
   `#lib/country-table.ts`. An "Other" column is a dash as soon as any folded country is a dash there (`sumNullable`): a
   partial sum would pass for the whole, and clicks are only looked up for the top 12, so Other's clicks are always a
   dash.
+- **Country names** carry their `#lib/country-colors.ts` dot (the color they wear in the trend charts) and, given
+  `onselectcountry`, a plain click switches the page's filter in place like a chip; a modified click keeps the link's
+  full load (new tab).
 - **D28 is optional end to end.** `mergeCountryRows` reads `d28Cohort`/`d28Retained` only when the worker sends them on
   at least one row; until then every D28 cell is `null` (a dash), never 0.
 - **The count color scale** (`#lib/count-color-scale.ts`) colors the map fill and the four count columns (as a tinted

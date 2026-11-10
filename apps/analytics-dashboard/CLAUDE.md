@@ -5,8 +5,8 @@ Pages at `analdash.getcmdr.com`, behind Cloudflare Access plus an in-app JWT gat
 
 ## Pages
 
-Four routes share `routes/+layout.svelte` (sticky header: brand, page nav, range picker). The picker writes `?range=`
-(7d / 30d / 90d) and hides on the ledger pages (`/licenses`, `/links`).
+Four routes share `routes/+layout.svelte` (header: nav, range picker). The picker writes `?range=` (7d / 30d / 90d),
+hidden on the ledger pages (`/licenses`, `/links`).
 
 - `/` (Acquisition, `routes/+page.svelte`): funnel trend charts (`?country=` scoped), country table, more sections.
 - `/product` (`routes/product/`): active use, settings adoption, payment, retention, feedback & errors.

@@ -12,6 +12,7 @@
     import { mapIdsForCountry } from '#lib/country-geo.js'
     import { COUNT_SCALE_PURPLE_AT, countColor, exceedsCountScale } from '#lib/count-color-scale.js'
     import { formatCountry, formatNumber, formatPercent } from '#lib/format.js'
+    import { countryColor } from '#lib/country-colors.js'
     import InfoPopover from '../InfoPopover.svelte'
     import ErrorState from '../ErrorState.svelte'
     import WorldMap from '../WorldMap.svelte'
@@ -22,10 +23,19 @@
         selection: DashboardSelection
         countryHref: (country: string | null) => string
         /** The window the numbers cover, for the title. */
-        days?: 7 | 30 | 90
+        days?: number
+        /** Switch the page's country filter in place. Without it, a country link does a full page load. */
+        onselectcountry?: (country: string | null) => void
     }
 
-    const { funnelCountries, country, selection, countryHref, days = 30 }: Props = $props()
+    const { funnelCountries, country, selection, countryHref, days = 30, onselectcountry }: Props = $props()
+
+    /** A plain click switches the filter in place; a modified click (new tab) keeps the link's own behavior. */
+    function handleCountryClick(event: MouseEvent, code: string) {
+        if (!onselectcountry || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+        event.preventDefault()
+        onselectcountry(code)
+    }
 
     /** Countries past this fold into one "Other" row. */
     const topCount = 20
@@ -210,8 +220,20 @@
                             {#each table.top as r (r.country)}
                                 <tr class="border-b border-border-subtle {r.country === country ? 'bg-accent/10' : ''}">
                                     <th scope="row" class="py-1.5 pr-3 text-left font-medium text-text-primary">
-                                        <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- `countryHref` builds it with resolve('/') -->
-                                        <a class="hover:text-accent" href={countryHref(r.country)}>{formatCountry(r.country)}</a>
+                                        <!-- eslint-disable svelte/no-navigation-without-resolve -- `countryHref` builds it with resolve('/') -->
+                                        <a
+                                            class="inline-flex items-center gap-2 hover:text-accent"
+                                            href={countryHref(r.country)}
+                                            onclick={(e: MouseEvent) => { handleCountryClick(e, r.country); }}
+                                        >
+                                            <span
+                                                class="inline-block size-2.5 shrink-0 rounded-full"
+                                                style="background-color: {countryColor(r.country)}"
+                                                aria-hidden="true"
+                                            ></span>
+                                            {formatCountry(r.country)}
+                                        </a>
+                                        <!-- eslint-enable svelte/no-navigation-without-resolve -->
                                     </th>
                                     {@render countCells(r)}
                                 </tr>
