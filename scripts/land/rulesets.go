@@ -38,6 +38,10 @@ func rulesets(r runner, args []string) error {
 		if err != nil {
 			return err
 		}
+		if p := placeholderActor(want); p != "" {
+			say("%q waits: %s names bypass actor %q, a placeholder. Put the real id in, then -apply (scripts/land/DETAILS.md § The rulesets).", name, filepath.Base(file), p)
+			continue
+		}
 		method, path := "POST", fmt.Sprintf("repos/%s/rulesets", repo)
 		if id, ok := ids[name]; ok {
 			method, path = "PUT", fmt.Sprintf("%s/%d", path, id)
@@ -95,6 +99,22 @@ func covers(want, live any) bool {
 	default:
 		return want == live
 	}
+}
+
+// placeholderActor is the first bypass actor id the file gives as a string, like
+// "CMDR_AGENTS_APP_ID", or "" when every id is a number. GitHub takes numbers only, so a file with
+// a placeholder is one waiting for an id that doesn't exist yet, and `rulesets` leaves it alone
+// rather than send GitHub a ruleset it refuses halfway through an `-apply`.
+func placeholderActor(rs any) string {
+	m, _ := rs.(map[string]any)
+	actors, _ := m["bypass_actors"].([]any)
+	for _, a := range actors {
+		actor, _ := a.(map[string]any)
+		if id, ok := actor["actor_id"].(string); ok {
+			return id
+		}
+	}
+	return ""
 }
 
 // readRuleset reads a ruleset file: its name, and the whole of it for `covers`.

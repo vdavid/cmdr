@@ -5,6 +5,26 @@ import (
 	"testing"
 )
 
+func TestPlaceholderActor(t *testing.T) {
+	cases := []struct {
+		name, file, want string
+	}{
+		{"numeric ids only", `{"bypass_actors": [{"actor_id": 5}, {"actor_id": 2740}]}`, ""},
+		{"no bypass actors", `{"bypass_actors": []}`, ""},
+		{"no bypass key", `{"rules": []}`, ""},
+		{"a named placeholder", `{"bypass_actors": [{"actor_id": 5}, {"actor_id": "CMDR_AGENTS_APP_ID"}]}`, "CMDR_AGENTS_APP_ID"},
+	}
+	for _, c := range cases {
+		var rs any
+		if err := json.Unmarshal([]byte(c.file), &rs); err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if got := placeholderActor(rs); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
 func TestCovers(t *testing.T) {
 	file := `{"name": "main: CI OK required", "bypass_actors": [], "rules": [{"type": "required_status_checks",
 		"parameters": {"strict_required_status_checks_policy": false, "required_status_checks": [{"context": "CI OK", "integration_id": 15368}]}}]}`

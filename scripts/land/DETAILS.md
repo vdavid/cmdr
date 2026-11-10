@@ -10,7 +10,11 @@ GitHub by name and leaves every other ruleset alone.
 - `main-pr-required.json` ("main: PR with approval"): a PR with one approval, stale approvals dismissed, last-push
   approval. Bypass: the repository admin role (`RepositoryRole` 5, David) and the Renovate app (`Integration` 2740, the
   `renovate` app that opens and merges our Renovate PRs). These are the settings Scorecard's Branch-Protection tier 2
-  looks for; the bypass actors cost only tier 5.
+  looks for; the bypass actors cost only tier 5. The third entry, the Cmdr agents GitHub App the headless M1 agents land
+  as (`scripts/slow-checks-fixer/DETAILS.md` § Credentials), still reads `"CMDR_AGENTS_APP_ID"`: a placeholder for the
+  App's numeric id (its App id, not the installation id; `secret CMDR_AGENTS_APP_ID` on the M1). `pnpm land rulesets`
+  skips a file with a string `actor_id` and says so, so `-apply` never half-applies. That's this ruleset's only bypass
+  the App gets: CI, signed commits, no force-push, and release tags keep it out.
 - `main-ci-required.json` ("main: CI OK required"): the `CI OK` check (job `ci-ok` in `.github/workflows/ci.yml`),
   pinned to the GitHub Actions app (`integration_id` 15368) so no other app can post a passing `CI OK`. `strict` is off,
   so GitHub merges a PR whose head is green even when `main` moved since (§ Decision: merge a green PR onto a moved
@@ -25,6 +29,11 @@ GitHub by name and leaves every other ruleset alone.
   bypass: its squash merges are signed by GitHub.
 - All five live here so a repo move or a lost setting can be restored with `-apply` (the first four exported from the
   live rulesets, 2026-10-22, where `pnpm land rulesets` reported all four matching).
+- No path-restriction rule exists for `main`: GitHub refuses push rulesets on public repos
+  (`422 "Source public repos cannot have push rules"`) and branch rulesets reject `file_path_restriction`
+  (`422 "Invalid rule"`), verified by POSTing disabled probe rulesets via `gh api` on the free `getcmdr` org, 2026-11-10
+  (neither was created). Org-level push rulesets would apply, but need GitHub Team (docs.github.com "About rulesets",
+  2026-11-10).
 - `pnpm land rulesets` compares each file with GitHub's copy and names only the ones that drifted. GitHub answers with
   defaults the files leave out, so a field missing from a file isn't drift.
 
