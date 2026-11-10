@@ -28,13 +28,14 @@ async fn smoke_groq_translate_shaped_completion() {
     let backend = AiBackend::remote(api_key(&GROQ), GROQ.base_url.to_string(), GROQ.model.to_string());
 
     // Mirror the translate commands' option shape (temperature + capped tokens + the
-    // empty-retry wrapper), so this exercises the same path Search/Selection use. 200 tokens,
-    // not 50: every Groq production chat model reasons now, and reasoning eats the budget
-    // before any text appears. A bad draw still lands on `chat_completion_with_empty_retry`,
-    // which is itself part of what we're testing.
+    // empty-retry wrapper), so this exercises the same path Search/Selection use. 1,000
+    // tokens: every Groq production chat model reasons now, and reasoning eats the budget
+    // before any text appears. At 200, both draws of `chat_completion_with_empty_retry` came
+    // back empty on the 2026-11-06 nightly ("AI returned no text"), a red run that proved
+    // nothing about our code. The retry wrapper is still on the path and still under test.
     let options = ChatOptions::default()
         .with_temperature(0.3)
-        .with_max_tokens(200)
+        .with_max_tokens(1000)
         .with_top_p(0.9);
 
     let system = "You output one line in the form `keyword: value`. No prose.";
