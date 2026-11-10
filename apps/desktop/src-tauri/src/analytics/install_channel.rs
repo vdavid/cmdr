@@ -45,8 +45,20 @@ pub(super) async fn get() -> Option<InstallChannel> {
         .await
 }
 
+/// The `.app` bundle the running binary sits in. The updater owns that lookup, and it's macOS-only.
+#[cfg(target_os = "macos")]
+fn running_bundle() -> Option<PathBuf> {
+    crate::updater::installer::running_bundle().ok()
+}
+
+/// No `.app` bundles off macOS, so the channel is unknown there (`get` short-circuits before this anyway).
+#[cfg(not(target_os = "macos"))]
+fn running_bundle() -> Option<PathBuf> {
+    None
+}
+
 fn probe() -> Option<InstallChannel> {
-    let bundle = crate::updater::installer::running_bundle().ok();
+    let bundle = running_bundle();
     let caskroom_dirs: Vec<PathBuf> = HOMEBREW_PREFIXES
         .iter()
         .map(|prefix| Path::new(prefix).join("Caskroom"))
