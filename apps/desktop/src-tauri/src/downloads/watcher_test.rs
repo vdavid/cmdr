@@ -672,6 +672,34 @@ fn latest_download_returns_ring_value_after_event() {
     assert_eq!(watcher.latest_download(), Some(root.join("ring.txt")));
 }
 
+/// Regression (ERR-CFHX6): a download renamed away after landing stayed the
+/// ring's latest, so ⌃⌥⌘J revealed a name the pane listing no longer held and
+/// the FE's cursor move threw. The newest entry still on disk wins instead, and
+/// with none left the lookup falls through to the scan.
+#[test]
+fn latest_download_skips_a_download_renamed_away_since() {
+    let (td, root, watcher, _rx) = scripted();
+    touch(td.path(), "older.pdf");
+    touch(td.path(), "transaction-history.csv");
+    watcher.deliver(vec![created(&root.join("older.pdf"))]);
+    watcher.deliver(vec![created(&root.join("transaction-history.csv"))]);
+    assert_eq!(watcher.latest_download(), Some(root.join("transaction-history.csv")));
+
+    fs::rename(
+        root.join("transaction-history.csv"),
+        root.join("transaction-history.csv.old"),
+    )
+    .unwrap();
+    assert_eq!(watcher.latest_download(), Some(root.join("older.pdf")));
+
+    fs::remove_file(root.join("older.pdf")).unwrap();
+    assert_eq!(
+        watcher.latest_download(),
+        None,
+        "every ring entry is gone, so the scan decides"
+    );
+}
+
 #[test]
 fn scan_latest_fallback_finds_file_with_no_events() {
     let td = unhidden_tempdir();

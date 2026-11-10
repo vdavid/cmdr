@@ -116,15 +116,21 @@ add visible toast latency. Revisit if real-world feedback says CLI downloads mat
 `go_to_latest_download` resolves the target in two tiers:
 
 - **Primary — the event-driven `LatestRing`** (`watcher.latest_download()`): the most-recent eligible final-form file the
-  watcher observed this session. The ring is process-lifetime — it survives across hotkey presses and clears only on
-  restart.
+  watcher observed this session that is STILL eligible on disk (`LatestRing::latest_where(is_eligible)`, newest first).
+  The ring is process-lifetime — it survives across hotkey presses and clears only on restart — and nothing evicts a
+  download renamed, moved, or deleted after landing, so the read re-checks each entry. Without that, ⌃⌥⌘J revealed a
+  name the pane listing no longer held (ERR-CFHX6). A skipped entry stays in the ring, so a file that comes back counts
+  again.
 - **Fallback — a bounded recursive scan** (`scan_latest`, capped at `SCAN_MAX_DEPTH`, picking the max-mtime eligible
-  file), used ONLY when the ring is empty: a fresh launch where the hotkey fires before any download arrived this
-  session. Run via `spawn_blocking` so the directory walk never blocks the IPC thread. Both tiers empty → the
-  empty-state error (the FE offers to open Downloads anyway).
+  file), used ONLY when no ring entry survives: a fresh launch where the hotkey fires before any download arrived this
+  session, or every recent download gone since. Both tiers run inside one `spawn_blocking` (the ring check stats up to
+  10 paths, the scan walks the tree), so neither blocks the IPC thread. Both tiers empty → the empty-state error (the FE
+  offers to open Downloads anyway).
 
 Both tiers share the same `is_eligible` filter (hidden and partial-suffix files excluded; a regular file or a symlink to
-one accepted), so an event-detected "latest" and a scanned "latest" can't disagree.
+one accepted), so an event-detected "latest" and a scanned "latest" can't disagree. The file can still vanish between
+this answer and the FE's cursor move; `revealFileInBestPane` absorbs that miss
+(`apps/desktop/src/lib/file-explorer/navigation/DETAILS.md` § `PaneRevealAPI`).
 
 ## Testing
 

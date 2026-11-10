@@ -177,18 +177,34 @@ function focusPaneShowing(explorer: PaneRevealAPI, dir: string): Pane | null {
  * "Already shows" is volume-safe and the active tab only (see `paneShowsLocalDir`).
  * The shared `navigateToFileInPane` primitive keeps its always-navigate-the-given-
  * pane contract for "Go to path" (⌘G); only the downloads flow reuses panes.
+ *
+ * Never throws; returns whether the cursor landed on `fileName`. `moveCursor` THROWS
+ * on a name the listing doesn't hold (a dotfile with hidden files off, a file renamed
+ * or deleted since its path was read, a listing not caught up yet), but by then the
+ * user is already in the right folder: the cursor is the bonus. Every caller is a
+ * person's reveal fired with `void` (a global hotkey, a toast click, a link), where a
+ * rejection escapes unhandled and auto-sends an error report (ERR-CFHX6).
  */
 export async function revealFileInBestPane(
   explorer: PaneRevealAPI,
   location: Location,
   fileName: string,
-): Promise<void> {
-  const reused = focusPaneShowing(explorer, location.path)
-  if (reused) {
-    await explorer.moveCursor(reused, fileName, 'person')
-    return
+): Promise<boolean> {
+  try {
+    const reused = focusPaneShowing(explorer, location.path)
+    if (reused) {
+      await explorer.moveCursor(reused, fileName, 'person')
+      return true
+    }
+    return await navigateToFileInPane(explorer, explorer.getFocusedPane(), location, fileName)
+  } catch (error) {
+    log.debug('Revealed {dir} but not on {name} (hidden, or gone since): {error}', {
+      dir: location.path,
+      name: fileName,
+      error,
+    })
+    return false
   }
-  await navigateToFileInPane(explorer, explorer.getFocusedPane(), location, fileName)
 }
 
 /**
@@ -222,13 +238,5 @@ export async function revealPathInBestPane(
   const fileName = target.path.slice(lastSlash + 1)
   const location = await resolveLocationOrToast(parentDir)
   if (!location) return
-  try {
-    await revealFileInBestPane(explorer, location, fileName)
-  } catch (error) {
-    log.debug('Opened {dir} but not on {name} (hidden, or gone since): {error}', {
-      dir: parentDir,
-      name: fileName,
-      error,
-    })
-  }
+  await revealFileInBestPane(explorer, location, fileName)
 }

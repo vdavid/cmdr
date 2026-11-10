@@ -6,7 +6,10 @@ mechanics, deep-link wiring, and the smoke-test guide.
 ## Per-file rundown
 
 - **`go-to-latest.ts`**: `goToLatestDownload(explorer)` consults the watcher ring with a Downloads-scan fallback;
-  `goToDownload(explorer, dir, name)` jumps to a specific file.
+  `goToDownload(explorer, dir, name)` jumps to a specific file. Neither throws when the file isn't in the listing
+  (renamed or deleted since, or the listing hasn't caught up): the user lands in the folder without the cursor on it.
+  The global hotkey fires them with `void`, so a throw was an unhandled rejection and an auto-sent report (ERR-CFHX6).
+  The guard is `revealFileInBestPane`'s (`../file-explorer/navigation/DETAILS.md` § `PaneRevealAPI`).
 - **`go-to-latest-ids.ts`**: dedup ids for the go-to-latest INFO toasts.
 - **`event-bridge.svelte.ts`**: one `download-detected` subscription (`startDownloadsEventBridge`), dispatches per the
   settings enum, re-checks the FDA gate per event, and coalesces the macOS banner (see § One toast at a time).

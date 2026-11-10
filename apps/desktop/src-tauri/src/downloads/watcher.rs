@@ -420,11 +420,13 @@ impl DownloadsWatcher {
         self.ignore_set.is_pending(path)
     }
 
-    /// Most-recently observed eligible download, or `None` if the ring is
-    /// empty. The "go to latest download" action reads this first; if `None`
-    /// it falls back to [`Self::scan_latest_fallback`].
+    /// Most-recently observed download that is STILL an eligible file on disk,
+    /// or `None` if no ring entry is. The "go to latest download" action reads
+    /// this first; if `None` it falls back to [`Self::scan_latest_fallback`].
+    /// Stats up to the ring's capacity (10) local paths, so call it off the
+    /// IPC thread (`go_to_latest_download` runs it in `spawn_blocking`).
     pub fn latest_download(&self) -> Option<PathBuf> {
-        self.latest_ring.latest()
+        self.latest_ring.latest_where(is_eligible)
     }
 
     /// Scan the Downloads dir recursively for the most-recently modified

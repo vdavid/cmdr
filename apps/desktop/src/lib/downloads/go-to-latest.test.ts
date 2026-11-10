@@ -368,6 +368,25 @@ describe('goToLatestDownload', () => {
     expect(secondId).toBe(LATEST_DOWNLOAD_EMPTY_TOAST_ID)
   })
 
+  it('leaves the user in the folder, never throwing, when the file is not in the listing', async () => {
+    // Regression (ERR-CFHX6): the global hotkey fires this with `void`, so a cursor miss
+    // (the download renamed away, a listing not caught up yet) escaped as an unhandled
+    // rejection and auto-sent an error report.
+    goToLatestDownloadMock.mockResolvedValue({
+      status: 'ok',
+      data: {
+        path: '/Users/me/Downloads/transaction-history.csv',
+        parentDir: '/Users/me/Downloads',
+        fileName: 'transaction-history.csv',
+      },
+    })
+    paneShows('left', '/Users/me/Downloads')
+    moveCursorMock.mockRejectedValue(new Error('"transaction-history.csv" not found in the left pane listing'))
+
+    await expect(goToLatestDownload(makeExplorerStub())).resolves.toBeUndefined()
+    expect(moveCursorMock).toHaveBeenCalledWith('left', 'transaction-history.csv', 'person')
+  })
+
   it('does nothing when the explorer handle is missing (HMR / pre-mount)', async () => {
     await goToLatestDownload(undefined)
 
@@ -412,6 +431,14 @@ describe('goToDownload', () => {
     expect(navigateMock).not.toHaveBeenCalled()
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
     expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf', 'person')
+  })
+
+  it('still lands in the folder, never throwing, when the toasted file is gone from the listing', async () => {
+    // The toast's click handler awaits this from an `onclick`, so a throw escapes unhandled.
+    moveCursorMock.mockRejectedValue(new Error('"report.pdf" not found in the left pane listing'))
+
+    await expect(goToDownload(makeExplorerStub(), '/Users/me/Downloads', 'report.pdf')).resolves.toBeUndefined()
+    expect(navigateMock).toHaveBeenCalled()
   })
 
   it('does nothing when the explorer handle is missing (HMR / pre-mount)', async () => {

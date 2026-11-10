@@ -205,8 +205,9 @@ that doesn't exist — and the paths asked about are routinely gone (the item wa
 up to the nearest live ancestor for exactly that reason; see `crates/cmdr-operations/src/delete/trash.rs`.
 
 **Gotcha: revealing a trashed dotfile throws.** `explorer.moveCursor(pane, name)` throws when the name isn't in the
-visible listing, and a dotfile isn't with "show hidden files" off. The navigation has already happened by then, so the
-throw is caught and logged: the user is in the right trash, only the cursor didn't land.
+visible listing, and a dotfile isn't with "show hidden files" off. The navigation has already happened by then, so
+`revealFileInBestPane` catches and logs it (`../../file-explorer/navigation/DETAILS.md` § `PaneRevealAPI`): the user is
+in the right trash, only the cursor didn't land.
 
 **The adopted path keeps the plain toast.** A window that ADOPTED an operation it never started
 (`../../file-explorer/pane/adopted-operation.svelte.ts`) has no birth context, so it has no source folder to fall back

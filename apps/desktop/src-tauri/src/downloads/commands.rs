@@ -72,28 +72,22 @@ pub struct DownloadsWatcherStatus {
 #[tauri::command]
 #[specta::specta]
 pub async fn go_to_latest_download() -> Result<LatestDownload, GoToLatestError> {
-    let from_ring = super::runtime::with_watcher(|w| w.latest_download()).flatten();
-    let path = match from_ring {
-        Some(p) => Some(p),
-        None => {
-            // Cold-start fallback: the ring is empty (no event landed yet),
-            // so walk the Downloads dir. The walk is bounded by
-            // `SCAN_MAX_DEPTH`, but it's still I/O and we don't want the IPC
-            // handler thread to block on it for thousands of entries. Move
-            // it off via `spawn_blocking`.
-            tauri::async_runtime::spawn_blocking(|| {
-                super::runtime::with_watcher(|w| w.scan_latest_fallback()).flatten()
-            })
-            .await
-            .unwrap_or_else(|err| {
-                log::warn!(
-                    target: "downloads::watcher",
-                    "scan_latest_fallback spawn_blocking failed: {err}",
-                );
-                None
-            })
-        }
-    };
+    // Both halves touch the disk, so neither runs on the IPC handler thread.
+    // The ring answers with its newest entry still on disk (a download renamed
+    // or deleted since is skipped). When none is (cold start, or every entry
+    // gone), walk the Downloads dir: bounded by `SCAN_MAX_DEPTH`, but still
+    // I/O over possibly thousands of entries.
+    let path = tauri::async_runtime::spawn_blocking(|| {
+        super::runtime::with_watcher(|w| w.latest_download().or_else(|| w.scan_latest_fallback())).flatten()
+    })
+    .await
+    .unwrap_or_else(|err| {
+        log::warn!(
+            target: "downloads::watcher",
+            "go-to-latest lookup spawn_blocking failed: {err}",
+        );
+        None
+    });
     let Some(path) = path else {
         // Distinguish "watcher dormant" from "watcher running but ring +
         // scan turned up nothing." Without the runtime we have no resolved

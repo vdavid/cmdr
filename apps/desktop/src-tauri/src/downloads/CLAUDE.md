@@ -9,7 +9,7 @@ file). FDA-gated.
 - **`filter.rs`**: `is_eligible(path)`: not hidden, not a partial-download suffix, regular file or symlink-to-file
 - **`ignore_set.rs`**: `IgnoreSet`, a `HashMap<PathBuf, Instant>` + FIFO `VecDeque`, 5 s TTL, 1000-entry cap; suppresses
   events for paths Cmdr just wrote
-- **`latest_ring.rs`**: `LatestRing`, a capacity-10 ring of `(PathBuf, Instant)`; re-pushing moves to the back
+- **`latest_ring.rs`**: `LatestRing`, a capacity-10 ring; re-pushing moves to the back; reads skip gone files
 - **`watcher.rs`**: `DownloadsWatcher`, the debouncer handle + ignore set + ring; pure `classify_event()` /
   `translate_debounced()`; `AppHandleSink` (prod) vs `ChannelSink` (tests). Its tests live in the sibling
   `watcher_test.rs`, wired as `#[cfg(test)] mod watcher_test;` from `mod.rs`

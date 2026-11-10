@@ -31,7 +31,7 @@ const {
   whenOperationSettled: vi.fn<(id: string) => Promise<boolean>>(),
   resolveLocationOrToast: vi.fn<(dir: string) => Promise<Location | null>>(),
   navigateToDirInBestPane: vi.fn<(explorer: PaneRevealAPI, location: Location) => Promise<void>>(),
-  revealFileInBestPane: vi.fn<(explorer: PaneRevealAPI, location: Location, name: string) => Promise<void>>(),
+  revealFileInBestPane: vi.fn<(explorer: PaneRevealAPI, location: Location, name: string) => Promise<boolean>>(),
   addToast: vi.fn<(message: string, options?: ToastOptions) => string>(),
 }))
 
@@ -164,11 +164,10 @@ describe('goToTrashedItems', () => {
   })
 
   it('still leaves the user in the trash when the cursor target is hidden', async () => {
-    // `moveCursor` THROWS on a name the visible listing doesn't hold, which is
-    // what a trashed dotfile is with "show hidden files" off. Navigation already
-    // happened by then, so the throw must not escape as a fault.
+    // A trashed dotfile with "show hidden files" off isn't in the listing, so the
+    // reveal lands in the trash without the cursor (`false`); no toast, no throw.
     getOperationLogDetail.mockResolvedValue(detail([trashedItem('/Users/me/.Trash/.env')]))
-    revealFileInBestPane.mockRejectedValue(new Error('".env" not found in the left pane listing'))
+    revealFileInBestPane.mockResolvedValue(false)
 
     await expect(goToTrashedItems(explorerStub(), 'op-1', '/Users/me/Documents')).resolves.toBeUndefined()
     expect(addToast).not.toHaveBeenCalled()

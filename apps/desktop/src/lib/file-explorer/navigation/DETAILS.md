@@ -19,9 +19,9 @@ used, in `../pane/DETAILS.md`. Only the layout facts that none of those carry li
   `navigateToFileInPane` ALWAYS navigate the pane they're given (the Go-to-path contract); `revealFileInBestPane` /
   `navigateToDirInBestPane` instead REUSE a pane already showing the target dir (volume-safe, active tab only) so the
   downloads reveal doesn't duplicate a view. `revealPathInBestPane` is the best-pane family's one door for an absolute
-  path of either kind (the Ask Cmdr tool line's links): it resolves the drive, opens a folder or lands on a file, and
-  swallows the `moveCursor` throw below. Both await `navigate()`'s `NavigateResult`, bailing on `'refused'` and awaiting
-  `settled` otherwise. Don't collapse the two families.
+  path of either kind (the Ask Cmdr tool line's links): it resolves the drive, then opens a folder or lands on a file.
+  `revealFileInBestPane` never throws (the `moveCursor` throw below). Both await `navigate()`'s `NavigateResult`,
+  bailing on `'refused'` and awaiting `settled` otherwise. Don't collapse the two families.
 - **`path-resolution.ts` exists to break an import cycle**, holding only the walk-up `resolveValidPath`:
   `path-navigation.ts` imports `getLastUsedPathForVolume` from `app-status-store.ts`, so `app-status-store.ts` needs a
   cycle-free way to reach the resolver. Folding it back into `path-navigation.ts` reintroduces the cycle.
@@ -1071,7 +1071,9 @@ change. The narrowing exists for callers that CAN'T hand over a coordinator: a d
 five methods from `DialogStateDeps.getExplorer()` instead of taking a dependency on tabs, volumes, and the MCP surface
 it has no business reaching. See `../pane/DETAILS.md` § "A dialog outcome that navigates".
 
-⚠️ `navigateToFileInPane` (and therefore `revealFileInBestPane`) can THROW: `moveCursor` rejects on a name the visible
-listing doesn't hold, which is what any dotfile is while "show hidden files" is off. The navigation has already happened
-at that point, so a caller revealing a file it doesn't control the name of should catch and carry on rather than let it
-surface as a fault. First case: `#lib/file-operations/delete/go-to-trash.ts`.
+⚠️ `navigateToFileInPane` can THROW: `moveCursor` rejects on a name the visible listing doesn't hold (any dotfile while
+"show hidden files" is off, a file renamed or deleted since its path was read, a listing that hasn't caught up yet). The
+navigation has already happened at that point, so `revealFileInBestPane` catches it, logs at debug, and returns `false`
+(`true` when the cursor landed): it NEVER throws. Every caller is a person's reveal fired with `void` (the global
+downloads hotkey, a toast click, a tool-line link), where a rejection escapes unhandled and auto-sends an error report;
+ERR-CFHX6 was exactly that, a ⌃⌥⌘J onto a download renamed away. Keep the guard there, not in each caller.

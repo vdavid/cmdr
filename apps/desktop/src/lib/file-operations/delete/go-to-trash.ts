@@ -85,18 +85,9 @@ export async function goToTrashedItems(
   const location = await resolveLocationOrToast(landed.dir)
   if (!location) return
 
-  // ⚠️ `moveCursor` THROWS on a name the visible listing doesn't hold, and a
-  // trashed DOTFILE is exactly that when "show hidden files" is off. The
-  // navigation happens first, so by then the user is already looking at the right
-  // trash: the cursor is the bonus, and losing it must not surface as a fault.
-  try {
-    await revealFileInBestPane(explorer, location, landed.name)
-  } catch (error) {
-    log.debug('Landed in the trash but not on {name} (hidden, or gone since): {error}', {
-      name: landed.name,
-      error,
-    })
-  }
+  // Never throws: a trashed DOTFILE with "show hidden files" off isn't in the
+  // listing, and `revealFileInBestPane` leaves the user in the trash without it.
+  await revealFileInBestPane(explorer, location, landed.name)
 }
 
 /**

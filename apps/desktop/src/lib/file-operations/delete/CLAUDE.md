@@ -45,8 +45,8 @@ counterpart: `crates/cmdr-operations/src/delete/CLAUDE.md`.
 - **A partly refused trash must never read as a clean success**: `refused` on the completion drops the toast to `warn`
   and raises a second naming what stayed (`composeTrashRefusedToast`). ❌ Nor a failure: what went IS trashed, and Undo
   must stay reachable.
-- **The trash is PER VOLUME** (`get_trash_dir`), and revealing a trashed dotfile with hidden files off THROWS in
-  `moveCursor`; keep that guarded. DETAILS § Undo and go-to-trash.
+- **The trash is PER VOLUME** (`get_trash_dir`). Reveal through `revealFileInBestPane`: a trashed dotfile with hidden
+  files off makes `moveCursor` throw. DETAILS § Undo and go-to-trash.
 - **`TransferProgressDialog` is shared** (`operationType: 'delete' | 'trash'`), and stays visible ≥400 ms.
 - **After delete, the cursor keeps its row**, or its index (clamped) once the row is gone
   (`pane/listing-diff-sync.svelte.ts`). Selection clears; both panes refresh.

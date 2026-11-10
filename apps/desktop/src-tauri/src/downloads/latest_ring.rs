@@ -1,7 +1,8 @@
 //! Bounded ring of recently-observed downloads.
 //!
 //! The watcher pushes every eligible download here; the "go to latest
-//! download" action reads from the back. Capacity 10 by default, oldest
+//! download" action reads from the back, skipping entries no longer on
+//! disk (`latest_where`). Capacity 10 by default, oldest
 //! drops off the front. Re-pushing the same path moves it to the back so
 //! the most-recent occurrence wins; we never want a stale entry to shadow
 //! a re-downloaded file.
@@ -12,7 +13,7 @@
 //! covers the cold-start path.
 
 use std::collections::VecDeque;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::Instant;
 
@@ -57,9 +58,24 @@ impl LatestRing {
     /// The most-recently observed path, or `None` if the ring is empty.
     /// Returns an owned `PathBuf` so we don't have to hold the lock across
     /// the caller's use.
+    #[cfg(test)]
     pub fn latest(&self) -> Option<PathBuf> {
-        let s = self.state.lock().expect("LatestRing poisoned");
-        s.back().map(|(p, _)| p.clone())
+        self.latest_where(|_| true)
+    }
+
+    /// The most-recently observed path that `keep` accepts, newest first, or
+    /// `None` if none does. Production passes "still an eligible file on disk":
+    /// a download renamed, moved, or deleted after landing stays in the ring
+    /// (nothing evicts it), and handing it out sent the go-to-latest reveal
+    /// after a name the listing no longer held (ERR-CFHX6). Skipped entries
+    /// stay put, so a file that comes back counts again. `keep` runs on a
+    /// snapshot, outside the lock, so a slow stat never blocks a `push`.
+    pub fn latest_where(&self, keep: impl Fn(&Path) -> bool) -> Option<PathBuf> {
+        let snapshot: Vec<PathBuf> = {
+            let s = self.state.lock().expect("LatestRing poisoned");
+            s.iter().map(|(p, _)| p.clone()).collect()
+        };
+        snapshot.into_iter().rev().find(|p| keep(p))
     }
 
     /// Test-only observer of the ring's occupancy. Production reads only
@@ -114,6 +130,26 @@ mod tests {
         // The oldest (`/d/f0`) is gone, but `/d/f1` is still in.
         // Drain via repeated `latest` would require popping; instead just
         // assert the front-eviction shape by exact length and last entry.
+    }
+
+    #[test]
+    fn latest_skips_entries_that_are_gone() {
+        // Regression (ERR-CFHX6): a download renamed or deleted after landing
+        // stayed the ring's latest, so ⌃⌥⌘J pointed at a file the listing no
+        // longer held. The newest entry still present wins instead.
+        let ring = LatestRing::new();
+        let older = pb("/d/older.csv");
+        let renamed_away = pb("/d/transaction-history.csv");
+        ring.push(older.clone(), Instant::now());
+        ring.push(renamed_away.clone(), Instant::now());
+        assert_eq!(ring.latest_where(|p| p != renamed_away.as_path()), Some(older));
+    }
+
+    #[test]
+    fn latest_is_none_when_every_entry_is_gone() {
+        let ring = LatestRing::new();
+        ring.push(pb("/d/a"), Instant::now());
+        assert_eq!(ring.latest_where(|_| false), None);
     }
 
     #[test]
