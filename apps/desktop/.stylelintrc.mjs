@@ -7,11 +7,14 @@ const __dirname = dirname(__filename)
 export default {
   extends: ['stylelint-config-standard'],
   plugins: ['stylelint-value-no-unknown-custom-properties', 'stylelint-declaration-block-no-ignored-properties'],
-  customSyntax: 'postcss-html',
   // Shrink-wrap for disable comments: a `stylelint-disable` that no longer
   // suppresses anything is an error, so stale opt-outs can't linger.
   reportNeedlessDisables: true,
   overrides: [
+    // Only `.svelte` needs `postcss-html` (to reach its `<style>` blocks). Set
+    // for every file, it parses a plain `.css` as HTML, finds no `<style>`, and
+    // checks nothing (#1056). The `stylelint` check probes for this regression.
+    { files: ['**/*.svelte'], customSyntax: 'postcss-html' },
     {
       files: ['**/app.css'],
       rules: {
@@ -65,7 +68,10 @@ export default {
       'font-weight': ['400', '500', '600', 'normal', 'inherit'],
       opacity: ['/^(0|0\\.3|0\\.4|0\\.5|0\\.6|0\\.7|0\\.8|1|inherit)$/'],
     },
-    'custom-property-pattern': '^(color|spacing|font|radius|shadow|transition|z|sheet|titlebar|glass)-.+',
+    // `pane-` holds the pane-tint mix shares (`--pane-tint-*-pct`): percentages, so no other namespace fits.
+    'custom-property-pattern': '^(color|spacing|font|radius|shadow|transition|z|sheet|titlebar|glass|pane)-.+',
+    // `@import './x.css'`, the plain string form; the standard config wants `url()`.
+    'import-notation': 'string',
     'declaration-block-no-duplicate-custom-properties': true,
     'selector-class-pattern': null,
     'no-descending-specificity': null,

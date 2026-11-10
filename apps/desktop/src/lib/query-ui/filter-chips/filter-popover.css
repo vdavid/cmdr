@@ -4,8 +4,8 @@
  * The Size and Modified popovers (`SizeFilterPopover.svelte`, `DateFilterPopover.svelte`) render
  * the same multi-column list-style grid, so the grid classes live here rather than duplicated
  * across both. The Scope popover (`ScopeFilterPopover.svelte`) shares only the section + label
- * primitives. Imported globally from each popover's `<script>` via `import './filter-popover.css'`
- * (Svelte `<style>` blocks are component-scoped and can't reach sibling components' markup, so a
+ * primitives. Imported globally from each popover's script via `import './filter-popover.css'`
+ * (Svelte style blocks are component-scoped and can't reach sibling components' markup, so a
  * shared global stylesheet is the right tool here, not a `FilterGridPopover` abstraction).
  *
  * All classes are used by at least one of the three popover components; the `css-unused` check

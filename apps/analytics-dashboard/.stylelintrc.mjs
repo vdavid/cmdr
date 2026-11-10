@@ -8,8 +8,9 @@
 export default {
   extends: ['stylelint-config-standard'],
   plugins: ['stylelint-declaration-block-no-ignored-properties'],
-  // `postcss-html` is what lets stylelint see inside `.svelte` `<style>` blocks.
-  customSyntax: 'postcss-html',
+  // `postcss-html` is what lets stylelint see inside `.svelte` `<style>` blocks. Scoped to `.svelte`:
+  // set for every file, it parses `app.css` as HTML, finds no `<style>`, and checks nothing (#1056).
+  overrides: [{ files: ['**/*.svelte'], customSyntax: 'postcss-html' }],
   // A `stylelint-disable` that no longer suppresses anything is an error, so stale opt-outs can't
   // linger. Same principle as the desktop config and knip's `treatConfigHintsAsErrors`.
   reportNeedlessDisables: true,
@@ -31,6 +32,10 @@ export default {
     // Tailwind's theme tokens are hex by design and live in `@theme`; the rest of the app uses
     // `var(--color-*)`, so hex outside `app.css` would be the smell, not hex inside it.
     'custom-property-pattern': '^color-.+',
+    // `@import 'tailwindcss'` is Tailwind v4's documented entry form; the standard config wants `url()`.
+    'import-notation': 'string',
+    // Blank lines group the `@theme` tokens (surfaces, text, accent, status); the standard config forbids them.
+    'custom-property-empty-line-before': null,
     // Utility-class names come from Tailwind, not from us.
     'selector-class-pattern': null,
     'no-descending-specificity': null,

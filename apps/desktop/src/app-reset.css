@@ -67,12 +67,12 @@
   }
 
   pre {
-    /* stylelint-disable-next-line declaration-property-value-disallowed-list -- CSS reset */
     font-size: 1em;
   }
 
   b,
   strong {
+    /* stylelint-disable-next-line declaration-property-value-allowed-list -- CSS reset: the UA's relative bold */
     font-weight: bolder;
   }
 
@@ -119,6 +119,7 @@
   }
 
   optgroup {
+    /* stylelint-disable-next-line declaration-property-value-allowed-list -- CSS reset: the UA's optgroup bold */
     font-weight: 700;
   }
 

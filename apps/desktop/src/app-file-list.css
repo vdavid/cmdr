@@ -53,7 +53,6 @@
   position: absolute;
   inset-block: 0;
   inset-inline-start: 0;
-  /* stylelint-disable-next-line declaration-property-value-disallowed-list -- a 3px mark, no spacing token */
   width: 3px;
   background-color: var(--color-selection-fg);
 }

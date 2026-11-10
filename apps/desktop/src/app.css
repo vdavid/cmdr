@@ -149,11 +149,8 @@
      the JS path is what keeps primary-button text readable, in particular
      on Apple Purple, where dark text falls below AA. */
   --color-accent-fg: #1a1a1a;
-  --color-accent-text: color-mix(
-    in srgb,
-    var(--color-accent),
-    black 65%
-  ); /* Darkened accent for a11y when used as foreground text (≥4.5:1 on --color-bg-secondary) */
+  /* Darkened accent for a11y when used as foreground text (≥4.5:1 on --color-bg-secondary) */
+  --color-accent-text: color-mix(in srgb, var(--color-accent), black 65%);
   --color-accent-hover: color-mix(in oklch, var(--color-accent), white 15%);
   --color-accent-subtle: color-mix(in oklch, var(--color-accent), transparent 85%);
   /* Text-selection fill inside text fields (the global `::selection` rule in
@@ -1158,7 +1155,7 @@ html.reduce-transparency {
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
   white-space: nowrap;
   border-width: 0;
 }

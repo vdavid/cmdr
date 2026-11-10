@@ -148,6 +148,21 @@ instead: extract every `(selector, property, value)` triple from the before and 
 `.svelte-<hash>` classes and the added container prefix, and diff the sets. Anything that shows up on one side only is a
 rule you changed, not moved.
 
+### Stylelint covers the global sheets too
+
+`.stylelintrc.mjs` sets `customSyntax: 'postcss-html'` ONLY for `**/*.svelte` (it's what reaches a component's style
+block). Set config-wide, it once parsed every plain `.css` as HTML, found no style block, and passed all seven sheets
+silently: 300 findings had piled up behind it (#1056). `runStylelintCheck` probes for it every run (a known-bad `.css`
+on stdin must report `declaration-no-important`), so the gap fails the lane instead of reopening quietly.
+
+- The rules apply here as in components; `app.css` alone may write hex and `rgb()` (the `**/app.css` override), since
+  it's where the tokens are defined.
+- `--pane-tint-*-pct` sits in the `pane-` custom-property namespace: mix percentages, no color or spacing token.
+- `app-reset.css` keeps the UA's `font-weight: bolder` / `700` (outside the 400/500/600 ladder) with a disable each:
+  it's a reset, not a design decision.
+- Gotcha: `stylelint --fix` escapes a literal `<style` inside a plain `.css` comment to `\3c style`. Write "style block"
+  in comments.
+
 ## Error boundaries
 
 A component that throws while it renders, runs an effect, or tears down must never blank a window. Five layers of

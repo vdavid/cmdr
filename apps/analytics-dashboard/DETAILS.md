@@ -378,7 +378,8 @@ What's specific to this app's configs:
 - **Stylelint** (`.stylelintrc.mjs`) is deliberately lighter than desktop's. Tailwind v4 supplies the utilities, so
   there's no design-token ladder to police here; the config's real job is allowing Tailwind's CSS-first at-rules
   (`@theme` and friends, which `stylelint-config-standard` would reject as unknown) while keeping the actual-mistake
-  rules.
+  rules. `postcss-html` is scoped to `**/*.svelte` so `app.css` gets linted as CSS; the check's coverage probe guards
+  that (`apps/desktop/src/DETAILS.md` § Stylelint covers the global sheets too).
 - **knip** (`knip.json`) treats SvelteKit's `+page` / `+layout` / `+server` files and `hooks.server.ts` as entry points.
   Without that it reports every route as unused, since nothing imports them by name.
 
