@@ -40,6 +40,23 @@ describe('mergeCountryRows', () => {
   })
 })
 
+describe('mergeCountryRows D28', () => {
+  it('is null on every row while the worker sends no D28 at all', () => {
+    const rows = mergeCountryRows(new Map([['SE', 3]]), null, [workerRow('DE', 1)])
+    expect(rows.map((r) => [r.d28Cohort, r.d28Retained])).toEqual([
+      [null, null],
+      [null, null],
+    ])
+  })
+
+  it('passes D28 through once the worker sends it, and is 0 for a country it has no row for', () => {
+    const rows = mergeCountryRows(new Map([['SE', 3]]), null, [{ ...workerRow('DE', 4), d28Cohort: 4, d28Retained: 2 }])
+    const byCountry = new Map(rows.map((r) => [r.country, r]))
+    expect(byCountry.get('DE')).toMatchObject({ d28Cohort: 4, d28Retained: 2 })
+    expect(byCountry.get('SE')).toMatchObject({ d28Cohort: 0, d28Retained: 0 })
+  })
+})
+
 describe('chipCountries', () => {
   it('takes the top real countries by visitors, skipping (unknown)', () => {
     const rows = mergeCountryRows(

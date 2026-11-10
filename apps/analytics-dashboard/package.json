@@ -20,7 +20,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "uplot": "^1.6.32"
+    "d3-geo": "^3.1.2",
+    "topojson-client": "^3.1.0",
+    "uplot": "^1.6.32",
+    "visionscarto-world-atlas": "^1.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -28,6 +31,8 @@
     "@sveltejs/kit": "^3.0.1",
     "@sveltejs/vite-plugin-svelte": "^7.2.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/d3-geo": "^3.1.1",
+    "@types/topojson-client": "^3.1.5",
     "@typescript/native": "npm:typescript@~7.0.2",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",

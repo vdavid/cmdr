@@ -47,14 +47,15 @@ settings-defaults, `svelte-kit sync`). Don't judge a change by raw `pnpm lint`: 
 - **❌ Nothing on `/licenses` may say a Paddle subscription is live.** `active` on a `paddle` row means we fulfilled
   that purchase; only `/validate` knows whether it still runs. Labels live in `#lib/licenses.ts`; the vocabulary is
   owned by `apps/api-server/src/licensing/DETAILS.md` § The licenses listing.
-- **`wrangler pages dev` doesn't emulate the CF Cache API**; `cache.ts` falls back to an in-memory Map.
 - **A `null` cell renders as a dash (`–`), never a 0** in the metric tables: "couldn't get this" and "this was zero"
   differ, and every source is best-effort and independent.
 - **Trend stats skip today and pool rates as ratios of sums**, only in `#lib/acquisition-stats.ts`. A missing worker
   field reads "Not available yet", never 0. `DETAILS.md` § Acquisition trends.
 - **One color means one property across the whole dashboard** (dots, strokes, fills). Palette: `DETAILS.md`.
+- **❌ Never auto-scale `#lib/count-color-scale.ts`**: purple always means `COUNT_SCALE_PURPLE_AT`, raised only by hand.
+  `DETAILS.md` § "The country map and table".
 
 Local dev: `pnpm dev:dashboard` serves on port 4830, reading `.env` (copy `.env.example`; escape a literal `$` as `\$`).
 Env resolution and the variables: `DETAILS.md`.
 
-Everything else (structure, data loading, sources, auth, decisions, env vars, local QA, deployment): `DETAILS.md`.
+Everything else (structure, data loading, sources, auth, env vars, local QA, deployment): `DETAILS.md`.

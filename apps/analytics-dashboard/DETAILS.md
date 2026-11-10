@@ -13,7 +13,8 @@ sections and pass their loaded data down.
 - `/` — Acquisition (`routes/+page.svelte`), in render order:
   - Acquisition trends (`components/sections/AcquisitionTrendsSection.svelte`): country chips, a 30/90-day toggle, and
     one `TrendRow` per funnel metric (chart left, `StatsGrid` right). Independent of the picker. § "Acquisition trends".
-  - By country, last 30 days (`components/sections/CountryFunnelSection.svelte`).
+  - By country, last N days (`components/sections/CountryFunnelSection.svelte`): the world map and the country table. §
+    "The country map and table".
   - Awareness (`components/sections/AwarenessSection.svelte`).
   - Interest (`components/sections/InterestSection.svelte`).
   - Download (`components/sections/DownloadSection.svelte`), with `CountryTable.svelte` and the per-day pie tooltip.
@@ -182,7 +183,8 @@ runtime values live outside `#lib/server`: `#lib/funnel.ts`, `#lib/feedback-and-
 - `src/lib/server/fetch-all.ts`: per-source loaders, per-page composers (`fetchAcquisitionData`, `fetchProductData`),
   and the all-sources `fetchDashboardData`.
 - `src/lib/server/types.ts`: `TimeRange`, `DashboardSelection`, `SourceResult`, time window + selection helpers.
-- `src/lib/server/cache.ts`: CF Cache API wrapper with in-memory Map fallback for local dev.
+- `src/lib/server/cache.ts`: CF Cache API wrapper with an in-memory Map fallback for local dev, `wrangler pages dev`
+  included (it doesn't emulate the Cache API).
 - `src/lib/server/sources/`: data source modules (one per external API).
 - `src/lib/components/sections/`: one component per dashboard section. `src/lib/components/`: shared UI (FunnelTable,
   CountryTable, MetricRow/MetricTable, ErrorState/EmptyState/BetaEmptyState, SectionDescription, Methodology,
@@ -190,7 +192,9 @@ runtime values live outside `#lib/server`: `#lib/funnel.ts`, `#lib/feedback-and-
 - `src/lib/{format,colors,chart-helpers}.ts`: client-safe formatters, color tokens, chart data-shaping helpers.
 - `src/lib/acquisition-stats.ts` (the stats grid, rolling rates, axis ticks), `acquisition-series.ts` (funnel rows →
   each chart's numerator and denominator), `acquisition-countries.ts` (country join + chips), and `daily-chart.ts`
-  (`DailyChart.svelte` geometry): client-safe, each with its Vitest file.
+  (`DailyChart.svelte` geometry): client-safe, each with its Vitest file. Same for the country section's
+  `count-color-scale.ts`, `country-table.ts`, `country-geo.ts`, and `world-map-shapes.ts` (§ "The country map and
+  table"), drawn by `WorldMap.svelte`.
 - `DailyChart.svelte` (SVG day columns or rate dots + rolling line), `StatsGrid.svelte`, `TrendRow.svelte`, and
   `InfoPopover.svelte` (the (i): hover, focus, or tap; Escape closes).
 - `src/lib/link-codes.ts`: client-safe `?r=` helpers (validation mirroring the api-server, row flattening, example
@@ -380,6 +384,46 @@ new installs; a spike means a scraper changed).
   and an exact-values tooltip. The chart is a `role="slider"` over days: arrow keys walk them and each day's readout is
   the `aria-valuetext`.
 - The methodology that used to sit under the old table now lives in each metric's (i) popover.
+
+## The country map and table
+
+`CountryFunnelSection` shows a world map of visitors beside the table from 2xl up, and above it (capped at `max-w-3xl`)
+below that. It takes `days` (7, 30, or 90, default 30) for its title; the data window itself is the source's.
+
+- **The table**: Visitors, Visitor → click, Clicks, Server downloads, Click → install, Installs, D7 (pooled), D28
+  (pooled). The top 20 real countries, then one "Other (N countries)" row summing the rest, then "(unknown)" on its own
+  (never ranked or folded: it's the worker's no-country bucket, mostly installs). Shaping lives in
+  `#lib/country-table.ts`. An "Other" column is a dash as soon as any folded country is a dash there (`sumNullable`): a
+  partial sum would pass for the whole, and clicks are only looked up for the top 12, so Other's clicks are always a
+  dash.
+- **D28 is optional end to end.** `mergeCountryRows` reads `d28Cohort`/`d28Retained` only when the worker sends them on
+  at least one row; until then every D28 cell is `null` (a dash), never 0.
+- **The count color scale** (`#lib/count-color-scale.ts`) colors the map fill and the four count columns (as a tinted
+  chip behind primary ink, so the number keeps full contrast; rates stay plain). Zero is a hueless gray; from 1 the hue
+  walks red → orange → yellow → green → cyan → blue → purple, linearly in log10, reaching purple at
+  `COUNT_SCALE_PURPLE_AT` and clamping above it.
+  - Decision/Why fixed, not data-driven: David is learning that purple means 1,000, and an auto-scaled map would quietly
+    change what every color means. When any visitor count passes the constant, the section shows a yellow callout asking
+    an agent to raise it tenfold; that's the only way it changes.
+  - Each anchor has its own OKLCH lightness and chroma, so yellow reads as yellow and red doesn't turn salmon; the tests
+    pin every color at 4.5:1 or better on the surface. It's a rainbow by request, so it fails the dataviz validator's
+    CVD check (blue ↔ purple under deutan): the legend, the tooltip, and the numbers in the table are the secondary
+    encoding.
+- **The map** (`src/lib/components/WorldMap.svelte`, geometry in `#lib/world-map-shapes.ts`): `visionscarto-world-atlas`
+  110m TopoJSON (the maintained successor of the archived `world-atlas`, with Kosovo and topology fixes),
+  `topojson-client` to decode it, and `d3-geo`'s Equal Earth projection (equal-area, so Russia doesn't overstate its
+  count). All three load by dynamic import on mount and project once per page (about 49 KB gzipped for the atlas plus
+  the geo chunk), so they stay out of the first paint. Antarctica is dropped.
+- **ISO-2 → map ids** (`#lib/country-geo.ts`): the atlas keys features by ISO-3166 numeric (zero-padded strings, like
+  `'004'`), plus negative ids for N. Cyprus (-1), Kosovo (-2), and Somaliland (-3). The table was generated once from
+  the ISO-3166 list joined with the atlas, and `country-geo.test.ts` pins it against the atlas file (every feature
+  round-trips). `XK` maps to Kosovo; `CY` and `SO` each fill two shapes, because geolocation reports those areas as CY
+  and SO. A country the 110m map has no shape for (Singapore, Hong Kong, Malta) is listed under the map as "Too small
+  for the map".
+- **Map interaction**: hover (mouse only), focus, or tap shows the tooltip with every table number for that country; a
+  tap or Enter/Space pins it, and a second tap, Escape, or a tap elsewhere closes it. Only countries with a row are
+  focusable, so Tab walks the data. A country with no row is a real 0 when Umami answered, and a darker "No data" fill
+  when it didn't.
 
 ## Write `{#if source.ok}`, never `{#if !source.ok}`
 

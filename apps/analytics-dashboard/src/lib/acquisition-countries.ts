@@ -17,6 +17,9 @@ export interface CountryFunnelRow {
   newInstalls: number | null
   d7Cohort: number | null
   d7Retained: number | null
+  /** `null` also while the worker doesn't send D28 yet. */
+  d28Cohort: number | null
+  d28Retained: number | null
 }
 
 interface WorkerCountry {
@@ -25,6 +28,9 @@ interface WorkerCountry {
   newInstalls: number
   d7Cohort: number
   d7Retained: number
+  /** Optional: older workers don't send D28. */
+  d28Cohort?: number
+  d28Retained?: number
 }
 
 /**
@@ -39,11 +45,15 @@ export function mergeCountryRows(
 ): CountryFunnelRow[] {
   const normalize = (code: string) => (code === unknownCountry ? code : code.toUpperCase())
   const workerByCountry = new Map((worker ?? []).map((w) => [normalize(w.country), w]))
+  const workerHasD28 = (worker ?? []).some((w) => w.d28Cohort !== undefined)
   const countries = new Set([...(visitors?.keys() ?? []), ...workerByCountry.keys()].map(normalize))
 
   const rows = [...countries].map((country): CountryFunnelRow => {
     const w = workerByCountry.get(country)
     const fromWorker = (pick: (w: WorkerCountry) => number) => (worker ? (w ? pick(w) : 0) : null)
+    // D28 is newer than the rest: a worker that sends it on no row hasn't shipped it, so it's unknown, not 0.
+    const fromD28 = (pick: (w: WorkerCountry) => number | undefined) =>
+      worker && workerHasD28 ? (w ? (pick(w) ?? 0) : 0) : null
     return {
       country,
       visitors: visitors ? (visitors.get(country) ?? 0) : null,
@@ -52,6 +62,8 @@ export function mergeCountryRows(
       newInstalls: fromWorker((r) => r.newInstalls),
       d7Cohort: fromWorker((r) => r.d7Cohort),
       d7Retained: fromWorker((r) => r.d7Retained),
+      d28Cohort: fromD28((r) => r.d28Cohort),
+      d28Retained: fromD28((r) => r.d28Retained),
     }
   })
   return rows.sort((a, b) => (b.visitors ?? 0) - (a.visitors ?? 0) || (b.newInstalls ?? 0) - (a.newInstalls ?? 0))
