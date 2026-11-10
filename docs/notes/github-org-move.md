@@ -122,8 +122,11 @@ what's identity-bound) is in the issue. Delete this note once the move is done a
 - **The next release, with David**: `release-finish` resolves `getcmdr/cmdr`, attests, and verifies under it; check the
   tap bump and `release-evidence.sh verify`.
 - **Later, if wanted**: a merge queue for landing (needs a `merge_group:` trigger in `ci.yml` first, or required checks
-  never report on queue entries). `cmdr-reports`, the backlog board, and the Homebrew tap stay under `vdavid` (the
-  audit's recommendation).
+  never report on queue entries). The Homebrew tap stays under `vdavid` for now.
+- **Moved later (2026-11-10)**: `cmdr-reports` (now `getcmdr/cmdr-reports`), the archived `cmdr-fsevent-stream`, and the
+  backlog board (copied to `https://github.com/orgs/getcmdr/projects/1`, every card's fields and order carried over; the
+  user-owned board is closed). GitHub can't transfer a project board between owners, so it was a `gh project copy` plus
+  a script re-adding each item; `apps/api-server/DETAILS.md` § The backlog board has the current setup.
 
 ## If it's ever reversed
 

@@ -4,7 +4,7 @@
 
 - Upstream `PhotonQuantum/fsevent-stream` is dead (last push 2024-10-18). We needed changes it never took: the overflow
   flag, `from_bits_retain` for unknown flag bits, and the soundness fixes below.
-- The separate mirror `vdavid/cmdr-fsevent-stream` is archived; the monorepo crate is the only copy, never published to
+- The separate mirror `getcmdr/cmdr-fsevent-stream` is archived; the monorepo crate is the only copy, never published to
   crates.io. The package keeps the `cmdr-fsevent-stream` name so dependents don't change.
 - The upstream MIT `LICENSE` stays, and `THIRD-PARTY-NOTICES.md` keeps crediting it. That's why the manifest has no
   `publish = false`: cargo-about's `[private] ignore` would drop the crate, credit and all.
