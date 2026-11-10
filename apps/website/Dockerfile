@@ -9,8 +9,13 @@ FROM node:26-alpine@sha256:143494b1da2945f061539253adc65e4f1569ddf07da2d384c022c
 
 WORKDIR /app
 
-# Install pnpm, the version `.mise.toml` pins (Node 25+ no longer ships corepack)
-RUN npm install --global pnpm@12.11.2
+# Install pnpm (Node 25+ no longer ships corepack) by `npm ci` from the hash-locked manifest the
+# baseline refresh script shares, so the install is pinned by hash. Its version equals the root
+# `packageManager` (the `website-pnpm-bootstrap-in-step` check). Installed outside /app so the
+# workspace never sees its node_modules.
+COPY apps/website/scripts/pnpm-bootstrap/package.json apps/website/scripts/pnpm-bootstrap/package-lock.json /opt/pnpm-bootstrap/
+RUN npm ci --prefix /opt/pnpm-bootstrap --no-audit --no-fund
+ENV PATH="/opt/pnpm-bootstrap/node_modules/.bin:${PATH}"
 
 # Copy workspace config, lockfile, and root package.json (needed for overrides)
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./

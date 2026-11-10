@@ -34,10 +34,6 @@
         {
           "warning": "Warn: containerImage not pinned by hash: apps/desktop/test/e2e-linux/docker/Dockerfile",
           "reason": "`FROM ${BASE_IMAGE}`: our own locally built E2E base, which has no registry digest. Folding it into Dockerfile.base as a stage would pin it, at the risk of the ~1 s entrypoint rebuild."
-        },
-        {
-          "warning": "Warn: npmCommand not pinned by hash: apps/website/Dockerfile",
-          "reason": "`npm install --global pnpm@<exact>` in the website build. Pinning it alone doesn't move the score while the E2E image above stays, so it waits for that."
         }
       ]
     },

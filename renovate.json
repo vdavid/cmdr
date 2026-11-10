@@ -140,7 +140,7 @@
       "groupName": null
     },
     {
-      "description": "pnpm moves as one PR wherever it's pinned: the root `packageManager`, `.mise.toml`, and `apps/website/scripts/pnpm-bootstrap/` (the hash-locked manifest the baseline refresh script `npm ci`s inside the Playwright image, whose Node 26 has no corepack). The `website-pnpm-bootstrap-in-step` check fails a PR that moves the bootstrap manifest apart from `packageManager`. Placed after the per-app, major, and security rules so its `groupName` wins over theirs; it sets nothing else, so a major still waits for dashboard approval.",
+      "description": "pnpm moves as one PR wherever it's pinned: the root `packageManager`, `.mise.toml`, and `apps/website/scripts/pnpm-bootstrap/` (the hash-locked manifest that the baseline refresh script and `apps/website/Dockerfile` `npm ci` from, since Node 26 has no corepack). The `website-pnpm-bootstrap-in-step` check fails a PR that moves the bootstrap manifest apart from `packageManager`. Placed after the per-app, major, and security rules so its `groupName` wins over theirs; it sets nothing else, so a major still waits for dashboard approval.",
       "matchPackageNames": ["pnpm"],
       "groupName": "pnpm"
     },

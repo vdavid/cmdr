@@ -680,12 +680,13 @@ verification together.
 - The container installs and builds into anonymous volumes and chowns the written PNGs back, so it never overwrites the
   caller's macOS `node_modules`/`dist`. Requires Docker; a stopped Docker aborts before any change.
 - pnpm comes from `npm ci` on `scripts/pnpm-bootstrap/` (a `package.json` + `package-lock.json` holding only `pnpm`,
-  with integrity hashes), copied to `/opt` in the container first. The Playwright images from v1.65.0 ship Node 26,
-  which has no corepack (verified with `docker run --rm <image> sh -c 'which corepack'`, 2026-11-10). `npm ci` keeps it
-  hash-pinned: `npm install --global pnpm@<v>` would be a new OpenSSF Scorecard Pinned-Dependencies finding. The
-  manifest is a second pnpm pin, so Renovate's `pnpm` group moves it with `packageManager` and
-  `website-pnpm-bootstrap-in-step` fails when they differ. To bump by hand: edit its `package.json`, then
-  `npm install --package-lock-only` in that dir. It sits outside the pnpm workspace (`apps/*` doesn't reach it).
+  with integrity hashes), copied to `/opt` in the container first; `apps/website/Dockerfile` installs its pnpm the same
+  way. The Playwright images from v1.65.0 ship Node 26, which has no corepack (verified with
+  `docker run --rm <image> sh -c 'which corepack'`, 2026-11-10). `npm ci` keeps it hash-pinned:
+  `npm install --global pnpm@<v>` would be a new OpenSSF Scorecard Pinned-Dependencies finding. The manifest is a second
+  pnpm pin, so Renovate's `pnpm` group moves it with `packageManager` and `website-pnpm-bootstrap-in-step` fails when
+  they differ. To bump by hand: edit its `package.json`, then `npm install --package-lock-only` in that dir. It sits
+  outside the pnpm workspace (`apps/*` doesn't reach it).
 - `--full` sets `VISUAL_FULL=1`, which swaps in a `snapshotPathTemplate` (playwright.config.ts) pointing at the
   gitignored `e2e/visual-full-snapshots/` and shoots every real page full-page in both themes (~7 MB). It's the coverage
   the region set gives up: capture before an Astro major upgrade, upgrade, re-run to compare, then delete the dir.
