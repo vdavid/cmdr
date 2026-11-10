@@ -91,22 +91,6 @@ pub(super) const STALL_AFTER: Duration = Duration::from_secs(20);
 /// § "The watchdog ACTS").
 pub(super) const STALL_ABORT_AFTER: Duration = Duration::from_secs(180);
 
-/// How far past its due time a watchdog tick may land before the gap reads as
-/// "the watchdog wasn't running" rather than "the runtime is busy".
-///
-/// A tick that lands this late says the async runtime (or the whole process)
-/// went unscheduled: a starved worker pool, a system sleep, App Nap. Nothing
-/// the watchdog could see happened in that gap, so it is forgiven
-/// ([`OperationProbe::forgive_unseen_time`]) and logged, which also makes the
-/// watchdog the runtime-stall witness for as long as a transfer runs.
-///
-/// 5 s mirrors `smb2`'s own cadence rule (`forgive_scheduling_stall`: a gap
-/// of `KEEPALIVE_AFTER` on top of its tick), so the two layers agree on what a
-/// stall is. ❌ Don't lower it toward the tick: forgiving a busy runtime's
-/// second-or-two jitter would let a real wedge on a loaded Mac dodge
-/// [`STALL_ABORT_AFTER`] indefinitely.
-pub(super) const LATE_TICK_AFTER: Duration = Duration::from_secs(5);
-
 /// The stall-abort window in force, honoring a test override.
 ///
 /// Read once per operation at registration, on the CALLER's thread (the copy
@@ -464,12 +448,23 @@ impl OperationProbe {
     /// One watchdog tick, split out from the timer loop so it can be tested
     /// without waiting on wall-clock seconds. `still_for` is how long BOTH
     /// progress counters have been unchanged.
-    fn watchdog_step(&self, watchdog: &mut WatchdogState, now: Duration) {
+    ///
+    /// Returns how long the watchdog went unscheduled before this tick, when
+    /// that was long enough to forgive ([`unseen::LATE_TICK_AFTER`]), so the loop can
+    /// log it with the evidence.
+    fn watchdog_step(&self, watchdog: &mut WatchdogState, now: Duration) -> Option<Duration> {
         // First, before any branch reads a clock: time the watchdog never got
         // to observe is not stillness it may act on.
-        if let Some(unseen) = watchdog.unseen_since_last_tick(now) {
+        let unseen = watchdog.unseen_since_last_tick(now);
+        if let Some(unseen) = unseen {
             self.forgive_unseen_time(unseen, now);
         }
+        self.observe_tick(watchdog, now);
+        unseen
+    }
+
+    /// The tick proper, once any unseen time is forgiven.
+    fn observe_tick(&self, watchdog: &mut WatchdogState, now: Duration) {
         // A transfer waiting for a volume to come back isn't stalled either: it
         // knows exactly what it's waiting on, and says so. It still heartbeats,
         // which is how the UI learns the wait started at all (a waiting
@@ -581,7 +576,7 @@ impl OperationProbe {
     }
 
     /// Move every in-flight task's stillness clock forward by `unseen`, a stretch
-    /// the watchdog itself spent unscheduled, and say so in the log.
+    /// the watchdog itself spent unscheduled.
     ///
     /// The abort gate's two halves both assume someone was watching. When the
     /// whole runtime starves, `smb2`'s liveness clocks starve with it and can read
@@ -597,10 +592,6 @@ impl OperationProbe {
     /// The operation-level stillness (`still_since`, which the UI and the dump
     /// read) is deliberately NOT shifted: the bar really sat still that long,
     /// and saying so is the truth. Only the clock that decides to ACT forgives.
-    ///
-    /// The log line is the runtime-stall probe: INFO (it never auto-sends a
-    /// report), and it rides the tick a transfer already pays for, so it costs
-    /// nothing at idle.
     fn forgive_unseen_time(&self, unseen: Duration, now: Duration) {
         let unseen_ms = u64::try_from(unseen.as_millis()).unwrap_or(u64::MAX);
         let now_ms = u64::try_from(now.as_millis()).unwrap_or(u64::MAX);
@@ -609,13 +600,6 @@ impl OperationProbe {
             task.still_since_ms
                 .store(since.saturating_add(unseen_ms).min(now_ms), Ordering::Relaxed);
         }
-        log::info!(
-            "transfer watchdog: op={} was not scheduled for {:.1}s (a starved async runtime, App Nap, or a \
-             system sleep). Nothing could be observed in that time, so it doesn't count toward ending a \
-             still task's wait",
-            self.operation_id,
-            unseen.as_secs_f64()
-        );
     }
 
     /// The watchdog ACTING rather than only reporting: track each in-flight task's
@@ -1034,12 +1018,9 @@ impl WatchdogState {
     }
 
     /// Record this tick, and return how long the watchdog went unscheduled
-    /// before it, when that's at least [`LATE_TICK_AFTER`] past the tick's due
-    /// time. Measured past the due time, so a healthy cadence reads zero.
+    /// before it, when that's long enough to forgive ([`unseen::gap`]).
     fn unseen_since_last_tick(&mut self, now: Duration) -> Option<Duration> {
-        let previous = self.last_tick.replace(now)?;
-        let unseen = now.saturating_sub(previous).saturating_sub(STALL_TICK);
-        (unseen >= LATE_TICK_AFTER).then_some(unseen)
+        unseen::gap(self.last_tick.replace(now)?, now)
     }
 }
 
@@ -1049,16 +1030,27 @@ impl WatchdogState {
 fn spawn_watchdog(runtime: &cmdr_fs::rt::Runtime, probes: Weak<Probes>, operation_id: String) {
     runtime.spawn(async move {
         let mut watchdog = WatchdogState::new();
+        let mut cpu = CpuWitness::default();
         let started = crate::rt::now();
         loop {
             crate::rt::time::sleep(STALL_TICK).await;
             let Some(probe) = probes.upgrade().and_then(|probes| probes.get(&operation_id)) else {
                 return; // operation finished (its guard removed it), or its engine is gone
             };
-            probe.watchdog_step(&mut watchdog, crate::rt::since(started));
+            let now = crate::rt::since(started);
+            if let Some(unseen) = probe.watchdog_step(&mut watchdog, now) {
+                unseen::log(&operation_id, unseen, cpu.describe_since_baseline(now));
+            }
+            cpu.refresh_if_due(now);
         }
     });
 }
+
+/// Time the watchdog couldn't see: the late-tick rule, and the evidence a late
+/// tick logs.
+#[path = "transfer_probe_unseen.rs"]
+mod unseen;
+use unseen::CpuWitness;
 
 #[path = "transfer_probe_registry.rs"]
 mod registry;

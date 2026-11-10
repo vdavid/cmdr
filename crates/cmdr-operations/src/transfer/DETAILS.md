@@ -70,6 +70,10 @@ included, § "One-pass sequential extract"). Only the layout facts that none of 
   `InboundWindow` (the receive rate across the last few ticks, pure and tested on its own).
   `transfer_probe_opening_tests.rs` pins what a transfer says before its first byte and while a response is still
   arriving.
+- **`transfer_probe_unseen.rs` is time the watchdog couldn't see**, another `#[path]` child: `LATE_TICK_AFTER` and `gap`
+  (when a tick counts as late), and `CpuWitness`, the per-thread CPU census a late tick logs so a bundle can tell
+  workers parked in blocking calls from a spinning task or an outbid runtime (§ "The watchdog ACTS", the late-tick
+  guard).
 - **`transfer_probe_registry.rs` is the engine's table of live transfers**, a third `#[path]` child: `Probes` (one per
   engine, in its `EngineStores`, reached through the op's scope), `register_operation`, and the guard that leaves the
   table. The watchdog holds the table weakly and ends at the first tick after the guard removes its probe.
