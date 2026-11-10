@@ -12,6 +12,7 @@ mod config_shape;
 pub mod events;
 pub(crate) mod first_index;
 mod heartbeat;
+mod install_channel;
 pub mod session;
 mod spool;
 pub mod volume_sink;

@@ -8,6 +8,7 @@ stores in D1. Neither the app nor the Worker sends them to a third party. Instal
 
 - `mod.rs`: the consent + suppression gate (`send_permission`), the spool handle, the shared `item_count_bucket`.
 - `heartbeat.rs`: the throttled loop (`crate::send_schedule`), payload, uptime, and what a 2xx settles.
+- `install_channel.rs`: the beat's `installChannel` (`homebrew` / `direct`, a Caskroom check), probed once.
 - `spool.rs`: the JSONL event spool (append, batch, acknowledge, cap).
 - `first_index.rs`: what a phased first index delivers, off the event stream.
 - `session.rs`: the session-length ladder; ❌ no `app_quit` (a crash can't report).

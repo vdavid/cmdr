@@ -111,9 +111,26 @@ the app being open, never the person at the keyboard (same caveat as the session
 - `uptimeSeconds`: runtime no earlier acknowledged beat reported. Always sent.
 - `events`: up to 500 spooled events, oldest first, and at most 192 KB of them (the server caps the body at 256 KB).
   Always sent, possibly empty. Each is `{ event, timestamp, id, appVersion, properties }`.
+- `installChannel`: `"homebrew"` / `"direct"` / `null`. Always sent, `null` when we can't tell. See § Install channel.
 
 20 s timeout (a beat can carry a couple of hundred KB). Endpoint: `http://localhost:8787/heartbeat` (debug) /
 `https://api.getcmdr.com/heartbeat` (release).
+
+## Install channel
+
+`install_channel.rs` probes once per process, on the first beat, in `spawn_blocking` under a 2 s timeout (the app may
+run from a hung network mount), and caches the answer, timeout included. Dev builds and non-macOS report `null` without
+probing. No `.app` bundle around `current_exe()` (`updater::installer::running_bundle`) → `null`. Otherwise
+`"homebrew"` when `/opt/homebrew/Caskroom/cmdr` or `/usr/local/Caskroom/cmdr` is a dir, else `"direct"`. `cmdr` is the
+token in `vdavid/tap` (`apps/desktop/packaging/homebrew/cmdr.rb`); a tap cask's Caskroom dir carries no tap prefix. The
+dir stays while the cask is installed, self-updates included (the cask has `auto_updates true`), and `brew uninstall`
+removes it. A custom `HOMEBREW_PREFIX` reads as `"direct"`.
+
+- **Decision: no download date.** ❌ Don't re-try the bundle's `com.apple.quarantine` timestamp: a DMG → `/Applications`
+  copy keeps only the flags and event UUID and zeroes the timestamp (`0083;00000000;;<uuid>`), Homebrew's stamp is the
+  install moment (no download-to-install lag to measure), and the only source of the real DMG date, LaunchServices'
+  `QuarantineEventsV2` database, is the user's whole download history (verified on macOS 27.0.1, a quarantined DMG
+  copied out with `cp -R`, `ditto`, and Finder, 2026-11-10).
 
 ## The event spool
 

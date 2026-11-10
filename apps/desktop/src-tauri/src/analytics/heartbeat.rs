@@ -2,8 +2,9 @@
 //!
 //! A loop wakes every [`WAKE_TICK`], adds the time since the last tick to the unreported uptime,
 //! and sends `POST /heartbeat` when [`CADENCE`] says one is due. A beat carries the install's
-//! identity, the PII-free config shape, `uptimeSeconds` (app runtime no earlier beat reported), and
-//! up to [`MAX_EVENTS_PER_BEAT`] events from the front of the spool. Wire contract:
+//! identity, the PII-free config shape, `uptimeSeconds` (app runtime no earlier beat reported), the
+//! install channel ([`install_channel`]), and up to [`MAX_EVENTS_PER_BEAT`] events from the front of
+//! the spool. Wire contract:
 //! `docs/specs/network-chatter-plan.md`.
 //!
 //! What a beat accounts for leaves local state only when the server acknowledged it with a 2xx:
@@ -11,6 +12,7 @@
 //! schedule and the uptime live in `analytics-heartbeat.json`, so a relaunch neither resets the
 //! three hours nor loses a short session's time.
 
+use super::install_channel::{self, InstallChannel};
 use super::spool::{Spool, SpooledEvent};
 use super::{SendPermission, config_shape};
 use crate::managed_policy::{Egress, ManagedPolicy};
@@ -69,6 +71,8 @@ struct HeartbeatPayload {
     uptime_seconds: u64,
     /// Spooled feature events, oldest first, at most [`MAX_EVENTS_PER_BEAT`].
     events: Vec<SpooledEvent>,
+    /// `"homebrew"` / `"direct"`, or `null` when we can't tell.
+    install_channel: Option<InstallChannel>,
 }
 
 /// What `analytics-heartbeat.json` holds.
@@ -200,10 +204,11 @@ async fn run(state_path: PathBuf) {
 }
 
 async fn beat(state: &mut HeartbeatState, spool: &Spool) -> BeatOutcome {
+    let install_channel = install_channel::get().await;
     let mut batch = spool.take_batch(MAX_EVENTS_PER_BEAT, EVENT_BYTES_PER_BEAT);
     let sent_uptime = state.unreported_uptime_seconds;
     let events = crate::pluralize::pluralize(batch.events.len() as u64, "event");
-    let payload = build_payload(sent_uptime, std::mem::take(&mut batch.events));
+    let payload = build_payload(sent_uptime, std::mem::take(&mut batch.events), install_channel);
 
     let outcome = send_payload(&payload).await;
     if settle(state, outcome, sent_uptime, now_unix_ms()) {
@@ -227,7 +232,11 @@ async fn beat(state: &mut HeartbeatState, spool: &Spool) -> BeatOutcome {
     outcome
 }
 
-fn build_payload(uptime_seconds: u64, events: Vec<SpooledEvent>) -> HeartbeatPayload {
+fn build_payload(
+    uptime_seconds: u64,
+    events: Vec<SpooledEvent>,
+    install_channel: Option<InstallChannel>,
+) -> HeartbeatPayload {
     let fda_granted = !crate::fda_gate::is_fda_pending_runtime();
     let config = config_for(
         &crate::managed_policy::current(),
@@ -244,6 +253,7 @@ fn build_payload(uptime_seconds: u64, events: Vec<SpooledEvent>) -> HeartbeatPay
         config,
         uptime_seconds,
         events,
+        install_channel,
     }
 }
 
@@ -328,6 +338,7 @@ mod tests {
             config: json!({ "theme.mode": "dark", "fdaGranted": true }),
             uptime_seconds: 5400,
             events,
+            install_channel: Some(InstallChannel::Homebrew),
         }
     }
 
@@ -360,6 +371,7 @@ mod tests {
                 "buildMode",
                 "config",
                 "events",
+                "installChannel",
                 "osVersion",
                 "uptimeSeconds"
             ]
@@ -384,6 +396,7 @@ mod tests {
         assert_eq!(value["buildMode"], json!("release"));
         assert_eq!(value["config"]["theme.mode"], json!("dark"));
         assert_eq!(value["uptimeSeconds"], json!(5400));
+        assert_eq!(value["installChannel"], json!("homebrew"));
         assert_eq!(value["events"][0]["event"], json!("pane_navigated"));
         assert_eq!(value["events"][0]["timestamp"], json!("2026-09-24T10:00:00.123Z"));
         assert_eq!(value["events"][0]["id"], json!("0f8fad5b-d9cb-469f-a165-70867728950e"));
@@ -399,6 +412,17 @@ mod tests {
         let value = serde_json::to_value(p).expect("serialize");
         assert_eq!(value["events"], json!([]));
         assert_eq!(value["buildMode"], json!(null));
+    }
+
+    /// A channel we can't tell still sends the key, as `null`, so the server sees "unknown" rather
+    /// than an old client.
+    #[test]
+    fn an_unknown_install_channel_sends_an_explicit_null() {
+        let mut p = payload(vec![]);
+        p.install_channel = None;
+        let value = serde_json::to_value(p).expect("serialize");
+        let object = value.as_object().expect("object");
+        assert_eq!(object.get("installChannel"), Some(&json!(null)));
     }
 
     #[test]
