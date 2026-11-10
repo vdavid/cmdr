@@ -316,12 +316,13 @@ back to the OAuth login).
 
 **D1 for telemetry and fulfillment:** crash reports, downloads, update checks, heartbeats, relayed feature events,
 feedback, and the `license_issuance` record all live in D1 (binding `TELEMETRY_DB`, database `cmdr-telemetry-eu`, in the
-`eu` jurisdiction). Migrations live in `migrations/` (latest: `0031_install_country_channel_summary.sql`, the
-heartbeat's `country` / `install_channel` and the `install_summary` table, `src/admin/DETAILS.md` § Install summary;
-`0026_feedback_error_report_id.sql`, the logs a feedback message came with, § The reports repo; `0023_card_ratings.sql`,
-the triage comments the rating job has applied or flagged, § Card ratings; `0022_report_outbox.sql`, the report outbox:
-`error_reports`, `error_report_amendments`, `ops_events`, and `issue_number` on crashes and feedback, § The reports
-repo; `0021_license_adjustments.sql` is the refund and chargeback record `/webhook/paddle` keeps beside the ledger
+`eu` jurisdiction). Migrations live in `migrations/` (latest: `0032_install_summary_first_beat_country.sql`, the
+install's first-beat country; `0031_install_country_channel_summary.sql`, the heartbeat's `country` / `install_channel`
+and the `install_summary` table, both `src/admin/DETAILS.md` § Install summary; `0026_feedback_error_report_id.sql`, the
+logs a feedback message came with, § The reports repo; `0023_card_ratings.sql`, the triage comments the rating job has
+applied or flagged, § Card ratings; `0022_report_outbox.sql`, the report outbox: `error_reports`,
+`error_report_amendments`, `ops_events`, and `issue_number` on crashes and feedback, § The reports repo;
+`0021_license_adjustments.sql` is the refund and chargeback record `/webhook/paddle` keeps beside the ledger
 (`src/licensing/DETAILS.md` § Refunds); `0020_heartbeat_uptime_and_events.sql` is `heartbeat.uptime_seconds` and the
 `analytics_event` table `/heartbeat` relays feature events into; `0017_manual_licenses.sql` is the `source` /
 `organization_name` / `expires_at` / `revoked_at` / `note` columns that turn `license_issuance` into the ledger for

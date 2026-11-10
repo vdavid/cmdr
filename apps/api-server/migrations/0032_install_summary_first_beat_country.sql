@@ -1,0 +1,11 @@
+-- The country of an install's FIRST-EVER beat, NULL when that beat carried none.
+--
+-- `install_summary.country` is the first non-NULL country, so an install that predates the field gains
+-- one on its next beat. Only installs still in use ever beat again, so per-country installs and
+-- retention built on it would count only the survivors: a country's retention would look better than
+-- it is. Every per-country install fact reads this column instead, and an install without one counts
+-- under "(unknown)": `apps/api-server/src/admin/DETAILS.md` § Install summary.
+--
+-- `/heartbeat` sets it on the insert only and never updates it. Every install already in the table
+-- keeps NULL (not from the first beat), including one whose `country` was filled on a later beat.
+ALTER TABLE install_summary ADD COLUMN first_beat_country TEXT;

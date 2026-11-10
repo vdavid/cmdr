@@ -72,12 +72,12 @@ const insertHeartbeatSql = `INSERT INTO heartbeat (anal_id, app_version, os_vers
 
 /**
  * Keeps `install_summary` in step with the beat, in the beat's own batch. The first beat inserts the
- * row; a later one only fills a still-NULL country or channel (the first non-NULL value wins). The
- * `WHERE` makes a beat that changes nothing a no-op rather than a row write, which is almost every
- * beat. `src/admin/DETAILS.md` § Install summary.
+ * row, `first_beat_country` included, which nothing ever updates; a later beat only fills a still-NULL
+ * country or channel (the first non-NULL value wins). The `WHERE` makes a beat that changes nothing a
+ * no-op rather than a row write, which is almost every beat. `src/admin/DETAILS.md` § Install summary.
  */
-const upsertInstallSummarySql = `INSERT INTO install_summary (anal_id, first_beat_at, country, install_channel)
-     VALUES (?1, ?2, ?3, ?4)
+const upsertInstallSummarySql = `INSERT INTO install_summary (anal_id, first_beat_at, country, install_channel, first_beat_country)
+     VALUES (?1, ?2, ?3, ?4, ?3)
      ON CONFLICT(anal_id) DO UPDATE SET
        country = COALESCE(install_summary.country, excluded.country),
        install_channel = COALESCE(install_summary.install_channel, excluded.install_channel)

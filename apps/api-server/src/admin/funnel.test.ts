@@ -144,9 +144,10 @@ describe('GET /admin/funnel/countries (route)', () => {
     }
     const res = await app.request('/admin/funnel/countries?days=7', { headers: authHeaders }, bindings)
     expect(res.status).toBe(200)
+    const none = { newInstalls: 0, d7Cohort: 0, d7Retained: 0, d28Cohort: 0, d28Retained: 0 }
     expect(await res.json()).toEqual([
-      { country: 'SE', serverDownloads: 3, humanInstalls: 3, newInstalls: 0, d7Cohort: 0, d7Retained: 0 },
-      { country: '(unknown)', serverDownloads: 3, humanInstalls: 1, newInstalls: 0, d7Cohort: 0, d7Retained: 0 },
+      { country: 'SE', serverDownloads: 3, humanInstalls: 3, ...none },
+      { country: '(unknown)', serverDownloads: 3, humanInstalls: 1, ...none },
     ])
   })
 })
@@ -200,9 +201,14 @@ function funnelRows(rows: Partial<FunnelRows> = {}): FunnelRows {
   }
 }
 
-/** `count` installs on `date` with no channel: what every pre-field install looks like. */
+/** `count` installs on `date` with no channel or country: what every pre-field install looks like. */
 function installs(date: string, count: number): Pick<FunnelRows, 'installsByChannel'> {
-  return { installsByChannel: [{ date, channel: null, count }] }
+  return { installsByChannel: [{ date, channel: null, country: null, count }] }
+}
+
+/** Retained installs of the `cohortDate` cohort at `dayOffset`, with no country. */
+function retained(cohortDate: string, dayOffset: number, count: number): FunnelRows['retention'][number] {
+  return { cohortDate, dayOffset, country: null, retained: count }
 }
 
 describe('assembleFunnel', () => {
@@ -232,9 +238,9 @@ describe('assembleFunnel', () => {
       ['2026-06-12'],
       funnelRows({
         downloadsBySource: [
-          { date: '2026-06-12', source: 'website', count: 5 },
-          { date: '2026-06-12', source: 'homebrew', count: 2 },
-          { date: '2026-06-12', source: 'other', count: 1 },
+          { date: '2026-06-12', country: null, source: 'website', count: 5 },
+          { date: '2026-06-12', country: null, source: 'homebrew', count: 2 },
+          { date: '2026-06-12', country: null, source: 'other', count: 1 },
         ],
       }),
       null,
@@ -287,15 +293,28 @@ describe('assembleFunnel', () => {
           // 2026-06-11: a Mac browser (human), a Windows bot (excluded), and a NULL UA (unknown, kept).
           {
             date: '2026-06-11',
+            country: null,
             uaFamily: null,
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
             count: 4,
           },
-          { date: '2026-06-11', uaFamily: null, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', count: 6 },
-          { date: '2026-06-11', uaFamily: null, userAgent: null, count: 2 },
+          {
+            date: '2026-06-11',
+            country: null,
+            uaFamily: null,
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            count: 6,
+          },
+          { date: '2026-06-11', country: null, uaFamily: null, userAgent: null, count: 2 },
           // 2026-06-12: a Homebrew install (human) and a Linux bot (excluded).
-          { date: '2026-06-12', uaFamily: null, userAgent: 'Homebrew/4.1.0 (Macintosh; arm64)', count: 3 },
-          { date: '2026-06-12', uaFamily: null, userAgent: 'Mozilla/5.0 (X11; Linux x86_64)', count: 5 },
+          {
+            date: '2026-06-12',
+            country: null,
+            uaFamily: null,
+            userAgent: 'Homebrew/4.1.0 (Macintosh; arm64)',
+            count: 3,
+          },
+          { date: '2026-06-12', country: null, uaFamily: null, userAgent: 'Mozilla/5.0 (X11; Linux x86_64)', count: 5 },
         ],
       }),
       null,
@@ -313,9 +332,9 @@ describe('assembleFunnel', () => {
       // Swept rows: the raw UA is gone, the family recorded at write time carries the day.
       funnelRows({
         downloadsByUa: [
-          { date: '2026-06-11', uaFamily: 'human', userAgent: null, count: 4 },
-          { date: '2026-06-11', uaFamily: 'bot', userAgent: null, count: 6 },
-          { date: '2026-06-11', uaFamily: 'unknown', userAgent: null, count: 2 },
+          { date: '2026-06-11', country: null, uaFamily: 'human', userAgent: null, count: 4 },
+          { date: '2026-06-11', country: null, uaFamily: 'bot', userAgent: null, count: 6 },
+          { date: '2026-06-11', country: null, uaFamily: 'unknown', userAgent: null, count: 2 },
         ],
       }),
       null,
@@ -330,10 +349,10 @@ describe('assembleFunnel', () => {
       ['2026-06-12'],
       funnelRows({
         installsByChannel: [
-          { date: '2026-06-12', channel: 'homebrew', count: 3 },
-          { date: '2026-06-12', channel: 'direct', count: 5 },
-          { date: '2026-06-12', channel: null, count: 2 },
-          { date: '2026-06-12', channel: 'mas', count: 1 },
+          { date: '2026-06-12', country: null, channel: 'homebrew', count: 3 },
+          { date: '2026-06-12', country: null, channel: 'direct', count: 5 },
+          { date: '2026-06-12', country: null, channel: null, count: 2 },
+          { date: '2026-06-12', country: null, channel: 'mas', count: 1 },
         ],
       }),
       null,
@@ -363,7 +382,7 @@ describe('assembleFunnel', () => {
       ['2026-06-04'],
       funnelRows({
         ...installs('2026-06-04', 4),
-        retention: [{ cohortDate: '2026-06-04', dayOffset: 7, retained: 1 }],
+        retention: [retained('2026-06-04', 7, 1)],
       }),
       null,
       now,
@@ -391,11 +410,11 @@ describe('assembleFunnel', () => {
     const rows = assembleFunnel(
       dates,
       funnelRows({
-        installsByChannel: dates.map((date) => ({ date, channel: null, count: 5 })),
+        installsByChannel: dates.map((date) => ({ date, channel: null, country: null, count: 5 })),
         retention: [
-          { cohortDate: '2026-06-05', dayOffset: 6, retained: 2 },
-          { cohortDate: '2026-06-05', dayOffset: 5, retained: 4 }, // not the latest passed day: ignored
-          { cohortDate: '2026-06-10', dayOffset: 1, retained: 3 },
+          retained('2026-06-05', 6, 2),
+          retained('2026-06-05', 5, 4), // not the latest passed day: ignored
+          retained('2026-06-10', 1, 3),
         ],
       }),
       null,
@@ -415,6 +434,110 @@ describe('assembleFunnel', () => {
   it('reports retention so far as null for a young day with no installs', () => {
     const rows = assembleFunnel(['2026-06-09'], funnelRows(), null, now)
     expect(rows[0].retentionSoFar).toBeNull()
+  })
+
+  it('reports D28 only for cohorts at least 29 days old, as retained/installs', () => {
+    // Today is 2026-06-12: 2026-05-14 is 29 days old, 2026-05-15 is 28.
+    const dates = ['2026-05-14', '2026-05-15']
+    const rows = assembleFunnel(
+      dates,
+      funnelRows({
+        installsByChannel: dates.map((date) => ({ date, channel: null, country: null, count: 4 })),
+        retention: [retained('2026-05-14', 28, 1), retained('2026-05-15', 27, 2)],
+      }),
+      null,
+      now,
+    )
+    expect(rows[0]).toMatchObject({ d28Retained: 1, d28Retention: 0.25, d28SoFar: null })
+    expect(rows[1]).toMatchObject({ d28Retained: null, d28Retention: null, d28SoFar: { day: 27, retained: 2 } })
+  })
+
+  it('reports D28 so far for cohorts 8..28 days old, taking over exactly where retention so far stops', () => {
+    // Today is 2026-06-12: 2026-06-04 is 8 days old (D7 known), 2026-06-05 is 7 (retention so far).
+    const dates = ['2026-06-04', '2026-06-05']
+    const rows = assembleFunnel(
+      dates,
+      funnelRows({
+        installsByChannel: dates.map((date) => ({ date, channel: null, country: null, count: 4 })),
+        retention: [retained('2026-06-04', 7, 3), retained('2026-06-05', 6, 1)],
+      }),
+      null,
+      now,
+    )
+    expect(rows[0]).toMatchObject({ d7Retained: 3, retentionSoFar: null, d28SoFar: { day: 7, retained: 3 } })
+    expect(rows[1]).toMatchObject({ d7Retained: null, retentionSoFar: { day: 6, retained: 1 }, d28SoFar: null })
+  })
+
+  it('reports D28 and D28 so far as null for a day with no installs', () => {
+    const rows = assembleFunnel(['2026-05-01', '2026-06-01'], funnelRows(), null, now)
+    for (const row of rows) expect(row).toMatchObject({ d28Retained: null, d28Retention: null, d28SoFar: null })
+  })
+
+  it('slices each day by country, folding non-countries together, and the slices sum to the day', () => {
+    const rows = assembleFunnel(
+      ['2026-06-04'],
+      funnelRows({
+        downloadsBySource: [
+          { date: '2026-06-04', country: 'SE', source: 'website', count: 3 },
+          { date: '2026-06-04', country: 'XX', source: 'homebrew', count: 1 },
+          { date: '2026-06-04', country: 'unknown', source: 'website', count: 2 },
+        ],
+        downloadsByUa: [
+          { date: '2026-06-04', country: 'SE', uaFamily: 'bot', userAgent: null, count: 3 },
+          { date: '2026-06-04', country: 'XX', uaFamily: 'human', userAgent: null, count: 1 },
+          { date: '2026-06-04', country: 'unknown', uaFamily: 'unknown', userAgent: null, count: 2 },
+        ],
+        installsByChannel: [
+          { date: '2026-06-04', country: 'SE', channel: 'homebrew', count: 2 },
+          { date: '2026-06-04', country: null, channel: 'direct', count: 1 },
+        ],
+        retention: [
+          { cohortDate: '2026-06-04', dayOffset: 7, country: 'SE', retained: 1 },
+          { cohortDate: '2026-06-04', dayOffset: 7, country: null, retained: 1 },
+        ],
+      }),
+      null,
+      now,
+    )
+    const day = rows[0]
+    expect(day.byCountry).toEqual({
+      SE: {
+        serverDownloads: 3,
+        humanInstalls: 0,
+        downloadsBySource: { website: 3, homebrew: 0, other: 0 },
+        newInstalls: 2,
+        newInstallsByChannel: { homebrew: 2, direct: 0, unknown: 0 },
+        d7Retained: 1,
+        d28Retained: null,
+        retentionSoFar: null,
+        d28SoFar: { day: 7, retained: 1 },
+      },
+      '(unknown)': {
+        serverDownloads: 3,
+        humanInstalls: 3,
+        downloadsBySource: { website: 2, homebrew: 1, other: 0 },
+        newInstalls: 1,
+        newInstallsByChannel: { homebrew: 0, direct: 1, unknown: 0 },
+        d7Retained: 1,
+        d28Retained: null,
+        retentionSoFar: null,
+        d28SoFar: { day: 7, retained: 1 },
+      },
+    })
+    expect(day).toMatchObject({
+      downloads: 6,
+      humanInstalls: 3,
+      downloadsBySource: { website: 5, homebrew: 1, other: 0 },
+      downloadsByUaFamily: { human: 1, bot: 3, unknown: 2 },
+      newInstalls: 3,
+      d7Retained: 2,
+      d7Retention: 2 / 3,
+      d28SoFar: { day: 7, retained: 2 },
+    })
+  })
+
+  it('leaves byCountry empty for a day with nothing in it', () => {
+    expect(assembleFunnel(['2026-06-04'], funnelRows(), null, now)[0].byCountry).toEqual({})
   })
 })
 

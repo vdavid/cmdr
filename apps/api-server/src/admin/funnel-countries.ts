@@ -2,12 +2,13 @@ import { Hono } from 'hono'
 import { verifyAdminAuth } from '../admin-auth'
 import type { Bindings } from '../types'
 import { resolveUaFamily } from '../user-agent'
-import { buildDateList, invalidDaysMessage, normalizeCountry, parseDays, unknownCountry } from './funnel'
+import { buildDateList, invalidDaysMessage, normalizeCountry, parseDays, shiftDate, unknownCountry } from './funnel'
 
 /**
  * `/admin/funnel/countries`: the funnel's window summed per country, for the dashboard's country table
- * and its country picker. Downloads count by the download's own country, installs and D7 by the
- * install's (`install_summary.country`, its first non-NULL one). `DETAILS.md` § Per-country funnel.
+ * and its country picker. Downloads count by the download's own country, installs and retention by the
+ * country of the install's first beat (`install_summary.first_beat_country`). `DETAILS.md` § Per-country
+ * funnel.
  */
 
 const funnelCountries = new Hono<{ Bindings: Bindings }>()
@@ -25,6 +26,10 @@ export interface FunnelCountry {
   d7Cohort: number
   /** Of `d7Cohort`, those that beat in [first day + 7, first day + 8). */
   d7Retained: number
+  /** Of `newInstalls`, those in cohorts at least 29 days old: the ones whose D28 is knowable. */
+  d28Cohort: number
+  /** Of `d28Cohort`, those that beat in [first day + 28, first day + 29). */
+  d28Retained: number
 }
 
 interface DownloadCountryRow {
@@ -38,25 +43,41 @@ interface InstallCountryRow {
   country: string | null
   newInstalls: number
   d7Cohort: number
+  d28Cohort: number
 }
 
-interface D7CountryRow {
+interface RetainedCountryRow {
   country: string | null
-  d7Retained: number
+  /** 7 or 28. */
+  dayOffset: number
+  retained: number
 }
 
 export interface CountryRows {
   downloads: DownloadCountryRow[]
   installs: InstallCountryRow[]
-  d7Retained: D7CountryRow[]
+  retained: RetainedCountryRow[]
 }
 
 /**
- * The three per-country row sets. `?2` is the first day whose cohort is still too young for D7
- * (today minus seven): a first beat before it is at least eight days old.
+ * The three per-country row sets over `[sinceDate, today]`. A cohort's D7 is knowable once its first
+ * beat is before today minus seven (`?2`), its D28 once before today minus 28 (`?3`).
  */
-export async function queryCountryRows(db: D1Database, sinceDate: string, d7CutoffDate: string): Promise<CountryRows> {
-  const [downloads, installs, d7Retained] = await Promise.all([
+export async function queryCountryRows(
+  db: D1Database,
+  window: { sinceDate: string; today: string },
+): Promise<CountryRows> {
+  const { sinceDate, today } = window
+  const d7Cutoff = shiftDate(today, -7)
+  const d28Cutoff = shiftDate(today, -28)
+  const horizon = (offset: number, cutoff: string) =>
+    `SELECT s.anal_id, s.first_beat_country AS country, ${String(offset)} AS dayOffset
+       FROM install_summary s
+       JOIN heartbeat h ON h.anal_id = s.anal_id
+        AND h.created_at >= date(s.first_beat_at, '+${String(offset)} days')
+        AND h.created_at <  date(s.first_beat_at, '+${String(offset + 1)} days')
+      WHERE s.first_beat_at >= ?1 AND s.first_beat_at < ${cutoff}`
+  const [downloads, installs, retained] = await Promise.all([
     db
       .prepare(
         `SELECT country, ua_family AS uaFamily, user_agent AS userAgent, COUNT(*) AS count
@@ -68,27 +89,25 @@ export async function queryCountryRows(db: D1Database, sinceDate: string, d7Cuto
       .all<DownloadCountryRow>(),
     db
       .prepare(
-        `SELECT country, COUNT(*) AS newInstalls, SUM(CASE WHEN first_beat_at < ?2 THEN 1 ELSE 0 END) AS d7Cohort
+        `SELECT first_beat_country AS country, COUNT(*) AS newInstalls,
+                SUM(CASE WHEN first_beat_at < ?2 THEN 1 ELSE 0 END) AS d7Cohort,
+                SUM(CASE WHEN first_beat_at < ?3 THEN 1 ELSE 0 END) AS d28Cohort
            FROM install_summary
            WHERE first_beat_at >= ?1
-           GROUP BY country`,
+           GROUP BY first_beat_country`,
       )
-      .bind(sinceDate, d7CutoffDate)
+      .bind(sinceDate, d7Cutoff, d28Cutoff)
       .all<InstallCountryRow>(),
     db
       .prepare(
-        `SELECT s.country AS country, COUNT(DISTINCT s.anal_id) AS d7Retained
-           FROM install_summary s
-           JOIN heartbeat h ON h.anal_id = s.anal_id
-            AND h.created_at >= date(s.first_beat_at, '+7 days')
-            AND h.created_at <  date(s.first_beat_at, '+8 days')
-          WHERE s.first_beat_at >= ?1 AND s.first_beat_at < ?2
-          GROUP BY s.country`,
+        `SELECT country, dayOffset, COUNT(DISTINCT anal_id) AS retained
+           FROM (${horizon(7, '?2')} UNION ALL ${horizon(28, '?3')})
+          GROUP BY country, dayOffset`,
       )
-      .bind(sinceDate, d7CutoffDate)
-      .all<D7CountryRow>(),
+      .bind(sinceDate, d7Cutoff, d28Cutoff)
+      .all<RetainedCountryRow>(),
   ])
-  return { downloads: downloads.results, installs: installs.results, d7Retained: d7Retained.results }
+  return { downloads: downloads.results, installs: installs.results, retained: retained.results }
 }
 
 /**
@@ -102,7 +121,16 @@ export function assembleCountries(rows: CountryRows): FunnelCountry[] {
     const country = normalizeCountry(raw)
     const existing = byCountry.get(country)
     if (existing) return existing
-    const created = { country, serverDownloads: 0, humanInstalls: 0, newInstalls: 0, d7Cohort: 0, d7Retained: 0 }
+    const created = {
+      country,
+      serverDownloads: 0,
+      humanInstalls: 0,
+      newInstalls: 0,
+      d7Cohort: 0,
+      d7Retained: 0,
+      d28Cohort: 0,
+      d28Retained: 0,
+    }
     byCountry.set(country, created)
     return created
   }
@@ -115,8 +143,13 @@ export function assembleCountries(rows: CountryRows): FunnelCountry[] {
     const target = entry(row.country)
     target.newInstalls += row.newInstalls
     target.d7Cohort += row.d7Cohort
+    target.d28Cohort += row.d28Cohort
   }
-  for (const row of rows.d7Retained) entry(row.country).d7Retained += row.d7Retained
+  for (const row of rows.retained) {
+    const target = entry(row.country)
+    if (row.dayOffset === 7) target.d7Retained += row.retained
+    else if (row.dayOffset === 28) target.d28Retained += row.retained
+  }
 
   const isUnknown = (c: FunnelCountry) => (c.country === unknownCountry ? 1 : 0)
   return [...byCountry.values()].sort(
@@ -136,12 +169,8 @@ funnelCountries.get('/admin/funnel/countries', async (c) => {
   const days = parseDays(c.req.query('days'))
   if (days === null) return c.json({ error: invalidDaysMessage }, 400)
 
-  const now = new Date()
-  const sinceDate = buildDateList(days, now)[0]
-  // Today minus seven: the youngest cohort day with a fully passed D7 window is the day before it.
-  const d7CutoffDate = buildDateList(8, now)[0]
-
-  const rows = await queryCountryRows(c.env.TELEMETRY_DB, sinceDate, d7CutoffDate)
+  const dates = buildDateList(days, new Date())
+  const rows = await queryCountryRows(c.env.TELEMETRY_DB, { sinceDate: dates[0], today: dates[dates.length - 1] })
   return c.json(assembleCountries(rows))
 })
 

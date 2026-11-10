@@ -120,9 +120,10 @@ the beat (they're enrichments; a 400 would make the client resend forever):
 There's no download date: the macOS quarantine stamp it would come from is zeroed when the app is copied out of the DMG,
 so the client can't know it.
 
-The same batch upserts the install's `install_summary` row (`upsertInstallSummarySql`): first beat, and first non-NULL
-country and channel. The beat binds its own `created_at` so the summary's `first_beat_at` matches it exactly. Why the
-table exists and what else keeps it in step: `../admin/DETAILS.md` § Install summary.
+The same batch upserts the install's `install_summary` row (`upsertInstallSummarySql`): first beat, first non-NULL
+country and channel, and the first beat's own country (`first_beat_country`, set on the insert only). The beat binds its
+own `created_at` so the summary's `first_beat_at` matches it exactly. Why the table exists and what else keeps it in
+step: `../admin/DETAILS.md` § Install summary.
 
 **Events** (`analytics_event`): each is `{ event, timestamp, properties }`. The name matches `^[a-z0-9_$]{1,100}$`, the
 timestamp is RFC 3339 with a `Z` or an offset, between 2025-01-01 and a day past our clock, normalized to UTC, and

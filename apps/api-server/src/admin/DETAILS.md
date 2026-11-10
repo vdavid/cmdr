@@ -16,13 +16,16 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   `PUT /admin/feedback/:id/answered` (§ below), `/admin/error-reports` (per-bundle R2 metadata via `list` + custom
   metadata, newest first; `.amend.json` sidecars share the prefix and are skipped, since an amendment is part of its
   report rather than a second one).
-- **`funnel.ts`**: `/admin/funnel`, its queries (`queryFunnelRows`), and the pure `buildDateList` / `parseDays` /
-  `normalizeCountry` / `assembleFunnel` helpers. **`funnel-countries.ts`**: `/admin/funnel/countries`
-  (`queryCountryRows` + the pure `assembleCountries`), reusing those helpers.
+- **`funnel.ts`**: `/admin/funnel`, its queries (`queryFunnelRows`), and the pure `buildDateList` / `shiftDate` /
+  `parseDays` helpers. **`funnel-assemble.ts`**: the contract (`FunnelDay`, `CountryDay`), the row sets the queries
+  return (`FunnelRows`), `normalizeCountry`, and the pure `assembleFunnel` (`funnel.ts` re-exports the public names).
+  **`funnel-countries.ts`**: `/admin/funnel/countries` (`queryCountryRows` + the pure `assembleCountries`), reusing
+  those helpers.
 - Tests: `admin-stats.test.ts`, `admin-endpoints.test.ts`, `funnel.test.ts` (route auth/validation plus the pure date
-  math, zero-fill, channel, D7-knowability, and retention-so-far rules), `funnel-sql.test.ts` (both funnels' SQL on real
-  SQLite, seeded through the `/heartbeat` INSERTs), `heartbeat-dau-sql.test.ts` (the DAU and app-hours query on real
-  SQLite), `feedback-answered.test.ts` (the feedback list and the mark-answered toggle through the app on real SQLite).
+  math, zero-fill, channel, D7/D28-knowability, retention-so-far, and `byCountry` rules), `funnel-sql.test.ts` (both
+  funnels' SQL on real SQLite, seeded through the `/heartbeat` INSERTs, including the country slices summing to the
+  day), `heartbeat-dau-sql.test.ts` (the DAU and app-hours query on real SQLite), `feedback-answered.test.ts` (the
+  feedback list and the mark-answered toggle through the app on real SQLite).
 
 Consumer: the private SvelteKit dashboard in `apps/analytics-dashboard/`.
 
@@ -78,9 +81,9 @@ apart by a field it lacks (an old Worker ignores `country` and answers the globa
 present those as a country's).
 
 **With `country`**, the download columns filter on `downloads.country` (the download's own request), while
-`newInstalls*`, `dau`, `d7*`, and `retentionSoFar` filter on the install's country (`install_summary.country`, its first
-non-NULL one; `dau` counts the beats of installs from that country). `newsletterSignups` is `null` for every day:
-Listmonk has no country, and Listmonk isn't asked.
+`newInstalls*`, `dau`, and every retention field filter on the country of the install's first beat
+(`install_summary.first_beat_country`, § Install summary; `dau` counts the beats of installs from that country).
+`newsletterSignups` is `null` for every day: Listmonk has no country, and Listmonk isn't asked.
 
 Per-day columns and how each is derived:
 
@@ -111,7 +114,23 @@ Per-day columns and how each is derived:
 - `retentionSoFar` (`{ day, retained } | null`): the dashboard's grey "tentative" D7 point. For a cohort 2–7 days old
   with installs, `day` is the latest fully passed day index n = age − 1 (1..6) and `retained` the cohort installs with a
   beat in `[X+n, X+n+1)`, the D7 definition with n in place of 7. `null` for younger cohorts, for D7-knowable ones, and
-  for a day with no installs. One query (`queryRetention`) returns every offset 1..7 per cohort; D7 is offset 7.
+  for a day with no installs.
+- `d28Retention` + `d28Retained` + `d28SoFar`: the same three with 28 in place of 7. D28 is known once the cohort is at
+  least 29 days old; `d28SoFar` covers cohorts 8–28 days old (`day` 7..27), so it starts exactly where D7 becomes known.
+  One pure helper (`horizonRetention`) derives both horizons.
+- **How `queryRetention` reads it**: three windows per install, UNIONed: `[X+7, X+8)`, `[X+28, X+29)`, and yesterday. A
+  cohort n+1 days old has fully passed day n exactly at yesterday, so that one window answers both "so far" fields for
+  every cohort 2–28 days old, and each install's lookup touches about three days of beats rather than its first four
+  weeks. The windows can overlap (yesterday is day seven for an eight-day-old cohort), hence `COUNT(DISTINCT)`. The
+  offsets it returns are 7, 28, and age − 1, nothing else.
+- `byCountry` (`Record<country, CountryDay>`): the day sliced per country, for the dashboard's instant country filter.
+  Keys are ISO-2 or `"(unknown)"` (`normalizeCountry`), and a country with nothing that day is absent. `CountryDay` is
+  `{ serverDownloads, humanInstalls, downloadsBySource, newInstalls, newInstallsByChannel, d7Retained, d28Retained, retentionSoFar, d28SoFar }`,
+  each with the top-level field's meaning and null rules; rates are left to the dashboard (sum the counts, then divide).
+  A download counts under its own country, an install under its first beat's. **The slices sum to the day by
+  construction**: the download, install, and retention queries are grouped by country too, and `assembleFunnel` builds
+  the day's own numbers by summing the slices (`funnel-sql.test.ts` asserts the invariant). That grouping is what keeps
+  it at the same seven queries; ❌ never a query per country.
 - `newsletterSignups`: Listmonk subscribers (newsletter list `LISTMONK_NEWSLETTER_LIST_ID`, default 3, **plus** beta
   list `LISTMONK_BETA_LIST_ID`) whose `created_at` falls on that UTC day, via one read-only
   `GET /api/subscribers?query=...` filtered by `created_at >= sinceDate`, paginated, then bucketed in code. Caveat:
@@ -121,31 +140,43 @@ Per-day columns and how each is derived:
   dashboard distinguishes "no signups" from "couldn't ask". The list ids MUST be TOML integers in `[vars]` (the resolver
   checks `typeof === 'number'`); a string drops that list from the count.
 
-`buildDateList` and `assembleFunnel` are pure and exported so the date math, zero-fill, and D7-knowability logic are
+`buildDateList` and `assembleFunnel` are pure and exported so the date math, zero-fill, and D7/D28-knowability logic are
 unit-tested without a live D1 (`funnel.test.ts`); the SQL is proved on real SQLite by `funnel-sql.test.ts`, and can be
 eyeballed against a local D1 with `../../scripts/seed-funnel-local.sql` (hand-computed expectations are in that file's
-header). The upsert, `julianday` offsets, and the retention join ran clean on a local D1 (wrangler 4.151.0, a probe
-script, 2026-11-10); the remote D1 can't run them until migration 0031 is applied.
+header). The upsert, `julianday` offsets, and the three-window UNION retention query ran clean on a local D1 (wrangler
+4.151.0, a probe script, 2026-11-10); the remote D1 can't run them until migrations 0031 and 0032 are applied.
 
 ## Per-country funnel (`GET /admin/funnel/countries`)
 
 `?days=N` (same bounds as `/admin/funnel`). Returns
-`[{ country, serverDownloads, humanInstalls, newInstalls, d7Cohort, d7Retained }]` over the whole window:
+`[{ country, serverDownloads, humanInstalls, newInstalls, d7Cohort, d7Retained, d28Cohort, d28Retained }]` over the
+whole window:
 
 - `serverDownloads` / `humanInstalls`: `downloads` rows by their own `country`, `humanInstalls` dropping the `bot`
   family exactly as `FunnelDay.humanInstalls` does.
-- `newInstalls`: installs whose first beat fell in the window, by `install_summary.country`.
+- `newInstalls`: installs whose first beat fell in the window, by `install_summary.first_beat_country`.
 - `d7Cohort` / `d7Retained`: of those, the installs in cohorts at least eight days old (first beat before today minus
   seven), and the ones among them retained at D7. The dashboard divides the two; a young cohort counts in `newInstalls`
   only.
+- `d28Cohort` / `d28Retained`: the same for D28, cohorts at least 29 days old (first beat before today minus 28). One
+  query reads both retention windows.
 - `country` is ISO-2, or `"(unknown)"` for anything else: a NULL install country, and the `unknown` / `XX` / `T1` values
   `downloads.country` can hold (`normalizeCountry`).
 - Sorted by `newInstalls`, then `serverDownloads`, both descending; on a full tie `(unknown)` goes last, then by code.
 
 ## Install summary
 
-`install_summary` (migration `0031`) is one row per install: `anal_id`, `first_beat_at`, and the install's first
-non-NULL `country` and `install_channel`.
+`install_summary` (migration `0031`) is one row per install: `anal_id`, `first_beat_at`, the install's first non-NULL
+`country` and `install_channel`, and `first_beat_country` (migration `0032`), the country of the first beat itself.
+
+**Decision: per-country install facts read `first_beat_country`, ❌ never `country`.** An install from before the field
+gains a `country` on its next beat, but only installs still in use ever beat again, so a country built on `country`
+counts its survivors and not its churned installs: its installs look lower and its retention higher than they are. The
+first-beat country is either known at install time or never, so every install counts under a real country or
+`"(unknown)"` regardless of whether it stuck around. `/heartbeat` writes it on the insert only; every install from
+before `0032` backfills NULL (`"(unknown)"`), even one whose `country` filled in later. That's every per-country number
+in `/admin/funnel` (`?country=`, `byCountry`) and `/admin/funnel/countries`; downloads keep `downloads.country`, which
+has always been recorded with the request. `country` stays for whatever doesn't need the cohort to be honest.
 
 **Decision: maintain it at ingest rather than aggregate at query time.** Why:
 

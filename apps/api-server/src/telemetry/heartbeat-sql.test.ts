@@ -32,7 +32,9 @@ function beat(db: DatabaseSync, id: string, facts: BeatFacts): void {
 function summary(db: DatabaseSync, id: string): Record<string, unknown> {
   return {
     ...(db
-      .prepare(`SELECT first_beat_at, country, install_channel FROM install_summary WHERE anal_id = ?`)
+      .prepare(
+        `SELECT first_beat_at, country, install_channel, first_beat_country FROM install_summary WHERE anal_id = ?`,
+      )
       .get(id) as Record<string, unknown>),
   }
 }
@@ -137,6 +139,7 @@ describe('the install-summary upsert against real SQLite', () => {
       first_beat_at: '2026-11-08 09:00:00',
       country: 'SE',
       install_channel: 'direct',
+      first_beat_country: 'SE',
     })
     db.close()
   })
@@ -151,7 +154,17 @@ describe('the install-summary upsert against real SQLite', () => {
       first_beat_at: '2026-11-08 09:00:00',
       country: 'HU',
       install_channel: 'homebrew',
+      // The first beat had no country, so the install never counts under one.
+      first_beat_country: null,
     })
+    db.close()
+  })
+
+  it("keeps the first beat's country even when a later beat comes from elsewhere", () => {
+    const db = openDb()
+    beat(db, analId, { at: '2026-11-08 09:00:00', country: 'SE' })
+    beat(db, analId, { at: '2026-11-08 12:00:00', country: 'DE', channel: 'direct' })
+    expect(summary(db, analId)).toMatchObject({ country: 'SE', install_channel: 'direct', first_beat_country: 'SE' })
     db.close()
   })
 
@@ -182,9 +195,34 @@ describe('migration 0031 backfills the install summary', () => {
       .all()
       .map((r) => ({ ...r }))
     expect(rows).toEqual([
-      { anal_id: 'anal_a', first_beat_at: '2026-10-01 08:00:00', country: null, install_channel: null },
-      { anal_id: 'anal_b', first_beat_at: '2026-10-05 08:00:00', country: null, install_channel: null },
+      {
+        anal_id: 'anal_a',
+        first_beat_at: '2026-10-01 08:00:00',
+        country: null,
+        install_channel: null,
+        first_beat_country: null,
+      },
+      {
+        anal_id: 'anal_b',
+        first_beat_at: '2026-10-05 08:00:00',
+        country: null,
+        install_channel: null,
+        first_beat_country: null,
+      },
     ])
+    sqlite.close()
+  })
+})
+
+describe('migration 0032 adds the first-beat country', () => {
+  it('backfills every existing install as not from the first beat, even one that gained a country', () => {
+    const { sqlite } = createSqliteD1({ before: '0032' })
+    sqlite
+      .prepare(`INSERT INTO install_summary (anal_id, first_beat_at, country) VALUES (?, ?, ?)`)
+      .run('anal_a', '2026-10-01 08:00:00', 'SE')
+    applyMigrationsFrom(sqlite, '0032')
+    const row = sqlite.prepare(`SELECT country, first_beat_country FROM install_summary`).get()
+    expect({ ...row }).toEqual({ country: 'SE', first_beat_country: null })
     sqlite.close()
   })
 })

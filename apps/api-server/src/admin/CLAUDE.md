@@ -3,8 +3,9 @@
 Aggregations the private analytics dashboard calls, all behind `ADMIN_API_TOKEN`. `admin.ts` holds the per-metric
 endpoints (`/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/update-activity`, `/admin/crashes`,
 `/admin/heartbeat-dau`, `/admin/config-shape`, `/admin/feedback`, `/admin/error-reports`) plus the one write,
-`PUT /admin/feedback/:id/answered`; `funnel.ts` holds `/admin/funnel`, the one-call per-UTC-day acquisition funnel, and
-`funnel-countries.ts` its per-country totals, `/admin/funnel/countries`.
+`PUT /admin/feedback/:id/answered`; `funnel.ts` holds `/admin/funnel`, the one-call per-UTC-day acquisition funnel (its
+contract and pure assembly in `funnel-assemble.ts`), and `funnel-countries.ts` its per-country totals,
+`/admin/funnel/countries`.
 
 ## Must-knows
 
@@ -27,6 +28,10 @@ endpoints (`/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/up
 - **Per-install facts read `install_summary`, ❌ never a `GROUP BY anal_id` over `heartbeat`**: that scans every beat
   ever, and D1 bills rows read. Three call sites keep the summary in step (`/heartbeat`, both sweeps); a new path that
   deletes beats must delete summary rows too. DETAILS § Install summary.
+- **An install's country, for any per-country number, is `first_beat_country`, ❌ never `install_summary.country`**: the
+  latter fills in on a later beat, so only surviving installs gain one and a country's retention reads too high.
+- **`FunnelDay.byCountry` must sum to the day**: `assembleFunnel` builds the day from its slices, and every query groups
+  by country rather than running once per country. DETAILS § Per-day funnel.
 - **UA-family aggregation reads `resolveUaFamily` (`../user-agent.ts`)**, ❌ never a fresh classification of the raw UA:
   the stored `ua_family` outlives the `user_agent` the retention sweep clears at 90 days.
 
