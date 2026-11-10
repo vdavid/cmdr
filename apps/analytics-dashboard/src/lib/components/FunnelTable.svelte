@@ -1,7 +1,7 @@
 <!--
   The old "Daily funnel" table, kept collapsed under the trend charts: one row per UTC day for the last
   30 days (newest first), plus the channel, referrer, and client breakdowns over that window. Independent
-  of the range picker, scoped by the country filter. Clicking a row filters the sections below to that day.
+  of the range picker, scoped by the country filter.
 -->
 <script lang="ts">
     import type { SourceResult } from '#lib/server/types.js'
@@ -16,17 +16,11 @@
     const {
         funnel,
         selection,
-        selectedDay,
-        isDaySelected,
         todayIso,
-        onselectday,
     }: {
         funnel: SourceResult<FunnelData>
         selection: DashboardSelection
-        selectedDay: string
-        isDaySelected: boolean
         todayIso: string
-        onselectday: (day: string) => void
     } = $props()
 
     /** Format a funnel cell: a real number, or an en dash when the value is unknown (null). */
@@ -50,7 +44,7 @@
             'downloads, new installs, week-one retention, signups, and purchases, all lined up so you can spot where ' +
             'a day fell off.'}
         caveat={"All days are UTC, and today's row is partial (it's still going). A dash means we couldn't get that cell " +
-            '(not a zero). Click a day to filter the sections below to it.'}
+            '(not a zero).'}
     />
     {#if funnel.ok}
         {@const rows = funnel.data.rows.slice(-funnelTableDays)}
@@ -71,12 +65,7 @@
                 <tbody>
                     {#each [...rows].reverse() as row (row.date)}
                         {@const isToday = row.date === todayIso}
-                        {@const isActiveDay = isDaySelected && row.date === selectedDay}
-                        <tr
-                            class="cursor-pointer border-b border-border-subtle transition-colors hover:bg-surface-elevated
-                                {isActiveDay ? 'bg-accent/10' : ''}"
-                            onclick={() => { onselectday(row.date); }}
-                        >
+                        <tr class="border-b border-border-subtle transition-colors hover:bg-surface-elevated">
                             <td class="py-1.5 pr-4 font-medium text-text-primary">
                                 {row.date}{#if isToday}<span class="ml-1 text-xs font-normal text-text-tertiary"
                                         >(today, partial)</span

@@ -26,7 +26,7 @@ const emptyEnv: DashboardEnv = {
   WORKER_BASE_URL: undefined,
 }
 
-const selection = { range: '7d', day: null } as const
+const selection = { range: '7d' } as const
 
 /**
  * Source keys: everything in the result except the shared envelope and the plain-config fields.
@@ -103,7 +103,7 @@ describe('per-page data-loading split', () => {
   })
 
   it('the report still loads every source (the union of both pages)', async () => {
-    const data = await fetchDashboardData(emptyEnv, '7d', null)
+    const data = await fetchDashboardData(emptyEnv, '7d')
     expect(sourceKeys(data)).toEqual([
       'cloudflare',
       'feedbackAndErrors',

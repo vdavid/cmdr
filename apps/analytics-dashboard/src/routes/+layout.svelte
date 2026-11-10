@@ -1,7 +1,7 @@
 <!--
   Shared shell for the whole dashboard: a sticky top bar with the page nav (Acquisition, Product,
-  Licenses, Link codes) and the range/day picker. The picker drives the shared time selection via
-  `?range=` / `?day=` and stays on the current page when you switch, so Acquisition and Product share
+  Licenses, Link codes) and the range picker (7d / 30d / 90d). The picker drives the shared time selection via
+  `?range=` and stays on the current page when you switch, so Acquisition and Product share
   selection state. It's hidden on the two ledger pages (Licenses, Link codes), where a time range is
   irrelevant. The selection comes from the layout load; `updatedAt` comes from whichever data page is
   active.
@@ -12,6 +12,7 @@
     import { page } from '$app/state'
     import { resolve } from '$app/paths'
     import { formatTime } from '#lib/format.js'
+    import { timeRanges, type TimeRange } from '#lib/time-range.js'
 
     const { children, data }: LayoutProps = $props()
 
@@ -22,8 +23,6 @@
         { href: resolve('/links'), label: 'Link codes' },
     ]
 
-    /** The relative ranges shown as picker buttons, in display order. `day` is set via the date input. */
-    const rangeButtons = ['today', '24h', '7d', '30d'] as const
 
     /** The current pathname, used to keep the nav active state and to keep range switches on the same page. */
     const pathname = $derived(page.url.pathname)
@@ -37,30 +36,12 @@
     /** The freshness stamp, set by the active data page's load (absent on Link codes). */
     const updatedAt = $derived(page.data.updatedAt as string | undefined)
 
-    /** True when a single specific UTC day is selected (vs a relative range). */
-    const isDaySelected = $derived(data.selection.range === 'day')
-    /** The selected specific day, or '' for the date input when a relative range is active. */
-    const selectedDay = $derived(data.selection.day ?? '')
-
-    /** Today's UTC day as YYYY-MM-DD, the max selectable day (no future days). */
-    const todayIso = new Date().toISOString().slice(0, 10)
-
-    /** The Acquisition page's `?country=` filter, carried across picker changes so a range switch keeps it. */
-    const countrySuffix = $derived.by(() => {
+    /** Navigate to a range on the current page, keeping the Acquisition page's `?country=` filter. */
+    function selectRange(range: TimeRange) {
+        if (data.selection.range === range) return
+        // Read at click time: the country chips update the URL in place, without a navigation.
         const country = page.url.searchParams.get('country')
-        return country ? `&country=${encodeURIComponent(country)}` : ''
-    })
-
-    /** Navigate to a relative range on the current page, clearing any specific-day selection. */
-    function selectRange(range: string) {
-        if (!(data.selection.range === range && !data.selection.day)) {
-            window.location.href = `${pathname}?range=${range}${countrySuffix}`
-        }
-    }
-
-    /** Navigate to a single specific UTC day on the current page (or back to the default range when cleared). */
-    function selectDay(day: string) {
-        window.location.href = day ? `${pathname}?day=${day}${countrySuffix}` : `${pathname}?range=7d${countrySuffix}`
+        window.location.href = `${pathname}?range=${range}${country ? `&country=${encodeURIComponent(country)}` : ''}`
     }
 </script>
 
@@ -93,11 +74,12 @@
         {#if showPicker}
             <div class="flex flex-wrap items-center gap-3">
                 <div class="flex rounded-lg border border-border bg-surface p-0.5">
-                    {#each rangeButtons as r (r)}
+                    {#each timeRanges as r (r)}
                         <button
                             onclick={() => { selectRange(r); }}
+                            aria-pressed={data.selection.range === r}
                             class="rounded-md px-3 py-1 text-sm font-medium transition-colors
-                                {!isDaySelected && data.selection.range === r
+                                {data.selection.range === r
                                 ? 'bg-accent text-accent-contrast'
                                 : 'text-text-secondary hover:text-text-primary'}"
                         >
@@ -105,17 +87,6 @@
                         </button>
                     {/each}
                 </div>
-                <input
-                    type="date"
-                    max={todayIso}
-                    value={selectedDay}
-                    onchange={(e) => { selectDay((e.currentTarget).value); }}
-                    aria-label="View a specific UTC day"
-                    class="rounded-lg border px-2 py-1 text-sm transition-colors
-                        {isDaySelected
-                        ? 'border-accent bg-accent/10 text-text-primary'
-                        : 'border-border bg-surface text-text-secondary hover:text-text-primary'}"
-                />
                 {#if updatedAt}
                     <span class="text-xs text-text-tertiary"> Updated {formatTime(updatedAt)} </span>
                 {/if}

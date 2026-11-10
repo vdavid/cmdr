@@ -20,7 +20,7 @@ visible via hover tooltips on the visual dashboard. This is the recommended way 
 GET /api/report?range=7d
 ```
 
-Accepts `range` query param: `24h`, `7d` (default), `30d`.
+Accepts `range` query param: `7d`, `30d` (default), `90d`.
 
 ❌ **"New installs" means two different things in this report; read the right one.** The **Daily funnel**'s `installs`
 column counts install ids whose first-ever heartbeat landed that day, so it's people who actually launched Cmdr, and

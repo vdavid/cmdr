@@ -1,5 +1,5 @@
 import type { DashboardSelection, SourceResult } from '../types.js'
-import { selectionCacheKey, selectionToWorkerRange } from '../types.js'
+import { selectionCacheKey } from '../types.js'
 import { cacheGet, cacheSet } from '../cache.js'
 import { fetchWorkerEndpoint } from './worker-endpoint.js'
 import {
@@ -21,17 +21,6 @@ interface SettingsAdoptionEnv {
 }
 
 /**
- * The config-shape endpoint takes 7d/30d/90d/all. The shortest coarse range maps up to 7d: a single
- * day of heartbeats sees only whoever happened to run the app, which makes a thin denominator look
- * like a real one.
- */
-const configShapeRangeMap: Record<'24h' | '7d' | '30d', string> = {
-  '24h': '7d',
-  '7d': '7d',
-  '30d': '30d',
-}
-
-/**
  * Settings adoption, resolved server-side.
  *
  * The resolution runs here rather than in a component for two reasons: the per-version defaults
@@ -45,7 +34,8 @@ export async function fetchSettingsAdoptionData(
   const cached = await cacheGet<SettingsAdoption>('settings-adoption', selectionCacheKey(selection))
   if (cached) return { ok: true, data: cached }
 
-  const range = configShapeRangeMap[selectionToWorkerRange(selection)]
+  // The config-shape endpoint takes 7d/30d/90d/all, so every dashboard range passes straight through.
+  const range = selection.range
   try {
     const raw = await fetchWorkerEndpoint<ConfigShapeResponse>(
       env.LICENSE_SERVER_ADMIN_TOKEN,

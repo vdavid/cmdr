@@ -1,7 +1,6 @@
 /**
- * Cache key for a source's data. A plain `TimeRange` for relative windows, or `'day:YYYY-MM-DD'` for a
- * single specific day, so two different picked days don't collide on one cache entry. The funnel source
- * passes the literal `'30d'`.
+ * Cache key for a source's data: a `TimeRange` for the picker-driven sources, or a source's own fixed key
+ * (the funnel passes `days:181`).
  */
 export type CacheRange = string
 
@@ -9,9 +8,8 @@ const cacheName = 'analytics-dashboard'
 
 /** TTL in seconds: long/historical ranges get 1 hour, short live ranges get 5 min. */
 function getTtl(range: CacheRange): number {
-  // A specific past day is immutable history, and 30d is heavy; both cache for an hour. `today` and the
-  // short rolling windows stay fresh at 5 min.
-  return range === '30d' || range.startsWith('day:') ? 3600 : 300
+  // 30d and 90d are heavy and barely move within an hour; 7d and everything else stay fresh at 5 min.
+  return range === '30d' || range === '90d' ? 3600 : 300
 }
 
 // In-memory fallback for local dev (CF Cache API isn't available in wrangler pages dev)

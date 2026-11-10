@@ -702,8 +702,7 @@ function writeFeedbackSection(w: ReportWriter, feedbackAndErrors: SourceResult<F
 export function formatReport(data: DashboardData): string {
   const w = new ReportWriter()
 
-  const selectionLabel = data.selection.range === 'day' ? data.selection.day : data.selection.range
-  w.title(`Cmdr analytics report (${selectionLabel ?? data.selection.range})`)
+  w.title(`Cmdr analytics report (${data.selection.range})`)
   w.line(`Generated: ${data.updatedAt}`)
 
   writeFunnelSection(w, data.funnel)

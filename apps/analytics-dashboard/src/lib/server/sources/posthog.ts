@@ -1,5 +1,5 @@
 import type { DashboardSelection, SourceResult } from '../types.js'
-import { selectionCacheKey, selectionToWorkerRange } from '../types.js'
+import { rangeDays, selectionCacheKey, type TimeRange } from '../types.js'
 import { cacheGet, cacheSet } from '../cache.js'
 
 export interface PostHogDailyRow {
@@ -25,13 +25,8 @@ interface HogQLResponse {
   error?: string
 }
 
-function toHogQLInterval(range: '24h' | '7d' | '30d'): string {
-  const map: Record<'24h' | '7d' | '30d', string> = {
-    '24h': '1 day',
-    '7d': '7 day',
-    '30d': '30 day',
-  }
-  return map[range]
+function toHogQLInterval(range: TimeRange): string {
+  return `${String(rangeDays[range])} day`
 }
 
 export function parseHogQLResponse(raw: HogQLResponse): PostHogDailyRow[] {
@@ -47,7 +42,7 @@ export async function fetchPostHogData(
   if (cached) return { ok: true, data: cached }
 
   try {
-    const interval = toHogQLInterval(selectionToWorkerRange(selection))
+    const interval = toHogQLInterval(selection.range)
     const url = `${env.POSTHOG_API_URL}/api/projects/${env.POSTHOG_PROJECT_ID}/query/`
 
     const response = await fetch(url, {

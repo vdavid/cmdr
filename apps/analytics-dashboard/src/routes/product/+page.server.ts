@@ -9,7 +9,7 @@ export type { ProductData } from '#lib/server/fetch-all.js'
 
 /** Loads only the Product page's sources (Cloudflare, Paddle, license, feedback & errors). */
 export const load: PageServerLoad = async ({ url }) => {
-  const selection = resolveSelection(url.searchParams.get('range'), url.searchParams.get('day'))
+  const selection = resolveSelection(url.searchParams.get('range'))
   return fetchProductData(dashboardEnv(), selection)
 }
 

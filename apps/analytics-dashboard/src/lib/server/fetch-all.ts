@@ -23,7 +23,7 @@ import { fetchSettingsAdoptionData } from './sources/settings-adoption.js'
 
 /** The shared time selection + freshness stamp every page load carries (resolved in `+layout.server.ts`). */
 export interface SelectionEnvelope {
-  /** The resolved selection driving the aggregate sections (range + optional specific day). */
+  /** The resolved selection driving the aggregate sections (the range). */
   selection: DashboardSelection
   updatedAt: string
 }
@@ -316,12 +316,8 @@ export async function fetchProductData(env: DashboardEnv, selection: DashboardSe
 }
 
 /** Fetches all dashboard data sources in parallel. Used by the agent-readable report API. */
-export async function fetchDashboardData(
-  env: DashboardEnv,
-  rangeParam: string | null,
-  dayParam: string | null = null,
-): Promise<DashboardData> {
-  const selection = resolveSelection(rangeParam, dayParam)
+export async function fetchDashboardData(env: DashboardEnv, rangeParam: string | null): Promise<DashboardData> {
+  const selection = resolveSelection(rangeParam)
 
   const [
     funnel,

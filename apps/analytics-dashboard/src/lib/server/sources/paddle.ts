@@ -135,16 +135,13 @@ export async function fetchPaddleData(
   if (cached) return { ok: true, data: cached }
 
   try {
-    const { startAt, endAt } = toTimeWindow(selection)
-    const startIso = new Date(startAt).toISOString()
-    // A specific single day needs an upper bound too, so transactions after that day don't leak in.
-    // The rolling ranges and `today` end at now, so the gte filter alone already covers them.
-    const upperBound = selection.range === 'day' ? `&created_at[lt]=${new Date(endAt).toISOString()}` : ''
+    // Every range ends now, so the lower bound alone covers it.
+    const startIso = new Date(toTimeWindow(selection).startAt).toISOString()
 
     const [rawTransactions, rawSubscriptions] = await Promise.all([
       paddleFetchAll<PaddleRawTransaction>(
         env.PADDLE_API_KEY_LIVE,
-        `/transactions?status=completed&created_at[gte]=${startIso}${upperBound}`,
+        `/transactions?status=completed&created_at[gte]=${startIso}`,
       ),
       paddleFetchAll<PaddleRawSubscription>(env.PADDLE_API_KEY_LIVE, '/subscriptions'),
     ])

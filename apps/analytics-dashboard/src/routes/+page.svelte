@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
     import type { PageProps } from './$types'
-    import type { TimeRange } from '#lib/server/types.js'
+    import { rangeDays } from '#lib/time-range.js'
     import { page } from '$app/state'
     import { resolve } from '$app/paths'
     import FunnelTable from '#lib/components/FunnelTable.svelte'
@@ -17,21 +17,12 @@
 
     const { data }: PageProps = $props()
 
-    /** True when a single specific UTC day is selected (vs a relative range). */
-    const isDaySelected = $derived(data.selection.range === 'day')
-    /** The selected specific day, or '' for the funnel's active-row highlight. */
-    const selectedDay = $derived(data.selection.day ?? '')
     /** Today's UTC day as YYYY-MM-DD (the charts fade it and the stats leave it out: it's partial). */
     const todayIso = new Date().toISOString().slice(0, 10)
 
-    /** Time range in seconds per relative range, the default zoom window for the star charts. */
-    const rangeSeconds: Partial<Record<TimeRange, number>> = {
-        today: 86400,
-        '24h': 86400,
-        '7d': 7 * 86400,
-        '30d': 30 * 86400,
-    }
-    const starChartXMin = $derived(Date.now() / 1000 - (rangeSeconds[data.selection.range] ?? 7 * 86400))
+    /** The selected range's length in days: the trend charts' window and the star charts' default zoom. */
+    const days = $derived(rangeDays[data.selection.range])
+    const starChartXMin = $derived(Date.now() / 1000 - days * 86400)
 
     /** This page's URL with `?country=` set or cleared, keeping the range/day selection. */
     function countryHref(country: string | null): string {
@@ -42,18 +33,6 @@
         else params.delete('country')
         const query = params.toString()
         return query ? `${resolve('/')}?${query}` : resolve('/')
-    }
-
-    /** Filter the dashboard to a specific UTC day (old table row click), staying on this page. */
-    function selectDay(day: string) {
-        // A throwaway builder for one navigation, so it needs no reactivity.
-        // eslint-disable-next-line svelte/prefer-svelte-reactivity
-        const params = new URLSearchParams(page.url.search)
-        params.delete('range')
-        params.delete('day')
-        if (day) params.set('day', day)
-        else params.set('range', '7d')
-        window.location.href = `${resolve('/')}?${params.toString()}`
     }
 </script>
 
@@ -81,11 +60,4 @@
     <DownloadSection cloudflare={data.cloudflare} github={data.github} selection={data.selection} />
 </div>
 
-<FunnelTable
-    funnel={data.funnel}
-    selection={data.selection}
-    {selectedDay}
-    {isDaySelected}
-    {todayIso}
-    onselectday={selectDay}
-/>
+<FunnelTable funnel={data.funnel} selection={data.selection} {todayIso} />

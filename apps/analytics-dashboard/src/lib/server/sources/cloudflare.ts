@@ -1,5 +1,5 @@
-import type { DashboardSelection, SourceResult } from '../types.js'
-import { selectionCacheKey, selectionToWorkerRange } from '../types.js'
+import type { DashboardSelection, SourceResult, TimeRange } from '../types.js'
+import { rangeDays, selectionCacheKey } from '../types.js'
 import { cacheGet, cacheSet } from '../cache.js'
 import { fetchWorkerEndpoint } from './worker-endpoint.js'
 
@@ -47,18 +47,20 @@ interface CloudflareEnv {
   WORKER_BASE_URL?: string
 }
 
-/** Maps the coarse worker range to the downloads/update-activity range param (they share the same set). */
-const downloadRangeMap: Record<'24h' | '7d' | '30d', string> = {
-  '24h': '24h',
+/**
+ * The downloads/update-activity range param. Those two endpoints take 24h/7d/30d/all (no 90d), so 90d asks
+ * for `all` and `sinceDay` trims the rows to the window.
+ */
+const downloadRangeMap: Record<TimeRange, string> = {
   '7d': '7d',
   '30d': '30d',
+  '90d': 'all',
 }
 
-/** The heartbeat-DAU endpoint takes 7d/30d/90d/all; the shortest coarse range (24h) maps up to 7d. */
-const heartbeatDauRangeMap: Record<'24h' | '7d' | '30d', string> = {
-  '24h': '7d',
-  '7d': '7d',
-  '30d': '30d',
+/** The first UTC day a range covers (`days` days ending today), for trimming an `all` answer. */
+export function sinceDay(range: TimeRange, now: Date): string {
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  return new Date(today - (rangeDays[range] - 1) * 86_400_000).toISOString().slice(0, 10)
 }
 
 interface WorkerDownloadRow {
@@ -107,7 +109,9 @@ export async function fetchCloudflareData(
   const cached = await cacheGet<CloudflareData>('cloudflare', selectionCacheKey(selection))
   if (cached) return { ok: true, data: cached }
 
-  const range = selectionToWorkerRange(selection)
+  const range = selection.range
+  // Only the `all` answer needs trimming; the worker windows the others itself.
+  const since = downloadRangeMap[range] === 'all' ? sinceDay(range, new Date()) : ''
   try {
     const [downloadsRaw, heartbeatDauRaw, updateActivityRaw] = await Promise.all([
       fetchWorkerEndpoint<WorkerDownloadRow[]>(
@@ -117,7 +121,7 @@ export async function fetchCloudflareData(
       ),
       fetchWorkerEndpoint<HeartbeatDauRow[]>(
         env.LICENSE_SERVER_ADMIN_TOKEN,
-        `/admin/heartbeat-dau?range=${heartbeatDauRangeMap[range]}`,
+        `/admin/heartbeat-dau?range=${range}`,
         env.WORKER_BASE_URL,
       ),
       fetchWorkerEndpoint<WorkerUpdateActivityRow[]>(
@@ -128,9 +132,9 @@ export async function fetchCloudflareData(
     ])
 
     const data: CloudflareData = {
-      downloads: parseDownloadRows(downloadsRaw),
+      downloads: parseDownloadRows(downloadsRaw).filter((r) => r.day >= since),
       heartbeatDau: parseHeartbeatDauRows(heartbeatDauRaw),
-      updateActivity: parseUpdateActivityRows(updateActivityRaw),
+      updateActivity: parseUpdateActivityRows(updateActivityRaw).filter((r) => r.day >= since),
     }
     await cacheSet('cloudflare', selectionCacheKey(selection), data)
     return { ok: true, data }

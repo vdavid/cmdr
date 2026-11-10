@@ -4,9 +4,7 @@
 
     const { error, selection }: { error: string; selection: DashboardSelection } = $props()
 
-    const tryAgainHref = $derived(
-        selection.range === 'day' && selection.day ? `?day=${selection.day}` : `?range=${selection.range}`,
-    )
+    const tryAgainHref = $derived(`?range=${selection.range}`)
 </script>
 
 <div class="rounded-lg border border-border-subtle bg-surface-elevated px-4 py-6 text-center">

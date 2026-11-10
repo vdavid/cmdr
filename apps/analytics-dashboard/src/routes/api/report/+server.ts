@@ -5,7 +5,7 @@ import { formatReport } from './format-report.js'
 
 export const GET: RequestHandler = async ({ url }) => {
   try {
-    const data = await fetchDashboardData(dashboardEnv(), url.searchParams.get('range'), url.searchParams.get('day'))
+    const data = await fetchDashboardData(dashboardEnv(), url.searchParams.get('range'))
     const report = formatReport(data)
 
     return new Response(report, {

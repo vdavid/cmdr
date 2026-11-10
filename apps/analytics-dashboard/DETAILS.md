@@ -23,20 +23,21 @@ sections and pass their loaded data down.
   - Active use (`ActiveUseSection.svelte`), Payment (`PaymentSection.svelte`), Retention (`RetentionSection.svelte`),
     Feedback & errors (`FeedbackErrorsSection.svelte`).
 - `/links` — Link codes (`routes/links/+page.{svelte,server.ts}`): CRUD for the `?r=` short codes. See § "Link codes
-  CRUD" below. The layout hides the range/day picker here.
+  CRUD" below. The layout hides the range picker here.
 - `/licenses` — Licenses (`routes/licenses/+page.{svelte,server.ts}`): one row per license we've issued. See § "The
-  licenses list" below. The layout hides the range/day picker here too.
+  licenses list" below. The layout hides the range picker here too.
 
 ### Shared layout
 
 `routes/+layout.svelte` is the only shell: a sticky header with the brand, the page nav (Acquisition / Product /
-Licenses / Link codes, active page marked with `aria-current="page"` and the accent background), and the range/day
-picker. The picker writes `?range=` / `?day=` and keeps the current pathname (`${pathname}?range=...`), so switching
-range on `/product` stays on `/product`. It's hidden on the two ledger pages, listed in `pathsWithoutPicker`. The
-"Updated HH:MM" stamp reads `page.data.updatedAt` (set by whichever data page is active; absent on both ledger pages).
+Licenses / Link codes, active page marked with `aria-current="page"` and the accent background), and the range picker
+(`7d` / `30d` / `90d`, default `30d`). The picker writes `?range=` and keeps the current pathname and `?country=`, so
+switching range on `/product` stays on `/product`. It's hidden on the two ledger pages, listed in `pathsWithoutPicker`.
+The "Updated HH:MM" stamp reads `page.data.updatedAt` (set by whichever data page is active; absent on both ledger
+pages).
 
-`rangeButtons` (the picker's `today/24h/7d/30d` button list) lives as a local const in the layout, NOT in
-`#lib/server/types.ts` — see the boundary gotcha below.
+The ranges live in client-safe `#lib/time-range.ts` (`timeRanges`, `defaultRange`, `rangeDays`), which
+`#lib/server/types.ts` re-exports, so the layout can import them without crossing the boundary gotcha below.
 
 ## Data-loading split
 
@@ -65,7 +66,7 @@ the fact that it's excluded from the "which sources does this page load" contrac
 
 The 20s cap is load-bearing, not belt-and-braces: Workers `fetch` has no built-in timeout, so without it a single hung
 upstream stalls the whole `Promise.all` until Cloudflare gives up with a 524 at 100 seconds, taking the entire page down
-over one slow third party. Results cache via `cache.ts`: 5 minutes for the 24h and 7d ranges, 1 hour for 30d. One
+over one slow third party. Results cache via `cache.ts`: 5 minutes for 7d (and the funnel), 1 hour for 30d and 90d. One
 exception: in "Feedback & errors", only the error-report listing caches. Feedback is read live so a message marked
 answered leaves "Awaiting reply" on the very next load (see the "Awaiting reply" bullet under Key decisions).
 
@@ -141,12 +142,12 @@ knows only about the one license in front of it. The api-server owns the contrac
 
 ## Selection state
 
-The shared `DashboardSelection` (`{ range, day }`) is resolved from `?range=` / `?day=` in `+layout.server.ts` (for the
-picker UI) and again in each `+page.server.ts` (for that page's fetch); both call the same `resolveSelection`, so they
-agree. A valid `?day=YYYY-MM-DD` forces `range: 'day'`. The funnel row click on `/` navigates to `/?day=<date>`, which
-filters the Acquisition sections to that day and highlights the row. Cache keys include the day (`selectionCacheKey`) so
-two picked days never collide. The whole rationale (why a `DashboardSelection` not a bare `TimeRange`, the coarse-window
-mapping for worker/PostHog sources) is in § "Key decisions" below.
+The shared `DashboardSelection` (`{ range }`) is resolved from `?range=` in `+layout.server.ts` (for the picker UI) and
+again in each `+page.server.ts` (for that page's fetch); both call the same `resolveSelection`, so they agree. An
+unknown or retired range (`today`, `24h`, an old `?day=` link) falls back to `30d`. Each source maps the range to its
+own API's window; the one gap is the worker's `/admin/downloads` and `/admin/update-activity`, which take no `90d`, so
+`cloudflare.ts` asks for `all` and trims to the window (`sinceDay`). On `/`, `?country=` is separate client state (§
+"Acquisition trends").
 
 ## Componentization
 
@@ -170,8 +171,8 @@ runtime values live outside `#lib/server`: `#lib/funnel.ts`, `#lib/feedback-and-
 ## Key files
 
 - `src/app.css`: Tailwind v4 theme (dark palette matching getcmdr.com). `src/app.d.ts`: the `App.Locals` identity type.
-- `src/routes/+layout.svelte`: shared shell (header, page nav, range/day picker). `src/routes/+layout.server.ts`:
-  resolves the shared `DashboardSelection` from `?range=` / `?day=` once for the layout.
+- `src/routes/+layout.svelte`: shared shell (header, page nav, range picker). `src/routes/+layout.server.ts`: resolves
+  the shared `DashboardSelection` from `?range=` once for the layout.
 - `src/routes/+page.{svelte,server.ts}`: Acquisition page (funnel/Umami/Cloudflare/GitHub/PostHog subset).
   `src/routes/product/+page.{svelte,server.ts}`: Product page (Cloudflare/Paddle/license/feedback subset).
   `src/routes/links/+page.{svelte,server.ts}`: Link codes CRUD (`load` lists, `save`/`delete` form actions proxy).
@@ -255,7 +256,7 @@ an install with `updates.autoCheck` off never appears at all.
 - **The high end can land BELOW the low end** (NAT, or an update check that didn't fire). `formatBound` then reports
   `N+` rather than an inverted range. ❌ It never means the fleet shrank below what the heartbeat already proved.
 - **A day the update endpoint doesn't cover gets a null reach, never a zero.** The two endpoints answer different ranges
-  (the heartbeat one maps 24h up to 7d), and a zero would read as "nobody checked".
+  (the downloads one trims an `all` answer for 90d), and a zero would read as "nobody checked".
 
 ## Settings adoption
 
@@ -542,11 +543,9 @@ have a happy-path test carrying the real `type: 'app'` stamp, so the discriminat
   direct links, GitHub-page traffic, bots filtered imperfectly). D7 needs a cohort ≥8 days old that had installs, so
   recent/empty days show a dash. The api-server owns the funnel contract and the D7 definition
   (`apps/api-server/src/admin/DETAILS.md` § "Per-day funnel").
-- **Time selection is a `DashboardSelection` (`{ range, day }`) carried in the URL,** not a bare `TimeRange`: David
-  needs "today" and any single specific day, not just rolling windows. A valid `?day=YYYY-MM-DD` forces `range: 'day'`
-  (so a single-day link is shareable/stable). Worker-backed and PostHog sources can't isolate one day cheaply, so they
-  map `today`/`day` to their nearest coarse window (`24h`) via `selectionToWorkerRange`; Umami and Paddle honor the
-  exact day. Cache keys include the day (`selectionCacheKey`) so two picked days never collide.
+- **Time selection is three rolling windows, `7d` / `30d` / `90d`, carried in `?range=`.** The trend charts answer "how
+  was a given day", so a single-day or today-only selection (and its custom-date input) went away; the windows every
+  source answers natively are what's left, and the trend charts' visible window follows the picker.
 - **Every section carries a "what insight + how reliable" blurb** (`sectionDescription`) plus per-chart `methodology`
   notes, because an opaque analytics number is worse than none. They state real caveats (Umami under/double-counts;
   clicks vs server downloads differ; new installs miss opt-outs and debug builds; heartbeat DAU is the trustworthy one;

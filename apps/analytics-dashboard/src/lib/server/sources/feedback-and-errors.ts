@@ -1,5 +1,5 @@
 import type { DashboardSelection, SourceResult } from '../types.js'
-import { selectionCacheKey, selectionToWorkerRange } from '../types.js'
+import { selectionCacheKey } from '../types.js'
 import type { FeedbackRow, ErrorReportRow } from '../../feedback-and-errors.js'
 import { cacheGet, cacheSet } from '../cache.js'
 import { fetchWorkerEndpoint } from './worker-endpoint.js'
@@ -16,17 +16,6 @@ interface FeedbackAndErrorsEnv {
 }
 
 /**
- * Maps the dashboard TimeRange to the worker range param. Both `/admin/feedback` and
- * `/admin/error-reports` take 7d/30d/90d/all, so the dashboard's 24h maps up to 7d (these are
- * low-volume streams; a 24h window would usually be empty). Same approach as heartbeat DAU.
- */
-const rangeMap: Record<'24h' | '7d' | '30d', string> = {
-  '24h': '7d',
-  '7d': '7d',
-  '30d': '30d',
-}
-
-/**
  * Feedback is read live on every load and only the error-report listing is cached. A message
  * marked answered has to show as answered on the reload right after, and a cached feedback list
  * would keep it under "Awaiting reply" for up to an hour. The feedback query is one small D1 read;
@@ -37,7 +26,8 @@ export async function fetchFeedbackAndErrorsData(
   selection: DashboardSelection,
 ): Promise<SourceResult<FeedbackAndErrorsData>> {
   try {
-    const workerRange = rangeMap[selectionToWorkerRange(selection)]
+    // `/admin/feedback` and `/admin/error-reports` take 7d/30d/90d/all, so every range passes through.
+    const workerRange = selection.range
     const [feedback, errorReports] = await Promise.all([
       fetchWorkerEndpoint<FeedbackRow[]>(
         env.LICENSE_SERVER_ADMIN_TOKEN,
