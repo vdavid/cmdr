@@ -1988,8 +1988,10 @@ pub trait Volume: Send + Sync {
     /// foreground work is pending; resume from the current offset once it drains),
     /// without the user pausing.
     ///
-    /// `true` only for MTP. Its reads are bounded windows, so a foreground
-    /// listing/nav already slips in between windows; this opt-in additionally
+    /// `true` only for MTP. Its reads are bounded windows on every phone, so a
+    /// foreground listing/nav already slips in between windows (its
+    /// `foreground_pending` answers `false` during a held-open read, which can't
+    /// let anyone in); this opt-in additionally
     /// keeps the copy from immediately re-grabbing the device lock and starving
     /// foreground — the copy's per-window checkpoint behaves like the index scan's
     /// `background_yield_point`, parking until foreground drains. No session is

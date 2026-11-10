@@ -59,19 +59,18 @@ pub(super) fn mtp_read_window() -> u32 {
     crate::connection::MTP_READ_WINDOW
 }
 
-/// Bounded-window MTP read stream.
+/// Bounded-window MTP read stream: about one `MTP_READ_WINDOW` per `next_chunk`.
 ///
-/// Reads a file as a sequence of bounded `GetPartialObject64` windows instead of
-/// one held-open `GetObject`. Between windows nothing is in flight and the
-/// one-per-device PTP session is free, so a foreground listing slips in at window
-/// granularity (the whole point — navigate the phone during a copy).
+/// On a phone, each window is one `GetPartialObject64` and the one-per-device PTP
+/// session is free between them, so a foreground listing slips in at window
+/// granularity (the whole point: navigate the phone during a copy). A device
+/// without partial reads gets one held-open `GetObject`, and the session keeps
+/// the device until EOF or a cancel.
 ///
 /// `next_chunk` delegates to the connection layer's `read_next_window`, which
-/// takes the per-device lock for each `GetPartialObject64`. The window
-/// bookkeeping (total size, offset, clamp-to-remaining, EOF, advance-by-returned-
-/// length, the 0-byte-before-EOF stall guard) lives in mtp-rs's `WindowedDownload`
-/// inside the cached [`MtpReadSession`]; this struct just relays windows and
-/// reports progress.
+/// owns the device lock and both paths; the window bookkeeping lives in mtp-rs's
+/// `FileDownload` inside the cached [`MtpReadSession`]. This struct just relays
+/// windows and reports progress.
 pub(super) struct MtpReadStream {
     pub(super) manager: Arc<MtpConnectionManager>,
     pub(super) session: MtpReadSession,
@@ -97,10 +96,17 @@ impl VolumeReadStream for MtpReadStream {
         self.session.bytes_read()
     }
 
-    // `cancel_and_release` uses the trait default (no-op): bounded windows hold
-    // nothing between reads, so there's no in-flight transaction to abort. A
-    // window read in flight when the stream is dropped self-heals via mtp-rs's
-    // `TransactionScope` (see the connection layer's `read_next_window`).
+    /// Between windows this costs nothing. Mid-transfer (a held-open read on a
+    /// device without partial reads) it stops the transfer and gives the device
+    /// back before returning; a plain drop does the same on the runtime
+    /// (`MtpReadSession`'s `Drop`).
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn cancel_and_release(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+        Box::pin(self.session.cancel())
+    }
 
     fn modified_at(&self) -> Option<std::time::SystemTime> {
         self.session.modified_at()

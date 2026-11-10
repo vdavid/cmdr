@@ -67,34 +67,56 @@ the count — harmless, they keep the scan yielded for the whole op. ❌ A READ 
 a _background_ gate user that yields TO foreground, so raising `foreground_pending` would make a copy yield to itself
 forever (livelock). See "Bounded-window reads" below.
 
-**Bounded-window reads (download + drag-out).** A read is NOT one held-open `GetObject` for the whole file. It's a
-sequence of bounded `GetPartialObject64` transactions (window = `MTP_READ_WINDOW` = 8 MiB; the
-throughput-vs-yield-latency knob). `open_read_session` resolves the handle and builds an mtp-rs `WindowedDownload`
-(`storage.download_windowed_from_offset`, which reads `total_size` via one `get_object_info`) ONCE under the device
-lock, returning an `MtpReadSession` the caller caches; each `read_next_window` then takes the per-device lock for just
-one window (~80 ms on a Pixel) and releases it. **Between windows nothing is in flight and the single PTP session is
-free**, so a foreground listing/nav slips in at window granularity — the whole "navigate the phone during a copy"
-property, with no abort/drain (the old held-open `GetObject` pinned mtp-rs's `operation_lock` for the entire file,
-starving everything until a ~35 s CLASS_CANCEL drain). `MtpVolume`'s read stream (copy + drag-out) is the one consumer
-of this pair.
+**Bounded-window reads (download + drag-out).** `open_read_session` resolves the handle and, under the device lock,
+starts an mtp-rs `FileDownload` (`download_with_pacing(.., DownloadPacing::FixedWindow(window))`, which reads
+`total_size` via one `get_object_info`; the storage handle comes from `storage_cache`), returning an `MtpReadSession`
+the caller caches. Each `read_next_window` returns about one window (`MTP_READ_WINDOW` = 8 MiB, the
+throughput-vs-yield-latency knob). mtp-rs picks how the file crosses the wire, and Cmdr follows two rules on either
+path:
 
-**mtp-rs owns the window bookkeeping; Cmdr owns the LOCK.** The offset tracking, clamp-to-remaining, EOF (`None`),
-advance-by-bytes-actually-returned (a short read mid-file is legal), and the 0-byte-before-EOF stall (surfaced as an
-error, not loop continuation) all live in mtp-rs's `WindowedDownload::next_window` — Cmdr no longer hand-rolls any of
-it. But `next_window` reaches the PTP session DIRECTLY (it holds its own `Arc<MtpDeviceInner>`) and does NOT take Cmdr's
-per-device lock. The foreground-priority scheduler relies on every device op taking that lock for its turn, so ❌
-`read_next_window` MUST call `next_window` under `acquire_device_lock` (it does). Calling `next_window` without the lock
-would let a concurrent listing and the window read drive the same USB session → desync, and break the scheduler
-serialization. **Drop-safety:** a window-read future dropped mid-flight (task abort, disconnect) does NOT desync the
-session — mtp-rs's `TransactionScope` flags the pipe and the next op drains it under the operation lock (one ~300 ms
-self-heal). That's what makes the buffered-window model safe to abort at any point.
+- **Windows** (the device has a partial read reaching the file's end, so every Android phone): one `GetPartialObject64`
+  per window, ~80 ms on a Pixel. **Between windows nothing is in flight and the PTP session is free**, so each call
+  takes the device lock for its window and gives it back, and a foreground listing/nav slips in at window granularity:
+  the whole "navigate the phone during a copy" property.
+- **One held-open `GetObject`** (no partial read at all, like libhaze or a simple PTP responder, or only the 32-bit one
+  and a file past 4 GiB, like some cameras): the session is busy from open to EOF. `MtpReadSession` then OWNS the device
+  lock across calls (an `OwnedMutexGuard` from `acquire_device_lock_owned`, same 300 s wait) for exactly as long as
+  `FileDownload::holds_session()` is `true`, and drops it the moment the download frees the session. Each call still
+  returns at most a window plus one 64 KiB chunk (`pull_window`), so memory stays flat on a 5 GB file. Foreground ops
+  wait for the whole file, as they must: there's only one session. 0.37 refused these devices outright.
+
+**Why the lock can't go back mid-transfer.** A foreground op would take Cmdr's lock and block inside mtp-rs's own
+operation lock, waiting for the transfer, while the transfer's next call waits for Cmdr's lock: a deadlock, until the
+300 s lock wait fails the read. Buffering the rest of the file under one call instead would cost its whole size in RAM.
+Pinned by `read_session_test.rs` (virtual device, both paths) and `read_window_test.rs` (the per-call bound, against a
+scripted download, since the virtual device hands a held-open object over as ONE chunk where real USB streams 64 KiB
+reads).
+
+**A held-open read never yields to the op it blocks.** The copy's checkpoint asks `transfer_should_yield`, which is
+`foreground_pending && no ReadHold`: a session keeping the lock between calls carries a `ReadHold` on the device's gate.
+Without it the checkpoint would park the copy for a listing that's queued on the copy's own lock. A user pause on that
+path parks in place with the lock held, so the phone stays busy until the copy resumes or stops.
+
+**Stopping mid-transfer.** `MtpReadSession::cancel` (behind `MtpReadStream::cancel_and_release`) calls
+`FileDownload::cancel` under the held lock, so the transfer stops the device's way (on Android that reads the rest of
+the current transfer) before anyone else gets the session. A plain DROP (the copy engine stopping, a pane closing
+mid-drag-out) does the same on `host().runtime()` and releases the lock when the cancel is done. Between windows both
+send nothing.
+
+**mtp-rs owns the window bookkeeping; Cmdr owns the LOCK.** Offsets, clamp-to-remaining, EOF, short reads mid-file, and
+the 0-byte-before-EOF stall (an error, never loop continuation) live in `FileDownload::next_chunk`. But the download
+reaches the PTP session DIRECTLY and takes no Cmdr lock, and the foreground-priority scheduler relies on every device op
+taking that lock for its turn, so ❌ every `next_chunk` MUST run under Cmdr's device lock (`read_next_window` does).
+**Drop-safety:** a read future dropped mid-flight (task abort, disconnect) does NOT desync the session: mtp-rs flags the
+pipe and the next op drains it under the operation lock. A seatbelt, so a copy cancel stops ISSUING reads rather than
+dropping one in flight.
 
 **Ranged reads take the DIRECT path, not a session.** A bounded read (`MtpVolume::read_range`, driving archive browsing
 and extraction) wants bytes at an offset, not a session, so it goes through `read_range_direct`: one
-`GetPartialObject64` under the device lock, and nothing else. Routing it through `open_read_session` instead would add
-two USB round trips per call whose products the caller discards — `GetStorageInfo` (`device.storage()`) and
-`GetObjectInfo` (`download_windowed` reads `total_size`) — and rc-zip's `EntryFsm` issues one read per 256 KiB, so that
-overhead scaled with every extracted byte.
+`GetPartialObject64` under the device lock, and nothing else. Routing it through `open_read_session` instead would add a
+USB round trip per call whose product the caller discards (the `GetObjectInfo` a download reads `total_size` with), and
+rc-zip's `EntryFsm` issues one read per 256 KiB, so that overhead scaled with every extracted byte. Both paths share the
+per-device `Storage` cache below, so neither pays `GetStorageInfo` more than once per device.
 
 **What the change is worth: ~2.3-2.7 ms of protocol overhead per bounded read, i.e. the two round trips.** That's the
 durable number. ❌ Don't quote a percentage as a property of the change: the useful read itself swings hard with device
@@ -122,14 +144,13 @@ a stale `info()` snapshot (free space, capacity), never stale bytes, and the bac
 amortizes over hundreds of windows, and `total_size` is what anchors progress, ETA, and the foreground-yield checkpoint.
 
 **Two background consumers, not one.** The scan is no longer the only yielding background user of the gate. A RUNNING
-MTP transfer is the second: its between-window checkpoint polls `MtpConnectionManager::foreground_pending(device_id)`
-and, when foreground pends, simply does NOT start the next window — it awaits `background_yield_point(device_id)`, then
-resumes reading from the current offset (it stays `Running`, not Paused). Because the read is already bounded windows
-(see "Bounded-window reads" above), the session is free between windows, so this yield is cheap and needs no
-release/reopen — there is no in-flight transaction to abort/drain (`cancel_and_release` is a no-op, never called by the
-copy path). This is the "navigate the phone DURING a transfer" feature; the gate sees a transfer exactly as it sees the
-scan — a background user that consults `foreground_pending` / `background_yield_point` between work units. The manager
-exposes both `foreground_pending(device_id) -> bool` (the gate's `foreground_pending()`, `false` if absent) and
+MTP transfer is the second: its between-window checkpoint polls `MtpConnectionManager::transfer_should_yield(device_id)`
+and, when it's `true`, simply does NOT start the next window: it awaits `background_yield_point(device_id)`, then
+resumes reading from the current offset (it stays `Running`, not Paused). On a windowed read the session is free between
+windows (see "Bounded-window reads" above), so this yield is cheap and needs no release/reopen; a held-open read answers
+`false` and never yields. This is the "navigate the phone DURING a transfer" feature; the gate sees a transfer exactly
+as it sees the scan: a background user that consults the gate between work units. The manager exposes
+`transfer_should_yield(device_id) -> bool` (the gate's `transfer_should_yield()`, `false` if absent) and
 `background_yield_point(device_id)` for this. Lane budget 1 on the MTP device means the only foreground contender is a
 listing/nav/metadata op, never a second transfer, so there's no transfer-vs-transfer or transfer-vs-scan priority
 inversion — both yield to the same signal. Mechanics + the debounce/min-progress-floor tuning live in
@@ -365,11 +386,12 @@ variant and its own `warn!` line, so a reset is diagnosable in a log instead of 
 and ❌ it never maps to `Disconnected` / `VolumeError::DeviceDisconnected` — that would drop a live device out of the
 sidebar and flip its index Stale for nothing. mtp-rs agrees: `Error::is_disconnected()` is deliberately false for it.
 
-**How Cmdr reaches it** (the 0.24.0 changelog's "cancel-only" framing understates this): not via `FileDownload::cancel`
-(Cmdr never calls `download()`), but via `PtpSession::recover_if_needed()`. Every data-phase op arms a
-`TransactionScope`; if that future is dropped before it disarms, the NEXT op drains the pipe with `cancel_transfer` and
-propagates the drain's outcome verbatim. Cmdr no longer creates that state deliberately (see § "No dropping timeouts"
-below); the drain is the seatbelt for what's left: a genuine device disconnect mid-transfer.
+**How Cmdr reaches it** (the 0.24.0 changelog's "cancel-only" framing understates this): mostly not via
+`FileDownload::cancel` (Cmdr calls it only to stop a held-open read, § "Bounded-window reads"), but via
+`PtpSession::recover_if_needed()`. Every data-phase op arms a `TransactionScope`; if that future is dropped before it
+disarms, the NEXT op drains the pipe with `cancel_transfer` and propagates the drain's outcome verbatim. Cmdr no longer
+creates that state deliberately (see § "No dropping timeouts" below); the drain is the seatbelt for what's left: a
+genuine device disconnect mid-transfer.
 
 ### The recovery (`session_reset.rs`)
 
@@ -638,7 +660,8 @@ gives a prompt out. The background scan additionally checks the token at every u
 **Cancellation is cooperative everywhere.** `CancelToken` (`list_objects_with_cancel`,
 `list_objects_stream_with_cancel`, `delete_with_cancel`) is checked BETWEEN per-handle round trips, so a cancel lands
 within one round trip's latency — prompt from the user's point of view, and never mid-transaction. Windowed reads and
-`read_range_direct` are single bounded transactions, so a copy cancel simply stops issuing windows.
+`read_range_direct` are single bounded transactions, so a copy cancel simply stops issuing windows; a held-open read
+stops through `FileDownload::cancel` (§ "Bounded-window reads").
 
 **Detach, don't abort, when a caller must answer NOW.** Some callers genuinely have a deadline (an IPC reply, the index
 walk giving up on a directory). They run the work in its own task and race the deadline against that task's JOIN HANDLE.

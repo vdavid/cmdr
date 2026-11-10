@@ -36,6 +36,12 @@ mod mutation_ops;
 /// Every test here drives a virtual MTP device, so it carries that feature gate.
 #[cfg(all(test, feature = "virtual-device"))]
 mod path_cache_sync_test;
+/// Who holds the device during a streamed read, windowed and held-open.
+#[cfg(all(test, feature = "virtual-device"))]
+mod read_session_test;
+/// How much one read call takes from a download, against a scripted one.
+#[cfg(test)]
+mod read_window_test;
 mod resolve;
 /// Path → handle resolution on a cache miss: the heal, and the typed not-found.
 #[cfg(all(test, feature = "virtual-device"))]
@@ -110,7 +116,8 @@ const USB_TRANSFER_TIMEOUT_SECS: u64 = 30;
 /// waiting its turn.
 const DEVICE_LOCK_WAIT_SECS: u64 = 300;
 
-/// Window size for one bounded MTP read transaction (`GetPartialObject64`).
+/// Window size for one bounded MTP read transaction (`GetPartialObject64`), and
+/// the most one `read_next_window` call returns on the held-open path too.
 ///
 /// 8 MiB is the spike-validated value: large enough for healthy USB throughput,
 /// small enough that the per-window device-lock hold (~80 ms on a Pixel) lets a
@@ -286,8 +293,28 @@ async fn acquire_device_lock<'a>(
     device_id: &str,
     operation: &str,
 ) -> Result<tokio::sync::MutexGuard<'a, MtpDevice>, MtpConnectionError> {
+    wait_for_device_lock(device_arc.lock(), device_id, operation).await
+}
+
+/// [`acquire_device_lock`] for a holder that keeps the lock past the call that
+/// took it: a read session whose download holds the PTP session between calls
+/// (`file_ops.rs`). Same wait, same timeout.
+async fn acquire_device_lock_owned(
+    device_arc: &Arc<Mutex<MtpDevice>>,
+    device_id: &str,
+    operation: &str,
+) -> Result<tokio::sync::OwnedMutexGuard<MtpDevice>, MtpConnectionError> {
+    wait_for_device_lock(Arc::clone(device_arc).lock_owned(), device_id, operation).await
+}
+
+/// Waits up to [`DEVICE_LOCK_WAIT_SECS`] for a device-lock acquisition.
+async fn wait_for_device_lock<G>(
+    lock: impl Future<Output = G>,
+    device_id: &str,
+    operation: &str,
+) -> Result<G, MtpConnectionError> {
     // allowed-dropping-timeout: waiting on a `tokio::Mutex` holds nothing on the wire, so giving up on the wait abandons no transaction.
-    tokio::time::timeout(Duration::from_secs(DEVICE_LOCK_WAIT_SECS), device_arc.lock())
+    tokio::time::timeout(Duration::from_secs(DEVICE_LOCK_WAIT_SECS), lock)
         .await
         .map_err(|_| {
             error!("MTP {}: timed out waiting for device lock", operation);
@@ -751,17 +778,18 @@ impl MtpConnectionManager {
         }
     }
 
-    /// `true` when any foreground op is currently pending on this device.
+    /// Whether a running transfer reading from this device should stop at its
+    /// checkpoint and `background_yield_point`, the way the scan does between
+    /// units: a foreground op pends and no read owns the device lock between
+    /// calls (`DevicePriorityGate::transfer_should_yield` says why that half
+    /// matters).
     ///
-    /// The cheap "should I yield?" probe a running transfer's per-chunk
-    /// checkpoint polls (see `CheckpointStream`): when it returns `true` the
-    /// transfer releases the PTP session and `background_yield_point`s, exactly
-    /// like the scan does between units. `false` when the device isn't connected
-    /// (no gate ⇒ nothing to yield to), so a transfer over a vanished device
-    /// never wedges on a missing gate.
-    pub(crate) async fn foreground_pending(&self, device_id: &str) -> bool {
+    /// The cheap per-chunk probe `CheckpointStream` polls. `false` when the
+    /// device isn't connected (no gate ⇒ nothing to yield to), so a transfer
+    /// over a vanished device never wedges on a missing gate.
+    pub(crate) async fn transfer_should_yield(&self, device_id: &str) -> bool {
         match self.priority_gate(device_id).await {
-            Some(gate) => gate.foreground_pending(),
+            Some(gate) => gate.transfer_should_yield(),
             None => false,
         }
     }
@@ -1067,7 +1095,7 @@ impl MtpConnectionManager {
 // Remaining impl blocks are in submodules:
 // - directory_ops.rs: list_directory, resolve_path_to_handle, handle_device_disconnected
 // - event_loop.rs: start_event_loop, stop_event_loop, event handling
-// - file_ops.rs: open_read_session + read_next_window (bounded-window reads), upload_from_stream
+// - file_ops.rs: open_read_session + read_next_window (streamed reads), read_range_direct, upload_from_stream
 // - mutation_ops.rs: delete_object, create_folder, rename_object, move_object
 // - bulk_ops.rs: scan_for_copy, upload_recursive
 

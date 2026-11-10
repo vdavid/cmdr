@@ -39,8 +39,9 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
 - **A failed PTP upload must delete the partial object** (mtp-rs doesn't); a stale cached parent handle self-heals into
   a one-shot retry, and ❌ drop the device lock before `refresh_dir_handle`, which re-lists into a non-reentrant
   `Mutex`.
-- **A ranged read takes `read_range_direct`, ❌ NOT `open_read_session`**, and ❌ not for COPY, which needs `total_size`
-  for progress and the yield checkpoint.
+- **Reads**: a ranged one takes `read_range_direct` (❌ not COPY, which needs `total_size`). A read session keeps the
+  device lock between calls while its download `holds_session()`; ❌ never release it mid-transfer (deadlock).
+  `DETAILS.md` § "Bounded-window reads".
 - **The event loop reports through the host seams** at the `mtp://` URL; the host keys panes by
   `MtpVolume::listing_path`. ❌ Never diff here, ❌ never one call per entry, ❌ never `tokio::spawn` (use
   `host().runtime()`), and clear the `ListingCache` before a `FullRefresh`. Which change goes where: `DETAILS.md`.
@@ -49,7 +50,5 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
   no `Option` to unwrap. Whether the device is POLLED is the separate `DeviceWatch` argument.
 - **`MtpDisconnectReason::User` is only the settings toggle or an explicit disconnect**; hotplug loss and I/O drops are
   `Removed`, else unstable USB reads as repeated unplugs.
-- **Test-gated behavior takes `any(test, feature = "testing")`, ❌ never `cfg(test)`**, which is off in a consumer's
-  test build.
 
 Locks, caches, recovery, event wiring: `DETAILS.md`; read it before non-trivial work.

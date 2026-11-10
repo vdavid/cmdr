@@ -108,12 +108,12 @@ pub trait VolumeReadStream: Send {
     /// chunks, before the stream is dropped. After this call the stream is spent;
     /// `next_chunk` must not be called again on it.
     ///
-    /// Default is a no-op, and that's what every current backend uses: reads that
-    /// could otherwise pin a scarce resource (MTP's one-per-device PTP session)
-    /// are bounded windows that hold nothing between chunks, so the copy wrapper
-    /// (`CheckpointStream`) parks in place rather than releasing anything. This
-    /// stays a trait hook for a hypothetical future backend whose stream genuinely
-    /// holds a resource across chunks; nothing in the copy path calls it today.
+    /// Default is a no-op, which is right for a stream that holds nothing between
+    /// chunks. MTP overrides it: on a device without partial reads its stream
+    /// keeps the one-per-device PTP session through a held-open transfer, and this
+    /// stops that transfer (its `Drop` does the same on the runtime). The copy
+    /// wrapper (`CheckpointStream`) parks in place rather than releasing anything,
+    /// so nothing in the copy path calls it today; a stopped copy drops the stream.
     #[allow(
         clippy::type_complexity,
         reason = "async trait method returns a pinned boxed future by design"

@@ -657,7 +657,9 @@ impl Volume for MtpVolume {
 
             // The window size (`mtp_read_window()`, shrinkable in tests) and the
             // start `offset` (non-zero resumes a reopened read; see
-            // `CheckpointStream`) are baked into the `WindowedDownload` here.
+            // `CheckpointStream`) are baked into the `FileDownload` here. A
+            // non-zero offset on a device without partial reads is refused at
+            // open: that device can only hand over whole objects.
             let session = self
                 .manager
                 .open_read_session(&self.device_id, self.storage_id, &mtp_path, offset, mtp_read_window())
@@ -723,6 +725,9 @@ impl Volume for MtpVolume {
         // pause has nothing scarce to release: it just stops starting the next
         // window (park-in-place, like every other backend). The phone stays
         // navigable while paused because the copy isn't holding the session.
+        // The exception is a device without partial reads: its one held-open
+        // transfer can't be released and resumed, so a pause there keeps the
+        // device until the copy resumes or stops.
         false
     }
 
@@ -736,8 +741,10 @@ impl Volume for MtpVolume {
         true
     }
 
+    /// `false` while a held-open read owns the device: the pending op is queued
+    /// behind that very transfer, so yielding to it would park both.
     fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(async move { self.manager.foreground_pending(&self.device_id).await })
+        Box::pin(async move { self.manager.transfer_should_yield(&self.device_id).await })
     }
 
     fn wait_until_foreground_idle<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {

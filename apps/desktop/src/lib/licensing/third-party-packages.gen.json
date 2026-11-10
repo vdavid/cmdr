@@ -2363,7 +2363,7 @@
     },
     {
       "name": "mtp-rs",
-      "version": "0.37.3",
+      "version": "0.38.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/vdavid/mtp-rs"
     },

@@ -1,36 +1,113 @@
-//! MTP streaming file transfer operations (bounded-window reads and streamed uploads).
+//! MTP streaming file transfer operations: streamed reads (windowed, or one
+//! held-open transfer), ranged reads, and streamed uploads.
 
 use log::debug;
-use mtp_rs::{ByteRange, MtpDevice, NewObjectInfo, ObjectHandle, StorageId, WindowedDownload};
+use mtp_rs::{
+    ByteRange, DEFAULT_CANCEL_TIMEOUT, DownloadPacing, FileDownload, MtpDevice, NewObjectInfo, ObjectHandle, Storage,
+    StorageId,
+};
 
 use super::dates::{mtp_datetime_from_system_time, system_time_from_mtp_datetime};
+use std::collections::HashMap;
 use std::path::Path;
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::sync::{Arc, RwLock};
+use std::time::SystemTime;
+use tokio::sync::{Mutex, OwnedMutexGuard};
 
 use super::errors::{MtpConnectionError, is_stale_handle_rejection};
-use super::{MtpConnectionManager, acquire_device_lock, normalize_mtp_path};
+use super::scheduler::{DevicePriorityGate, ReadHold};
+use super::{MtpConnectionManager, acquire_device_lock, acquire_device_lock_owned, normalize_mtp_path};
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_fs::rt::Runtime;
 
-/// Cached state for a bounded-window MTP read.
+/// A streamed read of one file: an mtp-rs [`FileDownload`] plus the device lock
+/// it needs, for as long as it needs it.
 ///
-/// `open_read_session` resolves the object handle and builds an mtp-rs
-/// [`WindowedDownload`] ONCE under the device lock; each window then pays only
-/// `acquire_device_lock` + one `GetPartialObject64` (no per-window handle/storage
-/// re-resolve). The `WindowedDownload` OWNS the window bookkeeping — total size,
-/// current offset, per-window clamp, EOF, short-read advance, and the
-/// 0-byte-before-EOF stall guard — so Cmdr no longer hand-rolls any of it.
+/// mtp-rs reads the file one of two ways, and this session doesn't choose:
 ///
-/// Cmdr keeps `device_arc` for one reason: `WindowedDownload::next_window` reaches
-/// the PTP session DIRECTLY (it holds its own `Arc<MtpDeviceInner>`) and does NOT
-/// take Cmdr's per-device lock. The foreground-priority scheduler relies on every
-/// device op taking that lock for its turn, so each window read MUST run under
-/// `acquire_device_lock` — see [`read_next_window`](MtpConnectionManager::read_next_window).
+/// - **Windows** (the device has a partial read that reaches the file's end):
+///   one `GetPartialObject64` per `window_size`, and the PTP session is free
+///   between them, so each [`read_next_window`] takes the device lock for its
+///   one window and gives it back.
+/// - **One held-open `GetObject`** (no partial read, or only the 32-bit one and
+///   a file past 4 GiB): the PTP session is busy from open to EOF. The session
+///   then OWNS the device lock across calls (`held`) for exactly as long as
+///   [`FileDownload::holds_session`] says, while each call still returns about
+///   one window, so memory stays bounded.
+///
+/// Giving the lock back mid-transfer would deadlock: a foreground op takes
+/// Cmdr's lock and blocks inside mtp-rs's own operation lock, waiting for the
+/// transfer, while the transfer waits for Cmdr's lock. `connection/DETAILS.md`
+/// § "Bounded-window reads" has the whole contract.
+///
+/// Dropping a session that holds the device cancels its transfer on the
+/// runtime and gives the lock back once that's done, so a stopped copy leaves
+/// the session clean for the next op. [`cancel`](Self::cancel) is the awaited
+/// form.
+///
+/// [`read_next_window`]: MtpConnectionManager::read_next_window
 pub(crate) struct MtpReadSession {
     device_arc: Arc<Mutex<MtpDevice>>,
-    windowed: WindowedDownload,
+    /// `None` once spent: cancelled, or handed to the drop-time cancel.
+    download: Option<FileDownload>,
+    /// The device lock, while the download holds the PTP session between calls.
+    held: Option<HeldDevice>,
+    /// Where the `ReadHold` comes from. `None` for a device that vanished
+    /// between the resolve and the open, which only makes the hold a no-op.
+    gate: Option<DevicePriorityGate>,
+    /// Where the drop-time cancel runs (`VolumeHost::runtime`, ❌ never
+    /// `tokio::spawn`).
+    runtime: Runtime,
+    /// The most one call returns (one more transfer chunk at worst).
+    window_size: u32,
+    total_size: u64,
+    modified: Option<SystemTime>,
+    /// File offset of the next byte this session hands out. Kept here rather
+    /// than read from the download, which also counts bytes of a call that
+    /// failed partway and never reached the caller.
+    delivered: u64,
     /// The object this reads, for a refusal of one of its windows.
     path: String,
+}
+
+/// The device lock a read session keeps between calls, plus the gate's mark
+/// that it does (so the transfer doesn't yield to an op queued behind it).
+struct HeldDevice {
+    guard: OwnedMutexGuard<MtpDevice>,
+    _hold: Option<ReadHold>,
+}
+
+/// What a read needs from the device entry, cloned out under the registry lock
+/// so the read never re-enters `devices` while it owns the device lock.
+struct ReadTarget {
+    device_arc: Arc<Mutex<MtpDevice>>,
+    gate: DevicePriorityGate,
+    storage_cache: Arc<RwLock<HashMap<u32, Arc<Storage>>>>,
+    storage_id: u32,
+    #[cfg(any(test, feature = "testing"))]
+    storage_lookups: Arc<std::sync::atomic::AtomicUsize>,
+}
+
+impl ReadTarget {
+    /// The storage handle, from the per-device cache or, on a miss, one
+    /// `GetStorageInfo` that fills it. The caller holds the device lock.
+    async fn storage(&self, device: &MtpDevice) -> Result<Arc<Storage>, mtp_rs::Error> {
+        let cached = self
+            .storage_cache
+            .read()
+            .ok()
+            .and_then(|cache| cache.get(&self.storage_id).cloned());
+        if let Some(storage) = cached {
+            return Ok(storage);
+        }
+        #[cfg(any(test, feature = "testing"))]
+        self.storage_lookups.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let storage = Arc::new(device.storage(StorageId(u64::from(self.storage_id))).await?);
+        if let Ok(mut cache) = self.storage_cache.write() {
+            cache.insert(self.storage_id, Arc::clone(&storage));
+        }
+        Ok(storage)
+    }
 }
 
 /// What an upload creates: the `SendObjectInfo` half, ahead of the bytes.
@@ -42,37 +119,142 @@ pub(crate) struct UploadedFile<'a> {
     pub(crate) size: u64,
     /// The source's modification date, sent as `DateModified` so the copy
     /// keeps it. `None` sends none and the device stamps its own.
-    pub(crate) modified: Option<std::time::SystemTime>,
+    pub(crate) modified: Option<SystemTime>,
 }
 
 impl MtpReadSession {
     /// Full object size in bytes (anchors progress and the EOF check). Read by
     /// the volume backend's read stream.
     pub(crate) fn total_size(&self) -> u64 {
-        self.windowed.size()
+        self.total_size
     }
 
-    /// Bytes delivered so far (the offset of the next window).
+    /// Bytes delivered so far, as a file offset (the offset of the next window).
     pub(crate) fn bytes_read(&self) -> u64 {
-        self.windowed.offset()
+        self.delivered
     }
 
     /// The file's `DateModified`, from the `ObjectInfo` the open already
     /// fetched, so it costs no round trip. `None` when the device sent none.
-    pub(crate) fn modified_at(&self) -> Option<std::time::SystemTime> {
-        self.windowed.modified().and_then(system_time_from_mtp_datetime)
+    pub(crate) fn modified_at(&self) -> Option<SystemTime> {
+        self.modified
+    }
+
+    /// Stops the read and gives the device back, awaited. Between windows this
+    /// sends nothing; mid-transfer mtp-rs stops it the device's way (on Android
+    /// it reads the rest of the current transfer, which is the price of a
+    /// held-open one). Afterwards the session is spent: the next call is EOF.
+    pub(crate) async fn cancel(&mut self) {
+        let held = self.held.take();
+        if let Some(mut download) = self.download.take()
+            && let Err(e) = download.cancel(DEFAULT_CANCEL_TIMEOUT).await
+        {
+            debug!("MTP read cancel of {}: {}", LogPrivate::file_path(&self.path), e);
+        }
+        drop(held);
+    }
+
+    /// Keeps `device` across calls while the download holds the PTP session,
+    /// else lets it go.
+    fn keep_device_while_busy(&mut self, device: OwnedMutexGuard<MtpDevice>) {
+        if self.download.as_ref().is_some_and(FileDownload::holds_session) {
+            self.held = Some(HeldDevice {
+                guard: device,
+                _hold: self.gate.as_ref().map(DevicePriorityGate::read_holding_device),
+            });
+        }
     }
 }
 
+impl Drop for MtpReadSession {
+    /// A session dropped mid-transfer (a copy that stopped, a pane that closed)
+    /// cancels it on the runtime and keeps the device lock until the cancel is
+    /// done, so no other op starts inside the abandoned transfer. Between
+    /// windows there's nothing to stop.
+    fn drop(&mut self) {
+        let Some(held) = self.held.take() else {
+            return;
+        };
+        let Some(mut download) = self.download.take() else {
+            return;
+        };
+        let path = std::mem::take(&mut self.path);
+        self.runtime.spawn(async move {
+            if let Err(e) = download.cancel(DEFAULT_CANCEL_TIMEOUT).await {
+                debug!("MTP read cancel on drop of {}: {}", LogPrivate::file_path(&path), e);
+            }
+            drop(held);
+        });
+    }
+}
+
+/// What [`pull_window`] reads from: mtp-rs's [`FileDownload`], or a cell's
+/// scripted stand-in. The virtual device hands a whole held-open object over as
+/// ONE chunk where real USB streams 64 KiB reads, so the per-call memory bound
+/// is only observable against a script (`read_window_test.rs`).
+pub(super) trait ChunkSource {
+    /// The next chunk, or `None` at the end of the download.
+    async fn next_chunk(&mut self) -> Option<Result<bytes::Bytes, mtp_rs::Error>>;
+    /// Whether a transfer is in flight, holding the device's PTP session.
+    fn holds_session(&self) -> bool;
+}
+
+impl ChunkSource for FileDownload {
+    async fn next_chunk(&mut self) -> Option<Result<bytes::Bytes, mtp_rs::Error>> {
+        FileDownload::next_chunk(self).await
+    }
+
+    fn holds_session(&self) -> bool {
+        FileDownload::holds_session(self)
+    }
+}
+
+/// One call's worth of a download: chunks until the session frees (a window
+/// ended) or `limit` bytes are in, whichever comes first, so a held-open
+/// transfer returns at most `limit` plus one chunk. Empty at EOF. The caller
+/// holds the device lock.
+pub(super) async fn pull_window<S: ChunkSource>(
+    source: &mut S,
+    limit: usize,
+    capacity: usize,
+) -> Result<Vec<u8>, mtp_rs::Error> {
+    let mut window = Vec::with_capacity(capacity);
+    while let Some(chunk) = source.next_chunk().await {
+        window.extend_from_slice(&chunk?);
+        if !source.holds_session() || window.len() >= limit {
+            break;
+        }
+    }
+    Ok(window)
+}
+
 impl MtpConnectionManager {
-    /// Opens a bounded-window read of a file: resolves the object handle and
-    /// builds an mtp-rs [`WindowedDownload`] (which reads `total_size` via one
-    /// `get_object_info`) ONCE under the device lock, returning an
-    /// [`MtpReadSession`] the caller feeds to [`read_next_window`] per window. The
-    /// lock is released before returning, so nothing is held between windows.
-    /// `window_size` is the per-window `GetPartialObject64` `max_bytes`
-    /// (`MTP_READ_WINDOW` in production; tests shrink it); `offset` is the
-    /// starting byte (0 for a fresh read, non-zero to resume).
+    /// The device entry's read-side handles, or `NotConnected`.
+    async fn read_target(&self, device_id: &str, storage_id: u32) -> Result<ReadTarget, MtpConnectionError> {
+        let devices = self.devices.lock().await;
+        let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
+            device_id: device_id.to_string(),
+        })?;
+        Ok(ReadTarget {
+            device_arc: Arc::clone(&entry.device),
+            gate: entry.priority_gate.clone(),
+            storage_cache: Arc::clone(&entry.storage_cache),
+            storage_id,
+            #[cfg(any(test, feature = "testing"))]
+            storage_lookups: Arc::clone(&entry.storage_lookups),
+        })
+    }
+
+    /// Opens a streamed read of a file from `offset`: resolves the object
+    /// handle, then, under the device lock, starts an mtp-rs [`FileDownload`]
+    /// paced at `window_size` (which reads `total_size` via one
+    /// `get_object_info`; the storage handle comes from the per-device cache).
+    /// The caller feeds the returned [`MtpReadSession`] to [`read_next_window`].
+    ///
+    /// On a windowed device the lock is released before returning. On a device
+    /// that needs one held-open transfer, mtp-rs starts it here and the session
+    /// keeps the lock (see [`MtpReadSession`]). `window_size` is
+    /// `MTP_READ_WINDOW` in production; tests shrink it.
     ///
     /// Takes NO `foreground_guard`: a transfer is a *background* user of the
     /// device gate (it yields TO foreground), so raising `foreground_pending`
@@ -97,65 +279,74 @@ impl MtpConnectionManager {
         );
 
         let object_handle = self.resolve_path_to_handle(device_id, storage_id, path).await?;
-        let device_arc = {
-            let devices = self.devices.lock().await;
-            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
-                device_id: device_id.to_string(),
-            })?;
-            Arc::clone(&entry.device)
-        };
-
-        let windowed = {
-            let device = acquire_device_lock(&device_arc, device_id, "open_read_session").await?;
-            let storage = device
-                .storage(StorageId(u64::from(storage_id)))
-                .await
-                .map_err(|e| self.map_device_read_error(e, device_id, path))?;
-
-            storage
-                .download_windowed(object_handle, ByteRange::From(offset), window_size)
-                .await
-                .map_err(|e| self.map_device_read_error(e, device_id, path))?
-        };
+        let target = self.read_target(device_id, storage_id).await?;
+        let device = acquire_device_lock_owned(&target.device_arc, device_id, "open_read_session").await?;
+        let storage = target
+            .storage(&device)
+            .await
+            .map_err(|e| self.map_device_read_error(e, device_id, path))?;
+        let download = storage
+            .download_with_pacing(
+                object_handle,
+                ByteRange::From(offset),
+                DownloadPacing::FixedWindow(window_size),
+            )
+            .await
+            .map_err(|e| self.map_device_read_error(e, device_id, path))?;
 
         debug!(
-            "MTP open_read_session: opened {} bytes for {}",
-            windowed.size(),
-            LogPrivate::file_path(path)
+            "MTP open_read_session: opened {} bytes for {} ({})",
+            download.size(),
+            LogPrivate::file_path(path),
+            if download.holds_session() {
+                "held-open"
+            } else {
+                "windowed"
+            }
         );
 
-        Ok(MtpReadSession {
-            device_arc,
-            windowed,
+        let mut session = MtpReadSession {
+            device_arc: target.device_arc,
+            total_size: download.size(),
+            modified: download.modified().and_then(system_time_from_mtp_datetime),
+            delivered: download.offset(),
+            download: Some(download),
+            held: None,
+            gate: Some(target.gate),
+            runtime: self.host().runtime(),
+            window_size,
             path: path.to_string(),
-        })
+        };
+        session.keep_device_while_busy(device);
+        Ok(session)
     }
 
-    /// Reads the next bounded window of an object opened with
-    /// [`open_read_session`], or `Ok(None)` at EOF. Acquires the per-device lock
-    /// for just this one `GetPartialObject64` (released on return), so the PTP
-    /// session is free between windows for a foreground listing/nav.
+    /// Reads the next window of a session opened with [`open_read_session`]:
+    /// about `window_size` bytes (one more transfer chunk at worst), or
+    /// `Ok(None)` at EOF.
     ///
-    /// The window bookkeeping — offset tracking, clamp-to-remaining, EOF
-    /// detection, advance-by-bytes-actually-returned (a short read mid-file is
-    /// legal), and surfacing a 0-byte-before-EOF stall as an error — lives in
-    /// mtp-rs's [`WindowedDownload::next_window`]. Cmdr owns only the LOCK:
-    /// `next_window` reaches the PTP session directly and does NOT take Cmdr's
-    /// per-device lock, so it MUST run under `acquire_device_lock` — which is
-    /// exactly what this method does. Calling `next_window` without the lock would
-    /// let a concurrent listing (which holds the lock) and this read drive the
-    /// same USB session, desyncing it and breaking the scheduler serialization.
+    /// Under the device lock, it pulls mtp-rs chunks until the download frees
+    /// the PTP session (a window ended) or the window is full. If the session
+    /// is still busy then (a held-open transfer), the lock stays with the
+    /// session for the next call; otherwise it's released on return, so a
+    /// foreground listing/nav slips in between windows. mtp-rs owns the window
+    /// bookkeeping: offsets, clamp-to-remaining, EOF, short reads, and the
+    /// 0-byte-before-EOF stall, which surfaces as an error.
+    ///
+    /// ❌ mtp-rs's download reaches the PTP session DIRECTLY and takes no Cmdr
+    /// lock, so every chunk MUST be pulled under the device lock, which is
+    /// exactly what this method does. Without it a concurrent listing and this
+    /// read would drive the same USB session.
     ///
     /// Takes NO `foreground_guard` (a transfer is a background gate user; see
     /// `open_read_session`).
     ///
     /// Drop-safety: ❌ don't rely on it. If this future IS dropped (a genuine
-    /// disconnect), mtp-rs's `TransactionScope` flags the pipe and the next op
-    /// drains it under the operation lock (one ~300 ms self-heal) — a seatbelt,
-    /// not a guarantee: some devices don't come back from an abandoned data
-    /// phase without a replug. So a copy cancel stops ISSUING windows rather
-    /// than dropping one in flight, and nothing wraps this in a timeout (see the
-    /// module `CLAUDE.md`).
+    /// disconnect), mtp-rs flags the pipe and the next op drains it under its
+    /// operation lock, a seatbelt, not a guarantee: some devices don't come
+    /// back from an abandoned data phase without a replug. So a copy cancel
+    /// stops ISSUING windows rather than dropping one in flight, and nothing
+    /// wraps this in a timeout (see the module `CLAUDE.md`).
     ///
     /// [`open_read_session`]: Self::open_read_session
     pub(crate) async fn read_next_window(
@@ -163,12 +354,30 @@ impl MtpConnectionManager {
         session: &mut MtpReadSession,
         device_id: &str,
     ) -> Result<Option<Vec<u8>>, MtpConnectionError> {
-        let _device = acquire_device_lock(&session.device_arc, device_id, "read_window").await?;
-        let outcome = session.windowed.next_window().await;
+        if session.download.is_none() {
+            return Ok(None);
+        }
+        let device = match session.held.take() {
+            Some(held) => held.guard,
+            None => acquire_device_lock_owned(&session.device_arc, device_id, "read_window").await?,
+        };
+
+        let limit = session.window_size as usize;
+        let remaining = session.total_size.saturating_sub(session.delivered);
+        let capacity = usize::try_from(remaining).unwrap_or(usize::MAX).min(limit);
+        let outcome = match session.download.as_mut() {
+            Some(download) => pull_window(download, limit, capacity).await,
+            None => Ok(Vec::new()),
+        };
+        session.keep_device_while_busy(device);
+
         match outcome {
-            Some(Ok(bytes)) => Ok(Some(bytes)),
-            Some(Err(e)) => Err(self.map_device_read_error(e, device_id, &session.path)),
-            None => Ok(None),
+            Err(e) => Err(self.map_device_read_error(e, device_id, &session.path)),
+            Ok(window) if window.is_empty() => Ok(None),
+            Ok(window) => {
+                session.delivered += window.len() as u64;
+                Ok(Some(window))
+            }
         }
     }
 
@@ -176,12 +385,11 @@ impl MtpConnectionManager {
     /// with no session setup: the direct path behind `MtpVolume::read_range`.
     ///
     /// A bounded read wants bytes, not a session. Going through
-    /// [`open_read_session`](Self::open_read_session) would cost two extra USB
-    /// round trips per call — `GetStorageInfo` (`device.storage()`) plus
-    /// `GetObjectInfo` (`download_windowed` reads `total_size`) — to produce
-    /// bookkeeping the caller discards. This path resolves the storage from the
-    /// per-device cache and issues only the read, so an archive extraction loop
-    /// pays one round trip per window instead of three.
+    /// [`open_read_session`](Self::open_read_session) would cost an extra USB
+    /// round trip per call, the `GetObjectInfo` a download reads `total_size`
+    /// with, to produce bookkeeping the caller discards. This path resolves the
+    /// storage from the per-device cache and issues only the read, so an
+    /// archive extraction loop pays one round trip per window.
     ///
     /// Returns what the device delivered, which may be SHORT: a legal partial
     /// read mid-file, or fewer bytes near EOF. Callers loop (see
@@ -200,45 +408,12 @@ impl MtpConnectionManager {
         len: u32,
     ) -> Result<Vec<u8>, MtpConnectionError> {
         let object_handle = self.resolve_path_to_handle(device_id, storage_id, path).await?;
-        let (device_arc, storage_cache, cached) = {
-            let devices = self.devices.lock().await;
-            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
-                device_id: device_id.to_string(),
-            })?;
-            let cache = Arc::clone(&entry.storage_cache);
-            // Clone the handle out under the entry's own lock so the read below
-            // never has to re-enter `devices` while holding the device lock.
-            let cached = cache.read().ok().and_then(|m| m.get(&storage_id).cloned());
-            (Arc::clone(&entry.device), cache, cached)
-        };
-        #[cfg(any(test, feature = "testing"))]
-        let storage_lookups = {
-            let devices = self.devices.lock().await;
-            devices.get(device_id).map(|entry| Arc::clone(&entry.storage_lookups))
-        };
-
-        let device = acquire_device_lock(&device_arc, device_id, "read_range_direct").await?;
-
-        let storage = match cached {
-            Some(storage) => storage,
-            None => {
-                #[cfg(any(test, feature = "testing"))]
-                if let Some(lookups) = &storage_lookups {
-                    lookups.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                }
-                let storage = Arc::new(
-                    device
-                        .storage(StorageId(u64::from(storage_id)))
-                        .await
-                        .map_err(|e| self.map_device_read_error(e, device_id, path))?,
-                );
-                if let Ok(mut cache) = storage_cache.write() {
-                    cache.insert(storage_id, Arc::clone(&storage));
-                }
-                storage
-            }
-        };
-
+        let target = self.read_target(device_id, storage_id).await?;
+        let device = acquire_device_lock(&target.device_arc, device_id, "read_range_direct").await?;
+        let storage = target
+            .storage(&device)
+            .await
+            .map_err(|e| self.map_device_read_error(e, device_id, path))?;
         storage
             .read_range(object_handle, offset, len)
             .await

@@ -59,6 +59,10 @@ struct GateInner {
     /// Woken when `foreground_pending` drops to zero, so every parked background
     /// unit re-checks and proceeds.
     drained: Notify,
+    /// Count of read sessions that own the device lock BETWEEN calls (a
+    /// held-open transfer in flight). While non-zero, a pending foreground op is
+    /// waiting on that read, so the read must not yield to it.
+    reads_holding_device: AtomicUsize,
 }
 
 impl DevicePriorityGate {
@@ -74,14 +78,36 @@ impl DevicePriorityGate {
 
     /// `true` when at least one foreground op is currently pending.
     ///
-    /// Two production consumers read this same predicate at a yield boundary:
-    /// the index scan (via `background_yield_point`, which reads the counter
-    /// inline) and a running transfer's per-chunk checkpoint (via the manager's
-    /// `foreground_pending(device_id)`), which uses it to decide whether to
-    /// release the PTP session and yield mid-copy. Cheap (an atomic load), so
-    /// it's safe to poll once per chunk.
+    /// The index scan reads this same predicate at its yield boundary (via
+    /// `background_yield_point`, which reads the counter inline); a running
+    /// transfer asks [`transfer_should_yield`](Self::transfer_should_yield),
+    /// which adds the held-open exception. Cheap (an atomic load), so it's safe
+    /// to poll once per chunk.
     pub(super) fn foreground_pending(&self) -> bool {
         self.inner.foreground_pending.load(Ordering::SeqCst) > 0
+    }
+
+    /// Marks a read session as owning the device lock across calls, for the
+    /// lifetime of the returned hold. Taken only while mtp-rs's download holds
+    /// the PTP session (`FileDownload::holds_session`).
+    pub(super) fn read_holding_device(&self) -> ReadHold {
+        self.inner.reads_holding_device.fetch_add(1, Ordering::SeqCst);
+        ReadHold {
+            inner: Arc::clone(&self.inner),
+        }
+    }
+
+    /// Whether a running transfer should stop at its checkpoint for foreground
+    /// work: a foreground op pends AND no read owns the device lock between
+    /// calls.
+    ///
+    /// The second half is what keeps a held-open transfer from deadlocking. The
+    /// foreground op it would yield to is queued on the device lock that very
+    /// transfer holds, so parking it parks the op too, until the 300 s lock wait
+    /// fails the op. Between windows nothing is held, so the yield works as
+    /// before.
+    pub(super) fn transfer_should_yield(&self) -> bool {
+        self.foreground_pending() && self.inner.reads_holding_device.load(Ordering::SeqCst) == 0
     }
 
     /// Background yield point: park while any foreground op is pending, returning
@@ -124,6 +150,18 @@ impl Drop for ForegroundGuard {
     }
 }
 
+/// RAII mark of a read session owning the device lock between calls. See
+/// [`DevicePriorityGate::transfer_should_yield`].
+pub(super) struct ReadHold {
+    inner: Arc<GateInner>,
+}
+
+impl Drop for ReadHold {
+    fn drop(&mut self) {
+        self.inner.reads_holding_device.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::DevicePriorityGate;
@@ -133,6 +171,22 @@ mod tests {
     fn no_pending_by_default() {
         let gate = DevicePriorityGate::default();
         assert!(!gate.foreground_pending());
+    }
+
+    #[test]
+    fn a_transfer_never_yields_to_the_op_waiting_on_its_own_held_transfer() {
+        let gate = DevicePriorityGate::default();
+        let fg = gate.foreground_guard();
+        assert!(gate.transfer_should_yield(), "between windows ⇒ yield");
+        let hold = gate.read_holding_device();
+        assert!(
+            !gate.transfer_should_yield(),
+            "the pending op waits on this read's lock ⇒ yielding would park both"
+        );
+        drop(hold);
+        assert!(gate.transfer_should_yield(), "hold released ⇒ yield again");
+        drop(fg);
+        assert!(!gate.transfer_should_yield(), "nothing pending ⇒ no yield");
     }
 
     #[test]

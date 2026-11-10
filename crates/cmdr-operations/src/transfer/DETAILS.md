@@ -1601,14 +1601,16 @@ destination's `write_from_stream` (and its safe-replace temp+rename) sees one co
 while parked lets the next chunk flow through to `on_progress`, so the cancel/cleanup contract is the park-in-place
 contract. Pinned by `volume::strategy::tests::paused_mtp_copy_parks_in_place_then_resumes_byte_exact` (pause freezes
 mid-file, never releases the source, resumes byte-exact with a single open at offset 0),
-`paused_mtp_copy_cancel_while_paused_keeps_no_partial`, and `unpaused_mtp_copy_streams_straight_through`.
+`paused_mtp_copy_cancel_while_paused_keeps_no_partial`, and `unpaused_mtp_copy_streams_straight_through`. The one
+exception is a device without partial reads (no phone): mtp-rs reads its file as one held-open transfer, so a pause
+there keeps the device until resume or cancel, and the auto-yield below never fires for it (`mtp/connection` §
+"Bounded-window reads").
 
 **No release/reopen machinery.** This bounded-window model has NO `cancel_and_release`/reopen path, because there is no
 held session to release between windows. `Volume::pause_releases_read_stream()` is `false` for every backend (kept only
 as a trait extension point), and `Volume::open_read_stream_at_offset` keeps its offset parameter (MTP implements it
 correctly) but the copy path only ever calls it with `offset == 0` via `open_read_stream`. The bounded-window read
-itself lives in `mtp/connection` (it needs `mtp-rs`'s `Storage::download_partial_64`, in `mtp-rs` 0.21.0 — the minimum
-`apps/desktop/src-tauri/Cargo.toml` pins).
+itself lives in `mtp/connection` (`crates/cmdr-mtp/Cargo.toml` pins the `mtp-rs` floor it needs).
 
 ### Foreground auto-yield (navigate the phone DURING a transfer, no pause)
 

@@ -418,16 +418,16 @@ The rest of this section is about **read-side** lifetime handling. Which pattern
 
 ### Pattern A: cached session + bounded windows (use when the SDK exposes a stateless partial-read primitive)
 
-If the SDK can read an arbitrary byte range on demand (no held streaming handle), cache the resolved session in your stream struct and issue one bounded read per `next_chunk`. Nothing is held between reads, so there's no lifetime gymnastics, no task, no channel, and no `Drop` to write. **Example: `MtpReadStream`** (`crates/cmdr-mtp/src/volume/mod.rs`), which loops mtp-rs's `WindowedDownload::next_window` (one `GetPartialObject64` each).
+If the SDK can read an arbitrary byte range on demand (no held streaming handle), cache the resolved session in your stream struct and issue one bounded read per `next_chunk`. Nothing is held between reads, so there's no lifetime gymnastics, no task, and no channel. **Example: `MtpReadStream`** (`crates/cmdr-mtp/src/volume/streams.rs`), which pulls mtp-rs's `FileDownload` one window per call (one `GetPartialObject64` each).
 
 ```rust
 struct MtpReadStream {
-    session: MtpReadSession,  // caches the mtp-rs WindowedDownload (owns size/offset/EOF)
+    session: MtpReadSession,  // caches the mtp-rs FileDownload (owns size/offset/EOF)
     device_id: String,
 }
 ```
 
-`next_chunk()` delegates to the connection layer's `read_next_window`, which takes the per-device lock for one window. The window bookkeeping (size, offset, clamp-to-remaining, EOF, advance-by-returned-length, the 0-byte-before-EOF stall guard) lives in mtp-rs's `WindowedDownload`, not here. `cancel_and_release` is the trait default no-op (nothing held); a mid-window drop self-heals via mtp-rs's `TransactionScope`. The lock invariant (every `next_window` runs under Cmdr's device lock) lives in `mtp/connection` (DETAILS § "Bounded-window reads").
+`next_chunk()` delegates to the connection layer's `read_next_window`, which takes the per-device lock for one window. The window bookkeeping (size, offset, clamp-to-remaining, EOF, short reads, the 0-byte-before-EOF stall guard) lives in mtp-rs's `FileDownload`, not here. MTP also shows the edge of this pattern: a device without partial reads gets one held-open transfer, so the session keeps the device lock between calls and its cancel and drop stop that transfer. Both paths and the lock invariant live in `crates/cmdr-mtp/src/connection/DETAILS.md` § "Bounded-window reads".
 
 ### Pattern B: channel-backed stream (use when the SDK's download type borrows `&mut Connection`)
 

@@ -98,13 +98,12 @@ listings; in-flight USB calls always finish before cancellation returns.
 no stat. `notify_mutation` pays it after each self-mutation (create, delete, rename), which is fine because those are
 infrequent. ❌ Never call it in a hot path.
 
-**A dropped read stream is safe, and needs no `Drop` impl.** `MtpReadStream` reads in bounded
-`GetPartialObject64(offset, MTP_READ_WINDOW)` windows (`src/connection/DETAILS.md` § "Bounded-window reads" owns the
-windowing and offset accounting). Between windows nothing is in flight — no held `FileDownload`, no pinned PTP session —
-so a cancel, pause, or drop has nothing to abort or drain, and `cancel_and_release` is the trait's default no-op. A
-stream dropped WHILE a window read is in flight is still safe: mtp-rs's `TransactionScope` flags the pipe and the next
-op drains it under the operation lock, one ~300 ms self-heal. ❌ Don't re-add a `Drop` cancel here; with no held
-`FileDownload`, mtp-rs's unconsumed-drop panic can't apply.
+**A dropped read stream is safe.** `MtpReadStream` reads about one `MTP_READ_WINDOW` per call, as `GetPartialObject64`
+windows or, on a device without partial reads, one held-open `GetObject` whose session keeps the device lock between
+calls (`src/connection/DETAILS.md` § "Bounded-window reads" owns both paths and the cancel). Between windows nothing is
+in flight, so a cancel, pause, or drop has nothing to stop. Mid-transfer, `cancel_and_release` and a plain drop both
+stop the transfer through `FileDownload::cancel` before the device lock goes back. A stream dropped WHILE a read call is
+in flight is still safe: mtp-rs flags the pipe and the next op drains it under the operation lock.
 
 **A conflict scan settles a missing destination through `get_metadata`, not a `NotFound` arm.** Every other backend
 reads `VolumeError::NotFound` from the destination listing as "nothing clashes" and answers an empty list. MTP confirms
@@ -166,7 +165,7 @@ source's metadata".)
   `SendObjectInfo` `DateModified` (`NewObjectInfo::with_modified`), in UTC with a `Z` suffix. Android's MTP server
   applies it to the file after the data phase (`MtpServer::doSendObject`'s `futimens`) and reads the `Z` as UTC
   (verified by the mtp-rs maintainer in AOSP, mtp-rs 0.33.0, 2026-10-07).
-- **Read**: `MtpReadStream::modified_at` reports `WindowedDownload::modified()`, from the `ObjectInfo` the open already
+- **Read**: `MtpReadStream::modified_at` reports `FileDownload::modified()`, from the `ObjectInfo` the open already
   fetched for the size, so it costs no round trip.
 - **Zones**: a date's own offset wins. A zoneless one (what Android sends: the phone's local wall clock) reads as the
   Mac's local time, in ONE place, `convert_mtp_datetime_in` in `src/connection/dates.rs`. **Decision/Why**: phone and
@@ -228,6 +227,11 @@ test lives on" states in full. Both sides drive the same virtual device through 
   non-recursion rather than inherit it, and `MtpDeleteScope` needs enough scaffolding to earn a file.
 - `volume/read_range_test.rs` — both read paths, sharing one fixture: the DIRECT `read_range` (a ranged read costs one
   device operation, not three) and the WINDOWED `open_read_stream` the copy engine and native drag-out go through.
+- `src/connection/read_session_test.rs` — who holds the device during a streamed read: windows free it between calls, a
+  device without partial reads (`virtual_device::setup_virtual_mtp_device_without_partial_reads`) keeps it to EOF while
+  a queued listing waits, and a cancel or drop mid-read on either path leaves the session clean.
+  `src/connection/read_window_test.rs` pins the per-call memory bound against a scripted download, since the virtual
+  device hands a held-open object over as one chunk.
 - `volume/streams_test.rs` — the `VolumeReadStream` → chunk-stream adapter, with no device behind it.
 - `src/volume/move_rename_test.rs` — a cross-folder rename with a new name beside a file holding the old one (§ "A move
   that also renames").

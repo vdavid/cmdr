@@ -149,8 +149,33 @@ impl VirtualDeviceFixture {
 #[cfg(any(test, feature = "testing"))]
 pub fn setup_virtual_mtp_device() -> VirtualDeviceFixture {
     let root = tempfile::tempdir().expect("failed to create a virtual-device fixture root");
-    let location_id = register_virtual_mtp_device_at(root.path(), false);
+    let location_id = register_virtual_mtp_device_at(root.path(), false, PartialReads::Supported);
     VirtualDeviceFixture { location_id, root }
+}
+
+/// [`setup_virtual_mtp_device`] for a responder that can only hand over whole
+/// objects: both partial-read operations are REFUSED, the way libhaze and simple
+/// PTP responders refuse them. mtp-rs then reads a whole file as one held-open
+/// `GetObject`, which is the path where Cmdr's read session keeps the device
+/// lock across calls (`connection/DETAILS.md` § "Bounded-window reads").
+#[cfg(test)]
+pub(crate) fn setup_virtual_mtp_device_without_partial_reads() -> VirtualDeviceFixture {
+    let root = tempfile::tempdir().expect("failed to create a virtual-device fixture root");
+    let location_id = register_virtual_mtp_device_at(root.path(), false, PartialReads::Refused);
+    VirtualDeviceFixture { location_id, root }
+}
+
+/// Whether the virtual device serves `GetPartialObject64` and `GetPartialObject`.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum PartialReads {
+    /// Both served, like the Pixel this device stands in for.
+    Supported,
+    /// Both refused, like a responder that only hands over whole objects.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "only this crate's own cells model such a device")
+    )]
+    Refused,
 }
 
 /// Registers a virtual MTP device backed by `root`, with two storages and
@@ -159,13 +184,13 @@ pub fn setup_virtual_mtp_device() -> VirtualDeviceFixture {
 /// Must be called **before** `start_mtp_watcher()` so the device appears in the
 /// initial device snapshot.
 pub fn setup_virtual_mtp_device_at(root: &Path) -> u64 {
-    register_virtual_mtp_device_at(root, true)
+    register_virtual_mtp_device_at(root, true, PartialReads::Supported)
 }
 
 /// The shared body of [`setup_virtual_mtp_device_at`] and (test-only)
 /// `setup_virtual_mtp_device`. `watch_backing_dirs` arms the device's
 /// filesystem watcher, which turns out-of-band disk writes into PTP events.
-fn register_virtual_mtp_device_at(root: &Path, watch_backing_dirs: bool) -> u64 {
+fn register_virtual_mtp_device_at(root: &Path, watch_backing_dirs: bool, partial_reads: PartialReads) -> u64 {
     let internal = root.join("internal");
     let readonly = root.join("readonly");
 
@@ -231,10 +256,11 @@ fn register_virtual_mtp_device_at(root: &Path, watch_backing_dirs: bool) -> u64 
                 read_only: true,
             },
         ],
-        // `supports_rename` and `supports_partial_object_64` come from the default
-        // (both true), which models a modern Android device: the virtual device
-        // stands in for a Pixel 9. Setting the latter false would exercise mtp-rs's
-        // 32-bit GetPartialObject fallback instead (cameras like the Lumix TZ61).
+        // `supports_rename` comes from the default (true), which models a modern
+        // Android device: the virtual device stands in for a Pixel 9. The partial
+        // reads stay on unless a cell models a whole-objects-only responder.
+        supports_partial_object_64: partial_reads == PartialReads::Supported,
+        supports_partial_object: partial_reads == PartialReads::Supported,
         event_poll_interval: Duration::from_millis(100),
         watch_backing_dirs,
         // Dates carry their offset (`Z`), unlike a real Android phone's. A
