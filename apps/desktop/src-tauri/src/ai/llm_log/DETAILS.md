@@ -44,7 +44,7 @@ Responses are logged as the assembled reply: for streams, the captured content w
 agent does), else the text accumulated from the chunk stream, plus stop reason and usage
 (`fidelity: "assembled"`); for the non-stream helper, the parsed genai `ChatResponse` (`fidelity: "parsed"`).
 
-**Follow-up for true wire fidelity:** genai is already vendored with a patch (`vendor/genai/CMDR-PATCH.md`); re-exporting
+**Follow-up for true wire fidelity:** vendoring genai (the `vendor/` pattern: a `CMDR-PATCH.md` plus a `[patch.crates-io]` line) and re-exporting
 those four items as `pub` there (or a thin `pub` wrapper calling `to_web_request_data`) would let the tap log the
 byte-identical wire `payload` (`fidelity: "wire"`) with no other change. The Anthropic thinking-capture patch once
 planned beside it isn't needed: genai 0.7 captures and replays signed, omitted, and redacted thinking unpatched

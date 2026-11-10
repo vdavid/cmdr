@@ -33,23 +33,13 @@ members = [
   "crates/index-query",
   "crates/operation-log-dump",
 ]
-exclude = [
-  "benchmarks/smb",
-  "vendor/genai",
-  "vendor/rc-zip",
-  "vendor/rustic_core",
-  "vendor/tauri-plugin-store",
-  "vendor/zip",
-]
+exclude = ["benchmarks/smb", "vendor/rc-zip", "vendor/rustic_core", "vendor/tauri-plugin-store", "vendor/zip"]
 resolver = "2"
 
 # Third-party crates we patch, each identical to its crates.io release apart from the fix, which
 # its `vendor/<crate>/CMDR-PATCH.md` lists. `desktop-rust-vendor-patch-applied` fails when a bump
 # past the vendored version makes cargo resolve crates.io again.
 [patch.crates-io]
-# A streamed OpenRouter answer keeps its `reasoning_details` (signed, encrypted, and summary
-# blocks), so a reasoning model's continuity survives an Ask Cmdr tool loop through OpenRouter.
-genai = { path = "vendor/genai" }
 # Built on `zstd` 0.14, clearing the 0.13 line's RustSec advisories (RUSTSEC-2026-0391,
 # 0395–0406), which no rc-zip or rustic_core release has moved off yet.
 rc-zip = { path = "vendor/rc-zip" }

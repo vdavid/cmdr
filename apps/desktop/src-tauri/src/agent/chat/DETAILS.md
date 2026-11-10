@@ -257,7 +257,7 @@ turn runs on an approval today; the `Outcomes` follow-up a rejection opens runs 
   Claude streams its thinking (`ReasoningTick`) and pings; Gemini streams thought summaries; OpenAI's Responses API
   streams reasoning summaries (genai asks for `summary: detailed` when reasoning is captured), so the longest silence
   is one reasoning step before its summary lands, which a High effort can stretch past a minute (verified by reading
-  genai 0.7.1's adapters, `vendor/genai/src/adapter/adapters/`, 2026-10-28; no live measurement). Two minutes leaves
+  genai 0.7.1's adapters (`src/adapter/adapters/` in the crates.io package), 2026-10-28; no live measurement). Two minutes leaves
   that room; a dead connection still ends well inside the rail's watchdog, which gives up at 150 s
   (`apps/desktop/src/lib/ask-cmdr/DETAILS.md` § The streaming model). Unverified: a chat-completions OpenAI reasoning
   model with no summary may think silently for longer at its highest effort.

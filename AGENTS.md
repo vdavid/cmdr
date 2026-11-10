@@ -130,9 +130,9 @@ Writing them:
   `maintenance.md`.
 - `tools/`: dev tooling outside every workspace and check: `tools/intellij-plugin/`, `tools/privatesize-poc/README.md`,
   `tools/demo-video/CLAUDE.md` (Remotion promo videos).
-- `vendor/`: third-party crates we patch (today `genai`, `rc-zip`, `rustic_core`, `tauri-plugin-store`, and `zip`),
-  swapped in via `[patch.crates-io]` and identical to upstream apart from the fix its `CMDR-PATCH.md` lists. Tooling
-  skips it; `desktop-rust-vendor-patch-applied` guards the patch.
+- `vendor/`: third-party crates we patch (today `rc-zip`, `rustic_core`, `tauri-plugin-store`, and `zip`), swapped in
+  via `[patch.crates-io]` and identical to upstream apart from the fix its `CMDR-PATCH.md` lists. Tooling skips it;
+  `desktop-rust-vendor-patch-applied` guards the patch.
 - `scripts/check/`: the Go check runner. `.github/workflows/`: CI.
 
 ## Dependencies

@@ -208,9 +208,8 @@ runs below, 2026-10-27):
   DeepSeek and Kimi there keep their continuity.
 - **OpenRouter**: continuity rides `reasoning_details` (signed, encrypted, and summary blocks), wanted back verbatim
   and in order; `reasoning_content` is accepted beside them (OpenRouter's reasoning-tokens guide, "Preserving
-  Reasoning", checked 2026-10-27). Upstream genai 0.7.1 captures the blocks on the non-streaming path only, so Cmdr
-  vendors a patch that merges the streamed pieces too (`vendor/genai/CMDR-PATCH.md`); they arrive as `Custom`
-  parts and go back as `reasoning_details`. Unverified live (the key has no credits).
+  Reasoning", checked 2026-10-27). genai captures them on both paths (the streamed pieces merge into blocks since 0.7.3, upstreamed from
+  Cmdr's jeremychone/rust-genai#360); they arrive as `Custom` parts and go back as `reasoning_details`. Unverified live (the key has no credits).
 - **Everything else on chat-completions** (Together, xAI, Qwen/DashScope, Perplexity, Ollama, LM Studio, custom, and
   Cmdr's own llama-server): unverified, so they keep what they always got, no reasoning back. Wrongly sending it is a
   400 that wedges the loop (Groq); wrongly withholding it costs continuity, except on a provider that requires it.

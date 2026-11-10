@@ -467,8 +467,8 @@ fn openrouter_round_one() -> String {
 #[tokio::test]
 async fn openrouter_replays_streamed_reasoning_details_verbatim() {
     // OpenRouter carries a signed or encrypted model's continuity in `reasoning_details` and
-    // wants the blocks back whole and in order. Upstream genai drops them when streaming; the
-    // vendored patch (`vendor/genai/CMDR-PATCH.md`) merges the pieces into blocks.
+    // wants the blocks back whole and in order. genai merges the streamed pieces into blocks
+    // (0.7.3, upstreamed from jeremychone/rust-genai#360).
     let (_, body) = two_rounds(
         "anthropic/claude-sonnet-5.5",
         "anthropic/claude-sonnet-5.5",
