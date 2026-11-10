@@ -332,6 +332,9 @@ silent** (a warning, not a red job):
   - apt's own 30-s connection timeout and retries.
 - **`slow-checks` dependency-checks**: rust-cache for cargo-udeps's nightly `target/`, plus the same "Free disk space"
   step. Kept alive by the 6-day cron (below).
+- **Every mise install goes through the `install-mise` action** (`.github/actions/`): `jdx/mise-action` pinned once,
+  retried once 30 s after a failure, since its single `curl` of the mise binary is a whole job's single point of failure
+  (all six slow-checks jobs, 2026-11-08, run 42469156732).
 - **mise's tool cache saves from `main` only** (`cache_save` on every mise-action a PR reaches). Its key holds the
   runner image (`ImageOS`) and the config hash, plus an `install_args` hash for the Go-only install in
   `lane-markers-tool`, so one run touches up to four entries of ~0.1–0.3 GB each; a container job (the website lane's)
@@ -456,9 +459,15 @@ crash, then a Kani proof that a new `OpKind` arm made stale). Two things keep it
   min, a build per mutant; cargo-udeps; the real-API smokes; the macOS pre-release gates) or would cost a second macOS
   job per land run, which queues (§ macOS lane): Miri, ~4 min, whose pure-Rust `unsafe` modules rarely change.
 - **A red run files an issue.** The `report` job opens one `slow-checks` issue (labels `bug`, `claude-created`) on a red
-  run on `main`, comments on it while it stays open, and closes it on the next fully green run. The board's "Auto-add to
-  project" workflow puts it on the backlog board; set its fields when you pick it up. A cancelled run and a branch
-  dispatch leave it alone.
+  run on `main`, comments on it while it stays open, and closes it on the next fully green run, with the green run's
+  link added to the body rather than as a comment (one email per incident, not three). The board's "Auto-add to project"
+  workflow puts it on the backlog board; set its fields when you pick it up. A cancelled run and a branch dispatch leave
+  it alone.
+- **An agent picks the issue up.** The slow-checks fixer on the M1 reruns an outside blip, lands a clear fix, or writes
+  up what needs David, all in the issue body: `scripts/slow-checks-fixer/CLAUDE.md`.
+- **Outside blips are designed out where we can.** Every mise install goes through `.github/actions/install-mise`, which
+  retries once (the 2026-11-08 download outage failed all six jobs), and the Groq smoke has room for its model to reason
+  before it answers.
 
 Gotchas:
 
