@@ -2549,9 +2549,9 @@ stays the gate.
 
 - **The `paths` mirror**: write-to-disk mode rebases tsconfig `paths` onto the emitted components but ignores
   package.json subpath `imports` (sveltejs/language-tools#3142). Without a `paths` twin of `#lib/*`, every
-  `#lib/*.svelte` import fell back to the ambient `*.svelte` shim: 46 false errors on desktop, and a seeded
-  `<StatusBadge status={12345} />` went unreported. Each app's tsconfig carries the twin; `tsconfig-paths-mirror` (in
-  `--fast`) fails when it drifts from `imports`.
+  `#lib/*.svelte` import fell back to the generic `*.svelte` module declaration: 46 false errors on desktop, and a
+  seeded `<StatusBadge status={12345} />` went unreported. Each app's tsconfig carries the twin; `tsconfig-paths-mirror`
+  (in `--fast`) fails when it drifts from `imports`.
 - **Parity evidence**: with the mirror, both modes report identical diagnostics on a clean tree and on seeded errors (a
   `.ts` type error, a local `.svelte` error, a cross-component prop error, and an a11y warning), compared on
   `--output machine` (2026-11-10). Only the summary's file count differs (442 vs 4,244): in `--tsgo` mode it counts

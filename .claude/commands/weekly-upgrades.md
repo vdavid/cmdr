@@ -20,11 +20,14 @@ Run unattended, start to finish, without asking David anything. He's reading the
    (`cargo outdated -w`, then per-crate `Cargo.toml` edit + `cargo update -p <crate> --precise <version>`, 3-day window
    enforced by hand against crates.io), fix the breakage, `pnpm check third-party-notices`, the checks per the guide,
    then `pnpm check --only-slow`.
-4. **Commit in logical pieces**, not one blob: npm bumps, Cargo bumps, and each non-trivial API fix separately. Lead
+4. **Move the TypeScript migration one step** (guide § "The TypeScript migration"): check whether a listed blocker has
+   lifted, and if one has, move that lane to TS 7 (or tsrs) with a parity diff, in its own commit. Update that section
+   with what you checked and found, dated, even when nothing moved.
+5. **Commit in logical pieces**, not one blob: npm bumps, Cargo bumps, and each non-trivial API fix separately. Lead
    with impact. A crate you had to hold back gets a line in the body saying which and why.
-5. **Land and tear down.** `pnpm land` (`scripts/land/CLAUDE.md`), then
+6. **Land and tear down.** `pnpm land` (`scripts/land/CLAUDE.md`), then
    `~/.claude/scripts/remove-worktree.sh weekly-upgrades`.
-6. **Report** in about ten lines for Cmdr plus two or three per sibling repo: what moved (counts per ecosystem, and name
+7. **Report** in about ten lines for Cmdr plus two or three per sibling repo: what moved (counts per ecosystem, and name
    anything interesting), what broke and how you fixed it, what you held back and why, and whether the slow lane (Cmdr)
    and GitHub CI (siblings) went green.
 

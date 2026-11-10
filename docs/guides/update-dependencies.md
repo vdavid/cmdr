@@ -82,6 +82,35 @@ Same pass, but one major per commit, and read the release notes first. Some are 
 `renovate.json` rule says why, like the `specta` trio (rc.25 types non-`Option` float PARAMETERS as `number | null`).
 Don't "fix" those by bumping them.
 
+## The TypeScript migration (check it every pass)
+
+David wants the fastest reliable type checker for every lane. The end state is tsrs (`oxc-project/tsrs`, Rust); TS 7
+(Microsoft's Go port) is the step in between, adopted lane by lane as each tool supports it. Each weekly pass checks
+whether a blocker below has lifted and moves the next lane over, with a parity diff against TS 6 first (identical
+diagnostics on a clean tree and on seeded errors), as the svelte-check switch did.
+
+Where it stands (verified 2026-11-10, against the tools' releases and issue trackers):
+
+- **On TS 7**: only `desktop-svelte-check` and `dashboard-svelte-check`, through `svelte-check --tsgo` and
+  `@typescript/native`, locally and in CI, with TS 6 backstop lanes gating CI. How, why, and when to drop the backstops
+  and the `paths` mirror: `scripts/check/checks/DETAILS.md` § "svelte-check runs on TS 7 with a TS 6 backstop".
+- **`typescript` itself stays on 6** (the `renovate.json` typescript-major rule): TS 7.0 has no JS compiler API, and
+  typescript-eslint, svelte-check, svelte2tsx, and SvelteKit all cap their peer ranges below 7.
+- **Typed ESLint (the biggest win left)**: `eslint-typecheck-ts` (58–103 s) and `eslint-typecheck-svelte` (79–96 s) on
+  desktop, plus the website, api-server, and dashboard ESLint lanes. Blocked on typescript-eslint supporting TS 7.1's
+  API (typescript-eslint#10940); TS 7.1 was in beta on 2026-11-10. oxlint's type-aware mode (tsgolint) is the other
+  route, blocked on `.svelte` support.
+- **`api-server-typecheck`** (`tsc --noEmit`, 1.7 s): can switch to TS 7's `tsc` today; small gain, so bundle it with a
+  bigger step.
+- **`website-typecheck`** (`astro check`, 7–11 s): whether Astro has a TS 7 mode is unchecked.
+- **`pnpm typecheck` in each app** (what humans run): still TS 6; can follow the check lanes once they've settled.
+- **tsrs**: 0.x and about five weeks old on 2026-11-10; measured 1.15 s on the desktop's plain TS program vs 2.9 s for
+  TS 7.0 and 38.8 s for TS 6.0 (`tsc --noEmit`, 2026-11-10). No `.svelte` support and no language-service API yet, so
+  nothing can use it. Adopt it per lane once it type-checks `.svelte` (or svelte-check can drive it) and matches TS 6/7
+  diagnostics on our tree.
+- **Upstream to watch**: sveltejs/language-tools#3142 and its fix PR #3143 (the `paths` mirror), plus the `--tsgo` gaps
+  that drop errors (#3187, #3174, #3185).
+
 ## Version constraints
 
 - Node, pnpm, Go: `.mise.toml`
