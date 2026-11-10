@@ -1050,9 +1050,9 @@
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a058f98"
   },
-  "fileOperations.rollbackConfirm.titleFinish": "Concluir esta reversão?",
-  "@fileOperations.rollbackConfirm.titleFinish": {
-    "sourceHash": "cfc998a"
+  "fileOperations.rollbackConfirm.titleRest": "Reverter o restante?",
+  "@fileOperations.rollbackConfirm.titleRest": {
+    "sourceHash": "08a5c9b"
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Isso apaga os arquivos e pastas que a operação criou. O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar para trás.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
@@ -1082,9 +1082,33 @@
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
   },
-  "fileOperations.rollbackConfirm.finishRollBack": "Concluir a reversão",
-  "@fileOperations.rollbackConfirm.finishRollBack": {
-    "sourceHash": "dbe3771"
+  "fileOperations.rollbackConfirm.rollBackRest": "Reverter o restante",
+  "@fileOperations.rollbackConfirm.rollBackRest": {
+    "sourceHash": "f954882"
+  },
+  "fileOperations.rollbackConfirm.titleSelected": "Reverter os itens selecionados?",
+  "@fileOperations.rollbackConfirm.titleSelected": {
+    "sourceHash": "94d4cad"
+  },
+  "fileOperations.rollbackConfirm.rollBackSelected": "Reverter selecionados",
+  "@fileOperations.rollbackConfirm.rollBackSelected": {
+    "sourceHash": "32a94c5"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Isso apaga os arquivos e pastas selecionados que a operação criou. O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar para trás.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
+    "sourceHash": "a2ed919"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Isso leva os arquivos selecionados de volta para onde estavam. O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar onde está.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": {
+    "sourceHash": "b90e365"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "Isso devolve aos arquivos selecionados os nomes antigos. O Cmdr pula tudo aquilo de que não tem certeza, então algo pode manter o nome atual.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": {
+    "sourceHash": "2d2606f"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "Isso devolve aos arquivos selecionados as etiquetas que eles tinham antes. O Cmdr pula todo arquivo cujas etiquetas mudaram desde então, então alguns podem manter as etiquetas atuais.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": {
+    "sourceHash": "e388f91"
   },
   "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {O Cmdr apagou o item que tinha gravado} many {O Cmdr apagou todos os {countText} itens que tinha gravado} other {O Cmdr apagou todos os {countText} itens que tinha gravado}}.",
   "@fileOperations.cancelRollback.doneDeleting": {

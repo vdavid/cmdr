@@ -12,15 +12,19 @@
  * double fire itself.
  *
  * One claim per command, the newest winning; a dialog claims on mount and releases on
- * destroy.
+ * destroy. A claim that answers `false` passes this fire on: the command runs as if
+ * unclaimed (the Operation log takes ⌘A only while its item tree has focus).
  */
 
 import type { CommandId } from './command-ids'
 
-const claims = new Map<CommandId, () => void>()
+/** A claim's answer: `false` passes the fire on to the command; anything else took it. */
+type MenuClaim = () => boolean | undefined
+
+const claims = new Map<CommandId, MenuClaim>()
 
 /** Sends `commandId`'s menu road to `run` until the returned release is called. */
-export function claimMenuCommand(commandId: CommandId, run: () => void): () => void {
+export function claimMenuCommand(commandId: CommandId, run: MenuClaim): () => void {
   claims.set(commandId, run)
   return () => {
     // A newer claim (a remount before the old destroy ran) stays.
@@ -28,10 +32,9 @@ export function claimMenuCommand(commandId: CommandId, run: () => void): () => v
   }
 }
 
-/** Runs `commandId`'s claim, if a dialog holds one. `true` when it did. */
+/** Runs `commandId`'s claim, if a dialog holds one. `true` when the claim took the fire. */
 export function runMenuClaim(commandId: CommandId): boolean {
   const run = claims.get(commandId)
   if (!run) return false
-  run()
-  return true
+  return run() !== false
 }

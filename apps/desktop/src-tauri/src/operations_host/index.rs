@@ -263,6 +263,46 @@ mod tests {
         assert!(buffered.leaves.iter().all(|l| l.entry_type == EntryType::File));
     }
 
+    /// Every descendant is a leaf, FOLDERS included, each with its path relative to
+    /// the subtree root. The Operation log journals these as `search_only` rows, so a
+    /// trashed or moved folder's subfolders reach its item tree as `dir` rows.
+    #[test]
+    fn a_nested_subtree_enumerates_its_folders_as_leaves_too() {
+        let (dir, _conn, photos_id) = index_with_subtree(1, false);
+        {
+            let wconn = IndexStore::open_write_connection(&dir.path().join("index.sqlite")).expect("write conn");
+            let trip = IndexStore::insert_entry_v2(&wconn, photos_id, "trip", true, false, None, None, None, None)
+                .expect("insert trip");
+            IndexStore::insert_entry_v2(
+                &wconn,
+                trip,
+                "beach.jpg",
+                false,
+                false,
+                Some(10),
+                Some(10),
+                Some(1_700_000_000),
+                None,
+            )
+            .expect("insert beach");
+        }
+        let conn = IndexStore::open_read_connection(&dir.path().join("index.sqlite")).expect("read conn");
+
+        let buffered = enumerate_from_id(&conn, photos_id, SEARCH_LEAF_CAP);
+
+        assert_eq!(buffered.coverage, SearchCoverage::Full);
+        let mut leaves: Vec<_> = buffered.leaves.iter().map(|l| (l.rel.clone(), l.entry_type)).collect();
+        leaves.sort_by(|a, b| a.0.cmp(&b.0));
+        assert_eq!(
+            leaves,
+            vec![
+                (PathBuf::from("f0.jpg"), EntryType::File),
+                (PathBuf::from("trip"), EntryType::Dir),
+                (PathBuf::from("trip/beach.jpg"), EntryType::File),
+            ]
+        );
+    }
+
     #[test]
     fn a_stale_subtree_downgrades_to_top_level_only_never_full() {
         // Pre-fix (gating only on presence) this would have wrongly stamped `full`

@@ -19,17 +19,9 @@
   "@operationLog.dialog.recordingOff": {
     "sourceHash": "0519736"
   },
-  "operationLog.dialog.itemsError": "Kon deze onderdelen niet laden.",
-  "@operationLog.dialog.itemsError": {
-    "sourceHash": "596819e"
-  },
   "operationLog.dialog.noItems": "Deze bewerking heeft geen vastgelegde onderdelen.",
   "@operationLog.dialog.noItems": {
     "sourceHash": "c7d7bfb"
-  },
-  "operationLog.dialog.moreItems": "{count, plural, one {en nog {countText} onderdeel} other {en nog {countText} onderdelen}}",
-  "@operationLog.dialog.moreItems": {
-    "sourceHash": "c39507d"
   },
   "operationLog.dialog.loadMore": "Laad nog 50",
   "@operationLog.dialog.loadMore": {
@@ -39,25 +31,212 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
-  "operationLog.dialog.finishRollBack": "Voltooi terugdraaien",
-  "@operationLog.dialog.finishRollBack": {
-    "sourceHash": "dbe3771"
+  "operationLog.dialog.rollBackRest": "De rest terugdraaien",
+  "@operationLog.dialog.rollBackRest": {
+    "sourceHash": "f954882"
   },
-  "operationLog.dialog.rollbackOf": "Terugdraaibewerking voor ‘<operationLink>{operation}</operationLink>’ van {time}",
-  "@operationLog.dialog.rollbackOf": {
-    "sourceHash": "4885c73"
+  "operationLog.dialog.rollBackSelected": "{count, plural, one {Selectie terugdraaien ({countText})} other {Selectie terugdraaien ({countText})}}",
+  "@operationLog.dialog.rollBackSelected": {
+    "sourceHash": "d28d5c7"
   },
-  "operationLog.dialog.rollbackOfUnlisted": "Terugdraaibewerking voor een eerdere bewerking",
-  "@operationLog.dialog.rollbackOfUnlisted": {
-    "sourceHash": "50d060d"
-  },
-  "operationLog.dialog.latestRollback": "Laatste terugdraaibewerking: ‘<operationLink>{operation}</operationLink>’ van {time}",
-  "@operationLog.dialog.latestRollback": {
-    "sourceHash": "a8275f9"
+  "operationLog.dialog.selectedCount": "{count, plural, one {{selectedText} van {selectableText} geselecteerd} other {{selectedText} van {selectableText} geselecteerd}}",
+  "@operationLog.dialog.selectedCount": {
+    "sourceHash": "8891bd3"
   },
   "operationLog.dialog.close": "Sluit",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "operationLog.dialog.operations": "Bewerkingen",
+  "@operationLog.dialog.operations": {
+    "sourceHash": "358cc20"
+  },
+  "operationLog.tree.label": "Onderdelen",
+  "@operationLog.tree.label": {
+    "sourceHash": "fb8e7a1"
+  },
+  "operationLog.tree.columnName": "Naam",
+  "@operationLog.tree.columnName": {
+    "sourceHash": "dcd1d52"
+  },
+  "operationLog.tree.columnSize": "Grootte",
+  "@operationLog.tree.columnSize": {
+    "sourceHash": "1af8519"
+  },
+  "operationLog.tree.columnStatus": "Status",
+  "@operationLog.tree.columnStatus": {
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "Dutch for this column heading is \"Status\": macOS System Settings Localizable.loctable renders \"Status\"→\"Status\"; byte-identical to servers.hub.colStatus and multiRename.statusColumn."
+  },
+  "operationLog.tree.selectAll": "Selecteer alles",
+  "@operationLog.tree.selectAll": {
+    "sourceHash": "1fc9a38"
+  },
+  "operationLog.tree.include": "{name} terugdraaien",
+  "@operationLog.tree.include": {
+    "sourceHash": "2bdcfa0"
+  },
+  "operationLog.tree.comesBackWithFolder": "Komt terug samen met de bovenliggende map.",
+  "@operationLog.tree.comesBackWithFolder": {
+    "sourceHash": "e6275c5"
+  },
+  "operationLog.tree.folderFiles": "{count, plural, one {{countText} bestand} other {{countText} bestanden}}",
+  "@operationLog.tree.folderFiles": {
+    "sourceHash": "3c08428"
+  },
+  "operationLog.tree.statusRemoved": "Verwijderd",
+  "@operationLog.tree.statusRemoved": {
+    "sourceHash": "4118fb4"
+  },
+  "operationLog.tree.statusMovedBack": "Teruggezet",
+  "@operationLog.tree.statusMovedBack": {
+    "sourceHash": "c6bc4e6"
+  },
+  "operationLog.tree.statusRenamedBack": "Naam teruggezet",
+  "@operationLog.tree.statusRenamedBack": {
+    "sourceHash": "769ab78"
+  },
+  "operationLog.tree.statusTagsRestored": "Tags hersteld",
+  "@operationLog.tree.statusTagsRestored": {
+    "sourceHash": "062e231"
+  },
+  "operationLog.tree.statusSkipped": "Overgeslagen",
+  "@operationLog.tree.statusSkipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.tree.statusUnfinished": "Niet voltooid",
+  "@operationLog.tree.statusUnfinished": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.tree.rollupRolledBack": "{count, plural, one {{countText} teruggedraaid} other {{countText} teruggedraaid}}",
+  "@operationLog.tree.rollupRolledBack": {
+    "sourceHash": "0b93ef8"
+  },
+  "operationLog.tree.rollupSkipped": "{count, plural, one {{countText} overgeslagen} other {{countText} overgeslagen}}",
+  "@operationLog.tree.rollupSkipped": {
+    "sourceHash": "3cb9b95"
+  },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Dutch lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
+  "operationLog.tree.operationSkipped": "De bewerking heeft dit onderdeel overgeslagen, dus er is niets terug te draaien.",
+  "@operationLog.tree.operationSkipped": {
+    "sourceHash": "b883085"
+  },
+  "operationLog.tree.operationUnfinished": "De bewerking heeft dit onderdeel niet voltooid, dus er is niets terug te draaien.",
+  "@operationLog.tree.operationUnfinished": {
+    "sourceHash": "e07232b"
+  },
+  "operationLog.tree.unexpandableEmpty": "Deze map was leeg.",
+  "@operationLog.tree.unexpandableEmpty": {
+    "sourceHash": "0c67a8d"
+  },
+  "operationLog.tree.unexpandableNotRecorded": "Cmdr heeft niet vastgelegd wat er in deze map staat.",
+  "@operationLog.tree.unexpandableNotRecorded": {
+    "sourceHash": "613608a"
+  },
+  "operationLog.tree.unexpandableCapped": "Cmdr heeft niet vastgelegd wat er in deze map staat, omdat er in deze bewerking een map met meer dan 50.000 bestanden zat.",
+  "@operationLog.tree.unexpandableCapped": {
+    "sourceHash": "6657eb0"
+  },
+  "operationLog.tree.otherEndFrom": "Van {path}",
+  "@operationLog.tree.otherEndFrom": {
+    "sourceHash": "0562430"
+  },
+  "operationLog.tree.otherEndTo": "Naar {path}",
+  "@operationLog.tree.otherEndTo": {
+    "sourceHash": "ea4bf38"
+  },
+  "operationLog.tree.backfilling": "Onderdelen van deze bewerking lezen…",
+  "@operationLog.tree.backfilling": {
+    "sourceHash": "45f623f"
+  },
+  "operationLog.tree.backfillProgress": "{doneText} van {totalText} onderdelen gelezen",
+  "@operationLog.tree.backfillProgress": {
+    "sourceHash": "230eb62"
+  },
+  "operationLog.tree.indexesBuilding": "Cmdr maakt je geschiedenis klaar na een update. De onderdelen verschijnen zo.",
+  "@operationLog.tree.indexesBuilding": {
+    "sourceHash": "0d6f56b"
+  },
+  "operationLog.tree.indexesUnavailable": "Cmdr kon je geschiedenis deze keer niet klaarmaken, dus deze onderdelen verschijnen nog niet. De volgende keer dat je Cmdr opent, probeert het dat opnieuw.",
+  "@operationLog.tree.indexesUnavailable": {
+    "sourceHash": "8d2fec7"
+  },
+  "operationLog.tree.operationRunning": "Deze bewerking is nog bezig. De onderdelen verschijnen hier zodra die klaar is.",
+  "@operationLog.tree.operationRunning": {
+    "sourceHash": "eebeba4"
+  },
+  "operationLog.tree.rollingBack": "Deze bewerking wordt teruggedraaid. De onderdelen verschijnen hier zodra dat klaar is.",
+  "@operationLog.tree.rollingBack": {
+    "sourceHash": "35ef2b2"
+  },
+  "operationLog.tree.unreadable": "Kon de onderdelen van deze bewerking niet lezen. Kies de bewerking opnieuw om het nog eens te proberen.",
+  "@operationLog.tree.unreadable": {
+    "sourceHash": "71453e9"
+  },
+  "operationLog.tree.togglesCapped": "Meer onderdelen kan Cmdr niet één voor één selecteren. Selecteer in plaats daarvan een map.",
+  "@operationLog.tree.togglesCapped": {
+    "sourceHash": "36aa8fa"
+  },
+  "operationLog.route.fromTo": "Van {from} naar {to}",
+  "@operationLog.route.fromTo": {
+    "sourceHash": "6eeb9b3"
+  },
+  "operationLog.route.to": "Naar {to}",
+  "@operationLog.route.to": {
+    "sourceHash": "55b2319"
+  },
+  "operationLog.route.fromToTrash": "Van {from} naar de prullenmand",
+  "@operationLog.route.fromToTrash": {
+    "sourceHash": "9eff97f"
+  },
+  "operationLog.route.from": "Van {from}",
+  "@operationLog.route.from": {
+    "sourceHash": "5848d99"
+  },
+  "operationLog.route.in": "In {path}",
+  "@operationLog.route.in": {
+    "sourceHash": "b1b3028",
+    "sameAsSourceJustification": "Dutch \"in\" is the same preposition as English (in de map); with a folder path after it, \"In {path}\" is the natural Dutch line."
+  },
+  "operationLog.skipReason.unverifiablePrecondition": "Cmdr kon dit niet controleren aan de hand van wat het had vastgelegd, dus heeft het dit ongemoeid gelaten.",
+  "@operationLog.skipReason.unverifiablePrecondition": {
+    "sourceHash": "c33ca33"
+  },
+  "operationLog.skipReason.drift": "Daar is sinds de bewerking iets aan gewijzigd, dus Cmdr heeft het ongemoeid gelaten.",
+  "@operationLog.skipReason.drift": {
+    "sourceHash": "6768024"
+  },
+  "operationLog.skipReason.restoreTargetOccupied": "Op de originele plek staat nu iets anders, dus Cmdr heeft dat niet overschreven.",
+  "@operationLog.skipReason.restoreTargetOccupied": {
+    "sourceHash": "1b1d375"
+  },
+  "operationLog.skipReason.dirNotEmpty": "Er staat nu iets nieuws in deze map, dus Cmdr heeft die behouden.",
+  "@operationLog.skipReason.dirNotEmpty": {
+    "sourceHash": "8fc1b3e"
+  },
+  "operationLog.skipReason.alreadyGone": "Dit onderdeel was al terug zoals het was.",
+  "@operationLog.skipReason.alreadyGone": {
+    "sourceHash": "71176d1"
+  },
+  "operationLog.skipReason.vanished": "Dit onderdeel staat niet meer waar de bewerking het heeft achtergelaten, dus er is niets terug te zetten.",
+  "@operationLog.skipReason.vanished": {
+    "sourceHash": "a715fb0"
+  },
+  "operationLog.skipReason.originalGone": "Het origineel is weg, dus Cmdr heeft deze kopie behouden in plaats van de enige die nog over is te verwijderen.",
+  "@operationLog.skipReason.originalGone": {
+    "sourceHash": "014fcaa"
+  },
+  "operationLog.skipReason.failed": "Cmdr kon dit onderdeel niet terugdraaien. Het logbestand heeft de details.",
+  "@operationLog.skipReason.failed": {
+    "sourceHash": "76c2b80"
+  },
+  "operationLog.skipReason.locked": "Dit onderdeel is zo beveiligd dat alleen een beheerder het kan verwijderen, dus Cmdr heeft het laten staan.",
+  "@operationLog.skipReason.locked": {
+    "sourceHash": "39e4c78"
   },
   "operationLog.summary.canceled": "{summary}, daarna geannuleerd ({plannedText} gepland)",
   "@operationLog.summary.canceled": {
@@ -136,9 +315,9 @@
   "@operationLog.status.running": {
     "sourceHash": "f4ccae2"
   },
-  "operationLog.status.done": "Gereed",
-  "@operationLog.status.done": {
-    "sourceHash": "11a6767"
+  "operationLog.status.finished": "Gereed",
+  "@operationLog.status.finished": {
+    "sourceHash": "7804f7a"
   },
   "operationLog.status.failed": "Niet voltooid",
   "@operationLog.status.failed": {
@@ -168,9 +347,45 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
-  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr heeft teruggedraaid wat het kon en de rest gelaten zoals die was. Bij het voltooien gaat Cmdr er nog een keer overheen en slaat alles over waar het nog steeds niet zeker van is.",
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr heeft teruggedraaid wat het kon en de rest gelaten zoals die was. Bij het terugdraaien van de rest gaat Cmdr er nog een keer overheen en slaat het alles over waar het nog steeds niet zeker van is.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
-    "sourceHash": "77e6f25"
+    "sourceHash": "8c0a534"
+  },
+  "operationLog.rollback.interruptedNotice": "Cmdr is gestopt voordat deze bewerking klaar was, dus misschien heeft Cmdr niet alles vastgelegd wat de bewerking deed. Terugdraaien werkt alleen voor wat Cmdr heeft vastgelegd.",
+  "@operationLog.rollback.interruptedNotice": {
+    "sourceHash": "642e6fc"
+  },
+  "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} onderdeel is terug zoals het was.} other {{countText} onderdelen zijn terug zoals ze waren.}}",
+  "@operationLog.rollback.partialRolledBack": {
+    "sourceHash": "0202fe5"
+  },
+  "operationLog.rollback.partialHeldBack": "{count, plural, one {Cmdr heeft {countText} onderdeel overgeslagen waar het niet zeker van was.} other {Cmdr heeft {countText} onderdelen overgeslagen waar het niet zeker van was.}}",
+  "@operationLog.rollback.partialHeldBack": {
+    "sourceHash": "5a43937"
+  },
+  "operationLog.rollback.partialWaiting": "{count, plural, one {{countText} onderdeel is nog niet teruggedraaid.} other {{countText} onderdelen zijn nog niet teruggedraaid.}}",
+  "@operationLog.rollback.partialWaiting": {
+    "sourceHash": "0850c46"
+  },
+  "operationLog.rollback.rollbackableNoticeCopy": "Terugdraaien verwijdert de geselecteerde kopieën. De originelen blijven waar ze zijn.",
+  "@operationLog.rollback.rollbackableNoticeCopy": {
+    "sourceHash": "6710bb4"
+  },
+  "operationLog.rollback.rollbackableNoticeDelete": "Terugdraaien verwijdert de geselecteerde onderdelen die deze bewerking heeft aangemaakt.",
+  "@operationLog.rollback.rollbackableNoticeDelete": {
+    "sourceHash": "d0e028e"
+  },
+  "operationLog.rollback.rollbackableNoticeMoveBack": "Terugdraaien zet de geselecteerde onderdelen terug waar ze vandaan kwamen.",
+  "@operationLog.rollback.rollbackableNoticeMoveBack": {
+    "sourceHash": "2cf40c3"
+  },
+  "operationLog.rollback.rollbackableNoticeRenameBack": "Terugdraaien geeft de geselecteerde onderdelen hun oude namen terug.",
+  "@operationLog.rollback.rollbackableNoticeRenameBack": {
+    "sourceHash": "8f2b884"
+  },
+  "operationLog.rollback.rollbackableNoticeTagsBack": "Terugdraaien geeft de geselecteerde onderdelen de tags terug die ze eerder hadden.",
+  "@operationLog.rollback.rollbackableNoticeTagsBack": {
+    "sourceHash": "d45b11b"
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "Deze wordt al teruggedraaid. Volg het in de wachtrij.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {
@@ -179,6 +394,10 @@
   "operationLog.rollback.refusalAlreadyRolledBack": "Deze is al terug zoals hij was.",
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalIsARollback": "Deze bewerking heeft een andere bewerking ongedaan gemaakt, en zoiets maakt Cmdr niet op zijn beurt ongedaan. De bewerking die ongedaan is gemaakt, staat nog in het bewerkingenlogboek.",
+  "@operationLog.rollback.refusalIsARollback": {
+    "sourceHash": "37738da"
   },
   "operationLog.rollback.refusalOverwrote": "Deze bewerking heeft bestanden vervangen die er al stonden. Cmdr bewaart geen kopieën van wat het vervangt, dus de originelen komen niet terug.",
   "@operationLog.rollback.refusalOverwrote": {
@@ -216,24 +435,20 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
+  "operationLog.rollback.refusalNothingSelected": "Selecteer minstens één onderdeel om terug te draaien.",
+  "@operationLog.rollback.refusalNothingSelected": {
+    "sourceHash": "7a3c2fa"
+  },
+  "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr is de onderdelen van deze bewerking nog aan het lezen. Probeer het zo meteen opnieuw.",
+  "@operationLog.rollback.refusalSummaryNotBuilt": {
+    "sourceHash": "d23332a"
+  },
+  "operationLog.rollback.refusalTooManyToggles": "Dat zijn meer onderdelen dan Cmdr één voor één kan selecteren. Selecteer in plaats daarvan een map.",
+  "@operationLog.rollback.refusalTooManyToggles": {
+    "sourceHash": "2be9bc8"
+  },
   "operationLog.rollback.refusalUnexpected": "Cmdr kon het terugdraaien niet starten. Probeer het zo meteen opnieuw.",
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "bef54f1"
-  },
-  "operationLog.outcome.done": "Gereed",
-  "@operationLog.outcome.done": {
-    "sourceHash": "11a6767"
-  },
-  "operationLog.outcome.skipped": "Overgeslagen",
-  "@operationLog.outcome.skipped": {
-    "sourceHash": "12698ce"
-  },
-  "operationLog.outcome.failed": "Niet voltooid",
-  "@operationLog.outcome.failed": {
-    "sourceHash": "59ea57b"
-  },
-  "operationLog.outcome.rolledBack": "Teruggedraaid",
-  "@operationLog.outcome.rolledBack": {
-    "sourceHash": "7159223"
   }
 }

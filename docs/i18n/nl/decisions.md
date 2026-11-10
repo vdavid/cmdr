@@ -53,7 +53,7 @@ first (`Bezig met {destination} bewerken`); `totdat je antwoordt` (`reageren` is
 `Naam van {countText} onderdeel gewijzigd` (Finder); lifecycle words from `queue.row.status`; You → `Jij`; `vastgelegd`
 (tentative); `Niet terug te draaien`; `Terugdraaibewerking` over `Terugdraaiing`.
 
-## Terugdraaien (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.*`, `queue.row.statusAwaitingAnswer`/`awaitingAnswerTooltip`, `queue.row.reversalInFolder`, `transferProgress.foregroundBusyToast`, `fileOperations.transferProgress.rollbackTooltip`/`.rollbackTooltipStopAndMoveBack`/`.rollbackAlreadyLandedTooltip`, `operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`)
+## Terugdraaien (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.*`, `queue.row.statusAwaitingAnswer`/`awaitingAnswerTooltip`, `queue.row.reversalInFolder`, `transferProgress.foregroundBusyToast`, `fileOperations.transferProgress.rollbackTooltip`/`.rollbackTooltipStopAndMoveBack`/`.rollbackAlreadyLandedTooltip`, `operationLog.dialog.rollBackRest`, `operationLog.rollback.partiallyRolledBackNotice`)
 
 - "Leave alone" → `ongemoeid laten` (as `askCmdr.renameUndo.skipReason.*`), never `overgeslagen`. ⚠️
   `reason.folderNotEmpty.named`/`.counted` stay byte-identical to their `skipReason` twins.

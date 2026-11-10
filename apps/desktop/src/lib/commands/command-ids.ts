@@ -229,6 +229,13 @@ export const COMMAND_IDS = [
   'multiRename.moveRowUp',
   'multiRename.moveRowDown',
   'multiRename.rename',
+  // Keys the Operation log dialog answers itself
+  'operationLog.goToItems',
+  'operationLog.toggleItem',
+  'operationLog.toggleItemAndDown',
+  'operationLog.selectAll',
+  'operationLog.deselectAll',
+  'operationLog.rollBack',
   'file.view',
   'file.edit',
   'file.copy',

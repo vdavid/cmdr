@@ -183,12 +183,13 @@ fn prune_removes_old_operation_and_gcs_its_dirs() {
     writer.shutdown();
 }
 
-/// Pruning an op that a SURVIVING op references via `rolls_back_op_id` nulls the
-/// survivor's link instead of tripping the self-FK on delete. Guards the
-/// ordering: null-before-delete. (Retention expands these tests; this one defends
-/// the FK trap the rollback linkage will exercise.)
+/// An age prune takes an aged-out original's inverse with it, even though the
+/// inverse ended later and is still inside the window. Regression: retention
+/// used to null the survivor's `rolls_back_op_id`, which turned the inverse into
+/// an ordinary listed op that the gate let through (`IsARollback` reads the link),
+/// so rolling it back redid the undone change. Rollbacks aren't ops of their own.
 #[test]
-fn prune_nulls_a_survivors_rollback_link_to_a_pruned_op() {
+fn age_prune_takes_an_originals_inverse_with_it() {
     let (store, writer, _dir) = fresh();
 
     // An old original op, and a recent inverse op that rolled it back.
@@ -243,12 +244,9 @@ fn prune_nulls_a_survivors_rollback_link_to_a_pruned_op() {
         read_operation(store.conn(), "original").expect("read").is_none(),
         "old original pruned"
     );
-    let inverse = read_operation(store.conn(), "inverse")
-        .expect("read")
-        .expect("inverse kept");
-    assert_eq!(
-        inverse.rolls_back_op_id, None,
-        "the survivor's link to the pruned op is nulled, not left dangling (no FK violation)"
+    assert!(
+        read_operation(store.conn(), "inverse").expect("read").is_none(),
+        "the inverse goes with its original, so it never resurfaces as a rollbackable op"
     );
 
     writer.shutdown();

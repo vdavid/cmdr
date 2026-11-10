@@ -778,7 +778,7 @@
     ],
     "chosen": "abgeschlossen",
     "confidence": "high",
-    "forms": "Copying complete → Kopieren abgeschlossen; Finish rolling back → Rollback abschließen; incomplete → unvollständig (Cmdr's own unvollständige Kopie); unfinished (a move) → nicht abgeschlossen",
+    "forms": "Copying complete → Kopieren abgeschlossen; the rest of a rollback → Rest rückgängig machen (no abschließen); incomplete → unvollständig (Cmdr's own unvollständige Kopie); unfinished (a move) → nicht abgeschlossen",
     "sources": "macOS Finder (Der Vorgang kann nicht abgeschlossen werden., LA33 … beschädigt oder unvollständig ist.)"
   },
   "compress": {
@@ -2252,6 +2252,9 @@
     "decision": "A move that could not be confirmed",
     "exceptions": {
       "errors.write.moveNotConfirmed.suggestion": "es points back at the move named in the title; Your originals haven’t moved → liegen noch dort, wo sie waren",
+      "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "putting files back where they were is zurücklegen (style digest), like its sibling bodyUndoByMovingBack",
+      "operationLog.rollback.rollbackableNoticeMoveBack": "putting files back where they were is zurücklegen (style digest), like rollbackConfirm.bodyUndoByMovingBack",
+      "operationLog.tree.statusMovedBack": "moved back where it came from is zurücklegen (style digest): Zurückgelegt",
       "suggestedOps.reversible.moveBack": "putting files back where they were is zurücklegen (style digest), like the trash undo's Zurücklegen"
     },
     "forms": "button Bewegen; progress Wird bewegt; the one move as a noun → die Bewegung, the act → das Bewegen; moves as an enumerated noun has no German noun, so enumerate verbs (umzubenennen, zu bewegen und aufzuräumen)",
@@ -2519,6 +2522,9 @@
     "accept": ["Originale"],
     "chosen": "Original",
     "confidence": "high",
+    "exceptions": {
+      "operationLog.skipReason.restoreTargetOccupied": "the original spot is a place, not the source files: am ursprünglichen Ort"
+    },
     "forms": "the originals → die Originale",
     "sources": "macOS Finder PE117 (…the original could not be deleted): das Original; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
   },
@@ -2946,6 +2952,9 @@
     "accept": ["umbenannt", "Umbenennung", "umbenenn", "benenne", "benenn"],
     "chosen": "umbenennen",
     "confidence": "high",
+    "exceptions": {
+      "operationLog.tree.statusRenamedBack": "old names back is zurücksetzen (style digest): Name zurückgesetzt"
+    },
     "forms": "Rename all → Alle umbenennen; progress Wird umbenannt; noun Umbenennung/Umbenennungen; rename cycle → Umbenennungszyklus",
     "sources": "macOS Finder (Umbenennen …), Double Commander, Nautilus (wird … umbenannt)"
   },
@@ -3053,7 +3062,7 @@
     "accept": ["rückgängig", "Rücknahme", "zurücknehmen", "zurückgenommen"],
     "chosen": "Rollback",
     "confidence": "high",
-    "decision": "Ein halb zurückgenommener Vorgang: das Rollback zu Ende bringen",
+    "decision": "Den Rest rückgängig machen",
     "forms": "neuter: das Rollback, ein Rollback, Teilweises Rollback; status chips Rollback möglich / Kein Rollback möglich / Rollback läuft / Rollback abgeschlossen; running prose and dialog titles → rückgängig machen (Diesen Vorgang rückgängig machen?); the confirming button → Rollback",
     "sources": "MS terminology keeps Rollback; catalog (settings.operationLog.intro Aktionen rückgängig machen)"
   },

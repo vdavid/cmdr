@@ -519,10 +519,10 @@
     "sources": "MS terminology"
   },
   "check": {
-    "accept": ["核对", "确认", "查看", "看看", "看一下", "校验", "比对", "验证"],
+    "accept": ["核对", "确认", "查看", "看看", "看一下", "校验", "比对", "验证", "勾选"],
     "chosen": "检查",
     "confidence": "high",
-    "forms": "checking for updates / conflicts → 检查 (正在检查); \"check that …\" (make sure) → 确认; \"check X\" (look at it) → 查看 / 看看; a host key's fingerprint → 核对; a download → 校验; Re-check → 再次检查 (Apple's Check Again)",
+    "forms": "checking for updates / conflicts → 检查 (正在检查); \"check that …\" (make sure) → 确认; \"check X\" (look at it) → 查看 / 看看; a host key's fingerprint → 核对; a download → 校验; Re-check → 再次检查 (Apple's Check Again); ticking a checkbox → 勾选, uncheck → 取消勾选 (the catalog's 取消勾选“已锁定”, the Operation log tree)",
     "note": "检查 is reserved for check, so it can't carry review (复查).",
     "sources": "macOS Finder"
   },
@@ -2118,7 +2118,7 @@
     "sources": "MS terminology; macOS Finder"
   },
   "move": {
-    "accept": ["移到", "移出", "移入", "移过", "移回", "移走"],
+    "accept": ["移到", "移出", "移入", "移过", "移回", "移走", "放回"],
     "avoid": [
       {
         "form": "挪",
@@ -2128,7 +2128,7 @@
     "chosen": "移动",
     "confidence": "high",
     "decision": "Standalone conflict prompt",
-    "forms": "F6 移动; in a sentence with a destination 移动到“{destination}”; out of / into an archive 移出 / 移入; moving back 移回原处; a file something moved away 已被移走",
+    "forms": "F6 移动; in a sentence with a destination 移动到“{destination}”; out of / into an archive 移出 / 移入; moving back 移回原处, a rollback's moving back 放回原处 / 放回原来的位置 (fileOperations.rollbackConfirm.bodyUndoByMovingBack); a file something moved away 已被移走",
     "note": "A progress line or conflict prompt naming the operation writes 移动到 so it matches the queue row's 正在移动; everyday prose may use Finder's contraction 移到 (移到废纸篓, 把 Cmdr 移到“应用程序”文件夹).",
     "sources": "macOS"
   },
@@ -2787,6 +2787,10 @@
   "remove": {
     "chosen": "移除",
     "confidence": "high",
+    "exceptions": {
+      "operationLog.skipReason.locked": "Removing the copy means deleting it from disk, so 删除, per this term's note.",
+      "operationLog.tree.statusRemoved": "A rollback deleted what the operation wrote, so 已删除, per this term's note."
+    },
     "forms": "从列表中移除; tags 移除“{color}”",
     "note": "Deleting what a rollback wrote, a leftover, or a model is 删除; 移除 only takes something out of a list or an archive.",
     "sources": "macOS"
@@ -2801,6 +2805,9 @@
     ],
     "chosen": "重命名",
     "confidence": "confirmed",
+    "exceptions": {
+      "operationLog.tree.statusRenamedBack": "An undone rename is 已恢复…原来的名称 (decisions.md § Deliberate splits), matching queue.row.reversalRenamingBack."
+    },
     "forms": "command and progress 重命名 (正在重命名); spoken error prose 改名; a rename cycle 重命名循环",
     "sources": "Double Commander; macOS"
   },

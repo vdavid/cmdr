@@ -704,6 +704,30 @@
   "@commands.multiRenameRename.label": {
     "sourceHash": "da881fb"
   },
+  "commands.operationLogGoToItems.label": "前往這項操作的項目",
+  "@commands.operationLogGoToItems.label": {
+    "sourceHash": "495419e"
+  },
+  "commands.operationLogToggleItem.label": "選取或取消選取這個項目",
+  "@commands.operationLogToggleItem.label": {
+    "sourceHash": "1c42fe5"
+  },
+  "commands.operationLogToggleItemAndDown.label": "選取或取消選取這個項目，然後下移",
+  "@commands.operationLogToggleItemAndDown.label": {
+    "sourceHash": "8017eef"
+  },
+  "commands.operationLogSelectAll.label": "選取所有項目",
+  "@commands.operationLogSelectAll.label": {
+    "sourceHash": "26c94c1"
+  },
+  "commands.operationLogDeselectAll.label": "取消選取所有項目",
+  "@commands.operationLogDeselectAll.label": {
+    "sourceHash": "d1df115"
+  },
+  "commands.operationLogRollBack.label": "復原所選項目",
+  "@commands.operationLogRollBack.label": {
+    "sourceHash": "3f2a947"
+  },
   "commands.fileView.label": "檢視",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

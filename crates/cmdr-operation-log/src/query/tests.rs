@@ -439,6 +439,60 @@ fn a_row_names_the_newest_operation_that_rolls_it_back() {
     writer.shutdown();
 }
 
+/// A rollback is never listed as its own operation, in the feed or a search, even by a
+/// name only its rows carry; the original still names it, which is how a surface finds
+/// the running reversal to pause or cancel.
+#[test]
+fn neither_the_feed_nor_a_search_lists_a_rollback() {
+    let (store, writer, _dir) = fresh();
+    journal_op(
+        &writer,
+        "op-move",
+        OpKind::Move,
+        Initiator::User,
+        1,
+        2,
+        SearchCoverage::Full,
+        None,
+        vec![leaf(0, "/home/pics", "dog.jpg", RowRole::RollbackUnit)],
+    );
+    journal_inverse_of(&writer, "inv", "op-move", 3);
+    writer
+        .record_items("inv", vec![leaf(0, "/home/pics", "dog.jpg", RowRole::RollbackUnit)])
+        .expect("the inverse's row");
+    writer.flush_blocking().expect("flush");
+
+    let feed = recent_operations(store.conn(), 10, 0).expect("feed");
+    assert_eq!(
+        feed.iter().map(|o| o.op_id.as_str()).collect::<Vec<_>>(),
+        vec!["op-move"]
+    );
+    assert_eq!(
+        feed[0].inverse_op_id.as_deref(),
+        Some("inv"),
+        "the original still names it"
+    );
+
+    let by_name = OperationSearchFilters {
+        name: Some(NameFilter {
+            text: "dog.jpg".to_string(),
+            match_kind: NameMatch::Exact,
+        }),
+        ..Default::default()
+    };
+    for filters in [OperationSearchFilters::default(), by_name] {
+        let hits = search_operations(store.conn(), &filters, 50, 0).expect("search");
+        assert_eq!(
+            hits.iter().map(|o| o.op_id.as_str()).collect::<Vec<_>>(),
+            vec!["op-move"],
+            "{filters:?}"
+        );
+        assert_eq!(hits[0].inverse_op_id.as_deref(), Some("inv"));
+    }
+
+    writer.shutdown();
+}
+
 /// Two operations in the SAME second come back newest-first.
 ///
 /// The journal's clock is whole seconds, so a reversal and whatever ran next

@@ -141,8 +141,9 @@ All under `apps/desktop/src/lib/`.
 - `updates/`: Auto-updater UI
 - `whats-new/`: Post-update "What's new" changelog popup: the pure show/stamp decision, the startup trigger, the soft
   dialog, and the manual Help reopen. See `whats-new/CLAUDE.md`
-- `operation-log/`: The alpha "Operation log" dialog (View menu / ⌘⌥L) over the read API — trigger + paging state, the
-  soft dialog, the pure typed-enum→i18n label mapping, and the per-row Roll back button that hands a reversal to the
+- `operation-log/`: The alpha "Operation log" dialog (View menu / ⌘⌥L), master–detail over the read API: the paged
+  operation list, the picked operation's detail and item tree (a `ColumnList` treegrid over `get_operation_log_tree`,
+  with checkboxes), the typed-enum→i18n label mapping, and the action bar that hands a whole or partial reversal to the
   operation queue. See `apps/desktop/src/lib/operation-log/CLAUDE.md`
 - `suggested-ops/`: The "Suggested ops" dialog (View menu) where the user reviews what Ask Cmdr proposed and decides
   what runs, over the proposal spine. Windowed op paging and the disclosure rules: its `CLAUDE.md`

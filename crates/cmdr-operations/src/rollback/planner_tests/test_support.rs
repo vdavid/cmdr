@@ -14,6 +14,8 @@ use crate::rollback::Reversal;
 use crate::testing::TestOperations;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{InMemoryVolume, Volume, VolumeError};
+use cmdr_operation_log::OperationLog;
+use cmdr_operation_log::query::{RollbackSelection, SelectionBase, SelectionToggle};
 use cmdr_operation_log::rollback::*;
 use cmdr_operation_log::store::{
     OperationItemRow, OperationRow, open_read_connection, operation_log_db_path, read_operation, read_operation_items,
@@ -142,6 +144,45 @@ impl Rig {
         self.writer.flush_blocking().expect("flush");
     }
 
+    /// Journal an op that never finalizes, as a crash mid-run leaves it: opened
+    /// `running` with these rows, still `not_rollbackable`.
+    pub(super) fn seed_interrupted(
+        &self,
+        op_id: &str,
+        kind: OpKind,
+        src_vol: &str,
+        dst_vol: Option<&str>,
+        items: Vec<JournalItem>,
+    ) {
+        self.writer
+            .open_operation(OpenOperation {
+                op_id: op_id.into(),
+                kind,
+                initiator: Initiator::User,
+                source_volume_id: Some(src_vol.to_string()),
+                dest_volume_id: dst_vol.map(str::to_string),
+                item_count: items.len() as u64,
+                started_at: 100,
+                rolls_back_op_id: None,
+                execution_status: ExecutionStatus::Running,
+            })
+            .expect("open");
+        self.writer.record_items(op_id, items).expect("record");
+        self.writer.flush_blocking().expect("flush");
+    }
+
+    /// The next launch over this rig's journal: the writer stops, and the journal
+    /// reopens through [`OperationLog::open`], startup steps and all.
+    pub(super) fn relaunched(self) -> Rig {
+        self.writer.shutdown();
+        let log = OperationLog::detached();
+        log.open(self.writer.db_path(), &|_| None).expect("reopen the journal");
+        Rig {
+            writer: log.writer().expect("the reopened journal's writer"),
+            ..self
+        }
+    }
+
     /// Put every copied file's ORIGINAL back where the seeded rows say it was copied
     /// from, at the recorded size, on its registered source volume. Undoing a copy
     /// removes it only while its original is still there, so a copy cell that wants
@@ -198,6 +239,114 @@ impl Rig {
             reversal.runner(),
         )
         .await
+    }
+}
+
+impl Rig {
+    /// Ask the gate to roll `op_id` back and answer its refusal; a gate that lets it
+    /// through fails the test without starting anything.
+    pub(super) fn refusal_of(&self, op_id: &str) -> RollbackRefusal {
+        match rollback_operation(&self.vm, &self.writer, op_id, |_plan| {
+            panic!("the gate let {op_id} through to a spawn")
+        }) {
+            Ok(plan) => panic!("the gate admitted {op_id}: {plan:?}"),
+            Err(refusal) => refusal,
+        }
+    }
+
+    /// Roll back only what `selection` takes, the way the dialog's Roll back does:
+    /// through the gate (which may refuse it), then the run with the plan's
+    /// normalized selection.
+    pub(super) async fn rollback_selected(
+        &self,
+        op_id: &str,
+        selection: &RollbackSelection,
+    ) -> Result<RollbackReport, RollbackRefusal> {
+        self.rollback_selected_driven_by(op_id, selection, &self.reversal("rollback"))
+            .await
+    }
+
+    /// [`Self::rollback_selected`] against a [`Reversal`] the test holds, to read its frames.
+    pub(super) async fn rollback_selected_driven_by(
+        &self,
+        op_id: &str,
+        selection: &RollbackSelection,
+        reversal: &Reversal,
+    ) -> Result<RollbackReport, RollbackRefusal> {
+        let plan = rollback_operation_with_selection(&self.vm, &self.writer, op_id, Some(selection), |_plan| Ok(()))?;
+        Ok(execute_rollback_with_selection(
+            &self.vm,
+            &self.writer,
+            &plan.original,
+            &plan.inverse_op_id,
+            Initiator::User,
+            plan.selection.as_ref(),
+            reversal.runner(),
+        )
+        .await)
+    }
+
+    /// The interned `dirs` id of `path` on `volume`: the key the item tree hands out
+    /// for that folder's row.
+    pub(super) fn dir_id(&self, volume: &str, path: &str) -> i64 {
+        let conn = open_read_connection(self.writer.db_path()).expect("read conn");
+        let mut id: i64 = conn
+            .query_row(
+                "SELECT dir_id FROM dirs WHERE volume_id = ?1 AND parent_dir_id IS NULL",
+                [volume],
+                |row| row.get(0),
+            )
+            .expect("the volume's root folder is interned");
+        for name in path.split('/').filter(|name| !name.is_empty()) {
+            id = conn
+                .query_row(
+                    "SELECT dir_id FROM dirs WHERE parent_dir_id = ?1 AND name = ?2",
+                    rusqlite::params![id, name],
+                    |row| row.get(0),
+                )
+                .unwrap_or_else(|e| panic!("{path} is interned on {volume}: {e}"));
+        }
+        id
+    }
+}
+
+/// Everything, minus or plus these toggles.
+pub(super) fn everything_but(toggles: Vec<SelectionToggle>) -> RollbackSelection {
+    RollbackSelection {
+        base: SelectionBase::Everything,
+        toggles,
+    }
+}
+
+/// Nothing, plus these toggles.
+pub(super) fn only(toggles: Vec<SelectionToggle>) -> RollbackSelection {
+    RollbackSelection {
+        base: SelectionBase::Nothing,
+        toggles,
+    }
+}
+
+/// A folder the operation moved (a same-volume move, or a trash): ONE `rollback_unit`
+/// DIR row from `src` to where it landed, as `record_items` writes a moved folder.
+pub(super) fn folder_unit(seq: i64, vol: &str, src: &str, dst: &str) -> JournalItem {
+    let (sd, sn) = split(src);
+    let (dd, dn) = split(dst);
+    JournalItem {
+        seq,
+        entry_type: EntryType::Dir,
+        row_role: RowRole::RollbackUnit,
+        source_volume_id: vol.to_string(),
+        source_dir: sd,
+        source_name: sn,
+        dest_volume_id: Some(vol.to_string()),
+        dest_dir: Some(dd),
+        dest_name: Some(dn),
+        size: Some(96),
+        mtime: Some(MT as i64),
+        outcome: ItemOutcome::Done,
+        overwrote: false,
+        dest_identity: None,
+        tags: None,
     }
 }
 

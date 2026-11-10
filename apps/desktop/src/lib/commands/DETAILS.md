@@ -80,8 +80,8 @@ command id of its own.
 `CommandScope` is a union of string literals: `'App'`, `'Main window'`, `'Main window/File list'`,
 `'Main window/Brief mode'`, `'Main window/Full mode'`, `'Main window/Servers'`, `'Main window/Places'`,
 `'Main window/Volume chooser'`, `'Main window/Favorites menu'`, `'Main window/Error screen'`,
-`'Main window/Multi-rename'`, `'About window'`, `'Operation queue window'`, `'Viewer window'`, `'Onboarding'`,
-`'Command palette'`. Scope is documentation-only.
+`'Main window/Multi-rename'`, `'Main window/Operation log'`, `'About window'`, `'Operation queue window'`,
+`'Viewer window'`, `'Onboarding'`, `'Command palette'`. Scope is documentation-only.
 
 ❗ **A NEW scope is three places**: the `CommandScope` union here, its ancestry chain in `shortcuts/scope-hierarchy.ts`
 (without one, `getActiveScopes` returns `[]` and its commands can never conflict with anything), and a row in
@@ -234,7 +234,8 @@ route through `handleCommandExecute(commandId, ctx)` in `routes/(main)/command-d
 the frontend listens and dispatches it down the menu's road.
 
 An open dialog can claim a menu command whose accelerator is one of its own keys (`menu-claims.ts`: the Multi-rename
-sheet's F2 is File > Rename's). The core runs the claim for that command's menu road, ahead of the dialog gate;
+sheet's F2 is File > Rename's, the Operation log's ⌘A / ⌘⇧A are Edit > Select all / Deselect all's; a claim answering
+`false` passes that fire on). The core runs the claim for that command's menu road, ahead of the dialog gate;
 `routes/(main)/DETAILS.md` § The dialog gate.
 
 Exception: `CheckMenuItem`s (show hidden files, view modes) keep separate handling to avoid double-toggle. Close tab

@@ -15,7 +15,9 @@
 //! unparseable file) and offers direct reads for tests and the dump bin.
 
 mod connection;
+mod dirs;
 mod migrations;
+mod tree_indexes;
 
 use std::path::{Path, PathBuf};
 
@@ -26,7 +28,10 @@ use unicode_normalization::UnicodeNormalization;
 
 pub use connection::open_read_connection;
 pub(crate) use connection::open_write_connection;
+pub use dirs::reconstruct_dir_path;
+pub(crate) use dirs::{intern_child_dir, intern_dir};
 pub use migrations::{MIGRATIONS, Migration, run_migrations};
+pub(crate) use tree_indexes::{build_tree_item_indexes, tree_item_indexes_exist};
 
 use super::types::{
     ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState,
@@ -201,6 +206,9 @@ pub struct OperationItemRow {
     pub dest_identity: Option<NodeIdentity>,
     /// The Finder-tags value before and after, on a tag write's row (schema v5 on).
     pub tags: Option<TagsChange>,
+    /// A DIR row's own folder on the operation's tree axis (schema v6 on), interned
+    /// by the writer. `None` on a FILE row and on a DIR row written before v6.
+    pub self_dir_id: Option<i64>,
 }
 
 /// A handle to `operation-log.db`, owning a connection for direct reads and the
@@ -271,115 +279,6 @@ impl OperationLogStore {
     #[cfg(test)]
     pub fn schema_version(&self) -> Result<u32, OperationLogStoreError> {
         migrations::read_schema_version(&self.conn)
-    }
-}
-
-// ── Dir interning ────────────────────────────────────────────────────────────
-
-/// Intern a directory path for `volume_id`, returning its `dir_id`. Interns each
-/// ancestor once (reused across operations, so a hot directory is stored once
-/// forever), then returns the leaf's id. A volume root (empty path) interns a
-/// single row with name `""` and NULL parent.
-///
-/// A remote volume's path is rooted at `scheme://authority` (`adb://serial/…`,
-/// `sftp://ada@nas:22/…`), and that root is ONE name in the chain, see
-/// [`split_scheme_root`].
-///
-/// Runs on a write-capable connection — inside the writer thread's transaction
-/// in production, or directly in tests. Idempotent: the same `(volume_id, path)`
-/// always returns the same id.
-pub(crate) fn intern_dir(conn: &Connection, volume_id: &str, path: &str) -> Result<i64, OperationLogStoreError> {
-    // The volume root anchors the chain (name ""), so a file directly at the
-    // volume root still has a dir to reference.
-    let mut parent = intern_one(conn, volume_id, None, "")?;
-    let (scheme_root, rest) = split_scheme_root(path);
-    let names = scheme_root.into_iter().chain(rest.split('/').filter(|c| !c.is_empty()));
-    for component in names {
-        parent = intern_one(conn, volume_id, Some(parent), component)?;
-    }
-    Ok(parent)
-}
-
-/// The separator that marks a path as rooted at a URL-style volume root.
-const SCHEME_SEPARATOR: &str = "://";
-
-/// Splits `scheme://authority` off the head of a remote volume's path, returning
-/// it and what follows. A path with no such head comes back whole.
-///
-/// The root has to stay one name: splitting it on `/` like the rest drops the
-/// empty segment inside `://`, and [`reconstruct_dir_path`] then rebuilds
-/// `adb://serial/x` as `/adb:/serial/x`, a path no volume answers to, which the
-/// rollback would hand to one. No real folder name can contain `://` (a name
-/// holds no `/`), so a name that does is always this root.
-fn split_scheme_root(path: &str) -> (Option<&str>, &str) {
-    let Some(scheme_len) = path.find(SCHEME_SEPARATOR) else {
-        return (None, path);
-    };
-    let is_scheme = scheme_len > 0
-        && path[..scheme_len]
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'-' | b'.'));
-    if !is_scheme {
-        return (None, path);
-    }
-    let authority_start = scheme_len + SCHEME_SEPARATOR.len();
-    let root_len = path[authority_start..]
-        .find('/')
-        .map_or(path.len(), |slash| authority_start + slash);
-    (Some(&path[..root_len]), &path[root_len..])
-}
-
-/// Intern one `(volume_id, parent, name)` dir row, returning its id. Insert-or-
-/// ignore against the IFNULL identity index, then read the id back (reliable
-/// whether or not the insert did anything). The identity is the EXACT name;
-/// `name_folded` rides along as a plain column.
-fn intern_one(
-    conn: &Connection,
-    volume_id: &str,
-    parent: Option<i64>,
-    name: &str,
-) -> Result<i64, OperationLogStoreError> {
-    conn.prepare_cached(
-        "INSERT INTO dirs (volume_id, parent_dir_id, name, name_folded)
-         VALUES (?1, ?2, ?3, ?4)
-         ON CONFLICT (volume_id, IFNULL(parent_dir_id, 0), name) DO NOTHING",
-    )?
-    .execute(rusqlite::params![volume_id, parent, name, fold_name(name)])?;
-
-    // `parent.unwrap_or(0)` mirrors the index's IFNULL(parent, 0): dir ids start
-    // at 1, so 0 is a safe stand-in for a NULL (root) parent.
-    let id = conn
-        .prepare_cached(
-            "SELECT dir_id FROM dirs
-             WHERE volume_id = ?1 AND IFNULL(parent_dir_id, 0) = ?2 AND name = ?3",
-        )?
-        .query_row(rusqlite::params![volume_id, parent.unwrap_or(0), name], |row| {
-            row.get::<_, i64>(0)
-        })?;
-    Ok(id)
-}
-
-/// Reconstruct a dir's full path by walking `parent_dir_id` to the volume root.
-/// The root (name `""`) contributes nothing, so a path renders as `/a/b/c`, and a
-/// remote one led by its `scheme://authority` name as `scheme://authority/a/b`.
-pub fn reconstruct_dir_path(conn: &Connection, dir_id: i64) -> Result<String, OperationLogStoreError> {
-    let mut names = Vec::new();
-    let mut current = Some(dir_id);
-    let mut stmt = conn.prepare_cached("SELECT name, parent_dir_id FROM dirs WHERE dir_id = ?1")?;
-    while let Some(id) = current {
-        let (name, parent): (String, Option<i64>) =
-            stmt.query_row(rusqlite::params![id], |row| Ok((row.get(0)?, row.get(1)?)))?;
-        if !name.is_empty() {
-            names.push(name);
-        }
-        current = parent;
-    }
-    names.reverse();
-    let joined = names.join("/");
-    if names.first().is_some_and(|root| root.contains(SCHEME_SEPARATOR)) {
-        Ok(joined)
-    } else {
-        Ok(format!("/{joined}"))
     }
 }
 
@@ -503,7 +402,7 @@ pub fn recent_operations(conn: &Connection, limit: u32) -> Result<Vec<OperationR
 
 pub(super) const ITEM_COLUMNS: &str = "item_id, op_id, seq, entry_type, row_role, source_dir_id, source_name, dest_dir_id, \
      dest_name, size, mtime, outcome, overwrote, rollback_skip_reason, dest_inode, dest_birth_ns, \
-     tags_before, tags_after";
+     tags_before, tags_after, self_dir_id";
 
 pub(super) fn map_item_row(row: &rusqlite::Row<'_>) -> Result<OperationItemRow, OperationLogStoreError> {
     Ok(OperationItemRow {
@@ -532,6 +431,7 @@ pub(super) fn map_item_row(row: &rusqlite::Row<'_>) -> Result<OperationItemRow, 
             (Some(before), Some(after)) => Some(TagsChange { before, after }),
             _ => None,
         },
+        self_dir_id: row.get(18)?,
     })
 }
 
@@ -597,17 +497,23 @@ impl RollbackUnit {
     /// verdict). A `skipped` row without one is the operation's own skip, a log entry
     /// that never moved anything. The in-code twin of `AWAITS_REVERSAL_SQL`.
     pub(crate) fn awaits_reversal(&self) -> bool {
-        match self.outcome {
-            ItemOutcome::Done => true,
-            ItemOutcome::Skipped => self.rollback_skip_reason.is_some(),
-            ItemOutcome::Failed | ItemOutcome::RolledBack => false,
-        }
+        awaits_reversal(self.outcome, self.rollback_skip_reason)
+    }
+}
+
+/// [`RollbackUnit::awaits_reversal`] over a row's two fields, for readers holding a
+/// raw row (the tree's row roles).
+pub(crate) fn awaits_reversal(outcome: ItemOutcome, skip_reason: Option<SkipReason>) -> bool {
+    match outcome {
+        ItemOutcome::Done => true,
+        ItemOutcome::Skipped => skip_reason.is_some(),
+        ItemOutcome::Failed | ItemOutcome::RolledBack => false,
     }
 }
 
 /// The rows a reversal streams, as SQL over `operation_items` (binds `?3` = `done`,
 /// `?4` = `skipped`): see [`RollbackUnit::awaits_reversal`]. Retrying a held-back
-/// row is what lets "Finish" pick a partial rollback back up; the per-item recheck
+/// row is what lets "Roll back the rest" pick a partial rollback back up; the per-item recheck
 /// keeps that idempotent. A held-back row recorded before the journal kept a reason
 /// (pre-v2) reads like the operation's own skip and isn't retried, which is why an
 /// empty pass over a partial op stays partial (`rollback.rs`, `resolve_final_state`).
@@ -630,7 +536,12 @@ pub(super) fn join_leaf(dir_path: &str, name: &str) -> PathBuf {
     PathBuf::from(dir_path).join(name)
 }
 
-fn map_rollback_unit(conn: &Connection, item: &OperationItemRow) -> Result<RollbackUnit, OperationLogStoreError> {
+/// Resolve one raw row's interned dirs into the [`RollbackUnit`] the engine acts on.
+/// Two dir resolutions per row, so the engine calls it only for a row it will act on.
+pub(crate) fn rollback_unit_of(
+    conn: &Connection,
+    item: &OperationItemRow,
+) -> Result<RollbackUnit, OperationLogStoreError> {
     let (source_volume_id, source_dir) = resolve_dir(conn, item.source_dir_id)?;
     let source_path = join_leaf(&source_dir, &item.source_name);
     let (dest_volume_id, dest_path) = match (item.dest_dir_id, &item.dest_name) {
@@ -670,6 +581,23 @@ pub fn read_rollback_units_page(
     before_seq: i64,
     limit: u32,
 ) -> Result<Vec<RollbackUnit>, OperationLogStoreError> {
+    read_rollback_rows_page(conn, op_id, before_seq, limit)?
+        .iter()
+        .map(|item| rollback_unit_of(conn, item))
+        .collect()
+}
+
+/// [`read_rollback_units_page`]'s rows before their dirs are resolved: a selective
+/// rollback decides each row on these, so a row its selection leaves out never pays
+/// for a path ([`rollback_unit_of`] resolves the ones it keeps). Page by the raw
+/// rows' smallest `seq`, never the kept ones', or a page that keeps nothing would
+/// read again forever.
+pub(crate) fn read_rollback_rows_page(
+    conn: &Connection,
+    op_id: &str,
+    before_seq: i64,
+    limit: u32,
+) -> Result<Vec<OperationItemRow>, OperationLogStoreError> {
     let sql = format!(
         "SELECT {ITEM_COLUMNS} FROM operation_items \
          WHERE op_id = ?1 AND row_role = ?2 AND {AWAITS_REVERSAL_SQL} AND seq < ?5 \
@@ -688,23 +616,33 @@ pub fn read_rollback_units_page(
     while let Some(row) = rows.next()? {
         items.push(map_item_row(row)?);
     }
-    // Resolve dirs after draining the query so the prepared-statement borrow is
-    // released (the cache reuses one connection).
-    items.iter().map(|item| map_rollback_unit(conn, item)).collect()
+    Ok(items)
 }
 
-/// What a reversal of `op_id` has ahead of it: how many FILE `rollback_unit` rows
-/// it will stream, and how many bytes they carry. One indexed aggregate, so a
-/// reversal gets honest totals without a scanning phase and without materializing
-/// the list [`read_rollback_units_page`] pages through.
+/// What a reversal of `op_id` has ahead of it: how many rows it will credit on its
+/// bar, and how many bytes they carry. One aggregate, so a reversal gets honest
+/// totals without a scanning phase and without materializing the list
+/// [`read_rollback_units_page`] pages through.
 ///
-/// The filters mirror that page query exactly (same `row_role`, same outcomes),
-/// or the bar would count rows the loop never visits. Directory rows are left out
-/// on purpose: they're removed in a trailing sweep of empty leftovers, not moved.
-pub(crate) fn read_rollback_file_totals(conn: &Connection, op_id: &str) -> Result<(u64, u64), OperationLogStoreError> {
+/// The filters mirror that page query exactly (same `row_role`, same outcomes), or
+/// the bar would count rows the loop never visits. It counts every row whose
+/// [`UnitRole`](crate::tree::UnitRole) is `Selectable`: each file, and each folder
+/// the operation moved, trashed, or made on its own (a trashed folder is one unit
+/// the sweep puts back, and a big trash can hold 100,000 of them). It leaves out the
+/// folders a copy or move made around its files: the sweep removes those empty
+/// leftovers, nothing a person is waiting on. Bytes are files' only, `MAX(size, 0)`,
+/// since a folder's `size` is an inode length. The engine credits by the same role
+/// (`rollback.rs::credits_progress`), and a selective reversal reads the same counts
+/// off the tree summary (`units_selectable`, `unit_bytes_selectable`).
+pub(crate) fn read_rollback_progress_totals(
+    conn: &Connection,
+    op_id: &str,
+    kind: OpKind,
+) -> Result<(u64, u64), OperationLogStoreError> {
     let sql = format!(
-        "SELECT COUNT(*), COALESCE(SUM(MAX(size, 0)), 0) FROM operation_items \
-         WHERE op_id = ?1 AND row_role = ?2 AND {AWAITS_REVERSAL_SQL} AND entry_type = ?5"
+        "SELECT COUNT(*), COALESCE(SUM(CASE WHEN entry_type = ?5 THEN MAX(size, 0) ELSE 0 END), 0) \
+         FROM operation_items WHERE op_id = ?1 AND row_role = ?2 AND {AWAITS_REVERSAL_SQL} \
+         AND NOT (?6 AND entry_type = ?7 AND dest_dir_id IS source_dir_id AND dest_name IS source_name)"
     );
     let mut stmt = conn.prepare_cached(&sql)?;
     let totals = stmt.query_row(
@@ -713,16 +651,68 @@ pub(crate) fn read_rollback_file_totals(conn: &Connection, op_id: &str) -> Resul
             RowRole::RollbackUnit.as_token(),
             ItemOutcome::Done.as_token(),
             ItemOutcome::Skipped.as_token(),
-            EntryType::File.as_token()
+            EntryType::File.as_token(),
+            crate::tree::creates_folders_around_files(kind),
+            EntryType::Dir.as_token(),
         ],
         |row| Ok((row.get::<_, i64>(0)?.max(0) as u64, row.get::<_, i64>(1)?.max(0) as u64)),
     )?;
     Ok(totals)
 }
 
-/// Every operation currently in `rolling_back` — the startup-reconcile input
-/// (`rollback.rs`): each resolves deterministically from its (unfinalized) inverse op's
-/// recorded outcomes, or straight back to `rollbackable` when no inverse row exists.
+/// One item row by its `seq`, `None` when the op has none there. Served by the
+/// `(op_id, seq)` index.
+pub(crate) fn read_item_row(
+    conn: &Connection,
+    op_id: &str,
+    seq: i64,
+) -> Result<Option<OperationItemRow>, OperationLogStoreError> {
+    let sql = format!("SELECT {ITEM_COLUMNS} FROM operation_items WHERE op_id = ?1 AND seq = ?2");
+    let mut stmt = conn.prepare_cached(&sql)?;
+    let mut rows = stmt.query(rusqlite::params![op_id, seq])?;
+    match rows.next()? {
+        Some(row) => Ok(Some(map_item_row(row)?)),
+        None => Ok(None),
+    }
+}
+
+/// [`has_rollback_outcome`]'s query (binds `?2` = `rolled_back`).
+const HAS_ROLLBACK_OUTCOME_SQL: &str = "SELECT EXISTS (SELECT 1 FROM operation_items \
+     WHERE op_id = ?1 AND (outcome = ?2 OR rollback_skip_reason IS NOT NULL))";
+
+/// [`any_inverse_reversed`]'s query (binds `?2` = `done`).
+const ANY_INVERSE_REVERSED_SQL: &str = "SELECT EXISTS (SELECT 1 FROM operations o \
+     JOIN operation_items i ON i.op_id = o.op_id WHERE o.rolls_back_op_id = ?1 AND i.outcome = ?2)";
+
+/// Whether a rollback pass already settled any of `op_id`'s rows: reversed one
+/// (`rolled_back`) or held one back (a stored `rollback_skip_reason`). An `EXISTS`
+/// that stops at the first hit; the row filter isn't index-served past `op_id`, so a
+/// miss reads the whole op. The startup reconcile is its only caller, and only for an
+/// op a crash left `rolling_back`.
+pub(crate) fn has_rollback_outcome(conn: &Connection, op_id: &str) -> Result<bool, OperationLogStoreError> {
+    let hit = conn
+        .prepare_cached(HAS_ROLLBACK_OUTCOME_SQL)?
+        .query_row(rusqlite::params![op_id, ItemOutcome::RolledBack.as_token()], |row| {
+            row.get::<_, bool>(0)
+        })?;
+    Ok(hit)
+}
+
+/// Whether ANY inverse of `original_op_id` (every op whose `rolls_back_op_id` names
+/// it, not only the newest) journaled a `done` row, meaning it durably reversed
+/// something. An `EXISTS` over the `operations_rolls_back` index and each inverse's
+/// rows, stopping at the first hit.
+pub(crate) fn any_inverse_reversed(conn: &Connection, original_op_id: &str) -> Result<bool, OperationLogStoreError> {
+    let hit = conn
+        .prepare_cached(ANY_INVERSE_REVERSED_SQL)?
+        .query_row(rusqlite::params![original_op_id, ItemOutcome::Done.as_token()], |row| {
+            row.get::<_, bool>(0)
+        })?;
+    Ok(hit)
+}
+
+/// Every operation currently in `rolling_back`: the startup-reconcile input
+/// (`rollback.rs`), each resolved from its own outcomes and every inverse's.
 pub(crate) fn ops_in_rolling_back(conn: &Connection) -> Result<Vec<OperationRow>, OperationLogStoreError> {
     let sql = format!("SELECT {OPERATION_COLUMNS} FROM operations WHERE rollback_state = ?1");
     let mut out = Vec::new();
@@ -737,9 +727,38 @@ pub(crate) fn ops_in_rolling_back(conn: &Connection) -> Result<Vec<OperationRow>
     Ok(out)
 }
 
+/// Every operation still `queued` or `running`: at open, before any engine runs, each
+/// one is an operation a crash interrupted (`interrupted.rs`). A scan of `operations`
+/// (no index on the status; the table is small next to its items, and this runs once
+/// per launch, as `ops_in_rolling_back` does).
+pub(crate) fn ops_left_running(conn: &Connection) -> Result<Vec<OperationRow>, OperationLogStoreError> {
+    let sql = format!("SELECT {OPERATION_COLUMNS} FROM operations WHERE execution_status IN (?1, ?2)");
+    let mut out = Vec::new();
+    let mut stmt = conn.prepare_cached(&sql)?;
+    let mut rows = stmt.query(rusqlite::params![
+        ExecutionStatus::Queued.as_token(),
+        ExecutionStatus::Running.as_token()
+    ])?;
+    while let Some(row) = rows.next()? {
+        out.push(map_operation_row(row)?);
+    }
+    Ok(out)
+}
+
+/// Whether any of `op_id`'s rows overwrote an existing file: the fact finalize turns
+/// into `not_rollbackable(overwrote)`. An `EXISTS` that stops at the first hit; a miss
+/// reads the op's rows, which only an interrupted op pays, once.
+pub(crate) fn any_row_overwrote(conn: &Connection, op_id: &str) -> Result<bool, OperationLogStoreError> {
+    let hit = conn
+        .prepare_cached("SELECT EXISTS (SELECT 1 FROM operation_items WHERE op_id = ?1 AND overwrote = 1)")?
+        .query_row(rusqlite::params![op_id], |row| row.get::<_, bool>(0))?;
+    Ok(hit)
+}
+
 /// The most recent inverse operation reversing `original_op_id` (its
-/// `rolls_back_op_id`), or `None` if none was ever opened. Used by startup
-/// reconcile to resolve a crashed `rolling_back` op from the inverse's outcomes.
+/// `rolls_back_op_id`), or `None` if none was ever opened. ❌ Not a reconcile input:
+/// an op reversed in several passes has several inverses, and the startup reconcile
+/// reads them all ([`any_inverse_reversed`]).
 pub fn read_inverse_op(
     conn: &Connection,
     original_op_id: &str,
@@ -761,4 +780,8 @@ pub fn read_inverse_op(
 }
 
 #[cfg(test)]
+mod migration_bench;
+#[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tree_migration_tests;

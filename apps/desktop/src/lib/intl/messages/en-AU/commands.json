@@ -55,6 +55,18 @@
   "@commands.selectionInvert.description": {
     "sourceHash": "b63ce32"
   },
+  "commands.operationLogToggleItem.label": "Select or unselect the item",
+  "@commands.operationLogToggleItem.label": {
+    "sourceHash": "1c42fe5"
+  },
+  "commands.operationLogToggleItemAndDown.label": "Select or unselect the item, then move down",
+  "@commands.operationLogToggleItemAndDown.label": {
+    "sourceHash": "8017eef"
+  },
+  "commands.operationLogDeselectAll.label": "Unselect every item",
+  "@commands.operationLogDeselectAll.label": {
+    "sourceHash": "d1df115"
+  },
   "commands.handler.favoriteAdded": "Added “{name}” to favourites",
   "@commands.handler.favoriteAdded": {
     "sourceHash": "ee59953"

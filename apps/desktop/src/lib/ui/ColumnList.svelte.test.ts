@@ -14,6 +14,7 @@ import { createRawSnippet, flushSync, mount, tick, unmount } from 'svelte'
 import { SvelteMap } from 'svelte/reactivity'
 import ColumnList from './ColumnList.svelte'
 import type { ColumnListApi, ColumnListColumn, ColumnListWindowedSource } from './column-list-types'
+import { MAX_SCROLL_HEIGHT_PX } from './column-list-layout'
 import { installLayoutMock, type LayoutMock } from '#lib/test-layout.js'
 
 vi.mock('@chenglou/pretext', () => ({
@@ -252,13 +253,20 @@ describe('ColumnList cursor and pointer', () => {
   })
 })
 
-/** Mounts a list and hands back its API too, for the methods a parent calls. */
-async function mountList(props: Record<string, unknown>): Promise<{ target: HTMLElement; api: ColumnListApi }> {
+/**
+ * Mounts a list and hands back its API too, for the methods a parent calls. With `reactive`,
+ * `props` is mounted as given (a `$state` object stays live), so it must carry `columns` and
+ * `ariaLabel` itself.
+ */
+async function mountList(
+  props: Record<string, unknown>,
+  { reactive = false } = {},
+): Promise<{ target: HTMLElement; api: ColumnListApi }> {
   const target = document.createElement('div')
   document.body.appendChild(target)
   const component = mount(ColumnList<Item>, {
     target,
-    props: { columns: plainColumns, ariaLabel: 'Things', ...props } as never,
+    props: (reactive ? props : { columns: plainColumns, ariaLabel: 'Things', ...props }) as never,
   })
   cleanup = () => {
     void unmount(component)
@@ -392,6 +400,217 @@ describe('ColumnList grid semantics', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+/** A tree row: `level` 1-based, `expanded` only on a folder that can open. */
+interface TreeItem extends Item {
+  level: number
+  expanded?: boolean
+}
+
+const treeRowAria = (row: TreeItem) => ({
+  level: row.level,
+  expanded: row.expanded,
+  setSize: 3,
+  posInSet: (row.id % 3) + 1,
+  describedBy: row.expanded === undefined ? `why-${String(row.id)}` : undefined,
+})
+
+function treeSource(rows: TreeItem[], count = rows.length): ColumnListWindowedSource<TreeItem> {
+  return { count, getRow: (index) => rows[index] }
+}
+
+// A treegrid is a grid whose rows carry their place in a tree (`rowAria`); the tree itself,
+// the indent, and ← / → stay the consumer's (`tree-cursor.ts`).
+describe('ColumnList treegrid semantics', () => {
+  const tree: TreeItem[] = [
+    { id: 0, name: 'Photos', level: 1, expanded: true },
+    { id: 1, name: 'a.jpg', level: 2 },
+    { id: 2, name: 'Old', level: 2, expanded: false },
+  ]
+
+  it('is a focusable treegrid whose rows carry level, expansion, place, and description, and no aria-selected', async () => {
+    const { target } = await mountList({
+      rows: treeSource(tree),
+      semantics: 'treegrid',
+      rowAria: treeRowAria,
+      cursorIndex: 1,
+    })
+    const grid = target.querySelector<HTMLElement>('[role="treegrid"]')
+    expect(grid?.getAttribute('tabindex')).toBe('0')
+    expect(grid?.getAttribute('aria-rowcount')).toBe('4')
+    const rows = [...target.querySelectorAll<HTMLElement>('.column-list-row.is-data')]
+    expect(rows.map((row) => row.getAttribute('role'))).toEqual(['row', 'row', 'row'])
+    expect(rows.map((row) => row.getAttribute('aria-level'))).toEqual(['1', '2', '2'])
+    // Only a row that can open says whether it is.
+    expect(rows.map((row) => row.getAttribute('aria-expanded'))).toEqual(['true', null, 'false'])
+    expect(rows.map((row) => row.getAttribute('aria-posinset'))).toEqual(['1', '2', '3'])
+    expect(rows.map((row) => row.getAttribute('aria-setsize'))).toEqual(['3', '3', '3'])
+    expect(rows.map((row) => row.getAttribute('aria-describedby'))).toEqual([null, 'why-1', null])
+    // The cursor shows, but no row claims to be selected: a row's checkbox says that.
+    expect(rows.some((row) => row.hasAttribute('aria-selected'))).toBe(false)
+    expect(rows[1].classList.contains('is-under-cursor')).toBe(true)
+    expect(rows[0].querySelectorAll('[role="gridcell"]')).toHaveLength(2)
+  })
+
+  it('answers its cursor keys as a grid does and hands ← and → to the consumer', async () => {
+    const onCursorChange = vi.fn()
+    const onKeydown = vi.fn<(event: KeyboardEvent) => void>()
+    const { target } = await mountList({
+      rows: treeSource(tree),
+      semantics: 'treegrid',
+      rowAria: treeRowAria,
+      cursorIndex: 0,
+      onCursorChange,
+      onKeydown,
+    })
+    const grid = target.querySelector<HTMLElement>('[role="treegrid"]')
+    const down = keydown('ArrowDown')
+    grid?.dispatchEvent(down)
+    expect(onCursorChange).toHaveBeenLastCalledWith(1)
+    expect(down.defaultPrevented).toBe(true)
+    grid?.dispatchEvent(keydown('End'))
+    expect(onCursorChange).toHaveBeenLastCalledWith(2)
+    grid?.dispatchEvent(keydown('ArrowRight'))
+    grid?.dispatchEvent(keydown('ArrowLeft'))
+    expect(onKeydown.mock.calls.map(([event]) => event.key)).toEqual(['ArrowRight', 'ArrowLeft'])
+    expect(onCursorChange).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps focus on the grid when a checkbox in a cell is pressed, while the row still takes the cursor', async () => {
+    const checkCell = createRawSnippet<[{ row: TreeItem }]>((ctx) => ({
+      render: () =>
+        `<label class="check"><input type="checkbox" tabindex="-1" aria-label="Pick ${ctx().row.name}" /></label>`,
+    }))
+    const onCursorChange = vi.fn()
+    const { target } = await mountList({
+      columns: [{ id: 'pick', label: 'Pick', labelHidden: true, width: { kind: 'fixed', px: 24 }, cell: checkCell }],
+      rows: treeSource(tree),
+      semantics: 'treegrid',
+      rowAria: treeRowAria,
+      cursorIndex: 0,
+      onCursorChange,
+    })
+    const grid = target.querySelector<HTMLElement>('[role="treegrid"]')
+    grid?.focus()
+    const label = target.querySelectorAll<HTMLElement>('label.check')[2]
+    const input = label.querySelector<HTMLInputElement>('input')
+
+    const press = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+    label.dispatchEvent(press)
+    expect(press.defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(grid)
+
+    // An engine whose label click focuses the input anyway: the grid takes focus straight back.
+    input?.focus()
+    expect(document.activeElement).toBe(grid)
+
+    label.click()
+    expect(input?.checked).toBe(true)
+    expect(onCursorChange).toHaveBeenCalledWith(2)
+    expect(document.activeElement).toBe(grid)
+  })
+
+  it('names the cursor row once it loads, after a key moved the cursor into rows still loading', async () => {
+    vi.useFakeTimers()
+    try {
+      const loaded = new SvelteMap<number, TreeItem>()
+      for (let i = 0; i < 30; i++) loaded.set(i, { id: i, name: `item-${String(i)}`, level: 1 })
+      const props = $state({
+        columns: plainColumns,
+        ariaLabel: 'Things',
+        rows: { count: 1_000, getRow: (index: number) => loaded.get(index) },
+        semantics: 'treegrid' as const,
+        rowAria: treeRowAria,
+        cursorIndex: 0,
+        onCursorChange: (index: number) => (props.cursorIndex = index),
+      })
+      const { target } = await mountList(props, { reactive: true })
+      const grid = target.querySelector<HTMLElement>('[role="treegrid"]')
+      grid?.focus()
+      vi.advanceTimersByTime(150)
+      flushSync()
+      expect(grid?.getAttribute('aria-activedescendant')).toBeTruthy()
+
+      grid?.dispatchEvent(keydown('End'))
+      flushSync()
+      // The last row is drawn but still a placeholder: nothing to name yet.
+      expect(target.querySelector('[data-index="999"]')).toBeNull()
+      expect(grid?.hasAttribute('aria-activedescendant')).toBe(false)
+
+      loaded.set(999, { id: 999, name: 'item-999', level: 1 })
+      flushSync()
+      const id = grid?.getAttribute('aria-activedescendant') ?? ''
+      expect(id).not.toBe('')
+      expect(target.querySelector(`#${CSS.escape(id)}`)?.getAttribute('data-index')).toBe('999')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('redraws its rows when a collapse drops many at once', async () => {
+    const all: TreeItem[] = [
+      { id: 0, name: 'Photos', level: 1, expanded: true },
+      ...items(8).map((item) => ({ ...item, id: item.id + 1, level: 2 })),
+      { id: 9, name: 'Music', level: 1, expanded: false },
+    ]
+    const props = $state({
+      columns: plainColumns,
+      ariaLabel: 'Things',
+      rows: treeSource(all),
+      semantics: 'treegrid' as const,
+      rowAria: treeRowAria,
+    })
+    const { target } = await mountList(props, { reactive: true })
+    expect(target.querySelectorAll('.column-list-row.is-data')).toHaveLength(10)
+
+    // Row 1 was a level-2 file; after the collapse it's the top-level Music folder.
+    const collapsed: TreeItem[] = [{ ...all[0], expanded: false }, all[9]]
+    props.rows = treeSource(collapsed)
+    flushSync()
+    const rows = [...target.querySelectorAll<HTMLElement>('.column-list-row.is-data')]
+    expect(rows.map((row) => row.getAttribute('aria-level'))).toEqual(['1', '1'])
+    expect(rows.map((row) => row.getAttribute('aria-expanded'))).toEqual(['false', 'false'])
+  })
+})
+
+// WebKit clamps a box past 2^25 px, so a list taller than `MAX_SCROLL_HEIGHT_PX` scrolls a
+// scaled position: 2,000,000 rows of 20 px are 40M pixels.
+describe('ColumnList past the browser height cap', () => {
+  it('reaches the last of 2,000,000 rows inside a capped scroll height', async () => {
+    const source: ColumnListWindowedSource<Item> = {
+      count: 2_000_000,
+      getRow: (index) => ({ id: index, name: `item-${String(index)}` }),
+    }
+    const { target, api } = await mountList({ rows: source, semantics: 'grid', cursorIndex: 0 })
+    const inner = target.querySelector<HTMLElement>('.column-list-viewport > div')
+    const heightOf = (): number =>
+      parseFloat(inner?.style.marginTop || '0') +
+      parseFloat(inner?.style.paddingTop ?? '0') +
+      target.querySelectorAll('.column-list-row[data-index]').length * ROW_PX +
+      parseFloat(inner?.style.paddingBottom ?? '0')
+    expect(heightOf()).toBeCloseTo(MAX_SCROLL_HEIGHT_PX, 1)
+
+    api.scrollIndexIntoView(1_999_999)
+    flushSync()
+    const viewport = target.querySelector<HTMLElement>(VIEWPORT)
+    expect(viewport?.scrollTop).toBeCloseTo(MAX_SCROLL_HEIGHT_PX - 200, 3)
+    expect(drawnIndices(target).at(-1)).toBe(1_999_999)
+    expect(heightOf()).toBeCloseTo(MAX_SCROLL_HEIGHT_PX, 1)
+    // The last row ends at the viewport's bottom edge.
+    const lastRowTop =
+      parseFloat(inner?.style.marginTop || '0') +
+      parseFloat(inner?.style.paddingTop ?? '0') +
+      (drawnIndices(target).length - 1) * ROW_PX
+    expect(lastRowTop - (viewport?.scrollTop ?? 0)).toBeCloseTo(200 - ROW_PX, 1)
+
+    // A scroll halfway down the scroller lands halfway down the rows.
+    layout.scroll(VIEWPORT, (MAX_SCROLL_HEIGHT_PX - 200) / 2)
+    flushSync()
+    // The window's first row in view (past its 20 overscan rows) sits one viewport short of
+    // the middle: (2,000,000 rows − 10 in view) / 2.
+    expect(Math.abs(drawnIndices(target)[0] + 20 - 999_995)).toBeLessThanOrEqual(1)
   })
 })
 

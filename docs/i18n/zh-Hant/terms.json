@@ -4149,6 +4149,7 @@
     "confidence": "high",
     "decision": "The get-it-back words",
     "exceptions": {
+      "operationLog.rollback.refusalIsARollback": "The undo here is an Operation log rollback of another operation, so the act decides: 復原 (decisions.md, The get-it-back words).",
       "ai.cloudConsent.askCmdr.actions": "English says undo, but both acts here (undoing an operation, undoing a tag change) are operation-log rollbacks, which Chinese names 復原; 還原 is spent on Undo.",
       "askCmdr.renameUndo.notRecorded": "Undoing an Ask Cmdr rename run puts the old names back, which this catalog says as 改回去 (decisions.md, The get-it-back words).",
       "fileOperations.cancelRollback.reason.failed.counted": "English says undo, but the act is a rollback, which Chinese names 復原; 還原 is spent on Undo.",

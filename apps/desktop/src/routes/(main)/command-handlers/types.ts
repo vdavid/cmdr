@@ -74,6 +74,13 @@ export type DispatchExemptId =
   | 'multiRename.moveRowUp'
   | 'multiRename.moveRowDown'
   | 'multiRename.rename'
+  // The Operation log dialog's own keys, answered by its panes through `eventMatchesCommand`.
+  | 'operationLog.goToItems'
+  | 'operationLog.toggleItem'
+  | 'operationLog.toggleItemAndDown'
+  | 'operationLog.selectAll'
+  | 'operationLog.deselectAll'
+  | 'operationLog.rollBack'
   | 'network.selectHost'
   | 'share.back'
   | 'share.selectShare'

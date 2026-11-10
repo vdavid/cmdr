@@ -322,5 +322,9 @@
   "fileOperations.transferDialog.macOnlyFiles.skippingByDefault": "Se omiten de forma predeterminada",
   "@fileOperations.transferDialog.macOnlyFiles.skippingByDefault": {
     "sourceHash": "501cb9f"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Esto elimina los archivos y carpetas seleccionados que creó la operación. Cmdr omite todo aquello de lo que no está seguro, así que puede que quede alguno.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
+    "sourceHash": "11ebc66"
   }
 }

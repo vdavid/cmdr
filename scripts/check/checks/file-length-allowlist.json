@@ -245,10 +245,6 @@
       "lines": 806,
       "reason": "TODO: the one `impl Volume` block can't span files, but `rename`'s body (about 120 lines: the no-clobber `exists` probe, the twin-aware handle resolution, and the forced-rename path) is real logic, not dispatch. Move it into a `pub(super)` inherent `rename_impl` in a new `volume/rename.rs`, leaving a one-line delegator, the shape `cmdr-smb`'s `volume_impl.rs` and `cmdr-local`'s `local_posix.rs` already follow; that leaves about 690 lines of dispatch and capability answers."
     },
-    "crates/cmdr-operation-log/src/rollback.rs": {
-      "lines": 947,
-      "reason": "TODO: split it, because the per-item inverse acts are a unit the planner shares no locals with. `reverse_item`, `removal_target`, `missing_item`, `remove_file_if_unchanged`, `remove_dir_if_empty`, and `restore_move` (lines 528-728, ~200 lines) are each an `async fn(vm, runner, unit) -\u003e ItemResult` reached through one `match` on `InverseAction`, so they move to a `rollback/inverse.rs` beside the existing `bookkeeping.rs`, `order.rs`, `runner.rs`, and `skips.rs`. The pure decision helpers (`InverseAction`, `inverse_kind`, `inverse_action`, `is_created_in_place`, `resolve_final_state`) can follow into a `rollback/plan.rs` (the self-collision guard already lives in `rollback/self_collision.rs`). That leaves the module doc, the refusal and report types, `check_rollbackable`, the paged `execute_rollback` loop, `summarize_inverse`, `rollback_operation`, and the reconcile at ~530 lines. This is the most data-safety-critical file in the subsystem, so it wants care, but every cut falls between functions."
-    },
     "crates/cmdr-operations/src/conflict.rs": {
       "lines": 811,
       "reason": "Just over: `ResolvedDestination` (what a conflict resolution answers) and the indexed-size lookup moved in from `overwrite.rs` and `durability.rs`, the local landing, so the browser build, which leaves those out, keeps them. Everything here is one conflict's lifecycle (detect, prompt, apply), and no cut between functions reads better than one file."

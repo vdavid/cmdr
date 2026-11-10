@@ -704,6 +704,30 @@
   "@commands.multiRenameRename.label": {
     "sourceHash": "da881fb"
   },
+  "commands.operationLogGoToItems.label": "Aller aux éléments de l’opération",
+  "@commands.operationLogGoToItems.label": {
+    "sourceHash": "495419e"
+  },
+  "commands.operationLogToggleItem.label": "Sélectionner ou désélectionner l’élément",
+  "@commands.operationLogToggleItem.label": {
+    "sourceHash": "1c42fe5"
+  },
+  "commands.operationLogToggleItemAndDown.label": "Sélectionner ou désélectionner l’élément, puis descendre",
+  "@commands.operationLogToggleItemAndDown.label": {
+    "sourceHash": "8017eef"
+  },
+  "commands.operationLogSelectAll.label": "Sélectionner tous les éléments",
+  "@commands.operationLogSelectAll.label": {
+    "sourceHash": "26c94c1"
+  },
+  "commands.operationLogDeselectAll.label": "Désélectionner tous les éléments",
+  "@commands.operationLogDeselectAll.label": {
+    "sourceHash": "d1df115"
+  },
+  "commands.operationLogRollBack.label": "Revenir en arrière sur les éléments sélectionnés",
+  "@commands.operationLogRollBack.label": {
+    "sourceHash": "3f2a947"
+  },
   "commands.fileView.label": "Visualiser",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

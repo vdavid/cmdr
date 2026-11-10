@@ -20,9 +20,17 @@
       "property": "kani:cmdr-operation-log/rollback::proofs::a_run_never_claims_more_than_it_reversed",
       "why": "the resume rule's comparison flips, so an empty pass over a partly rolled back op calls it fully rolled back",
       "file": "crates/cmdr-operation-log/src/rollback.rs",
-      "find": "} else if skipped > 0 || (resuming && reversed == 0) {",
-      "replace": "} else if skipped > 0 || (resuming && reversed > 0) {",
+      "find": "} else if skipped > 0 || left_out > 0 || (resuming && reversed == 0) {",
+      "replace": "} else if skipped > 0 || left_out > 0 || (resuming && reversed > 0) {",
       "expect": "an empty pass finished a partial op"
+    },
+    {
+      "property": "kani:cmdr-operation-log/rollback::proofs::a_run_never_claims_more_than_it_reversed",
+      "why": "a selective run forgets the rows it left out, so rolling back three of 400 calls the operation fully rolled back and drops \"Roll back the rest\"",
+      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "find": "} else if skipped > 0 || left_out > 0 || (resuming && reversed == 0) {",
+      "replace": "} else if skipped > 0 || (resuming && reversed == 0) {",
+      "expect": "rolled back with items the selection left out"
     },
     {
       "property": "kani:cmdr-operation-log/rollback::proofs::a_run_never_claims_more_than_it_reversed",
@@ -35,7 +43,7 @@
     {
       "property": "kani:cmdr-operation-log/rollback::proofs::every_item_gets_the_inverse_its_kind_promises",
       "why": "a copied file is removed without checking that its original is still there",
-      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "file": "crates/cmdr-operation-log/src/rollback/action_table.rs",
       "find": "EntryType::File => InverseAction::RemoveCopyIfOriginalStays,",
       "replace": "EntryType::File => InverseAction::RemoveFileIfUnchanged,",
       "expect": "a copy removed without checking its original"
@@ -43,7 +51,7 @@
     {
       "property": "kani:cmdr-operation-log/rollback::proofs::every_item_gets_the_inverse_its_kind_promises",
       "why": "a folder a move created is moved onto itself rather than removed, leaving its empty skeleton",
-      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "file": "crates/cmdr-operation-log/src/rollback/action_table.rs",
       "find": "if entry_type == EntryType::Dir && created_in_place {",
       "replace": "if entry_type == EntryType::Dir && created_in_place && kind != OpKind::Move {",
       "expect": "a created folder isn't removed"
@@ -51,7 +59,7 @@
     {
       "property": "kani:cmdr-operation-log/rollback::proofs::every_item_gets_the_inverse_its_kind_promises",
       "why": "a tag write's undo moves the file onto itself rather than writing its prior tags back, so the tags stay changed",
-      "file": "crates/cmdr-operation-log/src/rollback.rs",
+      "file": "crates/cmdr-operation-log/src/rollback/action_table.rs",
       "find": "OpKind::Tag => Some(InverseAction::RestoreTags),",
       "replace": "OpKind::Tag => Some(InverseAction::RestoreMove),",
       "expect": "a tag write undone some other way"

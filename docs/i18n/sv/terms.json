@@ -723,7 +723,7 @@
     "accept": ["klar", "slutför", "ofullständig", "avbruten"],
     "chosen": "slutföra",
     "confidence": "high",
-    "forms": "complete an operation → slutföra; finish rolling back → Ångra klart; an unfinished file → ofullständig; an unfinished process → avbruten",
+    "forms": "complete an operation → slutföra; the rest of a rollback → Ångra resten; an unfinished file → ofullständig; an unfinished process → avbruten",
     "sources": "macOS Finder (slutföra kopieringen, kopiera klart, skadad eller ofullständig)"
   },
   "compress": {
@@ -2369,7 +2369,8 @@
     "confidence": "high",
     "decision": "Drive disconnected mid-work",
     "exceptions": {
-      "viewer.saveAs.savedInSourceEncoding": "English sense: “the file’s original encoding” is an adjective on teckenkodning, not the source files of a copy; Swedish says filens ursprungliga teckenkodning, and a compound originalteckenkodning would be clunky."
+      "viewer.saveAs.savedInSourceEncoding": "English sense: “the file’s original encoding” is an adjective on teckenkodning, not the source files of a copy; Swedish says filens ursprungliga teckenkodning, and a compound originalteckenkodning would be clunky.",
+      "operationLog.skipReason.restoreTargetOccupied": "English sense: “the original spot” is an adjective on plats, not the source files of a copy; Swedish says den ursprungliga platsen."
     },
     "forms": "neuter, plural unchanged: originalet, originalen",
     "sources": "macOS Finder (originalet ligger i papperskorgen)"
@@ -2380,7 +2381,16 @@
     "sources": "catalog"
   },
   "overwrite": {
-    "accept": ["skriva över", "skriver över", "skrivs över", "skrivit över", "skrivas över", "överskrivning"],
+    "accept": [
+      "skriva över",
+      "skriver över",
+      "skrivs över",
+      "skrivit över",
+      "skrivas över",
+      "överskrivning",
+      "skrev över",
+      "skrev inte över"
+    ],
     "chosen": "skriv över",
     "confidence": "high",
     "forms": "button Skriv över; a warning badge takes the noun (överskrivning!)",
@@ -2749,7 +2759,9 @@
     "confidence": "high",
     "exceptions": {
       "commands.queueToggleSelected.label": "Taking a row out of the selection is avmarkera, the pair of markera (catalog: Avmarkera allt).",
-      "main.cliCommand.takenByOther": "The user deletes someone else's file from /usr/local/bin, so it takes the delete verb radera (Radera det eller byt namn på det)."
+      "main.cliCommand.takenByOther": "The user deletes someone else's file from /usr/local/bin, so it takes the delete verb radera (Radera det eller byt namn på det).",
+      "operationLog.skipReason.locked": "Undoing a copy would delete the item from disk, so it takes the delete verb radera.",
+      "operationLog.tree.statusRemoved": "A rollback deleted the file or folder from disk, so the status is the delete participle Raderad (en-gender like fil / mapp and the sibling Överhoppad)."
     },
     "forms": "out of a list or collection; never deleting files from disk (that is radera)",
     "sources": "macOS Finder (Ta bort), GNOME"
@@ -2785,6 +2797,9 @@
     "chosen": "byt namn",
     "confidence": "high",
     "decision": "Rename toasts",
+    "exceptions": {
+      "operationLog.tree.statusRenamedBack": "Status after a rollback gave the old name back: names come back with återställa (queue.row.reversalRenamingBack De gamla namnen återställs), so Namnet återställt."
+    },
     "forms": "Byt namn på …; noun namnbyte (ett namnbyte, namnbytet, namnbyten), which takes av: namnbytet av ”X”; a count of files that WILL be renamed → # redo för namnbyte (multiRename.summary, matching multiRename.status.ready Redo för namnbyte)",
     "sources": "macOS Finder (Byt namn på …), Thunar/Dolphin (Namnbyte)",
     "note": "A pending count never uses present-tense byter namn: # byter namn reads as a rename already running. The pile has no bare count label for it (Finder BulkRenameWindow shows none; Thunar's to be renamed is filer att döpa om / att byta namn på, which needs the noun filer), so # redo för namnbyte is tentative, built on the ruled noun and the sibling status string."
@@ -2905,13 +2920,14 @@
       },
       {
         "form": "Slutför ångringen",
-        "why": "the noun ångring is stilted in a UI; the button is Ångra klart"
+        "why": "the noun ångring is stilted on a button; the button is Ångra resten"
       }
     ],
     "chosen": "ångra",
+    "proseAccept": ["ångring"],
     "confidence": "high",
     "decision": "Rollback family",
-    "forms": "chips Går inte att ångra / Går att ångra / Ångrar / Ångrad / Delvis ångrad; Ångra klart; stopping it → Stoppa",
+    "forms": "chips Går inte att ångra / Går att ångra / Ångrar / Ångrad / Delvis ångrad; the rest of a partly rolled-back operation → Ångra resten (like Kopiera resten); prose noun en ångring (En ångring raderar …); stopping it → Stoppa",
     "sources": "macOS (Undo → Ångra), Nautilus (_Ångra Kopiera), MS (undo → ångra)"
   },
   "root-folder": {

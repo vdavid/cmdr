@@ -24,3 +24,13 @@ pub(crate) fn answer<T: Serialize, E: Serialize>(result: Result<T, E>) -> Result
         Err(error) => Err(ok(error)?),
     }
 }
+
+/// The runtime the engines' background work runs on (the viewer, the folder-size gather, Multi-Rename's media
+/// reads, an operation log tree backfill): the page's event loop in the browser, the caller's tokio runtime in
+/// native tests.
+pub(crate) fn page_runtime() -> cmdr_fs::rt::Runtime {
+    #[cfg(target_family = "wasm")]
+    return cmdr_fs::rt::Runtime::default();
+    #[cfg(not(target_family = "wasm"))]
+    cmdr_fs::rt::Runtime::current()
+}

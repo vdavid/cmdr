@@ -1999,7 +1999,11 @@
     "accept": ["Откуда", "Куда", "Из:"],
     "forms": "source heading → Откуда; destination heading → Куда; the delete dialog’s From: {path} → Из: {path}",
     "confidence": "tentative",
-    "sources": "Double Commander (From: → Из:, To: → в:). No macOS source; Откуда / Куда is the established Russian copy-dialog pair"
+    "sources": "Double Commander (From: → Из:, To: → в:). No macOS source; Откуда / Куда is the established Russian copy-dialog pair",
+    "exceptions": {
+      "operationLog.route.from": "A route line under the Operation log’s header, not the copy dialog’s headings: a folder path takes the type noun «папка» so the insert stays nominative. «Из папки {from}».",
+      "operationLog.route.to": "A route line under the Operation log’s header, not the copy dialog’s headings: a folder path takes the type noun «папка» so the insert stays nominative. «В папку {to}»."
+    }
   },
   "full-disk-access": {
     "chosen": "Полный доступ к диску",
@@ -3095,7 +3099,12 @@
     "accept": ["перемещ", "перемест"],
     "forms": "button/command → «Переместить»; progress → Перемещение; Move to → Переместить в",
     "confidence": "high",
-    "sources": "macOS Finder LocalizableMerged MV12 Move → «Переместить», AppKit MenuCommands Move To → «Переместить в»; MS move → «переместить»; Double Commander Move → «Переместить», Moving → «Перемещение»; Total Commander 97 «Переместить/переименовать файлы»; Xfce Thunar, GNOME Nautilus"
+    "sources": "macOS Finder LocalizableMerged MV12 Move → «Переместить», AppKit MenuCommands Move To → «Переместить в»; MS move → «переместить»; Double Commander Move → «Переместить», Moving → «Перемещение»; Total Commander 97 «Переместить/переименовать файлы»; Xfce Thunar, GNOME Nautilus",
+    "exceptions": {
+      "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says.",
+      "operationLog.rollback.rollbackableNoticeMoveBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says.",
+      "operationLog.tree.statusMovedBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says. Status cell «Возвращено на место»."
+    }
   },
   "move-to-trash": {
     "chosen": "Переместить в Корзину",
@@ -4526,7 +4535,28 @@
       "commands.queueExtendUp.label": "Shift-arrow extends the ticked queue rows that «Отменить выбранные» acts on; list-item choosing, so «Расширить выбор вверх»",
       "commands.queueExtendDown.label": "Shift-arrow extends the ticked queue rows; list-item choosing, so «Расширить выбор вниз»",
       "commands.queueToggleSelected.label": "Space ticks or unticks a queue row; list-item choosing, so «Выбрать операцию или снять выбор», mirroring «Выделить или снять выделение»",
-      "commands.queueSelectAll.label": "Ticks every cancelable queue row; list-item choosing, so «Выбрать все операции»"
+      "commands.queueSelectAll.label": "Ticks every cancelable queue row; list-item choosing, so «Выбрать все операции»",
+      "fileOperations.rollbackConfirm.titleSelected": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "fileOperations.rollbackConfirm.rollBackSelected": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "operationLog.tree.selectAll": "The item tree’s header checkbox ticks every rollbackable item: list-item choosing like the rest of the tree, so «Выбрать все», never «Выделить все» (nothing in a pane is marked).",
+      "operationLog.dialog.rollBackSelected": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "operationLog.dialog.selectedCount": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked). «Выбрано: {selectedText} из {selectableText}», like `queue.toolbar.selectedCount`.",
+      "operationLog.rollback.rollbackableNoticeCopy": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "operationLog.rollback.rollbackableNoticeDelete": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "operationLog.rollback.rollbackableNoticeMoveBack": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "operationLog.rollback.rollbackableNoticeRenameBack": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "operationLog.rollback.rollbackableNoticeTagsBack": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбранные / выбрано», never «выделенные» (nothing in a pane is marked).",
+      "commands.operationLogToggleItem.label": "Ticks or unticks a checkbox in the Operation log’s item tree: list-item choosing like the queue, so «Выбрать объект или снять выбор», mirroring `commands.queueToggleSelected.label`.",
+      "commands.operationLogToggleItemAndDown.label": "Ticks or unticks a checkbox in the Operation log’s item tree, then moves down: list-item choosing like the queue, so «Выбрать объект или снять выбор и перейти вниз».",
+      "commands.operationLogSelectAll.label": "Ticks every checkbox in the Operation log’s item tree: list-item choosing like the queue, so «Выбрать все объекты», mirroring `commands.queueSelectAll.label`.",
+      "commands.operationLogRollBack.label": "Items ticked by checkbox in the Operation log’s item tree: «Откатить выбранные объекты», matching `fileOperations.rollbackConfirm.titleSelected`.",
+      "operationLog.rollback.refusalNothingSelected": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выберите хотя бы один объект».",
+      "operationLog.tree.togglesCapped": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбрать по одному» / «Выберите папку целиком».",
+      "operationLog.rollback.refusalTooManyToggles": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбрать по одному» / «Выберите папку целиком»."
     },
     "decision": "Selection: выделение"
   },

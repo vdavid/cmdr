@@ -25,7 +25,12 @@
 //! [`OperationRow`] (from `store`) is the summary type returned directly (it holds
 //! no interned ids). [`OperationDetail`] / [`OperationItemView`] resolve the
 //! interned dir prefixes of item rows to full paths so the frontend never sees a
-//! `dir_id`.
+//! `dir_id`, except as the item tree's opaque row key ([`TreeRowKey`]).
+//!
+//! ## The item tree
+//!
+//! [`operation_tree`] answers one window of an operation's tree with its selection
+//! normalized and counted; the logic is `src/tree/` (`DETAILS.md` § "The tree view").
 
 use rusqlite::Connection;
 
@@ -35,6 +40,31 @@ use super::store::{
     join_leaf, map_item_row, map_operation_row, resolve_dir,
 };
 use super::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState, RowRole, SkipReason};
+
+// The item tree: its summary status and backfill, which the hosts drive and wire, and
+// its windowed view with the rollback selection (`crate::tree`, `DETAILS.md` § "Tree
+// summary" and § "The tree view").
+pub use super::tree::status::{BackfillProgress, BackfillRegistry, UnbuiltReason};
+pub use super::tree_backfill::{TreeBackfill, TreeBackfillEnd, TreeBackfillEvent, TreeBackfillStart, TreeBackfillStep};
+
+pub use crate::tree::selection::{RollbackSelection, SelectionBase, SelectionToggle};
+pub use crate::tree::view::{
+    OperationTreeRequest, OperationTreeRow, OperationTreeView, TreeCheckbox, TreeRowKey, TreeRowRole, TreeSummaryView,
+    TreeTally, UnexpandableReason,
+};
+
+/// One window of `op_id`'s item tree (`None` for an unknown op): the rows under the
+/// request's expansion from its offset, with the selection normalized and counted.
+/// `registry` is the host's running backfills, so an op being backfilled answers
+/// `building`. O(expansion + window + toggles) for any op size.
+pub fn operation_tree(
+    conn: &Connection,
+    op_id: &str,
+    request: &OperationTreeRequest,
+    registry: &BackfillRegistry,
+) -> Result<Option<OperationTreeView>, OperationLogStoreError> {
+    crate::tree::view::operation_tree(conn, op_id, request, registry)
+}
 
 /// How a name filter matches the folded name column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -149,14 +179,17 @@ fn view_from_row(conn: &Connection, item: &OperationItemRow) -> Result<Operation
 
 /// The most recent operations by start time (newest first), paged. This is the
 /// alpha UI's feed ("last 50 + load 50 more" = `limit = 50` with a growing
-/// `offset`). Includes unfinished ops.
+/// `offset`). Includes unfinished ops; leaves out every rollback (an inverse op),
+/// whose original carries its state and its `inverse_op_id`.
 pub fn recent_operations(
     conn: &Connection,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<OperationRow>, OperationLogStoreError> {
-    let sql =
-        format!("SELECT {OPERATION_COLUMNS} FROM operations ORDER BY started_at DESC, op_id DESC LIMIT ?1 OFFSET ?2");
+    let sql = format!(
+        "SELECT {OPERATION_COLUMNS} FROM operations WHERE rolls_back_op_id IS NULL \
+         ORDER BY started_at DESC, op_id DESC LIMIT ?1 OFFSET ?2"
+    );
     let mut out = Vec::new();
     {
         let mut stmt = conn.prepare_cached(&sql)?;
@@ -253,7 +286,9 @@ fn build_search_query(
     offset: u32,
 ) -> (String, Vec<Box<dyn rusqlite::ToSql>>) {
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
-    let mut where_clauses: Vec<String> = Vec::new();
+    // A rollback is never listed as its own operation (`DETAILS.md` § "No rollback of
+    // a rollback"): the original carries its state.
+    let mut where_clauses: Vec<String> = vec!["o.rolls_back_op_id IS NULL".to_string()];
 
     // Name predicate on the joined items (only present when a name filter is set).
     let joins_items = filters.name.is_some();
@@ -321,11 +356,7 @@ fn build_search_query(
         "FROM operations o"
     };
     let distinct = if joins_items { "DISTINCT " } else { "" };
-    let where_sql = if where_clauses.is_empty() {
-        String::new()
-    } else {
-        format!("WHERE {}", where_clauses.join(" AND "))
-    };
+    let where_sql = format!("WHERE {}", where_clauses.join(" AND "));
     params.push(Box::new(limit));
     let limit_ph = params.len();
     params.push(Box::new(offset));

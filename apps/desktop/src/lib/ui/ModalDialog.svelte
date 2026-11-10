@@ -511,8 +511,11 @@
         // When a button is focused (user Tab'd to it), let the browser activate
         // that button on Enter instead of firing the dialog's default action.
         // Without this, Tab'ing to Cancel and pressing Enter would still trigger
-        // Copy/Move/etc., which surprises users coming from Windows or the web.
-        if (event.key === 'Enter' && event.target instanceof HTMLButtonElement) {
+        // Copy/Move/etc., which surprises users coming from Windows or the web. Plain Enter
+        // only: ⌘↩ is a dialog's own key from anywhere in it (Multi-rename's Rename, the
+        // Operation log's Roll back), a focused button included.
+        const plainEnter = !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey
+        if (event.key === 'Enter' && plainEnter && event.target instanceof HTMLButtonElement) {
             return
         }
         onkeydown?.(event)

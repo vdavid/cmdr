@@ -20,3 +20,14 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - `settings.fileOperations.macOnlyFiles.description`: "when copying/moving/compressing files" uses slashes and says
   "files" twice; "when copying, moving, or compressing" reads cleaner, and cs, de, es, fr, hu, nl, pt, ru, and sv
   already render it that way. (cs, de, es, fr, hu, nl, pt, ru, sv)
+- The `remove` / `original` concepts match `operationLog.tree.statusRemoved`, `skipReason.locked`, and
+  `skipReason.restoreTargetOccupied`, which their own descriptions exclude. (cs, de, es, fr, hu, nl, pt, ru, sv, uk, vi,
+  zh, zh-Hant)
+- `operationLog.dialog.selectedCount` drives its plural with the TOTAL, but "selected" agrees with the checked count
+  (`3 sur 12 sélectionnés`), so fr falls back to a colon form. Pass the checked count as the plural driver. Likewise
+  `operationLog.tree.backfillProgress` has no plural driver at all for "Read {doneText} … items". (cs, es, fr, pt, sv)
+- `fileOperations.rollbackConfirm.titleRest` ("Roll back the rest?") and the `rollBackRest` buttons differ only by the
+  "?", so `i18n-terms` treats them as one string and forbids a question-shaped title where a style guide asks for one
+  (hu: title `Visszagörgeted a többit?`, buttons `A többi visszagörgetése`; it's the one warn left). Either the check
+  should ignore a trailing "?" split, or hu needs an allowlist entry. The `titleRest` description should name the
+  constraint either way. (hu, sv, zh, zh-Hant)

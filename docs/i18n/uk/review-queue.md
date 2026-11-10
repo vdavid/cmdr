@@ -198,3 +198,9 @@ record the outcome in `terms.json` or `decisions.md`).
   in a consent text; confirm it reads as "never leaves your Mac" to a native reader.
 - **Tool group header** (`askCmdr.toolGroup.summary`, `askCmdr.toolGroup.summaryRunning`): «Опрацьовано: 6 папок, 2
   пошуки» and «Опрацювання: …» need a native check for how natural they read with counts.
+- **Operation log status words** (`operationLog.tree.statusMovedBack`, `operationLog.tree.statusRenamedBack`,
+  `operationLog.tree.rollupRolledBack`): «Переміщено назад», «Перейменовано назад», and the lowercase rollup «відкочено
+  3, пропущено 2» (lowercase to match the shipped `fileOperations.transferTree.skippedCount`, even when it stands alone
+  in the cell) need a native check.
+- **Checkbox verbs** (`commands.operationLogToggleItem.label` and siblings): «Вибрати елемент або скасувати вибір»
+  follows the select and deselect rulings; confirm it reads naturally for a checkbox.

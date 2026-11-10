@@ -1051,9 +1051,9 @@
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a058f98"
   },
-  "fileOperations.rollbackConfirm.titleFinish": "Terminer le retour en arrière sur cette opération ?",
-  "@fileOperations.rollbackConfirm.titleFinish": {
-    "sourceHash": "cfc998a"
+  "fileOperations.rollbackConfirm.titleRest": "Revenir en arrière sur le reste ?",
+  "@fileOperations.rollbackConfirm.titleRest": {
+    "sourceHash": "08a5c9b"
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Cela supprime les fichiers et dossiers que l’opération a créés. Cmdr laisse de côté tout ce dont il n’est pas sûr, il peut donc en rester quelques-uns.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
@@ -1083,9 +1083,33 @@
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
   },
-  "fileOperations.rollbackConfirm.finishRollBack": "Terminer le retour en arrière",
-  "@fileOperations.rollbackConfirm.finishRollBack": {
-    "sourceHash": "dbe3771"
+  "fileOperations.rollbackConfirm.rollBackRest": "Revenir en arrière sur le reste",
+  "@fileOperations.rollbackConfirm.rollBackRest": {
+    "sourceHash": "f954882"
+  },
+  "fileOperations.rollbackConfirm.titleSelected": "Revenir en arrière sur les éléments sélectionnés ?",
+  "@fileOperations.rollbackConfirm.titleSelected": {
+    "sourceHash": "94d4cad"
+  },
+  "fileOperations.rollbackConfirm.rollBackSelected": "Revenir en arrière sur la sélection",
+  "@fileOperations.rollbackConfirm.rollBackSelected": {
+    "sourceHash": "32a94c5"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Cela supprime les fichiers et dossiers sélectionnés que l’opération a créés. Cmdr laisse de côté tout ce dont il n’est pas sûr, il peut donc en rester quelques-uns.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
+    "sourceHash": "a2ed919"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Cela replace les fichiers sélectionnés là d’où ils viennent. Cmdr laisse de côté tout ce dont il n’est pas sûr, certains peuvent donc rester où ils sont.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": {
+    "sourceHash": "b90e365"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "Cela redonne aux fichiers sélectionnés leurs anciens noms. Cmdr laisse de côté tout ce dont il n’est pas sûr, certains peuvent donc garder leur nom actuel.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": {
+    "sourceHash": "2d2606f"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "Cela redonne aux fichiers sélectionnés les tags qu’ils avaient avant. Cmdr laisse de côté tout fichier dont les tags ont changé depuis, certains peuvent donc garder leurs tags actuels.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": {
+    "sourceHash": "e388f91"
   },
   "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Cmdr a supprimé l’élément qu’il avait écrit.} many {Cmdr a supprimé tout ce qu’il avait écrit : {countText} éléments.} other {Cmdr a supprimé tout ce qu’il avait écrit : {countText} éléments.}}",
   "@fileOperations.cancelRollback.doneDeleting": {

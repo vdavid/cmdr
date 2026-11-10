@@ -19,17 +19,9 @@
   "@operationLog.dialog.recordingOff": {
     "sourceHash": "0519736"
   },
-  "operationLog.dialog.itemsError": "Не удалось загрузить эти объекты.",
-  "@operationLog.dialog.itemsError": {
-    "sourceHash": "596819e"
-  },
   "operationLog.dialog.noItems": "У этой операции нет записанных объектов.",
   "@operationLog.dialog.noItems": {
     "sourceHash": "c7d7bfb"
-  },
-  "operationLog.dialog.moreItems": "{count, plural, one {и еще {countText} объект} few {и еще {countText} объекта} many {и еще {countText} объектов} other {и еще {countText} объекта}}",
-  "@operationLog.dialog.moreItems": {
-    "sourceHash": "c39507d"
   },
   "operationLog.dialog.loadMore": "Загрузить еще 50",
   "@operationLog.dialog.loadMore": {
@@ -39,25 +31,210 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
-  "operationLog.dialog.finishRollBack": "Завершить откат",
-  "@operationLog.dialog.finishRollBack": {
-    "sourceHash": "dbe3771"
+  "operationLog.dialog.rollBackRest": "Откатить остальное",
+  "@operationLog.dialog.rollBackRest": {
+    "sourceHash": "f954882"
   },
-  "operationLog.dialog.rollbackOf": "Откат операции «<operationLink>{operation}</operationLink>» от {time}",
-  "@operationLog.dialog.rollbackOf": {
-    "sourceHash": "4885c73"
+  "operationLog.dialog.rollBackSelected": "{count, plural, one {Откатить выбранные ({countText})} few {Откатить выбранные ({countText})} many {Откатить выбранные ({countText})} other {Откатить выбранные ({countText})}}",
+  "@operationLog.dialog.rollBackSelected": {
+    "sourceHash": "d28d5c7"
   },
-  "operationLog.dialog.rollbackOfUnlisted": "Откат более ранней операции",
-  "@operationLog.dialog.rollbackOfUnlisted": {
-    "sourceHash": "50d060d"
-  },
-  "operationLog.dialog.latestRollback": "Последний откат: «<operationLink>{operation}</operationLink>» от {time}",
-  "@operationLog.dialog.latestRollback": {
-    "sourceHash": "a8275f9"
+  "operationLog.dialog.selectedCount": "{count, plural, one {Выбрано: {selectedText} из {selectableText}} few {Выбрано: {selectedText} из {selectableText}} many {Выбрано: {selectedText} из {selectableText}} other {Выбрано: {selectedText} из {selectableText}}}",
+  "@operationLog.dialog.selectedCount": {
+    "sourceHash": "8891bd3"
   },
   "operationLog.dialog.close": "Закрыть",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "operationLog.dialog.operations": "Операции",
+  "@operationLog.dialog.operations": {
+    "sourceHash": "358cc20"
+  },
+  "operationLog.tree.label": "Объекты",
+  "@operationLog.tree.label": {
+    "sourceHash": "fb8e7a1"
+  },
+  "operationLog.tree.columnName": "Имя",
+  "@operationLog.tree.columnName": {
+    "sourceHash": "dcd1d52"
+  },
+  "operationLog.tree.columnSize": "Размер",
+  "@operationLog.tree.columnSize": {
+    "sourceHash": "1af8519"
+  },
+  "operationLog.tree.columnStatus": "Состояние",
+  "@operationLog.tree.columnStatus": {
+    "sourceHash": "920e413"
+  },
+  "operationLog.tree.selectAll": "Выбрать все",
+  "@operationLog.tree.selectAll": {
+    "sourceHash": "1fc9a38"
+  },
+  "operationLog.tree.include": "Откатить «{name}»",
+  "@operationLog.tree.include": {
+    "sourceHash": "2bdcfa0"
+  },
+  "operationLog.tree.comesBackWithFolder": "Вернется вместе со своей папкой.",
+  "@operationLog.tree.comesBackWithFolder": {
+    "sourceHash": "e6275c5"
+  },
+  "operationLog.tree.folderFiles": "{count, plural, one {{countText} файл} few {{countText} файла} many {{countText} файлов} other {{countText} файла}}",
+  "@operationLog.tree.folderFiles": {
+    "sourceHash": "3c08428"
+  },
+  "operationLog.tree.statusRemoved": "Удалено",
+  "@operationLog.tree.statusRemoved": {
+    "sourceHash": "4118fb4"
+  },
+  "operationLog.tree.statusMovedBack": "Возвращено на место",
+  "@operationLog.tree.statusMovedBack": {
+    "sourceHash": "c6bc4e6"
+  },
+  "operationLog.tree.statusRenamedBack": "Имя возвращено",
+  "@operationLog.tree.statusRenamedBack": {
+    "sourceHash": "769ab78"
+  },
+  "operationLog.tree.statusTagsRestored": "Теги восстановлены",
+  "@operationLog.tree.statusTagsRestored": {
+    "sourceHash": "062e231"
+  },
+  "operationLog.tree.statusSkipped": "Пропущено",
+  "@operationLog.tree.statusSkipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.tree.statusUnfinished": "Не завершено",
+  "@operationLog.tree.statusUnfinished": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.tree.rollupRolledBack": "{count, plural, one {откат выполнен: {countText}} few {откат выполнен: {countText}} many {откат выполнен: {countText}} other {откат выполнен: {countText}}}",
+  "@operationLog.tree.rollupRolledBack": {
+    "sourceHash": "0b93ef8"
+  },
+  "operationLog.tree.rollupSkipped": "{count, plural, one {пропущено: {countText}} few {пропущено: {countText}} many {пропущено: {countText}} other {пропущено: {countText}}}",
+  "@operationLog.tree.rollupSkipped": {
+    "sourceHash": "3cb9b95"
+  },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Russian lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
+  "operationLog.tree.operationSkipped": "Операция пропустила этот объект, поэтому откатывать нечего.",
+  "@operationLog.tree.operationSkipped": {
+    "sourceHash": "b883085"
+  },
+  "operationLog.tree.operationUnfinished": "Операция не завершила обработку этого объекта, поэтому откатывать нечего.",
+  "@operationLog.tree.operationUnfinished": {
+    "sourceHash": "e07232b"
+  },
+  "operationLog.tree.unexpandableEmpty": "Эта папка была пустой.",
+  "@operationLog.tree.unexpandableEmpty": {
+    "sourceHash": "0c67a8d"
+  },
+  "operationLog.tree.unexpandableNotRecorded": "Cmdr не записал, что лежит в этой папке.",
+  "@operationLog.tree.unexpandableNotRecorded": {
+    "sourceHash": "613608a"
+  },
+  "operationLog.tree.unexpandableCapped": "Cmdr не записал, что лежит в этой папке, потому что в этой операции была папка, где больше 50 000 файлов.",
+  "@operationLog.tree.unexpandableCapped": {
+    "sourceHash": "6657eb0"
+  },
+  "operationLog.tree.otherEndFrom": "Откуда: {path}",
+  "@operationLog.tree.otherEndFrom": {
+    "sourceHash": "0562430"
+  },
+  "operationLog.tree.otherEndTo": "Куда: {path}",
+  "@operationLog.tree.otherEndTo": {
+    "sourceHash": "ea4bf38"
+  },
+  "operationLog.tree.backfilling": "Чтение объектов операции…",
+  "@operationLog.tree.backfilling": {
+    "sourceHash": "45f623f"
+  },
+  "operationLog.tree.backfillProgress": "Прочитано объектов: {doneText} из {totalText}",
+  "@operationLog.tree.backfillProgress": {
+    "sourceHash": "230eb62"
+  },
+  "operationLog.tree.indexesBuilding": "Cmdr готовит историю операций после обновления. Объекты появятся через мгновение.",
+  "@operationLog.tree.indexesBuilding": {
+    "sourceHash": "0d6f56b"
+  },
+  "operationLog.tree.indexesUnavailable": "В этот раз Cmdr не удалось подготовить историю операций, поэтому эти объекты пока не видны. Cmdr попробует еще раз, когда вы снова его откроете.",
+  "@operationLog.tree.indexesUnavailable": {
+    "sourceHash": "8d2fec7"
+  },
+  "operationLog.tree.operationRunning": "Эта операция еще выполняется. Ее объекты появятся здесь, когда она завершится.",
+  "@operationLog.tree.operationRunning": {
+    "sourceHash": "eebeba4"
+  },
+  "operationLog.tree.rollingBack": "Эта операция сейчас откатывается. Ее объекты появятся здесь, когда откат завершится.",
+  "@operationLog.tree.rollingBack": {
+    "sourceHash": "35ef2b2"
+  },
+  "operationLog.tree.unreadable": "Не удалось прочитать объекты этой операции. Выберите ее в списке снова, чтобы попробовать еще раз.",
+  "@operationLog.tree.unreadable": {
+    "sourceHash": "71453e9"
+  },
+  "operationLog.tree.togglesCapped": "Больше объектов Cmdr не может выбрать по одному. Выберите папку целиком.",
+  "@operationLog.tree.togglesCapped": {
+    "sourceHash": "36aa8fa"
+  },
+  "operationLog.route.fromTo": "Из папки {from} в папку {to}",
+  "@operationLog.route.fromTo": {
+    "sourceHash": "6eeb9b3"
+  },
+  "operationLog.route.to": "В папку {to}",
+  "@operationLog.route.to": {
+    "sourceHash": "55b2319"
+  },
+  "operationLog.route.fromToTrash": "Из папки {from} в Корзину",
+  "@operationLog.route.fromToTrash": {
+    "sourceHash": "9eff97f"
+  },
+  "operationLog.route.from": "Из папки {from}",
+  "@operationLog.route.from": {
+    "sourceHash": "5848d99"
+  },
+  "operationLog.route.in": "В папке {path}",
+  "@operationLog.route.in": {
+    "sourceHash": "b1b3028"
+  },
+  "operationLog.skipReason.unverifiablePrecondition": "Cmdr не удалось сверить этот объект с записью, поэтому он оставлен как есть.",
+  "@operationLog.skipReason.unverifiablePrecondition": {
+    "sourceHash": "c33ca33"
+  },
+  "operationLog.skipReason.drift": "Этот объект изменился после операции, поэтому Cmdr оставил его как есть.",
+  "@operationLog.skipReason.drift": {
+    "sourceHash": "6768024"
+  },
+  "operationLog.skipReason.restoreTargetOccupied": "На исходном месте теперь лежит что-то другое, поэтому Cmdr не стал его перезаписывать.",
+  "@operationLog.skipReason.restoreTargetOccupied": {
+    "sourceHash": "1b1d375"
+  },
+  "operationLog.skipReason.dirNotEmpty": "В этой папке появилось что-то новое, поэтому Cmdr ее сохранил.",
+  "@operationLog.skipReason.dirNotEmpty": {
+    "sourceHash": "8fc1b3e"
+  },
+  "operationLog.skipReason.alreadyGone": "Этот объект уже вернулся в прежнее состояние.",
+  "@operationLog.skipReason.alreadyGone": {
+    "sourceHash": "71176d1"
+  },
+  "operationLog.skipReason.vanished": "Этого объекта больше нет там, где его оставила операция, поэтому восстанавливать нечего.",
+  "@operationLog.skipReason.vanished": {
+    "sourceHash": "a715fb0"
+  },
+  "operationLog.skipReason.originalGone": "Оригинала больше нет, поэтому Cmdr сохранил эту копию, чтобы не удалить единственную оставшуюся.",
+  "@operationLog.skipReason.originalGone": {
+    "sourceHash": "014fcaa"
+  },
+  "operationLog.skipReason.failed": "Cmdr не удалось откатить этот объект. Подробности в журнале.",
+  "@operationLog.skipReason.failed": {
+    "sourceHash": "76c2b80"
+  },
+  "operationLog.skipReason.locked": "Этот объект защищен: удалить его может только администратор, поэтому Cmdr его оставил.",
+  "@operationLog.skipReason.locked": {
+    "sourceHash": "39e4c78"
   },
   "operationLog.summary.canceled": "{summary}, затем отменено (запланировано: {plannedText})",
   "@operationLog.summary.canceled": {
@@ -135,9 +312,9 @@
   "@operationLog.status.running": {
     "sourceHash": "f4ccae2"
   },
-  "operationLog.status.done": "Готово",
-  "@operationLog.status.done": {
-    "sourceHash": "11a6767"
+  "operationLog.status.finished": "Завершено",
+  "@operationLog.status.finished": {
+    "sourceHash": "7804f7a"
   },
   "operationLog.status.failed": "Не завершено",
   "@operationLog.status.failed": {
@@ -167,9 +344,45 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
-  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr откатил все, что смог, а остальное оставил как было. Чтобы завершить откат, Cmdr пройдется по операции еще раз и снова пропустит то, в чем не уверен.",
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr откатил все, что смог, а остальное оставил как было. Чтобы откатить остальное, Cmdr пройдется по операции еще раз и снова пропустит то, в чем не уверен.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
-    "sourceHash": "77e6f25"
+    "sourceHash": "8c0a534"
+  },
+  "operationLog.rollback.interruptedNotice": "Cmdr завершил работу до окончания этой операции, поэтому мог записать не все, что она сделала. Откат затронет только записанное.",
+  "@operationLog.rollback.interruptedNotice": {
+    "sourceHash": "642e6fc"
+  },
+  "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} объект вернулся в прежнее состояние.} few {{countText} объекта вернулись в прежнее состояние.} many {{countText} объектов вернулись в прежнее состояние.} other {{countText} объекта вернулись в прежнее состояние.}}",
+  "@operationLog.rollback.partialRolledBack": {
+    "sourceHash": "0202fe5"
+  },
+  "operationLog.rollback.partialHeldBack": "{count, plural, one {Cmdr пропустил {countText} объект, в котором не был уверен.} few {Cmdr пропустил {countText} объекта, в которых не был уверен.} many {Cmdr пропустил {countText} объектов, в которых не был уверен.} other {Cmdr пропустил {countText} объекта, в которых не был уверен.}}",
+  "@operationLog.rollback.partialHeldBack": {
+    "sourceHash": "5a43937"
+  },
+  "operationLog.rollback.partialWaiting": "{count, plural, one {Откат еще не затронул {countText} объект.} few {Откат еще не затронул {countText} объекта.} many {Откат еще не затронул {countText} объектов.} other {Откат еще не затронул {countText} объекта.}}",
+  "@operationLog.rollback.partialWaiting": {
+    "sourceHash": "0850c46"
+  },
+  "operationLog.rollback.rollbackableNoticeCopy": "При откате выбранные копии будут удалены. Оригиналы останутся на месте.",
+  "@operationLog.rollback.rollbackableNoticeCopy": {
+    "sourceHash": "6710bb4"
+  },
+  "operationLog.rollback.rollbackableNoticeDelete": "При откате будут удалены выбранные объекты, созданные этой операцией.",
+  "@operationLog.rollback.rollbackableNoticeDelete": {
+    "sourceHash": "d0e028e"
+  },
+  "operationLog.rollback.rollbackableNoticeMoveBack": "При откате выбранные объекты вернутся на прежние места.",
+  "@operationLog.rollback.rollbackableNoticeMoveBack": {
+    "sourceHash": "2cf40c3"
+  },
+  "operationLog.rollback.rollbackableNoticeRenameBack": "При откате выбранные объекты получат прежние имена.",
+  "@operationLog.rollback.rollbackableNoticeRenameBack": {
+    "sourceHash": "8f2b884"
+  },
+  "operationLog.rollback.rollbackableNoticeTagsBack": "При откате выбранные объекты получат прежние теги.",
+  "@operationLog.rollback.rollbackableNoticeTagsBack": {
+    "sourceHash": "d45b11b"
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "Эта операция уже откатывается. Следите за ней в очереди операций.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {
@@ -178,6 +391,10 @@
   "operationLog.rollback.refusalAlreadyRolledBack": "Здесь уже все вернулось как было.",
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalIsARollback": "Эта операция сама откатила другую, а откат откатить нельзя. Исходная операция по-прежнему есть в журнале.",
+  "@operationLog.rollback.refusalIsARollback": {
+    "sourceHash": "37738da"
   },
   "operationLog.rollback.refusalOverwrote": "Эта операция заменила файлы, которые уже были на месте. Cmdr не хранит копии заменяемых файлов, поэтому оригиналы вернуть нельзя.",
   "@operationLog.rollback.refusalOverwrote": {
@@ -215,24 +432,20 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
+  "operationLog.rollback.refusalNothingSelected": "Чтобы выполнить откат, выберите хотя бы один объект.",
+  "@operationLog.rollback.refusalNothingSelected": {
+    "sourceHash": "7a3c2fa"
+  },
+  "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr еще читает объекты этой операции. Попробуйте еще раз через мгновение.",
+  "@operationLog.rollback.refusalSummaryNotBuilt": {
+    "sourceHash": "d23332a"
+  },
+  "operationLog.rollback.refusalTooManyToggles": "Это больше объектов, чем Cmdr может выбрать по одному. Выберите папку целиком.",
+  "@operationLog.rollback.refusalTooManyToggles": {
+    "sourceHash": "2be9bc8"
+  },
   "operationLog.rollback.refusalUnexpected": "Cmdr не удалось начать откат. Попробуйте еще раз чуть позже.",
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "bef54f1"
-  },
-  "operationLog.outcome.done": "Готово",
-  "@operationLog.outcome.done": {
-    "sourceHash": "11a6767"
-  },
-  "operationLog.outcome.skipped": "Пропущено",
-  "@operationLog.outcome.skipped": {
-    "sourceHash": "12698ce"
-  },
-  "operationLog.outcome.failed": "Не завершено",
-  "@operationLog.outcome.failed": {
-    "sourceHash": "59ea57b"
-  },
-  "operationLog.outcome.rolledBack": "Откат выполнен",
-  "@operationLog.outcome.rolledBack": {
-    "sourceHash": "7159223"
   }
 }

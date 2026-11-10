@@ -2905,7 +2905,10 @@
     "chosen": "оригінал",
     "accept": ["оригінал"],
     "confidence": "high",
-    "sources": "macOS live Books (Original → Оригінал), PhotosUI (ORIGINAL → ОРИГІНАЛ)"
+    "sources": "macOS live Books (Original → Оригінал), PhotosUI (ORIGINAL → ОРИГІНАЛ)",
+    "exceptions": {
+      "operationLog.skipReason.restoreTargetOccupied": "«the original spot» is the item's former location, not the source file of a copy: «початкове місце»."
+    }
   },
   "outdated": {
     "chosen": "застарілий",
@@ -3431,7 +3434,9 @@
     ],
     "exceptions": {
       "main.cliCommand.adminPromptUninstall": "removing the installed command is uninstalling; the uninstall ruling says видалити and avoids Вилучити",
-      "main.cliCommand.takenByOther": "tells the user to delete a file in /usr/local/bin (Видаліть), not to take an entry off a list"
+      "main.cliCommand.takenByOther": "tells the user to delete a file in /usr/local/bin (Видаліть), not to take an entry off a list",
+      "operationLog.tree.statusRemoved": "the rollback deleted the copy from disk, which the concept itself excludes; deleted files take «Видалено»",
+      "operationLog.skipReason.locked": "removing a copy from disk is deleting files, so «видалити», as the concept's own exclusion allows"
     }
   },
   "rename": {

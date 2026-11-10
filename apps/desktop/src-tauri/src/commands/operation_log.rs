@@ -22,8 +22,13 @@ use tauri::AppHandle;
 
 use std::sync::Arc;
 
-use crate::operations_host::{TauriEventSink, operations};
-use cmdr_operation_log::query::{self, OperationDetail};
+use tauri_specta::Event as _;
+
+use crate::operations_host::{TauriEventSink, operations, wire};
+use cmdr_operation_log::query::{
+    self, OperationDetail, OperationTreeRequest, OperationTreeView, RollbackSelection, TreeBackfill, TreeBackfillEvent,
+    TreeBackfillStart, TreeBackfillStep,
+};
 use cmdr_operation_log::rollback::{RollbackDispatch, RollbackRefusal};
 use cmdr_operation_log::store::{OperationLogStoreError, OperationRow, open_read_connection, operation_log_db_path};
 use cmdr_operation_log::types::{Initiator, OperationId};
@@ -82,6 +87,71 @@ pub async fn get_operation_log_detail(
     .await
 }
 
+/// Ask for an operation's tree summary, so its item tree can open: start the backfill
+/// of an op journaled before the summary existed, join the one running, or say why
+/// none is needed or possible (typed). Returns at once; a started or joined backfill
+/// reports each step as an `operation-log-tree-backfill` event, ending with its
+/// `finished` step. The job runs on the blocking pool, one chunk per step, and stops at
+/// the next chunk after `cancel_operation_log_tree_backfill`.
+#[tauri::command]
+#[specta::specta]
+pub async fn start_operation_log_tree_backfill(
+    app: AppHandle,
+    operation_id: String,
+) -> Result<TreeBackfillStart, String> {
+    let log = crate::operation_log_host::operation_log().clone();
+    let (start, job) = tauri::async_runtime::spawn_blocking(move || TreeBackfill::start(&log, &operation_id))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())?;
+    if let Some(mut job) = job {
+        tauri::async_runtime::spawn_blocking(move || {
+            loop {
+                let step = job.step();
+                let event = TreeBackfillEvent {
+                    op_id: job.op_id().to_string(),
+                    step,
+                };
+                if let Err(e) = wire::OperationLogTreeBackfill(event).emit(&app) {
+                    log::warn!(target: "operation_log", "couldn't emit a tree backfill step: {e}");
+                }
+                if matches!(step, TreeBackfillStep::Finished(_)) {
+                    break;
+                }
+            }
+        });
+    }
+    Ok(start)
+}
+
+/// Ask an operation's running tree backfill to stop (the dialog closed or moved to
+/// another operation). A later start takes the cancel back if it comes first.
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_operation_log_tree_backfill(operation_id: String) {
+    crate::operation_log_host::operation_log()
+        .tree_backfills()
+        .cancel(&operation_id);
+}
+
+/// One window of an operation's item tree: the rows under the request's expanded
+/// folders from its offset, with its selection normalized and counted
+/// (`cmdr_operation_log::query::operation_tree`). `None` when the operation is absent.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_operation_log_tree(
+    app: AppHandle,
+    operation_id: String,
+    request: OperationTreeRequest,
+) -> Result<Option<OperationTreeView>, String> {
+    // The log's own registry, so an op its backfill is building answers `building`.
+    let backfills = Arc::clone(crate::operation_log_host::operation_log().tree_backfills());
+    with_read_connection(app, None, move |conn| {
+        query::operation_tree(conn, &operation_id, &request, &backfills)
+    })
+    .await
+}
+
 /// Roll one logged operation back, and hand the reversal to the operation queue.
 ///
 /// Returns after DISPATCH, not after the reversal finishes: the inverse is a normal
@@ -96,12 +166,17 @@ pub async fn get_operation_log_detail(
 ///
 /// `initiator` is who started the question a person answered: `user` for their own Roll back
 /// button, or the agent whose dialog they confirmed. Required, so provenance can't fail open.
+///
+/// `selection` is the item tree's normalized selection, sent back as the tree answered it;
+/// `null` reverses every row (the default, "Roll back the rest", and every agent's call).
+/// The engine normalizes it again and refuses one it can't run, typed (`selection`).
 #[tauri::command]
 #[specta::specta]
 pub async fn rollback_operation(
     app: AppHandle,
     operation_id: String,
     initiator: Initiator,
+    selection: Option<RollbackSelection>,
 ) -> Result<RollbackDispatch, RollbackRefusal> {
     // The gate opens a read connection and reads the operation's row before it
     // spawns anything, so it runs on the blocking pool like every other DB touch here.
@@ -109,7 +184,7 @@ pub async fn rollback_operation(
     let engine = operations().map_err(|_| RollbackRefusal::UnknownOperation)?;
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     tauri::async_runtime::spawn_blocking(move || {
-        engine.dispatch_rollback(&OperationId::from(operation_id), initiator, events)
+        engine.dispatch_rollback(&OperationId::from(operation_id), initiator, selection.as_ref(), events)
     })
     .await
     // The gate panicked, so nothing was dispatched and nothing changed on disk.

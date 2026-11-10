@@ -4155,6 +4155,60 @@ export const commands = {
       string
     >(__TAURI_INVOKE('get_operation_log_detail', { operationId, itemLimit, itemOffset })),
   /**
+   *  Ask for an operation's tree summary, so its item tree can open: start the backfill
+   *  of an op journaled before the summary existed, join the one running, or say why
+   *  none is needed or possible (typed). Returns at once; a started or joined backfill
+   *  reports each step as an `operation-log-tree-backfill` event, ending with its
+   *  `finished` step. The job runs on the blocking pool, one chunk per step, and stops at
+   *  the next chunk after `cancel_operation_log_tree_backfill`.
+   */
+  startOperationLogTreeBackfill: (operationId: string) =>
+    typedError<TreeBackfillStart, string>(__TAURI_INVOKE('start_operation_log_tree_backfill', { operationId })),
+  /**
+   *  Ask an operation's running tree backfill to stop (the dialog closed or moved to
+   *  another operation). A later start takes the cancel back if it comes first.
+   */
+  cancelOperationLogTreeBackfill: (operationId: string) =>
+    __TAURI_INVOKE<void>('cancel_operation_log_tree_backfill', { operationId }),
+  /**
+   *  One window of an operation's item tree: the rows under the request's expanded
+   *  folders from its offset, with its selection normalized and counted
+   *  (`cmdr_operation_log::query::operation_tree`). `None` when the operation is absent.
+   */
+  getOperationLogTree: (operationId: string, request: OperationTreeRequest) =>
+    typedError<
+      {
+        // Anything but `built` comes with no rows.
+        summary: TreeSummaryView
+        // A not-rollbackable op, or one rolling back: no checkboxes.
+        readOnly: boolean
+        /**
+         *  The folder every top row sits in; `null` for a forest (rows under several
+         *  volume roots), whose top rows carry full paths.
+         */
+        rootPath: string | null
+        // Where the other side's rows sit, when one root holds them.
+        otherRoot: string | null
+        totalRows: number
+        // Where `rows` starts.
+        offset: number
+        rows: OperationTreeRow[]
+        // The open folder rows above the window's first row, outermost first.
+        ancestors: OperationTreeRow[]
+        /**
+         *  The request's cursor row's flat index, or its nearest visible ancestor's
+         *  when it collapsed away; `null` when it's gone.
+         */
+        cursorIndex: number | null
+        tally: TreeTally
+        // The selection after normalizing: send this back with the next toggle.
+        selection: RollbackSelection
+        // Normalizing refused toggles past the cap (2,000): pick a folder instead.
+        togglesCapped: boolean
+      } | null,
+      string
+    >(__TAURI_INVOKE('get_operation_log_tree', { operationId, request })),
+  /**
    *  Roll one logged operation back, and hand the reversal to the operation queue.
    *
    *  Returns after DISPATCH, not after the reversal finishes: the inverse is a normal
@@ -4169,9 +4223,26 @@ export const commands = {
    *
    *  `initiator` is who started the question a person answered: `user` for their own Roll back
    *  button, or the agent whose dialog they confirmed. Required, so provenance can't fail open.
+   *
+   *  `selection` is the item tree's normalized selection, sent back as the tree answered it;
+   *  `null` reverses every row (the default, "Roll back the rest", and every agent's call).
+   *  The engine normalizes it again and refuses one it can't run, typed (`selection`).
    */
-  rollbackOperation: (operationId: string, initiator: Initiator) =>
-    typedError<RollbackDispatch, RollbackRefusal>(__TAURI_INVOKE('rollback_operation', { operationId, initiator })),
+  rollbackOperation: (
+    operationId: string,
+    initiator: Initiator,
+    selection: {
+      base: SelectionBase
+      /**
+       *  In the order they were made: a later folder toggle overrides every earlier
+       *  toggle inside it.
+       */
+      toggles: SelectionToggle[]
+    } | null,
+  ) =>
+    typedError<RollbackDispatch, RollbackRefusal>(
+      __TAURI_INVOKE('rollback_operation', { operationId, initiator, selection }),
+    ),
   /**
    *  Undo the given operations as one action, **newest first** (a multi-batch rename
    *  run is the case this exists for; the order is data-safety-critical, see
@@ -6294,6 +6365,8 @@ export const events = {
   openWithCopyLaunched: makeEvent<OpenWithCopyLaunched>('open-with-copy-launched'),
   openWithCopyRefused: makeEvent<OpenWithCopyRefused>('open-with-copy-refused'),
   openWithNotOnThisMac: makeEvent<OpenWithNotOnThisMac>('open-with-not-on-this-mac'),
+  operationLogTreeBackfill: makeEvent<TreeBackfillEvent>('operation-log-tree-backfill'),
+  operationLogTreeIndexesSettled: makeEvent<OperationLogTreeIndexesSettled>('operation-log-tree-indexes-settled'),
   operationsChanged: makeEvent<OperationsChanged>('operations-changed'),
   osLocalesChanged: makeEvent<OsLocalesChanged>('os-locales-changed'),
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
@@ -7373,6 +7446,14 @@ export type BackendCapabilities = {
 
 // Which backend strategy is active for a session.
 export type BackendType = 'fullLoad' | 'byteSeek' | 'lineIndex'
+
+// How far a running backfill got.
+export type BackfillProgress = {
+  // Rows read so far.
+  done: number
+  // Rows the op holds.
+  total: number
+}
 
 /**
  *  The prefix's estimated size against the budget the next send resolves. Both are `chars/4`
@@ -14950,6 +15031,13 @@ export type OperationItems = {
 }
 
 /**
+ *  `operation-log-tree-indexes-settled`: the writer's build of the journal's folder
+ *  indexes settled (built, or couldn't be), so an item tree that answered
+ *  `indexesBuilding` reads again and finds out which. Once per launch.
+ */
+export type OperationLogTreeIndexesSettled = Record<string, never>
+
+/**
  *  A read of one `operations` row, tokens decoded to typed enums. Doubles as the
  *  IPC/MCP summary wire type (the query API returns it directly): it carries no
  *  interned `dir_id`s, only volume ids and typed fields the frontend can render,
@@ -15037,6 +15125,89 @@ export type OperationSnapshot = {
    *  `None` while it waits in the queue, and on a retained failure.
    */
   startedAt: number | null
+}
+
+// What the dialog asks for.
+export type OperationTreeRequest = {
+  // Folder rows the person expanded.
+  expanded: TreeRowKey[]
+  // The selection, as the last answer normalized it; `null` means everything.
+  selection: RollbackSelection | null
+  // The cursor row, so the answer can say where it is now.
+  cursor: TreeRowKey | null
+  // The flat row index the window starts at.
+  offset: number
+  // How many rows, at most 200.
+  limit: number
+}
+
+// One row.
+export type OperationTreeRow = {
+  // Its flat row index.
+  index: number
+  key: TreeRowKey
+  /**
+   *  The name, or a compacted chain's names joined with `/`, or (a forest's top
+   *  row) the folder's full path.
+   */
+  label: string
+  // 1-based, for `aria-level`.
+  level: number
+  entryType: EntryType
+  expandable: boolean
+  expanded: boolean
+  // 1-based, for `aria-posinset`.
+  posInSet: number
+  // For `aria-setsize`.
+  setSize: number
+  // `null` for a folder no item row names.
+  role: TreeRowRole | null
+  // The row's outcome; a `contents` row shows its folder unit's.
+  outcome: ItemOutcome | null
+  skipReason: SkipReason | null
+  checkbox: TreeCheckbox
+  // A file's size as recorded.
+  size: number | null
+  // A folder's counts.
+  tally: TreeTally | null
+  fullPath: string
+  /**
+   *  The row's other end, only when it isn't where the other side's root plus this
+   *  row's relative path would put it (a conflict rename). Never for a trash.
+   */
+  otherEnd: string | null
+  unexpandable: UnexpandableReason | null
+}
+
+// One window of the tree.
+export type OperationTreeView = {
+  // Anything but `built` comes with no rows.
+  summary: TreeSummaryView
+  // A not-rollbackable op, or one rolling back: no checkboxes.
+  readOnly: boolean
+  /**
+   *  The folder every top row sits in; `null` for a forest (rows under several
+   *  volume roots), whose top rows carry full paths.
+   */
+  rootPath: string | null
+  // Where the other side's rows sit, when one root holds them.
+  otherRoot: string | null
+  totalRows: number
+  // Where `rows` starts.
+  offset: number
+  rows: OperationTreeRow[]
+  // The open folder rows above the window's first row, outermost first.
+  ancestors: OperationTreeRow[]
+  /**
+   *  The request's cursor row's flat index, or its nearest visible ancestor's
+   *  when it collapsed away; `null` when it's gone.
+   */
+  cursorIndex: number | null
+  tally: TreeTally
+  // The selection after normalizing: send this back with the next toggle.
+  selection: RollbackSelection
+  // Normalizing refused toggles past the cap (2,000): pick a folder instead.
+  togglesCapped: boolean
 }
 
 /**
@@ -16761,6 +16932,11 @@ export type RollbackRefusal =
   // The op was already fully reversed; there's nothing to undo.
   | { kind: 'alreadyRolledBack' }
   /**
+   *  The op is itself a rollback of another operation, and a rollback is never
+   *  rolled back.
+   */
+  | { kind: 'isARollback' }
+  /**
    *  The op is not rollbackable; carries the stored reason (delete, overwrote,
    *  archive-overwrite, zip-edit-unsupported, journal-incomplete).
    */
@@ -16776,6 +16952,22 @@ export type RollbackRefusal =
         volumeId: string
       }
     }
+  // The selection sent with the request can't run; carries why.
+  | { kind: 'selection'; detail: SelectionRefusal }
+
+/**
+ *  Which rows a rollback takes. A row's decision is its own `Item` toggle, else the
+ *  nearest `Folder` toggle up its folder chain, else `base`. Send back the normalized
+ *  one the tree answered with; `null` where a selection is optional means everything.
+ */
+export type RollbackSelection = {
+  base: SelectionBase
+  /**
+   *  In the order they were made: a later folder toggle overrides every earlier
+   *  toggle inside it.
+   */
+  toggles: SelectionToggle[]
+}
 
 /**
  *  Whether and how the operation can be / has been reversed. Independent
@@ -17628,6 +17820,11 @@ export type SearchCoverageReason =
   | 'volumeNotLive'
   // A `search_only` leaf row was dropped/errored (the completeness downgrade).
   | 'searchRowIncomplete'
+  /**
+   *  A crash interrupted the operation, so rows it never got to write are
+   *  missing (the next launch ended it).
+   */
+  | 'interrupted'
 
 // The run couldn't run.
 export type SearchErrorEvent = {
@@ -18161,6 +18358,13 @@ export type SelectedRows =
    */
   | { kind: 'paths'; paths: string[] }
 
+// What a selection starts from, before its toggles.
+export type SelectionBase =
+  // Every reversible row (⌘A, and the default).
+  | 'everything'
+  // No row (⌘⇧A).
+  | 'nothing'
+
 // A single recent-selection entry, persisted verbatim.
 export type SelectionHistoryEntry = {
   id: string
@@ -18178,6 +18382,18 @@ export type SelectionHistoryEntry = {
   matchCount: number
 }
 
+/**
+ *  Why a rollback refuses the selection it was sent. The dialog keeps its button off
+ *  at "0 of M" and refuses toggles past the cap itself, so each of these is a backstop.
+ */
+export type SelectionRefusal =
+  // It takes no unit that still awaits reversal ("0 of M").
+  | 'nothingSelected'
+  // The op's tree summary isn't built yet, and a selection is decided off it.
+  | 'summaryNotBuilt'
+  // It holds more hand toggles than a selection may.
+  | 'tooManyToggles'
+
 // Exact paths and kinds consumed from one guarded backend row space.
 export type SelectionSnapshot = {
   // Every selected row's full path, in row order.
@@ -18187,6 +18403,16 @@ export type SelectionSnapshot = {
   // How many of them are folders.
   folderCount: number
 }
+
+// One hand toggle: a folder (and everything under it) or one item, on or off.
+export type SelectionToggle =
+  /**
+   *  A folder row's key. A folder unit (a trashed folder) is decided by its own
+   *  folder's toggle.
+   */
+  | { kind: 'folder'; dirId: number; on: boolean }
+  // A file row's key.
+  | { kind: 'item'; seq: number; on: boolean }
 
 /**
  *  The structured selection translation handed to the frontend. Mirrors Search's
@@ -19148,7 +19374,7 @@ export type SkipBreakdown = {
  *
  *  WHICH variant is stored is reporting fidelity only: no variant may change
  *  whether an item is skipped, retried, or forced. That a reason is stored at all
- *  is load-bearing: it tells a row a rollback held back (which "Finish" retries)
+ *  is load-bearing: it tells a row a rollback held back (which "Roll back the rest" retries)
  *  from the operation's own skip (`RollbackUnit::awaits_reversal`).
  */
 export type SkipReason =
@@ -20740,10 +20966,126 @@ export type TrashRoutingAnswer = {
   folderMayHoldOnlineOnly: boolean
 }
 
+// How a backfill ended.
+export type TreeBackfillEnd =
+  // The summary is built: read the tree.
+  | { kind: 'built' }
+  /**
+   *  Cancelled before it finished; nothing was stamped, and the next start begins
+   *  afresh.
+   */
+  | { kind: 'cancelled' }
+  // The operation is gone (retention pruned it meanwhile).
+  | { kind: 'gone' }
+  // It can't be built now, for this reason (a rollback started meanwhile).
+  | { kind: 'unbuilt'; detail: UnbuiltReason }
+  /**
+   *  The journal couldn't be read or written; the details are in the log. The op
+   *  stays unbuilt, so opening its tree again retries.
+   */
+  | { kind: 'unreadable' }
+
+// The event payload a host emits for every step: which op, and the step.
+export type TreeBackfillEvent = {
+  opId: string
+  step: TreeBackfillStep
+}
+
+// What asking for an op's backfill answered.
+export type TreeBackfillStart =
+  // A backfill started; its progress and end arrive as events.
+  | { kind: 'started' }
+  // One was already running; its events keep coming.
+  | { kind: 'joined' }
+  // The summary is already built: read the tree.
+  | { kind: 'built' }
+  // It can't be built yet, for this reason (a running operation or rollback).
+  | { kind: 'unbuilt'; detail: UnbuiltReason }
+  // No operation with this id in the journal (or no journal).
+  | { kind: 'unknownOperation' }
+
+// One step of a backfill, as the host hears it and passes it on.
+export type TreeBackfillStep =
+  /**
+   *  Still reading: `done` of `total` rows so far. A restart after a rollback landed
+   *  starts `done` from zero again.
+   */
+  | { kind: 'progress'; detail: BackfillProgress }
+  // Over; further steps answer the same.
+  | { kind: 'finished'; detail: TreeBackfillEnd }
+
+// A row's checkbox.
+export type TreeCheckbox =
+  | 'on'
+  | 'off'
+  // Some of what's under this folder is selected.
+  | 'mixed'
+  // No checkbox: nothing selectable here, or the op is read-only.
+  | 'none'
+
+// A row's stable key: the same row answers to it across requests.
+export type TreeRowKey =
+  // A folder row; for a compacted chain (`a/b/c`), the deepest folder.
+  | { kind: 'folder'; dirId: number }
+  // A file row.
+  | { kind: 'item'; seq: number }
+
 export type TreeRowKind = 'file' | 'folder'
+
+// What a row is to a rollback.
+export type TreeRowRole =
+  // Awaits reversal and has a checkbox.
+  | 'selectable'
+  /**
+   *  A folder a copy or move made: no checkbox of its own; it goes when everything
+   *  under it does.
+   */
+  | 'housekeeping'
+  /**
+   *  Recorded inside a folder unit: it comes back with its folder, and shows the
+   *  folder's state.
+   */
+  | 'contents'
+  // Rolled back, or the operation's own skip or failure.
+  | 'settled'
+  // Nothing can reverse it (a permanent delete).
+  | 'notReversible'
 
 // A row's state as the view shows it, for files and folders alike.
 export type TreeRowState = 'waiting' | 'active' | 'done' | 'skipped' | 'failed'
+
+// Whether the tree can be read, and if not, why.
+export type TreeSummaryView =
+  // The rows are here.
+  | { kind: 'built' }
+  // The journal is still building its folder indexes (once, after an upgrade).
+  | { kind: 'indexesBuilding' }
+  // The journal couldn't build its folder indexes this launch; the next launch tries again.
+  | { kind: 'indexesUnavailable' }
+  // A backfill is building this op's summary.
+  | { kind: 'building'; progress: BackfillProgress }
+  // Not built and not building, for this reason.
+  | { kind: 'unbuilt'; reason: UnbuiltReason }
+
+// Counts for a folder, or for the whole op.
+export type TreeTally = {
+  files: number
+  bytes: number
+  // The "N" of "N of M".
+  selected: number
+  // The "M".
+  selectable: number
+  rolledBack: number
+  // Units a rollback held back (they still await reversal).
+  heldBack: number
+  // Units the operation itself never finished.
+  unfinished: number
+  /**
+   *  Folders a copy or move made that still await removal: why "Roll back the
+   *  rest" has work at 0 of 0.
+   */
+  housekeepingWaiting: number
+}
 
 // Where the window sits.
 export type TreeWindow =
@@ -20898,6 +21240,21 @@ export type TypeToJumpInfo = {
   lastMatchedName?: string | null
 }
 
+// Why an op's summary isn't built and isn't building.
+export type UnbuiltReason =
+  /**
+   *  Nothing has built it yet (an op journaled before the summary existed, or one
+   *  whose summary write failed). Opening its tree starts a backfill.
+   */
+  | 'notBuilt'
+  /**
+   *  The operation is still running. A backfill can't start: inserts don't bump
+   *  `outcome_generation`, so it couldn't tell rows that landed while it read.
+   */
+  | 'operationRunning'
+  // A rollback of it is running. A backfill would restart on every outcome batch.
+  | 'rollingBack'
+
 /**
  *  The whole job's undo result: a per-operation breakdown plus the totals the UI
  *  leads with.
@@ -20911,6 +21268,18 @@ export type UndoReport = {
   restored: number
   skipped: number
 }
+
+// Why a folder row can't unfold.
+export type UnexpandableReason =
+  // The folder was empty.
+  | 'empty'
+  // Cmdr didn't record what's inside this folder.
+  | 'notRecorded'
+  /**
+   *  Cmdr didn't record what's inside, because the operation held a folder of over
+   *  50,000 files. Op-level: the journal can't say WHICH folder it was.
+   */
+  | 'capped'
 
 /**
  *  Why an unlock or a forget didn't reach a container. A wrong password is

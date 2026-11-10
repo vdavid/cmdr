@@ -146,11 +146,11 @@ describe('parseToolRollbackFacts', () => {
       initiator: 'aiClient',
       guard: true,
     })
-    expect(parseToolRollbackFacts({ operationId: 'op-1', target: 'logged', kind: 'trash', finishing: true })).toEqual({
+    expect(parseToolRollbackFacts({ operationId: 'op-1', target: 'logged', kind: 'trash', rest: true })).toEqual({
       target: 'logged',
       operationId: 'op-1',
       kind: 'trash',
-      finishing: true,
+      rest: true,
       initiator: 'aiClient',
       guard: true,
     })
@@ -165,8 +165,8 @@ describe('parseToolRollbackFacts', () => {
       {},
       { operationId: '', target: 'live' },
       { operationId: 'op-1' },
-      { operationId: 'op-1', target: 'logged', finishing: false },
-      { operationId: 'op-1', target: 'logged', kind: 'nonsense', finishing: false },
+      { operationId: 'op-1', target: 'logged', rest: false },
+      { operationId: 'op-1', target: 'logged', kind: 'nonsense', rest: false },
       { operationId: 'op-1', target: 'logged', kind: 'copy' },
     ]) {
       expect(parseToolRollbackFacts(bad)).toBeUndefined()

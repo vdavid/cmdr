@@ -11,6 +11,7 @@ use std::sync::Arc;
 use super::test_support::*;
 use cmdr_fs::entry::{FINDER_TAGS_XATTR, TagsChange};
 use cmdr_fs::volume::{InMemoryVolume, Volume, XattrReadMode};
+use cmdr_operation_log::rollback::RollbackRefusal;
 use cmdr_operation_log::types::{EntryType, ItemOutcome, OpKind, RollbackState, RowRole, SkipReason};
 use cmdr_operation_log::writer::JournalItem;
 
@@ -133,24 +134,20 @@ async fn a_file_already_back_to_its_prior_tags_counts_as_reversed() {
 }
 
 #[tokio::test]
-async fn undoing_the_undo_puts_the_written_tags_back() {
+async fn the_undo_of_a_tag_write_is_never_rolled_back() {
+    // A rollback is never itself rolled back, even where the rows would allow it (a
+    // tag undo's swap `before` and `after`): `redo_tests.rs` has the other kinds.
     let rig = Rig::new();
     let v = tagged_pair(&rig).await;
     rig.rollback("op").await;
+    assert_eq!(rig.read_op("inv-1").kind, OpKind::Tag);
+    let undo_rows = rig.read_items("inv-1");
 
-    let inverse = rig.read_op("inv-1");
-    assert_eq!(inverse.kind, OpKind::Tag);
-    assert_eq!(
-        inverse.rollback_state,
-        RollbackState::Rollbackable,
-        "a tag undo can be undone"
-    );
+    assert_eq!(rig.refusal_of("inv-1"), RollbackRefusal::IsARollback);
 
-    let redo = rig.rollback_as("inv-1", "inv-2").await;
-
-    assert_eq!((redo.reversed, redo.skipped), (2, 0), "{redo:?}");
-    assert_eq!(tags_on(&v, "/a.txt").await.as_deref(), Some(AFTER));
-    assert_eq!(tags_on(&v, "/b.txt").await.as_deref(), Some(AFTER));
+    assert_eq!(rig.read_items("inv-1"), undo_rows, "the undo's rows are untouched");
+    assert_eq!(tags_on(&v, "/a.txt").await.as_deref(), Some(BEFORE));
+    assert_eq!(tags_on(&v, "/b.txt").await.as_deref(), Some(BEFORE));
 }
 
 #[tokio::test]

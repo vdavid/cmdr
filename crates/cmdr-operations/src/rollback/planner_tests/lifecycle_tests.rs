@@ -16,7 +16,7 @@ use cmdr_operation_log::rollback::*;
 use cmdr_operation_log::store::{OperationRow, open_read_connection, read_operation, read_operation_items};
 use cmdr_operation_log::types::{
     EntryType, ExecutionStatus, Initiator, ItemOutcome, NotRollbackableReason, OpKind, RollbackState, RowRole,
-    SearchCoverage,
+    SearchCoverage, SkipReason,
 };
 use cmdr_operation_log::writer::{JournalItem, OpenOperation};
 
@@ -132,6 +132,50 @@ async fn double_rollback_is_refused_with_already_rolling_back() {
 }
 
 #[tokio::test]
+async fn simultaneous_dispatches_spawn_exactly_one_reversal() {
+    // The flip to `rolling_back` is a compare-and-set in the writer, so two
+    // dispatches that both read `rollbackable` (a dialog's narrowed press and an
+    // agent's whole-op call landing together) can't both run: the loser gets the
+    // same typed refusal a later dispatch gets. Before, a read-then-write let both
+    // through, and the whole-op run reversed the rows the person left out.
+    const DISPATCHERS: usize = 8;
+    const ROUNDS: usize = 20;
+    for round in 0..ROUNDS {
+        let op_id = format!("op-{round}");
+        let rig = rig_with_rollbackable_op(&op_id).await;
+        let spawned = std::sync::atomic::AtomicUsize::new(0);
+        let start = std::sync::Barrier::new(DISPATCHERS);
+        let refusals: Vec<_> = std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..DISPATCHERS)
+                .map(|_| {
+                    scope.spawn(|| {
+                        start.wait();
+                        rollback_operation(&rig.vm, &rig.writer, &op_id, |_plan| {
+                            spawned.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                            Ok(())
+                        })
+                        .err()
+                    })
+                })
+                .collect();
+            handles
+                .into_iter()
+                .filter_map(|h| h.join().expect("dispatcher"))
+                .collect()
+        });
+        assert_eq!(
+            spawned.load(std::sync::atomic::Ordering::SeqCst),
+            1,
+            "round {round}: exactly one dispatch runs"
+        );
+        assert!(
+            refusals.iter().all(|r| *r == RollbackRefusal::AlreadyRollingBack),
+            "round {round}: every other dispatch is refused typed: {refusals:?}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn synchronous_spawn_failure_resets_to_rollbackable_and_a_retry_is_accepted() {
     let rig = rig_with_rollbackable_op("op").await;
     // The spawn fails synchronously (a volume dropped between the gate and spawn).
@@ -199,26 +243,54 @@ async fn entry_refuses_unknown_and_not_rollbackable_and_disconnected() {
 
 // ── Startup reconcile ────────────────────────────────────────────────────────
 
-/// Seed an op left `rolling_back`, plus an optional unfinalized inverse op with
-/// the given per-item outcomes, and run the reconcile.
-fn seed_rolling_back(rig: &Rig, op_id: &str, inverse: Option<(&str, &[ItemOutcome])>) {
+/// Where an earlier rollback pass left one of the ORIGINAL op's rows, as the journal
+/// records it once that pass's outcomes landed.
+#[derive(Clone, Copy)]
+enum Row {
+    /// No pass reached it, or its outcome never landed: still `done`.
+    Untouched,
+    /// A pass reversed it: `rolled_back`.
+    Reversed,
+    /// A pass held it back: `skipped` with a stored `rollback_skip_reason`.
+    HeldBack,
+}
+
+/// One inverse op a pass opened and never finalized (the crash): its id, its
+/// `started_at`, and the outcomes of the rows it journaled.
+type Inverse<'a> = (&'a str, i64, &'a [ItemOutcome]);
+
+/// Seed a copy op `op` left `rolling_back` by a crash, its rows as `original` says
+/// earlier passes left them, plus each inverse a pass opened. Runs nothing.
+fn seed_rolling_back(rig: &Rig, original: &[Row], inverses: &[Inverse<'_>]) {
     rig.writer
         .open_operation(OpenOperation {
-            op_id: op_id.into(),
+            op_id: "op".into(),
             kind: OpKind::Copy,
             initiator: Initiator::User,
             source_volume_id: Some("src".into()),
             dest_volume_id: Some("dst".into()),
-            item_count: 1,
+            item_count: original.len() as u64,
             started_at: 1,
             rolls_back_op_id: None,
             execution_status: ExecutionStatus::Done,
         })
         .expect("open orig");
+    let rows = original
+        .iter()
+        .enumerate()
+        .map(|(i, row)| JournalItem {
+            outcome: match row {
+                Row::Untouched | Row::HeldBack => Done,
+                Row::Reversed => ItemOutcome::RolledBack,
+            },
+            ..file_unit(i as i64, "src", &format!("/f{i}"), "dst", &format!("/f{i}"), 1)
+        })
+        .collect();
+    rig.writer.record_items("op", rows).expect("record original items");
     rig.writer
-        .set_rollback_state(op_id, RollbackState::RollingBack, None)
+        .set_rollback_state("op", RollbackState::RollingBack, None)
         .expect("set rolling_back");
-    if let Some((inv_id, outcomes)) = inverse {
+    for &(inv_id, started_at, outcomes) in inverses {
         rig.writer
             .open_operation(OpenOperation {
                 op_id: inv_id.into(),
@@ -227,8 +299,8 @@ fn seed_rolling_back(rig: &Rig, op_id: &str, inverse: Option<(&str, &[ItemOutcom
                 source_volume_id: Some("dst".into()),
                 dest_volume_id: None,
                 item_count: outcomes.len() as u64,
-                started_at: 2,
-                rolls_back_op_id: Some(Into::into(op_id.to_string())),
+                started_at,
+                rolls_back_op_id: Some("op".into()),
                 execution_status: ExecutionStatus::Running,
             })
             .expect("open inverse");
@@ -253,28 +325,143 @@ fn seed_rolling_back(rig: &Rig, op_id: &str, inverse: Option<(&str, &[ItemOutcom
                 tags: None,
             })
             .collect();
-        rig.writer.record_items(inv_id, items).expect("record inverse items");
-        // Deliberately NOT finalized — it crashed mid-stream.
+        if !items.is_empty() {
+            rig.writer.record_items(inv_id, items).expect("record inverse items");
+        }
+        // Deliberately NOT finalized: it crashed mid-stream.
     }
     rig.writer.flush_blocking().expect("flush");
+    // A held-back row carries its reason, which only the engine's outcome update
+    // writes (crate-private); set it the way that update leaves the row.
+    let conn = cmdr_fs::sqlite_util::open(rig.writer.db_path()).expect("open db");
+    for (i, row) in original.iter().enumerate() {
+        if matches!(row, Row::HeldBack) {
+            conn.execute(
+                "UPDATE operation_items SET outcome = ?1, rollback_skip_reason = ?2 WHERE op_id = 'op' AND seq = ?3",
+                rusqlite::params![Skipped.as_token(), SkipReason::Drift.as_token(), i as i64],
+            )
+            .expect("hold the row back");
+        }
+    }
+    // These cells guard the clauses that read ROWS, so the op reads as one journaled
+    // before the tree summary existed (that clause has its own cell in
+    // `cmdr-operation-log`'s `tree/maintenance_tests.rs`). It also keeps the hand-made
+    // held-back row honest: the summary only moves with the writer's outcome updates.
+    conn.execute("UPDATE operations SET tree_summary = NULL WHERE op_id = 'op'", [])
+        .expect("read the op's rows");
 }
 
+/// Seed per [`seed_rolling_back`], run the startup reconcile, and read the verdict.
+fn reconciled(original: &[Row], inverses: &[Inverse<'_>]) -> RollbackState {
+    let rig = Rig::new();
+    seed_rolling_back(&rig, original, inverses);
+    reconcile_rolling_back_on_open(&rig.writer);
+    rig.read_op("op").rollback_state
+}
+
+use ItemOutcome::{Done, Skipped};
+
+// One cell per clause of the reconcile rule (`reconcile_one`); each is named for the
+// clause it guards, and deleting that clause turns exactly that cell red. Inverses
+// are seeded with the older one at `started_at` 2 and the newer at 3, so "newest" is
+// never an id tiebreak.
+
+/// Clause: the original has a `rolled_back` row. A first pass reversed `f0`, but its
+/// inverse journaled no `done` row (the writer drops a row it can't insert, and
+/// `RunAcc::flush` sends the original's outcomes either way); a second pass opened
+/// its inverse and crashed having reversed nothing.
 #[tokio::test]
-async fn reconcile_resolves_from_inverse_outcomes() {
-    // (i) inverse reversed something ⇒ partially_rolled_back.
-    {
-        let rig = Rig::new();
-        seed_rolling_back(&rig, "op", Some(("inv", &[ItemOutcome::Done, ItemOutcome::Skipped])));
-        reconcile_rolling_back_on_open(&rig.writer);
-        assert_eq!(rig.read_op("op").rollback_state, RollbackState::PartiallyRolledBack);
-    }
-    // (i') inverse reversed nothing (all skipped) ⇒ back to rollbackable.
-    {
-        let rig = Rig::new();
-        seed_rolling_back(&rig, "op", Some(("inv", &[ItemOutcome::Skipped])));
-        reconcile_rolling_back_on_open(&rig.writer);
-        assert_eq!(rig.read_op("op").rollback_state, RollbackState::Rollbackable);
-    }
+async fn reconcile_guard_a_reversed_original_row_is_partial() {
+    assert_eq!(
+        reconciled(
+            &[Row::Reversed, Row::Untouched],
+            &[("inv-1", 2, &[]), ("inv-2", 3, &[])]
+        ),
+        RollbackState::PartiallyRolledBack
+    );
+}
+
+/// Clause: the original has a stored skip reason. A first pass only held `f0` back; a
+/// second pass opened its inverse and crashed having reversed nothing.
+#[tokio::test]
+async fn reconcile_guard_a_held_back_original_row_is_partial() {
+    assert_eq!(
+        reconciled(&[Row::HeldBack], &[("inv-1", 2, &[Skipped]), ("inv-2", 3, &[])]),
+        RollbackState::PartiallyRolledBack
+    );
+}
+
+/// Clause: any inverse has a `done` row. A crash between `RunAcc::flush`'s two
+/// messages: the inverse's `done` row landed, the original's `rolled_back` didn't.
+#[tokio::test]
+async fn reconcile_guard_an_inverse_done_row_over_an_untouched_original_is_partial() {
+    assert_eq!(
+        reconciled(&[Row::Untouched], &[("inv-1", 2, &[Done])]),
+        RollbackState::PartiallyRolledBack
+    );
+}
+
+/// Clause: ANY inverse, not only the newest. The older pass's `done` row counts while
+/// the newest inverse (a crashed second pass) holds none.
+#[tokio::test]
+async fn reconcile_guard_an_older_inverses_done_row_is_partial() {
+    assert_eq!(
+        reconciled(&[Row::Untouched], &[("inv-1", 2, &[Done]), ("inv-2", 3, &[])]),
+        RollbackState::PartiallyRolledBack
+    );
+}
+
+/// Clause: ANY row of the inverse, not a prefix. Its first 10,000 rows are skips and
+/// the `done` row sits past them.
+#[tokio::test]
+async fn reconcile_guard_a_done_row_past_ten_thousand_skips_is_partial() {
+    let mut outcomes = vec![Skipped; 10_000];
+    outcomes.push(Done);
+    assert_eq!(
+        reconciled(&[Row::Untouched], &[("inv-1", 2, &outcomes)]),
+        RollbackState::PartiallyRolledBack
+    );
+}
+
+/// None of the clauses: a crash between the two flush messages of a pass that only
+/// skipped (its inverse rows landed, the original's reasons didn't) reversed nothing,
+/// so the op is cleanly rollbackable again.
+#[tokio::test]
+async fn reconcile_with_nothing_reversed_or_held_back_returns_to_rollbackable() {
+    assert_eq!(
+        reconciled(&[Row::Untouched, Row::Untouched], &[("inv-1", 2, &[Skipped])]),
+        RollbackState::Rollbackable
+    );
+}
+
+/// A pass whose outcomes all landed and then crashed before finalizing: it reversed
+/// one row and held one back.
+#[tokio::test]
+async fn reconcile_of_a_pass_that_reversed_some_is_partial() {
+    assert_eq!(
+        reconciled(&[Row::Reversed, Row::HeldBack], &[("inv-1", 2, &[Done, Skipped])]),
+        RollbackState::PartiallyRolledBack
+    );
+}
+
+/// A pass that only held items back, its outcomes landed, is partial: the same verdict
+/// `resolve_final_state` gives a finished run with skips, which Finish then retries.
+#[tokio::test]
+async fn reconcile_of_a_pass_that_only_held_items_back_is_partial() {
+    assert_eq!(
+        reconciled(&[Row::HeldBack], &[("inv-1", 2, &[Skipped])]),
+        RollbackState::PartiallyRolledBack
+    );
+}
+
+/// A second pass that crashed BEFORE its inverse row opened: the first pass's records
+/// still say it reversed something.
+#[tokio::test]
+async fn reconcile_of_a_second_pass_that_never_opened_its_inverse_stays_partial() {
+    assert_eq!(
+        reconciled(&[Row::Reversed, Row::Untouched], &[("inv-1", 2, &[Done])]),
+        RollbackState::PartiallyRolledBack
+    );
 }
 
 #[tokio::test]
@@ -381,4 +568,48 @@ async fn retention_cannot_prune_a_rollbacks_source_mid_stream() {
     assert_eq!(report.reversed, 2, "both source rows were still there to reverse");
     assert!(!exists(&dst, "/one.txt").await);
     assert!(!exists(&dst, "/two.txt").await);
+}
+
+// ── An operation a crash interrupted ─────────────────────────────────────────
+
+/// A copy the app crashed out of ends `failed` at the next launch, rollbackable since
+/// nothing it journaled overwrote anything, and its rollback takes exactly the files it
+/// recorded, through the gate like any other.
+#[tokio::test]
+async fn a_copy_a_crash_interrupted_rolls_back_what_it_recorded() {
+    let rig = Rig::new();
+    let dst = Arc::new(InMemoryVolume::new("Dst"));
+    put(&dst, "/one.txt", b"1").await;
+    put(&dst, "/two.txt", b"22").await;
+    put(&dst, "/unrecorded.txt", b"333").await;
+    rig.register("src", Arc::new(InMemoryVolume::new("Src")));
+    rig.register("dst", Arc::clone(&dst));
+    rig.seed_interrupted(
+        "op",
+        OpKind::Copy,
+        "src",
+        Some("dst"),
+        vec![
+            file_unit(0, "src", "/one.txt", "dst", "/one.txt", 1),
+            file_unit(1, "src", "/two.txt", "dst", "/two.txt", 2),
+        ],
+    );
+    rig.put_originals("op").await;
+
+    let rig = rig.relaunched();
+
+    let op = rig.read_op("op");
+    assert_eq!(op.execution_status, ExecutionStatus::Failed);
+    assert_eq!(op.ended_at, Some(op.started_at));
+    assert_eq!(op.rollback_state, RollbackState::Rollbackable);
+    let plan = rollback_operation(&rig.vm, &rig.writer, "op", |_plan| Ok(())).expect("the gate admits it");
+    let report = rig.rollback_as("op", &plan.inverse_op_id).await;
+    assert_eq!((report.reversed, report.skipped), (2, 0), "{report:?}");
+    assert_eq!(report.final_state, RollbackState::RolledBack);
+    assert!(!exists(&dst, "/one.txt").await);
+    assert!(!exists(&dst, "/two.txt").await);
+    assert!(
+        exists(&dst, "/unrecorded.txt").await,
+        "a file the journal never saw stays"
+    );
 }

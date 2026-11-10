@@ -95,7 +95,7 @@ describe('createDoneUndo', () => {
     await drain()
 
     expect(getOperationLogDetail).toHaveBeenCalledWith('op-1', 0, 0)
-    expect(undo.state).toEqual({ kind: 'ready', opKind: 'copy', finishing: false })
+    expect(undo.state).toEqual({ kind: 'ready', opKind: 'copy', rest: false })
   })
 
   it('says why when the journal says it can’t be undone', async () => {

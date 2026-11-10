@@ -110,6 +110,51 @@ async fn finishing_a_partial_rollback_whose_blocker_remains_stays_partial() {
     assert_eq!(items[0].rollback_skip_reason, Some(SkipReason::RestoreTargetOccupied));
 }
 
+/// Finish retries ONLY what an earlier pass held back. A row it already reversed is
+/// `rolled_back` and never streams again, so a file the person later put at that
+/// path, identical in size and date to the removed copy, survives the second pass.
+#[tokio::test]
+async fn finishing_never_touches_a_row_an_earlier_pass_reversed() {
+    let rig = Rig::new();
+    let src = Arc::new(InMemoryVolume::new("Src"));
+    let dst = Arc::new(InMemoryVolume::new("Dst"));
+    put(&dst, "/a.txt", b"aaa").await;
+    put(&dst, "/b.txt", b"bb").await;
+    // `b.txt`'s original is missing, so the first pass holds its copy back.
+    put(&src, "/a.txt", b"aaa").await;
+    rig.register("src", src.clone());
+    rig.register("dst", dst.clone());
+    rig.seed(
+        "op",
+        OpKind::Copy,
+        "src",
+        Some("dst"),
+        RollbackState::Rollbackable,
+        vec![
+            file_unit(0, "src", "/a.txt", "dst", "/a.txt", 3),
+            file_unit(1, "src", "/b.txt", "dst", "/b.txt", 2),
+        ],
+    );
+    let first = rig.rollback_as("op", "inv-1").await;
+    assert_eq!((first.reversed, first.skipped), (1, 1), "{first:?}");
+    assert!(!exists(&dst, "/a.txt").await);
+
+    // The person puts a new `a.txt` where the copy was, and `b.txt`'s original back.
+    put(&dst, "/a.txt", b"aaa").await;
+    put(&src, "/b.txt", b"bb").await;
+
+    let second = rig.rollback_as("op", "inv-2").await;
+
+    assert_eq!(
+        (second.reversed, second.skipped),
+        (1, 0),
+        "only the held-back row is retried: {second:?}"
+    );
+    assert_eq!(second.final_state, RollbackState::RolledBack);
+    assert!(!exists(&dst, "/b.txt").await, "the held-back copy goes now");
+    assert_eq!(read(&dst, "/a.txt").await, b"aaa", "the new file stays");
+}
+
 /// A partial op whose held-back rows the run can't see (a skip recorded before the
 /// journal kept a reason reads like the operation's own skip) gives the run nothing to
 /// do. An empty pass proves nothing came back, so the op stays partial.

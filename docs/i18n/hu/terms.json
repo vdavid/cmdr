@@ -805,7 +805,7 @@
   "complete": {
     "chosen": "befejezés",
     "accept": ["befejez", "befejeződ", "elkészül", "kész", "hiányos", "félbe"],
-    "forms": "Finish rolling back → Visszagörgetés befejezése; to complete the operation → a művelet befejezéséhez",
+    "forms": "the rest of a rollback → A többi visszagörgetése (no befejezés); to complete the operation → a művelet befejezéséhez",
     "confidence": "high",
     "sources": "macOS Finder (NE108 Másolás befejezése, AR4 Tömörítés befejezése)"
   },
@@ -2504,7 +2504,7 @@
   },
   "move": {
     "chosen": "áthelyezés",
-    "accept": ["áthelyez", "helyezd át", "mozgat", "helyez", "mozg"],
+    "accept": ["áthelyez", "helyezd át", "mozgat", "helyez", "mozg", "visszavi"],
     "forms": "label Áthelyezés; result áthelyezve; Move it instead → Helyezd át inkább; files being moved in prose → mozgat",
     "confidence": "high",
     "sources": "macOS; ms"
@@ -2610,7 +2610,14 @@
   },
   "not-finished": {
     "chosen": "Nem sikerült befejezni",
-    "accept": ["nem fejeződött be", "félbe", "nem futott le", "nem jutott a végére", "nem tudta befejezni"],
+    "accept": [
+      "nem fejeződött be",
+      "félbe",
+      "nem futott le",
+      "nem jutott a végére",
+      "nem tudta befejezni",
+      "nem fejezte be"
+    ],
     "forms": "queue status and failure toast → Nem sikerült befejezni (+ the action in the accusative, verb first); the operation log's softer Didn't finish → Nem fejeződött be; an unfinished move → félbemaradt; an unfinished copy left at the destination (a half-written file) → hiányos másolat",
     "avoid": [
       {
@@ -2755,7 +2762,7 @@
   },
   "overwrite": {
     "chosen": "felülírás",
-    "accept": ["felülír"],
+    "accept": ["felülír", "írta felül"],
     "forms": "the conflict button → Felülírás, quoted in prose: A „Felülírás” gomb",
     "confidence": "high",
     "sources": "macOS (Felülír, Felülírás a célhelyen); ms; Xfce (Felülírja?)"
@@ -3229,7 +3236,10 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS Finder (Átnevezés, RN33/RN37 nem nevezhető át)"
+    "sources": "macOS Finder (Átnevezés, RN33/RN37 nem nevezhető át)",
+    "exceptions": {
+      "operationLog.tree.statusRenamedBack": "Renamed back is a rollback result that gives the old name back, so it takes the put-back ruling’s old-name form: Név visszaállítva (queue.row.reversalRenamingBack A régi nevek visszaállítása)."
+    }
   },
   "rename-cycle": {
     "chosen": "átnevezési ciklus",
@@ -3360,7 +3370,7 @@
   "rollback": {
     "chosen": "visszagörgetés",
     "accept": ["visszagörget", "görgethető vissza"],
-    "forms": "the button → Visszagörgetés; the progress title → Visszagörgetés…; status cells: Visszagörgethető / Nem görgethető vissza / Visszagörgetés folyamatban / Visszagörgetve / Részben visszagörgetve; Finish rolling back → Visszagörgetés befejezése",
+    "forms": "the button → Visszagörgetés; the progress title → Visszagörgetés…; status cells: Visszagörgethető / Nem görgethető vissza / Visszagörgetés folyamatban / Visszagörgetve / Részben visszagörgetve; Roll back the rest → A többi visszagörgetése",
     "avoid": [
       {
         "form": "visszavonás",
@@ -4285,8 +4295,8 @@
   },
   "from-to": {
     "chosen": "Forrás / Cél",
-    "accept": ["Forrás", "Cél", "Innen"],
-    "forms": "group headings and fact labels → Forrás / Cél; the inline label before a scan-phase path → Innen:",
+    "accept": ["Forrás", "Cél", "Innen", "Ide"],
+    "forms": "group headings and fact labels → Forrás / Cél; the inline label before a scan-phase path → Innen:; the Operation log's route lines → Innen: {from}, ide: {to} / Ide: {to} / Innen a Kukába: {from}",
     "confidence": "high",
     "sources": "catalog (fileOperations.transferDialog.sourceGroupTitle Forrás, targetGroupTitle Cél, scanPhase.fromLabel Innen:); Total Commander and Double Commander hu"
   },

@@ -704,6 +704,30 @@
   "@commands.multiRenameRename.label": {
     "sourceHash": "da881fb"
   },
+  "commands.operationLogGoToItems.label": "Перейти до елементів операції",
+  "@commands.operationLogGoToItems.label": {
+    "sourceHash": "495419e"
+  },
+  "commands.operationLogToggleItem.label": "Вибрати елемент або скасувати вибір",
+  "@commands.operationLogToggleItem.label": {
+    "sourceHash": "1c42fe5"
+  },
+  "commands.operationLogToggleItemAndDown.label": "Вибрати елемент або скасувати вибір і перейти вниз",
+  "@commands.operationLogToggleItemAndDown.label": {
+    "sourceHash": "8017eef"
+  },
+  "commands.operationLogSelectAll.label": "Вибрати всі елементи",
+  "@commands.operationLogSelectAll.label": {
+    "sourceHash": "26c94c1"
+  },
+  "commands.operationLogDeselectAll.label": "Скасувати вибір усіх елементів",
+  "@commands.operationLogDeselectAll.label": {
+    "sourceHash": "d1df115"
+  },
+  "commands.operationLogRollBack.label": "Відкотити вибрані елементи",
+  "@commands.operationLogRollBack.label": {
+    "sourceHash": "3f2a947"
+  },
   "commands.fileView.label": "Перегляд",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

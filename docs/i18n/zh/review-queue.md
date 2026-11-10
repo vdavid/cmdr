@@ -8,9 +8,9 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 
 - **compromised → `已泄露`** (`servers.refusal.hostKeyRevoked`): no Apple term; `已泄露` is the common security word and
   plainer than `已失陷`. Confirm it reads right for a revoked SSH host key.
-- **Finish rolling back → `完成回滚`** (`operationLog.dialog.finishRollBack`,
-  `fileOperations.rollbackConfirm.finishRollBack`): `继续回滚` says "not a fresh start" more plainly, but the English
-  says Finish, and `继续` belongs to Resume. The two keys must stay identical.
+- **Finish rolling back → `完成回滚`** (`operationLog.dialog.rollBackRest`,
+  `fileOperations.rollbackConfirm.rollBackRest`): `继续回滚` says "not a fresh start" more plainly, but the English says
+  Finish, and `继续` belongs to Resume. The two keys must stay identical.
 - **Places → `共享位置`** (`shortcuts.scope.places`): today the list is SMB shares; once object-storage buckets land, a
   more neutral word may fit better. Bare `位置` is reserved for file-system locations, `地点` for photos.
 - **"has stopped moving" → `停住不动了`** (`fileOperations.transferProgress.stallUnknown`,

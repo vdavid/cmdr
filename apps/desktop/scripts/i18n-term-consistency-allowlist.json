@@ -326,10 +326,6 @@
         "reason": "Noun vs verb, both Finder's: `Pré-visualização` labels a preview panel or sample (`askCmdr.renameReview.preview`, `settings.appearance.datePreviewLabel`), `Pré-visualizar` is the command (`commands.fileQuickLook.other.label`)."
       },
       {
-        "source": "Rolled back",
-        "reason": "Gender agreement, not drift: `Revertida` agrees with the operation (`operationLog.rollback.rolledBack`), `Revertido` with the item (`operationLog.outcome.rolledBack`)."
-      },
-      {
         "source": "Running",
         "reason": "Two senses: `Em andamento` is a task in progress (`operationLog.status.running`, matching `queue.row.status`), `Em execução` is a local AI server that is up (`ai.local.statusRunning`)."
       },

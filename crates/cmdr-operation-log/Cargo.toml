@@ -50,3 +50,7 @@ cmdr-operation-log = { path = ".", features = ["testing"] }
 cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # Scratch directories for the store and writer cells' databases.
 tempfile = "3"
+# `hooks` (an empty feature, no extra crates) for `Connection::progress_handler`, which
+# is how the item tree's structural gate COUNTS SQLite's VM steps per read
+# (`src/tree/scale_tests.rs`). Dev-only, so no shipped build carries the hook machinery.
+rusqlite = { version = "0.41", features = ["hooks"] }

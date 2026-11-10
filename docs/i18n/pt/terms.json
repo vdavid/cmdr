@@ -532,8 +532,20 @@
   },
   "check": {
     "chosen": "verificar",
-    "accept": ["confer", "confira", "verifi", "veja", "confirme", "varredura", "compar", "olhada"],
-    "forms": "Cmdr checking on its own → verificar / Verificando; the user checking → conferir (Confira, Já conferi); Checking for changes → Verificação de mudanças; the AI tool status line → Conferindo / Conferiu",
+    "accept": [
+      "confer",
+      "confira",
+      "verifi",
+      "veja",
+      "confirme",
+      "varredura",
+      "compar",
+      "olhada",
+      "marc",
+      "marque",
+      "desmarc"
+    ],
+    "forms": "Cmdr checking on its own → verificar / Verificando; the user checking → conferir (Confira, Já conferi); Checking for changes → Verificação de mudanças; the AI tool status line → Conferindo / Conferiu; ticking a checkbox → marcar / desmarcar (Marcar todos os itens, Desmarcar tudo; Finder Get Info: desmarque Bloqueado)",
     "confidence": "high",
     "sources": "macOS Finder pt-BR (Verificando os conteúdos…); SoftwareUpdate (Check Again → Verificar Novamente)"
   },
@@ -659,7 +671,7 @@
   "complete": {
     "chosen": "concluir",
     "accept": ["conclu", "incomplet"],
-    "forms": "Finish rolling back → Concluir a reversão; unfinished copy → cópia incompleta; unfinished move → movimentação incompleta",
+    "forms": "the rest of a rollback → Reverter o restante (no concluir); unfinished copy → cópia incompleta; unfinished move → movimentação incompleta",
     "avoid": [
       {
         "form": "inacabada",
@@ -1928,8 +1940,8 @@
   },
   "move": {
     "chosen": "Mover",
-    "accept": ["mov"],
-    "forms": "progress Movendo; noun movimentação (Finder MV2_V1 Desfazer Movimentação)",
+    "accept": ["mov", "levad", "leva os", "leva de volta"],
+    "forms": "progress Movendo; noun movimentação (Finder MV2_V1 Desfazer Movimentação); a rollback moving files back → levar de volta (Levado de volta), per put-back's three families",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR"
   },
@@ -2021,7 +2033,7 @@
   },
   "not-finished": {
     "chosen": "Não foi possível concluir",
-    "accept": ["concluir", "terminou", "não foi concluíd", "não concluíd"],
+    "accept": ["concluir", "terminou", "não foi concluíd", "não concluíd", "não concluiu"],
     "forms": "failure toast arms add the action noun: Não foi possível concluir a cópia / a movimentação / o apagamento; the transfer tree's tight count {countText} não concluído / não concluídos (plural arms)",
     "avoid": [
       {
@@ -2549,14 +2561,14 @@
   },
   "remove": {
     "chosen": "Remover",
-    "accept": ["remov"],
+    "accept": ["remov", "apag"],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR",
-    "note": "Remover takes an entry out of a list; files are apagados."
+    "note": "Remover takes an entry out of a list; files are apagados (a rollback's removed items → Apagado; removing a locked file → apagá-lo)."
   },
   "rename": {
     "chosen": "Renomear",
-    "accept": ["renome", "devolver o nome", "devolver os nomes"],
+    "accept": ["renome", "devolver o nome", "devolver os nomes", "nome restaurado"],
     "forms": "noun renomeação (feminine); progress Renomeando",
     "avoid": [
       {
@@ -2667,7 +2679,7 @@
   "rollback": {
     "chosen": "Reverter",
     "accept": ["revert", "reversão"],
-    "forms": "operation Revertida (fem), item Revertido (masc), progress Revertendo; noun a reversão; Finish rolling back → Concluir a reversão",
+    "forms": "operation Revertida (fem), item Revertido (masc), progress Revertendo; noun a reversão; Roll back the rest → Reverter o restante",
     "confidence": "confirmed",
     "sources": "shipped pt catalog",
     "decision": "Rollback confirm and finish"

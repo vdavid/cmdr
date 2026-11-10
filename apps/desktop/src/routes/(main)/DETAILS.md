@@ -209,7 +209,9 @@ the answer is the same whichever road a command came in by.
   Multi-rename sheet's F2 (its Presets menu) is File > Rename's accelerator. While the sheet is mounted, the MENU road's
   `file.rename` runs the sheet's claim, ahead of the gate that would refuse it; every other road, and the menu road with
   no claim, is unchanged. The sheet answers the keydown too and drops the second half of a double fire itself
-  (`createKeyRoadEcho`), so it works whichever of AppKit and the webview gets the key first.
+  (`createKeyRoadEcho`), so it works whichever of AppKit and the webview gets the key first. A claim may answer `false`
+  to pass a fire on: the Operation log claims `selection.selectAll` / `deselectAll` and takes them only while its item
+  tree holds focus (`lib/operation-log/DETAILS.md` § Keyboard).
 - **Why it lives in the core.** When only the keyboard resolver knew about dialogs, a native-menu accelerator (⌘W, ⌘T,
   ⌘K) reached its handler behind an open dialog: the `execute-command` listener had no gate. Refusing that listener
   wholesale isn't the fix either (§ Native-menu and input-focus interactions); the per-command rule is.

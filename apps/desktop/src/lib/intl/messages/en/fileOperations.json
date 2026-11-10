@@ -1642,9 +1642,9 @@
     "description": "Body of the Rollback confirmation shown on a MOVE (or a move to the trash) that is still RUNNING. The sibling of fileOperations.rollbackConfirm.body, which covers a running copy. The difference is the whole point: rolling back a move deletes NOTHING, it carries the files back where they came from, so keep the tone calm rather than a warning and never word it as a delete. Three facts, all load-bearing: everything moved SO FAR travels back (not only the file in flight, which is what a plain Cancel leaves), a file at the destination that this move overwrote is gone for good because no copy of it was kept, and Cmdr leaves alone every file it can’t match against what it moved, so the reversal can come out partial. Keep the last sentence parallel with its siblings. Deliberately gives no file count: the running counter includes files the operation skipped, so a number here would be wrong.",
     "screenshot": "rollback-confirmation-stopAndMoveBack.png"
   },
-  "fileOperations.rollbackConfirm.titleFinish": "Finish rolling this back?",
-  "@fileOperations.rollbackConfirm.titleFinish": {
-    "description": "Title of the same dialog when the operation is already PARTLY rolled back, so pressing the button carries on from where the rollback stopped rather than starting a fresh one. The body under it is unchanged and still says what happens to the files. Sibling of fileOperations.rollbackConfirm.title, which covers the first time round."
+  "fileOperations.rollbackConfirm.titleRest": "Roll back the rest?",
+  "@fileOperations.rollbackConfirm.titleRest": {
+    "description": "Title of the rollback confirmation when the operation is already PARTLY rolled back and the person asked to roll back everything that’s left. The body under it still says what happens to the files. Sibling of fileOperations.rollbackConfirm.title, which covers the first time round."
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "This deletes the files and folders the operation created. Cmdr skips anything it isn’t sure about, so a few may stay behind.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
@@ -1680,9 +1680,33 @@
     "description": "The confirming button on the Rollback confirmation: go ahead and undo the operation. The body above says what that does to the files, so this stays a plain verb and never names a delete. Styled as the destructive choice only in the two variants that really remove files. Matches the \"Rollback\" button that opened this dialog.",
     "screenshot": "rollback-confirmation-stopAndDelete.png"
   },
-  "fileOperations.rollbackConfirm.finishRollBack": "Finish rolling back",
-  "@fileOperations.rollbackConfirm.finishRollBack": {
-    "description": "The confirming button on the same dialog when the operation is already PARTLY rolled back: carry on from where the rollback stopped. Word it exactly like the \"Finish rolling back\" button in the Operation log that opened this dialog (operationLog.dialog.finishRollBack), so the two read as the same action."
+  "fileOperations.rollbackConfirm.rollBackRest": "Roll back the rest",
+  "@fileOperations.rollbackConfirm.rollBackRest": {
+    "description": "The confirming button of the rollback confirmation when the operation is already PARTLY rolled back: roll back everything that’s left. Word it exactly like the \"Roll back the rest\" button in the Operation log that opened this dialog (operationLog.dialog.rollBackRest), so the two read as the same action."
+  },
+  "fileOperations.rollbackConfirm.titleSelected": "Roll back the selected items?",
+  "@fileOperations.rollbackConfirm.titleSelected": {
+    "description": "Title of the rollback confirmation when the person checked only SOME of an operation’s items in the Operation log and pressed \"Roll back selected\". The body under it says what happens to those items."
+  },
+  "fileOperations.rollbackConfirm.rollBackSelected": "Roll back selected",
+  "@fileOperations.rollbackConfirm.rollBackSelected": {
+    "description": "The confirming button of the rollback confirmation when the person checked only some of an operation’s items. Word it like the \"Roll back selected\" button in the Operation log that opened this dialog (operationLog.dialog.rollBackSelected), without the count."
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "This deletes the selected files and folders the operation created. Cmdr skips anything it isn’t sure about, so a few may stay behind.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
+    "description": "Body of the rollback confirmation when the person checked only SOME items of an operation that created things (a copy, a new file or folder, a compress). Same two facts as fileOperations.rollbackConfirm.bodyUndoByDeleting, narrowed to the selected items: rolling back deletes them, and Cmdr leaves alone anything it can’t match against what it recorded. Keep the second sentence parallel to its siblings. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "This moves the selected files back where they came from. Cmdr skips anything it isn’t sure about, so a few may stay where they are.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": {
+    "description": "Body of the rollback confirmation when the person checked only SOME items of a move or a move to the trash. Same facts as fileOperations.rollbackConfirm.bodyUndoByMovingBack, narrowed to the selected items. Nothing is deleted. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "This gives the selected files their old names back. Cmdr skips anything it isn’t sure about, so a few may keep the names they have now.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": {
+    "description": "Body of the rollback confirmation when the person checked only SOME items of a rename. Same facts as fileOperations.rollbackConfirm.bodyUndoByRenamingBack, narrowed to the selected items. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "This gives the selected files the tags they had before. Cmdr skips any file whose tags changed since, so a few may keep the tags they have now.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": {
+    "description": "Body of the rollback confirmation when the person checked only SOME items of a Finder color-tag change. Same facts as fileOperations.rollbackConfirm.bodyUndoByRestoringTags, narrowed to the selected items."
   },
   "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Removed the item Cmdr had written.} other {Removed all {countText} items Cmdr had written.}}",
   "@fileOperations.cancelRollback.doneDeleting": {

@@ -1049,9 +1049,9 @@
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a058f98"
   },
-  "fileOperations.rollbackConfirm.titleFinish": "Ångra klart den här åtgärden?",
-  "@fileOperations.rollbackConfirm.titleFinish": {
-    "sourceHash": "cfc998a"
+  "fileOperations.rollbackConfirm.titleRest": "Ångra resten?",
+  "@fileOperations.rollbackConfirm.titleRest": {
+    "sourceHash": "08a5c9b"
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Det här raderar filerna och mapparna som åtgärden skapade. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
@@ -1081,9 +1081,33 @@
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
   },
-  "fileOperations.rollbackConfirm.finishRollBack": "Ångra klart",
-  "@fileOperations.rollbackConfirm.finishRollBack": {
-    "sourceHash": "dbe3771"
+  "fileOperations.rollbackConfirm.rollBackRest": "Ångra resten",
+  "@fileOperations.rollbackConfirm.rollBackRest": {
+    "sourceHash": "f954882"
+  },
+  "fileOperations.rollbackConfirm.titleSelected": "Ångra de markerade objekten?",
+  "@fileOperations.rollbackConfirm.titleSelected": {
+    "sourceHash": "94d4cad"
+  },
+  "fileOperations.rollbackConfirm.rollBackSelected": "Ångra markerade",
+  "@fileOperations.rollbackConfirm.rollBackSelected": {
+    "sourceHash": "32a94c5"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Det här raderar de markerade filerna och mapparna som åtgärden skapade. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
+    "sourceHash": "a2ed919"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Det här flyttar tillbaka de markerade filerna dit de kom ifrån. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar där de är.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": {
+    "sourceHash": "b90e365"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "Det här ger de markerade filerna tillbaka sina gamla namn. Cmdr hoppar över allt som är osäkert, så en del kan behålla namnet de har nu.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": {
+    "sourceHash": "2d2606f"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "Det här ger de markerade filerna tillbaka de taggar de hade förut. Cmdr hoppar över varje fil vars taggar har ändrats sedan dess, så en del kan behålla taggarna de har nu.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": {
+    "sourceHash": "e388f91"
   },
   "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Raderade objektet som Cmdr hade skrivit.} other {Raderade alla {countText} objekt som Cmdr hade skrivit.}}",
   "@fileOperations.cancelRollback.doneDeleting": {

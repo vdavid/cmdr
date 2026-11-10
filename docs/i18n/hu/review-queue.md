@@ -81,6 +81,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **`fileOperations.transferProgress.canceledAlertMessage` → `Megszakítottad ezt a másolást.`**: the `cancel` note says
   a sentence about what the user stopped takes `leállít`, but this follows `errors.write.cancelled.message.*`
   (`megszakítottad`) and the running-operation form; is `Leállítottad ezt a másolást` the better read?
+- **`fileOperations.rollbackConfirm.titleSelected` → `A kijelölt elemek visszagörgetése?`**: a nominal question, so it
+  matches the shortcut row `commands.operationLogRollBack.label` byte for byte (`i18n-terms`); its siblings `title` and
+  `titleRest` are `te` questions (`Visszagörgeted …?`). Decide together with `titleRest` which form the family takes.
 
 ## Length
 

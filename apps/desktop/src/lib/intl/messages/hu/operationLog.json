@@ -19,17 +19,9 @@
   "@operationLog.dialog.recordingOff": {
     "sourceHash": "0519736"
   },
-  "operationLog.dialog.itemsError": "Nem sikerült betölteni ezeket az elemeket.",
-  "@operationLog.dialog.itemsError": {
-    "sourceHash": "596819e"
-  },
   "operationLog.dialog.noItems": "Ehhez a művelethez nincsenek rögzített elemek.",
   "@operationLog.dialog.noItems": {
     "sourceHash": "c7d7bfb"
-  },
-  "operationLog.dialog.moreItems": "{count, plural, one {és {countText} további elem} other {és {countText} további elem}}",
-  "@operationLog.dialog.moreItems": {
-    "sourceHash": "c39507d"
   },
   "operationLog.dialog.loadMore": "További 50 betöltése",
   "@operationLog.dialog.loadMore": {
@@ -39,25 +31,210 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
-  "operationLog.dialog.finishRollBack": "Visszagörgetés befejezése",
-  "@operationLog.dialog.finishRollBack": {
-    "sourceHash": "dbe3771"
+  "operationLog.dialog.rollBackRest": "A többi visszagörgetése",
+  "@operationLog.dialog.rollBackRest": {
+    "sourceHash": "f954882"
   },
-  "operationLog.dialog.rollbackOf": "Ennek a visszagörgetése: „<operationLink>{operation}</operationLink>” ({time})",
-  "@operationLog.dialog.rollbackOf": {
-    "sourceHash": "4885c73"
+  "operationLog.dialog.rollBackSelected": "{count, plural, one {Kijelöltek visszagörgetése ({countText})} other {Kijelöltek visszagörgetése ({countText})}}",
+  "@operationLog.dialog.rollBackSelected": {
+    "sourceHash": "d28d5c7"
   },
-  "operationLog.dialog.rollbackOfUnlisted": "Egy korábbi művelet visszagörgetése",
-  "@operationLog.dialog.rollbackOfUnlisted": {
-    "sourceHash": "50d060d"
-  },
-  "operationLog.dialog.latestRollback": "Legutóbbi visszagörgetés: „<operationLink>{operation}</operationLink>” ({time})",
-  "@operationLog.dialog.latestRollback": {
-    "sourceHash": "a8275f9"
+  "operationLog.dialog.selectedCount": "{count, plural, one {{selectableText} közül {selectedText} kijelölve} other {{selectableText} közül {selectedText} kijelölve}}",
+  "@operationLog.dialog.selectedCount": {
+    "sourceHash": "8891bd3"
   },
   "operationLog.dialog.close": "Bezárás",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "operationLog.dialog.operations": "Műveletek",
+  "@operationLog.dialog.operations": {
+    "sourceHash": "358cc20"
+  },
+  "operationLog.tree.label": "Elemek",
+  "@operationLog.tree.label": {
+    "sourceHash": "fb8e7a1"
+  },
+  "operationLog.tree.columnName": "Név",
+  "@operationLog.tree.columnName": {
+    "sourceHash": "dcd1d52"
+  },
+  "operationLog.tree.columnSize": "Méret",
+  "@operationLog.tree.columnSize": {
+    "sourceHash": "1af8519"
+  },
+  "operationLog.tree.columnStatus": "Állapot",
+  "@operationLog.tree.columnStatus": {
+    "sourceHash": "920e413"
+  },
+  "operationLog.tree.selectAll": "Összes kijelölése",
+  "@operationLog.tree.selectAll": {
+    "sourceHash": "1fc9a38"
+  },
+  "operationLog.tree.include": "Visszagörgetés: {name}",
+  "@operationLog.tree.include": {
+    "sourceHash": "2bdcfa0"
+  },
+  "operationLog.tree.comesBackWithFolder": "A mappájával együtt kerül vissza.",
+  "@operationLog.tree.comesBackWithFolder": {
+    "sourceHash": "e6275c5"
+  },
+  "operationLog.tree.folderFiles": "{count, plural, one {{countText} fájl} other {{countText} fájl}}",
+  "@operationLog.tree.folderFiles": {
+    "sourceHash": "3c08428"
+  },
+  "operationLog.tree.statusRemoved": "Eltávolítva",
+  "@operationLog.tree.statusRemoved": {
+    "sourceHash": "4118fb4"
+  },
+  "operationLog.tree.statusMovedBack": "Visszahelyezve",
+  "@operationLog.tree.statusMovedBack": {
+    "sourceHash": "c6bc4e6"
+  },
+  "operationLog.tree.statusRenamedBack": "Név visszaállítva",
+  "@operationLog.tree.statusRenamedBack": {
+    "sourceHash": "769ab78"
+  },
+  "operationLog.tree.statusTagsRestored": "Címkék visszaállítva",
+  "@operationLog.tree.statusTagsRestored": {
+    "sourceHash": "062e231"
+  },
+  "operationLog.tree.statusSkipped": "Kihagyva",
+  "@operationLog.tree.statusSkipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.tree.statusUnfinished": "Nem fejeződött be",
+  "@operationLog.tree.statusUnfinished": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.tree.rollupRolledBack": "{count, plural, one {{countText} visszagörgetve} other {{countText} visszagörgetve}}",
+  "@operationLog.tree.rollupRolledBack": {
+    "sourceHash": "0b93ef8"
+  },
+  "operationLog.tree.rollupSkipped": "{count, plural, one {{countText} kihagyva} other {{countText} kihagyva}}",
+  "@operationLog.tree.rollupSkipped": {
+    "sourceHash": "3cb9b95"
+  },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Hungarian lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
+  "operationLog.tree.operationSkipped": "Ezt a művelet kihagyta, így nincs mit visszagörgetni.",
+  "@operationLog.tree.operationSkipped": {
+    "sourceHash": "b883085"
+  },
+  "operationLog.tree.operationUnfinished": "Ezt a művelet nem fejezte be, így nincs mit visszagörgetni.",
+  "@operationLog.tree.operationUnfinished": {
+    "sourceHash": "e07232b"
+  },
+  "operationLog.tree.unexpandableEmpty": "Ez a mappa üres volt.",
+  "@operationLog.tree.unexpandableEmpty": {
+    "sourceHash": "0c67a8d"
+  },
+  "operationLog.tree.unexpandableNotRecorded": "A Cmdr nem rögzítette, mi van ebben a mappában.",
+  "@operationLog.tree.unexpandableNotRecorded": {
+    "sourceHash": "613608a"
+  },
+  "operationLog.tree.unexpandableCapped": "A Cmdr nem rögzítette, mi van ebben a mappában, mert ebben a műveletben volt egy 50 000-nél több fájlt tartalmazó mappa.",
+  "@operationLog.tree.unexpandableCapped": {
+    "sourceHash": "6657eb0"
+  },
+  "operationLog.tree.otherEndFrom": "Innen: {path}",
+  "@operationLog.tree.otherEndFrom": {
+    "sourceHash": "0562430"
+  },
+  "operationLog.tree.otherEndTo": "Ide: {path}",
+  "@operationLog.tree.otherEndTo": {
+    "sourceHash": "ea4bf38"
+  },
+  "operationLog.tree.backfilling": "A művelet elemeinek beolvasása…",
+  "@operationLog.tree.backfilling": {
+    "sourceHash": "45f623f"
+  },
+  "operationLog.tree.backfillProgress": "{totalText} elemből {doneText} beolvasva",
+  "@operationLog.tree.backfillProgress": {
+    "sourceHash": "230eb62"
+  },
+  "operationLog.tree.indexesBuilding": "A Cmdr a frissítés után előkészíti az előzményeidet. Az elemek egy pillanat múlva megjelennek.",
+  "@operationLog.tree.indexesBuilding": {
+    "sourceHash": "0d6f56b"
+  },
+  "operationLog.tree.indexesUnavailable": "A Cmdr most nem tudta előkészíteni az előzményeidet, ezért ezek az elemek még nem jelenhetnek meg. Amikor legközelebb megnyitod a Cmdrt, újra megpróbálja.",
+  "@operationLog.tree.indexesUnavailable": {
+    "sourceHash": "8d2fec7"
+  },
+  "operationLog.tree.operationRunning": "Ez a művelet még folyamatban van. Az elemei itt jelennek meg, amint befejeződik.",
+  "@operationLog.tree.operationRunning": {
+    "sourceHash": "eebeba4"
+  },
+  "operationLog.tree.rollingBack": "Ennek a műveletnek a visszagörgetése folyamatban van. Az elemei itt jelennek meg, amint ez befejeződik.",
+  "@operationLog.tree.rollingBack": {
+    "sourceHash": "35ef2b2"
+  },
+  "operationLog.tree.unreadable": "Nem sikerült beolvasni ennek a műveletnek az elemeit. Válaszd ki újra a listában, és a Cmdr még egyszer megpróbálja.",
+  "@operationLog.tree.unreadable": {
+    "sourceHash": "71453e9"
+  },
+  "operationLog.tree.togglesCapped": "Ennél több elemet a Cmdr nem tud egyenként kijelölni. Jelölj ki inkább egy egész mappát.",
+  "@operationLog.tree.togglesCapped": {
+    "sourceHash": "36aa8fa"
+  },
+  "operationLog.route.fromTo": "Innen: {from}, ide: {to}",
+  "@operationLog.route.fromTo": {
+    "sourceHash": "6eeb9b3"
+  },
+  "operationLog.route.to": "Ide: {to}",
+  "@operationLog.route.to": {
+    "sourceHash": "55b2319"
+  },
+  "operationLog.route.fromToTrash": "Innen a Kukába: {from}",
+  "@operationLog.route.fromToTrash": {
+    "sourceHash": "9eff97f"
+  },
+  "operationLog.route.from": "Innen: {from}",
+  "@operationLog.route.from": {
+    "sourceHash": "5848d99"
+  },
+  "operationLog.route.in": "Itt: {path}",
+  "@operationLog.route.in": {
+    "sourceHash": "b1b3028"
+  },
+  "operationLog.skipReason.unverifiablePrecondition": "A Cmdr nem tudta összevetni ezt azzal, amit rögzített, ezért nem nyúlt hozzá.",
+  "@operationLog.skipReason.unverifiablePrecondition": {
+    "sourceHash": "c33ca33"
+  },
+  "operationLog.skipReason.drift": "Ez a művelet óta megváltozott, ezért a Cmdr nem nyúlt hozzá.",
+  "@operationLog.skipReason.drift": {
+    "sourceHash": "6768024"
+  },
+  "operationLog.skipReason.restoreTargetOccupied": "Az eredeti helyén most valami más van, ezért a Cmdr nem írta felül.",
+  "@operationLog.skipReason.restoreTargetOccupied": {
+    "sourceHash": "1b1d375"
+  },
+  "operationLog.skipReason.dirNotEmpty": "Ebbe a mappába azóta valami új került, ezért a Cmdr megtartotta.",
+  "@operationLog.skipReason.dirNotEmpty": {
+    "sourceHash": "8fc1b3e"
+  },
+  "operationLog.skipReason.alreadyGone": "Ez már úgy volt, ahogy korábban.",
+  "@operationLog.skipReason.alreadyGone": {
+    "sourceHash": "71176d1"
+  },
+  "operationLog.skipReason.vanished": "Ez már nincs ott, ahol a művelet hagyta, így nincs mit visszahelyezni.",
+  "@operationLog.skipReason.vanished": {
+    "sourceHash": "a715fb0"
+  },
+  "operationLog.skipReason.originalGone": "Az eredeti már nincs meg, ezért a Cmdr megtartotta ezt a másolatot, ahelyett hogy törölné az egyetlen megmaradt példányt.",
+  "@operationLog.skipReason.originalGone": {
+    "sourceHash": "014fcaa"
+  },
+  "operationLog.skipReason.failed": "A Cmdr nem tudta ezt visszagörgetni. A részleteket megtalálod a naplóban.",
+  "@operationLog.skipReason.failed": {
+    "sourceHash": "76c2b80"
+  },
+  "operationLog.skipReason.locked": "Ez úgy van zárolva, hogy csak rendszergazda távolíthatja el, ezért a Cmdr nem nyúlt hozzá.",
+  "@operationLog.skipReason.locked": {
+    "sourceHash": "39e4c78"
   },
   "operationLog.summary.canceled": "{summary}, majd megszakítva (tervezett: {plannedText})",
   "@operationLog.summary.canceled": {
@@ -135,9 +312,9 @@
   "@operationLog.status.running": {
     "sourceHash": "f4ccae2"
   },
-  "operationLog.status.done": "Kész",
-  "@operationLog.status.done": {
-    "sourceHash": "11a6767"
+  "operationLog.status.finished": "Befejeződött",
+  "@operationLog.status.finished": {
+    "sourceHash": "7804f7a"
   },
   "operationLog.status.failed": "Nem fejeződött be",
   "@operationLog.status.failed": {
@@ -167,9 +344,45 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
-  "operationLog.rollback.partiallyRolledBackNotice": "A Cmdr visszagörgette, amit tudott, a többit pedig úgy hagyta, ahogy volt. A befejezéshez még egy kör kell, és amiben a Cmdr továbbra sem biztos, azt megint kihagyja.",
+  "operationLog.rollback.partiallyRolledBackNotice": "A Cmdr visszagörgette, amit tudott, a többit pedig úgy hagyta, ahogy volt. A többi visszagörgetéséhez még egy kör kell, és amiben a Cmdr továbbra sem biztos, azt megint kihagyja.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
-    "sourceHash": "77e6f25"
+    "sourceHash": "8c0a534"
+  },
+  "operationLog.rollback.interruptedNotice": "A Cmdr bezárult, mielőtt ez a művelet befejeződött volna, így lehet, hogy nem rögzített mindent, amit a művelet csinált. A visszagörgetés csak arra terjed ki, amit rögzített.",
+  "@operationLog.rollback.interruptedNotice": {
+    "sourceHash": "642e6fc"
+  },
+  "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} elem újra úgy van, ahogy korábban volt.} other {{countText} elem újra úgy van, ahogy korábban volt.}}",
+  "@operationLog.rollback.partialRolledBack": {
+    "sourceHash": "0202fe5"
+  },
+  "operationLog.rollback.partialHeldBack": "{count, plural, one {A Cmdr kihagyott {countText} elemet, amelyben nem volt biztos.} other {A Cmdr kihagyott {countText} elemet, amelyekben nem volt biztos.}}",
+  "@operationLog.rollback.partialHeldBack": {
+    "sourceHash": "5a43937"
+  },
+  "operationLog.rollback.partialWaiting": "{count, plural, one {{countText} elem még nincs visszagörgetve.} other {{countText} elem még nincs visszagörgetve.}}",
+  "@operationLog.rollback.partialWaiting": {
+    "sourceHash": "0850c46"
+  },
+  "operationLog.rollback.rollbackableNoticeCopy": "A visszagörgetés törli a kijelölt másolatokat. Az eredetiek a helyükön maradnak.",
+  "@operationLog.rollback.rollbackableNoticeCopy": {
+    "sourceHash": "6710bb4"
+  },
+  "operationLog.rollback.rollbackableNoticeDelete": "A visszagörgetés törli azokat a kijelölt elemeket, amelyeket ez a művelet létrehozott.",
+  "@operationLog.rollback.rollbackableNoticeDelete": {
+    "sourceHash": "d0e028e"
+  },
+  "operationLog.rollback.rollbackableNoticeMoveBack": "A visszagörgetés visszaviszi a kijelölt elemeket oda, ahonnan jöttek.",
+  "@operationLog.rollback.rollbackableNoticeMoveBack": {
+    "sourceHash": "2cf40c3"
+  },
+  "operationLog.rollback.rollbackableNoticeRenameBack": "A visszagörgetés visszaadja a kijelölt elemek régi nevét.",
+  "@operationLog.rollback.rollbackableNoticeRenameBack": {
+    "sourceHash": "8f2b884"
+  },
+  "operationLog.rollback.rollbackableNoticeTagsBack": "A visszagörgetés visszaadja a kijelölt elemek korábbi címkéit.",
+  "@operationLog.rollback.rollbackableNoticeTagsBack": {
+    "sourceHash": "d45b11b"
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "Ennek a visszagörgetése már fut. A műveleti sorban látod.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {
@@ -178,6 +391,10 @@
   "operationLog.rollback.refusalAlreadyRolledBack": "Ez már úgy van, ahogy korábban volt.",
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalIsARollback": "Ez a művelet egy másikat vont vissza, egy visszavonást pedig nem lehet visszavonni. A visszavont művelet továbbra is ott van a Műveletnaplóban.",
+  "@operationLog.rollback.refusalIsARollback": {
+    "sourceHash": "37738da"
   },
   "operationLog.rollback.refusalOverwrote": "Ez a művelet olyan fájlokat írt felül, amik már ott voltak. A Cmdr nem őriz meg másolatot arról, amit felülír, így az eredetiek nem jönnek vissza.",
   "@operationLog.rollback.refusalOverwrote": {
@@ -215,24 +432,20 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
+  "operationLog.rollback.refusalNothingSelected": "Jelölj ki legalább egy elemet a visszagörgetéshez.",
+  "@operationLog.rollback.refusalNothingSelected": {
+    "sourceHash": "7a3c2fa"
+  },
+  "operationLog.rollback.refusalSummaryNotBuilt": "A Cmdr még olvassa ennek a műveletnek az elemeit. Próbáld újra egy pillanat múlva.",
+  "@operationLog.rollback.refusalSummaryNotBuilt": {
+    "sourceHash": "d23332a"
+  },
+  "operationLog.rollback.refusalTooManyToggles": "Ennyi elemet a Cmdr nem tud egyenként kijelölni. Jelölj ki inkább egy egész mappát.",
+  "@operationLog.rollback.refusalTooManyToggles": {
+    "sourceHash": "2be9bc8"
+  },
   "operationLog.rollback.refusalUnexpected": "A Cmdr nem tudta elindítani a visszagörgetést. Próbáld újra egy pillanat múlva.",
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "bef54f1"
-  },
-  "operationLog.outcome.done": "Kész",
-  "@operationLog.outcome.done": {
-    "sourceHash": "11a6767"
-  },
-  "operationLog.outcome.skipped": "Kihagyva",
-  "@operationLog.outcome.skipped": {
-    "sourceHash": "12698ce"
-  },
-  "operationLog.outcome.failed": "Nem fejeződött be",
-  "@operationLog.outcome.failed": {
-    "sourceHash": "59ea57b"
-  },
-  "operationLog.outcome.rolledBack": "Visszagörgetve",
-  "@operationLog.outcome.rolledBack": {
-    "sourceHash": "7159223"
   }
 }

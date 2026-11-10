@@ -13,7 +13,6 @@ import type {
   ArchiveSubkind,
   ExecutionStatus,
   Initiator,
-  ItemOutcome,
   NotRollbackableReason,
   OpKind,
   RollbackRefusal,
@@ -24,11 +23,15 @@ import {
   initiatorLabel,
   executionStatusLabel,
   rollbackStateLabel,
-  itemOutcomeLabel,
   rollbackRefusalNotice,
   rowRollbackAction,
   rowRollbackActionLabel,
   rowStandingNotice,
+  rollbackAction,
+  rollbackActionLabel,
+  selectedCountText,
+  partiallyRolledBackSummary,
+  coverageNotice,
 } from './operation-log-labels'
 
 /** A finished operation that did everything it planned. */
@@ -134,7 +137,7 @@ describe('enum labels', () => {
     const cases: Record<ExecutionStatus, string> = {
       queued: 'Queued',
       running: 'Running',
-      done: 'Done',
+      done: 'Finished',
       failed: 'Didn’t finish',
       canceled: 'Canceled',
     }
@@ -155,18 +158,6 @@ describe('enum labels', () => {
       expect(rollbackStateLabel(value as RollbackState)).toBe(label)
     }
   })
-
-  it('maps every item outcome', () => {
-    const cases: Record<ItemOutcome, string> = {
-      done: 'Done',
-      skipped: 'Skipped',
-      failed: 'Didn’t finish',
-      rolledBack: 'Rolled back',
-    }
-    for (const [value, label] of Object.entries(cases)) {
-      expect(itemOutcomeLabel(value as ItemOutcome)).toBe(label)
-    }
-  })
 })
 
 describe('rollbackRefusalNotice', () => {
@@ -176,8 +167,21 @@ describe('rollbackRefusalNotice', () => {
       [{ kind: 'alreadyRollingBack' }, 'This one is already rolling back. Watch it in the queue.'],
       [{ kind: 'alreadyRolledBack' }, 'This one is already back the way it was.'],
       [
+        { kind: 'isARollback' },
+        'This one undid another operation, and an undo doesn’t get undone in turn. The operation it undid is still in the log.',
+      ],
+      [
         { kind: 'volumeUnavailable', detail: { volumeId: 'smb-nas' } },
         'Connect the drive this operation used, then try again.',
+      ],
+      [{ kind: 'selection', detail: 'nothingSelected' }, 'Select at least one item to roll back.'],
+      [
+        { kind: 'selection', detail: 'summaryNotBuilt' },
+        'Cmdr is still reading this operation’s items. Try again in a moment.',
+      ],
+      [
+        { kind: 'selection', detail: 'tooManyToggles' },
+        'That’s more items than Cmdr can select one by one. Select a folder instead.',
       ],
     ]
     for (const [refusal, notice] of cases) {
@@ -245,9 +249,9 @@ describe('rowRollbackAction', () => {
   it('offers a press on exactly the states the backend gate admits', () => {
     // Mirrors `check_rollbackable` (`crates/cmdr-operation-log/src/rollback.rs`) arm for arm. Offering
     // one on any other state would be a button whose only possible answer is a refusal.
-    const cases: Record<RollbackState, 'start' | 'finish' | null> = {
+    const cases: Record<RollbackState, 'start' | 'rest' | null> = {
       rollbackable: 'start',
-      partiallyRolledBack: 'finish',
+      partiallyRolledBack: 'rest',
       notRollbackable: null,
       rollingBack: null,
       rolledBack: null,
@@ -259,36 +263,163 @@ describe('rowRollbackAction', () => {
 
   it('names what THIS press does, so a half-undone operation never promises a fresh reversal', () => {
     expect(rowRollbackActionLabel('start')).toBe('Roll back')
-    expect(rowRollbackActionLabel('finish')).toBe('Finish rolling back')
+    expect(rowRollbackActionLabel('rest')).toBe('Roll back the rest')
+  })
+})
+
+describe('rollbackAction', () => {
+  const tally = (selected: number, selectable: number, housekeepingWaiting = 0) => ({
+    selected,
+    selectable,
+    housekeepingWaiting,
+  })
+
+  it('offers nothing where the backend gate offers nothing, whatever the tree says', () => {
+    for (const state of ['notRollbackable', 'rollingBack', 'rolledBack'] as const) {
+      expect(rollbackAction(state, tally(3, 3), true)).toBeNull()
+    }
+  })
+
+  it('counts the checked items on a fresh rollback, untouched or narrowed', () => {
+    expect(rollbackAction('rollbackable', tally(12, 12), false)).toEqual({
+      action: { kind: 'selected', count: 12, rest: false, subset: false },
+      disabled: false,
+    })
+    expect(rollbackAction('rollbackable', tally(3, 12), true)).toEqual({
+      action: { kind: 'selected', count: 3, rest: false, subset: true },
+      disabled: false,
+    })
+  })
+
+  it('rolls back "the rest" of a partly reversed operation until the person narrows it', () => {
+    expect(rollbackAction('partiallyRolledBack', tally(4, 4), false)).toEqual({
+      action: { kind: 'rest' },
+      disabled: false,
+    })
+    expect(rollbackAction('partiallyRolledBack', tally(1, 4), true)).toEqual({
+      action: { kind: 'selected', count: 1, rest: true, subset: true },
+      disabled: false,
+    })
+  })
+
+  it('disables the press at 0 of M, the one state it can’t help', () => {
+    expect(rollbackAction('rollbackable', tally(0, 5), true)?.disabled).toBe(true)
+    expect(rollbackAction('partiallyRolledBack', tally(0, 5), true)?.disabled).toBe(true)
+  })
+
+  it('never strands an operation at 0 of 0: the whole-operation press sweeps what’s left', () => {
+    // A copied folder held back while a file sat in it, now empty: nothing to check, but a
+    // pass with no selection removes it.
+    expect(rollbackAction('rollbackable', tally(0, 0, 1), false)).toEqual({ action: { kind: 'all' }, disabled: false })
+    expect(rollbackAction('partiallyRolledBack', tally(0, 0, 1), true)).toEqual({
+      action: { kind: 'rest' },
+      disabled: false,
+    })
+  })
+
+  it('works as it always did while the tree can’t be read', () => {
+    expect(rollbackAction('rollbackable', null, false)).toEqual({ action: { kind: 'all' }, disabled: false })
+    expect(rollbackAction('partiallyRolledBack', null, false)).toEqual({ action: { kind: 'rest' }, disabled: false })
+  })
+})
+
+describe('rollbackActionLabel and selectedCountText', () => {
+  it('words each press, with thousands separators on the count', () => {
+    expect(rollbackActionLabel({ kind: 'all' })).toBe('Roll back')
+    expect(rollbackActionLabel({ kind: 'rest' })).toBe('Roll back the rest')
+    expect(rollbackActionLabel({ kind: 'selected', count: 1_234, rest: false, subset: true })).toBe(
+      'Roll back selected (1,234)',
+    )
+  })
+
+  it('says how many of the reversible items are checked', () => {
+    expect(selectedCountText({ selected: 3, selectable: 12 })).toBe('3 of 12 selected')
+    expect(selectedCountText({ selected: 1_000, selectable: 2_000_000 })).toBe('1,000 of 2,000,000 selected')
   })
 })
 
 describe('rowStandingNotice', () => {
-  it('explains the two states whose badge leaves a person guessing, and stays quiet on the rest', () => {
-    // A partly-reversed row is the one someone lands on after cancelling a reversal:
+  it('explains the states whose badge leaves a person guessing, and stays quiet on the rest', () => {
+    // A partly-reversed operation is the one someone lands on after cancelling a reversal:
     // some files came back, some didn't, and the badge alone says neither.
-    expect(tString(rowStandingNotice('partiallyRolledBack', null) as MessageKey)).toBe(
-      'Cmdr rolled back what it could and left the rest as it was. Finishing takes another pass and skips anything Cmdr still isn’t sure about.',
+    expect(tString(rowStandingNotice('partiallyRolledBack', null, 'copy') as MessageKey)).toBe(
+      'Cmdr rolled back what it could and left the rest as it was. Rolling back the rest takes another pass and skips anything Cmdr still isn’t sure about.',
     )
-    expect(tString(rowStandingNotice('notRollbackable', 'permanentDelete') as MessageKey)).toBe(
+    expect(tString(rowStandingNotice('notRollbackable', 'permanentDelete', 'delete') as MessageKey)).toBe(
       'A permanent delete leaves nothing to put back.',
     )
-    // A not-rollbackable row with no recorded reason is an operation still running;
-    // a dangling label would be worse than silence.
-    expect(rowStandingNotice('notRollbackable', null)).toBeNull()
-    expect(rowStandingNotice('rollbackable', null)).toBeNull()
-    expect(rowStandingNotice('rollingBack', null)).toBeNull()
-    expect(rowStandingNotice('rolledBack', null)).toBeNull()
+    // A not-rollbackable operation with no recorded reason is one still running; a
+    // dangling label would be worse than silence.
+    expect(rowStandingNotice('notRollbackable', null, 'copy')).toBeNull()
+    expect(rowStandingNotice('rollingBack', null, 'copy')).toBeNull()
+    expect(rowStandingNotice('rolledBack', null, 'copy')).toBeNull()
   })
 
-  it('promises no more than the engine delivers: a finish may skip again', () => {
+  it('says what rolling back does to the selected items, by what the reversal does', () => {
+    const cases: [OpKind, string][] = [
+      ['copy', 'Rolling back deletes the selected copies. The originals stay where they are.'],
+      ['createFolder', 'Rolling back deletes the selected items this operation created.'],
+      ['move', 'Rolling back moves the selected items back where they came from.'],
+      ['trash', 'Rolling back moves the selected items back where they came from.'],
+      ['rename', 'Rolling back gives the selected items their old names back.'],
+      ['tag', 'Rolling back gives the selected items the tags they had before.'],
+    ]
+    for (const [kind, sentence] of cases) {
+      expect(tString(rowStandingNotice('rollbackable', null, kind) as MessageKey)).toBe(sentence)
+    }
+    // Undoing a move takes nothing away, so its sentence must not say it does.
+    expect(tString(rowStandingNotice('rollbackable', null, 'move') as MessageKey)).not.toContain('delete')
+  })
+
+  it('promises no more than the engine delivers: another pass may skip again', () => {
     // A reversal lands partial for two reasons the UI can't tell apart: a cancel
     // midway, and items the engine couldn't verify (which a second pass skips
     // again). Copy that promised completion would be wrong half the time.
-    const sentence = tString(rowStandingNotice('partiallyRolledBack', null) as MessageKey).toLowerCase()
+    const sentence = tString(rowStandingNotice('partiallyRolledBack', null, 'move') as MessageKey).toLowerCase()
     expect(sentence).toContain('skips')
     for (const banned of ['error', 'failed', 'will finish', 'completely']) {
       expect(sentence).not.toContain(banned)
     }
+  })
+})
+
+describe('coverageNotice', () => {
+  it('says an interrupted operation may not be fully recorded, and stays quiet on search-only gaps', () => {
+    expect(tString(coverageNotice('interrupted') as MessageKey)).toBe(
+      'Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.',
+    )
+    for (const reason of [
+      'capped',
+      'indexAbsent',
+      'indexStale',
+      'volumeNotLive',
+      'searchRowIncomplete',
+      null,
+    ] as const) {
+      expect(coverageNotice(reason)).toBeNull()
+    }
+  })
+})
+
+describe('partiallyRolledBackSummary', () => {
+  it('says what came back, what was skipped, and what still waits, from the counts', () => {
+    // `selectable` counts held-back items too (they still await reversal), so what waits
+    // untouched is the difference.
+    expect(partiallyRolledBackSummary({ rolledBack: 4, heldBack: 2, selectable: 4 })).toBe(
+      '4 items are back the way they were. Cmdr skipped 2 items it wasn’t sure about. 2 items haven’t been rolled back yet.',
+    )
+  })
+
+  it('leaves out a sentence with nothing to count, and the singular reads as one', () => {
+    expect(partiallyRolledBackSummary({ rolledBack: 1, heldBack: 0, selectable: 1 })).toBe(
+      '1 item is back the way it was. 1 item hasn’t been rolled back yet.',
+    )
+    expect(partiallyRolledBackSummary({ rolledBack: 1_500, heldBack: 1, selectable: 1 })).toBe(
+      '1,500 items are back the way they were. Cmdr skipped 1 item it wasn’t sure about.',
+    )
+  })
+
+  it('gives way to the fixed sentence when there’s nothing to count', () => {
+    expect(partiallyRolledBackSummary({ rolledBack: 0, heldBack: 0, selectable: 0 })).toBeNull()
   })
 })

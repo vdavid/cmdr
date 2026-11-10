@@ -19,17 +19,9 @@
   "@operationLog.dialog.recordingOff": {
     "sourceHash": "0519736"
   },
-  "operationLog.dialog.itemsError": "Не вдалося завантажити ці елементи.",
-  "@operationLog.dialog.itemsError": {
-    "sourceHash": "596819e"
-  },
   "operationLog.dialog.noItems": "Для цієї операції не записано жодного елемента.",
   "@operationLog.dialog.noItems": {
     "sourceHash": "c7d7bfb"
-  },
-  "operationLog.dialog.moreItems": "{count, plural, one {і ще {countText} елемент} few {і ще {countText} елементи} many {і ще {countText} елементів} other {і ще {countText} елемента}}",
-  "@operationLog.dialog.moreItems": {
-    "sourceHash": "c39507d"
   },
   "operationLog.dialog.loadMore": "Завантажити ще 50",
   "@operationLog.dialog.loadMore": {
@@ -39,25 +31,210 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
-  "operationLog.dialog.finishRollBack": "Завершити відкочування",
-  "@operationLog.dialog.finishRollBack": {
-    "sourceHash": "dbe3771"
+  "operationLog.dialog.rollBackRest": "Відкотити решту",
+  "@operationLog.dialog.rollBackRest": {
+    "sourceHash": "f954882"
   },
-  "operationLog.dialog.rollbackOf": "Відкат операції «<operationLink>{operation}</operationLink>» від {time}",
-  "@operationLog.dialog.rollbackOf": {
-    "sourceHash": "4885c73"
+  "operationLog.dialog.rollBackSelected": "{count, plural, one {Відкотити вибрані ({countText})} few {Відкотити вибрані ({countText})} many {Відкотити вибрані ({countText})} other {Відкотити вибрані ({countText})}}",
+  "@operationLog.dialog.rollBackSelected": {
+    "sourceHash": "d28d5c7"
   },
-  "operationLog.dialog.rollbackOfUnlisted": "Відкат однієї з давніших операцій",
-  "@operationLog.dialog.rollbackOfUnlisted": {
-    "sourceHash": "50d060d"
-  },
-  "operationLog.dialog.latestRollback": "Останній відкат: «<operationLink>{operation}</operationLink>» від {time}",
-  "@operationLog.dialog.latestRollback": {
-    "sourceHash": "a8275f9"
+  "operationLog.dialog.selectedCount": "{count, plural, one {Вибрано {selectedText} з {selectableText}} few {Вибрано {selectedText} з {selectableText}} many {Вибрано {selectedText} з {selectableText}} other {Вибрано {selectedText} з {selectableText}}}",
+  "@operationLog.dialog.selectedCount": {
+    "sourceHash": "8891bd3"
   },
   "operationLog.dialog.close": "Закрити",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "operationLog.dialog.operations": "Операції",
+  "@operationLog.dialog.operations": {
+    "sourceHash": "358cc20"
+  },
+  "operationLog.tree.label": "Елементи",
+  "@operationLog.tree.label": {
+    "sourceHash": "fb8e7a1"
+  },
+  "operationLog.tree.columnName": "Назва",
+  "@operationLog.tree.columnName": {
+    "sourceHash": "dcd1d52"
+  },
+  "operationLog.tree.columnSize": "Розмір",
+  "@operationLog.tree.columnSize": {
+    "sourceHash": "1af8519"
+  },
+  "operationLog.tree.columnStatus": "Стан",
+  "@operationLog.tree.columnStatus": {
+    "sourceHash": "920e413"
+  },
+  "operationLog.tree.selectAll": "Вибрати все",
+  "@operationLog.tree.selectAll": {
+    "sourceHash": "1fc9a38"
+  },
+  "operationLog.tree.include": "Відкотити «{name}»",
+  "@operationLog.tree.include": {
+    "sourceHash": "2bdcfa0"
+  },
+  "operationLog.tree.comesBackWithFolder": "Повернеться разом зі своєю папкою.",
+  "@operationLog.tree.comesBackWithFolder": {
+    "sourceHash": "e6275c5"
+  },
+  "operationLog.tree.folderFiles": "{count, plural, one {{countText} файл} few {{countText} файли} many {{countText} файлів} other {{countText} файлу}}",
+  "@operationLog.tree.folderFiles": {
+    "sourceHash": "3c08428"
+  },
+  "operationLog.tree.statusRemoved": "Видалено",
+  "@operationLog.tree.statusRemoved": {
+    "sourceHash": "4118fb4"
+  },
+  "operationLog.tree.statusMovedBack": "Переміщено назад",
+  "@operationLog.tree.statusMovedBack": {
+    "sourceHash": "c6bc4e6"
+  },
+  "operationLog.tree.statusRenamedBack": "Перейменовано назад",
+  "@operationLog.tree.statusRenamedBack": {
+    "sourceHash": "769ab78"
+  },
+  "operationLog.tree.statusTagsRestored": "Теги відновлено",
+  "@operationLog.tree.statusTagsRestored": {
+    "sourceHash": "062e231"
+  },
+  "operationLog.tree.statusSkipped": "Пропущено",
+  "@operationLog.tree.statusSkipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.tree.statusUnfinished": "Не завершено",
+  "@operationLog.tree.statusUnfinished": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.tree.rollupRolledBack": "{count, plural, one {відкочено {countText}} few {відкочено {countText}} many {відкочено {countText}} other {відкочено {countText}}}",
+  "@operationLog.tree.rollupRolledBack": {
+    "sourceHash": "0b93ef8"
+  },
+  "operationLog.tree.rollupSkipped": "{count, plural, one {пропущено {countText}} few {пропущено {countText}} many {пропущено {countText}} other {пропущено {countText}}}",
+  "@operationLog.tree.rollupSkipped": {
+    "sourceHash": "3cb9b95"
+  },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Ukrainian lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
+  "operationLog.tree.operationSkipped": "Операція пропустила цей елемент, тож відкочувати тут нічого.",
+  "@operationLog.tree.operationSkipped": {
+    "sourceHash": "b883085"
+  },
+  "operationLog.tree.operationUnfinished": "Операція не завершила роботу з цим елементом, тож відкочувати тут нічого.",
+  "@operationLog.tree.operationUnfinished": {
+    "sourceHash": "e07232b"
+  },
+  "operationLog.tree.unexpandableEmpty": "Ця папка була порожня.",
+  "@operationLog.tree.unexpandableEmpty": {
+    "sourceHash": "0c67a8d"
+  },
+  "operationLog.tree.unexpandableNotRecorded": "Cmdr не записав, що лежить у цій папці.",
+  "@operationLog.tree.unexpandableNotRecorded": {
+    "sourceHash": "613608a"
+  },
+  "operationLog.tree.unexpandableCapped": "Cmdr не записав, що лежить у цій папці, бо ця операція охоплювала папку з понад 50 000 файлів.",
+  "@operationLog.tree.unexpandableCapped": {
+    "sourceHash": "6657eb0"
+  },
+  "operationLog.tree.otherEndFrom": "Звідки: {path}",
+  "@operationLog.tree.otherEndFrom": {
+    "sourceHash": "0562430"
+  },
+  "operationLog.tree.otherEndTo": "Куди: {path}",
+  "@operationLog.tree.otherEndTo": {
+    "sourceHash": "ea4bf38"
+  },
+  "operationLog.tree.backfilling": "Читання елементів цієї операції…",
+  "@operationLog.tree.backfilling": {
+    "sourceHash": "45f623f"
+  },
+  "operationLog.tree.backfillProgress": "Прочитано елементів: {doneText} з {totalText}",
+  "@operationLog.tree.backfillProgress": {
+    "sourceHash": "230eb62"
+  },
+  "operationLog.tree.indexesBuilding": "Cmdr готує вашу історію після оновлення. Елементи зʼявляться за мить.",
+  "@operationLog.tree.indexesBuilding": {
+    "sourceHash": "0d6f56b"
+  },
+  "operationLog.tree.indexesUnavailable": "Цього разу Cmdr не вдалося підготувати вашу історію, тож ці елементи поки не можна показати. Cmdr спробує ще раз, коли ви наступного разу його відкриєте.",
+  "@operationLog.tree.indexesUnavailable": {
+    "sourceHash": "8d2fec7"
+  },
+  "operationLog.tree.operationRunning": "Ця операція ще виконується. Її елементи зʼявляться тут, щойно вона закінчиться.",
+  "@operationLog.tree.operationRunning": {
+    "sourceHash": "eebeba4"
+  },
+  "operationLog.tree.rollingBack": "Ця операція зараз відкочується. Її елементи зʼявляться тут, щойно відкат закінчиться.",
+  "@operationLog.tree.rollingBack": {
+    "sourceHash": "35ef2b2"
+  },
+  "operationLog.tree.unreadable": "Не вдалося прочитати елементи цієї операції. Виберіть її ще раз, щоб спробувати знову.",
+  "@operationLog.tree.unreadable": {
+    "sourceHash": "71453e9"
+  },
+  "operationLog.tree.togglesCapped": "Більше елементів Cmdr не може вибрати по одному. Натомість виберіть цілу папку.",
+  "@operationLog.tree.togglesCapped": {
+    "sourceHash": "36aa8fa"
+  },
+  "operationLog.route.fromTo": "Звідки: {from}, куди: {to}",
+  "@operationLog.route.fromTo": {
+    "sourceHash": "6eeb9b3"
+  },
+  "operationLog.route.to": "Куди: {to}",
+  "@operationLog.route.to": {
+    "sourceHash": "55b2319"
+  },
+  "operationLog.route.fromToTrash": "Звідки: {from}, куди: Смітник",
+  "@operationLog.route.fromToTrash": {
+    "sourceHash": "9eff97f"
+  },
+  "operationLog.route.from": "Звідки: {from}",
+  "@operationLog.route.from": {
+    "sourceHash": "5848d99"
+  },
+  "operationLog.route.in": "У папці {path}",
+  "@operationLog.route.in": {
+    "sourceHash": "b1b3028"
+  },
+  "operationLog.skipReason.unverifiablePrecondition": "Cmdr не вдалося звірити цей елемент зі своїм записом, тож Cmdr залишив його як є.",
+  "@operationLog.skipReason.unverifiablePrecondition": {
+    "sourceHash": "c33ca33"
+  },
+  "operationLog.skipReason.drift": "Цей елемент змінився після операції, тож Cmdr залишив його як є.",
+  "@operationLog.skipReason.drift": {
+    "sourceHash": "6768024"
+  },
+  "operationLog.skipReason.restoreTargetOccupied": "На початковому місці тепер є щось інше, тож Cmdr не став його перезаписувати.",
+  "@operationLog.skipReason.restoreTargetOccupied": {
+    "sourceHash": "1b1d375"
+  },
+  "operationLog.skipReason.dirNotEmpty": "У цій папці зʼявилося щось нове, тож Cmdr її залишив.",
+  "@operationLog.skipReason.dirNotEmpty": {
+    "sourceHash": "8fc1b3e"
+  },
+  "operationLog.skipReason.alreadyGone": "Цей елемент уже був таким, як до операції.",
+  "@operationLog.skipReason.alreadyGone": {
+    "sourceHash": "71176d1"
+  },
+  "operationLog.skipReason.vanished": "Цього елемента вже немає там, де його залишила операція, тож повертати нічого.",
+  "@operationLog.skipReason.vanished": {
+    "sourceHash": "a715fb0"
+  },
+  "operationLog.skipReason.originalGone": "Оригіналу більше немає, тож Cmdr залишив цю копію, щоб не видалити єдину, яка лишилася.",
+  "@operationLog.skipReason.originalGone": {
+    "sourceHash": "014fcaa"
+  },
+  "operationLog.skipReason.failed": "Cmdr не вдалося відкотити цей елемент. Деталі є в журналі програми.",
+  "@operationLog.skipReason.failed": {
+    "sourceHash": "76c2b80"
+  },
+  "operationLog.skipReason.locked": "Цей елемент замкнено, тож видалити його може лише адміністратор. Cmdr його залишив.",
+  "@operationLog.skipReason.locked": {
+    "sourceHash": "39e4c78"
   },
   "operationLog.summary.canceled": "{summary}, потім скасовано (заплановано: {plannedText})",
   "@operationLog.summary.canceled": {
@@ -135,9 +312,9 @@
   "@operationLog.status.running": {
     "sourceHash": "f4ccae2"
   },
-  "operationLog.status.done": "Готово",
-  "@operationLog.status.done": {
-    "sourceHash": "11a6767"
+  "operationLog.status.finished": "Завершено",
+  "@operationLog.status.finished": {
+    "sourceHash": "7804f7a"
   },
   "operationLog.status.failed": "Не завершено",
   "@operationLog.status.failed": {
@@ -167,9 +344,45 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
-  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr відкотив усе, що зміг, а решту залишив як було. Щоб завершити, Cmdr пройде операцію ще раз і знову пропустить усе, у чому досі не впевнений.",
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr відкотив усе, що зміг, а решту залишив як було. Щоб відкотити решту, Cmdr пройде операцію ще раз і знову пропустить усе, у чому досі не впевнений.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
-    "sourceHash": "77e6f25"
+    "sourceHash": "8c0a534"
+  },
+  "operationLog.rollback.interruptedNotice": "Cmdr завершив роботу ще до кінця цієї операції, тож міг записати не все, що вона зробила. Відкат охопить лише те, що записано.",
+  "@operationLog.rollback.interruptedNotice": {
+    "sourceHash": "642e6fc"
+  },
+  "operationLog.rollback.partialRolledBack": "{count, plural, one {Відкочено {countText} елемент.} few {Відкочено {countText} елементи.} many {Відкочено {countText} елементів.} other {Відкочено {countText} елемента.}}",
+  "@operationLog.rollback.partialRolledBack": {
+    "sourceHash": "0202fe5"
+  },
+  "operationLog.rollback.partialHeldBack": "{count, plural, one {Cmdr пропустив {countText} елемент, у якому не був упевнений.} few {Cmdr пропустив {countText} елементи, у яких не був упевнений.} many {Cmdr пропустив {countText} елементів, у яких не був упевнений.} other {Cmdr пропустив {countText} елемента, у яких не був упевнений.}}",
+  "@operationLog.rollback.partialHeldBack": {
+    "sourceHash": "5a43937"
+  },
+  "operationLog.rollback.partialWaiting": "{count, plural, one {{countText} елемент ще не відкочено.} few {{countText} елементи ще не відкочено.} many {{countText} елементів ще не відкочено.} other {{countText} елемента ще не відкочено.}}",
+  "@operationLog.rollback.partialWaiting": {
+    "sourceHash": "0850c46"
+  },
+  "operationLog.rollback.rollbackableNoticeCopy": "Відкат видалить вибрані копії. Оригінали залишаться на місці.",
+  "@operationLog.rollback.rollbackableNoticeCopy": {
+    "sourceHash": "6710bb4"
+  },
+  "operationLog.rollback.rollbackableNoticeDelete": "Відкат видалить вибрані елементи, які створила ця операція.",
+  "@operationLog.rollback.rollbackableNoticeDelete": {
+    "sourceHash": "d0e028e"
+  },
+  "operationLog.rollback.rollbackableNoticeMoveBack": "Відкат поверне вибрані елементи туди, звідки їх перемістили.",
+  "@operationLog.rollback.rollbackableNoticeMoveBack": {
+    "sourceHash": "2cf40c3"
+  },
+  "operationLog.rollback.rollbackableNoticeRenameBack": "Відкат поверне вибраним елементам старі назви.",
+  "@operationLog.rollback.rollbackableNoticeRenameBack": {
+    "sourceHash": "8f2b884"
+  },
+  "operationLog.rollback.rollbackableNoticeTagsBack": "Відкат поверне вибраним елементам теги, які вони мали раніше.",
+  "@operationLog.rollback.rollbackableNoticeTagsBack": {
+    "sourceHash": "d45b11b"
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "Цю операцію вже відкочують. Стежте за нею у вікні «Черга операцій».",
   "@operationLog.rollback.refusalAlreadyRollingBack": {
@@ -178,6 +391,10 @@
   "operationLog.rollback.refusalAlreadyRolledBack": "Цю операцію вже відкочено: усе так, як було до неї.",
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalIsARollback": "Ця операція відмінила іншу, а відміну вже не відмінити. Операція, яку вона відмінила, досі є в журналі.",
+  "@operationLog.rollback.refusalIsARollback": {
+    "sourceHash": "37738da"
   },
   "operationLog.rollback.refusalOverwrote": "Ця операція замінила файли, які вже були на місці. Cmdr не зберігає копій того, що замінює, тож оригінали вже не повернути.",
   "@operationLog.rollback.refusalOverwrote": {
@@ -215,24 +432,20 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
+  "operationLog.rollback.refusalNothingSelected": "Виберіть хоча б один елемент, який треба відкотити.",
+  "@operationLog.rollback.refusalNothingSelected": {
+    "sourceHash": "7a3c2fa"
+  },
+  "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr ще читає елементи цієї операції. Спробуйте ще раз за мить.",
+  "@operationLog.rollback.refusalSummaryNotBuilt": {
+    "sourceHash": "d23332a"
+  },
+  "operationLog.rollback.refusalTooManyToggles": "Це більше елементів, ніж Cmdr може вибрати по одному. Натомість виберіть цілу папку.",
+  "@operationLog.rollback.refusalTooManyToggles": {
+    "sourceHash": "2be9bc8"
+  },
   "operationLog.rollback.refusalUnexpected": "Cmdr не вдалося запустити відкат. Спробуйте ще раз за мить.",
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "bef54f1"
-  },
-  "operationLog.outcome.done": "Готово",
-  "@operationLog.outcome.done": {
-    "sourceHash": "11a6767"
-  },
-  "operationLog.outcome.skipped": "Пропущено",
-  "@operationLog.outcome.skipped": {
-    "sourceHash": "12698ce"
-  },
-  "operationLog.outcome.failed": "Не завершено",
-  "@operationLog.outcome.failed": {
-    "sourceHash": "59ea57b"
-  },
-  "operationLog.outcome.rolledBack": "Відкочено",
-  "@operationLog.outcome.rolledBack": {
-    "sourceHash": "7159223"
   }
 }

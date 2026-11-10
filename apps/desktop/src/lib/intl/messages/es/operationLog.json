@@ -19,17 +19,9 @@
   "@operationLog.dialog.recordingOff": {
     "sourceHash": "0519736"
   },
-  "operationLog.dialog.itemsError": "No se han podido cargar estos elementos.",
-  "@operationLog.dialog.itemsError": {
-    "sourceHash": "596819e"
-  },
   "operationLog.dialog.noItems": "Esta operación no tiene elementos registrados.",
   "@operationLog.dialog.noItems": {
     "sourceHash": "c7d7bfb"
-  },
-  "operationLog.dialog.moreItems": "{count, plural, one {y {countText} elemento más} many {y {countText} elementos más} other {y {countText} elementos más}}",
-  "@operationLog.dialog.moreItems": {
-    "sourceHash": "c39507d"
   },
   "operationLog.dialog.loadMore": "Cargar 50 más",
   "@operationLog.dialog.loadMore": {
@@ -39,25 +31,210 @@
   "@operationLog.dialog.rollBack": {
     "sourceHash": "931f703"
   },
-  "operationLog.dialog.finishRollBack": "Terminar de revertir",
-  "@operationLog.dialog.finishRollBack": {
-    "sourceHash": "dbe3771"
+  "operationLog.dialog.rollBackRest": "Revertir el resto",
+  "@operationLog.dialog.rollBackRest": {
+    "sourceHash": "f954882"
   },
-  "operationLog.dialog.rollbackOf": "Reversión de “<operationLink>{operation}</operationLink>” ({time})",
-  "@operationLog.dialog.rollbackOf": {
-    "sourceHash": "4885c73"
+  "operationLog.dialog.rollBackSelected": "{count, plural, one {Revertir lo seleccionado ({countText})} many {Revertir lo seleccionado ({countText})} other {Revertir lo seleccionado ({countText})}}",
+  "@operationLog.dialog.rollBackSelected": {
+    "sourceHash": "d28d5c7"
   },
-  "operationLog.dialog.rollbackOfUnlisted": "Reversión de una operación anterior",
-  "@operationLog.dialog.rollbackOfUnlisted": {
-    "sourceHash": "50d060d"
-  },
-  "operationLog.dialog.latestRollback": "Última reversión: “<operationLink>{operation}</operationLink>” ({time})",
-  "@operationLog.dialog.latestRollback": {
-    "sourceHash": "a8275f9"
+  "operationLog.dialog.selectedCount": "{count, plural, one {{selectedText} de {selectableText} seleccionado} many {{selectedText} de {selectableText} seleccionados} other {{selectedText} de {selectableText} seleccionados}}",
+  "@operationLog.dialog.selectedCount": {
+    "sourceHash": "8891bd3"
   },
   "operationLog.dialog.close": "Cerrar",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "operationLog.dialog.operations": "Operaciones",
+  "@operationLog.dialog.operations": {
+    "sourceHash": "358cc20"
+  },
+  "operationLog.tree.label": "Elementos",
+  "@operationLog.tree.label": {
+    "sourceHash": "fb8e7a1"
+  },
+  "operationLog.tree.columnName": "Nombre",
+  "@operationLog.tree.columnName": {
+    "sourceHash": "dcd1d52"
+  },
+  "operationLog.tree.columnSize": "Tamaño",
+  "@operationLog.tree.columnSize": {
+    "sourceHash": "1af8519"
+  },
+  "operationLog.tree.columnStatus": "Estado",
+  "@operationLog.tree.columnStatus": {
+    "sourceHash": "920e413"
+  },
+  "operationLog.tree.selectAll": "Seleccionar todo",
+  "@operationLog.tree.selectAll": {
+    "sourceHash": "1fc9a38"
+  },
+  "operationLog.tree.include": "Revertir {name}",
+  "@operationLog.tree.include": {
+    "sourceHash": "2bdcfa0"
+  },
+  "operationLog.tree.comesBackWithFolder": "Vuelve con su carpeta.",
+  "@operationLog.tree.comesBackWithFolder": {
+    "sourceHash": "e6275c5"
+  },
+  "operationLog.tree.folderFiles": "{count, plural, one {{countText} archivo} many {{countText} archivos} other {{countText} archivos}}",
+  "@operationLog.tree.folderFiles": {
+    "sourceHash": "3c08428"
+  },
+  "operationLog.tree.statusRemoved": "Eliminado",
+  "@operationLog.tree.statusRemoved": {
+    "sourceHash": "4118fb4"
+  },
+  "operationLog.tree.statusMovedBack": "Devuelto",
+  "@operationLog.tree.statusMovedBack": {
+    "sourceHash": "c6bc4e6"
+  },
+  "operationLog.tree.statusRenamedBack": "Nombre restaurado",
+  "@operationLog.tree.statusRenamedBack": {
+    "sourceHash": "769ab78"
+  },
+  "operationLog.tree.statusTagsRestored": "Etiquetas restauradas",
+  "@operationLog.tree.statusTagsRestored": {
+    "sourceHash": "062e231"
+  },
+  "operationLog.tree.statusSkipped": "Omitido",
+  "@operationLog.tree.statusSkipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.tree.statusUnfinished": "No se completó",
+  "@operationLog.tree.statusUnfinished": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.tree.rollupRolledBack": "{count, plural, one {{countText} revertido} many {{countText} revertidos} other {{countText} revertidos}}",
+  "@operationLog.tree.rollupRolledBack": {
+    "sourceHash": "0b93ef8"
+  },
+  "operationLog.tree.rollupSkipped": "{count, plural, one {{countText} omitido} many {{countText} omitidos} other {{countText} omitidos}}",
+  "@operationLog.tree.rollupSkipped": {
+    "sourceHash": "3cb9b95"
+  },
+  "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
+  "@operationLog.tree.rollupBoth": {
+    "sourceHash": "607561b",
+    "sameAsSourceJustification": "Spanish lists two status phrases with a plain comma and a space, exactly like English (the key holds only the separator); both counts arrive already worded from rollupRolledBack and rollupSkipped."
+  },
+  "operationLog.tree.operationSkipped": "La operación omitió este elemento, así que no hay nada que revertir.",
+  "@operationLog.tree.operationSkipped": {
+    "sourceHash": "b883085"
+  },
+  "operationLog.tree.operationUnfinished": "La operación no llegó a completar este elemento, así que no hay nada que revertir.",
+  "@operationLog.tree.operationUnfinished": {
+    "sourceHash": "e07232b"
+  },
+  "operationLog.tree.unexpandableEmpty": "Esta carpeta estaba vacía.",
+  "@operationLog.tree.unexpandableEmpty": {
+    "sourceHash": "0c67a8d"
+  },
+  "operationLog.tree.unexpandableNotRecorded": "Cmdr no registró lo que había dentro de esta carpeta.",
+  "@operationLog.tree.unexpandableNotRecorded": {
+    "sourceHash": "613608a"
+  },
+  "operationLog.tree.unexpandableCapped": "Cmdr no registró lo que había dentro de esta carpeta porque esta operación incluía una carpeta de más de 50.000 archivos.",
+  "@operationLog.tree.unexpandableCapped": {
+    "sourceHash": "6657eb0"
+  },
+  "operationLog.tree.otherEndFrom": "Desde {path}",
+  "@operationLog.tree.otherEndFrom": {
+    "sourceHash": "0562430"
+  },
+  "operationLog.tree.otherEndTo": "Hacia {path}",
+  "@operationLog.tree.otherEndTo": {
+    "sourceHash": "ea4bf38"
+  },
+  "operationLog.tree.backfilling": "Leyendo los elementos de esta operación…",
+  "@operationLog.tree.backfilling": {
+    "sourceHash": "45f623f"
+  },
+  "operationLog.tree.backfillProgress": "Elementos leídos: {doneText} de {totalText}",
+  "@operationLog.tree.backfillProgress": {
+    "sourceHash": "230eb62"
+  },
+  "operationLog.tree.indexesBuilding": "Cmdr está preparando tu historial tras una actualización. Los elementos aparecerán en un momento.",
+  "@operationLog.tree.indexesBuilding": {
+    "sourceHash": "0d6f56b"
+  },
+  "operationLog.tree.indexesUnavailable": "Esta vez Cmdr no ha podido preparar tu historial, así que estos elementos aún no se pueden mostrar. Volverá a intentarlo la próxima vez que abras Cmdr.",
+  "@operationLog.tree.indexesUnavailable": {
+    "sourceHash": "8d2fec7"
+  },
+  "operationLog.tree.operationRunning": "Esta operación sigue en curso. Sus elementos aparecerán aquí cuando termine.",
+  "@operationLog.tree.operationRunning": {
+    "sourceHash": "eebeba4"
+  },
+  "operationLog.tree.rollingBack": "Esta operación se está revirtiendo. Sus elementos aparecerán aquí cuando termine la reversión.",
+  "@operationLog.tree.rollingBack": {
+    "sourceHash": "35ef2b2"
+  },
+  "operationLog.tree.unreadable": "No se han podido leer los elementos de esta operación. Vuelve a elegirla para intentarlo de nuevo.",
+  "@operationLog.tree.unreadable": {
+    "sourceHash": "71453e9"
+  },
+  "operationLog.tree.togglesCapped": "Has llegado al máximo de elementos que Cmdr puede seleccionar uno a uno. Selecciona una carpeta entera.",
+  "@operationLog.tree.togglesCapped": {
+    "sourceHash": "36aa8fa"
+  },
+  "operationLog.route.fromTo": "Desde {from} hacia {to}",
+  "@operationLog.route.fromTo": {
+    "sourceHash": "6eeb9b3"
+  },
+  "operationLog.route.to": "Hacia {to}",
+  "@operationLog.route.to": {
+    "sourceHash": "55b2319"
+  },
+  "operationLog.route.fromToTrash": "Desde {from} hacia la papelera",
+  "@operationLog.route.fromToTrash": {
+    "sourceHash": "9eff97f"
+  },
+  "operationLog.route.from": "Desde {from}",
+  "@operationLog.route.from": {
+    "sourceHash": "5848d99"
+  },
+  "operationLog.route.in": "En {path}",
+  "@operationLog.route.in": {
+    "sourceHash": "b1b3028"
+  },
+  "operationLog.skipReason.unverifiablePrecondition": "Cmdr no pudo comprobarlo con lo que había registrado, así que lo dejó como estaba.",
+  "@operationLog.skipReason.unverifiablePrecondition": {
+    "sourceHash": "c33ca33"
+  },
+  "operationLog.skipReason.drift": "Esto cambió después de la operación, así que Cmdr lo dejó como estaba.",
+  "@operationLog.skipReason.drift": {
+    "sourceHash": "6768024"
+  },
+  "operationLog.skipReason.restoreTargetOccupied": "Ahora hay otra cosa en el lugar original, así que Cmdr no la sobrescribió.",
+  "@operationLog.skipReason.restoreTargetOccupied": {
+    "sourceHash": "1b1d375"
+  },
+  "operationLog.skipReason.dirNotEmpty": "Esta carpeta tiene algo nuevo dentro, así que Cmdr la conservó.",
+  "@operationLog.skipReason.dirNotEmpty": {
+    "sourceHash": "8fc1b3e"
+  },
+  "operationLog.skipReason.alreadyGone": "Esto ya estaba como antes.",
+  "@operationLog.skipReason.alreadyGone": {
+    "sourceHash": "71176d1"
+  },
+  "operationLog.skipReason.vanished": "Esto ya no está donde lo dejó la operación, así que no hay nada que devolver a su sitio.",
+  "@operationLog.skipReason.vanished": {
+    "sourceHash": "a715fb0"
+  },
+  "operationLog.skipReason.originalGone": "El original ya no está, así que Cmdr conservó esta copia en lugar de eliminar la única que quedaba.",
+  "@operationLog.skipReason.originalGone": {
+    "sourceHash": "014fcaa"
+  },
+  "operationLog.skipReason.failed": "Cmdr no pudo revertir este elemento. El registro tiene los detalles.",
+  "@operationLog.skipReason.failed": {
+    "sourceHash": "76c2b80"
+  },
+  "operationLog.skipReason.locked": "Esto tiene un bloqueo que solo se puede quitar con permisos de administrador, así que Cmdr lo dejó como estaba.",
+  "@operationLog.skipReason.locked": {
+    "sourceHash": "39e4c78"
   },
   "operationLog.summary.canceled": "{summary}, luego se canceló (total previsto: {plannedText})",
   "@operationLog.summary.canceled": {
@@ -135,9 +312,9 @@
   "@operationLog.status.running": {
     "sourceHash": "f4ccae2"
   },
-  "operationLog.status.done": "Hecho",
-  "@operationLog.status.done": {
-    "sourceHash": "11a6767"
+  "operationLog.status.finished": "Hecho",
+  "@operationLog.status.finished": {
+    "sourceHash": "7804f7a"
   },
   "operationLog.status.failed": "No se completó",
   "@operationLog.status.failed": {
@@ -167,9 +344,45 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
-  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr ha revertido lo que ha podido y ha dejado el resto como estaba. Si terminas la reversión, Cmdr repasa la operación otra vez y vuelve a omitir todo aquello de lo que sigue sin estar seguro.",
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr ha revertido lo que ha podido y ha dejado el resto como estaba. Si reviertes el resto, Cmdr repasa la operación otra vez y vuelve a omitir todo aquello de lo que sigue sin estar seguro.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
-    "sourceHash": "77e6f25"
+    "sourceHash": "8c0a534"
+  },
+  "operationLog.rollback.interruptedNotice": "Cmdr se cerró antes de que terminara esta operación, así que puede que no haya registrado todo lo que hizo la operación. La reversión solo alcanza lo que quedó registrado.",
+  "@operationLog.rollback.interruptedNotice": {
+    "sourceHash": "642e6fc"
+  },
+  "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} elemento está como estaba antes.} many {{countText} elementos están como estaban antes.} other {{countText} elementos están como estaban antes.}}",
+  "@operationLog.rollback.partialRolledBack": {
+    "sourceHash": "0202fe5"
+  },
+  "operationLog.rollback.partialHeldBack": "{count, plural, one {Cmdr ha omitido {countText} elemento del que no estaba seguro.} many {Cmdr ha omitido {countText} elementos de los que no estaba seguro.} other {Cmdr ha omitido {countText} elementos de los que no estaba seguro.}}",
+  "@operationLog.rollback.partialHeldBack": {
+    "sourceHash": "5a43937"
+  },
+  "operationLog.rollback.partialWaiting": "{count, plural, one {{countText} elemento aún no se ha revertido.} many {{countText} elementos aún no se han revertido.} other {{countText} elementos aún no se han revertido.}}",
+  "@operationLog.rollback.partialWaiting": {
+    "sourceHash": "0850c46"
+  },
+  "operationLog.rollback.rollbackableNoticeCopy": "Al revertir, se eliminan las copias seleccionadas. Los originales se quedan donde están.",
+  "@operationLog.rollback.rollbackableNoticeCopy": {
+    "sourceHash": "6710bb4"
+  },
+  "operationLog.rollback.rollbackableNoticeDelete": "Al revertir, se eliminan los elementos seleccionados que creó esta operación.",
+  "@operationLog.rollback.rollbackableNoticeDelete": {
+    "sourceHash": "d0e028e"
+  },
+  "operationLog.rollback.rollbackableNoticeMoveBack": "Al revertir, los elementos seleccionados vuelven al lugar del que salieron.",
+  "@operationLog.rollback.rollbackableNoticeMoveBack": {
+    "sourceHash": "2cf40c3"
+  },
+  "operationLog.rollback.rollbackableNoticeRenameBack": "Al revertir, los elementos seleccionados recuperan sus nombres anteriores.",
+  "@operationLog.rollback.rollbackableNoticeRenameBack": {
+    "sourceHash": "8f2b884"
+  },
+  "operationLog.rollback.rollbackableNoticeTagsBack": "Al revertir, los elementos seleccionados recuperan las etiquetas que tenían antes.",
+  "@operationLog.rollback.rollbackableNoticeTagsBack": {
+    "sourceHash": "d45b11b"
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "Esta ya se está revirtiendo. Puedes seguirla en la cola.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {
@@ -178,6 +391,10 @@
   "operationLog.rollback.refusalAlreadyRolledBack": "Esta ya está como estaba antes.",
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalIsARollback": "Esta operación deshizo otra, y lo que deshace una operación no se puede deshacer a su vez. La operación original sigue en el registro de operaciones.",
+  "@operationLog.rollback.refusalIsARollback": {
+    "sourceHash": "37738da"
   },
   "operationLog.rollback.refusalOverwrote": "Esta operación reemplazó archivos que ya estaban ahí. Cmdr no guarda copias de lo que reemplaza, así que los originales no pueden volver.",
   "@operationLog.rollback.refusalOverwrote": {
@@ -215,24 +432,20 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
+  "operationLog.rollback.refusalNothingSelected": "Selecciona al menos un elemento para revertir.",
+  "@operationLog.rollback.refusalNothingSelected": {
+    "sourceHash": "7a3c2fa"
+  },
+  "operationLog.rollback.refusalSummaryNotBuilt": "Cmdr sigue leyendo los elementos de esta operación. Inténtalo de nuevo en un momento.",
+  "@operationLog.rollback.refusalSummaryNotBuilt": {
+    "sourceHash": "d23332a"
+  },
+  "operationLog.rollback.refusalTooManyToggles": "Son más elementos de los que Cmdr puede seleccionar uno a uno. Selecciona una carpeta entera.",
+  "@operationLog.rollback.refusalTooManyToggles": {
+    "sourceHash": "2be9bc8"
+  },
   "operationLog.rollback.refusalUnexpected": "Cmdr no ha podido iniciar la reversión. Inténtalo de nuevo en un momento.",
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "bef54f1"
-  },
-  "operationLog.outcome.done": "Hecho",
-  "@operationLog.outcome.done": {
-    "sourceHash": "11a6767"
-  },
-  "operationLog.outcome.skipped": "Omitido",
-  "@operationLog.outcome.skipped": {
-    "sourceHash": "12698ce"
-  },
-  "operationLog.outcome.failed": "No se completó",
-  "@operationLog.outcome.failed": {
-    "sourceHash": "59ea57b"
-  },
-  "operationLog.outcome.rolledBack": "Revertido",
-  "@operationLog.outcome.rolledBack": {
-    "sourceHash": "7159223"
   }
 }

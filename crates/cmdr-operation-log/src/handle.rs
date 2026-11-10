@@ -15,10 +15,12 @@ use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 
 use super::capture::{FinalizeInputs, OperationJournal, WriterJournal};
+use super::interrupted::end_interrupted_on_open;
 use super::recording::Recording;
 use super::retention::{self, RetentionLimitsSource};
 use super::rollback::reconcile_rolling_back_on_open;
 use super::store::{OperationLogStore, OperationLogStoreError};
+use super::tree::status::BackfillRegistry;
 use super::types::{NotRollbackableReason, OperationId, SearchCoverage, SearchCoverageReason};
 use super::writer::{FinalizeOutcome, JournalItem, OpenOperation, OperationLogWriter};
 
@@ -34,6 +36,8 @@ struct Inner {
     recording: Recording,
     /// Set by the first [`OperationLog::open`], whatever its outcome.
     open_claimed: AtomicBool,
+    /// The tree-summary backfills running now, one per op.
+    backfills: Arc<BackfillRegistry>,
 }
 
 #[derive(Clone)]
@@ -75,6 +79,7 @@ impl OperationLog {
                 slot: RwLock::new(None),
                 recording: Recording::new(),
                 open_claimed: AtomicBool::new(false),
+                backfills: Arc::default(),
             }),
         }
     }
@@ -83,7 +88,7 @@ impl OperationLog {
     /// forward (or hands an unparseable file to `set_aside` and recreates it, or
     /// refuses a downgrade), the
     /// writer thread starts, the operations a crash left mid-rollback resolve,
-    /// and only THEN do the writer and the journal become reachable, together.
+    /// the ones it left queued or running end, and only THEN do the writer and the journal become reachable, together.
     /// So a rollback can never be dispatched into a reconcile.
     ///
     /// Once per handle: a second call is [`OpenError::AlreadyOpen`] and touches
@@ -103,6 +108,19 @@ impl OperationLog {
         // inverse ever opened. Before anything can journal, so a re-issued
         // rollback resumes cleanly.
         reconcile_rolling_back_on_open(&writer);
+        // Every op a crash left queued or running gets its end. After the reconcile,
+        // which reads a stale inverse's rows; before publishing, so nothing journaled
+        // this launch can look stale.
+        end_interrupted_on_open(&writer);
+        // AFTER the reconcile, whose writes block on their reply: the first build
+        // after an upgrade can take seconds on a big journal, and `open` runs on the
+        // app's main thread. Queued here, it runs on the writer thread, and what's
+        // journaled meanwhile waits behind it (`store/tree_indexes.rs`). The registry
+        // hears how the build settled, and the host tells any tree waiting on it. A build
+        // that couldn't finish runs again at the next open.
+        if let Err(e) = writer.build_tree_indexes(Arc::clone(&self.inner.backfills)) {
+            log::warn!(target: "operation_log", "couldn't queue the item tree's folder indexes: {e}");
+        }
         *self.inner.slot.write_ignore_poison() = Some(Published {
             journal: Arc::new(WriterJournal::new(writer.clone())),
             writer: Some(writer),
@@ -121,6 +139,13 @@ impl OperationLog {
     /// inverse op through it directly, and for the read side's DB path.
     pub fn writer(&self) -> Option<OperationLogWriter> {
         self.inner.slot.read_ignore_poison().as_ref()?.writer.clone()
+    }
+
+    /// The tree-summary backfills running on this log, one per op: what the tree view
+    /// asks to answer `Building`, what `TreeBackfill::start` claims an op in, and where
+    /// a host cancels one.
+    pub fn tree_backfills(&self) -> &Arc<BackfillRegistry> {
+        &self.inner.backfills
     }
 
     /// Prune by age and size now and on a slow timer, on `runtime`, with the

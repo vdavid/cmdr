@@ -177,7 +177,7 @@ enum RollbackQuestion {
     Logged {
         kind: OpKind,
         /// It's already partly rolled back, so a yes picks that up.
-        finishing: bool,
+        rest: bool,
     },
 }
 
@@ -197,7 +197,7 @@ fn logged_question(row: Option<OperationRow>, volumes: &dyn VolumeLookup) -> Res
     check_rollbackable(volumes, &row).map_err(|refusal| refusal_error(&refusal))?;
     Ok(RollbackQuestion::Logged {
         kind: row.kind,
-        finishing: row.rollback_state == RollbackState::PartiallyRolledBack,
+        rest: row.rollback_state == RollbackState::PartiallyRolledBack,
     })
 }
 
@@ -217,11 +217,20 @@ fn refusal_error(refusal: &RollbackRefusal) -> ToolError {
         RollbackRefusal::UnknownOperation => "No operation has that id, so no dialog opened.".to_string(),
         RollbackRefusal::AlreadyRollingBack => "It's already rolling back, so no dialog opened.".to_string(),
         RollbackRefusal::AlreadyRolledBack => "It's already rolled back, so no dialog opened.".to_string(),
+        RollbackRefusal::IsARollback => {
+            "It's a rollback of another operation, and a rollback can't be rolled back, so no dialog opened."
+                .to_string()
+        }
         RollbackRefusal::NotRollbackable(reason) => {
             format!("This operation can't be rolled back ({reason:?}), so no dialog opened.")
         }
         RollbackRefusal::VolumeUnavailable { volume_id } => {
             format!("A volume it touched isn't connected ({volume_id}), so no dialog opened.")
+        }
+        // A tool's rollback always takes the whole operation, so this only words the
+        // variant for completeness.
+        RollbackRefusal::Selection(reason) => {
+            format!("The item selection can't run ({reason:?}), so no dialog opened.")
         }
     };
     let wire = serde_json::to_value(refusal).unwrap_or(Value::Null);

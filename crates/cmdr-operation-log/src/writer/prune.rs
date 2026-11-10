@@ -7,7 +7,9 @@
 //! capture burst.
 //!
 //! A rollback pair is indivisible — an operation and the operation that undid it
-//! are deleted together or not at all, so history never shows half a reversal.
+//! are deleted together or not at all, by age and by size, so history never
+//! shows half a reversal and an inverse never outlives its original as an op of
+//! its own.
 
 use rusqlite::{Connection, OptionalExtension};
 
@@ -83,24 +85,64 @@ fn prunable_ops_fragment() -> String {
     )
 }
 
-/// Prune every finished, unprotected op older than `cutoff` in one transaction.
+/// Prune every finished, unprotected op older than `cutoff` in one transaction,
+/// together with its rollback pair partners (the size prune's twin is
+/// [`rollback_pair_component`]). An inverse ends after its original, so by age
+/// the original always goes first; an inverse left behind with a nulled link
+/// would read as an ordinary, listed, rollbackable op (the gate's `IsARollback`
+/// reads that link), and rolling it back would redo what the person undid.
+/// Rollbacks aren't tracked as ops of their own, so the pair goes as one.
 fn prune_by_age(conn: &mut Connection, cutoff: i64) -> Result<(), OperationLogStoreError> {
     let prunable = prunable_ops_fragment();
-    let predicate = format!("ended_at IS NOT NULL AND ended_at < {cutoff} AND {prunable}");
-    let selector = format!("SELECT op_id FROM operations WHERE {predicate}");
+    let aged = format!("ended_at IS NOT NULL AND ended_at < {cutoff} AND {prunable}");
 
     let tx = conn.unchecked_transaction()?;
-    // Null any SURVIVING op's rollback link that points at an op about to be
-    // pruned, BEFORE the delete — otherwise the self-FK
-    // (`rolls_back_op_id REFERENCES operations`) rejects deleting a referenced op.
-    // A rolled-back pair whose both halves fall in the prune set deletes together;
-    // a split pair leaves the survivor with a nulled link, never a dangling one.
+    // Materialize the set first: nulling links below would otherwise hide the
+    // partners from a re-evaluated selector.
+    tx.execute_batch(
+        "CREATE TEMP TABLE IF NOT EXISTS prune_set (op_id TEXT PRIMARY KEY); DELETE FROM temp.prune_set;",
+    )?;
     tx.execute(
-        &format!("UPDATE operations SET rolls_back_op_id = NULL WHERE rolls_back_op_id IN ({selector})"),
+        &format!("INSERT INTO temp.prune_set SELECT op_id FROM operations WHERE {aged}"),
+        [],
+    )?;
+    // Finished, unprotected inverses of the aged ops, then the originals of aged
+    // inverses. One level is the whole closure: an inverse is never rolled back.
+    tx.execute(
+        &format!(
+            "INSERT OR IGNORE INTO temp.prune_set SELECT op_id FROM operations \
+             WHERE rolls_back_op_id IN (SELECT op_id FROM temp.prune_set) \
+             AND ended_at IS NOT NULL AND {prunable}"
+        ),
+        [],
+    )?;
+    tx.execute(
+        &format!(
+            "INSERT OR IGNORE INTO temp.prune_set SELECT rolls_back_op_id FROM operations \
+             WHERE op_id IN (SELECT op_id FROM temp.prune_set) AND rolls_back_op_id IS NOT NULL \
+             AND rolls_back_op_id IN (SELECT op_id FROM operations WHERE {prunable})"
+        ),
+        [],
+    )?;
+    let selector = "SELECT op_id FROM temp.prune_set";
+    // Null any SURVIVING op's link into the set BEFORE the delete, or the self-FK
+    // (`rolls_back_op_id REFERENCES operations`) rejects it. Only a protected
+    // partner survives that way.
+    tx.execute(
+        &format!(
+            "UPDATE operations SET rolls_back_op_id = NULL \
+             WHERE rolls_back_op_id IN ({selector}) AND op_id NOT IN ({selector})"
+        ),
+        [],
+    )?;
+    // Summary rows first: they reference both the op and the dirs the GC frees.
+    tx.execute(
+        &format!("DELETE FROM operation_tree_dirs WHERE op_id IN ({selector})"),
         [],
     )?;
     tx.execute(&format!("DELETE FROM operation_items WHERE op_id IN ({selector})"), [])?;
-    tx.execute(&format!("DELETE FROM operations WHERE {predicate}"), [])?;
+    tx.execute(&format!("DELETE FROM operations WHERE op_id IN ({selector})"), [])?;
+    tx.execute("DELETE FROM temp.prune_set", [])?;
     tx.commit()?;
     Ok(())
 }
@@ -190,6 +232,10 @@ fn delete_op_set(conn: &Connection, op_ids: &[String]) -> Result<(), OperationLo
         [params.as_slice(), params.as_slice()].concat().as_slice(),
     )?;
     conn.execute(
+        &format!("DELETE FROM operation_tree_dirs WHERE op_id IN ({placeholders})"),
+        params.as_slice(),
+    )?;
+    conn.execute(
         &format!("DELETE FROM operation_items WHERE op_id IN ({placeholders})"),
         params.as_slice(),
     )?;
@@ -229,7 +275,8 @@ fn reclaim_fully(conn: &Connection) {
 }
 
 /// GC interned dirs no longer live: iterate leaf-up, deleting dirs referenced by
-/// no item AND no child dir, until stable. This deletes exactly the complement
+/// no item (as its source, dest, or own folder), no tree-summary row, AND no child
+/// dir, until stable. A DIR unit's own folder is often referenced by nothing else. This deletes exactly the complement
 /// of the referenced-dirs-plus-their-ancestors closure — a referenced dir's
 /// whole parent chain survives (path reconstruction walks it), and a pruned
 /// dir's ancestors fall away only once nothing live remains under them.
@@ -239,6 +286,8 @@ fn gc_orphan_dirs(conn: &Connection) -> Result<(), OperationLogStoreError> {
             "DELETE FROM dirs
              WHERE dir_id NOT IN (SELECT source_dir_id FROM operation_items)
                AND dir_id NOT IN (SELECT dest_dir_id FROM operation_items WHERE dest_dir_id IS NOT NULL)
+               AND dir_id NOT IN (SELECT self_dir_id FROM operation_items WHERE self_dir_id IS NOT NULL)
+               AND dir_id NOT IN (SELECT dir_id FROM operation_tree_dirs)
                AND dir_id NOT IN (SELECT parent_dir_id FROM dirs WHERE parent_dir_id IS NOT NULL)",
             [],
         )?;

@@ -39,6 +39,10 @@
   "@shortcuts.scope.multiRename": {
     "sourceHash": "5ceb1a2"
   },
+  "shortcuts.scope.operationLog": "Nhật ký thao tác",
+  "@shortcuts.scope.operationLog": {
+    "sourceHash": "2c97965"
+  },
   "shortcuts.scope.askCmdr": "Ask Cmdr",
   "@shortcuts.scope.askCmdr": {
     "sourceHash": "aafb1ce",

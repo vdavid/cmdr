@@ -162,8 +162,8 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - `main.quit.title` (55 vs 45; fallback `Stoppen terwijl er nog 3 bewerkingen lopen?`) and `main.quit.body`.
 - `servers.hub.status.foundNearby` `Gevonden in de buurt` (20 vs 12), `commands.serversTogglePin.label` (30 vs 18),
   `settings.appearance.tintSmb.label`, `adb.readiness.offline`, `adb.hint.text`.
-- `fileOperations.cancelRollback.reason.*` (75–90 chars vs 50–60), `operationLog.dialog.finishRollBack` and
-  `fileOperations.rollbackConfirm.titleFinish`, `ai.cloudConsent.askCmdr.contentsRule`,
+- `fileOperations.cancelRollback.reason.*` (75–90 chars vs 50–60), `operationLog.dialog.rollBackRest` and
+  `fileOperations.rollbackConfirm.titleRest`, `ai.cloudConsent.askCmdr.contentsRule`,
   `fileOperations.delete.cloudOnlineOnlyMixedWarning`, `fileExplorer.navigation.favoritesCantAddHere`,
   `fileOperations.leftovers.stagingFolderKept`.
 - `settings.section.navigationAndFileOps` `Navigatie en bewerkingen`: fallback `Navigatie en bestandsbewerkingen` if the
@@ -245,3 +245,12 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `askCmdr.toolGroup.summaryRunning`) have no pile precedent. Confirm.
 - `Stop Cmdr?` (`ui.toolAsk.quit.title`) keeps the term-consistency frame with `menu.app.quit`, where the question
   register would otherwise say `Cmdr stoppen?`. Confirm.
+
+## Bewerkingenlogboek-boom (`operationLog.tree.*`, `commands.operationLog*`, `operationLog.rollback.refusal*`)
+
+- The checkbox verb follows English's `select` → `Selecteer` / `Deselecteer` (`Selecteer alle onderdelen`,
+  `3 van 12 geselecteerd`). `commands.operationLogRollBack.label` is the infinitive
+  `De geselecteerde onderdelen terugdraaien`, byte-identical to `fileOperations.rollbackConfirm.titleSelected` minus its
+  `?` (`i18n-terms`), against the palette's imperative. Confirm.
+- `Komt terug samen met de bovenliggende map.` for "Comes back with its folder." avoids a pronoun for an item of unknown
+  gender. Confirm.

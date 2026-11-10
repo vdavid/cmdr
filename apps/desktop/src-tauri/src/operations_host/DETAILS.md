@@ -72,7 +72,9 @@ emits `write-complete` and reports an `InstantMutationFact` instead.
 The engine's payloads (`crates/cmdr-operations/src/types/events.rs`, plus `OperationsChanged` and `MutationSettled`) derive only
 `serde` + `specta::Type`; the Tauri event, with its wire name, is the app's. `wire_event!` gives each a newtype that
 derives `tauri_specta::Event` with `#[serde(transparent)]`, `ipc.rs`'s `collect_events!` registers the newtypes, and
-every emit site writes `wire::WriteProgress(event).emit(&app)`. A payload emitted unwrapped doesn't compile.
+every emit site writes `wire::WriteProgress(event).emit(&app)`. A payload emitted unwrapped doesn't compile. One
+wrapper carries the operation log's payload rather than the engine's: `OperationLogTreeBackfill` (the item tree's
+backfill steps, emitted by `commands/operation_log.rs`), here because it needs the same foreign-type wrapper.
 
 - **Decision: wrappers, not app-side mirror structs.** Why: the orphan rule forbids implementing `tauri_specta::Event`
   on another crate's type, and once the engine is a crate its payloads are foreign. A newtype is one line per payload;

@@ -73,6 +73,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "operation_items.tags_before + tags_after: a tag write's prior and written Finder-tags value",
         up: migrate_v5_tags_change,
     },
+    Migration {
+        version: 6,
+        description: "operation_tree_dirs summary, per-folder item indexes, self_dir_id, tree_summary, outcome_generation",
+        up: migrate_v6_tree_summary,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a
@@ -105,15 +110,19 @@ pub fn run_migrations(conn: &Connection, migrations: &[Migration]) -> Result<(),
     let mut pending: Vec<&Migration> = migrations.iter().filter(|m| m.version > current).collect();
     pending.sort_by_key(|m| m.version);
     for migration in pending {
+        // The ladder runs while the app launches, so a slow step is a slow launch:
+        // every step logs what it cost.
+        let started = cmdr_fs::rt::now();
         let tx = conn.unchecked_transaction()?;
         (migration.up)(&tx)?;
         stamp_schema_version(&tx, migration.version)?;
         tx.commit()?;
         log::info!(
             target: "operation_log",
-            "operation-log DB migrated to schema v{} ({})",
+            "operation-log DB migrated to schema v{} ({}) in {:.1?}",
             migration.version,
-            migration.description
+            migration.description,
+            cmdr_fs::rt::since(started)
         );
     }
     Ok(())
@@ -288,5 +297,54 @@ fn migrate_v5_tags_change(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     tx.execute_batch(
         "ALTER TABLE operation_items ADD COLUMN tags_before BLOB;
          ALTER TABLE operation_items ADD COLUMN tags_after BLOB;",
+    )
+}
+
+/// Version 6: what the Operation log's item tree reads, so a 2M-item operation opens
+/// by reading a handful of rows (`DETAILS.md` § "Tree summary").
+///
+/// - `operations.tree_summary`: the `TreeSummaryState` token, `built` once the op's
+///   `operation_tree_dirs` rows are exact. NULL for every op journaled before this
+///   step: nothing is backfilled here, so the launch pays no per-op work; an old op's
+///   summary is built on demand, the first time someone opens its tree.
+/// - `operations.outcome_generation`: bumped inside every item-outcome transaction,
+///   so a backfill that read the op before a rollback landed can tell.
+/// - `operation_items.self_dir_id`: a DIR row's own folder on the op's tree axis,
+///   interned by the writer. NULL on older rows (the backfill fills it) and on FILE
+///   rows.
+/// - `operation_tree_dirs`: per (op, axis folder) subtree totals, every column a pure
+///   function of row fields.
+///
+/// Every part of it is constant-time on any journal. The two item indexes the tree's
+/// folder listings read are NOT here: building them scales with the journal (5.35 s on
+/// 4M rows), and this ladder runs on the app's main thread before the window can show,
+/// so the writer builds them after open (`tree_indexes.rs`).
+fn migrate_v6_tree_summary(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch(
+        "ALTER TABLE operations ADD COLUMN tree_summary TEXT;
+         ALTER TABLE operations ADD COLUMN outcome_generation INTEGER NOT NULL DEFAULT 0;
+         ALTER TABLE operation_items ADD COLUMN self_dir_id INTEGER REFERENCES dirs(dir_id);
+
+         CREATE TABLE operation_tree_dirs (
+             op_id                 TEXT    NOT NULL REFERENCES operations(op_id),
+             dir_id                INTEGER NOT NULL REFERENCES dirs(dir_id),
+             parent_dir_id         INTEGER REFERENCES dirs(dir_id),
+             name_folded           TEXT    NOT NULL,
+             self_seq              INTEGER,
+             child_dirs            INTEGER NOT NULL DEFAULT 0,
+             direct_files          INTEGER NOT NULL DEFAULT 0,
+             files                 INTEGER NOT NULL DEFAULT 0,
+             bytes                 INTEGER NOT NULL DEFAULT 0,
+             units_selectable      INTEGER NOT NULL DEFAULT 0,
+             unit_files_selectable INTEGER NOT NULL DEFAULT 0,
+             unit_bytes_selectable INTEGER NOT NULL DEFAULT 0,
+             units_rolled_back     INTEGER NOT NULL DEFAULT 0,
+             units_held_back       INTEGER NOT NULL DEFAULT 0,
+             units_unfinished      INTEGER NOT NULL DEFAULT 0,
+             housekeeping_waiting  INTEGER NOT NULL DEFAULT 0,
+             PRIMARY KEY (op_id, dir_id)
+         ) WITHOUT ROWID;
+         CREATE INDEX operation_tree_dirs_children
+             ON operation_tree_dirs (op_id, parent_dir_id, name_folded);",
     )
 }

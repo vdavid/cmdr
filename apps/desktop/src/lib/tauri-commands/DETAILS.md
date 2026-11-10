@@ -77,10 +77,13 @@ commands, and notable non-obvious placements.
   throw: an operation settling between two ticks is an ordinary answer for a view. Contract:
   `crates/cmdr-operations/src/transfer_tree/DETAILS.md` § "The view command".
 - **`operation-log.ts`**: the operation journal's read API (`getRecentOperationLogEntries`, `getOperationLogDetail`)
-  plus its two write entries. `rollbackOperation` reverses ONE operation, for a named initiator, and resolves as soon as
-  the inverse is queued, throwing a typed `RollbackRefusalFailure` on a refusal; `undoOperations` reverses SEVERAL and
-  resolves only with the whole tally, which is what Ask Cmdr's rename undo reports. ❌ Don't reorder the ids handed to
-  `undoOperations`: the backend reverses them newest-first and the apply order breaks a same-second tie.
+  plus its two write entries, and the item tree's (`getOperationLogTree`, `start` / `cancelOperationLogTreeBackfill`,
+  and the `onOperationLogTreeBackfill` / `onOperationLogTreeIndexesSettled` subscriptions). `rollbackOperation` reverses
+  ONE operation, for a named initiator, optionally narrowed to the tree's normalized `selection` (`null` = everything
+  still awaiting reversal), and resolves as soon as the inverse is queued, throwing a typed `RollbackRefusalFailure` on
+  a refusal; `undoOperations` reverses SEVERAL and resolves only with the whole tally, which is what Ask Cmdr's rename
+  undo reports. ❌ Don't reorder the ids handed to `undoOperations`: the backend reverses them newest-first and the
+  apply order breaks a same-second tie.
 - **`quit.ts`**: the quit gate's two answers (`quitConfirm` / `quitCancel`, each returning the gate's typed
   `QuitAnswer`), `relaunchApp` (Restart: quit through the gate, then reopen without a second Dock icon), and the two
   subscriptions, `onQuitRequested` and `onQuitCalledOff`. There is deliberately no cancel-every-operation wrapper

@@ -213,14 +213,14 @@ fn a_finished_operation_asks_in_its_own_terms() {
         logged_question(Some(logged_row(RollbackState::Rollbackable)), &NoVolumes).unwrap(),
         RollbackQuestion::Logged {
             kind: OpKind::Move,
-            finishing: false
+            rest: false
         }
     );
     assert_eq!(
         logged_question(Some(logged_row(RollbackState::PartiallyRolledBack)), &NoVolumes).unwrap(),
         RollbackQuestion::Logged {
             kind: OpKind::Move,
-            finishing: true
+            rest: true
         }
     );
 }
@@ -254,6 +254,14 @@ fn what_the_journal_refuses_is_typed_with_no_dialog() {
     gone.dest_volume_id = Some("backup".to_string());
     let data = refusal_of(logged_question(Some(gone), &NoVolumes));
     assert_eq!(data["refusal"], json!("volumeUnavailable"));
+
+    // A rollback is never itself rolled back, whatever state it stored.
+    let mut undo = logged_row(RollbackState::Rollbackable);
+    undo.rolls_back_op_id = Some("original".to_string());
+    assert_eq!(
+        refusal_of(logged_question(Some(undo), &NoVolumes)),
+        json!({ "refusal": "isARollback" })
+    );
 }
 
 #[test]
@@ -282,10 +290,10 @@ fn the_question_crosses_as_facts_the_frontend_words() {
     assert_eq!(
         serde_json::to_value(RollbackQuestion::Logged {
             kind: OpKind::CreateFolder,
-            finishing: true
+            rest: true
         })
         .unwrap(),
-        json!({ "target": "logged", "kind": "createFolder", "finishing": true })
+        json!({ "target": "logged", "kind": "createFolder", "rest": true })
     );
 }
 

@@ -36,8 +36,15 @@ pub(crate) fn ts_type_of_event(event: &str) -> &'static str {
     &line[start..end]
 }
 
-/// The top-level keys of `export type <name> = { ... }`.
+/// The top-level keys of `export type <name> = { ... }`; none for a fieldless fact, which
+/// specta writes as `Record<string, never>`.
 pub(crate) fn ts_keys(name: &str) -> BTreeSet<String> {
+    if BINDINGS
+        .lines()
+        .any(|l| l == format!("export type {name} = Record<string, never>"))
+    {
+        return BTreeSet::new();
+    }
     let header = format!("export type {name} = {{");
     let mut lines = BINDINGS.lines().skip_while(|l| *l != header);
     assert!(lines.next().is_some(), "`bindings.ts` has no `{name}` object type");
@@ -132,7 +139,7 @@ fn every_event_matches_the_generated_bindings() {
 /// with the engine type it carries (`operations_host/wire.rs`).
 #[test]
 fn every_write_event_name_matches_the_generated_bindings() {
-    use crate::operations_host::wire::{self, VolumesBusyChanged};
+    use crate::operations_host::wire::{self, OperationLogTreeIndexesSettled, VolumesBusyChanged};
 
     let named = [
         (wire::WRITE_PROGRESS, "WriteProgressEvent"),
@@ -156,6 +163,11 @@ fn every_write_event_name_matches_the_generated_bindings() {
         (wire::SCAN_PREVIEW_COMPLETE, "ScanPreviewCompleteEvent"),
         (wire::SCAN_PREVIEW_ERROR, "ScanPreviewErrorEvent"),
         (wire::SCAN_PREVIEW_CANCELLED, "ScanPreviewCancelledEvent"),
+        (wire::OPERATION_LOG_TREE_BACKFILL, "TreeBackfillEvent"),
+        (
+            wire::OPERATION_LOG_TREE_INDEXES_SETTLED,
+            "OperationLogTreeIndexesSettled",
+        ),
     ];
     for (event, ts) in named {
         assert_eq!(
@@ -169,5 +181,9 @@ fn every_write_event_name_matches_the_generated_bindings() {
         VolumesBusyChanged {
             volume_ids: vec!["root".into()],
         },
+    );
+    assert_matches(
+        wire::OPERATION_LOG_TREE_INDEXES_SETTLED,
+        OperationLogTreeIndexesSettled {},
     );
 }

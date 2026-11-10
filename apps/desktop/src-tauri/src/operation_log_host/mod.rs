@@ -17,6 +17,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, OnceLock};
 
 use tauri::AppHandle;
+use tauri_specta::Event as _;
 
 use cmdr_operation_log::OpenError;
 use cmdr_operation_log::OperationLog;
@@ -83,13 +84,34 @@ pub fn start(app: &AppHandle, log: &OperationLog) {
     match log.open(&operation_log_db_path(&data_dir), &set_aside_unreadable) {
         // Prune on startup and on a slow timer, on the app's runtime. Runs before
         // the app is under load; the size loop is a no-op while under budget.
-        Ok(()) => log.spawn_retention(tauri::async_runtime::handle().inner(), retention_limits(app)),
+        Ok(()) => {
+            log.spawn_retention(tauri::async_runtime::handle().inner(), retention_limits(app));
+            announce_tree_indexes(app, log);
+        }
         Err(OpenError::Store(e)) => log::warn!(target: "operation_log", "operation log store not opened: {e}"),
         Err(OpenError::Writer(e)) => log::warn!(target: "operation_log", "operation log writer not spawned: {e}"),
         Err(OpenError::AlreadyOpen) => {
             crate::log_error!(target: "operation_log", "the operation log was started twice; keeping the first");
         }
     }
+}
+
+/// `operation-log-tree-indexes-settled`: the writer's build of the journal's folder
+/// indexes settled (built, or couldn't be), so an item tree that answered
+/// `indexesBuilding` reads again and finds out which. Once per launch.
+#[derive(Debug, Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
+pub struct OperationLogTreeIndexesSettled {}
+
+/// Emit [`OperationLogTreeIndexesSettled`] once the writer's index build settled (at once
+/// when it already has), so the Operation log's tree subscribes rather than polls. Runs
+/// on the writer thread: an emit, nothing that waits on the writer.
+fn announce_tree_indexes(app: &AppHandle, log: &OperationLog) {
+    let app = app.clone();
+    log.tree_backfills().when_indexes_settled(Box::new(move || {
+        if let Err(e) = (OperationLogTreeIndexesSettled {}).emit(&app) {
+            log::warn!(target: "operation_log", "couldn't say the item tree's folder indexes settled: {e}");
+        }
+    }));
 }
 
 /// Keeps an `operation-log.db` the store can't read beside the fresh one, and

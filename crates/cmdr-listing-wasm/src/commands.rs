@@ -30,7 +30,7 @@ use crate::backend_listings::BackendListings;
 use crate::events::{DemoEvents, EventSink, ListingPathEvent};
 use crate::folder_sizes::FolderSizes;
 use crate::imports::{DemoImports, IMPORT_BUDGET_BYTES, ImportWatch};
-use crate::invoke::{answer, ok, parse};
+use crate::invoke::{answer, ok, page_runtime, parse};
 use crate::multi_rename::{DemoMultiRename, MULTI_RENAME_COMMANDS};
 use crate::operations_host::DemoOperations;
 use crate::search::{DemoSearch, SEARCH_COMMANDS};
@@ -448,15 +448,6 @@ impl Demo {
             timed_out: false,
         }
     }
-}
-
-/// The runtime the engines' background work runs on (the viewer, the folder-size gather, Multi-Rename's media
-/// reads): the page's event loop in the browser, the caller's tokio runtime in native tests.
-fn page_runtime() -> cmdr_fs::rt::Runtime {
-    #[cfg(target_family = "wasm")]
-    return cmdr_fs::rt::Runtime::default();
-    #[cfg(not(target_family = "wasm"))]
-    cmdr_fs::rt::Runtime::current()
 }
 
 /// A transfer command's sources, and whether it copies: what a drop's staging

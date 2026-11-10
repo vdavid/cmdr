@@ -14,7 +14,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, unmount, flushSync, tick } from 'svelte'
-import type { OperationRow as JournalRow, OperationSnapshot } from '#lib/ipc/bindings.js'
+import type { Initiator, OperationRow as JournalRow, OperationSnapshot, RollbackSelection } from '#lib/ipc/bindings.js'
 import type { OperationLogDetail } from '#lib/tauri-commands/index.js'
 
 const { commandMocks } = vi.hoisted(() => ({
@@ -24,9 +24,9 @@ const { commandMocks } = vi.hoisted(() => ({
     cancelOperation: vi.fn<(id: string) => Promise<void>>(() => Promise.resolve()),
     cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
     resolveWriteConflict: vi.fn(() => Promise.resolve('resolved')),
-    rollbackOperation: vi.fn<(id: string) => Promise<{ inverseOpId: string }>>(() =>
-      Promise.resolve({ inverseOpId: 'inv-dispatched' }),
-    ),
+    rollbackOperation: vi.fn<
+      (id: string, initiator: Initiator, selection: RollbackSelection | null) => Promise<{ inverseOpId: string }>
+    >(() => Promise.resolve({ inverseOpId: 'inv-dispatched' })),
     getOperationLogDetail: vi.fn<() => Promise<OperationLogDetail | null>>(() => Promise.resolve(null)),
   },
 }))
@@ -47,6 +47,15 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   onWriteConflictResolved: vi.fn(() => Promise.resolve(() => {})),
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
+}))
+
+// The item tree isn't what these pin: an operation without one gets the plain "Roll back".
+vi.mock('#lib/tauri-commands/operation-log.js', () => ({
+  getOperationLogTree: vi.fn(() => Promise.resolve(null)),
+  startOperationLogTreeBackfill: vi.fn(() => Promise.resolve({ kind: 'built' })),
+  cancelOperationLogTreeBackfill: vi.fn(() => Promise.resolve()),
+  onOperationLogTreeBackfill: vi.fn(() => Promise.resolve(() => {})),
+  onOperationLogTreeIndexesSettled: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({
@@ -149,8 +158,9 @@ async function mountDialog(entries: JournalRow[]): Promise<void> {
 /** A control by its visible words, scoped to the row's action area. */
 function control(label: string): HTMLButtonElement | null {
   return (
-    [...target.querySelectorAll<HTMLButtonElement>('.op-row button')].find((b) => b.textContent.trim() === label) ??
-    null
+    [...document.querySelectorAll<HTMLButtonElement>('.op-actions button')].find(
+      (b) => (b.querySelector('.btn-label') ?? b).textContent.trim() === label,
+    ) ?? null
   )
 }
 
@@ -426,7 +436,7 @@ describe('a rollback started from this dialog gets the controls immediately', ()
     if (!confirm) throw new Error('the confirmation has no confirming button')
     confirm.click()
     await vi.waitFor(() => {
-      expect(commandMocks.rollbackOperation).toHaveBeenCalledWith('op-copy', 'user')
+      expect(commandMocks.rollbackOperation).toHaveBeenCalledWith('op-copy', 'user', null)
     })
     flushSync()
 

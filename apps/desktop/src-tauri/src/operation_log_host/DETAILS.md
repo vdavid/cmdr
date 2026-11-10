@@ -12,6 +12,11 @@ work here: editing, planning, reorganizing, or advising.
 2. `start(app, &log)` runs late (beside `agent::start`), once the data dir resolves: it seeds the recording switch from
    `settings.json`, calls `OperationLog::open` (store, writer, reconcile, then publish), and starts retention on the
    app's runtime. A data-dir or open failure logs a warning and leaves the app running without history.
+3. On a good open, `start` also asks the log's registry to say when the writer's build of the item tree's folder
+   indexes settles, built or not (`when_indexes_settled`), and emits `OperationLogTreeIndexesSettled`
+   (`operation-log-tree-indexes-settled`) then, once. The writer builds them right after open (`crates/cmdr-operation-log/src/store/tree_indexes.rs`); the Operation
+   log's tree, which answers `indexesBuilding` until then, reads again on the event instead of polling. The callback
+   runs on the writer thread, so it only emits.
 
 - **Decision: `start` takes the handle `install` returned.** Why: a re-read through `operation_log()` could, in a
   mis-ordered startup, open a detached placeholder while the engine journals into the installed one. Passing it makes

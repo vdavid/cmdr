@@ -480,7 +480,12 @@ var surfaceGuardedCrates = []struct {
 		// crate exposes, with no headroom (David approved the rule, and that one
 		// re-measure, in the #415 plan). Tightened to 71 items on 2026-10-20, when
 		// four accessors only the crate's own tests call went behind `cfg(test)`
-		// (#467).
+		// (#467). Raised to 7 handle methods and 79 items on 2026-11-07 for the
+		// item tree's backfill (#1033): `tree_backfills` (the per-log registry the
+		// tree view and both hosts share), and in `query` the backfill job and its
+		// four wire types plus `BackfillRegistry`, `BackfillProgress`, and
+		// `UnbuiltReason`. Start and cancel folded onto `TreeBackfill::start` and the
+		// registry instead of two more handle methods.
 		//
 		// The 11 root promises are `OperationLog`, `OpJournal`, `OpenError`,
 		// `new_operation_id`, and the seven public modules: `store` and `query` (the
@@ -490,16 +495,35 @@ var surfaceGuardedCrates = []struct {
 		// planner, its `RollbackRunner` / `VolumeLookup` traits, and the fail-safe
 		// verdicts the engine's in-flight reversals share), and `retention`.
 		// `HandleMethods` counts `detached`, `open`, `set_recording`, `writer`,
-		// `spawn_retention`, and `journal_open`; the `testing`-gated `set_journal`
+		// `spawn_retention`, `journal_open`, and `tree_backfills`; the `testing`-gated `set_journal`
 		// counts apart. Item-by-item:
 		// `crates/cmdr-operation-log/DETAILS.md` § "The public surface is capped".
+		//
+		// Raised 79 -> 92 on 2026-11-07 for ONE concept, the Operation log's item
+		// tree (#1033), whose window both hosts answer from the crate (16 items, three
+		// of them the backfill's, counted once): `query`'s
+		// `operation_tree` and the wire vocabulary its request and answer are made
+		// of (the request, the view, a row, its key, role, checkbox, tally, and
+		// unexpandable reason, the summary state with the backfill's progress and
+		// unbuilt reason, the registry the host keeps, and the selection: base,
+		// toggle, selection). Every one crosses into `bindings.ts`; a host-side copy
+		// of any would let the desktop and the demo drift.
+		//
+		// Raised 92 -> 95 on 2026-11-08 for partial rollback (#1033), the engine half
+		// of that same tree: in `rollback`, `rollback_operation_with_selection` (the
+		// gate, which normalizes and refuses a selection), `execute_rollback_with_selection`
+		// (the run, which `cmdr-operations`' managed dispatch calls), and
+		// `SelectionRefusal` (the typed reason inside `RollbackRefusal::Selection`,
+		// which crosses into `bindings.ts`). `rollback_operation` and `execute_rollback`
+		// stay as their `None` wrappers on purpose: about 20 callers across both crates
+		// and the app's backend suites reverse a whole op and stay byte-identical.
 		Name:       "cmdr-operation-log",
 		HandleType: "OperationLog",
 		Ceilings: surfaceCeilings{
 			RootPromises:   11,
-			HandleMethods:  6,
+			HandleMethods:  7,
 			PublicModules:  7,
-			SubsystemItems: 71,
+			SubsystemItems: 95,
 		},
 	},
 	{

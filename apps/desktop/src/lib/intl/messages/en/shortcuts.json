@@ -60,6 +60,11 @@
     "description": "Group heading in the Keyboard shortcuts list for keys that work inside the Multi-rename tool (Ctrl+M, the sheet that renames many files at once). A short section title; match multiRename.title.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "shortcuts.scope.operationLog": "Operation log",
+  "@shortcuts.scope.operationLog": {
+    "description": "Group heading in the Keyboard shortcuts list for keys that work inside the Operation log dialog (View > Operation log: recent file operations and the items they touched, which can be rolled back). A short section title; match operationLog.dialog.title.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
   "shortcuts.scope.askCmdr": "Ask Cmdr",
   "@shortcuts.scope.askCmdr": {
     "description": "Group heading in the Keyboard shortcuts list for keys that work while focus is in Ask Cmdr, the chat rail where the user chats with an AI about their files. \"Ask Cmdr\" is the product name; keep it as-is.",

@@ -276,10 +276,9 @@ them, an article or contraction may not. The iCloud keys open `Abre {system_sett
 The verb agrees with the names: `Se han restaurado los nombres anteriores de N archivos.`, `one`
 `Se ha restaurado el nombre anterior de 1 archivo.`
 
-## Terminar la reversión (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)
+## Terminar la reversión (`operationLog.dialog.rollBackRest`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleRest`/`.rollBackRest`, `queue.row.reversalInFolder`)
 
-`Terminar de revertir` (never "start over"; shorter than `Completar la reversión`). `en “{folder}”` quoted, so the
-folder doesn't read as what gets removed.
+`Revertir el resto` everywhere. `en “{folder}”` quoted. Tree checkboxes → `seleccionar` / `deseleccionar`.
 
 ## El aviso de una reversión que no lo pudo todo (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`)
 

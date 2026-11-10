@@ -1880,7 +1880,8 @@
     "confidence": "high",
     "decision": "Terugdraaien",
     "exceptions": {
-      "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "\"May keep the names they have now\": houden misschien hun huidige naam."
+      "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "\"May keep the names they have now\": houden misschien hun huidige naam.",
+      "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "Same sentence as bodyUndoByRenamingBack: houden misschien hun huidige naam."
     },
     "forms": "rollback prompt's safe button Behoud de bestanden; a rename that kept its name → behoudt zijn naam",
     "sources": "macOS AppKit Revisions (Behoud beide), Finder (Behoud origineel)"
@@ -2190,6 +2191,9 @@
     "decision": "Verplaatsen dat niet afkwam",
     "exceptions": {
       "fileOperations.cancelRollback.stoppedMovingBack": "Moving back is the put-back concept: terugzetten.",
+      "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Moving back is the put-back concept: zet … terug, as bodyUndoByMovingBack.",
+      "operationLog.rollback.rollbackableNoticeMoveBack": "Moving back is the put-back concept: zet … terug.",
+      "operationLog.tree.statusMovedBack": "Moved back is the put-back concept: Teruggezet.",
       "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Undoing the move is the rollback concept: terugdraaien."
     },
     "forms": "button Verplaats; the move as a noun → het verplaatsen (voordat Cmdr het verplaatsen kon voltooien)",
@@ -2949,7 +2953,7 @@
     "confidence": "high",
     "decision": "Terugdraaien",
     "forms": "button Terugdraaien (kept identical to the button that opened the prompt, over the imperative rule); roll them back → draai ze terug; status Teruggedraaid, Gedeeltelijk teruggedraaid; progress Bezig met terugdraaien; badges Terug te draaien / Niet terug te draaien; Finish rolling back → Voltooi terugdraaien",
-    "note": "Never for a single item: an item is deleted (verwijderen) or put back (terugzetten).",
+    "note": "A single item's OUTCOME is named by what happened to it (Verwijderd, Teruggezet, Naam teruggezet); terugdraaien names the act, also on one item in the Operation log tree ({name} terugdraaien, kon dit onderdeel niet terugdraaien, {countText} teruggedraaid).",
     "sources": "standard NL; MS (roll back → terugdraaien)"
   },
   "root-folder": {

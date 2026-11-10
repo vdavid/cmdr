@@ -48,7 +48,7 @@
 {#if question}
     <RollbackConfirmDialog
         variant={question.variant}
-        finishing={question.finishing}
+        rest={question.rest}
         startedBy={startedByWhenGuarded(question.initiator, question.guard)}
         onConfirm={confirm}
         onCancel={dismissToolRollback}

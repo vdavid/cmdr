@@ -173,6 +173,9 @@ token_enum! {
         VolumeNotLive => "volume_not_live",
         /// A `search_only` leaf row was dropped/errored (the completeness downgrade).
         SearchRowIncomplete => "search_row_incomplete",
+        /// A crash interrupted the operation, so rows it never got to write are
+        /// missing (the next launch ended it).
+        Interrupted => "interrupted",
     }
 }
 
@@ -227,7 +230,7 @@ token_enum! {
     ///
     /// WHICH variant is stored is reporting fidelity only: no variant may change
     /// whether an item is skipped, retried, or forced. That a reason is stored at all
-    /// is load-bearing: it tells a row a rollback held back (which "Finish" retries)
+    /// is load-bearing: it tells a row a rollback held back (which "Roll back the rest" retries)
     /// from the operation's own skip (`RollbackUnit::awaits_reversal`).
     pub enum SkipReason {
         /// A precondition field couldn't be verified (a recorded snapshot field whose
@@ -261,6 +264,16 @@ token_enum! {
         /// process can't clear (`schg`, which only root can), so it can't be removed.
         /// A user flag or an ACL the copy carried over is cleared, never reported here.
         Locked => "locked",
+    }
+}
+
+token_enum! {
+    /// Whether an operation's `operation_tree_dirs` rows are exact, the nullable
+    /// `operations.tree_summary` column. NULL means unbuilt: an op journaled before the
+    /// summary existed, or one whose summary write failed (it's rebuilt from its rows
+    /// on demand). Every op opened since is `Built` from its first row.
+    pub enum TreeSummaryState {
+        Built => "built",
     }
 }
 
@@ -370,11 +383,19 @@ mod tests {
         check!(SearchCoverage, [Full, TopLevelOnly]);
         check!(
             SearchCoverageReason,
-            [Capped, IndexAbsent, IndexStale, VolumeNotLive, SearchRowIncomplete]
+            [
+                Capped,
+                IndexAbsent,
+                IndexStale,
+                VolumeNotLive,
+                SearchRowIncomplete,
+                Interrupted
+            ]
         );
         check!(EntryType, [File, Dir]);
         check!(RowRole, [RollbackUnit, SearchOnly]);
         check!(ItemOutcome, [Done, Skipped, Failed, RolledBack]);
+        check!(TreeSummaryState, [Built]);
         check!(
             SkipReason,
             [
@@ -384,6 +405,7 @@ mod tests {
                 DirNotEmpty,
                 AlreadyGone,
                 Vanished,
+                OriginalGone,
                 Failed,
                 Locked
             ]

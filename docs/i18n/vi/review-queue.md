@@ -57,9 +57,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   many Vietnamese devs say; `Lưu trữ lạnh` / `kho lưu trữ lạnh` for "Archived"; `tự triển khai` for self-hosted.
   `servers.sheet.s3GcsKeyHelp` keeps Google's `Interoperability` tab name English: the vi Google Cloud console's own
   label is unverified.
-- **Rollback captions** (`operationLog.dialog.rollbackOf`, `.rollbackOfUnlisted`, `.latestRollback`):
-  `Hoàn tác cho thao tác “…” lúc {time}` puts `thao tác` before the quote so `lúc {time}` binds to the undone operation,
-  not the rollback row. Confirm it reads as a caption, not a command.
 - **`Khung đích = khung nguồn`** (`commands.paneClone.label`, `menu.view.clonePane`, tentative): Total Commander’s name
   for Clone pane, because `nhân bản` is Duplicate and `sao chép` is Copy. Only TC has it (no Double Commander vi);
   confirm a Vietnamese reader takes it as "show the same folder in the other pane".
@@ -118,3 +115,5 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   inline field on a file name; no source names it, so this is coined. Confirm it reads naturally.
 - **`soạn tên mới`** (`askCmdr.tool.multiRename.doing`): "working out new names" has no source either; `soạn`
   ("compose") keeps the line from claiming anything got renamed. Confirm it reads naturally.
+- **`chọn từng mục một`** (`operationLog.tree.togglesCapped`, `operationLog.rollback.refusalTooManyToggles`): "select
+  one by one" has no source; coined. Confirm it reads naturally.

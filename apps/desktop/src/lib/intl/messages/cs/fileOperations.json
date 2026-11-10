@@ -1049,9 +1049,9 @@
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a058f98"
   },
-  "fileOperations.rollbackConfirm.titleFinish": "Dokončit vrácení změn?",
-  "@fileOperations.rollbackConfirm.titleFinish": {
-    "sourceHash": "cfc998a"
+  "fileOperations.rollbackConfirm.titleRest": "Vrátit zbývající změny?",
+  "@fileOperations.rollbackConfirm.titleRest": {
+    "sourceHash": "08a5c9b"
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Tímto se smažou soubory a složky, které operace vytvořila. Cmdr přeskočí vše, čím si není jistý, takže pár položek může zůstat.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
@@ -1081,9 +1081,33 @@
   "@fileOperations.rollbackConfirm.rollBack": {
     "sourceHash": "931f703"
   },
-  "fileOperations.rollbackConfirm.finishRollBack": "Dokončit vrácení změn",
-  "@fileOperations.rollbackConfirm.finishRollBack": {
-    "sourceHash": "dbe3771"
+  "fileOperations.rollbackConfirm.rollBackRest": "Vrátit zbývající změny",
+  "@fileOperations.rollbackConfirm.rollBackRest": {
+    "sourceHash": "f954882"
+  },
+  "fileOperations.rollbackConfirm.titleSelected": "Vrátit změny vybraných položek?",
+  "@fileOperations.rollbackConfirm.titleSelected": {
+    "sourceHash": "94d4cad"
+  },
+  "fileOperations.rollbackConfirm.rollBackSelected": "Vrátit vybrané změny",
+  "@fileOperations.rollbackConfirm.rollBackSelected": {
+    "sourceHash": "32a94c5"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Tímto se smažou vybrané soubory a složky, které operace vytvořila. Cmdr přeskočí vše, čím si není jistý, takže pár položek může zůstat.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
+    "sourceHash": "a2ed919"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Tímto se vybrané soubory přesunou zpět, odkud přišly. Cmdr přeskočí vše, čím si není jistý, takže pár položek může zůstat tam, kde je.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": {
+    "sourceHash": "b90e365"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": "Tímto se vybraným souborům vrátí jejich původní názvy. Cmdr přeskočí vše, čím si není jistý, takže pár souborů si může ponechat současné názvy.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBackSelected": {
+    "sourceHash": "2d2606f"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": "Tímto se vybraným souborům vrátí značky, které měly dřív. Cmdr přeskočí každý soubor, jehož značky se od té doby změnily, takže pár souborů si může ponechat současné značky.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRestoringTagsSelected": {
+    "sourceHash": "e388f91"
   },
   "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Položka, kterou Cmdr zapsal, byla odstraněna.} few {Všechny {countText} položky, které Cmdr zapsal, byly odstraněny.} many {Všech {countText} položky, které Cmdr zapsal, bylo odstraněno.} other {Všech {countText} položek, které Cmdr zapsal, bylo odstraněno.}}",
   "@fileOperations.cancelRollback.doneDeleting": {

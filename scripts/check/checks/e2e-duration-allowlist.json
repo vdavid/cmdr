@@ -110,7 +110,7 @@
       "maxMs": 4000,
       "reason": "David approved (2026-09-13): 2.1s on the full macOS Playwright lane; cap is that rounded up to the next whole second, plus 1s of headroom"
     },
-    "operation-log-rollback.spec.ts::Rolling an operation back from the history dialog::cancelling a reversal keeps what it reversed, and the row offers to finish the rest": {
+    "operation-log-rollback.spec.ts::Rolling an operation back from the history dialog::cancelling a reversal keeps what it reversed, and the dialog offers to roll back the rest": {
       "maxMs": 4000,
       "reason": "David approved (2026-09-13): 2.1s on the full macOS Playwright lane; cap is that rounded up to the next whole second, plus 1s of headroom"
     },

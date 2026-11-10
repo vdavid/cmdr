@@ -76,6 +76,10 @@ const AU_DIVERGES_FROM_GB: readonly string[] = [
   // mixed-selection wording says it: the all-online-only one can't offer that
   // remedy at all, so it stays identical to `en-GB`.
   'fileOperations.delete.cloudOnlineOnlyMixedWarning',
+  // The Operation log tree's keyboard commands deselect too.
+  'commands.operationLogToggleItem.label',
+  'commands.operationLogToggleItemAndDown.label',
+  'commands.operationLogDeselectAll.label',
 ]
 
 /**

@@ -275,21 +275,22 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'content when a file can’t be loaded.',
   },
   {
-    // The rollback cross-reference lines sit under a list row, not in another
-    // dialog state. Listed BEFORE the blanket `operationLog.` mapping, whose
-    // note would otherwise misplace them. `rollbackOf` also covers `rollbackOfUnlisted`.
-    prefix: 'operationLog.dialog.rollbackOf',
+    // The item tree's words (column headers, row statuses, why a row was skipped) sit in
+    // the detail pane, not in another dialog state. Listed BEFORE the blanket
+    // `operationLog.` mapping, whose note would otherwise misplace them.
+    prefix: 'operationLog.tree.',
     screenshot: 'operation-log-more-pages.png',
     note:
-      'The operation log dialog, pictured here with entries in it. Your string is the quiet second line under one of those ' +
-      'rows, shown only when that operation is a rollback or has been rolled back, so this screenshot may not show it.',
+      'The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a ' +
+      'column header, a row’s status, or the line under the tree that explains the row under the cursor, so this ' +
+      'screenshot may not show it.',
   },
   {
-    prefix: 'operationLog.dialog.latestRollback',
+    prefix: 'operationLog.skipReason.',
     screenshot: 'operation-log-more-pages.png',
     note:
-      'The operation log dialog, pictured here with entries in it. Your string is the quiet second line under one of those ' +
-      'rows, shown only when that operation is a rollback or has been rolled back, so this screenshot may not show it.',
+      'The operation log dialog, pictured here with entries in it. Your string is the line under the item tree that ' +
+      'explains why a rollback skipped the row under the cursor, so this screenshot may not show it.',
   },
   {
     // The recording-off notice sits above the list in every state, not in place of it.
