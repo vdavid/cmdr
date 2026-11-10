@@ -268,17 +268,17 @@ LISTMONK_SUBPROCESSOR_LIST_UUID = "990aee1b-97df-4a5b-be6f-d4def6783e87"
 # single write and writes nothing if the answer is anything but yes, so flipping it public disables
 # filing rather than publishing anyone's note. Keep the var here (version-controlled) rather than as
 # a same-named secret, which a later `wrangler deploy` would silently clobber back to this value.
-GITHUB_ISSUES_REPO = "vdavid/cmdr-reports"
+GITHUB_ISSUES_REPO = "getcmdr/cmdr-reports"
 
-# The Cmdr backlog project board (https://github.com/users/vdavid/projects/2) and the Status field's
+# The Cmdr backlog project board (https://github.com/orgs/getcmdr/projects/1) and the Status field's
 # Triage option. Not secret: these are opaque node ids, useless without the token.
 #
 # Fed by POST /webhook/github when an issue opens in the PUBLIC repo. The PRIVATE cmdr-reports repo
-# is served by the project's own built-in "Auto-add to project" workflow instead, because adding a
-# private repo's issue to a user-owned project needs a classic PAT with `repo` scope, and that is a
-# credential this Worker should not hold. See src/project-board.ts.
-GITHUB_PROJECT_ID = "PVT_kwHOACbxyc4BiPbZ"
-GITHUB_PROJECT_STATUS_FIELD_ID = "PVTSSF_lAHOACbxyc4BiPbZzhhIMOg"
+# is served by the project's own built-in "Auto-add to project" workflow instead, because the
+# `project`-only token can't resolve a private repo's issue, and widening it to `repo` would put a
+# credential this Worker should not hold next to user reports. See src/project-board.ts.
+GITHUB_PROJECT_ID = "PVT_kwDOFJP1R84Bq-Xx"
+GITHUB_PROJECT_STATUS_FIELD_ID = "PVTSSF_lADOFJP1R84Bq-XxzhpTFgc"
 GITHUB_PROJECT_TRIAGE_OPTION_ID = "6d6cdf53"
 
 # The login the report-triage agent posts as (its fine-grained token is David's, so it acts as him).

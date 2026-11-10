@@ -24,7 +24,7 @@ workflow changes what it claims.
 - **Single-source**: each mechanism lives in exactly one doc (usually the `DETAILS.md` beside the code); the threat
   model points there and never restates it.
 - ❗ **The repo is public: no exploit detail there.** Each boundary names where its gaps go, whether or not one is open
-  right now. A newly found gap goes to the private tracker (`vdavid/cmdr-reports`) first, labeled `security-gap`, which
+  right now. A newly found gap goes to the private tracker (`getcmdr/cmdr-reports`) first, labeled `security-gap`, which
   is what the release check lists.
 - **Re-verify by reading the code paths it names**, not the docs alone, and update its "Checked against the code" line.
 

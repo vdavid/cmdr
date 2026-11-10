@@ -34,7 +34,7 @@ function testEnv(overrides: Partial<Bindings> = {}): Bindings {
     TELEMETRY_DB: db.d1,
     CRASH_NOTIFICATION_EMAIL: 'david@example.com',
     SMTP2GO_API_KEY: 'test-smtp2go-key',
-    GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports',
+    GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports',
     ...overrides,
   } as Bindings
 }
@@ -253,7 +253,7 @@ describe('board links', () => {
     await handleReportDigest(testEnv())
 
     const { html } = lastEmail()
-    expect(html).toContain('https://github.com/vdavid/cmdr-reports/issues/57')
+    expect(html).toContain('https://github.com/getcmdr/cmdr-reports/issues/57')
     expect(html).toContain('Not on the board yet')
   })
 
@@ -264,7 +264,7 @@ describe('board links', () => {
 
     await handleReportDigest(testEnv())
 
-    expect(lastEmail().html).toContain('https://github.com/vdavid/cmdr-reports/issues/61')
+    expect(lastEmail().html).toContain('https://github.com/getcmdr/cmdr-reports/issues/61')
   })
 })
 

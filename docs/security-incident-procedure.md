@@ -17,8 +17,8 @@ because this list wasn't in front of anyone.
 1. **Write down the aware time, in UTC.** "Aware" is the moment there's reasonable certainty, not the first rumor.
    Unsure whether it counts? Treat it as aware: an unnecessary early warning costs nothing, and a missed one can.
 2. **Compute the deadlines and post them** (next section) where everyone working on it sees them.
-3. **Open the incident issue**: a private issue in `vdavid/cmdr-reports` titled `INCIDENT: <short name>`, with the aware
-   time, the deadlines, the source, and what's known. Everything after this gets logged there with UTC times.
+3. **Open the incident issue**: a private issue in `getcmdr/cmdr-reports` titled `INCIDENT: <short name>`, with the
+   aware time, the deadlines, the source, and what's known. Everything after this gets logged there with UTC times.
 4. **Contain.**
    - Update channel or release pipeline affected: disable the release workflow
      (`gh workflow disable release.yml -R getcmdr/cmdr`), set any affected GitHub release back to draft, and point

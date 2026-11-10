@@ -577,23 +577,22 @@ Every statement is idempotent: each `WHERE` excludes what it already cleared, so
 
 ## The backlog board
 
-Two repos feed the Cmdr backlog project (`https://github.com/users/vdavid/projects/2`), by two different routes, and the
-split is forced by how GitHub scopes project access.
+Two repos feed the Cmdr backlog project (`https://github.com/orgs/getcmdr/projects/1`, owned by the `getcmdr` org), by
+two different routes, and the split is forced by how GitHub scopes project access.
 
 - **`getcmdr/cmdr` (PUBLIC)** → `POST /webhook/github` (`webhook-github.ts` + `project-board.ts`). An `issues`/`opened`
   delivery adds the issue and sets Status to Triage.
-- **`vdavid/cmdr-reports` (PRIVATE)** → the project's own built-in "Auto-add to project" workflow, configured in
+- **`getcmdr/cmdr-reports` (PRIVATE)** → the project's own built-in "Auto-add to project" workflow, configured in
   GitHub's UI.
 
 **Why not one mechanism for both.** The free plan allows exactly ONE auto-add workflow, so one repo has to be served
-some other way. It has to be the public one: adding a PRIVATE repo's issue to a USER-OWNED project requires a classic
-PAT with `repo` scope (full read/write over every repo the account owns), because a `project`-scoped token cannot
-resolve a private issue's node at all (verified against the live API, 2026-09-19:
-`Could not resolve to a node with the global id`). A fine-grained PAT can carry `Projects: Read and write`, but only as
-an ORGANIZATION permission, so it does nothing for a user-owned board. ❌ Never widen `GITHUB_PROJECT_TOKEN` to `repo`
-to collapse these two paths: it would put a credential with full access to every repo next to the one thing this
-subsystem exists to keep narrow. The real fix, if the split ever becomes a problem, is moving the project to an
-organization, where a fine-grained token scoped to that org's projects plus read on one repo does everything.
+some other way. It has to be the public one: a `project`-scoped token cannot resolve a PRIVATE issue's node at all
+(verified against the live API, 2026-09-19: `Could not resolve to a node with the global id`), and the classic fix is
+`repo` scope (full read/write over every repo the account owns). ❌ Never widen `GITHUB_PROJECT_TOKEN` to `repo` to
+collapse these two paths: it would put a credential with full access to every repo next to the one thing this subsystem
+exists to keep narrow. Now that the board and both repos live in the org, the clean way to collapse them, if the split
+ever becomes a problem, is a fine-grained token with `getcmdr` as resource owner: `Projects: Read and write` (an org
+permission) plus `Issues: Read` on `cmdr-reports` alone.
 
 **What the token can do**: `project` scope alone reads and rewrites every board the account can reach, and the REST
 project-items endpoint returns the bodies of private issues on them, `cmdr-reports` cards included (verified
@@ -619,7 +618,7 @@ it.
 ## The reports repo
 
 Every crash, error report, feedback message, and amendment becomes a card in the PRIVATE repo named by
-`GITHUB_ISSUES_REPO` (`vdavid/cmdr-reports`), so triage happens on one board. `report-cards.ts` decides what goes on a
+`GITHUB_ISSUES_REPO` (`getcmdr/cmdr-reports`), so triage happens on one board. `report-cards.ts` decides what goes on a
 card, `github-issues.ts` writes it, and `report-outbox.ts` decides when. The token is the `GITHUB_ISSUES_TOKEN` secret:
 a fine-grained PAT scoped to that ONE repo with Issues read+write. With either unset the integration is off and nothing
 is filed.
@@ -731,7 +730,7 @@ comment with a line, and `applyCardRatings` (`report-ratings.ts`) copies that on
   repo. Triage comments created before `RATING_LINES_SINCE` (2026-10-15) predate the line and are skipped.
 - **Finding the card**: issue comments edited in the last 14 days (`sort=updated&since=`), then, only when something is
   due, the board's layout over GraphQL (field and option ids by NAME, so a renamed option fails loudly) and its
-  `repo:vdavid/cmdr-reports` items over REST, matched on issue number and repository URL. REST because GraphQL shows a
+  `repo:getcmdr/cmdr-reports` items over REST, matched on issue number and repository URL. REST because GraphQL shows a
   private issue's item as `content: null` to a `project`-only token. All three fields go in one mutation, ids as
   variables.
 - **Idempotent**: `card_ratings` (migration `0023`) keeps the line last applied per comment id. A rerun is a no-op that

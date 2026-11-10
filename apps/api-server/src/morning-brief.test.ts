@@ -45,7 +45,7 @@ function fakeGitHub(issues: FakeIssue[], options: { down?: boolean } = {}) {
       .filter((issue) => !label || issue.labels.includes(label))
       .map((issue) => ({
         ...issue,
-        html_url: `https://github.com/vdavid/cmdr-reports/issues/${String(issue.number)}`,
+        html_url: `https://github.com/getcmdr/cmdr-reports/issues/${String(issue.number)}`,
         labels: issue.labels.map((name) => ({ name })),
       }))
     return Promise.resolve(Response.json(matching))
@@ -72,7 +72,7 @@ function testEnv(overrides: Partial<Bindings> = {}): Bindings {
     CRASH_NOTIFICATION_EMAIL: 'david@example.com',
     SMTP2GO_API_KEY: 'test-smtp2go-key',
     GITHUB_ISSUES_TOKEN: 'ghp_test',
-    GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports',
+    GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports',
     ...overrides,
   } as Bindings
 }
@@ -130,7 +130,7 @@ describe('handleMorningBrief', () => {
     expect(to).toBe('david@example.com')
     expect(subject).toBe('Cmdr morning: 2 waiting on a reply, 1 unprocessed')
     expect(html).toContain('Zip copy loses the file')
-    expect(html).toContain('https://github.com/vdavid/cmdr-reports/issues/56')
+    expect(html).toContain('https://github.com/getcmdr/cmdr-reports/issues/56')
     expect(html).toContain('Crash in cmdr::x')
   })
 

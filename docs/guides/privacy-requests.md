@@ -14,7 +14,7 @@ where each item lives. If you find data the policy doesn't list, that's a bug in
 
 1. **Confirm who's asking.** Answer only the email address the data is tied to, from that same address. If the request
    comes from elsewhere, ask the person to write from the address on record. Never send data to a third address.
-2. **Record it** as a private issue in `vdavid/cmdr-reports` with the date received and the 30-day deadline. ❌ No name
+2. **Record it** as a private issue in `getcmdr/cmdr-reports` with the date received and the 30-day deadline. ❌ No name
    or email in the title or body; put identifying details only in a comment.
 3. **Find everything tied to that email**, store by store, following the policy: license and purchase records, report
    intake (crash, error, feedback, with their attachments and the reports-board comments), newsletter and beta lists,

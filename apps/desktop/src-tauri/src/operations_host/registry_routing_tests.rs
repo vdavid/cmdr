@@ -335,7 +335,7 @@ fn unique_lane_id() -> String {
 /// post-op `refresh_listing` skips an archive listing (its volume claims a
 /// watch), and the FSEvents content watch is too slow and lossy to carry the
 /// app's own edit, so the edit refreshes the open listings itself, before the
-/// terminal event (vdavid/cmdr-reports#55: a copy into a zip, then an F8 inside
+/// terminal event (getcmdr/cmdr-reports#55: a copy into a zip, then an F8 inside
 /// it, each left the pane stale until re-entered). No watch runs in this test.
 mod an_open_listing_inside_the_zip {
     use super::*;

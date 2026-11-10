@@ -1,12 +1,12 @@
 # Backlog board
 
-Open work lives on the "Cmdr backlog" GitHub project (owner `vdavid`, project 2). It holds cards from `getcmdr/cmdr`,
-`vdavid/cmdr-reports`, `vdavid/smb2`, and `vdavid/mtp-rs`. Each field option carries its definition as its GitHub
-description too.
+Open work lives on the "Cmdr backlog" GitHub project (`https://github.com/orgs/getcmdr/projects/1`, owner `getcmdr`,
+project 1). It holds cards from `getcmdr/cmdr`, `getcmdr/cmdr-reports`, `vdavid/smb2`, and `vdavid/mtp-rs`. Each field
+option carries its definition as its GitHub description too.
 
 Rule: an agent filing a card sets **Impact** and **Size**, plus **Severity** when it's a bug or a security issue.
 
-Report cards (`vdavid/cmdr-reports`) get theirs without any agent touching the board. The morning report-triage agent
+Report cards (`getcmdr/cmdr-reports`) get theirs without any agent touching the board. The morning report-triage agent
 reads this file for the definitions and ends its triage comment with a line like
 `Rating: Severity=Medium Impact=Low Size=S` (`Severity=none` for anything that isn't a bug). The API server's
 three-hourly cron copies that line onto the three fields, usually within a few hours, and alerts in the ops digest when
@@ -15,7 +15,7 @@ by hand or edit the comment's `Rating:` line; the cron never overwrites a field 
 
 ## Labels
 
-- **`security-gap`** (`vdavid/cmdr-reports`): a known weakness in Cmdr or its servers that `docs/threat-model.md` only
+- **`security-gap`** (`getcmdr/cmdr-reports`): a known weakness in Cmdr or its servers that `docs/threat-model.md` only
   calls "tracked privately". Every release lists the open ones (`docs/guides/releasing.md`, step 1). Not for error
   reports, crashes, feedback, or account-hygiene tasks. It stays on the issue after closing, as history.
 

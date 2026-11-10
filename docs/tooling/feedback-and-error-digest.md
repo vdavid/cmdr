@@ -7,12 +7,12 @@ bundle links the digest carries expire after 24 hours, while the bundles themsel
 ## The triage board comes first
 
 Every crash, error report (hand-written or auto-sent), and feedback message from a release build is filed as an issue in
-the **private** `vdavid/cmdr-reports` repo, which is the board David prioritizes on. Reach for it before the stores
+the **private** `getcmdr/cmdr-reports` repo, which is the board David prioritizes on. Reach for it before the stores
 below when the question is "what's waiting on me" rather than "what exactly happened in this bundle":
 
 ```bash
-gh issue list --repo vdavid/cmdr-reports --label needs-reply
-gh issue view <n> --repo vdavid/cmdr-reports --comments
+gh issue list --repo getcmdr/cmdr-reports --label needs-reply
+gh issue view <n> --repo getcmdr/cmdr-reports --comments
 ```
 
 Each issue's BODY is technical only (report id, versions, R2 key). The note, the reply-to address, and the bundle link

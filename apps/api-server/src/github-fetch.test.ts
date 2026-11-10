@@ -12,7 +12,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-const url = 'https://api.github.com/repos/vdavid/cmdr-reports/issues/comments'
+const url = 'https://api.github.com/repos/getcmdr/cmdr-reports/issues/comments'
 
 /** A fetch that answers with each status in turn (a thrown `Error` for `'throw'`), then 200. */
 function answers(...sequence: (number | 'throw')[]) {

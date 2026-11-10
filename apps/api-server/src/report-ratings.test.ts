@@ -75,7 +75,7 @@ function rejection(body: string): string {
   return parsed.reason
 }
 
-const REPO_URL = 'https://api.github.com/repos/vdavid/cmdr-reports'
+const REPO_URL = 'https://api.github.com/repos/getcmdr/cmdr-reports'
 
 interface FakeComment {
   id: number
@@ -109,7 +109,12 @@ function fakeGitHub(options: {
   fields?: ReturnType<typeof field>[]
   failMutation?: boolean
   failCommentListing?: boolean
+  /** Who owns the board. Defaults to the `getcmdr` organization's board 1. */
+  owner?: { __typename: 'User' | 'Organization'; login: string; number: number }
 }) {
+  const owner = options.owner ?? { __typename: 'Organization', login: 'getcmdr', number: 1 }
+  const ownerSegment = owner.__typename === 'User' ? 'users' : 'orgs'
+  const itemsUrl = `https://api.github.com/${ownerSegment}/${owner.login}/projectsV2/${String(owner.number)}/items?`
   const mutations: { query: string; variables: Record<string, unknown> }[] = []
   const commentListings: string[] = []
   const onBoard = options.onBoard ?? options.comments.map((c) => c.issueNumber)
@@ -136,7 +141,7 @@ function fakeGitHub(options: {
         })),
       )
     }
-    if (url.startsWith('https://api.github.com/users/vdavid/projectsV2/2/items?')) {
+    if (url.startsWith(itemsUrl)) {
       return json([
         ...onBoard.map((n) => ({
           node_id: `PVTI_${String(n)}`,
@@ -160,7 +165,13 @@ function fakeGitHub(options: {
       // indentation and the formatter writes `query (`, so match the keyword, not a spelling.
       if (/^\s*query\b/.test(request.query)) {
         return json({
-          data: { node: { number: 2, owner: { __typename: 'User', login: 'vdavid' }, fields: { nodes: fields } } },
+          data: {
+            node: {
+              number: owner.number,
+              owner: { __typename: owner.__typename, login: owner.login },
+              fields: { nodes: fields },
+            },
+          },
         })
       }
       mutations.push(request)
@@ -192,7 +203,7 @@ function testEnv(overrides: Partial<Bindings> = {}): Bindings {
   return {
     TELEMETRY_DB: db.d1,
     GITHUB_ISSUES_TOKEN: 'github_pat_issues',
-    GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports',
+    GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports',
     GITHUB_PROJECT_TOKEN: 'ghp_project',
     GITHUB_PROJECT_ID: 'PVT_board',
     GITHUB_TRIAGE_AUTHOR: 'vdavid',
@@ -236,6 +247,19 @@ describe('applyCardRatings', () => {
     expect(db.sqlite.prepare(`SELECT applied_rating FROM card_ratings WHERE comment_id = 501`).get()).toEqual({
       applied_rating: 'Rating: Severity=High Impact=Medium Size=S',
     })
+    expect(opsEvents()).toEqual([])
+  })
+
+  it('finds the card on a user-owned board too', async () => {
+    const github = fakeGitHub({
+      comments: [{ id: 520, issueNumber: 61, body: rated('Rating: Severity=Low Impact=Low Size=XS') }],
+      owner: { __typename: 'User', login: 'vdavid', number: 2 },
+    })
+
+    await applyCardRatings(testEnv(), now)
+
+    expect(github.mutations).toHaveLength(1)
+    expect(github.mutations[0].variables).toMatchObject({ item: 'PVTI_61' })
     expect(opsEvents()).toEqual([])
   })
 

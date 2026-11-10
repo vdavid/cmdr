@@ -78,7 +78,7 @@ where
 /// archive listing (its volume isn't local and claims a watch), and nothing else
 /// is reliable: the local content watch rides FSEvents, which delivered the
 /// app's own swap many seconds late or not at all (a pane stayed stale until
-/// re-entered, vdavid/cmdr-reports#55), and a remote parent has no watch at all.
+/// re-entered, getcmdr/cmdr-reports#55), and a remote parent has no watch at all.
 /// The parsed index goes first, since the cache key can miss the change.
 async fn show_the_edit(host: &EngineHost, parent_volume_id: &str, archive_path: &Path) {
     host.volumes().forget_archive_index(archive_path);

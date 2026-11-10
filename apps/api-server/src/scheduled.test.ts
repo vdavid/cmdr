@@ -192,7 +192,7 @@ describe('handlePersonalCommentSweep', () => {
     vi.unstubAllGlobals()
   })
 
-  const configured = { GITHUB_ISSUES_TOKEN: 'ghp_x', GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports' }
+  const configured = { GITHUB_ISSUES_TOKEN: 'ghp_x', GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports' }
 
   it('does nothing when the reports repo is not configured', async () => {
     const fetchMock = vi.fn()

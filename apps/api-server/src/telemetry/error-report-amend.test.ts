@@ -371,7 +371,7 @@ describe('from the routes to the board', () => {
   function configured(): { bindings: Record<string, unknown>; github: Mock } {
     let next = 31
     const github = vi.fn((url: string, init?: RequestInit) => {
-      if (url.endsWith('/repos/vdavid/cmdr-reports')) return Promise.resolve(Response.json({ private: true }))
+      if (url.endsWith('/repos/getcmdr/cmdr-reports')) return Promise.resolve(Response.json({ private: true }))
       if (url.endsWith('/issues') && init?.method === 'POST') {
         return Promise.resolve(Response.json({ number: next++ }, { status: 201 }))
       }
@@ -382,7 +382,7 @@ describe('from the routes to the board', () => {
       bindings: createBindings({
         TELEMETRY_DB: createSqliteD1().d1,
         GITHUB_ISSUES_TOKEN: 'ghp_x',
-        GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports',
+        GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports',
       }),
       github,
     }

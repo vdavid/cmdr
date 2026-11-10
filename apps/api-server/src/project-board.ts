@@ -7,9 +7,9 @@
  *
  * GitHub's built-in "Auto-add to project" is the better mechanism, and it is already spoken for:
  * the free plan allows exactly ONE, and it serves the PRIVATE `cmdr-reports` repo, which nothing
- * else can reach. Adding a private repo's issue to a user-owned project needs a classic PAT with
- * `repo` scope, which is full read/write over every repo the account owns; `github-issues.ts`
- * exists to keep a user's note away from exactly that kind of credential.
+ * else can reach. Adding a private repo's issue through this Worker would need a token that can
+ * read that repo (a classic PAT with `repo` scope is full read/write over every repo the account
+ * owns); `github-issues.ts` exists to keep a user's note away from exactly that kind of credential.
  *
  * ## Why this token is safe to hold
  *
@@ -19,8 +19,8 @@
  * the same token (verified 2026-10-14 with a `project`-only token: full `cmdr-reports` card bodies,
  * user reports included). So a leak of this secret exposes every board the account can reach: their
  * structure, and the bodies of private issues on them. No repository contents. ❌ Never widen it to `repo` to
- * make private issues work here; the right answer for those is the built-in workflow, or moving the
- * project to an organization where a fine-grained token can be scoped properly.
+ * make private issues work here; the right answer for those is the built-in workflow, or a
+ * fine-grained token scoped to the `getcmdr` org's projects plus read on the one reports repo.
  *
  * ## Fail loudly
  *
@@ -198,9 +198,8 @@ export interface BoardSelectField {
 
 /** What a rating needs to know about the board, read once per tick that has work. */
 export interface BoardLayout {
-  /** The user who owns the board, for the REST items path. */
-  ownerLogin: string
-  number: number
+  /** The board's REST path, `users/<login>/projectsV2/<n>` or `orgs/<login>/projectsV2/<n>`. */
+  restPath: string
   /** Single-select fields by name. */
   fields: Map<string, BoardSelectField>
 }
@@ -221,6 +220,9 @@ export async function readBoardLayout(target: BoardTarget): Promise<BoardLayout>
             owner {
               __typename
               ... on User {
+                login
+              }
+              ... on Organization {
                 login
               }
             }
@@ -252,12 +254,16 @@ export async function readBoardLayout(target: BoardTarget): Promise<BoardLayout>
   if (!node || typeof node.number !== 'number') {
     throw new Error('Project board: the board could not be read (wrong GITHUB_PROJECT_ID, or an expired token)')
   }
-  // The REST items path differs for an organization's board; this one is user-owned.
-  if (node.owner?.__typename !== 'User' || typeof node.owner.login !== 'string') {
-    throw new Error('Project board: the board is not owned by a user, so its items path is unknown')
+  // The REST items path depends on whether a user or an organization owns the board.
+  const ownerSegment = { User: 'users', Organization: 'orgs' }[String(node.owner?.__typename)]
+  if (!ownerSegment || typeof node.owner?.login !== 'string') {
+    throw new Error('Project board: the board has no user or organization owner, so its items path is unknown')
   }
 
-  return { ownerLogin: node.owner.login, number: node.number, fields: selectFieldsByName(node.fields?.nodes ?? []) }
+  return {
+    restPath: `${ownerSegment}/${node.owner.login}/projectsV2/${String(node.number)}`,
+    fields: selectFieldsByName(node.fields?.nodes ?? []),
+  }
 }
 
 /** The single-select fields among a board's field nodes (other kinds come back as `{}`), by name. */
@@ -294,8 +300,7 @@ export async function listBoardItemsForRepo(
 ): Promise<Map<number, string>> {
   const repositoryUrl = `${GITHUB_API}/repos/${repo}`
   const items = new Map<number, string>()
-  let url: string | null =
-    `${GITHUB_API}/users/${layout.ownerLogin}/projectsV2/${String(layout.number)}/items?per_page=100&q=${encodeURIComponent(`repo:${repo}`)}`
+  let url: string | null = `${GITHUB_API}/${layout.restPath}/items?per_page=100&q=${encodeURIComponent(`repo:${repo}`)}`
 
   for (let page = 0; url && page < ITEM_PAGES; page++) {
     const response = await githubFetch(url, {

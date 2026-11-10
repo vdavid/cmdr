@@ -28,7 +28,7 @@ Read this before adding, wiping, or reorganizing a spec.
   [#302](https://github.com/getcmdr/cmdr/issues/302).
 - `saved-smb-shares.md`: **A saved SMB server holds only a host, not the user and share the person wants.** A share row
   under its server, recorded at mount time, pinnable and openable like an SFTP place. Issue:
-  [cmdr-reports#7](https://github.com/vdavid/cmdr-reports/issues/7).
+  [cmdr-reports#7](https://github.com/getcmdr/cmdr-reports/issues/7).
 - `s3-support-plan.md`: **Cmdr can't reach files in S3, R2, B2, Wasabi, or Hetzner buckets.** One `crates/cmdr-s3`
   backend with its own SigV4 layer, account → bucket places, server-side copies, and a rename capability so a folder
   rename on S3 runs as a real move. Issue: [#119](https://github.com/getcmdr/cmdr/issues/119).

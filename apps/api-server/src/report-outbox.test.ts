@@ -58,9 +58,9 @@ function fakeGitHub(options: { failCreates?: boolean; isPrivate?: boolean } = {}
     const url = input as string
     const body = typeof init?.body === 'string' ? (JSON.parse(init.body) as Record<string, unknown>) : {}
     if (init?.method !== 'POST') {
-      return url.endsWith('/repos/vdavid/cmdr-reports') ? json({ private: options.isPrivate ?? true }) : json({}, 404)
+      return url.endsWith('/repos/getcmdr/cmdr-reports') ? json({ private: options.isPrivate ?? true }) : json({}, 404)
     }
-    if (url.endsWith('/repos/vdavid/cmdr-reports/issues')) return createIssue(body)
+    if (url.endsWith('/repos/getcmdr/cmdr-reports/issues')) return createIssue(body)
     return writeToIssue(url, body) ?? json({ message: `unexpected POST ${url}` }, 404)
   })
 
@@ -99,7 +99,7 @@ function testEnv(overrides: Partial<Bindings> = {}): Bindings {
     ERROR_REPORT_META: memoryKv(),
     ERROR_REPORTS_BUCKET: fakeBucket(),
     GITHUB_ISSUES_TOKEN: 'ghp_test',
-    GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports',
+    GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports',
     ...overrides,
   } as Bindings
 }

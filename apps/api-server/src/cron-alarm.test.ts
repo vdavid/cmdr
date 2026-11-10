@@ -47,7 +47,7 @@ afterEach(() => {
 })
 
 /** With the board configured, every every-tick job touches D1, so each one fails on a broken D1. */
-const withBoard = { GITHUB_ISSUES_TOKEN: 'ghp_x', GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports' }
+const withBoard = { GITHUB_ISSUES_TOKEN: 'ghp_x', GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports' }
 
 /** The jobs every tick runs, in order, as `index.ts` names them. */
 const everyTickJobs = [

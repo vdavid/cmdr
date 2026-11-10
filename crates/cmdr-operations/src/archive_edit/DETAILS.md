@@ -50,7 +50,7 @@ it reliably: the FE's post-op `refresh_listing` skips an archive listing (not lo
 local content watch rides FSEvents (late or dropped for the app's own swap; `crates/cmdr-archive/src/watch/DETAILS.md` §
 "Interaction with mutation"), and a remote parent has no watch at all. Living in the chokepoint, it covers copy and move
 into, delete, rename, mkdir, mkfile, and move out with no per-route call. Pinned by
-`driver_tests::an_open_listing_inside_the_zip` (vdavid/cmdr-reports#55).
+`driver_tests::an_open_listing_inside_the_zip` (getcmdr/cmdr-reports#55).
 
 Because the local mutator's `raw_copy_file` needs a `Read + Seek` source (which async ranged reads can't give), a remote
 edit does NOT edit in place — it PULLS the `.zip` to a local temp, runs the ordinary local closure there, uploads the

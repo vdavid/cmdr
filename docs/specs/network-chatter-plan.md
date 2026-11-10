@@ -1,6 +1,6 @@
 # Less network chatter: throttled heartbeat, event relay, 3-hour update check
 
-Tracks vdavid/cmdr-reports#22. Why: direct calls to a third-party domain (PostHog) raise eyebrows with people who watch
+Tracks getcmdr/cmdr-reports#22. Why: direct calls to a third-party domain (PostHog) raise eyebrows with people who watch
 their network traffic, and hourly beats and update checks are more chatter than Cmdr needs. Part of making Cmdr friendly
 to company policies (#118).
 

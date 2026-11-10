@@ -128,4 +128,4 @@ then read `/Users/agents-readers/report-triage/logs/`. The account's login shell
 
 The labels it sets (`bug`, `enhancement`, `duplicate`) must exist in the repo; GitHub creates a missing one on first use
 only with admin rights, which the PAT doesn't have. The board fields its rating names (Severity, Impact, Size, with the
-option names in `docs/tooling/backlog-board.md`) must exist on project 2; the cron alerts rather than create one.
+option names in `docs/tooling/backlog-board.md`) must exist on the board (`getcmdr` project 1); the cron alerts rather than create one.

@@ -27,7 +27,7 @@ minutes, not an hour.
    it in UTC (`date -u +%Y-%m-%dT%H:%MZ`). Stockholm is UTC+2 in summer time and UTC+1 in winter.
 2. **Deadlines.** Compute them from the aware time per § Deadlines (severe incident or exploited vulnerability; unsure
    means severe incident) and post them to David as a short list with weekday, UTC, and Stockholm time.
-3. **Open the issue** (pre-approved): `gh issue create -R vdavid/cmdr-reports --label claude-created` (add
+3. **Open the issue** (pre-approved): `gh issue create -R getcmdr/cmdr-reports --label claude-created` (add
    `--label security-gap` when it's a flaw in Cmdr or its servers) titled `INCIDENT: <short name>`, with the aware time,
    the deadlines, the source, what's known, and an empty UTC timeline. Log every later action there as a comment with
    its UTC time.

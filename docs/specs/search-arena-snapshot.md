@@ -12,7 +12,7 @@ permanent ownership of a file format with a crash-recovery path? Everything belo
 
 Opening the search dialog on a large boot volume costs tens of seconds before anything is searchable.
 
-Field evidence, `ERR-S76V3` (`vdavid/cmdr-reports#18`, 0.46.1, macOS 27.0, Mac15,9, 64 GB RAM, app up 312 s, first
+Field evidence, `ERR-S76V3` (`getcmdr/cmdr-reports#18`, 0.46.1, macOS 27.0, Mac15,9, 64 GB RAM, app up 312 s, first
 search of the session). Log timestamps are local:
 
 ```

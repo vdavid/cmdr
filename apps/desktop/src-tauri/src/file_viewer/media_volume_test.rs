@@ -205,7 +205,7 @@ fn a_volume_claiming(
     get_volume_manager().register(id, volume as Arc<dyn Volume>);
     (file.display().to_string(), bytes, counters)
 }
-/// The reported bug (vdavid/cmdr-reports#91): a HEIC on a share opened as text.
+/// The reported bug (getcmdr/cmdr-reports#91): a HEIC on a share opened as text.
 #[test]
 fn a_heic_on_a_share_opens_as_an_image() {
     let id = "viewer-media-heic";

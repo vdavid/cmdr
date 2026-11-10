@@ -131,7 +131,7 @@ The repository variable `RELEASE_UPDATE_SIGNING` picks where it signs, read by t
 - **`ci`, or unset**: the tag push does everything, and the `sign` job signs each archive with `TAURI_SIGNING_*` from
   the `release` environment.
 - **`local`**: the key never leaves this laptop. Decided 2026-10-06; the threat-model discussion is private issue
-  `vdavid/cmdr-reports#39`.
+  `getcmdr/cmdr-reports#39`.
 
 Read it with `gh variable get RELEASE_UPDATE_SIGNING -R getcmdr/cmdr` (an error means unset, so `ci`). Any other value
 fails the guard. Both modes stay implemented in the same files (`release-pipeline.yml`, `release.yml`), so switching is
@@ -277,7 +277,7 @@ check.
      to disable it again after the release.
    - **No known exploitable vulnerability ships** (EU Cyber Resilience Act, Annex I Part I (2)(a)). List the open
      security gaps in the private tracker, the ones `docs/threat-model.md` calls "tracked privately":
-     `gh issue list -R vdavid/cmdr-reports --label security-gap --state open`. For each, read it and say whether this
+     `gh issue list -R getcmdr/cmdr-reports --label security-gap --state open`. For each, read it and say whether this
      release's code is exploitable through it. David confirms. An exploitable one stops the release until it's fixed,
      unless David writes a risk decision on its issue. Then add one line to the vault's release log,
      `projects/Cmdr/business/CRA technical file/Release log.md`: the date, the version (filled in at step 6), the issue

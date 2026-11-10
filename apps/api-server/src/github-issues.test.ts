@@ -15,7 +15,7 @@ import {
 import { PERSONAL_COMMENT_MARKER, type ErrorReportIssueInput } from './report-cards'
 import type { Bindings } from './types'
 
-const target: IssueTarget = { token: 'ghp_test', owner: 'vdavid', repo: 'cmdr-reports' }
+const target: IssueTarget = { token: 'ghp_test', owner: 'getcmdr', repo: 'cmdr-reports' }
 
 const errorReport: ErrorReportIssueInput = {
   id: 'ERR-A2345',
@@ -54,7 +54,7 @@ function env(fields: Partial<Bindings>): Bindings {
 describe('resolveIssueTarget', () => {
   it('is off unless both the repo and the token are configured', () => {
     expect(resolveIssueTarget(env({}))).toBeNull()
-    expect(resolveIssueTarget(env({ GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports' }))).toBeNull()
+    expect(resolveIssueTarget(env({ GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports' }))).toBeNull()
     expect(resolveIssueTarget(env({ GITHUB_ISSUES_TOKEN: 'ghp_x' }))).toBeNull()
   })
 
@@ -65,8 +65,8 @@ describe('resolveIssueTarget', () => {
 
   it('splits a configured repo into owner and name', () => {
     expect(
-      resolveIssueTarget(env({ GITHUB_ISSUES_TOKEN: 'ghp_x', GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports' })),
-    ).toEqual({ token: 'ghp_x', owner: 'vdavid', repo: 'cmdr-reports' })
+      resolveIssueTarget(env({ GITHUB_ISSUES_TOKEN: 'ghp_x', GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports' })),
+    ).toEqual({ token: 'ghp_x', owner: 'getcmdr', repo: 'cmdr-reports' })
   })
 })
 
@@ -85,7 +85,7 @@ function fakeKv(): KVNamespace {
 function configuredEnv(): Bindings {
   return env({
     GITHUB_ISSUES_TOKEN: 'ghp_x',
-    GITHUB_ISSUES_REPO: 'vdavid/cmdr-reports',
+    GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports',
     ERROR_REPORT_META: fakeKv(),
   })
 }
@@ -173,7 +173,7 @@ describe('recordAmendmentOnBoard', () => {
     ).resolves.toBe('commented')
 
     expect(requestUrl(fetchMock.mock.calls[2])).toBe(
-      'https://api.github.com/repos/vdavid/cmdr-reports/issues/12/labels',
+      'https://api.github.com/repos/getcmdr/cmdr-reports/issues/12/labels',
     )
     expect(requestBody(fetchMock.mock.calls[2])).toContain('needs-reply')
   })
@@ -229,7 +229,7 @@ describe('recordAmendmentOnBoard', () => {
       recordAmendmentOnBoard(sharedEnv, { id: 'ERR-A2345', comment: 'the amendment', readReportFacts: readFacts }),
     ).resolves.toBe('commented')
     expect(requestUrl(fetchMock.mock.calls[1])).toBe(
-      'https://api.github.com/repos/vdavid/cmdr-reports/issues/12/comments',
+      'https://api.github.com/repos/getcmdr/cmdr-reports/issues/12/comments',
     )
     expect(requestBody(fetchMock.mock.calls[1])).toContain('the amendment')
     // The card exists, so nothing reads the bundle to describe it.
@@ -422,7 +422,7 @@ describe('listCommentsUpdatedSince', () => {
     const comment = {
       id: 9,
       body: 'hi',
-      issue_url: 'https://api.github.com/repos/vdavid/cmdr-reports/issues/14',
+      issue_url: 'https://api.github.com/repos/getcmdr/cmdr-reports/issues/14',
       user: { login: 'vdavid' },
       created_at: '2026-10-24T10:00:00Z',
       updated_at: '2026-10-24T10:00:00Z',
@@ -541,14 +541,14 @@ describe('fileIssue', () => {
     expect(number).toBe(7)
     expect(fetchMock).toHaveBeenCalledTimes(3)
 
-    expect(requestUrl(fetchMock.mock.calls[1])).toBe('https://api.github.com/repos/vdavid/cmdr-reports/issues')
+    expect(requestUrl(fetchMock.mock.calls[1])).toBe('https://api.github.com/repos/getcmdr/cmdr-reports/issues')
     const issuePayload = JSON.parse(requestBody(fetchMock.mock.calls[1])) as Record<string, unknown>
     expect(issuePayload['body']).toBe('technical only')
     // The body the tracker keeps forever must never carry the personal half.
     expect(JSON.stringify(issuePayload)).not.toContain('the note')
 
     expect(requestUrl(fetchMock.mock.calls[2])).toBe(
-      'https://api.github.com/repos/vdavid/cmdr-reports/issues/7/comments',
+      'https://api.github.com/repos/getcmdr/cmdr-reports/issues/7/comments',
     )
     expect(requestBody(fetchMock.mock.calls[2])).toContain('the note')
   })
