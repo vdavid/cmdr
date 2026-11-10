@@ -26,10 +26,10 @@
     },
     {
       "property": "kani:cmdr-operation-log/rollback::proofs::a_run_never_claims_more_than_it_reversed",
-      "why": "a selective run forgets the rows it left out, so rolling back three of 400 calls the operation fully rolled back and drops \"Roll back the rest\"",
+      "why": "a selective run forgets a lone row it left out, so rolling back 399 of 400 calls the operation fully rolled back and drops \"Roll back the rest\"",
       "file": "crates/cmdr-operation-log/src/rollback.rs",
       "find": "} else if skipped > 0 || left_out > 0 || (resuming && reversed == 0) {",
-      "replace": "} else if skipped > 0 || (resuming && reversed == 0) {",
+      "replace": "} else if skipped > 0 || left_out > 1 || (resuming && reversed == 0) {",
       "expect": "rolled back with items the selection left out"
     },
     {
