@@ -47,10 +47,10 @@ settings-defaults, `svelte-kit sync`). Don't judge a change by raw `pnpm lint`: 
 - **❌ Nothing on `/licenses` may say a Paddle subscription is live.** `active` on a `paddle` row means we fulfilled
   that purchase; only `/validate` knows whether it still runs. Labels live in `#lib/licenses.ts`; the vocabulary is
   owned by `apps/api-server/src/licensing/DETAILS.md` § The licenses listing.
-- **A `null` cell renders as a dash (`–`), never a 0** in the metric tables: "couldn't get this" and "this was zero"
-  differ, and every source is best-effort and independent.
-- **Trend stats skip today and pool rates as ratios of sums**, only in `#lib/acquisition-stats.ts`. A missing worker
-  field reads "Not available yet", never 0. `DETAILS.md` § Acquisition trends.
+- **A `null` cell renders as a dash (`–`), never a 0**: "couldn't get this" and "this was zero" differ.
+- **Trend stats skip today and pool rates as ratios of sums** (`#lib/acquisition-stats.ts`); a missing worker field
+  reads "Not available yet". Country chips update the URL shallowly, so ❌ never rebuild a URL from `page.url` on `/`;
+  read `window.location`. `DETAILS.md` § Acquisition trends.
 - **One color means one property across the whole dashboard** (dots, strokes, fills). Palette: `DETAILS.md`.
 - **❌ Never auto-scale `#lib/count-color-scale.ts`**: purple always means `COUNT_SCALE_PURPLE_AT`, raised only by hand.
   `DETAILS.md` § "The country map and table".

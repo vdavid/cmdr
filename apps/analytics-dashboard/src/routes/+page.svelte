@@ -1,12 +1,16 @@
 <!--
   Acquisition page (`/`): the trend charts (one row per funnel metric, scoped by the country chips), the
   per-country table, the awareness, interest, and download sections, and the old daily table, collapsed.
-  The shared range/day picker and nav live in the layout. Each section is its own component.
+  The shared range picker and nav live in the layout. Each section is its own component.
 -->
 <script lang="ts">
     import type { PageProps } from './$types'
+    import type { FunnelData } from '#lib/server/sources/funnel.js'
+    import type { SourceResult } from '#lib/server/types.js'
     import { rangeDays } from '#lib/time-range.js'
+    import { rowsForCountry } from '#lib/acquisition-by-country.js'
     import { page } from '$app/state'
+    import { goto } from '$app/navigation'
     import { resolve } from '$app/paths'
     import FunnelTable from '#lib/components/FunnelTable.svelte'
     import AcquisitionTrendsSection from '#lib/components/sections/AcquisitionTrendsSection.svelte'
@@ -24,28 +28,49 @@
     const days = $derived(rangeDays[data.selection.range])
     const starChartXMin = $derived(Date.now() / 1000 - days * 86400)
 
-    /** This page's URL with `?country=` set or cleared, keeping the range/day selection. */
-    function countryHref(country: string | null): string {
-        // A throwaway builder for one href, so it needs no reactivity.
+    /**
+     * The country filter. It starts from `?country=` and follows a navigation that changes it (a link from
+     * the country table), while a chip click sets it here directly: the funnel already carries every chip's
+     * slice, so filtering is instant and only the URL changes, shallowly, so links and reloads still land on it.
+     */
+    let country = $derived(data.country)
+
+    function selectCountry(code: string | null) {
+        country = code
+        // eslint-disable-next-line svelte/no-navigation-without-resolve -- `countryHref` builds every href with resolve('/')
+        void goto(countryHref(code), { shallow: true, replace: true })
+    }
+
+    /** This page's URL with `?country=` set or cleared, keeping the range. */
+    function countryHref(code: string | null): string {
+        // A throwaway builder for one href, so it needs no reactivity. It reads the live URL, because a chip
+        // click updates it shallowly and `page.url` doesn't follow a shallow navigation.
         // eslint-disable-next-line svelte/prefer-svelte-reactivity
-        const params = new URLSearchParams(page.url.search)
-        if (country) params.set('country', country)
+        const params = new URLSearchParams(typeof window === 'undefined' ? page.url.search : window.location.search)
+        if (code) params.set('country', code)
         else params.delete('country')
         const query = params.toString()
         return query ? `${resolve('/')}?${query}` : resolve('/')
     }
+
+    /** The funnel as the selected country saw it, for the old daily table. */
+    const scopedFunnel = $derived.by((): SourceResult<FunnelData> => {
+        const funnel = data.funnel
+        if (!funnel.ok || !country) return funnel
+        return { ok: true, data: { ...funnel.data, rows: rowsForCountry(funnel.data, country) } }
+    })
 </script>
 
 <AcquisitionTrendsSection
     funnel={data.funnel}
-    funnelCountries={data.funnelCountries}
-    country={data.country}
+    {country}
+    onselectcountry={selectCountry}
+    viewDays={days}
     selection={data.selection}
     {todayIso}
-    {countryHref}
 />
 
-<CountryFunnelSection funnelCountries={data.funnelCountries} country={data.country} selection={data.selection} {countryHref} />
+<CountryFunnelSection funnelCountries={data.funnelCountries} {country} selection={data.selection} {countryHref} />
 
 <!-- Acquisition sections -->
 <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -60,4 +85,4 @@
     <DownloadSection cloudflare={data.cloudflare} github={data.github} selection={data.selection} />
 </div>
 
-<FunnelTable funnel={data.funnel} selection={data.selection} {todayIso} />
+<FunnelTable funnel={scopedFunnel} selection={data.selection} {todayIso} />

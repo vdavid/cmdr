@@ -39,8 +39,8 @@
     /** Navigate to a range on the current page, keeping the Acquisition page's `?country=` filter. */
     function selectRange(range: TimeRange) {
         if (data.selection.range === range) return
-        // Read at click time: the country chips update the URL in place, without a navigation.
-        const country = page.url.searchParams.get('country')
+        // Read the live URL: the country chips update it shallowly, which `page.url` doesn't follow.
+        const country = new URL(window.location.href).searchParams.get('country')
         window.location.href = `${pathname}?range=${range}${country ? `&country=${encodeURIComponent(country)}` : ''}`
     }
 </script>

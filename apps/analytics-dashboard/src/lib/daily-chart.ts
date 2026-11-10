@@ -6,6 +6,36 @@ export interface ColumnSeries {
   label: string
   color: string
   values: (number | null)[]
+  /** Draw the segment as 45° stripes of `color` instead of a solid fill (the "unknown channel" texture). */
+  hatch?: boolean
+}
+
+/** A legend entry, for charts whose layers are too many to list one by one. */
+export interface LegendItem {
+  label: string
+  color: string
+  hatch?: boolean
+}
+
+/**
+ * A rate chart's background bands: below `yellow` is red (bad), `yellow` up to `green` is yellow (fair),
+ * and `green` and up is green (good).
+ */
+export interface RateBands {
+  yellow: number
+  green: number
+}
+
+export type BandStatus = 'bad' | 'fair' | 'good'
+
+/** The bands between 0 and `yMax`, bottom first, each clipped to the axis; a band above the top is dropped. */
+export function bandSegments(bands: RateBands, yMax: number): { status: BandStatus; from: number; to: number }[] {
+  const edges: [BandStatus, number, number][] = [
+    ['bad', 0, bands.yellow],
+    ['fair', bands.yellow, bands.green],
+    ['good', bands.green, Infinity],
+  ]
+  return edges.filter(([, from]) => from < yMax).map(([status, from, to]) => ({ status, from, to: Math.min(to, yMax) }))
 }
 
 /** One line of the hover tooltip: the value leads, the label follows, keyed by a mark in the series color. */
@@ -14,6 +44,10 @@ export interface TooltipRow {
   value: string
   color?: string
   mark?: 'box' | 'line' | 'dot'
+  /** A striped box, matching a hatched segment. */
+  hatch?: boolean
+  /** A group heading inside the tooltip: drawn smaller and muted, value optional. */
+  heading?: boolean
 }
 
 /** Roughly how wide a column label renders at the chart's 10px tabular font. */

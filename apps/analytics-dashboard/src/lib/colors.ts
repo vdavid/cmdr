@@ -16,3 +16,9 @@ export const COLOR_CYAN = '#22d3ee'
 export const COLOR_HOMEBREW = '#4a90e2'
 /** An unknown value in a breakdown: deliberately gray, so it reads as "no identity". */
 export const COLOR_UNKNOWN = '#6b6b73'
+
+/**
+ * The rate charts' background bands (bad / fair / good): the app's status tokens from `app.css`. Drawn
+ * faint, behind the data, and named in the chart's legend, so the meaning never rides on color alone.
+ */
+export const COLOR_BAND = { bad: '#ef4444', fair: '#eab308', good: '#22c55e' } as const

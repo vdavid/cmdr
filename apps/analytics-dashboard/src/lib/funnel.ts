@@ -99,10 +99,38 @@ export interface InstallsByChannel {
   unknown: number
 }
 
-/** A cohort too young for D7: how many of it came back so far, as of which day after install. */
+/** A cohort too young for D7 (or D28): how many of it came back so far, as of which day after install. */
 export interface RetentionSoFar {
   day: number
   retained: number
+}
+
+/**
+ * One country's worker facts for one day (the api-server's per-day `byCountry` entry). Install facts count
+ * only installs whose first-ever beat carried a country, so they undercount next to the day's totals.
+ */
+export interface WorkerCountryDay {
+  serverDownloads: number
+  humanInstalls: number
+  downloadsBySource?: DownloadsBySource
+  newInstalls: number
+  newInstallsByChannel?: InstallsByChannel
+  d7Retained: number | null
+  d28Retained?: number | null
+  retentionSoFar?: RetentionSoFar | null
+  d28SoFar?: RetentionSoFar | null
+}
+
+/**
+ * One country's slice of one funnel day, kept sparse: a field is absent when that side had nothing for
+ * the country that day. Whether "absent" means 0 or unknown depends on `FunnelData.countries` (did that
+ * side answer per country at all), which `rowsForCountry` in `#lib/acquisition-by-country.ts` decides.
+ */
+export interface CountrySlice {
+  visitors?: number
+  pageviews?: number
+  downloadClicks?: number
+  worker?: WorkerCountryDay
 }
 
 /**

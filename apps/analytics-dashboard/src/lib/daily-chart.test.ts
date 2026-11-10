@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { columnPath, lineRuns, shortDay } from './daily-chart.js'
+import { bandSegments, columnPath, lineRuns, shortDay } from './daily-chart.js'
 
 describe('lineRuns', () => {
   it('breaks the line at unknown days', () => {
@@ -28,5 +28,25 @@ describe('columnPath', () => {
 describe('shortDay', () => {
   it('reads the day in UTC', () => {
     expect(shortDay('2026-11-03')).toBe('Nov 3')
+  })
+})
+
+describe('bandSegments', () => {
+  const bands = { yellow: 0.05, green: 0.12 }
+
+  it('splits the axis into red, yellow, and green, clipped to the axis top', () => {
+    expect(bandSegments(bands, 0.2)).toEqual([
+      { status: 'bad', from: 0, to: 0.05 },
+      { status: 'fair', from: 0.05, to: 0.12 },
+      { status: 'good', from: 0.12, to: 0.2 },
+    ])
+  })
+
+  it('drops the bands above the axis top', () => {
+    expect(bandSegments(bands, 0.08)).toEqual([
+      { status: 'bad', from: 0, to: 0.05 },
+      { status: 'fair', from: 0.05, to: 0.08 },
+    ])
+    expect(bandSegments(bands, 0.04)).toEqual([{ status: 'bad', from: 0, to: 0.04 }])
   })
 })

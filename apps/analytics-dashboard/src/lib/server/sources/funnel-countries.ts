@@ -36,6 +36,9 @@ interface WorkerCountryRow {
   newInstalls: number
   d7Cohort: number
   d7Retained: number
+  // Optional: absent on a worker deployed before D28.
+  d28Cohort?: number
+  d28Retained?: number
 }
 
 interface CountriesEnv {

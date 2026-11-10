@@ -11,8 +11,9 @@ sections and pass their loaded data down.
 ### Routes and sections
 
 - `/` — Acquisition (`routes/+page.svelte`), in render order:
-  - Acquisition trends (`components/sections/AcquisitionTrendsSection.svelte`): country chips, a 30/90-day toggle, and
-    one `TrendRow` per funnel metric (chart left, `StatsGrid` right). Independent of the picker. § "Acquisition trends".
+  - Acquisition trends (`components/sections/AcquisitionTrendsSection.svelte`): country chips (filtering in the browser)
+    and one `TrendRow` per funnel metric (chart left, `StatsGrid` right). The charts' window follows the picker. §
+    "Acquisition trends".
   - By country, last N days (`components/sections/CountryFunnelSection.svelte`): the world map and the country table. §
     "The country map and table".
   - Awareness (`components/sections/AwarenessSection.svelte`).
@@ -52,11 +53,11 @@ The ranges live in client-safe `#lib/time-range.ts` (`timeRanges`, `defaultRange
 3. **`fetchDashboardData`**: all ten sources, used by the report endpoint (`api/report/+server.ts`) which dumps every
    section at once. Unchanged contract.
 
-The funnel is always the last 181 UTC days (180 complete plus today), ignoring the selection but honoring `?country=`;
-it's still gated on the worker admin token, with Umami and Paddle degrading to dashes inside. It needs no env vars of
-its own, reusing the worker admin token, the Umami credentials, and the Paddle key already present (Listmonk signups
-arrive via the api-server, so no Listmonk secret reaches the dashboard). Each source returns `SourceResult<T>` (ok+data,
-or an error string the UI shows as "Couldn't load this data").
+The funnel is always the last 181 UTC days (180 complete plus today), ignoring the selection (a non-top `?country=` adds
+that country's slices); it's still gated on the worker admin token, with Umami and Paddle degrading to dashes inside. It
+needs no env vars of its own, reusing the worker admin token, the Umami credentials, and the Paddle key already present
+(Listmonk signups arrive via the api-server, so no Listmonk secret reaches the dashboard). Each source returns
+`SourceResult<T>` (ok+data, or an error string the UI shows as "Couldn't load this data").
 
 `AcquisitionData` also carries `umamiSiteUrls`, which is **config, not a source**: the per-site Umami dashboard deep
 links, built from the `UMAMI_*_WEBSITE_ID` env vars so the IDs live in exactly one place instead of being hardcoded in a
@@ -192,10 +193,11 @@ runtime values live outside `#lib/server`: `#lib/funnel.ts`, `#lib/feedback-and-
   ExternalLinks, Chart, StackedBarChart, MiniTimeline, PieChart).
 - `src/lib/{format,colors,chart-helpers}.ts`: client-safe formatters, color tokens, chart data-shaping helpers.
 - `src/lib/acquisition-stats.ts` (the stats grid, rolling rates, axis ticks), `acquisition-series.ts` (funnel rows →
-  each chart's numerator and denominator), `acquisition-countries.ts` (country join + chips), and `daily-chart.ts`
-  (`DailyChart.svelte` geometry): client-safe, each with its Vitest file. Same for the country section's
-  `count-color-scale.ts`, `country-table.ts`, `country-geo.ts`, and `world-map-shapes.ts` (§ "The country map and
-  table"), drawn by `WorldMap.svelte`.
+  each chart's numerator and denominator), `acquisition-countries.ts` (country table join), `acquisition-by-country.ts`
+  (client-side country rows, stacks, split bar), `country-colors.ts`, and `daily-chart.ts` (`DailyChart.svelte`
+  geometry): client-safe, each with its Vitest file. Same for the country section's `count-color-scale.ts`,
+  `country-table.ts`, `country-geo.ts`, and `world-map-shapes.ts` (§ "The country map and table"), drawn by
+  `WorldMap.svelte`.
 - `DailyChart.svelte` (SVG day columns or rate dots + rolling line), `StatsGrid.svelte`, `TrendRow.svelte`, and
   `InfoPopover.svelte` (the (i): hover, focus, or tap; Escape closes).
 - `src/lib/link-codes.ts`: client-safe `?r=` helpers (validation mirroring the api-server, row flattening, example
@@ -228,9 +230,10 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
   from `/admin/feedback` and `/admin/error-reports`. Pure helpers + row types in client-safe
   `#lib/feedback-and-errors.ts`.
 - `funnel.ts` (Bearer + Umami + Paddle): the per-UTC-day funnel behind the trend charts and the old table (181 days,
-  independent of the picker, optionally `?country=`-scoped), joining `/admin/funnel` with Umami per-day visitors,
-  pageviews, and clicks, and Paddle purchases. Per-day `downloadsByRef` feeds the "Channels" breakdown (rolled up by
-  `aggregateChannels` in `#lib/funnel.ts`). Cache key: days + country.
+  independent of the picker), joining `/admin/funnel` with Umami per-day visitors, pageviews, and clicks, and Paddle
+  purchases, plus per-country slices for the top eight (§ "Acquisition trends"). Per-day `downloadsByRef` feeds the
+  "Channels" breakdown (rolled up by `aggregateChannels` in `#lib/funnel.ts`). Cache: `funnel-v3` once for everyone,
+  `funnel-extra-v1` per non-top `?country=`.
 - `funnel-countries.ts` (Bearer + Umami): the per-country 30-day table and the chips. Umami `metrics?type=country` for
   visitors, one `metrics?type=event&country=XX` per top-12 country for clicks (Umami can't group events by country in
   one call), and `/admin/funnel/countries?days=30` for downloads, installs, and pooled D7.
@@ -355,12 +358,18 @@ association from one section to the next:
   single-series metrics are all getcmdr.com, so gold; "direct" installs are the getcmdr.com DMG, so gold too. The
   gold/blue/grey stack passes the dataviz validator's CVD and normal-vision checks on the dark surface; it fails its
   lightness-band and chroma checks on purpose (gold is the house color, grey means "no identity").
+- Countries: eight fixed colors in `#lib/country-colors.ts` (`countryColor(code)`), assigned once to the 90-day top
+  eight and never reshuffled by rank; every other country, and "Other", is the grey. The file's header carries the
+  validator run and the near-pair caveat. Re-assign deliberately if the top eight drift far from that list.
+- Status bands (`COLOR_BAND`): the app's success / warning / danger tokens, only as faint backgrounds behind rate
+  charts.
 
 ## Acquisition trends
 
 The top of `/` answers "is each funnel step getting better?" with one row per metric: visitors, visitor → click,
-download clicks, click → install, new installs (stacked by channel), D7 retention, and the bot meter (server downloads ÷
-new installs; a spike means a scraper changed).
+download clicks, click → install, new installs, D7 retention, D28 retention, and the bot meter (server downloads ÷ new
+installs; a spike means a scraper changed). The charts show the picker's range (7/30/90 days, plus today); the stats
+grids stay on fixed 90/30/7 columns.
 
 - **Today is a partial UTC day**: drawn faded, given no rolling point, and excluded from every stat, which all take an
   exclusive `end` day.
@@ -371,16 +380,35 @@ new installs; a spike means a scraper changed).
 - **The stats grid is one shape everywhere** (`StatsGrid`): 90/30/7 complete days × average, median, weekday and weekend
   averages, and change vs. the previous same-length window. A window the data doesn't fully cover is a dash: that's why
   we fetch 181 days, and why the 90d change is a dash against a worker capped at 90.
-- **D7 windows count final cohorts.** A cohort is final at eight days old (the api-server's definition,
-  `apps/api-server/src/admin/DETAILS.md` § "Per-day funnel"), so the D7 stats anchor at `today - 7` and "7d" means the
-  seven newest final cohorts; a 7d window ending today would always be empty. Young cohorts draw grey `retentionSoFar`
-  points ("D3 so far").
+- **Retention windows count final cohorts.** A cohort is final for D7 at eight days old and for D28 at 29 (the
+  api-server's definition, `apps/api-server/src/admin/DETAILS.md` § "Per-day funnel"), so the D7 stats anchor at
+  `today - 7` (`d7End`) and the D28 ones at `today - 28` (`d28End`), and "7d" means the seven newest final cohorts.
+  Young cohorts draw grey points: `retentionSoFar` for D7 ("D3 so far"), `d28SoFar` for cohorts 8–28 days old.
+- **Click → install leaves Homebrew out** once the channel split exists: (direct + unknown) ÷ clicks, because Homebrew
+  installs never click the button. Unknown stays in: it's builds too old to report a channel, nearly all DMGs, and
+  counting only `direct` read 0% for every day before the builds that report it. Days without the split use all
+  installs.
+- **Bands** (`rateBands` in `#lib/acquisition-series.ts`) tint the rate charts faint red / yellow / green behind the
+  data, named in the legend in words so the meaning never rides on color alone. The bot meter has none on purpose.
 - **Compatible with an older worker.** Every new `FunnelDay` field is optional and maps to `null` when absent, so the
-  section says "Not available yet" in place of zeros. An older worker refuses `?days=181` (400) and ignores `?country=`:
-  the source retries at 90 days, and under a country filter it drops worker numbers that carry none of the new fields
-  (`workerStatus: 'country-unsupported'`) rather than show global numbers as one country's.
-- **Country chips** are links (`?country=XX`, kept across picker changes), the top eight by 30-day visitors. The
-  per-country table never filters, and its "(unknown)" row is the worker's bucket for no usable country.
+  section says "Not available yet" in place of zeros. An older worker refuses `?days=181` (400): the source retries at
+  90 days. Without `byCountry`, a country view's worker rows say "Not available yet for one country"
+  (`countries.worker: false`) rather than show global numbers as one country's.
+- **Country switching is client-side.** `funnel.ts` loads the totals plus a sparse per-country slice for the top eight
+  countries by 90-day Umami visitors (worker installs when Umami is down) in one cached fetch: the worker's per-day
+  `byCountry`, and per country one `/pageviews?country=` and one `/events/series?country=` (18 Umami calls with the
+  totals and the ranking). The chips are buttons; `#lib/acquisition-by-country.ts` (`rowsForCountry`) derives the rows
+  in the browser and the page updates `?country=` with a shallow `goto`, so a reload or a shared link lands on the same
+  view. ❌ `page.url` doesn't follow a shallow navigation, so code that rebuilds the URL (the picker, `countryHref`)
+  reads `window.location`. A `?country=` outside the top eight (a link from the country table) is a normal load: the
+  server adds that country's slices (`countries.extra`, cached on its own).
+- **Country stacks.** For all countries, visitors and clicks stack the top eight plus grey "Other" (total minus their
+  sum, so a stack always sums to the day's total; `stackByCountry`), and the tooltip shows each count and its share of
+  the day. New installs draw a split bar: the left half stacks by channel, the right half by channel group first and
+  country within it (`installSplit`), so the channel boundaries line up across both halves. A country's Homebrew segment
+  is a lighter tint of its color (`homebrewTint`), its unknown-channel segment that tint striped. Per-country installs
+  count only installs whose first beat carried a country, so "Other" also holds the ones with none. Filtered to one
+  country, every chart is a single series in that country's color.
 - **Plain SVG over uPlot** for these charts: discrete days, an exact number on each column where it fits, a faded today,
   and an exact-values tooltip. The chart is a `role="slider"` over days: arrow keys walk them and each day's readout is
   the `aria-valuetext`.

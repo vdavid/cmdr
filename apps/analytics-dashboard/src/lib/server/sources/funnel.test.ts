@@ -6,7 +6,7 @@ import {
   assembleFunnelRows,
   buildFunnelDateList,
   indexWorkerFunnel,
-  workerStatusOf,
+  rankTopCountries,
 } from './funnel.js'
 import type { UaFamilyCounts } from './funnel.js'
 
@@ -163,29 +163,111 @@ describe('trend-chart worker fields', () => {
   })
 })
 
-describe('workerStatusOf', () => {
+describe('D28 and per-country worker fields', () => {
   const base = {
-    downloads: 1,
+    downloads: 3,
     downloadsByRef: {},
-    newInstalls: 1,
-    d7Retention: null,
-    d7Retained: null,
+    newInstalls: 2,
+    d7Retention: 0.5,
+    d7Retained: 1,
     newsletterSignups: null,
   }
-  const oldWorker = indexWorkerFunnel([{ date: '2026-06-11', ...base }], '2026-06-11')
-  const newWorker = indexWorkerFunnel(
-    [{ date: '2026-06-11', ...base, newInstallsByChannel: { homebrew: 0, direct: 1, unknown: 0 } }],
-    '2026-06-11',
-  )
+  const se = {
+    serverDownloads: 2,
+    humanInstalls: 2,
+    newInstalls: 1,
+    newInstallsByChannel: { homebrew: 0, direct: 1, unknown: 0 },
+    d7Retained: 1,
+    d28Retained: null,
+    retentionSoFar: null,
+    d28SoFar: { day: 12, retained: 1 },
+  }
 
-  it("refuses an older worker's numbers under a country filter: they'd be global numbers", () => {
-    expect(workerStatusOf(oldWorker, 'SE')).toBe('country-unsupported')
-    expect(workerStatusOf(newWorker, 'SE')).toBe('ok')
+  it('records which optional fields an older worker lacks', () => {
+    const old = indexWorkerFunnel([{ date: '2026-06-11', ...base }], '2026-06-11')
+    expect(old.hasCountries).toBe(false)
+    expect(old.hasD28).toBe(false)
+    const rows = assembleFunnelRows(['2026-06-11'], {
+      worker: old,
+      visitors: null,
+      pageviews: null,
+      clicks: null,
+      purchases: null,
+    })
+    expect(rows[0]).toMatchObject({ d28Retention: null, d28Retained: null, d28SoFar: null, byCountry: {} })
   })
 
-  it("keeps an older worker's numbers for all countries", () => {
-    expect(workerStatusOf(oldWorker, null)).toBe('ok')
-    expect(workerStatusOf(null, null)).toBe('unavailable')
+  it('passes D28 through and keeps slices only for the asked-for countries, sparse', () => {
+    const worker = indexWorkerFunnel(
+      [
+        {
+          date: '2026-06-11',
+          ...base,
+          d28Retained: 1,
+          d28Retention: 0.5,
+          d28SoFar: null,
+          byCountry: { SE: se, HU: { ...se, newInstalls: 1 }, '(unknown)': { ...se } },
+        },
+      ],
+      '2026-06-11',
+    )
+    expect(worker.hasCountries).toBe(true)
+    expect(worker.hasD28).toBe(true)
+    const umami = new Map([
+      ['SE', { visitors: new Map([['2026-06-11', 9]]), pageviews: new Map([['2026-06-11', 12]]), clicks: new Map() }],
+      ['DE', { visitors: new Map(), pageviews: new Map(), clicks: new Map() }],
+    ])
+    const rows = assembleFunnelRows(['2026-06-11', '2026-06-12'], {
+      worker,
+      visitors: null,
+      pageviews: null,
+      clicks: null,
+      purchases: null,
+      countries: ['SE', 'DE'],
+      countryUmami: umami,
+    })
+    expect(rows[0]).toMatchObject({ d28Retained: 1, d28Retention: 0.5 })
+    // SE has both sides; DE had nothing that day, so it's absent; HU and (unknown) weren't asked for.
+    expect(rows[0].byCountry).toEqual({ SE: { visitors: 9, pageviews: 12, worker: se } })
+    expect(rows[1].byCountry).toEqual({})
+  })
+})
+
+describe('rankTopCountries', () => {
+  it('ranks by Umami visitors, biggest first, never (unknown), capped', () => {
+    const visitors = new Map([
+      ['us', 50],
+      ['DE', 80],
+      ['(unknown)', 999],
+      ['SE', 0],
+      ['HU', 10],
+    ])
+    expect(rankTopCountries(visitors, null, '2026-01-01', 2)).toEqual(['DE', 'US'])
+    expect(rankTopCountries(visitors, null, '2026-01-01')).toEqual(['DE', 'US', 'HU'])
+  })
+
+  it("falls back to the worker's installs (then downloads) inside the ranking window when Umami is down", () => {
+    const day = (date: string, byCountry: Record<string, { newInstalls: number; serverDownloads: number }>) => ({
+      date,
+      downloads: 0,
+      downloadsByRef: {},
+      newInstalls: 0,
+      d7Retention: null,
+      d7Retained: null,
+      newsletterSignups: null,
+      byCountry: Object.fromEntries(
+        Object.entries(byCountry).map(([k, v]) => [k, { ...v, humanInstalls: 0, d7Retained: null }]),
+      ),
+    })
+    const worker = indexWorkerFunnel(
+      [
+        day('2026-05-01', { SE: { newInstalls: 99, serverDownloads: 0 } }), // before the window: ignored
+        day('2026-06-11', { HU: { newInstalls: 1, serverDownloads: 1 }, DE: { newInstalls: 1, serverDownloads: 5 } }),
+        day('2026-06-12', { '(unknown)': { newInstalls: 9, serverDownloads: 9 } }),
+      ],
+      '2026-05-01',
+    )
+    expect(rankTopCountries(null, worker, '2026-06-01')).toEqual(['DE', 'HU'])
   })
 })
 
