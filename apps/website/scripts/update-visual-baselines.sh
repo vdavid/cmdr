@@ -75,10 +75,6 @@ pnpm install --frozen-lockfile --filter @cmdr/website
 # CI's. Deriving it (rather than hardcoding) keeps the image in lockstep with Renovate bumps.
 PW_VERSION="$(node -p "require('$WEBSITE_DIR/node_modules/@playwright/test/package.json').version")"
 IMAGE="mcr.microsoft.com/playwright:v${PW_VERSION}-noble"
-# The repo's pinned pnpm (`packageManager`), installed in the container by npm. Not corepack: the
-# image's Node 26 no longer bundles it (from `playwright:v1.65.0-noble`; v1.64.1 shipped Node 24
-# with corepack; checked 2026-11-10 with `docker run ... which corepack`).
-PNPM_VERSION="$(node -p "require('$REPO_ROOT/package.json').packageManager.split('@')[1]")"
 
 if [[ "$FULL_MODE" == "1" ]]; then
   echo "==> full-page set (container: $IMAGE) -> apps/website/e2e/visual-full-snapshots/ (gitignored)"
@@ -88,14 +84,13 @@ else
   echo "==> committed baselines (container: $IMAGE): compare, refresh only failures"
 fi
 
-# Runs as root so npm can install pnpm globally, but the container's install and build go
+# Runs as root so corepack can write its pnpm shim, but the container's install and build go
 # into anonymous volumes (the `-v /repo/...` with no host side) so the main clone's macOS
 # node_modules and dist are never overwritten. Only the snapshots dir is a real bind-mount
 # write; we chown it back to the host user before exiting.
 docker run --rm \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
   -e CI=1 \
-  -e PNPM_VERSION="$PNPM_VERSION" \
   -e VISUAL_FULL="$([[ "$FULL_MODE" == "1" ]] && echo 1 || echo '')" \
   -e VISUAL_FORCE="$([[ "$FORCE_MODE" == "1" ]] && echo 1 || echo '')" \
   -v "$REPO_ROOT":/repo -w /repo \
@@ -105,7 +100,7 @@ docker run --rm \
   "$IMAGE" \
   bash -lc '
     set -e
-    npm install --global --silent "pnpm@$PNPM_VERSION"
+    corepack enable
     pnpm install --frozen-lockfile --filter @cmdr/website
     pnpm --filter @cmdr/website build
     cd apps/website
