@@ -67,6 +67,10 @@
         {
           "warning": "Warn: jobLevel 'actions' permission set to 'write': .github/workflows/ci-upkeep.yml",
           "reason": "`prune-superseded-caches` deletes superseded `main` build caches after a land, so the repo stays under its 10 GB budget. Runs only after CI on a `main` push, with no checkout and no third-party action, just an inline `gh cache` script; `release.yml` can't be dispatched. The score stays 10."
+        },
+        {
+          "warning": "Warn: jobLevel 'actions' permission set to 'write': .github/workflows/sensitive-path-approval.yml",
+          "reason": "Accepted by David on 2026-11-10: `rerun-gate` reruns only the `ci-ok` job (by job id, so every other job keeps its result) where the sensitive-path gate waited for his approval. Runs only on a `vdavid` approval of a same-repo PR, with no checkout and no third-party action, just an inline `gh api` script. The score stays 10."
         }
       ]
     }
