@@ -36,6 +36,22 @@
         {
           "name": "SOPS_AGE_KEY_FILE",
           "mode": "deny"
+        },
+        {
+          "name": "FIRECRAWL_API_KEY",
+          "mode": "deny"
+        },
+        {
+          "name": "FIRECRAWL_API_KEY_N",
+          "mode": "deny"
+        },
+        {
+          "name": "CMDR_AGENTS_APP_ID",
+          "mode": "deny"
+        },
+        {
+          "name": "CMDR_AGENTS_APP_PRIVATE_KEY",
+          "mode": "deny"
         }
       ]
     }
@@ -66,7 +82,8 @@
       "Read(~/Dropbox/**)",
       "Read(~/.claude/**)",
       "Read(~/.gmail-mcp/**)",
-      "Read(~/.local/bin/**)"
+      "Read(~/.local/**)",
+      "Read(~/slow-checks-fixer/**)"
     ]
   }
 }

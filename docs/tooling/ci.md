@@ -463,7 +463,8 @@ crash, then a Kani proof that a new `OpKind` arm made stale). Two things keep it
   link added to the body rather than as a comment (one email per incident, not three). The board's "Auto-add to project"
   workflow puts it on the backlog board; set its fields when you pick it up. A cancelled run and a branch dispatch leave
   it alone.
-- **An agent picks the issue up.** The slow-checks fixer on the M1 reruns an outside blip, lands a clear fix, or writes
+- **An agent picks the issue up.** The slow-checks fixer on the M1 (the restricted `agents` user, landing as a GitHub
+  App) reruns an outside blip, lands a clear fix, opens a PR for David when the fix touches a sensitive path, or writes
   up what needs David, all in the issue body: `scripts/slow-checks-fixer/CLAUDE.md`.
 - **Outside blips are designed out where we can.** Every mise install goes through `.github/actions/install-mise`, which
   retries once (the 2026-11-08 download outage failed all six jobs), and the Groq smoke has room for its model to reason

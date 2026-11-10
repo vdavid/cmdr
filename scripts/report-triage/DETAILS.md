@@ -5,19 +5,23 @@
 The threat is prompt injection: a note, a feedback message, or a log line written to make the agent do something else.
 The layers, outermost first (schema verified against code.claude.com docs, 2026-10-14):
 
-1. **Credentials**: `run.sh` resolves three secrets from the M1 box's `secret` store, then `exec env -i`, so the agent
-   inherits nothing from the box (not its broad `GH_TOKEN` or `CLOUDFLARE_API_TOKEN`). `TRIAGE_GH_TOKEN` is a
+0. **The user**: it runs as `agents`, a restricted macOS user that can't read David's home, keychain, vault, or SSH
+   keys, and whose `secret` store holds only the two M1 agents' secrets (the fixer's are listed in
+   `scripts/slow-checks-fixer/DETAILS.md` § Credentials). A run that escaped every layer below would still find nothing
+   of David's.
+1. **Credentials**: `run.sh` resolves three secrets from the `agents` store, then `exec env -i`, so the agent inherits
+   nothing else from the user (not the fixer's App key or the Firecrawl and OpenAI keys). `TRIAGE_GH_TOKEN` is a
    fine-grained PAT for `vdavid/cmdr-reports` only (Issues read+write, Metadata read); the R2 token is Object Read on
    `cmdr-error-reports-eu` only. There is NO board token on the box (§ Ratings without a board token). The worst a
    hijacked run can do is edit today's `unprocessed` cards on a private board (wrong ratings included) and read bundles
-   it was meant to read anyway. The claude process also gets the box's `CLAUDE_CODE_OAUTH_TOKEN` (the keychain login
-   isn't reliable over SSH or launchd); `sandbox.credentials.envVars` strips it, and the box's other secret names, from
-   every Bash command.
+   it was meant to read anyway. The claude process also gets `CLAUDE_CODE_OAUTH_TOKEN` (the keychain login isn't
+   reliable over SSH or launchd); `sandbox.credentials.envVars` strips it, and every other secret name the `agents`
+   store or David's old setup holds, from every Bash command.
 2. **The agent's shell**: `env -i` alone isn't enough. Claude Code snapshots the user's shell startup outside the
-   sandbox and replays it in each Bash command, so the box's `~/.zshenv` put its broad `GH_TOKEN` (overriding ours),
-   `CLOUDFLARE_API_TOKEN`, `GH_PROJECT_TOKEN`, and `CARGO_REGISTRY_TOKEN` back into the agent's env. `run.sh` sets
-   `SHELL=/bin/zsh` and `ZDOTDIR=/var/empty` (root-owned, empty) so zsh reads no startup files (verified on the M1 with
-   a probe script fingerprinting `GH_TOKEN`, Claude Code 2.1.299, 2026-10-14).
+   sandbox and replays it in each Bash command: when this ran as David's user, his `~/.zshenv` put its broad `GH_TOKEN`
+   (overriding ours), `CLOUDFLARE_API_TOKEN`, `GH_PROJECT_TOKEN`, and `CARGO_REGISTRY_TOKEN` back into the agent's env.
+   `run.sh` sets `SHELL=/bin/zsh` and `ZDOTDIR=/var/empty` (root-owned, empty) so zsh reads no startup files, whatever
+   the user's say (verified on the M1 with a probe script fingerprinting `GH_TOKEN`, Claude Code 2.1.299, 2026-10-14).
 3. **Network**: the Bash sandbox allows `api.github.com` and Cmdr's own R2 account host only, with `failIfUnavailable`
    and `allowUnsandboxedCommands: false`, so nothing can be exfiltrated to a third host and a missing sandbox stops the
    run rather than weakening it.
@@ -93,16 +97,17 @@ Cost: one `claude -p` run a day on David's subscription, bounded by the number o
 ## Install
 
 The infra repo's `m1mbp/ansible/roles/report_triage` installs it: it copies `run.sh`, `board.sh`, `fetch-bundle.sh`,
-`prompt.md`, and `settings.json` from the laptop's local cmdr checkout to `~/.local/share/report-triage/` on the box,
-and loads the launchd user agent `com.vdavid.report-triage`, daily at 05:30 box-local (Europe/Stockholm), logging to
-`~/report-triage/logs/triage.log`. The files live outside the agent's working dir (`~/report-triage`) on purpose: the
-sandbox can write there, and `fetch-bundle.sh` unzips strangers' bundles into it. `run.sh` copies the two scripts in
-fresh each run (Lockdown layer 5). After editing these files, re-run the playbook with `--tags report_triage`. The
-secrets are in the box's own store (`m1mbp/ansible/secrets.sops.yaml`): `TRIAGE_GH_TOKEN`, `TRIAGE_R2_ACCESS_KEY_ID`,
-`TRIAGE_R2_SECRET_ACCESS_KEY`, plus the existing `CLAUDE_CODE_OAUTH_TOKEN`.
+`prompt.md`, and `settings.json` from a cmdr checkout (`-e report_triage_src=<dir>/`) to
+`/Users/agents/.local/share/report-triage/` on the box, and loads a launchd daemon running as `agents`, daily at 05:30
+box-local (Europe/Stockholm), logging to `/Users/agents/report-triage/logs/triage.log`. The files live outside the
+agent's working dir (`/Users/agents/report-triage`, with its own HTTPS clone in `cmdr/`) on purpose: the sandbox can
+write there, and `fetch-bundle.sh` unzips strangers' bundles into it. `run.sh` copies the two scripts in fresh each run
+(Lockdown layer 5). After editing these files, re-run the playbook with `--tags report_triage`. The secrets are in the
+`agents` store: `TRIAGE_GH_TOKEN`, `TRIAGE_R2_ACCESS_KEY_ID`, `TRIAGE_R2_SECRET_ACCESS_KEY`, plus
+`CLAUDE_CODE_OAUTH_TOKEN`.
 
-Test with a dummy `unprocessed` card: run `~/.local/share/report-triage/run.sh` over SSH and read its output before
-trusting the schedule.
+Test with a dummy `unprocessed` card: run `sudo -u agents -i zsh -lc /Users/agents/.local/share/report-triage/run.sh`
+over SSH and read its output before trusting the schedule.
 
 The labels it sets (`bug`, `enhancement`, `duplicate`) must exist in the repo; GitHub creates a missing one on first use
 only with admin rights, which the PAT doesn't have. The board fields its rating names (Severity, Impact, Size, with the
