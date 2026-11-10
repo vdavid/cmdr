@@ -2371,8 +2371,9 @@ doubles as production code.
   dialogs gallery, and every row names a registered id), btn-restyle, bare-poll, ipc-unused (every `tauri-commands`
   wrapper and `commands.*` binding has a caller; § "IPC dead code"), e2e-stale-selector (ERROR; a Playwright selector
   naming a class or `data-*` attribute that appears nowhere in `apps/desktop/src`, see § "E2E stale selectors"),
-  svelte-check, svelte-tests-related (named only, not in CI: `vitest related` over what the branch changed against
-  `origin/main`, committed or not, for an agent to run beside `--fast`; the full `svelte-tests` stays the gate),
+  svelte-check (TypeScript 7 via `--tsgo`; § "svelte-check runs on TS 7 with a TS 6 backstop"), svelte-check-ts6
+  (CI-only TS 6 backstop), svelte-tests-related (named only, not in CI: `vitest related` over what the branch changed
+  against `origin/main`, committed or not, for an agent to run beside `--fast`; the full `svelte-tests` stays the gate),
   import-cycles, jscpd (the frontend clone list, TypeScript and Svelte), message-keys-fresh (regenerate-and-diff
   `keys.gen.ts` from the message catalogs), message-key-naming (the `area.feature.leaf` shape + known-area first
   segment), message-keys-unused (catalog keys never referenced in `src/` or `src-tauri/src/`; error-level, with a closed
@@ -2458,18 +2459,18 @@ doubles as production code.
   `api-server-eslint` refusing to run when the file is missing rather than reporting the `no-unsafe-*` fallout. It
   regenerates instead of diffing, so there's no freshness contract to break; `api-server-typecheck` calls
   `typecheck:no-gen` so it doesn't rewrite the file under the parallel ESLint pass.
-- **Analytics dashboard / Svelte**: svelte-kit-sync, eslint, stylelint, svelte-check, import-cycles, knip, tests, build,
-  settings-defaults (regenerates the defaults manifest from the desktop settings registry and diffs it). Stylelint,
-  knip, and import-cycles run through the same `runStylelintCheck` / `runKnipCheck` / `runImportCyclesCheck` helpers the
-  desktop lanes use, parameterized by app dir. `runStylelintCheck` first runs `probeStylelintCSSCoverage`: a known-bad
-  `.css` piped on stdin must come back with a `declaration-no-important` finding (read from a `--output-file` JSON
-  report, since stylelint prints to stderr only when it finds problems), or the lane fails. It catches a config that
-  silently stops linting plain `.css` (#1056). `dashboard-build` is NOT redundant with `dashboard-svelte-check`: the
-  `#lib/server` boundary guard trips only at build time, so it's the only check standing between a stray runtime import
-  and shipping a server-side API key into the browser bundle. The dashboard deliberately has no css-unused (Tailwind
-  supplies every utility class, so "undefined class" would fire on all of them), no a11y-contrast (that tool models
-  desktop's accent matrix and light/dark token pairs; the dashboard is dark-only), no type-drift (no Rust), and no
-  bare-poll (no Playwright helpers).
+- **Analytics dashboard / Svelte**: svelte-kit-sync, eslint, stylelint, svelte-check (TS 7 via `--tsgo`),
+  svelte-check-ts6 (CI-only TS 6 backstop), import-cycles, knip, tests, build, settings-defaults (regenerates the
+  defaults manifest from the desktop settings registry and diffs it). Stylelint, knip, and import-cycles run through the
+  same `runStylelintCheck` / `runKnipCheck` / `runImportCyclesCheck` helpers the desktop lanes use, parameterized by app
+  dir. `runStylelintCheck` first runs `probeStylelintCSSCoverage`: a known-bad `.css` piped on stdin must come back with
+  a `declaration-no-important` finding (read from a `--output-file` JSON report, since stylelint prints to stderr only
+  when it finds problems), or the lane fails. It catches a config that silently stops linting plain `.css` (#1056).
+  `dashboard-build` is NOT redundant with `dashboard-svelte-check`: the `#lib/server` boundary guard trips only at build
+  time, so it's the only check standing between a stray runtime import and shipping a server-side API key into the
+  browser bundle. The dashboard deliberately has no css-unused (Tailwind supplies every utility class, so "undefined
+  class" would fire on all of them), no a11y-contrast (that tool models desktop's accent matrix and light/dark token
+  pairs; the dashboard is dark-only), no type-drift (no Rust), and no bare-poll (no Playwright helpers).
 - **Scripts / Go**: gofmt, go-vet, staticcheck, ineffassign, misspell, gocyclo, nilaway, deadcode, go-tests, govulncheck
 - **Other / Metrics**: file-length, CLAUDE.md-reminder (warn-only, in `--fast`), claude-md-length, invariant-density
   (warn-only and MOTHBALLED, run by name only; `❌` rules per subsystem, absolute and per 1,000 source lines, on a
@@ -2485,6 +2486,9 @@ doubles as production code.
   re-download the toolchain in every container), website-pnpm-bootstrap-in-step (errors when the hash-locked pnpm
   manifest `apps/website/scripts/update-visual-baselines.sh` installs from, or its lockfile, names a version other than
   the root `packageManager`), ci-coverage (registry-to-workflows contract)
+- **Other / Svelte**: tsconfig-paths-mirror (in `--fast`; errors when the desktop or dashboard tsconfig `paths` stop
+  mirroring its package.json `imports`, which `svelte-check --tsgo` needs; § "svelte-check runs on TS 7 with a TS 6
+  backstop")
 - **Other / Go**: go-version-single-source (errors when anything but `.mise.toml` names a Go toolchain version, when the
   `go.mod` floors disagree with each other, or when a floor exceeds the pinned toolchain)
 - **Other / Security**: workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`,
@@ -2529,6 +2533,34 @@ automerge working. Making the floors track mise exactly would break automerge on
 CI-red afternoon when the `EnsureGoTool` analyzer pins had to move in lockstep with the 1.27 bump.
 
 ## Key decisions
+
+### svelte-check runs on TS 7 with a TS 6 backstop
+
+**Decision**: `desktop-svelte-check` and `dashboard-svelte-check` run `svelte-check --tsgo` on TypeScript 7, from
+Microsoft's side-by-side package (`@typescript/native` as `npm:typescript@~7.0.2` in each app's devDependencies), while
+`typescript` itself stays on 6 (`renovate.json`'s typescript-major rule says why). CI also runs
+`desktop-svelte-check-ts6` and `dashboard-svelte-check-ts6`, svelte-check's default in-memory mode on TS 6; they're
+`CIOnly`, so locally only the fast lane runs. **Why**: desktop drops from 19.6–22.0 s wall / 25.9–30.2 s user to
+6.2–11.8 s wall / 12.4–14.3 s user, and the dashboard from 2.7 s / 4.4 s to 1.3 s / 2.1 s (verified on svelte-check
+4.7.8, TS 6.0.3 vs 7.0.2, `/usr/bin/time` on David's laptop with nothing else running, 2026-11-10). But `--tsgo` is
+experimental: it type-checks components it writes to disk under `.svelte-kit/.svelte-check/`, and that mode has open
+gaps that DROP real errors, such as a missing `.svelte` import going unreported (sveltejs/language-tools#3187), so TS 6
+stays the gate.
+
+- **The `paths` mirror**: write-to-disk mode rebases tsconfig `paths` onto the emitted components but ignores
+  package.json subpath `imports` (sveltejs/language-tools#3142). Without a `paths` twin of `#lib/*`, every
+  `#lib/*.svelte` import fell back to the ambient `*.svelte` shim: 46 false errors on desktop, and a seeded
+  `<StatusBadge status={12345} />` went unreported. Each app's tsconfig carries the twin; `tsconfig-paths-mirror` (in
+  `--fast`) fails when it drifts from `imports`.
+- **Parity evidence**: with the mirror, both modes report identical diagnostics on a clean tree and on seeded errors (a
+  `.ts` type error, a local `.svelte` error, a cross-component prop error, and an a11y warning), compared on
+  `--output machine` (2026-11-10). Only the summary's file count differs (442 vs 4,244): in `--tsgo` mode it counts
+  svelte-check's emit set plus files with diagnostics, so the TS 7 lane's success message leaves it out.
+- **Reading the result**: all four lanes pass `--output machine` and take the error and warning counts from its
+  `COMPLETED` line, failing when there's none. They used to search the prose for "0 warnings", which "10 warnings" also
+  contains.
+- **Lift it**: drop the backstops once `--tsgo` leaves experimental and those issues close; drop the mirror once #3142
+  ships.
 
 **Decision**: every operational `cargo` command in checks passes `--locked`. **Why**: without it, cargo silently
 re-resolves `Cargo.lock` whenever upstream metadata shifts (a yank, a new transitive dep version). For a 1028-crate

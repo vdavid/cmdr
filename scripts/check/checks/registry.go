@@ -1257,6 +1257,33 @@ var AllChecks = []CheckDefinition{
 		Inputs:      svelteInputs,
 		Run:         RunSvelteCheck,
 	},
+	// The TS 6 backstop for `desktop-svelte-check`'s `--tsgo` run: svelte-check's
+	// experimental write-to-disk mode has open gaps that drop real errors
+	// (sveltejs/language-tools#3142, #3187), so CI keeps the in-memory TS 6 run as
+	// the gate. CIOnly: locally the TS 7 lane is the fast loop; `checks/DETAILS.md`
+	// § "svelte-check runs on TS 7 with a TS 6 backstop".
+	{
+		ID:          "desktop-svelte-check-ts6",
+		CpuWeight:   2,
+		Nickname:    "svelte-check-ts6",
+		DisplayName: "svelte-check (TypeScript 6 backstop)",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		CIOnly:      true,
+		DependsOn:   []string{"desktop-svelte-kit-sync"},
+		Inputs:      svelteInputs,
+		Run:         RunSvelteCheckTS6,
+	},
+	{
+		ID:          "tsconfig-paths-mirror",
+		DisplayName: "tsconfig paths mirror package.json imports",
+		App:         AppOther,
+		Tech:        "🎨 Svelte",
+		IsFast:      true,
+		// Reads the two apps' package.json and tsconfig.json, nothing else.
+		Inputs: tsconfigPathsMirrorInputs,
+		Run:    RunTsconfigPathsMirror,
+	},
 	{
 		ID:          "desktop-svelte-import-cycles",
 		Nickname:    "import-cycles",
@@ -1628,6 +1655,17 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   []string{"dashboard-svelte-kit-sync"},
 		Inputs:      dashboardInputs,
 		Run:         RunDashboardSvelteCheck,
+	},
+	{
+		// The TS 6 backstop for the `--tsgo` run above, as `desktop-svelte-check-ts6`.
+		ID:          "dashboard-svelte-check-ts6",
+		DisplayName: "svelte-check (TypeScript 6 backstop)",
+		App:         AppDashboard,
+		Tech:        "🎨 Svelte",
+		CIOnly:      true,
+		DependsOn:   []string{"dashboard-svelte-kit-sync"},
+		Inputs:      dashboardInputs,
+		Run:         RunDashboardSvelteCheckTS6,
 	},
 	{
 		ID:          "dashboard-import-cycles",

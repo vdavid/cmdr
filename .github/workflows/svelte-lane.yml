@@ -94,8 +94,13 @@ jobs:
       - name: Check Vite build target
         run: ./scripts/check/check --check desktop-vite-build-target --ci
 
-      - name: Run svelte-check
+      - name: Run svelte-check (TypeScript 7, `--tsgo`)
         run: ./scripts/check/check --check desktop-svelte-check --ci
+
+      # The gate: `--tsgo` is experimental and has open gaps that drop real errors
+      # (`scripts/check/checks/DETAILS.md` § "svelte-check runs on TS 7 with a TS 6 backstop").
+      - name: Run svelte-check (TypeScript 6 backstop)
+        run: ./scripts/check/check --check desktop-svelte-check-ts6 --ci
 
       - name: Check import cycles
         run: ./scripts/check/check --check desktop-svelte-import-cycles --ci

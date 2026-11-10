@@ -90,6 +90,7 @@
     "@types/css-tree": "3.2.0",
     "@types/estree": "1.0.10",
     "@types/node": "^26.6.6",
+    "@typescript/native": "npm:typescript@~7.0.2",
     "@vitest/coverage-v8": "^5.1.0",
     "axe-core": "~4.14.0",
     "cldr-core": "49.0.0",

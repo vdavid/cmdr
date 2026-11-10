@@ -153,7 +153,7 @@ jobs:
       - name: Check the cross-app guards and the workflows
         if: ${{ !cancelled() && steps.ready.outcome == 'success' }}
         run: |
-          ./scripts/check/check --ci --check desktop-rust-property-mutant-records,analytics-event-catalog,analytics-settings-defaults,desktop-pluralize-noun,go-version-single-source,e2e-rust-image-pin,website-pnpm-bootstrap-in-step,workflows-hardening,workflows-rustup,ci-coverage
+          ./scripts/check/check --ci --check desktop-rust-property-mutant-records,analytics-event-catalog,analytics-settings-defaults,desktop-pluralize-noun,go-version-single-source,e2e-rust-image-pin,website-pnpm-bootstrap-in-step,workflows-hardening,workflows-rustup,ci-coverage,tsconfig-paths-mirror
 
       # ---- Repo hygiene: only when their inputs changed ----
 
@@ -194,10 +194,10 @@ jobs:
         run: pnpm exec svelte-kit sync
         working-directory: ./apps/analytics-dashboard
 
-      - name: Check the dashboard (ESLint, Stylelint, svelte-check, cycles, knip, tests, build)
+      - name: Check the dashboard (ESLint, Stylelint, svelte-check on TS 7 and TS 6, cycles, knip, tests, build)
         if: ${{ !cancelled() && steps.dashboard-sync.outcome == 'success' }}
         run: |
-          ./scripts/check/check --ci --check dashboard-eslint,dashboard-stylelint,dashboard-svelte-check,dashboard-import-cycles,dashboard-knip,dashboard-tests,dashboard-build
+          ./scripts/check/check --ci --check dashboard-eslint,dashboard-stylelint,dashboard-svelte-check,dashboard-svelte-check-ts6,dashboard-import-cycles,dashboard-knip,dashboard-tests,dashboard-build
 
   # The two slow Go tools, in a job of their own beside `checks`, so neither sits on the light
   # job's critical path: nilaway is the slowest Go check, and a cold Scorecard `go install` takes

@@ -212,6 +212,9 @@ failures):
 - Rust: `cd apps/desktop/src-tauri && cargo nextest run <test_name>`
 - Svelte: `cd apps/desktop && pnpm vitest run -t "<test_name>"`
 - Playwright: see `test/e2e-playwright/DETAILS.md` § "Running a single spec".
+- Types: `pnpm check svelte-check` (TypeScript 7 via `svelte-check --tsgo`; `pnpm check svelte-check-ts6` is the TS 6
+  backstop CI gates on). The `paths` twin of `#lib/*` in `tsconfig.json` exists for `--tsgo`. Why both:
+  `scripts/check/checks/DETAILS.md` § "svelte-check runs on TS 7 with a TS 6 backstop".
 
 Every E2E binary carries the dialog gallery and the i18n capture sink: `test:e2e:playwright:build` and the Linux Docker
 build set `CMDR_E2E_BUILD=1`, which turns on the `__CMDR_E2E_BUILD__` Vite define, and the fixture command behind it

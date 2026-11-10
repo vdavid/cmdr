@@ -14,7 +14,14 @@
     // stripping types, which can't erase those, and with no enum anywhere ESLint can skip
     // `no-unsafe-enum-assignment`, which cost ~17 s per Svelte lint pass guarding one enum
     // (`docs/notes/performance/local-check-lanes-2026-11-05.md`). Use an `as const` object.
-    "erasableSyntaxOnly": true
+    "erasableSyntaxOnly": true,
+    // Mirrors package.json `imports` for `svelte-check --tsgo`, whose write-to-disk mode rebases
+    // tsconfig `paths` onto its emitted components but ignores subpath `imports`: without this,
+    // every `#lib/*.svelte` import falls back to the ambient `*.svelte` shim, which reports 46
+    // false errors AND silently drops prop checks on those components (verified on svelte-check
+    // 4.7.8 + TS 7.0.2, seeded `<StatusBadge status={12345} />`, 2026-11-10; upstream
+    // sveltejs/language-tools#3142). `tsconfig-paths-mirror` keeps the two in step.
+    "paths": { "#lib/*": ["./src/lib/*"] }
   },
   // `test/fixtures/*.svelte` are components a unit test mounts (they'd fail
   // `a11y-coverage` under `src/lib`, which they aren't part of), so they belong to

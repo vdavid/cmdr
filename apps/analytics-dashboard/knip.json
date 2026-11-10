@@ -2,6 +2,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "treatConfigHintsAsErrors": true,
   "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": ["@typescript/native"],
   "project": ["src/**/*.{ts,svelte,css}"],
   "svelte": {
     "entry": [

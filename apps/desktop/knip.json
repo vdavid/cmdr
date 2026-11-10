@@ -4,7 +4,13 @@
   "ignoreBinaries": ["rustc", "oxfmt", "magick", "chflags", "ffmpeg", "swiftc"],
   "ignore": ["src/lib/ipc/bindings.ts"],
   "ignoreUnresolved": ["~icons/.+"],
-  "ignoreDependencies": ["oxlint", "@testing-library/svelte", "@iconify-json/lucide", "cldr-core"],
+  "ignoreDependencies": [
+    "oxlint",
+    "@testing-library/svelte",
+    "@iconify-json/lucide",
+    "cldr-core",
+    "@typescript/native"
+  ],
   "ignoreExportsUsedInFile": true,
   "project": ["src/**/*.{ts,svelte}", "scripts/vite-*.ts", "eslint-plugins/*.js"],
   "svelte": {

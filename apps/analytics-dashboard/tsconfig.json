@@ -2,7 +2,11 @@
   "extends": "$app/tsconfig",
   "compilerOptions": {
     "sourceMap": true,
-    "strict": true
+    "strict": true,
+    // Mirrors package.json `imports` for `svelte-check --tsgo`, which ignores subpath `imports`
+    // and would type every `#lib/*.svelte` import as the ambient `*.svelte` shim. Why, evidence,
+    // and the guard (`tsconfig-paths-mirror`): the same alias in `apps/desktop/tsconfig.json`.
+    "paths": { "#lib/*": ["./src/lib/*"] }
   },
   "include": ["src", "vite.config.ts"]
 }
