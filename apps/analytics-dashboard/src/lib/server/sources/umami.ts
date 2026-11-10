@@ -213,27 +213,49 @@ export async function fetchUmamiVisitorsByCountry(
   return new Map(items.map((item) => [item.x.toUpperCase(), item.y]))
 }
 
+/** The page size for `fetchUmamiEventCountsByCountry`; 90 days of clicks fit in one or two pages. */
+const eventPageSize = 1000
+
+/** Past this many pages the listing is runaway, not traffic: fail loudly rather than drain the subrequest budget. */
+const maxEventPages = 20
+
+/** The country label for an event Umami geolocated nowhere, matching the worker's no-country bucket. */
+const noCountry = '(unknown)'
+
 /**
- * How many `eventName` events one country fired over the window. Umami can't group events by country in
- * one call (`metrics?type=country` ignores the event filter, verified on anal.veszelovszki.com, curl,
- * 2026-11-10), so this asks per country: `metrics?type=event&country=XX`.
+ * How many `eventName` events each country fired over the window, as `Map<ISO-2 | "(unknown)", count>`, from
+ * one paginated `/events?event=NAME` listing (each row carries the session's country). No aggregate endpoint
+ * groups custom events by country: `metrics?type=country&event=` and `/breakdown` both count pageviews only
+ * and answer `[]` for a custom event (verified on anal.veszelovszki.com, Umami v3, curl, 2026-11-10). The
+ * listing's per-country tallies matched `metrics?type=event&country=XX` there (US 35 of 287).
  */
-export async function fetchUmamiEventCountForCountry(
+export async function fetchUmamiEventCountsByCountry(
   apiUrl: string,
   token: string,
   websiteId: string,
-  window: { startAt: number; endAt: number; country: string },
+  window: { startAt: number; endAt: number },
   eventName: string,
-): Promise<number> {
-  const url =
-    `${apiUrl}/api/websites/${websiteId}/metrics?startAt=${String(window.startAt)}&endAt=${String(window.endAt)}` +
-    `&type=event${countryFilter(window.country)}`
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-  if (!response.ok) {
-    throw new Error(`Umami metrics (event, ${window.country}) returned ${String(response.status)}`)
+  pageSize = eventPageSize,
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>()
+  let seen = 0
+  for (let page = 1; page <= maxEventPages; page++) {
+    const url =
+      `${apiUrl}/api/websites/${websiteId}/events?startAt=${String(window.startAt)}&endAt=${String(window.endAt)}` +
+      `&event=${encodeURIComponent(eventName)}&page=${String(page)}&pageSize=${String(pageSize)}`
+    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    if (!response.ok) {
+      throw new Error(`Umami events listing returned ${String(response.status)}`)
+    }
+    const body = (await response.json()) as { data: { country: string | null }[]; count: number }
+    for (const row of body.data) {
+      const country = row.country ? row.country.toUpperCase() : noCountry
+      counts.set(country, (counts.get(country) ?? 0) + 1)
+    }
+    seen += body.data.length
+    if (body.data.length === 0 || seen >= body.count) return counts
   }
-  const items = (await response.json()) as UmamiMetricItem[]
-  return items.find((item) => item.x === eventName)?.y ?? 0
+  throw new Error(`Umami events listing ran past ${String(maxEventPages)} pages`)
 }
 
 export function parseUmamiStats(raw: unknown): UmamiSiteStats {

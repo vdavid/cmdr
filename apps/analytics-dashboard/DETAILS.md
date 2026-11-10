@@ -234,9 +234,13 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
   purchases, plus per-country slices for the top 20 (§ "Acquisition trends"). Per-day `downloadsByRef` feeds the
   "Channels" breakdown (rolled up by `aggregateChannels` in `#lib/funnel.ts`). Cache: `funnel-v3` once for everyone,
   `funnel-extra-v1` per non-top `?country=`.
-- `funnel-countries.ts` (Bearer + Umami): the per-country 30-day table and the chips. Umami `metrics?type=country` for
-  visitors, one `metrics?type=event&country=XX` per top-12 country for clicks (Umami can't group events by country in
-  one call), and `/admin/funnel/countries?days=30` for downloads, installs, and pooled D7.
+- `funnel-countries.ts` (Bearer + Umami): the per-country map and table over the picker's window (`days` = 7/30/90,
+  cached per window as `funnel-countries-v2`). Three parallel calls: Umami `metrics?type=country` for visitors, Umami
+  `/events?event=download` (paginated, 1,000 a page) tallied by each row's country for every country's clicks, and
+  `/admin/funnel/countries?days=N` for downloads, installs, and pooled D7/D28. No Umami aggregate groups a custom event
+  by country: `metrics?type=country&event=` and `/breakdown` count pageviews only and answer `[]` (verified on
+  anal.veszelovszki.com, Umami v3, curl, 2026-11-10); the listing's tallies matched the per-country
+  `metrics?type=event&country=XX` there.
 - `settings-adoption.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): per-setting adoption from `/admin/config-shape`,
   resolved against the per-version defaults manifest before it leaves the server (§ Settings adoption).
 - `worker-endpoint.ts` (shared helper): `fetchWorkerEndpoint(token, path)`, used by the worker-backed sources.
@@ -419,14 +423,15 @@ grids stay on fixed 90/30/7 columns.
 ## The country map and table
 
 `CountryFunnelSection` shows a world map of visitors beside the table from 2xl up, and above it (capped at `max-w-3xl`)
-below that. It takes `days` (7, 30, or 90, default 30) for its title; the data window itself is the source's.
+below that. It takes `days` (7, 30, or 90, default 30) for its title; the page passes the picker's range, and
+`fetchFunnelCountriesSource` fetches that same window, so title and numbers can't drift apart.
 
 - **The table**: Visitors, Visitor → click, Clicks, Server downloads, Click → install, Installs, D7 (pooled), D28
   (pooled). The top 20 real countries, then one "Other (N countries)" row summing the rest, then "(unknown)" on its own
   (never ranked or folded: it's the worker's no-country bucket, mostly installs). Shaping lives in
   `#lib/country-table.ts`. An "Other" column is a dash as soon as any folded country is a dash there (`sumNullable`): a
-  partial sum would pass for the whole, and clicks are only looked up for the top 12, so Other's clicks are always a
-  dash.
+  partial sum would pass for the whole. Clicks cover every country (a country Umami answered for with no click is a real
+  0), so Other's clicks are a true sum, and clicks Umami geolocated nowhere land on "(unknown)".
 - **Country names** carry their `#lib/country-colors.ts` dot (the color they wear in the trend charts) and, given
   `onselectcountry`, a plain click switches the page's filter in place like a chip; a modified click keeps the link's
   full load (new tab).

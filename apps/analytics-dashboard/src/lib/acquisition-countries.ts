@@ -11,7 +11,6 @@ export interface CountryFunnelRow {
   /** ISO-3166 alpha-2, uppercase, or `"(unknown)"`. */
   country: string
   visitors: number | null
-  /** `null` also for a country outside the top visitor countries we asked Umami about. */
   clicks: number | null
   serverDownloads: number | null
   newInstalls: number | null
@@ -36,7 +35,7 @@ interface WorkerCountry {
 /**
  * Join Umami's per-country visitors and clicks with the worker's per-country rows, ranked by visitors then
  * installs. A side that failed (`null`) leaves its columns `null`; a present side with no entry for a country
- * is a real 0. Clicks are known only for the countries we asked about, so they stay `null` elsewhere.
+ * is a real 0. Clicks cover every country (`(unknown)` holds the ones Umami geolocated nowhere).
  */
 export function mergeCountryRows(
   visitors: Map<string, number> | null,
@@ -57,7 +56,7 @@ export function mergeCountryRows(
     return {
       country,
       visitors: visitors ? (visitors.get(country) ?? 0) : null,
-      clicks: clicks?.get(country) ?? null,
+      clicks: clicks ? (clicks.get(country) ?? 0) : null,
       serverDownloads: fromWorker((r) => r.serverDownloads),
       newInstalls: fromWorker((r) => r.newInstalls),
       d7Cohort: fromWorker((r) => r.d7Cohort),

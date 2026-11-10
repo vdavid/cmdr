@@ -21,9 +21,21 @@ describe('mergeCountryRows', () => {
     )
     expect(rows.map((r) => r.country)).toEqual(['US', 'SE', '(unknown)'])
     expect(rows[0]).toMatchObject({ visitors: 50, clicks: 4, newInstalls: 0 })
-    // Clicks are only known for the countries we asked about: SE wasn't, so it's unknown, not 0.
-    expect(rows[1].clicks).toBeNull()
+    // Umami answered for every country at once, so a country with no clicks entry clicked 0 times.
+    expect(rows[1].clicks).toBe(0)
     expect(rows[2].visitors).toBe(0)
+  })
+
+  it('gives (unknown) the clicks that carried no country', () => {
+    const rows = mergeCountryRows(
+      new Map([['US', 5]]),
+      new Map([
+        ['US', 2],
+        ['(unknown)', 1],
+      ]),
+      [workerRow('(unknown)', 3)],
+    )
+    expect(rows.find((r) => r.country === '(unknown)')?.clicks).toBe(1)
   })
 
   it('leaves a failed side null, never zero', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fetchUmamiData, parseUmamiStats, parseUmamiMetrics } from './umami.js'
+import { fetchUmamiData, fetchUmamiEventCountsByCountry, parseUmamiStats, parseUmamiMetrics } from './umami.js'
 import { clearMemoryCache } from '../cache.js'
 
 const mockEnv = {
@@ -132,5 +132,55 @@ describe('fetchUmamiData', () => {
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error).toContain('Network error')
+  })
+})
+
+describe('fetchUmamiEventCountsByCountry', () => {
+  const event = (country: string | null) => ({ country, eventName: 'download' })
+  const page = (data: unknown[], count: number, pageNumber: number) => ({
+    ok: true,
+    json: () => Promise.resolve({ data, count, page: pageNumber, pageSize: 2 }),
+  })
+
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('tallies every event by country across pages, with no-country events under (unknown)', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(page([event('us'), event('DE')], 5, 1))
+      .mockResolvedValueOnce(page([event('US'), event(null)], 5, 2))
+      .mockResolvedValueOnce(page([event('')], 5, 3))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const counts = await fetchUmamiEventCountsByCountry(
+      'https://umami.example.com',
+      'tok',
+      'site',
+      { startAt: 1, endAt: 2 },
+      'download',
+      2,
+    )
+    expect(Object.fromEntries(counts)).toEqual({ US: 2, DE: 1, '(unknown)': 2 })
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    const firstUrl = String(fetchMock.mock.calls[0][0])
+    expect(firstUrl).toContain('/api/websites/site/events?')
+    expect(firstUrl).toContain('event=download')
+    expect(firstUrl).toContain('page=1')
+    expect(String(fetchMock.mock.calls[2][0])).toContain('page=3')
+  })
+
+  it('throws on an Umami error rather than return a partial tally', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(page([event('US'), event('DE')], 3, 1))
+        .mockResolvedValueOnce({ ok: false, status: 500 }),
+    )
+    await expect(
+      fetchUmamiEventCountsByCountry('https://u', 'tok', 'site', { startAt: 1, endAt: 2 }, 'download', 2),
+    ).rejects.toThrow('500')
   })
 })

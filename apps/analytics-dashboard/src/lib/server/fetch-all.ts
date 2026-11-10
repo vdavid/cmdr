@@ -1,5 +1,5 @@
 import type { DashboardEnv, DashboardSelection, SourceResult } from './types.js'
-import { resolveSelection } from './types.js'
+import { rangeDays, resolveSelection } from './types.js'
 import type { UmamiData } from './sources/umami.js'
 import type { CloudflareData } from './sources/cloudflare.js'
 import type { PaddleData } from './sources/paddle.js'
@@ -161,17 +161,23 @@ export function fetchFunnelSource(env: DashboardEnv, country: string | null = nu
   )
 }
 
-/** The per-country 30-day funnel (table + chips). Gated on the worker token like the funnel itself. */
-export function fetchFunnelCountriesSource(env: DashboardEnv): Promise<SourceResult<FunnelCountriesData>> {
+/** The per-country funnel (map + table) over the picker's window. Gated on the worker token like the funnel. */
+export function fetchFunnelCountriesSource(
+  env: DashboardEnv,
+  selection: DashboardSelection,
+): Promise<SourceResult<FunnelCountriesData>> {
   return guardedFetch(env.LICENSE_SERVER_ADMIN_TOKEN, 'Countries', () =>
-    fetchFunnelCountriesData({
-      LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN,
-      WORKER_BASE_URL: env.WORKER_BASE_URL,
-      UMAMI_API_URL: env.UMAMI_API_URL,
-      UMAMI_USERNAME: env.UMAMI_USERNAME,
-      UMAMI_PASSWORD: env.UMAMI_PASSWORD,
-      UMAMI_WEBSITE_ID: env.UMAMI_WEBSITE_ID,
-    }),
+    fetchFunnelCountriesData(
+      {
+        LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN,
+        WORKER_BASE_URL: env.WORKER_BASE_URL,
+        UMAMI_API_URL: env.UMAMI_API_URL,
+        UMAMI_USERNAME: env.UMAMI_USERNAME,
+        UMAMI_PASSWORD: env.UMAMI_PASSWORD,
+        UMAMI_WEBSITE_ID: env.UMAMI_WEBSITE_ID,
+      },
+      rangeDays[selection.range],
+    ),
   )
 }
 
@@ -273,7 +279,7 @@ export async function fetchAcquisitionData(
 ): Promise<AcquisitionData> {
   const [funnel, funnelCountries, umami, cloudflare, github, githubStars, posthog] = await Promise.all([
     fetchFunnelSource(env, country),
-    fetchFunnelCountriesSource(env),
+    fetchFunnelCountriesSource(env, selection),
     fetchUmamiSource(env, selection),
     fetchCloudflareSource(env, selection),
     fetchGitHubSource(env),

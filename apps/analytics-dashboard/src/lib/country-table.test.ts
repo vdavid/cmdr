@@ -55,4 +55,12 @@ describe('shapeCountryTable', () => {
     expect(table.other?.clicks).toBeNull()
     expect(table.other?.d28Cohort).toBeNull()
   })
+
+  it('sums Other clicks once every folded country has a count', () => {
+    const table = shapeCountryTable(
+      [row('US', 5, { clicks: 2 }), row('SE', 3, { clicks: 1 }), row('HU', 2, { clicks: 0 })],
+      1,
+    )
+    expect(table.other?.clicks).toBe(1)
+  })
 })
