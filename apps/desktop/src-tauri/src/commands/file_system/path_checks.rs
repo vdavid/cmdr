@@ -94,7 +94,7 @@ enum Spelling {
 }
 
 async fn exists_on_volume(volume_id: Option<String>, path: String, spelling: Spelling) -> TimedOut<bool> {
-    let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
+    let volume_id = volume_id.unwrap_or_else(|| crate::volumes::local_volume_id_for_path(&path));
 
     // For local volumes, expand tilde
     let expanded_path = if volume_id == "root" { expand_tilde(&path) } else { path };

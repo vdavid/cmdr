@@ -304,7 +304,14 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5).
 
 34. [M] Windows. Multi-root path model in the app: drives and UNC shares as volumes, the `"root"` volume id and `/`
-    assumptions (`file_system/mod.rs:115`, `priority/roots.rs:64`, `tools/resources/volumes.rs:465`). Needs D1, 20.
+    assumptions (`file_system/mod.rs:126`, `priority/roots.rs:80`, `tools/resources/volumes.rs:469`). Needs D1, 20.
+    **Platform-independent part done**: `cmdr_fs::volume::path_grammar` (`AppPath`/`AppRoot`, `PathFlavor::HOST` behind
+    a `platform/` seam, `to_native`/`from_native` for `\\?\C:\…` and `\\?\UNC\…`, pure and tested on Linux) runs the
+    frontend's case table, and `volumes::local_volume_id_for_path` is the seam the missing-volume defaults in
+    `commands/rename.rs` and `commands/file_system/path_checks.rs` now ask (every arm answers `"root"` today). Left: the
+    drive and UNC volume id scheme (open), registering a volume per drive (with 35 and 39), and the remaining
+    single-root sites, most of which only change once those volumes exist (the root `LocalPosixVolume` at `/`, the
+    index's `ROOT_VOLUME_ID`, the boot-volume priority roots, the MCP volumes resource's non-macOS row).
 35. [L] Windows. `LocalWindowsVolume` in `cmdr-local`, a sibling of `LocalPosixVolume`: `FindFirstFileExW` reader,
     space, no-replace and atomic-replace rename (❗ `std::fs::rename` replaces on Windows), streams, file vs dir
     symlinks, junctions, reparse tags, ADS-backed xattrs, write-access probe, metadata caps, the conformance suite

@@ -105,6 +105,14 @@ pub(crate) fn volume_id_for_mount(_mount_path: &str) -> String {
     DEFAULT_VOLUME_ID.to_string()
 }
 
+/// ❗ A marked seam, not an answer: each drive and UNC share is its own volume
+/// (`AppPath::parse(path, PathFlavor::Windows)` names its root), but their volume ids aren't
+/// decided yet (`docs/specs/windows-port-plan.md`, the drives task), so every path still answers
+/// the root volume, as the stub did.
+pub(crate) fn local_volume_id_for_path(_path: &str) -> String {
+    DEFAULT_VOLUME_ID.to_string()
+}
+
 pub(crate) fn mount_identity_at(_path: &str) -> Option<u64> {
     None
 }

@@ -18,6 +18,12 @@ twin.
 re-exported by the arm root, closes that into a module cycle (`desktop-rust-module-cycles`).
 `platform/windows.rs` lists the root and three home folders and answers "nothing here" to every mount-table question.
 
+`local_volume_id_for_path` answers which local volume a path lies on, from the path alone, for a command handed a path
+without its volume (`commands/rename.rs`, `commands/file_system/path_checks.rs`): macOS and Linux have one local root
+volume, so every path answers `DEFAULT_VOLUME_ID`, exactly what those commands hard-coded. On Windows each drive and UNC
+share will be its own volume (`cmdr_fs::volume::path_grammar` names the root); until their volume ids are decided, the
+Windows arm answers the root volume too, a marked seam.
+
 What only one OS has stays in its arm, re-exported under a positive gate: on macOS, disk images, whole-disk units, the
 unmount approver, and the readers eject and the SMB paths use; on Linux, the GVFS dirname parser the mount helper reads.
 

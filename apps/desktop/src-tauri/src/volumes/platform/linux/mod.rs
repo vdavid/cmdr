@@ -51,6 +51,11 @@ pub(crate) const NETWORK_FS_TYPE: &str = "cifs";
 /// all compare names exactly.
 pub(crate) const LOCAL_DISK_CASE_SENSITIVE: bool = true;
 
+/// One local root volume owns every local path here, `~`-rooted ones included.
+pub(crate) fn local_volume_id_for_path(_path: &str) -> String {
+    DEFAULT_VOLUME_ID.to_string()
+}
+
 /// The `(fs type, source)` of the mount `path` lexically lies on, from `/proc/mounts` alone.
 pub(crate) fn mount_type_and_source_for(path: &Path) -> Option<(String, String)> {
     linux_mounts::mount_entry_for_path(path).map(|entry| (entry.fstype, entry.device))
@@ -363,6 +368,23 @@ mod tests {
         let target = row.favorite_target.expect("a favorite row carries its target");
         assert_eq!(target.discovered.on_disk, OnDisk::No);
         assert_eq!(target.reach, FavoriteReach::NotFound);
+    }
+
+    /// One local root volume owns every local path on Linux, whatever its spelling: the
+    /// answer every command handed a path without its volume used to hard-code.
+    #[test]
+    fn every_local_path_lies_on_the_root_volume() {
+        for path in [
+            "/",
+            "/home/ada/notes.txt",
+            "/mnt/usb/x",
+            "~/Documents",
+            "~",
+            "relative/dir",
+            "",
+        ] {
+            assert_eq!(local_volume_id_for_path(path), DEFAULT_VOLUME_ID, "{path:?}");
+        }
     }
 
     /// Linux's local disks compare names exactly, so the main volume and a favorite on it say so,

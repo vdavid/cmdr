@@ -57,6 +57,11 @@ pub(crate) const NETWORK_FS_TYPE: &str = "smbfs";
 /// default: the stated assumption.
 pub(crate) const LOCAL_DISK_CASE_SENSITIVE: bool = false;
 
+/// One local root volume owns every local path here, `~`-rooted ones included.
+pub(crate) fn local_volume_id_for_path(_path: &str) -> String {
+    DEFAULT_VOLUME_ID.to_string()
+}
+
 /// Whether a MOUNT ROOT is served by a cloud provider's own filesystem, so its
 /// entries cost a round trip to that provider's daemon rather than a disk read.
 ///

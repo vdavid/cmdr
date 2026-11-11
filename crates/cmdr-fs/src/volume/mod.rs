@@ -2458,6 +2458,7 @@ pub mod mtp_ids;
 mod node_identity;
 mod password_locked;
 pub mod patching;
+pub mod path_grammar;
 mod presence;
 mod read_stream;
 pub mod read_window;

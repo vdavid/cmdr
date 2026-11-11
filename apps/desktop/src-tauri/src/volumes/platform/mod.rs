@@ -32,6 +32,7 @@ const _: fn() -> MountRows = mount_rows;
 const _: fn() -> Option<Vec<String>> = registrable_mount_roots;
 const _: fn(&str) -> MountPointFacts = get_mount_point;
 const _: fn(&str) -> String = volume_id_for_mount;
+const _: fn(&str) -> String = local_volume_id_for_path;
 const _: fn(&str) -> Option<u64> = mount_identity_at;
 const _: fn(u64) -> Option<bool> = has_mount_identity;
 const _: fn(&Path) -> Option<(String, String)> = mount_type_and_source_for;
@@ -80,6 +81,12 @@ pub(crate) use imp::get_mount_point;
 
 /// The volume ID for the mount at `mount_path`. ❌ Never derive one any other way.
 pub(crate) use imp::volume_id_for_mount;
+
+/// The local volume a local path lies on, from the path alone (no mount table, no syscall), for
+/// a command handed a path without its volume. ❌ Never default a missing volume to
+/// `DEFAULT_VOLUME_ID` by hand: on Windows each drive and UNC share is its own volume
+/// (`cmdr_fs::volume::path_grammar`).
+pub(crate) use imp::local_volume_id_for_path;
 
 /// The non-blocking identity of the mount at `path` (its filesystem ID or device), `None` when
 /// the table doesn't list it.

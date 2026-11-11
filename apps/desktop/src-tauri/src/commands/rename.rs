@@ -94,7 +94,7 @@ pub async fn get_trash_dir(path: String) -> Result<Option<String>, MutationError
 #[specta::specta]
 pub async fn check_rename_permission(path: String, volume_id: Option<String>) -> Result<(), MutationError> {
     let engine = operations().map_err(refuse_instant_not_installed)?;
-    let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
+    let volume_id_str = volume_id.unwrap_or_else(|| crate::volumes::local_volume_id_for_path(&path));
 
     // Non-local volume paths are volume-relative; never tilde-expand them.
     let path_buf = if volume_id_str == "root" {
@@ -151,7 +151,7 @@ async fn check_rename_validity_with(
         });
     };
     let expanded_dir = expand_tilde(&dir);
-    let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
+    let volume_id_str = volume_id.unwrap_or_else(|| crate::volumes::local_volume_id_for_path(&dir));
 
     // Detached: conflict detection on a non-local volume LISTS the directory, so
     // on MTP a bare timeout would drop a listing mid-`GetObjectInfo`. A live
@@ -213,7 +213,7 @@ pub(crate) async fn rename_file_replying(
     on_settled: impl FnOnce(MutationSettled) + Send + 'static,
 ) -> Result<MutationReply, MutationError> {
     let engine = operations().map_err(refuse_instant_not_installed)?;
-    let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
+    let volume_id_str = volume_id.unwrap_or_else(|| crate::volumes::local_volume_id_for_path(&from));
 
     let (from_path, to_path) = if volume_id_str != "root" {
         // Non-local volume paths are volume-relative; never tilde-expand them.
