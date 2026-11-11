@@ -83,6 +83,10 @@ impl Ledger {
     }
 
     /// The close `ticket` has started its slide-out from `rest`.
+    #[cfg_attr(
+        not(target_os = "macos"),
+        allow(dead_code, reason = "only the AppKit path slides a window out")
+    )]
     pub fn record_slide_out(&mut self, label: &str, ticket: u64, rest: Frame) {
         if let Some(Motion::Closing {
             ticket: current,
