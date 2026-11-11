@@ -100,7 +100,7 @@ pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_sy
 /// diverge on how sizes/inode/nlink are mapped. `physical_size` is bytes (the caller
 /// has already applied `st_blocks * 512` or read `ATTR_FILE_ALLOCSIZE`).
 #[cfg_attr(
-    not(target_os = "macos"),
+    any(target_os = "linux", target_os = "windows"),
     allow(dead_code, reason = "only the macOS bulk reader calls this directly today")
 )]
 pub(super) fn metadata_from_raw(

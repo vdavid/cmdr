@@ -194,7 +194,7 @@ fn data_volume_twin(canonical: &Path) -> Option<PathBuf> {
         let relative = canonical.strip_prefix("/").ok()?;
         Some(Path::new("/System/Volumes/Data").join(relative))
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
     {
         let _ = canonical;
         None

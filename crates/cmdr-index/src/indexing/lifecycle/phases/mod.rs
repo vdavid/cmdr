@@ -107,7 +107,7 @@ const MAX_PASSES_PER_PHASE: usize = 2;
 /// Linux has no single equivalent pile, so it has none.
 #[cfg(target_os = "macos")]
 const DEFERRED_HOME_FOLDER: Option<&str> = Some("Library");
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 const DEFERRED_HOME_FOLDER: Option<&str> = None;
 
 /// Whether a drive's first index is covered in phases, the way this module does

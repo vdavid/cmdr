@@ -354,7 +354,7 @@ pub fn default_reader() -> ReadDirFn {
     {
         Arc::new(bulk_read::bulk_read_dir)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     {
         Arc::new(std_read_dir)
     }

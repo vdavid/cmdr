@@ -67,7 +67,7 @@ pub fn current_phys_footprint() -> Option<u64> {
     {
         query_task_vm_info().map(|vm| vm.phys_footprint)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
     {
         None
     }

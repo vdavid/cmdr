@@ -176,7 +176,7 @@ pub(crate) fn stop_generation() -> u64 {
 /// Record a watchdog stop, BEFORE the stop runs, so a waiter that reads the count
 /// after seeing its volume gone can't miss it.
 #[cfg_attr(
-    not(any(target_os = "macos", test)),
+    all(any(target_os = "linux", target_os = "windows"), not(test)),
     expect(dead_code, reason = "the watchdog only runs on macOS")
 )]
 pub(crate) fn note_stop() {
@@ -205,7 +205,7 @@ pub fn start(events: std::sync::Arc<dyn crate::EventSink>) {
     crate::indexing::host::runtime::spawn(run_watchdog(events));
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 pub fn start(_events: std::sync::Arc<dyn crate::EventSink>) {
     // No-op on non-macOS platforms
 }

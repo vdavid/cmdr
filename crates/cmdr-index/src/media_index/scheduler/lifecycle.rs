@@ -222,7 +222,7 @@ fn platform_backends() -> Option<(Arc<dyn VisionBackend>, BackendFactory)> {
             Arc::new(|| Arc::new(VisionOcrBackend::new()) as Arc<dyn VisionBackend>),
         ))
     }
-    #[cfg(all(not(target_os = "macos"), feature = "playwright-e2e"))]
+    #[cfg(all(target_os = "linux", feature = "playwright-e2e"))]
     {
         use crate::media_index::backend::fake::FakeVisionBackend;
         Some((
@@ -230,7 +230,7 @@ fn platform_backends() -> Option<(Arc<dyn VisionBackend>, BackendFactory)> {
             Arc::new(|| Arc::new(FakeVisionBackend::new()) as Arc<dyn VisionBackend>),
         ))
     }
-    #[cfg(all(not(target_os = "macos"), not(feature = "playwright-e2e")))]
+    #[cfg(all(any(target_os = "linux", target_os = "windows"), not(feature = "playwright-e2e")))]
     {
         None
     }
@@ -609,7 +609,7 @@ mod tests {
     /// Regression anchor for #943, run in the Linux lane against the real selector: the
     /// test fake used to be Linux's production backend, writing OCR text and tags derived
     /// from file names into the real `media.db`. A shipped build has no engine there.
-    #[cfg(all(not(target_os = "macos"), not(feature = "playwright-e2e")))]
+    #[cfg(all(target_os = "linux", not(feature = "playwright-e2e")))]
     #[test]
     fn off_macos_the_platform_has_no_inference_engine() {
         assert!(platform_backends().is_none());

@@ -174,8 +174,12 @@ its prerequisites; tasks without any can start any time. Order within a phase is
    unknown-target `compile_error!` (Windows is known); `platform-cfg-placement` counting negated OS cfgs and unseamed
    ones per file (seeded at 351 and 1,569 over 261 files); `platform/`, `system_memory/`, and `diagnostics_snapshot/`
    piloted, `linux_distro.rs` folded into `platform/linux/`.
-8. [S] Win. Convert the crates' 58 `not(macos)` and 67 `any`/`not(any)` gates to the named cfgs, shrinking the
-   allowlist. Needs 7.
+8. [S] Win. **Done**. The crates' negated OS gates went from 138 to 18: each arm names its OSes, the browser build
+   (`target_family = "wasm"`) where the old arm served it too, and Windows only where the body is right there, so a
+   Windows build fails at each missing arm instead of inheriting Linux's. `cmdr-fs` takes `cmdr_host` (build script,
+   crate-root gate, `rt`, the fallback runtime) and asks `cfg(unix)` where `not(wasm)` meant a POSIX host. Left for
+   their own tasks: the identity stubs (9) and `cmdr-http` (16). Positive `any(macos, linux)` lists stay: honest, if not
+   yet in seams.
 
 ### Phase 2: crate seams
 

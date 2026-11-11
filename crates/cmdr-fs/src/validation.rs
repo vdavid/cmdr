@@ -13,8 +13,8 @@ pub const MAX_NAME_BYTES: usize = 255;
 /// macOS PATH_MAX is 1024; Linux PATH_MAX is 4096.
 #[cfg(target_os = "linux")]
 pub const MAX_PATH_BYTES: usize = 4096;
-/// Maximum path length in bytes (macOS `PATH_MAX`).
-#[cfg(not(target_os = "linux"))]
+/// Maximum path length in bytes (macOS `PATH_MAX`, which the browser build borrows).
+#[cfg(any(target_os = "macos", target_family = "wasm"))]
 pub const MAX_PATH_BYTES: usize = 1024;
 
 /// Validation error types for filename and path checks.

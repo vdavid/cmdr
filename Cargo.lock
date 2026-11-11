@@ -1634,6 +1634,7 @@ name = "cmdr-fs"
 version = "0.0.0"
 dependencies = [
  "blake3",
+ "cmdr-platform-cfg",
  "dirs 7.0.0",
  "exacl",
  "futures-util",

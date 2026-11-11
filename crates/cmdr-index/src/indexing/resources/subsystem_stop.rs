@@ -33,7 +33,7 @@ pub fn register_subsystem_stop_hook(hook: StopHook) {
 /// watchdog's stop action), so a shared-pool subsystem yields under the same
 /// ceiling.
 #[cfg_attr(
-    not(target_os = "macos"),
+    any(target_os = "linux", target_os = "windows"),
     allow(
         dead_code,
         reason = "only the macOS memory watchdog stops indexing and runs the hooks"

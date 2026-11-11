@@ -519,7 +519,7 @@ mod tests {
         // `/media/X`), plus a cloud-drive folder that sits inside the home dir.
         #[cfg(target_os = "macos")]
         let ext_root = "/Volumes/RoutingTestExt";
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(target_os = "linux")]
         let ext_root = "/media/RoutingTestExt";
         let cloud_root = "/Users/routingtest/Library/CloudStorage/RoutingTest";
 

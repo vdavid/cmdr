@@ -177,8 +177,8 @@ pub const ENOTEMPTY_DEVICE: i32 = 39;
 /// re-dispatches `raw_os_error` against (`cmdr-sftp` makes the same translation).
 #[cfg(target_os = "linux")]
 const ENOTEMPTY_HOST: i32 = 39;
-/// `ENOTEMPTY` on everything else Cmdr builds for.
-#[cfg(not(target_os = "linux"))]
+/// `ENOTEMPTY` on macOS. Windows numbers it differently again (41 in the MSVC CRT).
+#[cfg(target_os = "macos")]
 const ENOTEMPTY_HOST: i32 = 66;
 
 /// Turns a device errno (from `STA2`/`DNT2`, or a shell probe) into the

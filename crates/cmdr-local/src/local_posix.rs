@@ -306,7 +306,7 @@ impl LocalPosixVolume {
         staged_flags: UserFlags::NONE,
     };
     /// See the macOS twin.
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     pub const METADATA_CAPS: MetadataCaps = MetadataCaps {
         stores: MetadataClasses::MODE.union(MetadataClasses::XATTRS),
         reports: MetadataClasses::CREATED

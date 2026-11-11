@@ -120,6 +120,11 @@ mimalloc = { version = "0.1", optional = true }
 # Everything that needs a host OS, which the browser build (`wasm32-unknown-unknown`,
 # for `crates/cmdr-listing-wasm`) doesn't have. The modules using them are gated in
 # `lib.rs`; `DETAILS.md` § "The browser build".
+[build-dependencies]
+# The named platform cfgs (`cmdr_host`), one definition the whole workspace shares:
+# `docs/guides/platform-seams.md` § "Named cfgs".
+cmdr-platform-cfg = { path = "../cmdr-platform-cfg" }
+
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 # The fallback runtime's worker pool (`volume::host`). A browser has no threads.
 tokio = { version = "1", features = ["rt-multi-thread"] }

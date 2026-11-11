@@ -120,7 +120,7 @@ pub(super) fn listing_error_from_errno(errno: i32, path: &Path, _err: &VolumeErr
 ///
 /// The transient arm matters beyond the copy: a stalled listing retries exactly
 /// the `Transient` category (`crates/cmdr-listing/src/stall.rs` in the app).
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_family = "wasm"))]
 pub(super) fn listing_error_from_errno(errno: i32, path: &Path, err: &VolumeError) -> ListingError {
     use std::io::ErrorKind;
 

@@ -121,7 +121,7 @@ pub(crate) fn is_inside_known_cloud_drive(home: &Path, path: &Path) -> bool {
 
 /// `~/Library/CloudStorage` is macOS's layout, so everywhere else this is simply
 /// "an ordinary location": attempt the trash and let it answer.
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
 pub(crate) fn is_inside_known_cloud_drive(_home: &Path, _path: &Path) -> bool {
     false
 }
@@ -138,7 +138,7 @@ pub(crate) fn metadata_is_online_only(metadata: &std::fs::Metadata) -> bool {
 }
 
 /// `SF_DATALESS` is Apple's; nothing elsewhere evicts a file behind our back.
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_family = "wasm"))]
 pub(crate) fn metadata_is_online_only(_metadata: &std::fs::Metadata) -> bool {
     false
 }

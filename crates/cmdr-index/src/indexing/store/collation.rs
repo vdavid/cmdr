@@ -29,7 +29,7 @@ pub(super) fn platform_case_compare(a: &str, b: &str) -> std::cmp::Ordering {
     a_norm.cmp(&b_norm)
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
 pub(super) fn platform_case_compare(a: &str, b: &str) -> std::cmp::Ordering {
     a.cmp(b)
 }

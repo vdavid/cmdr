@@ -86,7 +86,7 @@ pub fn sample_last_used(volume_id: &str, paths: &[String]) -> HashMap<String, u6
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 pub fn sample_last_used(_volume_id: &str, _paths: &[String]) -> HashMap<String, u64> {
     HashMap::new()
 }

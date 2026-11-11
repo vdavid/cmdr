@@ -29,7 +29,7 @@ use crate::indexing::store::UnreadableCause;
 enum Seal {
     /// SIP (`SF_RESTRICTED`) or a data vault (`lstat` itself refused).
     #[cfg_attr(
-        all(not(target_os = "macos"), not(test)),
+        all(any(target_os = "linux", target_os = "windows"), not(test)),
         expect(dead_code, reason = "only macOS seals a folder; elsewhere `seal_of` answers `Open`")
     )]
     Sealed,
@@ -75,7 +75,7 @@ fn seal_of(path: &Path) -> Seal {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 fn seal_of(_path: &Path) -> Seal {
     Seal::Open
 }
@@ -107,7 +107,7 @@ mod tests {
         assert_eq!(cause_for(Some(libc::EPERM), || Seal::Open), UnreadableCause::Denied);
     }
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     #[test]
     fn eperm_off_macos_is_off_limits() {
         assert_eq!(cause_for(Some(libc::EPERM), || Seal::Open), UnreadableCause::OffLimits);

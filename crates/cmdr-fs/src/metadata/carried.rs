@@ -11,7 +11,7 @@ use std::path::Path;
 use std::time::SystemTime;
 
 use super::{MetadataClasses, UserFlags};
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 use crate::log_private::LogPrivate;
 
 /// The xattr macOS stamps on every file a process writes. The kernel ignores a
@@ -188,7 +188,7 @@ impl CarriedMetadata {
     /// The classes a local item's stat answers: creation date, mode, and
     /// (macOS) flags. No call at all.
     pub fn of_local_stat(meta: &Metadata) -> Self {
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(unix)]
         let mode = {
             use std::os::unix::fs::PermissionsExt as _;
             Some(meta.permissions().mode() & 0o7777)
@@ -207,7 +207,7 @@ impl CarriedMetadata {
 
 /// The xattrs worth carrying off the open `file`. A file with none costs one
 /// `flistxattr`.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn local_xattrs(file: &File) -> Vec<Xattr> {
     use xattr::FileExt as _;
     match file.list_xattr() {
@@ -232,7 +232,7 @@ fn local_xattrs(file: &File) -> Vec<Xattr> {
 
 /// The names of the xattrs worth carrying off the open `file`, each with an
 /// empty value.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn local_xattr_names(file: &File) -> Vec<Xattr> {
     use xattr::FileExt as _;
     match file.list_xattr() {
@@ -252,7 +252,7 @@ fn local_xattr_names(file: &File) -> Vec<Xattr> {
 
 /// The xattrs a copy carries off the item at `path` itself. `xattr::list` and
 /// `xattr::get` never follow a link (`XATTR_NOFOLLOW`).
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn xattrs_at(path: &Path) -> Vec<Xattr> {
     match xattr::list(path) {
         Ok(names) => names
@@ -297,7 +297,7 @@ fn flags_of(meta: &Metadata) -> UserFlags {
     UserFlags::from_bsd(meta.st_flags())
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_family = "wasm"))]
 fn flags_of(_meta: &Metadata) -> UserFlags {
     UserFlags::NONE
 }

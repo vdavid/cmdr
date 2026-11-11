@@ -240,7 +240,7 @@ pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, MutationError>
 }
 
 /// Refuses with `TrashNotSupported`: this platform has no trash integration.
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(any(windows, target_family = "wasm"))]
 pub fn move_to_trash_sync(_path: &Path) -> Result<Option<PathBuf>, MutationError> {
     Err(MutationError::TrashNotSupported)
 }
@@ -377,7 +377,7 @@ pub fn trash_dir_for_path(path: &Path) -> Option<PathBuf> {
 /// The trash directory `path` would go to: always `None` here. The `trash` crate
 /// doesn't surface a trash location, and the XDG layout has no single answer for
 /// a non-home volume either, so callers degrade to "nowhere to go".
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
 pub fn trash_dir_for_path(_path: &Path) -> Option<PathBuf> {
     None
 }

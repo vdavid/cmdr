@@ -640,7 +640,7 @@ fn print_footprint(label: &str) {
             mib(vm.phys_footprint)
         );
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     println!("FOOTPRINT {label}: not measured off macOS");
 }
 
@@ -723,6 +723,6 @@ fn print_rss(label: &str) {
             mb(vm.phys_footprint_peak.unwrap_or(0))
         );
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     println!("RSS {label}: not measured off macOS");
 }

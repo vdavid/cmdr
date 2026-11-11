@@ -82,7 +82,7 @@ fn write_mode(_item: StagedItem<'_>, _mode: u32) -> ClassOutcome {
     ClassOutcome::NotApplicable
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn write_xattrs(item: StagedItem<'_>, carried: &CarriedMetadata) -> ClassOutcome {
     use xattr::FileExt as _;
     if carried.xattrs.is_empty() {
@@ -104,7 +104,7 @@ fn write_xattrs(item: StagedItem<'_>, carried: &CarriedMetadata) -> ClassOutcome
     outcome
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn write_mode(item: StagedItem<'_>, mode: u32) -> ClassOutcome {
     use std::os::unix::fs::PermissionsExt as _;
     let permissions = std::fs::Permissions::from_mode(mode);
@@ -176,9 +176,9 @@ fn set_dates(item: StagedItem<'_>, created: Option<SystemTime>, times: StagedTim
         #[cfg(target_os = "macos")]
         StagedItem::Link(path) => macos_dates::set_at_path(path, created, times, macos_dates::Follow::No),
         // std's path setter is unstable, so a folder is opened for its fd.
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(any(target_os = "linux", target_family = "wasm"))]
         StagedItem::Path(path) => File::open(path)?.set_times(file_times(created, times)),
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(any(target_os = "linux", target_family = "wasm"))]
         StagedItem::Link(_) => Err(std::io::ErrorKind::Unsupported.into()),
     }
 }
@@ -198,7 +198,7 @@ fn file_times(created: Option<SystemTime>, times: StagedTimes) -> std::fs::FileT
         use std::os::darwin::fs::FileTimesExt as _;
         file_times = file_times.set_created(created);
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_family = "wasm"))]
     let _ = created;
     file_times
 }

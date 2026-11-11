@@ -212,7 +212,7 @@ fn classify_external(volume_id: &str) -> Result<WalkableVolume, NoCoverContext> 
     })
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(target_os = "windows")]
 fn classify_external(_volume_id: &str) -> Result<WalkableVolume, NoCoverContext> {
     // No external-drive transport is compiled here, so nothing registers a volume
     // under that id and the boot disk is the only one with anywhere to run.
@@ -253,7 +253,7 @@ fn probe_mount(root: &Path) -> MountFacts {
 /// reason.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 const MOUNT_PROBE_TIMEOUT: std::time::Duration = crate::indexing::transports::local_external::index::FS_PROBE_TIMEOUT;
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(target_os = "windows")]
 const MOUNT_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// Why a frontier path can't be walked.

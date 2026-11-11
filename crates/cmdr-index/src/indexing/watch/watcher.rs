@@ -543,15 +543,15 @@ fn classify_paths(paths: &[std::path::PathBuf]) -> FsEventFlags {
     Default::default()
 }
 
-// ── DriveWatcher stub (other platforms) ──────────────────────────────
+// ── DriveWatcher stub (Windows, no watcher yet) ──────────────────────
 
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-/// Stub DriveWatcher for unsupported platforms.
+#[cfg(target_os = "windows")]
+/// Stub DriveWatcher until Windows has a watcher backend.
 pub struct DriveWatcher {
     _private: (),
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(target_os = "windows")]
 impl DriveWatcher {
     pub fn start(
         _root: &std::path::Path,

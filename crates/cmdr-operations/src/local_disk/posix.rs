@@ -48,7 +48,7 @@ pub(crate) fn write_probe(path: &Path) -> WriteProbe {
             WriteProbe::Refused(std::io::Error::last_os_error().raw_os_error().unwrap_or(libc::EACCES))
         }
     }
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     {
         let _ = path;
         WriteProbe::Allowed
@@ -99,7 +99,7 @@ pub(crate) fn is_locked_item(path: &Path) -> bool {
         const LOCKS: u32 = libc::UF_IMMUTABLE | libc::UF_APPEND | libc::SF_IMMUTABLE | libc::SF_APPEND;
         std::fs::symlink_metadata(path).is_ok_and(|meta| meta.st_flags() & LOCKS != 0)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_family = "wasm"))]
     {
         let _ = path;
         false
@@ -118,7 +118,7 @@ pub(crate) fn is_mount_point(root: &Path) -> Option<bool> {
     {
         cmdr_local::linux_mounts::is_mount_point(&root)
     }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    #[cfg(any(windows, target_family = "wasm"))]
     {
         let _ = root;
         None

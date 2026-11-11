@@ -84,7 +84,7 @@ pub(super) fn available_space(destination: &Path, required_bytes: u64) -> Option
     )
 }
 
-#[cfg(not(unix))]
+#[cfg(target_family = "wasm")]
 pub(super) fn available_space(_destination: &Path, _required_bytes: u64) -> Option<u64> {
     None
 }
@@ -141,7 +141,7 @@ fn important_usage_available(destination: &Path) -> Option<u64> {
 }
 
 /// Linux has no purgeable space, so `statvfs` is the whole answer.
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(target_os = "linux")]
 fn important_usage_available(_destination: &Path) -> Option<u64> {
     None
 }

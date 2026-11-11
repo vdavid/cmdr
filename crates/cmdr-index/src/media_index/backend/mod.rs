@@ -25,7 +25,7 @@
 // Tests, plus the never-shipped Linux E2E build (`scheduler/lifecycle.rs::platform_backends`).
 // ❌ Never in a shipped build: as production's off-macOS backend it wrote invented OCR text
 // and tags into the real `media.db` (#943).
-#[cfg(any(test, all(feature = "playwright-e2e", not(target_os = "macos"))))]
+#[cfg(any(test, all(feature = "playwright-e2e", target_os = "linux")))]
 pub(crate) mod fake;
 
 #[cfg(target_os = "macos")]

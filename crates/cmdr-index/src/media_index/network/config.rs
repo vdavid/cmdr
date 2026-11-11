@@ -313,7 +313,7 @@ mod tests {
         assert!(!path_is_within("/Users/me/IDs2/a.jpg", "/users/me/ids"));
     }
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     #[test]
     fn path_within_is_byte_exact_where_the_filesystem_is() {
         // ext4 and btrfs keep `IDs` and `ids` as two folders, so folding them would exclude a

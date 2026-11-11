@@ -188,7 +188,7 @@ fn archive_quarantine(state: &WriteOperationState, source_volume: &Arc<dyn Volum
 }
 
 /// Linux has no quarantine to carry.
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_family = "wasm"))]
 fn archive_quarantine(_state: &WriteOperationState, _source_volume: &Arc<dyn Volume>) -> Option<Vec<u8>> {
     None
 }

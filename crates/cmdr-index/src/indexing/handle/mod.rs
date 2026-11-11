@@ -320,7 +320,7 @@ impl Index {
             }
             Ok(StartOutcome::Started)
         }
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        #[cfg(target_os = "windows")]
         {
             Ok(StartOutcome::Refused(DriveIndexRefusal::NotIndexable))
         }
@@ -780,7 +780,7 @@ impl Index {
     pub fn on_device_object_changed(&self, device_id: &str, handle: u32) {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::indexing::transports::mtp::watch::on_device_object_changed(device_id, handle);
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        #[cfg(target_os = "windows")]
         {
             let _ = (device_id, handle);
         }
@@ -791,7 +791,7 @@ impl Index {
     pub fn on_device_object_removed(&self, device_id: &str, handle: u32) {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::indexing::transports::mtp::watch::on_device_object_removed(device_id, handle);
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        #[cfg(target_os = "windows")]
         {
             let _ = (device_id, handle);
         }
@@ -810,7 +810,7 @@ impl Index {
             WatchScope::Device(device_id) => {
                 #[cfg(any(target_os = "macos", target_os = "linux"))]
                 crate::indexing::transports::mtp::index::on_mtp_watch_continuity_lost(device_id);
-                #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+                #[cfg(target_os = "windows")]
                 {
                     let _ = device_id;
                 }

@@ -149,7 +149,7 @@ pub(super) fn settle_the_ledger(
 pub(super) fn emit_full_refresh(events: &dyn EventSink) {
     #[cfg(target_os = "macos")]
     objc2::rc::autoreleasepool(|_| emit_dir_updated(events, vec!["/".to_string()]));
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     emit_dir_updated(events, vec!["/".to_string()]);
 }
 

@@ -20,14 +20,14 @@
     reason = "this module is the one place the engines' clock and timer calls are allowed to live"
 )]
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 pub use std::time::Instant;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 pub use tokio::runtime::Handle as Runtime;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 pub use tokio::task::{JoinError, JoinHandle};
 
-#[cfg(all(test, not(target_family = "wasm")))]
+#[cfg(all(test, cmdr_host))]
 mod task_test;
 #[cfg(target_family = "wasm")]
 mod wasm;
@@ -75,7 +75,7 @@ pub fn caller_can_wait() -> bool {
 
 /// The wall clock, as `std`'s `SystemTime` (what file dates and journal stamps are
 /// made of). `std`'s own `SystemTime::now` panics in the browser build.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 #[inline]
 pub fn wall_now() -> std::time::SystemTime {
     std::time::SystemTime::now()
@@ -85,7 +85,7 @@ pub fn wall_now() -> std::time::SystemTime {
 /// outside one, as a bare `tokio::spawn` does), the page's event loop in the
 /// browser. Only for helpers whose design is ambient (`crate::deadline`); an
 /// engine spawns on its host's [`Runtime`].
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 pub fn spawn_ambient<F>(future: F) -> JoinHandle<F::Output>
 where
     F: Future + Send + 'static,
@@ -95,7 +95,7 @@ where
 }
 
 /// Task sets and cooperative yields: tokio's natively, the page's in the browser.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 pub mod task {
     pub use tokio::task::{AbortHandle, Id, JoinSet};
 
@@ -109,7 +109,7 @@ pub mod task {
 
 /// The engines' timers, on tokio's clock natively (so `start_paused` tests
 /// control them) and on the page's in the browser.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 pub mod time {
     use std::future::IntoFuture;
     use std::time::Duration;

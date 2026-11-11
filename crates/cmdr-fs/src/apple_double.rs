@@ -58,7 +58,7 @@ pub fn volume_keeps_sidecars(path: &Path) -> bool {
     {
         native_xattrs(path).is_some_and(|native| !native)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
     {
         let _ = path;
         false

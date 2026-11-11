@@ -212,8 +212,8 @@ pub(in crate::indexing) const EXCLUDED_PREFIXES: &[&str] = &[
     "/var/run/",
 ];
 
-/// Fallback exclusion prefixes for other platforms.
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+/// Windows has no exclusion list yet; these Unix prefixes never match a Windows path.
+#[cfg(target_os = "windows")]
 pub(in crate::indexing) const EXCLUDED_PREFIXES: &[&str] = &["/dev/", "/proc/"];
 
 /// The subset of [`EXCLUDED_PREFIXES`] that marks a MOUNTED EXTERNAL VOLUME
@@ -232,7 +232,7 @@ pub(in crate::indexing) const EXCLUDED_PREFIXES: &[&str] = &["/dev/", "/proc/"];
 pub(in crate::indexing) const EXTERNAL_MOUNT_PREFIXES: &[&str] = &["/Volumes/"];
 #[cfg(target_os = "linux")]
 pub(in crate::indexing) const EXTERNAL_MOUNT_PREFIXES: &[&str] = &["/mnt/", "/media/"];
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(target_os = "windows")]
 pub(in crate::indexing) const EXTERNAL_MOUNT_PREFIXES: &[&str] = &[];
 
 /// Whether `path` sits on a mounted external volume ([`EXTERNAL_MOUNT_PREFIXES`]),

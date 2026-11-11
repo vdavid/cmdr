@@ -522,7 +522,7 @@ pub(in crate::transfer) fn copy_single_item(
             {
                 copy_symlink(&source_for_symlink, target)?;
             }
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
             {
                 let link_target = fs::read_link(&source_for_symlink).map_err(|e| WriteOperationError::IoError {
                     path: source_for_symlink.display().to_string(),

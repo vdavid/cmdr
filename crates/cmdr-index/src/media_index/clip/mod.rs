@@ -30,7 +30,7 @@
 // The fakes' shared embedding space, for tests and the fake Vision backend the Linux E2E
 // build runs. Off macOS CLIP is unavailable (`encode_text_query` answers `NotAvailable`
 // and no image tower exists), so nothing in a shipped build encodes through here.
-#[cfg(any(test, all(feature = "playwright-e2e", not(target_os = "macos"))))]
+#[cfg(any(test, all(feature = "playwright-e2e", target_os = "linux")))]
 pub(crate) mod backend;
 pub mod install;
 #[cfg(target_os = "macos")]
@@ -49,7 +49,7 @@ use std::path::Path;
 pub(crate) fn set_data_dir(data_dir: &Path) {
     #[cfg(target_os = "macos")]
     macos::set_data_dir(data_dir);
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     let _ = data_dir;
 }
 
@@ -75,7 +75,7 @@ pub fn encode_text_query(query: &str) -> Result<Vec<f32>, ClipError> {
     {
         macos::encode_text(ids)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     {
         let _ = ids;
         Err(ClipError::NotAvailable)

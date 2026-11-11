@@ -40,7 +40,7 @@ pub(super) fn drain(walk: CoverWalk) -> (Vec<CoveredEntry>, CoverOutcome) {
 /// OS, so a hardcoded `/Volumes/…` would route back to `root`'s index on Linux.
 #[cfg(target_os = "macos")]
 const MOUNT_PREFIX: &str = "/Volumes";
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
 const MOUNT_PREFIX: &str = "/media";
 
 /// A share the index has never seen, driven through the public handle.

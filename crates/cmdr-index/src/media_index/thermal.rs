@@ -19,7 +19,7 @@
 /// [`Nominal`]: ThermalPressure::Nominal
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(
-    not(any(test, target_os = "macos")),
+    all(any(target_os = "linux", target_os = "windows"), not(test)),
     allow(
         dead_code,
         reason = "only the macOS `NSProcessInfo` probe reports anything above Nominal; the levels stay in the enum so the capping rule reads the same on every platform"
@@ -69,7 +69,7 @@ pub fn current_pressure() -> ThermalPressure {
 }
 
 /// Off macOS there is no thermal signal.
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 pub fn current_pressure() -> ThermalPressure {
     ThermalPressure::Nominal
 }

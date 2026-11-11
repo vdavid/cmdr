@@ -25,31 +25,31 @@ pub(crate) mod errno {
 
     // No OS hands the browser build an errno, so these only have to be names
     // that compile; Linux's values.
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const EACCES: i32 = 13;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const EPERM: i32 = 1;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const EINVAL: i32 = 22;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const ENOSYS: i32 = 38;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const ENOTTY: i32 = 25;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const ENOTSUP: i32 = 95;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const EOPNOTSUPP: i32 = 95;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const EROFS: i32 = 30;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const ENAMETOOLONG: i32 = 36;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const ENOSPC: i32 = 28;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const EDQUOT: i32 = 122;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const ENODEV: i32 = 19;
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     pub(crate) const ENXIO: i32 = 6;
 }
 
@@ -80,7 +80,7 @@ pub(crate) fn mode_of(permissions: &std::fs::Permissions) -> u32 {
         use std::os::unix::fs::PermissionsExt;
         permissions.mode()
     }
-    #[cfg(not(unix))]
+    #[cfg(any(windows, target_family = "wasm"))]
     {
         if permissions.readonly() { 0o444 } else { 0o644 }
     }
@@ -93,7 +93,7 @@ pub(crate) fn set_mode(path: &Path, mode: u32) -> std::io::Result<()> {
         use std::os::unix::fs::PermissionsExt;
         std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode))
     }
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     {
         let _ = (path, mode);
         Err(no_local_disk())
@@ -107,7 +107,7 @@ pub(crate) fn create_dir_with_mode(dir: &Path, mode: u32) -> std::io::Result<()>
         use std::os::unix::fs::DirBuilderExt;
         std::fs::DirBuilder::new().mode(mode).create(dir)
     }
-    #[cfg(not(unix))]
+    #[cfg(any(windows, target_family = "wasm"))]
     {
         let _ = mode;
         std::fs::create_dir(dir)
@@ -121,7 +121,7 @@ pub(crate) fn with_mode(options: &mut std::fs::OpenOptions, mode: u32) -> &mut s
         use std::os::unix::fs::OpenOptionsExt;
         options.mode(mode)
     }
-    #[cfg(not(unix))]
+    #[cfg(any(windows, target_family = "wasm"))]
     {
         let _ = mode;
         options
@@ -141,7 +141,7 @@ pub(crate) fn symlink(target: &Path, link: &Path) -> std::io::Result<()> {
     {
         std::os::unix::fs::symlink(target, link)
     }
-    #[cfg(not(unix))]
+    #[cfg(target_family = "wasm")]
     {
         let _ = (target, link);
         Err(no_local_disk())
@@ -209,7 +209,7 @@ pub(crate) fn mount_points() -> Option<Vec<std::path::PathBuf>> {
                 .collect()
         })
     }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    #[cfg(any(windows, target_family = "wasm"))]
     {
         None
     }
@@ -269,7 +269,7 @@ pub(crate) fn folder_volume(name: &str, root: impl Into<std::path::PathBuf>, hos
 }
 
 /// Every refusal a browser-build stand-in gives.
-#[cfg(not(unix))]
+#[cfg(target_family = "wasm")]
 fn no_local_disk() -> std::io::Error {
     std::io::Error::new(std::io::ErrorKind::Unsupported, "no local disk")
 }

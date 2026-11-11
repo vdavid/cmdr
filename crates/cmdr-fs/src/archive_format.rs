@@ -184,7 +184,7 @@ pub fn archive_boundary_candidates(path: &Path) -> impl Iterator<Item = (PathBuf
     // Byte-wise, because a path component is only required to be UTF-8 where the
     // extension check reads it: `to_str()` on the whole path would decline a
     // valid archive under a non-UTF-8 ancestor directory.
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(unix)]
     use std::os::unix::ffi::OsStrExt;
     #[cfg(target_family = "wasm")]
     use wasm_paths::OsStrExt;

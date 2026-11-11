@@ -415,7 +415,7 @@ fn os_version() -> String {
         let v = NSProcessInfo::processInfo().operatingSystemVersion();
         format!("{}.{}.{}", v.majorVersion, v.minorVersion, v.patchVersion)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     {
         "non-macos".to_string()
     }

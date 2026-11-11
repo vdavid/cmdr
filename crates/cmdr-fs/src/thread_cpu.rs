@@ -36,7 +36,7 @@ pub fn current_thread_cpu_time() -> Option<Duration> {
     {
         read_thread_cpu_time_macos()
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
     {
         None
     }

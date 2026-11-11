@@ -39,7 +39,7 @@
 use cmdr_local as _;
 //noinspection RsUnusedImport
 // Read by one space cell, which only the macOS test build compiles.
-#[cfg(all(test, not(target_os = "macos")))]
+#[cfg(all(test, target_os = "linux"))]
 use dirs as _;
 
 /// Whether this build takes the test fast paths: space from `statvfs` rather than
