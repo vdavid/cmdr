@@ -4,6 +4,7 @@ import type { WorkerCountryDay } from './funnel.js'
 import {
   bandsLabel,
   countryStackEntries,
+  countryChips,
   countrySeries,
   installCountryEntries,
   homebrewTint,
@@ -88,7 +89,7 @@ const se: WorkerCountryDay = {
 function data(rows: FunnelRow[], countries: Partial<FunnelData['countries']> = {}): FunnelData {
   return {
     rows,
-    countries: { top: ['SE', 'DE'], extra: null, umami: true, worker: true, ...countries },
+    countries: { top: ['SE', 'DE'], extra: null, umami: true, worker: true, breakdowns: false, ...countries },
     workerStatus: 'ok',
   }
 }
@@ -142,12 +143,69 @@ describe('rowsForCountry', () => {
     expect(rowsForCountry(data(rows), 'FR')[0]).toMatchObject({ visitors: null, newInstalls: 0 })
   })
 
+  it('fills the download breakdowns from the slice once the worker splits them by country', () => {
+    const withBreakdowns: WorkerCountryDay = {
+      ...se,
+      downloadsByRef: { hn: 4, '(none)': 2 },
+      downloadsByReferer: { 'github.com': 6 },
+      downloadsByUaFamily: { human: 5, bot: 1 },
+    }
+    const rows = rowsForCountry(
+      data([row('2026-11-01', { byCountry: { SE: { worker: withBreakdowns } } }), row('2026-11-02')], {
+        breakdowns: true,
+      }),
+      'SE',
+    )
+    expect(rows[0]).toMatchObject({
+      downloadsByRef: { hn: 4, '(none)': 2 },
+      downloadsByReferer: { 'github.com': 6 },
+      // The worker sends only the non-zero families; the row carries all three.
+      downloadsByUaFamily: { human: 5, bot: 1, unknown: 0 },
+    })
+    // No slice that day: a real empty day, not an unknown one.
+    expect(rows[1]).toMatchObject({
+      downloadsByRef: {},
+      downloadsByReferer: {},
+      downloadsByUaFamily: { human: 0, bot: 0, unknown: 0 },
+    })
+  })
+
   it('keeps a day the totals couldn’t answer unknown for the country too', () => {
     const rows = rowsForCountry(
       data([row('2026-11-01', { visitors: null, serverDownloads: null, newInstalls: null })]),
       'SE',
     )
     expect(rows[0]).toMatchObject({ visitors: null, serverDownloads: null, newInstalls: null })
+  })
+})
+
+describe('countryChips', () => {
+  const window = { start: '2026-11-02', end: '2026-11-03', current: true }
+  const rows = [
+    row('2026-11-01', { byCountry: { SE: { visitors: 100 } } }),
+    row('2026-11-02', { byCountry: { SE: { visitors: 2 }, DE: { visitors: 5 }, FR: { visitors: 1 } } }),
+    row('2026-11-03', { byCountry: { SE: { visitors: 2 }, FR: { visitors: 9 } } }),
+  ]
+
+  it('ranks the chips by visitors in the window in view, biggest first', () => {
+    // SE leads over 90 days (the 2026-11-01 spike), but not in this window.
+    expect(countryChips(data(rows, { extra: 'FR' }), window)).toEqual([
+      { code: 'FR', visitors: 10 },
+      { code: 'DE', visitors: 5 },
+      { code: 'SE', visitors: 4 },
+    ])
+  })
+
+  it('keeps the 90-day order on a tie', () => {
+    const tie = [row('2026-11-02', { byCountry: { SE: { visitors: 3 }, DE: { visitors: 3 } } })]
+    expect(countryChips(data(tie), window).map((c) => c.code)).toEqual(['SE', 'DE'])
+  })
+
+  it('shows no count and keeps the 90-day order when Umami didn’t answer per country', () => {
+    expect(countryChips(data(rows, { umami: false }), window)).toEqual([
+      { code: 'SE', visitors: null },
+      { code: 'DE', visitors: null },
+    ])
   })
 })
 

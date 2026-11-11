@@ -1,4 +1,4 @@
-import { resolveUaFamily } from '../user-agent'
+import { resolveUaFamily, type UaFamily } from '../user-agent'
 
 /**
  * The per-day funnel's contract (`FunnelDay`), the row sets its queries return (`FunnelRows`), and the
@@ -97,12 +97,22 @@ export interface RetentionSoFar {
   retained: number
 }
 
-/** One country's slice of a `FunnelDay`, every field meaning what the same-named `FunnelDay` one does. */
+/** A UA-family split with only its non-zero families: `{ bot: 3 }` means three bots, no humans or unknowns. */
+export type SparseUaFamilyCounts = Partial<Record<UaFamily, number>>
+
+/**
+ * One country's slice of a `FunnelDay`, every field meaning what the same-named `FunnelDay` one does. The
+ * three download breakdowns keep only non-zero entries and are absent on a slice with no downloads, since
+ * `byCountry` is most of the response (181–400 days × every country).
+ */
 export interface CountryDay {
   /** `FunnelDay.downloads` for this country. */
   serverDownloads: number
   humanInstalls: number
   downloadsBySource: { website: number; homebrew: number; other: number }
+  downloadsByRef?: Record<string, number>
+  downloadsByReferer?: Record<string, number>
+  downloadsByUaFamily?: SparseUaFamilyCounts
   newInstalls: number
   newInstallsByChannel: { homebrew: number; direct: number; unknown: number }
   d7Retained: number | null
@@ -122,12 +132,14 @@ export interface DownloadBySourceRow {
 export interface DownloadByRefRow {
   date: string
   ref: string
+  country: string | null
   count: number
 }
 
 export interface DownloadByRefererRow {
   date: string
   referer: string
+  country: string | null
   count: number
 }
 
@@ -175,24 +187,11 @@ export interface FunnelRows {
   retention: RetentionRow[]
 }
 
-/** Fold rows into one entry per day, created by `empty` and filled by `add`. The ref and referer breakdowns share it. */
-function byDay<Row extends { date: string }, Entry>(
-  rows: Row[],
-  empty: () => Entry,
-  add: (args: { entry: Entry; row: Row }) => void,
-): Map<string, Entry> {
-  const map = new Map<string, Entry>()
-  for (const row of rows) {
-    const entry = map.get(row.date) ?? empty()
-    add({ entry, row })
-    map.set(row.date, entry)
-  }
-  return map
-}
-
 /** One day's raw counts for one country, before any derivation. */
 interface Tally {
   bySource: { website: number; homebrew: number; other: number }
+  byRef: Record<string, number>
+  byReferer: Record<string, number>
   uaFamily: { human: number; bot: number; unknown: number }
   byChannel: { homebrew: number; direct: number; unknown: number }
   /** Installs of this day's cohort retained at each day offset the retention query read. */
@@ -202,10 +201,17 @@ interface Tally {
 function emptyTally(): Tally {
   return {
     bySource: { website: 0, homebrew: 0, other: 0 },
+    byRef: {},
+    byReferer: {},
     uaFamily: { human: 0, bot: 0, unknown: 0 },
     byChannel: { homebrew: 0, direct: 0, unknown: 0 },
     retained: new Map(),
   }
+}
+
+/** Add `count` under `key`. */
+function addTo(map: Record<string, number>, key: string, count: number): void {
+  map[key] = (map[key] ?? 0) + count
 }
 
 /** The tallies summed, so a day's own numbers are its country slices added up and can't drift from them. */
@@ -213,11 +219,20 @@ function sumTallies(tallies: Iterable<Tally>): Tally {
   const total = emptyTally()
   for (const tally of tallies) {
     for (const key of ['website', 'homebrew', 'other'] as const) total.bySource[key] += tally.bySource[key]
+    for (const [ref, count] of Object.entries(tally.byRef)) addTo(total.byRef, ref, count)
+    for (const [referer, count] of Object.entries(tally.byReferer)) addTo(total.byReferer, referer, count)
     for (const key of ['human', 'bot', 'unknown'] as const) total.uaFamily[key] += tally.uaFamily[key]
     for (const key of ['homebrew', 'direct', 'unknown'] as const) total.byChannel[key] += tally.byChannel[key]
     for (const [offset, count] of tally.retained) total.retained.set(offset, (total.retained.get(offset) ?? 0) + count)
   }
   return total
+}
+
+/** The UA-family split without its zero families. */
+function sparseUaFamily(counts: Tally['uaFamily']): SparseUaFamilyCounts {
+  const out: SparseUaFamilyCounts = {}
+  for (const key of ['human', 'bot', 'unknown'] as const) if (counts[key] > 0) out[key] = counts[key]
+  return out
 }
 
 /** Retention at one horizon: the known count and rate, or the tentative stand-in while the cohort is too young. */
@@ -267,10 +282,20 @@ function derive(tally: Tally, cohortAgeDays: number) {
 
 function countryDay(tally: Tally, cohortAgeDays: number): CountryDay {
   const { downloads, humanInstalls, installs, d7, d28 } = derive(tally, cohortAgeDays)
+  // Each breakdown query reads the same download rows, so with no downloads all three are empty.
+  const breakdowns =
+    downloads > 0
+      ? {
+          downloadsByRef: tally.byRef,
+          downloadsByReferer: tally.byReferer,
+          downloadsByUaFamily: sparseUaFamily(tally.uaFamily),
+        }
+      : {}
   return {
     serverDownloads: downloads,
     humanInstalls,
     downloadsBySource: tally.bySource,
+    ...breakdowns,
     newInstalls: installs,
     newInstallsByChannel: tally.byChannel,
     d7Retained: d7.retained,
@@ -299,6 +324,8 @@ function tallyRows(rows: FunnelRows): Map<string, Map<string, Tally>> {
     else if (row.source === 'homebrew') bySource.homebrew += row.count
     else bySource.other += row.count
   }
+  for (const row of rows.downloadsByRef) addTo(tally(row.date, row.country).byRef, row.ref, row.count)
+  for (const row of rows.downloadsByReferer) addTo(tally(row.date, row.country).byReferer, row.referer, row.count)
   for (const row of rows.downloadsByUa) tally(row.date, row.country).uaFamily[resolveUaFamily(row)] += row.count
   for (const row of rows.installsByChannel) {
     const { byChannel } = tally(row.date, row.country)
@@ -326,20 +353,6 @@ export function assembleFunnel(
   signupsByDay: Map<string, number> | null,
   now: Date,
 ): FunnelDay[] {
-  const refMap = byDay(
-    rows.downloadsByRef,
-    (): Record<string, number> => ({}),
-    ({ entry, row }) => {
-      entry[row.ref] = (entry[row.ref] ?? 0) + row.count
-    },
-  )
-  const refererMap = byDay(
-    rows.downloadsByReferer,
-    (): Record<string, number> => ({}),
-    ({ entry, row }) => {
-      entry[row.referer] = (entry[row.referer] ?? 0) + row.count
-    },
-  )
   const dauMap = new Map(rows.dau.map((r) => [r.date, r.dau]))
   const tallies = tallyRows(rows)
   const todayUtcMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
@@ -356,8 +369,8 @@ export function assembleFunnel(
       date,
       downloads,
       downloadsBySource: total.bySource,
-      downloadsByRef: refMap.get(date) ?? {},
-      downloadsByReferer: refererMap.get(date) ?? {},
+      downloadsByRef: total.byRef,
+      downloadsByReferer: total.byReferer,
       downloadsByUaFamily: total.uaFamily,
       humanInstalls,
       newInstalls: installs,

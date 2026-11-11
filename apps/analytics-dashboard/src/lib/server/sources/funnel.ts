@@ -120,6 +120,8 @@ export interface FunnelCountries {
   umami: boolean
   /** Whether the worker sends per-country facts (`byCountry`); an older worker doesn't. */
   worker: boolean
+  /** Whether those slices carry the download breakdowns (ref, referer, UA family) behind the pies. */
+  breakdowns: boolean
 }
 
 export interface FunnelData {
@@ -232,6 +234,11 @@ export interface WorkerFunnel {
   hasTrendFields: boolean
   /** Whether this worker carries the per-country split (`byCountry`). */
   hasCountries: boolean
+  /**
+   * Whether its slices carry the download breakdowns. They're absent on a slice with no downloads, so only
+   * a response where no slice has one is an older worker.
+   */
+  hasCountryBreakdowns: boolean
   /** Whether this worker carries D28 (`d28Retained`, `d28SoFar`). */
   hasD28: boolean
 }
@@ -357,6 +364,9 @@ export function indexWorkerFunnel(rows: WorkerFunnelDay[], requestedSince: strin
     since: rows.length > 0 && rows[0].date > requestedSince ? rows[0].date : requestedSince,
     hasTrendFields: rows.some((r) => r.newInstallsByChannel !== undefined),
     hasCountries: rows.some((r) => r.byCountry !== undefined),
+    hasCountryBreakdowns: rows.some((r) =>
+      Object.values(r.byCountry ?? {}).some((c) => c.downloadsByRef !== undefined),
+    ),
     hasD28: rows.some((r) => r.d28SoFar !== undefined || r.d28Retained !== undefined),
   }
 }
@@ -415,7 +425,7 @@ export async function fetchFunnelData(
 
 async function fetchFunnelBase(env: FunnelEnv, days: number): Promise<SourceResult<FunnelData>> {
   const cacheKey = `days:${String(days)}`
-  const cached = await cacheGet<FunnelData>('funnel-v3', cacheKey)
+  const cached = await cacheGet<FunnelData>('funnel-v4', cacheKey)
   if (cached) return { ok: true, data: cached }
 
   const now = new Date()
@@ -440,7 +450,7 @@ async function fetchFunnelBase(env: FunnelEnv, days: number): Promise<SourceResu
   }
 
   const data = assembleFunnelData(dates, rankingSince, worker, umami, purchases)
-  await cacheSet('funnel-v3', cacheKey, data)
+  await cacheSet('funnel-v4', cacheKey, data)
   return { ok: true, data }
 }
 
@@ -462,10 +472,17 @@ export function assembleFunnelData(
     countries: top,
     countryUmami: umami?.byCountry ?? null,
   })
+  return { rows, countries: funnelCountries(top, worker, umami), workerStatus: worker ? 'ok' : 'unavailable' }
+}
+
+/** Which countries carry a slice, and which sides answered per country. */
+function funnelCountries(top: string[], worker: WorkerFunnel | null, umami: UmamiFunnel | null): FunnelCountries {
   return {
-    rows,
-    countries: { top, extra: null, umami: Boolean(umami?.byCountry), worker: worker?.hasCountries ?? false },
-    workerStatus: worker ? 'ok' : 'unavailable',
+    top,
+    extra: null,
+    umami: Boolean(umami?.byCountry),
+    worker: worker?.hasCountries ?? false,
+    breakdowns: worker?.hasCountryBreakdowns ?? false,
   }
 }
 
@@ -479,7 +496,7 @@ async function fetchExtraCountry(
   days: number,
 ): Promise<Map<string, Record<string, CountrySlice>>> {
   type Cached = [string, Record<string, CountrySlice>][]
-  const cached = await cacheGet<Cached>('funnel-extra-v1', `days:${String(days)}`, `country=${country}`)
+  const cached = await cacheGet<Cached>('funnel-extra-v2', `days:${String(days)}`, `country=${country}`)
   if (cached) return new Map(cached)
 
   const now = new Date()
@@ -493,7 +510,7 @@ async function fetchExtraCountry(
     })().catch(() => null),
   ])
   const byDay: Cached = dates.map((date) => [date, countrySlices([country], date, worker.byDay.get(date), umami)])
-  await cacheSet('funnel-extra-v1', `days:${String(days)}`, byDay, `country=${country}`)
+  await cacheSet('funnel-extra-v2', `days:${String(days)}`, byDay, `country=${country}`)
   return new Map(byDay)
 }
 

@@ -3,6 +3,7 @@ import {
   aggregateChannels,
   aggregateReferers,
   aggregateUaFamilies,
+  assembleFunnelData,
   assembleFunnelRows,
   buildFunnelDateList,
   indexWorkerFunnel,
@@ -213,6 +214,8 @@ describe('D28 and per-country worker fields', () => {
     )
     expect(worker.hasCountries).toBe(true)
     expect(worker.hasD28).toBe(true)
+    // None of the slices carries a download breakdown: a worker from before they were split by country.
+    expect(worker.hasCountryBreakdowns).toBe(false)
     const umami = new Map([
       ['SE', { visitors: new Map([['2026-06-11', 9]]), pageviews: new Map([['2026-06-11', 12]]), clicks: new Map() }],
       ['DE', { visitors: new Map(), pageviews: new Map(), clicks: new Map() }],
@@ -230,6 +233,21 @@ describe('D28 and per-country worker fields', () => {
     // SE has both sides; DE had nothing that day, so it's absent; HU and (unknown) weren't asked for.
     expect(rows[0].byCountry).toEqual({ SE: { visitors: 9, pageviews: 12, worker: se } })
     expect(rows[1].byCountry).toEqual({})
+  })
+
+  it('tells a worker that splits the download breakdowns by country from one that doesn’t', () => {
+    const withBreakdowns = { ...se, downloadsByRef: { hn: 2 }, downloadsByUaFamily: { human: 2 } }
+    const worker = indexWorkerFunnel(
+      [
+        { date: '2026-06-10', ...base, byCountry: { SE: se } },
+        { date: '2026-06-11', ...base, byCountry: { SE: withBreakdowns } },
+      ],
+      '2026-06-10',
+    )
+    expect(worker.hasCountryBreakdowns).toBe(true)
+    const data = assembleFunnelData(['2026-06-10', '2026-06-11'], '2026-06-10', worker, null, null)
+    expect(data.countries.breakdowns).toBe(true)
+    expect(data.rows[1].byCountry.SE.worker).toEqual(withBreakdowns)
   })
 })
 

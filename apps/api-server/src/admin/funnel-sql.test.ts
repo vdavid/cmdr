@@ -156,7 +156,9 @@ describe('the per-day funnel queries against real SQLite', () => {
     for (const set of [rows.downloadsByRef, rows.downloadsByReferer, rows.downloadsByUa]) {
       expect(set.reduce((sum, r) => sum + r.count, 0)).toBe(2)
     }
-    expect(rows.downloadsByUa.every((r) => r.country === 'SE')).toBe(true)
+    for (const set of [rows.downloadsByRef, rows.downloadsByReferer, rows.downloadsByUa]) {
+      expect(set.every((r) => r.country === 'SE')).toBe(true)
+    }
   })
 })
 
@@ -179,6 +181,15 @@ describe('the per-day funnel assembled from real SQLite', () => {
       for (const source of ['website', 'homebrew', 'other'] as const) {
         expect(sum(day, (c) => c.downloadsBySource[source])).toBe(day.downloadsBySource[source])
       }
+      for (const family of ['human', 'bot', 'unknown'] as const) {
+        expect(sum(day, (c) => c.downloadsByUaFamily?.[family] ?? null)).toBe(day.downloadsByUaFamily[family])
+      }
+      for (const [ref, count] of Object.entries(day.downloadsByRef)) {
+        expect(sum(day, (c) => c.downloadsByRef?.[ref] ?? null)).toBe(count)
+      }
+      for (const [referer, count] of Object.entries(day.downloadsByReferer)) {
+        expect(sum(day, (c) => c.downloadsByReferer?.[referer] ?? null)).toBe(count)
+      }
       expect(sum(day, (c) => c.newInstalls)).toBe(day.newInstalls)
       for (const channel of ['homebrew', 'direct', 'unknown'] as const) {
         expect(sum(day, (c) => c.newInstallsByChannel[channel])).toBe(day.newInstallsByChannel[channel])
@@ -198,6 +209,9 @@ describe('the per-day funnel assembled from real SQLite', () => {
         serverDownloads: 1,
         humanInstalls: 0,
         downloadsBySource: { website: 1, homebrew: 0, other: 0 },
+        downloadsByRef: { '(none)': 1 },
+        downloadsByReferer: { '(none)': 1 },
+        downloadsByUaFamily: { bot: 1 },
         newInstalls: 1,
         newInstallsByChannel: { homebrew: 1, direct: 0, unknown: 0 },
         d7Retained: 1,
@@ -209,6 +223,9 @@ describe('the per-day funnel assembled from real SQLite', () => {
         serverDownloads: 1,
         humanInstalls: 1,
         downloadsBySource: { website: 1, homebrew: 0, other: 0 },
+        downloadsByRef: { '(none)': 1 },
+        downloadsByReferer: { '(none)': 1 },
+        downloadsByUaFamily: { human: 1 },
         newInstalls: 1,
         newInstallsByChannel: { homebrew: 0, direct: 1, unknown: 0 },
         d7Retained: 0,
@@ -223,6 +240,8 @@ describe('the per-day funnel assembled from real SQLite', () => {
     const day = (await funnelDays()).find((d) => d.date === '2026-06-20')
     expect(day).toMatchObject({ d28Retained: null, d28Retention: null, d28SoFar: { day: 19, retained: 1 } })
     expect(day?.byCountry.SE).toMatchObject({ d28Retained: null, d28SoFar: { day: 19, retained: 1 } })
+    // No downloads that day, so the slice carries no download breakdowns.
+    expect(day?.byCountry.SE).not.toHaveProperty('downloadsByRef')
   })
 
   it('omits a country with nothing that day', async () => {

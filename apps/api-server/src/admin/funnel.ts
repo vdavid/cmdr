@@ -15,7 +15,7 @@ import {
 } from './funnel-assemble'
 
 export { assembleFunnel, normalizeCountry, unknownCountry } from './funnel-assemble'
-export type { CountryDay, FunnelDay, FunnelRows, RetentionSoFar } from './funnel-assemble'
+export type { CountryDay, FunnelDay, FunnelRows, RetentionSoFar, SparseUaFamilyCounts } from './funnel-assemble'
 
 /**
  * Per-day acquisition funnel for the analytics dashboard. One admin endpoint returns a per-UTC-day
@@ -116,7 +116,7 @@ async function queryDownloadsBySource(
  * Homebrew, direct links, return visits in a later session, and rows written before migration 0009;
  * those COALESCE to the `"(none)"` bucket so the dashboard renders them as a single "no ref" channel
  * (consistent with how it shows other unknowns). The value was already sanitized at write time, so
- * grouping is on the stored value as-is.
+ * grouping is on the stored value as-is. Grouped by country too, for `CountryDay.downloadsByRef`.
  */
 async function queryDownloadsByRef(
   db: D1Database,
@@ -125,10 +125,10 @@ async function queryDownloadsByRef(
 ): Promise<DownloadByRefRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT date(created_at) AS date, COALESCE(ref, '(none)') AS ref, COUNT(*) AS count
+      `SELECT date(created_at) AS date, COALESCE(ref, '(none)') AS ref, country, COUNT(*) AS count
          FROM downloads
          WHERE date(created_at) >= ?1 AND (?2 IS NULL OR country = ?2)
-         GROUP BY date, ref`,
+         GROUP BY date, ref, country`,
     )
     .bind(sinceDate, country)
     .all<DownloadByRefRow>()
@@ -141,7 +141,7 @@ async function queryDownloadsByRef(
  * Homebrew/curl) and for rows before migration 0010; those COALESCE to the `"(none)"` bucket. The host
  * was already sanitized at write time, so grouping is on the stored value as-is. This is a separate
  * signal from `ref`: `ref` is the website's first-touch attribution; `referer` is the raw request host,
- * which is what reveals where the direct (no-`ref`) downloads came from.
+ * which is what reveals where the direct (no-`ref`) downloads came from. Grouped by country too.
  */
 async function queryDownloadsByReferer(
   db: D1Database,
@@ -150,10 +150,10 @@ async function queryDownloadsByReferer(
 ): Promise<DownloadByRefererRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT date(created_at) AS date, COALESCE(referer, '(none)') AS referer, COUNT(*) AS count
+      `SELECT date(created_at) AS date, COALESCE(referer, '(none)') AS referer, country, COUNT(*) AS count
          FROM downloads
          WHERE date(created_at) >= ?1 AND (?2 IS NULL OR country = ?2)
-         GROUP BY date, referer`,
+         GROUP BY date, referer, country`,
     )
     .bind(sinceDate, country)
     .all<DownloadByRefererRow>()

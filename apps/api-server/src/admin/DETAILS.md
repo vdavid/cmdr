@@ -125,12 +125,16 @@ Per-day columns and how each is derived:
   offsets it returns are 7, 28, and age − 1, nothing else.
 - `byCountry` (`Record<country, CountryDay>`): the day sliced per country, for the dashboard's instant country filter.
   Keys are ISO-2 or `"(unknown)"` (`normalizeCountry`), and a country with nothing that day is absent. `CountryDay` is
-  `{ serverDownloads, humanInstalls, downloadsBySource, newInstalls, newInstallsByChannel, d7Retained, d28Retained, retentionSoFar, d28SoFar }`,
+  `{ serverDownloads, humanInstalls, downloadsBySource, downloadsByRef?, downloadsByReferer?, downloadsByUaFamily?, newInstalls, newInstallsByChannel, d7Retained, d28Retained, retentionSoFar, d28SoFar }`,
   each with the top-level field's meaning and null rules; rates are left to the dashboard (sum the counts, then divide).
-  A download counts under its own country, an install under its first beat's. **The slices sum to the day by
-  construction**: the download, install, and retention queries are grouped by country too, and `assembleFunnel` builds
-  the day's own numbers by summing the slices (`funnel-sql.test.ts` asserts the invariant). That grouping is what keeps
-  it at the same seven queries; ❌ never a query per country.
+  The three download breakdowns are sparse to keep the response small (`byCountry` is most of it, about 1.1 MB at 181
+  days with the slices alone, measured 2026-11-11): only non-zero entries (`downloadsByUaFamily` is `{ bot: 3 }`, not
+  three keys), and absent on a slice with no downloads. A reader treats an absent breakdown as empty once any slice in
+  the response carries one; a response where none does is an older Worker. A download counts under its own country, an
+  install under its first beat's. **The slices sum to the day by construction**: the download (source, ref, referer,
+  UA), install, and retention queries are grouped by country too, and `assembleFunnel` builds the day's own numbers by
+  summing the slices (`funnel-sql.test.ts` asserts the invariant). That grouping is what keeps it at the same seven
+  queries; ❌ never a query per country.
 - `newsletterSignups`: Listmonk subscribers (newsletter list `LISTMONK_NEWSLETTER_LIST_ID`, default 3, **plus** beta
   list `LISTMONK_BETA_LIST_ID`) whose `created_at` falls on that UTC day, via one read-only
   `GET /api/subscribers?query=...` filtered by `created_at >= sinceDate`, paginated, then bucketed in code. Caveat:

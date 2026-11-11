@@ -3,12 +3,14 @@
  * `FunnelData` the page loads, so switching the country chips never asks the server again.
  *
  * - `rowsForCountry`: the funnel rows as one country saw them, from the sparse per-day slices.
+ * - `countryChips`: the filter's chips ranked by visitors in the window in view.
  * - `stackByCountry` / `installSplit`: the country-stacked bars, with the rest as "Other" (total minus the
  *   named countries), so a stack always sums to the day's total.
  */
 import type { FunnelData, FunnelRow } from '#lib/server/sources/funnel.js'
 import type { DownloadsBySource, InstallsByChannel, WorkerCountryDay } from './funnel.js'
 import type { BreakdownEntry, ColumnSeries, RateBands } from './daily-chart.js'
+import type { ViewWindow } from './time-range.js'
 import { COLOR_OTHER_COUNTRIES, countryColor, tint } from './country-colors.js'
 import { formatCountry, formatNumber } from './format.js'
 
@@ -105,24 +107,24 @@ export type Channel = (typeof channels)[number]
 /**
  * The funnel rows as `code` saw them. A side counts a missing slice as a real 0 only when it answered per
  * country at all (and, for Umami, was asked about `code`); otherwise that side is `null`. A day the totals
- * couldn't answer stays unknown. Fields nothing splits by country (refs, UA families, signups, purchases)
- * are `null`.
+ * couldn't answer stays unknown. The download breakdowns (refs, referers, UA families) are `null` on a worker
+ * that doesn't split them by country; signups and purchases have no country, so they're always `null`.
  */
 export function rowsForCountry(data: FunnelData, code: string): FunnelRow[] {
   const umamiAsked = data.countries.umami && (data.countries.top.includes(code) || data.countries.extra === code)
+  const { breakdowns } = data.countries
   return data.rows.map((r): FunnelRow => {
     const slice = r.byCountry[code] ?? {}
     const umami = (total: number | null, value: number | undefined) =>
       umamiAsked && total !== null ? (value ?? 0) : null
+    const workerKnown = data.countries.worker && r.serverDownloads !== null
     return {
       date: r.date,
       visitors: umami(r.visitors, slice.visitors),
       pageviews: umami(r.pageviews, slice.pageviews),
       downloadClicks: umami(r.downloadClicks, slice.downloadClicks),
-      ...(data.countries.worker && r.serverDownloads !== null ? workerColumns(r, slice.worker) : unknownWorker),
-      downloadsByRef: null,
-      downloadsByReferer: null,
-      downloadsByUaFamily: null,
+      ...(workerKnown ? workerColumns(r, slice.worker) : unknownWorker),
+      ...(workerKnown && breakdowns ? breakdownColumns(slice.worker) : unknownBreakdowns),
       newsletterSignups: null,
       purchases: null,
       byCountry: {},
@@ -180,9 +182,50 @@ function workerColumns(total: FunnelRow, slice: WorkerCountryDay | undefined): W
   }
 }
 
-/** A country with nothing that day (the worker omits it). */
+type BreakdownColumns = Pick<FunnelRow, 'downloadsByRef' | 'downloadsByReferer' | 'downloadsByUaFamily'>
+
+const unknownBreakdowns: BreakdownColumns = {
+  downloadsByRef: null,
+  downloadsByReferer: null,
+  downloadsByUaFamily: null,
+}
+
+/** One country's download breakdowns: the worker sends them sparse, and drops them on a day with no downloads. */
+function breakdownColumns(slice: WorkerCountryDay | undefined): BreakdownColumns {
+  const ua = slice?.downloadsByUaFamily ?? {}
+  return {
+    downloadsByRef: slice?.downloadsByRef ?? {},
+    downloadsByReferer: slice?.downloadsByReferer ?? {},
+    downloadsByUaFamily: { human: ua.human ?? 0, bot: ua.bot ?? 0, unknown: ua.unknown ?? 0 },
+  }
+}
+
+/** A chip of the country filter: a country and its visitors in the window in view (`null`: Umami couldn't say). */
+export interface CountryChip {
+  code: string
+  visitors: number | null
+}
+
+/**
+ * The country chips (`top`, then `extra`), ranked by visitors over `window`, biggest first; a tie keeps the
+ * 90-day order. Without per-country Umami numbers, the chips keep that order and carry no count.
+ */
+export function countryChips(data: FunnelData, window: ViewWindow): CountryChip[] {
+  const { top, extra, umami } = data.countries
+  const codes = extra ? [...top, extra] : top
+  if (!umami) return codes.map((code) => ({ code, visitors: null }))
+  const inView = data.rows.filter((r) => r.date >= window.start && r.date <= window.end && r.visitors !== null)
+  const chips = codes.map((code) => ({
+    code,
+    visitors: inView.length > 0 ? inView.reduce((sum, r) => sum + ((r.byCountry[code] ?? {}).visitors ?? 0), 0) : null,
+  }))
+  // `toSorted` is stable, so equal counts keep the 90-day order.
+  return chips.toSorted((a, b) => (b.visitors ?? 0) - (a.visitors ?? 0))
+}
+
+/** A country with nothing that day (the worker omits it). The breakdowns have their own defaults (`breakdownColumns`). */
 const emptyCountryDay: {
-  [K in keyof WorkerCountryDay]-?: Exclude<WorkerCountryDay[K], undefined>
+  [K in Exclude<keyof WorkerCountryDay, keyof BreakdownColumns>]-?: Exclude<WorkerCountryDay[K], undefined>
 } & { downloadsBySource: DownloadsBySource; newInstallsByChannel: InstallsByChannel } = {
   serverDownloads: 0,
   humanInstalls: 0,

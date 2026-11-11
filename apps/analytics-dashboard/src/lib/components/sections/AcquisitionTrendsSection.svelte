@@ -22,6 +22,7 @@
     import { safeRatio } from '#lib/acquisition-countries.js'
     import {
         bandsLabel,
+        countryChips,
         countryLabel,
         countrySeries,
         countryStackEntries,
@@ -72,8 +73,10 @@
     const tentativeColor = '#8a8a93'
 
     const data = $derived(funnel.ok ? funnel.data : null)
-    const countries = $derived(data?.countries ?? { top: [], extra: null, umami: false, worker: false })
+    const countries = $derived(data?.countries ?? { top: [], extra: null, umami: false, worker: false, breakdowns: false })
     const chips = $derived(countries.extra ? [...countries.top, countries.extra] : countries.top)
+    /** The chips in display order: by visitors over the window in view, each with that count. */
+    const rankedChips = $derived(data ? countryChips(data, shown) : [])
     /** The rows the charts and stats read: the totals, or one country's. */
     const rows = $derived(data ? (country ? rowsForCountry(data, country) : data.rows) : [])
     /** Each top country's rows, for the country stacks (only drawn for all countries). */
@@ -321,7 +324,7 @@
 
     <!-- Country filter: re-scopes every chart and stat below, in the browser -->
     <div class="mb-2 flex flex-wrap gap-1.5" role="group" aria-label="Filter by country">
-        {#each [null, ...chips] as code (code ?? 'all')}
+        {#each [{ code: null, visitors: null }, ...rankedChips] as { code, visitors } (code ?? 'all')}
             {@const selected = country === code}
             <button
                 type="button"
@@ -333,7 +336,7 @@
             >
                 {#if code}
                     <span class="inline-block size-2 rounded-full" style="background-color: {countryColor(code)};"></span>
-                    {formatCountry(code)}
+                    {formatCountry(code)}{visitors === null ? '' : ` - ${formatNumber(visitors)}`}
                 {:else}
                     All
                 {/if}
@@ -491,7 +494,9 @@
         <!-- Where the range's server downloads came from: three pies over the charts' window -->
         {@const breakdownReason =
             workerReason ??
-            (country ? "Not available for one country: the api-server doesn't split these by country." : null)}
+            (country && !countries.breakdowns
+                ? "Not available yet for one country: the live api-server doesn't split these by country until its update lands."
+                : null)}
         <div class="grid grid-cols-1 gap-6 border-t border-border-subtle py-5 md:grid-cols-3">
             {#each breakdowns as b (b.title)}
                 <div class="min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-6">

@@ -258,8 +258,8 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
   report's daily funnel (181 days, or 400 for a deep stepped-back window), joining `/admin/funnel` with Umami per-day
   visitors, pageviews, and clicks, and Paddle purchases, plus per-country slices for the top 20 (§ "Acquisition
   trends"). Per-day `downloadsByRef`, `downloadsByReferer`, and `downloadsByUaFamily` feed the three pies (rolled up by
-  `aggregateChannels` / `aggregateReferers` / `aggregateUaFamilies` in `#lib/funnel.ts`). Cache: `funnel-v3` once for
-  everyone per fetch length, `funnel-extra-v1` per non-top `?country=`.
+  `aggregateChannels` / `aggregateReferers` / `aggregateUaFamilies` in `#lib/funnel.ts`). Cache: `funnel-v4` once for
+  everyone per fetch length, `funnel-extra-v2` per non-top `?country=`.
 - `funnel-countries.ts` (Bearer + Umami): the per-country map and table over the selection's window (`days` = 7/30/90,
   plus `end` for a past one, cached per window as `funnel-countries-v2`). Three parallel calls: Umami
   `metrics?type=country` for visitors, Umami `/events?event=download` (paginated, 1,000 a page) tallied by each row's
@@ -434,6 +434,10 @@ columns ending today.
   view. ❌ `page.url` doesn't follow a shallow navigation, so code that rebuilds the URL (the picker, `countryHref`)
   reads `window.location`. A `?country=` outside the top 20 (a link from the country table) is a normal load: the server
   adds that country's slices (`countries.extra`, cached on its own).
+- **Chips**: "All" first, then the top 20 (plus `extra`) ranked by visitors over the window in view, each reading "dot,
+  name (code) - visitors" (David's format, 2026-11-11). `countryChips` sums the slices' visitors over `viewWindow`, so
+  the order and counts follow the picker and ‹ ›, while the set stays the 90-day top 20. Without per-country Umami the
+  chips keep the 90-day order and show no count.
 - **Country stacks.** For all countries, visitors and clicks stack the top 20 plus grey "Other" (total minus their sum,
   so a stack always sums to the day's total; `stackByCountry`). A country segment shorter than 4px (`foldBelowPx`) draws
   as part of "Other" that day (its channel's "Other" in the split bar), so a bar holds only readable slices; the tooltip
@@ -460,8 +464,11 @@ columns ending today.
   carries a top-level snippet.
 - **Download breakdown pies** (Channels, Download referrers, Downloads by client), in one row of three 1/3 cards under
   the clicks chart (one column below `md`). They sum the funnel rows' per-day maps over the charts' window, so the
-  country filter re-slices in the browser with no new fetch. Filtered to one country they say "Not available for one
-  country": the worker's per-country slice carries none of the three maps.
+  country filter re-slices in the browser with no new fetch: `rowsForCountry` fills the three maps from the slice's
+  `downloadsByRef` / `downloadsByReferer` / `downloadsByUaFamily`. The worker sends those sparse (non-zero entries only,
+  absent on a day with no downloads, `apps/api-server/src/admin/DETAILS.md` § "Per-day funnel"), so an absent one is a
+  real empty day once `countries.breakdowns` says the worker splits them at all; without it, a country view says "Not
+  available yet for one country".
   - `foldSlices` (`#lib/pie-slices.ts`) ranks the slices, names at most four colored ones at 3% or more, and folds the
     rest into "Other" (a lone would-be fold stays named). Neutral keys (`(none)`, `unknown`) wear the unknown grey and
     don't use a hue; "Other" is a lighter grey (`COLOR_PIE_OTHER`) so the two read apart.

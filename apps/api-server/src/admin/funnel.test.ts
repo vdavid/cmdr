@@ -273,9 +273,10 @@ describe('assembleFunnel', () => {
       ['2026-06-11', '2026-06-12'],
       funnelRows({
         downloadsByRef: [
-          { date: '2026-06-11', ref: 'hn', count: 4 },
-          { date: '2026-06-11', ref: '(none)', count: 2 },
-          { date: '2026-06-12', ref: 'reddit', count: 1 },
+          { date: '2026-06-11', ref: 'hn', country: 'SE', count: 3 },
+          { date: '2026-06-11', ref: 'hn', country: null, count: 1 },
+          { date: '2026-06-11', ref: '(none)', country: null, count: 2 },
+          { date: '2026-06-12', ref: 'reddit', country: null, count: 1 },
         ],
       }),
       null,
@@ -290,9 +291,10 @@ describe('assembleFunnel', () => {
       ['2026-06-11', '2026-06-12'],
       funnelRows({
         downloadsByReferer: [
-          { date: '2026-06-11', referer: 'alternativeto.net', count: 5 },
-          { date: '2026-06-11', referer: '(none)', count: 3 },
-          { date: '2026-06-12', referer: 'github.com', count: 2 },
+          { date: '2026-06-11', referer: 'alternativeto.net', country: 'US', count: 4 },
+          { date: '2026-06-11', referer: 'alternativeto.net', country: 'DE', count: 1 },
+          { date: '2026-06-11', referer: '(none)', country: null, count: 3 },
+          { date: '2026-06-12', referer: 'github.com', country: null, count: 2 },
         ],
       }),
       null,
@@ -505,6 +507,17 @@ describe('assembleFunnel', () => {
           { date: '2026-06-04', country: 'XX', uaFamily: 'human', userAgent: null, count: 1 },
           { date: '2026-06-04', country: 'unknown', uaFamily: 'unknown', userAgent: null, count: 2 },
         ],
+        downloadsByRef: [
+          { date: '2026-06-04', country: 'SE', ref: 'hn', count: 2 },
+          { date: '2026-06-04', country: 'SE', ref: '(none)', count: 1 },
+          { date: '2026-06-04', country: 'XX', ref: '(none)', count: 1 },
+          { date: '2026-06-04', country: 'unknown', ref: 'reddit', count: 2 },
+        ],
+        downloadsByReferer: [
+          { date: '2026-06-04', country: 'SE', referer: 'github.com', count: 3 },
+          { date: '2026-06-04', country: 'XX', referer: '(none)', count: 1 },
+          { date: '2026-06-04', country: null, referer: '(none)', count: 2 },
+        ],
         installsByChannel: [
           { date: '2026-06-04', country: 'SE', channel: 'homebrew', count: 2 },
           { date: '2026-06-04', country: null, channel: 'direct', count: 1 },
@@ -523,6 +536,9 @@ describe('assembleFunnel', () => {
         serverDownloads: 3,
         humanInstalls: 0,
         downloadsBySource: { website: 3, homebrew: 0, other: 0 },
+        downloadsByRef: { hn: 2, '(none)': 1 },
+        downloadsByReferer: { 'github.com': 3 },
+        downloadsByUaFamily: { bot: 3 },
         newInstalls: 2,
         newInstallsByChannel: { homebrew: 2, direct: 0, unknown: 0 },
         d7Retained: 1,
@@ -534,6 +550,9 @@ describe('assembleFunnel', () => {
         serverDownloads: 3,
         humanInstalls: 3,
         downloadsBySource: { website: 2, homebrew: 1, other: 0 },
+        downloadsByRef: { '(none)': 1, reddit: 2 },
+        downloadsByReferer: { '(none)': 3 },
+        downloadsByUaFamily: { human: 1, unknown: 2 },
         newInstalls: 1,
         newInstallsByChannel: { homebrew: 0, direct: 1, unknown: 0 },
         d7Retained: 1,
@@ -547,11 +566,27 @@ describe('assembleFunnel', () => {
       humanInstalls: 3,
       downloadsBySource: { website: 5, homebrew: 1, other: 0 },
       downloadsByUaFamily: { human: 1, bot: 3, unknown: 2 },
+      downloadsByRef: { hn: 2, '(none)': 2, reddit: 2 },
+      downloadsByReferer: { 'github.com': 3, '(none)': 3 },
       newInstalls: 3,
       d7Retained: 2,
       d7Retention: 2 / 3,
       d28SoFar: { day: 7, retained: 2 },
     })
+  })
+
+  it('leaves the download breakdowns off a slice with no downloads, to keep the response small', () => {
+    const rows = assembleFunnel(
+      ['2026-06-04'],
+      funnelRows({ installsByChannel: [{ date: '2026-06-04', country: 'SE', channel: 'direct', count: 1 }] }),
+      null,
+      now,
+    )
+    const slice = rows[0].byCountry.SE
+    expect(slice.newInstalls).toBe(1)
+    expect(slice).not.toHaveProperty('downloadsByRef')
+    expect(slice).not.toHaveProperty('downloadsByReferer')
+    expect(slice).not.toHaveProperty('downloadsByUaFamily')
   })
 
   it('leaves byCountry empty for a day with nothing in it', () => {

@@ -110,6 +110,13 @@ export interface WorkerCountryDay {
   serverDownloads: number
   humanInstalls: number
   downloadsBySource?: DownloadsBySource
+  /**
+   * The three download breakdowns, sparse: only non-zero entries, and absent on a day with no downloads (or
+   * on a worker from before they were split by country, which `FunnelCountries.breakdowns` tells apart).
+   */
+  downloadsByRef?: Record<string, number>
+  downloadsByReferer?: Record<string, number>
+  downloadsByUaFamily?: Partial<UaFamilyCounts>
   newInstalls: number
   newInstallsByChannel?: InstallsByChannel
   d7Retained: number | null

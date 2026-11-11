@@ -96,7 +96,7 @@ const richData: DashboardData = {
           byCountry: {},
         },
       ],
-      countries: { top: [], extra: null, umami: false, worker: false },
+      countries: { top: [], extra: null, umami: false, worker: false, breakdowns: false },
       workerStatus: 'ok',
     },
   },
@@ -374,7 +374,11 @@ const emptyData: DashboardData = {
   updatedAt: '2026-08-02T03:04:05.000Z',
   funnel: {
     ok: true,
-    data: { rows: [], countries: { top: [], extra: null, umami: false, worker: false }, workerStatus: 'ok' },
+    data: {
+      rows: [],
+      countries: { top: [], extra: null, umami: false, worker: false, breakdowns: false },
+      workerStatus: 'ok',
+    },
   },
   umami: {
     ok: true,
