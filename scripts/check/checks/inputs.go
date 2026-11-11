@@ -62,10 +62,12 @@ var agentDocExclusions = []string{
 //     blocks, `fingerprint.go` + `cache.go` + `runner-sources.go` the cache
 //     itself, `common.go` the context and process handling every check runs
 //     through, and `test-log.go` the per-test record every lane records into.
+//     `procgroup_*.go` are common.go's per-OS process-group arms.
 //     `fixture-stacks.go`, `smb_ports.go`, `sftp_ports.go`, `webdav_ports.go`,
 //     `s3_ports.go`, and `nfs_ports.go` are the fixture vocabulary and the port
 //     env the orchestrator applies before any lane runs.
-//   - `go.mod` / `go.sum` and `check.sh` build and start the runner itself.
+//   - `go.mod` / `go.sum` and `check.sh` build and start the runner itself, and
+//     `filelock/` is the lock the stats logs and the stack leases hold.
 //
 // `TestGlobalInputsCoverWhatNoCheckCanReach` and
 // `TestRunnerCoreCoversWhatTheExecutorReaches` prove nothing else in the runner
@@ -78,8 +80,10 @@ var GlobalInputs = []string{
 	"scripts/check/go.sum",
 	"scripts/check/stack-lease/**",
 	"scripts/check/stacklease/**",
+	"scripts/check/filelock/**",
 	"scripts/check/checks/cache.go",
 	"scripts/check/checks/common.go",
+	"scripts/check/checks/procgroup_*.go",
 	"scripts/check/checks/fingerprint.go",
 	"scripts/check/checks/fixture-stacks.go",
 	"scripts/check/checks/inputs.go",

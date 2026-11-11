@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -290,13 +289,13 @@ func (c *CheckDefinition) EffectiveCpuWeight(capacity int) int {
 
 // processTracker keeps track of all running child processes so they can be
 // killed as a group on Ctrl+C. Each command is started with its own process
-// group (Setpgid), so killing -pgid cleans up all its descendants too.
+// group (`ownProcessGroup`), so stopping the group cleans up its descendants too.
 var processTracker = struct {
 	mu    sync.Mutex
 	procs map[*exec.Cmd]struct{}
 }{procs: make(map[*exec.Cmd]struct{})}
 
-// KillAllProcesses sends SIGTERM to the process group of every tracked child, then
+// KillAllProcesses stops the process group of every tracked child, then
 // force-removes any container a check left running.
 //
 // The container part matters because the runner `os.Exit`s straight after this on
@@ -307,8 +306,7 @@ func KillAllProcesses() {
 	processTracker.mu.Lock()
 	for cmd := range processTracker.procs {
 		if cmd.Process != nil {
-			// Kill the entire process group (negative PID).
-			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
+			stopProcessGroup(cmd.Process.Pid)
 		}
 	}
 	processTracker.mu.Unlock()
@@ -343,7 +341,7 @@ func RunCommandTo(cmd *exec.Cmd, stdout, stderr io.Writer) error {
 	cmd.Stderr = stderr
 
 	// Give the child its own process group so we can kill the whole tree.
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.SysProcAttr = ownProcessGroup()
 
 	if err := cmd.Start(); err != nil {
 		return err
