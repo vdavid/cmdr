@@ -15,15 +15,44 @@
  *
  * Values are emitted verbatim: `menu_t` is a raw lookup with no ICU, matching
  * `isRawKey()` in `i18n-catalog-lib.ts`, which classifies `menu.*` as raw
- * alongside `errors.*`.
+ * alongside `errors.*`. A platform block (`{platform, select, …}`) is split
+ * here by the one splitter (`platform-select.ts`) into one text per OS, and Rust
+ * picks the running OS's text at lookup time, so the generated file never needs
+ * an OS `cfg`.
  */
+
+import { parsePlatformSelect, PLATFORM_SELECT_PREFIX } from '../src/lib/intl/platform-select.ts'
+
+/**
+ * One native value, mirroring Rust's `NativeText`: the same text on every OS
+ * (`All`), or one text per OS (`PerOs`), with a branch the block omits already
+ * resolved to `other`, so Rust never has to know the folding rule.
+ */
+export type NativeText = { all: string } | { macos: string; windows: string; other: string }
 
 /** One shipped locale's native strings, mirroring Rust's `LocaleStrings`. */
 export interface LocaleNativeStrings {
   /** The catalog directory name, verbatim (`en`, `zh`). */
   tag: string
   /** `[key, value]` pairs, sorted by key so Rust can binary-search them. */
-  entries: [string, string][]
+  entries: [string, NativeText][]
+}
+
+/**
+ * A catalog value as Rust stores it. Throws, naming the key, for a value that
+ * starts like a block but doesn't split: emitted as plain text, it would put raw
+ * ICU on the menu bar.
+ */
+export function nativeTextOf(key: string, value: string): NativeText {
+  const branches = parsePlatformSelect(value)
+  if (branches === null) {
+    if (value.startsWith(PLATFORM_SELECT_PREFIX)) {
+      throw new Error(`${key} starts like a platform block but doesn't split as one: ${value}`)
+    }
+    return { all: value }
+  }
+  const { other } = branches
+  return { macos: branches.macos ?? other, windows: branches.windows ?? other, other }
 }
 
 /**
@@ -75,10 +104,18 @@ export function appleLanguageName(tag: string): string {
  * The menu item's title per language, English first and the rest sorted. A locale whose title
  * matches English is left out: macOS falls back to English on its own, and an overlay catalog that
  * inherits the key would only add a duplicate. A locale with no such key yet is left out too.
+ *
+ * Throws for a platform block in any locale: the item exists only on macOS, and `Info.plist` and
+ * `Localizable.strings` take one literal title, so a block would ship as raw ICU.
  */
 export function finderMenuTitles(
   catalogs: Partial<Record<string, Partial<Record<string, string>>>>,
 ): { lproj: string; title: string }[] {
+  for (const [tag, messages] of Object.entries(catalogs)) {
+    if (messages?.[FINDER_MENU_KEY]?.startsWith(PLATFORM_SELECT_PREFIX) === true) {
+      throw new Error(`${tag}'s ${FINDER_MENU_KEY} holds a platform block, but the Finder menu item is macOS-only`)
+    }
+  }
   const english = catalogs.en?.[FINDER_MENU_KEY]
   if (english === undefined) throw new Error(`The English catalog has no ${FINDER_MENU_KEY}`)
   const others = Object.entries(catalogs)
@@ -127,10 +164,11 @@ export function isNativeKey(key: string, prefixes: readonly string[] = NATIVE_KE
 export function nativeEntriesOf(
   messages: Record<string, string>,
   prefixes: readonly string[] = NATIVE_KEY_PREFIXES,
-): [string, string][] {
+): [string, NativeText][] {
   return Object.entries(messages)
     .filter(([key]) => isNativeKey(key, prefixes))
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([key, value]): [string, NativeText] => [key, nativeTextOf(key, value)])
 }
 
 /**
@@ -168,19 +206,41 @@ export function rustStringLiteral(value: string): string {
   return `"${escaped}"`
 }
 
+/** Renders one value as a `NativeText` literal (the variants are imported bare). */
+function emitNativeText(text: NativeText): string {
+  if ('all' in text) return `All(${rustStringLiteral(text.all)})`
+  const { macos, windows, other } = text
+  return `PerOs { macos: ${rustStringLiteral(macos)}, windows: ${rustStringLiteral(windows)}, other: ${rustStringLiteral(other)} }`
+}
+
+/**
+ * The `use` line for the `NativeText` variants the table spells bare, naming only
+ * those it uses: an unused import is a warning, and clippy denies warnings.
+ */
+function variantImport(locales: readonly LocaleNativeStrings[]): string {
+  const texts = locales.flatMap((locale) => locale.entries.map(([, text]) => text))
+  const used = [
+    ...(texts.some((text) => 'all' in text) ? ['All'] : []),
+    ...(texts.some((text) => !('all' in text)) ? ['PerOs'] : []),
+  ]
+  if (used.length === 0) return ''
+  return `\nuse super::NativeText::${used.length === 1 ? used[0] : `{${used.join(', ')}}`};`
+}
+
 /** Renders one locale as a Rust struct literal. */
 function emitLocale(locale: LocaleNativeStrings): string {
   const rows = locale.entries.map(
-    ([key, value]) => `            (${rustStringLiteral(key)}, ${rustStringLiteral(value)}),`,
+    ([key, value]) => `            (${rustStringLiteral(key)}, ${emitNativeText(value)}),`,
   )
   const entries = rows.length === 0 ? '&[]' : ['&[', ...rows, '        ]'].join('\n')
   return ['    LocaleStrings {', `        tag: "${locale.tag}",`, `        entries: ${entries},`, '    },'].join('\n')
 }
 
 /**
- * Emits the whole generated Rust module. The `LocaleStrings` struct is
- * hand-written in `intl/native_strings.rs`; only the data lives here, so the
- * doc comments explaining the lookup don't churn when a label changes.
+ * Emits the whole generated Rust module. The `LocaleStrings` struct and the
+ * `NativeText` enum are hand-written in `intl/native_strings.rs`; only the data
+ * lives here, so the doc comments explaining the lookup don't churn when a label
+ * changes.
  * @param locales the table, already built and sorted
  */
 export function emitRustModule(locales: readonly LocaleNativeStrings[]): string {
@@ -195,8 +255,9 @@ export function emitRustModule(locales: readonly LocaleNativeStrings[]): string 
 //! the native menu bar, the window title, and the already-running alert. The
 //! \`${PSEUDO_LOCALE}\` pseudolocale is deliberately absent: it's regenerated and
 //! gitignored, so including it would make this file differ between checkouts.
+//! A platform block becomes \`PerOs\`; \`menu_t\` picks the running OS's text.
 
-use super::LocaleStrings;
+use super::LocaleStrings;${variantImport(locales)}
 
 /// Every shipped locale's native strings, sorted by tag; each locale's entries
 /// are sorted by key so [\`super::lookup\`] can binary-search them.

@@ -26,15 +26,15 @@ Rust draws.
   overlay. ❌ No region table beside it, and set `covers` when an overlay speaks for a CLDR group.
   `macos_fallback_test.rs` pins us to what the reader's own Mac would do.
 - **`shipped_locales.gen.rs` holds the CLDR likely-subtags and parent-locale data Rust can't compute at runtime**
-  (`pnpm intl:shipped-locales` from `apps/desktop/`, guarded by `shipped-locales-fresh` plus a unit test against the
-  catalog dirs). ❌ Never hand-edit it, and never hand-write a script or parent table beside it: both drift with CLDR.
+  (`pnpm intl:shipped-locales`, guarded by `shipped-locales-fresh`). ❌ Never hand-edit it, and never hand-write a script or parent table beside it: both drift with CLDR.
 - **Rust's own user-facing strings go through `menu_t("menu.…")`**, reading `native_strings.gen.rs`
   (`pnpm intl:native-strings`, guarded by `native-strings-fresh`). A RAW lookup, so `menu.*` is a raw family in
   `isRawKey` and apostrophes stay single. ❌ Never `t()` one. Missing → overlay base → English; unknown → the key.
+  A platform block picks via the seam's `NATIVE_TEXT_OS`, ❌ never `cmdr-menu`'s `Platform`.
 - **`set_language_preference` stores the SETTING, not the resolved tag**, so `'system'` keeps tracking the OS. It and
   `refresh_active_locale` report whether the answer MOVED: the cue to rebuild the menu bar.
 - **The `en-XA` pseudolocale is excluded by the GENERATORS, not filtered here.** Auto-selection draws only from the
-  tables, so leaving it out is what makes it unreachable. Keep it that way, not a runtime check.
+  tables, so leaving it out is what makes it unreachable, with no runtime check.
 - **The formatting tag is COMPOSED here, ❌ never read off the webview**, which drops the `-u-rg-` region override. It
   follows the OS, never `appearance.language`. An unrecognized part composes `None`, never a half-built tag.
   `DETAILS.md`.

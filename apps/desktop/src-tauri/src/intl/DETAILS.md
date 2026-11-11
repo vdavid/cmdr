@@ -330,14 +330,16 @@ list. `pnpm intl:native-strings` regenerates, and `native-strings-fresh` diffs i
 
 ### Why `menu_t` is deliberately dumb
 
-`menu_t(key)` finds the locale's row, binary-searches its sorted `(key, value)` pairs, then walks the catalogs that
+`menu_t(key)` finds the locale's row, binary-searches its sorted `(key, value)` pairs (picking the running OS's text,
+§ Per-OS text), then walks the catalogs that
 locale inherits from (`inheritance_chain`: an overlay's base, so `es-419` → `es`), then English, then the key itself.
 That's the whole thing. No ICU, no plurals, no formatting:
 
 - **No panic, ever.** The menu is built inside AppKit callbacks that abort the process on a panic, so a typo has to cost
   a visibly wrong label rather than a crash. The typo is caught at test time instead, by
-  `menu_t_literals_exist_in_the_english_catalog`, which parses every `menu_t` / `menu_t_with` call site in the crate and
-  checks the key against the English table.
+  `every_menu_key_literal_exists_in_the_english_catalog`, which finds every `"menu.…"` literal in this crate and in
+  `cmdr-menu` (literals, not call sites, because several keys travel through tables) and checks it against the English
+  table.
 - **No ICU engine in the app process.** A menu label that seems to want a plural is a label to reshape. The one
   concession is `menu_t_with`, which does literal `{token}` replacement for the four labels that name what they act on
   (`Copy "photo.jpg"`, `Eject (Backup)` and its `(busy)` twin, `Preview (default)`); reshaping those would cost the user
@@ -354,6 +356,29 @@ overlay with a non-English base (`es-419`, `pt-PT`) would then get an English me
 ❌ Don't shortcut it. `an_overlay_inherits_the_labels_it_does_not_fork_from_its_base_not_english` pins it, and
 `every_shipped_locale_speaks_its_own_menu_bar` holds each overlay's native table against its BASE's table, not
 English's.
+
+### Per-OS text
+
+A native catalog value may be a platform block (`{platform, select, macos {…} windows {…} other {…}}`, the shape and
+the splitter: `apps/desktop/src/lib/intl/DETAILS.md` § "Platform variants"). The generator splits it with that same
+splitter and emits each entry as a `NativeText`: `All("…")` for a plain value, or `PerOs { macos, windows, other }`
+with a branch the block omits already resolved to `other`. `lookup` hands the entry to the pure `pick(text, os)`, and
+the OS comes from `platform::NATIVE_TEXT_OS`, one answer per arm of the `intl/platform/` seam (Linux reads `other`).
+
+- **Why every OS's text ships in every binary**: a few KB of labels buys a generated file with no OS `cfg`, which
+  would otherwise sit outside a seam (`desktop-rust-platform-cfg-placement`). `menu_t`'s signature and callers stay.
+- **❌ Never choose text with `cmdr-menu`'s `Platform`**: it answers Linux on Windows, so Windows would read Linux
+  words. Its `PerPlatform` is for accelerators and ids.
+- **Entries compare as whole `NativeText`s** in the overlay contract: an `en-GB` fork of only the Windows text is a real
+  fork, and comparing one OS's pick would call it dead weight
+  (`an_overlay_that_forks_only_its_windows_text_still_forks_something`). The ellipsis rule checks every OS's text.
+- **The Finder menu item's title can't hold a block**: it's macOS-only and lands in `Info.plist` and
+  `Localizable.strings` as one literal, so `finderMenuTitles` refuses a block in any locale.
+- **The generated `use` line imports only the variants the table spells**, because clippy denies an unused import. A
+  malformed block (starts like one, doesn't split) fails generation, naming the key.
+
+`each_os_reads_its_own_text_and_a_plain_value_reads_the_same_everywhere` covers `pick` for all three OSes on any host;
+`this_hosts_arm_answers_its_own_os_for_native_text` (in the seam) checks the arm per CI OS lane.
 
 ### Which locale, and who decides
 

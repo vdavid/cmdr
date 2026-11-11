@@ -38,7 +38,59 @@ pub(crate) struct LocaleStrings {
     /// `(key, value)` pairs, sorted by key so [`lookup`] can binary-search.
     /// Empty for a locale whose native strings aren't translated yet, which is
     /// how a locale ships a translated app under an English menu bar.
-    pub(crate) entries: &'static [(&'static str, &'static str)],
+    pub(crate) entries: &'static [(&'static str, NativeText)],
+}
+
+/// One native string's text: the same on every OS, or one text per OS.
+///
+/// `PerOs` is what a catalog platform block (`{platform, select, …}`) becomes.
+/// The generator has already resolved a branch the block omits to `other`, so
+/// every field is the text that OS reads. The table carries every OS's text, a
+/// few KB, so the generated file needs no OS `cfg`; [`pick`] chooses at lookup.
+///
+/// `PartialEq` compares the WHOLE value on purpose: an overlay that forks only
+/// its Windows text still forks something.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    dead_code,
+    reason = "the generated table builds `PerOs` only once a native catalog value holds a platform block"
+)]
+pub(crate) enum NativeText {
+    All(&'static str),
+    PerOs {
+        macos: &'static str,
+        windows: &'static str,
+        /// Linux, and any OS without a branch of its own.
+        other: &'static str,
+    },
+}
+
+/// Which OS's text [`pick`] reads. The running OS's answer is
+/// `platform::NATIVE_TEXT_OS`, one per seam arm.
+///
+/// ❌ Never derive it from `cmdr-menu`'s `Platform`: that one answers Linux on
+/// Windows, so Windows would read Linux words.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    dead_code,
+    reason = "each seam arm names only its own OS, so a non-test build constructs one variant"
+)]
+pub(crate) enum NativeOs {
+    MacOs,
+    Windows,
+    Linux,
+}
+
+/// `text` as `os` reads it. Pure, so one test covers every OS on any host.
+fn pick(text: NativeText, os: NativeOs) -> &'static str {
+    match text {
+        NativeText::All(value) => value,
+        NativeText::PerOs { macos, windows, other } => match os {
+            NativeOs::MacOs => macos,
+            NativeOs::Windows => windows,
+            NativeOs::Linux => other,
+        },
+    }
 }
 
 /// The catalog `en` always exists under. Every lookup falls back here, so a key
@@ -151,8 +203,13 @@ fn expand_tokens(value: &str, args: &[(&str, &str)]) -> String {
     expanded
 }
 
-/// The value for `key` in `locale`'s table, or `None`.
+/// The value for `key` in `locale`'s table, as the running OS reads it, or `None`.
 fn lookup(locale: &str, key: &str) -> Option<&'static str> {
+    lookup_text(locale, key).map(|text| pick(text, super::platform::NATIVE_TEXT_OS))
+}
+
+/// The whole value for `key` in `locale`'s table, every OS's text, or `None`.
+fn lookup_text(locale: &str, key: &str) -> Option<NativeText> {
     let entries = NATIVE_STRINGS
         .iter()
         .find(|candidate| candidate.tag.eq_ignore_ascii_case(locale))?
@@ -226,8 +283,30 @@ pub(crate) fn lock_active_locale_for_tests() -> std::sync::MutexGuard<'static, (
 mod tests {
     use super::*;
 
+    impl NativeText {
+        /// Every OS's text, so a rule about labels holds for the ones this host never reads.
+        fn every_os(self) -> [&'static str; 3] {
+            [NativeOs::MacOs, NativeOs::Windows, NativeOs::Linux].map(|os| pick(self, os))
+        }
+    }
+
+    #[test]
+    fn each_os_reads_its_own_text_and_a_plain_value_reads_the_same_everywhere() {
+        let per_os = NativeText::PerOs {
+            macos: "Show in Finder",
+            windows: "Show in File Explorer",
+            other: "Show in file manager",
+        };
+        assert_eq!(pick(per_os, NativeOs::MacOs), "Show in Finder");
+        assert_eq!(pick(per_os, NativeOs::Windows), "Show in File Explorer");
+        assert_eq!(pick(per_os, NativeOs::Linux), "Show in file manager");
+        for os in [NativeOs::MacOs, NativeOs::Windows, NativeOs::Linux] {
+            assert_eq!(pick(NativeText::All("File"), os), "File");
+        }
+    }
+
     /// The English table, which every other lookup falls back to.
-    fn english() -> &'static [(&'static str, &'static str)] {
+    fn english() -> &'static [(&'static str, NativeText)] {
         NATIVE_STRINGS
             .iter()
             .find(|locale| locale.tag == BASE_LOCALE)
@@ -264,12 +343,14 @@ mod tests {
     #[test]
     fn menu_labels_end_with_the_ellipsis_character() {
         for locale in NATIVE_STRINGS {
-            for (key, value) in locale.entries {
-                assert!(
-                    !value.ends_with("..."),
-                    "{}/{key} ends with `...`; use the `…` character (U+2026): {value}",
-                    locale.tag
-                );
+            for (key, text) in locale.entries {
+                for value in text.every_os() {
+                    assert!(
+                        !value.ends_with("..."),
+                        "{}/{key} ends with `...`; use the `…` character (U+2026): {value}",
+                        locale.tag
+                    );
+                }
             }
         }
     }
@@ -352,12 +433,16 @@ mod tests {
     /// full translation that lost one string would otherwise reclassify itself
     /// into the weaker contract, where English satisfies the `menu.bar.file`
     /// assertion and the guard silently stops guarding.
-    fn assert_speaks_its_menu_bar<'a>(
+    ///
+    /// Values compare as whole [`NativeText`]s, ❌ never as one OS's pick: an
+    /// overlay forking only its Windows text would otherwise read as dead weight
+    /// on a Mac.
+    fn assert_speaks_its_menu_bar(
         tag: &str,
-        entries: &[(&'a str, &'a str)],
-        inherits_from: Option<&[(&'a str, &'a str)]>,
+        entries: &[(&str, NativeText)],
+        inherits_from: Option<&[(&str, NativeText)]>,
     ) {
-        fn find<'a>(table: &[(&'a str, &'a str)], key: &str) -> Option<&'a str> {
+        fn find(table: &[(&str, NativeText)], key: &str) -> Option<NativeText> {
             table
                 .iter()
                 .find(|(candidate, _)| *candidate == key)
@@ -409,7 +494,7 @@ mod tests {
     }
 
     /// The native table the generator emitted for `tag`.
-    fn native_table(tag: &str) -> &'static [(&'static str, &'static str)] {
+    fn native_table(tag: &str) -> &'static [(&'static str, NativeText)] {
         NATIVE_STRINGS
             .iter()
             .find(|locale| locale.tag == tag)
@@ -462,7 +547,7 @@ mod tests {
         // The regression this guard exists to catch, and the one a size-based
         // classification let through: a full translation short one string is
         // still a full translation, so English must NOT satisfy it for it.
-        assert_speaks_its_menu_bar("hu", &[("menu.bar.edit", "Szerkesztés")], None);
+        assert_speaks_its_menu_bar("hu", &[("menu.bar.edit", NativeText::All("Szerkesztés"))], None);
     }
 
     #[test]
@@ -473,8 +558,50 @@ mod tests {
         // size check called any full translation short one string an overlay,
         // which is exactly how a Hungarian user could have ended up with an
         // English menu bar and a green guard.
-        let base = &[("menu.bar.edit", "Edit"), ("menu.bar.file", "File")];
-        assert_speaks_its_menu_bar("en-GB", &[("menu.bar.edit", "Szerkesztés")], Some(base));
+        let base = &[
+            ("menu.bar.edit", NativeText::All("Edit")),
+            ("menu.bar.file", NativeText::All("File")),
+        ];
+        assert_speaks_its_menu_bar(
+            "en-GB",
+            &[("menu.bar.edit", NativeText::All("Szerkesztés"))],
+            Some(base),
+        );
+    }
+
+    /// A per-OS label whose macOS and Linux text stay fixed, so only Windows varies.
+    fn trash_with_windows(windows: &'static str) -> NativeText {
+        NativeText::PerOs {
+            macos: "Move to Trash",
+            windows,
+            other: "Move to Bin",
+        }
+    }
+
+    #[test]
+    fn an_overlay_that_forks_only_its_windows_text_still_forks_something() {
+        // On a Mac both read "Move to Trash"; comparing one OS's pick would call
+        // this fork dead weight and push someone to delete a real Windows fork.
+        let base = &[
+            ("menu.bar.file", NativeText::All("File")),
+            ("menu.file.trash", trash_with_windows("Delete")),
+        ];
+        let overlay = &[("menu.file.trash", trash_with_windows("Move to Recycle Bin"))];
+        assert_speaks_its_menu_bar("en-GB", overlay, Some(base));
+    }
+
+    #[test]
+    #[should_panic(expected = "forks nothing")]
+    fn an_overlay_repeating_every_os_of_its_base_still_fails_the_guard() {
+        let base = &[
+            ("menu.bar.file", NativeText::All("File")),
+            ("menu.file.trash", trash_with_windows("Delete")),
+        ];
+        assert_speaks_its_menu_bar(
+            "en-GB",
+            &[("menu.file.trash", trash_with_windows("Delete"))],
+            Some(base),
+        );
     }
 
     #[test]
