@@ -479,8 +479,6 @@ pub(super) fn spawn_watchdog(runtime: &cmdr_fs::rt::Runtime, probes: Weak<Probes
     });
 }
 
-/// Time the watchdog couldn't see: the late-tick rule, and the evidence a late
-/// tick logs.
 #[path = "transfer_probe_unseen.rs"]
 mod unseen;
 use unseen::CpuWitness;

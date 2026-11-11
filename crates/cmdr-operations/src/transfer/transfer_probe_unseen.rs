@@ -35,7 +35,7 @@ use super::STALL_TICK;
 /// A tick that lands this late says the async runtime (or the whole process)
 /// went unscheduled: a starved worker pool, a system sleep, App Nap. Nothing
 /// the watchdog could see happened in that gap, so it is forgiven
-/// (`OperationProbe::forgive_unseen_time`) and logged ([`log`]), which also
+/// (`OperationProbe::forgive_unseen_time`) and logged ([`log()`]), which also
 /// makes the watchdog the runtime-stall witness for as long as a transfer runs.
 ///
 /// 5 s mirrors `smb2`'s own cadence rule (`forgive_scheduling_stall`: a gap
