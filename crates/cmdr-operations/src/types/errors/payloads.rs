@@ -121,11 +121,11 @@ impl From<cmdr_fs::volume::RemoteRefuser> for PermissionRefusal {
 }
 
 impl PermissionRefusal {
-    /// Reads a raw errno as one of the three answers above.
+    /// Reads a raw errno as one of the three answers above, by its class.
     pub fn from_errno(errno: Option<i32>) -> Self {
-        match errno {
-            Some(crate::local_disk::errno::EACCES) => Self::FolderPermissions,
-            Some(crate::local_disk::errno::EPERM) => Self::SystemProtected,
+        match errno.map(cmdr_fs::os_error::OsErrorClass::of_code) {
+            Some(cmdr_fs::os_error::OsErrorClass::AccessDenied) => Self::FolderPermissions,
+            Some(cmdr_fs::os_error::OsErrorClass::NotPermitted) => Self::SystemProtected,
             _ => Self::Unclassified,
         }
     }

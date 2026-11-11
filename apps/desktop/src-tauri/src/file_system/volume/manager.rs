@@ -37,7 +37,7 @@ pub use reconnects::{ArrivalOnReconnect, ConnectionNews, connection_news};
 pub use root_move::RootMove;
 pub use root_replace::RootReplacement;
 use roots::Registration;
-pub use roots::{RootRemoval, StaleRootOutcome, is_stale_mount_errno};
+pub use roots::{RootRemoval, StaleRootOutcome, is_stale_mount};
 pub use routing::path_routes_over_its_parent;
 
 #[cfg(test)]

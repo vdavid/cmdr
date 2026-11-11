@@ -3,14 +3,14 @@
 //! Most variants delegate to the canonical `kinds::*` constructors so the typed
 //! `reason` is the same regardless of which layer the error originated in. A few
 //! variants are unique to this layer:
-//! - `IoError { raw_os_error: Some(_) }` dispatches to `errno::listing_error_from_errno` for
-//!   per-errno reasons
+//! - `IoError { raw_os_error: Some(_) }` dispatches to `errno::listing_error_from_class` for
+//!   per-class reasons
 //! - `FriendlyGit(_)` carries a typed `FriendlyGitErrorKind` from the git module, which rides as
 //!   the `Git` reason so the FE renders git copy from its parallel git factory
 
 use std::path::Path;
 
-use super::errno::listing_error_from_errno;
+use super::errno::listing_error_from_class;
 use super::{ErrorCategory, ListingError, ListingErrorReason, kinds};
 use crate::volume::LockedContainer;
 use crate::volume::git_error::FriendlyGitErrorKind;
@@ -43,7 +43,7 @@ pub(super) fn git_category(kind: FriendlyGitErrorKind) -> ErrorCategory {
 
 /// Converts a `VolumeError` into a typed, word-free `ListingError`.
 ///
-/// For `IoError` with a `raw_os_error`, matches against platform-specific errno codes.
+/// For an `IoError` carrying an OS code, matches on that code's `OsErrorClass`.
 /// For typed `VolumeError` variants, delegates to the shared `kinds::*` constructors.
 ///
 /// Git failures arrive as `VolumeError::FriendlyGit(FriendlyGitError)` from the
@@ -197,7 +197,7 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         VolumeError::IoError {
             raw_os_error: Some(errno),
             ..
-        } => listing_error_from_errno(*errno, path, err),
+        } => listing_error_from_class(crate::os_error::OsErrorClass::of_code(*errno), *errno, path, err),
         VolumeError::IoError {
             raw_os_error: None,
             message,

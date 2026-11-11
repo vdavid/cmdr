@@ -25,24 +25,24 @@ the next section.
   follow it); `child_name.rs` (`ChildName`, a listed name proven to be one plain path component, the only way a source
   listing's name may join a destination path; a refusal is `VolumeError::InvalidName`. Why and who calls it:
   `crates/cmdr-operations/src/transfer/volume/DETAILS.md` § "Listed names are untrusted"); `transport_fault.rs`
-  (`VolumeError::transport_fault` and `is_transport_errno`: the ONE answer to "did the link fail, or did the other end
-  say no?", an exhaustive match plus one errno set decided by `io::ErrorKind`, which the write engine's retry, outage
-  wait, and local error mapping all ask; `crates/cmdr-operations/src/transfer/DETAILS.md` § "Retrying one FILE");
-  `server_side.rs` (`RenameWork`, `SubtreeTally`, `ServerCopyProgress`: work a server does on its own, § "Server-side
-  work"); `routed.rs` (`ResolvedVolume`, `RoutedKind`: what the app's `VolumeManager::resolve` answers, here so the
-  listing engine reads it without the app); `password_locked.rs` (`PasswordLocked`, `UnlockOutcome`: the one unlock seam
-  for every locked container, reached through `Volume::as_password_locked`, cancel-safe by contract);
-  `locked_container.rs` (`LockedContainer`: which kind asked, a leaf both `error.rs` and `password_locked.rs` read, so
-  neither depends on the other and `module-cycles` stays at zero); `retirement.rs` (how background work learns it
-  stopped being the live volume); `connection_cell.rs` (a backend's connection state packed with its session generation,
-  § "Three questions a remote volume gets asked"); `channel_stream.rs` (a network backend's read path, consumer half);
-  `scan_boundary.rs` + `scan_stop.rs` + `scan_recorder.rs` (the one seam a copy scan touches per entry: counts, Cancel,
-  Pause, and the transfer tree's recorder); `scan_listing_clock.rs` (an index walk's per-listing wedge timer, which a
-  backend pauses while it parks the listing by its own choice); `scan_walk.rs`, `mkdir_all.rs`, `patching.rs`, and
-  `secret_store.rs` (the bodies a stat-and-listing backend gets for free); `listing_progress.rs` (`report_while`: a long
-  listing's running count sampled on a timer from the async side that owns `on_progress`, which can't ride into the
-  blocking reader); `http_session.rs` (the HTTP backends' shared connection lifecycle, § "The HTTP backends' connection
-  lifecycle"); `liveness.rs` (their silence watch, which tells a server gone silent from one that's only slow:
+  (`VolumeError::transport_fault`: the ONE answer to "did the link fail, or did the other end say no?", an exhaustive
+  match plus `OsErrorClass::is_transport`, which the write engine's retry, outage wait, and local error mapping all ask;
+  `crates/cmdr-operations/src/transfer/DETAILS.md` § "Retrying one FILE"); `server_side.rs` (`RenameWork`,
+  `SubtreeTally`, `ServerCopyProgress`: work a server does on its own, § "Server-side work"); `routed.rs`
+  (`ResolvedVolume`, `RoutedKind`: what the app's `VolumeManager::resolve` answers, here so the listing engine reads it
+  without the app); `password_locked.rs` (`PasswordLocked`, `UnlockOutcome`: the one unlock seam for every locked
+  container, reached through `Volume::as_password_locked`, cancel-safe by contract); `locked_container.rs`
+  (`LockedContainer`: which kind asked, a leaf both `error.rs` and `password_locked.rs` read, so neither depends on the
+  other and `module-cycles` stays at zero); `retirement.rs` (how background work learns it stopped being the live
+  volume); `connection_cell.rs` (a backend's connection state packed with its session generation, § "Three questions a
+  remote volume gets asked"); `channel_stream.rs` (a network backend's read path, consumer half); `scan_boundary.rs` +
+  `scan_stop.rs` + `scan_recorder.rs` (the one seam a copy scan touches per entry: counts, Cancel, Pause, and the
+  transfer tree's recorder); `scan_listing_clock.rs` (an index walk's per-listing wedge timer, which a backend pauses
+  while it parks the listing by its own choice); `scan_walk.rs`, `mkdir_all.rs`, `patching.rs`, and `secret_store.rs`
+  (the bodies a stat-and-listing backend gets for free); `listing_progress.rs` (`report_while`: a long listing's running
+  count sampled on a timer from the async side that owns `on_progress`, which can't ride into the blocking reader);
+  `http_session.rs` (the HTTP backends' shared connection lifecycle, § "The HTTP backends' connection lifecycle");
+  `liveness.rs` (their silence watch, which tells a server gone silent from one that's only slow:
   `crates/cmdr-webdav/DETAILS.md` § "Silent or slow") and `tls.rs` (their connect probes' TLS-refusal test, by the typed
   `io::ErrorKind`); `app_paths.rs` (whether an app path sits under a volume root, segment-wise, and rebasing it onto a
   moved root); `remote_paths.rs` (a server tree's `<scheme>://user@host:port` app spelling, and the ONE translation);
@@ -74,26 +74,27 @@ the next section.
   files a transfer leaves out"), `archive_format.rs` (sole source of truth for archive detection, and the extension-only
   split of a path at its archive component), `file_extension.rs` (what counts as a name's extension, product-wide: §
   "What counts as an extension"), `file_identity/` (which node, which device, how many links: § "File identity"),
-  `restic_view.rs` (the `Browse snapshots` name and the lexical split of a path at it, here so the listing engine and
-  the write guards ask it without linking `rustic_core`; `cmdr-restic` confirms), `benchmark.rs` (the env-gated
-  `[TIMELINE]` stderr events, `docs/guides/benchmarking-file-loading.md`), `cloud_provider.rs` (macOS: which cloud
-  provider owns a path, and what it can do; pure path rules, its module docs say why it's a type), `validation.rs` (the
-  platform's name and path-length limits, `ValidationError`, the typed refusal a rename's validity check carries over
-  IPC, and `validate_plain_leaf`, the stricter check for a name somebody else chose for the user: no edge whitespace,
-  control character, or invisible bidi, zero-width, or format character, so the name a review shows is the name that
-  lands; a transfer's per-source names go through it), `firmlinks.rs` (`normalize_path`; the index and the app's
-  watchers have to agree on it), `file_provider.rs` (the cloud-domain marker), `filesystem_kind.rs`, `path_locations.rs`
-  (how many PLACES a set of directories amounts to), `path_hash.rs` (the fixed 64-bit folder-path hash two resident maps
-  key on instead of the path: search's importance weights and the media coverage score cache), `git_meta` (what a git
-  portal row's Size cell states), `restic_meta` (a restic snapshot row's host, tags, and paths), `name_fold.rs` (the ONE
-  "same name, spelled another way" key: NFC + lowercase, shared by share IDs, transfer conflict buckets, the SMB
-  spelling resolve, and cursor placement; beside it `normalize_for_comparison`, the local filesystem's own key, which
-  the drive index stores and the write engine matches sources under), `log_rollup`, `log_private` + `log_detail`
-  (`LogPrivate`, the wrapper a log site marks a user-derived value with, over the ONE marker table and lexer the app's
-  span pass reads too; `LogDetail` for external OS/server/CLI text as one Debug-quoted, 1 KiB-capped field, and
-  `LoggedText` for our own; `log_error`, the `LogError` a path-carrying error logs through, `error_detail`, the message
-  field that keeps its cause typed for it, and `log_json`, a value's JSON with its fields marked; § "Marked log
-  values"), `tcc_paths`, `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path a person typed on THIS
+  `os_error/` (`OsErrorClass`: what an OS error code means, per OS, so nothing above it compares an errno: § "OS error
+  classes"), `restic_view.rs` (the `Browse snapshots` name and the lexical split of a path at it, here so the listing
+  engine and the write guards ask it without linking `rustic_core`; `cmdr-restic` confirms), `benchmark.rs` (the
+  env-gated `[TIMELINE]` stderr events, `docs/guides/benchmarking-file-loading.md`), `cloud_provider.rs` (macOS: which
+  cloud provider owns a path, and what it can do; pure path rules, its module docs say why it's a type), `validation.rs`
+  (the platform's name and path-length limits, `ValidationError`, the typed refusal a rename's validity check carries
+  over IPC, and `validate_plain_leaf`, the stricter check for a name somebody else chose for the user: no edge
+  whitespace, control character, or invisible bidi, zero-width, or format character, so the name a review shows is the
+  name that lands; a transfer's per-source names go through it), `firmlinks.rs` (`normalize_path`; the index and the
+  app's watchers have to agree on it), `file_provider.rs` (the cloud-domain marker), `filesystem_kind.rs`,
+  `path_locations.rs` (how many PLACES a set of directories amounts to), `path_hash.rs` (the fixed 64-bit folder-path
+  hash two resident maps key on instead of the path: search's importance weights and the media coverage score cache),
+  `git_meta` (what a git portal row's Size cell states), `restic_meta` (a restic snapshot row's host, tags, and paths),
+  `name_fold.rs` (the ONE "same name, spelled another way" key: NFC + lowercase, shared by share IDs, transfer conflict
+  buckets, the SMB spelling resolve, and cursor placement; beside it `normalize_for_comparison`, the local filesystem's
+  own key, which the drive index stores and the write engine matches sources under), `log_rollup`, `log_private` +
+  `log_detail` (`LogPrivate`, the wrapper a log site marks a user-derived value with, over the ONE marker table and
+  lexer the app's span pass reads too; `LogDetail` for external OS/server/CLI text as one Debug-quoted, 1 KiB-capped
+  field, and `LoggedText` for our own; `log_error`, the `LogError` a path-carrying error logs through, `error_detail`,
+  the message field that keeps its cause typed for it, and `log_json`, a value's JSON with its fields marked; § "Marked
+  log values"), `tcc_paths`, `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path a person typed on THIS
   machine), `twin_path` (a same-named twin's row path: `folder_of` past its pick, and `shown`, the one rule that takes a
   pick out of anything a person reads; `crates/cmdr-mtp/src/connection/DETAILS.md` § "Same-named siblings"), `byte_size`
   (`format_size`, the IEC byte count log lines and model-facing answers read), `thread_qos`, `thread_cpu`,
@@ -188,7 +189,19 @@ allows:
   right answer anyway, because joining a rooted path onto `/` replaces it.
 
 Desktop behavior is unchanged: each native path keeps its old body, a few moved into a gated helper of their own
-(`entry.rs`'s `user_name_of`, `blockers.rs`'s `open_host_parent_folder`).
+(`entry.rs`'s `user_name_of`, `metadata/platform/`'s `open_parent_folder`).
+
+## OS error classes
+
+`os_error::OsErrorClass` is what an OS error code MEANS, and every caller that decides on one (the listing error's
+reason, `transport_fault`, the write engine's error mapping and fsync rule, the app's stale-mount promotion) matches the
+class, ❌ never the number: errnos differ per OS (`ENOTEMPTY` is 66 on macOS and 39 on Linux) and Windows hands back
+Win32 codes. The code itself still travels where it did (`VolumeError`'s `raw_os_error`, a write error's `errno`)
+because it's the OS's own diagnostic, shown in the technical details and kept across IPC unchanged;
+`VolumeError::os_class` reads it. Each OS's table sits behind `os_error/platform/`: the POSIX names both Unixes share,
+macOS's BSD extras, the Win32 and Winsock codes, and none in the browser build. `InUseByAnotherApp` (a Windows sharing
+or lock violation) has no Unix code, so no Unix errno produces it (`src/os_error/tests.rs` sweeps every errno to 4096;
+`EBUSY` is `Busy`).
 
 ## File identity
 

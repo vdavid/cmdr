@@ -1,5 +1,5 @@
-//! The host's own disk, as the engine's shared code needs it: errnos, a file's
-//! device and mode, the no-replace rename, mount and file-size questions, a
+//! The host's own disk, as the engine's shared code needs it: a file's device
+//! and mode, the no-replace rename, mount and file-size questions, a
 //! working-copy file, and a volume over a local folder.
 //!
 //! The one place (with the local-engine trees, `transfer/copy/` and friends)
@@ -15,43 +15,6 @@ use std::sync::Arc;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::listings::ListingHost;
 use cmdr_fs::volume::{MutationEvent, Volume, VolumeError};
-
-/// The errnos the shared classifiers compare against, by name.
-pub(crate) mod errno {
-    #[cfg(unix)]
-    pub(crate) use libc::{
-        EACCES, EDQUOT, EINVAL, ENAMETOOLONG, ENODEV, ENOSPC, ENOSYS, ENOTSUP, ENOTTY, ENXIO, EOPNOTSUPP, EPERM, EROFS,
-    };
-
-    // No OS hands the browser build an errno, so these only have to be names
-    // that compile; Linux's values.
-    #[cfg(target_family = "wasm")]
-    pub(crate) const EACCES: i32 = 13;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const EPERM: i32 = 1;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const EINVAL: i32 = 22;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const ENOSYS: i32 = 38;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const ENOTTY: i32 = 25;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const ENOTSUP: i32 = 95;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const EOPNOTSUPP: i32 = 95;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const EROFS: i32 = 30;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const ENAMETOOLONG: i32 = 36;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const ENOSPC: i32 = 28;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const EDQUOT: i32 = 122;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const ENODEV: i32 = 19;
-    #[cfg(target_family = "wasm")]
-    pub(crate) const ENXIO: i32 = 6;
-}
 
 mod posix;
 

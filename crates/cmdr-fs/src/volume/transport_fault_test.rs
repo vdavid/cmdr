@@ -1,7 +1,8 @@
 //! `VolumeError::transport_fault`: the link failing is a fault, a refusal or a
 //! person's decision never is.
 
-use super::{LockedContainer, TransportFault, VolumeError, is_transport_errno};
+use super::{LockedContainer, TransportFault, VolumeError};
+use crate::os_error::OsErrorClass;
 
 fn io(code: i32) -> VolumeError {
     VolumeError::IoError {
@@ -38,7 +39,7 @@ fn transport_blips_are_transport_faults() {
 
 #[cfg(unix)]
 #[test]
-fn transport_errnos_are_transport_faults_carrying_the_errno() {
+fn transport_errnos_are_transport_faults_carrying_their_class() {
     for code in [
         libc::ENOTCONN,
         libc::ENETDOWN,
@@ -49,7 +50,7 @@ fn transport_errnos_are_transport_faults_carrying_the_errno() {
     ] {
         assert_eq!(
             io(code).transport_fault(),
-            Some(TransportFault::TransportErrno(code)),
+            Some(TransportFault::OsTransport(OsErrorClass::of_code(code))),
             "errno {code}"
         );
     }
@@ -60,20 +61,18 @@ fn transport_errnos_are_transport_faults_carrying_the_errno() {
 #[cfg(unix)]
 #[test]
 fn an_epipe_is_a_transport_fault() {
-    assert!(is_transport_errno(libc::EPIPE));
     assert_eq!(
         io(libc::EPIPE).transport_fault(),
-        Some(TransportFault::TransportErrno(libc::EPIPE))
+        Some(TransportFault::OsTransport(OsErrorClass::BrokenPipe))
     );
 }
 
 #[cfg(unix)]
 #[test]
 fn an_econnaborted_is_a_transport_fault() {
-    assert!(is_transport_errno(libc::ECONNABORTED));
     assert_eq!(
         io(libc::ECONNABORTED).transport_fault(),
-        Some(TransportFault::TransportErrno(libc::ECONNABORTED))
+        Some(TransportFault::OsTransport(OsErrorClass::ConnectionAborted))
     );
 }
 
@@ -159,7 +158,37 @@ fn refusals_and_data_facts_are_not_transport_faults() {
 #[test]
 fn a_refusal_errno_is_not_a_transport_fault() {
     for code in [libc::EACCES, libc::EPERM, libc::ENOSPC, libc::EROFS, libc::ENOENT] {
-        assert!(!is_transport_errno(code), "errno {code}");
+        assert!(!OsErrorClass::of_code(code).is_transport(), "errno {code}");
         assert_eq!(io(code).transport_fault(), None, "errno {code}");
+    }
+}
+
+/// The characterization table, every errno: exactly the eight that mean the link
+/// went away are a transport fault, on an `IoError`; a permission refusal never is,
+/// whatever its errno.
+#[cfg(unix)]
+#[test]
+fn every_errno_keeps_its_transport_answer() {
+    let transport = [
+        libc::EPIPE,
+        libc::ECONNRESET,
+        libc::ECONNABORTED,
+        libc::ENOTCONN,
+        libc::ETIMEDOUT,
+        libc::ENETDOWN,
+        libc::ENETUNREACH,
+        libc::EHOSTUNREACH,
+    ];
+    for code in 0..=4096 {
+        assert_eq!(
+            io(code).transport_fault().is_some(),
+            transport.contains(&code),
+            "errno {code}"
+        );
+        let refused = VolumeError::PermissionDenied {
+            path: "/p".to_string(),
+            raw_os_error: Some(code),
+        };
+        assert_eq!(refused.transport_fault(), None, "errno {code}");
     }
 }

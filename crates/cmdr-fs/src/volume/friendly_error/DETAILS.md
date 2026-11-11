@@ -35,10 +35,11 @@ Sources that produce a `ListingError`:
   parsing. The FE routes the `Git` reason to its parallel git factory (`git-error-messages.ts`).
 - **`listing_error_from_volume_error(err, path)`** (`volume_error.rs`): the entry point. Maps typed `VolumeError`
   variants through the shared `kinds::*` constructors, and dispatches `IoError { raw_os_error: Some(_) }` to
-  `errno::listing_error_from_errno`. The permission-denied arm splits by who refused (see § The permission-denied split
-  below), since one errno hides three unrelated fixes.
-- **`errno::listing_error_from_errno`** (`errno.rs`): macOS errno → reason, one reason per distinct outcome (errnos with
-  identical FE copy collapse to one reason). Non-macOS falls back to `CouldntReadUnknown`.
+  `errno::listing_error_from_class` with the code's `OsErrorClass` (`crate::os_error`). The permission-denied arm splits
+  by who refused (see § The permission-denied split below), since one errno hides three unrelated fixes.
+- **`errno::listing_error_from_class`** (`errno.rs`): a macOS errno's class → reason, one reason per distinct outcome
+  (errnos with identical FE copy collapse to one reason), matched by class so no number is assumed. Off macOS, nine
+  transient classes keep their reasons and the rest fall back to `CouldntReadUnknown`.
 - **`enrich_with_provider(error, path)`** (`provider.rs`): detects 18 cloud/mount providers from path patterns +
   `statfs` filesystem type and SETS `provider`. The FE overlays the provider-specific suggestion when `provider` is
   present (reproducing the old override exactly), keyed by `(provider, category)`.

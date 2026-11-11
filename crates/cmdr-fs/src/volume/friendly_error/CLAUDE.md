@@ -15,8 +15,8 @@ trait's app-side wiring, backends, capability matrix). App-wide error convention
   `git_category`, the `FriendlyGitErrorKind` → `ErrorCategory` map. The git types themselves are the leaf
   `volume/git_error.rs`, which `VolumeError::FriendlyGit` carries; keep `git_category` a free fn here, ❌ never an
   inherent method on the kind, or the module graph re-welds `git_error` to this module.
-- `errno.rs`: raw macOS errno → `ListingError` (one reason per distinct outcome); off macOS, transient errnos via `std`
-  `ErrorKind`, the rest unknown.
+- `errno.rs`: a macOS errno's `OsErrorClass` → `ListingError` (one reason per distinct outcome); elsewhere, nine
+  transient classes keep their reasons, the rest unknown.
 - `kinds.rs`: shared `ListingError` constructors for `VolumeError` variants that map to the same conceptual reason.
 - `empty_root.rs`: TCC-restricted volume-root hint (the iCloud-looks-empty special case).
 - `provider.rs`: `Provider` enum (18 variants), `detect_provider`, `enrich_with_provider` (sets the typed `provider`).

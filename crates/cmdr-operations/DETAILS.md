@@ -285,7 +285,7 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
 - **`error_classification.rs` classifies from `errno` / `ErrorKind` only, never the message**. The native copy calls on
   both platforms (`macos_copy`, `linux_copy`) share `classify_copy_io_error`, which also picks the path: a refused write
   names the destination, anything else the source. One table, so the platforms can't drift apart again. A dropped link's
-  errno (`cmdr_fs::volume::is_transport_errno`, the set the transfer engine's retry and outage wait also ask) maps to
+  errno (`OsErrorClass::is_transport`, the set the transfer engine's retry and outage wait also ask) maps to
   `ConnectionInterrupted`.
 - **A vanished DRIVE is decided by the mount table, not by the errno** (`transfer_sides.rs`). A drive pulled mid-write
   answers `ENOENT`, `EIO`, `EBADF`, or `ENXIO` depending on which call was in flight, and every one of those would read

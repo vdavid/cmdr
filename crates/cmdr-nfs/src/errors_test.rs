@@ -68,7 +68,7 @@ fn a_lost_connection_is_a_transport_fault_and_a_refusal_is_not() {
     let unanswered = map_call_error(&CallError::Unanswered, PATH);
     assert_eq!(
         unanswered.transport_fault(),
-        Some(TransportFault::TransportErrno(libc::ETIMEDOUT))
+        Some(TransportFault::OsTransport(cmdr_fs::os_error::OsErrorClass::TimedOut))
     );
 
     let refused = map_call_error(&CallError::Denied(Rejection::Auth(AuthStat::TooWeak)), PATH);

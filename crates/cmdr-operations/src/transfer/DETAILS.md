@@ -2030,12 +2030,11 @@ connection lost, session reset, stale handle, pause outlasted, transport errno).
 marks a session `Disconnected` every call fails at once, and nothing in this loop reconnects it. Only a sub-second blip,
 where the session never read `Disconnected`, is rescued here; a longer outage is the next section's. On MTP the device
 really is gone and each attempt fails immediately, costing a bounded 1.25 s), `DeviceSessionReset` (its own doc says
-retrying works), `StaleDestinationHandle`, and an `IoError` whose errno `cmdr_fs::volume::is_transport_errno` accepts
-(EPIPE, ECONNRESET, ECONNABORTED, ENOTCONN, ETIMEDOUT, ENETDOWN, ENETUNREACH, EHOSTUNREACH, decided by `io::ErrorKind`)
-— the case where a write onto an OS-mounted share reports the blip as an errno rather than a typed backend error; the
-local engine maps the same set to `ConnectionInterrupted`. `Cancelled` and `NotConnected` (nothing is dialing it) are
-never faults. ❌ Everything else is a decision or a fact about the data: re-running the write fails the same way and
-only delays the report.
+retrying works), `StaleDestinationHandle`, and an `IoError` whose errno's class `OsErrorClass::is_transport` accepts
+(EPIPE, ECONNRESET, ECONNABORTED, ENOTCONN, ETIMEDOUT, ENETDOWN, ENETUNREACH, EHOSTUNREACH) — the case where a write
+onto an OS-mounted share reports the blip as an errno rather than a typed backend error; the local engine maps the same
+set to `ConnectionInterrupted`. `Cancelled` and `NotConnected` (nothing is dialing it) are never faults. ❌ Everything
+else is a decision or a fact about the data: re-running the write fails the same way and only delays the report.
 
 **❌ A cancel is never retryable, and outranks a retryable error.** `should_retry` checks `work_stopped` first, the
 backoff is a `select!` against `state.stop_work` (not a `sleep`), and a cancel that lands while an attempt is failing on

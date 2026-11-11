@@ -10,6 +10,7 @@
 
 use super::{Volume, VolumeManager};
 use crate::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::os_error::OsErrorClass;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -344,31 +345,25 @@ pub enum StaleRootOutcome {
     Promoted { new_root: PathBuf },
 }
 
-/// Whether `errno` proves the MOUNT behind a path is gone or wedged, rather than
-/// saying something about the file.
+/// Whether an OS error of this class proves the MOUNT behind a path is gone or
+/// wedged, rather than saying something about the file.
 ///
-/// Typed errno matching, never message text:
-/// these reach us through `VolumeError::IoError { raw_os_error }`. The set matches
-/// what the transfer layer already treats as a lost connection
-/// (`crates/cmdr-operations/src/error_classification.rs`), plus `ESTALE`, which is precisely
-/// "this handle's filesystem moved out from under you".
-#[cfg(unix)]
-pub fn is_stale_mount_errno(errno: i32) -> bool {
+/// Typed, never message text: these reach us through `VolumeError::IoError`'s
+/// `os_class`. The set is the transfer layer's lost connection
+/// (`OsErrorClass::is_transport`) without a broken pipe or an aborted or reset
+/// connection, plus a down host, plus a stale handle, which is precisely "this
+/// handle's filesystem moved out from under you".
+pub fn is_stale_mount(class: OsErrorClass) -> bool {
     matches!(
-        errno,
-        libc::ENOTCONN
-            | libc::ETIMEDOUT
-            | libc::EHOSTDOWN
-            | libc::EHOSTUNREACH
-            | libc::ENETDOWN
-            | libc::ENETUNREACH
-            | libc::ESTALE
+        class,
+        OsErrorClass::NotConnected
+            | OsErrorClass::TimedOut
+            | OsErrorClass::HostDown
+            | OsErrorClass::HostUnreachable
+            | OsErrorClass::NetworkDown
+            | OsErrorClass::NetworkUnreachable
+            | OsErrorClass::Stale
     )
-}
-
-#[cfg(not(unix))]
-pub fn is_stale_mount_errno(_errno: i32) -> bool {
-    false
 }
 
 #[cfg(test)]
@@ -436,18 +431,26 @@ mod tests {
         assert_eq!(reg.volume.root(), Path::new("/Volumes/naspi"));
     }
 
+    /// Every errno: the seven that say the mount is gone or wedged promote, and none
+    /// of the rest do. A missing file, a permission wall, or a full disk says nothing
+    /// about the mount, and promoting on one would rotate a healthy volume's root.
     #[test]
     fn stale_mount_errnos_are_told_apart_from_ordinary_file_errors() {
-        for errno in [libc::ENOTCONN, libc::ETIMEDOUT, libc::EHOSTDOWN, libc::ESTALE] {
-            assert!(
-                is_stale_mount_errno(errno),
-                "errno {errno}: the mount is gone, not the file"
+        let stale = [
+            libc::ENOTCONN,
+            libc::ETIMEDOUT,
+            libc::EHOSTDOWN,
+            libc::EHOSTUNREACH,
+            libc::ENETDOWN,
+            libc::ENETUNREACH,
+            libc::ESTALE,
+        ];
+        for errno in 0..=4096 {
+            assert_eq!(
+                is_stale_mount(OsErrorClass::of_code(errno)),
+                stale.contains(&errno),
+                "errno {errno}"
             );
-        }
-        // A missing file, a permission wall, or a full disk says nothing about
-        // the mount, and promoting on one would rotate a healthy volume's root.
-        for errno in [libc::ENOENT, libc::EACCES, libc::ENOSPC, libc::EEXIST] {
-            assert!(!is_stale_mount_errno(errno), "errno {errno} is about the file");
         }
     }
 
