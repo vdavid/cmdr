@@ -37,18 +37,16 @@ and Linux branches is task 28 and comes after.
 ## Inputs
 
 - `docs/notes/windows-port/copy-decisions.md`: David's answers. Wins over everything below.
-- `docs/notes/windows-port/copy-glossary-evidence.md` (sibling agent, may land after this plan): vocabulary corrections
-  from the reference pile. Where it corrects a glossary term, it wins over the proposal.
-- `docs/notes/windows-port/copy-row-verdicts.md` (sibling agent, may land after this plan): per-row verdicts and the
-  exact capability gates, read from the code. Where it gives a row a verdict, it wins over the proposal row.
+- `docs/notes/windows-port/copy-glossary-evidence.md`: vocabulary corrections from the reference pile. Where it corrects
+  a glossary term, it wins over the proposal.
+- `docs/notes/windows-port/copy-row-verdicts.md`: per-row verdicts and the exact capability gates, read from the code.
+  Where it gives a row a verdict, it wins over the proposal row.
 - `docs/notes/windows-port/copy-proposal.json`: 478 rows (`strings`), 349 description-only rows (`descriptionOnly`), 109
   reviewed-no-change rows. Row fields that matter: `key`, `keys` (a collapsed pair lists both), `file`, `source`
   (`catalog` or `rust`), `mechanism` (`select` 269, `none` 174, `split-feature` 18, `neutral` 10, `code` 7), `macos`,
   `windows`, `linux`, `linuxDesktops` (ignored: task 59), `macosChanged`, `rawFamily`, `needsDavid`, `question`.
 - `docs/notes/windows-port/copy-survey.md` § Mechanism: the design this plan refines. Where the code contradicts it, §
   "What the code says" below wins.
-
-If a sibling doc isn't on disk when a milestone that consumes it starts, stop and report; don't guess its content.
 
 **Precedence, top wins**: `copy-decisions.md`, then this plan's § "Copy resolution" (which settles every conflict found
 between the docs below), then `copy-row-verdicts.md` for a row it names (its texts come from the code and the D4 Windows
@@ -95,8 +93,11 @@ docs are on disk at `0327ab051d`.
   BLIND to a raw block's text) must split the block first.
 - `expandSystemStrings()` replaces `{system_settings}` and friends after the catalog lookup; those tokens belong in the
   `macos` branch only, and per-branch token parity must allow branches to differ from each other.
-- The old-WebKit boot guard (`gen-boot-guard-lib.ts`, spliced in by `vite.config.js`) runs in ES5 before the runtime
-  exists. A key it reads can't hold a block unless the guard resolves it itself from `window.__CMDR_PLATFORM__`.
+- The old-WebKit boot guard (`gen-boot-guard-lib.ts`, spliced in by `vite.config.js` at config-load time; keys in
+  `src/lib/utils/boot-guard-keys.ts`) runs in ES5 before the runtime exists. It CAN fire on Linux (an old WebKitGTK,
+  verdicts § Behavior findings) and shows today's "this Mac … Software Update" text there, so `main.oldWebkit.title` and
+  `.body` need blocks. The guard resolves them itself (§ Design, reader 4). The backend's init script
+  (`src-tauri/src/platform/frontend.rs:init_script`) defines `window.__CMDR_PLATFORM__` before any page script.
 
 ### Rust
 
@@ -174,10 +175,15 @@ The 14 pair rows and their `isMacOS()` call sites:
 
 - Branch names are `macos`, `windows`, `other`. `other` is required and covers Linux plus every backend-less context. No
   `linux` branch: it would be a second name for `other` today. (Task 59's `desktop` value nests inside `other` later.)
-- At least two branches; no two branches byte-identical (the apply script folds a duplicate into `other`, or drops the
-  `windows` branch when Windows reads like Linux). So `{macos, other}`, `{windows, other}`, and
-  `{macos, windows, other}` are the legal sets. In `{windows, other}`, macOS reads `other`: every rule below that says
-  "the `macos` branch" means "the branch macOS reads" (`pickPlatformBranch(value, 'macos')`), never `branches.macos`.
+- At least two branches; no `macos` or `windows` branch byte-identical to `other` (the apply script folds such a branch
+  into `other`). `macos` and `windows` MAY be equal to each other: that's how a row whose Windows text is still "keep
+  the macOS text" stays explicit while Linux differs, so Windows never falls through to Linux words by omission. So
+  `{macos, other}`, `{windows, other}`, and `{macos, windows, other}` are the legal sets. In `{windows, other}`, macOS
+  reads `other`: every rule below that says "the `macos` branch" means "the branch macOS reads"
+  (`pickPlatformBranch(value, 'macos')`), never `branches.macos`.
+- **Windows reads `other` only by decision.** A block without a `windows` branch means "Windows says exactly what Linux
+  says", which `copy-final.json` records explicitly per row (milestone 6b: every row carries all three branches before
+  folding, and the apply script refuses one that omits `windows`). Never "Windows wasn't considered".
 - Canonical spelling: the value starts with exactly `{platform, select, ` (one space after each comma) and branches come
   in the order `macos`, `windows`, `other`. The shape check enforces it, so `getMessage`'s prefix test is sound.
 - Whole value only (rule 4). The same block is valid ICU and is what the raw splitter reads.
@@ -203,6 +209,11 @@ Readers:
    precedent) and emits each native entry as a per-OS value (below).
 3. **The checks**: `i18n-catalog-lib.ts` gains `platformBranches(key, value)` over the splitter, and every check that
    reads text iterates branches through it.
+4. **The boot guard**: `buildBootGuardData` splits each boot-guard value per locale and bakes the branches; the ES5
+   guard in `app.html` picks `window.__CMDR_PLATFORM__`'s branch, `other` when the global is missing or names no branch.
+   Runtime pick, not a build-target pick (`TAURI_ENV_PLATFORM`): plain `vite build` and the forced screen
+   (`VITE_CMDR_FORCE_OLD_WEBKIT`) have no target, and the global is the same answer the rest of the app reads. The guard
+   never fires on Windows (WebView2 is evergreen), so its blocks fold Windows into `other` by decision.
 
 ### ICU family: `platform` injected at the one format call
 
@@ -258,6 +269,9 @@ The pipeline's answer to "English changed, translations lag" is `desktop-i18n-st
   block comes from the `.mac` key (so its hash is the old `.mac` English hash: stale). The old keys are gone.
 - **A key already stale before task 27**: its translation goes in the branch macOS reads only; the apply script lists
   these.
+- **The two accepted English changes**: the exception to "always true for `macos`". A locale's `macos` branch keeps its
+  existing translation anyway (loud rule 1: its macOS text doesn't move), as does any other branch whose English is
+  unchanged (`ai.secretError.genericBody`'s `other`). The hash stays, so both keys are stale like every migrated key.
 - **`none`, gated, `code`-mechanism, and description-only rows**: locale files untouched.
 - **A collapsed pair, outside the catalogs**: the script renames the old keys to the survivor in every
   `docs/i18n/*/terms.json` `exceptions`, `docs/i18n/*/{decisions,review-queue}.md` citation,
@@ -275,8 +289,10 @@ The pipeline's answer to "English changed, translations lag" is `desktop-i18n-st
   overlay copy. So per migrated key: the script builds the block (each branch: the overlay's fork text where that
   branch's English is unchanged, else `en`'s branch), then the milestone agent applies the overlay's spelling rulings
   (`docs/i18n/en-GB/glossary.md`, `docs/i18n/en-AU/glossary.md`) to the new branches, adds the forks the sweep demands,
-  and restamps with `sync-locale-keys.ts --restamp <key>` (its `restampOverlay`). This is the one sanctioned restamp
-  (invariant 9's exception): an English fork of English isn't a translation.
+  and restamps with `node scripts/sync-locale-keys.ts en-GB en-AU --restamp <key>` (overlay tags named, so only
+  `restampOverlay` runs). ❌ Never a bare `--restamp <key>`: with no tags it restamps every full locale too and wipes
+  task 28's worklist. This is the one sanctioned restamp (invariant 9's exception): an English fork of English isn't a
+  translation.
 
 **What a reader sees**: German on a Mac reads today's German everywhere. German on Windows or Linux reads today's German
 wherever the row didn't change that branch, and the English Windows or Linux sentence where it did (instead of German
@@ -307,9 +323,11 @@ Read with the precedence in § Inputs. Everything here is settled; a milestone a
    restart the app."), and a pair's `other` keeps the old `.other` text unless the platform needs a change (the old
    "e.g. via chmod" stays in `errors.write.fileLocked.suggestion` and the `permissionDenied` pair until a copy pass).
    The two accepted macOS changes are the only style edits.
-2. **"Keep the macOS text" means the branch folds.** A verdict that leaves Windows "open" (keep macOS text) makes the
-   `windows` branch equal the branch macOS reads, so the script folds it away. `goToPath.dialog.inputPlaceholder` then
-   needs no block at all: its new English is one plain value ("…for example ~/Documents"), an accepted change.
+2. **"Keep the macOS text" is written out.** A verdict that leaves Windows "open" (keep macOS text) sets `windows` to
+   the macOS text in `copy-final.json`. The script folds it only when it also equals `other`; when Linux differs, the
+   block keeps `macos` and `windows` as two equal branches (§ The block), so Windows doesn't read the Linux sentence.
+   `goToPath.dialog.inputPlaceholder` needs no block at all: all three read the same new English, one plain value ("…for
+   example ~/Documents"), an accepted change.
 3. **The Linux actor rule is writing, not substitution.** Where a Linux branch says "The system wouldn't/couldn't/
    blocked …" (about a dozen proposal rows: `errors.write.trashRefused.message.*`, `.suggestion.other`,
    `errors.mutation.trashRefused`, `fileExplorer.open.didNotOpen`, `fileExplorer.networkMount.mountingSlow`, …),
@@ -348,7 +366,7 @@ Read with the precedence in § Inputs. Everything here is settled; a milestone a
     `operationLog.rollback.interruptedNotice`, and three keys the proposal never listed: `askCmdr.tool.quit.doing`
     ("Closing Cmdr"), `main.quit.countdown` ("Closing in …"), `main.quit.countdownAria` ("…until Cmdr closes on its
     own").
-  - Linux "Quit" / "quit" in both registers, so Linux folds into the macOS branch on every key above.
+  - Linux "Quit" / "quit" in both registers, equal to macOS, so every key above is a `{windows, other}` block.
   - Not variants: `menu.app.quit`, `shortcuts.system.forceQuit`, `onboarding.stepFda.step3`,
     `updates.moveToApplicationsDialog.howTo` (macOS-only); `main.oldWebkit.quit` (the Linux "Quit" equals macOS, so only
     its title and body get a block); `errors.provider.appBased.serious` names another app (Windows "Close and reopen",
@@ -413,7 +431,7 @@ Each runs as one agent, sequentially, in this worktree, and ends in one commit (
 `pnpm check i18n-parity i18n-icu i18n-plural i18n-stale i18n-coverage i18n-dont-translate i18n-quoted-labels i18n-aria i18n-terms i18n-termbase i18n-mechanics i18n-citations`
 plus
 `i18n-tag-param-collision i18n-trans-snippets message-keys-fresh message-keys-unused message-key-naming message-screenshots-fresh native-strings-fresh`
-and the new `desktop-i18n-platform-select` once it exists, PLUS the disk-reading catalog tests by name, which
+and the new `i18n-platform-select` once it exists, PLUS the disk-reading catalog tests by name, which
 `svelte-tests-related` can't select from a JSON change:
 `cd apps/desktop && pnpm vitest run scripts/i18n-en-overlays.test.ts scripts/i18n-es-overlay.test.ts scripts/gen-pseudolocale.test.ts scripts/gen-boot-guard-lib.test.ts`
 and the touched area's `*i18n-parity.test.ts`. Stale WARNs from migrated keys are expected from milestone 7 on; no other
@@ -452,8 +470,9 @@ the point, and runs the listed E2E specs on Linux. Report in ≤350 words.
 ### 2. Runtime: the splitter and the injected `platform`
 
 - **Scope**: `platform-select.ts`, `getMessage()`, the shared format call in `t()`/`tStringIn()`, `TranslationParams`,
-  `i18n-tag-param-collision`'s reserved name (a Go check), and `macos-copy-unchanged.test.ts` switched to
-  `pickPlatformBranch`. Frontend only.
+  `i18n-tag-param-collision`'s reserved name (a Go check), the boot guard's branch pick (`gen-boot-guard-lib.ts` +
+  `app.html`, § Design reader 4), and `macos-copy-unchanged.test.ts` switched to `pickPlatformBranch`. Frontend only.
+  (The demo already answers `windows` for a Windows user agent: `lib/demo/platform.ts:visitorPlatform`.)
 - **Intentions**: § Design. One place injects, one place splits; no call site changes.
 - **Landmines**: the locale-version rune read stays FIRST in `t()`/`getMessage()` (`intl/CLAUDE.md`). Don't add
   `platform` to `getCompiled`'s cache key. The runtime must not grow imports beyond `#lib/platform`
@@ -462,7 +481,9 @@ the point, and runs the listed E2E specs on Linux. Report in ≤350 words.
   → `other`, quoted braces, nested ICU in a branch, unbalanced raw body rejected). `messages.svelte.test.ts` with
   `_setCatalogForTests`: an ICU key and a raw key holding blocks, read under `withPlatform` × 3 with no cache reset
   between flips; `tStringIn` picks the branch; a `<Trans>` key with a block renders the right branch's snippet;
-  `// @ts-expect-error` on `t(key, { platform: 'macos' })`.
+  `// @ts-expect-error` on `t(key, { platform: 'macos' })`. `gen-boot-guard-lib.test.ts`: a block bakes all branches per
+  locale, a plain value bakes one, and the emitted guard stays ES5 (the file's existing ES5 assertions cover the new
+  pick code); a guard-pick test for each platform global plus a missing one.
 - **DONE**: tests green, `intl/DETAILS.md` gains § "Platform variants" (canonical mechanism doc), `intl/CLAUDE.md` one
   must-know line, `messages/CLAUDE.md`'s raw-family line mentions the block.
 
@@ -479,7 +500,8 @@ the point, and runs the listed E2E specs on Linux. Report in ≤350 words.
   (derive `PartialEq`), never one OS's pick, or an overlay forking only its Windows text reads as dead weight. Adapt
   them; ❌ don't weaken them.
 - **Test plan**: `gen-native-strings.test.ts` (a block emits `PerOs`, a plain value `All`, branch text escaped; a
-  `{windows, other}` block emits `macos` = `other`); a Rust unit test of the pure `pick` over all three OSes, plus one
+  `{windows, other}` block emits `macos` = `other`, a `{macos, other}` block emits `windows` = `other`, and a block
+  whose `macos` and `windows` are equal keeps both); a Rust unit test of the pure `pick` over all three OSes, plus one
   asserting the host's arm answers the host's OS (runs on each CI OS lane, Windows included). Existing
   `every_shipped_locale_speaks_its_own_menu_bar` and the overlay test stay green.
 - **DONE**: regenerated table identical in content for today's catalogs (no block exists yet), tests green, clippy
@@ -490,13 +512,14 @@ the point, and runs the listed E2E specs on Linux. Report in ≤350 words.
 - **Scope**: `platformBranches()` in `i18n-catalog-lib.ts`; new `i18n-check-platform-select.ts` +
   `scripts/check/checks/desktop-i18n-platform-select.go` (ERROR, plus its `registry.go` entry); parity, coverage, ICU,
   plural, the pseudolocale generator, the brief (`i18n-brief-lib.ts`'s token and placeholder listing), and the two
-  overlay vitest files' `visibleTextOf` made branch-aware. Split into 4a (splitter-backed lib + platform-select +
-  parity + ICU) and 4b (coverage, plural, pseudolocale, brief, overlay tests) if the context runs low.
+  overlay vitest files' `visibleTextOf` made branch-aware. Runs as two agents, one commit each: 4a (splitter-backed lib
+  - platform-select + parity + ICU), then 4b (coverage, plural, pseudolocale, brief, overlay tests).
 - **Intentions**:
-  - `platform-select` (ERROR): rule 4's shape and canonical spelling; legal branch sets; no duplicate branches; balanced
-    raw bodies; no `'` directly before `{` or `}` in a raw body; no `{platform}` outside a top-level select (so no OS
-    name leaks as text); no block in a boot-guard key, a `MANIFEST_KEYS` key, or the Finder menu key; every locale's
-    branch set equals its source's.
+  - `platform-select` (ERROR, nickname `i18n-platform-select`, fast, inputs like its `desktop-i18n-*` siblings): rule
+    4's shape and canonical spelling; legal branch sets; no `macos` or `windows` branch equal to `other`; balanced raw
+    bodies; no `'` directly before `{` or `}` in a raw body; no `{platform}` outside a top-level select (so no OS name
+    leaks as text); no block in a `MANIFEST_KEYS` key or the Finder menu key; every locale's branch set equals its
+    source's.
   - Parity: per branch, ICU placeholder and tag sets (raw: `rawTokens` per branch) equal the source's same branch.
   - Coverage: new ERROR "untranslated platform branch": a FRESH locale key (hash matches) whose branch equals English's
     same branch while that English branch differs from the English branch macOS reads, unless
@@ -515,7 +538,8 @@ the point, and runs the listed E2E specs on Linux. Report in ≤350 words.
   a nested block, a `{platform}` interpolation, and a per-branch token mismatch each fail; the fresh-key English branch
   fails coverage and passes with a justification; a `ru` block whose `windows` branch carries English `one`/`other`
   passes plural while a translated branch missing `few` fails; `'{` in a raw body and a non-canonical
-  `{platform,select,` each fail platform-select. `gen-pseudolocale.test.ts` covers a raw and an ICU block.
+  `{platform,select,` each fail platform-select, as does a `windows` branch equal to `other`, while equal `macos` and
+  `windows` branches pass. `gen-pseudolocale.test.ts` covers a raw and an ICU block.
 - **DONE**: all green on today's tree, `i18n.md` § Raw families and the check catalog (`scripts/check/CLAUDE.md` or
   wherever checks are listed) mention the new check.
 
@@ -539,34 +563,60 @@ the point, and runs the listed E2E specs on Linux. Report in ≤350 words.
 - **Test plan**: each check's fixture tests gain a block case (carryover branch skipped, translated branch judged); the
   ESLint rule's own tests (flags the `file-list.ts` and `ai-secret-error.ts` shapes, passes `hasCapability` gates and
   glyph formatting).
+- **Termbase per OS** (lead ruling): a `docs/i18n/<tag>/terms.json` ruling gains optional per-OS forms (`windows`,
+  `other`), empty in task 27, and the termbase judges each translated branch against its OS's form, falling back to the
+  ruling's base form when that OS has none. So task 28's pt-BR `windows` "Excluir" passes against a Windows form instead
+  of hitting the macOS ruling's `avoid` list, with no baseline raise. Update the schema and `docs/i18n/termbase.md`.
 - **DONE**: all checks report the same counts on today's tree as before (say so in the commit body with numbers).
 
 ### 6. Gates, the resolved-copy file, the glossary, and the apply script
 
-This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the rest) if the agent's context runs low.
+This is the biggest non-copy milestone. It runs as two agents, one commit each: 6a (gates), then 6b (the rest).
 
-- **Scope (6a, gates)**: every "gate, don't translate" row from `copy-decisions.md` § Beyond wording, with the exact
-  gate from `copy-row-verdicts.md`: the Quick Look hint toast and its setting, the Linux menu bar's Get info and Quick
-  look rows (`macos_only` in `bar.rs`), the macOS Local Network block in Settings, `listing.showTags`, the Local AI
-  option, and `showSafeSaveFiles`, the bundle row, and the full-screen rows where the verdicts confirm they mean nothing
-  off macOS. New capability fields go in `src-tauri/src/platform/capabilities.rs` with an answer in every arm,
-  `NO_CAPABILITIES`, the demo's `lib/demo/platform.ts`, and `pnpm bindings:regen`. The verdicts' full gate list also
-  names `homebrew_cask` (onboarding star note) and `global_shortcuts` (Wayland); both are in scope here. After the
-  gates, audit every surface that LISTS commands or settings for the gated ones: settings search honors
-  `needsCapability` (`settings/settings-search.ts`), but the Keyboard shortcuts section renders the full command
-  registry (`KeyboardShortcutsSection.controller.svelte.ts`), so `file.getInfo` and `file.quickLook` stay listed on
-  Linux under their `other` labels; check the MCP and Ask Cmdr command listings the same way (review note (copy) 4).
+- **Scope (6a, gates)**: every "gate, don't translate" row from `copy-decisions.md` § Beyond wording, at the exact site
+  `copy-row-verdicts.md` § Gates names: the Quick Look hint toast and its setting, the Linux menu bar's Get info and
+  Quick look rows (`macos_only` in `bar.rs`, plus a test pinning each `macos_only` row to its capability being `false`
+  in the Linux and Windows arms), the macOS Local Network block in Settings, `listing.showTags` (and its two readers),
+  the Local AI option (three sites), `showSafeSaveFiles`, the bundle row (and `classify`), the full-screen rows (and
+  `escape-key.ts`), the onboarding Homebrew star note, the global go-to-latest shortcut rows, and the extension-change
+  folder ask (`PACKAGE_EXTENSIONS`' name rule made macOS-only through a `cmdr-fs` platform seam, never a bare `cfg`;
+  `platform-cfg-placement` stays green). Also make `ai/mod.rs:is_local_ai_supported` require macOS (verdicts § Bugs: it
+  says yes on Linux ARM64). `NATIVE_SHORTCUT_COMMAND_IDS` is task 26's, not here.
+- **The seven new capabilities**, each a per-OS fact with a deliberate Windows answer (Rust `snake_case`, TS
+  `camelCase`):
+  - `local_network_permission`: macOS `true` (a TCC permission), Windows `false`, Linux `false`: neither OS asks.
+  - `local_ai`: macOS `true`; Windows and Linux `false`: no local model runtime ships for them.
+  - `safe_save_files`: macOS `true`; Windows and Linux `false`: only NSDocument writes the `.sb-` files the filter
+    knows.
+  - `app_bundles`: macOS `true`; Windows and Linux `false`: no LaunchServices, a folder named `X.app` is a folder.
+  - `full_screen`: macOS `true`; Windows `false` and Linux `false` until a native F11 entry exists (a follow-up issue,
+    review notes (walkthrough) 3); the arm's comment says so.
+  - `homebrew_cask`: macOS `true`; Windows and Linux `false`: the cask is the macOS distribution.
+  - `global_shortcuts`: macOS `true`, Windows `true` (`RegisterHotKey`), Linux `true` only on an X11 session, read once
+    at startup (`XDG_SESSION_TYPE`, or `WAYLAND_DISPLAY` unset). Existing capabilities cover the rest: `quickLook`,
+    `getInfo`, `colorTags`. Each new field goes in `src-tauri/src/platform/capabilities.rs` with an answer in every arm,
+    `NO_CAPABILITIES`, the demo's Mac table in `lib/demo/platform.ts` (written out; a Windows or Linux visitor gets
+    `NO_CAPABILITIES`, right for a backend-less page), and `pnpm bindings:regen`; `lib/platform/DETAILS.md` §
+    Capabilities lists it.
+- **Commands get `needsCapability`** (lead ruling): a command source declares one, and every surface that lists commands
+  skips a command whose capability is off: the palette (`getPaletteCommands`), the Keyboard shortcuts section
+  (`KeyboardShortcutsSection.controller.svelte.ts`, which renders the whole registry today, so Linux lists "File
+  properties" and "Preview" for commands that do nothing), and the MCP and Ask Cmdr command listings. `file.getInfo` and
+  `file.quickLook` declare theirs. Settings already honor `needsCapability` (`settings-registry.ts`,
+  `settings-search.ts`).
 - **Scope (6b)**:
   - `docs/notes/windows-port/copy-final.json`: the resolved rows the script reads. Same keys as the proposal plus
-    `branches: { macos, windows?, other }` (final English, before folding), `collapseFrom: { mac, other }` for pairs
-    (explicit, since the menu pair's survivor `menu.file.showInFileManager` is its `.other` side while its `@key` and
-    `macos` text come from `menu.file.showInFinder`), `status` (`apply`, `gated`, `none`, `open`), `register` (`label`,
-    `sentence`, `action`, or `narration`; required on every row touching Trash or Quit, seeded from § Copy resolution's
-    per-key lists), `written: true` on a branch an agent wrote rather than copied from a doc (shown flagged on David's
-    review page), and `sources` (which doc decided each branch). The seed generator takes the proposal's `strings`, then
-    the § Copy resolution additions (overturned `reviewedNoChange` rows, the four permanent-delete siblings, the five
-    unscanned values), and a verdict may promote a `none` row to `apply` (`errors.provider.appBased.serious`). The
-    milestone writes the schema and the generator and resolves nothing beyond the pairs and the two `macosChanged` rows;
+    `branches: { macos, windows, other }` (final English, before folding; all three required on an `apply` row, so a
+    Windows answer is always a decision, § The block), `collapseFrom: { mac, other }` for pairs (the survivor names are
+    milestone 7's list; explicit, since the menu pair's survivor `menu.file.showInFileManager` is its `.other` side
+    while its `@key` and `macos` text come from `menu.file.showInFinder`), `status` (`apply`, `gated`, `none`, `open`),
+    `register` (`label`, `sentence`, `action`, or `narration`; required on every row touching Trash or Quit, seeded from
+    § Copy resolution's per-key lists), `written` (the list of branch names an agent wrote rather than copied from a
+    doc, like `["other"]`; flagged on David's review page), `lintException` (`{ branch, reason }`, optional), and
+    `sources` (which doc decided each branch). The seed generator takes the proposal's `strings`, then the § Copy
+    resolution additions (overturned `reviewedNoChange` rows, the four permanent-delete siblings, the five unscanned
+    values), and a verdict may promote a `none` row to `apply` (`errors.provider.appBased.serious`). The milestone
+    writes the schema and the generator and resolves nothing beyond the pairs and the two `macosChanged` rows;
     milestones 7–11 resolve their own catalogs into it.
   - The **scan and lint** step of the apply script (also runnable alone, `--scan <catalog>`): (1) greps every current
     `en` value for the Mac vocabulary (§ Copy resolution's term list, plus "this Mac", "click", "enable", "disk") and
@@ -601,30 +651,46 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
   script fixture tests (plain row, Windows-only change, Linux-only change, raw row with `{system_settings}` in `macos`
   only, pair collapse with a locale missing `.other`, a pair key named in a fixture `terms.json` and `decisions.md`,
   `es-419` fork whose `es` branch carries a Spain-only form, `en-GB` fork, pre-stale key, `{windows, other}` row, a
-  plural toast folding to `{windows, other}` with a `ru` `other` keeping `few`/`many`, a lint hit blocked and one passed
-  by `lintException`, an unscanned Mac value reported); then a dry run over every catalog reporting what it would do,
-  without writing.
+  plural toast folding to `{windows, other}` with a `ru` `other` keeping `few`/`many`, a row whose `windows` equals
+  `macos` but not `other` keeping both, an `apply` row missing `windows` refused, a lint hit blocked and one passed by
+  `lintException`, an unscanned Mac value reported, the overlay restamp touching `en-GB`/`en-AU` only); then a dry run
+  over every catalog reporting what it would do, without writing.
 - **DONE**: gates landed and tested, glossary written, script tested, `copy-final.json` seeded.
 
 ### 7. Collapse the 14 pairs, switch on the lint
 
 - **Scope**: the pair rows through the script; their call sites (§ Existing pairs) lose the ternary;
   `SHOW_IN_FILE_MANAGER_KEY` retires; `cmdr/no-platform-copy-branch` turns on.
-- **Intentions**: the survivor name is the pair's stem without the suffix (`commands.fileShowInFinder.label`,
-  `errors.write.fileLocked.suggestion`, `ai.secretError.keyringBody` folded into its keychain twin's neutral name), so
-  the key names the UI concept, not an OS. `ai.secretError.keyringBody` serves two pairs today: resolve it into two
-  survivors. The menu pair has no suffix to drop (`menu.file.showInFinder` + `menu.file.showInFileManager`): its `.mac`
-  side is `showInFinder`; pick the survivor name in `copy-final.json` (review note 3) and name it in the commit.
+- **Intentions**: each survivor names the UI concept, not an OS (lead rulings). The survivors, `.mac` side → `.other`
+  side → survivor:
+  - `commands.fileShowInFinder.mac.label` / `.other.label` → `commands.fileShowInFileManager.label` (the command id
+    `file.showInFinder` stays: ids are persisted in shortcut customizations, `shortcuts-store.ts`).
+  - `commands.fileGetInfo.{mac,other}.label` → `commands.fileGetInfo.label`; `commands.fileQuickLook.{mac,other}.label`
+    → `commands.fileQuickLook.label`.
+  - `errors.write.fileLocked.suggestion.{mac,other}` → `errors.write.fileLocked.suggestion`.
+  - `errors.write.permissionDenied.suggestion.{deleteMac,deleteOther}` → `.suggestion.delete`; `needsAdmin{Mac,Other}` →
+    `.suggestion.needsAdmin`; `systemProtected{Mac,Other}` → `.suggestion.systemProtected`.
+  - `settings.appearance.appColorHintLink{Mac,Other}` → `settings.appearance.appColorHintLink`.
+  - `ai.secretError.keychainTitle` / `keyringTitle` → `ai.secretError.title`; `keychainBody` / `keyringBody` →
+    `ai.secretError.body`; `removeKeychainBody` / `keyringBody` → `ai.secretError.removeBody` (`keyringBody` feeds two
+    survivors' `other` branches).
+  - `mtp.connectedToast.body{Mac,Other}` → `mtp.connectedToast.body`; `main.upgradeNudge.{mac,other}` →
+    `main.upgradeNudge`.
+  - `menu.file.showInFinder` / `menu.file.showInFileManager` → `menu.file.showInFileManager`.
+    `macos-copy-unchanged.test.ts`'s `COLLAPSED_PAIRS` must name the same survivors (a map edit, never a baseline edit).
+    The `ai.secretError.genericBody` accepted change lands here, with the rest of `ai.secretError`.
 - **Landmines**: `transfer-error-messages.ts` builds keys through `w(…)` and a `mac ?` helper; the dynamic-prefix
   allowlist of `desktop-message-keys-unused` may name these: it shrinks, never grows. Run `sync-locale-keys.ts` after
-  and confirm it's a no-op. The `ai.secretError.genericBody` accepted change lands here or with its catalog in milestone
-  11; pick one and record it. This is the first milestone where `i18n-en-overlays.test.ts`, termbase schema,
+  and confirm it's a no-op. This is the first milestone where `i18n-en-overlays.test.ts`, termbase schema,
   `i18n-citations`, and `message-screenshots-fresh` can see a renamed or migrated key: run all four before committing.
   `Label::PerPlatformKey` loses its only user with `SHOW_IN_FILE_MANAGER_KEY`; remove it, and move `cmdr-menu`'s
   `bar_test.rs` text goldens to the survivor key (a rename, not a loosening).
 - **Test plan**: the call sites' tests under `withPlatform` × 3; `macos-copy-unchanged.test.ts` via the pair map; the
   Rust menu test for the Show-in row on each seam arm.
-- **DONE**: zero `isMacOS()` copy branches, lint on, stale lists exactly the survivors.
+- **Plural**: the per-branch rule can first see real catalogs here. A category a carried translation turns out to lack
+  is a pre-existing translation bug: list it in the commit body for task 28, ❌ never baseline it.
+- **DONE**: zero `isMacOS()` copy branches, lint on, stale lists exactly the survivors plus
+  `ai.secretError.genericBody`.
 
 ### 8. Errors, listing family
 
@@ -667,7 +733,9 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
   their descriptions might move. Settings search indexes English through `tStringIn`: a Windows user searching "Recycle
   Bin" must find the row (test it).
 - **Landmines**: `settings-search.i18n.test.ts` pins manifest labels; the search index caches by locale, and platform is
-  constant per window, so no cache change.
+  constant per window, so no cache change. `apps/website/src/lib/trust-sources.json` lists `messages/*/settings.json`
+  (and `en/updates.json`) as `/trust` page sources, so this milestone and 11 queue the MDM and accessibility sections
+  for the next release's trust review: expected, not a CI failure.
 - **Test plan**: section component tests × 3; the search test above.
 - **DONE**: as milestone 8, `settings/` docs touched.
 
@@ -679,7 +747,13 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
   11a (`fileExplorer`, `servers`, `commands`, `menu`, `mtp`, `adb`) and 11b (the rest) if needed.
 - **Intentions**: `menu.*` rows regenerate `native_strings.gen.rs`; Quit rows follow § Copy resolution's per-key
   register list (Windows "Exit" for the action, "close" in narration; Linux "Quit" in both). `code` rows (runtime data)
-  follow the verdicts. Any `main.oldWebkit.*` change must respect the boot-guard landmine.
+  follow the verdicts. `main.oldWebkit.title` and `.body` get `{macos, other}` blocks (Linux: a newer WebKitGTK from the
+  distribution's updates), read by the guard's own pick from milestone 2; run `gen-boot-guard-lib.test.ts` and build
+  once with `VITE_CMDR_FORCE_OLD_WEBKIT=unsupported` to see the screen. The `goToPath.dialog.inputPlaceholder` accepted
+  change lands here. Linux names the settings window "Settings…" in both `menu.app.settings` and
+  `fileExplorer.quickFilter.intro.openSettings` (the proposal's "Preferences" disagrees with the toast; the window title
+  decides). Before calling "Eject" neutral, check which volumes `menu.volume.eject` and the eject tooltips reach: on a
+  network mount, Windows says "Disconnect" and Linux "Unmount" (lead ruling).
 - **Landmines**: `commands.*` labels feed the palette's fuzzy search and the shortcut settings: test both. The home
   folder command gets "Go to user folder" on Windows with "home" kept as a palette search alias (decision file): add
   `'home'` to `nav.goHome`'s `keywords` in `lib/commands/sources/file-list.ts`, and `'recycle bin'` to the trash
@@ -726,12 +800,12 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
   expanded to their arms), the register, and a diff against the proposal. It leads with what needs his eye: every
   `written: true` branch (the Linux actor rewrites, the permanent-delete siblings), the Exit-vs-close flag, the settled
   conflicts, and the rows left `open`. Publish it once milestone 11 lands, not at close-out, so his edits land before
-  task 28 starts: a translator working from English David then changes is a wasted round (review note (copy) 6).
-  `apply-platform-copy.ts` is deleted (git keeps it); `macos-copy-unchanged.test.ts` and its baseline STAY until task 28
-  finishes, since they keep translator agents off the `macos` branches, and task 28's entry says to delete them at its
-  end.
+  task 28 starts: a translator working from English David then changes is a wasted round. Task 28 waits for his review
+  (lead ruling); say so in its plan entry. `apply-platform-copy.ts` is deleted (git keeps it);
+  `macos-copy-unchanged.test.ts` and its baseline STAY until task 28 finishes, since they keep translator agents off the
+  `macos` branches, and task 28's entry says to delete them at its end.
 - **Test plan**: `pnpm check --only-slow` (backgrounded by the lead), then the adversarial conformance review and the
-  docs audit (`docs/guides/multi-agent-refactors.md` § Close out).
+  docs audit (`docs/guides/multi-agent-refactors.md` § The loop, step 5).
 - **DONE**: landed via `pnpm land`, task 28 ready to start.
 
 ## Out of scope
@@ -753,7 +827,8 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
 1. Every locale renders byte-identical macOS text, except the two accepted English keys
    (`macos-copy-unchanged.test.ts`).
 2. Every platform-variant value is one whole-value block with branches ⊆ `{macos, windows, other}`, `other` present, no
-   duplicates, and the same branch set in every locale (`desktop-i18n-platform-select`).
+   branch equal to `other`, and the same branch set in every locale (`desktop-i18n-platform-select`). Windows reads
+   `other` only where `copy-final.json` says its text equals Linux's.
 3. `platform` reaches ICU only through the runtime's one format call; no caller can pass it (type-level).
 4. Raw values are split by the one splitter in `platform-select.ts`, in the runtime, the generator, and the checks.
 5. The generated Rust table carries no OS `cfg`; the OS answer comes from `intl/platform/`.
@@ -763,94 +838,52 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
 8. Gated surfaces ask `hasCapability()`, with an answer in every capability arm.
 9. No string translated; no `sourceHash` restamped outside `en-GB`/`en-AU` (§ How English lands).
 
-## Review notes
+## Review rulings (folded into the body above)
 
-Mechanism review against `f0e0d8639b`. The plan text above already carries the clear fixes; these are the judgment calls
-left open.
+Three reviews (mechanism, copy and data, implementer walkthrough). The lead's rulings, each where it now lives:
 
-1. **English overlays on Windows and Linux.** `i18n-en-overlays.test.ts` forces `en-GB`/`en-AU` to fork every new branch
-   that uses an American form and to restamp, so the plan now treats them as English that task 27 writes. That is a
-   narrow exception to "no restamp"; David may prefer it the other way round (overlays stay stale, the hash assertion
-   learns platform blocks), but that loosens a test, so the plan doesn't do it. Open wording: what a British or
-   Australian Linux branch calls the Trash (the test bans "trash" in overlay copy; GNOME's and KDE's en_GB words are
-   unverified here). Route it to `copy-glossary-evidence.md` before milestone 9.
-2. **The demo reads Linux words for Windows visitors.** `lib/demo/platform.ts` answers `macos` for a Mac user agent and
-   `linux` otherwise, so getcmdr.com's demo shows a Windows visitor the Linux branch. Fine while no Windows build ships;
-   a one-line UA check would make the demo speak Windows once one does.
-3. **The menu pair's survivor name.** Rule "stem without the suffix" doesn't apply to `menu.file.showInFinder` /
-   `menu.file.showInFileManager`. Keeping `showInFinder` names an OS in the key; a neutral `menu.file.reveal` (or
-   `showInFileManager`) names the concept. Either works mechanically; it's a naming call.
-4. **Plural strictness after task 28.** The per-branch plural rule makes `i18n-plural` stricter than today on real
-   catalogs only where a translated branch already lacks a category another branch has; on today's tree there are no
-   blocks, so nothing changes until milestone 7. If milestone 7+ surfaces real misses in carried translations, they are
-   pre-existing translation bugs exposed, not new ones; listing them for task 28 (not baselining them) keeps rule 3.
-5. **Milestone size.** Milestones 4 and 6 are each near one agent's limit now (4 grew the brief and the overlay tests);
-   both carry an a/b split line. Milestone 7 is small in rows but touches Rust (`cmdr-menu`), TS call sites, catalogs,
-   four docs trees, and the capture report in one commit, because a half-collapsed pair leaves `message-keys-fresh` or
-   the termbase red; keep it one commit.
-6. **Not found, so not planned for**: no catalog value has an arg or tag named `platform` today; no Rust reads catalog
-   values outside `native_strings.gen.rs` (`resolve.rs` only lists catalog dirs); the website and api-server don't read
-   desktop catalog values (`apps/website/src/lib/trust-sources.json` lists `messages/en/{settings,updates}.json` and
-   `messages/*/settings.json` as trust-page sources, so milestones 10 and 11 queue the `/trust` MDM and accessibility
-   sections for the next release's trust review, which is expected, not a CI failure);
-   `TranslationParams & { platform?: never }` accepts `Record<string, string>`-typed params built elsewhere and rejects
-   a literal `platform` (checked with the repo's `tsc` 7.0.2).
+1. `en-GB` and `en-AU` are English: task 27 writes and restamps them, and their Linux branch keeps "Bin" (no
+   desktop-neutral British word exists; GNOME/Xfce "Wastebasket", KDE "wastebin"). § How English lands, § Copy
+   resolution.
+2. The demo answers `windows` for a Windows user agent: already true at `f0e0d8639b` (`lib/demo/platform.ts`).
+3. Survivors name the concept: `menu.file.showInFileManager`, `commands.fileShowInFileManager.label`; command ids stay.
+   Milestone 7.
+4. Plural gaps the per-branch rule exposes are listed for task 28, never baselined. Milestone 7.
+5. Milestones 4 and 6 run as a/b halves, one agent each; milestone 7 stays one commit (a half-collapsed pair leaves
+   `message-keys-fresh` or the termbase red).
+6. No drive-by rewording: a branch that reads as today keeps its 13 translations. § Branch-writing rules 1.
+7. Commands gain `needsCapability`; every command-listing surface skips one whose capability is off. Milestone 6a.
+8. `terms.json` rulings gain optional per-OS forms. Milestone 5.
+9. Task 28 starts after David has reviewed the English. Milestone 13.
+10. Milestone 11 checks which volumes the eject rows reach before calling "Eject" neutral.
+11. The four permanent-delete siblings gain "permanently" on Windows and are flagged on the review page.
 
-## Lead rulings on the review notes
+Facts the mechanism review checked, so nobody re-checks them: no catalog value has an arg or tag named `platform` today;
+no Rust reads catalog values outside `native_strings.gen.rs`; the website and api-server read no desktop catalog values
+beyond the `/trust` sources (milestone 10); `TranslationParams & { platform?: never }` accepts `Record<string, string>`
+params and rejects a literal `platform` (repo `tsc` 7.0.2).
 
-1. The overlay exception stands: `en-GB` and `en-AU` are English, so task 27 writes and restamps them. The British and
-   Australian Linux word for the Trash is mined from the pile (`en-GB/gnome-nautilus`, `en-GB/kde-dolphin`, and the
-   `en-AU` siblings in the main clone's `_ignored/i18n/`) by the milestone 9 agent and recorded in
-   `copy-glossary-evidence.md`; Windows overlays say "Recycle Bin".
-2. The demo answers `windows` for a Windows user agent. It goes in with milestone 2: a Windows visitor reading Linux
-   words is the "leftover platform" treatment the design principle rules out.
-3. The menu pair's survivor is `menu.file.showInFileManager`: the key names the concept.
-4. Plural gaps that the stricter rule exposes in carried translations are listed for task 28, never baselined.
-5. Milestones 4 and 6 run as their a/b halves, one agent each. Milestone 7 stays one commit.
+## Review notes (walkthrough)
 
-## Review notes (copy)
+Implementer walkthrough against `3fd80741fc`. Fixed in the body: the boot-guard contradiction (§ Raw families said no
+block, § Copy resolution gave two keys blocks; now the guard picks, § Design reader 4); the fold rule that made a "keep
+the macOS text" Windows branch read Linux words (§ The block, branch-writing rule 2, invariant 2); every
+`copy-final.json` row now carries an explicit `windows`; milestone 7's survivor list (the "stem" rule contradicted the
+rulings); the bare `--restamp` trap; the seven capabilities with per-OS answers; the new check's nickname; the
+`multi-agent-refactors.md` anchor. Judgment calls left:
 
-Copy, data, and executability review against `0327ab051d`. The fixes are in the plan above (§ Inputs precedence, § Copy
-resolution, milestones 6a, 6b, 9, 11–13, and the test-discovery line in the milestones preamble); these are the judgment
-calls left.
-
-1. **No drive-by rewording** (§ Branch-writing rules 1) keeps carried translations on Linux, at the cost of shipping old
-   style nits ("e.g. via chmod") in `other` branches until a copy pass. David may prefer the polish now; it only costs
-   Linux readers English text until task 28.
-2. **The `en-GB`/`en-AU` Linux trash word** changes lead ruling 1's "milestone 9 mines it": the evidence already did,
-   and found no desktop-neutral British word (GNOME/Xfce "Wastebasket", KDE "wastebin"). The plan keeps the overlays'
-   "Bin" on Linux so overlays never need a branch `en` folded away. "Wastebasket" is the alternative if David wants
-   GNOME's word as the generic one.
-3. **The command pair's survivor name.** The "stem without the suffix" rule makes `commands.fileShowInFinder.label`,
-   which names an OS, against the reasoning of lead ruling 3. Recommended: `commands.fileShowInFileManager.label`. The
-   command id `file.showInFinder` stays either way: ids are persisted in people's shortcut customizations
-   (`shortcuts-store.ts`), so renaming one is a migration, out of scope.
-4. **Gated commands in list surfaces.** The Keyboard shortcuts section lists the whole registry, so Linux shows "File
-   properties" and "Preview" rows for commands that do nothing there. Recommended: that section skips commands whose
-   `showInPalette` is a `hasCapability()` false (or a new `needsCapability` on the command), decided in milestone 6a.
-5. **Termbase after task 28.** Milestone 5 makes the termbase skip English-carryover branches, but a TRANSLATED
-   `windows` branch using the Microsoft word (pt-BR "Excluir") is then judged against the locale's macOS ruling
-   ("Apagar") and may hit its `avoid` list. Recommended: milestone 5 also gives `terms.json` rulings optional per-OS
-   forms (empty in task 27) and judges each branch against its OS's form; otherwise task 28 needs baseline raises, which
-   need David's OK.
-6. **Review timing.** The review page moves to "after milestone 11" so David's English edits land before task 28. If he
-   can't review in that window, task 28 should wait rather than translate English that may still change.
-7. **Eject for network volumes on Windows.** "Eject" stays neutral, but if `menu.volume.eject` / the volume eject
-   tooltips also show on an SMB mount, Windows says "Disconnect" and Linux "Unmount" there. Unverified; milestone 11
-   checks which volumes the eject rows reach before calling them neutral.
-8. **The permanent-delete siblings** (`confirmDelete`, `suggestedOps.action.delete`, `approve.delete`,
-   `sourcesGone.continue`'s `delete` arm) gain a Windows-only "permanently". It follows from the decision's two labels
-   ("Delete" / "Delete permanently") but changes four keys nobody proposed, so it's on David's review page.
-
-## Lead rulings on the copy review notes
-
-1. No drive-by rewording stands: a branch that reads the same as today keeps its 13 translations.
-2. `en-GB` and `en-AU` keep "Bin" on Linux. This replaces the mining step in the first rulings' item 1.
-3. The command pair's survivor is `commands.fileShowInFileManager.label`; the command id stays.
-4. A command gains `needsCapability`, and every surface that lists commands (palette, Keyboard shortcuts, menus) skips
-   one whose capability is off. Milestone 6a.
-5. `terms.json` rulings gain optional per-OS forms, empty for now, and the termbase judges each branch against its OS's
-   form. Milestone 5.
-6. Task 28 starts after David has reviewed the English.
-7. Milestone 11 checks which volumes the eject rows reach before calling "Eject" neutral.
-8. The four permanent-delete siblings gain "permanently" on Windows and are flagged on the review page.
+1. **`homebrew_cask` is a distribution fact, not an OS capability.** It fits "named after the UI that asks" poorly and
+   will want siblings (winget, Flathub) when per-OS distribution notes arrive. Alternative: one `distribution_note`
+   select-worded line, shown everywhere, with a Windows and Linux branch once those channels exist. Kept as planned:
+   today only macOS has a channel to star.
+2. **Gated commands' `other` labels become unreachable.** With `needsCapability` on `file.getInfo` and `file.quickLook`,
+   nothing shows "File properties" or "Preview" off macOS, so those pairs could collapse to plain macOS values. Kept as
+   blocks: Windows has a native Properties dialog, so `get_info` may turn on there, and the branch is then ready.
+3. **Follow-up issues, not plan work** (verdicts § Bugs, plus this pass). The lead files these before milestone 6a:
+   inotify overflow drops the rescan (`notify_backend.rs`); no Windows `AppData` rules in `tools/sensitive.rs` (must
+   land before Windows ships Ask Cmdr); `locate_adb_binary` misses `.exe` and `~/Android/Sdk`; `expand_tilde` breaks
+   D1's slash form on Windows; `app.quit` has no handler off macOS, so Ctrl+Q does nothing on Linux and the Windows
+   "Exit Cmdr" command this plan words is dead until task 26 (#1102) gives it one;
+   `servers.refusal.certificateUntrusted` tells a revoked certificate to "add it to your trust store"; the "macOS kernel
+   mount" log line on Linux; `packages.rs`'s negated `cfg`; and a Windows F11 full-screen entry, which flips
+   `full_screen` on.
