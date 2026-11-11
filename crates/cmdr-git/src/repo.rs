@@ -12,7 +12,7 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, OnceLock, RwLock, Weak};
+use std::sync::{Arc, Mutex, RwLock, Weak};
 use std::time::Instant;
 
 use cmdr_fs::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
@@ -241,9 +241,10 @@ fn open_options() -> gix::sec::trust::Mapping<gix::open::Options> {
 /// under a mapping while Cmdr runs. Anything else (a USB drive, an SD card, a network share, a
 /// second internal volume) counts as one that can, which only costs reading packed-refs into
 /// memory.
+#[cfg(unix)]
 fn is_on_the_startup_disk(path: &Path) -> bool {
     use std::os::unix::fs::MetadataExt as _;
-    static STARTUP_DEVICES: OnceLock<Vec<u64>> = OnceLock::new();
+    static STARTUP_DEVICES: std::sync::OnceLock<Vec<u64>> = std::sync::OnceLock::new();
     let startup = STARTUP_DEVICES.get_or_init(|| {
         [Some(PathBuf::from("/")), std::env::home_dir()]
             .into_iter()
@@ -252,6 +253,13 @@ fn is_on_the_startup_disk(path: &Path) -> bool {
             .collect()
     });
     std::fs::metadata(path).is_ok_and(|meta| startup.contains(&meta.dev()))
+}
+
+/// No device number to compare off Unix, so every disk counts as one that can go away: the
+/// cautious answer, which only costs reading packed-refs into memory.
+#[cfg(not(unix))]
+fn is_on_the_startup_disk(_path: &Path) -> bool {
+    false
 }
 
 fn map_discover_err(err: gix::Error) -> FriendlyGitError {

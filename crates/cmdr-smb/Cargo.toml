@@ -81,10 +81,11 @@ cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # `io-util` are the credit-cap proxy's (`volume/credit_cap_proxy.rs`). `test-util`
 # pauses the clock for the watcher's slow-server tests.
 tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "test-util", "macros"] }
-# The mount half of `examples/tag_sweep_bench.rs`, what a sweep cost before smb2 did it.
-xattr = "1"
 
 [target.'cfg(unix)'.dev-dependencies]
+# The mount half of `examples/tag_sweep_bench.rs`, what a sweep cost before smb2 did it.
+# Unix-only: `xattr` doesn't build for Windows.
+xattr = "1"
 # `getpeername` over the process's fds, for the mount/unmount socket-lifetime cell
 # (`volume/session_integration_test.rs`). No new package: the graph already
 # carries `libc`.

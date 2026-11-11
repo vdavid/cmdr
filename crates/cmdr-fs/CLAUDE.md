@@ -16,7 +16,8 @@ paths (`crate::file_system::volume::VolumeError`); other crates use `cmdr_fs::�
 ## Must-knows
 
 - **`#![deny(missing_docs)]` holds here**; `specta` is pinned to the app's exact version for `bindings.ts`.
-- **It builds for `wasm32` too**: host-OS deps go under `cfg(not(target_family = "wasm"))`. DETAILS § The browser build.
+- **It builds for `wasm32` too**: host-OS deps go under `cfg(not(target_family = "wasm"))`, Unix-only ones under
+  `cfg(unix)`. DETAILS § The browser build.
 - **`Volume::capabilities()` is a PURE FOLD of the trait's predicates, published over IPC.** ❌ Never override it: add a
   predicate instead (`src/volume/capabilities.rs`).
 - **`Volume::notify_mutation` defaults to a no-op.** A new mutable backend must override it or its destination pane goes

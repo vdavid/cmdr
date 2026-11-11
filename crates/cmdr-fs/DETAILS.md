@@ -117,8 +117,9 @@ The engines build for `wasm32-unknown-unknown` (`crates/cmdr-listing-wasm`, the 
 A browser has no host filesystem, user database, threads, or C toolchain, and the gates are as few and coarse as that
 allows:
 
-- **Host-only deps** sit in `Cargo.toml`'s `cfg(not(target_family = "wasm"))` table: `libc`, `uzers`, `xattr`, `exacl`,
-  and tokio's `rt-multi-thread`. `dirs` stays unconditional (it answers `None` there). The wasm table adds `uuid`'s `js`
+- **Host-only deps** sit in `Cargo.toml`'s `cfg(not(target_family = "wasm"))` table (tokio's `rt-multi-thread`) and, for
+  the Unix-only ones, its `cfg(unix)` table: `libc`, `uzers`, `xattr`, `exacl`, none of which builds for Windows (or has
+  a Windows job here). `dirs` stays unconditional (it answers `None` there). The wasm table adds `uuid`'s `js`
   randomness and `rt`'s browser half (`web-time`, `wasm-bindgen`, `wasm-bindgen-futures`).
 - **One whole module is host-only** (`lib.rs`): `mapped_file_faults` (mmap).
 - **SQLite builds for the browser too**: `rusqlite` is an ordinary dependency, and on `wasm32-unknown-unknown` it links
