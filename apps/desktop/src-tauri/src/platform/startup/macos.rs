@@ -15,8 +15,8 @@ pub(crate) fn install(app: &AppHandle) {
     crate::native_drag::set_app_handle(app.clone());
 
     // Start the volume mount/unmount watcher.
-    crate::volumes::watcher::start_volume_watcher(app);
-    // Holds every DA-mediated unmount while the drive's index lets go (`volumes/unmount_approver/`).
+    crate::volumes::start_volume_watcher(app);
+    // Holds every DA-mediated unmount while the drive's index lets go (`volumes/platform/macos/unmount_approver/`).
     crate::volumes::unmount_approver::install_for_app();
 
     // Ensure ptpcamerad is re-enabled in case a previous session crashed while it was

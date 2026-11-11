@@ -61,7 +61,6 @@ pub mod smb_diagnostics;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 pub mod usage;
 pub mod volume_sign_in; // Backend-neutral sign-in commands
-#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod volumes;
 pub mod webdav;
 pub mod whats_new;

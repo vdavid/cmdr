@@ -5,7 +5,7 @@
 //! keeps the app's own `crate::usb_speed::UsbSpeed` path, which every volume
 //! producer already spells.
 //!
-//! Producer side (MTP discovery) lives behind `#[cfg(any(target_os = "macos",
-//! target_os = "linux"))]`; everything else carries `None`.
+//! MTP discovery fills it in for a phone's storages; every other row carries
+//! `None`.
 
 pub use cmdr_fs::volume::UsbSpeed;

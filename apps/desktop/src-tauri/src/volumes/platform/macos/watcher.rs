@@ -124,7 +124,7 @@ fn install_observers() {
 static WILL_UNMOUNT_OBSERVER_INSTALLED: OnceLock<()> = OnceLock::new();
 
 /// Install the `NSWorkspaceWillUnmountNotification` observer: the FALLBACK pre-unmount hook, for
-/// when the DiskArbitration approver can't install (`volumes/unmount_approver/`). It's racy — the
+/// when the DiskArbitration approver can't install (`volumes/platform/macos/unmount_approver/`). It's racy — the
 /// OS doesn't wait for the observer — so it only ever runs instead of the approver, never beside
 /// it, or one unmount would stop the same index twice. Idempotent.
 pub(crate) fn install_will_unmount_observer() {

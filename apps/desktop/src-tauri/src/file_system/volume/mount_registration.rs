@@ -28,10 +28,7 @@ use super::Volume;
 use super::manager::get_volume_manager;
 use cmdr_fs::log_private::LogPrivate;
 
-#[cfg(target_os = "macos")]
-use crate::volumes as platform;
-#[cfg(target_os = "linux")]
-use crate::volumes_linux as platform;
+use crate::volumes::{get_mount_point, registrable_mount_roots, volume_id_for_mount};
 
 /// A live mount, as the ID funnel sees it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -69,7 +66,7 @@ fn name_for_root(root: &Path) -> String {
 ///
 /// [`VolumeManager::register_if_absent`]: super::manager::VolumeManager::register_if_absent
 pub(crate) fn register_mount_root(root: &str) {
-    let volume_id = platform::volume_id_for_mount(root);
+    let volume_id = volume_id_for_mount(root);
     register_mount_root_as(&volume_id, root);
 }
 
@@ -100,7 +97,7 @@ fn register_mount_root_as(volume_id: &str, root: &str) {
 /// Browsable or not, on purpose (see the module header). A table that wouldn't answer
 /// registers nothing and says so: ❌ never treat it as an empty machine.
 pub(crate) fn register_every_mount() {
-    let Some(roots) = platform::registrable_mount_roots() else {
+    let Some(roots) = registrable_mount_roots() else {
         log::warn!(
             target: "volume",
             "The mount table wouldn't answer, so no mounts were registered this pass; \
@@ -142,8 +139,8 @@ pub(crate) fn adopt_mount_serving(volume_id: &str, path: &Path) -> Option<Arc<dy
 
 /// The live mount that owns `path`, named by the ID funnel.
 fn live_mount_under(path: &Path) -> Option<MountIdentity> {
-    let (root, _fs_type, _source) = platform::get_mount_point(&path.to_string_lossy())?;
-    let volume_id = platform::volume_id_for_mount(&root);
+    let (root, _fs_type, _source) = get_mount_point(&path.to_string_lossy())?;
+    let volume_id = volume_id_for_mount(&root);
     Some(MountIdentity {
         root: PathBuf::from(root),
         volume_id,

@@ -4,11 +4,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 
 ## File inventory
 
-- **`mod.rs`**: re-exports. `eject` and `volumes` are gated behind
-  `#[cfg(any(target_os = "macos", target_os = "linux"))]` until the volumes seam gives Windows an arm; every other
-  module compiles everywhere. There's no `volumes_linux` module and no alias for one: the
-  volume commands are cross-platform and `commands/volumes.rs` serves both. See `../volumes_linux/DETAILS.md` § "One
-  command module".
+- **`mod.rs`**: re-exports. `eject` is gated behind `#[cfg(any(target_os = "macos", target_os = "linux"))]` until it
+  gets a Windows arm; every other module compiles everywhere. `commands/volumes.rs` serves every OS over the `volumes`
+  seam: `../volumes/DETAILS.md` § "The seam".
 - **`file_system/`**: directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, tests.
   `listing.rs`: streaming + virtual-scroll listing, `find_first_fuzzy_match` (type-to-jump),
   benchmarking, `get_brief_column_text_widths` (per-column widest-filename text widths for Brief mode). The guarded
@@ -57,8 +55,6 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   (`#lib/tauri-commands/storage.ts`, with the outer FE timeout layer) and
   `lib/file-explorer/navigation/resolve-location.ts` maps it to a typed `{ ok }` outcome. Calling
   `resolve_path_volume_fast` alone would return `None` for `smb://` / `mtp://` paths, so don't bypass the shared body.
-- **`volumes_linux.rs`** (Linux): same interface as `volumes.rs` (including `resolve_location`), delegates to the
-  `volumes_linux` module.
 - **`mtp.rs`**: the MTP on/off switch, the dial (`connect_mtp_device`), and the ptpcamerad workaround text. Browsing
   and file operations go through `MtpVolume`, and the device list reaches the frontend as volumes.
 - **`sftp.rs`**: the SFTP surface minus connecting (that's `servers.rs`, below) and minus editing a saved entry

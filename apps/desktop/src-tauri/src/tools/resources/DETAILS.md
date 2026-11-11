@@ -56,7 +56,7 @@ reports the gap; the section is present and plausible, just short.
 
 Fixing it means pointing the Linux branch at the same `volume_listing::list_with_timeout` the macOS one already uses,
 and giving it a summary mapping: `is_smb_fs_type` lives in the
-macOS-only `volumes/fs_type.rs`, so the `VolumeKind::Smb` classification `kind_for_location` makes needs a home both
+macOS-only `volumes/platform/macos/fs_type.rs`, so the `VolumeKind::Smb` classification `kind_for_location` makes needs a home both
 platforms can reach before this can just be shared. (The `connection_state` half is already shared: both twins carry the
 `cmdr_fs::volume::ConnectionState` enum.) Roughly 40 lines plus that move. Found during the volume-command dedupe; deliberately
 left out of that branch because it's an agent-facing behavior change, not duplication.

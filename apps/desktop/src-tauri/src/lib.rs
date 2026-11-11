@@ -184,18 +184,10 @@ mod usb_speed;
 mod volume_broadcast;
 mod volume_host;
 mod volume_listing;
-#[cfg(target_os = "macos")]
 mod volumes;
-#[cfg(target_os = "linux")]
-mod volumes_linux;
 mod whats_new;
 mod window_events;
 mod window_state;
-
-// The volume list's stand-in where neither `volumes` nor `volumes_linux` builds; the last stub
-// without a platform seam.
-#[cfg(not(target_os = "macos"))]
-mod stubs;
 
 use tauri::Manager;
 

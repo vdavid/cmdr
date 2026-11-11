@@ -312,7 +312,7 @@ re-enable reconciles in place). Idempotent, so overlapping hooks are safe. All t
 their own disconnect paths, and stopping them here would fight that. It answers once the index has LET GO of the drive,
 not once the stop was asked: a stop landing while the index is still starting, or while a scan start or another teardown
 holds its manager, returns with the watcher still up (`../lifecycle/DETAILS.md` § "When a volume has been let go"). The
-hooks themselves live in `file_system/volume/eject/mod.rs` and `volumes/lifecycle.rs`.
+hooks themselves live in `file_system/volume/eject/mod.rs` and `volumes/platform/macos/lifecycle.rs`.
 
 - **Cmdr's own eject (`file_system/volume/eject/mod.rs`) — the reliable wedge-safe point.** For a
   `DiskutilUnmount`/`DiskutilEject`, the eject releases the volume through the app's drive-release gate (so a start
@@ -324,12 +324,13 @@ hooks themselves live in `file_system/volume/eject/mod.rs` and `volumes/lifecycl
   meet the unmount with its watcher still up, which is this very wedge (`file_system/volume/DETAILS.md` § "Eject").
   SMB/MTP keep their own teardown and their offline-browsable Stale index across an eject, so the eject-stop is a no-op
   for them.
-- **The DiskArbitration unmount approver (`volumes/unmount_approver/`) — the reliable point for an unmount Cmdr didn't
-  start.** DA asks Cmdr's own approval session before every DA-mediated unmount (Finder, `diskutil`, `hdiutil`,
-  `NSWorkspace`, another app) and WAITS for the answer, so the stop finishes while the filesystem is still healthy. It
-  stops every indexed volume of the whole disk in the first ask, dissents while anything is still letting go, and hands
-  back what it stopped once DA goes idle with the drive still mounted. Bounds: DA ignores a dissent under force, and it
-  never sees a raw `/sbin/umount`. `apps/desktop/src-tauri/src/volumes/DETAILS.md` § "The unmount approver".
+- **The DiskArbitration unmount approver (`volumes/platform/macos/unmount_approver/`) — the reliable point for an
+  unmount Cmdr didn't start.** DA asks Cmdr's own approval session before every DA-mediated unmount (Finder, `diskutil`,
+  `hdiutil`, `NSWorkspace`, another app) and WAITS for the answer, so the stop finishes while the filesystem is still
+  healthy. It stops every indexed volume of the whole disk in the first ask, dissents while anything is still letting
+  go, and hands back what it stopped once DA goes idle with the drive still mounted. Bounds: DA ignores a dissent under
+  force, and it never sees a raw `/sbin/umount`. `apps/desktop/src-tauri/src/volumes/DETAILS.md` § "The unmount
+  approver".
 - **`NSWorkspaceWillUnmountNotification` — the best-effort FALLBACK, installed only when the approver can't be.** The
   earliest hook AppKit offers, but RACY (the OS doesn't wait for our observer). Runs off-main, and logs a `warn` when
   the index was still letting go of the drive as the OS unmounted it: the line to look for after a hung unmount. ❌
@@ -337,9 +338,9 @@ hooks themselves live in `file_system/volume/eject/mod.rs` and `volumes/lifecycl
 - **`NSWorkspaceDidUnmountNotification` — CLEANUP only, and only without the approver.** By the time it fires the volume
   is gone, so it can't prevent a wedge; it releases the now-dangling watcher + handles for a volume that unmounted
   without going through Cmdr's eject. With the approver installed it stands down, because the approver's cause machine
-  already stops a drive that went away AND knows why it went (`volumes/unmount_approver/causes.rs`); two hooks would
-  race the same stop. It stays the whole post-unmount cleanup on a Mac where the approver couldn't install, which is
-  also the only place the `WillUnmount` fallback runs.
+  already stops a drive that went away AND knows why it went (`volumes/platform/macos/unmount_approver/causes.rs`); two
+  hooks would race the same stop. It stays the whole post-unmount cleanup on a Mac where the approver couldn't install,
+  which is also the only place the `WillUnmount` fallback runs.
 
 The DidUnmount/WillUnmount handlers do NOT flip freshness to Stale: for a physically removed drive the volume row leaves
 the picker, so a `Fresh→Stale` transition would pop the one-time stale dialog about a drive that's simply gone.

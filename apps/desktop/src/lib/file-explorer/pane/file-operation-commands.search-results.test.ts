@@ -268,7 +268,7 @@ describe('openDeleteDialog on a search-results pane', () => {
 
   it('drops the trash affordance when the rows sit on a volume with no trash', async () => {
     // exFAT and every network mount answer `supportsTrash: false`
-    // (`volumes/fs_type.rs`). Offering "Move to trash" there gives the user a
+    // (`volumes/platform/macos/fs_type.rs`). Offering "Move to trash" there gives the user a
     // button whose operation the backend can only fail.
     getSnapshotSpy.mockReturnValue(
       snapshot(

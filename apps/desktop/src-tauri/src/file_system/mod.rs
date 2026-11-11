@@ -153,7 +153,6 @@ fn register_discovered_volumes() {
     // share, a disk image attached with `-mountpoint`) resolving to an ID
     // nothing served, so the pane died on "Volume not found".
     // `file_system::volume::mount_registration` carries the full why.
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     volume::mount_registration::register_every_mount();
 
     // Register attached volumes and cloud drives (macOS)
@@ -199,10 +198,10 @@ fn register_discovered_volumes() {
     // Register mounted volumes, cloud drives, and network mounts (Linux)
     #[cfg(target_os = "linux")]
     {
-        let locations = crate::volumes_linux::list_locations();
+        let locations = crate::volumes::list_locations();
         let non_fav: Vec<_> = locations
             .iter()
-            .filter(|l| l.category != crate::volumes_linux::LocationCategory::Favorite)
+            .filter(|l| l.category != crate::volumes::LocationCategory::Favorite)
             .collect();
         log::debug!("Registering {} volume(s)", non_fav.len());
         for location in non_fav {
@@ -336,12 +335,6 @@ pub fn upgrade_existing_smb_mounts() {
     });
 }
 
-/// The per-platform mount-info struct `get_smb_mount_info` returns.
-#[cfg(target_os = "macos")]
-type SmbMountInfo = crate::volumes::SmbMountInfo;
-#[cfg(target_os = "linux")]
-type SmbMountInfo = crate::volumes_linux::SmbMountInfo;
-
 /// The OS-mounted SMB shares that don't have a Cmdr smb2 session yet, as
 /// `(mount_path, mount_info)`.
 ///
@@ -357,11 +350,8 @@ type SmbMountInfo = crate::volumes_linux::SmbMountInfo;
 /// `attempt_reconnect` rather than through a replacement. An unreadable table
 /// reads as nothing to do: the next pass asks again.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn os_mounted_smb_shares() -> Vec<(String, SmbMountInfo)> {
-    #[cfg(target_os = "macos")]
+fn os_mounted_smb_shares() -> Vec<(String, crate::volumes::SmbMountInfo)> {
     use crate::volumes::smb_mounts;
-    #[cfg(target_os = "linux")]
-    use crate::volumes_linux::smb_mounts;
 
     let Some(kernel_smb_mounts) = smb_mounts() else {
         log::debug!("The mount table wouldn't answer; no SMB mounts to upgrade this pass");

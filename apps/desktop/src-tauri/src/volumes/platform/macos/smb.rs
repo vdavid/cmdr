@@ -2,7 +2,7 @@
 //! of a `statfs` mount source, tagging volumes with their SMB connection state,
 //! and deriving the SMB-aware volume ID.
 
-use super::{ConnectionState, LocationInfo, is_smb_fs_type};
+use super::{ConnectionState, LocationInfo, SmbMountInfo, is_smb_fs_type};
 
 /// Enriches discovered locations with everything only the registered `Volume`
 /// knows: its capability surface and how live its session is.
@@ -36,31 +36,6 @@ pub fn enrich_from_volume_registry(volumes: &mut [LocationInfo]) {
             vol.connection_state = Some(ConnectionState::OsMount);
         }
     }
-}
-
-/// Information about an SMB mount extracted from `statfs`.
-#[derive(Debug, Clone)]
-pub struct SmbMountInfo {
-    /// Server hostname or IP (for example, "192.168.1.111").
-    pub server: String,
-    /// Share name, ONE path segment (for example, "naspi"). This is what goes to
-    /// TreeConnect, so it can never carry a separator.
-    pub share: String,
-    /// Where inside the share this mount is anchored, `/`-separated and without
-    /// leading or trailing separators (for example, "example.com"). `None` for the
-    /// ordinary mount, which sits at the share root.
-    ///
-    /// macOS follows a DFS referral by making a SECOND mount underneath the
-    /// namespace root (`/Volumes/SYSVOL/example.com` beside `/Volumes/SYSVOL`),
-    /// and a subdirectory mount looks the same. Both are the same SHARE, so both
-    /// derive the same volume ID and ride one session; the anchor is what a path
-    /// on this mount has to be joined onto before it goes on the wire, and it
-    /// reaches the backend as `SmbVolume`'s `share_root`.
-    pub subpath: Option<String>,
-    /// Username if present in the mount source (for example, "david").
-    pub username: Option<String>,
-    /// Port from the mount source (for example, 10480). Defaults to 445.
-    pub port: u16,
 }
 
 /// Extracts SMB server, share, and username from a mount path via `statfs`.

@@ -1,6 +1,33 @@
 # Volumes details
 
-Depth and rationale. `CLAUDE.md` holds the must-knows; the decision detail lives here.
+Depth and rationale for the seam and the macOS arm. `CLAUDE.md` holds the must-knows; the Linux arm's detail is
+`platform/linux/DETAILS.md`.
+
+## The seam
+
+`platform/mod.rs` pins every fn an arm answers (the locations, the mount a path sits on, the SMB mounts, the mount
+table's identity and rows, the live space reading, the watcher's start and stop, and `NETWORK_FS_TYPE`, which the
+synthetic `network` volume reports), and `mod.rs` re-exports them, so a caller asks `crate::volumes` and never names an
+OS. The model (`LocationInfo`, `LocationCategory`, `SmbMountInfo`, `DEFAULT_VOLUME_ID`) is defined once in `mod.rs`: the
+frontend reads one shape everywhere, and a field one OS forgets is a compile error, not a drifted twin.
+`platform/windows.rs` lists the root and three home folders and answers "nothing here" to every mount-table question.
+
+What only one OS has stays in its arm, re-exported under a positive gate: on macOS, disk images, whole-disk units, the
+unmount approver, and the readers eject and the SMB paths use; on Linux, the GVFS dirname parser the mount helper reads.
+
+**Decision**: one command module, `commands/volumes.rs`, for every OS, over the seam.
+**Why**: a file existing only to be a registration target reads like an OS implementation and invites someone to put
+OS behavior in it, which then has to be kept in step with its twin by hand. The pair of hand-maintained command modules
+this replaced had drifted: both Linux `list_volumes` and `get_volume_space` ran their blocking work straight on the
+async thread with no deadline, so one wedged CIFS mount or a stuck `gvfsd-fuse` held the IPC handler for as long as the
+kernel did, while macOS had wrapped both in `blocking_with_timeout_flag` for months.
+
+The shared `confirm_archive_boundary` call in `resolve_path_to_volume` is NOT one of those fixes, despite looking like
+one. macOS needs it because `statfs` fails outright on `…/bundle.zip/docs/readme.txt`; Linux's `get_mount_point` is a
+longest-prefix match over `/proc/mounts` that never fails, so Linux already resolved such a path to the containing
+drive (verified by running the macOS test against the pre-merge Linux module in the Docker lane, where it passed). It's
+shared so the contract is explicit: a stat-based fast path added later would otherwise silently start answering `None`
+for archive-inner paths.
 
 ## Location categories
 
@@ -103,7 +130,7 @@ rule, mount a share as one account, fast-user-switch, and list it from the other
 `is_network_fs_type` clause and its test. ❗ `is_network_fs_type` also picks the volume-ID derivation and which mounts
 skip blocking enrichment: this rule only reads it.
 
-Linux has the same rule for FUSE, read off the mount options: `volumes_linux/DETAILS.md` § "Another account's FUSE
+Linux has the same rule for FUSE, read off the mount options: `platform/linux/DETAILS.md` § "Another account's FUSE
 mounts".
 
 ## Location IDs (two cross-file sync points)
@@ -120,7 +147,7 @@ Every other ID is minted by `cmdr_fs::volume::ids` (below).
 ## `list_locations()`
 
 Aggregates all `LocationCategory` entries in order (favorites first) and deduplicates through
-`cmdr_fs::volume::published_locations::dedupe_locations`, shared with `volumes_linux/`: the first row per ID, and the
+`cmdr_fs::volume::published_locations::dedupe_locations`, shared with the Linux arm: the first row per ID, and the
 first volume row per path.
 
 **Decision: a favorite never claims its path.** A favorite is a `fav-<uuid>` shortcut into a volume, not a volume, so
@@ -164,7 +191,7 @@ refresh into a round of network traffic. The device-provider seam is deliberatel
 ### Enrichment has two twins
 
 `smb.rs::enrich_from_volume_registry` is the only place a `LocationInfo` learns anything from the `VolumeManager`, and
-`volumes_linux/smb.rs` carries the twin. Both copy `capabilities()` and `connection_state()`; only the macOS one adds
+`platform/linux/smb.rs` carries the twin. Both copy `capabilities()` and `connection_state()`; only the macOS one adds
 the `OsMount` fallback, because that fallback is a `mount_smbfs` the Linux build never performs. ❗ A field filled on one
 twin and not the other is a pane whose buttons differ by OS, which is exactly what the Docker E2E lane would have hit
 with a registered SFTP volume greying out under Linux while it stayed live on a Mac. Each twin has a cell for that.
@@ -176,7 +203,7 @@ with a registered SFTP volume greying out under Linux while it stayed live on a 
 lexicographically. `list_locations` then dedupes on ID as well as path (favorites on ID only; see above).
 
 The collapse lives in `cmdr-fs` rather than here because it's a pure list transform over `(volume id, mount root)`
-pairs, and Linux needs the identical rule (`volumes_linux/DETAILS.md`): bind mounts and container mounts make "one ID,
+pairs, and Linux needs the identical rule (`platform/linux/DETAILS.md`): bind mounts and container mounts make "one ID,
 several roots" routine there. Each platform implements `MountRootCandidate` on its own `LocationInfo` and keeps its own
 platform-specific ID derivation. A second copy would rot independently, which is the whole reason the two enumerations
 share this one.
@@ -289,9 +316,8 @@ panes off ejected volumes.
 ## Volume space
 
 The space reading (`get_volume_space`, the live readout's memo, and the NSURL resource readers behind them) is the local
-backend's: `crates/cmdr-local/DETAILS.md` § "Local volume space". `volumes/` calls it by crate name, and re-exports
-only `get_volume_space`, the macOS half of the `platform::get_volume_space` facade `commands/volumes.rs` reaches
-(`volumes_linux/` re-exports the same function for Linux).
+backend's: `crates/cmdr-local/DETAILS.md` § "Local volume space". `mod.rs` re-exports `get_volume_space`, the same
+reading on every OS; the seam's `live_volume_space` is the polling readout's (the memoized NSURL figure on macOS).
 
 ## The unmount approver
 
@@ -587,7 +613,7 @@ never `Some("")`, which would make the downstream join prepend a `/`).
 macOS produces this shape on its own: it follows a DFS referral by making a SECOND mount underneath the namespace root,
 so `smb://example.com/SYSVOL` leaves `/Volumes/SYSVOL/example.com` live beside `/Volumes/SYSVOL`. A subdirectory mount
 (`mount_smbfs //server/share/sub`) is the same shape asked for deliberately, and Linux's `mount -t cifs` records it the
-same way, which is why `volumes_linux/smb.rs` parses identically.
+same way, which is why `platform/linux/smb.rs` parses identically.
 
 Swallowing the whole tail into `share` sent `SYSVOL/example.com` to TreeConnect, which no server has a share for:
 `STATUS_BAD_NETWORK_NAME`, so the share stayed on the slow kernel mount and the user was warned about a share already

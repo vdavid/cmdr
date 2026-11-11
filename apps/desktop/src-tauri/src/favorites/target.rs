@@ -3,7 +3,7 @@
 //!
 //! The listing builds a favorite row in two stages, because neither alone sees enough:
 //!
-//! 1. **Discovery** (`volumes::get_favorites`, `volumes_linux::get_favorites`) runs blocking under
+//! 1. **Discovery** (each `volumes/platform/` arm's `get_favorites`) runs blocking under
 //!    its own timeout and can look at the disk, but sees no servers and no devices. It stats a
 //!    favorite's folder only where that can't hang ([`on_disk`]) and seeds the row's
 //!    [`FavoriteTarget`] from the store ([`FavoriteTarget::discovered`]).

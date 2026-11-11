@@ -26,7 +26,7 @@ struct WantedShare<'a> {
 ///
 /// Reads the folder names under `/run/user/<uid>/gvfs`, which `gvfsd-fuse` lists from
 /// its own mount table (no round trip to any server), and matches what each name says
-/// (`volumes_linux::parse_gvfs_smb_dirname`). ❌ Never build the path from parts: GVFS
+/// (`volumes::parse_gvfs_smb_dirname`). ❌ Never build the path from parts: GVFS
 /// adds `port=` and `user=` when the mount URL carries them and URI-escapes the values,
 /// so a built path misses every authenticated or off-445 share.
 fn find_gvfs_mount(wanted: &WantedShare<'_>) -> Option<String> {
@@ -59,7 +59,7 @@ fn match_gvfs_mount<'a>(
     use cmdr_fs::name_fold::fold_name;
     let mut any_account = None;
     for dirname in dirnames {
-        let Some(mount) = crate::volumes_linux::parse_gvfs_smb_dirname(dirname) else {
+        let Some(mount) = crate::volumes::parse_gvfs_smb_dirname(dirname) else {
             continue;
         };
         if mount.port != wanted.port

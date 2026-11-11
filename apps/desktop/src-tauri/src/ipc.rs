@@ -620,26 +620,14 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
-            // Volumes. One block for both platforms: `commands::volumes` is the whole
-            // command layer, and the platform difference lives a layer down in
-            // `crate::volumes` vs `crate::volumes_linux`, which it picks by `cfg`.
-            cfg(any(target_os = "macos", target_os = "linux")) {
+            // Volumes: one command layer over the `volumes` seam.
+            cfg(all()) {
                 typed: [
                     crate::commands::volumes::list_volumes,
                     crate::commands::volumes::resolve_path_volume,
                     crate::commands::volumes::resolve_location,
                     crate::commands::volumes::get_default_volume_id,
                     crate::commands::volumes::get_volume_space,
-                ]
-                dispatch_only: []
-            }
-            cfg(not(any(target_os = "macos", target_os = "linux"))) {
-                typed: [
-                    crate::stubs::volumes::list_volumes,
-                    crate::stubs::volumes::resolve_path_volume,
-                    crate::stubs::volumes::resolve_location,
-                    crate::stubs::volumes::get_default_volume_id,
-                    crate::stubs::volumes::get_volume_space,
                 ]
                 dispatch_only: []
             }
@@ -1108,13 +1096,13 @@ pub fn builder() -> Builder<tauri::Wry> {
             wire::ScanPreviewComplete,
             wire::ScanPreviewError,
             wire::ScanPreviewCancelled,
-            // Volumes + disk space (volumes/, volumes_linux/, space_poller/,
+            // Volumes + disk space (volumes/, space_poller/,
             // crates/cmdr-operations/src/state.rs busy set, menu eject action).
             VolumesChanged,
             VolumeMounted,
             VolumeUnmounted,
             // A volume's root or landing moved: an edit to a connected SFTP or WebDAV
-            // place (network/live_server_edit.rs), or a renamed drive (volumes/lifecycle.rs).
+            // place (network/live_server_edit.rs), or a renamed drive (volumes/platform/macos/lifecycle.rs).
             VolumeRootChanged,
             // A saved server moved to a new address, so its places have new ids
             // (server_move.rs).

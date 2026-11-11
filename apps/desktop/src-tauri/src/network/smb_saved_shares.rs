@@ -169,10 +169,7 @@ pub fn remember_named_share(host_name: &str, share: &str, username: Option<&str>
 /// `statfs` on the share: that waits on the server, and a slow one ran the add out of time
 /// (cmdr-reports#40).
 pub fn remember_favorited_share(mount_path: &str, volume_id: &str) {
-    #[cfg(target_os = "macos")]
     let info = crate::volumes::smb_mount_info_at(mount_path);
-    #[cfg(target_os = "linux")]
-    let info = crate::volumes_linux::get_smb_mount_info(mount_path);
     let Some(info) = info else {
         // A non-SMB mount has no source to read.
         log::debug!(

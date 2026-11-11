@@ -230,9 +230,14 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     order-free installers (macOS observers, mouse navigation, Services, volume watcher, unmount approver, `ptpcamerad`,
     File Provider warm-up, drag-out handle, updater state; Linux watcher, accent, title-bar revert); order-bound steps
     (the E2E activation policy, the FDA probe, `after_update`) stay on the spine.
-20. [M] Win. Volumes seam: fold `volumes/` and `volumes_linux/` into one `volumes/` with `platform/` arms behind a
-    pinned fn set, remove the `as platform` aliases and `stubs/volumes.rs`, route `listing_host/mounts.rs`,
-    `space_poller`, `index_provider`, `usb_speed` through it. Needs 7, and 11 for the shared mount façade.
+20. [M] Win. **Done**. One `volumes/` defines the model (`LocationInfo`, `SmbMountInfo`) once, and `volumes/platform/`
+    pins 17 fns and a const (locations, path resolution, SMB mounts, the mount table's rows and identities, live space,
+    the watcher's start and stop, `NETWORK_FS_TYPE`) across a macOS arm (the old `volumes/`), a Linux arm (the old
+    `volumes_linux/`), and a Windows arm (the old stub's answers). `stubs/` is gone; `commands::volumes`, its IPC group,
+    and `mount_registration` compile everywhere, and `listing_host/mounts.rs`, `space_poller`, `index_provider`,
+    `volume_listing`, and the SMB callers ask `crate::volumes` with no `cfg`. Eject's `is_mount_point` reads go through
+    `cmdr_local::mounts`. `mount_table` and `linux_mounts` stay public: the arms read their full rows (fs type, source,
+    flags, owner), which the façade doesn't carry, and `cmdr-operations` reads `linux_mounts` too.
 21. [M] Win. **Done**. `adb`, `network`, `managed_policy`, `saved_servers`, `server_move`, `server_volumes`, and the
     `nfs`/`s3`/`servers`/`sftp`/`volume_sign_in`/`webdav` commands are on every OS (their IPC groups are `cfg(all())`),
     and `smb2` and `mdns-sd` sit in `[dependencies]` (both build for `x86_64-pc-windows-gnu`). Still macOS+Linux: MTP,

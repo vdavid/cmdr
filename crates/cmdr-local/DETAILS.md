@@ -40,7 +40,7 @@ they're the same OS-probe code the backend's own answers need (the `getfsstat` s
 `filesystem_kind.rs`), and none of them knows the app. The platform-free classification they feed (`FilesystemKind`,
 `MaxFileSize`, `mount_is_local_disk`) is `cmdr_fs::filesystem_kind`. What stays app-side is policy over the snapshot:
 which rows the switcher shows, and whose mount is another account's own
-(`apps/desktop/src-tauri/src/volumes/mounts.rs::mount_is_private_to_another_user`).
+(`apps/desktop/src-tauri/src/volumes/platform/macos/mounts.rs::mount_is_private_to_another_user`).
 
 **Decision**: `write_from_stream` `sync_data`s each file (+ best-effort parent-dir fsync) before it returns **Why**:
 Every cross-volume copy/move that lands on a local disk (MTP → Local, SMB → Local, USB import) flows through this one
@@ -244,11 +244,11 @@ paths.
 `space.rs` holds it, beside `get_space_info_for_path` (what `Volume::get_space_info` returns) and the `statvfs` reading
 Linux uses and macOS falls back to.
 
-**Decision**: on Linux, `get_volume_space` is THE `statvfs` call: the app's `volumes_linux` re-exports it for the IPC
+**Decision**: on Linux, `get_volume_space` is THE `statvfs` call: the app's `volumes` seam re-exports it for the IPC
 command, and the space poller's unregistered-path fallback calls it, so ❌ never write a second `statvfs` in the app.
 **Why**: the app once kept its own copy, which derived `used` as `total - available` (counting root-reserved blocks as
 used) while a `Volume`'s answer read `f_bfree`, so the switcher and a transfer's pre-flight could disagree on one disk
-(#465). The non-macOS, non-Linux `stubs/volumes.rs` keeps its own copy on purpose: stubs import nothing.
+(#465).
 
 **Decision**: a test build answers from `statvfs` (`space::get_space_info_statvfs`), and only the NSURL tests in
 `space.rs` call the real `nsurl_volume_space`. **Why**: the first NSURL call in a process runs `CFBundleGetMainBundle`,
@@ -378,7 +378,7 @@ app read of a local disk that doesn't go through a volume:
   surface is the better design, because every caller that moves onto it is a two-arm OS dispatch gone, and once the
   app's volume code reads its records through it too, `mount_table` and `linux_mounts` can go private.
 - **The mount probes**: `filesystem_kind` (seven, counting `probe_mount_for_path`'s three platform arms), `mount_table`
-  (four), `statfs` (three), `nsurl` (two), and `linux_mounts` (16, the `/proc/mounts` and `mountinfo` readers
-  `volumes_linux/` builds on). The counter reads source, so each platform's module counts whatever the build target.
+  (four), `statfs` (three), `nsurl` (two), and `linux_mounts` (16, the `/proc/mounts` and `mountinfo` readers the app's
+  Linux volumes arm builds on). The counter reads source, so each platform's module counts whatever the build target.
 
 A new item names which of these callers it serves, or goes behind `testing`.

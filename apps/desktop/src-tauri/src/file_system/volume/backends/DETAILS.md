@@ -47,7 +47,7 @@ SMB mounts are automatically upgraded to `SmbVolume` (direct smb2 connection) in
    is on (default `true`), it starts the browse — that's when the macOS prompt fires, once per app per data dir. Without
    this, dev profiles with auto-reconnected SMB shares would stay on the slow OS-mount path forever.
 
-2. **Mount detection** (`volumes/lifecycle.rs::try_upgrade_smb_mount`): When FSEvents detects a new volume in `/Volumes/`
+2. **Mount detection** (`volumes/platform/macos/lifecycle.rs::try_upgrade_smb_mount`): When FSEvents detects a new volume in `/Volumes/`
    and it's `smbfs`, spawns a background upgrade attempt, which holds the mDNS browse through `discover_server`.
 
 3. **Pane open** (`network::smb_pane_upgrade::upgrade_on_pane_open`, from `list_directory_start_streaming`): a pane

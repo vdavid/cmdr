@@ -22,10 +22,7 @@ use crate::network::smb_connect_failure::{
 use crate::network::smb_server_address::{
     ServerAddress, discover_server, friendly_server_name, get_keychain_password, resolve_server_address,
 };
-#[cfg(target_os = "macos")]
 use crate::volumes::SmbMountInfo;
-#[cfg(target_os = "linux")]
-use crate::volumes_linux::SmbMountInfo;
 use cmdr_fs::log_private::LogPrivate;
 
 /// What a mount is, as the OS records it: which volume it belongs to, and where
@@ -56,10 +53,7 @@ struct MountIdentity {
 /// referral lands a second mount a directory inside the namespace root).
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn identity_from_statfs(mount_path: &str) -> Option<MountIdentity> {
-    #[cfg(target_os = "macos")]
     let info = crate::volumes::get_smb_mount_info(mount_path)?;
-    #[cfg(target_os = "linux")]
-    let info = crate::volumes_linux::get_smb_mount_info(mount_path)?;
     Some(MountIdentity {
         volume_id: crate::file_system::volume::smb_volume_id(&info.server, info.port, &info.share),
         share_root: info.subpath.unwrap_or_default(),

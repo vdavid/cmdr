@@ -17,7 +17,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 /// lock-free reads from any thread. The internal state machine is binary
 /// (`Direct ⇄ Disconnected`). The "OS mount" fallback the frontend shows lives at
 /// the outer `cmdr_fs::volume::ConnectionState` layer (see
-/// `enrich_from_volume_registry` in `volumes/smb.rs`) and never reaches this
+/// `enrich_from_volume_registry` in `volumes/platform/macos/smb.rs`) and never reaches this
 /// cell on the smb2 hot path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]

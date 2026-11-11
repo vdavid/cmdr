@@ -122,7 +122,7 @@ fn disk_lock() -> &'static Mutex<()> {
 ///
 /// Platform-native (per `design-principles.md`): macOS seeds `/Applications`, `~/Desktop`,
 /// `~/Documents`, `~/Downloads` (the previous hardcoded four); Linux seeds Home, `~/Desktop`,
-/// `~/Documents`, `~/Downloads` (matching the previous `volumes_linux` favorites).
+/// `~/Documents`, `~/Downloads` (the Linux favorites before the store existed).
 fn default_favorites() -> Vec<Favorite> {
     let home = dirs::home_dir().unwrap_or_default();
 

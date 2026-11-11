@@ -138,7 +138,7 @@ module-doc comment in `cloud_actions.rs` has the full story.
 `crates/cmdr-fs/src/cloud_provider.rs` is the one source of truth for "is this path in a cloud folder, and whose?", shared by the volume switcher (which wants a
 display name and a stable volume ID) and the file context menu (which wants to know what the provider can do).
 `locate(home, path)` is pure, so it's cheap on every navigation and unit-testable without a real cloud folder;
-`volumes/cloud.rs` is a thin adapter over it, and a test pins `CloudProvider::ICloudDrive.volume_id()` against
+`volumes/platform/macos/cloud.rs` is a thin adapter over it, and a test pins `CloudProvider::ICloudDrive.volume_id()` against
 `ICLOUD_VOLUME_ID` so the two can't drift.
 
 `supports_eviction()` is the point of the enum: it states once that the eviction pair is iCloud's alone, so a provider

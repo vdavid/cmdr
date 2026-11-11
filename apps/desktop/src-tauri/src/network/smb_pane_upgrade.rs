@@ -15,10 +15,7 @@
 use crate::file_system::volume::BackendKind;
 use crate::ignore_poison::IgnorePoison;
 use crate::network::os_mount_notice::FallbackNotice;
-#[cfg(target_os = "macos")]
 use crate::volumes::SmbMountInfo;
-#[cfg(target_os = "linux")]
-use crate::volumes_linux::SmbMountInfo;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{LazyLock, Mutex};
@@ -166,12 +163,7 @@ async fn dial(upgrade: PaneUpgrade) {
 /// The SMB mount the kernel lists exactly at `root`, from the non-blocking mount
 /// table: a pane on a hung share can't stall here.
 fn smb_mount_at(root: &Path) -> Option<SmbMountInfo> {
-    #[cfg(target_os = "macos")]
-    use crate::volumes::smb_mounts;
-    #[cfg(target_os = "linux")]
-    use crate::volumes_linux::smb_mounts;
-
-    smb_mounts()?
+    crate::volumes::smb_mounts()?
         .into_iter()
         .find(|(mount_point, _)| Path::new(mount_point) == root)
         .map(|(_, info)| info)

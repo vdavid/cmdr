@@ -203,7 +203,7 @@ pub(crate) fn device_readiness_token(readiness: cmdr_fs::volume::DeviceReadiness
 /// ❗ It is checked LAST, so a server's own `fs_type` always wins; four backends
 /// carry a session now, and a session alone has never meant "SMB".
 ///
-/// ❗ macOS-only, because `is_smb_fs_type` is: `volumes/fs_type.rs` is gated to it,
+/// ❗ macOS-only, because `is_smb_fs_type` is: `volumes/platform/macos/fs_type.rs` is gated to it,
 /// and the Linux snapshot surfaces only root plus MTP today. Moving the SMB
 /// fs-type test somewhere both platforms reach is what that gap needs
 /// (`DETAILS.md` § "`cmdr://state` lists no real volumes on Linux").

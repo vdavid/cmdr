@@ -11,10 +11,7 @@ use crate::file_system::volume::manager::get_volume_manager;
 use crate::network::known_shares;
 use crate::network::os_mount_notice::withdraw_os_mount_notice;
 use crate::network::smb_upgrade::{MOUNT_READ_LIMIT, return_to_os_mount};
-#[cfg(target_os = "macos")]
 use crate::volumes::{SmbMountInfo, get_smb_mount_info};
-#[cfg(target_os = "linux")]
-use crate::volumes_linux::{SmbMountInfo, get_smb_mount_info};
 use cmdr_fs::deadline::blocking_with_timeout;
 use std::time::Duration;
 
