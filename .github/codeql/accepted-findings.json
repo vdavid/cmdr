@@ -18,8 +18,8 @@
     },
     {
       "rule": "rust/hard-coded-cryptographic-value",
-      "path": "apps/desktop/src-tauri/src/network/smb_smbclient.rs",
-      "reason": "Linux-only module (`#[cfg(target_os = \"linux\")]`), so the macOS-target analysis can't see its `#[cfg(test)]` module as test code; the flagged passwords are that module's test inputs."
+      "path": "apps/desktop/src-tauri/src/network/os_mount/platform/linux/smbclient.rs",
+      "reason": "Linux-only module (the Linux arm of `os_mount/platform/`), so the macOS-target analysis can't see its `#[cfg(test)]` module as test code; the flagged passwords are that module's test inputs."
     },
     {
       "rule": "rust/weak-sensitive-data-hashing",

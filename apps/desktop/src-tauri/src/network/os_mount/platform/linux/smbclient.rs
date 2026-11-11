@@ -2,7 +2,7 @@
 //!
 //! Provides fallback share listing using the `smbclient` command (from the `samba-client`
 //! package) when the pure Rust smb-rs implementation fails on Linux. This is the Linux
-//! equivalent of the macOS `smbutil` fallback in `smb_smbutil.rs`.
+//! equivalent of the macOS `smbutil` fallback (`../macos/smbutil.rs`).
 
 use cmdr_smb::{ShareInfo, ShareListError};
 use log::{debug, warn};
@@ -76,10 +76,7 @@ pub async fn run_smbclient_list(
         })
         .map_err(|e| {
             if e.kind() == std::io::ErrorKind::NotFound {
-                #[cfg(target_os = "linux")]
-                let install_command = super::linux_distro::smbclient_install_command();
-                #[cfg(not(target_os = "linux"))]
-                let install_command: Option<String> = None;
+                let install_command = super::distro::smbclient_install_command();
 
                 ShareListError::MissingDependency {
                     message: "smbclient is not installed. It's needed to connect to this server.".to_string(),
@@ -177,7 +174,6 @@ fn write_smbclient_auth_file(username: &str, password: &str) -> std::io::Result<
 
     let mut opts = std::fs::OpenOptions::new();
     opts.write(true).create_new(true);
-    #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
         opts.mode(0o600);

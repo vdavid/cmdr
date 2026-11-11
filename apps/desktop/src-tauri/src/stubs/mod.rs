@@ -11,10 +11,6 @@ pub mod display_accessibility;
 #[cfg(not(target_os = "macos"))]
 pub mod glass_tint;
 #[cfg(not(target_os = "linux"))]
-pub mod mtp;
-#[cfg(not(target_os = "linux"))]
-pub mod network;
-#[cfg(not(target_os = "linux"))]
 pub mod permissions;
 #[cfg(not(target_os = "macos"))]
 pub mod text_size;

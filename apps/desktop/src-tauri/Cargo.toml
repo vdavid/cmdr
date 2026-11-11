@@ -313,6 +313,12 @@ mdns-sd = { version = "0.21.7", features = ["logging"] }
 # When bumping: also re-vendor the test containers per
 # apps/desktop/test/smb-servers/.compose/VENDORED.md
 smb2 = { version = "0.43.0", features = ["serde"] }
+# The MTP backend: device discovery, the PTP session layer, and the `Volume` over
+# one device storage. No `tauri` in its tree, so `cargo check -p cmdr-mtp`
+# verifies it without building the app. The hotplug watcher, the ptpcamerad
+# workaround, the registrar wiring, and the frontend events stay here in `mtp/`.
+# It carries `mtp-rs`, which the app no longer names directly.
+cmdr-mtp = { path = "../../../crates/cmdr-mtp" }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -331,14 +337,6 @@ cocoon = "0.5"
 zbus = "5"
 # Native file icons: XDG icon theme lookup (pure Rust, no GTK dependency)
 freedesktop-icons = "0.4"
-
-[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
-# The MTP backend: device discovery, the PTP session layer, and the `Volume` over
-# one device storage. No `tauri` in its tree, so `cargo check -p cmdr-mtp`
-# verifies it without building the app. The hotplug watcher, the ptpcamerad
-# workaround, the registrar wiring, and the frontend events stay here in `mtp/`.
-# It carries `mtp-rs`, which the app no longer names directly.
-cmdr-mtp = { path = "../../../crates/cmdr-mtp" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # The custom updater's trust check: unpacking the release tarball and requiring Cmdr's Developer

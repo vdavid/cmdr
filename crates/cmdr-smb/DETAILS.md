@@ -64,11 +64,12 @@ In the app, because the answer is no:
 
 - **Discovery** (`network/mdns_discovery.rs`, `manual_servers.rs`, `virtual_smb_hosts.rs`) — mDNS is a different
   protocol, and the discovered-host registry is app state the frontend subscribes to.
-- **Mounts** (`network/mount.rs`, `mount_linux.rs`) — `NetFSMountURLSync` and `gio mount` are OS APIs, not SMB.
+- **Mounts** (`apps/desktop/src-tauri/src/network/os_mount/platform/`, one arm per OS) — `NetFSMountURLSync` and
+  `gio mount` are OS APIs, not SMB.
 - **The keychain** (`network/keychain.rs`, `credential_store.rs`) — the backend asks for credentials through the
   `CredentialStore` seam; where they're stored is the host's business.
-- **The CLI fallback** (`network/smb_smbutil.rs`, `smb_smbclient.rs`) — subprocesses under the app's deadline wrapper,
-  reading app settings.
+- **The CLI fallback** (the same arms: `smbutil` on macOS, `smbclient` on Linux) — subprocesses under the app's deadline
+  wrapper, reading app settings.
 - **The upgrade passes** (`network/smb_upgrade.rs`) — they decide when to replace a kernel mount with a direct session,
   which needs the volume registry, the index, and analytics.
 - **Every event and every word** (`network/events.rs`'s `VolumeConnectionChanged`, `SmbFellBackToOsMount`,

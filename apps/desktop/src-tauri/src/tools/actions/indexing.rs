@@ -14,7 +14,6 @@
 use serde_json::{Value, json};
 
 use super::{ToolError, ToolResult};
-#[cfg(any(target_os = "macos", target_os = "linux"))]
 use crate::commands::indexing::EnableIndexingOutcome;
 use crate::commands::indexing::{disable_drive_index, enable_drive_index, forget_drive_index, rescan_drive_index};
 use crate::tools::resources::indexing::freshness_token;

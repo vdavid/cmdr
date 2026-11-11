@@ -16,8 +16,8 @@ use std::time::Duration;
 
 use crate::network::connect_wiring::{AttemptTable, DialTicket};
 use crate::network::known_shares::{self, AuthOptions, ConnectionMode, KnownNetworkShare};
-use crate::network::mount::MountError;
 use crate::network::one_shot_credentials::SecretOffer;
+use crate::network::os_mount::MountError;
 use crate::network::os_mount_notice::FallbackNotice;
 use crate::network::{keychain, smb_upgrade};
 use crate::saved_servers::ServerConnectOutcome;
@@ -278,7 +278,7 @@ pub async fn connect_saved_share(
         },
     };
 
-    let mount = crate::network::mount_share(
+    let mount = crate::network::os_mount::mount_share(
         address.clone(),
         row.share_name.clone(),
         row.username.clone(),

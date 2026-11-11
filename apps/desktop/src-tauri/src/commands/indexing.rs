@@ -222,7 +222,6 @@ pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), Str
     // Disk access is the wake loop's second gate, and it caches the answer.
     crate::agent::wake::refresh_readiness(&app);
 
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     crate::mtp::start_mtp_watcher(&app);
 
     index()

@@ -254,8 +254,8 @@ Two exceptions stay on a raw OS-temp path deliberately, and both name their reas
 `updater/installer.rs`'s `staging_dir_sits_under_temp_dir` asserts on the path itself, and `cmdr-git`'s
 `test_fixtures::temp_dir` is already process-and-run unique (PID plus a nanosecond stamp) and keeps its directory on
 panic on purpose, for post-mortem inspection. Production code that stages into the OS temp dir (the updater, the icon
-sample files, `smb_smbclient`'s auth file, `crates/cmdr-operations/src/scratch_dir.rs`) is correct as-is and is not test
-scaffolding.
+sample files, the Linux `smbclient` share-list's auth file, `crates/cmdr-operations/src/scratch_dir.rs`) is correct
+as-is and is not test scaffolding.
 
 ## Waiting for background work (Rust)
 
@@ -778,27 +778,27 @@ usually means a real race to fix, not a budget to enlarge. The rare exception is
 and genuinely not optimizable** — then a generous, loudly-commented timeout is correct. Keep this list short; a new
 entry needs a real "we can't make this faster" justification, not convenience.
 
-- **`smb_integration_mount_non_ascii_share`** (`src-tauri/src/network/mount_test.rs`): uses a **16s** NetFS connect
-  timeout (double the usual 8s). It's one of only three SMB tests that do a real macOS NetFS _kernel_ mount
-  (`NetFSMountURLSync`); the other ~36 use the userspace `smb2` lib with no OS mount. The kernel mount RTT depends on
-  factors we don't control (the OS mount queue, host CPU/lease contention when the full slow suite + both e2e lanes run
-  at once), so the default 8s spuriously timed out under load. The mount is pure setup there, so the larger budget only
-  delays how long a genuinely-hung mount waits before nextest's 30s slow-timeout cap fires. Only NetFS can answer
-  whether it accepts the escaped URL `build_smb_mount_url` produces, which is why a unit test can't replace it. It
-  mounts exactly ONE share (`café`) even though the `unicode` fixture serves four: the others assert the same mechanism,
-  their URLs are already pinned byte for byte by unit tests, and each extra kernel mount is another one of these budgets
-  in the lane. It also carries the volume-ID assertion, which rides that same mount rather than making a second one.
-  Don't copy the 16s to other tests, and don't apply it to `smb_integration_mount_guest_no_dialog`, whose 8s budget IS
-  its assertion.
+- **`smb_integration_mount_non_ascii_share`** (`src-tauri/src/network/os_mount/platform/macos/mount_test.rs`): uses a
+  **16s** NetFS connect timeout (double the usual 8s). It's one of only three SMB tests that do a real macOS NetFS
+  _kernel_ mount (`NetFSMountURLSync`); the other ~36 use the userspace `smb2` lib with no OS mount. The kernel mount
+  RTT depends on factors we don't control (the OS mount queue, host CPU/lease contention when the full slow suite + both
+  e2e lanes run at once), so the default 8s spuriously timed out under load. The mount is pure setup there, so the
+  larger budget only delays how long a genuinely-hung mount waits before nextest's 30s slow-timeout cap fires. Only
+  NetFS can answer whether it accepts the escaped URL `build_smb_mount_url` produces, which is why a unit test can't
+  replace it. It mounts exactly ONE share (`café`) even though the `unicode` fixture serves four: the others assert the
+  same mechanism, their URLs are already pinned byte for byte by unit tests, and each extra kernel mount is another one
+  of these budgets in the lane. It also carries the volume-ID assertion, which rides that same mount rather than making
+  a second one. Don't copy the 16s to other tests, and don't apply it to `smb_integration_mount_guest_no_dialog`, whose
+  8s budget IS its assertion.
 - ❌ **Two real-mount tests must never share a share.** Each pre-cleans with `diskutil unmount force` and unmounts on
   drop, so two of them on one share tear down each other's mount, and the symptom lands somewhere else entirely: a wait
   expiring against a path that has stopped being a mount. The three kernel-mount tests hold `public` on the guest
   fixture, `café` on the `unicode` one, and `private` on the `auth` one, dialed as `127.0.0.1` so the `testuser` session
   it signs in never meets the guest tests on `localhost`.
-- ❌ **A test that calls NetFS takes `NetfsFixtureLock` first** (`network/mount_test.rs`), even one that only expects a
-  refusal. macOS hands a mount any live session to the same hostname whatever the port, and every fixture is
-  `localhost`, so two NetFS calls at once land on each other's servers: `café` came back `ShareNotFound` from the guest
-  server on most lane runs while passing alone.
+- ❌ **A test that calls NetFS takes `NetfsFixtureLock` first** (`network/os_mount/platform/macos/mount_test.rs`), even
+  one that only expects a refusal. macOS hands a mount any live session to the same hostname whatever the port, and
+  every fixture is `localhost`, so two NetFS calls at once land on each other's servers: `café` came back
+  `ShareNotFound` from the guest server on most lane runs while passing alone.
 - **`an_outside_change_in_an_accented_directory_names_the_path_the_pane_opened`**
   (`crates/cmdr-smb/src/volume/unicode_names_integration_test.rs`): a **20 s** delivery budget under a 30 s cap, for
   ~0.3 s of real work. It waits on the fixture Samba's `notifyd`, which lags by seconds when several lanes share the

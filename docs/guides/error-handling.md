@@ -116,8 +116,8 @@ The rule that replaced it:
   that word an eject share `wordEjectRefusal`, which also routes the technical detail to the log. `unmountRefused` is
   the one variant whose sentence depends on its payload: `wordUnmountRefusal` picks it from the `HolderScan`
   (`apps/desktop/src/lib/file-explorer/navigation/DETAILS.md` § "A refused unmount names who held the drive").
-- **Mount refusals**: the enum is `apps/desktop/src-tauri/src/network/mount.rs` (the Linux twin is `mount_linux.rs`, and
-  why its variants are cut the way they are is `apps/desktop/src-tauri/src/network/DETAILS.md`); the words are
+- **Mount refusals**: the enum is `apps/desktop/src-tauri/src/network/os_mount/mod.rs` (one type every OS's arm answers,
+  and why its variants are cut the way they are is `apps/desktop/src-tauri/src/network/DETAILS.md`); the words are
   `apps/desktop/src/lib/file-explorer/network/mount-error-messages.ts`, and `mount-error.ts` beside it carries the value
   across the throw. A new variant needs its `errors.mount.<variant>` key and its arm in `MOUNT_MESSAGE`, whose record
   type demands every variant.

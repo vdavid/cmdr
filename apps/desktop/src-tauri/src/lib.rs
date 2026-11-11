@@ -113,7 +113,6 @@ mod mcp;
 mod menu;
 #[cfg(target_os = "macos")]
 mod mouse_nav;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
 mod multi_rename;
 #[cfg(target_os = "macos")]
@@ -420,7 +419,6 @@ pub fn run() {
             // Stash the AppHandle so a share that stays on the slow kernel mount
             // can say so. Session-state transitions need no handle here: they go
             // through the volume host's event seam, wired in `volume_host`.
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::os_mount_notice::set_app_handle(app.handle().clone());
 
             // Network discovery (mDNS) startup is deferred. See the post-`load_settings`
@@ -440,11 +438,9 @@ pub fn run() {
             // MTP device would connect and show no volumes at all. Must be
             // before the virtual device and the hotplug watcher below, which
             // are the two things that can connect one.
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             mtp::install_connection_manager(app.handle());
             // File MTP as a device provider, so the volume list, eject, and path
             // resolution see its storages. `device_volumes` is the seam.
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             mtp::volume_wiring::install_device_provider();
             adb::volume_wiring::install_device_provider();
 
@@ -523,7 +519,6 @@ pub fn run() {
             error_reporter::auto_dispatcher::set_enabled(saved_settings.error_reports_enabled.unwrap_or(false));
 
             // Apply MTP enabled setting (default: true) before starting the watcher
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             mtp::set_mtp_enabled_flag(saved_settings.mtp_enabled.unwrap_or(true));
 
             // Start MTP device hotplug watcher (Android device support).
@@ -533,7 +528,6 @@ pub fn run() {
             // FDA gate is pending; `start_indexing_after_fda_decision` (deny path)
             // and a fresh launch with the FDA decision already made (allow path)
             // both call `start_mtp_watcher` after the gate has cleared.
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             if !fda_gate::is_fda_pending_runtime() {
                 mtp::start_mtp_watcher(app.handle());
             }

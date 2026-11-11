@@ -4,8 +4,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 
 ## File inventory
 
-- **`mod.rs`**: re-exports. `mtp` / `network` / `sftp` / `webdav` / `volumes` gated behind
-  `#[cfg(any(target_os = "macos", target_os = "linux"))]`. There's no `volumes_linux` module and no alias for one: the
+- **`mod.rs`**: re-exports. `eject` and `volumes` are gated behind
+  `#[cfg(any(target_os = "macos", target_os = "linux"))]` until the volumes seam gives Windows an arm; every other
+  module compiles everywhere. There's no `volumes_linux` module and no alias for one: the
   volume commands are cross-platform and `commands/volumes.rs` serves both. See `../volumes_linux/DETAILS.md` § "One
   command module".
 - **`file_system/`**: directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, tests.
@@ -176,7 +177,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `Volume::sign_in_prompt`, a `SignInShape` tagged on `kind`, read live when a banner renders, ❌ never carried on a
   connect result and ❌ never derived from the protocol or the sheet's mode; an unregistered id and a backend with no
   story of its own both answer `password`, the safe way to be wrong, and a share answers `username_password` because
-  the share is the identity and the account is a field on it). Off macOS and Linux, `stubs/network.rs` stands in.
+  the share is the identity and the account is a field on it). Real on every OS.
 - **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
   per-volume disconnect (`disconnect_smb_volume`: macOS shells out to
   `diskutil unmount`, Linux drops the smb2 session). Borrow Finder's saved password (macOS):

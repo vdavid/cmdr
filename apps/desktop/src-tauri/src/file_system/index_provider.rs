@@ -170,7 +170,6 @@ impl VolumeProvider for AppVolumeProvider {
         })
     }
 
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     fn resolve_mtp_object(&self, device_id: &str, storage_id: u32, handle: u32) -> ResolveMtpFut<'_> {
         let device_id = device_id.to_string();
         Box::pin(async move {
@@ -185,11 +184,6 @@ impl VolumeProvider for AppVolumeProvider {
                 })
                 .map_err(|e| format!("{e:?}").into())
         })
-    }
-
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    fn resolve_mtp_object(&self, _device_id: &str, _storage_id: u32, handle: u32) -> ResolveMtpFut<'_> {
-        Box::pin(async move { Err(format!("MTP is unsupported on this platform (handle {handle})").into()) })
     }
 }
 

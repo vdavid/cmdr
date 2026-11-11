@@ -12,17 +12,9 @@ pub use super::smb_cache::invalidate_cache;
 pub use cmdr_smb::{AuthMode, ShareListError, ShareListResult};
 
 // Internal imports
+use super::os_mount::{list_shares_cli_as_guest, list_shares_cli_with_keychain, list_shares_cli_with_password};
 use super::smb_cache::{DEFAULT_CACHE_TTL_MS, DEFAULT_LIST_SHARES_TIMEOUT_MS, cache_shares, get_cached_shares};
-use super::smb_smbutil::{list_shares_smbutil, list_shares_smbutil_authenticated_from_keychain};
-use cmdr_smb::{try_list_shares_as_guest, try_list_shares_authenticated};
-// macOS no longer shells out with explicit credentials (the URL-embedded password leaks into
-// argv); only the non-macOS authed fallback (smbclient `-A` authfile) still uses this.
-#[cfg(not(target_os = "macos"))]
-use super::smb_smbutil::list_shares_smbutil_with_auth;
-// Only the macOS arm classifies the raw smb2 failure of an authenticated listing
-// (Linux retries via the smbclient authfile fallback instead).
-#[cfg(target_os = "macos")]
-use cmdr_smb::classify_authenticated_error;
+use cmdr_smb::{classify_authenticated_error, try_list_shares_as_guest, try_list_shares_authenticated};
 use cmdr_smb::{classify_error, convert_shares, is_auth_error};
 
 /// Whether a listing may try guest access first.
@@ -165,7 +157,7 @@ async fn list_shares_uncached(
                 credentials.is_some(),
                 cmdr_fs::log_detail::LogDetail(message),
             );
-            list_shares_smbutil(hostname, ip_address, port).await
+            list_shares_cli_as_guest(hostname, ip_address, port).await
         }
         Err(e) => Err(e),
     }
@@ -250,7 +242,7 @@ async fn list_shares_smb2(
                         .to_string(),
                 });
             }
-            match list_shares_smbutil_authenticated_from_keychain(hostname, ip_address, port).await {
+            match list_shares_cli_with_keychain(hostname, ip_address, port).await {
                 Ok(result) => {
                     debug!("smbutil with Keychain succeeded, got {} shares", result.shares.len());
                     Ok(result)
@@ -305,51 +297,21 @@ async fn list_authenticated(
             Ok(converted(shares, AuthMode::CredsRequired))
         }
         Ok(inner) => {
-            // smb2 returned 0 shares or failed with creds.
-            //
-            // Linux: fall back to `smbclient -L -A <authfile>`. The password
-            // rides in a 0o600 temp file, never argv, so the fallback is safe.
-            //
-            // macOS: there's NO argv-free way to pass an explicit password to
-            // `smbutil view` (the URL is the only channel, which leaks the
-            // cleartext password into `ps`-readable argv). We don't shell out
-            // with credentials here. Surface the underlying smb2 failure instead;
-            // the user can still mount via the secure NetFS path.
-            #[cfg(target_os = "macos")]
+            // smb2 returned 0 shares or failed with creds. The OS's own client gets a turn
+            // where it can take a password without argv (Linux: `smbclient -L -A <authfile>`,
+            // the password in a 0o600 temp file). macOS's `smbutil view` can't (the URL is its
+            // only channel, and it leaks the cleartext password into `ps`-readable argv), so
+            // there the underlying smb2 failure is the answer; the user can still mount via
+            // the secure NetFS path.
+            if cli_fallback_allowed()
+                && let Some(result) = list_shares_cli_with_password(hostname, ip_address, port, user, pass).await
             {
-                let _ = (hostname, ip_address, port, user, pass); // keep bindings used across cfgs
-                match inner {
-                    Ok(_) => Err(ShareListError::AuthFailed {
-                        message: "Invalid username or password".to_string(),
-                    }),
-                    Err(e) => {
-                        debug!(
-                            "Authenticated share listing stopped: source=backend, backend=smb2, error_kind={:?}, nt_status={:?}, detail={:?}",
-                            e.kind(),
-                            e.status(),
-                            cmdr_fs::log_detail::LogDetail(&e.to_string())
-                        );
-                        // Authenticated context: a rejected session means
-                        // wrong credentials, not "authentication required".
-                        Err(classify_authenticated_error(&e))
-                    }
-                }
-            }
-            #[cfg(not(target_os = "macos"))]
-            {
-                if !cli_fallback_allowed() {
-                    return match inner {
-                        Ok(_) => Err(ShareListError::AuthFailed {
-                            message: "Invalid username or password".to_string(),
-                        }),
-                        Err(e) => Err(cmdr_smb::classify_authenticated_error(&e)),
-                    };
-                }
-                let _ = inner;
-                debug!("smb2 auth returned empty or failed, trying smbclient with credentials");
-                match list_shares_smbutil_with_auth(hostname, ip_address, port, user, pass).await {
+                return match result {
                     Ok(result) => {
-                        debug!("smbclient with auth succeeded, got {} shares", result.shares.len());
+                        debug!(
+                            "CLI share list with credentials succeeded, got {} shares",
+                            result.shares.len()
+                        );
                         Ok(result)
                     }
                     Err(e) => {
@@ -359,6 +321,22 @@ async fn list_authenticated(
                         );
                         Err(e)
                     }
+                };
+            }
+            match inner {
+                Ok(_) => Err(ShareListError::AuthFailed {
+                    message: "Invalid username or password".to_string(),
+                }),
+                Err(e) => {
+                    debug!(
+                        "Authenticated share listing stopped: source=backend, backend=smb2, error_kind={:?}, nt_status={:?}, detail={:?}",
+                        e.kind(),
+                        e.status(),
+                        cmdr_fs::log_detail::LogDetail(&e.to_string())
+                    );
+                    // Authenticated context: a rejected session means
+                    // wrong credentials, not "authentication required".
+                    Err(classify_authenticated_error(&e))
                 }
             }
         }

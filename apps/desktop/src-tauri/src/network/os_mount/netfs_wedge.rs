@@ -5,7 +5,7 @@
 //! never comes, and from then on every `NetFSMountURLSync` blocks inside it, for
 //! every server. Only restarting the helper clears it (`killall NetAuthSysAgent`;
 //! launchd starts it again on the next mount), and ❌ Cmdr never does that itself:
-//! it tells the user how. The mechanism and how it was confirmed: `DETAILS.md` §
+//! it tells the user how. The mechanism and how it was confirmed: `network/DETAILS.md` §
 //! "A wedged `NetAuthSysAgent` hangs every NetFS mount".
 //!
 //! Two jobs:
@@ -19,16 +19,13 @@
 //!   queueing another call on the wedged daemon. It stops as soon as the stuck
 //!   call comes back, or the helper running now isn't the one it got stuck in.
 
-use super::mount::MountError;
+use super::MountError;
+use super::platform::CAN_WEDGE;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
-
-/// Whether this platform's mount can wedge this way: only macOS's NetFS goes
-/// through `NetAuthSysAgent`. Linux's `gio mount` keeps the plain answers.
-pub(crate) const CAN_WEDGE: bool = cfg!(target_os = "macos");
 
 /// How long a mount must have waited before giving up on it can say anything
 /// about the helper. A healthy NetFS mount takes a second or two (1.5 s right
@@ -39,10 +36,6 @@ pub(crate) const SUSPECT_AFTER: Duration = Duration::from_secs(10);
 /// How long the server gets to accept a TCP connection on its SMB port. A LAN
 /// server answers in milliseconds; this only bounds how long Cancel can take.
 const PROBE_LIMIT: Duration = Duration::from_secs(2);
-
-/// The helper's process name, for the restart check.
-#[cfg(target_os = "macos")]
-const SIGN_IN_HELPER: &str = "NetAuthSysAgent";
 
 /// One NetFS call's ticket in a [`CallLedger`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -242,63 +235,6 @@ async fn server_answers(server: &str, port: u16) -> bool {
         tokio::time::timeout(PROBE_LIMIT, tokio::net::TcpStream::connect((server, port))).await,
         Ok(Ok(_))
     )
-}
-
-/// The sign-in helper's pid right now, or `None` when it isn't running (launchd
-/// starts it on demand) or there's no such helper on this platform.
-pub(crate) fn sign_in_helper_pid() -> Option<u32> {
-    #[cfg(target_os = "macos")]
-    {
-        pids_named(SIGN_IN_HELPER).into_iter().next()
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        None
-    }
-}
-
-/// The pids of every process named `name`, by `proc_listallpids` + `proc_name`
-/// (what `pgrep` reads, without a subprocess). A process running as root is
-/// listed too.
-#[cfg(target_os = "macos")]
-pub(crate) fn pids_named(name: &str) -> Vec<u32> {
-    // SAFETY: a null buffer with size 0 is the documented way to ask
-    // `proc_listallpids` how many pids there are; it writes nothing.
-    let count = unsafe { libc::proc_listallpids(std::ptr::null_mut(), 0) };
-    let Ok(count) = usize::try_from(count) else {
-        return Vec::new();
-    };
-    // Headroom for processes started between the two calls.
-    let mut pids: Vec<libc::c_int> = vec![0; count + 64];
-    let Ok(buffer_bytes) = libc::c_int::try_from(pids.len() * size_of::<libc::c_int>()) else {
-        return Vec::new();
-    };
-    // SAFETY: `pids` owns `buffer_bytes` bytes of writable, `c_int`-aligned memory,
-    // and `proc_listallpids` writes at most that many.
-    let filled = unsafe { libc::proc_listallpids(pids.as_mut_ptr().cast(), buffer_bytes) };
-    let Ok(filled) = usize::try_from(filled) else {
-        return Vec::new();
-    };
-    pids.truncate(filled.min(pids.len()));
-    pids.into_iter()
-        .filter_map(|pid| u32::try_from(pid).ok())
-        .filter(|&pid| pid != 0 && process_name(pid).as_deref() == Some(name))
-        .collect()
-}
-
-/// A process's name, as `proc_name` reads it, or `None` when it's gone.
-#[cfg(target_os = "macos")]
-pub(crate) fn process_name(pid: u32) -> Option<String> {
-    let pid = libc::c_int::try_from(pid).ok()?;
-    // `PROC_PIDPATHINFO_MAXSIZE` is generous; a name is at most `2 * MAXCOMLEN` (32).
-    let mut buffer = [0u8; 256];
-    let size = u32::try_from(buffer.len()).ok()?;
-    // SAFETY: `buffer` is `size` bytes of writable memory, and `proc_name` writes at
-    // most that many, answering how many it wrote.
-    let written = unsafe { libc::proc_name(pid, buffer.as_mut_ptr().cast(), size) };
-    let written = usize::try_from(written).ok().filter(|&n| n > 0)?;
-    let bytes = buffer.get(..written)?;
-    Some(String::from_utf8_lossy(bytes).into_owned())
 }
 
 #[cfg(test)]

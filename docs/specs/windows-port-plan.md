@@ -229,9 +229,11 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     and `smb2` and `mdns-sd` sit in `[dependencies]` (both build for `x86_64-pc-windows-gnu`). Still macOS+Linux: MTP,
     eject, volumes, `commands::network`, and `network/`'s OS-mount files, whose per-OS gates now mark exactly where
     Windows lacks an arm (tasks 20 and 22). The backend crates themselves stop only in `cmdr-fs` on Windows.
-22. [M] Win. The OS-mount half of `network/` (`mount*.rs`, `smb_smbutil.rs`, `smb_smbclient.rs`, `netfs_wedge.rs`,
-    `os_mount_notice.rs`, `keychain.rs`) moves behind `network/os_mount/platform/`; delete `stubs/network.rs` and
-    `stubs/mtp.rs`. Needs 21.
+22. [M] Win. **Done**. `network/os_mount/` holds `mount_share`, the NetFS-wedge ledger, the mount watch, and one
+    `MountResult`/`MountError` (three hand-mirrored copies before); `os_mount/platform/` pins each arm's mount, unmount,
+    share-list CLI (smbutil, smbclient, none), and sign-in-helper probe, with an explicit Windows arm. `keychain.rs` and
+    `os_mount_notice.rs` stay in `network/`: they have no OS code. `commands::network` and MTP (`mtp-rs` builds for
+    Windows) compile everywhere, and `stubs/network.rs` and `stubs/mtp.rs` are gone. Eject stays macOS+Linux (task 20).
 23. [S] Win. **Done** except the size measurer's inode dedup, which waits for task 9's vocabulary (with
     `open_with_copies.rs`'s inode check). Seams: `icons/platform/` (path and id lookups, the per-path threads, the
     autorelease pool, tag tinting; `macos_workspace.rs` moved under it), `intl/platform/` (the UI locale's two answers),

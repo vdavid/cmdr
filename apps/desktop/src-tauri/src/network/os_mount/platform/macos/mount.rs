@@ -31,74 +31,15 @@
 //! its own login flow. See `open_option_entries`.
 
 use crate::network::NetworkHost;
+use crate::network::os_mount::{MountError, MountResult};
 use crate::network::server_identity::SmbServer;
 use crate::volumes::SmbMountInfo;
 use cmdr_fs::log_private::LogPrivate;
 use core_foundation::base::TCFType;
 use core_foundation::string::CFString;
 use core_foundation::url::CFURL;
-use serde::{Deserialize, Serialize};
 use std::ffi::c_void;
 use std::ptr;
-
-/// Result of a successful mount operation.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MountResult {
-    /// For example, "/Volumes/Documents".
-    pub mount_path: String,
-    pub already_mounted: bool,
-}
-
-/// Why a mount didn't go through, as the data a person's message is built from.
-///
-/// ❌ No sentences: the frontend words every variant from the catalog
-/// (`file-explorer/network/mount-error-messages.ts`), so a translated UI never shows
-/// an English one (ERR-SHUSC). `server` is the address the mount used; the pane
-/// names the host by its own name where it has one. `mount_linux.rs` and
-/// `stubs/network.rs` carry the same JSON shape.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
-pub enum MountError {
-    /// Nothing answered at the server's address: the connection was refused or had no route.
-    HostUnreachable { server: String },
-    /// The server didn't answer within the mount's budget.
-    Timeout { server: String },
-    /// macOS's network sign-in helper (`NetAuthSysAgent`) looks wedged: a mount
-    /// waited it out while the server answered on its SMB port, or an earlier one
-    /// is still stuck in it. Only restarting the helper clears it
-    /// (`network/netfs_wedge.rs`). macOS only.
-    SignInHelperStuck { server: String },
-    /// The server has no share by that name, or offers none to this identity.
-    ShareNotFound { server: String, share: String },
-    /// The server wants a sign-in before it opens the share: a guest was turned away.
-    AuthRequired { server: String, share: String },
-    /// The server turned the offered username and password away.
-    AuthFailed { server: String },
-    /// The account signed in, and the share doesn't let it in.
-    PermissionDenied {
-        server: String,
-        share: String,
-        username: String,
-    },
-    /// The mount was canceled before it finished.
-    Cancelled { share: String },
-    /// The server offers no SMB version this computer's client speaks.
-    UnsupportedProtocol { server: String },
-    /// The server accepted the sign-in, then wouldn't mount the share.
-    MountRefused { server: String, share: String },
-    /// The system reported the share connected, and no mount of it is there.
-    MountMissing { server: String, share: String },
-    /// Linux only: `gio` isn't installed, so there's nothing to mount with.
-    GvfsMissing,
-    /// Anything the variants above don't describe.
-    Unexpected {
-        server: String,
-        share: String,
-        /// What NetFS, `gio`, or the mount task said, for the log. ❌ Never shown to a person.
-        detail: String,
-    },
-}
 
 // NetFS.framework FFI declarations
 // These are manually declared since NetFS isn't in standard Rust crates.
@@ -176,12 +117,12 @@ fn error_from_code(code: i32, share_name: &str, server_name: &str) -> MountError
     match code {
         USER_CANCELLED_ERR => MountError::Cancelled { share },
         // ❗ Ambiguous: NetFS answers ENOENT for a share this identity may not open as
-        // well as for one that doesn't exist. `network::mount_share` asks the server
+        // well as for one that doesn't exist. `network::os_mount::mount_share` asks the server
         // which (`network/DETAILS.md` § "A share that says not found").
         ENOENT | ENETFSNOSHARESAVAIL | KNETAUTH_ERROR_NO_SHARES_AVAILABLE => {
             MountError::ShareNotFound { server, share }
         }
-        // A guest's is a sign-in question, which `network::mount_share` knows and this
+        // A guest's is a sign-in question, which `network::os_mount::mount_share` knows and this
         // doesn't (`share_access::refusal_for_identity`).
         EACCES | EAUTH | KNETAUTH_ERROR_INTERNAL => MountError::AuthFailed { server },
         ENETFSNOAUTHMECHSUPP | KNETAUTH_ERROR_GUEST_NOT_SUPPORTED => MountError::AuthRequired { server, share },
@@ -357,7 +298,7 @@ fn encode_url_host(server: &str) -> String {
 /// Mount an SMB share to the local filesystem.
 ///
 /// This is a synchronous function that should be called from a spawn_blocking context;
-/// `crate::network::mount_share` is the async entry point that does, shared with Linux.
+/// `crate::network::os_mount::mount_share` is the async entry point that does, shared with Linux.
 /// It uses NetFSMountURLSync which handles the mount operation synchronously.
 /// NetFS automatically detects if the share is already mounted and returns the existing path.
 ///

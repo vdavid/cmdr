@@ -49,9 +49,6 @@
       "negated": 5,
       "outsideSeam": 9
     },
-    "apps/desktop/src-tauri/src/commands/indexing.rs": {
-      "outsideSeam": 1
-    },
     "apps/desktop/src-tauri/src/commands/menu.rs": {
       "negated": 4,
       "outsideSeam": 22
@@ -61,7 +58,7 @@
       "outsideSeam": 7
     },
     "apps/desktop/src-tauri/src/commands/mod.rs": {
-      "outsideSeam": 7
+      "outsideSeam": 5
     },
     "apps/desktop/src-tauri/src/commands/network.rs": {
       "negated": 1,
@@ -121,10 +118,6 @@
     "apps/desktop/src-tauri/src/error_reporter/preview_file.rs": {
       "outsideSeam": 1
     },
-    "apps/desktop/src-tauri/src/favorites/reach.rs": {
-      "negated": 1,
-      "outsideSeam": 2
-    },
     "apps/desktop/src-tauri/src/favorites/store.rs": {
       "negated": 1,
       "outsideSeam": 3
@@ -149,8 +142,8 @@
       "outsideSeam": 3
     },
     "apps/desktop/src-tauri/src/file_system/index_provider.rs": {
-      "negated": 5,
-      "outsideSeam": 15
+      "negated": 4,
+      "outsideSeam": 13
     },
     "apps/desktop/src-tauri/src/file_system/mod.rs": {
       "negated": 2,
@@ -258,12 +251,12 @@
       "outsideSeam": 10
     },
     "apps/desktop/src-tauri/src/ipc.rs": {
-      "negated": 8,
-      "outsideSeam": 29
+      "negated": 6,
+      "outsideSeam": 24
     },
     "apps/desktop/src-tauri/src/lib.rs": {
       "negated": 3,
-      "outsideSeam": 36
+      "outsideSeam": 30
     },
     "apps/desktop/src-tauri/src/licensing/device_id.rs": {
       "outsideSeam": 4
@@ -356,19 +349,8 @@
     "apps/desktop/src-tauri/src/network/mdns_discovery.rs": {
       "outsideSeam": 4
     },
-    "apps/desktop/src-tauri/src/network/mod.rs": {
-      "outsideSeam": 4
-    },
-    "apps/desktop/src-tauri/src/network/netfs_wedge.rs": {
-      "negated": 1,
-      "outsideSeam": 6
-    },
     "apps/desktop/src-tauri/src/network/server_identity.rs": {
       "outsideSeam": 2
-    },
-    "apps/desktop/src-tauri/src/network/smb_client.rs": {
-      "negated": 2,
-      "outsideSeam": 4
     },
     "apps/desktop/src-tauri/src/network/smb_connect_directly.rs": {
       "negated": 1,
@@ -392,14 +374,6 @@
     },
     "apps/desktop/src-tauri/src/network/smb_share_label.rs": {
       "outsideSeam": 1
-    },
-    "apps/desktop/src-tauri/src/network/smb_smbclient.rs": {
-      "negated": 1,
-      "outsideSeam": 3
-    },
-    "apps/desktop/src-tauri/src/network/smb_smbutil.rs": {
-      "negated": 6,
-      "outsideSeam": 15
     },
     "apps/desktop/src-tauri/src/network/smb_upgrade.rs": {
       "negated": 1,
@@ -455,8 +429,8 @@
       "outsideSeam": 5
     },
     "apps/desktop/src-tauri/src/stubs/mod.rs": {
-      "negated": 8,
-      "outsideSeam": 8
+      "negated": 6,
+      "outsideSeam": 6
     },
     "apps/desktop/src-tauri/src/subprocess.rs": {
       "outsideSeam": 1
@@ -479,9 +453,6 @@
     "apps/desktop/src-tauri/src/tools/actions/eject.rs": {
       "negated": 1,
       "outsideSeam": 5
-    },
-    "apps/desktop/src-tauri/src/tools/actions/indexing.rs": {
-      "outsideSeam": 1
     },
     "apps/desktop/src-tauri/src/tools/actions/memory.rs": {
       "negated": 1,

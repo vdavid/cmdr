@@ -6,7 +6,7 @@
 //! macOS kernel mount).
 
 use super::*;
-use crate::network::mount_share;
+use crate::network::os_mount::mount_share;
 use tokio_util::sync::CancellationToken;
 
 /// `CFURLCreateWithString` parses, it does not escape: it returns NULL for any
@@ -491,7 +491,7 @@ async fn smb_integration_mount_guest_refused_share_asks_for_credentials() {
 ///
 /// NetFS answers this with an auth code, which alone reads as `AuthFailed`
 /// (`kNetAuthErrorInternal`, -6600, in the field), so the sheet opened blaming a
-/// password nobody typed. `network::mount_share` reads a guest's `AuthFailed` as
+/// password nobody typed. `network::os_mount::mount_share` reads a guest's `AuthFailed` as
 /// `AuthRequired` (`share_access::refusal_for_identity`). The `auth` fixture host lets
 /// no guest in.
 #[cfg(target_os = "macos")]
