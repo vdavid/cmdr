@@ -519,9 +519,10 @@ fn a_drive_with_no_index_is_walked_live_then_read_back_from_what_the_walk_wrote(
         "a directory nothing is coming for is reported, never swallowed"
     );
     assert!(
-        third.permission_denied.is_empty(),
-        "and as ground Cmdr declines to read, never as a permission the user could grant: {:?}",
-        third.permission_denied
+        third.permission_denied.is_empty() && third.off_limits.is_empty(),
+        "and as ground Cmdr declines to read, never as a refusal: {:?} {:?}",
+        third.permission_denied,
+        third.off_limits
     );
 
     // 4. THE anchor. `b` now reads as covered, so nothing walks it — and the

@@ -14,10 +14,12 @@ single `should_exclude` gate for scanner, reconcile, watch verification, and the
   walk parks. ❌ Don't drop the tick, shrink the batch, or add a third cadence.
 - **Honest-stale, never false-complete.** An abandoned or give-up-pruned dir is NEVER marked listed, so it stays
   `listed_epoch = 0`.
-- **Every failed read gets an `unreadable_cause`**: `Denied` for permission denied, `Abandoned` for a timeout, any other
-  errno, and a give-up-pruned task (via `DirVisitor::visit_pruned`, a pruned task's only mention anywhere). ❌ Don't
-  "let a transient failure heal" by leaving one uncaused: that's a full stall timeout per dir on EVERY search, forever,
-  and it never converges. The retry lives in `../writer/abandoned_retry.rs` on a backoff instead.
+- **Every failed read gets an `unreadable_cause`**: a permission-denied read is `Denied` (TCC, Full Disk Access opens
+  it) or `OffLimits` (POSIX, SIP, data vault), decided by errno + `SF_RESTRICTED` in `refusal.rs`, ❌ never by message
+  text. `Abandoned` for a timeout, any other errno, and a give-up-pruned task (via `DirVisitor::visit_pruned`, a pruned
+  task's only mention anywhere). ❌ Don't "let a transient failure heal" by leaving one uncaused: that's a full stall
+  timeout per dir on EVERY search, forever, and it never converges. The retry lives in `../writer/abandoned_retry.rs` on
+  a backoff instead.
 - **Marks are sent AFTER `visitor.finish()`, and only for ids a read actually failed on.** ❌ Never derive them from
   "whatever is still unlisted": that condemns rows the walk read but hasn't stamped, which looks like a speed-up and
   shows up only as a short entry count (`marking_abandoned_ground_costs_no_coverage`).

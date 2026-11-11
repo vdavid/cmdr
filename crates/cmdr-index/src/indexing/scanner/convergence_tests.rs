@@ -185,9 +185,10 @@ fn a_cancelled_walk_leaves_durable_partial_coverage() {
 /// every single search and that part of the scope never converges.
 ///
 /// The schema carries the column for exactly this, and the walk is its only writer.
-/// Every failed read gets a cause, split by WHOSE problem it is: permission denied
-/// is the durable, user-fixable refusal; any other errno is ground Cmdr gave up on
-/// and will retry on a backoff.
+/// Every failed read gets a cause, split by WHOSE problem it is: a TCC refusal is
+/// the durable, user-fixable one; a refusal by file permissions is durable and
+/// nobody's to fix; any other errno is ground Cmdr gave up on and will retry on a
+/// backoff.
 ///
 /// ⚠️ Leaving the non-permission case uncaused is what made a wedged mount cost a
 /// full stall timeout on every search, forever: 1,497 `ETIMEDOUT` directories
@@ -201,6 +202,7 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
     let root = PathBuf::from(TREE_ROOT);
     let a = root.join("A");
     let denied = a.join("denied");
+    let root_only = a.join("root-only");
     let flaky = a.join("flaky");
     let healthy = a.join("healthy");
     seed_chain(&db_path, &a, &writer);
@@ -210,9 +212,13 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
     let reader = MockTree::new()
         // `flaky` is declared as a child but has no listing, so its read fails
         // with a plain not-found — the non-permission errno shape.
-        .dir_at(a.clone(), vec![dir("denied"), dir("flaky"), dir("healthy")])
+        .dir_at(
+            a.clone(),
+            vec![dir("denied"), dir("root-only"), dir("flaky"), dir("healthy")],
+        )
         .dir_at(healthy.clone(), level(None))
         .denied_at(denied.clone())
+        .off_limits_at(root_only.clone())
         .reader(&cancel);
 
     cover_subtree_with_reader(&a, &IndexPathSpace::root(), &writer, None, &work, reader, None).expect("walk A");
@@ -228,10 +234,21 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
             .expect("the unreadable cause")
             .expect("row")
     };
+    // Off macOS there's no permission to grant, so every refusal is off limits.
+    let tcc = if cfg!(target_os = "macos") {
+        UnreadableCause::Denied
+    } else {
+        UnreadableCause::OffLimits
+    };
     assert_eq!(
         unreadable_flag(&denied),
-        Some(UnreadableCause::Denied),
+        Some(tcc),
         "permission denied is durable, so mark it — and as a refusal, which is the half a user can act on"
+    );
+    assert_eq!(
+        unreadable_flag(&root_only),
+        Some(UnreadableCause::OffLimits),
+        "a refusal by file permissions is durable too, and ❌ never offered Full Disk Access"
     );
     assert_eq!(
         unreadable_flag(&flaky),
@@ -254,17 +271,25 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
     .expect("coverage");
     map.frontier.sort();
     map.permission_denied.sort();
+    map.off_limits.sort();
     map.abandoned.sort();
     assert!(
         map.frontier.is_empty(),
         "nothing is offered to the next walk: every folder here was either read or recorded, got {:?}",
         map.frontier
     );
+    let (mut fixable, mut off_limits) = (Vec::new(), vec![root_only.to_string_lossy().to_string()]);
+    if tcc == UnreadableCause::Denied {
+        fixable.push(denied.to_string_lossy().to_string());
+    } else {
+        off_limits.push(denied.to_string_lossy().to_string());
+        off_limits.sort();
+    }
     assert_eq!(
-        map.permission_denied,
-        vec![denied.to_string_lossy().to_string()],
+        map.permission_denied, fixable,
         "and the refusal is reported to the user instead of walked again"
     );
+    assert_eq!(map.off_limits, off_limits, "each refusal in its own list");
     assert_eq!(
         map.abandoned,
         vec![flaky.to_string_lossy().to_string()],

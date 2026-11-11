@@ -86,6 +86,7 @@ fn a_fully_covered_run_is_the_same_report_with_nothing_walked() {
             walk: WalkEnding::NothingToWalk,
             kind: CoverageKind::Covered,
             permission_denied: Vec::new(),
+            off_limits: Vec::new(),
             declined: Vec::new(),
             still_covering: Vec::new(),
             unresolved_scopes: Vec::new(),
@@ -161,6 +162,7 @@ fn the_unreadable_lists_reach_the_report_apart() {
     let report = CoverageFacts {
         unreadable: UnreadableGround {
             permission_denied: vec!["/denied".to_string()],
+            off_limits: vec!["/root-only".to_string()],
             declined: vec!["/snapshots".to_string()],
             abandoned: Vec::new(),
         },
@@ -171,6 +173,7 @@ fn the_unreadable_lists_reach_the_report_apart() {
     }
     .report(true, 0);
     assert_eq!(report.permission_denied, ["/denied"]);
+    assert_eq!(report.off_limits, ["/root-only"]);
     assert_eq!(report.declined, ["/snapshots"]);
     assert_eq!(report.still_covering, ["/other-walk"]);
     assert_eq!(report.failed_roots, ["/gone"]);

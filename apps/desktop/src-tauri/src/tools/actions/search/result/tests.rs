@@ -10,6 +10,7 @@ fn covered(volume: &str) -> SearchRunCoverage {
         walk: WalkEnding::NothingToWalk,
         kind: CoverageKind::Covered,
         permission_denied: Vec::new(),
+        off_limits: Vec::new(),
         declined: Vec::new(),
         still_covering: Vec::new(),
         unresolved_scopes: Vec::new(),
@@ -226,6 +227,13 @@ fn coverage_complete_is_false_when_any_gap_is_set() {
             },
         ),
         (
+            "a folder the OS keeps closed",
+            SearchRunCoverage {
+                off_limits: vec!["/private/var/root".to_string()],
+                ..covered("root")
+            },
+        ),
+        (
             "a declined snapshot tree",
             SearchRunCoverage {
                 declined: vec!["/Volumes/naspi/@eaDir".to_string()],
@@ -377,28 +385,39 @@ fn a_run_that_covered_its_scope_from_the_index_says_nothing() {
 }
 
 #[test]
-fn the_two_unreadable_lists_get_two_different_sentences() {
-    // The typed unreadable cause, end to end: one half is a permission somebody can
-    // grant, the other is ground Cmdr declines to read. ❌ Never one list and
-    // never one sentence — offering Full Disk Access over a snapshot folder
-    // is advice that does nothing.
+fn each_unreadable_list_gets_its_own_sentence() {
+    // The typed unreadable cause, end to end: one is a permission somebody can
+    // grant, one is a folder the OS keeps closed for good, and one is ground Cmdr
+    // declines to read. ❌ Never one list and never one sentence — offering Full
+    // Disk Access over a root-only or snapshot folder is advice that does nothing.
     let coverage = SearchRunCoverage {
         walk: WalkEnding::Completed,
         kind: CoverageKind::Live,
         permission_denied: vec!["/Users/dave/Documents".to_string()],
+        off_limits: vec!["/Volumes/naspi/.root-only".to_string()],
         declined: vec!["/Volumes/naspi/@eaDir".to_string()],
         ..covered("naspi")
     };
     let result = shape_answer(answer(settled(coverage), 12), true);
 
     assert_eq!(result.coverage.permission_denied, vec!["/Users/dave/Documents"]);
+    assert_eq!(result.coverage.off_limits, vec!["/Volumes/naspi/.root-only"]);
     assert_eq!(result.coverage.declined, vec!["/Volumes/naspi/@eaDir"]);
     let notes = joined(&result.notes);
+    let off_limits_note = result
+        .notes
+        .iter()
+        .find(|note| note.contains("/Volumes/naspi/.root-only"))
+        .expect("the off-limits folder is named");
+    assert!(
+        !off_limits_note.contains("Full Disk Access"),
+        "no grant opens it: {off_limits_note}"
+    );
     assert!(notes.contains("/Users/dave/Documents"), "{notes}");
     assert!(notes.contains("/Volumes/naspi/@eaDir"), "{notes}");
     assert!(notes.contains("snapshot folders"), "{notes}");
     assert!(
-        result.notes.len() >= 3,
+        result.notes.len() >= 4,
         "each cause gets its own sentence, plus the walk's own line: {notes}"
     );
 }

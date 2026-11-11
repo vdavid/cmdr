@@ -127,7 +127,7 @@ every rule below is unit-tested against fabricated answers with no harness and n
 { targetVolumeId, matchCount, matchCountHuman, returned, truncated,
   entries: [{ name, path, parentPath, isDirectory, sizeBytes, sizeHuman, modified, modifiedHuman }],
   coverage: { complete, stillWalking, foldersFound, capped, hiddenByExcludes,
-              permissionDenied[], declined[], stillCovering[], unresolvedScopes[],
+              permissionDenied[], offLimits[], declined[], stillCovering[], unresolvedScopes[],
               abandonedGround, abandonedLocations, failedRoots[] },
   notes: [ "…" ] }
 ```
@@ -148,8 +148,8 @@ which for a cloud drive named by its own `volumeId` is `root`. An answer for a v
   which. `entries` goes through `fit_to_result_budget` on top of the 200-row cap, and `returned` / `truncated` ride out
   with it.
 - **`coverage.complete` is the one field to read before saying "that's all of them"**: settled, walk finished (or
-  nothing to walk), and `permissionDenied` / `declined` / `stillCovering` / `unresolvedScopes` / `abandonedGround` all
-  clear. It exists because a seven-way conjunction is one a model gets wrong once in ten. The seven stay beside it,
+  nothing to walk), and `permissionDenied` / `offLimits` / `declined` / `stillCovering` / `unresolvedScopes` / `abandonedGround` all
+  clear. It exists because an eight-way conjunction is one a model gets wrong once in ten. The eight stay beside it,
   because each one is a different sentence to the user.
 - **`capped` and `hiddenByExcludes` deliberately don't clear `complete`.** Neither is ground Cmdr failed to cover: the
   first stopped the rows and not the count, the second is the caller's own filter. Both still make the number a floor,

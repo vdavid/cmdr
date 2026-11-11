@@ -137,11 +137,11 @@ into its index space against the root its last walk recorded (`volume_path`), th
 - A volume that comes live mid-read is safe: both are read-only WAL readers beside the lifecycle's writer.
 
 **What a COMPLETED index couldn't read** (`unreadable_ground`). A finished walk can hold no rows for directories it was
-refused (`Denied`), ones Cmdr declines to read at all (`Declined`), and ones that stopped answering (`Abandoned`), so
-"done" can mean "done, with holes" and the badge has to be able to say so. The status carries a COUNT of places
-(`cmdr_fs::path_locations::location_count` over all three lists — the same rule search's coverage note uses, so the two
-surfaces can't disagree about one drive) plus whether any of it is the retryable kind, which is the only distinction the
-badge makes: what to DO about a refusal is search's note, not a tooltip's job.
+refused (`Denied`, `OffLimits`), ones Cmdr declines to read at all (`Declined`), and ones that stopped answering
+(`Abandoned`), so "done" can mean "done, with holes" and the badge has to be able to say so. The status carries a COUNT
+of places (`cmdr_fs::path_locations::location_count` over every list — the same rule search's coverage note uses, so the
+two surfaces can't disagree about one drive) plus whether any of it is the retryable kind, which is the only distinction
+the badge makes: what to DO about a refusal is search's note, not a tooltip's job.
 
 ⚠️ **The completion gate is what makes it affordable**, not just meaningful. The coverage descent stops at the first
 fully covered subtree, so on a complete index with no holes it answers at the volume root immediately, and with holes it
@@ -279,11 +279,12 @@ Both epoch fields plus `entries.unreadable_cause`. Descending from the scope roo
   child directories and classify each.
 - `listed_epoch == 0 && unreadable_cause != 0` ⇒ **unreadable**. Cut; reported rather than dropped, in the list its
   CAUSE names. Nothing is coming for that subtree right now, so offering it as frontier would be a promise no walk
-  keeps. The three answers stay APART all the way to the screen (`CoverageMap::permission_denied` / `::declined` /
-  `::abandoned`), because each is a different sentence: `Denied` is the one a user can act on, `Declined` is a standing
-  policy over a NAS snapshot tree, and `Abandoned` is ground Cmdr gave up on and retries on a backoff. "Grant Full Disk
-  Access" over either of the last two is advice that does nothing. The causes themselves are `../store/DETAILS.md` §
-  "What coverage needs".
+  keeps. The four answers stay APART all the way to the screen (`CoverageMap::permission_denied` / `::off_limits` /
+  `::declined` / `::abandoned`), because each is a different sentence: `Denied` is the one a user can act on (Full Disk
+  Access), `OffLimits` is a refusal nothing opens (POSIX permissions, SIP), `Declined` is a standing policy over a NAS
+  snapshot tree, and `Abandoned` is ground Cmdr gave up on and retries on a backoff. "Grant Full Disk Access" over any
+  of the last three is advice that does nothing. The causes themselves are `../store/DETAILS.md` § "What coverage
+  needs".
 
   ⚠️ **An `abandoned` list is a hole in an otherwise complete answer, and only this list says so.** Those subtrees left
   the frontier, so nothing else in a coverage answer hints that they were skipped; a caller reporting how complete its

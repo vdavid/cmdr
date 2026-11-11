@@ -153,6 +153,7 @@ pub(super) struct Answer {
     pub(super) kind: CoverageKind,
     pub(super) phases: Vec<SearchPhase>,
     pub(super) permission_denied: Vec<String>,
+    pub(super) off_limits: Vec<String>,
     pub(super) declined: Vec<String>,
     pub(super) unresolved: Vec<String>,
 }
@@ -230,6 +231,7 @@ pub(super) fn search_watched(run_id: &str, scope: &str, pattern: &str, sink: &Co
         kind: terminal.coverage.kind,
         phases: progress.iter().map(|event| event.phase).collect(),
         permission_denied: terminal.coverage.permission_denied.clone(),
+        off_limits: terminal.coverage.off_limits.clone(),
         declined: terminal.coverage.declined.clone(),
         unresolved: terminal.coverage.unresolved_scopes.clone(),
     }

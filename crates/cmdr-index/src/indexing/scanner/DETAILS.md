@@ -228,15 +228,45 @@ stays frontier for the drive's next life (`mod.rs`, the `drive_left` arm). The c
 are `../store/DETAILS.md` § "What coverage needs"; what this module owns is which one each failure earns and when the
 message goes out.
 
-`InsertVisitor` accumulates ids into `UnreadableIds`, split two ways:
+`InsertVisitor` accumulates ids into `UnreadableIds`, split three ways:
 
-- **`denied`** — `WalkReadError::Io` whose `ErrorKind` is `PermissionDenied`. Also emits `IndexEvent::PathAccessDenied`,
-  which is what puts the "limited by macOS" styling on a TCC-restricted folder in the sidebar.
+- **`denied`** — `WalkReadError::Io` whose `ErrorKind` is `PermissionDenied` and that `refusal.rs` classifies as TCC
+  (below). Also emits `IndexEvent::PathAccessDenied`, which is what puts the "limited by macOS" styling on a
+  TCC-restricted folder in the sidebar. Only this kind emits it: nothing else is "limited by macOS" in a way the user
+  can lift.
+- **`off_limits`** — the other permission-denied reads: plain POSIX permissions, SIP, a data vault, and every refusal
+  off macOS, where there's no permission to grant.
 - **`abandoned`** — the other three ways a listing doesn't arrive: `WalkReadError::TimedOut` (the watchdog condemned a
   stalled read), `WalkReadError::Io` with any other errno, and `DirVisitor::visit_pruned` (the give-up budget dropped
   the task unread). A pruned task never reaches `visit_read_error`, so that hook is its only mention in the whole
   system; without it the pruned MAJORITY of a dead mount — the part the budget exists to avoid probing — would stay
   silently in the frontier.
+
+### Which refusal Full Disk Access opens
+
+Rust folds `EPERM` and `EACCES` into one `ErrorKind::PermissionDenied`, so `refusal.rs` reads the raw errno, plus the
+folder's own `lstat` when it's `EPERM`:
+
+- `EACCES` (13) → `OffLimits`. Plain POSIX permissions (`/private/var/root`, `/private/etc/cups/certs`, root-only
+  folders under `/Library/Application Support`). TCC never answers with it. A SIP folder that's ALSO mode 700
+  (`/usr/sbin/authserver`) lands here too: the permission bits refuse before SIP is asked.
+- `EPERM` (1) on a folder carrying `SF_RESTRICTED` (0x80000, `ls -lO` prints `restricted`) → `OffLimits`. SIP
+  (`/System/Library/AssetsV2/com_apple_MobileAsset_UAF_FM_*`).
+- `EPERM` where the folder's own `lstat` also answers `EPERM` → `OffLimits`. A data vault
+  (`/Library/Caches/com.apple.aned`, `/private/var/db/ConfigurationProfiles/Store`): refused WITH Full Disk Access too.
+- `EPERM` on anything else → `Denied`, the TCC case (`~/Library/Mail`, `~/Library/Safari`), the only one Full Disk
+  Access opens.
+- Off macOS, or with no errno at all → `OffLimits`.
+
+Evidence (verified on macOS 27.0 (Darwin 27.0.0), a Go probe doing `lstat` + `open` + `readdir`, run once from a
+terminal holding Full Disk Access and once via `launchctl submit` with none, 2026-11-11): without FDA, `~/Library/Mail`,
+`Messages`, and `Safari` gave `EPERM` with no flags and a clean `lstat`; with FDA they opened. `AssetsV2`'s `UAF_FM_*`
+folders gave `EPERM` + `restricted` both ways; `/usr/sbin/authserver` (`restricted`, mode 700) and `/private/var/root`
+gave `EACCES` both ways; `/Library/Caches/com.apple.aned` gave `EPERM` on `lstat` itself both ways. A walk of `/Library`
+with FDA found only `EACCES` and data-vault `EPERM`s, never a bare `EPERM`.
+
+⚠️ Marks written before this split carry `Denied` for every refusal, and a mark only clears on a successful listing, so
+an older index keeps offering Full Disk Access over its SIP and root-only folders until it's rebuilt.
 
 `send_unreadable_marks` sends one `MarkDirsUnreadable` per cause, in `MARK_CHUNK` batches, from `run_scan` **after
 `visitor.finish()`**. Two ordering properties ride on that:
