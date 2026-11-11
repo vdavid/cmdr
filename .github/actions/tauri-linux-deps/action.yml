@@ -1,16 +1,27 @@
 name: Install Tauri dependencies (Linux)
 description: >-
-  apt-installs the system libraries the Tauri crates link against, from a cache of the downloaded packages when one
-  exists, with a timeout and a mirror switch so a slow Ubuntu mirror fails over instead of eating the job.
+  apt-installs the system libraries the Tauri crates link against, straight from a cache of the downloaded packages when
+  one exists (no mirror involved), otherwise with a timeout and a mirror switch so a slow Ubuntu mirror fails over
+  instead of eating the job.
 
 # Why: this install is ~0.5 min on a healthy mirror, but on 2026-10-22 it took 2.8, 5.2, 6.6,
 # 19.3, and 38.9 min in five of ~25 runs, and the 38.9 one ran `desktop-rust-fixtures` into its
 # 40-min cap. The mirror wasn't stalled, it crawled (~15 MB in 8 min), so a plain retry against it
-# timed out again. Hence three layers:
-# - The ~64 MB of `.deb`s are cached, keyed on the runner image version (its preinstalled package
-#   versions decide what apt fetches) and the package list, so most runs never touch a mirror.
-# - The download is time-boxed, and the second attempt drops the Azure mirror for
-#   `archive.ubuntu.com`. Only the download: killing `dpkg` mid-install would leave a broken
+# timed out again. And on 2026-11-11 the runners reached neither mirror for an hour, which failed
+# every Linux Rust lane although the packages sat in the cache (#1098). Jobs that need only
+# `libacl1-dev` (Kani, Shuttle, fuzz) use this action too: one warm cache covers them all, and
+# installing the extra libraries from local files costs seconds. Hence, in order:
+# - The ~64 MB of downloaded `.deb`s are cached, keyed on the runner image version (its
+#   preinstalled package versions decide what apt fetches) and the package list. An edit to this
+#   file changes the key, so the restore falls back to any entry for the same image: otherwise
+#   an edit landing mid-outage would start every branch cold. The step then saves what it used
+#   under the new key.
+# - With cached packages, apt installs those files by path, with no `apt-get update` and its
+#   sources hidden. Naming the files pins their versions, so the runner's package lists (which
+#   disagree with the cached packages) never get a say, and the step needs no network at all.
+# - With no cache, or if the cached set doesn't cover the list, the mirror path runs: the
+#   download is time-boxed, and the second attempt drops the Azure mirror for
+#   `archive.ubuntu.com`. Only the download: stopping `dpkg` mid-install would leave a broken
 #   package state, and installing from local files is fast anyway.
 # - apt itself gives up on a dead connection after 30 s (`Acquire::http::Timeout`).
 runs:
@@ -20,9 +31,12 @@ runs:
     - name: Compute the package cache key
       id: key
       shell: bash
-      run:
-        echo "key=tauri-apt-${ImageOS:-unknown}-${ImageVersion:-unknown}-${{
-        hashFiles('.github/actions/tauri-linux-deps/action.yml') }}" >>"$GITHUB_OUTPUT"
+      env:
+        ACTION_HASH: ${{ hashFiles('.github/actions/tauri-linux-deps/action.yml') }}
+      run: |
+        prefix="tauri-apt-${ImageOS:-unknown}-${ImageVersion:-unknown}-"
+        echo "prefix=$prefix" >>"$GITHUB_OUTPUT"
+        echo "key=$prefix$ACTION_HASH" >>"$GITHUB_OUTPUT"
 
     - name: Restore the downloaded packages
       id: restore
@@ -30,6 +44,7 @@ runs:
       with:
         path: ${{ runner.temp }}/apt-archives
         key: ${{ steps.key.outputs.key }}
+        restore-keys: ${{ steps.key.outputs.prefix }}
 
     - name: Install Tauri dependencies (Linux)
       shell: bash
@@ -37,6 +52,35 @@ runs:
         ARCHIVES: ${{ runner.temp }}/apt-archives
       run: |
         packages=(libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev)
+
+        all_installed() {
+          local package
+          for package in "${packages[@]}"; do
+            [[ $(dpkg-query -W -f='${db:Status-Abbrev}' "$package" 2>/dev/null) == ii* ]] || return 1
+          done
+        }
+
+        # Cached packages: install the files by path, with apt's sources hidden for this one call
+        # (and the package cache kept in memory, so the hidden view never reaches disk). apt then
+        # knows only the installed packages and these files: it can't reach for a mirror, and a
+        # set with a gap fails at dependency resolution, before `dpkg` touches anything.
+        # (`--no-download` doesn't do this job: apt counts a local file as a fetch and refuses,
+        # verified on the ubuntu26 runner image, apt 3, 2026-11-11.) `all_installed` catches an
+        # earlier action's entry that lacks a package this one lists. Either way the mirror path
+        # below takes over.
+        offline_opts=(-o Dir::Etc::sourcelist=/dev/null -o Dir::Etc::sourceparts=-
+          -o Dir::Cache::pkgcache= -o Dir::Cache::srcpkgcache=)
+        shopt -s nullglob
+        debs=("$ARCHIVES"/*.deb)
+        shopt -u nullglob
+        if ((${#debs[@]} > 0)); then
+          if sudo apt-get "${offline_opts[@]}" install -y "${debs[@]}" && all_installed; then
+            echo "Installed ${#debs[@]} cached packages without contacting a mirror."
+            exit 0
+          fi
+          echo "::warning::The cached packages didn't cover the install; falling back to the mirrors."
+        fi
+
         mkdir -p "$ARCHIVES/partial"
         apt_opts=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
           -o "Dir::Cache::archives=$ARCHIVES")

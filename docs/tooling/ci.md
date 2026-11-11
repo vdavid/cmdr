@@ -323,12 +323,24 @@ silent** (a warning, not a red job):
   #557.)
 - **The Linux apt install goes through the `tauri-linux-deps` action** (`.github/actions/`). On 2026-10-22 the plain
   install took up to 38.9 min (usually ~0.5) and ran `desktop-rust-fixtures` out of its 40-min cap. The Azure mirror
-  crawled rather than stalled (~15 MB in 8 min), so a timeout plus a plain retry against it still failed. The action
-  layers:
-  - A cache of the ~64 MB of downloaded `.deb`s (`tauri-apt-<ImageOS>-<ImageVersion>-<hash of the action>`), so most
-    runs skip the mirror. A new runner image misses once and re-saves. `warm-rust-cache` runs the action on every `main`
-    push, even on a Rust cache hit, because a PR reads only its own and `main`'s caches.
-  - A time-boxed download (4 min, then 8), with the second attempt dropping `azure.archive.ubuntu.com` for
+  crawled rather than stalled (~15 MB in 8 min), so a timeout plus a plain retry against it still failed. On 2026-11-11
+  the runners reached neither mirror for about an hour, and every Linux Rust lane failed with the packages sitting in
+  the cache, because `apt-get update` ran first (#1098). Every job that apt-installs a build dependency uses the action,
+  including the ones that need only `libacl1-dev` (Kani, Shuttle, fuzz): one warm cache covers them all. The action, in
+  order:
+  - A cache of the ~64 MB of downloaded `.deb`s (`tauri-apt-<ImageOS>-<ImageVersion>-<hash of the action>`). A new
+    runner image misses once and re-saves. An edit to the action changes the hash, so the restore falls back to any
+    entry for the same image (`restore-keys`) and re-saves it under the new key: an edit that lands during an outage
+    doesn't start every branch cold. `warm-rust-cache` runs the action on every `main` push, even on a Rust cache hit,
+    because a PR reads only its own and `main`'s caches.
+  - With cached packages, `apt-get install` of the files by path with apt's sources hidden for that call: no
+    `apt-get update`, no mirror, no network. Naming the files pins their versions, so it doesn't matter that the
+    runner's package lists disagree with the cached packages (they did on `libsoup-3.0`, 2026-11-11). `--no-download`
+    can't do this: apt counts a local file as a fetch and refuses (verified on the ubuntu26 runner image, apt 3,
+    2026-11-11, run 43052969593). A `dpkg-query` check then confirms every listed package is installed, which catches a
+    fallback entry from before a package joined the list.
+  - With no cache, or if the cached set doesn't cover the list (a warning annotation says so): `apt-get update` plus a
+    time-boxed download (4 min, then 8), with the second attempt dropping `azure.archive.ubuntu.com` for
     `archive.ubuntu.com`, under a 20-min step cap.
   - apt's own 30-s connection timeout and retries.
 - **`slow-checks` dependency-checks**: rust-cache for cargo-udeps's nightly `target/`, plus the same "Free disk space"
