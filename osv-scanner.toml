@@ -58,10 +58,6 @@ reason = "paste is unmaintained: a proc macro, so it runs at compile time and le
 # --- npm (all dev/build-time; nothing here ships in the app or on the website) ---
 
 [[IgnoredVulns]]
-id = "GHSA-vfj7-8cjw-p6xm"
-reason = "braces 3.0.3, via micromatch in lint and test tooling (devDependencies of desktop and the dashboard). It expands only our own glob patterns. No fixed version exists."
-
-[[IgnoredVulns]]
 id = "GHSA-gcqx-w48m-w2h4"
 reason = "deepmerge 4.3.1 (prototype poisoning of mergeObject's result), via @sveltejs/vite-plugin-svelte under SvelteKit, devDependencies of desktop and the dashboard. It runs only at build time, merging the plugin's options with our own Svelte config (`src/utils/options.js`); nothing it merges is bundled into the app or the dashboard. No fixed version exists. Verified with `pnpm why -r deepmerge`, 2026-10-27."
 
