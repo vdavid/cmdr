@@ -5,6 +5,8 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SearchQuery } from '#lib/tauri-commands/index.js'
+import { createSearchRunners } from './search-runners'
+import { clearSearchState, setQuery } from './search-state.svelte'
 
 const searchFiles = vi.fn((_query: SearchQuery) =>
   Promise.resolve({ entries: [], totalCount: 0, targetVolumeId: 'root' }),
@@ -20,9 +22,6 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
 vi.mock('./live-search-source', () => ({
   createLiveSearchSource: () => ({ start: () => Promise.resolve(() => {}), cancel: () => {} }),
 }))
-
-const { createSearchRunners } = await import('./search-runners')
-const { clearSearchState, setQuery } = await import('./search-state.svelte')
 
 function makeRunners() {
   return createSearchRunners({ getDefaultScopePath: () => '/Users/test', onRunState: () => {} })
