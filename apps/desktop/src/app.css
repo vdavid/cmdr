@@ -473,7 +473,8 @@
    * runs (e.g. before SvelteKit hydrates).
    */
   --font-system: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Cascadia Mono is Windows 11's own monospace font; Consolas covers Windows 10. */
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, 'Cascadia Mono', Consolas, monospace;
   --font-scale: 1;
   --font-size-xs: 0.625rem; /* 10px */
   --font-size-sm: 0.75rem; /* 12px */

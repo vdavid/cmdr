@@ -127,7 +127,8 @@ Settled:
   renders only on macOS). Fixed in task 24: `--titlebar-height` is 0 off macOS, the viewer's 35px override and the queue
   window's in-webview title line are macOS-only too.
 - **Off macOS, `Ctrl+D` is bound twice**, so favorites never fires in the file list. Task 26.
-- **api-server titles Linux reports "macOS Ubuntu …"** (`apps/api-server/src/report-cards.ts:140`). Task 2.
+- **api-server titled Linux reports "macOS Ubuntu …"** (`apps/api-server/src/report-cards.ts`). Fixed (task 2):
+  `osLabel` shows the OS name as the app sent it and prefixes `macOS` only onto a bare version number.
 - **Off macOS the updater skips the advisory list and trust checks** (`lib/updates/updater.svelte.ts:390-430`). Fine for
   an unadvertised Linux alpha, a blocker for any Windows release. Task 33.
 - **Linux licenses carried no device id.** Fixed in [#980](https://github.com/getcmdr/cmdr/issues/980): Linux now hashes
@@ -147,8 +148,8 @@ its prerequisites; tasks without any can start any time. Order within a phase is
    `needsImageIndexing`, which drops their page from the sidebar. The Linux E2E build keeps a fake engine
    (`cmdr-index/playwright-e2e`) so its specs still run. Task 25's capability set can take over the frontend half
    (`imageIndexingAvailable()`) later.
-2. [XS] Win. Small fixes: `macOsLabel` prefixing non-mac OS names, the MCP instructions' "for macOS", `'Cascadia Mono'`
-   before `Consolas` in `--font-mono`.
+2. [XS] Win. **Done**. Small fixes: `macOsLabel` prefixing non-mac OS names, the MCP instructions' "for macOS",
+   `'Cascadia Mono'` before `Consolas` in `--font-mono`.
 
 ### Phase 1: make platform code honest and checkable
 
