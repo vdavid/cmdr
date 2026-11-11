@@ -386,21 +386,7 @@ async fn poll_loop() {
 ///
 /// Always [`SpaceInfo::Bounded`]: a mounted filesystem has a size.
 fn fetch_space_for_path(path: &str) -> Option<SpaceInfo> {
-    #[cfg(target_os = "macos")]
-    {
-        cmdr_local::live_space::live_volume_space(path)
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        cmdr_local::space::get_volume_space(path)
-    }
-
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        let _ = path;
-        None
-    }
+    crate::volumes::live_volume_space(path)
 }
 
 /// The one number a reader watches move on this volume, and the number the emit

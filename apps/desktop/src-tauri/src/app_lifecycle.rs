@@ -19,7 +19,7 @@ use crate::{ai, crash_reporter, data_wipe, file_viewer, mcp, quit, search, secur
 use crate::{dock, drag_image_detection, mtp, reveal};
 
 /// Stop the services that outlive a window: the local LLM, the MCP server, mDNS, and
-/// Linux's mount watchers.
+/// the mount watchers.
 ///
 /// Reached from three places (main window closed, main window destroyed, process
 /// exiting), because none of them implies the others fire: a `CloseRequested` the
@@ -30,8 +30,7 @@ fn stop_background_services() {
     ai::manager::shutdown();
     mcp::stop_mcp_server();
     network::discovery_gate::shut_down();
-    #[cfg(target_os = "linux")]
-    crate::volumes_linux::watcher::stop_volume_watcher();
+    crate::volumes::stop_volume_watcher();
 }
 
 /// Per-window signals: focus re-checks the FDA gate, closing the main window quits

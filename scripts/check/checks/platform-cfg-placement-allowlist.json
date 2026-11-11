@@ -16,7 +16,7 @@
       "outsideSeam": 3
     },
     "apps/desktop/src-tauri/src/app_lifecycle.rs": {
-      "outsideSeam": 6
+      "outsideSeam": 5
     },
     "apps/desktop/src-tauri/src/clipboard/mod.rs": {
       "negated": 3,
@@ -45,7 +45,7 @@
       "outsideSeam": 7
     },
     "apps/desktop/src-tauri/src/commands/mod.rs": {
-      "outsideSeam": 5
+      "outsideSeam": 4
     },
     "apps/desktop/src-tauri/src/commands/network.rs": {
       "negated": 1,
@@ -57,9 +57,6 @@
     "apps/desktop/src-tauri/src/commands/sync_status.rs": {
       "negated": 1,
       "outsideSeam": 4
-    },
-    "apps/desktop/src-tauri/src/commands/volumes.rs": {
-      "outsideSeam": 5
     },
     "apps/desktop/src-tauri/src/commands/window_ordering.rs": {
       "negated": 2,
@@ -119,13 +116,9 @@
       "negated": 1,
       "outsideSeam": 3
     },
-    "apps/desktop/src-tauri/src/file_system/index_provider.rs": {
-      "negated": 4,
-      "outsideSeam": 13
-    },
     "apps/desktop/src-tauri/src/file_system/mod.rs": {
       "negated": 2,
-      "outsideSeam": 21
+      "outsideSeam": 16
     },
     "apps/desktop/src-tauri/src/file_system/open_with.rs": {
       "negated": 4,
@@ -181,7 +174,7 @@
       "outsideSeam": 18
     },
     "apps/desktop/src-tauri/src/file_system/volume/eject/unmount_tool.rs": {
-      "outsideSeam": 11
+      "outsideSeam": 9
     },
     "apps/desktop/src-tauri/src/file_system/volume/manager.rs": {
       "outsideSeam": 3
@@ -191,9 +184,6 @@
       "outsideSeam": 2
     },
     "apps/desktop/src-tauri/src/file_system/volume/mod.rs": {
-      "outsideSeam": 2
-    },
-    "apps/desktop/src-tauri/src/file_system/volume/mount_registration.rs": {
       "outsideSeam": 2
     },
     "apps/desktop/src-tauri/src/file_system/watcher.rs": {
@@ -229,22 +219,17 @@
       "outsideSeam": 10
     },
     "apps/desktop/src-tauri/src/ipc.rs": {
-      "negated": 1,
-      "outsideSeam": 12
+      "outsideSeam": 10
     },
     "apps/desktop/src-tauri/src/lib.rs": {
-      "negated": 2,
-      "outsideSeam": 20
+      "negated": 1,
+      "outsideSeam": 17
     },
     "apps/desktop/src-tauri/src/licensing/device_id.rs": {
       "outsideSeam": 4
     },
     "apps/desktop/src-tauri/src/listing_host/mod.rs": {
       "outsideSeam": 2
-    },
-    "apps/desktop/src-tauri/src/listing_host/mounts.rs": {
-      "negated": 1,
-      "outsideSeam": 3
     },
     "apps/desktop/src-tauri/src/listing_host/volumes.rs": {
       "negated": 1,
@@ -324,25 +309,13 @@
     "apps/desktop/src-tauri/src/mtp/watcher.rs": {
       "outsideSeam": 8
     },
-    "apps/desktop/src-tauri/src/network/server_identity.rs": {
-      "outsideSeam": 2
-    },
     "apps/desktop/src-tauri/src/network/smb_connect_directly.rs": {
       "negated": 1,
-      "outsideSeam": 6
-    },
-    "apps/desktop/src-tauri/src/network/smb_direct_switch.rs": {
-      "outsideSeam": 2
+      "outsideSeam": 4
     },
     "apps/desktop/src-tauri/src/network/smb_mount_gate.rs": {
       "negated": 1,
       "outsideSeam": 5
-    },
-    "apps/desktop/src-tauri/src/network/smb_pane_upgrade.rs": {
-      "outsideSeam": 4
-    },
-    "apps/desktop/src-tauri/src/network/smb_saved_shares.rs": {
-      "outsideSeam": 2
     },
     "apps/desktop/src-tauri/src/network/smb_server_address.rs": {
       "outsideSeam": 2
@@ -352,7 +325,7 @@
     },
     "apps/desktop/src-tauri/src/network/smb_upgrade.rs": {
       "negated": 1,
-      "outsideSeam": 6
+      "outsideSeam": 2
     },
     "apps/desktop/src-tauri/src/notifications.rs": {
       "negated": 1,
@@ -395,17 +368,9 @@
     "apps/desktop/src-tauri/src/security_log/mod.rs": {
       "outsideSeam": 1
     },
-    "apps/desktop/src-tauri/src/space_poller/mod.rs": {
-      "negated": 1,
-      "outsideSeam": 3
-    },
     "apps/desktop/src-tauri/src/spotlight.rs": {
       "negated": 1,
       "outsideSeam": 5
-    },
-    "apps/desktop/src-tauri/src/stubs/mod.rs": {
-      "negated": 1,
-      "outsideSeam": 1
     },
     "apps/desktop/src-tauri/src/subprocess.rs": {
       "outsideSeam": 1
@@ -456,16 +421,6 @@
       "outsideSeam": 2
     },
     "apps/desktop/src-tauri/src/volume_listing.rs": {
-      "negated": 3,
-      "outsideSeam": 14
-    },
-    "apps/desktop/src-tauri/src/volumes/disk_image.rs": {
-      "outsideSeam": 1
-    },
-    "apps/desktop/src-tauri/src/volumes/disk_units.rs": {
-      "outsideSeam": 2
-    },
-    "apps/desktop/src-tauri/src/volumes/lifecycle.rs": {
       "outsideSeam": 3
     },
     "crates/cmdr-adb/src/errors.rs": {

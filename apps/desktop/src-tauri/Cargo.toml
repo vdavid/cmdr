@@ -458,7 +458,7 @@ minisign-verify = "0.3"
 # default behind "Reveal in Cmdr" (`reveal/registration.rs`); shelling out to `defaults` is not the
 # sanctioned way to write it.
 objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes", "CFUserNotification", "CFDate", "CFURL", "CFPreferences", "CFPropertyList", "CFError", "CFArray", "CFUUID"] }
-# DiskArbitration's unmount approval (`volumes/unmount_approver/`): Cmdr's own DA session asks to let
+# DiskArbitration's unmount approval (`volumes/platform/macos/unmount_approver/`): Cmdr's own DA session asks to let
 # go of a drive before any DA-mediated unmount, whoever started it. Published 2025-10-04, same objc2
 # 0.3 family as the bindings above; Zlib OR Apache-2.0 OR MIT. `CFArray` and `CFUUID` above are for
 # its watch list and a volume's UUID.

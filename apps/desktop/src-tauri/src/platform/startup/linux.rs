@@ -4,7 +4,7 @@ use tauri::{AppHandle, Manager, TitleBarStyle};
 
 /// Starts every Linux installer.
 pub(crate) fn install(app: &AppHandle) {
-    crate::volumes_linux::watcher::start_volume_watcher(app);
+    crate::volumes::start_volume_watcher(app);
 
     // Follow the portal's accent color and emit events to the frontend.
     crate::system_look::observe_changes(app.clone());

@@ -327,17 +327,16 @@ All under `apps/desktop/src-tauri/src/`.
   catalogs we ship (refusing to cross a script boundary), composes the formatting tag WebKit can't see (the `-u-rg-`
   region override), and answers the frontend over `get_os_locales`. See its `CLAUDE.md`
 - `favorites/`: User-editable favorites. Ordered `favorites.json` store (`{ id, path, name }`) backing the favorites
-  menu. Seed-once-on-absence, dedup-by-path, pure testable core. Read by `get_favorites()` in both `volumes/` twins;
+  menu. Seed-once-on-absence, dedup-by-path, pure testable core. Read by `get_favorites()` in each `volumes/` arm;
   mutated via `commands/favorites.rs`, which re-emits `volumes-changed` and owns the add gate (`favorites/DETAILS.md` §
   The add gate)
-- `volumes/`: macOS location/volume discovery, the `NSWorkspace` mount/unmount watcher, and `unmount_approver/`, the
-  DiskArbitration approval session that holds every DA-mediated unmount while the drive's index lets go. Distinct from
-  `file_system/volume/`. `get_favorites()` reads the `favorites/` store
-- `volumes_linux/`: Linux equivalent: location discovery + mount/unmount via `/proc/mounts` and GVFS
-- `volume_listing.rs`: the one volume-list pipeline. Aliases whichever discovery module the platform has, bounds it with
-  a timeout, appends every device provider's storages (`device_volumes.rs`), and enriches from the registry;
-  `commands/volumes.rs` and `volume_broadcast.rs` both publish what it returns. See
-  `apps/desktop/src-tauri/src/volumes/CLAUDE.md`
+- `volumes/`: location/volume discovery and the mount/unmount watcher, one model behind a platform seam. The macOS arm
+  adds `unmount_approver/`, the DiskArbitration approval session that holds every DA-mediated unmount while the drive's
+  index lets go; the Linux arm reads `/proc/mounts` and GVFS. Distinct from `file_system/volume/`. `get_favorites()`
+  reads the `favorites/` store
+- `volume_listing.rs`: the one volume-list pipeline. Runs the platform's discovery, bounds it with a timeout, appends
+  every device provider's storages (`device_volumes.rs`), and enriches from the registry; `commands/volumes.rs` and
+  `volume_broadcast.rs` both publish what it returns. See `apps/desktop/src-tauri/src/volumes/CLAUDE.md`
 - `location/`: the `Location` pair, plus the tools' location resolver: a pure core that places a `path` + optional
   `volumeId` on one volume or answers a typed miss with `nearby` candidates, the one volume-root function, and the
   in-memory volume facts and earlier-roots record it reads, plus the same-share proof (server GUID + share name) that
@@ -366,7 +365,6 @@ All under `apps/desktop/src-tauri/src/`.
 - `cli/`: macOS-only. The `cmdr <path>` terminal command: the bundled script's `cmdr-cli://open` URL (parsed here,
   delivered by `reveal/`), and the app menu's install link at `/usr/local/bin/cmdr`. The script is
   `apps/desktop/src-tauri/resources/bin/cmdr`. See `apps/desktop/src-tauri/src/cli/CLAUDE.md`
-- `stubs/`: Linux compilation stubs for macOS-only modules (Docker E2E pipeline)
 - `menu/`: Native menu bar: construction, dispatch mapping, accelerator sync, context-aware enable/disable. The Help
   menu carries the "What's new" item (above "Send feedback…")
 - `whats_new/`: Parses the embedded `CHANGELOG.md` into the typed model behind the `get_whats_new` IPC that the frontend

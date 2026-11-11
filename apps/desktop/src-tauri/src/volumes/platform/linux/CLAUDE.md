@@ -1,23 +1,22 @@
 # Volumes (Linux)
 
-Linux volume and location discovery, plus live mount/unmount watching. Mirrors macOS `volumes/mod.rs`'s JSON
-shape (`LocationInfo`, `LocationCategory`, `VolumeSpaceInfo`). Distinct from `file_system/volume/`.
+The Linux arm of the `volumes` seam: location discovery, plus live mount/unmount watching. Publishes the model in
+`../../mod.rs`; the seam and the macOS arm: `../../CLAUDE.md`. Distinct from `file_system/volume/`.
 
 ## Key files
 
-Same file names as macOS `volumes/`. `mod.rs`
-holds the model types, `DEFAULT_VOLUME_ID`, and the orchestrators (`list_locations`, `get_favorites`, `get_main_volume`,
-`resolve_path_volume_fast`), and re-exports every submodule item so `crate::volumes_linux::X` stays stable:
-`mounts.rs` (`get_mounted_volumes`, and which `/proc/mounts` rows are user-facing), `fs_type.rs` (trash support,
-`VIRTUAL_FS_TYPES`, `get_mount_point`), `ids.rs` (`volume_id_for_mount` and its
-`/dev/disk/by-uuid` lookup), `cloud.rs` (cloud-sync dirs), `smb.rs` (CIFS mount-source and GVFS dirname parsing,
-`get_network_mounts`, plus `enrich_from_volume_registry`; keep it in step with the macOS twin, the frontend doesn't
-branch on platform), `watcher.rs` (mount-table and GVFS watchers; diffs known state, registers with `VolumeManager`, emits
-`volume-mounted` / `volume-unmounted`).
+Same file names as the macOS arm. `mod.rs` holds the orchestrators (`list_locations`, `get_favorites`,
+`get_main_volume`, `resolve_path_volume_fast`) and re-exports what the seam reaches: `mounts.rs`
+(`get_mounted_volumes`, and which `/proc/mounts` rows are user-facing), `fs_type.rs` (trash support,
+`VIRTUAL_FS_TYPES`, `get_mount_point`), `ids.rs` (`volume_id_for_mount` and its `/dev/disk/by-uuid` lookup), `cloud.rs`
+(cloud-sync dirs), `smb.rs` (CIFS mount-source and GVFS dirname parsing, `get_network_mounts`, plus
+`enrich_from_volume_registry`; keep it in step with the macOS twin, the frontend doesn't branch on platform),
+`watcher.rs` (mount-table and GVFS watchers; diffs known state, registers with `VolumeManager`, emits `volume-mounted` /
+`volume-unmounted`).
 
 ## Must-knows
 
-- **❌ Never derive a volume ID yourself; call `volume_id_for_mount`.** It's the twin of macOS `volumes::ids` and owns
+- **❌ Never derive a volume ID yourself; call `volume_id_for_mount`.** It's the twin of the macOS arm's `ids.rs` and owns
   the same ladder: CIFS and GVFS SMB key on `(server, port, share)`, everything else on its filesystem UUID
   (`/dev/disk/by-uuid`, matched against the `/proc/mounts` device), falling back to the mount path. A share is ONE
   segment, so `//server/share/sub` is a mount INSIDE the share, on the share's own ID (`volumes/DETAILS.md` § "A mount
@@ -46,8 +45,4 @@ branch on platform), `watcher.rs` (mount-table and GVFS watchers; diffs known st
   falls back `$USER` → `$LOGNAME` → empty; empty makes everything non-ejectable, the safe default.
 - **`is_submount()` filters bind mounts nested under a real mount**, so dev `node_modules` / build-dir bind mounts don't
   clutter the sidebar as separate volumes.
-- **The volume IPC commands aren't per-platform**: one `commands/volumes.rs` serves both, reaching this module through
-  a `#[cfg]`'d `platform` alias. Linux-only behavior goes behind that alias, ❌ never into a second command module.
-  DETAILS § "One command module".
-
 Full details (decision rationale): `DETAILS.md`.

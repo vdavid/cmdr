@@ -68,7 +68,7 @@ pub(super) enum Resolution {
 /// image backed by a file on a hung share would block resolution for good.
 pub(super) fn resolve(mount_path: &str) -> Resolution {
     let Some(bsd_name) = disk_units::bsd_name_at(std::path::Path::new(mount_path)) else {
-        return if cmdr_local::mount_table::is_mount_point(mount_path) == Some(false) {
+        return if cmdr_local::mounts::is_mount_point(std::path::Path::new(mount_path)) == Some(false) {
             Resolution::Gone
         } else {
             Resolution::NoDisk

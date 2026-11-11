@@ -272,10 +272,10 @@ parent). A grant of "one item" for such a type is `RootPromises` moving by one a
   One question — "live watching lost continuity, so the index can no longer claim it has seen every change" — asked in
   two scopes (a volume, a whole device).
 - **`volume_kind` + `stop_indexing` ⇒ `Index::stop_removable_volume`.** Two call sites (`volume/eject/`,
-  `volumes/lifecycle.rs`) each open with the identical `!= LocalExternal` guard, because only that kind holds a watcher
-  and open database handles that can wedge an unmount. That's the index's knowledge, not the app's. So is WHEN the drive
-  has been let go: the call waits for it, bounded by the host's `wait_at_most`, and answers a `RemovableStop` (§ "The 14
-  the glob was hiding").
+  `volumes/platform/macos/lifecycle.rs`) each open with the identical `!= LocalExternal` guard, because only that kind
+  holds a watcher and open database handles that can wedge an unmount. That's the index's knowledge, not the app's. So
+  is WHEN the drive has been let go: the call waits for it, bounded by the host's `wait_at_most`, and answers a
+  `RemovableStop` (§ "The 14 the glob was hiding").
 - **`is_active` + `get_freshness` ⇒ `Index::is_fresh`.** The operation log's coverage gate wants one predicate: can
   these rows be trusted as a complete answer?
 - **`should_auto_start` + `set_master_enabled` ⇒ `IndexBuilder::indexing_enabled`.** The stored setting is

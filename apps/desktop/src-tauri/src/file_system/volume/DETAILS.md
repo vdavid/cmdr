@@ -20,7 +20,7 @@ in-memory test fixture. Callers never touch the filesystem directly; they call `
 - **`error.rs`**: `VolumeError`, the IPC-facing error union, with its `Display`/`Error` impls and its `from_io_at` / `from_io_without_path` constructors
 - **`ids.rs`** (in `cmdr-fs`): the funnel every volume ID is built through (`local_volume_id`, `path_volume_id`,
   `smb_volume_id`, `mtp_device_id`, `is_legacy_volume_id`). Which constructor a macOS mount goes through is
-  `crate::volumes::ids`; the Linux twin is `volumes_linux::volume_id_for_mount`
+  `crate::volumes::ids`; the Linux twin is the Linux arm's `volume_id_for_mount`
 - **`manager.rs`** (+ `manager/roots.rs`): `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default
   volume. Also holds the process-wide instance and its `get_volume_manager()` accessor. `roots.rs` holds the mount-root
   set each entry owns and the promotion rules over it
@@ -538,8 +538,8 @@ onto the wire type: only a tool that EXITED with a code is `UnmountRefused`. One
 signal is `Unexpected`, since "something is still in use there" would be a lie there.
 
 **A failure for a volume that's no longer mounted counts as done.** When the tool doesn't succeed, `settle` asks
-whether the mount root is still in the OS mount table (`volumes::is_mount_point`, the non-blocking
-`getfsstat(MNT_NOWAIT)` snapshot discovery reads; `file_system::linux_mounts::is_mount_point` on Linux), and if it
+whether the mount root is still in the OS mount table (`cmdr_local::mounts::is_mount_point`: the non-blocking
+`getfsstat(MNT_NOWAIT)` snapshot discovery reads on macOS, `/proc/mounts` on Linux), and if it
 isn't, the eject answers `Ok`: the person's goal is met. That covers an eject of a path something already unmounted
 (`diskutil` exits 1, "Failed to find disk"), and a timed-out unmount that landed anyway. The `info` line still records
 what the tool said. The evidence is typed and can't block: ❌ not the tool's stderr (`error-string-match`), ❌ not a
@@ -876,11 +876,11 @@ hook is only cleanup (the volume's already gone), not wedge-prevention. See `cra
 
 `drive_release/` is the one door for every app-side index stop of a removable drive Cmdr decides on, and every app-side
 start of a non-root index. Stops: the eject's pre-stop (`stop_index_blocking`), the DiskArbitration unmount approver's
-ask (`volumes/unmount_approver/`, which also sets the unmount-pending flag and resumes what it stopped), and the
-`WillUnmount` / `DidUnmount` hooks (`volumes/lifecycle.rs`; BOTH stand down while the approver is installed, and stand in
+ask (`volumes/platform/macos/unmount_approver/`, which also sets the unmount-pending flag and resumes what it stopped), and the
+`WillUnmount` / `DidUnmount` hooks (`volumes/platform/macos/lifecycle.rs`; BOTH stand down while the approver is installed, and stand in
 only for one that couldn't). Starts: `enable_drive_index` and `rescan_drive_index` (IPC and MCP), the master switch's
 resume loop in `set_indexing_enabled`, a search's `Index::cover` (`search/execute/live_run.rs`), and a renamed drive's restart
-(`Index::follow_volume_move`, `volumes/lifecycle.rs`). The user's
+(`Index::follow_volume_move`, `volumes/platform/macos/lifecycle.rs`). The user's
 `disable_drive_index` goes through it too. The boot disk's launch and FDA starts stay outside, and the gate passes `root`
 straight through: it never unmounts.
 
@@ -919,7 +919,7 @@ release's `LateStop`), a pending-resume flag, and an unmount-pending flag.
   owns the record, the volume is listed, no other owner is ejecting it), and intent. The record is consumed either way, so
   a later idle never re-runs a start (a stopped first scan would get `force_scan`). The start runs on the Tauri runtime
   holding the ticket. The macOS unmount approver is the one owner that resumes through the gate and the one caller of
-  `set_unmount_pending` / `clear_unmount_pending` (`volumes/unmount_approver/callbacks.rs`), which is why `resume.rs`
+  `set_unmount_pending` / `clear_unmount_pending` (`volumes/platform/macos/unmount_approver/callbacks.rs`), which is why `resume.rs`
   carries a `dead_code` expectation naming that platform. The eject's own flight resumes through `FlightResume`
   (`eject/disk_flight.rs`).
 
@@ -1063,7 +1063,7 @@ renamed drive"). A share's index reads through its `Volume` and needs nothing.
 **Decision**: `mount_registration::register_every_mount` registers every row of the kernel's mount table this account
 can reach at startup, browsable or not, and it is the only way a mount becomes a registered volume (the mount watcher and the listing's adoption
 path go through the same module). What the volume SWITCHER publishes stays a separate, stricter question that
-`volumes/mounts.rs` answers.
+`volumes/platform/macos/mounts.rs` answers.
 
 **Why**: path resolution and volume registration were two different answers to "which volumes exist", and resolution's
 was bigger. `resolve_path_volume_fast` reads `statfs`, so it mints an ID for any mount; registration took
@@ -1082,7 +1082,7 @@ right after).
 account can't open, so resolution has no business naming it either. The platform's `registrable_mount_roots` draws that
 line, and the mount watcher asks the same question; adoption below still covers the case where `statfs` does answer for
 a path inside one. The rule and its evidence: `volumes/DETAILS.md` § "Another account's mounts" (Linux:
-`volumes_linux/DETAILS.md` § "Another account's FUSE mounts").
+`volumes/platform/linux/DETAILS.md` § "Another account's FUSE mounts").
 
 **Adoption**, the net under the sweep: a listing whose ID nothing serves asks whether the mount under its path derives
 exactly that ID, and registers it if so (`adopt_mount_serving`). It covers the two gaps a startup sweep can't: a
@@ -1136,7 +1136,7 @@ FAT32 disk images under a Swift `NSWorkspace` observer while `diskutil rename` r
 registry stayed rooted at a path that no longer existed, so listings, the index, and the panes all failed until a
 restart. Unmount plus mount would stop the drive's index and send every pane on it home, for a drive that never left.
 
-What `volumes/lifecycle.rs::handle_volume_renamed` does with it:
+What `volumes/platform/macos/lifecycle.rs::handle_volume_renamed` does with it:
 
 - **Only when the id survives.** The new root has to derive the same id the old one is registered under (a UUID-keyed
   local volume does). A volume with no UUID keys on its path, so its rename IS a new id, and unmount plus mount is the
@@ -1150,7 +1150,7 @@ What `volumes/lifecycle.rs::handle_volume_renamed` does with it:
   `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "A drive whose mount point moved".
 
 Pinned by `manager/root_move_tests.rs` and, on real APFS and HFS+ images,
-`apps/desktop/src-tauri/src/volumes/rename_real_image.rs`.
+`apps/desktop/src-tauri/src/volumes/platform/macos/rename_real_image.rs`.
 
 **Decision**: a caller that retires the incumbent asks `would_keep_incumbent` first
 **Why**: `register_replacing_predecessor` (the SMB upgrade's entry point) calls `on_superseded` on the volume it is displacing, which stops that volume's watcher. On a refused registration the registry keeps that same volume active, so retiring first left the ID pointing at a live share with no watcher: it stayed listed, and silently stopped seeing its own changes. `would_keep_incumbent(id, root)` answers the guard's question under the read lock so the caller can skip the retirement, and the ordering (retire, then register) is unchanged for the routine same-root swap, where two live watchers on one ID would double-feed the index. Covered by `a_registration_the_registry_refuses_leaves_the_incumbent_untouched`.

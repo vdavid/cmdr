@@ -1,34 +1,19 @@
 //! Tauri commands for volume operations.
 //!
-//! One module for macOS and Linux. Everything genuinely per-platform lives a
-//! layer down in `volumes/` and `volumes_linux/`; what's left up here is the
-//! same on both, and the two spots that aren't are the `platform` alias and
-//! [`NETWORK_FS_TYPE`].
+//! One module for every OS. Everything genuinely per-platform lives a layer down in the
+//! `volumes` seam; what's left up here is the same everywhere.
 
 use serde::Serialize;
 use tokio::time::Duration;
 
 use crate::location::{Location, ResolveLocationResult};
 use crate::volume_listing;
+use crate::volumes::{DEFAULT_VOLUME_ID, LocationCategory, NETWORK_FS_TYPE, VolumeInfo};
 use cmdr_fs::deadline::{TimedOut, blocking_with_timeout_flag};
 
-#[cfg(target_os = "macos")]
-use crate::volumes as platform;
-#[cfg(target_os = "linux")]
-use crate::volumes_linux as platform;
-
 use crate::file_system::volume::SpaceInfo;
-use platform::{DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo};
 
 pub(super) const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
-
-/// The `fs_type` the synthetic `network` volume reports: whatever the OS calls an
-/// SMB mount, so a consumer classifying by fs type sees a share and not an unknown
-/// filesystem.
-#[cfg(target_os = "macos")]
-const NETWORK_FS_TYPE: &str = "smbfs";
-#[cfg(target_os = "linux")]
-const NETWORK_FS_TYPE: &str = "cifs";
 
 /// Result of resolving a path to its containing volume.
 /// Unlike `TimedOut<Option<VolumeInfo>>`, `timed_out: true` means "the filesystem
@@ -74,7 +59,7 @@ pub async fn get_volume_space(path: String) -> TimedOut<Option<SpaceInfo>> {
             timed_out: false,
         };
     }
-    blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || platform::get_volume_space(&path)).await
+    blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || crate::volumes::get_volume_space(&path)).await
 }
 
 /// Resolves a path to its containing volume without enumerating all volumes.
@@ -142,7 +127,6 @@ async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<V
     // at launch, and four servers connecting there is
     // four Keychain reads and four network waits nobody asked for. Activating
     // the row is what brings it to life.
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     if ["sftp://", "webdav://", "s3://", "nfs://"]
         .iter()
         .any(|scheme| path.starts_with(scheme))
@@ -198,7 +182,7 @@ async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<V
             Some((zip_path, _inner)) => zip_path,
             None => std::path::PathBuf::from(&path),
         };
-        platform::resolve_path_volume_fast(&fs_path.to_string_lossy())
+        crate::volumes::resolve_path_volume_fast(&fs_path.to_string_lossy())
     })
     .await;
     (result.data, result.timed_out)
@@ -299,7 +283,6 @@ mod tests {
     /// Without the scheme the mount table answers the LOCAL root for any
     /// absolute path it doesn't know, on both platforms, which is what would
     /// send a restored tab, a favorite, a drag, or an MCP row to `/`.
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     #[tokio::test]
     async fn resolve_location_sftp_path_returns_the_saved_server_without_dialing() {
         // Routed nowhere (RFC 5737), so a dial would hang rather than reach a
@@ -332,7 +315,6 @@ mod tests {
     }
 
     /// A remote path nothing saved matches is `None`, ❌ never the boot disk.
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     #[tokio::test]
     async fn resolve_location_unknown_server_path_returns_none() {
         let result = resolve_location_inner("webdav://nobody@192.0.2.99:8080/dav/x".to_string(), TEST_FS_TIMEOUT).await;
@@ -347,7 +329,6 @@ mod tests {
     /// frontend loop on a failing listing, so a resolver that dials turns such a
     /// loop into hundreds of failed dials a second against the ADB server. The
     /// pane is the one dialer (`device-connect.svelte.ts`).
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     #[tokio::test]
     async fn resolve_location_adb_path_returns_the_listed_phone_without_dialing() {
         const SERIAL: &str = "R58M-Resolve-Cell";

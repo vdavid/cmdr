@@ -215,11 +215,11 @@ fn get_username() -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::super::ids::smb_volume_id;
+    use super::super::smb::parse_smb_mount_source;
+    use super::super::test_support::parse_test_mounts;
     use super::*;
     use crate::file_system::volume::path_volume_id;
-    use crate::volumes_linux::ids::smb_volume_id;
-    use crate::volumes_linux::smb::parse_smb_mount_source;
-    use crate::volumes_linux::test_support::parse_test_mounts;
     use cmdr_local::linux_mounts;
 
     #[test]

@@ -4,7 +4,7 @@
 //! `VolumeManager`, the platform mount probes, or the MTP session layer, so they
 //! ask through `indexing::host::volumes::VolumeProvider` and this is what the app
 //! installs at startup. A pure adapter: every decision below already lived
-//! somewhere in `file_system/`, `volumes*/`, or `mtp/`, and stays there.
+//! somewhere in `file_system/`, `volumes/`, or `mtp/`, and stays there.
 
 use std::path::Path;
 use std::sync::Arc;
@@ -79,48 +79,17 @@ impl VolumeProvider for AppVolumeProvider {
     // Both read the non-blocking mount table discovery and eject already read, so a
     // hung or dead drive can't stall the answer.
     fn mount_identity(&self, root: &Path) -> Option<MountIdentity> {
-        let root = root.to_string_lossy();
-        #[cfg(target_os = "macos")]
-        {
-            crate::volumes::mount_identity_at(&root).map(MountIdentity::from_raw)
-        }
-        #[cfg(target_os = "linux")]
-        {
-            cmdr_local::linux_mounts::mount_device_at(&root).map(MountIdentity::from_raw)
-        }
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        {
-            let _ = root;
-            None
-        }
+        crate::volumes::mount_identity_at(&root.to_string_lossy()).map(MountIdentity::from_raw)
     }
 
     fn is_mounted(&self, identity: MountIdentity) -> Option<bool> {
-        #[cfg(target_os = "macos")]
-        {
-            crate::volumes::has_mount_identity(identity.raw())
-        }
-        #[cfg(target_os = "linux")]
-        {
-            cmdr_local::linux_mounts::device_is_mounted(identity.raw())
-        }
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        {
-            let _ = identity;
-            None
-        }
+        crate::volumes::has_mount_identity(identity.raw())
     }
 
     fn mount_points(&self) -> Option<Vec<MountPoint>> {
         // The whole table, ❌ never `registrable_mount_roots`: the boot scan has to
         // stop at another account's mount too, which the registry leaves out.
-        #[cfg(target_os = "macos")]
-        let rows = crate::volumes::mount_rows();
-        #[cfg(target_os = "linux")]
-        let rows = crate::volumes_linux::mount_rows();
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        let rows: Option<Vec<(String, String, String)>> = Some(Vec::new());
-        rows.map(|rows| {
+        crate::volumes::mount_rows().map(|rows| {
             rows.into_iter()
                 .map(|(path, source, fs_type)| MountPoint {
                     path: path.into(),
@@ -193,24 +162,10 @@ impl VolumeProvider for AppVolumeProvider {
 /// `smbfs`/`cifs` mount, else `None`. Keyed by `(server, port, share)` (via
 /// `smb_volume_id`), the SAME id the `VolumeManager` registers the share under, so
 /// a listing under `/Volumes/<share>` resolves to the SMB volume's index, not
-/// `root`. Platform-split because the mount-info probe lives in the macOS-only
-/// `volumes` / Linux-only `volumes_linux` module.
+/// `root`.
 pub(crate) fn smb_volume_id_for_path(path: &str) -> Option<String> {
-    #[cfg(target_os = "macos")]
-    use crate::volumes::get_smb_mount_info;
-    #[cfg(target_os = "linux")]
-    use crate::volumes_linux::get_smb_mount_info;
-
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
-    {
-        let info = get_smb_mount_info(path)?;
-        Some(cmdr_fs::volume::smb_volume_id(&info.server, info.port, &info.share))
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        let _ = path;
-        None
-    }
+    let info = crate::volumes::get_smb_mount_info(path)?;
+    Some(cmdr_fs::volume::smb_volume_id(&info.server, info.port, &info.share))
 }
 
 #[cfg(all(test, target_os = "macos"))]

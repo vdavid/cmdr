@@ -8,8 +8,8 @@ import (
 
 // RunClippyLinux lints the workspace for the Linux target, from a Mac, with the clippy
 // and rustdoc commands CI's "Desktop (Rust)" job runs natively on ubuntu. The host lanes
-// only ever see macOS's `cfg`s, so a lint in a `#[cfg(target_os = "linux")]` module (all
-// of `volumes_linux/`, the GTK paths), or a doc link to a macOS-only item, reached `main`
+// only ever see macOS's `cfg`s, so a lint in a `#[cfg(target_os = "linux")]` module (the
+// Linux volumes arm, the GTK paths), or a doc link to a macOS-only item, reached `main`
 // unchecked and turned CI red.
 //
 // It shares the tests lane's image and target volume (`desktop-rust-linux-container.go`):

@@ -576,9 +576,9 @@ diagnosis.
 
 `filesystem_kind::mount_has_trash` is THE trash rule: a mount keeps a Trash exactly when `mount_is_local_disk` admits
 it. Everything else derives from it: `MountClass::has_trash` (so `Volume::has_trash` on a `LocalPosixVolume`, whose
-`MountClass` comes from the same allowlist at registration) and the volume list's `supports_trash` (`volumes/fs_type.rs`
-and its Linux twin). The suggested-ops review reads `Volume::has_trash` to say a trash group "can't run", and the delete
-dialog reads `supports_trash`, so the two can't disagree about a drive.
+`MountClass` comes from the same allowlist at registration) and the volume list's `supports_trash`
+(`volumes/platform/macos/fs_type.rs` and its Linux twin). The suggested-ops review reads `Volume::has_trash` to say a
+trash group "can't run", and the delete dialog reads `supports_trash`, so the two can't disagree about a drive.
 
 - **FAT32 and exFAT keep one.** `cmdr-operations`' `move_to_trash_sync` (`trashItemAtURL`) moved a file into
   `/Volumes/<label>/.Trashes/501/` on both, returning that in-trash path, and the file left its folder (verified on

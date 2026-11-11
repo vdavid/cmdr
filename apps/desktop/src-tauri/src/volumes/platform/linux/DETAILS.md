@@ -1,6 +1,6 @@
 # Volumes (Linux): details
 
-Decision rationale. `CLAUDE.md` holds the must-knows.
+Decision rationale for the Linux arm. `CLAUDE.md` holds the must-knows; the seam: `../../DETAILS.md` § "The seam".
 
 ## What each location category covers
 
@@ -10,31 +10,9 @@ Decision rationale. `CLAUDE.md` holds the must-knows.
 
 ## Dependencies
 
-`linux_mounts` (`/proc/mounts` parsing + fstype lookup), `dirs`, `libc` (`poll`), `cmdr_local::space::get_volume_space` (free space, re-exported as the `platform::get_volume_space`
-facade; `crates/cmdr-local/DETAILS.md` § "Local volume space"), `notify` (inotify on the
+`linux_mounts` (`/proc/mounts` parsing + fstype lookup), `dirs`, `libc` (`poll`), `cmdr_local::space::get_volume_space` (free space, the reading `volumes::get_volume_space` re-exports on every OS;
+`crates/cmdr-local/DETAILS.md` § "Local volume space"), `notify` (inotify on the
 GVFS directory), and `crate::file_system::volume::{manager::get_volume_manager, LocalPosixVolume}`.
-
-## One command module
-
-`commands/volumes.rs` serves macOS and Linux alike. The genuine platform difference is this module versus `volumes/`,
-reached through one `#[cfg]`'d `platform` alias, and the only other divergence is `NETWORK_FS_TYPE` (`smbfs` / `cifs`),
-which the synthetic `network` volume reports.
-
-❌ Don't add a second, Linux-only command module beside it. A file existing only to be a registration target reads
-like a Linux implementation and invites someone to put Linux behavior in it, which then has to be kept in step with the
-macOS twin by hand. Linux-only behavior belongs behind the `platform` alias, in THIS module.
-
-The pair of hand-maintained command modules this replaced had drifted: both `list_volumes` and `get_volume_space` ran
-their blocking work straight on the async thread with no deadline here, so one wedged CIFS mount or a stuck
-`gvfsd-fuse` held the IPC handler for as long as the kernel did. macOS had wrapped both in `blocking_with_timeout_flag`
-for months. Every test in the shared module now runs on both platforms, which is what keeps them in step.
-
-The shared `confirm_archive_boundary` call in `resolve_path_to_volume` is NOT one of those fixes, despite looking like
-one. macOS needs it because `statfs` fails outright on `…/bundle.zip/docs/readme.txt`; `get_mount_point` here is a
-longest-prefix match over `/proc/mounts` that never fails, so Linux already resolved such a path to the containing
-drive (verified by running the macOS test against the pre-merge Linux module in the Docker lane, where it passed).
-It's shared so the contract is explicit: a stat-based fast path added here later would otherwise silently start
-answering `None` for archive-inner paths.
 
 ## Decisions
 

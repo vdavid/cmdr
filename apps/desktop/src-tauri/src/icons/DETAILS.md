@@ -149,7 +149,7 @@ so it needs no TCC permission and can't descend into a FileProvider XPC chain. N
 handful of apps, rendered when the settings row opens. It's `#[cfg(target_os = "macos")]` for the same reason its caller
 is: `.app` bundles are a macOS thing, and an ungated copy is dead code in the Linux build.
 
-**Volumes** carry their own per-path icon through a separate, already-wired path: `volumes/mod.rs` calls
+**Volumes** carry their own per-path icon through a separate, already-wired path: `volumes/platform/macos/mod.rs` calls
 `icons::get_icon_for_path` at volume-enumeration time and stores the data URL directly on the volume struct (FDA-gated,
 returns `None` while pending). Independent of the `iconId` registry used for file-list rows, so no Tier-C wiring is
 needed for volumes.

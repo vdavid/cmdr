@@ -1,43 +1,17 @@
 //! The one volume-list pipeline, cross-platform.
 //!
-//! Discovery is per-platform (`volumes/` on macOS, `volumes_linux/` on Linux,
-//! `stubs/volumes.rs` elsewhere), but nothing downstream of it is: the
-//! `list_volumes` IPC call and the `volumes-changed` push publish the same list
-//! to the same frontend, so they have to assemble it the same way. This module
-//! owns the platform aliases and the assembly, and every consumer goes through
+//! Discovery is per-platform (the `volumes` seam), but nothing downstream of it
+//! is: the `list_volumes` IPC call and the `volumes-changed` push publish the
+//! same list to the same frontend, so they have to assemble it the same way. This
+//! module owns the assembly, and every consumer goes through
 //! [`complete`] rather than re-deriving the steps. Device-backed volumes (MTP,
 //! ADB) come from `device_volumes`, which also answers the per-path questions
 //! (`device_volume_for_path`, `device_space_for_path`).
 
 use std::time::Duration;
 
-// ============================================================================
-// Platform aliases
-// ============================================================================
-
-#[cfg(target_os = "macos")]
+use crate::volumes::list_locations;
 pub(crate) use crate::volumes::{LocationCategory, LocationInfo};
-
-#[cfg(target_os = "linux")]
-pub(crate) use crate::volumes_linux::{LocationCategory, LocationInfo};
-
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-pub(crate) use crate::stubs::volumes::{LocationCategory, VolumeInfo as LocationInfo};
-
-#[cfg(target_os = "macos")]
-fn list_locations() -> Vec<LocationInfo> {
-    crate::volumes::list_locations()
-}
-
-#[cfg(target_os = "linux")]
-fn list_locations() -> Vec<LocationInfo> {
-    crate::volumes_linux::list_locations()
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-fn list_locations() -> Vec<LocationInfo> {
-    crate::stubs::volumes::list_volumes()
-}
 
 /// The network mount a path lexically lies on, read from the kernel's cached mount table
 /// (`getfsstat(MNT_NOWAIT)` on macOS, `/proc/mounts` on Linux): ❌ never a `statfs` on the path,
@@ -53,20 +27,7 @@ pub(crate) struct NetworkMount {
 /// The network mount `path` lies on: the deepest mount point that's a whole-segment prefix of it.
 /// `None` when that mount is a local disk, or the table couldn't be read. Lexical, so a symlink on
 /// the way isn't followed.
-#[cfg(target_os = "macos")]
-pub(crate) fn network_mount_under(path: &std::path::Path) -> Option<NetworkMount> {
-    crate::volumes::network_mount_under(path)
-}
-
-#[cfg(target_os = "linux")]
-pub(crate) fn network_mount_under(path: &std::path::Path) -> Option<NetworkMount> {
-    crate::volumes_linux::network_mount_under(path)
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-pub(crate) fn network_mount_under(_path: &std::path::Path) -> Option<NetworkMount> {
-    None
-}
+pub(crate) use crate::volumes::network_mount_under;
 
 // ============================================================================
 // The hub row
@@ -145,10 +106,7 @@ pub(crate) async fn complete(local: Vec<LocationInfo>) -> Vec<LocationInfo> {
     // here would turn a refresh into a round of network traffic.
     crate::server_volumes::append_server_volumes(&mut volumes);
 
-    #[cfg(target_os = "macos")]
     crate::volumes::enrich_from_volume_registry(&mut volumes);
-    #[cfg(target_os = "linux")]
-    crate::volumes_linux::enrich_from_volume_registry(&mut volumes);
 
     // Favorites last: the reach pass reads every row's FINAL connection state and capabilities,
     // and rows only (`favorites/reach.rs`). The claims it makes for legacy entries are a file

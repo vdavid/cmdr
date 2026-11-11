@@ -8,8 +8,8 @@ must-knows.
 ## What it replaces
 
 Favorites used to be a hardcoded `Vec<LocationInfo>` of four folders, computed fresh on every
-`get_favorites()` call with no write path. Now `get_favorites()` (both the macOS `volumes/mod.rs` and
-the Linux `volumes_linux/mod.rs` twins) reads `favorites::store::list()` and maps each entry to a
+`get_favorites()` call with no write path. Now `get_favorites()` (in the macOS and Linux arms,
+`volumes/platform/macos/mod.rs` and `volumes/platform/linux/mod.rs`) reads `favorites::store::list()` and maps each entry to a
 `LocationInfo` with `category: Favorite`. The frontend already tells favorites apart from volumes via
 `category`, so no extra "user-removable" flag is needed: every favorite is now a user favorite.
 
@@ -73,7 +73,7 @@ hardcoded behavior.
 Platform defaults (`default_favorites`, platform-native per `design-principles.md`):
 
 - macOS: `/Applications`, `~/Desktop`, `~/Documents`, `~/Downloads` (the previous hardcoded four).
-- Linux: Home, `~/Desktop`, `~/Documents`, `~/Downloads` (matching the old `volumes_linux`
+- Linux: Home, `~/Desktop`, `~/Documents`, `~/Downloads` (matching the old Linux discovery
   favorites).
 
 ## Operations (pure core)
@@ -168,7 +168,7 @@ The listing builds a favorite row in two stages (`target.rs` header), because ne
 enough. ❗ Every stored favorite publishes a row, a missing or offline one included: hiding is what
 made favorites on an unmounted share silently vanish.
 
-**Stage 1, discovery** (`volumes::favorite_location`, `volumes_linux::favorite_location`). Blocking,
+**Stage 1, discovery** (each `volumes/platform/` arm's `favorite_location`). Blocking,
 under `discover_local`'s 2 s timeout, so it may look at the disk but ❌ never at a network path:
 
 - The containing mount's fs type comes from the mount-table snapshot the listing already took
@@ -262,7 +262,7 @@ servers-hub path would be written down with nothing able to reopen it.
    if the registry holds a place backend AT that mount point (`find_by_root`), that's the volume,
    named as its switcher row is. ❗ AT, ❌ never above: a mount nested inside a registered share is
    another filesystem, and a prefix match would give it the share's id. On Linux a GVFS share names
-   its own folder, ❌ never the one FUSE root serving them all (`volumes_linux/DETAILS.md` § "A path
+   its own folder, ❌ never the one FUSE root serving them all (`volumes/platform/linux/DETAILS.md` § "A path
    inside a GVFS share resolves to the share"). Tests inject the resolver to see whether the gate
    asked it, ❌ not a zero deadline: Linux's lexical resolver beats the timer. Local disks skip this (their
    `statfs` is cheap, and the resolver knows a cloud folder on the boot disk is its own row); a miss
@@ -282,7 +282,7 @@ servers-hub path would be written down with nothing able to reopen it.
    unregistered (the servers hub) answers `NotAPlace`.
 
 It answers `FavoriteVolume { id, root, name }` from the resolved row. On macOS the resolver names an
-SMB share the way its switcher row does ("naspi on nas.local", `volumes/mounts.rs::smb_share_name`),
+SMB share the way its switcher row does ("naspi on nas.local", `volumes/platform/macos/mounts.rs::smb_share_name`),
 so a pick after the share is forgotten says which server it means; a bare share name couldn't. An OS-mounted SMB share
 served by `LocalPosixVolume` reports `BackendKind::Local`, which is admitted like any drive.
 

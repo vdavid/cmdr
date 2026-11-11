@@ -4,7 +4,7 @@
 //! mount, each share a subdirectory). This module parses both and turns the GVFS
 //! side into `Network` locations.
 
-use super::{LocationCategory, LocationInfo, ids::volume_id_for_mount, linux_mounts};
+use super::{LocationCategory, LocationInfo, SmbMountInfo, ids::volume_id_for_mount, linux_mounts};
 use std::path::Path;
 
 /// Enriches discovered locations with what only the registered `Volume` knows:
@@ -25,26 +25,6 @@ pub fn enrich_from_volume_registry(volumes: &mut [LocationInfo]) {
             vol.connection_state = registered.connection_state();
         }
     }
-}
-
-/// Information about an SMB mount extracted from `/proc/mounts`.
-#[derive(Debug, Clone)]
-pub struct SmbMountInfo {
-    /// Server hostname or IP (for example, "192.168.1.111").
-    pub server: String,
-    /// Share name, ONE path segment (for example, "naspi"). This is what goes to
-    /// TreeConnect, so it can never carry a separator.
-    pub share: String,
-    /// Where inside the share this mount is anchored, `/`-separated and without
-    /// leading or trailing separators. `None` for the ordinary mount at the share
-    /// root. `mount -t cifs //server/share/sub` records the whole path in the
-    /// device field. Same field, same meaning as the macOS twin's; see
-    /// `volumes/smb.rs`.
-    pub subpath: Option<String>,
-    /// Username if present in the mount source (for example, "david").
-    pub username: Option<String>,
-    /// Port from the mount source (for example, 10480). Defaults to 445.
-    pub port: u16,
 }
 
 /// Extracts SMB server, share, port, and username for the SMB mount AT `mount_path`.
@@ -268,7 +248,7 @@ mod enrichment_tests {
     use cmdr_fs::volume::InMemoryVolume;
     use std::sync::Arc;
 
-    /// The Linux half of the macOS twin's cell (`volumes/smb.rs`). The frontend
+    /// The Linux half of the macOS twin's cell (`volumes/platform/macos/smb.rs`). The frontend
     /// doesn't branch on platform, so a live server that greys out under the
     /// Docker E2E lane and not on a Mac is a pane whose buttons differ by OS.
     #[test]
@@ -430,7 +410,7 @@ mod tests {
     /// `mount -t cifs //server/share/sub` records the whole path in the device
     /// field, and a share is ONE segment: the rest is a directory inside it. The
     /// macOS twin has the same rule, for the DFS sub-mount that reported ERR-48RZX
-    /// (`volumes/smb.rs`); keeping the two parsers in step is the point.
+    /// (`volumes/platform/macos/smb.rs`); keeping the two parsers in step is the point.
     #[test]
     fn a_subdirectory_mount_keeps_only_the_first_segment_as_the_share() {
         let info = parse_smb_mount_source("//alice@nas.local/media/photos/2026").expect("a well-formed source");

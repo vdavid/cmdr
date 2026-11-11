@@ -24,10 +24,7 @@ use crate::network::keychain;
 use crate::network::smb_connect_failure::{Refusal, RefusedAt, SignInIdentity, UpgradeError, UpgradeFailure};
 use crate::network::smb_server_address::{discover_server, friendly_server_name, get_keychain_password};
 use crate::network::smb_upgrade::{MOUNT_READ_LIMIT, try_smb_upgrade};
-#[cfg(target_os = "macos")]
 use crate::volumes::{SmbMountInfo, get_smb_mount_info};
-#[cfg(target_os = "linux")]
-use crate::volumes_linux::{SmbMountInfo, get_smb_mount_info};
 use cmdr_fs::deadline::blocking_with_timeout;
 use cmdr_fs::log_private::LogPrivate;
 use std::time::Duration;

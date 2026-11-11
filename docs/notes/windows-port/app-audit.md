@@ -56,7 +56,7 @@ unconditionally, no `cfg` at the caller" idea in miniature.
 The "other OS" arm exists but has never been compiled, so it has rotted.
 
 1. **The "other" arm doesn't compile on Windows.** `stubs/volumes.rs:194` calls `libc::statvfs`, and `libc` isn't a
-   dependency there. The stubs' own doc names `libc` as a dep (`stubs/CLAUDE.md`).
+   dependency there. The stubs' own doc names `libc` as a dep (its C.md, since removed with it).
 2. **Two arms, no third (27 files).** Items defined for macOS and Linux with no fallback, in modules that are NOT gated
    off on Windows:
    - `licensing/device_id.rs:31,87` (`read_platform_uuid`).
@@ -244,8 +244,8 @@ Linux has today.
   crate root. `stubs/` goes away. Each "not available here" answer lives in that feature's `windows.rs` (or `linux.rs`),
   with the real types.
 - **One IPC command per feature**: commands stay pass-throughs with one signature; the platform split sits under them.
-  This deletes the 63 duplicated command definitions, the three-way `ipc.rs` groups, and the hand-synced stub types
-  (`stubs/CLAUDE.md`'s "align the corresponding stub type by hand" stops being a rule).
+  This deletes the 63 duplicated command definitions, the three-way `ipc.rs` groups, and the hand-synced stub types (the
+  stubs' C.md's "align the corresponding stub type by hand" stops being a rule).
 - **A capability answer instead of silent stubs**: a `platform_capabilities()` command (`has_quick_look`, `has_dock`,
   `has_tags`, `can_drag_out`, ...), so the frontend hides a feature on purpose. Today a stub returning success makes it
   "silently not appear", which is untestable.

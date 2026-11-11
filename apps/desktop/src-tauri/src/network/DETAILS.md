@@ -455,9 +455,9 @@ mount URL carried them. So `smb://testuser@localhost:11481/private` lands at
 `cmdr-e2e` image, `gio mount` then `ls`, 2026-10-10). Two consequences:
 
 - **The mount path is FOUND, ❌ never built.** `find_gvfs_mount` reads the folder names (`gvfsd-fuse` answers that
-  readdir from its own table, no server round trip) and matches each through `volumes_linux::parse_gvfs_smb_dirname`.
+  readdir from its own table, no server round trip) and matches each through `volumes::parse_gvfs_smb_dirname`.
   A path built from server and share alone missed every authenticated or off-445 share.
-- **The id comes off the name.** `volumes_linux::get_smb_mount_info` answers a GVFS share folder from its name (pure,
+- **The id comes off the name.** `volumes::get_smb_mount_info` answers a GVFS share folder from its name (pure,
   no syscall), so `volume_id_for_mount`, `identity_from_statfs`, and the saved row all key it by the same
   `(server, port, share)`. The Linux E2E fixtures sit on 445 by container name, which is why a port-less id never
   tripped them.
@@ -838,9 +838,9 @@ the migration, and what Forget does). What the code has to defend:
   wait; a kernel mount under way may still finish. A password the sheet offered is stored only after the mount went
   through.
 - **A Linux GVFS mount saves its place like a CIFS one**: `smb_upgrade::mounted_volume_id` reads the share folder's
-  name through `volumes_linux::get_smb_mount_info`, the same read the mount row's id comes off (§ "Linux GVFS folder
+  name through `volumes::get_smb_mount_info`, the same read the mount row's id comes off (§ "Linux GVFS folder
   names"). Known gap (#348): an unmount from outside Cmdr goes unnoticed, so the share stays registered and its saved
-  row stays hidden (`volumes_linux/DETAILS.md` § "A path inside a GVFS share resolves to the share").
+  row stays hidden (`volumes/platform/linux/DETAILS.md` § "A path inside a GVFS share resolves to the share").
 - **A restored tab on an unmounted saved share keeps its folder**: launch leaves the path unprobed and keeps the
   share's id (`pane/initialization.ts::restoreShareTab`), the `saved` row dials, and the pane enters that folder or the
   nearest one still there (`pane/DETAILS.md` § "A pane on a saved place").

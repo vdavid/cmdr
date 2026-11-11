@@ -146,15 +146,15 @@ unmounts roots with `mount`, `rename_mount`, and `mark_unmounted`. `stop_removab
 (`../lifecycle/DETAILS.md` § "When a volume has been let go"), and so does every delete and completion gate, through
 `VolumeHold::drive_is_listed` (`../reconcile/DETAILS.md` § "The delete gates").
 
-**`mount_points()` is the whole table, as it spells itself**, from the same non-blocking read (`volumes::mount_rows` /
-`volumes_linux::mount_rows` app-side), `None` when it couldn't be read. Each `MountPoint` carries the row's source and
-fs type, because on Linux the boot scan cuts only the mounts that aren't a local disk (`MountPoint::is_local_disk`, the
-shared `cmdr_fs::filesystem_kind::mount_is_local_disk` allowlist). The index filters it into the mounts inside the boot
-tree and caches that for a second (`../scanner/boot_tree_mounts.rs`). `FakeVolumeProvider::mount` lists a root there
-too, with no source or type (so not a local disk, cut on every platform) unless `set_mount_kind` gives it one. So a test
-that mounts a fake drive at a temp path inside the boot tree has made it a boot-tree mount, which boot-space walks then
-stop at; list a gate-only drive under `/Volumes/` instead (`reconciler/tests/delete_gates.rs`). Installing a provider,
-and every fake table change, bumps `table_generation`, so the cache re-reads at once.
+**`mount_points()` is the whole table, as it spells itself**, from the same non-blocking read (`volumes::mount_rows`
+app-side), `None` when it couldn't be read. Each `MountPoint` carries the row's source and fs type, because on Linux the
+boot scan cuts only the mounts that aren't a local disk (`MountPoint::is_local_disk`, the shared
+`cmdr_fs::filesystem_kind::mount_is_local_disk` allowlist). The index filters it into the mounts inside the boot tree
+and caches that for a second (`../scanner/boot_tree_mounts.rs`). `FakeVolumeProvider::mount` lists a root there too,
+with no source or type (so not a local disk, cut on every platform) unless `set_mount_kind` gives it one. So a test that
+mounts a fake drive at a temp path inside the boot tree has made it a boot-tree mount, which boot-space walks then stop
+at; list a gate-only drive under `/Volumes/` instead (`reconciler/tests/delete_gates.rs`). Installing a provider, and
+every fake table change, bumps `table_generation`, so the cache re-reads at once.
 
 **Why the provider slot is an `RwLock`, unlike the runtime and the policy.** Tests swap it. Three tests used to register
 real `LocalPosixVolume`s into the process-wide `VolumeManager`, which is exactly the coupling the extraction removes;

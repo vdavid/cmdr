@@ -14,10 +14,7 @@
 //! pre-existing behavior).
 
 use super::NetworkHost;
-#[cfg(target_os = "macos")]
 use crate::volumes::{SmbMountInfo, smb_mounts};
-#[cfg(target_os = "linux")]
-use crate::volumes_linux::{SmbMountInfo, smb_mounts};
 use std::collections::HashSet;
 use std::net::IpAddr;
 

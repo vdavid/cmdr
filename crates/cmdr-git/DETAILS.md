@@ -54,9 +54,9 @@ which:
 - **Filling in commit counts** (`apps/desktop/src-tauri/src/file_system/git/commit_counts.rs`):
   `GitPortal::commit_rows_with_counts` and `GitPortal::COUNT_ALL_LIMIT`, a method and an associated const on the
   browsing type rather than new root exports (approved 2026-10-14), so the count stays 11 while the list names them.
-- **Letting a drive eject** (`apps/desktop/src-tauri/src/volumes/unmount_approver/mod.rs`): `GitPortal::release_volume`,
-  one method on the browsing type for the same reason (added 2026-10-19 for GitHub #488, pending David's say-so; §
-  "Letting go of a volume that's about to unmount").
+- **Letting a drive eject** (`apps/desktop/src-tauri/src/volumes/platform/macos/unmount_approver/mod.rs`):
+  `GitPortal::release_volume`, one method on the browsing type for the same reason (added 2026-10-19 for GitHub #488,
+  pending David's say-so; § "Letting go of a volume that's about to unmount").
 
 **A `pub` inside a private module isn't measured either**, which is exactly why one may not sit there waiting for a
 caller: nothing would ever notice. So a helper here earns its place from a caller that exists today, ❌ never from a
