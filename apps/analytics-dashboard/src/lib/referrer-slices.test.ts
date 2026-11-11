@@ -60,6 +60,40 @@ describe('referrerSlices', () => {
     expect(color(first, 'github.com')).toBe(color(flipped, 'github.com'))
   })
 
+  it("merges a site's www., m., l., lm., and mobile. hosts into one slice that lists what it combines", () => {
+    const slices = referrerSlices([
+      { x: 'm.facebook.com', y: 11 },
+      { x: 'l.facebook.com', y: 9 },
+      { x: 'facebook.com', y: 3 },
+      { x: 'lm.facebook.com', y: 2 },
+      { x: 'www.google.com', y: 20 },
+      { x: 'mobile.twitter.com', y: 5 },
+    ])
+    expect(slices.map((s) => [s.key, s.count])).toEqual([
+      ['facebook.com', 25],
+      ['google.com', 20],
+      ['twitter.com', 5],
+    ])
+    expect(slices[0].members?.map((m) => [m.label, m.count])).toEqual([
+      ['m.facebook.com', 11],
+      ['l.facebook.com', 9],
+      ['facebook.com', 3],
+      ['lm.facebook.com', 2],
+    ])
+    // One host behind a slice: nothing to list, and the label is the bare domain.
+    expect(slices[1].label).toBe('google.com')
+    expect(slices[1].members).toBeUndefined()
+  })
+
+  it('leaves hosts alone when stripping would leave no registrable domain', () => {
+    const slices = referrerSlices([
+      { x: 'm.com', y: 5 },
+      { x: 'l.co', y: 5 },
+      { x: 'com.linkedin.android', y: 5 },
+    ])
+    expect(slices.map((s) => s.key).sort()).toEqual(['com.linkedin.android', 'l.co', 'm.com'])
+  })
+
   it('returns no slices when no visitor came from another site', () => {
     expect(referrerSlices([])).toEqual([])
     expect(referrerSlices([{ x: 'a.com', y: 0 }])).toEqual([])

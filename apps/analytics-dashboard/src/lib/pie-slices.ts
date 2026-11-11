@@ -25,6 +25,8 @@ export interface PieInput {
   key: string
   label: string
   count: number
+  /** The entries this one sums, when it merges several (a site's subdomains); the tooltip lists them. */
+  members?: PieInput[]
 }
 
 /** One drawn slice: its share of the whole and its color, plus what folded into it for "Other". */

@@ -2,7 +2,7 @@
   A breakdown as a ring (plain SVG): the slices from `#lib/pie-slices.ts` (folded, shared, colored), the
   total in the middle, and a legend listing every slice's count and share, which doubles as the table view.
   Hover, focus, or tap a slice (or a legend row) for its tooltip; a tap or Enter pins it until a second
-  tap, Escape, or a tap elsewhere. "Other" lists what folded into it.
+  tap, Escape, or a tap elsewhere. "Other" lists what folded into it, and a merged slice what it combines.
 -->
 <script lang="ts">
     import { donutArc, type PieSlice } from '#lib/pie-slices.js'
@@ -100,6 +100,8 @@
     }
 
     const activeSlice = $derived(active ? slices.at(active.index) : undefined)
+    /** What the tooltip lists under the slice: what folded into "Other", or what a merged slice combines. */
+    const parts = $derived(activeSlice?.folded ?? activeSlice?.members)
 </script>
 
 <svelte:document onpointerdown={onDocumentPointerDown} />
@@ -164,9 +166,11 @@
                 </span>
                 <span class="font-semibold whitespace-nowrap text-text-primary tabular-nums">{readout(activeSlice)}</span>
             </div>
-            {#if activeSlice.folded}
-                <p class="mt-1.5 text-[10px] tracking-wide text-text-tertiary uppercase">Folded in</p>
-                {#each activeSlice.folded.slice(0, otherListMax) as entry (entry.key)}
+            {#if parts}
+                <p class="mt-1.5 text-[10px] tracking-wide text-text-tertiary uppercase">
+                    {activeSlice.folded ? 'Folded in' : 'Combines'}
+                </p>
+                {#each parts.slice(0, otherListMax) as entry (entry.key)}
                     <div class="flex items-center justify-between gap-4">
                         <span class="truncate text-text-tertiary">{entry.label}</span>
                         <span class="text-text-secondary tabular-nums">
@@ -174,8 +178,8 @@
                         </span>
                     </div>
                 {/each}
-                {#if activeSlice.folded.length > otherListMax}
-                    <p class="text-text-tertiary">and {formatNumber(activeSlice.folded.length - otherListMax)} more</p>
+                {#if parts.length > otherListMax}
+                    <p class="text-text-tertiary">and {formatNumber(parts.length - otherListMax)} more</p>
                 {/if}
             {/if}
         </div>

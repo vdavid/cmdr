@@ -495,7 +495,10 @@ columns ending today.
 - `referrerSlices` (`#lib/referrer-slices.ts`) runs the rows through `foldSlices`, so the pies fold, color, and keep a
   lone would-be fold named like the breakdown pies (§ "Acquisition trends"). An empty referrer, should Umami ever send
   one, is a neutral "(direct)" slice.
-- Subdomains stay separate slices (`m.facebook.com`, `l.facebook.com`, `facebook.com`), as Umami reports them.
+- **A site's host variants merge into one slice**: `www.`, `m.`, `l.`, `lm.`, and `mobile.` strip off (`m.facebook.com`,
+  `l.facebook.com`, and `facebook.com` are one "facebook.com"), unless that would leave a single label (`m.com`). The
+  slice's tooltip lists the hosts it combines (`members`). Umami counts distinct visitors per host, so one visitor who
+  arrived through two hosts counts twice in the merged slice; rare enough to ignore.
 - **Layout**: Awareness spans the page (Interest and Download share the row below it), because three 1/3 pie cards don't
   fit inside a 1/3 column.
 
