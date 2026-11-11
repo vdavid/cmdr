@@ -40,10 +40,14 @@
 pub mod disk_images;
 #[cfg(target_os = "macos")]
 pub mod metadata_fixture;
+#[cfg(cmdr_host)]
+mod platform;
 pub mod scan_recording;
 pub mod tcp_proxy;
 mod wedged_volume;
 
+#[cfg(cmdr_host)]
+pub use platform::*;
 pub use wedged_volume::WedgedVolume;
 
 use std::future::Future;

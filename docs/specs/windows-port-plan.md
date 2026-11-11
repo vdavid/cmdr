@@ -200,8 +200,9 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 14. [S] Win. Name and path validity keyed on the destination's `filesystem_kind`, not the host OS (`cmdr-fs` validation,
     `cmdr-operations` rename validity, Multi-Rename). Start with a quick check of today's exFAT and SMB behavior on a
     Mac.
-15. [XS] Win. Portable test helpers (`testing::symlink`, `is_root`, special-file fixtures, `can_create_symlinks()`),
-    replacing ~60 `cfg(unix)` test sites.
+15. [XS] Win. **Done**. `cmdr_fs::testing::{symlink, is_root, can_create_symlinks, make_fifo}` behind a `platform/`
+    seam; the crates' 83 test `symlink` calls, seven `geteuid` root checks, and four `mkfifo` fixtures use them. The
+    tests' own `cfg(unix)` gates stay until a Windows lane can say which ones compile there.
 16. [XS] Win. `cmdr-http`: `MacSystem` → `OsSystem` with per-OS submodules.
 17. [S] Win (moderate). `cmdr-fs` metadata classes: per-OS bodies into `metadata/platform/`, ordering rules stay in
     `mod.rs`; `cmdr-local`'s caps constant moves beside them. Needs 7.

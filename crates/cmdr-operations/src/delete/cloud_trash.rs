@@ -453,7 +453,7 @@ mod tests {
         let drive = home.join("Library/CloudStorage/Dropbox");
         fs::create_dir_all(drive.join("Work")).expect("cloud drive");
         fs::write(drive.join("Work/report.pdf"), b"x").expect("a file in the drive");
-        std::os::unix::fs::symlink(&drive, home.join("Dropbox")).expect("the provider's home link");
+        cmdr_fs::testing::symlink(&drive, home.join("Dropbox")).expect("the provider's home link");
 
         let evicted = drive.join("Work/report.pdf");
         let all_evicted = |path: &Path| {
@@ -479,7 +479,7 @@ mod tests {
         fs::write(drive.join("report.pdf"), b"x").expect("a file in the drive");
         fs::create_dir_all(home.join("Documents")).expect("an ordinary folder");
         let link = home.join("Documents/report-link.pdf");
-        std::os::unix::fs::symlink(drive.join("report.pdf"), &link).expect("the link");
+        cmdr_fs::testing::symlink(drive.join("report.pdf"), &link).expect("the link");
 
         // Even if the link's own leaf read came back evicted, the link is not in
         // the drive, so nothing routes.

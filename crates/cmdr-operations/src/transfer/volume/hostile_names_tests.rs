@@ -182,7 +182,7 @@ async fn a_copy_never_merges_through_a_destination_link() {
         let outside = dest_dir.path().join("outside");
         std::fs::create_dir_all(&outside).unwrap();
         std::fs::create_dir_all(dest_dir.path().join("inbox/album")).unwrap();
-        std::os::unix::fs::symlink(&outside, dest_dir.path().join("inbox/album/a")).unwrap();
+        cmdr_fs::testing::symlink(&outside, dest_dir.path().join("inbox/album/a")).unwrap();
         let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
             "Dest",
             dest_dir.path().to_path_buf(),

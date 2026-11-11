@@ -122,9 +122,7 @@ fn test_staging_cleanup_on_copy_failure() {
 #[test]
 fn test_staging_cleanup_on_rename_failure() {
     // Skip if running as root (root bypasses permission checks)
-    // SAFETY: (test) `geteuid` takes no arguments, shares no memory, and can't fail — it just
-    // returns the caller's effective uid. We compare the returned integer to 0 to detect root.
-    if unsafe { libc::geteuid() } == 0 {
+    if cmdr_fs::testing::is_root() {
         return;
     }
 

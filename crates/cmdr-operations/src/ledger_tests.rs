@@ -80,7 +80,7 @@ fn a_symlink_records_the_link_not_its_target() {
     let target = tmp.path().join("target.bin");
     fs::write(&target, vec![0u8; 4096]).unwrap();
     let link = tmp.path().join("link");
-    std::os::unix::fs::symlink(&target, &link).unwrap();
+    cmdr_fs::testing::symlink(&target, &link).unwrap();
 
     let recorded = WrittenFile::local(link.clone());
 

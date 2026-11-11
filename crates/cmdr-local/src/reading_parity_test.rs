@@ -11,11 +11,12 @@
 //! Every cell runs once per [`Lister`], so a second lister is proven by adding it
 //! to [`LISTERS`], with no cell edited.
 
+use cmdr_fs::testing::symlink;
 use std::collections::HashSet;
 use std::ffi::CString;
 use std::fs;
 use std::os::unix::ffi::OsStrExt;
-use std::os::unix::fs::{MetadataExt, PermissionsExt, symlink};
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 

@@ -173,7 +173,7 @@ async fn listing_dates_honor_the_shared_claim_contract() {
     volume.create_directory(Path::new("dated")).await.unwrap();
     volume.create_directory(Path::new("dated/folder")).await.unwrap();
     volume.create_file(Path::new("dated/file.txt"), b"bytes").await.unwrap();
-    std::os::unix::fs::symlink("file.txt", test_dir.join("dated/link")).unwrap();
+    cmdr_fs::testing::symlink("file.txt", test_dir.join("dated/link")).unwrap();
 
     cmdr_fs::volume::conformance::assert_listing_dates_are_claimed(&volume, Path::new("dated")).await;
     let claimed = volume.supported_dates(Path::new("dated")).await;
@@ -292,7 +292,7 @@ async fn create_directory_all_honors_the_shared_through_a_link_contract() {
     let volume = LocalPosixVolume::local_folder("Test", &*test_dir, VolumeHost::detached());
 
     volume.create_directory(Path::new("real")).await.unwrap();
-    std::os::unix::fs::symlink(test_dir.join("real"), test_dir.join("link")).unwrap();
+    cmdr_fs::testing::symlink(test_dir.join("real"), test_dir.join("link")).unwrap();
 
     cmdr_fs::volume::conformance::assert_create_directory_all_goes_through_a_link_to_a_folder(
         &volume,
@@ -311,7 +311,7 @@ async fn delete_of_a_link_to_a_folder_honors_the_shared_contract() {
 
     volume.create_directory(Path::new("real")).await.unwrap();
     volume.create_file(Path::new("real/keep.txt"), b"keep").await.unwrap();
-    std::os::unix::fs::symlink(test_dir.join("real"), test_dir.join("link")).unwrap();
+    cmdr_fs::testing::symlink(test_dir.join("real"), test_dir.join("link")).unwrap();
 
     cmdr_fs::volume::conformance::assert_delete_of_a_link_to_a_folder_removes_the_link_alone(
         &volume,
@@ -332,7 +332,7 @@ async fn a_link_to_a_folder_moves_as_the_link_per_the_shared_contract() {
     volume.create_directory(Path::new("real")).await.unwrap();
     volume.create_file(Path::new("real/keep.txt"), b"keep").await.unwrap();
     volume.create_directory(Path::new("moved")).await.unwrap();
-    std::os::unix::fs::symlink(test_dir.join("real"), test_dir.join("link")).unwrap();
+    cmdr_fs::testing::symlink(test_dir.join("real"), test_dir.join("link")).unwrap();
 
     cmdr_fs::volume::conformance::assert_a_link_to_a_folder_moves_as_the_link(
         &volume,

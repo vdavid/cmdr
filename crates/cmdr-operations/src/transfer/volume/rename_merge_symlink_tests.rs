@@ -34,7 +34,7 @@ fn plant_target(root: &Path) {
 }
 
 fn link(root: &Path, at: &str, to: &str) {
-    std::os::unix::fs::symlink(root.join(to), root.join(at)).expect("symlink");
+    cmdr_fs::testing::symlink(root.join(to), root.join(at)).expect("symlink");
 }
 
 fn is_link(root: &Path, rel: &str) -> bool {

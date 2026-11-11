@@ -156,7 +156,7 @@ fn an_edit_through_a_symlink_changes_the_target_and_keeps_the_link() {
         &build_zip(&[stored("keep.txt", "keep me"), stored("drop.txt", "drop me")]),
     );
     let link = tmp.path().join("report.zip");
-    std::os::unix::fs::symlink(&target, &link).expect("make the link");
+    cmdr_fs::testing::symlink(&target, &link).expect("make the link");
 
     delete(&link, "drop.txt").expect("the edit applies");
 

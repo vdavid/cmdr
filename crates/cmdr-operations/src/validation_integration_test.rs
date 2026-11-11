@@ -121,7 +121,7 @@ fn test_validate_sources_with_symlink() {
     let target = temp_dir.join("target.txt");
     let link = temp_dir.join("link");
     fs::write(&target, "content").unwrap();
-    std::os::unix::fs::symlink(&target, &link).unwrap();
+    cmdr_fs::testing::symlink(&target, &link).unwrap();
 
     // Should accept symlinks
     let result = validate_sources(&[link]);
@@ -134,7 +134,7 @@ fn test_validate_sources_with_broken_symlink() {
 
     let temp_dir = create_temp_dir("validate_sources_broken_symlink");
     let link = temp_dir.join("broken_link");
-    std::os::unix::fs::symlink("/nonexistent/path", &link).unwrap();
+    cmdr_fs::testing::symlink("/nonexistent/path", &link).unwrap();
 
     // Should accept broken symlinks (symlink_metadata succeeds)
     let result = validate_sources(&[link]);
@@ -313,7 +313,7 @@ fn test_ensure_destination_dir_creates_through_a_link_to_a_folder() {
     // is one), so the file-in-the-way refusal must not catch it.
     let temp_dir = create_temp_dir("ensure_dest_through_link");
     fs::create_dir_all(temp_dir.join("real")).unwrap();
-    std::os::unix::fs::symlink(temp_dir.join("real"), temp_dir.join("link")).unwrap();
+    cmdr_fs::testing::symlink(temp_dir.join("real"), temp_dir.join("link")).unwrap();
 
     ensure_destination_dir(&temp_dir.join("link")).expect("a link to a folder is a folder");
     ensure_destination_dir(&temp_dir.join("link").join("new").join("deeper")).expect("created through the link");
@@ -329,9 +329,7 @@ fn test_ensure_destination_dir_surfaces_create_failure() {
     // parent below would still accept the create). The CI Linux suite runs as
     // root in Docker; this mirrors the geteuid==0 guard the other permission
     // tests in this file use.
-    // SAFETY: (test) `geteuid` takes no arguments, shares no memory, and can't fail — it just
-    // returns the caller's effective uid. We compare the returned integer to 0 to detect root.
-    if unsafe { libc::geteuid() } == 0 {
+    if cmdr_fs::testing::is_root() {
         return;
     }
 
@@ -504,7 +502,7 @@ fn test_validate_destination_not_inside_source_symlink_bypass() {
 
     // Create a symlink outside src that points back into src
     let alias = temp_dir.join("alias_to_nested");
-    std::os::unix::fs::symlink(&nested, &alias).unwrap();
+    cmdr_fs::testing::symlink(&nested, &alias).unwrap();
 
     // Destination via symlink resolves back inside source
     let result = validate_destination_not_inside_source(std::slice::from_ref(&src_dir), &alias);
@@ -535,9 +533,7 @@ fn test_validate_destination_writable_readonly() {
     use super::validate_destination_writable;
 
     // Skip if running as root (root bypasses permission checks)
-    // SAFETY: (test) `geteuid` takes no arguments, shares no memory, and can't fail — it just
-    // returns the caller's effective uid. We compare the returned integer to 0 to detect root.
-    if unsafe { libc::geteuid() } == 0 {
+    if cmdr_fs::testing::is_root() {
         return;
     }
 
@@ -594,7 +590,7 @@ fn test_may_be_same_file_via_symlink() {
     let file = temp_dir.join("original.txt");
     let link = temp_dir.join("link.txt");
     fs::write(&file, "content").unwrap();
-    std::os::unix::fs::symlink(&file, &link).unwrap();
+    cmdr_fs::testing::symlink(&file, &link).unwrap();
 
     // file and link resolve to the same inode
     assert!(may_be_same_file(&file, &link));
@@ -722,13 +718,7 @@ fn test_special_file_fifo_skipped() {
     let temp_dir = create_temp_dir("special_fifo");
     let fifo_path = temp_dir.join("test.fifo");
 
-    // Create a FIFO
-    let c_path = std::ffi::CString::new(fifo_path.to_str().unwrap()).unwrap();
-    // SAFETY: (test) `c_path` is a valid NUL-terminated C string held alive across the call, and
-    // `mkfifo` reads it plus a plain mode integer and writes nothing back through the pointer. The
-    // path is under a fresh temp dir this test owns. We assert the return is 0 (success).
-    let result = unsafe { libc::mkfifo(c_path.as_ptr(), 0o644) };
-    assert_eq!(result, 0, "Failed to create FIFO");
+    cmdr_fs::testing::make_fifo(&fifo_path).expect("create the FIFO");
     assert!(fifo_path.exists());
 
     // Verify it's detected as a special file

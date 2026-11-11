@@ -64,8 +64,8 @@ fn the_reconcile_read_matches_a_per_entry_stat() {
     std::fs::create_dir(root.join("subdir")).unwrap();
     std::fs::write(root.join("subdir/nested.txt"), b"nested").unwrap();
     std::fs::create_dir(root.join("empty_dir")).unwrap();
-    std::os::unix::fs::symlink(root.join("small.txt"), root.join("link.txt")).unwrap();
-    std::os::unix::fs::symlink(root.join("nowhere"), root.join("broken_link")).unwrap();
+    cmdr_fs::testing::symlink(root.join("small.txt"), root.join("link.txt")).unwrap();
+    cmdr_fs::testing::symlink(root.join("nowhere"), root.join("broken_link")).unwrap();
     // A hardlink pair (nlink == 2): the size of one occurrence must survive.
     std::fs::hard_link(root.join("small.txt"), root.join("small_alias.txt")).unwrap();
     // A plain dotfile (kept) next to an excluded basename (dropped), so the test
@@ -74,15 +74,8 @@ fn the_reconcile_read_matches_a_per_entry_stat() {
     std::fs::create_dir(root.join(".Spotlight-V100")).unwrap();
     // A named pipe: a type the bulk reader carries no inline size for, so it must
     // take the per-entry stat fallback and land on the same values.
-    let fifo = std::ffi::CString::new(root.join("pipe").as_os_str().as_bytes()).unwrap();
-    // SAFETY: `fifo` is a valid NUL-terminated C string that outlives the call, naming
-    // a path inside this test's own temp dir; `mkfifo` only reads it and creates the
-    // node, returning 0 or -1.
-    let mkfifo_rc = unsafe { libc::mkfifo(fifo.as_ptr(), 0o644) };
-    assert_eq!(
-        mkfifo_rc, 0,
-        "the fifo is what covers the no-inline-stat fallback; without it this test silently stops testing it"
-    );
+    cmdr_fs::testing::make_fifo(&root.join("pipe"))
+        .expect("the fifo is what covers the no-inline-stat fallback; without it this test silently stops testing it");
 
     let space = IndexPathSpace::root();
     let bulk = read_fs_children(root, &space).expect("the directory lists").children;

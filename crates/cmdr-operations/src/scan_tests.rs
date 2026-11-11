@@ -122,7 +122,7 @@ fn walk_reports_a_symlinked_directory_source_as_a_file() {
     let root: &Path = &dir;
     fs::create_dir(root.join("real")).unwrap();
     fs::write(root.join("real/inside.txt"), b"xyz").unwrap();
-    std::os::unix::fs::symlink(root.join("real"), root.join("link")).unwrap();
+    cmdr_fs::testing::symlink(root.join("real"), root.join("link")).unwrap();
 
     let per_path = walk_for_test(&[root.join("link")]);
 
@@ -558,7 +558,7 @@ mod online_only_tally {
         let folder = scratch.join("Work");
         fs::create_dir_all(&folder).expect("fixture tree");
         fs::write(folder.join("real.txt"), b"local").expect("the target");
-        std::os::unix::fs::symlink(folder.join("real.txt"), folder.join("evicted.txt")).expect("the link");
+        cmdr_fs::testing::symlink(folder.join("real.txt"), folder.join("evicted.txt")).expect("the link");
 
         assert!(
             !walk_finds_online_only(&[folder], "evicted.txt"),

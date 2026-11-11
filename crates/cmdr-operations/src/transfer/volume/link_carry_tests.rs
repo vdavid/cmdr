@@ -2,7 +2,7 @@
 //! skips it, counted, where neither the destination nor the source can do better.
 //! `DETAILS.md` § "A copy carries a link as the link".
 
-use std::os::unix::fs::symlink;
+use cmdr_fs::testing::symlink;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;

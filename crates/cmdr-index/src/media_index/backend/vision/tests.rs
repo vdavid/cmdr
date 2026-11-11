@@ -307,9 +307,7 @@ fn read_within_deadline(path: &std::path::Path) -> Result<Vec<u8>, VisionError> 
 fn local_read_of_a_fifo_named_like_an_image_fails_promptly() {
     let dir = tempfile::tempdir().expect("temp");
     let fifo = dir.path().join("x.jpg");
-    let c_path = std::ffi::CString::new(fifo.to_string_lossy().as_bytes()).expect("c path");
-    // SAFETY: `c_path` is a valid NUL-terminated path that outlives the call.
-    assert_eq!(unsafe { libc::mkfifo(c_path.as_ptr(), 0o600) }, 0, "mkfifo");
+    cmdr_fs::testing::make_fifo(&fifo).expect("mkfifo");
 
     let result = read_within_deadline(&fifo);
     assert!(
@@ -325,7 +323,7 @@ fn local_read_refuses_a_symlink_even_to_a_real_image() {
     // between the walk and the read.
     let dir = tempfile::tempdir().expect("temp");
     let link = dir.path().join("scan.jpg");
-    std::os::unix::fs::symlink(fixture_path(), &link).expect("symlink");
+    cmdr_fs::testing::symlink(fixture_path(), &link).expect("symlink");
 
     let result = read_within_deadline(&link);
     assert!(

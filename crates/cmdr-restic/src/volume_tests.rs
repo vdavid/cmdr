@@ -46,7 +46,7 @@ fn source_folder() -> TestDir {
     std::fs::write(source.join("Cafe\u{301}.txt"), b"nfd").expect("NFD name");
     std::fs::write(source.join("with  two spaces.txt"), b"spaces").expect("spaced name");
     std::fs::write(source.join("x".repeat(LONG_NAME_LEN)), b"long").expect("long name");
-    std::os::unix::fs::symlink("a.txt", source.join("link")).expect("symlink");
+    cmdr_fs::testing::symlink("a.txt", source.join("link")).expect("symlink");
     for file in ["a.txt", "nested/b.bin", "run.sh"] {
         File::options()
             .write(true)

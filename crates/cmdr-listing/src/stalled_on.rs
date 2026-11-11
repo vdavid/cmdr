@@ -212,7 +212,7 @@ mod tests {
         let target = dir.path().join("target");
         std::fs::create_dir(&target).unwrap();
         let link = dir.path().join("link");
-        std::os::unix::fs::symlink(&target, &link).unwrap();
+        cmdr_fs::testing::symlink(&target, &link).unwrap();
         assert_eq!(resolve_symlinks(&link), std::fs::canonicalize(&target).unwrap());
     }
 

@@ -522,7 +522,7 @@ async fn a_landing_that_is_a_source_by_inode_refuses() {
     refuses_everywhere(NamedLeavesRefusal::OntoASource, |tmp| {
         let a = write(&tmp.join("src/a.txt"), b"a");
         let b = write(&tmp.join("real/b.txt"), b"b");
-        std::os::unix::fs::symlink(tmp.join("real"), tmp.join("link")).expect("a symlinked folder");
+        cmdr_fs::testing::symlink(tmp.join("real"), tmp.join("link")).expect("a symlinked folder");
         let leaves = names(&[(&a, "b.txt"), (&b, "kept-apart.txt")]);
         (vec![a, b], tmp.join("link"), leaves)
     })

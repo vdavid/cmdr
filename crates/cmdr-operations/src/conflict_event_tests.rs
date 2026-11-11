@@ -68,7 +68,7 @@ fn type_flags_come_from_the_side_not_from_a_link_following_stat() {
     let source = temp.path().join("link");
     let dest = temp.path().join("folder");
     fs::create_dir(&target).unwrap();
-    std::os::unix::fs::symlink(&target, &source).unwrap();
+    cmdr_fs::testing::symlink(&target, &source).unwrap();
     fs::create_dir(&dest).unwrap();
     // Following the link, as `resolve_conflict`'s stat does: this says "folder".
     let (source_meta, dest_meta) = (fs::metadata(&source).unwrap(), fs::metadata(&dest).unwrap());

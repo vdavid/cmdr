@@ -59,7 +59,7 @@ mod on_a_real_disk {
         let target = dir.path().join("target");
         let link = dir.path().join("link");
         fs::write(&target, b"x").unwrap();
-        std::os::unix::fs::symlink(&target, &link).unwrap();
+        crate::testing::symlink(&target, &link).unwrap();
         let target_meta = fs::metadata(&target).unwrap();
 
         assert_eq!(same_node(&fs::metadata(&link).unwrap(), &target_meta), Sameness::Same);

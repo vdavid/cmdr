@@ -251,7 +251,7 @@ fn link_over_folder_fixture(dir: &TestDir) -> (std::path::PathBuf, std::path::Pa
     fs::create_dir_all(&src_root).unwrap();
     fs::create_dir_all(&target).unwrap();
     fs::write(target.join("linked.txt"), "behind the link").unwrap();
-    std::os::unix::fs::symlink(&target, src_root.join("docs")).unwrap();
+    cmdr_fs::testing::symlink(&target, src_root.join("docs")).unwrap();
     fs::create_dir_all(dst_root.join("docs")).unwrap();
     fs::write(dst_root.join("docs/precious.txt"), "precious user data").unwrap();
     (src_root, dst_root)
@@ -294,7 +294,7 @@ fn a_moved_folder_meeting_a_link_to_a_folder_is_described_as_folder_over_leaf() 
     fs::write(src_root.join("docs/incoming.txt"), "incoming").unwrap();
     fs::create_dir_all(&target).unwrap();
     fs::create_dir_all(&dst_root).unwrap();
-    std::os::unix::fs::symlink(&target, dst_root.join("docs")).unwrap();
+    cmdr_fs::testing::symlink(&target, dst_root.join("docs")).unwrap();
 
     let prompt = the_one_prompt(prompts_for(&engine, Engine::Move, &[src_root.join("docs")], &dst_root));
 

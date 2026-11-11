@@ -138,7 +138,7 @@ fn test_move_to_trash_sync_dangling_symlink() {
     let target = tmp.join("target.txt");
     let link = tmp.join("link.txt");
     fs::write(&target, "data").unwrap();
-    std::os::unix::fs::symlink(&target, &link).unwrap();
+    cmdr_fs::testing::symlink(&target, &link).unwrap();
     // Remove the target, leaving a dangling symlink
     fs::remove_file(&target).unwrap();
 

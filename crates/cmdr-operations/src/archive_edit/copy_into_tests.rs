@@ -466,7 +466,7 @@ async fn move_into_a_top_level_symlink_preserves_the_source_and_surfaces_the_ski
     let src_root = tmp.path().join("src");
     std::fs::create_dir_all(&src_root).expect("mkdir src");
     std::fs::write(src_root.join("target.txt"), b"real").expect("target");
-    std::os::unix::fs::symlink("target.txt", src_root.join("link")).expect("symlink");
+    cmdr_fs::testing::symlink("target.txt", src_root.join("link")).expect("symlink");
 
     let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
         "src",
@@ -527,7 +527,7 @@ async fn move_into_a_dir_containing_a_symlink_preserves_the_whole_source_tree() 
     let src_root = tmp.path().join("src");
     std::fs::create_dir_all(src_root.join("d")).expect("mkdir src");
     std::fs::write(src_root.join("d/real.txt"), b"real").expect("real");
-    std::os::unix::fs::symlink("real.txt", src_root.join("d/link")).expect("symlink");
+    cmdr_fs::testing::symlink("real.txt", src_root.join("d/link")).expect("symlink");
 
     let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
         "src",
@@ -594,7 +594,7 @@ async fn move_into_a_broken_symlink_preserves_the_source() {
     // succeeds (it's an lstat), so it classifies as neither file nor dir.
     let src_root = tmp.path().join("src");
     std::fs::create_dir_all(&src_root).expect("mkdir src");
-    std::os::unix::fs::symlink("/nonexistent/target-xyz", src_root.join("broken")).expect("symlink");
+    cmdr_fs::testing::symlink("/nonexistent/target-xyz", src_root.join("broken")).expect("symlink");
 
     let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
         "src",

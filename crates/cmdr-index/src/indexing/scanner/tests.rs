@@ -671,7 +671,7 @@ fn scan_handles_symlinks() {
 
     #[cfg(unix)]
     {
-        std::os::unix::fs::symlink(scan_root.path().join("real.txt"), scan_root.path().join("link.txt")).unwrap();
+        cmdr_fs::testing::symlink(scan_root.path().join("real.txt"), scan_root.path().join("link.txt")).unwrap();
     }
 
     let (writer, db_path, _db_dir) = setup_writer();
@@ -711,8 +711,8 @@ fn scan_sets_recursive_has_symlinks_for_symlink_only_dir() {
     let links_dir = scan_root.path().join("links");
     fs::create_dir(&links_dir).unwrap();
     // Two symlinks pointing somewhere; targets don't have to exist for this test
-    std::os::unix::fs::symlink("/tmp/does-not-matter-1", links_dir.join("a")).unwrap();
-    std::os::unix::fs::symlink("/tmp/does-not-matter-2", links_dir.join("b")).unwrap();
+    cmdr_fs::testing::symlink("/tmp/does-not-matter-1", links_dir.join("a")).unwrap();
+    cmdr_fs::testing::symlink("/tmp/does-not-matter-2", links_dir.join("b")).unwrap();
     // A neighboring dir with no symlinks
     let plain = scan_root.path().join("plain");
     fs::create_dir(&plain).unwrap();

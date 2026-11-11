@@ -117,7 +117,7 @@ fn the_unix_root_probe_needs_all_three_real_directories() {
 
     #[cfg(unix)]
     {
-        std::os::unix::fs::symlink(dir.path().join("sys"), dir.path().join("proc")).expect("symlink proc");
+        cmdr_fs::testing::symlink(dir.path().join("sys"), dir.path().join("proc")).expect("symlink proc");
         assert!(!has_pseudo_fs_trio(&root), "a symlink named proc is not the real thing");
         std::fs::remove_file(dir.path().join("proc")).expect("remove the symlink");
     }

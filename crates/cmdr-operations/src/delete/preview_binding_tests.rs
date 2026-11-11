@@ -295,7 +295,7 @@ fn a_local_delete_never_acts_on_a_preview_walked_for_a_copy() {
 
     let selected = root.join("selected");
     fs::create_dir_all(&selected).expect("create the selected dir");
-    std::os::unix::fs::symlink(&photos, selected.join("data")).expect("link into photos");
+    cmdr_fs::testing::symlink(&photos, selected.join("data")).expect("link into photos");
 
     // What a walk that followed `data` would have listed.
     let through_link = selected.join("data/p.jpg");

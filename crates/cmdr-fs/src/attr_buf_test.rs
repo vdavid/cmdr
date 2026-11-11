@@ -571,7 +571,7 @@ fn kernel_records_decode_to_what_lstat_reports() {
     std::fs::write(root.join("small.txt"), b"hello world").unwrap();
     std::fs::write(root.join("larger.bin"), vec![7u8; 40_000]).unwrap();
     std::fs::create_dir(root.join("sub")).unwrap();
-    std::os::unix::fs::symlink("small.txt", root.join("link")).unwrap();
+    crate::testing::symlink("small.txt", root.join("link")).unwrap();
     std::fs::hard_link(root.join("small.txt"), root.join("alias.txt")).unwrap();
 
     let handle = std::fs::File::open(root).unwrap();

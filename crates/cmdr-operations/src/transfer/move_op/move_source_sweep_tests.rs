@@ -325,7 +325,7 @@ fn a_source_dir_that_kept_a_skipped_child_never_reports_removal() {
 /// points at, which the user never selected and which the move never copied.
 #[test]
 fn a_symlinked_source_file_is_removed_as_a_link_and_its_target_is_untouched() {
-    use std::os::unix::fs::symlink;
+    use cmdr_fs::testing::symlink;
 
     let engine = TestOperations::new();
 

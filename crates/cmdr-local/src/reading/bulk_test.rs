@@ -3,10 +3,10 @@
 //! scratch. What it yields on a healthy stream is `reading_parity_test.rs`, which
 //! runs every cell through both listers.
 
+use cmdr_fs::testing::symlink;
 use std::collections::HashSet;
 use std::fs::{self, File};
 use std::io;
-use std::os::unix::fs::symlink;
 use std::path::Path;
 
 use cmdr_fs::attr_buf::{Record, Timespec, VDIR, VLNK, VREG};

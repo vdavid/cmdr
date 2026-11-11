@@ -207,7 +207,7 @@ fn a_frontier_path_that_is_not_a_directory_on_disk_is_declined() {
     );
     #[cfg(unix)]
     {
-        std::os::unix::fs::symlink(root.join("real"), root.join("link")).expect("symlink");
+        cmdr_fs::testing::symlink(root.join("real"), root.join("link")).expect("symlink");
         assert!(
             matches!(
                 bootstrap::ensure_walkable(&f.context(), &Ground::Local, &root.join("link")),
