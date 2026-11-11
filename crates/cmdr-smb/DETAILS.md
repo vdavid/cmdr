@@ -1913,7 +1913,8 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
     the transport carries on from its checkpoint, or from an earlier one, byte for byte; a tail past the checkpoint is
     overwritten and trimmed; a temp past its checkpoint, truncated, replaced, reborn (same identity, another creation
     time), gone, or never checkpointed is refused with nothing created; a refusal that isn't the transport keeps
-    nothing. Plus `smb_integration_checkpoint_cost`, the interval measurement (`--nocapture`).
+    nothing. Plus `smb_integration_checkpoint_cost`, the interval measurement: opt-in with
+    `CMDR_MEASURE_CHECKPOINT_COST=1` and `--nocapture`, a no-op in the fixture lane (a full run outran its nextest cap).
   - `wire_shape_integration_test.rs` — what a byte-path op COSTS, which neither of the above asks: the hinted read's ONE
     compound frame and the `quick_read_limit` boundary where it gives way to streaming (on a cold connection `(1, 3)` at
     512 KiB, `(1, 8)` one byte over (the open is a compound carrying its version), in two chunks; after a measuring

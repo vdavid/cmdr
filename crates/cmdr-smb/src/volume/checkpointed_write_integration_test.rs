@@ -380,6 +380,10 @@ async fn smb_integration_a_failure_that_isnt_the_transport_keeps_nothing() {
 /// none. The intervals interleave within each round, so drift in the Docker
 /// VM lands on all of them alike. `CHECKPOINT_COST_MIB` (256) and
 /// `CHECKPOINT_COST_ROUNDS` (5) size it.
+///
+/// Opt-in with `CMDR_MEASURE_CHECKPOINT_COST=1`, and a no-op without it: the
+/// fixture lane runs every ignored cell in this package, and a full measurement
+/// (over 6 GiB written) outran the lane's nextest cap on a CI runner.
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 #[allow(
@@ -387,6 +391,9 @@ async fn smb_integration_a_failure_that_isnt_the_transport_keeps_nothing() {
     reason = "a measurement, printed by design (run with --nocapture)"
 )]
 async fn smb_integration_checkpoint_cost() {
+    if std::env::var_os("CMDR_MEASURE_CHECKPOINT_COST").is_none() {
+        return;
+    }
     let env = |name: &str, default: usize| std::env::var(name).ok().and_then(|v| v.parse().ok()).unwrap_or(default);
     let vol = make_docker_volume().await;
     let dir = test_dir_name();

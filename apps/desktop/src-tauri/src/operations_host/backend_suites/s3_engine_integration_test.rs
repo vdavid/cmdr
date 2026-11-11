@@ -434,13 +434,16 @@ pub(super) async fn a_folder_of_1005_objects_deletes(target: &S3Target) {
     // this folder once). What's left: the top-level "is it a folder?" probe (a
     // capped listing and a HEAD; the dialog's preview answers it in the app),
     // the scan's two listing pages, two batches, and the emptied folder's own
-    // removal (a capped listing, then a HEAD, since it has no marker).
+    // removal (a capped listing, then a HEAD, since it has no marker). A
+    // marker-less folder answers its removal with "not found", so the delete
+    // asks once more whether anything is there before counting it as gone
+    // (`entry_kind`, one more capped listing: `delete/already_gone.rs`).
     let sent = take_sent_requests(&volume).await;
     let count = |kind: &str| sent.get(kind).copied().unwrap_or(0);
     assert_eq!(count("DeleteObjects"), 2, "{sent:?}");
     assert_eq!(count("DeleteObject"), 0, "{sent:?}");
     assert!(count("HeadObject") <= 2, "{sent:?}");
-    assert!(count("ListObjectsV2") <= 4, "{sent:?}");
+    assert!(count("ListObjectsV2") <= 5, "{sent:?}");
 
     assert!(matches!(
         volume.list_directory(&dir.join("folder"), None).await,
