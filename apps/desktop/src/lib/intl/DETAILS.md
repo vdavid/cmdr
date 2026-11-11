@@ -242,13 +242,16 @@ space after each comma). Never a block inside a sentence, never `{platform}` int
 ### The frozen macOS copy
 
 `macos-copy-unchanged.test.ts` holds every locale's macOS text for the platform-copy keys (the rows of
-`docs/notes/windows-port/copy-proposal.json`, about 8,300 values) to `__fixtures__/macos-copy-baseline.json`: the
-RESOLVED value a Mac reader saw (locale, its inheritable ancestors, then `en`), read from disk for all 17 catalogs. ICU
-values compare ASTs, raw ones text. The only allowed moves are its `ACCEPTED_ENGLISH_CHANGES` (English only) and its
-`COLLAPSED_PAIRS` (a survivor's macOS branch must equal the old `.mac` value).
-`apps/desktop/scripts/i18n-macos-copy-baseline.ts` wrote the baseline once and refuses to overwrite it. ❌ Never edit or
-regenerate the baseline to get green: a red means a catalog edit changed what a Mac shows. Per-area English goldens
-(`*i18n-parity.test.ts`, `*.parity.test.ts`) run under `withPlatform('macos')` for the same reason.
+`docs/notes/windows-port/copy-proposal.json` plus the generator's `KEYS_BEYOND_PROPOSAL`, the rows the plan's § "Copy
+resolution" adds, about 8,650 values) to `__fixtures__/macos-copy-baseline.json`: the RESOLVED value a Mac reader saw
+(locale, its inheritable ancestors, then `en`), read from disk for all 17 catalogs. ICU values compare ASTs, raw ones
+text. The only allowed moves are its `ACCEPTED_ENGLISH_CHANGES` (English only) and its `COLLAPSED_PAIRS` (a survivor's
+macOS branch must equal the old `.mac` value). `apps/desktop/scripts/i18n-macos-copy-baseline.ts` writes it: the first
+write refuses an existing file, and `--add-missing` freezes a newly named key from today's catalogs while leaving every
+existing entry byte-identical. Add a key that way only BEFORE its catalog values change, or the baseline freezes the
+edit. ❌ Never edit or regenerate the baseline to get green: a red means a catalog edit changed what a Mac shows.
+Per-area English goldens (`*i18n-parity.test.ts`, `*.parity.test.ts`) run under `withPlatform('macos')` for the same
+reason.
 
 Ask Cmdr tool labels are literal-keyed in `ask-cmdr-tool-label-keys.ts`, so proposal status remains localized without
 dynamic message-key construction. New English keys require translated catalog entries and a regenerated `keys.gen.ts`.

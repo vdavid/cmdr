@@ -67,6 +67,48 @@ export function resolveLocales(
   return result
 }
 
+/** Whether a catalog value is already a `{platform, select, …}` block (the baseline must predate them). */
+function isPlatformBlock(value: string): boolean {
+  return value.startsWith('{platform, select,')
+}
+
+/**
+ * Freezes `keys` that `baseline` lacks, from `resolved`, and leaves every entry it
+ * already holds exactly as it was, even where the catalog has moved since. Each
+ * locale comes back sorted by key, like the first write, so the file diff is pure
+ * additions. Only the baseline's own locales are touched.
+ * @returns the grown baseline and how many (locale, key) values it gained
+ * @throws when a missing key resolves nowhere or already holds a platform block
+ */
+export function addMissingEntries(
+  baseline: MacosCopyBaseline,
+  resolved: Partial<Record<string, Partial<Record<string, ResolvedValue>>>>,
+  keys: readonly string[],
+  readme: string,
+): { baseline: MacosCopyBaseline; added: number } {
+  const locales: Record<string, Record<string, string>> = {}
+  let added = 0
+  for (const [locale, existing] of Object.entries(baseline.locales)) {
+    const values: Record<string, string> = { ...existing }
+    for (const key of keys) {
+      if (key in existing) continue
+      const entry = resolved[locale]?.[key]
+      if (!entry) throw new Error(`${locale}: no catalog in the chain defines ${key}`)
+      if (isPlatformBlock(entry.value)) {
+        throw new Error(`${locale} ${key} already holds a platform block; the baseline must predate them`)
+      }
+      values[key] = entry.value
+      added++
+    }
+    locales[locale] = Object.fromEntries(
+      Object.keys(values)
+        .sort()
+        .map((key) => [key, values[key]]),
+    )
+  }
+  return { baseline: { readme, locales }, added }
+}
+
 /** The absolute path of a file under `apps/desktop/`, resolved from this script's dir. */
 export function desktopPath(relative: string): string {
   return join(import.meta.dirname, '..', relative)
