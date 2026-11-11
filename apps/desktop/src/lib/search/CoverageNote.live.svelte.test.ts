@@ -207,7 +207,7 @@ describe('each list as one line', () => {
 
   it('says a folder the system keeps closed is closed, and never offers a permission for it', () => {
     const root = mountNote(liveNote({ offLimits: ['/private/var/root'] }), () => {})
-    const text = root.textContent ?? ''
+    const text = root.textContent
     expect(text).toContain(tString('search.coverage.line.offLimits', one))
     expect(text).toContain('/private/var/root')
     expect(text).not.toContain(tString('search.coverage.setUpFullDiskAccess'))
