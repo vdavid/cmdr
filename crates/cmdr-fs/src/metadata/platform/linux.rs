@@ -85,7 +85,7 @@ pub(crate) const CREATED_SETTABLE: bool = false;
 /// One `futimens`. std's path setter is unstable, so a folder is opened for its fd; a link's
 /// own dates would need `utimensat(AT_SYMLINK_NOFOLLOW)`.
 pub(crate) fn set_dates(item: StagedItem<'_>, _created: Option<SystemTime>, times: StagedTimes) -> std::io::Result<()> {
-    let file_times = super::super::staged::file_times(times);
+    let file_times = times.file_times();
     match item {
         StagedItem::File(file) => file.set_times(file_times),
         StagedItem::Path(path) => File::open(path)?.set_times(file_times),

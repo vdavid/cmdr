@@ -211,7 +211,7 @@ pub(crate) fn set_dates(item: StagedItem<'_>, created: Option<SystemTime>, times
 /// One `FileTimes`, which std issues as one `fsetattrlist`, birth included.
 fn file_times(created: Option<SystemTime>, times: StagedTimes) -> std::fs::FileTimes {
     use std::os::darwin::fs::FileTimesExt as _;
-    let mut file_times = super::super::staged::file_times(times);
+    let mut file_times = times.file_times();
     if let Some(created) = created {
         file_times = file_times.set_created(created);
     }

@@ -341,7 +341,10 @@ through a local helper, a fully-qualified call inline in an expression, a `use` 
 removal blockers, the umask probe, and the local disk's `LOCAL_DISK_CAPS`) is in `metadata/platform/` (both Unixes share
 `unix.rs`; macOS adds the flags, ACL options, `setattrlist` dates, and blockers; Linux its POSIX ACL rule; the browser
 its stand-ins; Windows has no bodies yet, so its build fails there, class by class). The class modules keep the ORDER
-the classes go on in and what each outcome means, and name no OS. Linux's answers are pinned in
+the classes go on in and what each outcome means, and name no OS. The seam depends only on leaves: the values both sides
+speak (`Xattr`, `StagedItem`, `StagedTimes`) are `src/metadata/items.rs`, and the blockers' public doors sit in
+`metadata/mod.rs` so `blockers.rs` holds just the types the arms answer in; a class module that called the seam and also
+owned its vocabulary would import it in a circle (`desktop-rust-module-cycles`). Linux's answers are pinned in
 `src/metadata/linux_characterization_tests.rs`, macOS's in `src/metadata/tests.rs`.
 
 `src/metadata/`. Evidence for every rule here: `docs/notes/transfer-metadata-experiments-2026-10-11.md` (verified on

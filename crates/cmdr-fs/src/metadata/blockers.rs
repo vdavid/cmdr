@@ -15,7 +15,7 @@
 use std::io;
 use std::path::Path;
 
-use super::LandedMetadata;
+use super::{LandedMetadata, clear_blockers, open_parent_folder};
 
 /// What [`clear_blockers`] did to one item.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,15 +30,8 @@ pub enum Unblock {
     Refused,
 }
 
-/// Clears `path`'s own `uchg`/`uappnd` and strips its ACL, flags first because
-/// `uchg` refuses an ACL write. Never follows a symlink. On Linux there's never
-/// anything to clear (module docs).
-pub fn clear_blockers(path: &Path) -> Unblock {
-    super::platform::clear_blockers(path)
-}
-
 /// What stands between an item and a rename or an unlink of it, as a move that
-/// needs one sees it. Read by [`removal_lock`], before anything is cleared.
+/// needs one sees it. Read by [`removal_lock`](super::removal_lock), before anything is cleared.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RemovalLock {
     /// Nothing does.
@@ -49,16 +42,6 @@ pub enum RemovalLock {
     Locked,
     /// `schg`/`sappnd`: only root can clear them, so no consent can move it.
     SystemLocked,
-}
-
-/// Whether `path` itself (never a symlink's target) wears a [`RemovalLock`].
-/// System flags win over the user's lock: an item wearing both can't move
-/// either way. A deny entry that only reaches the item's future children
-/// (`only_inherit`) doesn't count, and neither does an ACL that can't be read:
-/// the move then meets the refusal where it would have anyway. Always
-/// [`RemovalLock::Free`] off macOS (module docs).
-pub fn removal_lock(path: &Path) -> RemovalLock {
-    super::platform::removal_lock(path)
 }
 
 /// What [`open_parent_folder`] did to the folder holding an item.
@@ -112,16 +95,6 @@ impl Drop for OpenedFolder {
     fn drop(&mut self) {
         self.restore_now();
     }
-}
-
-/// Opens the folder holding `child` so `child` can leave it: clears its own
-/// `uchg`/`uappnd`, strips its ACL (a `deny delete_child` refuses the unlink),
-/// and adds owner write and search when it lacks them (a `0500` folder refuses
-/// it too). For a folder a copy made and carried a source's metadata onto, which
-/// a reversal now empties. ❗ The folder isn't removed here: what's opened is put
-/// back by [`OpenedFolder::close`].
-pub fn open_parent_folder(child: &Path) -> ParentOpening {
-    super::platform::open_parent_folder(child)
 }
 
 /// Why a `remove_*_clearing_blockers` call left the item in place.

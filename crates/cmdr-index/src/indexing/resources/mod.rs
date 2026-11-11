@@ -12,6 +12,7 @@
 //! - [`retention`]: the external-index-DB count cap with LRU eviction of
 //!   offline drives.
 
+mod breakdown;
 #[cfg(target_os = "macos")]
 mod memory_snapshot;
 pub(crate) mod memory_watchdog;
