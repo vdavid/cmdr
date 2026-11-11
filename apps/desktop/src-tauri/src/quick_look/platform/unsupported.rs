@@ -6,10 +6,10 @@ use std::sync::Mutex;
 use tauri::AppHandle;
 
 /// Nothing to keep.
-pub type QuickLookState = Mutex<()>;
+pub(crate) type QuickLookState = Mutex<()>;
 
 /// Nothing to keep.
-pub fn init_state() -> QuickLookState {
+pub(crate) fn init_state() -> QuickLookState {
     Mutex::new(())
 }
 

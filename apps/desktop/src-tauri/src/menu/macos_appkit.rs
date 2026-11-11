@@ -494,7 +494,7 @@ pub(super) fn tracking_menu(_mtm: MainThreadMarker, notification: &NSNotificatio
 ///
 /// ❗ Call it ONCE per caller (each guards with its own `OBSERVING` flag): the observer
 /// is deliberately never removed, so it lives for the process, like the accent-color one
-/// in `accent_color.rs`, and registering twice would run the work twice per menu.
+/// in `system_look/platform/macos/accent_color.rs`, and registering twice would run the work twice per menu.
 ///
 /// `what` finishes the sentence "Couldn't …", so phrase it as a verb phrase.
 ///

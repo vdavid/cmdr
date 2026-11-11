@@ -10,10 +10,10 @@ use crate::ignore_poison::IgnorePoison;
 use crate::quick_look::QuickLookController;
 
 /// The controller, behind the mutex `tauri::State` holds.
-pub type QuickLookState = Mutex<QuickLookController>;
+pub(crate) type QuickLookState = Mutex<QuickLookController>;
 
 /// The empty controller.
-pub fn init_state() -> QuickLookState {
+pub(crate) fn init_state() -> QuickLookState {
     Mutex::new(QuickLookController::new())
 }
 

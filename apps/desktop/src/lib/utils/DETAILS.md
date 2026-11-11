@@ -221,7 +221,7 @@ re-probing. `logWebkitCompat()` (called from the main layout at boot) emits `err
 `isBelowSupportedMacOs(macosMajor)` is a third, unrelated answer: whether this Mac is older than `SUPPORTED_MACOS_MAJOR`
 (12), the range Cmdr is developed and tested against. The bundle's `minimumSystemVersion` is 10.15, deliberately lower,
 so 10 and 11 are best-effort and this predicate is where "best effort" is defined. It takes the number rather than
-fetching it, which keeps the module free of IPC: callers pass what `commands.getMacosMajorVersion()` returned (Catalina
+fetching it, which keeps the module free of IPC: callers pass what `commands.getOsMajorVersion()` returned (Catalina
 reports `10`, not `10.15`), and a version that didn't parse reads as supported. Floor rationale and the version
 evidence: `docs/notes/system-requirements-and-es2025.md`. The one caller is `maybeShowOldMacosNotice` in
 `routes/(main)/startup-gates.ts`, which turns a `true` into the once-per-machine best-effort dialog.

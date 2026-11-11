@@ -119,7 +119,7 @@ export const SUPPORTED_MACOS_MAJOR = 12
  * True when this Mac is below the range Cmdr is tested on, so the UI can say so.
  *
  * Takes the major version rather than fetching it, which keeps this module free
- * of IPC. Callers pass what `commands.getMacosMajorVersion()` returned; Catalina
+ * of IPC. Callers pass what `commands.getOsMajorVersion()` returned; Catalina
  * reports `10`, not `10.15`. A version that didn't parse (`0`, `NaN`) reads as
  * supported: a probe that failed is no reason to warn anybody.
  */

@@ -5,6 +5,8 @@
 #[cfg_attr(target_os = "linux", path = "linux.rs")]
 #[cfg_attr(target_os = "windows", path = "windows.rs")]
 mod imp;
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+mod unsupported;
 
 type StartDrag = fn(tauri::AppHandle, Vec<String>, String, Option<String>) -> Result<(), String>;
 

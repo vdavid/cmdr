@@ -31,7 +31,8 @@ pub struct CfPrefsSource {
 #[cfg(target_os = "macos")]
 impl CfPrefsSource {
     /// Opens `domain` for one read pass. ❗ Synchronizes first, or a profile installed while Cmdr
-    /// runs stays invisible to this process (the same gotcha as `glass_tint.rs`).
+    /// runs stays invisible to this process (the same gotcha as
+    /// `system_look/platform/macos/glass_tint.rs`).
     pub fn synchronized(domain: &str) -> Self {
         use objc2_core_foundation::{CFPreferencesAppSynchronize, CFString};
 

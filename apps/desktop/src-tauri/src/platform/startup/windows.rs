@@ -1,8 +1,10 @@
-//! Windows: nothing yet. The volume watcher and the system-look observers (accent color, text
-//! scale, high contrast) arrive with their Windows arms; until then the frontend keeps the
-//! defaults it starts with, as every other OS does before its first event.
+//! Windows: the system-look observers, which follow nothing yet (accent color, text scale, and
+//! high contrast arrive with their Windows arms), so the frontend keeps the defaults it starts
+//! with, as every other OS does before its first event.
 
 use tauri::AppHandle;
 
-/// Starts every Windows installer: none yet.
-pub(crate) fn install(_app: &AppHandle) {}
+/// Starts every Windows installer.
+pub(crate) fn install(app: &AppHandle) {
+    crate::system_look::observe_changes(app.clone());
+}
