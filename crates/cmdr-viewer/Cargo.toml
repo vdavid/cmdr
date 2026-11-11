@@ -5,6 +5,10 @@ edition = "2024"
 license = "LicenseRef-BSL-1.1"
 publish = false
 
+[package.metadata.cmdr]
+# Not on Windows yet; see `docs/tooling/ci.md` § Windows lane.
+platforms = ["linux", "macos"]
+
 # The house lint set lives in the workspace root's `[workspace.lints]`, so this
 # crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
 # one lint that stays at the crate root instead (it's judged per compilation unit).

@@ -625,6 +625,9 @@ func printRerunHint(failedChecks []string, blankBefore bool) {
 // needsPnpmInstall returns true if any of the checks require pnpm dependencies.
 func needsPnpmInstall(checksToRun []checks.CheckDefinition) bool {
 	for _, check := range checksToRun {
+		if check.NoNodeModules {
+			continue
+		}
 		// Checks that need pnpm: Svelte, Astro, TS (api-server)
 		switch check.App {
 		case checks.AppDesktop, checks.AppWebsite, checks.AppApiServer, checks.AppDashboard:

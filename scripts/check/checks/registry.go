@@ -36,8 +36,27 @@ var AllChecks = []CheckDefinition{
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
 		DependsOn:   []string{"desktop-rust-rustfmt"},
-		Inputs:      inputs(rustCompileInputs, []string{"clippy.toml"}),
-		Run:         RunClippy,
+		// It runs cargo and `download-llama-server.go`, nothing from `node_modules`,
+		// so the Windows lane runs it with no Node installed.
+		NoNodeModules: true,
+		Inputs:        inputs(rustCompileInputs, []string{"clippy.toml"}),
+		Run:           RunClippy,
+	},
+	{
+		ID:          "desktop-rust-windows-breaks",
+		CpuWeight:   8,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "windows-breaks",
+		DisplayName: "Windows break report",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		// A report, not a gate: it never fails on a break, and off Windows it skips
+		// unless CMDR_WINDOWS_BREAKS_TARGET names a triple, so no local suite
+		// should pay a whole-workspace check for it. The Windows lane names it.
+		CIOnly:        true,
+		NoNodeModules: true,
+		Inputs:        rustCompileInputs,
+		Run:           RunWindowsBreaks,
 	},
 	{
 		ID:          "desktop-rust-clippy-mimalloc",
@@ -2159,9 +2178,11 @@ var AllChecks = []CheckDefinition{
 		App:         AppCrates,
 		Tech:        "🦀 Rust",
 		IsFast:      true,
-		// Pure Go over the manifests and the registry: no cargo, no compile.
+		// Pure Go over the manifests, the registry, and the Windows allowlist: no
+		// cargo, no compile.
 		Inputs: inputs(
 			[]string{"Cargo.toml", "apps/desktop/src-tauri/Cargo.toml", "crates/**"},
+			runnerDataInputs("member-coverage-allowlist.json"),
 		),
 		Run: RunWorkspaceMemberCoverage,
 	},

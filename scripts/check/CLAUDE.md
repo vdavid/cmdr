@@ -1,6 +1,6 @@
 # Check runner
 
-Go CLI running the monorepo's 169 checks in parallel with dependency ordering, via `pnpm check` at the repo root.
+Go CLI running the monorepo's 170 checks in parallel with dependency ordering, via `pnpm check` at the repo root.
 Authoring a check: `checks/CLAUDE.md`.
 
 ## Module map

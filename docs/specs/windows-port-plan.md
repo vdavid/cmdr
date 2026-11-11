@@ -160,10 +160,9 @@ its prerequisites; tasks without any can start any time. Order within a phase is
    `urlencoding` sit in `[dependencies]` (`ammonia` and the viewer's positional read had already moved to
    `cmdr-viewer`), and the six unix-only tests carry `cfg(unix)`. `open_with_copies.rs` and `measure.rs` keep their
    `MetadataExt` inode reads for task 9's vocabulary: a `cfg(unix)` there would add cfgs outside a seam.
-5. [S] Windows (cheap insurance). Non-blocking Windows CI lane: `windows-lane.yml` mirroring `macos-lane.yml`, native
-   `cargo check` + clippy on `windows-latest`, a ratcheting allowlist of members that must compile (`platforms` metadata
-   gains `"windows"`), promoted to blocking once green. Turns the audits' static guesses into a real break list. Needs 3
-   and 4 to get past dependency resolution.
+5. [S] Windows (cheap insurance). **Done**, non-blocking: `windows-lane.yml` runs clippy on the members declared for
+   Windows and reports where the rest break; promoted into `ci.yml` once the `windowsPending` list in
+   `member-coverage-allowlist.json` is empty (`docs/tooling/ci.md` § Windows lane).
 6. [XS] Win. **Done**. Tauri config split: macOS keys into `tauri.macos.conf.json`, Linux's into
    `tauri.linux.conf.json`, explicit per-OS `bundle.targets`, a `tauri.windows.conf.json` (NSIS, `currentUser`,
    `embedBootstrapper`), and `windows/app.manifest` (`longPathAware`, per-monitor-v2 DPI) through `build.rs`.

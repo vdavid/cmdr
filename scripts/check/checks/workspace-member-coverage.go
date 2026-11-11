@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -105,6 +106,7 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-rustfmt":           "`cargo fmt --all`",
 	"desktop-rust-clippy":            "`--workspace` via CargoSelectionArgs",
 	"desktop-rust-clippy-mimalloc":   "`--workspace` via CargoSelectionArgs, with `cmdr/mimalloc` in a private target dir",
+	"desktop-rust-windows-breaks":    "`-p` each member that builds on Linux but isn't declared for Windows, in one `--keep-going` check; the complement of what `desktop-rust-clippy` selects on a Windows host, and a report, not a sweep",
 	"desktop-rust-rustdoc":           "every first-party member named explicitly; the vendored fork is skipped, since `--all-features` turns on two mutually exclusive arms there",
 	"desktop-rust-cargo-deny":        "reads the whole `cargo metadata` graph from the workspace root",
 	"desktop-rust-cargo-machete":     "handed each member's directory (it walks dirs, not the cargo graph)",
@@ -258,6 +260,22 @@ func RunWorkspaceMemberCoverage(ctx *CheckContext) (CheckResult, error) {
 	problems = append(problems, findStaleJurisdictions(memberCoverageRegistry, classification)...)
 	problems = append(problems, findMalformedJurisdictions(classification.scanners)...)
 
+	allowlist := loadWindowsPendingAllowlist(ctx.RootDir)
+	windowsProblems, promoted := checkWindowsRatchet(members, &allowlist)
+	problems = append(problems, windowsProblems...)
+	staleMsg := ""
+	if len(promoted) > 0 {
+		if ctx.CI {
+			staleMsg = "stale Windows allowlist entries (a local run drops them): " + strings.Join(promoted, ", ")
+		} else {
+			if err := writeJSONAllowlist(filepath.Join(ctx.RootDir, windowsPendingAllowlistRelPath), allowlist); err != nil {
+				return CheckResult{}, err
+			}
+			reformatWithOxfmt(ctx.RootDir, windowsPendingAllowlistRelPath)
+			staleMsg = "dropped from the Windows allowlist, now on the must-compile list: " + strings.Join(promoted, ", ")
+		}
+	}
+
 	if len(problems) > 0 {
 		sort.Strings(problems)
 		return CheckResult{}, fmt.Errorf(
@@ -266,12 +284,79 @@ func RunWorkspaceMemberCoverage(ctx *CheckContext) (CheckResult, error) {
 		)
 	}
 
-	return Success(fmt.Sprintf(
+	okMsg := fmt.Sprintf(
 		"%d workspace %s covered by %d cargo %s and %d source %s",
 		len(members), Pluralize(len(members), "member", "members"),
 		len(classification.cargoLanes), Pluralize(len(classification.cargoLanes), "lane", "lanes"),
 		len(classification.scanners), Pluralize(len(classification.scanners), "scanner", "scanners"),
-	)), nil
+	)
+	if staleMsg == "" {
+		return Success(okMsg), nil
+	}
+	if ctx.CI {
+		return Success(okMsg + "; " + staleMsg), nil
+	}
+	return SuccessWithChanges(okMsg + "; " + staleMsg), nil
+}
+
+// windowsPendingAllowlistRelPath lists the members that build on Linux but aren't
+// declared for Windows yet. It's the Windows ratchet: a member off this list must
+// compile for Windows (the Windows lane's clippy selects it there), and the list
+// only shrinks on its own.
+const windowsPendingAllowlistRelPath = "scripts/check/checks/member-coverage-allowlist.json"
+
+// windowsPendingAllowlist is the on-disk shape: member name -> why it can't build
+// for Windows yet.
+type windowsPendingAllowlist struct {
+	Comment string            `json:"$comment"`
+	Members map[string]string `json:"windowsPending"`
+}
+
+// loadWindowsPendingAllowlist reads the list. A missing or unparsable file is an
+// empty list, so every restricted member gets reported.
+func loadWindowsPendingAllowlist(rootDir string) windowsPendingAllowlist {
+	var list windowsPendingAllowlist
+	data, err := os.ReadFile(filepath.Join(rootDir, windowsPendingAllowlistRelPath))
+	if err == nil {
+		_ = json.Unmarshal(data, &list)
+	}
+	if list.Members == nil {
+		list.Members = map[string]string{}
+	}
+	return list
+}
+
+// checkWindowsRatchet holds the members' `platforms` to the allowlist. A member
+// that builds on Linux but not on Windows must be listed with a reason, so taking
+// a member off the Windows lane's must-compile list is a deliberate edit of a
+// file whose loosening needs David's OK, never a one-line manifest change. An
+// entry whose member now builds on Windows (or is gone) is dropped from the list and
+// returned, which is the ratchet turning.
+func checkWindowsRatchet(members []WorkspaceMember, list *windowsPendingAllowlist) (problems, promoted []string) {
+	pending := map[string]bool{}
+	for _, m := range windowsPendingMembers(members) {
+		pending[m.Name] = true
+		reason, listed := list.Members[m.Name]
+		switch {
+		case !listed:
+			problems = append(problems, fmt.Sprintf(
+				"member %q declares platforms %v, which leaves out Windows, but `%s` doesn't list it: a member "+
+					"that compiles for Windows stays on the Windows lane's must-compile list. Fix the Windows build "+
+					"and drop the restriction; adding an entry is a loosening that needs David's OK",
+				m.Name, m.Platforms, filepath.Base(windowsPendingAllowlistRelPath)))
+		case strings.TrimSpace(reason) == "":
+			problems = append(problems, fmt.Sprintf(
+				"`%s` lists %q with no reason; say why it can't build for Windows yet",
+				filepath.Base(windowsPendingAllowlistRelPath), m.Name))
+		}
+	}
+	for _, name := range sortedKeys(list.Members) {
+		if !pending[name] {
+			delete(list.Members, name)
+			promoted = append(promoted, name)
+		}
+	}
+	return problems, promoted
 }
 
 // findMemberCoverageGaps reports members nothing reaches.

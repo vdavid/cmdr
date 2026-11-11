@@ -284,21 +284,9 @@ func e2eBinaryPath(rootDir, triple string) string {
 
 // findTauriBinary locates the built Cmdr binary by querying rustc for the host triple.
 func findTauriBinary(rootDir string) (string, error) {
-	rustcCmd := exec.Command("rustc", "-vV")
-	output, err := RunCommand(rustcCmd, true)
+	triple, err := rustHostTriple(rootDir)
 	if err != nil {
-		return "", fmt.Errorf("failed to get rust host triple: %w", err)
-	}
-
-	var triple string
-	for line := range strings.SplitSeq(output, "\n") {
-		if rest, ok := strings.CutPrefix(line, "host:"); ok {
-			triple = strings.TrimSpace(rest)
-			break
-		}
-	}
-	if triple == "" {
-		return "", fmt.Errorf("could not parse host triple from `rustc -vV` output")
+		return "", err
 	}
 
 	binaryPath := e2eBinaryPath(rootDir, triple)

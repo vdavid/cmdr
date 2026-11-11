@@ -149,6 +149,11 @@ type CheckDefinition struct {
 	// `slow-checks.yml`), every other run leaves them out, and naming one still runs it. For
 	// gates that guard what a release ships but move too slowly to earn a seat on every run.
 	IsPreRelease bool
+	// NoNodeModules says the check reads nothing a `pnpm install` provides, so
+	// selecting it doesn't install the JS workspace although its App would (every
+	// desktop check does by default). For the Rust lanes the Windows lane runs on a
+	// runner with no Node.
+	NoNodeModules bool
 	// NeedsContainers declares the Docker fixture stacks this check needs
 	// running, and the service set it needs from each. The check runner manages
 	// every named stack's lifecycle for the union of selected checks (see

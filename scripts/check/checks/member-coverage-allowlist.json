@@ -1,0 +1,30 @@
+{
+  "$comment": "`windowsPending`: the workspace members that build on Linux but don't compile for Windows yet, each declaring `platforms = [\"linux\", \"macos\"]` in its manifest. Every member off this list must compile for Windows: the Windows lane's clippy selects it there (docs/tooling/ci.md § Windows lane). A strict ratchet: `workspace-member-coverage` fails on a restricted member this list doesn't name, and a local run drops an entry once its member builds on Windows. Adding one needs David's OK (scripts/check/checks/DETAILS.md § Allowlist consent). Each reason is where the Windows break report stopped the member when it was listed (seeded 2026-11-11 from an `x86_64-pc-windows-gnu` cross-check); the lane's latest report is the current answer.",
+  "windowsPending": {
+    "cmdr": "blocked by `cmdr-fs`, `usearch`'s build script, and an unconditional `xattr` dependency",
+    "cmdr-adb": "blocked by `cmdr-fs`",
+    "cmdr-archive": "blocked by `cmdr-fs`",
+    "cmdr-brief-columns": "blocked by `cmdr-fs`",
+    "cmdr-fs": "fails in its own code (66 errors, mostly `std::os::unix` imports)",
+    "cmdr-git": "blocked by `cmdr-fs`",
+    "cmdr-index": "blocked by `cmdr-fs` and `usearch`'s build script",
+    "cmdr-listing": "blocked by `cmdr-fs`",
+    "cmdr-listing-wasm": "blocked by `cmdr-fs`",
+    "cmdr-local": "blocked by `cmdr-fs`",
+    "cmdr-media-meta": "blocked by `cmdr-fs`",
+    "cmdr-mtp": "blocked by `cmdr-fs`",
+    "cmdr-multi-rename": "blocked by `cmdr-fs`",
+    "cmdr-nfs": "blocked by `cmdr-fs`",
+    "cmdr-operation-log": "blocked by `cmdr-fs`",
+    "cmdr-operations": "blocked by `cmdr-fs`",
+    "cmdr-restic": "blocked by `cmdr-fs`",
+    "cmdr-s3": "blocked by `cmdr-fs`",
+    "cmdr-search": "blocked by `cmdr-fs`",
+    "cmdr-sftp": "blocked by `cmdr-fs`",
+    "cmdr-smb": "blocked by `cmdr-fs`",
+    "cmdr-viewer": "blocked by `cmdr-fs`",
+    "cmdr-webdav": "blocked by `cmdr-fs`",
+    "index-query": "blocked by `cmdr-fs` and `usearch`'s build script",
+    "operation-log-dump": "blocked by `cmdr-fs`"
+  }
+}
