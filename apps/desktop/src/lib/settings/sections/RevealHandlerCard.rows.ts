@@ -3,8 +3,8 @@
  * card in Behavior › Navigation & file ops.
  *
  * Declaration only: it makes the row findable and never decides what renders. The
- * card gates itself on `shouldShow(id)` with this id. macOS-only, like the card: off
- * macOS there's no row for a hit to land on.
+ * card gates itself on `shouldShow(id)` with this id. Behind `revealHandler`, like the card:
+ * without it there's no row for a hit to land on.
  */
 
 import type { SearchableRow } from '../types'
@@ -19,6 +19,6 @@ export const revealHandlerRows: SearchableRow[] = [
     // misremembering), and the apps whose downloads list runs that command.
     keywordsKey: 'settings.behavior.revealHandler.keywords',
     terms: ['finder', 'google', 'chrome', 'safari', 'firefox', 'slack'],
-    macOSOnly: true,
+    needsCapability: 'revealHandler',
   },
 ]

@@ -69,7 +69,7 @@
     import { navCommandForMouseButton } from './mouse-nav'
     import { resolveGlobalKeyAction, unclaimedDispatchWarning } from './global-keydown'
     import { exitFullScreenOnEscape, installEscapeStopClaims } from './escape-key'
-    import { isMacOS } from '#lib/platform/index.js'
+    import { hasCapability } from '#lib/platform/index.js'
     import { getMessage, tString } from '#lib/intl/messages.svelte.js'
     import { showMainOnMount } from './show-main-on-mount'
     import {
@@ -788,7 +788,7 @@
 </script>
 
 <div class="page-container">
-    {#if isMacOS()}
+    {#if hasCapability('overlayTitleBar')}
         <header
             class="title-bar"
             class:dev-mode={appMode === 'dev'}

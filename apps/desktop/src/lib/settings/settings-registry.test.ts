@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { describe, it, expect, afterEach } from 'vitest'
+import { withCapabilities, withEveryCapability } from '#lib/platform/test-platform.js'
 import { _setSystemLocalesForTests } from '#lib/intl/os-locales.js'
 import {
   settingsRegistry,
@@ -14,18 +14,10 @@ import { searchSettings, clearSearchIndex } from './settings-search'
 import { tString } from '#lib/intl/messages.svelte.js'
 
 /**
- * On a Mac by default, so the tree under test holds every setting, `macOSOnly` ones too
- * (Vitest runs off macOS otherwise). Tests that need another platform say so.
+ * Every capability on by default, so the tree under test holds every setting, `needsCapability` ones too
+ * (Vitest offers none otherwise). Tests that need fewer say so.
  */
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
-
-/** Not an E2E run by default; the Linux E2E case says so. */
-const isE2eRun = vi.hoisted(() => vi.fn(() => false))
-
-vi.mock('#lib/app-mode.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/app-mode.js')>()),
-  isE2eRun: () => isE2eRun(),
-}))
+withEveryCapability()
 
 describe('settingsRegistry', () => {
   it('should have at least one setting defined', () => {
@@ -354,8 +346,7 @@ describe('appearance.showFunctionKeyBar', () => {
 
 describe('buildSectionTree', () => {
   afterEach(() => {
-    withPlatform('macos')
-    isE2eRun.mockReturnValue(false)
+    withEveryCapability()
   })
 
   function indexingPages(): string[] {
@@ -363,28 +354,27 @@ describe('buildSectionTree', () => {
     return indexing?.subsections.map((s) => s.name) ?? []
   }
 
-  it('lists the Image indexing page on macOS', () => {
+  it('lists the Image indexing page where there is an image engine', () => {
     expect(indexingPages()).toEqual(['Drive indexing', 'Image indexing'])
   })
 
-  // #943: off macOS there's no on-device image engine, so the backend starts no
+  // #943: off macOS there's no on-device image engine (no `imageIndexing`), so the backend starts no
   // scheduler and the page has nothing it can honestly offer.
-  it('drops the Image indexing page off macOS, keeping Drive indexing', () => {
-    withPlatform('linux')
+  it('drops the Image indexing page without an image engine, keeping Drive indexing', () => {
+    withCapabilities()
     expect(indexingPages()).toEqual(['Drive indexing'])
   })
 
   // The Linux E2E build runs a fake engine, so the image-indexing specs keep running there.
-  it('keeps the Image indexing page in an E2E run off macOS', () => {
-    withPlatform('linux')
-    isE2eRun.mockReturnValue(true)
+  it('keeps the Image indexing page wherever the backend says there is an engine', () => {
+    withCapabilities('imageIndexing')
     expect(indexingPages()).toEqual(['Drive indexing', 'Image indexing'])
   })
 
   it('gates every image-indexing setting on the image engine, so search agrees with the sidebar', () => {
     const imageIndexing = settingsRegistry.filter((s) => s.section[1] === 'Image indexing')
     expect(imageIndexing.length).toBeGreaterThan(0)
-    for (const s of imageIndexing) expect(s.needsImageIndexing, s.id).toBe(true)
+    for (const s of imageIndexing) expect(s.needsCapability, s.id).toBe('imageIndexing')
   })
 
   it('should build a tree from settings', () => {

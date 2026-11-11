@@ -6,7 +6,7 @@
  * gets "try again" under a folded disclosure, which is the report that started this.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import type { TrashRefusalKind } from '#lib/ipc/bindings.js'
 
@@ -16,7 +16,7 @@ const { fdaIsMissing } = vi.hoisted(() => ({
   fdaIsMissing: vi.fn<() => boolean>(() => false),
 }))
 
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+vi.hoisted(() => vi.stubGlobal('__CMDR_CAPABILITIES__', { fullDiskAccess: true }))
 vi.mock('#lib/onboarding/fda-status.svelte.js', () => ({
   fdaIsMissing: () => fdaIsMissing(),
 }))
@@ -40,7 +40,7 @@ function refused(reason: TrashRefusalKind, itemCount = 7, onlineOnly = false) {
 describe('a refused trash', () => {
   beforeEach(() => {
     _setLocaleForTests('en-US')
-    withPlatform('macos')
+    withCapabilities('fullDiskAccess')
     fdaIsMissing.mockReturnValue(false)
   })
 
@@ -114,9 +114,9 @@ describe('a refused trash', () => {
       expect(refused('other').suggestion).not.toContain('full disk access')
     })
 
-    it('stays away off macOS, where the permission does not exist', () => {
+    it('stays away where the OS has no such permission', () => {
       fdaIsMissing.mockReturnValue(true)
-      withPlatform('linux')
+      withCapabilities()
       expect(refused('notPermitted').suggestion).not.toContain('full disk access')
     })
 

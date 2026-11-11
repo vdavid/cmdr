@@ -18,7 +18,7 @@
  * the right copy.
  */
 
-import { isMacOS } from '#lib/platform/index.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { isDialogOpen } from '#lib/ui/open-dialogs.svelte.js'
 import type { FullDiskAccessChoice } from '#lib/settings/index.js'
 import type { SettingLock } from '#lib/ipc/bindings.js'
@@ -194,8 +194,8 @@ export interface ResumeContext {
   fullDiskAccessChoice: FullDiskAccessChoice
   isOnboarded: boolean
   hasFda: boolean
-  /** Override platform for tests; defaults to `isMacOS()`. */
-  isMac?: boolean
+  /** Whether the OS has a Full Disk Access gate. A test seam; defaults to the `fullDiskAccess` capability. */
+  offersFda?: boolean
 }
 
 /**
@@ -212,8 +212,8 @@ export interface ResumeContext {
  * Linux: always step 2 (no FDA gate).
  */
 export function resumeStepFor(ctx: ResumeContext): OnboardingStep {
-  const isMac = ctx.isMac ?? isMacOS()
-  if (!isMac) return 2
+  const offersFda = ctx.offersFda ?? hasCapability('fullDiskAccess')
+  if (!offersFda) return 2
   if (ctx.fullDiskAccessChoice === 'unanswered') return 1
   if (ctx.fullDiskAccessChoice === 'allow' && !ctx.hasFda && ctx.isOnboarded) return 1
   return 2
@@ -239,8 +239,8 @@ export function step1VariantFor(ctx: ResumeContext, source: OnboardingSource): S
 /** Returns the step 2 banner mode for the given context. Used by step 2 and by the */
 /** state machine itself when advancing from step 1. */
 export function stepTwoBannerFor(ctx: ResumeContext): StepTwoFdaBanner {
-  const isMac = ctx.isMac ?? isMacOS()
-  if (!isMac) return 'linux'
+  const offersFda = ctx.offersFda ?? hasCapability('fullDiskAccess')
+  if (!offersFda) return 'linux'
   // Show the celebratory "granted" banner only on a fresh first-run grant. Once the user
   // has finished onboarding, FDA being on is the steady state, so re-entry shows no banner.
   if (ctx.hasFda) return ctx.isOnboarded ? 'none' : 'granted'
@@ -269,20 +269,20 @@ export function openWizard(source: OnboardingSource, ctx: ResumeContext | null =
   if (ctx === null) {
     // No flags available (M1-style dev force). Use sensible defaults: macOS lands on
     // step 1 with the first-ask variant; Linux skips to step 2.
-    state.currentStep = isMacOS() ? 1 : 2
+    state.currentStep = hasCapability('fullDiskAccess') ? 1 : 2
     state.step1Variant = 'first-ask'
     state.step1FooterMode = 'decide'
     state.step1Granted = false
-    state.stepTwoBanner = isMacOS() ? 'stuck' : 'linux'
+    state.stepTwoBanner = hasCapability('fullDiskAccess') ? 'stuck' : 'linux'
     return
   }
   // Menu / palette re-entry always opens at the first reachable step (step 1 on macOS,
   // step 2 on Linux) so the user can step through every page from the start. Other
   // sources (force / first-launch) honour the resume rule so crash-then-resume lands on
   // the first not-yet-decided step.
-  const isMac = ctx.isMac ?? isMacOS()
+  const offersFda = ctx.offersFda ?? hasCapability('fullDiskAccess')
   if (source === 'menu' || source === 'palette') {
-    state.currentStep = isMac ? 1 : 2
+    state.currentStep = offersFda ? 1 : 2
   } else {
     state.currentStep = resumeStepFor(ctx)
   }
@@ -331,9 +331,9 @@ export function nextStep(): void {
  * Allow/Deny buttons are live again (a prior Deny shouldn't lock the user into the
  * restart-mode footer on a return visit).
  */
-export function previousStep(platform: { isMac?: boolean } = {}): void {
+export function previousStep(gate: { offersFda?: boolean } = {}): void {
   if (state.currentStep === null) return
-  if (isAtFirstStep(platform)) return
+  if (isAtFirstStep(gate)) return
   if (state.currentStep > 1) {
     const previous = (state.currentStep - 1) as OnboardingStep
     state.currentStep = previous === 2 && state.aiStepSkipped ? 1 : previous
@@ -344,9 +344,9 @@ export function previousStep(platform: { isMac?: boolean } = {}): void {
   }
 }
 
-/** True when on the first reachable step (Back should be disabled). `platform` is a test seam. */
-export function isAtFirstStep(platform: { isMac?: boolean } = {}): boolean {
-  if (platform.isMac ?? isMacOS()) return state.currentStep === 1
+/** True when on the first reachable step (Back should be disabled). `gate` is a test seam. */
+export function isAtFirstStep(gate: { offersFda?: boolean } = {}): boolean {
+  if (gate.offersFda ?? hasCapability('fullDiskAccess')) return state.currentStep === 1
   return state.currentStep === (state.aiStepSkipped ? 3 : 2)
 }
 

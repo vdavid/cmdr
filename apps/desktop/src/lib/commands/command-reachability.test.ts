@@ -4,8 +4,8 @@
  * A new command that has none of the three fails here, so the keyboard path
  * ships with the command instead of being found missing later (#383).
  *
- * Runs on macOS, because macOS is where every command
- * exists: the macOS-only ones (Quick Look, Get Info, tags, cloud actions) are
+ * Runs on macOS, with every capability a command asks for, because that's where every command
+ * exists: the capability-gated ones (Quick Look, Get Info, tags, cloud actions) are
  * hidden from the palette elsewhere AND cfg-gated out of the native menus, so
  * off macOS they're absent, not mouse-only.
  */
@@ -14,7 +14,18 @@ import { commands } from './command-registry'
 import { mcpCommands } from './sources/mcp'
 import type { CommandId } from './command-ids'
 
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+vi.hoisted(() => {
+  vi.stubGlobal('__CMDR_PLATFORM__', 'macos')
+  // Every capability a command asks for, as macOS answers them.
+  vi.stubGlobal('__CMDR_CAPABILITIES__', {
+    quickLook: true,
+    getInfo: true,
+    openTerminalHere: true,
+    cloudFileActions: true,
+    colorTags: true,
+    cliCommand: true,
+  })
+})
 
 const MCP_ONLY_REASON =
   'MCP-only: carries a per-pane payload for an MCP tool, and the focused-pane commands are the keyboard path.'

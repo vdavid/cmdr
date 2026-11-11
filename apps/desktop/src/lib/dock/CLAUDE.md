@@ -7,7 +7,7 @@ many saw it, how many said yes". Every decision that has to look at the machine 
 ## Module map
 
 - **`should-show-dock-nudge.ts`**: pure. `shouldShowDockNudge` plus `DOCK_NUDGE_AFTER_DAYS`. The half every offer shares
-  — automated run, macOS, onboarding, "already asked", the cooldown — is `#lib/nudges/`.
+  — automated run, the `dockPin` capability, onboarding, "already asked", the cooldown — is `#lib/nudges/`.
 - **`dock-nudge.ts`**: raises the toast, stamps the nudge ledger, sends `dock_pin_offered`.
 - **`dock-pin-answer.ts`**: the three exits, `dock_pin_answered` / `dock_pin_failed`, and the failure copy. Separate so
   the toast body can reach it without an import cycle.

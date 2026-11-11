@@ -92,9 +92,12 @@ vi.mock('#lib/ai/cloud-consent.svelte.js', () => ({
   CLOUD_CONSENT_ANCHOR: 'settings-ai-cloud-consent',
 }))
 
-// Run on macOS so the wizard renders step 1 (StepFda) instead of skipping it.
-// Resume-rule behaviour on Linux is unit-tested in onboarding-state.test.ts.
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+// Run on macOS, with Full Disk Access to ask for, so the wizard renders step 1 (StepFda) instead of skipping it.
+// Resume-rule behaviour without it is unit-tested in onboarding-state.test.ts.
+vi.hoisted(() => {
+  vi.stubGlobal('__CMDR_PLATFORM__', 'macos')
+  vi.stubGlobal('__CMDR_CAPABILITIES__', { fullDiskAccess: true })
+})
 
 function mountWizard(onComplete: () => void = () => {}) {
   const target = document.createElement('div')

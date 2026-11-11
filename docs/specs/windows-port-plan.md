@@ -146,8 +146,8 @@ its prerequisites; tasks without any can start any time. Order within a phase is
    backend (`platform_backends` answers `None`), so the scheduler doesn't start, an older build's invented `media.db`
    rows go at launch ([#1001](https://github.com/getcmdr/cmdr/issues/1001)), and the image-indexing settings carry
    `needsImageIndexing`, which drops their page from the sidebar. The Linux E2E build keeps a fake engine
-   (`cmdr-index/playwright-e2e`) so its specs still run. Task 25's capability set can take over the frontend half
-   (`imageIndexingAvailable()`) later.
+   (`cmdr-index/playwright-e2e`) so its specs still run. Task 25's `imageIndexing` capability took over the frontend
+   half (it answers yes in that build).
 2. [XS] Win. **Done**. Small fixes: `macOsLabel` prefixing non-mac OS names, the MCP instructions' "for macOS",
    `'Cascadia Mono'` before `Consolas` in `--font-mono`.
 
@@ -242,8 +242,11 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     `tauri_builder.rs` defines `window.__CMDR_PLATFORM__` in every webview, `isMacOS()` lives there and reads it (no UA
     sniff; `'linux'` without a backend, the demo answers for the visitor), `data-platform` on `<html>`,
     `--titlebar-height: 0` off macOS, and `withPlatform()` drives every test that used to mock `isMacOS` or stub the UA.
-25. [S] Win. Capabilities instead of OS checks: a typed `platform_capabilities()` from the backend; migrate the 74
-    `isMacOS()` sites in 28 files. Needs 24 (and is easier after 18).
+25. [S] Win. **Done**. Capabilities instead of OS checks: `PlatformCapabilities` (14 flags, one answer per arm of the
+    `platform/` seam, typed into `bindings.ts`) arrives beside the platform in the same init script; 46 of the 72
+    `isMacOS()` calls (in 28 files) now ask `hasCapability()`, settings' `macOSOnly` and `needsImageIndexing` became one
+    `needsCapability`, and CSS keys the title bar on `data-overlay-title-bar`. Left as platform questions: 11 (key
+    glyphs, the macOS updater flow, the old-macOS notice); for 26: 5 keymap sites; for 27: 10 copy variants.
 26. [S] Win. Per-platform default keymap: explicit per-platform overrides where mechanical mapping is wrong, retire the
     `⌃`→Shift hack, fix the `Ctrl+D` clash, conflict tests for all three platforms plus OS-reserved combos (Windows,
     GNOME). Needs 24.

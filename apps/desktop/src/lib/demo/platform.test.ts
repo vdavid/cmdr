@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { getPlatform, PLATFORM_GLOBAL } from '#lib/platform/index.js'
-import { installPlatform, visitorPlatform } from './platform.js'
+import {
+  CAPABILITIES_GLOBAL,
+  getPlatform,
+  NO_CAPABILITIES,
+  PLATFORM_GLOBAL,
+  platformCapabilities,
+  type Capability,
+} from '#lib/platform/index.js'
+import { installPlatform, visitorCapabilities, visitorPlatform } from './platform.js'
 
 describe('visitorPlatform', () => {
   it.each([
@@ -30,5 +37,26 @@ describe('installPlatform', () => {
   it('is what the app reads once installed in its own frame', () => {
     installPlatform(window)
     expect(getPlatform()).toBe(visitorPlatform(navigator.userAgent))
+    expect(platformCapabilities()).toEqual(visitorCapabilities(getPlatform()))
+  })
+
+  it('hands the capabilities over read-only too', () => {
+    const frame = { navigator: { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' } } as unknown as Window
+    installPlatform(frame)
+    expect(Object.getOwnPropertyDescriptor(frame, CAPABILITIES_GLOBAL)?.writable).toBe(false)
+    expect(Object.isFrozen((frame as unknown as Record<string, unknown>)[CAPABILITIES_GLOBAL])).toBe(true)
+  })
+})
+
+describe('visitorCapabilities', () => {
+  it('shows a Mac visitor the Mac app, overlay title bar and Full Disk Access included', () => {
+    const mac = visitorCapabilities('macos')
+    for (const capability of Object.keys(NO_CAPABILITIES) as Capability[])
+      expect(mac[capability], capability).toBe(true)
+  })
+
+  it('shows everyone else no OS-backed surface, as before capabilities existed', () => {
+    expect(visitorCapabilities('windows')).toEqual(NO_CAPABILITIES)
+    expect(visitorCapabilities('linux')).toEqual(NO_CAPABILITIES)
   })
 })

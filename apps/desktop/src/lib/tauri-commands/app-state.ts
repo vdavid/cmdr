@@ -13,7 +13,7 @@ import {
 import type { SameKindTarget } from '#lib/file-explorer/pane/select-same-kind.js'
 import type { TrashUndoTarget } from '#lib/file-operations/delete/trash-undo.js'
 import type { OperationGate, SoftDialogId } from '#lib/ui/dialog-registry.js'
-import { isMacOS } from '#lib/platform/index.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { throwIpcError } from './ipc-types'
 
 export type { PaneFileEntry, PaneState, RequestedSort, SelectedRows, ServicesSelection }
@@ -187,14 +187,14 @@ export async function updateMenuContext(path: string, filename: string): Promise
  * Pushes what `Cmdr > Services` acts on: the focused pane's selection, or its
  * cursor row when nothing is selected.
  *
- * macOS only (nothing else has a Services menu), so this is a no-op elsewhere and
+ * Only where the OS has a Services menu (`servicesMenu`, macOS), so this is a no-op elsewhere and
  * the caller doesn't have to know. Selected ROWS travel as listing indices rather
  * than resolved paths, so a select-all over a huge folder stays cheap; the backend
  * reads the paths out of the listing cache only when a service asks. See
  * `apps/desktop/src-tauri/src/services_menu/CLAUDE.md`.
  */
 export async function updateServicesSelection(selection: ServicesSelection): Promise<void> {
-  if (!isMacOS()) return
+  if (!hasCapability('servicesMenu')) return
   await commands.updateServicesSelection(selection)
 }
 

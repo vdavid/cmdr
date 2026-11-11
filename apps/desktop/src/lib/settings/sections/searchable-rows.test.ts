@@ -14,8 +14,8 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { describe, expect, it } from 'vitest'
+import { withCapabilities, withEveryCapability } from '#lib/platform/test-platform.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { buildSectionTree, settingsRegistry, type SettingsSection } from '../settings-registry'
 import {
@@ -27,8 +27,8 @@ import {
 import type { SearchableRow, SearchableRowId, SettingId } from '../types'
 import { searchableRows } from './searchable-rows'
 
-/** On a Mac by default, so every row, `macOSOnly` ones too, is in the index under test. */
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+/** Every capability on by default, so every row, `needsCapability` ones too, is in the index under test. */
+withEveryCapability()
 
 /**
  * The compile-time half of the collision guard: `never` the moment a
@@ -168,26 +168,26 @@ describe('a row that anchors its section', () => {
 })
 
 /**
- * Off macOS a `macOSOnly` row's markup never renders, so a hit would land on a
+ * Without its capability a `needsCapability` row's markup never renders, so a hit would land on a
  * page with nothing to show for it. The row stays declared; only the index drops it.
  */
-describe('a macOS-only row', () => {
-  it('stays out of the search index off macOS, while the other rows stay in', () => {
-    const macOnly = searchableRows.filter((row) => row.macOSOnly === true)
-    const everywhere = searchableRows.filter((row) => row.macOSOnly !== true)
-    expect(macOnly.length).toBeGreaterThan(0)
+describe('a capability-gated row', () => {
+  it('stays out of the search index where the OS does not offer it, while the other rows stay in', () => {
+    const gated = searchableRows.filter((row) => row.needsCapability !== undefined)
+    const everywhere = searchableRows.filter((row) => row.needsCapability === undefined)
+    expect(gated.length).toBeGreaterThan(0)
 
-    withPlatform('linux')
+    withCapabilities()
     clearSearchIndex()
     try {
-      for (const row of macOnly) {
+      for (const row of gated) {
         expect([...getMatchingSettingIdsInSection(tString(row.labelKey), row.section)]).not.toContain(row.id)
       }
       for (const row of everywhere) {
         expect([...getMatchingSettingIdsInSection(tString(row.labelKey), row.section)]).toContain(row.id)
       }
     } finally {
-      withPlatform('macos')
+      withEveryCapability()
       clearSearchIndex()
     }
   })

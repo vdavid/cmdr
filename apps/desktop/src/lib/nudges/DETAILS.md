@@ -11,7 +11,8 @@ Every offer here is the same shape, and only the middle step differs:
 1. `routes/(main)/+page.svelte` calls `maybeOfferNudges(startupGatesCtx)`, fire-and-forget, after
    `resolveOnboardingMount` and again from `handleWizardComplete`.
 2. `startup-gates.ts::maybeOfferNudges` awaits each offer in turn. Each gathers the free `NudgeContext` (automated run,
-   macOS, onboarding, wizard, the ledger, now) and runs `nudgeCouldFire`. Most launches stop there.
+   the OS's capabilities, onboarding, wizard, the ledger, now) and runs `nudgeCouldFire`, which needs the offer's own
+   capability (`NUDGE_CAPABILITY`: `dockPin`, `revealHandler`, `finderExtension`). Most launches stop there.
 3. Otherwise the offer awaits its own two backend answers in parallel and runs its full `shouldShow…`.
 4. The offer's raise module stamps the ledger, sends its `*_offered` event, and raises a persistent INFO toast.
 5. The toast's buttons record an answer; the frame's × records `dismissed` through the `onDismiss` the raise installed.

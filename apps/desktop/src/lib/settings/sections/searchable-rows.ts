@@ -13,7 +13,7 @@
  */
 
 import { tString } from '#lib/intl/messages.svelte.js'
-import { isMacOS } from '#lib/platform/index.js'
+import { hasCapability } from '#lib/platform/index.js'
 import type { SearchableEntry, SearchableRow } from '../types'
 import { adbRows } from './AdbSection.rows'
 import { advancedRows } from './AdvancedSection.rows'
@@ -70,10 +70,11 @@ function resolveRow(row: SearchableRow): SearchableEntry {
 /**
  * The rows as search-index entries, merged with the registry by `buildSearchIndex`.
  *
- * Read when the index builds rather than at import, so a `macOSOnly` row drops out
- * off macOS (where its markup never renders) and a test can flip the platform.
+ * Read when the index builds rather than at import, so a `needsCapability` row drops out
+ * where this OS doesn't offer it (its markup never renders there) and a test can flip it.
  */
 export function searchableRowEntries(): SearchableEntry[] {
-  const onMacOS = isMacOS()
-  return searchableRows.filter((row) => onMacOS || row.macOSOnly !== true).map(resolveRow)
+  return searchableRows
+    .filter((row) => row.needsCapability === undefined || hasCapability(row.needsCapability))
+    .map(resolveRow)
 }

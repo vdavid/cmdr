@@ -1,6 +1,6 @@
 /**
  * The searchable non-setting row of `FinderExtensionCard.svelte`. Declaration only: the
- * card gates itself on `shouldShow(id)` with this id. macOS-only, like the card.
+ * card gates itself on `shouldShow(id)` with this id. Behind `finderExtension`, like the card.
  */
 
 import type { SearchableRow } from '../types'
@@ -13,6 +13,6 @@ export const finderExtensionRows: SearchableRow[] = [
     cardKey: 'settings.finderExtension.card',
     keywordsKey: 'settings.behavior.finderExtension.keywords',
     terms: ['finder', 'context menu', 'right-click', 'extension'],
-    macOSOnly: true,
+    needsCapability: 'finderExtension',
   },
 ]

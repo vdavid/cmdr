@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { withCapabilities, withEveryCapability } from '#lib/platform/test-platform.js'
 import {
   searchSettings,
   getMatchingSections,
@@ -14,40 +14,40 @@ import {
 import { getSettingDefinition } from './settings-registry'
 
 /**
- * On a Mac by default, so `macOSOnly` settings are in the index under test. The
- * same platform drives the searchable-row filter, so both halves of the index answer
- * to one platform.
+ * Every capability on by default, so `needsCapability` settings are in the index under test. The
+ * same capabilities drive the searchable-row filter, so both halves of the index answer
+ * to one answer.
  */
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+withEveryCapability()
 
 /**
- * Off macOS a `macOSOnly` setting renders nowhere, so a hit would open a page with
+ * Without its capability a `needsCapability` setting renders nowhere, so a hit would open a page with
  * nothing to show for it. The entry stays registered; only the index drops it.
  */
-describe('a macOS-only setting', () => {
-  const MAC_ONLY = ['behavior.openTerminalHereApp', 'behavior.textEditorApp', 'behavior.textEditorHintSeen']
+describe('a capability-gated setting', () => {
+  const GATED = ['behavior.openTerminalHereApp', 'behavior.textEditorApp', 'behavior.textEditorHintSeen']
 
   afterEach(() => {
-    withPlatform('macos')
+    withEveryCapability()
     clearSearchIndex()
   })
 
-  it('stays out of the search index off macOS', () => {
-    withPlatform('linux')
+  it('stays out of the search index where the OS does not offer it', () => {
+    withCapabilities()
     clearSearchIndex()
 
     const ids = searchSettings('').map((r) => r.entry.id)
-    for (const id of MAC_ONLY) {
+    for (const id of GATED) {
       expect(ids).not.toContain(id)
     }
     expect(searchSettings('Sublime Text').map((r) => r.entry.id)).not.toContain('behavior.textEditorApp')
   })
 
-  it('is in the search index on macOS', () => {
-    withPlatform('macos')
+  it('is in the search index where the OS offers it', () => {
+    withEveryCapability()
     clearSearchIndex()
 
-    expect(searchSettings('').map((r) => r.entry.id)).toEqual(expect.arrayContaining(MAC_ONLY))
+    expect(searchSettings('').map((r) => r.entry.id)).toEqual(expect.arrayContaining(GATED))
     expect(searchSettings('Sublime Text').map((r) => r.entry.id)).toContain('behavior.textEditorApp')
   })
 })

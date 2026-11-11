@@ -7,7 +7,7 @@ import type { CommandSource } from '../types'
 import type { CliCommandState } from '#lib/ipc/bindings.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { getBadgeStatus } from '#lib/feature-status.js'
-import { isMacOS } from '#lib/platform/index.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { BLOCKED_BY_DIALOGS, runsOverDialogs } from '../while-dialog-open'
 
 // macOS owns these four outright via PredefinedMenuItems; they never reach the dispatch core, so
@@ -168,11 +168,11 @@ export const appCommands: CommandSource[] = [
   },
   {
     // Installs or removes the `cmdr` terminal command, whichever the filesystem says is next.
-    // macOS only, like the link and the script it points at.
+    // Behind `cliCommand` (macOS today), like the link and the script it points at.
     id: 'app.toggleCliCommand',
     nameKey: cliCommandNameKey,
     scope: 'App',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('cliCommand'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.appToggleCliCommand.description',

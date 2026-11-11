@@ -85,10 +85,10 @@ function buildSearchIndex(): SearchIndex {
   // license") join here as equal entries. They carry no `SettingsValues` key and
   // add no nav entry — `buildSectionTree` reads the registry alone.
   //
-  // A setting that can't render on this run (`settingRendersHere`: a `macOSOnly` one
-  // off macOS, an image-indexing one without an image engine) stays out, the same
+  // A setting that can't render on this run (`settingRendersHere`: one whose
+  // `needsCapability` this OS doesn't offer) stays out, the same
   // rule the nav tree applies and `searchableRowEntries` applies to rows. Read when
-  // the index builds rather than at import, so a test can flip the platform.
+  // the index builds rather than at import, so a test can flip the capability.
   const settings = settingsRegistry.filter(settingRendersHere)
   const entries = [...settings, ...searchableRowEntries()].map((entry) => indexEntry(entry, locale))
   searchIndex = { locale, entries, haystack: entries.map((e) => e.searchableText) }

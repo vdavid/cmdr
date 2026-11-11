@@ -2,8 +2,17 @@
 //! analytics pipelines (crash reports, error reports, the heartbeat). Each OS's startup
 //! installers sit beside it in `startup/`.
 //!
+//! Also what this OS lets Cmdr offer (`PlatformCapabilities`), and the init script that tells
+//! every webview both (`frontend_init_script`).
+//!
 //! A platform seam (`docs/guides/platform-seams.md`): one arm per OS, picked below, and every
 //! signature the arms owe pinned, so an arm that drifts fails to compile at the pin.
+
+mod capabilities;
+mod frontend;
+
+pub(crate) use capabilities::PlatformCapabilities;
+pub(crate) use frontend::init_script as frontend_init_script;
 
 #[cfg_attr(target_os = "macos", path = "macos.rs")]
 #[cfg_attr(target_os = "linux", path = "linux/mod.rs")]
@@ -14,6 +23,7 @@ pub(crate) mod startup;
 
 const _: fn() -> String = os_version;
 const _: fn(i64, i64) -> bool = macos_at_least;
+const _: fn() -> PlatformCapabilities = capabilities;
 
 /// A human-readable OS version string, for example `macOS 26.0` or `Ubuntu 24.04 LTS`.
 ///
@@ -30,6 +40,10 @@ pub(crate) use imp::os_version;
 /// floor is macOS 10.15, so anything newer than that has to ask here first. Off macOS every caller
 /// is itself macOS-only today; the question stays askable everywhere so none needs its own `cfg`.
 pub(crate) use imp::macos_at_least;
+
+/// What this OS lets Cmdr offer, every field answered by the arm. Read once per webview, by the
+/// init script.
+pub(crate) use imp::capabilities;
 
 /// The Linux distribution, for package-manager install hints. Linux-only by nature, so only Linux
 /// code reaches it.

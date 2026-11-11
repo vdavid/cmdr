@@ -17,7 +17,10 @@ vi.mock('#lib/ipc/bindings.js', () => ({
   },
 }))
 
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+vi.hoisted(() => {
+  vi.stubGlobal('__CMDR_PLATFORM__', 'macos')
+  vi.stubGlobal('__CMDR_CAPABILITIES__', { finderExtension: true })
+})
 
 import FinderExtensionCard from './FinderExtensionCard.svelte'
 

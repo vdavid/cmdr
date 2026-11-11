@@ -17,8 +17,8 @@
      *   3. **Text editor** — which app F4 opens files in (`TextEditorSelect`).
      *   4. **Terminal** — which app "Open terminal here" launches
      *      (`TerminalAppSelect`). Both rows read their options off this Mac, so
-     *      neither is `SettingSelect`, and both cards render on macOS only: their
-     *      settings carry `macOSOnly`, so search agrees.
+     *      neither is `SettingSelect`, and each card renders only where its capability holds
+     *      (`textEditorChoice`, `openTerminalHere`): their settings carry it as `needsCapability`, so search agrees.
      *   5. **Show in Finder** — `RevealHandlerCard`, whose switch is backed by a
      *      macOS preference rather than the registry, so it owns its own card
      *      and gates it on search itself (`RevealHandlerCard.rows.ts`). Its own
@@ -45,7 +45,7 @@
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '#lib/settings/index.js'
     import { createShouldShow, anyVisible } from '#lib/settings/settings-search.js'
-    import { isMacOS } from '#lib/platform/index.js'
+    import { hasCapability } from '#lib/platform/index.js'
 
     interface Props {
         searchQuery: string
@@ -56,8 +56,9 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     // The text editor and terminal rows speak macOS's vocabulary (LaunchServices
-    // bundle ids); Linux keeps `xdg-open` for F4 and has no terminal table.
-    const onMacOS = isMacOS()
+    // bundle ids); elsewhere F4 keeps the OS default and there's no terminal table.
+    const offersTextEditorChoice = hasCapability('textEditorChoice')
+    const offersOpenTerminalHere = hasCapability('openTerminalHere')
 
     const defaultDef = { label: '', description: '', disabled: false, disabledReason: '' }
     const doubleClickDef = getSettingDefinition('behavior.doubleClickPaneNavigatesToParent') ?? defaultDef
@@ -164,7 +165,7 @@
         </SectionCard>
     {/if}
 
-    {#if onMacOS && anyVisible(shouldShow, 'behavior.textEditorApp')}
+    {#if offersTextEditorChoice && anyVisible(shouldShow, 'behavior.textEditorApp')}
         <SectionCard label={tString('settings.navigationAndFileOps.card.textEditor')}>
             {#if shouldShow('behavior.textEditorApp')}
                 <SettingRow
@@ -180,7 +181,7 @@
         </SectionCard>
     {/if}
 
-    {#if onMacOS && anyVisible(shouldShow, 'behavior.openTerminalHereApp')}
+    {#if offersOpenTerminalHere && anyVisible(shouldShow, 'behavior.openTerminalHereApp')}
         <SectionCard label={tString('settings.navigationAndFileOps.card.terminal')}>
             {#if shouldShow('behavior.openTerminalHereApp')}
                 <SettingRow

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 
 const mocks = vi.hoisted(() => ({ getStatus: vi.fn(), setEnabled: vi.fn() }))
 
@@ -28,11 +28,11 @@ function switchOf(target: HTMLElement): HTMLInputElement | null {
 describe('FinderExtensionCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    withPlatform('macos')
+    withCapabilities('finderExtension')
   })
 
-  it('renders nothing off macOS, where there is no extension to ask about', async () => {
-    withPlatform('linux')
+  it('renders nothing where the OS has no extension to ask about', async () => {
+    withCapabilities()
     const { target, cleanup } = await render()
     expect(mocks.getStatus).not.toHaveBeenCalled()
     expect(target.textContent.trim()).toBe('')

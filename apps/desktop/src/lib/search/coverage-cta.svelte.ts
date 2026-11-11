@@ -25,7 +25,7 @@
 
 import { checkFullDiskAccessQuiet } from '#lib/tauri-commands/index.js'
 import { capabilitiesFor } from '#lib/file-explorer/pane/volume-capabilities.js'
-import { isMacOS } from '#lib/platform/index.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { getVolumes } from '#lib/stores/volume-store.svelte.js'
 import { isDriveSilenced, silenceDrive as silenceDrivePref } from '#lib/indexing/drive-index-prefs.js'
 import { isVolumeCoveredInPhases } from '#lib/indexing/index-state.svelte.js'
@@ -113,7 +113,7 @@ export function createCoverageCta(deps: CoverageCtaDeps): CoverageCtaView {
   /** Ask the OS, but only when the answer could change what's on screen. */
   $effect(() => {
     if ((note?.live?.permissionDenied.length ?? 0) === 0) return
-    if (!isMacOS()) return
+    if (!hasCapability('fullDiskAccess')) return
     void checkFullDiskAccessQuiet().then((granted) => {
       hasFullDiskAccess = granted
     })
@@ -126,7 +126,8 @@ export function createCoverageCta(deps: CoverageCtaDeps): CoverageCtaView {
    */
   const grantFullDiskAccess = $derived.by(() => {
     const route = deps.getGrantFullDiskAccess()
-    if (!route || !offersFullDiskAccess({ note, isMac: isMacOS(), hasFullDiskAccess })) return null
+    if (!route || !offersFullDiskAccess({ note, offersFda: hasCapability('fullDiskAccess'), hasFullDiskAccess }))
+      return null
     return () => {
       trackCtaUsed('fullDiskAccess')
       deps.closeDialog()

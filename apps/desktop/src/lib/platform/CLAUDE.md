@@ -1,21 +1,26 @@
 # Platform (`lib/platform/`)
 
-Which OS this window runs on (`'macos' | 'linux' | 'windows'`), as the backend says, read synchronously.
+Which OS this window runs on (`'macos' | 'linux' | 'windows'`), and what that OS lets Cmdr offer, as the backend says,
+read synchronously.
 
-- `index.ts`: `getPlatform()`, `isMacOS()`, `applyPlatformAttribute()` (`data-platform` on `<html>`).
-- `test-platform.ts`: `withPlatform()`, the test helper.
+- `index.ts`: `getPlatform()`, `isMacOS()`, `hasCapability()`, `platformCapabilities()`, `applyPlatformAttributes()`.
+- `test-platform.ts`: `withPlatform()`, `withCapabilities()`, `capabilitiesWith()`, the test helpers.
 
 ## Must-knows
 
-- **The value is injected, never sniffed.** The backend's init script defines `window.__CMDR_PLATFORM__` in every
-  webview before any script runs (`src-tauri/src/tauri_builder.rs`), so module-load reads are safe. ❌ Never read
+- **To show or hide a feature, ask `hasCapability('quickLook')`, ❌ never `isMacOS()`.** The set is
+  `PlatformCapabilities`, generated from Rust (`apps/desktop/src-tauri/src/platform/capabilities.rs`, one answer per OS
+  arm). New OS-backed surface: add a field there, answer it in every arm, regen bindings. `isMacOS()` stays for
+  genuinely per-platform answers: key glyphs, the keymap, copy variants, the OS version.
+- **Both values are injected, never sniffed.** The backend's init script defines `window.__CMDR_PLATFORM__` and
+  `window.__CMDR_CAPABILITIES__` in every webview before any script runs, so module-load reads are safe. ❌ Never read
   `navigator.userAgent` or `navigator.platform` to decide the OS.
-- **No backend, no injection: the answer is `'linux'`** (Vitest, a plain browser), so no Mac-only surface shows by
-  accident. The browser demo answers for the visitor's computer (`apps/desktop/src/lib/demo/platform.ts`).
-- **Tests switch platforms with `withPlatform()`**, ❌ never by mocking `isMacOS` or stubbing the user agent: it moves
-  everything that reads the platform at once, key formatting included. A module-load read needs it in `vi.hoisted`
-  before the imports; the forms are in `test-platform.ts`.
-- **CSS follows `data-platform`**, set by `hooks.client.ts` before the first route renders. `--titlebar-height` is 0 off
-  macOS (`app.css` § Window chrome off macOS).
+- **No backend, no injection: `'linux'` and no capabilities** (Vitest, a plain browser), so no OS-backed surface shows
+  by accident. The browser demo answers for the visitor's computer (`apps/desktop/src/lib/demo/platform.ts`).
+- **The two move independently in tests.** `withPlatform()` moves the platform (key formatting follows),
+  `withCapabilities('fullDiskAccess')` what the OS offers; ❌ never mock `isMacOS` / `hasCapability` or stub the user
+  agent. Module-load reads need `vi.hoisted`; the forms are in `test-platform.ts`.
+- **CSS follows `data-overlay-title-bar`** (and `data-platform`), set by `hooks.client.ts` before the first route
+  renders. `--titlebar-height` is 0 without an overlay title bar (`app.css` § Window chrome).
 
 Mechanics, the fallback, and decisions: `DETAILS.md`.

@@ -13,7 +13,7 @@
     import Switch from '#lib/ui/Switch.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
-    import { isMacOS } from '#lib/platform/index.js'
+    import { hasCapability } from '#lib/platform/index.js'
     import { getFinderExtensionStatus, setFinderExtensionEnabled } from '#lib/tauri-commands/index.js'
     import { createShouldShow } from '#lib/settings/settings-search.js'
     import type { MessageKey } from '#lib/intl/keys.gen.js'
@@ -27,12 +27,12 @@
 
     const SWITCH_ID = 'finder-extension-switch'
 
-    /** `null` until the OS has answered, and for good off macOS. */
+    /** `null` until the OS has answered, and for good where this OS has no Finder extension. */
     let status = $state<FinderExtensionStatus | null>(null)
     let applying = $state(false)
 
     onMount(() => {
-        if (!isMacOS()) return
+        if (!hasCapability('finderExtension')) return
         void (async () => {
             status = await getFinderExtensionStatus()
         })()

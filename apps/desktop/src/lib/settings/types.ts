@@ -5,6 +5,7 @@
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import type { IconName } from '#lib/ui/icons/icon-map.js'
 import type { EnterAction } from '#lib/file-explorer/pane/archive-enter-policy.js'
+import type { Capability } from '#lib/platform/index.js'
 
 // ============================================================================
 // Core Types
@@ -110,10 +111,11 @@ export interface SearchableRow {
   /** See `SettingDefinition.terms`. */
   terms?: string[]
   /**
-   * The row renders only on macOS, so it joins the search index only there. Off
-   * macOS a hit would land on a page with nothing to show for it.
+   * The row renders only where this capability holds (`hasCapability`, `#lib/platform`),
+   * so it joins the search index only there. Elsewhere a hit would land on a page with
+   * nothing to show for it.
    */
-  macOSOnly?: true
+  needsCapability?: Capability
   /**
    * This row is what puts its PAGE in the sidebar, right after the named sibling.
    *
@@ -237,20 +239,15 @@ export interface SettingDefinition {
   /** Internal state that should not appear in any section (main tree or Advanced). Persisted via the same store. */
   hidden?: boolean
   /**
-   * The setting renders only on macOS, so it joins the search index only there
-   * (`settings-search.ts`); off macOS a hit would open a page with nothing to show
-   * for it. Same meaning as `SearchableRow.macOSOnly`. Off macOS it also stays out of
-   * `buildSectionTree`, so a page whose every visible setting carries it leaves the
-   * sidebar. It decides nothing else about rendering: the section gates its own markup.
+   * The setting belongs to a feature only some OSes offer (`hasCapability`, `#lib/platform`),
+   * so it joins the search index only where that capability holds (`settings-search.ts`);
+   * elsewhere a hit would open a page with nothing to show for it. Same meaning as
+   * `SearchableRow.needsCapability`. Elsewhere it also stays out of `buildSectionTree`, so a
+   * page whose every visible setting carries it leaves the sidebar (the Image indexing page
+   * off macOS, #943). It decides nothing else about rendering: the section gates its own
+   * markup on the same capability.
    */
-  macOSOnly?: true
-  /**
-   * The setting belongs to image indexing, which runs only where
-   * `imageIndexingAvailable()` (`#lib/media-index/availability.ts`) says so: macOS, plus
-   * the Linux E2E build's fake engine. Elsewhere it stays out of `buildSectionTree` and
-   * search, like `macOSOnly`, so the Image indexing page leaves the sidebar (#943).
-   */
-  needsImageIndexing?: true
+  needsCapability?: Capability
   /**
    * How far MCP `set_setting` may write this consent-bearing setting (`mcp-main-bridge.ts`), so an
    * AI client never undoes a person's answer. `false`: never (the terms acceptance, a held "no").

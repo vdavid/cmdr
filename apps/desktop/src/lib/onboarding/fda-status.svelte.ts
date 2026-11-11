@@ -10,7 +10,7 @@
  * stack popups on someone who simply alt-tabbed.
  */
 import { getAppLogger } from '#lib/logging/logger.js'
-import { isMacOS } from '#lib/platform/index.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { checkFullDiskAccessQuiet } from '#lib/tauri-commands/index.js'
 
 const log = getAppLogger('fda-status')
@@ -22,18 +22,18 @@ const log = getAppLogger('fda-status')
  */
 let granted = $state<boolean | null>(null)
 
-/** True only once we've actually asked AND the answer was no. Always false off macOS. */
+/** True only once we've actually asked AND the answer was no. Always false where there's no such permission. */
 export function fdaIsMissing(): boolean {
-  return isMacOS() && granted === false
+  return hasCapability('fullDiskAccess') && granted === false
 }
 
 /**
  * Re-probe and store the answer. Safe to call often (it's a cheap syscall-level check) and
- * safe to call off macOS, where it records "granted" so nothing downstream offers a fix for
- * a permission that doesn't exist on the platform.
+ * safe to call where the OS has no such permission: it records "granted" there, so nothing
+ * downstream offers a fix for a permission that doesn't exist.
  */
 export async function refreshFdaStatus(): Promise<void> {
-  if (!isMacOS()) {
+  if (!hasCapability('fullDiskAccess')) {
     granted = true
     return
   }

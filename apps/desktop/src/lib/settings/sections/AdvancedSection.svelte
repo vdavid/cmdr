@@ -1,6 +1,7 @@
 <script lang="ts">
     import {
         getAdvancedSettings,
+        settingRendersHere,
         getSetting,
         setSetting,
         resetSetting,
@@ -27,7 +28,6 @@
     import { confirmDialog } from '#lib/utils/confirm-dialog.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { getAppLogger } from '#lib/logging/logger.js'
-    import { isMacOS } from '#lib/platform/index.js'
     import { revealItemInDir } from '@tauri-apps/plugin-opener'
     import { appLogDir } from '@tauri-apps/api/path'
     import { getVersion } from '@tauri-apps/api/app'
@@ -38,10 +38,9 @@
 
     const { searchQuery }: Props = $props()
 
-    // A `macOSOnly` row (a hint only macOS ever raises) renders nowhere off macOS,
+    // A `needsCapability` row (a hint only that feature ever raises) renders nowhere without it,
     // the same rule the search index applies (`settings-search.ts`).
-    const onMacOS = isMacOS()
-    const allAdvancedSettings = getAdvancedSettings().filter((setting) => onMacOS || setting.macOSOnly !== true)
+    const allAdvancedSettings = getAdvancedSettings().filter(settingRendersHere)
 
     // The card grouping is computed once (registry-order, stable). Row
     // visibility under search is driven per-row by `shouldShow`, NOT by swapping

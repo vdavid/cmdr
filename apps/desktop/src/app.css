@@ -618,10 +618,11 @@
   --sheet-backdrop-color: var(--color-overlay-heavy);
 }
 
-/* === Window chrome off macOS ===
+/* === Window chrome without an overlay title bar ===
    The OS draws the title bar outside the webview, so nothing in it sits under one, and a dialog's
-   backdrop covers the whole window. `data-platform` comes from `#lib/platform`. */
-:root:not([data-platform='macos']) {
+   backdrop covers the whole window. `data-overlay-title-bar` comes from `#lib/platform`'s
+   `overlayTitleBar` capability. */
+:root:not([data-overlay-title-bar]) {
   --titlebar-height: 0px;
 }
 

@@ -234,8 +234,8 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     // constants.
     component: 'select',
     valueNamesApp: true,
-    // Linux keeps `xdg-open` and renders no Text editor card.
-    macOSOnly: true,
+    // Elsewhere F4 keeps the OS default (`xdg-open` on Linux) and there's no Text editor card.
+    needsCapability: 'textEditorChoice',
   },
 
   // ------------------------------------------------------------------------
@@ -265,8 +265,8 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     // are whatever is installed right now, so they can't be registry constants.
     component: 'select',
     valueNamesApp: true,
-    // The whole feature is macOS-only, and so is the Terminal card.
-    macOSOnly: true,
+    // The whole feature needs the capability, and so does the Terminal card.
+    needsCapability: 'openTerminalHere',
   },
 
   // ------------------------------------------------------------------------

@@ -2,17 +2,17 @@
  * Unit tests for the onboarding state machine.
  *
  * Covers `resumeStepFor`, `step1VariantFor`, and `stepTwoBannerFor`: all pure logic
- * over the persisted-flag triple `(fullDiskAccessChoice, isOnboarded, hasFda)`. Platform
- * is passed in explicitly via `ctx.isMac`, so the test platform doesn't matter.
+ * over the persisted-flag triple `(fullDiskAccessChoice, isOnboarded, hasFda)`. The FDA
+ * gate is passed in explicitly via `ctx.offersFda`, so the test capabilities don't matter.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { SettingLock } from '#lib/ipc/bindings.js'
 
-// Pretend we're on macOS so `previousStep` / `isAtFirstStep` / `openWizard(... null)`
-// resolve to the macOS branches. Linux behaviour is exercised via the explicit `isMac`
-// override on `ResumeContext`, not via the test platform.
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+// Offer Full Disk Access, as macOS does, so `previousStep` / `isAtFirstStep` / `openWizard(... null)`
+// resolve to the FDA branches. The no-FDA behaviour is exercised via the explicit `offersFda`
+// override on `ResumeContext`, not via the test capabilities.
+vi.hoisted(() => vi.stubGlobal('__CMDR_CAPABILITIES__', { fullDiskAccess: true }))
 
 import {
   resumeStepFor,
@@ -39,7 +39,7 @@ const ctxMac = (overrides: Partial<ResumeContext>): ResumeContext => ({
   fullDiskAccessChoice: 'unanswered',
   isOnboarded: false,
   hasFda: false,
-  isMac: true,
+  offersFda: true,
   ...overrides,
 })
 
@@ -65,9 +65,9 @@ describe('resumeStepFor', () => {
   })
 
   it('Linux: always step 2', () => {
-    expect(resumeStepFor({ ...ctxMac({}), isMac: false })).toBe(2)
-    expect(resumeStepFor({ ...ctxMac({ fullDiskAccessChoice: 'allow' }), isMac: false })).toBe(2)
-    expect(resumeStepFor({ ...ctxMac({ fullDiskAccessChoice: 'deny' }), isMac: false })).toBe(2)
+    expect(resumeStepFor({ ...ctxMac({}), offersFda: false })).toBe(2)
+    expect(resumeStepFor({ ...ctxMac({ fullDiskAccessChoice: 'allow' }), offersFda: false })).toBe(2)
+    expect(resumeStepFor({ ...ctxMac({ fullDiskAccessChoice: 'deny' }), offersFda: false })).toBe(2)
   })
 })
 
@@ -118,7 +118,7 @@ describe('stepTwoBannerFor', () => {
   })
 
   it('Linux → linux', () => {
-    expect(stepTwoBannerFor({ ...ctxMac({}), isMac: false })).toBe('linux')
+    expect(stepTwoBannerFor({ ...ctxMac({}), offersFda: false })).toBe('linux')
   })
 })
 
@@ -202,7 +202,7 @@ describe('four-step flow (FDA → AI → Beta → Optional)', () => {
     expect(resumeStepFor(ctxMac({ fullDiskAccessChoice: 'allow', isOnboarded: true, hasFda: false }))).toBe(1)
     expect(resumeStepFor(ctxMac({ fullDiskAccessChoice: 'allow', hasFda: true }))).toBe(2)
     expect(resumeStepFor(ctxMac({ fullDiskAccessChoice: 'deny' }))).toBe(2)
-    expect(resumeStepFor({ ...ctxMac({}), isMac: false })).toBe(2)
+    expect(resumeStepFor({ ...ctxMac({}), offersFda: false })).toBe(2)
   })
 })
 
@@ -240,11 +240,11 @@ describe("the AI step under the organization's policy", () => {
   })
 
   it('treats step 3 as the first step on Linux while skipped', () => {
-    openWizard('first-launch', { ...ctxMac({}), isMac: false })
+    openWizard('first-launch', { ...ctxMac({}), offersFda: false })
     setAiStepSkipped(true)
     expect(getOnboardingState().currentStep).toBe(3)
-    expect(isAtFirstStep({ isMac: false })).toBe(true)
-    previousStep({ isMac: false })
+    expect(isAtFirstStep({ offersFda: false })).toBe(true)
+    previousStep({ offersFda: false })
     expect(getOnboardingState().currentStep).toBe(3)
   })
 })
@@ -272,7 +272,7 @@ describe('menu / palette re-entry always opens step 1 on macOS', () => {
   })
 
   it('Linux menu re-entry lands on step 2 (no step 1 to render)', () => {
-    openWizard('menu', { fullDiskAccessChoice: 'unanswered', isOnboarded: true, hasFda: false, isMac: false })
+    openWizard('menu', { fullDiskAccessChoice: 'unanswered', isOnboarded: true, hasFda: false, offersFda: false })
     expect(getOnboardingState().currentStep).toBe(2)
   })
 

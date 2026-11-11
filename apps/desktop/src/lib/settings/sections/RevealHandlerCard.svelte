@@ -42,7 +42,7 @@
     import Trans from '#lib/intl/Trans.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
-    import { isMacOS } from '#lib/platform/index.js'
+    import { hasCapability } from '#lib/platform/index.js'
     import { getRevealHandlerState, setRevealHandlerEnabled } from '#lib/tauri-commands/index.js'
     import { REVEAL_HANDLER_ANCHOR_ID } from '#lib/reveal/reveal-settings-link.js'
     import { createShouldShow } from '#lib/settings/settings-search.js'
@@ -60,16 +60,16 @@
 
     /**
      * `null` until the OS has answered, so no switch flashes the wrong way first,
-     * and for good where there's nothing to ask (off macOS).
+     * and for good where there's nothing to ask (no `revealHandler`).
      */
     let handlerStatus = $state<RevealHandlerStatus | null>(null)
     /** True while a take-over or hand-back is in flight; the switch stays put meanwhile. */
     let applying = $state(false)
 
     onMount(() => {
-        // Non-macOS has no mechanism at all, so skip the round-trip: the wrapper
+        // Without `revealHandler` there's no mechanism at all, so skip the round-trip: the wrapper
         // would answer `null` and the card would hide either way.
-        if (!isMacOS()) return
+        if (!hasCapability('revealHandler')) return
         void (async () => {
             handlerStatus = await getRevealHandlerState()
         })()

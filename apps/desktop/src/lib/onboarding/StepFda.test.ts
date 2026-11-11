@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities, withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick, unmount, flushSync } from 'svelte'
 import StepFda from './StepFda.svelte'
 import {
@@ -49,11 +49,14 @@ vi.mock('#lib/settings/index.js', async (importOriginal) => {
   }
 })
 
-// Off macOS, Vitest's default, the Linux safety net inside `StepFda.svelte` would return
-// null and leave us nothing to assert against. Run on macOS; Linux flow is enforced by the
+// Without the `fullDiskAccess` capability, Vitest's default, the safety net inside `StepFda.svelte` would return
+// null and leave us nothing to assert against. Run on macOS with it; the no-FDA flow is enforced by the
 // wizard's resume rule, not by the step body, and the resume-rule unit tests live in
-// onboarding-state.test.ts. The Linux block at the bottom switches for its own tests.
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+// onboarding-state.test.ts. The Linux block at the bottom takes it away for its own tests.
+vi.hoisted(() => {
+  vi.stubGlobal('__CMDR_PLATFORM__', 'macos')
+  vi.stubGlobal('__CMDR_CAPABILITIES__', { fullDiskAccess: true })
+})
 
 function mountStep() {
   const target = document.createElement('div')
@@ -282,6 +285,7 @@ describe('StepFda', () => {
 describe('StepFda on Linux', () => {
   beforeEach(() => {
     onTestFinished(withPlatform('linux'))
+    onTestFinished(withCapabilities())
     closeWizard()
     resetForTesting()
     openWizard('first-launch')

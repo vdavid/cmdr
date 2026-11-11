@@ -3,11 +3,12 @@
 Depth behind `CLAUDE.md`. The launch table, the per-app recipes, why there's no window-vs-tab control, and what was
 deferred are `src-tauri/src/file_system/DETAILS.md` § "Open terminal here (`terminal.rs`)".
 
-The whole feature is macOS-only, and the gating is per surface rather than one flag: the palette entry and the shortcut
-come from `isMacOS()` in `commands/sources/file-list.ts`, the menu item from the Rust side, and the Settings Terminal
-card from `isMacOS()` in `settings/sections/NavigationAndFileOpsSection.svelte`, with `macOSOnly` on the setting so
-search agrees. Bundle ids and launch recipes are a macOS vocabulary, and Linux has no default terminal either, so a
-Linux build would bring its own table rather than reuse this one.
+The whole feature sits behind the `openTerminalHere` capability (macOS today), asked per surface: the palette entry and
+the shortcut come from `hasCapability` in `commands/sources/file-list.ts`, the F9 slot from `FunctionKeyBar.svelte`, the
+menu item from the Rust side, and the Settings Terminal card from
+`settings/sections/NavigationAndFileOpsSection.svelte`, with `needsCapability` on the setting so search agrees. Bundle
+ids and launch recipes are a macOS vocabulary, and Linux has no default terminal either, so a Linux build would bring
+its own table rather than reuse this one.
 
 ## What "here" means
 

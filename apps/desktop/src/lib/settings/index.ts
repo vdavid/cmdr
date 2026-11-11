@@ -36,7 +36,13 @@ export {
 } from './types'
 
 // Registry
-export { buildSectionTree, getAdvancedSettings, getDefaultValue, getSettingDefinition } from './settings-registry'
+export {
+  buildSectionTree,
+  getAdvancedSettings,
+  getDefaultValue,
+  getSettingDefinition,
+  settingRendersHere,
+} from './settings-registry'
 
 export type { SettingsSection } from './settings-registry'
 

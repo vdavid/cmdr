@@ -72,8 +72,10 @@ All under `apps/desktop/src/lib/`.
 - `shortcuts/`: Keyboard shortcut customization, scope hierarchy, conflict detection, plus the read-only Help > Keyboard
   shortcuts window (`shortcuts-window.ts` + `ShortcutsList.svelte` + pure `shortcut-diff.ts`, route at
   `routes/shortcuts/`)
-- `platform/`: Which OS the window runs on (`macos` / `linux` / `windows`), injected by the backend before any script
-  runs; `data-platform` on `<html>`, and `withPlatform()` for tests. See `apps/desktop/src/lib/platform/CLAUDE.md`
+- `platform/`: Which OS the window runs on (`macos` / `linux` / `windows`) and what it offers (`hasCapability`, typed
+  from Rust's `PlatformCapabilities`), injected by the backend before any script runs; `data-platform` and
+  `data-overlay-title-bar` on `<html>`, and `withPlatform()` / `withCapabilities()` for tests. See
+  `apps/desktop/src/lib/platform/CLAUDE.md`
 - `ipc/`: Auto-generated `tauri-specta` bindings (`bindings.ts`). Don't edit by hand; call through `tauri-commands/`
 - `tauri-commands/`: Typed TypeScript wrappers around `ipc/bindings.ts`. Canonical import path for backend IPC
 - `command-palette/`: Fuzzy command search (~77 palette-visible commands)

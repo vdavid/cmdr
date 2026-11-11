@@ -7,6 +7,7 @@
  * `#lib/nudges/nudge-ledger.test.ts`; these rows are the Dock's own.
  */
 
+import { capabilitiesWith } from '#lib/platform/test-platform.js'
 import { describe, it, expect } from 'vitest'
 import type { DockPinState } from '#lib/ipc/bindings.js'
 import { emptyNudgeLedger } from '#lib/nudges/nudge-ledger.js'
@@ -22,7 +23,7 @@ function daysAgo(days: number): string {
 /** A settled Mac on its fourth day, with room in the Dock: the one case that speaks up. */
 const ready: DockNudgeInputs = {
   automatedRun: false,
-  onMacOs: true,
+  capabilities: capabilitiesWith('dockPin'),
   onboarded: true,
   onboardingShowing: false,
   ledger: emptyNudgeLedger(),
@@ -83,7 +84,7 @@ describe('shouldShowDockNudge', () => {
   })
 
   it('stays quiet off macOS, where there is no Dock to be in', () => {
-    expect(shouldShowDockNudge({ ...ready, onMacOs: false })).toBe(false)
+    expect(shouldShowDockNudge({ ...ready, capabilities: capabilitiesWith() })).toBe(false)
   })
 
   it('waits for onboarding to be finished', () => {
