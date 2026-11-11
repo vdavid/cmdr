@@ -294,9 +294,13 @@ func modulePathPrefix(srcDir, path string) (string, bool) {
 
 // findMacOSOnlyModules returns the names of `mod x;` declarations gated on macOS and
 // nothing else, leaving out one that a second declaration of the same name stands in for
-// off macOS: a `#[cfg(not(target_os = "macos"))] #[path = "…"] mod x;`, or one arm per OS
+// on Linux: a `#[cfg(not(target_os = "macos"))] #[path = "…"] mod x;`, or one arm per OS
 // (`#[cfg(target_os = "linux")] #[path = "mount_linux.rs"] mod mount;`). Either way the name
 // exists in the Linux lane too.
+//
+// The twin has to REACH Linux. A `#[cfg(target_os = "windows")] mod x;` beside the macOS one
+// leaves the Linux lane without the name, and reading it as a stand-in would hide exactly the
+// ungated `use crate::x` this check exists to catch.
 func findMacOSOnlyModules(lines []string) []string {
 	var gated []string
 	standIns := map[string]bool{}
@@ -305,16 +309,18 @@ func findMacOSOnlyModules(lines []string) []string {
 		if matches == nil {
 			continue
 		}
-		macOSOnly := false
+		macOSOnly, reachesLinux := false, true
 		for _, attrText := range directAttributesAbove(lines, i) {
 			if isExclusivelyMacOSGateAttribute(attrText) {
 				macOSOnly = true
-				break
+			}
+			if !gateReachesLinux(attrText) {
+				reachesLinux = false
 			}
 		}
 		if macOSOnly {
 			gated = append(gated, matches[1])
-		} else {
+		} else if reachesLinux {
 			standIns[matches[1]] = true
 		}
 	}
@@ -325,6 +331,77 @@ func findMacOSOnlyModules(lines []string) []string {
 		}
 	}
 	return result
+}
+
+// cfgAttrBodyPattern captures the predicate of a `#[cfg(...)]` attribute. A `cfg_attr` or a
+// `#[path]` gates nothing, so neither matches.
+var cfgAttrBodyPattern = regexp.MustCompile(`(?s)^\s*#\[\s*cfg\s*\((.*)\)\s*\]\s*$`)
+
+// gateReachesLinux reports whether an attribute lets the item under it into a Linux build.
+// Anything that isn't a `cfg`, and any predicate the parser can't read whole, counts as
+// reaching: only a predicate that is provably false on Linux rules a twin out.
+func gateReachesLinux(attrText string) bool {
+	m := cfgAttrBodyPattern.FindStringSubmatch(attrText)
+	if m == nil {
+		return true
+	}
+	node := parseCfgPredicate(m[1])
+	return node == nil || node.onLinux() != cfgFalse
+}
+
+// cfgTruth is what a cfg predicate comes to on one target: decided either way, or left open
+// by a leaf the target doesn't settle (`test`, `feature = "x"`, `debug_assertions`).
+type cfgTruth int
+
+const (
+	cfgFalse cfgTruth = iota
+	cfgOpen
+	cfgTrue
+)
+
+// onLinux evaluates a predicate for the Linux lane, the same target `cfg(unix)` reaches in
+// the manifest half of this check (`extractMacOSCrateModules`).
+func (n *cfgNode) onLinux() cfgTruth {
+	if n.isCombinator() {
+		return n.combineOnLinux()
+	}
+	value := strings.Trim(n.value, `"`)
+	decided := func(holds bool) cfgTruth {
+		if holds {
+			return cfgTrue
+		}
+		return cfgFalse
+	}
+	switch {
+	case !n.hasValue && n.name == "unix":
+		return cfgTrue
+	case !n.hasValue && n.name == "windows":
+		return cfgFalse
+	case n.hasValue && n.name == "target_os":
+		return decided(value == "linux")
+	case n.hasValue && n.name == "target_family":
+		return decided(value == "unix")
+	case n.hasValue && n.name == "target_vendor" && value == "apple":
+		return cfgFalse
+	}
+	return cfgOpen
+}
+
+// combineOnLinux folds an `all` / `any` / `not` over its children's verdicts.
+func (n *cfgNode) combineOnLinux() cfgTruth {
+	lowest, highest := cfgTrue, cfgFalse
+	for _, c := range n.children {
+		t := c.onLinux()
+		lowest, highest = min(lowest, t), max(highest, t)
+	}
+	switch n.name {
+	case "all":
+		return lowest
+	case "any":
+		return highest
+	}
+	// `not` takes one child, so lowest == highest; an open leaf stays open.
+	return cfgTrue - lowest
 }
 
 // isExclusivelyMacOSGateAttribute reports whether an attribute gates on macOS and on no

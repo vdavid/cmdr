@@ -249,6 +249,82 @@ pub mod mount;
 	}
 }
 
+// A twin that never reaches Linux hides nothing: with the name declared for macOS and for
+// Windows only, the Linux lane has no `crate::mount`, and an ungated import of it breaks there.
+func TestRunCfgGate_FlagsAMacOSModuleWhoseOnlyTwinIsWindows(t *testing.T) {
+	root := writeCfgGateModuleWorkspace(t, "use crate::mount::MountError;\n\nfn main() {}\n")
+	appSrc := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
+	mustWrite(t, filepath.Join(appSrc, "lib.rs"), `mod commands;
+#[cfg(target_os = "macos")]
+#[path = "mount.rs"]
+pub mod mount;
+#[cfg(target_os = "windows")]
+#[path = "mount_windows.rs"]
+pub mod mount;
+`)
+	mustWrite(t, filepath.Join(appSrc, "mount.rs"), "pub struct MountError;\n")
+	mustWrite(t, filepath.Join(appSrc, "mount_windows.rs"), "pub struct MountError;\n")
+
+	_, err := RunCfgGate(&CheckContext{RootDir: root})
+	if err == nil || !strings.Contains(err.Error(), "crate::mount") {
+		t.Fatalf("a module with only a Windows twin is absent on Linux, expected it flagged, got: %v", err)
+	}
+}
+
+// One arm per OS, all three: the Linux arm is what keeps the name alive in the Linux lane,
+// whatever sits beside it.
+func TestRunCfgGate_IgnoresAMacOSModuleWithLinuxAndWindowsTwins(t *testing.T) {
+	root := writeCfgGateModuleWorkspace(t, "use crate::mount::MountError;\n\nfn main() {}\n")
+	appSrc := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
+	mustWrite(t, filepath.Join(appSrc, "lib.rs"), `mod commands;
+#[cfg(target_os = "macos")]
+#[path = "mount.rs"]
+pub mod mount;
+#[cfg(target_os = "windows")]
+#[path = "mount_windows.rs"]
+pub mod mount;
+#[cfg(target_os = "linux")]
+#[path = "mount_linux.rs"]
+pub mod mount;
+`)
+	for _, f := range []string{"mount.rs", "mount_windows.rs", "mount_linux.rs"} {
+		mustWrite(t, filepath.Join(appSrc, f), "pub struct MountError;\n")
+	}
+
+	if _, err := RunCfgGate(&CheckContext{RootDir: root}); err != nil {
+		t.Fatalf("a module with a Linux arm among its per-OS twins exists on Linux, got: %v", err)
+	}
+}
+
+func TestGateReachesLinux(t *testing.T) {
+	cases := []struct {
+		attr string
+		want bool
+	}{
+		{`#[cfg(target_os = "linux")]`, true},
+		{`#[cfg(not(target_os = "macos"))]`, true},
+		{`#[cfg(unix)]`, true},
+		{`#[cfg(target_family = "unix")]`, true},
+		{`#[cfg(any(target_os = "windows", target_os = "linux"))]`, true},
+		{`#[cfg(all(unix, not(target_os = "macos")))]`, true},
+		{`#[cfg(feature = "smb")]`, true},
+		{`#[cfg(all(test, target_os = "linux"))]`, true},
+		{`#[path = "mount_linux.rs"]`, true},
+		{`#[cfg(target_os = "windows")]`, false},
+		{`#[cfg(windows)]`, false},
+		{`#[cfg(target_os = "macos")]`, false},
+		{`#[cfg(not(unix))]`, false},
+		{`#[cfg(all(test, target_os = "windows"))]`, false},
+		{`#[cfg(any(target_os = "windows", target_os = "ios"))]`, false},
+		{`#[cfg(target_vendor = "apple")]`, false},
+	}
+	for _, c := range cases {
+		if got := gateReachesLinux(c.attr); got != c.want {
+			t.Errorf("gateReachesLinux(%q) = %v, want %v", c.attr, got, c.want)
+		}
+	}
+}
+
 func TestMacOSOnlyModulePaths_NestedModule(t *testing.T) {
 	srcDir := t.TempDir()
 	mustWrite(t, filepath.Join(srcDir, "lib.rs"), "#[cfg(any(target_os = \"macos\", target_os = \"linux\"))]\nmod mtp;\n")
