@@ -15700,6 +15700,55 @@ export type PhaseRecord = {
   stats: [string, string][]
 }
 
+/**
+ *  One flag per OS-provided feature the UI shows or hides. `true` means the backend can do it on
+ *  this OS, so the surface for it exists; `false` means it hides on purpose, never by accident.
+ *
+ *  Named after the UI that asks. A new field is a compile error in every arm until each OS
+ *  answers it, and in the browser demo's table (`lib/demo/platform.ts`) through the generated
+ *  TS type.
+ */
+export type PlatformCapabilities = {
+  // Quick Look previews of the cursor file (`file.quickLook`).
+  quickLook: boolean
+  // The OS's own Get Info panel for a file (`file.getInfo`).
+  getInfo: boolean
+  // "Open terminal here": the known-terminals table, the F9 slot, and the Terminal settings card.
+  openTerminalHere: boolean
+  // Picking the app F4 opens files in (the Text editor settings card and its first-use hint).
+  textEditorChoice: boolean
+  /**
+   *  Cloud-file actions on synced folders: keep offline, remove download, and the Google Drive
+   *  items.
+   */
+  cloudFileActions: boolean
+  // The system's color tags on files (`tags.toggle*`).
+  colorTags: boolean
+  // The app menu's Services submenu, fed with the focused pane's selection.
+  servicesMenu: boolean
+  /**
+   *  A Full Disk Access permission the user can grant: the onboarding step, the status badge,
+   *  and every "open System Settings" offer.
+   */
+  fullDiskAccess: boolean
+  // Cmdr's Finder extension (the settings card and its nudge).
+  finderExtension: boolean
+  // Cmdr can answer other apps' "Show in Finder" (the settings card, its nudge and notice).
+  revealHandler: boolean
+  // The offer to keep Cmdr in the Dock.
+  dockPin: boolean
+  // Installing the `cmdr` terminal command (`app.toggleCliCommand`).
+  cliCommand: boolean
+  /**
+   *  The window's title bar is drawn by the page, under the OS's window buttons, so the page
+   *  leaves room for them (`--titlebar-height`). Where `false`, the OS draws the title bar
+   *  outside the webview.
+   */
+  overlayTitleBar: boolean
+  // An image engine for OCR and tags, so the Image indexing settings exist.
+  imageIndexing: boolean
+}
+
 export type PrepareResult = {
   ready: boolean
   entryCount: number

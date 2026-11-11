@@ -27,7 +27,7 @@
     } from '#lib/tauri-commands/index.js'
     import { boundShortcuts } from '#lib/shortcuts/index.js'
     import { tString } from '#lib/intl/messages.svelte.js'
-    import { isMacOS } from '#lib/platform/index.js'
+    import { hasCapability } from '#lib/platform/index.js'
     import Button from '#lib/ui/Button.svelte'
     import Icon from '#lib/ui/Icon.svelte'
     import QueueRow from '#lib/file-operations/queue/QueueRow.svelte'
@@ -526,9 +526,9 @@
     <!-- The title sits on the traffic lights' line, centered like a native window
          title (the main window's title bar does the same), and the whole strip
          drags the window. The text carries the attribute too: Tauri reads it off
-         the element under the cursor. macOS only, as in the main window: elsewhere
+         the element under the cursor. Only under an overlay title bar (`overlayTitleBar`), as in the main window: elsewhere
          the OS draws the title bar, with the window's title in it. -->
-    {#if isMacOS()}
+    {#if hasCapability('overlayTitleBar')}
         <div class="title-bar" data-tauri-drag-region>
             <span class="title" data-tauri-drag-region aria-hidden="true">{tString('queue.heading')}</span>
         </div>

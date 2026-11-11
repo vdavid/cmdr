@@ -30,7 +30,7 @@ export const REVEAL_HANDLER_ANCHOR_ID = 'settings-reveal-handler'
  * ❗ `settings-window` is imported LAZILY, ❌ never statically. `RevealHandlerCard`
  * imports the anchor id above at module scope, and a static import would drag
  * the command registry into the card's module graph — where `file-list.ts` calls
- * `isMacOS()` at eval time and blows up under a test that mocks it. Same reason
+ * `isMacOS()` and `hasCapability()` at eval time and blows up under a test that mocks them. Same reason
  * `ShortcutChip` reaches for `openShortcutCustomization` this way.
  *
  * Swallows a failure into a log line: a window that won't open is not worth

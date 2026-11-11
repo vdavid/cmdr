@@ -16,9 +16,9 @@
   same height: backdrops start exactly below the toolbar, keeping the OS
   window-drag region live while a dialog is open. This is the single source of
   truth for the viewer's bar height — `ViewerToolbar` sizes itself to it.
-  `display: contents` sets the var without adding a layout box. macOS only: off
-  it the OS draws the title bar, the toolbar is plain content, and a backdrop
-  covers it like the rest of the window (`app.css` § Window chrome off macOS).
+  `display: contents` sets the var without adding a layout box. Only under an
+  overlay title bar: elsewhere the OS draws the title bar, the toolbar is plain content, and a backdrop
+  covers it like the rest of the window (`app.css` § Window chrome without an overlay title bar).
 -->
 <div class="viewer-window-root">
     <slot />
@@ -30,7 +30,7 @@
         display: contents;
     }
 
-    :global(:root[data-platform='macos']) .viewer-window-root {
+    :global(:root[data-overlay-title-bar]) .viewer-window-root {
         --titlebar-height: 35px;
     }
 </style>

@@ -358,7 +358,7 @@ export const advancedSettings: SettingDefinitionSource[] = [
     type: 'boolean',
     default: false,
     component: 'switch',
-    macOSOnly: true,
+    needsCapability: 'textEditorChoice',
   },
   {
     // The toast after the first "Open terminal here", naming the app that
@@ -372,7 +372,7 @@ export const advancedSettings: SettingDefinitionSource[] = [
     type: 'boolean',
     default: false,
     component: 'switch',
-    macOSOnly: true,
+    needsCapability: 'openTerminalHere',
   },
   {
     // The notice the first time a "Show in Finder" from another app lands in
@@ -388,7 +388,7 @@ export const advancedSettings: SettingDefinitionSource[] = [
     type: 'boolean',
     default: false,
     component: 'switch',
-    macOSOnly: true,
+    needsCapability: 'revealHandler',
   },
   {
     id: 'fileExplorer.tabs.closedTabHistorySize',

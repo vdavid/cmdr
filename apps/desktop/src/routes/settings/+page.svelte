@@ -7,7 +7,6 @@
     import SettingsContent from '#lib/settings/components/SettingsContent.svelte'
     import { flushSettingsChanges, forceSave as forceSettingsSave } from '#lib/settings/index.js'
     import { initWindowSettings, initWindowLanguageSync } from '#lib/settings/window-settings.js'
-    import { initAppMode } from '#lib/app-mode.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '#lib/shortcuts/index.js'
     import { initAccentColor, cleanupAccentColor } from '#lib/accent-color.js'
@@ -261,15 +260,8 @@
 
         try {
             // Initialize settings (store + reactive layer) and the shortcuts store
-            // The app mode settles here too: the sidebar and search read it before they render
-            // (`imageIndexingAvailable()`: the Linux E2E build's fake image engine keeps the
-            // Image indexing page there).
             log.debug('Calling initWindowSettings() and initializeShortcuts()')
-            // An unknown mode reads as a plain run, so it mustn't hold the window back.
-            const appModeSettled = initAppMode().catch((error: unknown) => {
-                log.warn('App mode unknown, reading it as a plain run: {error}', { error })
-            })
-            await Promise.all([initWindowSettings(), initializeShortcuts(), appModeSettled])
+            await Promise.all([initWindowSettings(), initializeShortcuts()])
             log.debug('Settings and shortcuts initialization complete')
 
             await installE2eFlushHook()

@@ -33,7 +33,7 @@ import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
 import { w, type FriendlyErrorMessage } from './transfer-error-catalog'
 import { volumeGoneMessage } from './transfer-error-volume-gone'
 import { formatInteger } from '#lib/intl/number-format.js'
-import { isMacOS } from '#lib/platform/index.js'
+import { hasCapability, isMacOS } from '#lib/platform/index.js'
 import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
 import { colorizeSize } from '#lib/file-explorer/selection/selection-info-utils.js'
 import { escapeHtml } from '#lib/tooltip/tooltip.js'
@@ -552,7 +552,8 @@ function trashRefusedMessage(error: Extract<WriteOperationError, { type: 'trash_
   // Access when their real problem is a file that lives on Dropbox's servers is a
   // wrong answer they'd act on. The backend reads the flag at the refusal
   // (`delete/cloud_trash.rs`).
-  const offerGrant = isMacOS() && fdaIsMissing() && !error.onlineOnly && mayBeAPermissionGrantAway(error.reason)
+  const offerGrant =
+    hasCapability('fullDiskAccess') && fdaIsMissing() && !error.onlineOnly && mayBeAPermissionGrantAway(error.reason)
   return {
     title: w('trashRefused.title'),
     message: trashRefusedCountSentence(error.reason, error.itemCount),

@@ -8,6 +8,8 @@
  * the free prefix they share); the ledger's settings I/O is `nudge-store.ts`.
  */
 
+import type { Capability, PlatformCapabilities } from '#lib/platform/index.js'
+
 /**
  * When an offer was made, as an ISO 8601 instant, or `''` when it never was.
  *
@@ -19,6 +21,13 @@ export type NudgeOfferedAt = string
 
 /** Every offer that participates in the shared floor. */
 export type NudgeKind = 'dockPin' | 'reveal' | 'finderExtension'
+
+/** The capability each offer is about: where the OS lacks it, there's nothing to offer. */
+export const NUDGE_CAPABILITY: Record<NudgeKind, Capability> = {
+  dockPin: 'dockPin',
+  reveal: 'revealHandler',
+  finderExtension: 'finderExtension',
+}
 
 /** When each offer was last made. One entry per {@link NudgeKind}, always present. */
 export type NudgeLedger = Record<NudgeKind, NudgeOfferedAt>
@@ -69,8 +78,11 @@ export function nudgeCooldownActive(ledger: NudgeLedger, now: Date): boolean {
 export interface NudgeContext {
   /** `isE2eRun()`: a Playwright shard or the screenshot capture pass. */
   automatedRun: boolean
-  /** Whether this is a Mac at all. Every nudge here is about a macOS-only affordance. */
-  onMacOs: boolean
+  /**
+   * What this OS offers (`platformCapabilities()`). Every nudge here is about an OS-provided
+   * affordance, so each kind fires only where its capability ({@link NUDGE_CAPABILITY}) holds.
+   */
+  capabilities: PlatformCapabilities
   /** `onboarding.completed`. */
   onboarded: boolean
   /** Whether the onboarding wizard is on screen right now. */
@@ -90,7 +102,7 @@ export interface NudgeContext {
  */
 export function nudgeCouldFire(ctx: NudgeContext, kind: NudgeKind): boolean {
   if (ctx.automatedRun) return false
-  if (!ctx.onMacOs) return false
+  if (!ctx.capabilities[NUDGE_CAPABILITY[kind]]) return false
   if (!ctx.onboarded) return false
   if (ctx.onboardingShowing) return false
   if (wasOffered(ctx.ledger[kind])) return false

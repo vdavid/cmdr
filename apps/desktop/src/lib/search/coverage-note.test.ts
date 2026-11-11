@@ -205,7 +205,7 @@ describe('offersFullDiskAccess', () => {
     expect(offersFullDiskAccess({ note: note({ offLimits: ['/private/var/root'] }), ...onMacWithout })).toBe(false)
   })
 
-  const onMacWithout = { isMac: true, hasFullDiskAccess: false }
+  const onMacWithout = { offersFda: true, hasFullDiskAccess: false }
 
   it('offers the route when a folder was refused and Cmdr lacks the permission', () => {
     expect(offersFullDiskAccess({ note: note({ permissionDenied: ['/Users/me/Documents'] }), ...onMacWithout })).toBe(
@@ -226,7 +226,7 @@ describe('offersFullDiskAccess', () => {
     expect(
       offersFullDiskAccess({
         note: note({ permissionDenied: ['/Users/other/Documents'] }),
-        isMac: true,
+        offersFda: true,
         hasFullDiskAccess: true,
       }),
     ).toBe(false)
@@ -236,7 +236,7 @@ describe('offersFullDiskAccess', () => {
     expect(
       offersFullDiskAccess({
         note: note({ permissionDenied: ['/home/other'] }),
-        isMac: false,
+        offersFda: false,
         hasFullDiskAccess: false,
       }),
     ).toBe(false)

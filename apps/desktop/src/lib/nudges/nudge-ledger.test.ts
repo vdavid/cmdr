@@ -6,6 +6,7 @@
  * on the wrong launch can't be taken back.
  */
 
+import { capabilitiesWith } from '#lib/platform/test-platform.js'
 import { describe, it, expect } from 'vitest'
 import {
   NUDGE_COOLDOWN_DAYS,
@@ -26,7 +27,7 @@ function daysAgo(days: number): string {
 /** A settled Mac that has never been nudged: the one case that speaks up. */
 const ready: NudgeContext = {
   automatedRun: false,
-  onMacOs: true,
+  capabilities: capabilitiesWith('dockPin', 'revealHandler', 'finderExtension'),
   onboarded: true,
   onboardingShowing: false,
   ledger: emptyNudgeLedger(),
@@ -96,11 +97,18 @@ describe('nudgeCouldFire', () => {
 
   it.each([
     ['an automated run', { automatedRun: true }],
-    ['a machine with no Dock and no NSFileViewer', { onMacOs: false }],
+    ['a machine with no Dock and no NSFileViewer', { capabilities: capabilitiesWith() }],
     ['onboarding still unfinished', { onboarded: false }],
     ['the wizard on screen', { onboardingShowing: true }],
   ] as const)('turns around on %s, before any IPC is paid for', (_case, override) => {
     expect(nudgeCouldFire({ ...ready, ...override }, 'reveal')).toBe(false)
+  })
+
+  it('asks each offer only where the OS has what that offer is about', () => {
+    const onlyDock = { ...ready, capabilities: capabilitiesWith('dockPin') }
+    expect(nudgeCouldFire(onlyDock, 'dockPin')).toBe(true)
+    expect(nudgeCouldFire(onlyDock, 'reveal')).toBe(false)
+    expect(nudgeCouldFire(onlyDock, 'finderExtension')).toBe(false)
   })
 
   it('never asks the same thing twice', () => {

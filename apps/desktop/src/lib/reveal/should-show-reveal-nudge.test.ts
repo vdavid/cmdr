@@ -6,6 +6,7 @@
  * holder are the important half of this file.
  */
 
+import { capabilitiesWith } from '#lib/platform/test-platform.js'
 import { describe, it, expect } from 'vitest'
 import type { RevealHandlerState, RevealHandlerStatus } from '#lib/ipc/bindings.js'
 import { emptyNudgeLedger } from '#lib/nudges/nudge-ledger.js'
@@ -21,7 +22,7 @@ function daysAgo(days: number): string {
 /** A settled Mac on its second day, with nobody holding the key: the one case that speaks up. */
 const ready: RevealNudgeInputs = {
   automatedRun: false,
-  onMacOs: true,
+  capabilities: capabilitiesWith('revealHandler'),
   onboarded: true,
   onboardingShowing: false,
   ledger: emptyNudgeLedger(),
@@ -111,7 +112,7 @@ describe('shouldShowRevealNudge', () => {
   })
 
   it('stays quiet off macOS, where there is no NSFileViewer to hold', () => {
-    expect(shouldShowRevealNudge({ ...ready, onMacOs: false })).toBe(false)
+    expect(shouldShowRevealNudge({ ...ready, capabilities: capabilitiesWith() })).toBe(false)
   })
 
   it('waits for onboarding to be finished', () => {

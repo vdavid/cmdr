@@ -26,7 +26,7 @@ import { runWhatsNewStartupTrigger } from '#lib/whats-new/whats-new-trigger.svel
 import { forceSave, getSetting, setSetting } from '#lib/settings/index.js'
 import { isE2eRun } from '#lib/app-mode.js'
 import { notifyOnboardingComplete } from '#lib/updates/updater.svelte.js'
-import { isMacOS } from '#lib/platform/index.js'
+import { isMacOS, platformCapabilities } from '#lib/platform/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { getAppLogger } from '#lib/logging/logger.js'
@@ -243,7 +243,7 @@ export async function maybeShowOldMacosNotice(ctx: StartupGatesContext): Promise
 function nudgeContext(ctx: StartupGatesContext): NudgeContext {
   return {
     automatedRun: isE2eRun(),
-    onMacOs: isMacOS(),
+    capabilities: platformCapabilities(),
     onboarded: getSetting('onboarding.completed'),
     onboardingShowing: ctx.isOnboardingVisible(),
     ledger: readNudgeLedger(),

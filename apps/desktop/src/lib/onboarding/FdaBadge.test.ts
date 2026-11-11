@@ -3,7 +3,7 @@
  * label on a machine that's fine, or silence on the machine that needs the hint.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { mount, tick, unmount } from 'svelte'
 
 const { checkFullDiskAccessQuiet } = vi.hoisted(() => ({
@@ -13,7 +13,7 @@ const { checkFullDiskAccessQuiet } = vi.hoisted(() => ({
 vi.mock('#lib/tauri-commands/index.js', () => ({
   checkFullDiskAccessQuiet: () => checkFullDiskAccessQuiet(),
 }))
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+vi.hoisted(() => vi.stubGlobal('__CMDR_CAPABILITIES__', { fullDiskAccess: true }))
 
 import { markDialogOpen, markDialogClosed, _resetOpenDialogsForTesting } from '#lib/ui/open-dialogs.svelte.js'
 import { refreshFdaStatus, _resetFdaStatusForTests } from './fda-status.svelte'
@@ -42,7 +42,7 @@ describe('FdaBadge', () => {
     _resetFdaStatusForTests()
     _resetOpenDialogsForTesting()
     resetForTesting()
-    withPlatform('macos')
+    withCapabilities('fullDiskAccess')
     checkFullDiskAccessQuiet.mockResolvedValue(false)
   })
 
@@ -74,8 +74,8 @@ describe('FdaBadge', () => {
     expect(target.querySelector('.fda-badge')).toBeNull()
   })
 
-  it('stays hidden off macOS, where the permission does not exist', async () => {
-    withPlatform('linux')
+  it('stays hidden where the OS has no such permission', async () => {
+    withCapabilities()
     await refreshFdaStatus()
     const target = await renderBadge()
     expect(target.querySelector('.fda-badge')).toBeNull()

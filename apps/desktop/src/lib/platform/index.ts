@@ -1,11 +1,15 @@
 /**
- * Which OS this window runs on, as the backend says, read synchronously.
+ * Which OS this window runs on, and what that OS lets Cmdr offer, as the backend says, read
+ * synchronously.
  *
- * The backend injects it into every webview before any script runs (`tauri_builder.rs`'s
- * `platform_plugin`), so a module may read it at load time. A context with no backend to ask (a
- * plain browser, Vitest) gets {@link FALLBACK_PLATFORM}. Mechanics and the browser demo's answer:
- * `DETAILS.md`.
+ * The backend injects both into every webview before any script runs (the Rust `platform`
+ * module's `frontend.rs`), so a module may read them at load time. A context with no backend to
+ * ask (a plain browser, Vitest) gets {@link FALLBACK_PLATFORM} and {@link NO_CAPABILITIES}.
+ * Mechanics and the browser demo's answer: `DETAILS.md`.
  */
+import type { PlatformCapabilities } from '#lib/ipc/bindings.js'
+
+export type { PlatformCapabilities }
 
 export type Platform = 'macos' | 'linux' | 'windows'
 
@@ -29,10 +33,60 @@ export function isMacOS(): boolean {
   return getPlatform() === 'macos'
 }
 
+/** One thing this OS lets Cmdr offer, named after the UI that asks (`PlatformCapabilities`). */
+export type Capability = keyof PlatformCapabilities
+
+/** The global the backend's init script defines beside the platform. Tests set it via `withCapabilities()`. */
+export const CAPABILITIES_GLOBAL = '__CMDR_CAPABILITIES__'
+
 /**
- * Writes `data-platform` on `<html>`, so CSS can follow the platform (`app.css` § Window chrome).
- * Called once per window, before the first route renders (`hooks.client.ts`).
+ * What a context without a backend can offer: nothing. Like {@link FALLBACK_PLATFORM}, so no
+ * OS-backed surface shows where nothing can answer it.
  */
-export function applyPlatformAttribute(root: HTMLElement = document.documentElement): void {
+export const NO_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({
+  quickLook: false,
+  getInfo: false,
+  openTerminalHere: false,
+  textEditorChoice: false,
+  cloudFileActions: false,
+  colorTags: false,
+  servicesMenu: false,
+  fullDiskAccess: false,
+  finderExtension: false,
+  revealHandler: false,
+  dockPin: false,
+  cliCommand: false,
+  overlayTitleBar: false,
+  imageIndexing: false,
+})
+
+/**
+ * What this OS lets Cmdr offer, as the backend says. Each flag reads `true` only where the injected
+ * value says exactly `true`, so a missing global or a missing field hides its surface.
+ */
+export function platformCapabilities(): PlatformCapabilities {
+  const injected = (globalThis as Record<string, unknown>)[CAPABILITIES_GLOBAL]
+  if (typeof injected !== 'object' || injected === null) return { ...NO_CAPABILITIES }
+  const answered = injected as Partial<Record<Capability, unknown>>
+  const capabilities = { ...NO_CAPABILITIES }
+  for (const capability of Object.keys(NO_CAPABILITIES) as Capability[]) {
+    capabilities[capability] = answered[capability] === true
+  }
+  return capabilities
+}
+
+/** Whether this OS lets Cmdr offer `capability`. Ask this, ❌ not `isMacOS()`, to show or hide a feature. */
+export function hasCapability(capability: Capability): boolean {
+  return platformCapabilities()[capability]
+}
+
+/**
+ * Writes `data-platform` on `<html>`, and `data-overlay-title-bar` where the page draws the title
+ * bar, so CSS can follow both (`app.css` § Window chrome). Called once per window, before the first
+ * route renders (`hooks.client.ts`).
+ */
+export function applyPlatformAttributes(root: HTMLElement = document.documentElement): void {
   root.dataset.platform = getPlatform()
+  if (hasCapability('overlayTitleBar')) root.dataset.overlayTitleBar = ''
+  else delete root.dataset.overlayTitleBar
 }

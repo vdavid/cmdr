@@ -21,7 +21,7 @@
  * cache/explicit-set start empty on each import.
  */
 import { describe, it, expect, vi, beforeAll, beforeEach, onTestFinished } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { getDefaultValue } from './settings-registry'
 import { SCHEMA_VERSION } from './settings-migrations'
 
@@ -561,10 +561,10 @@ describe('migration 8: a leftover plaintext OpenAI key is deleted', () => {
  * Migration 9 (#1001): before #943, a Linux install could turn image indexing on and the
  * test fake filled its `media.db`. Without an image engine the backend now purges those
  * stores, and the switch that would bring the page's badges and grid back goes too.
- * These run off macOS unless a test says otherwise.
+ * These run without the `imageIndexing` capability unless a test says otherwise.
  */
 describe('migration 9: image indexing turns off where there is no image engine', () => {
-  it('drops a stored "on" off macOS, so the switch reads off', async () => {
+  it('drops a stored "on" where there is no engine, so the switch reads off', async () => {
     disk.set('mediaIndex.enabled', true)
     disk.set('_schemaVersion', 8)
 
@@ -576,8 +576,8 @@ describe('migration 9: image indexing turns off where there is no image engine',
     expect(disk.get('_schemaVersion')).toBe(SCHEMA_VERSION)
   })
 
-  it('keeps it on a Mac, where the engine is real', async () => {
-    onTestFinished(withPlatform('macos'))
+  it('keeps it where the backend has an engine', async () => {
+    onTestFinished(withCapabilities('imageIndexing'))
     disk.set('mediaIndex.enabled', true)
     disk.set('_schemaVersion', 8)
 

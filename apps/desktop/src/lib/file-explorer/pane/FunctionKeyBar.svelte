@@ -6,7 +6,7 @@
         getFirstShiftShortcutReactive,
         getFirstShortcutReactive,
     } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
-    import { isMacOS } from '#lib/platform/index.js'
+    import { hasCapability } from '#lib/platform/index.js'
     import { toAriaKeyShortcut, toPlatformShortcut } from '#lib/shortcuts/key-capture.js'
     import { canOpenTerminalIn } from '#lib/open-terminal/terminal-target.js'
     import { fnKeyToCommand } from './function-key-commands'
@@ -60,11 +60,11 @@
     /** Source-side actions (copy/move/delete). The snapshot pane's rows are real files. */
     const canSourceOps = $derived(caps.canBeSource)
     /**
-     * "Open terminal here" is macOS-only, like its command, so the F9 slot exists only
+     * "Open terminal here" needs its capability, like its command, so the F9 slot exists only
      * there. Enabled by the same rule as the File menu item (`open-terminal/menu-gate`):
      * the VOLUME's kind, so an archive pane still reaches the folder holding it.
      */
-    const hasTerminalSlot = isMacOS()
+    const hasTerminalSlot = hasCapability('openTerminalHere')
     const canTerminal = $derived(canOpenTerminalIn(capabilitiesFor(activeTab.volumeId).kind))
 
     let shiftHeld = $state(false)

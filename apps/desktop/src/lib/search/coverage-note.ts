@@ -191,7 +191,7 @@ export function isTargetIndexReady(input: {
  *    a folder Cmdr declines to read on purpose. This is what the typed cause on
  *    the wire buys — the paths alone can't tell the two apart, and matching folder
  *    names to guess isn't an option.
- * 2. **macOS.** Full Disk Access doesn't exist anywhere else; a Linux refusal is
+ * 2. **An OS with the permission** (`fullDiskAccess`). It doesn't exist on Linux, where a refusal is
  *    ordinary file permissions, which Cmdr can't grant itself either.
  * 3. **Cmdr doesn't already have it.** With Full Disk Access on, a refusal is a
  *    folder that belongs to someone else on the machine, and offering the setup
@@ -202,12 +202,12 @@ export function isTargetIndexReady(input: {
  */
 export function offersFullDiskAccess(input: {
   note: CoverageNote | null
-  /** `false` on Linux, where there is no such permission. */
-  isMac: boolean
+  /** Whether the OS has the permission at all (the `fullDiskAccess` capability); `false` on Linux. */
+  offersFda: boolean
   /** What the side-effect-free TCC probe last said. */
   hasFullDiskAccess: boolean
 }): boolean {
-  if (!input.isMac || input.hasFullDiskAccess) return false
+  if (!input.offersFda || input.hasFullDiskAccess) return false
   return (input.note?.live?.permissionDenied.length ?? 0) > 0
 }
 

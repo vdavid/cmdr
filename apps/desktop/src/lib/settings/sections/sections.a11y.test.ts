@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { createRawSnippet, mount, tick, type ComponentProps } from 'svelte'
 import { computeAccessibleDescription } from 'dom-accessibility-api'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
@@ -540,7 +540,7 @@ describe('McpServerSection a11y', () => {
 })
 
 /**
- * Tier 3 a11y tests for `NavigationAndFileOpsSection.svelte`, on macOS so the Text
+ * Tier 3 a11y tests for `NavigationAndFileOpsSection.svelte`, with both capabilities so the Text
  * editor and Terminal cards render too.
  */
 describe('NavigationAndFileOpsSection a11y', () => {
@@ -552,7 +552,7 @@ describe('NavigationAndFileOpsSection a11y', () => {
     return undefined
   })
 
-  beforeEach(() => withPlatform('macos'))
+  beforeEach(() => withCapabilities('textEditorChoice', 'openTerminalHere'))
 
   it('default has no a11y violations', async () => {
     const target = container()

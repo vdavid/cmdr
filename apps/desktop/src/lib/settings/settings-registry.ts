@@ -25,8 +25,7 @@ import type {
 } from './types'
 import { SettingValidationError } from './types'
 import { tString } from '#lib/intl/messages.svelte.js'
-import { isMacOS } from '#lib/platform/index.js'
-import { imageIndexingAvailable } from '#lib/media-index/availability.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { appearanceSettings } from './definitions/appearance'
 import { behaviorSettings } from './definitions/behavior'
 import { indexingSettings } from './definitions/indexing'
@@ -275,14 +274,12 @@ export interface SettingsSection {
 }
 
 /**
- * Whether `setting` can render on this run: a `macOSOnly` one needs macOS, and a
- * `needsImageIndexing` one needs an image engine (`imageIndexingAvailable()`). The nav
- * tree and the search index both ask this, so a search hit never opens a missing page.
+ * Whether `setting` can render on this run: one with `needsCapability` needs this OS to
+ * offer it. The nav tree and the search index both ask this, so a search hit never opens a
+ * missing page.
  */
 export function settingRendersHere(setting: SettingDefinition): boolean {
-  if (setting.macOSOnly === true && !isMacOS()) return false
-  if (setting.needsImageIndexing === true && !imageIndexingAvailable()) return false
-  return true
+  return setting.needsCapability === undefined || hasCapability(setting.needsCapability)
 }
 
 /**

@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import type { RevealHandlerState, RevealHandlerStatus } from '#lib/ipc/bindings.js'
 
@@ -32,7 +32,10 @@ vi.mock('#lib/ipc/bindings.js', () => ({
 
 // Hoisted: the card imports settings search, whose import graph calls `isMacOS()`
 // while modules load.
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+vi.hoisted(() => {
+  vi.stubGlobal('__CMDR_PLATFORM__', 'macos')
+  vi.stubGlobal('__CMDR_CAPABILITIES__', { revealHandler: true })
+})
 
 import RevealHandlerCard from './RevealHandlerCard.svelte'
 
@@ -72,7 +75,7 @@ const HELD_BY_PATH_FINDER: RevealHandlerState = {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  withPlatform('macos')
+  withCapabilities('revealHandler')
   getRevealHandlerState.mockResolvedValue(unblocked({ kind: 'notRegistered' }))
 })
 
@@ -123,8 +126,8 @@ describe('when the card renders nothing at all', () => {
     expect(card(target)).toBeNull()
   })
 
-  it('does not even ask the backend when this is not a Mac', async () => {
-    withPlatform('linux')
+  it('does not even ask the backend where the OS has no reveal handler', async () => {
+    withCapabilities()
 
     const target = await mountCard()
 

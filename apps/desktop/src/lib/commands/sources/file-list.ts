@@ -5,7 +5,7 @@
  */
 import type { CommandSource } from '../types'
 import { getBadgeStatus } from '#lib/feature-status.js'
-import { isMacOS } from '#lib/platform/index.js'
+import { hasCapability, isMacOS } from '#lib/platform/index.js'
 import { sameKindCommandLabel } from '#lib/file-explorer/pane/same-kind-target.svelte.js'
 import { trashUndoCommandLabel } from '#lib/file-operations/delete/trash-undo.js'
 import { BLOCKED_BY_DIALOGS, IN_TEXT_INPUTS_ONLY } from '../while-dialog-open'
@@ -381,7 +381,7 @@ export const fileListCommands: CommandSource[] = [
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
-    // macOS only: the known-terminals table and its launch recipes are a macOS
+    // Behind `openTerminalHere`: the known-terminals table and its launch recipes are a macOS
     // vocabulary, and there's no Linux module behind the command yet.
     // F9 first: it's the F-key bar's slot, so the bar chip, the palette, and the
     // menu all show it. ⌘⌥T stays as a second binding, written Command-then-Option
@@ -389,8 +389,8 @@ export const fileListCommands: CommandSource[] = [
     id: 'file.openTerminalHere',
     nameKey: 'commands.fileOpenTerminalHere.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
-    shortcuts: isMacOS() ? ['F9', '⌘⌥T'] : [],
+    showInPalette: hasCapability('openTerminalHere'),
+    shortcuts: hasCapability('openTerminalHere') ? ['F9', '⌘⌥T'] : [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileOpenTerminalHere.description',
     keywords: ['terminal', 'shell', 'console', 'cd', 'iterm', 'ghostty', 'warp'],
@@ -456,19 +456,19 @@ export const fileListCommands: CommandSource[] = [
     id: 'file.getInfo',
     nameKey: isMacOS() ? 'commands.fileGetInfo.mac.label' : 'commands.fileGetInfo.other.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
-    shortcuts: isMacOS() ? ['⌘I'] : [],
+    showInPalette: hasCapability('getInfo'),
+    shortcuts: hasCapability('getInfo') ? ['⌘I'] : [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     id: 'file.quickLook',
     nameKey: isMacOS() ? 'commands.fileQuickLook.mac.label' : 'commands.fileQuickLook.other.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('quickLook'),
     // ⇧Space matches the menu accelerator. key-capture.ts maps `' '` → 'Space',
     // and registry shortcuts use that same `⇧Space` form (no separator) for the
     // Tier-1 dispatcher and the menu-accelerator sync to agree.
-    shortcuts: isMacOS() ? ['⇧Space'] : [],
+    shortcuts: hasCapability('quickLook') ? ['⇧Space'] : [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -487,7 +487,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'cloud.makeOffline',
     nameKey: 'commands.cloudMakeOffline.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('cloudFileActions'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cloudMakeOffline.description',
@@ -496,7 +496,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'cloud.removeDownload',
     nameKey: 'commands.cloudRemoveDownload.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('cloudFileActions'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cloudRemoveDownload.description',
@@ -505,7 +505,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'cloud.openInGoogleDrive',
     nameKey: 'commands.cloudOpenInGoogleDrive.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('cloudFileActions'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cloudOpenInGoogleDrive.description',
@@ -514,7 +514,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'cloud.copyGoogleDriveLink',
     nameKey: 'commands.cloudCopyGoogleDriveLink.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('cloudFileActions'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cloudCopyGoogleDriveLink.description',
@@ -523,7 +523,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'cloud.askGemini',
     nameKey: 'commands.cloudAskGemini.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('cloudFileActions'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cloudAskGemini.description',
@@ -547,7 +547,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'tags.toggleGrey',
     nameKey: 'commands.tagsToggleGrey.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('colorTags'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleGrey.description',
@@ -556,7 +556,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'tags.toggleGreen',
     nameKey: 'commands.tagsToggleGreen.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('colorTags'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleGreen.description',
@@ -565,7 +565,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'tags.togglePurple',
     nameKey: 'commands.tagsTogglePurple.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('colorTags'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsTogglePurple.description',
@@ -574,7 +574,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'tags.toggleBlue',
     nameKey: 'commands.tagsToggleBlue.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('colorTags'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleBlue.description',
@@ -583,7 +583,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'tags.toggleYellow',
     nameKey: 'commands.tagsToggleYellow.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('colorTags'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleYellow.description',
@@ -592,7 +592,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'tags.toggleRed',
     nameKey: 'commands.tagsToggleRed.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('colorTags'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleRed.description',
@@ -601,7 +601,7 @@ export const fileListCommands: CommandSource[] = [
     id: 'tags.toggleOrange',
     nameKey: 'commands.tagsToggleOrange.label',
     scope: 'Main window/File list',
-    showInPalette: isMacOS(),
+    showInPalette: hasCapability('colorTags'),
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleOrange.description',

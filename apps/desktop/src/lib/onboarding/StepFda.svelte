@@ -16,7 +16,7 @@
     import { getAppLogger } from '#lib/logging/logger.js'
     import { LogOnceGate } from '#lib/logging/log-once.js'
     import { systemStrings } from '#lib/system-strings.svelte.js'
-    import { isMacOS } from '#lib/platform/index.js'
+    import { hasCapability } from '#lib/platform/index.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import Trans from '#lib/intl/Trans.svelte'
     import type { Snippet } from 'svelte'
@@ -100,7 +100,7 @@
      * a denial, so polling it twice a second stays cheap and quiet.
      */
     $effect(() => {
-        if (!isMacOS()) return
+        if (!hasCapability('fullDiskAccess')) return
         if (onboardingState.step1Variant === 'already-granted') return
         if (onboardingState.step1Granted) return
 
@@ -193,9 +193,9 @@
         setCurrentStep(2)
     }
 
-    /** Linux skip safety net: the wizard's resume rule lands Linux on step 2, so this */
-    /** component shouldn't ever render on Linux. Guard returns nothing if it does. */
-    const renderable = isMacOS()
+    /** No-FDA safety net: without the permission the wizard's resume rule lands on step 2, so this */
+    /** component shouldn't ever render there. Guard returns nothing if it does. */
+    const renderable = hasCapability('fullDiskAccess')
 </script>
 
 {#snippet strong(children: Snippet)}<strong>{@render children()}</strong>{/snippet}

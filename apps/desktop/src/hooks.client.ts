@@ -18,11 +18,11 @@
 import '#lib/demo/boot.js'
 import type { HandleClientError } from '@sveltejs/kit/hooks'
 import { logPageCrash } from '#lib/logging/uncaught-errors.js'
-import { applyPlatformAttribute } from '#lib/platform/index.js'
+import { applyPlatformAttributes } from '#lib/platform/index.js'
 
-// Every window runs this before its first route renders, so CSS keyed on `data-platform` (the
+// Every window runs this before its first route renders, so CSS keyed on `data-overlay-title-bar` (the
 // title bar's height, `app.css` § Window chrome) is right from the first paint.
-applyPlatformAttribute()
+applyPlatformAttributes()
 
 export const handleError: HandleClientError = ({ kind, error, event }) => {
   // SvelteKit's own errors (a route that doesn't exist) aren't crashes, so they stay out of the log.

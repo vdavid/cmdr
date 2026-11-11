@@ -1,13 +1,16 @@
 /**
- * The F-key bar on macOS, where "Open terminal here" exists and takes the F9 slot.
- * Its own file because `isMacOS()` is read at module load (by the command registry
- * too), so the platform has to be set before either imports; the platform-neutral
+ * The F-key bar on macOS, where "Open terminal here" exists (`openTerminalHere`) and takes the F9 slot.
+ * Its own file because the platform and capabilities are read at module load (by the command registry
+ * too), so both have to be set before either imports; the platform-neutral
  * cases live in `FunctionKeyBar.test.ts`.
  */
 import { describe, it, expect, vi } from 'vitest'
 import { mount, flushSync } from 'svelte'
 
-vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
+vi.hoisted(() => {
+  vi.stubGlobal('__CMDR_PLATFORM__', 'macos')
+  vi.stubGlobal('__CMDR_CAPABILITIES__', { openTerminalHere: true })
+})
 vi.mock('@tauri-apps/plugin-store', () => ({
   load: vi.fn(() =>
     Promise.resolve({

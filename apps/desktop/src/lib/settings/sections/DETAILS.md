@@ -615,8 +615,9 @@ answer confirms it.
 **The `CHOOSE_APP_VALUE` sentinel is neither `system`, nor a bundle id, nor an absolute path**, the shapes Rust's
 `parse_choice` reads, so it couldn't be mistaken for a real choice even if a bug wrote it.
 
-**Both rows render on macOS only.** `NavigationAndFileOpsSection.svelte` gates both cards on `isMacOS()`, and both
-settings carry `macOSOnly`, so a search off macOS can't land on them (`../DETAILS.md` § Searchable rows).
+**Each row renders only where its capability holds** (`textEditorChoice`, `openTerminalHere`; macOS today).
+`NavigationAndFileOpsSection.svelte` gates each card on it, and each setting carries it as `needsCapability`, so a
+search elsewhere can't land on them (`../DETAILS.md` § Searchable rows).
 
 ### "Edit files in": the text editor row
 

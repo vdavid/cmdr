@@ -1,5 +1,29 @@
 //! The macOS arm of the platform-identity seam.
 
+use super::PlatformCapabilities;
+
+/// Everything: each surface was built on a macOS API (Quick Look, `NSWorkspace`, File Provider,
+/// TCC, the Finder Sync extension, LaunchServices, the overlay title bar of
+/// `tauri.macos.conf.json`, Vision and Core ML for images).
+pub(crate) fn capabilities() -> PlatformCapabilities {
+    PlatformCapabilities {
+        quick_look: true,
+        get_info: true,
+        open_terminal_here: true,
+        text_editor_choice: true,
+        cloud_file_actions: true,
+        color_tags: true,
+        services_menu: true,
+        full_disk_access: true,
+        finder_extension: true,
+        reveal_handler: true,
+        dock_pin: true,
+        cli_command: true,
+        overlay_title_bar: true,
+        image_indexing: true,
+    }
+}
+
 /// `macOS <version>` from `sw_vers -productVersion`, or `macOS (unknown version)`.
 pub(crate) fn os_version() -> String {
     if let Ok(output) = std::process::Command::new("sw_vers").arg("-productVersion").output() {

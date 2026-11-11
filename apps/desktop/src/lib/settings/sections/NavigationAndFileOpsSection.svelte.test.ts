@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import { clearSearchIndex } from '#lib/settings/settings-search.js'
 import NavigationAndFileOpsSection from './NavigationAndFileOpsSection.svelte'
@@ -35,7 +35,7 @@ vi.mock('#lib/settings/settings-store.js', () => ({
   onSettingChange: vi.fn(() => () => {}),
 }))
 
-// macOS by default; a test off macOS says so.
+// macOS by default (the platform at module load; the capabilities per test, below).
 vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 // The Text editor and Terminal rows ask the backend which apps are on this Mac on
@@ -77,8 +77,8 @@ function labelFors(target: HTMLElement): (string | null)[] {
 }
 
 beforeEach(() => {
-  withPlatform('macos')
-  // The index drops macOS-only settings off macOS, and it memoizes.
+  withCapabilities('textEditorChoice', 'openTerminalHere')
+  // The index drops capability-gated settings without their capability, and it memoizes.
   clearSearchIndex()
 })
 
@@ -89,8 +89,8 @@ describe('NavigationAndFileOpsSection', () => {
     target.remove()
   })
 
-  it('renders neither the Text editor nor the Terminal card off macOS', async () => {
-    withPlatform('linux')
+  it('renders neither the Text editor nor the Terminal card where the OS offers neither', async () => {
+    withCapabilities()
     const target = await mountSection()
     expect(cardLabels(target)).toEqual(['Navigation', 'File operations', 'Operation log'])
     const fors = labelFors(target)

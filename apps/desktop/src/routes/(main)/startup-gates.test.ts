@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities, withEveryCapability, withPlatform } from '#lib/platform/test-platform.js'
 import type { FullDiskAccessChoice } from '#lib/settings/index.js'
 
 const mocks = vi.hoisted(() => ({
@@ -161,6 +161,7 @@ beforeEach(() => {
     throw new Error(`Unexpected getSetting(${id})`)
   })
   withPlatform('macos')
+  withEveryCapability()
 })
 
 // `check_full_disk_access` answers a bare bool on every platform, so its wrapper rejects only when the IPC
@@ -495,9 +496,9 @@ describe('maybeOfferDockPin', () => {
     expect(mocks.offerDockPin).not.toHaveBeenCalled()
   })
 
-  it('never asks the backend anything off macOS', async () => {
+  it('never asks the backend anything where the OS has nothing to offer', async () => {
     settings('allow', true)
-    withPlatform('linux')
+    withCapabilities()
 
     await maybeOfferDockPin(ctx)
 
@@ -574,9 +575,9 @@ describe('maybeOfferRevealHandler', () => {
     expect(mocks.offerRevealHandler).not.toHaveBeenCalled()
   })
 
-  it('never asks the backend anything off macOS', async () => {
+  it('never asks the backend anything where the OS has nothing to offer', async () => {
     settings('allow', true)
-    withPlatform('linux')
+    withCapabilities()
 
     await maybeOfferRevealHandler(ctx)
 

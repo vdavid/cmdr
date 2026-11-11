@@ -1,5 +1,6 @@
 /** The offer's rule, its raise, and its answers, covered together since they're one flow. */
 
+import { capabilitiesWith } from '#lib/platform/test-platform.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { FinderExtensionStatus } from '#lib/ipc/bindings.js'
 import { emptyNudgeLedger } from '#lib/nudges/nudge-ledger.js'
@@ -32,7 +33,7 @@ const off: FinderExtensionStatus = { enabled: false, blockedBy: null }
 function inputs(overrides: Partial<Parameters<typeof shouldShowFinderExtensionNudge>[0]> = {}) {
   return {
     automatedRun: false,
-    onMacOs: true,
+    capabilities: capabilitiesWith('finderExtension'),
     onboarded: true,
     onboardingShowing: false,
     ledger: emptyNudgeLedger(),

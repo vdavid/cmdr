@@ -488,10 +488,10 @@ The E2E `openSettingsWindowViaProd` helper emits the same `open-settings` event 
 
 ## Search (`settings-search.ts`)
 
-The index covers the whole registry (Advanced and `hidden` included, `macOSOnly` dropped off macOS) plus the searchable
-rows, and runs through the shared engine in `#lib/utils/unicode-fuzzy.ts` (the command palette's): every script counts
-as letters, accents fold on both sides (`tema` finds `Téma`, `ngon ngu` finds `Ngôn ngữ`), and a CJK query matches
-exactly, since one typo in a two-to-five-character term is a different word. The engine's rules and why:
+The index covers the whole registry (Advanced and `hidden` included, a `needsCapability` one dropped without it) plus
+the searchable rows, and runs through the shared engine in `#lib/utils/unicode-fuzzy.ts` (the command palette's): every
+script counts as letters, accents fold on both sides (`tema` finds `Téma`, `ngon ngu` finds `Ngôn ngữ`), and a CJK query
+matches exactly, since one typo in a two-to-five-character term is a different word. The engine's rules and why:
 `../utils/DETAILS.md` § unicode-fuzzy.ts.
 
 **One entry's text**, built by `indexEntry`, in this order:
@@ -669,19 +669,18 @@ element and widen that signature — deliberately not done for an unused capabil
 - **A card that renders a row lists its id in the card's `anyVisible(...)` guard**, or a hit filters every card away.
 - **Only register a row that's there whenever its page is.** Rows gated on runtime state (the image-index reclaim offer,
   the CLIP model's download/delete, everything behind the image-index master toggle) stay unregistered: a hit that
-  scrolls to a row that isn't rendered is worse than no hit. A row that renders on one platform only is fine:
-  `macOSOnly: true` keeps it out of the index everywhere else (`searchable-rows.ts`, pinned by its test).
-- **Settings take the same flag.** `SettingDefinition.macOSOnly` drops a setting from the index off macOS
-  (`buildSearchIndex` in `settings-search.ts`, pinned by `settings-search.test.ts`), for a setting whose section renders
-  it on macOS only. Off macOS `buildSectionTree` skips it too, so a page whose every visible setting is macOS-only
-  leaves the sidebar. Beyond that it decides nothing about rendering: a hand-rendering section gates its own markup on
-  `isMacOS()`, and `AdvancedSection` drops `macOSOnly` rows off macOS itself (`behavior.textEditorHintSeen` and the
-  other macOS-only hint flags). Hidden settings still enter search, so a macOS-only feature's hidden flags take it too.
-- **Image indexing takes its own flag, `needsImageIndexing`.** Both filters ask one predicate, `settingRendersHere`
-  (`settings-registry.ts`), and it drops these where `imageIndexingAvailable()` (`#lib/media-index/availability.ts`)
-  says no: a shipped build off macOS, where the backend starts no image engine (#943). It's not `macOSOnly` because the
-  Linux E2E build runs a fake engine, so its specs keep the page. That check reads the app mode, so the settings window
-  settles `initAppMode()` before it renders. Pinned by `settings-registry.test.ts`.
+  scrolls to a row that isn't rendered is worse than no hit. A row that renders only where the OS offers a feature is
+  fine: `needsCapability: '<capability>'` keeps it out of the index everywhere else (`searchable-rows.ts`, pinned by its
+  test; the capabilities are `#lib/platform`'s).
+- **Settings take the same flag.** `SettingDefinition.needsCapability` drops a setting from the index where this OS
+  doesn't offer it (`buildSearchIndex` in `settings-search.ts`, pinned by `settings-search.test.ts`), for a setting
+  whose section renders it only there. `buildSectionTree` skips it too, so a page whose every visible setting needs a
+  missing capability leaves the sidebar: the Image indexing page off macOS (#943), whose `imageIndexing` the Linux E2E
+  build answers yes for its fake engine. Both filters ask one predicate, `settingRendersHere` (`settings-registry.ts`),
+  and `AdvancedSection` applies it to its rows (`behavior.textEditorHintSeen` and the other hint flags only one feature
+  raises). Beyond that it decides nothing about rendering: a hand-rendering section gates its own markup on the same
+  `hasCapability`. Hidden settings still enter search, so a capability-gated feature's hidden flags take it too. Pinned
+  by `settings-registry.test.ts`.
 
 ## OS-backed rows (a control whose value lives outside Cmdr)
 
@@ -708,9 +707,10 @@ Three consequences fall out of that shape, all accepted deliberately:
 - **It carries its own DOM anchor.** With no `SettingId`, `settingAnchorId` has nothing to derive one from, so the card
   takes an `id` that lives beside its only deep-linker: `#lib/reveal/reveal-settings-link.ts`. Same shape as the
   sub-group anchors (`settings-downloads-notifications`).
-- **It's a `SearchableRow` like any other** (`sections/RevealHandlerCard.rows.ts`, `macOSOnly`), gated on `shouldShow`
-  inside the card, since the card owns its frame. Its keywords carry how people look for it ("Finder", "Find in Finder",
-  "Chrome", "Google"), not only its label. That's honest because the row renders on every Mac (next bullet).
+- **It's a `SearchableRow` like any other** (`sections/RevealHandlerCard.rows.ts`, `needsCapability: 'revealHandler'`),
+  gated on `shouldShow` inside the card, since the card owns its frame. Its keywords carry how people look for it
+  ("Finder", "Find in Finder", "Chrome", "Google"), not only its label. That's honest because the row renders on every
+  Mac (next bullet).
 - **It explains itself rather than hiding.** Where this copy may not operate the switch (a debug, worktree, or E2E
   build, or a copy outside an Applications folder), the backend still reads the real state and says why through
   `blockedBy`, so the row renders disabled with the reason as a tooltip. It renders nothing only where there's no
@@ -750,9 +750,10 @@ A boolean that records "this one-time hint, toast, or notice was shown or dismis
 `cardKey: 'settings.advanced.card.hintsAndWarnings'`), never `hidden`. On means "already shown, don't show it again",
 matching the suppress switches beside it, so turning a row off brings its hint back once. The code that raises the hint
 spends the flag as the hint goes up and reads it fresh each time, so no wiring beyond the registry entry is needed. A
-hint only macOS raises carries `macOSOnly`, which `AdvancedSection` honors. Still `hidden`: cooldown stamps
-(`*OfferedAt`, `#lib/nudges/`), consent and onboarding state, version markers, UI state (expanded/collapsed), and
-`advanced.oldMacosNoticeShown` (fires only below the supported macOS, so the row would do nothing for nearly everyone).
+hint only one feature raises carries that feature's `needsCapability`, which `AdvancedSection` honors. Still `hidden`:
+cooldown stamps (`*OfferedAt`, `#lib/nudges/`), consent and onboarding state, version markers, UI state
+(expanded/collapsed), and `advanced.oldMacosNoticeShown` (fires only below the supported macOS, so the row would do
+nothing for nearly everyone).
 
 ### Why separate shortcuts from settings?
 
