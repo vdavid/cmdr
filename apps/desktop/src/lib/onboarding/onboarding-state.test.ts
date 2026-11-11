@@ -3,7 +3,7 @@
  *
  * Covers `resumeStepFor`, `step1VariantFor`, and `stepTwoBannerFor`: all pure logic
  * over the persisted-flag triple `(fullDiskAccessChoice, isOnboarded, hasFda)`. Platform
- * is passed in explicitly via `ctx.isMac` so jsdom's userAgent doesn't matter.
+ * is passed in explicitly via `ctx.isMac`, so the test platform doesn't matter.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -11,11 +11,8 @@ import type { SettingLock } from '#lib/ipc/bindings.js'
 
 // Pretend we're on macOS so `previousStep` / `isAtFirstStep` / `openWizard(... null)`
 // resolve to the macOS branches. Linux behaviour is exercised via the explicit `isMac`
-// override on `ResumeContext`, not via the jsdom userAgent.
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return { ...actual, isMacOS: () => true }
-})
+// override on `ResumeContext`, not via the test platform.
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 import {
   resumeStepFor,

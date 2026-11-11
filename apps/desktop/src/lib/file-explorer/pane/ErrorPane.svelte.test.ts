@@ -18,10 +18,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   openSystemSettingsUrl: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: vi.fn(() => true),
-}))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 const openErrorReportFor = vi.hoisted(() => vi.fn())
 vi.mock('#lib/error-reporter/error-report-flow.svelte.js', () => ({ openErrorReportFor }))

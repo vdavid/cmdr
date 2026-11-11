@@ -7,23 +7,17 @@
  * costs"). Each block below keeps its component's own doc comment, props, and
  * assertions.
  *
- * `isMacOS` needs care: the toast block forces it BOTH ways, and file-wide that
- * would decide what the two platform dialogs render on whichever runner the lane
- * happens to use. `null` means "use the real export", which is what those two
- * blocks, which never stubbed it, always saw.
+ * The platform needs care: the toast block runs on both, each for one test, so
+ * the two platform dialogs keep Vitest's default.
  */
 
-import { describe, it, vi, afterEach } from 'vitest'
+import { describe, it, vi, afterEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import MtpConnectedToastContent from './MtpConnectedToastContent.svelte'
 import MtpPermissionDialog from './MtpPermissionDialog.svelte'
 import PtpcameradDialog from './PtpcameradDialog.svelte'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
-
-// `vi.hoisted`, not a plain `let`: spreading the real `#lib/settings` pulls in the
-// command registry, which calls `isMacOS()` while the mocks are still being wired,
-// and a module-level `let` is still in its temporal dead zone at that point.
-const macState: { value: boolean | null } = vi.hoisted(() => ({ value: null }))
 
 vi.mock('#lib/ui/toast/index.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -34,14 +28,6 @@ vi.mock('#lib/settings/index.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   setSetting: vi.fn(),
 }))
-
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => {
-  const actual = await importOriginal<{ isMacOS: () => boolean }>()
-  return {
-    ...actual,
-    isMacOS: () => (macState.value === null ? actual.isMacOS() : macState.value),
-  }
-})
 
 vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -66,15 +52,11 @@ afterEach(() => {
  * Sticky toast shown after an MTP device connects. The only state that
  * matters for a11y is the "Don't show again" checkbox and the two
  * action buttons. The body text is platform-dependent (macOS adds a
- * `ptpcamerad` note), which we simulate by mocking `isMacOS()`.
+ * `ptpcamerad` note), which each test picks with `withPlatform()`.
  */
 describe('MtpConnectedToastContent a11y', () => {
-  afterEach(() => {
-    macState.value = null
-  })
-
   it('macOS variant has no a11y violations', async () => {
-    macState.value = true
+    onTestFinished(withPlatform('macos'))
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(MtpConnectedToastContent, { target, props: { toastId: 'mtp-connected', deviceName: 'Pixel 8' } })
@@ -83,7 +65,7 @@ describe('MtpConnectedToastContent a11y', () => {
   })
 
   it('non-macOS variant has no a11y violations', async () => {
-    macState.value = false
+    onTestFinished(withPlatform('linux'))
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(MtpConnectedToastContent, { target, props: { toastId: 'mtp-connected', deviceName: 'Pixel 8' } })

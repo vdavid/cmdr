@@ -1,22 +1,15 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { getUserFriendlyMessage, getTechnicalDetails, getErrorDisplayMeta } from './transfer-error-messages'
 import type { DisconnectedSide, WriteOperationError } from '#lib/file-explorer/types.js'
 import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
 import { formatInteger } from '#lib/intl/number-format.js'
 import { formatDuration, seconds } from '#lib/units/index.js'
 
-// Mock navigator to control isMacOS() behavior
-const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-
+/** Runs the rest of the current test on macOS or, with `false`, off it. */
 function setMacOS(isMac: boolean) {
-  navigatorSpy.mockReturnValue({
-    userAgent: isMac ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' : 'Mozilla/5.0 (X11; Linux x86_64)',
-  } as Navigator)
+  onTestFinished(withPlatform(isMac ? 'macos' : 'linux'))
 }
-
-afterEach(() => {
-  navigatorSpy.mockReset()
-})
 
 describe('getUserFriendlyMessage', () => {
   describe('copy operation (default)', () => {

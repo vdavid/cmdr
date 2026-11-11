@@ -9,16 +9,12 @@
  * if that happens.
  */
 
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { getEffectiveShortcuts } from '#lib/shortcuts/shortcuts-store.js'
 import { formatKeyCombo } from '#lib/shortcuts/key-capture.js'
 import { initShortcutDispatch, lookupCommand, destroyShortcutDispatch } from '#lib/shortcuts/shortcut-dispatch.js'
-
-const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-beforeAll(() => {
-  navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
-})
-afterAll(() => navigatorSpy.mockReset())
+beforeAll(() => withPlatform('macos'))
 
 describe('askCmdr.newChat default shortcut (⌘N)', () => {
   it('a real Command+N keydown resolves to askCmdr.newChat', () => {

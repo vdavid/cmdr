@@ -4,7 +4,8 @@
  * in a `[C…]` token stays the counter editor's. A field with no history has a disabled chevron.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick, unmount } from 'svelte'
 import MultiRenameDialog from './MultiRenameDialog.svelte'
 import { setLastMultiRenameRun } from './last-run.svelte'
@@ -91,12 +92,10 @@ function menuRows(): string[] {
 }
 
 describe('MultiRenameDialog field history', () => {
-  const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-
   beforeEach(() => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
-    navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
+    onTestFinished(withPlatform('macos'))
     ipc.previewMultiRename.mockResolvedValue({ ok: true, value: PREVIEW })
     ipc.renderMultiRenameExamples.mockImplementation((examples: unknown[]) => Promise.resolve(examples.map(() => null)))
     ipc.getMultiRenamePresets.mockResolvedValue([])
@@ -108,7 +107,6 @@ describe('MultiRenameDialog field history', () => {
   afterEach(async () => {
     for (const sheet of mounted) await unmount(sheet)
     mounted = []
-    navigatorSpy.mockReset()
   })
 
   it('↓ in a field lists that field’s values, newest first, and a pick fills the field', async () => {

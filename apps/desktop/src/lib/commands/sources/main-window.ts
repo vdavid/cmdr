@@ -5,7 +5,7 @@
  */
 import type { CommandSource } from '../types'
 import { getBadgeStatus } from '#lib/feature-status.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { BLOCKED_BY_DIALOGS, runsOverDialogs } from '../while-dialog-open'
 
 // Zoom scales the whole app, dialog included, and touches no pane.

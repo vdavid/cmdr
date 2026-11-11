@@ -14,16 +14,12 @@
  * that default would only work on some layouts.
  */
 
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { commands } from '#lib/commands/command-registry.js'
 import { classifySystemShortcut } from '#lib/settings/sections/keyboard-shortcuts-banner.js'
 import { formatKeyCombo } from './key-capture'
-
-const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-beforeAll(() => {
-  navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
-})
-afterAll(() => navigatorSpy.mockReset())
+beforeAll(() => withPlatform('macos'))
 
 /** The modifier symbols `formatKeyCombo` emits, mapped to the event flag each one sets. */
 const modifierSymbolToFlag = {

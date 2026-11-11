@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
-const mocks = vi.hoisted(() => ({ getStatus: vi.fn(), setEnabled: vi.fn(), isMacOS: vi.fn() }))
+const mocks = vi.hoisted(() => ({ getStatus: vi.fn(), setEnabled: vi.fn() }))
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   getFinderExtensionStatus: mocks.getStatus,
   setFinderExtensionEnabled: mocks.setEnabled,
 }))
-vi.mock('#lib/shortcuts/key-capture.js', () => ({ isMacOS: mocks.isMacOS }))
 
 import FinderExtensionCard from './FinderExtensionCard.svelte'
 
@@ -28,11 +28,11 @@ function switchOf(target: HTMLElement): HTMLInputElement | null {
 describe('FinderExtensionCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.isMacOS.mockReturnValue(true)
+    withPlatform('macos')
   })
 
   it('renders nothing off macOS, where there is no extension to ask about', async () => {
-    mocks.isMacOS.mockReturnValue(false)
+    withPlatform('linux')
     const { target, cleanup } = await render()
     expect(mocks.getStatus).not.toHaveBeenCalled()
     expect(target.textContent.trim()).toBe('')

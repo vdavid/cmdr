@@ -5,7 +5,7 @@
  */
 import type { CommandSource } from '../types'
 import { getBadgeStatus } from '#lib/feature-status.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { sameKindCommandLabel } from '#lib/file-explorer/pane/same-kind-target.svelte.js'
 import { trashUndoCommandLabel } from '#lib/file-operations/delete/trash-undo.js'
 import { BLOCKED_BY_DIALOGS, IN_TEXT_INPUTS_ONLY } from '../while-dialog-open'

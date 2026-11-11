@@ -123,8 +123,9 @@ Settled:
   (`apps/desktop/src/lib/settings/definitions/indexing.ts:91`), so turning it on fills `media.db` with OCR text and tags
   derived from file names. Fixed in [#943](https://github.com/getcmdr/cmdr/issues/943) (task 1): off macOS the scheduler
   doesn't start, and the Image indexing settings page is gone.
-- **Linux: dialog backdrops leave a 29px strip live** at the top (`--titlebar-height` is unconditional, the title bar
-  renders only on macOS). Task 24.
+- **Linux: dialog backdrops left a 29px strip live** at the top (`--titlebar-height` was unconditional, the title bar
+  renders only on macOS). Fixed in task 24: `--titlebar-height` is 0 off macOS, the viewer's 35px override and the queue
+  window's in-webview title line are macOS-only too.
 - **Off macOS, `Ctrl+D` is bound twice**, so favorites never fires in the file list. Task 26.
 - **api-server titles Linux reports "macOS Ubuntu …"** (`apps/api-server/src/report-cards.ts:140`). Task 2.
 - **Off macOS the updater skips the advisory list and trust checks** (`lib/updates/updater.svelte.ts:390-430`). Fine for
@@ -216,9 +217,10 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 
 ### Phase 4: frontend seams
 
-24. [S] Win. `#lib/platform`: a backend-sourced `'macos' | 'linux' | 'windows'` injected synchronously by an
-    `initialization_script`, `isMacOS()` moves there and stops sniffing the UA, `data-platform` on `<html>`,
-    `--titlebar-height: 0` off macOS (fixes the Linux backdrop strip), a `withPlatform()` test helper.
+24. [S] Win. **Done**. `#lib/platform` (`apps/desktop/src/lib/platform/CLAUDE.md`): a plugin init script in
+    `tauri_builder.rs` defines `window.__CMDR_PLATFORM__` in every webview, `isMacOS()` lives there and reads it (no UA
+    sniff; `'linux'` without a backend, the demo answers for the visitor), `data-platform` on `<html>`,
+    `--titlebar-height: 0` off macOS, and `withPlatform()` drives every test that used to mock `isMacOS` or stub the UA.
 25. [S] Win. Capabilities instead of OS checks: a typed `platform_capabilities()` from the backend; migrate the 74
     `isMacOS()` sites in 28 files. Needs 24 (and is easier after 18).
 26. [S] Win. Per-platform default keymap: explicit per-platform overrides where mechanical mapping is wrong, retire the

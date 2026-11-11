@@ -16,12 +16,8 @@
 import { describe, it, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { RECONNECT_DELAYS_MS } from '../network/smb-reconnect-manager.svelte'
-
-// `null` means "use the real `isMacOS`". Only `ErrorPane` forces it, because
-// only that block depends on the macOS-only branch rendering; forcing it
-// file-wide would change what the other blocks render on a Linux CI runner.
-const stubs = vi.hoisted(() => ({ isMacOS: null as (() => boolean) | null }))
 
 // The union of what these four views reach for, over the real module: each
 // source file mocked a disjoint slice of it, so a bare union would hand a view
@@ -35,16 +31,6 @@ vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   // The SMB sign-in opener reads these before the sheet renders.
   getUsernameHint: vi.fn(() => Promise.resolve(null)),
 }))
-
-// Partial mock: `ShortcutChip` (rendered inside the Go back / Go home buttons and
-// the Technical details summary) needs the real `toDisplayShortcut`.
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()
-  return {
-    ...actual,
-    isMacOS: () => (stubs.isMacOS ? stubs.isMacOS() : actual.isMacOS()),
-  }
-})
 
 vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn().mockResolvedValue(() => {}),
@@ -60,10 +46,6 @@ function container(): HTMLDivElement {
   return target
 }
 
-beforeEach(() => {
-  stubs.isMacOS = null
-})
-
 /**
  * Tier 3 a11y tests for `ErrorPane.svelte`.
  *
@@ -72,10 +54,9 @@ beforeEach(() => {
  * category.
  */
 describe('ErrorPane a11y', () => {
-  // Only `isMacOS` is forced, so the "Open System Settings" branch renders on any host.
-  beforeEach(() => {
-    stubs.isMacOS = () => true
-  })
+  // On macOS, so the "Open System Settings" branch renders. Only this block, because
+  // macOS file-wide would change what the other blocks render.
+  beforeEach(() => withPlatform('macos'))
 
   const transientError = {
     category: 'transient' as const,

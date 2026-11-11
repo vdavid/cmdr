@@ -9,6 +9,7 @@ import type { Payload } from './answer-types.js'
 import type { DemoBackend, EventTarget } from './backend.js'
 import { installColorScheme } from './color-scheme.js'
 import { installDragRegions } from './drag-regions.js'
+import { installPlatform } from './platform.js'
 
 /** A listener's target, as `@tauri-apps/api/event`'s `listen` sends it. */
 type ListenTarget = { kind: 'Any' } | { kind: string; label: string }
@@ -130,6 +131,8 @@ export function installWebview(
       scheme.set(theme)
     },
   })
+  // Tauri's injected platform script, for this window (`platform.ts`).
+  installPlatform(window)
   // Tauri's injected drag script, for this window: the backend moves the panel (`windows.ts`).
   installDragRegions((cmd, payload) => invoke(cmd, { ...payload, label }))
   // A secondary window's iframe going away is that window closing: stop sending it events.

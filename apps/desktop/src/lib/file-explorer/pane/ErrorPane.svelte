@@ -3,7 +3,7 @@
     import Icon from '#lib/ui/Icon.svelte'
     import type { FriendlyError } from '../types'
     import { openPrivacySettings } from '#lib/tauri-commands/index.js'
-    import { isMacOS } from '#lib/shortcuts/key-capture.js'
+    import { isMacOS } from '#lib/platform/index.js'
     import { eventMatchesCommand } from '#lib/shortcuts/shortcut-dispatch.js'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
     import Button from '#lib/ui/Button.svelte'

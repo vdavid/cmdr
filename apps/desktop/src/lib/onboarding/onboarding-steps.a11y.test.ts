@@ -7,15 +7,15 @@
  * assertions.
  *
  * Two stubs are mutable because the source files disagreed: `checkFullDiskAccess`
- * answers `false` for the FDA step and `true` for the AI step, and only the
- * wizard and the FDA step forced `isMacOS`. Forcing that file-wide would change
- * what the other steps render on a Linux CI runner.
+ * answers `false` for the FDA step and `true` for the AI step. Only the wizard
+ * and the FDA step run on macOS: macOS file-wide would change what the other
+ * steps render.
  *
  * The standalone pieces live in `onboarding-parts.a11y.test.ts`; one merged file
  * for the whole directory would clear the 800-line `file-length` mark.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
 import { mount, tick, unmount, flushSync } from 'svelte'
 import {
   closeWizard,
@@ -28,13 +28,13 @@ import {
   setStepTwoBanner,
 } from './onboarding-state.svelte'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { TERMS_VERSION } from '#lib/legal/terms.js'
 
 const stubs = vi.hoisted(() => ({
   settingsMap: Object.create(null) as Record<string, unknown>,
   getSetting: null as ((id: string) => unknown) | null,
   fullDiskAccess: false,
-  isMacOS: null as (() => boolean) | null,
 }))
 
 // The union of what these five blocks reach for, over the real module: each
@@ -100,14 +100,6 @@ vi.mock('#lib/settings/ai-config.js', () => ({
   pushConfigToBackend: vi.fn(() => Promise.resolve()),
 }))
 
-// jsdom isn't macOS, so the safety-net guard would short-circuit the FDA render.
-// Resume-rule platform logic is unit-tested separately.
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  const realIsMacOS = actual.isMacOS as () => boolean
-  return { ...actual, isMacOS: () => (stubs.isMacOS ? stubs.isMacOS() : realIsMacOS()) }
-})
-
 import OnboardingWizard from './OnboardingWizard.svelte'
 import StepAi from './StepAi.svelte'
 import StepBeta from './StepBeta.svelte'
@@ -140,7 +132,6 @@ beforeEach(() => {
   for (const key of Object.keys(stubs.settingsMap)) delete stubs.settingsMap[key]
   stubs.getSetting = null
   stubs.fullDiskAccess = false
-  stubs.isMacOS = null
 })
 
 afterEach(async () => {
@@ -164,9 +155,9 @@ afterEach(async () => {
  * Focus trap + Escape-swallowing behaviour live in `OnboardingWizard.test.ts`.
  */
 describe('OnboardingWizard a11y', () => {
-  beforeEach(() => {
-    stubs.isMacOS = () => true
-  })
+  // Off macOS the FDA step's safety-net guard would short-circuit its render. Resume-rule
+  // platform logic is unit-tested separately.
+  beforeEach(() => withPlatform('macos'))
 
   it('step 1 first-ask (decide mode) has no a11y violations', async () => {
     const target = container()
@@ -222,9 +213,9 @@ describe('OnboardingWizard a11y', () => {
  */
 describe('StepFda a11y', () => {
   beforeEach(() => {
-    // Same reason as in `StepFda.test.ts`: jsdom isn't macOS so the safety-net guard would
-    // short-circuit the render.
-    stubs.isMacOS = () => true
+    // Same reason as in `StepFda.test.ts`: off macOS the safety-net guard would short-circuit
+    // the render.
+    onTestFinished(withPlatform('macos'))
     closeWizard()
     resetForTesting()
     openWizard('first-launch')

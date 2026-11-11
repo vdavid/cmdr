@@ -20,7 +20,7 @@ import {
 } from '#lib/tauri-commands/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { isRestricted } from '#lib/stores/restricted-paths-store.svelte.js'
 import type { MenuActivationSource, MenuIcon, MenuItem, MenuSection } from '#lib/ui/menu-types.js'
 import type { VolumeContextActionKind } from '#lib/ipc/bindings.js'

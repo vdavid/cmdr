@@ -30,7 +30,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
 }))
 
 // The typed check lives on the macOS branch.
-vi.mock('#lib/shortcuts/key-capture.js', () => ({ isMacOS: () => true }))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 vi.mock('#lib/ui/toast/index.js', () => ({ addToast: vi.fn(), dismissToast: vi.fn() }))
 

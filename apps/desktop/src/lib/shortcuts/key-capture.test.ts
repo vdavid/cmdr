@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import {
   formatKeyCombo,
   physicalKeyCombo,
@@ -15,18 +16,10 @@ import {
   toAriaKeyShortcut,
 } from './key-capture'
 
-// Mock navigator to control isMacOS() behavior
-const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-
+/** Runs the rest of the current test on macOS or, with `false`, off it. */
 function setMacOS(isMac: boolean) {
-  navigatorSpy.mockReturnValue({
-    userAgent: isMac ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' : 'Mozilla/5.0 (X11; Linux x86_64)',
-  } as Navigator)
+  onTestFinished(withPlatform(isMac ? 'macos' : 'linux'))
 }
-
-afterEach(() => {
-  navigatorSpy.mockReset()
-})
 
 function makeKeyEvent(overrides: Partial<KeyboardEvent>): KeyboardEvent {
   return {

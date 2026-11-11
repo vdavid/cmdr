@@ -15,6 +15,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { buildSectionTree, settingsRegistry, type SettingsSection } from '../settings-registry'
 import {
@@ -27,12 +28,7 @@ import type { SearchableRow, SearchableRowId, SettingId } from '../types'
 import { searchableRows } from './searchable-rows'
 
 /** On a Mac by default, so every row, `macOSOnly` ones too, is in the index under test. */
-const isMacOS = vi.hoisted(() => vi.fn(() => true))
-
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => isMacOS(),
-}))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 /**
  * The compile-time half of the collision guard: `never` the moment a
@@ -181,7 +177,7 @@ describe('a macOS-only row', () => {
     const everywhere = searchableRows.filter((row) => row.macOSOnly !== true)
     expect(macOnly.length).toBeGreaterThan(0)
 
-    isMacOS.mockReturnValue(false)
+    withPlatform('linux')
     clearSearchIndex()
     try {
       for (const row of macOnly) {
@@ -191,7 +187,7 @@ describe('a macOS-only row', () => {
         expect([...getMatchingSettingIdsInSection(tString(row.labelKey), row.section)]).toContain(row.id)
       }
     } finally {
-      isMacOS.mockReturnValue(true)
+      withPlatform('macos')
       clearSearchIndex()
     }
   })

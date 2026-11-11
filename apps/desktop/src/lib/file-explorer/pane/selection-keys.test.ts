@@ -7,14 +7,10 @@
  * commands ran. Resolving through the registry makes that impossible by construction.
  */
 
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { classifySelectionKey } from './selection-keys'
-
-const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-beforeAll(() => {
-  navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
-})
-afterAll(() => navigatorSpy.mockReset())
+beforeAll(() => withPlatform('macos'))
 
 function keydown(overrides: Partial<KeyboardEvent>): KeyboardEvent {
   return {

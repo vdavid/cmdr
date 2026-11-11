@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import { clearSearchIndex } from '#lib/settings/settings-search.js'
 import NavigationAndFileOpsSection from './NavigationAndFileOpsSection.svelte'
@@ -34,12 +35,8 @@ vi.mock('#lib/settings/settings-store.js', () => ({
   onSettingChange: vi.fn(() => () => {}),
 }))
 
-// `isMacOS()` reads false under jsdom on every host, so each test says which platform it's on.
-const isMacOS = vi.hoisted(() => vi.fn(() => true))
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => isMacOS(),
-}))
+// macOS by default; a test off macOS says so.
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 // The Text editor and Terminal rows ask the backend which apps are on this Mac on
 // mount. The Show in Finder card asks macOS too; `null` keeps it hidden here.
@@ -80,7 +77,7 @@ function labelFors(target: HTMLElement): (string | null)[] {
 }
 
 beforeEach(() => {
-  isMacOS.mockReturnValue(true)
+  withPlatform('macos')
   // The index drops macOS-only settings off macOS, and it memoizes.
   clearSearchIndex()
 })
@@ -93,7 +90,7 @@ describe('NavigationAndFileOpsSection', () => {
   })
 
   it('renders neither the Text editor nor the Terminal card off macOS', async () => {
-    isMacOS.mockReturnValue(false)
+    withPlatform('linux')
     const target = await mountSection()
     expect(cardLabels(target)).toEqual(['Navigation', 'File operations', 'Operation log'])
     const fors = labelFors(target)

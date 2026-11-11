@@ -74,13 +74,13 @@ Before merging more, know the two traps:
   split it rather than forcing one file, and say so in the file's doc comment.
 - **Union mocks must spread the real module.** A bare union of two files' stubs hands a third component a missing export
   it never had, which fails loudly; spreading `importOriginal()` first keeps every un-stubbed member as it was.
-- **A stub the OTHER blocks never had is the quiet one.** A file-wide `isMacOS: () => true` decides what every other
-  block renders on a Linux runner, and a `getSetting` that answers one key and returns a flag for everything else
-  answers for its neighbours too. Give such a stub a mutable that means "use the real export" when a block hasn't set
-  it, and hold it in a `vi.hoisted` object rather than a module-level `let`: spreading a real module can pull in the
-  command registry, which calls `isMacOS()` while the mocks are still being wired, and a plain `let` is still in its
-  temporal dead zone then (`ReferenceError: Cannot access '...' before initialization`, reported as "There was an error
-  when mocking a module").
+- **A stub the OTHER blocks never had is the quiet one.** A file-wide `withPlatform('macos')` decides what every other
+  block renders, and a `getSetting` that answers one key and returns a flag for everything else answers for its
+  neighbours too. Give such a stub a mutable that means "use the real export" when a block hasn't set it, and hold it in
+  a `vi.hoisted` object rather than a module-level `let`: spreading a real module can pull in the command registry,
+  which calls `isMacOS()` while the mocks are still being wired, and a plain `let` is still in its temporal dead zone
+  then (`ReferenceError: Cannot access '...' before initialization`, reported as "There was an error when mocking a
+  module").
 - **Fake timers belong INSIDE the block that needs them.** `vi.useFakeTimers()` in a file-level `beforeEach` stalls
   every other block's `await`ed render, and axe drives its own timers.
 - **Merged files audit a shared jsdom document.** axe resolves ARIA id references document-wide, and components that

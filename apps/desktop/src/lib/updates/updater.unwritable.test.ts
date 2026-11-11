@@ -53,7 +53,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   trackEvent: trackEventMock,
 }))
 
-vi.mock('#lib/shortcuts/key-capture.js', () => ({ isMacOS: () => true }))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 vi.mock('#lib/ui/toast/index.js', () => ({ addToast: addToastMock, dismissToast: vi.fn() }))
 

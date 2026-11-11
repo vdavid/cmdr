@@ -25,7 +25,7 @@
 
 import { checkFullDiskAccessQuiet } from '#lib/tauri-commands/index.js'
 import { capabilitiesFor } from '#lib/file-explorer/pane/volume-capabilities.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { getVolumes } from '#lib/stores/volume-store.svelte.js'
 import { isDriveSilenced, silenceDrive as silenceDrivePref } from '#lib/indexing/drive-index-prefs.js'
 import { isVolumeCoveredInPhases } from '#lib/indexing/index-state.svelte.js'

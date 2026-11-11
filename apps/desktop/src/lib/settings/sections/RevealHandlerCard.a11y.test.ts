@@ -2,10 +2,10 @@
  * Tier 3 a11y tests for `RevealHandlerCard.svelte`.
  *
  * ❗ It can't join `sections.a11y.test.ts`. The card renders only on macOS, and
- * jsdom's user agent says otherwise, so auditing it there would audit an empty
- * container and call it covered. Forcing `isMacOS()` true file-wide would also
- * change what `KeyboardShortcutsSection` renders in the same run, so the mock
- * has to stay local — the same reason `AskCmdrSection` and the image-index
+ * that file runs off macOS, so auditing it there would audit an empty container
+ * and call it covered. macOS file-wide would also change what
+ * `KeyboardShortcutsSection` renders in the same run, so the platform has to stay
+ * local — the same reason `AskCmdrSection` and the image-index
  * components keep their own files.
  */
 
@@ -23,10 +23,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
   },
 }))
 
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => true,
-}))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 import RevealHandlerCard from './RevealHandlerCard.svelte'
 

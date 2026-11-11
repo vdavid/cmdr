@@ -9,10 +9,10 @@
  * subset matching), the search/filter derivations, and the capture/conflict
  * branches, with the store + registry mocked for determinism.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 // ── Mocked store + registry ──────────────────────────────────────────────────
-let macOS = true
 const effectiveShortcuts = new Map<string, string[]>()
 const modifiedIds = new Set<string>()
 
@@ -27,12 +27,6 @@ const findConflictsForShortcut = vi.fn<
 const confirmDialog = vi.fn<(payload: { message: string; title: string }) => Promise<boolean>>(() =>
   Promise.resolve(false),
 )
-
-vi.stubGlobal('navigator', {
-  get userAgent() {
-    return macOS ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' : 'Mozilla/5.0 (X11; Linux x86_64)'
-  },
-})
 
 vi.mock('#lib/shortcuts/index.js', async () => ({
   getEffectiveShortcuts: (id: string) => effectiveShortcuts.get(id) ?? [],
@@ -50,11 +44,10 @@ vi.mock('#lib/shortcuts/index.js', async () => ({
     resetShortcut(...a)
   },
   resetAllShortcuts: () => resetAllShortcuts(),
-  isMacOS: () => macOS,
   isModifierKey: (key: string) => ['Meta', 'Control', 'Alt', 'Shift'].includes(key),
   // The REAL capture helper: what the field records is the vocabulary contract
   // itself (typed symbols by character, retyped ⌥ keys by position), and a
-  // hand-copied fake here would drift from it. `navigator` follows `macOS` below.
+  // hand-copied fake here would drift from it. It follows the platform each test sets.
   capturedKeyCombo: (
     await vi.importActual<typeof import('#lib/shortcuts/key-capture.js')>('#lib/shortcuts/key-capture.js')
   ).capturedKeyCombo,
@@ -115,7 +108,7 @@ function keyEvent(init: Partial<KeyboardEvent> & { key: string }): KeyboardEvent
 }
 
 beforeEach(() => {
-  macOS = true
+  onTestFinished(withPlatform('macos'))
   effectiveShortcuts.clear()
   modifiedIds.clear()
   vi.clearAllMocks()
@@ -163,7 +156,7 @@ describe('key-filter field (macOS)', () => {
 
 describe('key-filter field (non-macOS)', () => {
   it('shows word-form modifiers on keydown and clears a modifiers-only value on full release', () => {
-    macOS = false
+    onTestFinished(withPlatform('linux'))
     const c = create()
     c.handleKeyFilterKeyDown(keyEvent({ key: 'Control', ctrlKey: true }))
     expect(c.keySearchQuery).toBe('Ctrl')

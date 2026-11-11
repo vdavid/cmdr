@@ -13,7 +13,7 @@
     import Switch from '#lib/ui/Switch.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
-    import { isMacOS } from '#lib/shortcuts/key-capture.js'
+    import { isMacOS } from '#lib/platform/index.js'
     import { getFinderExtensionStatus, setFinderExtensionEnabled } from '#lib/tauri-commands/index.js'
     import { createShouldShow } from '#lib/settings/settings-search.js'
     import type { MessageKey } from '#lib/intl/keys.gen.js'

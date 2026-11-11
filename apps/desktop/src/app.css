@@ -547,7 +547,8 @@
      backdrop starts at this offset (`inset: var(--titlebar-height) 0 0 0`) so
      the scrim never covers the title bar — the OS window-drag region stays live
      while a dialog is open. Windows with a taller bar (the viewer's toolbar)
-     override this on their own root so their backdrops stay precise. */
+     override this on their own root so their backdrops stay precise. 0 off
+     macOS (below): the OS draws the title bar there, outside the webview. */
   --titlebar-height: 29px;
   /* The status corner's bottom edge in viewport px, which the main window's corner publishes on `:root` while it's
      mounted (`lib/status-corner/toast-clearance.ts`) so the top toast stack starts below it. 0 in every other window. */
@@ -614,6 +615,13 @@
   --sheet-radius: var(--radius-dialog);
   --sheet-backdrop-blur: 10px;
   --sheet-backdrop-color: var(--color-overlay-heavy);
+}
+
+/* === Window chrome off macOS ===
+   The OS draws the title bar outside the webview, so nothing in it sits under one, and a dialog's
+   backdrop covers the whole window. `data-platform` comes from `#lib/platform`. */
+:root:not([data-platform='macos']) {
+  --titlebar-height: 0px;
 }
 
 /* === Size tier palette: App ===

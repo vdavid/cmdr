@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import {
   searchSettings,
   getMatchingSections,
@@ -14,15 +15,10 @@ import { getSettingDefinition } from './settings-registry'
 
 /**
  * On a Mac by default, so `macOSOnly` settings are in the index under test. The
- * same mock drives the searchable-row filter, so both halves of the index answer
+ * same platform drives the searchable-row filter, so both halves of the index answer
  * to one platform.
  */
-const isMacOS = vi.hoisted(() => vi.fn(() => true))
-
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => isMacOS(),
-}))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 /**
  * Off macOS a `macOSOnly` setting renders nowhere, so a hit would open a page with
@@ -32,12 +28,12 @@ describe('a macOS-only setting', () => {
   const MAC_ONLY = ['behavior.openTerminalHereApp', 'behavior.textEditorApp', 'behavior.textEditorHintSeen']
 
   afterEach(() => {
-    isMacOS.mockReturnValue(true)
+    withPlatform('macos')
     clearSearchIndex()
   })
 
   it('stays out of the search index off macOS', () => {
-    isMacOS.mockReturnValue(false)
+    withPlatform('linux')
     clearSearchIndex()
 
     const ids = searchSettings('').map((r) => r.entry.id)
@@ -48,7 +44,7 @@ describe('a macOS-only setting', () => {
   })
 
   it('is in the search index on macOS', () => {
-    isMacOS.mockReturnValue(true)
+    withPlatform('macos')
     clearSearchIndex()
 
     expect(searchSettings('').map((r) => r.entry.id)).toEqual(expect.arrayContaining(MAC_ONLY))

@@ -16,7 +16,7 @@
     import { getAppLogger } from '#lib/logging/logger.js'
     import { LogOnceGate } from '#lib/logging/log-once.js'
     import { systemStrings } from '#lib/system-strings.svelte.js'
-    import { isMacOS } from '#lib/shortcuts/key-capture.js'
+    import { isMacOS } from '#lib/platform/index.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import Trans from '#lib/intl/Trans.svelte'
     import type { Snippet } from 'svelte'

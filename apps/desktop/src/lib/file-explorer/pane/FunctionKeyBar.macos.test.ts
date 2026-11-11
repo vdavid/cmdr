@@ -1,16 +1,13 @@
 /**
  * The F-key bar on macOS, where "Open terminal here" exists and takes the F9 slot.
  * Its own file because `isMacOS()` is read at module load (by the command registry
- * too), so the mock has to be in place before either imports; the platform-neutral
+ * too), so the platform has to be set before either imports; the platform-neutral
  * cases live in `FunctionKeyBar.test.ts`.
  */
 import { describe, it, expect, vi } from 'vitest'
 import { mount, flushSync } from 'svelte'
 
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => true,
-}))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 vi.mock('@tauri-apps/plugin-store', () => ({
   load: vi.fn(() =>
     Promise.resolve({

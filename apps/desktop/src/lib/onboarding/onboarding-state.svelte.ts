@@ -18,7 +18,7 @@
  * the right copy.
  */
 
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { isDialogOpen } from '#lib/ui/open-dialogs.svelte.js'
 import type { FullDiskAccessChoice } from '#lib/settings/index.js'
 import type { SettingLock } from '#lib/ipc/bindings.js'

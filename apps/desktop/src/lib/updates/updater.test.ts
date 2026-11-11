@@ -51,7 +51,7 @@ vi.mock('@tauri-apps/api/app', () => ({
   getVersion: getVersionMock,
 }))
 
-// jsdom's userAgent does not include "Macintosh", so the updater takes the non-macOS branch and
+// Vitest runs off macOS, so the updater takes the non-macOS branch and
 // dynamically imports `@tauri-apps/plugin-updater`. Mock that here so the test environment doesn't
 // try to load the real Tauri plugin.
 vi.mock('@tauri-apps/plugin-updater', () => ({

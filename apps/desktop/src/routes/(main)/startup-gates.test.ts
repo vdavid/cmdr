@@ -10,6 +10,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import type { FullDiskAccessChoice } from '#lib/settings/index.js'
 
 const mocks = vi.hoisted(() => ({
@@ -23,7 +24,6 @@ const mocks = vi.hoisted(() => ({
   setSetting: vi.fn(),
   getAppMode: vi.fn(),
   notifyOnboardingComplete: vi.fn(),
-  isMacOS: vi.fn(),
   addToast: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
@@ -65,7 +65,6 @@ vi.mock('#lib/app-mode.js', () => ({
   isE2eRun: () => mocks.getAppMode() === 'e2e' || mocks.getAppMode() === 'capture',
 }))
 vi.mock('#lib/updates/updater.svelte.js', () => ({ notifyOnboardingComplete: mocks.notifyOnboardingComplete }))
-vi.mock('#lib/shortcuts/key-capture.js', () => ({ isMacOS: mocks.isMacOS }))
 vi.mock('#lib/ui/toast/index.js', () => ({ addToast: mocks.addToast }))
 vi.mock('#lib/intl/messages.svelte.js', () => ({ tString: (key: string) => key }))
 vi.mock('#lib/logging/logger.js', () => ({
@@ -161,7 +160,7 @@ beforeEach(() => {
     if (id === 'behavior.finderExtensionNudgeOfferedAt') return ''
     throw new Error(`Unexpected getSetting(${id})`)
   })
-  mocks.isMacOS.mockReturnValue(true)
+  withPlatform('macos')
 })
 
 // `check_full_disk_access` answers a bare bool on every platform, so its wrapper rejects only when the IPC
@@ -365,7 +364,7 @@ describe('maybeFireUpgradeNudge', () => {
   })
 
   it('uses the palette wording off macOS', () => {
-    mocks.isMacOS.mockReturnValue(false)
+    withPlatform('linux')
 
     maybeFireUpgradeNudge()
 
@@ -498,7 +497,7 @@ describe('maybeOfferDockPin', () => {
 
   it('never asks the backend anything off macOS', async () => {
     settings('allow', true)
-    mocks.isMacOS.mockReturnValue(false)
+    withPlatform('linux')
 
     await maybeOfferDockPin(ctx)
 
@@ -577,7 +576,7 @@ describe('maybeOfferRevealHandler', () => {
 
   it('never asks the backend anything off macOS', async () => {
     settings('allow', true)
-    mocks.isMacOS.mockReturnValue(false)
+    withPlatform('linux')
 
     await maybeOfferRevealHandler(ctx)
 
@@ -743,7 +742,7 @@ describe('maybeShowOldMacosNotice', () => {
   })
 
   it('never asks the OS off macOS', async () => {
-    mocks.isMacOS.mockReturnValue(false)
+    withPlatform('linux')
 
     await maybeShowOldMacosNotice(ctx)
 

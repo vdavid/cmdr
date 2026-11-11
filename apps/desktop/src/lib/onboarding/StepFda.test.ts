@@ -7,7 +7,8 @@
  * branch in the "find Cmdr in the list" copy.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick, unmount, flushSync } from 'svelte'
 import StepFda from './StepFda.svelte'
 import {
@@ -48,16 +49,11 @@ vi.mock('#lib/settings/index.js', async (importOriginal) => {
   }
 })
 
-// jsdom's userAgent doesn't contain "mac" by default, so the Linux safety net inside
-// `StepFda.svelte` would return null and leave us nothing to assert against. Pretend
-// we're on macOS for these tests; Linux flow is enforced by the wizard's resume rule,
-// not by the step body, and the resume-rule unit tests live in onboarding-state.test.ts.
-// The Linux case at the bottom flips `platform.isMac` for its one test.
-const platform = vi.hoisted(() => ({ isMac: true }))
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return { ...actual, isMacOS: () => platform.isMac }
-})
+// Off macOS, Vitest's default, the Linux safety net inside `StepFda.svelte` would return
+// null and leave us nothing to assert against. Run on macOS; Linux flow is enforced by the
+// wizard's resume rule, not by the step body, and the resume-rule unit tests live in
+// onboarding-state.test.ts. The Linux block at the bottom switches for its own tests.
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 function mountStep() {
   const target = document.createElement('div')
@@ -285,7 +281,7 @@ describe('StepFda', () => {
 // Linux: StepFda renders nothing and the poller never runs.
 describe('StepFda on Linux', () => {
   beforeEach(() => {
-    platform.isMac = false
+    onTestFinished(withPlatform('linux'))
     closeWizard()
     resetForTesting()
     openWizard('first-launch')
@@ -295,7 +291,6 @@ describe('StepFda on Linux', () => {
   })
 
   afterEach(() => {
-    platform.isMac = true
     closeWizard()
     resetForTesting()
   })
