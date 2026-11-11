@@ -139,7 +139,7 @@ allows:
 - **The rest answer as "the platform can't hold this"**, the way the Linux branches already do for macOS-only classes:
   ACL, mode, and xattr reads find nothing, writes report `ClassOutcome::NotApplicable`, the umask is the `022` fallback,
   owners resolve to their numeric id, `open_parent_folder` opens nothing, and `Acl` wraps `Infallible`, so no code path
-  can hold one. Each gate sits on the one function that makes the syscall.
+  can hold one. Those stand-ins are `src/metadata/platform/wasm.rs`, one arm of the metadata seam.
 - **`rt` is the executor and clock every engine names** (`src/rt/`, `pub`), shared by `cmdr-listing` and the write
   engine. Natively it's re-exports plus one-line forwards: `Runtime` is `tokio::runtime::Handle`, `rt::Instant` is
   `std::time::Instant`, `rt::time::Instant` is tokio's, and `rt::now()`, `rt::since()`,
@@ -323,6 +323,13 @@ through a local helper, a fully-qualified call inline in an expression, a `use` 
   compile error.
 
 ## `metadata`: what a copy keeps, and when it goes on
+
+**Where the OS lives**: every per-OS body (the mode, the `xattr` calls, the ACL, BSD user flags, birth dates, the
+removal blockers, the umask probe, and the local disk's `LOCAL_DISK_CAPS`) is in `metadata/platform/` (both Unixes share
+`unix.rs`; macOS adds the flags, ACL options, `setattrlist` dates, and blockers; Linux its POSIX ACL rule; the browser
+its stand-ins; Windows has no bodies yet, so its build fails there, class by class). The class modules keep the ORDER
+the classes go on in and what each outcome means, and name no OS. Linux's answers are pinned in
+`src/metadata/linux_characterization_tests.rs`, macOS's in `src/metadata/tests.rs`.
 
 `src/metadata/`. Evidence for every rule here: `docs/notes/transfer-metadata-experiments-2026-10-11.md` (verified on
 macOS 27.0, APFS, with a C helper replaying each syscall sequence, 2026-10-11).

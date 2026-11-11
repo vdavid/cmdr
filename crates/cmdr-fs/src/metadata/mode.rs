@@ -52,43 +52,11 @@ pub fn default_folder_mode() -> u32 {
 }
 
 /// The umask assumed when the probe can't run: the macOS and Linux default.
-const FALLBACK_UMASK: u32 = 0o022;
+pub(super) const FALLBACK_UMASK: u32 = 0o022;
 
 fn umask() -> u32 {
     static UMASK: OnceLock<u32> = OnceLock::new();
-    *UMASK.get_or_init(probe_umask)
-}
-
-/// Makes one throwaway folder with mode `0777` in the temp dir and reads what
-/// the umask left of it. A process's umask never changes under it, so once is
-/// enough.
-#[cfg(unix)]
-fn probe_umask() -> u32 {
-    use std::os::unix::fs::{DirBuilderExt as _, PermissionsExt as _};
-
-    let nanos = crate::rt::wall_now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.subsec_nanos())
-        .unwrap_or(0);
-    let probe = std::env::temp_dir().join(format!(".cmdr-umask-probe-{}-{nanos}", std::process::id()));
-    let made = std::fs::DirBuilder::new()
-        .mode(0o777)
-        .create(&probe)
-        .and_then(|()| std::fs::metadata(&probe));
-    let _ = std::fs::remove_dir(&probe);
-    match made {
-        Ok(meta) => !meta.permissions().mode() & 0o777,
-        Err(e) => {
-            log::debug!(target: "metadata", "couldn't probe the umask ({e}); assuming {FALLBACK_UMASK:03o}");
-            FALLBACK_UMASK
-        }
-    }
-}
-
-/// The browser build has no process umask to probe.
-#[cfg(target_family = "wasm")]
-fn probe_umask() -> u32 {
-    FALLBACK_UMASK
+    *UMASK.get_or_init(super::platform::probe_umask)
 }
 
 #[cfg(test)]

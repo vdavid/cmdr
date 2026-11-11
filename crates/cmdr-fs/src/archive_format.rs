@@ -184,12 +184,7 @@ pub fn archive_boundary_candidates(path: &Path) -> impl Iterator<Item = (PathBuf
     // Byte-wise, because a path component is only required to be UTF-8 where the
     // extension check reads it: `to_str()` on the whole path would decline a
     // valid archive under a non-UTF-8 ancestor directory.
-    #[cfg(unix)]
-    use std::os::unix::ffi::OsStrExt;
-    #[cfg(target_family = "wasm")]
-    use wasm_paths::OsStrExt;
-
-    let bytes = path.as_os_str().as_bytes();
+    let bytes = path.as_os_str().as_encoded_bytes();
     let mut start = Some(0);
     std::iter::from_fn(move || {
         loop {
@@ -206,35 +201,19 @@ pub fn archive_boundary_candidates(path: &Path) -> impl Iterator<Item = (PathBuf
                 // Everything past the separator is the inner path, empty when the
                 // archive component is the last one.
                 let inner_start = bytes.len().min(end + 1);
-                return Some((
-                    PathBuf::from(OsStr::from_bytes(&bytes[..end])),
-                    PathBuf::from(OsStr::from_bytes(&bytes[inner_start..])),
-                ));
+                // SAFETY: both halves are cut from one `OsStr`'s encoded bytes right
+                // before or after an ASCII `/`, which std documents as a valid split
+                // point, so each half is valid encoded bytes of the same encoding.
+                let (archive, inner) = unsafe {
+                    (
+                        OsStr::from_encoded_bytes_unchecked(&bytes[..end]),
+                        OsStr::from_encoded_bytes_unchecked(&bytes[inner_start..]),
+                    )
+                };
+                return Some((PathBuf::from(archive), PathBuf::from(inner)));
             }
         }
     })
-}
-
-/// The browser build's stand-in for Unix's byte-wise `OsStrExt`. Every path it
-/// sees came from a JS string, so it's UTF-8, and a cut at a `/` keeps it so.
-#[cfg(target_family = "wasm")]
-mod wasm_paths {
-    use std::ffi::OsStr;
-
-    pub(super) trait OsStrExt {
-        fn as_bytes(&self) -> &[u8];
-        fn from_bytes(bytes: &[u8]) -> &Self;
-    }
-
-    impl OsStrExt for OsStr {
-        fn as_bytes(&self) -> &[u8] {
-            self.as_encoded_bytes()
-        }
-
-        fn from_bytes(bytes: &[u8]) -> &Self {
-            OsStr::new(std::str::from_utf8(bytes).unwrap_or_default())
-        }
-    }
 }
 
 #[cfg(test)]
