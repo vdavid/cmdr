@@ -92,8 +92,8 @@ describe('buildErrorReportIssue', () => {
     )
   })
 
-  it('does not double the macOS prefix a client already sent', () => {
-    // ERR-KVERS arrived titled "macOS macOS 10.15.8": some clients send the prefix, some don't.
+  it('does not double the macOS prefix, and prefixes a bare version number', () => {
+    // ERR-KVERS arrived titled "macOS macOS 10.15.8": the app sends the prefix, fixtures often don't.
     expect(buildErrorReportIssue({ ...errorReport, osVersion: 'macOS 10.15.8' }).title).toBe(
       'Error report ERR-A2345: hand-written on 0.46.0 (macOS 10.15.8)',
     )
@@ -102,6 +102,22 @@ describe('buildErrorReportIssue', () => {
     )
     expect(buildFeedbackIssue({ ...feedbackInput, osVersion: 'macOS 10.15.8' }).title).toBe(
       'Feedback #42 on 0.46.0 (macOS 10.15.8)',
+    )
+  })
+
+  it('shows a non-mac OS name as the client sent it', () => {
+    // The app sends Linux's `PRETTY_NAME` as is, and the bare `std::env::consts::OS` elsewhere.
+    expect(buildErrorReportIssue({ ...errorReport, osVersion: 'Ubuntu 24.04 LTS' }).title).toBe(
+      'Error report ERR-A2345: hand-written on 0.46.0 (Ubuntu 24.04 LTS)',
+    )
+    expect(buildErrorReportIssue({ ...errorReport, osVersion: 'Linux (unknown distro)' }).title).toBe(
+      'Error report ERR-A2345: hand-written on 0.46.0 (Linux (unknown distro))',
+    )
+    expect(buildFeedbackIssue({ ...feedbackInput, osVersion: 'Windows 11 24H2' }).title).toBe(
+      'Feedback #42 on 0.46.0 (Windows 11 24H2)',
+    )
+    expect(buildFeedbackIssue({ ...feedbackInput, osVersion: 'windows' }).title).toBe(
+      'Feedback #42 on 0.46.0 (windows)',
     )
   })
 
