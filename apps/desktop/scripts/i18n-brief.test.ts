@@ -171,6 +171,9 @@ describe('buildBrief (fixture tree)', () => {
       'queue.hint': 'Nothing sparkly: Cmdr still keeps it offline',
       'queue.offlineA': 'Make available offline',
       'queue.offlineB': 'Offline copy',
+      'queue.reveal': '{platform, select, macos {Show {name} in Finder} other {Show {name} in the file manager}}',
+      'errors.queue.revealHint':
+        '{platform, select, macos {Open {system_settings} and allow it.} other {Check the folder permissions.}}',
     })
     write(join(messagesRoot, 'en', 'settings.json'), {
       'settings.queue.keywords': 'operation, offline, jobs',
@@ -259,6 +262,14 @@ describe('buildBrief (fixture tree)', () => {
     expect(text).toContain('{folder}: String, e.g. "Backup"')
     expect(text).toContain('{count}: how many')
     expect(text).toContain('Bewerkingenwachtrij')
+  })
+
+  it('lists a per-OS block’s placeholders and tokens branch by branch, never the injected platform or a branch body', () => {
+    const text = renderBrief(buildBrief({ ...opts, keys: ['queue.reveal', 'errors.queue.revealHint'] }))
+    const notes = text.split('\n').filter((line) => line.startsWith('  - {'))
+    expect(notes).toEqual(['  - {name}', '  - {system_settings}'])
+    expect(text).not.toContain('{platform}')
+    expect(text.match(/Per-OS value: translate each branch/g)?.length).toBe(2)
   })
 
   it('lists the terms in play with their distinct neighbors, and none that are not', () => {

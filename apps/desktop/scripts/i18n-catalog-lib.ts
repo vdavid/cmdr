@@ -53,7 +53,7 @@ import { createHash } from 'node:crypto'
 import { IntlMessageFormat } from 'intl-messageformat'
 import { isNativeKey } from './gen-native-strings-lib.ts'
 import { inheritableAncestors } from '../src/lib/intl/locale-inheritance.ts'
-import { parsePlatformSelect, pickPlatformBranch } from '../src/lib/intl/platform-select.ts'
+import { PLATFORM_SELECT_PREFIX, parsePlatformSelect, pickPlatformBranch } from '../src/lib/intl/platform-select.ts'
 import type { PlatformSelectBranch } from '../src/lib/intl/platform-select.ts'
 
 /** AST element `type` constants (the `@formatjs` `TYPE` enum, inlined to avoid a deep import). */
@@ -687,6 +687,37 @@ export function platformBranches(value: string): PlatformBranch[] {
     const text = branches[name]
     return text === undefined ? [] : [{ name, text }]
   })
+}
+
+/**
+ * The inverse of `platformBranches`: writes branches back as one canonical block
+ * (`{platform, select, macos {…} windows {…} other {…}}`), or a lone unnamed
+ * branch as the plain value it came from. For generators that transform each
+ * branch's text and must keep the block's frame and branch names untouched.
+ * @param branches what `platformBranches` returned, each `text` possibly rewritten
+ */
+export function formatPlatformBranches(branches: readonly PlatformBranch[]): string {
+  if (branches.length === 1 && branches[0].name === null) return branches[0].text
+  const body = branches.map(({ name, text }) => `${String(name)} {${text}}`).join(' ')
+  return `${PLATFORM_SELECT_PREFIX}${body}}`
+}
+
+/**
+ * The text a reader sees across every OS, with every identifier removed: no
+ * placeholder, tag, or plural/select names, and no platform branch names. For a
+ * sweep that matches WORDS (a vocabulary or spelling test) and must never match
+ * an identifier. Each platform branch is read on its own, so a raw block's
+ * bodies aren't stripped away as if they were `{token}`s. Branch texts are joined
+ * with a space, so a word never straddles two branches.
+ * @param key the message key (picks the raw or ICU reading)
+ * @param value the catalog value
+ * @param locale the locale the value is in (ICU parsing)
+ */
+export function visibleText(key: string, value: string, locale = BASE_LOCALE): string {
+  const stripTokens = (text: string): string => text.replaceAll(/\{[^{}]*\}/g, ' ')
+  return platformBranches(value)
+    .map(({ text }) => (isRawKey(key) ? stripTokens(text) : (visibleLiterals(text, locale) ?? stripTokens(text))))
+    .join(' ')
 }
 
 /** One pairing of `pairPlatformBranches`: the source and locale text a reader of `name`'s OS sees. */

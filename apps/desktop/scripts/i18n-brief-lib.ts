@@ -48,6 +48,7 @@ import {
   parseMessage,
   isRawKey,
   isSearchKeywordsKey,
+  platformBranches,
   rawTokens,
   resolveLocaleSource,
   visibleLiterals,
@@ -173,11 +174,18 @@ interface BriefContext {
   memory: MemoryIndex
 }
 
-/** Placeholder and tag notes for a key: described ones from `@key.placeholders`, the rest bare. */
+/**
+ * Placeholder and tag notes for a key: described ones from `@key.placeholders`, the rest bare. A per-OS block is
+ * read branch by branch (a whole-value `rawTokens` reads a brace-free raw branch body as a token), and its
+ * `platform` selector is the runtime's to fill, never the translator's.
+ */
 function placeholderNotes(key: string, value: string, metadata: Record<string, unknown> | undefined): string[] {
   const described = (metadata?.placeholders ?? {}) as Record<string, unknown>
-  const names = isRawKey(key) ? rawTokens(value) : parseMessage(value).placeholders
-  const tags = isRawKey(key) ? new Set<string>() : parseMessage(value).tags
+  const branches = platformBranches(value).map(({ text }) => text)
+  const names = new Set(
+    branches.flatMap((text) => [...(isRawKey(key) ? rawTokens(text) : parseMessage(text).placeholders)]),
+  )
+  const tags = new Set(isRawKey(key) ? [] : branches.flatMap((text) => [...parseMessage(text).tags]))
   const notes: string[] = []
   for (const name of new Set([...Object.keys(described), ...names])) {
     const info = described[name]
@@ -374,6 +382,10 @@ function changeLines(previous: Record<string, string> | undefined, current: stri
   )
 }
 
+/** What a per-OS `{platform, select, …}` key gets: each branch is its own sentence, and the frame is structure. */
+const PER_OS_NOTE =
+  'Per-OS value: translate each branch (`macos`, `windows`, `other` = Linux) in that OS’s own words; keep the `{platform, select, …}` frame and the branch names exactly as they are.'
+
 /** What a search keyword key gets in place of "No concept yet": the termbase doesn't govern it. */
 const KEYWORDS_NOTE =
   'Search keywords: hidden synonyms, outside the termbase (no ruling, avoid-list, or pile mining applies; see the Search keywords instruction).'
@@ -386,6 +398,7 @@ function keysSection(ctx: BriefContext): BriefSection {
     lines.push(`- \`${key}\`: ${JSON.stringify(value)}`)
     lines.push(...changeLines(ctx.opts.previousEnglish?.[key], value))
     if (typeof metadata?.description === 'string') lines.push(`  - Note: ${metadata.description}`)
+    if (platformBranches(value)[0].name !== null) lines.push(`  - ${PER_OS_NOTE}`)
     const notes = placeholderNotes(key, value, metadata)
     if (notes.length > 0) lines.push(`  - ${notes.join(' · ')}`)
     if (isSearchKeywordsKey(key)) lines.push(`  - ${KEYWORDS_NOTE}`)
@@ -666,7 +679,10 @@ function shippedValues(ctx: BriefContext): string[] {
     for (const key of ctx.opts.keys) {
       const value = ctx.targets.get(tag)?.[key]
       if (value === undefined) continue
-      for (const form of [value, value.replace(/''/g, "'"), visibleLiterals(value, tag)?.trim()]) {
+      // A per-OS block's branches are each a shipped sentence a doc might quote on its own.
+      const texts = new Set([value, ...platformBranches(value).map(({ text }) => text)])
+      const forms = [...texts].flatMap((text) => [text, text.replace(/''/g, "'"), visibleLiterals(text, tag)?.trim()])
+      for (const form of forms) {
         if (!form) continue
         // A rule often quotes one clause of a value rather than all of it.
         for (const part of [form, ...form.split(/\s*[.:;!?…]+(?:\s+|$)/)]) {

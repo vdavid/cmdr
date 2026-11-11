@@ -238,9 +238,11 @@ space after each comma). Never a block inside a sentence, never `{platform}` int
   guard picks one from `window.__CMDR_PLATFORM__` (`../utils/DETAILS.md` § Old-WebKit boot guard).
 - **Other readers**: the macOS-copy test reads each value's macOS branch through `pickPlatformBranch`. A script that
   needs a branch imports the same file by path (it's dependency-free for that); ❌ never a second splitter. The i18n
-  checks read text through `platformBranches()` / `pairPlatformBranches()` in `scripts/i18n-catalog-lib.ts` (parity
-  compares each locale branch with the source's same branch), and `desktop-i18n-platform-select` enforces every rule
-  above, plus each locale's branch set matching its source's, in every catalog including `en`.
+  checks read text through `platformBranches()` / `pairPlatformBranches()` in `scripts/i18n-catalog-lib.ts` (parity,
+  plural, and coverage compare each locale branch with the source's same branch; word sweeps such as the overlay tests
+  read `visibleText()`; generators write a block back with `formatPlatformBranches()`), and
+  `desktop-i18n-platform-select` enforces every rule above, plus each locale's branch set matching its source's, in
+  every catalog including `en`.
 - **Tests**: `withPlatform('macos' | 'windows' | 'linux')` from `#lib/platform/test-platform` moves both the select and
   the split; Vitest's fallback is Linux, so an assertion on macOS text names macOS.
 

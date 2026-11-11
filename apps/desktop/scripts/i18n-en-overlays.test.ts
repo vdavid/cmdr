@@ -37,7 +37,9 @@ import {
   parseMessage,
   resolveLocaleSource,
   sourceHash,
-  visibleLiterals,
+  pairPlatformBranches,
+  rawTokens,
+  visibleText,
 } from './i18n-catalog-lib.ts'
 
 const en = loadCatalog('en')
@@ -90,13 +92,11 @@ const AU_DIVERGES_FROM_GB: readonly string[] = [
  * placeholder NAME and `queue.row.label`'s only "trash" is the operation-kind
  * selector Rust sends over IPC. Forking either would break rendering.
  *
- * The RAW families (`errors.*`, native `menu.*`) never reach the ICU engine, so
- * they get the same treatment by hand: strip `{token}` spans, keep the rest.
+ * A per-OS block counts every branch: a Windows branch saying "favorite" needs
+ * its fork as much as the macOS one (`visibleText` reads raw and ICU families,
+ * branch by branch).
  */
-function visibleTextOf(key: string, value: string): string {
-  if (isRawKey(key)) return value.replaceAll(/\{[^{}]*\}/g, ' ')
-  return visibleLiterals(value) ?? value.replaceAll(/\{[^{}]*\}/g, ' ')
-}
+const visibleTextOf = (key: string, value: string): string => visibleText(key, value)
 
 /**
  * Every American form these overlays fork, with the locales that fork it. Mirrors
@@ -304,10 +304,15 @@ describe('every overlay value stays renderable where base en is', () => {
       for (const [key, value] of Object.entries(cat.messages)) {
         const source = en.messages[key]
         if (isRawKey(key)) {
-          // The raw families never reach ICU; their `{token}` set is the contract.
-          const tokensOf = (v: string): string[] => sorted(new Set(v.match(/\{[^{}]*\}/g) ?? []))
-          if (String(tokensOf(value)) !== String(tokensOf(source))) {
-            mismatches.push(`${tag}: ${key} raw tokens ${String(tokensOf(value))} vs en ${String(tokensOf(source))}`)
+          // The raw families never reach ICU; their `{token}` set is the contract, per platform branch (a
+          // whole-value regex would read a raw block's brace-free branch bodies as tokens).
+          for (const pair of pairPlatformBranches(source, value)) {
+            const want = sorted(rawTokens(pair.source))
+            const got = sorted(rawTokens(pair.locale))
+            if (String(got) !== String(want)) {
+              const where = pair.name === null ? '' : ` (${pair.name} branch)`
+              mismatches.push(`${tag}: ${key}${where} raw tokens ${String(got)} vs en ${String(want)}`)
+            }
           }
           continue
         }

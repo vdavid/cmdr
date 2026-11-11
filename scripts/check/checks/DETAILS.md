@@ -2471,8 +2471,9 @@ doubles as production code.
   handler, because `Trans` lets the tag win the merged lookup), i18n-trans-snippets (ERROR; a message `<tag>` with no
   matching `snippets={{ … }}` key at the call site renders as nothing, so its inner text silently vanishes; catches a
   rename finished on only one side), i18n-plural (ERROR; each plural covers its locale's required CLDR categories, gated
-  on the English source's plural shape), i18n-coverage (ERROR; for a full translation, keys missing from the locale or
-  still showing English without a `@key.sameAsSourceJustification`, either of which ships a half-translated locale.
+  on the English source's plural shape, per platform branch), i18n-coverage (ERROR; for a full translation, keys missing
+  from the locale or still showing English without a `@key.sameAsSourceJustification`, either of which ships a
+  half-translated locale, plus a fresh key's platform branch left English where English differs from macOS's text.
   "Still English" is byte-identical OR English text under a plural/select branch set the locale legitimately changed,
   which byte comparison alone reads as translated; for an OVERLAY the rules invert, and a key identical to what it
   overrides, or unknown to it, is the finding), i18n-dont-translate (warn-only; a curated brand/system token English

@@ -18,7 +18,15 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { loadCatalog, parseMessage, sourceHash, isMetadataKey, readLocaleFiles } from './i18n-catalog-lib.ts'
+import {
+  loadCatalog,
+  parseMessage,
+  sourceHash,
+  isMetadataKey,
+  readLocaleFiles,
+  platformBranches,
+} from './i18n-catalog-lib.ts'
+import { platformSelectIssues } from './i18n-check-platform-select.ts'
 import { buildPseudoFile, isRawKey, pseudoIcu, pseudoRaw, pseudoValue, PSEUDO_LOCALE } from './gen-pseudolocale.ts'
 
 /** Set equality. */
@@ -141,6 +149,37 @@ describe('pseudoRaw: accents text, preserves {tokens} and literal markup', () =>
     // Raw path does NOT double apostrophes (the raw pipeline isn't ICU).
     expect(pseudo).toContain("'")
     expect(pseudo).not.toContain("''")
+  })
+})
+
+describe('pseudoValue: a per-OS block keeps its frame and branch names, and transforms each branch', () => {
+  const branchNames = (v: string) => platformBranches(v).map(({ name }) => name)
+
+  it('raw block: every branch body is accented, its {tokens} kept, the block still canonical', () => {
+    const en = '{platform, select, macos {Open {system_settings} to continue} other {Open Settings, then {path}}}'
+    const pseudo = pseudoValue('errors.fixture.s', en)
+    expect(pseudo.startsWith('{platform, select, macos {')).toBe(true)
+    expect(branchNames(pseudo)).toEqual(['macos', 'other'])
+    const [macos, other] = platformBranches(pseudo).map(({ text }) => text)
+    expect(macos).toContain('{system_settings}')
+    expect(macos).not.toContain('Open')
+    expect(other).toContain('{path}')
+    expect(other).not.toMatch(/Open|Settings/)
+    expect(platformSelectIssues({ key: 'errors.fixture.s', value: pseudo, sourceValue: en })).toEqual([])
+  })
+
+  it('ICU block: branch names stay unaccented and nested plurals keep their structure', () => {
+    const en =
+      '{platform, select, macos {{count, plural, one {# file in Trash} other {# files in Trash}}} windows {Recycle Bin} other {Trash}}'
+    const pseudo = pseudoValue('fixture.trash', en)
+    expect(branchNames(pseudo)).toEqual(['macos', 'windows', 'other'])
+    expect(pseudo).not.toMatch(/Trash|Recycle/)
+    const p = parseMessage(pseudo)
+    const e = parseMessage(en)
+    expect(p.ok).toBe(true)
+    expect(mapEq(p.pluralCategories, e.pluralCategories)).toBe(true)
+    expect(mapEq(p.selectCategories, e.selectCategories)).toBe(true)
+    expect(platformSelectIssues({ key: 'fixture.trash', value: pseudo, sourceValue: en })).toEqual([])
   })
 })
 

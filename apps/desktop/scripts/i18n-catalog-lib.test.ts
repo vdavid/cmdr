@@ -35,6 +35,8 @@ import {
   layerCatalogs,
   platformBranches,
   pairPlatformBranches,
+  formatPlatformBranches,
+  visibleText,
 } from './i18n-catalog-lib.ts'
 
 describe('isMetadataKey', () => {
@@ -357,6 +359,52 @@ describe('pairPlatformBranches', () => {
       { name: 'windows', source: 'O', locale: 'w' },
       { name: 'other', source: 'O', locale: 'o' },
     ])
+  })
+})
+
+describe('formatPlatformBranches', () => {
+  it('writes branches back as one canonical block', () => {
+    expect(
+      formatPlatformBranches([
+        { name: 'macos', text: 'Open {system_settings}' },
+        { name: 'other', text: 'Run <cmd>' },
+      ]),
+    ).toBe('{platform, select, macos {Open {system_settings}} other {Run <cmd>}}')
+  })
+
+  it('round-trips every block platformBranches splits', () => {
+    const block =
+      '{platform, select, macos {Finder} windows {File Explorer} other {{count, plural, one {#} other {#}}}}'
+    expect(formatPlatformBranches(platformBranches(block))).toBe(block)
+  })
+
+  it('writes a lone unnamed branch back as the plain value', () => {
+    expect(formatPlatformBranches([{ name: null, text: 'Show in Finder' }])).toBe('Show in Finder')
+  })
+})
+
+describe('visibleText', () => {
+  it('reads an ICU value as its literals, identifiers gone', () => {
+    expect(visibleText('a.b', 'Pick a {colorName} color').replace(/\s+/g, ' ')).toBe('Pick a color')
+  })
+
+  it('reads a raw value with its {token} spans stripped', () => {
+    expect(visibleText('errors.x', 'Open {system_settings} now').replace(/\s+/g, ' ')).toBe('Open now')
+  })
+
+  it('reads every branch of a raw block, where a whole-value strip would delete them all', () => {
+    const text = visibleText('errors.x', '{platform, select, macos {Move to Trash} other {Empty the {thing} bin}}')
+    expect(text).toMatch(/Move to Trash/)
+    expect(text).toMatch(/Empty the +bin/)
+    expect(text).not.toMatch(/platform|select|macos|thing/)
+  })
+
+  it('reads every branch of an ICU block, without the branch names', () => {
+    const text = visibleText('a.b', '{platform, select, macos {Favorites} windows {Quick access} other {Bookmarks}}')
+    expect(text).toMatch(/Favorites/)
+    expect(text).toMatch(/Quick access/)
+    expect(text).toMatch(/Bookmarks/)
+    expect(text).not.toMatch(/macos|windows/)
   })
 })
 

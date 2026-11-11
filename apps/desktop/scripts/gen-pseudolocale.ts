@@ -46,6 +46,13 @@
  *    markdown char, and punctuation untouched, preserving the raw-pipeline
  *    `.replaceAll('{token}', …)` substitution targets exactly.
  *
+ * A per-OS block (`{platform, select, macos {…} other {…}}`) keeps its frame and
+ * branch names (unaccented) on both paths. The ICU path gets that for free (the
+ * block is an ICU `select`, and only literals are transformed); the raw path
+ * splits it (`platformBranches`), transforms each body, and writes it back
+ * (`formatPlatformBranches`), since its `{token}` skip would otherwise copy the
+ * frame AND the first body through untouched.
+ *
  * The acceptance bar both paths must clear (asserted in the tests): for an ICU
  * key, `parseMessage(pseudo)` token sets (placeholders, tags, plural/select
  * categories) equal `parseMessage(en)`'s; for a raw key, the set of `{…}`
@@ -59,8 +66,10 @@ import { join } from 'node:path'
 import { IntlMessageFormat } from 'intl-messageformat'
 import {
   BRAND_WORDS,
+  formatPlatformBranches,
   isMetadataKey,
   isRawKey,
+  platformBranches,
   readLocaleFiles,
   resolveMessagesRoot,
   sourceHash,
@@ -383,6 +392,13 @@ export function pseudoIcu(value: string): string {
  * @returns the pseudo raw message
  */
 export function pseudoRaw(value: string): string {
+  const branches = platformBranches(value)
+  if (branches[0].name === null) return pseudoRawText(value)
+  return formatPlatformBranches(branches.map(({ name, text }) => ({ name, text: pseudoRawText(text) })))
+}
+
+/** `pseudoRaw` for one plain raw text (a whole value, or one platform branch body). */
+function pseudoRawText(value: string): string {
   let out = ''
   let i = 0
   while (i < value.length) {

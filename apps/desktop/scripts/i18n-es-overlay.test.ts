@@ -14,16 +14,13 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { isRawKey, isSearchKeywordsKey, loadCatalog, visibleLiterals } from './i18n-catalog-lib.ts'
+import { isSearchKeywordsKey, loadCatalog, visibleText } from './i18n-catalog-lib.ts'
 
 const es = loadCatalog('es').messages
 const la = loadCatalog('es-419').messages
 
-/** The text a reader sees: no placeholder, tag, or plural/select identifiers. */
-function visibleTextOf(key: string, value: string): string {
-  if (isRawKey(key)) return value.replaceAll(/\{[^{}]*\}/g, ' ')
-  return visibleLiterals(value, 'es') ?? value.replaceAll(/\{[^{}]*\}/g, ' ')
-}
+/** The text a reader sees on any OS: no placeholder, tag, plural/select, or platform branch identifiers. */
+const visibleTextOf = (key: string, value: string): string => visibleText(key, value, 'es')
 
 /**
  * Every Spain-only form `es-419` replaces, as it appears in `es` (`u` flag, so

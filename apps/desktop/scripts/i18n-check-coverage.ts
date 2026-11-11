@@ -21,6 +21,16 @@
  *    branch TEXT. Byte comparison alone reads that as translated, which is how
  *    English counters shipped inside a locale this check called fully covered.
  *
+ *  - UNTRANSLATED PLATFORM BRANCH: a FRESH key (its `@key.sourceHash` matches the
+ *    current English) whose per-OS block (`{platform, select, …}`) keeps a branch
+ *    byte-for-byte English (or English under a richer plural set) while that
+ *    English branch differs from the text macOS reads. The macOS branch carries
+ *    the translation, so the whole-value signals above never fire on such a key.
+ *    A STALE key is never judged here: carrying English in its new branches is
+ *    exactly how a migration lands, and the stale check lists it for the
+ *    translator. Restamping a key without translating its branches is what this
+ *    catches. A `sameAsSourceJustification` exempts it, as it does IDENTICAL.
+ *
  * And one WARN (exit `EXIT_WARN` when nothing else is wrong): a plural/select
  * branch left in English while the same English text is translated in a sibling
  * branch (`englishBranches`), the `many` a translator pasted from English.
@@ -60,8 +70,19 @@
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
-import { BASE_LOCALE, TYPE, astOrUndefined, isRawKey, showsOnlySourceText, showsSameText } from './i18n-catalog-lib.ts'
+import {
+  BASE_LOCALE,
+  TYPE,
+  astOrUndefined,
+  isRawKey,
+  pairPlatformBranches,
+  showsOnlySourceText,
+  showsSameText,
+  sourceHash,
+} from './i18n-catalog-lib.ts'
 import type { AstElement } from './i18n-catalog-lib.ts'
+import { pickPlatformBranch } from '../src/lib/intl/platform-select.ts'
+import type { PlatformSelectBranch } from '../src/lib/intl/platform-select.ts'
 import { EXIT_CLEAN, EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 import type { LocaleCheckOptions } from './i18n-locale-check-lib.ts'
 import type { Issue } from './i18n-locale-check-lib.ts'
@@ -149,9 +170,22 @@ const hasWords = (branch: readonly AstElement[]): boolean =>
  * untranslated one by structure, so it's left alone; a wholly English value is
  * `sourceTextOnly`'s business. Exposed for unit tests.
  *
+ * A per-OS block is read one platform branch at a time against English's same
+ * branch (`pairPlatformBranches`), naming the branch: platform branches are
+ * different sentences for different OSes, not categories of one, so a branch
+ * repeating ANOTHER OS's English is never this signal (a key stale before its
+ * migration carries English `macos` text in `windows` legitimately).
+ *
  * @returns one line per stale branch, like "count: `many` repeats the English `other` branch"
  */
 export function englishBranches(englishValue: string, localeValue: string, locale: string): string[] {
+  return pairPlatformBranches(englishValue, localeValue).flatMap(({ name, source, locale: text }) =>
+    branchEnglishBranches(source, text, locale).map((detail) => (name === null ? detail : `${name} branch, ${detail}`)),
+  )
+}
+
+/** `englishBranches` for one platform branch pair (or two plain values). */
+function branchEnglishBranches(englishValue: string, localeValue: string, locale: string): string[] {
   const englishAst = astOrUndefined(englishValue, BASE_LOCALE)
   const localeAst = astOrUndefined(localeValue, locale)
   if (!englishAst || !localeAst) return []
@@ -172,6 +206,42 @@ export function englishBranches(englishValue: string, localeValue: string, local
     }
   }
   return [...found]
+}
+
+/**
+ * The UNTRANSLATED PLATFORM BRANCH signal (see the file header): the names of a
+ * fresh key's platform branches that still show English while that English
+ * differs from what macOS reads. Empty for a plain value, a stale or unstamped
+ * key, or a justified one. "Shows English" is the whole-value rule applied to
+ * one branch: byte-identical, or (ICU family) English text under a different
+ * plural set (`showsOnlySourceText`). A branch whose English equals the macOS
+ * reading is the macOS translation's to carry, so it's judged like that text:
+ * left English beside a translated macOS branch, it's flagged.
+ * Exposed for unit tests.
+ * @param key the message key
+ * @param englishValue the English value
+ * @param localeValue the locale's value
+ * @param keyMetadata the locale's `@key` block for this key
+ */
+export function untranslatedPlatformBranches(
+  key: string,
+  englishValue: string,
+  localeValue: string,
+  keyMetadata: Record<string, unknown> | undefined,
+): PlatformSelectBranch[] {
+  if (keyMetadata?.['sourceHash'] !== sourceHash(englishValue)) return []
+  const justification = keyMetadata['sameAsSourceJustification']
+  if (typeof justification === 'string' && justification !== '') return []
+  const macosEnglish = pickPlatformBranch(englishValue, 'macos')
+  const macosLocale = pickPlatformBranch(localeValue, 'macos')
+  const showsEnglish = (source: string, text: string): boolean =>
+    text === source || (!isRawKey(key) && showsOnlySourceText(source, text))
+  return pairPlatformBranches(englishValue, localeValue).flatMap(({ name, source, locale }) => {
+    if (name === null || name === 'macos') return []
+    // English here reads like macOS: judged only when the macOS branch itself got translated.
+    if (source === macosEnglish && showsEnglish(macosEnglish, macosLocale)) return []
+    return showsEnglish(source, locale) ? [name] : []
+  })
 }
 
 /**
@@ -244,9 +314,20 @@ export function runCoverageCheck(opts: LocaleCheckOptions = {}): number {
         else if (status === 'identical') findings.add(key, 'identical to English; possibly untranslated')
         else if (status === 'sourceTextOnly') {
           findings.add(key, 'every branch reads as English (only the plural categories differ); possibly untranslated')
-        } else if (!isRawKey(key)) {
-          for (const detail of englishBranches(englishValue, catalog.messages[key], findings.locale)) {
-            stale.push({ key, detail })
+        } else {
+          const localeValue = catalog.messages[key]
+          // A key with no `@key` metadata reads `undefined` here at runtime, whatever the record index types say.
+          const untranslated = untranslatedPlatformBranches(key, englishValue, localeValue, catalog.metadata[key])
+          if (untranslated.length > 0) {
+            findings.add(
+              key,
+              `untranslated platform branch(es) ${untranslated.join(', ')}: English text in a fresh key; translate, or justify with sameAsSourceJustification`,
+            )
+          }
+          if (!isRawKey(key)) {
+            for (const detail of englishBranches(englishValue, localeValue, findings.locale)) {
+              stale.push({ key, detail })
+            }
           }
         }
       }

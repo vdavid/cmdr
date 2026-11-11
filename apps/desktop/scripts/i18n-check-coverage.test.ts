@@ -11,7 +11,14 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { EXIT_WARN, runCoverageCheck, coverageStatus, englishBranches } from './i18n-check-coverage.ts'
+import {
+  EXIT_WARN,
+  runCoverageCheck,
+  coverageStatus,
+  englishBranches,
+  untranslatedPlatformBranches,
+} from './i18n-check-coverage.ts'
+import { sourceHash } from './i18n-catalog-lib.ts'
 import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.ts'
 
 const FIXTURE_ROOT = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
@@ -93,6 +100,86 @@ describe('englishBranches: a branch left in English beside its translated siblin
   })
 })
 
+describe('englishBranches: platform blocks', () => {
+  it('compares each platform branch with its own English branch, never across OSes', () => {
+    // A key stale before the migration: only the branch macOS reads carries the
+    // translation, and the `windows` branch is English text that happens to equal
+    // English's `macos`. That's stale's business, not a branch pasted from a sibling.
+    const en = '{platform, select, macos {Show in Finder} windows {Show in Finder} other {Show in Files}}'
+    const de = '{platform, select, macos {Im Finder zeigen} windows {Show in Finder} other {Show in Files}}'
+    expect(englishBranches(en, de, 'de')).toEqual([])
+  })
+
+  it('still finds a plural branch left in English inside one platform branch, naming the branch', () => {
+    const en =
+      '{platform, select, macos {{count, plural, one {# file} other {# files}}} other {{count, plural, one {# item} other {# items}}}}'
+    const pt =
+      '{platform, select, macos {{count, plural, one {# arquivo} many {# files} other {# arquivos}}} other {{count, plural, one {# item} many {# itens} other {# itens}}}}'
+    expect(englishBranches(en, pt, 'pt')).toEqual(['macos branch, count: `many` repeats the English `other` branch'])
+  })
+})
+
+describe('untranslatedPlatformBranches: a fresh key whose platform branch is still English', () => {
+  const en = '{platform, select, macos {Move to Trash} windows {Move to Recycle Bin} other {Move to trash}}'
+  const fresh = { sourceHash: sourceHash(en) }
+
+  it('flags each English branch that differs from what macOS reads', () => {
+    const de = '{platform, select, macos {In den Papierkorb} windows {Move to Recycle Bin} other {Move to trash}}'
+    expect(untranslatedPlatformBranches('a.b', en, de, fresh)).toEqual(['windows', 'other'])
+  })
+
+  it('is clean once every branch is translated', () => {
+    const de = '{platform, select, macos {In den Papierkorb} windows {In den Papierkorb (Windows)} other {In den Müll}}'
+    expect(untranslatedPlatformBranches('a.b', en, de, fresh)).toEqual([])
+  })
+
+  it('never judges a stale key (stale owns it: task 28’s worklist)', () => {
+    const de = '{platform, select, macos {In den Papierkorb} windows {Move to Recycle Bin} other {Move to trash}}'
+    expect(untranslatedPlatformBranches('a.b', en, de, { sourceHash: 'abcdef0' })).toEqual([])
+    expect(untranslatedPlatformBranches('a.b', en, de, undefined)).toEqual([])
+  })
+
+  it('honors a sameAsSourceJustification', () => {
+    const de = '{platform, select, macos {In den Papierkorb} windows {Move to Recycle Bin} other {Move to trash}}'
+    expect(
+      untranslatedPlatformBranches('a.b', en, de, { ...fresh, sameAsSourceJustification: 'Windows UI is English' }),
+    ).toEqual([])
+  })
+
+  it('leaves a branch that equals what macOS reads to the translation of that text', () => {
+    // `windows` keeps the macOS text on purpose: one translation serves both.
+    const shared = '{platform, select, macos {Get Info} windows {Get Info} other {Properties}}'
+    const de = '{platform, select, macos {Informationen} windows {Get Info} other {Eigenschaften}}'
+    expect(untranslatedPlatformBranches('a.b', shared, de, { sourceHash: sourceHash(shared) })).toEqual(['windows'])
+    const deRight = '{platform, select, macos {Informationen} windows {Informationen} other {Eigenschaften}}'
+    expect(untranslatedPlatformBranches('a.b', shared, deRight, { sourceHash: sourceHash(shared) })).toEqual([])
+  })
+
+  it('reads macOS’s branch as `other` in a {windows, other} block', () => {
+    const winOnly = '{platform, select, windows {Recycle Bin} other {Trash}}'
+    const de = '{platform, select, windows {Recycle Bin} other {Papierkorb}}'
+    expect(untranslatedPlatformBranches('a.b', winOnly, de, { sourceHash: sourceHash(winOnly) })).toEqual(['windows'])
+  })
+
+  it('sees English text under a richer plural set as untranslated, like the whole-value rule', () => {
+    const counter =
+      '{platform, select, macos {{n, plural, one {# tab} other {# tabs}}} other {{n, plural, one {# pane} other {# panes}}}}'
+    const pt =
+      '{platform, select, macos {{n, plural, one {# aba} many {# abas} other {# abas}}} other {{n, plural, one {# pane} many {# panes} other {# panes}}}}'
+    expect(untranslatedPlatformBranches('a.b', counter, pt, { sourceHash: sourceHash(counter) })).toEqual(['other'])
+  })
+
+  it('judges a raw block by bytes', () => {
+    const raw = '{platform, select, macos {Open {system_settings}.} other {Open Settings.}}'
+    const de = '{platform, select, macos {Öffne {system_settings}.} other {Open Settings.}}'
+    expect(untranslatedPlatformBranches('errors.x', raw, de, { sourceHash: sourceHash(raw) })).toEqual(['other'])
+  })
+
+  it('has nothing to say about a plain value', () => {
+    expect(untranslatedPlatformBranches('a.b', 'Cancel', 'Cancel', { sourceHash: sourceHash('Cancel') })).toEqual([])
+  })
+})
+
 describe('runCoverageCheck against the committed fixture', () => {
   it('is clean: en-XA has every key and every value differs from English', () => {
     const { lines, write } = capture()
@@ -161,6 +248,47 @@ describe('runCoverageCheck negative cases (temp catalog copies)', () => {
     const { code, text } = run()
     expect(code).toBe(EXIT_WARN)
     expect(text).toMatch(/fixture\.fileCount → count: `few` repeats the English `other` branch/)
+  })
+
+  /** Adds one block key to the temp tree: English plus the en-XA value, stamped fresh unless `hash` says otherwise. */
+  const addBlockKey = (english: string, pseudo: string, hash = sourceHash(english)) => {
+    const enFile = join(root, 'en', 'fixture.json')
+    const enCat = JSON.parse(readFileSync(enFile, 'utf8')) as Record<string, unknown>
+    enCat['fixture.revealLabel'] = english
+    enCat['@fixture.revealLabel'] = { description: 'Reveal command label, per OS.' }
+    writeFileSync(enFile, JSON.stringify(enCat, null, 2) + '\n', 'utf8')
+    writeXa({ ...read(), 'fixture.revealLabel': pseudo, '@fixture.revealLabel': { sourceHash: hash } })
+  }
+  const english = '{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in Files}}'
+
+  it('is clean for a migrated key in the shape English lands in: translated macOS branch, stale hash', () => {
+    addBlockKey(
+      english,
+      '{platform, select, macos {Šḣöŵ íñ Finder} windows {Show in File Explorer} other {Show in Files}}',
+      'abcdef0',
+    )
+    const { code, text } = run()
+    expect(code).toBe(EXIT_CLEAN)
+    expect(text).toMatch(/en-XA: clean\./)
+  })
+
+  it('flags a fresh key whose Windows and Linux branches are still English', () => {
+    addBlockKey(
+      english,
+      '{platform, select, macos {Šḣöŵ íñ Finder} windows {Show in File Explorer} other {Show in Files}}',
+    )
+    const { code, text } = run()
+    expect(code).toBe(EXIT_ISSUES)
+    expect(text).toMatch(/fixture\.revealLabel → untranslated platform branch\(es\) windows, other/)
+    expect(text.match(/^ {2}- /gm)?.length).toBe(1)
+  })
+
+  it('is clean for a fresh key with every branch translated', () => {
+    addBlockKey(
+      english,
+      '{platform, select, macos {Šḣöŵ íñ Finder} windows {Šḣöŵ íñ Ḟíļé Éẋṗļöŕéŕ} other {Šḣöŵ íñ Ḟíļéš}}',
+    )
+    expect(run().code).toBe(EXIT_CLEAN)
   })
 
   it('does NOT flag an identical value that carries a sameAsSourceJustification', () => {

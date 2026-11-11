@@ -35,11 +35,21 @@
  * is why the catalog helper keeps `pluralCategories` and `selectCategories`
  * separate. Raw `errors.*` keys carry no ICU plurals, so they contribute nothing.
  *
+ * A per-OS block (`{platform, select, …}`) is checked PLATFORM BRANCH BY BRANCH,
+ * each against English's same branch (`platformPluralDetail`). The ICU parse
+ * merges an arg's categories across every branch of a message, so a whole-value
+ * read let one OS's `few` mask another OS's missing one. A locale branch
+ * byte-identical to English's same branch (English text a migration carried in,
+ * pending translation) is held to English's categories, which it has by
+ * construction, so it's never a finding: requiring `few` there would demand
+ * translator work from a check that judges structure, and the runtime renders
+ * the missing category through `other`. Stale lists that branch for translation.
+ *
  * Run: `pnpm i18n:check-plural` (desktop) or `node scripts/i18n-check-plural.ts`.
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
-import { parseMessage } from './i18n-catalog-lib.ts'
+import { pairPlatformBranches, parseMessage, platformBranches } from './i18n-catalog-lib.ts'
 import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /**
@@ -110,6 +120,35 @@ export function pluralCoverageDetail(
   return parts.length === 0 ? null : parts.join('; ')
 }
 
+/**
+ * `pluralCoverageDetail` for a whole catalog value, read platform branch by
+ * platform branch (see the file header). A plain value is one unnamed branch, so
+ * this is `pluralCoverageDetail` with English's shape for it. Each finding in a
+ * block names its branch. Exposed for unit tests.
+ * @param locale the BCP-47 tag
+ * @param englishValue the source's value for the key (`undefined` when the key
+ *   isn't in the source: every branch is held to the strict default)
+ * @param localeValue the locale's value
+ */
+export function platformPluralDetail(
+  locale: string,
+  englishValue: string | undefined,
+  localeValue: string,
+): string | null {
+  const pairs =
+    englishValue === undefined
+      ? platformBranches(localeValue).map(({ name, text }) => ({ name, source: undefined, locale: text }))
+      : pairPlatformBranches(englishValue, localeValue)
+  const details = pairs.flatMap(({ name, source, locale: text }) => {
+    if (source !== undefined && text === source) return []
+    const englishPlurals = source === undefined ? undefined : parseMessage(source).pluralCategories
+    const detail = pluralCoverageDetail(locale, text, englishPlurals)
+    if (detail === null) return []
+    return [name === null ? detail : `${name} branch: ${detail}`]
+  })
+  return details.length === 0 ? null : details.join('; ')
+}
+
 /** Options for `runPluralCheck`. */
 interface RunPluralCheckOptions {
   /** only these locales; every one when absent */
@@ -132,13 +171,10 @@ export function runPluralCheck(opts: RunPluralCheckOptions = {}): number {
     summaryLine: (count) => `${String(count)} plural message(s) missing a required CLDR category for this locale:`,
     inspectLocale: ({ locale, source, catalog, findings }) => {
       for (const [key, localeValue] of Object.entries(catalog.messages)) {
-        const englishValue = source.messages[key]
-        // Parse English to learn its plural shape (degenerate vs full); absent en
-        // key → leave undefined so the strict default applies. The record index is
-        // `string` to the types, but undefined at runtime when the key is absent.
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        const englishPlurals = englishValue === undefined ? undefined : parseMessage(englishValue).pluralCategories
-        const detail = pluralCoverageDetail(locale, localeValue, englishPlurals)
+        // English's plural shape (degenerate vs full) gates each branch; an absent en key leaves it undefined so the
+        // strict default applies. The record index is `string` to the types, but undefined at runtime then.
+        const englishValue = source.messages[key] as string | undefined
+        const detail = platformPluralDetail(locale, englishValue, localeValue)
         if (detail !== null) findings.add(key, detail)
       }
     },

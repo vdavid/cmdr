@@ -11,7 +11,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { runPluralCheck, pluralCoverageDetail, requiredPluralCategories } from './i18n-check-plural.ts'
+import {
+  runPluralCheck,
+  platformPluralDetail,
+  pluralCoverageDetail,
+  requiredPluralCategories,
+} from './i18n-check-plural.ts'
 import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.ts'
 
 const FIXTURE_ROOT = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
@@ -102,6 +107,44 @@ describe('pluralCoverageDetail: pure classifier', () => {
     const englishFull = new Map([['count', new Set(['one', 'other'])]])
     expect(pluralCoverageDetail('pl', '{count, plural, one {# plik} other {# plików}}', englishFull)).toMatch(
       /\{count\} missing plural categories few, many/,
+    )
+  })
+})
+
+describe('platformPluralDetail: a per-OS block, branch by branch', () => {
+  const en =
+    '{platform, select, macos {{count, plural, one {# file in the Trash} other {# files in the Trash}}} windows {{count, plural, one {# file in the Recycle Bin} other {# files in the Recycle Bin}}} other {{count, plural, one {# file in the trash} other {# files in the trash}}}}'
+
+  it('passes a ru block whose untranslated windows branch carries English one/other', () => {
+    // How a migration lands: the macOS branch keeps the translation, the new branch
+    // is English text with English's categories (the runtime falls back to `other`).
+    const ru =
+      '{platform, select, macos {{count, plural, one {# файл в Корзине} few {# файла в Корзине} many {# файлов в Корзине} other {# файла в Корзине}}} windows {{count, plural, one {# file in the Recycle Bin} other {# files in the Recycle Bin}}} other {{count, plural, one {# file in the trash} other {# files in the trash}}}}'
+    expect(platformPluralDetail('ru', en, ru)).toBeNull()
+  })
+
+  it('fails a translated branch missing few, naming the branch, even when a sibling branch has it', () => {
+    // The whole-value union merged categories across platform branches, so the
+    // macOS branch's `few` used to mask the gap in `windows`.
+    const ru =
+      '{platform, select, macos {{count, plural, one {# файл в Корзине} few {# файла в Корзине} many {# файлов в Корзине} other {# файла в Корзине}}} windows {{count, plural, one {# файл в Корзине Windows} many {# файлов в Корзине Windows} other {# файла в Корзине Windows}}} other {{count, plural, one {# file in the trash} other {# files in the trash}}}}'
+    expect(platformPluralDetail('ru', en, ru)).toBe('windows branch: {count} missing plural category few')
+  })
+
+  it('keeps the English shape gate per branch (an other-only English branch asks only for other)', () => {
+    const enMixed =
+      '{platform, select, macos {{n, plural, other {# times}}} other {{n, plural, one {# try} other {# tries}}}}'
+    const pl =
+      '{platform, select, macos {{n, plural, other {# razy}}} other {{n, plural, one {# próba} other {# próby}}}}'
+    expect(platformPluralDetail('pl', enMixed, pl)).toBe('other branch: {n} missing plural categories few, many')
+  })
+
+  it('reads a plain value as before, and with no English reference stays strict', () => {
+    expect(
+      platformPluralDetail('pl', '{n, plural, one {# x} other {# xs}}', '{n, plural, one {# plik} other {# plików}}'),
+    ).toBe('{n} missing plural categories few, many')
+    expect(platformPluralDetail('en', undefined, '{platform, select, macos {{n, plural, other {#}}} other {x}}')).toBe(
+      'macos branch: {n} missing plural category one',
     )
   })
 })
