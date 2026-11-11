@@ -1,7 +1,7 @@
 <!--
     Title-bar overlay toolbar for the viewer. Matches the main window's overlay
     style (see `tauri.macos.conf.json` § titleBarStyle and `open-viewer.ts` mirror).
-    Reserves 72 px on the left for the macOS traffic lights and lets the empty
+    Reserves 72 px on the left for the macOS traffic lights (only under an overlay title bar) and lets the empty
     space remain draggable via `data-tauri-drag-region`. The pickers opt out of
     the drag region with their own click handlers so the user can interact with
     them. Indexing progress sits next to the pickers instead of stealing space
@@ -130,7 +130,9 @@
         min-height: var(--titlebar-height);
     }
 
-    .viewer-toolbar::before {
+    /* Only where the window buttons sit on this bar (the overlay title bar, `app.css` §
+       Window chrome); elsewhere the OS draws them outside the webview. */
+    :global(:root[data-overlay-title-bar]) .viewer-toolbar::before {
         content: '';
         display: block;
         width: 72px;
