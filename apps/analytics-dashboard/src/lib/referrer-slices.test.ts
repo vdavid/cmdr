@@ -1,0 +1,67 @@
+import { describe, it, expect } from 'vitest'
+import { COLOR_UNKNOWN } from './colors.js'
+import { referrerSlices } from './referrer-slices.js'
+
+describe('referrerSlices', () => {
+  it('turns Umami referrer rows into pie slices keyed and labeled by domain', () => {
+    const slices = referrerSlices([
+      { x: 'google.com', y: 60 },
+      { x: 'reddit.com', y: 40 },
+    ])
+    expect(slices.map((s) => [s.key, s.label, s.count, s.share])).toEqual([
+      ['google.com', 'google.com', 60, 0.6],
+      ['reddit.com', 'reddit.com', 40, 0.4],
+    ])
+  })
+
+  it('names an empty referrer "(direct)" and paints it the unknown grey without using a hue', () => {
+    const slices = referrerSlices([
+      { x: 'a.com', y: 30 },
+      { x: '', y: 25 },
+      { x: 'b.com', y: 15 },
+      { x: 'c.com', y: 15 },
+      { x: 'd.com', y: 15 },
+    ])
+    const direct = slices.find((s) => s.label === '(direct)')
+    expect(direct?.color).toBe(COLOR_UNKNOWN)
+    expect(slices.map((s) => s.label)).toEqual(['a.com', '(direct)', 'b.com', 'c.com', 'd.com'])
+  })
+
+  it('folds the long tail into "Other" but keeps a lone would-be fold named', () => {
+    const tail = referrerSlices([
+      { x: 'a.com', y: 50 },
+      { x: 'b.com', y: 20 },
+      { x: 'c.com', y: 10 },
+      { x: 'd.com', y: 10 },
+      { x: 'e.com', y: 5 },
+      { x: 'f.com', y: 5 },
+    ])
+    expect(tail.map((s) => s.label)).toEqual(['a.com', 'b.com', 'c.com', 'd.com', 'Other'])
+    expect(tail.at(-1)?.folded?.map((f) => f.label)).toEqual(['e.com', 'f.com'])
+
+    const lone = referrerSlices([
+      { x: 'a.com', y: 98 },
+      { x: 'b.com', y: 2 },
+    ])
+    expect(lone.map((s) => s.label)).toEqual(['a.com', 'b.com'])
+  })
+
+  it('gives the same domain the same color whatever its rank', () => {
+    const first = referrerSlices([
+      { x: 'google.com', y: 60 },
+      { x: 'github.com', y: 40 },
+    ])
+    const flipped = referrerSlices([
+      { x: 'google.com', y: 40 },
+      { x: 'github.com', y: 60 },
+    ])
+    const color = (slices: typeof first, key: string) => slices.find((s) => s.key === key)?.color
+    expect(color(first, 'google.com')).toBe(color(flipped, 'google.com'))
+    expect(color(first, 'github.com')).toBe(color(flipped, 'github.com'))
+  })
+
+  it('returns no slices when no visitor came from another site', () => {
+    expect(referrerSlices([])).toEqual([])
+    expect(referrerSlices([{ x: 'a.com', y: 0 }])).toEqual([])
+  })
+})

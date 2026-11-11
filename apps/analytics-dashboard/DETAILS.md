@@ -16,9 +16,11 @@ sections and pass their loaded data down.
     under the clicks chart. The charts' and pies' window follows the picker. § "Acquisition trends".
   - By country, last N days (`components/sections/CountryFunnelSection.svelte`): the world map and the country table. §
     "The country map and table".
-  - Awareness (`components/sections/AwarenessSection.svelte`).
-  - Interest (`components/sections/InterestSection.svelte`).
-  - Download (`components/sections/DownloadSection.svelte`), with `CountryTable.svelte` and the per-day pie tooltip.
+  - Awareness (`components/sections/AwarenessSection.svelte`), full page width: total page views, then one 1/3 card per
+    site (getcmdr.com, getprvw.com, veszelovszki.com; one column below `md`), each with the site's page views and change
+    beside its name and a `DonutChart` of its top referrers, then GitHub stars. § "Awareness referrer pies".
+  - Interest (`components/sections/InterestSection.svelte`) and Download (`components/sections/DownloadSection.svelte`,
+    with `CountryTable.svelte` and the per-day pie tooltip), side by side from `md`.
 - `/product` — Product (`routes/product/+page.svelte`):
   - Active use (`ActiveUseSection.svelte`), Payment (`PaymentSection.svelte`), Retention (`RetentionSection.svelte`),
     Feedback & errors (`FeedbackErrorsSection.svelte`).
@@ -212,14 +214,16 @@ runtime values live outside `#lib/server`: `#lib/funnel.ts`, `#lib/feedback-and-
 - `src/lib/server/sources/`: data source modules (one per external API).
 - `src/lib/components/sections/`: one component per dashboard section. `src/lib/components/`: shared UI (CountryTable,
   MetricRow/MetricTable, ErrorState/EmptyState/BetaEmptyState, SectionDescription, Methodology, ExternalLinks, Chart,
-  StackedBarChart, MiniTimeline, PieChart (the Download section's tiny per-day pie), DonutChart (the breakdown pies)).
+  StackedBarChart, MiniTimeline, PieChart (the Download section's tiny per-day pie), DonutChart (the breakdown and
+  referrer pies)).
 - `src/lib/{format,colors,chart-helpers}.ts`: client-safe formatters, color tokens, chart data-shaping helpers.
 - `src/lib/acquisition-stats.ts` (the stats grid, rolling rates, axis ticks), `acquisition-series.ts` (funnel rows →
   each chart's numerator and denominator), `acquisition-countries.ts` (country table join), `acquisition-by-country.ts`
   (client-side country rows, stacks, split bar), `country-colors.ts`, `daily-chart.ts` (`DailyChart.svelte` geometry),
-  and `pie-slices.ts` (`DonutChart.svelte` folding, colors, ring geometry): client-safe, each with its Vitest file. Same
-  for the country section's `count-color-scale.ts`, `country-table.ts`, `country-geo.ts`, and `world-map-shapes.ts` (§
-  "The country map and table"), drawn by `WorldMap.svelte`.
+  `pie-slices.ts` (`DonutChart.svelte` folding, colors, ring geometry), and `referrer-slices.ts` (Umami referrer rows →
+  pie slices): client-safe, each with its Vitest file. Same for the country section's `count-color-scale.ts`,
+  `country-table.ts`, `country-geo.ts`, and `world-map-shapes.ts` (§ "The country map and table"), drawn by
+  `WorldMap.svelte`.
 - `DailyChart.svelte` (SVG day columns or rate dots + rolling line), `StatsGrid.svelte`, `TrendRow.svelte`, and
   `InfoPopover.svelte` (the (i): hover, focus, or tap; Escape closes).
 - `src/lib/link-codes.ts`: client-safe `?r=` helpers (validation mirroring the api-server, row flattening, example
@@ -235,11 +239,11 @@ runtime values live outside `#lib/server`: `#lib/funnel.ts`, `#lib/feedback-and-
 
 Each source under `src/lib/server/sources/` exports a typed fetch returning `SourceResult<T>`:
 
-- `umami.ts` (JWT login): page views, visitors, referrers, countries, download events for veszelovszki.com, getcmdr.com,
-  getprvw.com. The daily series (`fetchUmamiDailyTraffic`, `fetchUmamiDailyEventSeries`) split a long window into spans
-  of at most `umamiMaxDaySpanDays` (`umamiDaySpans`): past about seven months Umami ignores `unit=day` and answers
-  monthly buckets in the same shape, which read as a few huge days (210 days came back daily, 230 monthly; Umami v3,
-  curl, 2026-11-10).
+- `umami.ts` (JWT login): page views, visitors, and referrers for veszelovszki.com, getcmdr.com, and getprvw.com, plus
+  getcmdr.com's countries and download events and getprvw.com's pages. The daily series (`fetchUmamiDailyTraffic`,
+  `fetchUmamiDailyEventSeries`) split a long window into spans of at most `umamiMaxDaySpanDays` (`umamiDaySpans`): past
+  about seven months Umami ignores `unit=day` and answers monthly buckets in the same shape, which read as a few huge
+  days (210 days came back daily, 230 monthly; Umami v3, curl, 2026-11-10).
 - `cloudflare.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): downloads (by version/arch/country/source, raw +
   same-day-deduped), true per-day DAU + app hours from the heartbeat, per-day update-check activity by version, from
   worker endpoints (`/admin/downloads`, `/admin/heartbeat-dau`, `/admin/update-activity`).
@@ -391,7 +395,8 @@ association from one section to the next:
 - Countries: eight fixed colors in `#lib/country-colors.ts` (`countryColor(code)`), assigned once to the 90-day top
   eight and never reshuffled by rank; every other country, and "Other", is the grey. The file's header carries the
   validator run and the near-pair caveat. Add a color deliberately when an uncolored country climbs into the top 20.
-- Breakdown pies: four hues of their own plus two greys, in `#lib/pie-slices.ts` (§ "Acquisition trends").
+- Breakdown and referrer pies: four hues of their own plus two greys, in `#lib/pie-slices.ts` (§ "Acquisition trends").
+  Each referrer card's dot beside the site name wears that site's color.
 - Status bands (`COLOR_BAND`): the app's success / warning / danger tokens, only as faint backgrounds behind rate
   charts.
 
@@ -477,6 +482,22 @@ columns ending today.
     all-pairs check, and no fifth hue does against these four (validator run in the file header).
   - `DonutChart.svelte`: a ring with the total inside and a legend of every slice's count and share (the table view).
     Hover, focus, or tap a slice for its tooltip; a tap or Enter pins it; "Other"'s lists what folded in.
+
+## Awareness referrer pies
+
+- **Window**: the picker's 7/30/90 days ending now, like the rest of the Awareness section (§ "Selection state"); a
+  stepped-back `?end=` doesn't move them.
+- **What a slice counts**: visitors, not views. Umami's `metrics?type=referrer` counts distinct visitors per referrer
+  domain and leaves out visitors with no referrer (getcmdr.com, 30 days: google.com 218, and `stats?referrer=google.com`
+  answered 218 visitors, 265 views; the rows summed to 548 of 1,190 visitors; Umami v3, curl, 2026-11-11). So the ring's
+  middle reads "visitors", the line above it says how many of the site's visitors came from another site, and the big
+  number beside the site name is its page views (with change vs. the previous window when there was one).
+- `referrerSlices` (`#lib/referrer-slices.ts`) runs the rows through `foldSlices`, so the pies fold, color, and keep a
+  lone would-be fold named like the breakdown pies (§ "Acquisition trends"). An empty referrer, should Umami ever send
+  one, is a neutral "(direct)" slice.
+- Subdomains stay separate slices (`m.facebook.com`, `l.facebook.com`, `facebook.com`), as Umami reports them.
+- **Layout**: Awareness spans the page (Interest and Download share the row below it), because three 1/3 pie cards don't
+  fit inside a 1/3 column.
 
 ## The country map and table
 

@@ -124,6 +124,7 @@ const richData: DashboardData = {
       downloadEvents: [{ x: 'download-mac', y: 240 }],
       prvwReferrers: [{ x: 'google.com', y: 60 }],
       prvwPages: [{ x: '/', y: 120 }],
+      personalSiteReferrers: [{ x: 'linkedin.com', y: 30 }],
     },
   },
   cloudflare: {
@@ -392,6 +393,7 @@ const emptyData: DashboardData = {
       downloadEvents: [],
       prvwReferrers: [],
       prvwPages: [],
+      personalSiteReferrers: [],
     },
   },
   cloudflare: { ok: true, data: { downloads: [], heartbeatDau: [], updateActivity: [] } },
@@ -472,6 +474,9 @@ Top referrers (getcmdr.com):
 
 Top referrers (getprvw.com):
   google.com: 60 (100.0%)
+
+Top referrers (veszelovszki.com):
+  linkedin.com: 30 (100.0%)
 
 ## Interest: how many engage with the product page?
 

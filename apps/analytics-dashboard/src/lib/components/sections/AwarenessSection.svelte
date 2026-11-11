@@ -1,4 +1,4 @@
-<!-- Acquisition § Awareness: top-of-funnel reach across the three sites, top referrers, and GitHub stars. -->
+<!-- Acquisition § Awareness: top-of-funnel reach across the three sites, a referrer pie per site, and GitHub stars. -->
 <script lang="ts">
     import type { SourceResult, DashboardSelection } from '#lib/server/types.js'
     import type { UmamiSiteUrls } from '#lib/server/fetch-all.js'
@@ -9,7 +9,8 @@
     import Chart from '#lib/components/Chart.svelte'
     import ErrorState from '#lib/components/ErrorState.svelte'
     import MetricRow from '#lib/components/MetricRow.svelte'
-    import MetricTable from '#lib/components/MetricTable.svelte'
+    import DonutChart from '#lib/components/DonutChart.svelte'
+    import { referrerSlices } from '#lib/referrer-slices.js'
     import SectionDescription from '#lib/components/SectionDescription.svelte'
     import ExternalLinks from '#lib/components/ExternalLinks.svelte'
 
@@ -56,28 +57,47 @@
         {@const prevPageviews = u.personalSite.pageviews.prev + u.website.pageviews.prev + u.prvw.pageviews.prev}
         {@const delta = formatDelta(totalPageviews, prevPageviews)}
 
-        <MetricRow
-            metrics={[
-                { label: 'Total page views', value: formatNumber(totalPageviews), delta },
-                { label: 'veszelovszki.com views', value: formatNumber(u.personalSite.pageviews.value), color: COLOR_GREEN },
-                { label: 'getcmdr.com views', value: formatNumber(u.website.pageviews.value), color: COLOR_GOLD },
-                { label: 'getprvw.com views', value: formatNumber(u.prvw.pageviews.value), color: COLOR_CYAN },
-            ]}
-        />
+        {@const sites = [
+            { name: 'getcmdr.com', color: COLOR_GOLD, stats: u.website, referrers: u.websiteReferrers },
+            { name: 'getprvw.com', color: COLOR_CYAN, stats: u.prvw, referrers: u.prvwReferrers },
+            { name: 'veszelovszki.com', color: COLOR_GREEN, stats: u.personalSite, referrers: u.personalSiteReferrers },
+        ]}
 
-        {#if u.websiteReferrers.length > 0}
-            <div class="mt-4">
-                <h3 class="mb-2 text-sm font-medium text-text-secondary">Top referrers (getcmdr.com)</h3>
-                <MetricTable items={u.websiteReferrers.slice(0, 10)} colLabel="Source" colValue="Views" />
-            </div>
-        {/if}
+        <MetricRow metrics={[{ label: 'Total page views', value: formatNumber(totalPageviews), delta }]} />
 
-        {#if u.prvwReferrers.length > 0}
-            <div class="mt-4">
-                <h3 class="mb-2 text-sm font-medium text-text-secondary">Top referrers (getprvw.com)</h3>
-                <MetricTable items={u.prvwReferrers.slice(0, 10)} colLabel="Source" colValue="Views" />
-            </div>
-        {/if}
+        <!-- Per site: its views up top, then where its visitors came from. DETAILS.md § "Awareness referrer pies" -->
+        <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {#each sites as site (site.name)}
+                {@const slices = referrerSlices(site.referrers)}
+                {@const referred = slices.reduce((sum, s) => sum + s.count, 0)}
+                {@const views = site.stats.pageviews}
+                <div class="min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-6">
+                    <div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                        <h3 class="flex items-center gap-2 text-sm font-medium text-text-primary">
+                            <span class="inline-block size-2 rounded-full" style="background: {site.color}"></span>
+                            {site.name}
+                        </h3>
+                        <p class="flex flex-wrap items-baseline gap-x-1.5">
+                            <span class="text-2xl font-bold text-text-primary tabular-nums">{formatNumber(views.value)}</span>
+                            <span class="text-xs text-text-tertiary">views</span>
+                            {#if views.prev > 0}
+                                {@const d = formatDelta(views.value, views.prev)}
+                                <span class="text-xs tabular-nums {d.positive ? 'text-success' : 'text-danger'}">{d.text}</span>
+                            {/if}
+                        </p>
+                    </div>
+                    {#if slices.length === 0}
+                        <p class="text-sm text-text-tertiary">No visitors came from another site in this window.</p>
+                    {:else}
+                        <p class="mb-3 text-xs text-text-secondary">
+                            Top referrers: {formatNumber(referred)} of {formatNumber(site.stats.visitors.value)} visitors came
+                            from another site.
+                        </p>
+                        <DonutChart slices={slices} label="Referrers to {site.name}" unit="visitors" />
+                    {/if}
+                </div>
+            {/each}
+        </div>
 
         {#if githubStars.ok}
             {@const stars = githubStars.data}

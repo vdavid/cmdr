@@ -71,7 +71,7 @@ describe('fetchUmamiData', () => {
       json: () => Promise.resolve({ token: 'test-jwt-token' }),
     })
 
-    // 9 parallel requests: personalSite stats, website stats, prvw stats, referrers, pages, countries, events, prvwReferrers, prvwPages
+    // 10 parallel requests: personalSite stats, website stats, prvw stats, referrers, pages, countries, events, prvwReferrers, prvwPages, personalSiteReferrers
     const rawStats = {
       pageviews: 1200,
       visitors: 450,
@@ -80,7 +80,7 @@ describe('fetchUmamiData', () => {
       totaltime: 86400,
       comparison: { pageviews: 1000, visitors: 400, visits: 550, bounces: 180, totaltime: 72000 },
     }
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 10; i++) {
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(i < 3 ? rawStats : sampleMetrics),
@@ -98,6 +98,7 @@ describe('fetchUmamiData', () => {
     expect(result.data.prvw.pageviews.value).toBe(1200)
     expect(result.data.websitePages).toHaveLength(3)
     expect(result.data.prvwReferrers).toHaveLength(3)
+    expect(result.data.personalSiteReferrers).toHaveLength(3)
 
     // Verify auth was called first
     expect(fetchMock.mock.calls[0][0]).toBe('https://umami.example.com/api/auth/login')

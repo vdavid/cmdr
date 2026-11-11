@@ -286,6 +286,7 @@ function writeAwarenessSection(
   writeGitHubStars(w, githubStars)
   writeTopReferrers(w, 'Top referrers (getcmdr.com):', u.websiteReferrers)
   writeTopReferrers(w, 'Top referrers (getprvw.com):', u.prvwReferrers)
+  writeTopReferrers(w, 'Top referrers (veszelovszki.com):', u.personalSiteReferrers)
 }
 
 // ── 2. Interest ──────────────────────────────────────────────────────────────────────────────────

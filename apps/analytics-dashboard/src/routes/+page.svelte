@@ -79,7 +79,8 @@
         Awareness, interest, and downloads below still cover the last {days} days ending today.
     </p>
 {/if}
-<div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+<!-- Awareness spans the page so its three referrer pies get 1/3-wide cards, like the breakdown pies above -->
+<div class="mb-6">
     <AwarenessSection
         umami={data.umami}
         umamiSiteUrls={data.umamiSiteUrls}
@@ -87,6 +88,8 @@
         selection={data.selection}
         {starChartXMin}
     />
+</div>
+<div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
     <InterestSection umami={data.umami} posthog={data.posthog} selection={data.selection} />
     <DownloadSection cloudflare={data.cloudflare} github={data.github} selection={data.selection} />
 </div>

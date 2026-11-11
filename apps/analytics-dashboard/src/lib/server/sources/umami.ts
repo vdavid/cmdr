@@ -30,6 +30,8 @@ export interface UmamiData {
   downloadEvents: UmamiMetricItem[]
   /** Top referrers for getprvw.com */
   prvwReferrers: UmamiMetricItem[]
+  /** Top referrers for veszelovszki.com */
+  personalSiteReferrers: UmamiMetricItem[]
   /** Top pages for getprvw.com */
   prvwPages: UmamiMetricItem[]
 }
@@ -330,7 +332,7 @@ export function parseUmamiMetrics(raw: unknown): UmamiMetricItem[] {
 
 export async function fetchUmamiData(env: UmamiEnv, selection: DashboardSelection): Promise<SourceResult<UmamiData>> {
   const cacheKey = selectionCacheKey(selection)
-  const cached = await cacheGet<UmamiData>('umami-v2', cacheKey)
+  const cached = await cacheGet<UmamiData>('umami-v3', cacheKey)
   if (cached) return { ok: true, data: cached }
 
   try {
@@ -347,6 +349,7 @@ export async function fetchUmamiData(env: UmamiEnv, selection: DashboardSelectio
       downloadEvents,
       prvwReferrers,
       prvwPages,
+      personalSiteReferrers,
     ] = await Promise.all([
       fetchStats(env.UMAMI_API_URL, token, env.UMAMI_BLOG_WEBSITE_ID, startAt, endAt),
       fetchStats(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt),
@@ -357,6 +360,7 @@ export async function fetchUmamiData(env: UmamiEnv, selection: DashboardSelectio
       fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_WEBSITE_ID, startAt, endAt, 'event'),
       fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_PRVW_WEBSITE_ID, startAt, endAt, 'referrer'),
       fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_PRVW_WEBSITE_ID, startAt, endAt, 'path'),
+      fetchMetrics(env.UMAMI_API_URL, token, env.UMAMI_BLOG_WEBSITE_ID, startAt, endAt, 'referrer'),
     ])
 
     const data: UmamiData = {
@@ -369,8 +373,9 @@ export async function fetchUmamiData(env: UmamiEnv, selection: DashboardSelectio
       downloadEvents,
       prvwReferrers,
       prvwPages,
+      personalSiteReferrers,
     }
-    await cacheSet('umami-v2', cacheKey, data)
+    await cacheSet('umami-v3', cacheKey, data)
     return { ok: true, data }
   } catch (e) {
     return { ok: false, error: `Umami: ${e instanceof Error ? e.message : String(e)}` }
