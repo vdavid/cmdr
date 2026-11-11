@@ -241,6 +241,11 @@ share races it the way a local walk used to race the local loop.
 
 ## Platform split: why Linux watches branches and macOS watches the volume
 
+`DriveWatcher` is one struct over a `WatcherBackend` the OS picks in `watcher/platform/`: `macos.rs` (FSEvents, and a
+test root on the scripted fake journal, `watcher/fake_journal.rs`), and `notify_backend.rs`, which Linux and Windows
+share. Whether the OS keeps a journal to replay (`SUPPORTS_EVENT_REPLAY`) is the backend's property, and so is how a
+branch-watched volume is watched (`start_branches`), the one place the two backends differ in shape:
+
 On macOS a branch watch is one FSEvents stream over the VOLUME ROOT plus the scope's path test. A stream costs nothing
 per directory below its root, and rooting it at the volume is what makes `sinceWhen` replay the whole journal — a branch
 added last session would otherwise have no history to replay. `watch_branch` is a no-op.

@@ -195,8 +195,10 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     `cmdr_fs::mount_layout` (pure path knowledge, so the index asks it without depending on `cmdr-local`), each behind a
     `platform/` seam. The write engine's mount guards and the index's external-volume routing and volume-root classifier
     stop naming the OS.
-12. [S] Win. Watcher backend trait in `cmdr-index`: FSEvents and `notify` behind one `DriveWatcher`, replay as a backend
-    property, the test journal as a third backend. Windows then needs only the dep widened and a smoke test.
+12. [S] Win. **Done**. `DriveWatcher` over a `WatcherBackend` trait, per OS in `watch/watcher/platform/`: FSEvents on
+    macOS, one `notify` backend for Linux and Windows (the `notify` dependency is now Linux and Windows), the fake
+    journal as a third backend for macOS tests. Replay support and the branch-watch shape are backend properties.
+    Windows still needs a smoke test on a real runner.
 13. [S] Win (Linux gains a watchdog). Process stats behind one module with per-OS readers; the memory watchdog consumes
     the portable reading.
 14. [S] Win. Name and path validity keyed on the destination's `filesystem_kind`, not the host OS (`cmdr-fs` validation,

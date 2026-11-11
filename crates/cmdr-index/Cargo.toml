@@ -95,9 +95,11 @@ sha2 = "0.11"
 # the type is part of that gated surface and can't live in dev-dependencies.
 tempfile = { version = "3", optional = true }
 
-[target.'cfg(target_os = "linux")'.dependencies]
-# inotify-backed directory watching. macOS uses `cmdr-fsevent-stream` instead:
-# only FSEvents carries the event IDs that make watch-gap detection possible.
+[target.'cfg(any(target_os = "linux", target_os = "windows"))'.dependencies]
+# Directory watching where the OS keeps no event journal: inotify on Linux,
+# `ReadDirectoryChangesW` on Windows (`watch/watcher/platform/notify_backend.rs`).
+# macOS uses `cmdr-fsevent-stream` instead: only FSEvents carries the event IDs
+# that make watch-gap detection possible.
 notify = "8"
 
 [target.'cfg(unix)'.dependencies]
