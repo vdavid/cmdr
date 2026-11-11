@@ -25,7 +25,8 @@ request, once per request (to decide on proxy auth). `route::decide` answers:
    `Proxy-Authorization` header, or for a SOCKS URL into the SOCKS5 username/password sign-in (RFC 1929). A `socks4` /
    `socks4a` / `socks5` / `socks5h` value is passed through as typed, so `socks5://` resolves names on this Mac and
    `socks5h://` at the proxy (curl's convention, and what someone writing the variable expects).
-5. **macOS** (`system::mac::route`) → CFNetwork's verdict. Elsewhere there's no system layer and this step is direct.
+5. **The OS** (`system::OsSystem`, per OS under `system/platform/`) → on macOS CFNetwork's verdict. Linux and Windows
+   read no system layer yet, so this step is direct there.
 
 The environment is snapshotted on the first `client_builder()` call (`OnceLock`): a running process's environment
 doesn't change.
@@ -121,9 +122,10 @@ Left alone, a PAC on a loaded Mac could miss `TIMEOUT` on that cold first evalua
 requests direct for `FAILURE_TTL`, past a proxy that should have covered them (#810). So the app calls
 `warm_up_pac("https://api.getcmdr.com")` right after the logger starts:
 
-- A `cmdr-http-pac-warm-up` thread runs `route::decide` for that URL with `WarmingSystem`, which is `MacSystem` with the
-  PAC miss given `WARM_UP_TIMEOUT` (10 s) through `MacPac::with_budget`. Same cache, same turn: only the budget differs.
-  No PAC, a local host, or an env var deciding first → nothing runs, at the cost of one 15 µs lookup.
+- A `cmdr-http-pac-warm-up` thread runs `route::decide` for that URL with `WarmingSystem` (macOS's arm), which is the
+  macOS route with the PAC miss given `WARM_UP_TIMEOUT` (10 s) through `MacPac::with_budget`. Same cache, same turn:
+  only the budget differs. No PAC, a local host, or an env var deciding first → nothing runs, at the cost of one 15 µs
+  lookup.
 - **A request arriving meanwhile joins it**: it blocks on the turn, then reads the cached answer, so it can wait up to
   `WARM_UP_TIMEOUT` + 1 s instead of `TIMEOUT` + 1 s, once, and only while the PAC is genuinely slow
   (`pac_test.rs::a_request_during_the_warm_up_joins_it`).
@@ -147,8 +149,8 @@ the PAC fails, which would be undefined behavior in a `NonNull` parameter.
 
 - `route_test.rs` / `env_test.rs`: the pure decision, with the environment injected (`EnvProxies::from_vars`) and a fake
   system layer. ❌ Never `std::env::set_var` in a test: the runner is parallel.
-- `system_test.rs`: `first_route` everywhere, plus the real CFNetwork call on macOS against a settings dictionary the
-  test builds (`mac::settings`), so it never reads or changes this Mac's own settings.
+- `system/platform/macos_test.rs`: the real CFNetwork call on macOS against a settings dictionary the test builds
+  (`settings`), so it never reads or changes this Mac's own settings.
 - `pac_test.rs`: real PAC evaluation against a PAC file served from loopback, an inline script, the cache, an
   unreachable PAC host, one that never answers, and a broken script.
 - `lib_test.rs`: the built client end to end, with a fake proxy and origin on loopback, and a fake SOCKS5 server that

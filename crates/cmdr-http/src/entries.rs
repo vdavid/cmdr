@@ -1,7 +1,7 @@
 //! CFNetwork's ordered proxy list, as Cmdr reads and walks it. The list comes from the system
-//! settings (`system.rs`) or from a PAC file (`pac.rs`), in the same shape either way.
+//! settings (`system/platform/macos.rs`) or from a PAC file (`pac.rs`), in the same shape either way.
 #![cfg_attr(
-    not(target_os = "macos"),
+    any(target_os = "linux", target_os = "windows"),
     allow(
         dead_code,
         reason = "the list walk serves macOS's answer; elsewhere only its tests use it"
