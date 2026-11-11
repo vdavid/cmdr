@@ -255,7 +255,8 @@ All under `apps/desktop/src-tauri/src/`.
   dev, E2E, and capture launcher sets). Read by the analytics gate and the updater's update-check gate
 - `platform/`: Which OS and version this is (`os_version()`, `macos_at_least()`, Linux's `LinuxDistro`), used by crash +
   error reports and the heartbeat. The first platform seam: every OS split takes the shape in
-  `docs/guides/platform-seams.md`
+  `docs/guides/platform-seams.md`. `platform/startup/` holds each OS's order-free setup-hook installers (observers, the
+  volume watcher, native hooks), one `install(app)` per OS
 - `licensing/`: Ed25519 license verification, server validation
 - `settings/`: Settings persistence (tauri-plugin-store)
 - `priority/`: Who gets the volume, and which of its folders come first. The per-volume signals background work yields

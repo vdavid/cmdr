@@ -273,8 +273,8 @@
       "outsideSeam": 34
     },
     "apps/desktop/src-tauri/src/lib.rs": {
-      "negated": 5,
-      "outsideSeam": 69
+      "negated": 3,
+      "outsideSeam": 52
     },
     "apps/desktop/src-tauri/src/licensing/device_id.rs": {
       "outsideSeam": 4

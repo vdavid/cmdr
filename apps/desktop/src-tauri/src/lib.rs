@@ -238,6 +238,10 @@ use tauri::Manager;
 // pre-`setup` registrations, where nothing observes app state or cares what ran
 // before it. A new order-free registration belongs there; anything that has to
 // happen after another step belongs in the spine below.
+//
+// The same holds per OS: an order-free installer only one OS has (an observer, a
+// watcher, a native hook) goes in that OS's arm of `platform/startup/`, which runs at
+// one point on the spine; anything else keeps its own line here.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Before anything in this crate can panic. It can't write a crash file until
@@ -422,23 +426,11 @@ pub fn run() {
             // Initialize the volume manager with the root volume
             file_system::init_volume_manager();
 
-            // Read which File Provider domains exist and what their extensions declare, on
-            // a thread of its own, so the first right-click in Dropbox or Google Drive
-            // already finds its actions.
-            #[cfg(target_os = "macos")]
-            file_system::file_provider_actions::warm();
-
             // Stash the AppHandle so a share that stays on the slow kernel mount
             // can say so. Session-state transitions need no handle here: they go
             // through the volume host's event seam, wired in `volume_host`.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::os_mount_notice::set_app_handle(app.handle().clone());
-
-            // Stash the AppHandle so the drag-out file-promise machinery can
-            // dispatch session cleanup (freeing the retained promise delegates)
-            // back to the AppKit main thread once a fulfillment drains.
-            #[cfg(target_os = "macos")]
-            native_drag::set_app_handle(app.handle().clone());
 
             // Network discovery (mDNS) startup is deferred. See the post-`load_settings`
             // block below. Starting mDNS here would trigger macOS's "Cmdr wants to find devices
@@ -488,15 +480,10 @@ pub fn run() {
             // System Settings. See `crate::restricted_paths`.
             restricted_paths::init(app.handle());
 
-            // Start volume mount/unmount watcher
-            #[cfg(target_os = "macos")]
-            volumes::watcher::start_volume_watcher(app.handle());
-            // Holds every DA-mediated unmount while the drive's index lets go (`volumes/unmount_approver/`).
-            #[cfg(target_os = "macos")]
-            volumes::unmount_approver::install_for_app();
-
-            #[cfg(target_os = "linux")]
-            volumes_linux::watcher::start_volume_watcher(app.handle());
+            // This OS's own installers: the volume watcher, the system-look observers, and the
+            // native hooks (`platform/startup/`). After the volume broadcast above (the watcher
+            // emits), before the MTP watcher, the first volume list, and the menu bar below.
+            platform::startup::install(app.handle());
 
             // Register the virtual MTP device (before the watcher so it's in the initial
             // snapshot) when requested. Two activation paths, unified in
@@ -506,11 +493,6 @@ pub fn run() {
             // See `mtp/virtual_device.rs::decide_startup_root` and `docs/tooling/virtual-mtp.md`.
             #[cfg(feature = "virtual-mtp")]
             mtp::virtual_device::activate_from_env_if_requested(test_mode::is_e2e_mode());
-
-            // Ensure ptpcamerad is re-enabled in case a previous session crashed
-            // while it was suppressed. No-op if it was already enabled.
-            #[cfg(target_os = "macos")]
-            mtp::macos_workaround::ensure_ptpcamerad_enabled();
 
             // Load persisted settings early so MTP enabled flag is set before the watcher starts
             let saved_settings = settings::load_settings(app.handle());
@@ -631,36 +613,6 @@ pub fn run() {
             // exist in the runtime until the first webview is created, which happens after
             // setup() returns.
 
-            // Observe system accent color changes and emit events to frontend
-            #[cfg(target_os = "macos")]
-            accent_color::observe_accent_color_changes(app.handle().clone());
-            #[cfg(target_os = "linux")]
-            accent_color_linux::observe_accent_color_changes(app.handle().clone());
-
-            // Observe macOS Accessibility > Display option changes (Reduce transparency,
-            // Increase contrast, Differentiate without color)
-            #[cfg(target_os = "macos")]
-            display_accessibility::observe_display_accessibility_changes(app.handle().clone());
-            #[cfg(not(target_os = "macos"))]
-            stubs::display_accessibility::observe_display_accessibility_changes(app.handle().clone());
-
-            // Follow the macOS 27 Appearance > Liquid Glass slider
-            #[cfg(target_os = "macos")]
-            glass_tint::observe_glass_tint_changes(app.handle().clone());
-            #[cfg(not(target_os = "macos"))]
-            stubs::glass_tint::observe_glass_tint_changes(app.handle().clone());
-
-            // Watch the mouse's back / forward navigation. macOS only: the mouse's own
-            // driver decides what the press becomes, and a Logi Options+ mouse posts a
-            // swipe gesture with no button behind it, so AppKit is the only layer that
-            // sees both shapes. On Linux the frontend reads the buttons off the DOM.
-            #[cfg(target_os = "macos")]
-            mouse_nav::install(app.handle().clone());
-
-            // Observe macOS Accessibility > Display > Text Size changes
-            #[cfg(target_os = "macos")]
-            text_size::observe_system_text_size_changes(app.handle().clone());
-
             // Follow a live macOS language or region change, so `'system'` means the
             // language the user reads NOW and the conventions they format in NOW,
             // not the ones they had at launch. No-op off macOS (no equivalent signal
@@ -737,11 +689,6 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             file_system::upgrade_existing_smb_mounts();
 
-            // Before the menu bar is built: AppKit decides what the Services submenu may
-            // contain from the send types the app has registered.
-            #[cfg(target_os = "macos")]
-            services_menu::install(app.handle());
-
             menu::install::at_startup(app, &saved_settings)?;
 
             // Before the first status check: an older version may have left the license key in
@@ -752,19 +699,6 @@ pub fn run() {
             // status change, so activating a licence mid-session clears "Personal use only"
             // from the Dock's window list without a relaunch.
             licensing::refresh_window_title(app.handle());
-
-            // titleBarStyle is "Overlay" in JSON for macOS (needed so trafficLightPosition
-            // is applied at window creation time. Setting it at runtime resets the position.
-            // On Linux/GTK, Overlay hides native window controls, so revert to Visible.
-            #[cfg(target_os = "linux")]
-            if let Some(window) = app.get_webview_window("main") {
-                use tauri::TitleBarStyle;
-                let _ = window.set_title_bar_style(TitleBarStyle::Visible);
-            }
-
-            // Initialize custom updater state (shared between download and install commands)
-            #[cfg(target_os = "macos")]
-            app.manage(updater::UpdateState::new());
 
             // Is this the first launch after an update? Answered before any share is dialed (the
             // launch sweep waits on mDNS), since the share notices read it. On macOS that launch

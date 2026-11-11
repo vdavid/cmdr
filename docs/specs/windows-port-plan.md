@@ -205,8 +205,11 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     clipboard, drag, Quick Look, Get Info) onto platform fns, delete the matching `stubs/`, rename platform-named
     commands (`show_in_finder` → `reveal_in_file_manager`, `get_macos_major_version` → `get_os_version`; the frontend
     changes for renames only). Needs 7.
-19. [S] Win. Startup seam: the per-OS installers in the `lib.rs` setup hook move to `platform/startup` with one
-    `install(app)` per OS. Needs 7.
+19. [S] Win. **Done**. Startup seam: `platform/startup/` with one pinned `install(app)` per OS, called once in the setup
+    hook after the volume broadcast and before the MTP watcher, the first volume list, and the menu bar. It holds the
+    order-free installers (macOS observers, mouse navigation, Services, volume watcher, unmount approver, `ptpcamerad`,
+    File Provider warm-up, drag-out handle, updater state; Linux watcher, accent, title-bar revert); order-bound steps
+    (the E2E activation policy, the FDA probe, `after_update`) stay on the spine.
 20. [M] Win. Volumes seam: fold `volumes/` and `volumes_linux/` into one `volumes/` with `platform/` arms behind a
     pinned fn set, remove the `as platform` aliases and `stubs/volumes.rs`, route `listing_host/mounts.rs`,
     `space_poller`, `index_provider`, `usb_speed` through it. Needs 7, and 11 for the shared mount façade.

@@ -5,7 +5,7 @@ else has one.
 
 ## Module map
 
-- `mod.rs`: `install()`, called from `setup` BEFORE the menu bar is built (`lib.rs`).
+- `mod.rs`: `install()`, called from `setup` BEFORE the menu bar is built (`../platform/startup/macos.rs`).
 - `responder.rs`: the send-type registration and `CmdrServicesResponder`, the `NSResponder` subclass that answers
   `validRequestorForSendType:returnType:` and writes the pasteboard. All AppKit, all main-thread.
 - `selection.rs`: what the menu acts on, pushed by the frontend, plus the context-menu override. No AppKit, fully
