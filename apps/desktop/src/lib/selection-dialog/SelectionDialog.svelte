@@ -44,6 +44,7 @@
     } from '#lib/query-ui/query-dialog-config.js'
     import { applySizeFromAi, applyDateFromAi, applyTypeFromAi } from '#lib/query-ui/apply-ai-filters.js'
     import { typeFilterToIsDirectory } from '#lib/query-ui/query-filter-state.svelte.js'
+    import type { QueryAnswer, QueryPage } from '#lib/query-ui/result-paging.js'
     import {
         chipTooltip,
         modeName,
@@ -306,7 +307,11 @@
         }
     }
 
-    /** Last matched-indices set from the most recent `runQuery`. Pinned so `primaryAction.handler` can commit. */
+    /**
+     * Last matched-indices set from the most recent `runQuery`, in full. Pinned so
+     * `primaryAction.handler` can commit, and so `loadMore` pages THIS run's answer rather
+     * than re-matching against a bar the user may have edited since.
+     */
     let lastMatchedIndices: number[] = []
 
     /**
@@ -327,19 +332,20 @@
     }
 
     /**
-     * Runs the matcher against the dialog-time snapshot and returns the matched
-     * entries adapted into `SearchResultEntry`. QueryDialog handles writing state.
+     * Runs the matcher against the dialog-time snapshot and returns the first
+     * `page.limit` matches adapted into `SearchResultEntry`, plus the full count.
+     * QueryDialog handles writing state.
      */
-    function runQuery(): Promise<{ entries: SearchResultEntry[]; totalCount: number }> {
+    function runQuery(page: QueryPage): Promise<QueryAnswer> {
         const q = buildMatchQuery()
-        if (!q) {
-            lastMatchedIndices = []
-            return Promise.resolve({ entries: [], totalCount: 0 })
-        }
-        const idxs = dropParentIndex(matchEntries(buildAccessors(), entries.length, q))
-        lastMatchedIndices = idxs
-        const adapted = idxs.map((i) => entryToResult(entries[i]))
-        return Promise.resolve({ entries: adapted, totalCount: adapted.length })
+        lastMatchedIndices = q ? dropParentIndex(matchEntries(buildAccessors(), entries.length, q)) : []
+        return Promise.resolve(matchedPage(page))
+    }
+
+    /** The last run's matches, in folder order, up to `page.limit`: rows only adapt once shown. */
+    function matchedPage(page: QueryPage): QueryAnswer {
+        const shown = lastMatchedIndices.slice(0, page.limit).map((i) => entryToResult(entries[i]))
+        return { entries: shown, totalCount: lastMatchedIndices.length }
     }
 
     /**
@@ -587,6 +593,7 @@
         noticeBanner,
 
         runQuery,
+        loadMore: (page: QueryPage) => Promise.resolve(matchedPage(page)),
         translateAi: aiEnabled ? translateAi : undefined,
 
         primaryAction: {

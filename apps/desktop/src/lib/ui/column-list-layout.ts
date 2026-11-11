@@ -206,6 +206,36 @@ export function visibleRange({
 }
 
 /**
+ * How close to the end the rows in view come before `onReachEnd` fires: about half a
+ * screen, so a consumer paging from a fast source has its next rows in before the user gets
+ * there, and a list that's merely long doesn't ask for more the moment it opens.
+ */
+export const REACH_END_ROWS = 10
+
+/**
+ * Whether the rows in VIEW (not the overscan) come within `REACH_END_ROWS` of the end, which
+ * includes a list short enough to fit whole. `false` before the row height or viewport is
+ * known: a list with no layout can't say what's on screen, and guessing would page a
+ * consumer for rows nobody scrolled to. `scrollTop` is the rows' own position (already
+ * through `scrollMapping`).
+ */
+export function reachesEnd({
+  count,
+  rowHeight,
+  scrollTop,
+  viewportHeight,
+}: {
+  count: number
+  rowHeight: number
+  scrollTop: number
+  viewportHeight: number
+}): boolean {
+  if (count === 0 || rowHeight <= 0 || viewportHeight <= 0) return false
+  const lastInView = Math.ceil((scrollTop + viewportHeight) / rowHeight)
+  return lastInView >= count - REACH_END_ROWS
+}
+
+/**
  * The tallest scroll content the list lays out, in CSS pixels. WebKit stores layout lengths
  * as 1/64 px in an int32, so a box taller than 2^25 px (33,554,432) is silently clamped: at
  * the default 23.6 px row, every row past about 1,421,000 sat beyond the scrollbar's reach

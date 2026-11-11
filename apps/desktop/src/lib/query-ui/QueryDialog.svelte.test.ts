@@ -141,6 +141,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
       if (opts.runQueryError !== undefined) return Promise.reject(opts.runQueryError)
       return Promise.resolve(opts.runQueryResult ?? { entries: [], totalCount: 0 })
     },
+    loadMore: () => Promise.resolve(null),
     translateAi: opts.translateAi
       ? (() => {
           const fn = opts.translateAi
@@ -381,6 +382,24 @@ describe('QueryDialog recent-items dropdown', () => {
     dispatchKey(overlay, 'ArrowDown')
     await tick()
     expect(document.body.querySelector('.recent-popover')).toBeNull()
+    expect(state.getCursorIndex()).toBe(1)
+    cleanup()
+  })
+
+  it('holds ↓ on the last row while more results are still to come, instead of looping to the top', async () => {
+    const { overlay, state, cleanup } = mountQueryDialog({
+      initialQuery: '*.jpg',
+      // Two rows on screen of 50 found: the list's end isn't the results' end.
+      runQueryResult: { entries: [SAMPLE_RESULT, { ...SAMPLE_RESULT, path: '/b', name: 'b.jpg' }], totalCount: 50 },
+    })
+    await settle()
+    dispatchKey(overlay, 'Enter')
+    await settle()
+
+    dispatchKey(overlay, 'ArrowDown')
+    expect(state.getCursorIndex()).toBe(1)
+    const held = dispatchKey(overlay, 'ArrowDown')
+    expect(held.defaultPrevented).toBe(true)
     expect(state.getCursorIndex()).toBe(1)
     cleanup()
   })

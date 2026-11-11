@@ -130,6 +130,11 @@
         onPickPath: (ancestorPath: string) => void
         /** Right-click on a row. Parent routes to the native context-menu factory. */
         onRowMenu: (entry: SearchResultEntry) => void
+        /**
+         * The list's end came into view (`ColumnList.onReachEnd`): the dialog asks for the
+         * next page. Fires repeatedly while it holds; the runner keeps one page in flight.
+         */
+        onReachEnd?: () => void
     }
 
     const {
@@ -162,6 +167,7 @@
         emptyExamples,
         onPickPath,
         onRowMenu,
+        onReachEnd,
     }: Props = $props()
 
     let columnList: ColumnListApi | undefined = $state()
@@ -220,7 +226,7 @@
             }
             if (totalCount === 0) return ''
             return tString('queryUi.results.resultCount', {
-                shownText: String(results.length),
+                shownText: formatInteger(results.length),
                 totalText: formatInteger(totalCount),
                 total: totalCount,
             })
@@ -575,6 +581,7 @@
                     // The mouse and the arrows share one cursor here.
                     onCursorChange: onHover,
                     hoverMovesCursor: true,
+                    onReachEnd,
                     onRowClick: onResultClick,
                     onRowContextMenu: ({ row }) => {
                         onRowMenu(row)

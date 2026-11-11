@@ -23,8 +23,8 @@ menu facts). `search-state.svelte.ts` is the façade over these, `searchable-fol
 - **"Open in pane" promotes to the `search-results://` virtual volume.** Refcount is the ONLY lifetime authority (a tab
   close transfers ref ownership to the `ClosedTab`). Destination write ops are blocked there; source ops run, and ❌
   never re-derive their rows: `resolveSnapshotEntries` decides.
-- **The DIALOG lists 30 rows; a PANE gets every hit**, via `snapshot-fill.ts`. ❌ Never promote `getResults()`, and ❌
-  never let a top-up shrink a pane.
+- **The DIALOG pages; a PANE gets every hit**, via `snapshot-fill.ts`. ❌ Never promote `getResults()`, and ❌ never let
+  a top-up shrink a pane.
 - **"Open in pane" during a live walk KEEPS the walk** (`walk-handoff.svelte.ts`), so the close must NAME it
   (`releaseSearchIndex(handedOffRunId())`) or the walk dies silently as the pane appears. Its ENDING fills the pane. A
   reopen ADOPTS through `source.resume`, ❌ never re-runs.

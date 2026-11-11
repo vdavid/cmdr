@@ -13,6 +13,8 @@ import {
   createTabularMeasure,
   MAX_SCROLL_HEIGHT_PX,
   MEASUREMENT_PAD,
+  REACH_END_ROWS,
+  reachesEnd,
   revealScrollTop,
   scrollMapping,
   splitShareColumns,
@@ -167,6 +169,28 @@ describe('buildGridTemplate', () => {
         chPx: 10,
       }),
     ).toBe('minmax(80px, 1fr) minmax(120px, 1fr) 10ch')
+  })
+})
+
+describe('reachesEnd', () => {
+  const at = (scrollTop: number, count = 100) => reachesEnd({ count, rowHeight: 20, scrollTop, viewportHeight: 200 })
+
+  it('holds once the last row in view is within REACH_END_ROWS of the end', () => {
+    // Rows 0–9 in view of 100: far from the end.
+    expect(at(0)).toBe(false)
+    // Last row in view is 100 - REACH_END_ROWS.
+    expect(at((90 - REACH_END_ROWS) * 20)).toBe(true)
+    expect(at((89 - REACH_END_ROWS) * 20)).toBe(false)
+  })
+
+  it('holds for a list that fits whole, and never for an empty one', () => {
+    expect(at(0, 5)).toBe(true)
+    expect(at(0, 0)).toBe(false)
+  })
+
+  it('says nothing before the list has a layout', () => {
+    expect(reachesEnd({ count: 5, rowHeight: 0, scrollTop: 0, viewportHeight: 200 })).toBe(false)
+    expect(reachesEnd({ count: 5, rowHeight: 20, scrollTop: 0, viewportHeight: 0 })).toBe(false)
   })
 })
 

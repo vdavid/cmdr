@@ -21,6 +21,7 @@ import { addToast } from '#lib/ui/toast/toast-store.svelte.js'
 import type { QueryDialogConfig } from './query-dialog-config'
 import { SEARCH_AUTO_APPLY_DEBOUNCE_MS, type QueryFilterState, type SearchMode } from './query-filter-state.svelte'
 import type { LiveRunView, QueryStreamEnd, QueryStreamProgress, QueryStreamSource } from './query-stream'
+import { appendUnseen, MAX_LISTED_RESULTS, nextPageLimit, RESULTS_PAGE_SIZE } from './result-paging'
 
 /** How long the fields the AI touched stay flashed, so the user sees what changed. */
 export const AI_HIGHLIGHT_FLASH_MS = 1500
@@ -82,6 +83,18 @@ export interface QueryRunner {
    * to win.
    */
   resumeLive: () => boolean
+  /**
+   * Whether the list holds fewer rows than the run found and a page could still add some.
+   * Plain, not reactive: the cursor keys read it at the moment of the key press.
+   */
+  readonly hasMoreResults: boolean
+  /**
+   * The list's end is in view: ask the last run's question again for one page more
+   * (`result-paging.ts`). A no-op while a page is in flight, when there's nothing more,
+   * and after a page came back adding nothing (until the total moves). Every consumer
+   * pages; there's no opt-in.
+   */
+  loadMoreResults: () => void
   /** Debounced auto-apply, behind the AI / setting / IME gates. */
   scheduleSearch: () => void
   executeQuery: (options?: RunOptions) => Promise<void>
@@ -182,6 +195,34 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
    */
   let stopAsked = false
 
+  /**
+   * Bumped by every run the user or the debounce starts, by emptying the bar, and by
+   * adopting a run. An answer (a one-shot run's, or a page's) carrying an older number
+   * belongs to a list that's gone and is dropped. Plain, not `$state`: nothing renders it.
+   */
+  let runGeneration = 0
+  /** A page is in flight for the current run, so the next "end in view" waits for it. */
+  let pageInFlight = false
+  /**
+   * The total a page last came back empty-handed (or failed) at, so scrolling at the end
+   * doesn't ask the same question in a loop. A live run's total climbs, and a climbed
+   * total is worth one more ask: the walk writes what it reads into the index.
+   */
+  let pagingParkedAt: number | null = null
+  /**
+   * A page has grown this run's list. The user scrolled into it to get there, so the
+   * completion re-rank must leave the order alone (Decision 8).
+   */
+  let pagedThisRun = false
+
+  /** A new list starts: drop every answer the old one was still waiting for. */
+  function beginRun(): void {
+    runGeneration += 1
+    pageInFlight = false
+    pagingParkedAt = null
+    pagedThisRun = false
+  }
+
   /** The backend's own message when there is one; a generic fallback otherwise. */
   function describeRunFailure(err: unknown): string {
     const message = err instanceof Error ? err.message : typeof err === 'string' ? err : ''
@@ -238,8 +279,11 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     }
     config.state.setTotalCount(update.matchCount)
     if (update.entries.length === 0) return
-    const hadRows = config.state.getResults().length > 0
-    setResultsHoldingCursor(config.state, [...config.state.getResults(), ...update.entries])
+    const current = config.state.getResults()
+    const hadRows = current.length > 0
+    // Deduped by path: a page from the index can already hold a row the walk sends later.
+    const merged = appendUnseen(current, update.entries)
+    if (merged !== current) setResultsHoldingCursor(config.state, merged)
     // D8: the first rows are what hands ⏎ to "go-to-file". Only the first batch, or
     // every later one would overwrite the 'cursor-moved' the user just caused — which
     // is also what tells us to leave the order alone on completion.
@@ -270,7 +314,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     // moved the cursor, because reordering under someone reading is worse than
     // arrival order (Decision 8).
     if (!end.walked || !source.rankOnCompletion) return
-    if (config.state.getLastDialogEvent() === 'cursor-moved') return
+    if (config.state.getLastDialogEvent() === 'cursor-moved' || pagedThisRun) return
     setResultsHoldingCursor(config.state, source.rankOnCompletion(config.state.getResults()))
   }
 
@@ -309,6 +353,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     })
     if (!resumed) return false
 
+    beginRun()
     dropLiveSubscription()
     adoptedRunId = resumed.runId
     liveRunId = resumed.runId
@@ -318,7 +363,7 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     config.state.setTotalCount(resumed.view.matchCount)
     config.state.setIsSearching(resumed.view.running)
     if (resumed.missedEntries.length > 0) {
-      setResultsHoldingCursor(config.state, [...config.state.getResults(), ...resumed.missedEntries])
+      setResultsHoldingCursor(config.state, appendUnseen(config.state.getResults(), resumed.missedEntries))
     }
     return true
   }
@@ -391,14 +436,15 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
    * Called when the user empties the query with no filter left standing.
    */
   function resetToEmptyState(): void {
-    // A live run has no promise whose `finally` clears the spinner: dropping its
-    // subscription is the last anyone hears of it. So emptying the bar mid-walk has to
-    // clear the flag here, or the dialog sits on "Searching…" with nothing coming.
-    const wasStreaming = live !== null
+    // Nothing that was out clears the spinner after this: a live run has no promise whose
+    // `finally` would (dropping its subscription is the last anyone hears of it), and a
+    // one-shot answer is now a superseded generation's, whose `finally` stands down. So
+    // the flag clears here, or the dialog sits on "Searching…" with nothing coming.
+    beginRun()
     dropLiveSubscription()
     live = null
     const state = deps.getConfig().state
-    if (wasStreaming) state.setIsSearching(false)
+    state.setIsSearching(false)
     state.setResults([])
     state.setTotalCount(0)
     state.setCursorIndex(0)
@@ -423,6 +469,8 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
     const config = deps.getConfig()
     if (debounceTimer) clearTimeout(debounceTimer)
     if (!fromAiTranslation) aiRunSeq += 1
+    beginRun()
+    const generation = runGeneration
     // Nothing to run: an empty bar with every filter at its default isn't a query, and the
     // backend refuses it ("Query too broad"), which surfaced as a warning toast the moment
     // the user cleared the field. This is the choke point every path goes through
@@ -452,7 +500,10 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
 
     config.state.setIsSearching(true)
     try {
-      const result = await config.runQuery()
+      const result = await config.runQuery({ limit: RESULTS_PAGE_SIZE })
+      // A newer run started while this one was out (a ⏎ walk inside the debounce's
+      // answer, or the bar emptied): its list is the one on screen, so this answer goes.
+      if (generation !== runGeneration) return
       config.state.setResults(result.entries)
       config.state.setTotalCount(result.totalCount)
       config.state.setCursorIndex(0)
@@ -472,10 +523,55 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       // swallowing it left the user staring at an empty list that reads as "nothing
       // matched". No typed variant crosses this IPC boundary, so we pass the message
       // through verbatim instead of classifying it by its text.
-      toastRunFailure(describeRunFailure(err))
+      if (generation === runGeneration) toastRunFailure(describeRunFailure(err))
     } finally {
-      config.state.setIsSearching(false)
+      // Only the current run owns the spinner: clearing it for a superseded one would
+      // take it off a live walk that's still going.
+      if (generation === runGeneration) config.state.setIsSearching(false)
     }
+  }
+
+  function hasMoreResults(state: QueryFilterState): boolean {
+    const shown = state.getResults().length
+    if (shown === 0 || shown >= MAX_LISTED_RESULTS || shown >= state.getTotalCount()) return false
+    // A one-shot run is out, and its answer replaces the list rather than extending it.
+    if (state.getIsSearching() && live === null) return false
+    return pagingParkedAt !== state.getTotalCount()
+  }
+
+  /**
+   * One more page of the run on screen, merged so nothing already shown moves or goes
+   * (`appendUnseen`). Under a live run the walk keeps appending its own batches on top,
+   * and the run's counter stays the total's owner: the index can't count what the walk
+   * hasn't written yet.
+   */
+  async function loadMoreResults(): Promise<void> {
+    const config = deps.getConfig()
+    const state = config.state
+    if (pageInFlight || !hasMoreResults(state)) return
+    const generation = runGeneration
+    pageInFlight = true
+    let answer: Awaited<ReturnType<typeof config.loadMore>>
+    try {
+      answer = await config.loadMore({ limit: nextPageLimit(state.getResults().length) })
+    } catch (err) {
+      if (generation !== runGeneration) return
+      pageInFlight = false
+      pagingParkedAt = state.getTotalCount()
+      toastRunFailure(describeRunFailure(err))
+      return
+    }
+    if (generation !== runGeneration) return
+    pageInFlight = false
+    if (answer && live === null) state.setTotalCount(answer.totalCount)
+    const current = state.getResults()
+    const merged = answer ? appendUnseen(current, answer.entries) : current
+    if (merged === current) {
+      pagingParkedAt = state.getTotalCount()
+      return
+    }
+    pagedThisRun = true
+    setResultsHoldingCursor(state, merged.length > MAX_LISTED_RESULTS ? merged.slice(0, MAX_LISTED_RESULTS) : merged)
   }
 
   /**
@@ -618,6 +714,12 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       const config = deps.getConfig()
       if (!config.streamingSource) return false
       return resumeLiveRun(config, config.streamingSource)
+    },
+    get hasMoreResults() {
+      return hasMoreResults(deps.getConfig().state)
+    },
+    loadMoreResults: () => {
+      void loadMoreResults()
     },
     scheduleSearch,
     executeQuery,

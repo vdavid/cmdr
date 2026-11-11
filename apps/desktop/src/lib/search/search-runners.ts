@@ -12,8 +12,9 @@
  * (`search-run-tracking.ts`).
  */
 
-import { searchFiles, parseSearchScope, type SearchQuery, type SearchResultEntry } from '#lib/tauri-commands/index.js'
+import { searchFiles, parseSearchScope, type SearchQuery } from '#lib/tauri-commands/index.js'
 import type { LiveRunView, QueryStreamSource } from '#lib/query-ui/query-stream.js'
+import type { QueryAnswer, QueryPage } from '#lib/query-ui/result-paging.js'
 import { coverageNoteFrom, coverageNoteFromRun } from './coverage-note'
 import { createLiveSearchSource } from './live-search-source'
 import { fullRowQuery } from './snapshot-fill'
@@ -76,7 +77,15 @@ export interface SearchRunnersDeps {
 
 export interface SearchRunners {
   /** The one-shot index answer, in one promise. QueryDialog's `runQuery`. */
-  runQuery: () => Promise<{ entries: SearchResultEntry[]; totalCount: number }>
+  runQuery: (page: QueryPage) => Promise<QueryAnswer>
+  /**
+   * The last run's payload asked of the index again for more rows: QueryDialog's
+   * `loadMore`. The payload is the one the run SENT, so a bar or chip edited since without
+   * re-running can't splice another question's rows in, and it repeats none of a run's
+   * side effects (the coverage note, analytics). `null` before this dialog has started a
+   * run of its own (a walk adopted on reopen): the list it shows was asked elsewhere.
+   */
+  loadMore: (page: QueryPage) => Promise<QueryAnswer | null>
   /** The index's half, then a walk over what it can't answer for. QueryDialog's `streamingSource`. */
   streamingSource: QueryStreamSource
   /**
@@ -92,13 +101,16 @@ export interface SearchRunners {
 
 export function createSearchRunners(deps: SearchRunnersDeps): SearchRunners {
   const tracker = createSearchRunTracker()
+  /** What the latest run asked, for `loadMore`. Set the moment either path builds it. */
+  let lastRunPayload: SearchQuery | null = null
 
-  async function runSearch(): Promise<{ entries: SearchResultEntry[]; totalCount: number }> {
+  async function runSearch(page: QueryPage): Promise<QueryAnswer> {
     // The note belongs to the run that produced it. Dropping it up front (rather than
     // only on the way out) means a run that throws can't leave the previous run's
     // caveat sitting under a fresh answer.
     setCoverageNote(null)
-    const query = await buildRunQuery(deps.getDefaultScopePath())
+    const query = { ...(await buildRunQuery(deps.getDefaultScopePath())), limit: page.limit }
+    lastRunPayload = query
     const result = await searchFiles(query)
     // Ahead of the rows reaching the dialog: anything that acts on one needs its volume.
     setResultsVolumeId(result.targetVolumeId ?? null)
@@ -110,7 +122,11 @@ export function createSearchRunners(deps: SearchRunnersDeps): SearchRunners {
   }
 
   const streamingSource = createLiveSearchSource({
-    buildQuery: () => buildRunQuery(deps.getDefaultScopePath()),
+    buildQuery: async () => {
+      const query = await buildRunQuery(deps.getDefaultScopePath())
+      lastRunPayload = query
+      return query
+    },
     onRunState: deps.onRunState,
     onRowsVolume: setResultsVolumeId,
     onCoverage: (coverage) => {
@@ -128,8 +144,15 @@ export function createSearchRunners(deps: SearchRunnersDeps): SearchRunners {
       }),
   })
 
+  async function loadMore(page: QueryPage): Promise<QueryAnswer | null> {
+    if (!lastRunPayload) return null
+    const result = await searchFiles({ ...lastRunPayload, limit: page.limit })
+    return { entries: result.entries, totalCount: result.totalCount }
+  }
+
   return {
     runQuery: runSearch,
+    loadMore,
     streamingSource,
     buildFullRowQuery: async () => fullRowQuery(await buildRunQuery(deps.getDefaultScopePath())),
   }
