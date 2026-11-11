@@ -284,12 +284,17 @@ server's text (`Refused`) is a log diagnostic; ❌ branching on it is what `erro
 maps it to the `Volume` vocabulary for an operation on `path` in one place: `ENOENT` → `NotFound(path)`,
 `EACCES`/`EPERM` → `PermissionDenied { path, raw_os_error: None }` (❗ `None`: the errno is the device's, and carrying
 it would earn macOS-only "unlock it in Finder" advice), `EEXIST` → `AlreadyExists(path)`, `EISDIR` →
-`IsADirectory(path)`, `ENAMETOOLONG` → `InvalidName(path)`, `ENOTEMPTY` → an `IoError` carrying the HOST's `ENOTEMPTY`
-number (the device numbers it 39, macOS 66; the app's classifier re-dispatches on `raw_os_error`, so the translation
-happens here, as `cmdr-sftp` does it), `EROFS` → `ReadOnly(path)`, `ENOSPC` → `StorageFull`. Anything else is an
-`IoError` with the raw number. `volume_error_from_adb` maps the transport's shapes (`DeviceGone` → `DeviceDisconnected`,
-`Timeout` → `ConnectionTimeout`, `Cancelled` → `Cancelled`); a `FAIL` text from the sync service lands as an
-unclassified `IoError` with the text in `message` for the log.
+`IsADirectory(path)`, `ENAMETOOLONG` → `InvalidName(path)`, `EROFS` → `ReadOnly(path)`, `ENOSPC` → `StorageFull`.
+Anything else goes through `DEVICE_ERRNO_CLASSES`, the Linux-numbered errno → `OsErrorClass` table, and lands as
+`VolumeError::io_of_class`: an `IoError` carrying the HOST's code for that class (the device numbers `ENOTEMPTY` 39,
+macOS 66; the app's classifiers read the class off `raw_os_error`, so the translation happens here, as `cmdr-sftp` does
+it). ❗ An errno the table doesn't name carries `raw_os_error: None`, ❌ never the device's number: Linux 70 (`ECOMM`)
+is macOS's `ESTALE`, 57 (`EBADSLT`) its `ENOTCONN`, 60 (`ENOSTR`) its `ETIMEDOUT`, and 35 (`EDEADLK`) its `EAGAIN`, so a
+raw pass-through got a rare device error retried as a dropped link or flagged as a stale mount. The number stays in
+`message` for the log. ❗ The table is literal numbers, ❌ never `libc::` constants (those are the host's); a Linux-only
+test checks every row against the OS's own table. `volume_error_from_adb` maps the transport's shapes (`DeviceGone` →
+`DeviceDisconnected`, `Timeout` → `ConnectionTimeout`, `Cancelled` → `Cancelled`); a `FAIL` text from the sync service
+lands as an unclassified `IoError` with the text in `message` for the log.
 
 **A shell failure is classified by a follow-up probe, never by stderr.** `shell,v2` gives an exit code, which says "no"
 and nothing else; `mkdir`, `rm`, and `mv` print their reason to stderr in `toybox`'s wording, which is for people and

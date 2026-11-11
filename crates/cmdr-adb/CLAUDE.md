@@ -22,23 +22,25 @@ words.
   (`MAX_DATA_CHUNK`, `MAX_FRAME_PAYLOAD`), decompressed bytes included, or a hostile phone allocates 4 GiB. DETAILS §
   "Wire contract".
 - **❗ The peer is the server, not the phone.** A refused loopback connect earns exactly one `adb start-server` per
-  process, ❌ never a retry loop.
+  process, ❌ no retry loop.
 - **❗ `shell_v2` is required; a device without it is `AdbConnectError::DeviceTooOld`.** Legacy `shell:` has no exit
   code, and output is never parsed for one.
 - **❗ A shell failure is classified by a follow-up stat of the path and its parent, ❌ never by stderr.** A guard
   before a verb stats via `occupant` (a failed stat refuses), ❌ never `probe`. `DETAILS.md` § "The error policy".
 - **❗ `NotFound` / `PermissionDenied` carry the PATH**, ❌ never the device's wording: the frontend renders it as the
-  missing file's name. `errors::volume_error_from_errno` takes the path for that reason.
+  missing file's name.
+- **❗ A device errno is Linux's, ❌ never a host `raw_os_error`**: `errors::DEVICE_ERRNO_CLASSES` gives its
+  `OsErrorClass`, or no code.
 - **❗ Paths are `adb://<serial>/…` both ways; `volume/paths.rs` is the ONLY translation.** ❌ A bare `/sdcard` or a
   `..` above `/` is refused, never anchored.
 - **❌ Never collect a file into a `Vec<u8>`.** `RECV`/`SEND` stream chunkwise; `read_range` runs bounded, quoted
   device-side `dd`.
 - **❗ `SEND` truncates, so `CreateNew` stages and `mv -f`s in; `CreateOrReplace` (the engine's own temp) goes in
   place**, ❌ never re-staged (#339).
-- **❗ Every mutation calls `notify_mutation`.** There is no watcher; `can_watch_listings` is `false` and stays so.
+- **❗ Every mutation calls `notify_mutation`.** There is no watcher; `can_watch_listings` stays `false`.
 - **❗ The walk and the listing patch come from `cmdr_fs::volume::{scan_walk, patching}`**, ❌ never a copy here. But ❌
   do NOT adopt `MakesDirectories`: the shell's native `mkdir -p` is one verb at any depth, where that walk costs a
-  request per level. `DETAILS.md` has the reasoning.
+  request per level. Why: `DETAILS.md`.
 - **❗ One sync socket per operation, ❌ no shared session behind a mutex**: a same-volume copy would deadlock and a
   paused transfer would park every listing. `max_concurrent_ops` (1, the app's `"adb"` settings row) is what bounds
   transfers.

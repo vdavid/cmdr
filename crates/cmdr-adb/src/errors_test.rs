@@ -22,16 +22,63 @@ fn errno_maps_to_the_volume_vocabulary_carrying_the_path() {
     assert!(matches!(volume_error_from_errno(ENAMETOOLONG, path), VolumeError::InvalidName(p) if p == path));
 }
 
+/// An errno the named arms don't cover still arrives as what it MEANS on the device,
+/// which is Linux whatever the host is.
 #[test]
-fn unknown_errno_is_an_io_error_carrying_the_number() {
-    let err = volume_error_from_errno(20, "/x");
-    assert!(matches!(
-        err,
-        VolumeError::IoError {
-            raw_os_error: Some(20),
-            ..
-        }
-    ));
+fn an_unlisted_device_errno_arrives_as_its_linux_class() {
+    let cases = [
+        (20, OsErrorClass::NotADirectory),
+        (5, OsErrorClass::Io),
+        (16, OsErrorClass::Busy),
+        (18, OsErrorClass::CrossDevice),
+        (40, OsErrorClass::LinkLoop),
+        (95, OsErrorClass::Unsupported),
+        (107, OsErrorClass::NotConnected),
+        (110, OsErrorClass::TimedOut),
+        (116, OsErrorClass::Stale),
+        (122, OsErrorClass::QuotaExceeded),
+    ];
+    for (errno, class) in cases {
+        let err = volume_error_from_errno(errno, "/x");
+        assert!(matches!(err, VolumeError::IoError { .. }), "{errno}: {err:?}");
+        assert_eq!(err.os_class(), Some(class), "device errno {errno}");
+    }
+}
+
+/// The regression anchor: these Linux numbers each mean something ELSE on macOS (70 is
+/// its `ESTALE`, 57 its `ENOTCONN`, 60 its `ETIMEDOUT`, 35 its `EAGAIN`), so passing
+/// one through as the host's code retried a rare device error as a dropped link or
+/// flagged a stale mount. Linux 70 is `ECOMM`, 57 `EBADSLT`, 60 `ENOSTR`, 35
+/// `EDEADLK`: none has a class, so none carries a code.
+#[test]
+fn a_device_errno_with_no_class_carries_no_host_code() {
+    for errno in [35, 57, 60, 70, 9999, -1] {
+        let err = volume_error_from_errno(errno, "/x");
+        assert!(
+            matches!(err, VolumeError::IoError { raw_os_error: None, .. }),
+            "device errno {errno}: {err:?}"
+        );
+        assert_eq!(err.os_class(), None, "device errno {errno}");
+    }
+}
+
+/// The device table is written in literal Linux numbers. On a Linux host those are the
+/// host's own, so the OS's table checks every row.
+#[cfg(target_os = "linux")]
+#[test]
+fn the_device_table_matches_linux_itself() {
+    for &(errno, class) in DEVICE_ERRNO_CLASSES {
+        assert_eq!(OsErrorClass::of_code(errno), class, "errno {errno}");
+    }
+}
+
+/// One row per number, so a lookup can't depend on the order.
+#[test]
+fn the_device_table_names_each_errno_once() {
+    let mut seen = std::collections::HashSet::new();
+    for &(errno, _) in DEVICE_ERRNO_CLASSES {
+        assert!(seen.insert(errno), "errno {errno} is listed twice");
+    }
 }
 
 #[test]

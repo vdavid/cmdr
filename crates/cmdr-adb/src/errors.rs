@@ -174,6 +174,66 @@ pub const ENAMETOOLONG: i32 = 36;
 /// Linux `ENOTEMPTY`, as the DEVICE numbers it.
 pub const ENOTEMPTY_DEVICE: i32 = 39;
 
+/// What each errno the device can answer MEANS, in Linux's numbering.
+///
+/// ❗ Literal numbers, ❌ never `libc::` constants: those are the HOST's, and a
+/// Linux number read as the host's lies (Linux 70 is `ECOMM`, macOS 70 is
+/// `ESTALE`). The same names `cmdr-fs`'s POSIX table lists; on a Linux host
+/// `the_device_table_matches_linux_itself` checks every row against the OS.
+pub(crate) const DEVICE_ERRNO_CLASSES: &[(i32, OsErrorClass)] = &[
+    (EPERM, OsErrorClass::NotPermitted),
+    (ENOENT, OsErrorClass::NotFound),
+    (4, OsErrorClass::Interrupted),         // EINTR
+    (5, OsErrorClass::Io),                  // EIO
+    (6, OsErrorClass::DeviceNotConfigured), // ENXIO
+    (11, OsErrorClass::WouldBlock),         // EAGAIN
+    (12, OsErrorClass::OutOfMemory),        // ENOMEM
+    (EACCES, OsErrorClass::AccessDenied),
+    (16, OsErrorClass::Busy), // EBUSY
+    (EEXIST, OsErrorClass::AlreadyExists),
+    (18, OsErrorClass::CrossDevice), // EXDEV
+    (19, OsErrorClass::NoDevice),    // ENODEV
+    (ENOTDIR, OsErrorClass::NotADirectory),
+    (EISDIR, OsErrorClass::IsADirectory),
+    (22, OsErrorClass::InvalidArgument),    // EINVAL
+    (25, OsErrorClass::InappropriateIoctl), // ENOTTY
+    (27, OsErrorClass::FileTooLarge),       // EFBIG
+    (ENOSPC, OsErrorClass::NoSpace),
+    (EROFS, OsErrorClass::ReadOnlyFilesystem),
+    (31, OsErrorClass::TooManyLinks), // EMLINK
+    (32, OsErrorClass::BrokenPipe),   // EPIPE
+    (ENAMETOOLONG, OsErrorClass::NameTooLong),
+    (37, OsErrorClass::NoLocks),        // ENOLCK
+    (38, OsErrorClass::NotImplemented), // ENOSYS
+    (ENOTEMPTY_DEVICE, OsErrorClass::NotEmpty),
+    (40, OsErrorClass::LinkLoop),            // ELOOP
+    (66, OsErrorClass::Remote),              // EREMOTE
+    (71, OsErrorClass::Protocol),            // EPROTO
+    (74, OsErrorClass::BadMessage),          // EBADMSG
+    (95, OsErrorClass::Unsupported),         // EOPNOTSUPP, Linux's ENOTSUP
+    (100, OsErrorClass::NetworkDown),        // ENETDOWN
+    (101, OsErrorClass::NetworkUnreachable), // ENETUNREACH
+    (102, OsErrorClass::NetworkReset),       // ENETRESET
+    (103, OsErrorClass::ConnectionAborted),  // ECONNABORTED
+    (104, OsErrorClass::ConnectionReset),    // ECONNRESET
+    (107, OsErrorClass::NotConnected),       // ENOTCONN
+    (110, OsErrorClass::TimedOut),           // ETIMEDOUT
+    (111, OsErrorClass::ConnectionRefused),  // ECONNREFUSED
+    (112, OsErrorClass::HostDown),           // EHOSTDOWN
+    (113, OsErrorClass::HostUnreachable),    // EHOSTUNREACH
+    (116, OsErrorClass::Stale),              // ESTALE
+    (122, OsErrorClass::QuotaExceeded),      // EDQUOT
+    (125, OsErrorClass::Canceled),           // ECANCELED
+];
+
+/// The class of an errno the DEVICE answered, or `None` for one no caller tells
+/// apart (`ECOMM`, `EDEADLK`, a number Linux doesn't name).
+fn device_errno_class(errno: i32) -> Option<OsErrorClass> {
+    DEVICE_ERRNO_CLASSES
+        .iter()
+        .find_map(|&(named, class)| (named == errno).then_some(class))
+}
+
 /// Turns a device errno (from `STA2`/`DNT2`, or a shell probe) into the
 /// `Volume` vocabulary, for an operation on `path`.
 ///
@@ -183,9 +243,10 @@ pub const ENOTEMPTY_DEVICE: i32 = 39;
 /// straight into `SourceNotFound { path }`, which the frontend renders as the
 /// name of the missing file. It goes in VERBATIM.
 ///
-/// Anything unlisted is an [`VolumeError::IoError`] carrying the number, so the
-/// app's classifier can still dispatch on it; `ENOTEMPTY` arrives as its class,
-/// which carries the host's number (the device is Linux, the host may not be).
+/// Anything unlisted is a [`VolumeError::IoError`] of the errno's CLASS
+/// (`DEVICE_ERRNO_CLASSES`), which carries the HOST's code for it, so the app's
+/// classifiers still dispatch on it (the device is Linux, the host may not be). An
+/// errno with no class carries no code, ❌ never the device's raw number.
 pub fn volume_error_from_errno(errno: i32, path: &str) -> VolumeError {
     match errno {
         ENOENT => VolumeError::NotFound(path.to_string()),
@@ -205,10 +266,18 @@ pub fn volume_error_from_errno(errno: i32, path: &str) -> VolumeError {
         ENOTEMPTY_DEVICE => {
             VolumeError::io_of_class(ErrorDetail::at_path("ENOTEMPTY on ", path), OsErrorClass::NotEmpty)
         }
-        other => VolumeError::IoError {
-            message: ErrorDetail::at_path(format!("errno {other} on "), path),
-            raw_os_error: Some(other),
-        },
+        other => {
+            let message = ErrorDetail::at_path(format!("errno {other} on "), path);
+            match device_errno_class(other) {
+                Some(class) => VolumeError::io_of_class(message, class),
+                // ❗ No code at all: the number is Linux's, and the host would read
+                // its own meaning into it. It stays in `message` for the log.
+                None => VolumeError::IoError {
+                    message,
+                    raw_os_error: None,
+                },
+            }
+        }
     }
 }
 

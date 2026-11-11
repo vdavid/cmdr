@@ -322,8 +322,6 @@ Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5
       rename's fallback, ~131; the write-access probe, ~947), `local_posix/links.rs` (~33), `reading/bulk.rs` (~164);
       `cmdr-fs` `durable.rs` (~18); the app's `network/smb_connect_failure.rs` (~219, its log detail); and `cmdr-smb`
       `volume/mapping.rs` (`local_errno`).
-    - ADB passes any device errno it doesn't name through raw (`cmdr-adb` `errors.rs`'s `other` arm): a Linux number,
-      which a macOS or Windows host misreads. It wants a device-errno → class table.
 37. [S] Windows. Cloud Files placeholders (OneDrive and friends: sync badges, cloud trash) and Mark of the Web on
     extract (`cmdr-operations` + `cmdr-archive`). Needs 36.
 38. [S] Windows. Identity and system bundle: secrets via `windows-native-keyring-store` (❗ a blocker: off macOS and
