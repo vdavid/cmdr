@@ -7,7 +7,7 @@
 //!
 //! Gotcha/Why: every call builds its own bitmap rep and context instead of reusing one.
 //! `fetch_icon_for_path` runs on rayon workers and on the dedicated 8 MB-stack threads
-//! (see `CLAUDE.md`), so a shared drawing surface would be two threads compositing into
+//! (see `icons/CLAUDE.md`), so a shared drawing surface would be two threads compositing into
 //! the same buffer. The allocation is a few hundred KB against a Launch Services round
 //! trip, which is where the time actually goes.
 //!

@@ -29,6 +29,7 @@ use shipped_locales::SHIPPED_LOCALES;
 
 mod format_locale;
 mod live_locale;
+mod platform;
 mod resolve;
 
 #[cfg(test)]
@@ -46,6 +47,9 @@ pub(crate) mod native_strings;
 mod native_strings;
 
 pub use live_locale::observe_os_locale_changes;
+/// The catalog the native surfaces open while the user hasn't pinned a language. Distinct from
+/// [`get_os_locales`], which answers `None` off macOS: the menu bar has no webview to defer to.
+pub(crate) use platform::os_ui_locale;
 // `refresh_active_locale` is deliberately NOT re-exported: its only caller is
 // `live_locale.rs`, one module down, and re-exporting it would leave a dead
 // public name on every platform that has no live-locale observer.
@@ -127,78 +131,16 @@ pub fn get_os_locales() -> OsLocales {
     resolved_os_locales()
 }
 
-/// The macOS answers. Both halves are read fresh on every call, which is what
-/// makes a live change visible; the reads are `NSUserDefaults`-cheap (~65 µs for
-/// the language half).
-#[cfg(target_os = "macos")]
+/// The OS's answers, both halves read fresh on every call, which is what makes a live change
+/// visible. Where the OS has no preference list and no region override (Linux), both are `None`,
+/// so the webview's own default stands: WebKit reads the same session environment the desktop
+/// does.
+///
+/// The format half goes through `format_locale` rather than being answered here, so that module
+/// keeps ONE answer per platform.
 pub(crate) fn resolved_os_locales() -> OsLocales {
     OsLocales {
-        ui: Some(resolved_ui_locale()),
+        ui: platform::webview_ui_locale(),
         format: format_locale::resolved_format_locale(),
     }
-}
-
-/// Off macOS there's no preference list and no region override, so the webview's
-/// own default stands for both halves. That's the right answer on Linux, where
-/// WebKit reads the same session environment the desktop does.
-///
-/// The format half goes through `format_locale` rather than writing `None`
-/// inline, so that module keeps ONE answer per platform instead of having its
-/// off-macOS branch shadowed here.
-#[cfg(not(target_os = "macos"))]
-pub(crate) fn resolved_os_locales() -> OsLocales {
-    OsLocales {
-        ui: None,
-        format: format_locale::resolved_format_locale(),
-    }
-}
-
-/// The macOS answer to "which catalog should the app open", read fresh from the
-/// OS preference list every time.
-///
-/// Uncached on purpose: the read is a `NSUserDefaults` lookup (~65 µs), and
-/// caching it is what would make a live language change invisible.
-#[cfg(target_os = "macos")]
-pub(crate) fn resolved_ui_locale() -> String {
-    let preferences = crate::system_strings::apple_languages();
-    resolve_ui_locale(&preferences, SHIPPED_LOCALES).unwrap_or_else(|| "en".to_string())
-}
-
-/// The catalog the NATIVE surfaces should open while the user hasn't pinned a
-/// language, on whichever platform we're running.
-///
-/// Distinct from [`get_os_locales`], which answers `None` off macOS to say "no
-/// OS answer, the webview's own default stands". The native menu bar has no
-/// webview to defer to, so it needs a real answer everywhere; on Linux that
-/// answer comes from the same session environment WebKit itself reads.
-pub(crate) fn os_ui_locale() -> String {
-    #[cfg(target_os = "macos")]
-    {
-        resolved_ui_locale()
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        posix_ui_locale()
-    }
-}
-
-/// The catalog a POSIX session asks for, read from the locale environment in the
-/// order POSIX itself resolves messages: `LC_ALL` beats `LC_MESSAGES` beats
-/// `LANG`.
-///
-/// The values are POSIX locale names (`hu_HU.UTF-8`, `C`), so the codeset suffix
-/// is dropped and [`resolve::normalize`] folds the rest into a comparable tag. There's no
-/// ordered preference LIST here the way macOS has one: the session exposes one
-/// answer, and it's the same one WebKit hands the webview, so the two halves of
-/// the app agree.
-#[cfg(not(target_os = "macos"))]
-fn posix_ui_locale() -> String {
-    ["LC_ALL", "LC_MESSAGES", "LANG"]
-        .iter()
-        .filter_map(|name| std::env::var(name).ok())
-        .map(|value| value.split('.').next().unwrap_or_default().to_string())
-        .filter(|value| !value.is_empty())
-        .find_map(|value| resolve_ui_locale(&[value], SHIPPED_LOCALES))
-        .unwrap_or_else(|| "en".to_string())
 }

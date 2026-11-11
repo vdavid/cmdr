@@ -13,10 +13,6 @@
       "lines": 830,
       "reason": "TODO: move the in-container test run (the ~170-line `bash -c` string from the node_modules install to `exit \"$playwright_status\"`) into `e2e-linux-in-container.sh`, run inside the container by path, like the sourced `e2e-linux-fixtures.sh` on the host side. That also lifts the apostrophe-free-comment rule the single-quoted string imposes."
     },
-    "apps/desktop/src-tauri/src/crash_reporter/mod.rs": {
-      "lines": 812,
-      "reason": "TODO: the panic path is its own concern and already has `panic_courier.rs` and `panic_courier_tests.rs` as neighbors. Move `install_panic_hook`, `contained_panic_warning`, `PanicDisposition`, `handle_panic`, `write_first_crash_report`, `build_panic_report`, and the message/backtrace helpers (`extract_panic_message`, `sanitize_panic_message`, `sanitize_thread_name`, `cap_chars`, `cap_panic_message`, `parse_backtrace_frames`, `current_image_base_hex`) into `panic_hook.rs`, about 260 lines. `mod.rs` keeps the `CrashReport` shape, `init`, the pending-report read/write, and the active-settings snapshot."
-    },
     "apps/desktop/src-tauri/src/lib.rs": {
       "lines": 886,
       "reason": "TODO: `setup()` wires every OS observer as a `#[cfg]` pair (accent color, reduce transparency, Liquid Glass tint, text size); moving those pairs into one `os_appearance::observe(app)` helper beside `system_events.rs` would bring the file back under 800 and give them one home."

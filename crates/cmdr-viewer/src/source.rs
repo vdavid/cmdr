@@ -14,6 +14,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use super::ViewerError;
+use crate::platform::positioned_read;
 
 /// A file the viewer reads by absolute offset.
 pub trait ByteSource: Send + Sync {
@@ -60,19 +61,6 @@ impl ByteSource for LocalFileSource {
         }
         Ok(filled)
     }
-}
-
-/// One `pread`: no cursor, so concurrent readers never disturb each other.
-#[cfg(unix)]
-fn positioned_read(file: &File, buf: &mut [u8], offset: u64) -> std::io::Result<usize> {
-    std::os::unix::fs::FileExt::read_at(file, buf, offset)
-}
-
-/// The browser has no local files (a session there reads through its volume, and
-/// `File::open` already refuses), so a positioned read is a typed refusal, never a panic.
-#[cfg(target_family = "wasm")]
-fn positioned_read(_file: &File, _buf: &mut [u8], _offset: u64) -> std::io::Result<usize> {
-    Err(std::io::ErrorKind::Unsupported.into())
 }
 
 /// An open source plus the two facts every backend needs at open.
