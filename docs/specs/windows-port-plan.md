@@ -372,7 +372,56 @@ Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5
     a short explainer of SmartScreen's "More info → Run anyway" step, next to the Store link. David reviews the copy.
     Needs 32, 52.
 
+### Phase 7: native feel
+
+Phases 1–6 make Cmdr run correctly on Windows. This phase makes it feel like a Windows app, which is the goal David set
+on 2026-11-11: not "a macOS app ported to Windows" and not a "cross-platform app" (a spork: good at everything, great at
+nothing), but native controls, native conventions, native words and keys, and every macOS goodie in its Windows form
+(`docs/design-principles.md` § "Platform-native, not generic"). Tasks 26 (keymap) and 27 (copy) serve the same goal.
+None of it blocks a first Windows alpha; all of it is expected before Windows is called done.
+
+Linux rides along as a decision, not as leftover: each task below states what Linux does for that aspect (follows macOS,
+follows Windows, splits by desktop, or its own way), so the Linux version can grow into it without rework. The starting
+assumptions, each to be verified against the GNOME and KDE guidelines in task 59 before anything builds on it
+(unverified, from memory, 2026-11-11):
+
+- **Shortcuts**: Windows (Ctrl-based), minus what GNOME and KDE reserve.
+- **Window chrome**: Windows (native decorations, already decided).
+- **Paths, Trash, permissions**: macOS (POSIX).
+- **Dialog button order**: splits by desktop, GNOME like macOS and KDE like Windows.
+- **Control styling**: its own, one neutral theme following the system accent and dark mode.
+- **Words**: its own, desktop-specific where GNOME and KDE differ.
+- **Screen reader**: its own (Orca), on the same ARIA groundwork.
+
+59. [S] Win. Platform conventions as data: a typed set beside the capabilities (dialog button order, default and cancel
+    keys, access-key support, menu model, which screen readers to expect), plus the Linux desktop (GNOME, KDE, other) as
+    a backend value. UI primitives ask a convention, ❌ never "is this Windows", so Linux picks per desktop. Starts by
+    verifying the table above against each platform's own guidelines and recording the sources. Needs 25.
+60. [M] Windows. A Windows theme for the `lib/ui` primitives, following Fluent 2: buttons, dropdowns, checkboxes,
+    switches, text fields, scrollbars, focus visuals, tooltips, and context menus, as tokens keyed on the platform so
+    components stay one implementation. David reviews the design. Linux: its own neutral theme, same token set.
+    Needs 59.
+61. [S] Windows. Dialog conventions: button order and alignment, the default and cancel buttons, Enter and Esc, access
+    keys (Alt mnemonics), all read from task 59's conventions inside `ModalDialog` and friends. Linux: per desktop.
+    Needs 59.
+62. [S] Windows. Typography and motion: Segoe UI Variable through the system font stack, the Windows type ramp, Windows
+    animation curves and durations, and the system's animation setting. Linux: follows the desktop's font and
+    reduced-motion settings. Needs 40.
+63. [S] Windows. The menu model: decide between an in-window menu bar (as Total Commander has), a command bar, or
+    neither, then build it with Alt and F10 focus and native-feeling context menus. David decides the model. Linux:
+    in-window menu bar today; revisit per desktop. Needs 26.
+64. [M] Windows. Screen reader parity: a Narrator and NVDA pass over the main flows (panes, dialogs, Settings, the
+    viewer, operations in progress), fixing what the ARIA work for VoiceOver doesn't carry through WebView2 and UI
+    Automation, plus the Windows contrast themes (`forced-colors`). The findings become part of task 55's checklist.
+    Linux: the same pass with Orca, later.
+65. [S] Windows. System surfaces: native file pickers, toast notifications under Cmdr's app identity, a dark title bar
+    in dark mode, and Mica or another system backdrop on Windows 11. Linux: portals for pickers and notifications. Needs
+    52 for the app identity.
+66. [S] Windows, David. A native-feel checklist for task 55: per surface, what "native" means on Windows with reference
+    screenshots from Windows' own apps, so the QA pass has something to check against. An agent drafts it; David owns
+    it.
+
 ### Later, not in the first Windows release
 
 - OCR via `Windows.Media.Ocr`, CLIP on ONNX Runtime + DirectML.
-- Explorer shell-extension verbs in Cmdr's own context menu (`IContextMenu`), preview handlers, Mica, ARM64 builds.
+- Explorer shell-extension verbs in Cmdr's own context menu (`IContextMenu`), preview handlers, ARM64 builds.

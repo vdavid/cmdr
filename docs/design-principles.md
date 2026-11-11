@@ -2,12 +2,27 @@
 
 - Prefer an elegant architecture over quick hacks. We have time to do outstanding work, and we are in this for the long
   run.
-- **Platform-native, not generic.** The app should look and feel as if it was specifically made for the user's OS. Never
-  generalize user-facing text, labels, or behavior to be "cross-platform". Instead, fork by OS. On macOS, say "Finder",
-  "Trash", "System Settings". On Linux, say "file manager", "Trash" (FreeDesktop spec), and use DE-specific terminology
-  where possible. Windows (later) gets its own native terms too. This applies to error messages, menu labels, tooltips,
-  and any user-visible string. Use `isMacOS()` / `cfg(target_os)` to branch. A few extra lines of platform-specific text
-  are always better than one watered-down generic string.
+- **Platform-native, not generic.** The app should look and feel as if it was specifically made for the user's OS. On
+  Windows that means a Windows app, not "a macOS app ported to Windows" and not a "cross-platform app": those are
+  sporks, good at everything and great at nothing. Never generalize user-facing text, labels, or behavior to be
+  "cross-platform". Instead, fork by OS:
+  - **Words.** On macOS, say "Finder", "Trash", "System Settings". On Linux, say "file manager", "Trash" (FreeDesktop
+    spec), and use DE-specific terminology where possible. Windows gets its own native terms ("File Explorer", "Recycle
+    Bin", "Settings"). This applies to error messages, menu labels, tooltips, and any user-visible string. A few extra
+    lines of platform-specific text are always better than one watered-down generic string.
+  - **Controls and conventions.** Buttons, dropdowns, checkboxes, scrollbars, focus visuals, and menus look and behave
+    like the platform's own, and dialogs follow its conventions (button order, default and cancel keys, access keys).
+  - **Keys.** Each platform gets the shortcuts its users already have in their fingers, not a mechanical translation of
+    the Mac ones.
+  - **The goodies travel.** Whatever makes Cmdr good on macOS has its native counterpart elsewhere: VoiceOver support
+    means Narrator and NVDA on Windows and Orca on Linux, the system accent and contrast settings are followed
+    everywhere, and so on.
+  - **Linux is its own platform**, never "whatever is left over". For each aspect it follows macOS, follows Windows,
+    splits by desktop (GNOME, KDE), or goes its own way, and that choice is written down when the Windows side is built,
+    so the Linux version can grow into it.
+  - **How.** Ask the backend what the platform offers and how it behaves (`hasCapability()`, the platform conventions,
+    `docs/guides/platform-seams.md`), never a bare "is this Windows" check: the same value then serves Linux without
+    rework. The roadmap for Windows is `docs/specs/windows-port-plan.md` § "Native feel".
 - Always apply radical transparency: make the internals of what's happening available. Like, don't just put a "Syncing"
   spinner but write exactly what's happening. Don't overshare/overcomplicate, but the user must understand what's
   happening to an extent that they could explain it to someone else if asked.
