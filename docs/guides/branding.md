@@ -95,7 +95,7 @@ The two signature colors are **mustard yellow** (`#ffc206`) and **near-black** (
 ### Desktop app
 
 - **Sans-serif:** System font stack: `-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`
-- **Monospace:** `ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace`
+- **Monospace:** `ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, 'Cascadia Mono', Consolas, monospace`
 - Base font size: 16px (`1rem = 16px`)
 
 ## Icons
