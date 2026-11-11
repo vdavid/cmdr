@@ -8,9 +8,9 @@
  */
 import type { FunnelData, FunnelRow } from '#lib/server/sources/funnel.js'
 import type { DownloadsBySource, InstallsByChannel, WorkerCountryDay } from './funnel.js'
-import type { ColumnSeries, RateBands } from './daily-chart.js'
+import type { BreakdownEntry, ColumnSeries, RateBands } from './daily-chart.js'
 import { COLOR_OTHER_COUNTRIES, countryColor, tint } from './country-colors.js'
-import { formatCountry } from './format.js'
+import { formatCountry, formatNumber } from './format.js'
 
 /** How much lighter a country's Homebrew segment is than its direct one (share mixed toward white). */
 export const homebrewTint = 0.45
@@ -36,19 +36,59 @@ export function countrySeries(layers: CountryLayer[]): ColumnSeries[] {
  * lighter tint of it, and its unknown-channel segment striped in that tint.
  */
 export function splitSeries(layers: SplitLayer[]): ColumnSeries[] {
-  return layers.map((l) => {
-    const base = l.code === otherCountries ? COLOR_OTHER_COUNTRIES : countryColor(l.code)
+  return layers.map((l) => ({
+    key: `${l.channel}-${l.code}`,
+    label: `${countryLabel(l.code)}, ${l.channel}`,
+    ...splitStyle(l.code, l.channel),
+    values: l.values,
+    // A thin country segment folds into its own channel's "Other", so the channel groups stay aligned.
+    ...(l.code === otherCountries ? {} : { foldInto: `${l.channel}-${otherCountries}` }),
+  }))
+}
+
+/** A country's own color, "Other" grey. */
+function baseColor(code: string): string {
+  return code === otherCountries ? COLOR_OTHER_COUNTRIES : countryColor(code)
+}
+
+/** How one country-and-channel segment of the split bar looks, shared by the bar and its tooltip. */
+function splitStyle(code: string, channel: Channel): { color: string; hatch: boolean } {
+  const base = baseColor(code)
+  return { color: channel === 'direct' ? base : tint(base, homebrewTint), hatch: channel === 'unknown' }
+}
+
+/** A country stack's layers on day `i`, as tooltip breakdown entries ("Other" sorts last). */
+export function countryStackEntries(stack: ColumnSeries[], i: number): BreakdownEntry[] {
+  return stack.map((s) => ({ label: s.label, color: s.color, count: s.values[i], last: s.key === otherCountries }))
+}
+
+/**
+ * The split bar's right half on day `i`, one tooltip entry per country in `codes`: its installs across the
+ * three channels, with the bar split by channel in the same colors as the chart segments, and the channels
+ * in words ("3 direct, 1 Homebrew").
+ */
+export function installCountryEntries(layers: SplitLayer[], codes: string[], i: number): BreakdownEntry[] {
+  return codes.map((code) => {
+    const counts = channels.map((channel) => ({
+      channel,
+      value: layers.find((l) => l.code === code && l.channel === channel)?.values[i] ?? 0,
+    }))
     return {
-      key: `${l.channel}-${l.code}`,
-      label: `${countryLabel(l.code)}, ${l.channel}`,
-      color: l.channel === 'direct' ? base : tint(base, homebrewTint),
-      values: l.values,
-      hatch: l.channel === 'unknown',
-      // A thin country segment folds into its own channel's "Other", so the channel groups stay aligned.
-      ...(l.code === otherCountries ? {} : { foldInto: `${l.channel}-${otherCountries}` }),
+      label: countryLabel(code),
+      color: baseColor(code),
+      count: counts.reduce((sum, c) => sum + c.value, 0),
+      detail: counts
+        .filter((c) => c.value > 0)
+        .map((c) => `${formatNumber(c.value)} ${channelWords[c.channel]}`)
+        .join(', '),
+      parts: counts.map((c) => ({ value: c.value, ...splitStyle(code, c.channel) })),
+      last: code === otherCountries,
     }
   })
 }
+
+/** A channel as the tooltip says it. */
+const channelWords: Record<Channel, string> = { direct: 'direct', homebrew: 'Homebrew', unknown: 'unknown' }
 
 /** The bands in words for the legend: "Red under 5%, yellow 5–12%, green 12%+". */
 export function bandsLabel(bands: RateBands, format: (n: number) => string): string {

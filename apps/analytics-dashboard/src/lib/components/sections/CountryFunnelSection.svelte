@@ -113,11 +113,13 @@
     {/each}
 {/snippet}
 
-{#snippet headerWithInfo(label: string, topic: string, text: string)}
+{#snippet headerWithInfo(label: string, topic: string, lines: string[])}
     <th class="py-2 pr-3 text-right font-medium last:pr-0">
         <span class="inline-flex items-center gap-1">
             {label}
-            <InfoPopover {topic} align="end">{text}</InfoPopover>
+            <InfoPopover {topic} align="end">
+                {#each lines as line (line)}<p>{line}</p>{/each}
+            </InfoPopover>
         </span>
     </th>
 {/snippet}
@@ -126,10 +128,24 @@
     <h2 class="mb-1 flex items-center gap-2 text-lg font-semibold text-text-primary">
         By country, {period}
         <InfoPopover topic="the country table">
-            {pastWindow ? `The ${String(days)} UTC days ${inPeriod}.` : `The last ${String(days)} complete UTC days plus today, the days the charts above draw.`} Visitors and clicks come from Umami, by the visitor's IP country;
-            downloads, installs, D7, and D28 come from the api-server (downloads by the request's country, installs by
-            the country on the install's heartbeat). "(unknown)" is everything without a usable country. Rates pool as ratios of sums. Counts
-            are colored on a fixed log scale: red is 1, yellow 10, cyan 100, and purple {scaleTop}.
+            <p>
+                The funnel per country, over {pastWindow
+                    ? `the ${String(days)} UTC days ${inPeriod}`
+                    : `the last ${String(days)} complete UTC days plus today (the days the charts above draw)`}.
+            </p>
+            <ul>
+                <li>Visitors and clicks come from Umami, by the visitor's IP country.</li>
+                <li>
+                    Downloads, installs, D7, and D28 come from the api-server: downloads by the request's country,
+                    installs by the country on the install's heartbeat.
+                </li>
+                <li>"(unknown)" is everything without a usable country.</li>
+                <li>Rates pool as ratios of sums.</li>
+            </ul>
+            <p>
+                <span class="info-label">Colors:</span> counts wear a fixed log scale. Red is 1, yellow 10, cyan 100, and
+                purple {scaleTop}.
+            </p>
         </InfoPopover>
     </h2>
     <p class="mb-3 text-sm text-text-tertiary">
@@ -213,19 +229,28 @@
                                 {@render headerWithInfo(
                                     'Server downloads',
                                     'server downloads',
-                                    'Every DMG request the api-server logged, bots included. A country with many downloads and few installs is likely a scraper.',
+                                    [
+                                        'Every DMG request the api-server logged, bots included.',
+                                        'A country with many downloads and few installs is likely a scraper.',
+                                    ],
                                 )}
                                 <th class="py-2 pr-3 text-right font-medium">Click → install</th>
                                 <th class="py-2 pr-3 text-right font-medium">Installs</th>
                                 {@render headerWithInfo(
                                     'D7 (pooled)',
                                     'pooled D7',
-                                    'All D7-retained installs ÷ all installs in the cohorts old enough to have a D7, with the raw counts beside it.',
+                                    [
+                                        'D7-retained installs ÷ installs, over the cohorts old enough to have a D7.',
+                                        'The raw counts sit beside each rate.',
+                                    ],
                                 )}
                                 {@render headerWithInfo(
                                     'D28 (pooled)',
                                     'pooled D28',
-                                    'The same for day 28: retained ÷ installs in the cohorts old enough to have a D28. A dash until the api-server sends it.',
+                                    [
+                                        'D28-retained installs ÷ installs, over the cohorts old enough to have a D28.',
+                                        'A dash until the api-server sends it.',
+                                    ],
                                 )}
                             </tr>
                         </thead>

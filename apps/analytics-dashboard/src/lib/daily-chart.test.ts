@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
   bandSegments,
+  breakdownRows,
   columnPath,
   foldedColumn,
   lineRuns,
   shortDay,
   stackGap,
+  type BreakdownEntry,
   type ColumnSeries,
 } from './daily-chart.js'
 
@@ -108,5 +110,60 @@ describe('bandSegments', () => {
       { status: 'fair', from: 0.05, to: 0.08 },
     ])
     expect(bandSegments(bands, 0.04)).toEqual([{ status: 'bad', from: 0, to: 0.04 }])
+  })
+})
+
+describe('breakdownRows', () => {
+  const entry = (label: string, count: number | null, last = false): BreakdownEntry => ({
+    label,
+    color: '#123456',
+    count,
+    last,
+  })
+
+  it('drops empty rows, sorts by count with "Other" last, and scales bars to the largest row', () => {
+    const rows = breakdownRows(
+      [entry('A', 1), entry('B', 0), entry('C', 6), entry('Other', 9, true), entry('D', null)],
+      16,
+    )
+    expect(rows.map((r) => r.label)).toEqual(['C', 'A', 'Other'])
+    expect(rows.map((r) => r.breakdown?.fill)).toEqual([6 / 9, 1 / 9, 1])
+    expect(rows[0].breakdown).toMatchObject({ count: '6', share: '38%' })
+    expect(rows[0].value).toBe('6 · 38%')
+  })
+
+  it('keeps the input order on ties and with sort off', () => {
+    expect(breakdownRows([entry('A', 2), entry('B', 2)], 4).map((r) => r.label)).toEqual(['A', 'B'])
+    expect(breakdownRows([entry('A', 1), entry('B', 3)], 4, { sort: false }).map((r) => r.label)).toEqual(['A', 'B'])
+  })
+
+  it('leaves the share blank on an unknown or empty total', () => {
+    const [row] = breakdownRows([entry('A', 1)], null)
+    expect(row.breakdown?.share).toBe('')
+    expect(row.value).toBe('1')
+  })
+
+  it('splits the bar into its parts as fractions of the row, dropping empty ones, and reads the detail aloud', () => {
+    const [row] = breakdownRows(
+      [
+        {
+          label: 'SE',
+          color: '#111111',
+          count: 4,
+          detail: '3 direct, 1 Homebrew',
+          parts: [
+            { value: 3, color: '#111111' },
+            { value: 1, color: '#222222' },
+            { value: 0, color: '#333333', hatch: true },
+          ],
+        },
+      ],
+      8,
+    )
+    expect(row.breakdown?.parts).toEqual([
+      { fraction: 0.75, color: '#111111' },
+      { fraction: 0.25, color: '#222222' },
+    ])
+    expect(row.value).toBe('4 · 50% (3 direct, 1 Homebrew)')
   })
 })

@@ -24,7 +24,7 @@ All API keys stay server-side, behind `+server.ts` / `+page.server.ts`.
 
 ## Checks
 
-`pnpm check dashboard` runs all nine checks. Don't judge a change by raw `pnpm lint`: the runner owns ordering.
+`pnpm check dashboard` runs all nine checks; don't judge a change by raw `pnpm lint`.
 
 ## Must-knows
 
@@ -50,10 +50,11 @@ All API keys stay server-side, behind `+server.ts` / `+page.server.ts`.
 - **Trend stats skip today and pool rates as ratios of sums** (`#lib/acquisition-stats.ts`); a missing worker field
   reads "Not available yet". Country chips update the URL shallowly, so ❌ never rebuild a URL from `page.url` on `/`;
   read `window.location`. `DETAILS.md` § Acquisition trends.
+- **(i) popovers: a gist line, bullets, then `Source:`** (`InfoPopover.svelte`).
 - **One color means one property across the whole dashboard** (dots, strokes, fills). Palette: `DETAILS.md`.
 - **❌ Never auto-scale `#lib/count-color-scale.ts`**: purple always means `COUNT_SCALE_PURPLE_AT`, raised only by hand.
   `DETAILS.md` § "The country map and table".
 
 Local dev: `pnpm dev:dashboard` serves on port 4830, reading `.env` (copy `.env.example`; escape a literal `$` as `\$`).
 
-Everything else (structure, data loading, sources, auth, env vars, local QA, deployment): `DETAILS.md`.
+Everything else (structure, data, sources, auth, env, QA, deployment): `DETAILS.md`.

@@ -435,18 +435,29 @@ columns ending today.
   reads `window.location`. A `?country=` outside the top 20 (a link from the country table) is a normal load: the server
   adds that country's slices (`countries.extra`, cached on its own).
 - **Country stacks.** For all countries, visitors and clicks stack the top 20 plus grey "Other" (total minus their sum,
-  so a stack always sums to the day's total; `stackByCountry`), and the tooltip shows each count and its share of the
-  day. A country segment shorter than 4px (`foldBelowPx`) draws as part of "Other" that day (its channel's "Other" in
-  the split bar), so a bar holds only readable slices; the tooltip still lists every country (`foldedColumn`, David's
-  call 2026-11-10). New installs draw a split bar: the left half stacks by channel, the right half by channel group
-  first and country within it (`installSplit`), so the channel boundaries line up across both halves. A country's
-  Homebrew segment is a lighter tint of its color (`homebrewTint`), its unknown-channel segment that tint striped.
-  Per-country installs count only installs whose first beat carried a country, so "Other" also holds the ones with none.
-  Filtered to one country, every chart is a single series in that country's color.
+  so a stack always sums to the day's total; `stackByCountry`). A country segment shorter than 4px (`foldBelowPx`) draws
+  as part of "Other" that day (its channel's "Other" in the split bar), so a bar holds only readable slices; the tooltip
+  still lists every country with a count that day (`foldedColumn`, David's call 2026-11-10). New installs draw a split
+  bar: the left half stacks by channel, the right half by channel group first and country within it (`installSplit`), so
+  the channel boundaries line up across both halves. A country's Homebrew segment is a lighter tint of its color
+  (`homebrewTint`), its unknown-channel segment that tint striped. Per-country installs count only installs whose first
+  beat carried a country, so "Other" also holds the ones with none. Filtered to one country, every chart is a single
+  series in that country's color.
+- **The stack tooltip's breakdown** (`breakdownRows` in `#lib/daily-chart.ts`, fed by `countryStackEntries` and
+  `installCountryEntries`): the day's total first, then one row per country with its dot, a magnitude bar, the count,
+  and its share of the day, in aligned columns (one CSS grid in `DailyChart.svelte`). Countries at zero that day drop
+  out, the rest sort by count, largest first, and "Other" always sorts last (a bucket, not a country). Each bar is
+  linear, scaled to the day's largest row, in the country's own color. New installs' country rows split their bar into
+  the chart's direct / Homebrew / unknown segments and name the split in a muted aside; the channel rows above keep the
+  stack's order. Decision/Why: the bar over count-scale coloring, because the log scale's rainbow fights the country
+  dots and compares magnitudes within one day poorly.
 - **Plain SVG over uPlot** for these charts: discrete days, an exact number on each column where it fits, a faded today,
   and an exact-values tooltip. The chart is a `role="slider"` over days: arrow keys walk them and each day's readout is
   the `aria-valuetext`.
-- Each metric's methodology lives in its (i) popover.
+- Each metric's methodology lives in its (i) popover, written as a glanceable stack: a gist `<p>` first (drawn
+  brighter), then a `<ul>` of how to read it and its caveats, and a `Source:` line last (`<span class="info-label">`).
+  `InfoPopover.svelte` spaces the blocks and bullets the lists; a popover that's data (like the pies' `breakdowns`)
+  carries a top-level snippet.
 - **Download breakdown pies** (Channels, Download referrers, Downloads by client), in one row of three 1/3 cards under
   the clicks chart (one column below `md`). They sum the funnel rows' per-day maps over the charts' window, so the
   country filter re-slices in the browser with no new fetch. Filtered to one country they say "Not available for one

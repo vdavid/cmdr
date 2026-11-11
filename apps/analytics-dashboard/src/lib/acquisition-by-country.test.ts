@@ -3,7 +3,9 @@ import type { FunnelData, FunnelRow } from '#lib/server/sources/funnel.js'
 import type { WorkerCountryDay } from './funnel.js'
 import {
   bandsLabel,
+  countryStackEntries,
   countrySeries,
+  installCountryEntries,
   homebrewTint,
   installSplit,
   otherCountries,
@@ -212,5 +214,54 @@ describe('installSplit', () => {
       [{ code: 'SE', channels: [{ direct: 1, homebrew: 0, unknown: 0 }, null] }],
     )
     expect(split.every((s) => s.values[0] === null && s.values[1] === null)).toBe(true)
+  })
+})
+
+describe('countryStackEntries', () => {
+  it('reads each layer on day `i`, in its color, with "Other" marked to sort last', () => {
+    const stack = countrySeries([
+      { code: 'SE', values: [1, 4] },
+      { code: otherCountries, values: [9, 2] },
+    ])
+    expect(countryStackEntries(stack, 1)).toEqual([
+      { label: 'Sweden (SE)', color: countryColors.SE, count: 4, last: false },
+      { label: 'Other', color: COLOR_OTHER_COUNTRIES, count: 2, last: true },
+    ])
+  })
+})
+
+describe('installCountryEntries', () => {
+  const layers = installSplit(
+    [{ direct: 5, homebrew: 2, unknown: 1 }],
+    [
+      { code: 'SE', channels: [{ direct: 3, homebrew: 1, unknown: 0 }] },
+      { code: 'DE', channels: [{ direct: 0, homebrew: 0, unknown: 0 }] },
+    ],
+  )
+
+  it('sums each country across channels, with the bar split by channel in the split bar’s colors', () => {
+    const [se] = installCountryEntries(layers, ['SE', 'DE', otherCountries], 0)
+    expect(se).toEqual({
+      label: 'Sweden (SE)',
+      color: countryColors.SE,
+      count: 4,
+      detail: '3 direct, 1 Homebrew',
+      parts: [
+        { value: 3, color: countryColors.SE, hatch: false },
+        { value: 1, color: tint(countryColors.SE, homebrewTint), hatch: false },
+        { value: 0, color: tint(countryColors.SE, homebrewTint), hatch: true },
+      ],
+      last: false,
+    })
+  })
+
+  it('keeps empty countries (the rows helper drops them) and marks "Other" last', () => {
+    const entries = installCountryEntries(layers, ['SE', 'DE', otherCountries], 0)
+    expect(entries.map((e) => [e.label, e.count, e.last])).toEqual([
+      ['Sweden (SE)', 4, false],
+      ['Germany (DE)', 0, false],
+      ['Other', 4, true],
+    ])
+    expect(entries[2].detail).toBe('2 direct, 1 Homebrew, 1 unknown')
   })
 })

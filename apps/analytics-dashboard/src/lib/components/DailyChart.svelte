@@ -328,23 +328,44 @@
             <p class="mb-1 font-medium text-text-primary">
                 {days[active]}{#if days[active] === today}<span class="ml-1 font-normal text-text-tertiary">(today, partial)</span>{/if}
             </p>
-            {#each activeRows as row, k (`${String(k)}-${row.label}`)}
-                <div class="flex items-center justify-between gap-4 {row.heading ? 'mt-1.5 text-[10px] tracking-wide uppercase' : ''}">
-                    <span class="flex items-center gap-1.5 text-text-tertiary">
-                        {#if row.color}
-                            {#if row.mark === 'line'}
-                                <span class="inline-block h-0.5 w-3 rounded-sm" style="background-color: {row.color};"></span>
-                            {:else if row.mark === 'dot'}
-                                <span class="inline-block size-2 rounded-full" style="background-color: {row.color};"></span>
-                            {:else}
-                                <span class="inline-block size-2 rounded-sm" style={swatchStyle({ color: row.color, hatch: row.hatch })}></span>
+            <!--
+              One grid for every row, so breakdown rows line up: label, magnitude bar, count, share. Plain rows
+              put their value across the last three columns.
+            -->
+            <div class="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-2 gap-y-0.5">
+                {#each activeRows as row, k (`${String(k)}-${row.label}`)}
+                    {#if row.heading}
+                        <span class="col-span-4 mt-1.5 text-[10px] tracking-wide text-text-tertiary uppercase">{row.label}</span>
+                    {:else}
+                        <span class="flex min-w-0 items-center gap-1.5 pr-2 whitespace-nowrap text-text-tertiary">
+                            {#if row.color}
+                                {#if row.mark === 'line'}
+                                    <span class="inline-block h-0.5 w-3 shrink-0 rounded-sm" style="background-color: {row.color};"></span>
+                                {:else if row.mark === 'dot'}
+                                    <span class="inline-block size-2 shrink-0 rounded-full" style="background-color: {row.color};"></span>
+                                {:else}
+                                    <span class="inline-block size-2 shrink-0 rounded-sm" style={swatchStyle({ color: row.color, hatch: row.hatch })}></span>
+                                {/if}
                             {/if}
+                            {row.label}
+                            {#if row.breakdown?.detail}<span class="text-[10px] text-text-tertiary/80">{row.breakdown.detail}</span>{/if}
+                        </span>
+                        {#if row.breakdown}
+                            <span class="flex h-1.5 w-14 overflow-hidden rounded-full bg-border">
+                                <span class="flex h-full" style="width: {row.breakdown.fill * 100}%;">
+                                    {#each row.breakdown.parts as part, p (p)}
+                                        <span class="h-full" style="width: {part.fraction * 100}%; {swatchStyle(part)}"></span>
+                                    {/each}
+                                </span>
+                            </span>
+                            <span class="text-right font-semibold text-text-primary tabular-nums">{row.breakdown.count}</span>
+                            <span class="min-w-8 text-right text-text-secondary tabular-nums">{row.breakdown.share}</span>
+                        {:else}
+                            <span class="col-span-3 text-right font-semibold text-text-primary tabular-nums">{row.value}</span>
                         {/if}
-                        {row.label}
-                    </span>
-                    <span class="font-semibold text-text-primary tabular-nums">{row.value}</span>
-                </div>
-            {/each}
+                    {/if}
+                {/each}
+            </div>
         </div>
     {/if}
 

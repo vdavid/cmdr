@@ -1,5 +1,7 @@
 /** Client-safe types and geometry for `DailyChart.svelte`, kept here so the math stays testable. */
 
+import { formatNumber, formatPercent } from './format.js'
+
 /** One stacked layer of a column chart. `null` days draw nothing and read as "–" in the tooltip. */
 export interface ColumnSeries {
   key: string
@@ -80,6 +82,76 @@ export interface TooltipRow {
   hatch?: boolean
   /** A group heading inside the tooltip: drawn smaller and muted, value optional. */
   heading?: boolean
+  /**
+   * A breakdown row (one country or channel of the day): drawn as aligned count and share columns beside a
+   * magnitude bar. `value` still carries the same numbers as text, for the slider's `aria-valuetext`.
+   */
+  breakdown?: TooltipBreakdown
+}
+
+/** The parts of a breakdown row, as `breakdownRows` shapes them. */
+export interface TooltipBreakdown {
+  count: string
+  /** The formatted share of the day's total, or `''` when the total is unknown. */
+  share: string
+  /** The bar's length, 0–1, relative to the group's largest row. */
+  fill: number
+  /** Colored pieces of the bar, left to right, each a fraction (0–1) of this row's own count. */
+  parts: { fraction: number; color: string; hatch?: boolean }[]
+  /** A muted aside after the label, like "2 direct, 1 Homebrew". */
+  detail?: string
+}
+
+/** One input to `breakdownRows`: a layer's count on the day, plus how its row and bar look. */
+export interface BreakdownEntry {
+  label: string
+  color: string
+  count: number | null
+  hatch?: boolean
+  detail?: string
+  /** The bar's colored pieces as raw counts (summing to `count`); by default one piece in `color`. */
+  parts?: { value: number; color: string; hatch?: boolean }[]
+  /** A catch-all bucket ("Other") that sorts after every named row, whatever its count. */
+  last?: boolean
+}
+
+/**
+ * A day's breakdown as tooltip rows: drops empty (zero or unknown) entries, sorts the rest by count, largest
+ * first (ties and `sort: false` keep the input order; `last` entries go at the end), and scales every bar to
+ * the largest row, so big and small read apart at a glance. Shares are of `total`. Pure.
+ */
+export function breakdownRows(
+  entries: BreakdownEntry[],
+  total: number | null,
+  { sort = true }: { sort?: boolean } = {},
+): TooltipRow[] {
+  const shown = entries.map((entry, order) => ({ entry, order, count: entry.count ?? 0 })).filter((e) => e.count > 0)
+  if (sort) {
+    shown.sort(
+      (a, b) => Number(a.entry.last ?? false) - Number(b.entry.last ?? false) || b.count - a.count || a.order - b.order,
+    )
+  }
+  const max = Math.max(0, ...shown.map((e) => e.count))
+  return shown.map(({ entry, count }) => {
+    const share = total !== null && total > 0 ? formatPercent(count / total) : ''
+    const parts = (entry.parts ?? [{ value: count, color: entry.color, hatch: entry.hatch }])
+      .filter((p) => p.value > 0)
+      .map((p) => ({ fraction: p.value / count, color: p.color, ...(p.hatch ? { hatch: true } : {}) }))
+    const text = [formatNumber(count), share].filter(Boolean).join(' · ')
+    return {
+      label: entry.label,
+      value: entry.detail ? `${text} (${entry.detail})` : text,
+      color: entry.color,
+      ...(entry.hatch ? { hatch: true } : {}),
+      breakdown: {
+        count: formatNumber(count),
+        share,
+        fill: count / max,
+        parts,
+        ...(entry.detail ? { detail: entry.detail } : {}),
+      },
+    }
+  })
 }
 
 /** Roughly how wide a column label renders at the chart's 10px tabular font. */

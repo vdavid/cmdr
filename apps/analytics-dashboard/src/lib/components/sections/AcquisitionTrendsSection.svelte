@@ -8,7 +8,7 @@
     import type { SourceResult, DashboardSelection } from '#lib/server/types.js'
     import { rollingDays, type ViewWindow } from '#lib/time-range.js'
     import type { FunnelData, FunnelRow } from '#lib/server/sources/funnel.js'
-    import type { ColumnSeries, TooltipRow } from '#lib/daily-chart.js'
+    import { breakdownRows, type ColumnSeries, type TooltipRow } from '#lib/daily-chart.js'
     import {
         countStats,
         ratioStats,
@@ -24,10 +24,11 @@
         bandsLabel,
         countryLabel,
         countrySeries,
+        countryStackEntries,
+        installCountryEntries,
         installSplit,
         otherCountries,
         rowsForCountry,
-        shareOf,
         splitSeries,
         stackByCountry,
     } from '#lib/acquisition-by-country.js'
@@ -141,16 +142,9 @@
         )
     }
 
-    /** The tooltip for a country stack: the total, then each layer's count and share of the day. */
+    /** The tooltip for a country stack: the total, then the day's countries, biggest first (`breakdownRows`). */
     function stackTooltip(stack: ColumnSeries[], total: number | null, i: number, totalLabel: string): TooltipRow[] {
-        return [
-            { label: totalLabel, value: cell(total) },
-            ...stack.map((s) => {
-                const value = s.values[i]
-                const share = shareOf(value, total)
-                return { label: s.label, value: share === null ? cell(value) : `${cell(value)} · ${formatPercent(share)}`, color: s.color }
-            }),
-        ]
+        return [{ label: totalLabel, value: cell(total) }, ...breakdownRows(countryStackEntries(stack, i), total)]
     }
 
     /** A retention chart's readout: a final cohort's rate and counts, or a young one's "so far" point. */
@@ -216,39 +210,21 @@
         return [
             {
                 title: 'Channels',
-                info:
-                    "Which channels drove server downloads: a download's ref is the channel the visitor first arrived " +
-                    'from (a UTM source or campaign, else the referring site). Ref is first-touch per browser visit and ' +
-                    'comes from the URL only, so return visits and cross-device journeys (read on the phone, download on ' +
-                    'the Mac) carry no ref and land in "(none / unknown)". Homebrew and direct links have none too, and ' +
-                    'rows before 2026-06-12 predate the column, so read it as "channel unknown", not "direct". From the ' +
-                    'api-server\'s download log; all days UTC.',
+                info: channelsInfo,
                 empty: 'No downloads with a channel in this range.',
                 headline: null,
                 slices: foldSlices(pieEntries(aggregateChannels(inRange)), { neutral: ['(none)'] }),
             },
             {
                 title: 'Download referrers',
-                info:
-                    'The Referer host of each /download request. Unlike the first-touch channel (set only by the ' +
-                    'website button), this is captured on every hit, so it shows where the direct, no-ref downloads came ' +
-                    'from: a link on AlternativeTo, a directory, GitHub, Reddit, or a forum. "(none / unknown)" means no ' +
-                    'usable referer: a typed URL, a privacy browser, a referrer-policy strip, Homebrew or curl, or rows ' +
-                    'before 2026-06-25 that predate the column. A download counts here and in Channels, sliced ' +
-                    "differently. From the api-server's download log; all days UTC.",
+                info: referrersInfo,
                 empty: 'No downloads with a referer in this range.',
                 headline: null,
                 slices: foldSlices(pieEntries(aggregateReferers(inRange)), { neutral: ['(none)'] }),
             },
             {
                 title: 'Downloads by client',
-                info:
-                    "The /download request's user-agent family. Cmdr is macOS-only, so a Windows, Android, or Linux " +
-                    'client downloading the .dmg can\'t install it: that\'s the "bot / impossible" slice, the one ' +
-                    'high-confidence exclusion. "Human installs" is every download minus those. The scraper spoofs Mac ' +
-                    'browser UAs too, so "human" (a Mac browser, Homebrew, or curl/wget) means "could be a real install", not proof of one. "Unknown" (no or ' +
-                    'unrecognized UA, including rows before UA capture) stays counted because we can\'t tell. From the ' +
-                    "api-server's download log; all days UTC.",
+                info: clientsInfo,
                 empty: 'No downloads to classify in this range.',
                 headline:
                     ua.total > 0
@@ -267,18 +243,78 @@
     })
 </script>
 
+<!-- The download breakdowns' (i) content, top-level so `breakdowns` can carry it -->
+{#snippet downloadLogSource()}
+    <p><span class="info-label">Source:</span> the api-server's download log, UTC days.</p>
+{/snippet}
+
+{#snippet channelsInfo()}
+    <p>Which channel drove each server download.</p>
+    <ul>
+        <li>The channel is where the visitor first arrived from: a UTM source or campaign, else the referring site.</li>
+        <li>
+            It's first-touch per browser visit and comes from the URL only, so return visits and cross-device journeys
+            (read on the phone, download on the Mac) carry none.
+        </li>
+        <li>Homebrew and direct links have none either, and rows before 2026-06-12 predate the column.</li>
+        <li>So read "(none / unknown)" as "channel unknown". It doesn't mean direct.</li>
+    </ul>
+    {@render downloadLogSource()}
+{/snippet}
+
+{#snippet referrersInfo()}
+    <p>The Referer host of each /download request.</p>
+    <ul>
+        <li>
+            It's captured on every hit (the channel only comes from the website button), so it shows where the no-ref
+            downloads came from: AlternativeTo, a directory, GitHub, Reddit, or a forum.
+        </li>
+        <li>
+            "(none / unknown)" means no usable referer: a typed URL, a privacy browser, a stripped referrer, Homebrew or
+            curl, or rows before 2026-06-25.
+        </li>
+        <li>Each download counts here and in Channels, sliced differently.</li>
+    </ul>
+    {@render downloadLogSource()}
+{/snippet}
+
+{#snippet clientsInfo()}
+    <p>The user-agent family of each /download request.</p>
+    <ul>
+        <li>
+            Cmdr is macOS-only, so a Windows, Android, or Linux client can't install the .dmg. That's the "Bot /
+            impossible" slice, the one high-confidence exclusion.
+        </li>
+        <li>"Human installs" is every download minus those.</li>
+        <li>
+            "Human" (a Mac browser, Homebrew, or curl/wget) means "could be a real install". The scraper spoofs Mac
+            browser user agents too, so it's no proof.
+        </li>
+        <li>"Unknown" (no or unrecognized user agent, including rows before we captured it) stays counted, since we can't tell.</li>
+    </ul>
+    {@render downloadLogSource()}
+{/snippet}
+
 <section class="mb-6 rounded-xl border border-border bg-surface p-4 sm:p-6">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 class="flex items-center gap-2 text-lg font-semibold text-text-primary">
             Acquisition trends
             <InfoPopover topic="reading these charts">
-                Every day is a UTC day. Today is still going, so it's drawn faded and left out of every stat. The
-                charts show the dates in the header (step back with ‹ and ›); the stats always cover the last 90, 30,
-                and 7 complete days, even on an earlier period, and "vs.
-                previous" compares with the same-length window before it. Columns carry their exact number where it
-                fits; hover or focus a chart (then use the arrow keys) for each day's exact values. Rates pool as a
-                ratio of sums (all clicks ÷ all visitors), never an average of daily rates; the median is the one
-                per-day rate stat. A dash means we couldn't get that number, never a zero.
+                <p>One row per funnel step: a daily chart, then its 90, 30, and 7-day stats.</p>
+                <ul>
+                    <li>Every day is a UTC day. Today is still going, so it's faded and left out of every stat.</li>
+                    <li>The charts show the dates in the header; step back with ‹ and ›.</li>
+                    <li>
+                        The stats always cover the last 90, 30, and 7 complete days, even on an earlier period. "Vs.
+                        previous" compares with the same-length window before.
+                    </li>
+                    <li>Hover or focus a chart (then use the arrow keys) for each day's exact values.</li>
+                </ul>
+                <p>
+                    <span class="info-label">Rates</span> pool as a ratio of sums (all clicks ÷ all visitors), so a quiet
+                    day can't skew them. The median is the one per-day rate stat.
+                </p>
+                <p>A dash means we couldn't get that number. A real zero shows as 0.</p>
             </InfoPopover>
         </h2>
     </div>
@@ -333,10 +369,16 @@
         {@const ppv = ratioStatsAll(inputs.pageviewsPerVisitor)}
         <TrendRow title="Visitors" unavailable={umamiReason}>
             {#snippet info()}
-                Unique visitors to getcmdr.com per UTC day, from Umami (cookieless, in the browser). Ad blockers hide some
-                visitors, and one person on two devices counts twice. Across all countries, each column stacks the top
-                eight countries by 90-day visitors, each in its own color, with the rest as grey "Other". Pageviews per
-                visitor pools all pageviews ÷ all visitors in the window.
+                <p>Unique visitors to getcmdr.com per UTC day.</p>
+                <ul>
+                    <li>
+                        Across all countries, each column stacks the top {countries.top.length} countries by 90-day visitors,
+                        each in its own color, with the rest as grey "Other".
+                    </li>
+                    <li>Pageviews per visitor pools all pageviews ÷ all visitors in the window.</li>
+                    <li>Ad blockers hide some visitors, and one person on two devices counts twice.</li>
+                </ul>
+                <p><span class="info-label">Source:</span> Umami (cookieless, in the browser).</p>
             {/snippet}
             {#snippet chart()}
                 <DailyChart
@@ -371,9 +413,16 @@
         <!-- 2. Visitor → click conversion -->
         <TrendRow title="Visitor → click conversion" unavailable={umamiReason}>
             {#snippet info()}
-                Download-button clicks ÷ visitors. Dots are each day's rate; the line is the 7-day rate, pooled as the
-                week's clicks ÷ the week's visitors, so a quiet day with one visitor can't swing it. Both sides come from
-                Umami. The bands mark our targets: under 5% is weak, 12% and up is strong.
+                <p>Download-button clicks ÷ visitors.</p>
+                <ul>
+                    <li>Dots are each day's rate.</li>
+                    <li>
+                        The line is the 7-day rate: the week's clicks ÷ the week's visitors, so a quiet day with one
+                        visitor can't swing it.
+                    </li>
+                    <li>The bands mark our targets: under 5% is weak, 12% and up is strong.</li>
+                </ul>
+                <p><span class="info-label">Source:</span> Umami, for both sides.</p>
             {/snippet}
             {#snippet chart()}
                 <DailyChart
@@ -407,10 +456,16 @@
         <!-- 3. Download clicks -->
         <TrendRow title="Download clicks" unavailable={umamiReason}>
             {#snippet info()}
-                The website's download button firing Umami's <code>download</code> event. It's in the browser, so it misses
-                Homebrew and direct links, and it won't match server downloads: those also count Homebrew, direct links,
-                GitHub-page traffic, and bots the user-agent filter misses. Across all countries, columns stack by
-                country like the visitors chart.
+                <p>Clicks on the website's download button (Umami's <code>download</code> event).</p>
+                <ul>
+                    <li>Across all countries, columns stack by country like the visitors chart.</li>
+                    <li>It runs in the browser, so it misses Homebrew and direct links.</li>
+                    <li>
+                        It won't match server downloads: those also count Homebrew, direct links, GitHub-page traffic,
+                        and bots the user-agent filter misses.
+                    </li>
+                </ul>
+                <p><span class="info-label">Source:</span> Umami.</p>
             {/snippet}
             {#snippet chart()}
                 <DailyChart
@@ -442,7 +497,7 @@
                 <div class="min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-6">
                     <h3 class="mb-3 flex items-center gap-2 text-sm font-medium text-text-primary">
                         {b.title}
-                        <InfoPopover topic={b.title}>{b.info}</InfoPopover>
+                        <InfoPopover topic={b.title}>{@render b.info()}</InfoPopover>
                     </h3>
                     {#if breakdownReason}
                         <p class="text-sm text-text-tertiary">{breakdownReason}</p>
@@ -460,16 +515,29 @@
         <TrendRow title="Click → install conversion" unavailable={bothReason}>
             {#snippet info()}
                 {#if inputs.has.channels}
-                    Direct installs ÷ download clicks, daily dots plus the pooled 7-day rate. Homebrew installs stay
-                    out, because they never click the website's button. Installs from builds too old to report their
-                    channel ("unknown") count as direct, since nearly all of those came from the DMG. An install can
-                    still first launch days after its click, so read the trend. Targets: under 50% is weak, 70% and up
-                    is strong.
+                    <p>Direct installs ÷ download clicks.</p>
+                    <ul>
+                        <li>Dots are each day's rate; the line is the pooled 7-day rate.</li>
+                        <li>Homebrew installs stay out, because they never click the website's button.</li>
+                        <li>
+                            Installs from builds too old to report their channel ("unknown") count as direct, since
+                            nearly all of those came from the DMG.
+                        </li>
+                        <li>An install can first launch days after its click, so read the trend.</li>
+                        <li>Targets: under 50% is weak, 70% and up is strong.</li>
+                    </ul>
                 {:else}
-                    New installs ÷ download clicks, daily dots plus the pooled 7-day rate. It can pass 100%: Homebrew and
-                    direct-link installs never click the button, and an install can first launch days after its
-                    download. So read the trend, not the level.
+                    <p>New installs ÷ download clicks.</p>
+                    <ul>
+                        <li>Dots are each day's rate; the line is the pooled 7-day rate.</li>
+                        <li>
+                            It can pass 100%: Homebrew and direct-link installs never click the button, and an install
+                            can first launch days after its download.
+                        </li>
+                        <li>So read the trend more than the level.</li>
+                    </ul>
                 {/if}
+                <p><span class="info-label">Source:</span> clicks from Umami, installs from the app's telemetry.</p>
             {/snippet}
             {#snippet chart()}
                 <DailyChart
@@ -504,14 +572,24 @@
         <!-- 5. New installs: by channel (left half) and by country within each channel (right half) -->
         <TrendRow title="New installs" unavailable={workerReason}>
             {#snippet info()}
-                Installs whose first-ever heartbeat landed that day: people who actually launched the app (the app's own
-                telemetry). It misses installs that opted out of analytics, and debug builds. The channel is what the app
-                reported on that first beat: Homebrew, direct (the DMG), or unknown (an older build, or a value the
-                server doesn't know). Across all countries, each day has two halves of the same height: the left stacks
-                by channel, the right by country within each channel, so the channel boundaries line up. A country's
-                Homebrew segment is a lighter tint of its color, and its unknown-channel segment is striped. Installs
-                count toward a country only when their first heartbeat carried one, so "Other" also holds the installs
-                with no country.
+                <p>Installs whose first-ever heartbeat landed that day: people who actually launched the app.</p>
+                <ul>
+                    <li>
+                        The channel is what the app reported on that first beat: Homebrew, direct (the DMG), or unknown
+                        (an older build, or a value the server doesn't know).
+                    </li>
+                    <li>
+                        Across all countries, each day has two halves of the same height. The left stacks by channel, the
+                        right by country within each channel, so the channel boundaries line up.
+                    </li>
+                    <li>A country's Homebrew segment is a lighter tint of its color, and its unknown-channel segment is striped.</li>
+                    <li>
+                        Installs count toward a country only when their first heartbeat carried one, so "Other" also holds
+                        the installs with no country.
+                    </li>
+                    <li>It misses installs that opted out of analytics, and debug builds.</li>
+                </ul>
+                <p><span class="info-label">Source:</span> the app's own telemetry, via the api-server.</p>
             {/snippet}
             {#snippet chart()}
                 {@const channelSplit = view(inputs.installsByChannel)}
@@ -542,36 +620,24 @@
                     tooltip={(i: number): TooltipRow[] => {
                         const r = rows[start + i]
                         const c = r.newInstallsByChannel
-                        const byCountry: TooltipRow[] = installRight
-                            ? [...countries.top, otherCountries].flatMap((code): TooltipRow[] => {
-                                  const n = (channel: string) =>
-                                      installRight.find((l) => l.code === code && l.channel === channel)?.values[i] ?? 0
-                                  const [direct, homebrew, unknown] = [n('direct'), n('homebrew'), n('unknown')]
-                                  const total = direct + homebrew + unknown
-                                  if (total === 0) return []
-                                  const parts = [
-                                      direct ? `${formatNumber(direct)} direct` : '',
-                                      homebrew ? `${formatNumber(homebrew)} Homebrew` : '',
-                                      unknown ? `${formatNumber(unknown)} unknown` : '',
-                                  ].filter(Boolean)
-                                  return [
-                                      {
-                                          label: countryLabel(code),
-                                          value: `${formatNumber(total)} (${parts.join(', ')})`,
-                                          color: code === otherCountries ? COLOR_OTHER_COUNTRIES : countryColor(code),
-                                      },
-                                  ]
-                              })
+                        const byCountry = installRight
+                            ? breakdownRows(installCountryEntries(installRight, [...countries.top, otherCountries], i), r.newInstalls)
+                            : []
+                        // The channels keep the stack's order (bottom first), so they read like the left half.
+                        const byChannel = c
+                            ? breakdownRows(
+                                  [
+                                      { label: 'Direct', count: c.direct, color: country ? seriesColor : COLOR_GOLD },
+                                      { label: 'Homebrew', count: c.homebrew, color: COLOR_HOMEBREW },
+                                      { label: 'Unknown', count: c.unknown, color: COLOR_UNKNOWN },
+                                  ],
+                                  r.newInstalls,
+                                  { sort: false },
+                              )
                             : []
                         return [
                             { label: 'New installs', value: cell(r.newInstalls) },
-                            ...(c
-                                ? [
-                                      { label: 'Direct', value: formatNumber(c.direct), color: country ? seriesColor : COLOR_GOLD },
-                                      { label: 'Homebrew', value: formatNumber(c.homebrew), color: COLOR_HOMEBREW },
-                                      { label: 'Unknown', value: formatNumber(c.unknown), color: COLOR_UNKNOWN },
-                                  ]
-                                : []),
+                            ...byChannel,
                             ...(byCountry.length > 0 ? [{ label: 'By country', value: '', heading: true }, ...byCountry] : []),
                         ]
                     }}
@@ -595,12 +661,20 @@
         <!-- 6. D7 retention -->
         <TrendRow title="D7 retention" unavailable={workerReason}>
             {#snippet info()}
-                The share of a day's new installs that sent any heartbeat on their 7th day after install (the api-server
-                owns the definition). A cohort needs to be at least eight days old to have a D7, so the newest week shows
-                grey "so far" points instead: retained as of day N, which can only grow. The line pools the last seven
-                final cohorts. Stats pool cohorts too (all retained ÷ all installs) and count back from the newest final
-                cohort, so "7d" is the seven newest cohorts that have a D7. Targets: under 15% is weak, 25% and up is
-                strong.
+                <p>The share of a day's new installs that sent any heartbeat on their 7th day after install.</p>
+                <ul>
+                    <li>
+                        A cohort needs to be at least eight days old to have a D7, so the newest week shows grey "so far"
+                        points instead: retained as of day N, which can only grow.
+                    </li>
+                    <li>The line pools the last seven final cohorts.</li>
+                    <li>
+                        Stats pool cohorts too (all retained ÷ all installs) and count back from the newest final cohort,
+                        so "7d" is the seven newest cohorts that have a D7.
+                    </li>
+                    <li>Targets: under 15% is weak, 25% and up is strong.</li>
+                </ul>
+                <p><span class="info-label">Source:</span> the api-server, which owns the definition.</p>
             {/snippet}
             {#snippet chart()}
                 <DailyChart
@@ -631,11 +705,16 @@
         <!-- 7. D28 retention -->
         <TrendRow title="D28 retention" unavailable={workerReason ?? (inputs.has.d28 ? null : 'Not available yet: the live api-server sends D28 once its update lands.')}>
             {#snippet info()}
-                The share of a day's new installs that sent any heartbeat on their 28th day after install (the api-server
-                owns the definition). A cohort needs to be at least 29 days old to have a D28, so cohorts 8–28 days old
-                show grey "so far" points: retained as of day N, which can only grow. The line pools the last seven
-                final cohorts, and the stats count back from the newest final cohort, as for D7. Targets: under 10% is
-                weak, 20% and up is strong.
+                <p>The share of a day's new installs that sent any heartbeat on their 28th day after install.</p>
+                <ul>
+                    <li>
+                        A cohort needs to be at least 29 days old to have a D28, so cohorts 8–28 days old show grey "so
+                        far" points: retained as of day N, which can only grow.
+                    </li>
+                    <li>The line pools the last seven final cohorts, and the stats count back from the newest final cohort, as for D7.</li>
+                    <li>Targets: under 10% is weak, 20% and up is strong.</li>
+                </ul>
+                <p><span class="info-label">Source:</span> the api-server, which owns the definition.</p>
             {/snippet}
             {#snippet chart()}
                 <DailyChart
@@ -663,9 +742,16 @@
         <!-- 8. Bot meter -->
         <TrendRow title="Bot meter" unavailable={workerReason}>
             {#snippet info()}
-                Server downloads ÷ new installs. Most DMG requests are mirrors, scrapers, and bots the user-agent filter
-                doesn't catch, so this sits well above 1×. A sudden spike means a scraper changed; a slow drift down is
-                good news (fewer bots, or more people actually launching the app).
+                <p>Server downloads ÷ new installs.</p>
+                <ul>
+                    <li>
+                        Most DMG requests are mirrors, scrapers, and bots the user-agent filter doesn't catch, so this sits
+                        well above 1×.
+                    </li>
+                    <li>A sudden spike means a scraper changed.</li>
+                    <li>A slow drift down is good news: fewer bots, or more people actually launching the app.</li>
+                </ul>
+                <p><span class="info-label">Source:</span> the api-server's download log and the app's telemetry.</p>
             {/snippet}
             {#snippet chart()}
                 <DailyChart
