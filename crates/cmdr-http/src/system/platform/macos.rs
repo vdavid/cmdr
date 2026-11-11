@@ -55,7 +55,7 @@ pub(crate) fn settings(
 }
 
 /// The system layer [`warm_up`] decides with: this arm's [`route`], but a PAC miss gets
-/// [`pac::WARM_UP_TIMEOUT`](crate::pac::WARM_UP_TIMEOUT), since nothing waits on it but the
+/// [`pac::WARM_UP_TIMEOUT`], since nothing waits on it but the
 /// requests that would otherwise have run the cold first evaluation themselves.
 struct WarmingSystem;
 
