@@ -2,7 +2,8 @@
 //! publishes that requirement. Both have to match what the release build signs with, or a profile
 //! an admin already deployed stops matching after a signing change and Cmdr silently loses Full
 //! Disk Access on every managed Mac. So the expected requirement is built here from the release
-//! config (`tauri.conf.json`'s bundle id and the Team ID in its signing identity), and both copies
+//! config (`tauri.conf.json`'s bundle id and the Team ID in `tauri.macos.conf.json`'s signing
+//! identity), and both copies
 //! must equal it. The requirement's shape is Apple's for a Developer ID app, read from a shipped
 //! build with `codesign -d -r-`.
 
@@ -12,6 +13,7 @@ const PROFILE: &str = include_str!("../../../../website/public/mdm/cmdr-full-dis
 const PREFERENCES_PROFILE: &str = include_str!("../../../../website/public/mdm/cmdr-managed-preferences.mobileconfig");
 const TRUST_TS: &str = include_str!("../../../../website/src/lib/trust-mdm.ts");
 const TAURI_CONF: &str = include_str!("../../tauri.conf.json");
+const TAURI_MACOS_CONF: &str = include_str!("../../tauri.macos.conf.json");
 
 const TCC_PAYLOAD_TYPE: &str = "com.apple.TCC.configuration-profile-policy";
 
@@ -20,9 +22,10 @@ fn expected_requirement() -> String {
     let conf: serde_json::Value = serde_json::from_str(TAURI_CONF).expect("tauri.conf.json is JSON");
     let bundle_id = conf["identifier"].as_str().expect("tauri.conf.json has an identifier");
     assert_eq!(bundle_id, crate::config::BUNDLE_ID);
-    let identity = conf["bundle"]["macOS"]["signingIdentity"]
+    let macos_conf: serde_json::Value = serde_json::from_str(TAURI_MACOS_CONF).expect("tauri.macos.conf.json is JSON");
+    let identity = macos_conf["bundle"]["macOS"]["signingIdentity"]
         .as_str()
-        .expect("tauri.conf.json has bundle.macOS.signingIdentity");
+        .expect("tauri.macos.conf.json has bundle.macOS.signingIdentity");
     assert!(
         identity.starts_with("Developer ID Application: "),
         "the release signs with a Developer ID Application identity, not {identity}"

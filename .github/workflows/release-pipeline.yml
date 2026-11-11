@@ -678,9 +678,9 @@ jobs:
             "$HOME/Library/Keychains/login.keychain-db"
 
           # The identity is the application one with the certificate kind swapped, so the team
-          # has one source: `tauri.conf.json`. It must be in the keychain, or the p12 is for
+          # has one source: `tauri.macos.conf.json`. It must be in the keychain, or the p12 is for
           # another team or isn't an installer certificate.
-          APP_IDENTITY=$(jq -r .bundle.macOS.signingIdentity apps/desktop/src-tauri/tauri.conf.json)
+          APP_IDENTITY=$(jq -r .bundle.macOS.signingIdentity apps/desktop/src-tauri/tauri.macos.conf.json)
           IDENTITY="Developer ID Installer: ${APP_IDENTITY#Developer ID Application: }"
           security find-identity -v "$KEYCHAIN_PATH" | grep -qF "\"$IDENTITY\"" || {
             echo "::error::The certificate in APPLE_INSTALLER_CERTIFICATE isn't \"$IDENTITY\"."

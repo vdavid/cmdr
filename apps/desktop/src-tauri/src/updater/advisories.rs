@@ -12,7 +12,7 @@ use semver::Version;
 
 use crate::security_advisories::{self, Severity};
 
-/// Where the list sits inside a bundle (`tauri.conf.json` → `bundle.macOS.files`).
+/// Where the list sits inside a bundle (`tauri.macos.conf.json` → `bundle.macOS.files`).
 const BUNDLE_ADVISORIES_PATH: &str = "Contents/Resources/security-advisories.json";
 
 /// What the restart toast says about security: the update fixes `count` advisories, the most

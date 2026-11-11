@@ -177,6 +177,10 @@ mod system_events;
 mod system_memory;
 mod system_strings;
 mod tauri_builder;
+/// Test-only: invariants over the per-platform Tauri config files, which no other code
+/// references (Tauri reads them at build time).
+#[cfg(test)]
+mod tauri_config;
 pub mod test_mode;
 /// The sanctioned way to wait for background work in a Rust test. See `docs/testing.md`.
 #[cfg(test)]

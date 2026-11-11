@@ -113,3 +113,39 @@ set across the cargo lanes".
 
 The Ask Cmdr bulk-rename review commands register in the same builder and type collector as every other typed command.
 Their authority and filesystem behavior live with the agent and write-operation modules, not at this registration edge.
+
+## Tauri config per platform
+
+`tauri.conf.json` holds what every platform shares; `tauri.macos.conf.json`, `tauri.linux.conf.json`, and
+`tauri.windows.conf.json` hold what only that OS reads. Tauri merges the target's file over the shared one as a JSON
+Merge Patch (RFC 7396), in the CLI and again in tauri-build and `generate_context!`, and only then applies a `-c`
+override (the wrapper's instance config, the release's Finder-extension overlay), so an override still wins (verified on
+tauri-utils 2.10.2's config parser and tauri-cli 2.12.4's config loader, source read 2026-11-11).
+
+- **macOS**: the main window's overlay chrome (`titleBarStyle`, `trafficLightPosition`, `hiddenTitle`,
+  `acceptFirstMouse`, which tauri-runtime-wry and wry apply only on macOS), `bundle.macOS` (signing identity,
+  `minimumSystemVersion`, entitlements, extra bundle files), and `bundle.targets` `app`, `dmg`.
+- **Linux**: `bundle.linux` (the `.desktop` template) and `bundle.targets` `deb`, `rpm`, `appimage`.
+- **Windows**: `bundle.targets` `nsis`, an NSIS install per user (`currentUser`, no admin), and the WebView2 bootstrapper
+  embedded in the installer (`embedBootstrapper`, about 1.8 MB). MSI waits until an enterprise asks. Rationale:
+  `docs/notes/windows-port/frontend-build-audit.md` § 2.
+- Each platform's targets are exactly what `"all"` expanded to there (tauri-bundler filters the list by the target OS),
+  Windows' minus MSI.
+
+Gotcha/Why: a merge patch REPLACES arrays, so `tauri.macos.conf.json` restates the whole main window, and that copy can
+drift from the shared one. `tauri_config.rs` fails a test when it does, or when a macOS-only key lands in the shared
+file.
+
+Decision/Why: `macOSPrivateApi` stays shared, and the `macos-private-api` feature stays on for every target. tauri-build
+fails the build when the `tauri` dependency's features differ from what the effective config asks for, and it checks
+the `[dependencies]` entry, or else every `[target.*]` entry, against the one target being built (tauri-build 2.7.4's
+`manifest::check`, source read 2026-11-11), so the feature can't differ per target while the key does. The Tauri CLI rewrites `Cargo.toml` to
+match in the same way. Both are inert anyway: the feature has been a no-op since Tauri 2.12.1 (`tauri` 2.12.5 crate
+docs; `tauri-runtime`'s feature is empty, and wry 0.57 uses the private API unconditionally).
+
+**The Windows app manifest** is `windows/app.manifest`. `build.rs` hands it to tauri-build as
+`WindowsAttributes::app_manifest` and reads it only for a Windows target; tauri-build embeds it only there either way.
+It replaces tauri-build's default, so it repeats that default's Common Controls v6 dependency (the native dialogs need
+it) and adds `longPathAware` (paths past 260 characters, once the machine's `LongPathsEnabled` policy is on too) and
+per-monitor-v2 DPI awareness (`dpiAwareness` `PerMonitorV2`, with `dpiAware` `true/pm` for an OS that predates it).
+Element names and namespaces follow Microsoft's "Application manifests" reference (read 2026-11-11).

@@ -185,7 +185,7 @@ func TestCommittedFrameworkVersionsMatchTheBundleFloor(t *testing.T) {
 		t.Fatalf("readFrameworkIndex: %v", err)
 	}
 	if index.Floor != floor.String() {
-		t.Fatalf("%s says floor %s, %s says %s", macOSFrameworkVersionsFile, index.Floor, tauriConfRelPath, floor)
+		t.Fatalf("%s says floor %s, %s says %s", macOSFrameworkVersionsFile, index.Floor, tauriMacOSConfRelPath, floor)
 	}
 	for name, raw := range index.Frameworks {
 		if _, ok := parseMacOSVersion(raw); !ok {

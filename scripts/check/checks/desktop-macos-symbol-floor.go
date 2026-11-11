@@ -116,7 +116,7 @@ func RunMacOSSymbolFloor(ctx *CheckContext) (CheckResult, error) {
 		}
 		return CheckResult{}, fmt.Errorf(
 			"%s imports %s newer than the macOS %s it promises in %s, so dyld aborts the app at launch with `Symbol not found` before any of your code runs:\n%s\nUse an equivalent that reaches the floor (`kIOMainPortDefault` is documented as a synonym for NULL, so the literal 0 says the same thing on every version), or weak-link it AND gate every call, then record it in `%s` with that gate as the reason",
-			description, Pluralize(len(violations), "a symbol", "symbols"), floor, tauriConfRelPath,
+			description, Pluralize(len(violations), "a symbol", "symbols"), floor, tauriMacOSConfRelPath,
 			strings.TrimRight(sb.String(), "\n"), macOSSymbolAllowlistFile)
 	}
 

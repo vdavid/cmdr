@@ -19,14 +19,7 @@
         "height": 720,
         "minWidth": 950,
         "minHeight": 550,
-        "visible": false,
-        "titleBarStyle": "Overlay",
-        "trafficLightPosition": {
-          "x": 9,
-          "y": 17
-        },
-        "hiddenTitle": true,
-        "acceptFirstMouse": true
+        "visible": false
       }
     ],
     "security": {
@@ -43,7 +36,6 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
     "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
@@ -54,22 +46,6 @@
     ],
     "resources": [
       "resources/ai/*"
-    ],
-    "linux": {
-      "deb": {
-        "desktopTemplate": "linux/cmdr.desktop.hbs"
-      }
-    },
-    "macOS": {
-      "bundleName": "Cmdr",
-      "minimumSystemVersion": "10.15",
-      "signingIdentity": "Developer ID Application: Rymdskottkarra AB (83H6YAQMNP)",
-      "entitlements": "./Entitlements.plist",
-      "files": {
-        "Resources/Assets.car": "resources/Assets.car",
-        "Resources/bin/cmdr": "resources/bin/cmdr",
-        "Resources/security-advisories.json": "resources/security-advisories.json"
-      }
-    }
+    ]
   }
 }

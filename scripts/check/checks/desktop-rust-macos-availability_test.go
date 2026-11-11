@@ -248,7 +248,7 @@ func TestScanForNewSelectors_ReportsAnOptOutThatExcusesNothing(t *testing.T) {
 
 func TestMacOSDeploymentFloor_ReadsTheBundleFloor(t *testing.T) {
 	root := t.TempDir()
-	mustWrite(t, filepath.Join(root, filepath.FromSlash(tauriConfRelPath)),
+	mustWrite(t, filepath.Join(root, filepath.FromSlash(tauriMacOSConfRelPath)),
 		`{"bundle": {"macOS": {"minimumSystemVersion": "12.0"}}}`)
 	floor, err := macOSDeploymentFloor(root)
 	if err != nil {
@@ -261,7 +261,7 @@ func TestMacOSDeploymentFloor_ReadsTheBundleFloor(t *testing.T) {
 
 func TestMacOSDeploymentFloor_MissingFloorIsAFailure(t *testing.T) {
 	root := t.TempDir()
-	mustWrite(t, filepath.Join(root, filepath.FromSlash(tauriConfRelPath)), `{"bundle": {"macOS": {}}}`)
+	mustWrite(t, filepath.Join(root, filepath.FromSlash(tauriMacOSConfRelPath)), `{"bundle": {"macOS": {}}}`)
 	if _, err := macOSDeploymentFloor(root); err == nil {
 		t.Fatal("expected an error when the bundle names no minimum system version")
 	}

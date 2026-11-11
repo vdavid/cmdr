@@ -1,11 +1,11 @@
 /**
  * The demo's macOS window buttons (close, minimize, zoom), drawn by the page because no OS draws
  * them. Every window's sit where the app's own `trafficLightPosition` puts them on the desktop
- * (the main window's from `tauri.conf.json`, a panel's from its creation options, `windows.ts`),
+ * (the main window's from `tauri.macos.conf.json`, a panel's from its creation options, `windows.ts`),
  * over the overlay title bar the app already leaves them room in. Measured off macOS 27's own
  * rendering; see `DETAILS.md` § Traffic lights.
  */
-import tauriConfig from '../../../src-tauri/tauri.conf.json'
+import tauriMacOSConfig from '../../../src-tauri/tauri.macos.conf.json'
 import { getMessage } from '#lib/intl/messages.svelte.js'
 
 /** What one window's lights do. A missing action leaves that light inert (`aria-disabled`). */
@@ -52,8 +52,8 @@ export function lightsInset(position: TrafficLightPosition): LightsInset {
   return { left: position.x, top: position.y - LIGHT_TOP_ABOVE_Y }
 }
 
-/** The main window's, from the same `tauri.conf.json` the desktop builds it from. */
-export const MAIN_LIGHTS_INSET = lightsInset(tauriConfig.app.windows[0].trafficLightPosition)
+/** The main window's, from the same `tauri.macos.conf.json` the macOS app builds it from. */
+export const MAIN_LIGHTS_INSET = lightsInset(tauriMacOSConfig.app.windows[0].trafficLightPosition)
 
 /** A glyph as a CSS mask: one SVG in the 28-unit box the 2x measurements were taken in. */
 function glyph(shapes: string): string {

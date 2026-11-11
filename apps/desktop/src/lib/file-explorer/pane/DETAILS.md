@@ -2160,7 +2160,7 @@ travels to Rust unchanged. Two things make that correct, both measured in the ru
 display, geometry logged from `NSView`/`NSWindow` inside the popup call):
 
 - **No decoration offset.** `popup_at` positions inside the NSView Tauri hands muda, which is the window's CONTENT view;
-  `titleBarStyle: "Overlay"` + `hiddenTitle` (`tauri.conf.json`) makes that view full-size, so its frame is
+  `titleBarStyle: "Overlay"` + `hiddenTitle` (`tauri.macos.conf.json`) makes that view full-size, so its frame is
   `(0, 0, 1080 × 720)` — origin at the window's top-left, title bar included, and its size is exactly
   `window.innerWidth × window.innerHeight`. The webview fills it. ⚠️ A window with an ordinary title bar would NOT have
   this property; if `titleBarStyle` ever changes, this is the thing that breaks, and it breaks by a constant y offset.

@@ -6,8 +6,8 @@ Reference for minimum-OS pinning and for adopting newer JS features.
 
 Three numbers, and nothing but this note ties them together:
 
-- **`bundle.macOS.minimumSystemVersion` in `apps/desktop/src-tauri/tauri.conf.json`** is what the `.app` claims: macOS
-  10.15 Catalina. Three checks hold the native side to it, one per way the promise can break.
+- **`bundle.macOS.minimumSystemVersion` in `apps/desktop/src-tauri/tauri.macos.conf.json`** is what the `.app` claims:
+  macOS 10.15 Catalina. Three checks hold the native side to it, one per way the promise can break.
   `desktop-rust-macos-availability` enforces every Objective-C selector against it, so anything newer needs a
   `crate::platform::macos_at_least` gate plus the `allowed-newer-selector` marker. `desktop-macos-framework-floor`
   enforces every framework the built binary LOADS, which is the harder half: a framework link is a hard `LC_LOAD_DYLIB`
@@ -248,8 +248,8 @@ any of them. Adopting them means raising the floor (below).
 
 ## Recommendation if we want to use the fancier ES2025 features
 
-1. Raise `minimumSystemVersion` in `tauri.conf.json` to `14.7` (or `15.0`), `build.target` in `vite.config.js` to the
-   matching Safari, and the capability floor in `webkit-compat.ts` plus the `app.html` guard with them.
+1. Raise `minimumSystemVersion` in `tauri.macos.conf.json` to `14.7` (or `15.0`), `build.target` in `vite.config.js` to
+   the matching Safari, and the capability floor in `webkit-compat.ts` plus the `app.html` guard with them.
 2. Update website's download page system requirements to mention the version.
 3. Raise the `lib` pin in `apps/desktop/tsconfig.json` to match (and trim `src/webkit-floor.d.ts`), and drop the entries
    the new Safari has from `API_LIST` in `apps/desktop/scripts/vite-webkit-api-floor.ts`.

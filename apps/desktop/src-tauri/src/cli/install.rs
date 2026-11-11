@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) const COMMAND_NAME: &str = "cmdr";
 
 /// Where the script sits inside a Cmdr bundle, relative to the `.app`. ❗ Must match the
-/// `bundle.macOS.files` entry in `tauri.conf.json` and the cask's `binary` stanza.
+/// `bundle.macOS.files` entry in `tauri.macos.conf.json` and the cask's `binary` stanza.
 pub(crate) const BUNDLE_SCRIPT: &str = "Contents/Resources/bin/cmdr";
 
 /// Every Cmdr's bundle id starts with this: the production one is exactly it, and dev, worktree,

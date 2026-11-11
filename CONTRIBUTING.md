@@ -276,7 +276,7 @@ sudo apt remove cmdr              # to uninstall
 ```
 
 The launcher entry comes from `apps/desktop/src-tauri/linux/cmdr.desktop.hbs`, wired up through `bundle.linux.deb` in
-`tauri.conf.json`. That's what puts Cmdr in a real file-manager category instead of the default catch-all.
+`tauri.linux.conf.json`. That's what puts Cmdr in a real file-manager category instead of the default catch-all.
 
 **Gotcha: don't run `pnpm check bindings-fresh` on Linux.** `pnpm bindings:regen` exports `bindings.ts` from whatever
 the host platform's `cfg` gates compile, so on Linux every macOS-only IPC command regenerates as its

@@ -38,8 +38,8 @@ spike before M2 starts.
 - **Signing**: `apps/desktop/src-tauri/Entitlements.plist` is an empty dict, so the hardened runtime has no holes and
   nothing can inject code into Cmdr. That's what makes decision 8's "trust whatever runs inside Cmdr" sound.
   `docs/security.md` § Entitlements holds the invariant.
-- **Platform floor**: `apps/desktop/src-tauri/tauri.conf.json` says 10.15; the supported floor is macOS 12, with 10.15
-  and 11 best effort (`apps/website/src/pages/llms.txt.ts`).
+- **Platform floor**: `apps/desktop/src-tauri/tauri.macos.conf.json` says 10.15; the supported floor is macOS 12, with
+  10.15 and 11 best effort (`apps/website/src/pages/llms.txt.ts`).
 
 ## Rejected alternatives
 

@@ -214,7 +214,8 @@ var rustEmbeddedInputs = []string{
 	"apps/desktop/src/lib/units/free-percent-cases.json",
 	"apps/desktop/test/fixtures/encodings/**",
 	"apps/desktop/src-tauri/resources/security-advisories.json",
-	"apps/desktop/src-tauri/tauri.conf.json",
+	// `generate_context!` embeds the config merged with the target's `tauri.<os>.conf.json`.
+	"apps/desktop/src-tauri/tauri*.conf.json",
 	"apps/desktop/src-tauri/updater-backup.pub",
 	"apps/website/public/mdm/**",
 	"apps/website/src/lib/trust-mdm.ts",
@@ -243,7 +244,7 @@ var rustAppTreeInputs = inputs(
 // verdict, so a cached pass from before that edit isn't one.
 var macOSAvailabilityInputs = inputs(
 	rustScanInputs(KindApp, KindTool, KindVendored),
-	[]string{"apps/desktop/src-tauri/tauri.conf.json"},
+	[]string{"apps/desktop/src-tauri/tauri.macos.conf.json"},
 	runnerDataInputs("macos-availability-selectors.json"),
 )
 
@@ -256,7 +257,7 @@ var macOSAvailabilityInputs = inputs(
 var macOSFrameworkFloorInputs = inputs(
 	rustWorkspaceConfigInputs,
 	[]string{"apps/desktop/src-tauri/Cargo.toml", "crates/*/Cargo.toml", "apps/desktop/src-tauri/build.rs"},
-	[]string{"apps/desktop/src-tauri/tauri.conf.json"},
+	[]string{"apps/desktop/src-tauri/tauri.macos.conf.json"},
 	runnerDataInputs("macos-framework-versions.json"),
 )
 
@@ -272,7 +273,7 @@ var macOSFrameworkFloorInputs = inputs(
 var macOSSymbolFloorInputs = inputs(
 	rustWorkspaceConfigInputs,
 	[]string{"apps/desktop/src-tauri/Cargo.toml", "crates/*/Cargo.toml"},
-	[]string{"apps/desktop/src-tauri/tauri.conf.json"},
+	[]string{"apps/desktop/src-tauri/tauri.macos.conf.json"},
 	runnerDataInputs(macOSSymbolAllowlistFile),
 )
 

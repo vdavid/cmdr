@@ -179,6 +179,7 @@ func TestE2EBinaryInputsCoverTheBuildAndNothingElse(t *testing.T) {
 		"apps/desktop/static/favicon.png",
 		"apps/desktop/src-tauri/src/lib.rs",
 		"apps/desktop/src-tauri/tauri.conf.json",
+		"apps/desktop/src-tauri/tauri.linux.conf.json",
 		"apps/desktop/scripts/tauri-wrapper.ts",
 		"apps/desktop/package.json",
 		"apps/desktop/vite.config.js",

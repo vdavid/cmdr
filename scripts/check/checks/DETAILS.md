@@ -2130,7 +2130,7 @@ nothing" and passes). Anything narrower than every first-party member carries a 
 ## macOS availability
 
 `desktop-rust-macos-availability` fails on a call to an Objective-C selector newer than
-`bundle.macOS.minimumSystemVersion` in `apps/desktop/src-tauri/tauri.conf.json`.
+`bundle.macOS.minimumSystemVersion` in `apps/desktop/src-tauri/tauri.macos.conf.json`.
 
 The hole it fills: `objc2` carries no availability information, so every binding compiles against every deployment
 target and a selector the running OS lacks raises `NSInvalidArgumentException` instead. Raised on the main thread inside

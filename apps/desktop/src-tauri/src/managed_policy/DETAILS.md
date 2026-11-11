@@ -17,8 +17,8 @@ The canonical key catalog for Cmdr's MDM support. `/trust` and the sample profil
 - `apps/website/public/mdm/cmdr-full-disk-access.mobileconfig`: a PPPC profile (`com.apple.TCC.configuration-profile-policy`)
   granting Full Disk Access plus the five narrower file services the app's `Info.plist` asks for. It's not a managed
   preference and Cmdr never reads it; it lives here because it's the other MDM file admins download. **Guard**
-  (`pppc_profile_test.rs`): every grant names `config::BUNDLE_ID` and a code requirement built from `tauri.conf.json`
-  (bundle id plus the Team ID in `signingIdentity`), `codeRequirement` in `trust-mdm.ts` equals it too, entries use
+  (`pppc_profile_test.rs`): every grant names `config::BUNDLE_ID` and a code requirement built from the Tauri config
+  (`tauri.conf.json`'s bundle id plus the Team ID in `tauri.macos.conf.json`'s `signingIdentity`), `codeRequirement` in `trust-mdm.ts` equals it too, entries use
   `Allowed` (`Authorization` needs macOS 11; the floor is 10.15), and neither profile reuses the other's identifiers or
   UUIDs. Which TCC services it carries and why: the comment at the top of the file and `/trust#mdm-deploy`. Not yet
   tested on an MDM-enrolled Mac (only the requirement, against the shipped 0.50.0 with `codesign -v -R=`, 2026-10-07);

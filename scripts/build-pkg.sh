@@ -98,7 +98,7 @@ pkgbuild --root "$WORK/root" \
     "$WORK/Cmdr-component.pkg" > /dev/null
 
 # No scripts, no choices to customize, the system domain only, and the same macOS floor as the
-# app (`minimumSystemVersion` in tauri.conf.json).
+# app (`minimumSystemVersion` in tauri.macos.conf.json).
 cat > "$WORK/distribution.xml" << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">

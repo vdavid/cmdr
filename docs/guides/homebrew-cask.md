@@ -64,9 +64,9 @@ This shape also satisfies a future `Homebrew/homebrew-cask` resubmission, so kee
   flow already publishes it.
 - **`auto_updates true`**: Cmdr ships its own updater, so `brew upgrade` skips it unless `--greedy`.
 - **`depends_on macos: :big_sur`** means "Big Sur or later", and it sits one release ABOVE the app's own floor
-  (`minimumSystemVersion` is `10.15` in `tauri.conf.json`). That gap is Homebrew's, not ours: `:catalina` is a disabled
-  call in current Homebrew and raises `Error: Calling depends_on macos: :catalina is disabled!` when the cask loads, so
-  the whole cask fails to parse and `brew install` dies. Catalina can no longer be expressed at all
+  (`minimumSystemVersion` is `10.15` in `tauri.macos.conf.json`). That gap is Homebrew's, not ours: `:catalina` is a
+  disabled call in current Homebrew and raises `Error: Calling depends_on macos: :catalina is disabled!` when the cask
+  loads, so the whole cask fails to parse and `brew install` dies. Catalina can no longer be expressed at all
   (`MacOSVersion::SYMBOLS` starts at `:big_sur`, verified Homebrew 6.0.22, 2026-09-09), and Homebrew itself no longer
   runs there, so nobody loses a working install path. ❗ Don't "correct" this back down to match `minimumSystemVersion`:
   any symbol below `:big_sur` breaks every `brew install`. A Catalina user installs by downloading from the site, where
@@ -91,7 +91,7 @@ This shape also satisfies a future `Homebrew/homebrew-cask` resubmission, so kee
   `<prefix>/Caskroom/cmdr` dir next to that link, reads it as Homebrew's, and won't install its own or remove this one
   (`apps/desktop/src-tauri/src/cli/DETAILS.md` § "The menu item"). ❗ Copy this stanza into the tap only once a release
   that ships the script is out: against an older bundle, `brew install` fails on the missing link source. The script
-  path is pinned in three places: here, `tauri.conf.json` `bundle.macOS.files`, and `cli::install::BUNDLE_SCRIPT`.
+  path is pinned in three places: here, `tauri.macos.conf.json` `bundle.macOS.files`, and `cli::install::BUNDLE_SCRIPT`.
 - **`zap` paths** were verified on a prod machine. `~/Library/HTTPStorages/` is deliberately absent (Cmdr doesn't create
   it).
 

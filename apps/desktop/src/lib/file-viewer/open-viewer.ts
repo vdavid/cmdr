@@ -62,10 +62,10 @@ export async function openFileViewer(
     maximizable: true,
     closable: true,
     focus: !isE2e,
-    // Mirror the main window's overlay title bar (see `tauri.conf.json:23-28`):
+    // Mirror the main window's overlay title bar (see `tauri.macos.conf.json`):
     // traffic-light position `{ x: 9, y: 17 }` and a hidden title. The viewer toolbar
     // owns the title-bar row, so the picker rows sit inline with the close/min/max
-    // buttons on macOS. Keep these values in sync with `tauri.conf.json`.
+    // buttons on macOS. Keep these values in sync with `tauri.macos.conf.json`.
     titleBarStyle: 'overlay',
     trafficLightPosition: new LogicalPosition(9, 17),
     hiddenTitle: true,

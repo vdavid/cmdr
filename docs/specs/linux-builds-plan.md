@@ -112,23 +112,23 @@ initially, so no changes needed. The placeholder file satisfies Tauri's resource
 
 ## Part 2: Tauri config
 
-**File: `apps/desktop/src-tauri/tauri.conf.json`**
+**Files: `apps/desktop/src-tauri/tauri.conf.json` and `tauri.linux.conf.json`**
 
 The existing config mostly works for Linux as-is:
 
-- `bundle.macOS` section is ignored on Linux.
+- The macOS keys live in `tauri.macos.conf.json`, which a Linux build never reads.
 - `bundle.icon` includes PNG files that Linux uses.
 
-**Already done**: the `bundle.linux` section exists, pointing `deb.desktopTemplate` at
+**Already done**: the `bundle.linux` section exists in `tauri.linux.conf.json`, pointing `deb.desktopTemplate` at
 `apps/desktop/src-tauri/linux/cmdr.desktop.hbs`, which carries `Categories=Utility;FileManager;FileTools;`, `Keywords`,
 `StartupWMClass`, and a conditional `MimeType`. It landed alongside the local `.deb` build documented in
 `CONTRIBUTING.md`. Nothing to do here.
 
 Still needed:
 
-- **Bundle targets**: `bundle.targets` is still `"all"`. Change it to explicitly listed targets per platform, or
-  override in CI. On Linux we only want `deb` and `appimage` (not RPM). The CI build step should pass
-  `--bundles deb,appimage` to avoid needing `rpmbuild`.
+- **Bundle targets**: each platform file lists its own `bundle.targets`; Linux's is `deb`, `rpm`, `appimage`, what
+  `"all"` meant there. On Linux we only want `deb` and `appimage` (not RPM): drop `rpm` from `tauri.linux.conf.json`, or
+  have the CI build step pass `--bundles deb,appimage` to avoid needing `rpmbuild`.
 
 ## Part 3: Website
 
@@ -354,9 +354,9 @@ Evidence and the per-item detail: `docs/notes/linux-gaps-2026-08-10.md`.
 
 ### Milestone 1: CI builds and Tauri config
 
-- [x] Add `bundle.linux` section to `tauri.conf.json` with `.desktop` categories and icon refs (landed with the local
+- [x] Add `bundle.linux` section to the Tauri config with `.desktop` categories and icon refs (landed with the local
       `.deb` build; see `apps/desktop/src-tauri/linux/cmdr.desktop.hbs`)
-- [ ] Narrow `bundle.targets` from `"all"` to per-platform targets
+- [x] Narrow `bundle.targets` from `"all"` to per-platform targets (still with `rpm` on Linux)
 - [ ] Add Linux x86_64 and aarch64 matrix entries to `release.yml` build job (use `--bundles deb,appimage`), moving
       `runs-on` from the job to `${{ matrix.os }}`
 - [ ] Conditionalize macOS-only steps (certificate, notarization, SDK pin check) with `if: matrix.platform == 'macos'`

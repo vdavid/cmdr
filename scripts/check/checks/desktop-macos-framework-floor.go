@@ -86,7 +86,7 @@ func RunMacOSFrameworkFloor(ctx *CheckContext) (CheckResult, error) {
 	if index.Floor != floor.String() {
 		return CheckResult{}, fmt.Errorf(
 			"%s records the floor as macOS %s but %s now says %s; re-check every entry against the new floor, then update the file's `floor`",
-			macOSFrameworkVersionsFile, index.Floor, tauriConfRelPath, floor)
+			macOSFrameworkVersionsFile, index.Floor, tauriMacOSConfRelPath, floor)
 	}
 
 	binary, description, isNamedBinary := desktopBinaryPath(ctx.RootDir)
@@ -124,7 +124,7 @@ func RunMacOSFrameworkFloor(ctx *CheckContext) (CheckResult, error) {
 		}
 		return CheckResult{}, fmt.Errorf(
 			"%s loads %s newer than the macOS %s it promises in %s, so dyld turns the app away on that OS before any of your code runs:\n%s\nRun `cargo tree -e normal --target aarch64-apple-darwin -i <the objc2 crate that binds it>` to find who pulls it in. A feature default reaching a framework nothing calls is how this last happened, and `default-features = false` was the whole fix. Failing that, raise `minimumSystemVersion`",
-			description, Pluralize(len(tooNew), "a framework", "frameworks"), floor, tauriConfRelPath,
+			description, Pluralize(len(tooNew), "a framework", "frameworks"), floor, tauriMacOSConfRelPath,
 			strings.TrimRight(sb.String(), "\n"))
 	}
 
