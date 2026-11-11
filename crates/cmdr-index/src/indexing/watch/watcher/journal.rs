@@ -31,7 +31,7 @@ pub fn current_event_id(root: &Path) -> u64 {
     unsafe { cmdr_fsevent_stream::ffi::FSEventsGetCurrentEventId() }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 pub fn current_event_id(_root: &std::path::Path) -> u64 {
     0
 }
@@ -72,7 +72,7 @@ pub fn journal_uuid(root: &Path) -> Option<String> {
     Some(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 pub fn journal_uuid(_root: &std::path::Path) -> Option<String> {
     None
 }

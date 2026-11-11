@@ -70,7 +70,7 @@ fn positioned_read(file: &File, buf: &mut [u8], offset: u64) -> std::io::Result<
 
 /// The browser has no local files (a session there reads through its volume, and
 /// `File::open` already refuses), so a positioned read is a typed refusal, never a panic.
-#[cfg(not(unix))]
+#[cfg(target_family = "wasm")]
 fn positioned_read(_file: &File, _buf: &mut [u8], _offset: u64) -> std::io::Result<usize> {
     Err(std::io::ErrorKind::Unsupported.into())
 }

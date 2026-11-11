@@ -48,8 +48,8 @@ use crate::xml::{parse_copy_result, parse_list_objects};
 /// what the app renders "this folder still has something in it" from.
 #[cfg(target_os = "linux")]
 pub(crate) const ENOTEMPTY: i32 = 39;
-/// `ENOTEMPTY` on everything else Cmdr builds for.
-#[cfg(not(target_os = "linux"))]
+/// `ENOTEMPTY` on macOS. Windows numbers it differently again (41 in the MSVC CRT).
+#[cfg(target_os = "macos")]
 pub(crate) const ENOTEMPTY: i32 = 66;
 
 /// What holds a name, folder first (the listing's rule).

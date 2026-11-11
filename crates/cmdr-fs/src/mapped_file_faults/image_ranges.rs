@@ -8,7 +8,7 @@
 //! game.
 
 #![cfg_attr(
-    not(target_os = "macos"),
+    any(target_os = "linux", target_os = "windows"),
     allow(dead_code, reason = "only macOS tracks image ranges")
 )]
 

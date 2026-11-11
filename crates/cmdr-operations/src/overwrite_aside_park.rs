@@ -16,7 +16,7 @@
 // Only the macOS real-detach lane arms the park; elsewhere the engine's own hook is
 // all that's read, and `-D unused` is fatal on the Linux build.
 #![cfg_attr(
-    not(target_os = "macos"),
+    any(target_os = "linux", target_os = "windows", target_family = "wasm"),
     expect(dead_code, reason = "only the macOS real-detach lane arms the park")
 )]
 

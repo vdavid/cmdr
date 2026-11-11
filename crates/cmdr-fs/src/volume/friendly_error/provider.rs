@@ -150,7 +150,7 @@ fn detect_provider(path: &Path) -> Option<Provider> {
 
 /// Detects the provider from the path's name patterns. There's no `statfs` fs-type
 /// fallback off macOS.
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
 fn detect_provider(path: &Path) -> Option<Provider> {
     provider_by_path(path)
 }

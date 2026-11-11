@@ -503,7 +503,7 @@ impl MtpConnectionManager {
                 if e.is_exclusive_access() {
                     #[cfg(target_os = "macos")]
                     let blocking_process = usb_owner::get_usb_exclusive_owner();
-                    #[cfg(not(target_os = "macos"))]
+                    #[cfg(any(target_os = "linux", target_os = "windows"))]
                     let blocking_process: Option<String> = None;
 
                     // Report it so the app can offer the workaround.

@@ -40,7 +40,7 @@ fn main() {
     macos::main();
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 fn main() {
     eprintln!("listing_bench is macOS only");
 }

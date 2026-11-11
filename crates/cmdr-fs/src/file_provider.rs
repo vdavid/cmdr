@@ -88,7 +88,7 @@ pub fn domain_id_for_dir(path: &str) -> Option<String> {
 /// against a name they're allowed to write. macOS refuses `com.apple.*` xattrs to
 /// an unentitled process, so a test that builds its fixture with the real constant
 /// can never pass; see the tests below.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn read_domain_id_xattr(path: &str, name: &str) -> Option<String> {
     let raw = xattr::get(path, name).ok()??;
     String::from_utf8(raw).ok()
@@ -426,7 +426,7 @@ mod tests {
         let value = "com.example.provider/2f3c1a90-0000-4000-8000-000000000001";
         #[cfg(target_os = "macos")]
         let writable_name = "com.example.file-provider-domain-id";
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(target_os = "linux")]
         let writable_name = "user.cmdr-file-provider-domain-id";
         xattr::set(&path, writable_name, value.as_bytes()).expect("set the stand-in xattr");
 

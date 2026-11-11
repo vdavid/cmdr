@@ -39,16 +39,16 @@
 //! [`VolumeHost::runtime`]: super::VolumeHost::runtime
 //! [`VolumeHost::detached`]: super::VolumeHost::detached
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 use std::sync::OnceLock;
 
 use crate::rt::Runtime as Handle;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 use tokio::runtime::{Builder, Runtime};
 
 /// Built on first use, only when no host injected a handle. Never dropped: tasks
 /// spawned onto it outlive any scope we could tie it to.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 static FALLBACK: OnceLock<Runtime> = OnceLock::new();
 
 /// The injected runtime, or the page's event loop (module docs).
@@ -58,7 +58,7 @@ pub(super) fn resolve(injected: Option<&Handle>) -> Handle {
 }
 
 /// The injected handle, or the shared fallback.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(cmdr_host)]
 pub(super) fn resolve(injected: Option<&Handle>) -> Handle {
     if let Some(handle) = injected {
         return handle.clone();

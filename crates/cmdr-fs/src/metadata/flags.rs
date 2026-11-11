@@ -126,7 +126,7 @@ pub(super) fn add_flags(path: &Path, flags: UserFlags) -> ClassOutcome {
 }
 
 /// Linux's `chattr` flags need `CAP_LINUX_IMMUTABLE`, and Hidden is a dot-name.
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_family = "wasm"))]
 pub(super) fn add_flags(_path: &Path, _flags: UserFlags) -> ClassOutcome {
     ClassOutcome::NotApplicable
 }

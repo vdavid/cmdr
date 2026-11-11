@@ -166,7 +166,7 @@ fn private_folder(dir: &Path) -> io::Result<()> {
     Ok(())
 }
 
-#[cfg(not(unix))]
+#[cfg(any(windows, target_family = "wasm"))]
 fn private_folder(dir: &Path) -> io::Result<()> {
     std::fs::create_dir_all(dir)
 }
@@ -207,7 +207,7 @@ fn sweep_orphans(dir: &Path) {
     }
 }
 
-#[cfg(not(unix))]
+#[cfg(any(windows, target_family = "wasm"))]
 fn sweep_orphans(_dir: &Path) {}
 
 /// Whether no process `pid` exists. `EPERM` (someone else's process) counts as running.

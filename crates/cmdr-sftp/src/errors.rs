@@ -92,8 +92,8 @@ pub fn map_sftp_error(err: &SftpError, path: &str) -> VolumeError {
 /// or the same refusal reads differently depending on which backend produced it.
 #[cfg(target_os = "linux")]
 pub(crate) const ENOTEMPTY: i32 = 39;
-/// `ENOTEMPTY` on everything else Cmdr builds for.
-#[cfg(not(target_os = "linux"))]
+/// `ENOTEMPTY` on macOS. Windows numbers it differently again (41 in the MSVC CRT).
+#[cfg(target_os = "macos")]
 pub(crate) const ENOTEMPTY: i32 = 66;
 
 /// What the server says is at a path, asked only AFTER an operation on it

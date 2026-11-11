@@ -121,7 +121,12 @@ allows:
   the Unix-only ones, its `cfg(unix)` table: `libc`, `uzers`, `xattr`, `exacl`, none of which builds for Windows (or has
   a Windows job here). `dirs` stays unconditional (it answers `None` there). The wasm table adds `uuid`'s `js`
   randomness and `rt`'s browser half (`web-time`, `wasm-bindgen`, `wasm-bindgen-futures`).
-- **One whole module is host-only** (`lib.rs`): `mapped_file_faults` (mmap).
+- **Code gates say which kind of host it needs**: `cfg(cmdr_host)` (set by `build.rs` through `cmdr-platform-cfg`) for
+  anything a desktop OS has and a browser doesn't (`rt`'s tokio half, the fallback runtime), `cfg(unix)` for a POSIX
+  call (owner names, xattrs, ACLs, mode, the umask probe). ❌ Not `not(target_family = "wasm")`: it read as "a Unix
+  host" and would hand Windows the POSIX bodies. The crate root refuses any target outside both
+  (`docs/guides/platform-seams.md` § Unknown targets).
+- **One whole module is Unix-only** (`lib.rs`): `mapped_file_faults` (mmap, `SIGBUS`).
 - **SQLite builds for the browser too**: `rusqlite` is an ordinary dependency, and on `wasm32-unknown-unknown` it links
   `sqlite-wasm-rs`, which compiles `sqlite3.c` with the pinned conda LLVM clang the wasm build script installs
   (`scripts/build-listing-wasm/toolchain.go`); Apple's clang can't target wasm32. `sqlite_util` is the same code there.

@@ -385,7 +385,7 @@ const MOUNT_PREFIXES: &[&str] = &["/Volumes/"];
 #[cfg(target_os = "linux")]
 const MOUNT_PREFIXES: &[&str] = &["/mnt/", "/media/"];
 /// See the macOS arm. No mount convention we recognize, so only `/` is a root.
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(target_os = "windows")]
 const MOUNT_PREFIXES: &[&str] = &[];
 
 /// Whether `path` is the root of a volume: the disk root `/`, or exactly one

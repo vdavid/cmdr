@@ -44,12 +44,12 @@ pub fn get_group_name(gid: u32) -> String {
     name
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn user_name_of(uid: u32) -> Option<String> {
     uzers::get_user_by_uid(uid).map(|u| u.name().to_string_lossy().into_owned())
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn group_name_of(gid: u32) -> Option<String> {
     uzers::get_group_by_gid(gid).map(|g| g.name().to_string_lossy().into_owned())
 }

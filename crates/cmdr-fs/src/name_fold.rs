@@ -75,7 +75,7 @@ pub fn normalize_for_comparison(s: &str) -> String {
 /// Case- and form-sensitive off macOS, where the filesystem is: two names that
 /// differ in case are two different files, so folding them would merge rows that
 /// are genuinely distinct.
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_family = "wasm"))]
 pub fn normalize_for_comparison(s: &str) -> String {
     s.to_string()
 }

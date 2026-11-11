@@ -558,19 +558,15 @@
       "outsideSeam": 3
     },
     "crates/cmdr-adb/src/errors.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-adb/src/server.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-archive/src/mutation/mutator.rs": {
-      "negated": 2,
       "outsideSeam": 4
     },
     "crates/cmdr-fs/src/apple_double.rs": {
-      "negated": 1,
       "outsideSeam": 3
     },
     "crates/cmdr-fs/src/archive_format.rs": {
@@ -595,76 +591,60 @@
       "outsideSeam": 3
     },
     "crates/cmdr-fs/src/mapped_file_faults/image_ranges.rs": {
-      "negated": 1,
       "outsideSeam": 1
     },
     "crates/cmdr-fs/src/mapped_file_faults/mod.rs": {
       "outsideSeam": 4
     },
     "crates/cmdr-fs/src/mapped_file_faults/proc_maps.rs": {
-      "negated": 1,
       "outsideSeam": 1
     },
     "crates/cmdr-fs/src/metadata/blockers.rs": {
-      "negated": 2,
       "outsideSeam": 10
     },
     "crates/cmdr-fs/src/metadata/carried.rs": {
-      "negated": 1,
       "outsideSeam": 8
     },
     "crates/cmdr-fs/src/metadata/flags.rs": {
-      "negated": 1,
       "outsideSeam": 7
     },
     "crates/cmdr-fs/src/metadata/mod.rs": {
-      "negated": 2,
       "outsideSeam": 8
     },
     "crates/cmdr-fs/src/metadata/mode.rs": {
       "outsideSeam": 1
     },
     "crates/cmdr-fs/src/metadata/staged.rs": {
-      "negated": 3,
       "outsideSeam": 11
     },
     "crates/cmdr-fs/src/name_fold.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-fs/src/process_cpu/mod.rs": {
-      "negated": 1,
       "outsideSeam": 3
     },
     "crates/cmdr-fs/src/process_memory/mod.rs": {
-      "negated": 1,
       "outsideSeam": 18
     },
     "crates/cmdr-fs/src/tcc_paths.rs": {
-      "negated": 1,
       "outsideSeam": 4
     },
     "crates/cmdr-fs/src/testing/mod.rs": {
       "outsideSeam": 2
     },
     "crates/cmdr-fs/src/thread_cpu.rs": {
-      "negated": 1,
       "outsideSeam": 3
     },
     "crates/cmdr-fs/src/thread_qos.rs": {
-      "negated": 1,
       "outsideSeam": 3
     },
     "crates/cmdr-fs/src/validation.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-fs/src/volume/friendly_error/errno.rs": {
-      "negated": 1,
       "outsideSeam": 4
     },
     "crates/cmdr-fs/src/volume/friendly_error/provider.rs": {
-      "negated": 1,
       "outsideSeam": 3
     },
     "crates/cmdr-fs/src/volume/node_identity.rs": {
@@ -687,31 +667,24 @@
       "outsideSeam": 5
     },
     "crates/cmdr-index/src/importance/classify.rs": {
-      "negated": 1,
       "outsideSeam": 3
     },
     "crates/cmdr-index/src/importance/last_used.rs": {
-      "negated": 1,
       "outsideSeam": 5
     },
     "crates/cmdr-index/src/indexing/handle/mod.rs": {
-      "negated": 4,
       "outsideSeam": 9
     },
     "crates/cmdr-index/src/indexing/lifecycle/cover/bootstrap.rs": {
-      "negated": 2,
       "outsideSeam": 4
     },
     "crates/cmdr-index/src/indexing/lifecycle/cover/test_support.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-index/src/indexing/lifecycle/manager/network_scan.rs": {
-      "negated": 2,
       "outsideSeam": 4
     },
     "crates/cmdr-index/src/indexing/lifecycle/phases/mod.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-index/src/indexing/lifecycle/state.rs": {
@@ -724,7 +697,7 @@
       "outsideSeam": 4
     },
     "crates/cmdr-index/src/indexing/metadata.rs": {
-      "negated": 4,
+      "negated": 3,
       "outsideSeam": 7
     },
     "crates/cmdr-index/src/indexing/network_scanner/mod.rs": {
@@ -737,21 +710,18 @@
       "outsideSeam": 2
     },
     "crates/cmdr-index/src/indexing/resources/memory_watchdog.rs": {
-      "negated": 2,
       "outsideSeam": 19
     },
     "crates/cmdr-index/src/indexing/resources/mod.rs": {
       "outsideSeam": 1
     },
     "crates/cmdr-index/src/indexing/resources/subsystem_stop.rs": {
-      "negated": 1,
       "outsideSeam": 1
     },
     "crates/cmdr-index/src/indexing/scanner/boot_tree_mounts.rs": {
       "outsideSeam": 1
     },
     "crates/cmdr-index/src/indexing/scanner/exclusions.rs": {
-      "negated": 2,
       "outsideSeam": 9
     },
     "crates/cmdr-index/src/indexing/scanner/mod.rs": {
@@ -759,15 +729,12 @@
       "outsideSeam": 4
     },
     "crates/cmdr-index/src/indexing/scanner/refusal.rs": {
-      "negated": 2,
       "outsideSeam": 5
     },
     "crates/cmdr-index/src/indexing/scanner/walker/mod.rs": {
-      "negated": 1,
       "outsideSeam": 3
     },
     "crates/cmdr-index/src/indexing/store/collation.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-index/src/indexing/testing.rs": {
@@ -777,7 +744,6 @@
       "outsideSeam": 3
     },
     "crates/cmdr-index/src/indexing/transports/mtp/watch.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-index/src/indexing/transports/smb/mod.rs": {
@@ -787,54 +753,42 @@
       "outsideSeam": 8
     },
     "crates/cmdr-index/src/indexing/watch/watcher.rs": {
-      "negated": 2,
       "outsideSeam": 22
     },
     "crates/cmdr-index/src/indexing/watch/watcher/journal.rs": {
-      "negated": 2,
       "outsideSeam": 5
     },
     "crates/cmdr-index/src/indexing/writer/mod.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-index/src/indexing/writer/pending_rollups.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-index/src/media_index/backend/mod.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-index/src/media_index/clip/install.rs": {
-      "negated": 1,
       "outsideSeam": 6
     },
     "crates/cmdr-index/src/media_index/clip/mod.rs": {
-      "negated": 3,
       "outsideSeam": 8
     },
     "crates/cmdr-index/src/media_index/scheduler/lifecycle.rs": {
-      "negated": 2,
       "outsideSeam": 3
     },
     "crates/cmdr-index/src/media_index/thermal.rs": {
-      "negated": 2,
       "outsideSeam": 3
     },
     "crates/cmdr-local/src/filesystem_kind.rs": {
-      "negated": 1,
       "outsideSeam": 3
     },
     "crates/cmdr-local/src/lib.rs": {
       "outsideSeam": 5
     },
     "crates/cmdr-local/src/local_posix.rs": {
-      "negated": 1,
       "outsideSeam": 5
     },
     "crates/cmdr-local/src/reading.rs": {
-      "negated": 6,
       "outsideSeam": 18
     },
     "crates/cmdr-local/src/space.rs": {
@@ -847,52 +801,44 @@
       "outsideSeam": 1
     },
     "crates/cmdr-mtp/src/connection/mod.rs": {
-      "negated": 1,
       "outsideSeam": 4
     },
     "crates/cmdr-mtp/src/volume/mapping.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-multi-rename/src/names_file.rs": {
-      "negated": 2,
       "outsideSeam": 8
     },
     "crates/cmdr-operations/src/delete/cloud_trash.rs": {
-      "negated": 2,
       "outsideSeam": 6
     },
     "crates/cmdr-operations/src/delete/trash.rs": {
-      "negated": 2,
       "outsideSeam": 11
     },
     "crates/cmdr-operations/src/error_classification.rs": {
       "outsideSeam": 2
     },
     "crates/cmdr-operations/src/free_space.rs": {
-      "negated": 2,
-      "outsideSeam": 5
+      "outsideSeam": 4
     },
     "crates/cmdr-operations/src/home_folder.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-operations/src/lib.rs": {
       "outsideSeam": 1
     },
     "crates/cmdr-operations/src/local_disk/mod.rs": {
-      "negated": 22,
-      "outsideSeam": 34
+      "negated": 2,
+      "outsideSeam": 18
     },
     "crates/cmdr-operations/src/local_disk/posix.rs": {
-      "negated": 4,
-      "outsideSeam": 12
+      "negated": 1,
+      "outsideSeam": 11
     },
     "crates/cmdr-operations/src/overwrite.rs": {
       "outsideSeam": 1
     },
     "crates/cmdr-operations/src/overwrite_aside_park.rs": {
-      "negated": 1,
       "outsideSeam": 1
     },
     "crates/cmdr-operations/src/rename.rs": {
@@ -918,11 +864,9 @@
       "outsideSeam": 1
     },
     "crates/cmdr-operations/src/transfer/copy/single_item.rs": {
-      "negated": 1,
       "outsideSeam": 3
     },
     "crates/cmdr-operations/src/transfer/copy_strategy.rs": {
-      "negated": 5,
       "outsideSeam": 19
     },
     "crates/cmdr-operations/src/transfer/mod.rs": {
@@ -932,41 +876,35 @@
       "outsideSeam": 1
     },
     "crates/cmdr-operations/src/transfer/volume/extract_quarantine.rs": {
-      "negated": 1,
       "outsideSeam": 3
     },
     "crates/cmdr-operations/src/validation.rs": {
-      "negated": 4,
-      "outsideSeam": 9
+      "negated": 2,
+      "outsideSeam": 7
     },
     "crates/cmdr-s3/src/volume/mutation.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-search/src/name_rules.rs": {
       "outsideSeam": 1
     },
     "crates/cmdr-sftp/src/errors.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-update-trust/src/lib.rs": {
       "outsideSeam": 4
     },
     "crates/cmdr-update-trust/src/main.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-viewer/src/source.rs": {
-      "negated": 1,
-      "outsideSeam": 2
+      "outsideSeam": 1
     },
     "crates/cmdr-viewer/src/watcher.rs": {
       "negated": 3,
       "outsideSeam": 9
     },
     "crates/cmdr-webdav/src/volume/mutation.rs": {
-      "negated": 1,
       "outsideSeam": 2
     }
   }

@@ -71,7 +71,7 @@ fn create_a_file(drive: &ColdDrive, path: &Path) {
     if !on_a_real_watcher(drive) {
         crate::indexing::watch::watcher::fake_journal::record_created_file(path);
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     let _ = drive;
 }
 
@@ -81,7 +81,7 @@ fn create_a_file(drive: &ColdDrive, path: &Path) {
 fn on_a_real_watcher(drive: &ColdDrive) -> bool {
     #[cfg(target_os = "macos")]
     return drive._journal.is_none();
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     {
         let _ = drive;
         true

@@ -27,7 +27,7 @@
 //! (`cmdr_fs::metadata`). NTFS-3G is FUSE-based and has the same buffering issues as network
 //! mounts. See `DETAILS.md` § "Copy strategy selection".
 
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(target_os = "windows")]
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
@@ -37,7 +37,7 @@ use super::linux_copy::copy_single_file_linux;
 #[cfg(target_os = "macos")]
 use super::macos_copy::{CopyProgressContext, copy_single_file_native};
 
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(target_os = "windows")]
 use super::super::error_classification::IoResultExt;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::LandedMetadata;
@@ -161,8 +161,8 @@ pub(super) enum LocalCopyStrategy {
     /// `copy_file_range(2)`: kernel-side, and a reflink on btrfs/XFS.
     #[cfg(target_os = "linux")]
     KernelCopyRange,
-    /// `std::fs::copy`, for platforms with neither of the above.
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    /// `std::fs::copy` (`CopyFileExW` underneath on Windows).
+    #[cfg(target_os = "windows")]
     StdCopy,
 }
 
@@ -188,7 +188,7 @@ pub(super) fn select_local_copy_strategy(source: &Path, dest: &Path) -> LocalCop
             LocalCopyStrategy::KernelCopyRange
         }
     }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    #[cfg(target_os = "windows")]
     {
         let _ = (source, dest);
         LocalCopyStrategy::StdCopy
@@ -284,7 +284,7 @@ pub(super) fn copy_file_using(
                 handed_back: landed.handed_back,
             })
         }
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        #[cfg(target_os = "windows")]
         LocalCopyStrategy::StdCopy => {
             let _ = progress_callback; // Unused on this platform
             // The std fallback doesn't flush; the caller's end-of-op pass does.

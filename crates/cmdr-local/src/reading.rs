@@ -35,7 +35,7 @@ fn has_uf_hidden(metadata: &fs::Metadata) -> bool {
     metadata.st_flags() & libc::UF_HIDDEN != 0
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
 fn has_uf_hidden(_metadata: &fs::Metadata) -> bool {
     false
 }
@@ -130,7 +130,7 @@ pub fn list_directory_with(
 pub fn added_at_by_path(path: &Path) -> Option<u64> {
     #[cfg(target_os = "macos")]
     return bulk::added_at_by_path(path);
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     {
         let _ = path;
         None
@@ -310,7 +310,7 @@ fn read_entries(
 /// Every entry of `path`, unsorted. Linux has no `getattrlistbulk`, so always
 /// `read_dir`, and no added date. Each entry keeps only the dates `path`'s
 /// listing claims (`withhold_unclaimed_dates`): one more `stat`, of `path`.
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
 fn read_entries(
     path: &Path,
     dot_hidden: &HashSet<String>,
@@ -415,7 +415,7 @@ pub fn get_single_entry(path: &Path) -> Result<FileEntry, std::io::Error> {
     // Linux: keep the birth time only where the parent's listing claims one, as
     // `read_entries` does, so a re-stat equals its listing entry. The parent's
     // `stat` runs only for an entry that has a birth time to lose.
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     let entry = if entry.created_at.is_some() {
         let parent = parent_dir(path);
         withhold_unclaimed_dates(entry, supported_dates_of(parent))
@@ -426,7 +426,7 @@ pub fn get_single_entry(path: &Path) -> Result<FileEntry, std::io::Error> {
 }
 
 /// The folder whose listing holds `path` (`path` itself at `/`).
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
 fn parent_dir(path: &Path) -> &Path {
     match path.parent() {
         Some(parent) if parent.as_os_str().is_empty() => Path::new("."),
@@ -450,7 +450,7 @@ pub(crate) fn supported_dates_of(dir: &Path) -> SupportedDates {
         created: fs::metadata(dir).and_then(|metadata| metadata.created()).is_ok(),
         #[cfg(target_os = "macos")]
         added: bulk::dir_is_bulk_eligible(dir),
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(target_os = "linux")]
         added: false,
     }
 }

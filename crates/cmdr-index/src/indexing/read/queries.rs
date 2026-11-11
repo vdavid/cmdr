@@ -679,7 +679,7 @@ mod tests {
     fn volume_index_status_for_external_drive_resolves_to_the_drive_not_root() {
         #[cfg(target_os = "macos")]
         let ext_root = "/Volumes/StatusTestExt";
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(target_os = "linux")]
         let ext_root = "/media/StatusTestExt";
 
         let ext_id = "volumes-status-test-ext";

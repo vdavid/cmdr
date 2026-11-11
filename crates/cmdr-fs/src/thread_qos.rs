@@ -66,7 +66,13 @@ pub fn set_current_thread_qos(class: QosClass) {
     // it, and why the `testing` feature has to be in the condition alongside `test`.
     #[cfg(all(target_os = "macos", not(any(test, feature = "testing"))))]
     set_thread_qos_macos(class);
-    #[cfg(not(all(target_os = "macos", not(any(test, feature = "testing")))))]
+    #[cfg(any(
+        target_os = "linux",
+        target_os = "windows",
+        target_family = "wasm",
+        test,
+        feature = "testing"
+    ))]
     let _ = class;
 }
 

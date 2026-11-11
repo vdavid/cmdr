@@ -9,7 +9,7 @@ use cmdr_fs::volume::VolumeError;
 /// macOS and Linux only, so those are the two that exist.
 #[cfg(target_os = "linux")]
 const ENOTEMPTY: i32 = 39;
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
 const ENOTEMPTY: i32 = 66;
 
 /// Maps MTP connection errors to Volume errors. A message variant keeps the connection error

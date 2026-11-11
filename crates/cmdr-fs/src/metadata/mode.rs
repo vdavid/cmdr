@@ -62,7 +62,7 @@ fn umask() -> u32 {
 /// Makes one throwaway folder with mode `0777` in the temp dir and reads what
 /// the umask left of it. A process's umask never changes under it, so once is
 /// enough.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn probe_umask() -> u32 {
     use std::os::unix::fs::{DirBuilderExt as _, PermissionsExt as _};
 

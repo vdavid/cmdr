@@ -271,7 +271,7 @@ pub(crate) fn refusing_folder(path: &Path) -> Option<String> {
     None
 }
 
-#[cfg(not(unix))]
+#[cfg(target_family = "wasm")]
 pub(crate) fn refusing_folder(_path: &Path) -> Option<String> {
     None
 }
@@ -292,7 +292,7 @@ pub(crate) fn validate_destination_writable(destination: &Path) -> Result<(), Wr
     ))
 }
 
-#[cfg(not(unix))]
+#[cfg(target_family = "wasm")]
 pub(crate) fn validate_destination_writable(_destination: &Path) -> Result<(), WriteOperationError> {
     Ok(())
 }

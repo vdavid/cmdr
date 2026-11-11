@@ -491,8 +491,8 @@ fn resolve_and_apply_buffered_handles(volume_id: &str, handles: Vec<(u32, u32)>)
     });
 }
 
-/// No-op shim on platforms without MTP (the buffer never fills there).
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+/// No-op shim while Windows has no MTP transport (the buffer never fills there).
+#[cfg(target_os = "windows")]
 fn resolve_and_apply_buffered_handles(_volume_id: &str, _handles: Vec<(u32, u32)>) {}
 
 /// Discard any buffered mid-scan MTP changes for a volume without replaying them

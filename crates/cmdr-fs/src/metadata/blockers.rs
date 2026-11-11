@@ -16,7 +16,7 @@ use std::io;
 use std::path::Path;
 
 use super::LandedMetadata;
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 use crate::log_private::LogPrivate;
 
 /// What [`clear_blockers`] did to one item.
@@ -41,7 +41,7 @@ pub fn clear_blockers(path: &Path) -> Unblock {
         super::note_helper_call();
         clear_on_macos(path)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_family = "wasm"))]
     {
         let _ = path;
         Unblock::NothingToClear
@@ -117,7 +117,7 @@ pub fn removal_lock(path: &Path) -> RemovalLock {
                 .unwrap_or(false)
         })
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_family = "wasm"))]
     {
         let _ = path;
         RemovalLock::Free
@@ -206,11 +206,11 @@ pub fn open_parent_folder(child: &Path) -> ParentOpening {
         let _ = child;
         ParentOpening::NothingToOpen
     }
-    #[cfg(not(target_family = "wasm"))]
+    #[cfg(unix)]
     open_host_parent_folder(child)
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn open_host_parent_folder(child: &Path) -> ParentOpening {
     use std::os::unix::fs::PermissionsExt as _;
 

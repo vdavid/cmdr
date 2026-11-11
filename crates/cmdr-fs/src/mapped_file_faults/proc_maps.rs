@@ -5,7 +5,7 @@
 //! fields the fault recovery needs from one line.
 
 #![cfg_attr(
-    not(target_os = "linux"),
+    any(target_os = "macos", target_os = "windows"),
     allow(dead_code, reason = "only Linux reads /proc/self/maps")
 )]
 

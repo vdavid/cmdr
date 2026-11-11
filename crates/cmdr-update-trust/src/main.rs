@@ -51,7 +51,7 @@ fn main() {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 fn main() {
     eprintln!("cmdr-vet-update runs Apple's code-signature check, so it needs macOS.");
     std::process::exit(2);

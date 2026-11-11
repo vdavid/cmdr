@@ -62,8 +62,8 @@ pub fn probe_mount_for_path(path: &std::path::Path) -> MountProbe {
     }
 }
 
-/// No mount table to read on this platform: the type is unknown.
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+/// No mount-table reader on Windows yet: the type is unknown.
+#[cfg(target_os = "windows")]
 pub fn probe_mount_for_path(_path: &std::path::Path) -> MountProbe {
     MountProbe {
         info: FilesystemInfo::from_raw_type(None),

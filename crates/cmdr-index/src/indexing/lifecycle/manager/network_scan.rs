@@ -62,7 +62,7 @@ fn replay_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) -> b
         // Local-scanner kinds take the guarded-walker path and never buffer network changes.
         IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => {}
     }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    #[cfg(target_os = "windows")]
     let _ = (kind, volume_id);
     true
 }
@@ -79,7 +79,7 @@ fn discard_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) {
         // Local-scanner kinds take the guarded-walker path and never buffer network changes.
         IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => {}
     }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    #[cfg(target_os = "windows")]
     let _ = (kind, volume_id);
 }
 

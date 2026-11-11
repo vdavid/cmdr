@@ -1341,7 +1341,7 @@ fn writer_loop(
                 &failure_signal,
             )
         });
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(any(target_os = "linux", target_os = "windows"))]
         let should_exit = process_message(
             &conn,
             msg,

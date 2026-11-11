@@ -27,6 +27,11 @@
     )
 )]
 
+// An unknown target is one outside macOS, Linux, Windows (`cmdr_host`, set by `build.rs`
+// through `cmdr-platform-cfg`), and the browser build. `docs/guides/platform-seams.md`.
+#[cfg(not(any(cmdr_host, target_family = "wasm")))]
+compile_error!("Cmdr builds for macOS, Linux, Windows, and the browser only; see docs/guides/platform-seams.md");
+
 pub mod apple_double;
 pub mod archive_format;
 #[cfg(target_os = "macos")]
@@ -54,7 +59,7 @@ pub mod log_rollup;
 pub mod mac_only_files;
 // The browser build (`wasm32`, `crates/cmdr-listing-wasm`) maps no files, so
 // this one is host-only. `DETAILS.md` § "The browser build".
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 pub mod mapped_file_faults;
 pub mod metadata;
 pub mod name_fold;

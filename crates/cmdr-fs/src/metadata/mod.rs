@@ -44,7 +44,7 @@ mod staged;
 
 use std::path::Path;
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 use crate::log_private::LogPrivate;
 
 pub use blockers::{
@@ -170,7 +170,7 @@ impl MetadataReport {
 }
 
 /// An ACL as the helper carries it: opaque entries, read and written whole.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Acl(Vec<exacl::AclEntry>);
 
@@ -280,7 +280,7 @@ pub fn apply_landed(path: &Path, set: &LandedMetadata) -> MetadataReport {
 
 /// `chmod` by path. Only ever a folder, which isn't a link, so following one
 /// can't reach anywhere else.
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn write_mode(path: &Path, mode: u32) -> ClassOutcome {
     use std::os::unix::fs::PermissionsExt as _;
     match std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode)) {
@@ -321,7 +321,7 @@ fn read_acl(path: &Path) -> Option<Acl> {
     }
 }
 
-#[cfg(not(any(target_os = "macos", target_family = "wasm")))]
+#[cfg(target_os = "linux")]
 fn read_acl(path: &Path) -> Option<Acl> {
     match exacl::getfacl(path, None) {
         // A named user or group, or a default ACL, is what makes it more than the mode.
@@ -340,11 +340,11 @@ fn read_acl(path: &Path) -> Option<Acl> {
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
+#[cfg(unix)]
 fn write_acl(path: &Path, acl: &Acl) -> ClassOutcome {
     #[cfg(target_os = "macos")]
     let written = exacl::setfacl(&[path], &acl.0, exacl::AclOption::SYMLINK_ACL);
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     let written = exacl::setfacl(&[path], &acl.0, None);
     match written {
         Ok(()) => ClassOutcome::Kept,

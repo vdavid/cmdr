@@ -200,7 +200,7 @@ fn network_volume_root(path: &Path) -> Option<PathBuf> {
         let volume_root = PathBuf::from("/Volumes").join(share);
         fs_type_is_network(&volume_root).then_some(volume_root)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
     {
         let _ = path;
         None
@@ -347,7 +347,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "linux")]
     fn non_macos_always_false() {
         // The public predicate short-circuits to false on non-macOS regardless of path.
         let h = home();

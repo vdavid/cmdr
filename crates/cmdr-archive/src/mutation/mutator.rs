@@ -368,7 +368,7 @@ pub fn local_file_sidecar(file: &File) -> Option<Vec<u8>> {
         let names = file.list_xattr().ok()?.collect();
         apple_double::sidecar_for(names, |name| file.get_xattr(name).ok().flatten())
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
     {
         let _ = file;
         None
@@ -383,7 +383,7 @@ pub fn local_folder_sidecar(path: &Path) -> Option<Vec<u8>> {
         let names = xattr::list(path).ok()?.collect();
         apple_double::sidecar_for(names, |name| xattr::get(path, name).ok().flatten())
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
     {
         let _ = path;
         None

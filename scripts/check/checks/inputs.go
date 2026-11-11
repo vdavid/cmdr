@@ -383,6 +383,7 @@ var websiteDemoInputs = []string{
 	"crates/cmdr-listing-wasm/**",
 	"crates/cmdr-listing/**",
 	"crates/cmdr-fs/**",
+	"crates/cmdr-platform-cfg/**",
 	"crates/cmdr-collation/**",
 	"crates/cmdr-brief-columns/**",
 	"crates/cmdr-menu/**",
