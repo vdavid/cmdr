@@ -573,7 +573,16 @@
       "negated": 1,
       "outsideSeam": 3
     },
+    "crates/cmdr-fs/src/archive_format.rs": {
+      "outsideSeam": 1
+    },
     "crates/cmdr-fs/src/durable.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-fs/src/entry.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-fs/src/file_provider.rs": {
       "outsideSeam": 1
     },
     "crates/cmdr-fs/src/firmlinks.rs": {
@@ -583,7 +592,7 @@
       "outsideSeam": 4
     },
     "crates/cmdr-fs/src/lib.rs": {
-      "outsideSeam": 2
+      "outsideSeam": 3
     },
     "crates/cmdr-fs/src/mapped_file_faults/image_ranges.rs": {
       "negated": 1,
@@ -598,11 +607,11 @@
     },
     "crates/cmdr-fs/src/metadata/blockers.rs": {
       "negated": 2,
-      "outsideSeam": 7
+      "outsideSeam": 10
     },
     "crates/cmdr-fs/src/metadata/carried.rs": {
       "negated": 1,
-      "outsideSeam": 3
+      "outsideSeam": 8
     },
     "crates/cmdr-fs/src/metadata/flags.rs": {
       "negated": 1,
@@ -610,11 +619,14 @@
     },
     "crates/cmdr-fs/src/metadata/mod.rs": {
       "negated": 2,
-      "outsideSeam": 4
+      "outsideSeam": 8
+    },
+    "crates/cmdr-fs/src/metadata/mode.rs": {
+      "outsideSeam": 1
     },
     "crates/cmdr-fs/src/metadata/staged.rs": {
       "negated": 3,
-      "outsideSeam": 9
+      "outsideSeam": 11
     },
     "crates/cmdr-fs/src/name_fold.rs": {
       "negated": 1,
