@@ -18,7 +18,7 @@ use futures_util::future::BoxFuture;
 use crate::error::{MultiRenameError, ReadOnlyPlace};
 use crate::media::{Loader, ProgressEmit};
 use crate::plan::PreviewRow;
-use crate::run::MultiRenameStarted;
+use crate::started::MultiRenameStarted;
 
 /// The host's answers to a Multi-Rename engine.
 pub trait MultiRenameHost: Send + Sync {

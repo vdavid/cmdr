@@ -10,7 +10,7 @@ the same sheet. Hosts: `apps/desktop/src-tauri/src/multi_rename/` and `crates/cm
 - `presets.rs`, `history.rs` types and pure list ops; `names_file.rs` the Results file; `rule_kinds.rs` which rules a
   spec uses (the app's `multi_rename_applied` analytics).
 - `session.rs` `MultiRename` (sessions, over a host's `Listings`, runtime, and `MultiRenameHost` in `host.rs`);
-  `media.rs` the media cache and loader; `run.rs` apply.
+  `media.rs` the media cache and loader; `run.rs` apply; `started.rs` its result, apart so `host` never imports `run`.
 
 ## Must-knows
 

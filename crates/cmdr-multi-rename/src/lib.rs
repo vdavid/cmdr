@@ -20,6 +20,7 @@ pub mod presets;
 mod rule_kinds;
 pub mod run;
 pub mod session;
+mod started;
 pub mod transform;
 mod transliterate;
 

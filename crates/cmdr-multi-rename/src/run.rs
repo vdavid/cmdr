@@ -10,7 +10,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use futures_util::stream::{self, StreamExt};
-use serde::{Deserialize, Serialize};
 
 use cmdr_fs::deadline::{Deadline, blocking_typed_result_with_timeout_on, timeout_detached_within};
 use cmdr_fs::volume::Volume;
@@ -23,18 +22,7 @@ use crate::plan::PreviewRow;
 use crate::rule_kinds::rule_tokens;
 use crate::session::{MultiRename, Prepared};
 
-/// A started rename.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MultiRenameStarted {
-    /// The operation, for its progress, the queue, and Undo.
-    pub operation_id: String,
-    /// How many rows it renames.
-    pub renaming: usize,
-    /// Rows that swap names with each other, which a batch that runs as a move
-    /// (a rename that copies, on S3) leaves out: they keep their names.
-    pub swaps_left_out: usize,
-}
+pub use crate::started::MultiRenameStarted;
 
 /// How long apply waits for the remote fingerprints, at least (a volume with a
 /// live session gets more, see `MultiRenameHost::io_budget`).
