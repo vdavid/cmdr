@@ -32,12 +32,12 @@ import {
   resetAllShortcuts,
   capturedKeyCombo,
   isModifierKey,
-  isMacOS,
   typingRefusal,
   findConflictsForShortcut,
   getConflictingCommandIds,
   getConflictCount,
 } from '#lib/shortcuts/index.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { confirmDialog } from '#lib/utils/confirm-dialog.js'
 import { dependOn } from '#lib/utils/reactivity.js'
 import { groupCommandsByScope } from './keyboard-shortcuts-grouping'

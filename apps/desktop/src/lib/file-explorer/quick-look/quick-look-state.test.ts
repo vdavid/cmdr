@@ -11,12 +11,10 @@ type HandlerMap = Record<string, EventHandler>
 // matters for the destructured `handlers`).
 // The close gesture resolves `file.quickLook` through the command registry, and that
 // command's `⇧Space` default is gated on `isMacOS()` AT MODULE LOAD (Quick Look is a
-// macOS-only feature, so the registry declares no shortcut elsewhere). happy-dom
-// reports a Linux UA, so pin macOS from a `vi.hoisted` block: a `beforeAll` spy would
-// run after `command-registry` has already read the user agent.
-vi.hoisted(() => {
-  vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' })
-})
+// macOS-only feature, so the registry declares no shortcut elsewhere). Vitest runs
+// off macOS, so pin macOS from a `vi.hoisted` block: a `beforeAll` would run after
+// `command-registry` has already read the platform.
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 const { handlers, unlistenFns, quickLookCloseMock } = vi.hoisted(
   (): {

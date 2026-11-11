@@ -5,7 +5,8 @@
  * a mark, and "Use the settings again" drops them.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick, unmount } from 'svelte'
 import MultiRenameDialog from './MultiRenameDialog.svelte'
 import { setLastMultiRenameRun } from './last-run.svelte'
@@ -130,13 +131,12 @@ function notice(root: HTMLElement): string {
 }
 
 describe('MultiRenameDialog Results', () => {
-  // `formatKeyCombo` emits ⌥-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
-  const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+  // `formatKeyCombo` emits ⌥-form modifiers only when `isMacOS()` is true, and Vitest runs off macOS.
 
   beforeEach(() => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
-    navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
+    onTestFinished(withPlatform('macos'))
     ipc.previewMultiRename.mockResolvedValue({ ok: true, value: PREVIEW })
     ipc.renderMultiRenameExamples.mockImplementation((examples: unknown[]) => Promise.resolve(examples.map(() => null)))
     ipc.getMultiRenamePresets.mockResolvedValue([])
@@ -152,7 +152,6 @@ describe('MultiRenameDialog Results', () => {
   afterEach(async () => {
     for (const sheet of mounted) await unmount(sheet)
     mounted = []
-    navigatorSpy.mockReset()
   })
 
   it('⌥⏎ writes the shown preview’s names and opens them in the text editor, and never renames', async () => {

@@ -4,7 +4,7 @@
     import ToastActions from '#lib/ui/toast/ToastActions.svelte'
     import Checkbox from '#lib/ui/Checkbox.svelte'
     import { setSetting } from '#lib/settings/index.js'
-    import { isMacOS } from '#lib/shortcuts/key-capture.js'
+    import { isMacOS } from '#lib/platform/index.js'
     import { tString } from '#lib/intl/messages.svelte.js'
 
     interface Props {

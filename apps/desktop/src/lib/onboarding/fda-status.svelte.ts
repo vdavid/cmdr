@@ -10,7 +10,7 @@
  * stack popups on someone who simply alt-tabbed.
  */
 import { getAppLogger } from '#lib/logging/logger.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { checkFullDiskAccessQuiet } from '#lib/tauri-commands/index.js'
 
 const log = getAppLogger('fda-status')

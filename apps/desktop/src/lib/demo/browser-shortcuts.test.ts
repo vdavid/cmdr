@@ -5,11 +5,9 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-// The registry gates some defaults on `isMacOS()` at module load, so stub the UA before the
+// The registry gates some defaults on `isMacOS()` at module load, so pin macOS before the
 // imports, as `registry-conflicts.test.ts` does: this walks the macOS defaults the demo shows.
-vi.hoisted(() => {
-  vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' })
-})
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 import { COMMAND_IDS } from '#lib/commands/command-ids.js'
 import { commands } from '#lib/commands/command-registry.js'

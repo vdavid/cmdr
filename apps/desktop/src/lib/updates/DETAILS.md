@@ -65,8 +65,8 @@ frontend holds picks what gets installed. The non-macOS path uses the plugin's f
 `src-tauri/src/updater/` syncs files into the existing `.app` bundle, preserving the inode and TCC/Full Disk Access
 permissions, and isn't compiled off macOS.
 
-The branch is `isMacOS()` from `#lib/shortcuts/key-capture`, ❌ never `navigator.platform`, which is deprecated and lies
-under WKWebView. Both UIs treat `downloading` and `installing` identically, so the split costs the frontend nothing.
+The branch is `isMacOS()` from `#lib/platform`, ❌ never `navigator.platform`, which is deprecated and lies under
+WKWebView. Both UIs treat `downloading` and `installing` identically, so the split costs the frontend nothing.
 
 ## Re-checking while staged
 

@@ -12,9 +12,7 @@ import { flushSync, mount, tick, unmount } from 'svelte'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
 
 // The registry's ⌘ means Command on a Mac; pin the platform before the registry loads.
-vi.hoisted(() => {
-  vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' })
-})
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 import AskCmdrFind from './AskCmdrFind.svelte'
 import { FIND_TYPING_DEBOUNCE_MS } from './ask-cmdr-find.svelte'

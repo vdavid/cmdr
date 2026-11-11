@@ -15,6 +15,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { createRawSnippet, mount, tick, type ComponentProps } from 'svelte'
 import { computeAccessibleDescription } from 'dom-accessibility-api'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
@@ -94,14 +95,6 @@ const bindingCommands = vi.hoisted(() => ({
       timedOut: false,
     }),
   ),
-}))
-
-// `isMacOS()` reads false under jsdom on every host. Off by default, as the real
-// check answers here; the blocks whose rows render on macOS only switch it on.
-const isMacOS = vi.hoisted(() => vi.fn(() => false))
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => isMacOS(),
 }))
 
 vi.mock('#lib/ipc/bindings.js', async (importOriginal) => ({
@@ -559,13 +552,7 @@ describe('NavigationAndFileOpsSection a11y', () => {
     return undefined
   })
 
-  beforeEach(() => {
-    isMacOS.mockReturnValue(true)
-  })
-
-  afterEach(() => {
-    isMacOS.mockReturnValue(false)
-  })
+  beforeEach(() => withPlatform('macos'))
 
   it('default has no a11y violations', async () => {
     const target = container()

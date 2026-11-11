@@ -12,7 +12,7 @@
  * carve-out below stays because the label is state-dependent, not because the
  * registry treats that command specially. The three platform-conditional commands
  * (`file.showInFinder` / `file.getInfo` / `file.quickLook`) resolve their name
- * by `isMacOS()`; the test runs under jsdom (non-macOS), so it pins the
+ * by `isMacOS()`; the test runs off macOS, Vitest's default, so it pins the
  * non-macOS labels and asserts the macOS catalog keys exist separately.
  */
 import { describe, it, expect } from 'vitest'
@@ -192,7 +192,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'file.deletePermanently': 'Delete permanently',
   'file.goToTrash': 'Go to trash',
   'dialog.confirm': 'Confirm the dialog on screen',
-  // Platform-conditional names resolve to the non-macOS label under jsdom.
+  // Platform-conditional names resolve to the non-macOS label here.
   'file.showInFinder': 'Show in file manager',
   'file.openTerminalHere': 'Open terminal here',
   'file.copyPath': 'Copy path to clipboard',
@@ -370,7 +370,7 @@ describe('command registry en parity', () => {
   })
 
   it('the macOS platform-conditional labels exist in the catalog with the right English', () => {
-    // jsdom is non-macOS, so the registry resolves the `.other` labels above.
+    // Vitest runs off macOS, so the registry resolves the `.other` labels above.
     // Pin the macOS variants directly so a catalog edit can't drift them.
     expect(tString('commands.fileShowInFinder.mac.label')).toBe('Show in Finder')
     expect(tString('commands.fileGetInfo.mac.label')).toBe('Get info')

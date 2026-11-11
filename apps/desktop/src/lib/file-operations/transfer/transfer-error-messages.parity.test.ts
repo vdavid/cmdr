@@ -16,7 +16,8 @@
  * (`transfer-error-messages.test.ts` covers the same factory with partial /
  * structural assertions; this is the exhaustive full-string net.)
  */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { getUserFriendlyMessage } from './transfer-error-messages'
 import type { FriendlyErrorMessage } from './transfer-error-messages'
 import type { WriteOperationError, TransferOperationType } from '#lib/file-explorer/types.js'
@@ -47,14 +48,10 @@ vi.mock('#lib/shortcuts/index.js', async (orig) => {
   const actual = await orig<typeof import('#lib/shortcuts/index.js')>()
   return { ...actual, getEffectiveShortcuts: (id: string) => (id === 'file.deletePermanently' ? ['⇧F8'] : []) }
 })
-
-const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+/** Runs the rest of the current test on macOS or, with `false`, off it. */
 function setMacOS(isMac: boolean) {
-  navigatorSpy.mockReturnValue({
-    userAgent: isMac ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' : 'Mozilla/5.0 (X11; Linux x86_64)',
-  } as Navigator)
+  onTestFinished(withPlatform(isMac ? 'macos' : 'linux'))
 }
-afterEach(() => navigatorSpy.mockReset())
 
 interface Case {
   name: string

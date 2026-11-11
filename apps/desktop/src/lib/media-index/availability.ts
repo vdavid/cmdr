@@ -1,5 +1,5 @@
 import { isE2eRun } from '#lib/app-mode.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 
 /**
  * Whether this run can index images. The engine is Apple's Vision plus CLIP's Core ML

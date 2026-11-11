@@ -4,7 +4,7 @@
  * A new command that has none of the three fails here, so the keyboard path
  * ships with the command instead of being found missing later (#383).
  *
- * Runs with `isMacOS()` forced on, because macOS is where every command
+ * Runs on macOS, because macOS is where every command
  * exists: the macOS-only ones (Quick Look, Get Info, tags, cloud actions) are
  * hidden from the palette elsewhere AND cfg-gated out of the native menus, so
  * off macOS they're absent, not mouse-only.
@@ -14,10 +14,7 @@ import { commands } from './command-registry'
 import { mcpCommands } from './sources/mcp'
 import type { CommandId } from './command-ids'
 
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => true,
-}))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 const MCP_ONLY_REASON =
   'MCP-only: carries a per-pane payload for an MCP tool, and the focused-pane commands are the keyboard path.'

@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 // Shared test state: the mock factory closures capture these references
 const listeners = new Set<(commandId: string) => void>()
@@ -233,13 +234,9 @@ describe('shortcut-dispatch', () => {
   })
 
   describe('eventMatchesCommand', () => {
-    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and
-    // happy-dom reports a Linux UA.
-    const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-    beforeEach(() => {
-      navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
-    })
-    afterEach(() => navigatorSpy.mockReset())
+    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and Vitest
+    // runs off macOS.
+    beforeEach(() => withPlatform('macos'))
 
     it('accepts the exact keypress and refuses the ⌥⌘A superset', () => {
       const cmdA = new KeyboardEvent('keydown', { key: 'a', metaKey: true })

@@ -11,6 +11,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 const { getSettingMock, setSettingMock, setGlobalGoToLatestShortcutMock } = vi.hoisted(() => ({
   getSettingMock: vi.fn(),
@@ -30,12 +31,9 @@ vi.mock('#lib/ipc/bindings.js', () => ({
   },
 }))
 
-// The global go-to-latest hotkey is macOS-only; force `isMacOS()` (which reads the
-// user agent) to report macOS so `formatKeyCombo` emits the symbol form.
-Object.defineProperty(navigator, 'userAgent', {
-  value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-  configurable: true,
-})
+// The global go-to-latest hotkey is macOS-only; run on macOS so `formatKeyCombo` emits the
+// symbol form.
+withPlatform('macos')
 
 import GlobalShortcutRow from './GlobalShortcutRow.svelte'
 

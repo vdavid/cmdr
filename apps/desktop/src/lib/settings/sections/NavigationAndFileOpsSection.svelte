@@ -45,7 +45,7 @@
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '#lib/settings/index.js'
     import { createShouldShow, anyVisible } from '#lib/settings/settings-search.js'
-    import { isMacOS } from '#lib/shortcuts/key-capture.js'
+    import { isMacOS } from '#lib/platform/index.js'
 
     interface Props {
         searchQuery: string

@@ -19,10 +19,11 @@ import { commands } from '#lib/commands/command-registry.js'
 import type { DialogsOnScreen } from './command-dispatch-context'
 import { initShortcutDispatch, destroyShortcutDispatch } from '#lib/shortcuts/shortcut-dispatch.js'
 import { registerToastStack } from '#lib/ui/toast/toast-focus.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 // The resolver speaks the macOS combo vocabulary (⌘V, not Ctrl+V), and this is a
-// macOS-only bug; `isMacOS()` reads the user agent.
-vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' })
+// macOS-only bug.
+withPlatform('macos')
 
 const NOTHING_OPEN: DialogsOnScreen = { dialogOpen: false, paletteOpen: false }
 const DIALOG_OPEN: DialogsOnScreen = { dialogOpen: true, paletteOpen: false }

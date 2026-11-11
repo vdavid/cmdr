@@ -1,11 +1,7 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { classifySelectionDialogKey } from './selection-dialog-keys'
-
-const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-beforeAll(() => {
-  navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
-})
-afterAll(() => navigatorSpy.mockReset())
+beforeAll(() => withPlatform('macos'))
 
 function ev(opts: Partial<KeyboardEventInit> & { key: string }): KeyboardEvent {
   return new KeyboardEvent('keydown', opts)

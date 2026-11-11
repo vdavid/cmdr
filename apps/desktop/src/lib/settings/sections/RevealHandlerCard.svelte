@@ -42,7 +42,7 @@
     import Trans from '#lib/intl/Trans.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
-    import { isMacOS } from '#lib/shortcuts/key-capture.js'
+    import { isMacOS } from '#lib/platform/index.js'
     import { getRevealHandlerState, setRevealHandlerEnabled } from '#lib/tauri-commands/index.js'
     import { REVEAL_HANDLER_ANCHOR_ID } from '#lib/reveal/reveal-settings-link.js'
     import { createShouldShow } from '#lib/settings/settings-search.js'

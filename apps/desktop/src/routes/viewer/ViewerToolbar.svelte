@@ -125,7 +125,8 @@
         flex-shrink: 0;
         /* Source of the value lives in `viewer/+layout.svelte`, which sets
            `--titlebar-height` for this window so modal backdrops start exactly
-           below this bar (keeping the OS window-drag region live). */
+           below this bar (keeping the OS window-drag region live). On macOS
+           only; elsewhere the bar takes its content's height. */
         min-height: var(--titlebar-height);
     }
 

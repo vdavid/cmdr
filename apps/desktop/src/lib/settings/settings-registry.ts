@@ -25,7 +25,7 @@ import type {
 } from './types'
 import { SettingValidationError } from './types'
 import { tString } from '#lib/intl/messages.svelte.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { imageIndexingAvailable } from '#lib/media-index/availability.js'
 import { appearanceSettings } from './definitions/appearance'
 import { behaviorSettings } from './definitions/behavior'

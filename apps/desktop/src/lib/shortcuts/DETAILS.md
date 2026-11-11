@@ -169,7 +169,7 @@ an `allowedConflicts` list that is empty today. Without it the detector only eve
 Settings, so a new registry entry could silently shadow an existing binding for everyone (the dispatch map keeps one
 winner per combo, so the loser just stops working, with no warning anywhere). A deliberate "keep both" clash is legal —
 it goes in `allowedConflicts` with its reason, and a second test fails on a stale entry so the list can't rot. The test
-stubs a macOS user agent from a `vi.hoisted` block because several registry entries gate their `shortcuts` array on
+pins macOS (`withPlatform`) from a `vi.hoisted` block because several registry entries gate their `shortcuts` array on
 `isMacOS()` AT MODULE LOAD; a `beforeAll` spy would leave those combos unchecked. It also asserts the detector can still
 find a claimed combo, so a broken import or a scope typo can't turn the whole check vacuous.
 

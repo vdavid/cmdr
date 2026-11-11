@@ -5,7 +5,8 @@
  * shows a ✓ and is announced; Enter inserts and closes, Esc closes back to the mask, Tab moves on.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick, unmount } from 'svelte'
 import MultiRenameDialog from './MultiRenameDialog.svelte'
 import { setLastMultiRenameRun } from './last-run.svelte'
@@ -115,10 +116,9 @@ async function openPicker(root: HTMLElement): Promise<void> {
 }
 
 describe('the media field picker', () => {
-  // The registry reads ⌘ as ⌘ only on a Mac, and happy-dom reports a Linux UA.
-  const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+  // The registry reads ⌘ as ⌘ only on a Mac, and Vitest runs off macOS.
   beforeEach(() => {
-    navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
+    onTestFinished(withPlatform('macos'))
     vi.clearAllMocks()
     ipc.previewMultiRename.mockResolvedValue({ ok: true, value: PREVIEW })
     ipc.getMultiRenameMediaOverview.mockResolvedValue(overview())
@@ -126,7 +126,6 @@ describe('the media field picker', () => {
   })
 
   afterEach(() => {
-    navigatorSpy.mockReset()
     for (const app of mounted) void unmount(app)
     mounted = []
     document.body.innerHTML = ''

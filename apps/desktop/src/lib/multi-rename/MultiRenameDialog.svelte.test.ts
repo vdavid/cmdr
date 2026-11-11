@@ -7,7 +7,8 @@
  * remembers the fields; and ⌘⌥Z rolls back the last run.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick, unmount } from 'svelte'
 import MultiRenameDialog from './MultiRenameDialog.svelte'
 import { runMenuClaim } from '#lib/commands/menu-claims.js'
@@ -374,12 +375,8 @@ describe('MultiRenameDialog', () => {
   })
 
   describe('rename key', () => {
-    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
-    const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-    beforeEach(() => {
-      navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
-    })
-    afterEach(() => navigatorSpy.mockReset())
+    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and Vitest runs off macOS.
+    beforeEach(() => withPlatform('macos'))
 
     it('⌘⏎ renames from anywhere in the sheet, a checkbox too, and the Rename button shows it', async () => {
       ipc.applyMultiRename.mockResolvedValue({ ok: true, value: { operationId: 'op', renaming: 1, swapsLeftOut: 0 } })
@@ -567,12 +564,8 @@ describe('MultiRenameDialog', () => {
   })
 
   describe('undo rename', () => {
-    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
-    const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-    beforeEach(() => {
-      navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
-    })
-    afterEach(() => navigatorSpy.mockReset())
+    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and Vitest runs off macOS.
+    beforeEach(() => withPlatform('macos'))
 
     function undoLink(root: HTMLElement): HTMLButtonElement | undefined {
       // A house button, its key chip on it.
@@ -654,12 +647,8 @@ describe('MultiRenameDialog', () => {
   })
 
   describe('option keys', () => {
-    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
-    const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-    beforeEach(() => {
-      navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
-    })
-    afterEach(() => navigatorSpy.mockReset())
+    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and Vitest runs off macOS.
+    beforeEach(() => withPlatform('macos'))
 
     /** Whether the option named `label` reads as on: a whole-name option's checkbox, or a search chip. */
     function isOn(root: HTMLElement, label: string): boolean {
@@ -798,16 +787,11 @@ describe('MultiRenameDialog', () => {
   })
 
   describe('presets', () => {
-    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
-    const macNavigator = Object.defineProperty(Object.create(navigator) as Navigator, 'userAgent', {
-      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)',
-    })
-    const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and Vitest runs off macOS.
     beforeEach(() => {
-      navigatorSpy.mockReturnValue(macNavigator)
+      onTestFinished(withPlatform('macos'))
       ipc.getMultiRenamePresets.mockResolvedValue([{ id: 'p1', name: 'Mine', spec: { ...SPEC, nameMask: 'IMG_[C]' } }])
     })
-    afterEach(() => navigatorSpy.mockReset())
 
     const SPEC = {
       nameMask: '[N]',

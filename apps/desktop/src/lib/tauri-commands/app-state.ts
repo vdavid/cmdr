@@ -13,7 +13,7 @@ import {
 import type { SameKindTarget } from '#lib/file-explorer/pane/select-same-kind.js'
 import type { TrashUndoTarget } from '#lib/file-operations/delete/trash-undo.js'
 import type { OperationGate, SoftDialogId } from '#lib/ui/dialog-registry.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { throwIpcError } from './ipc-types'
 
 export type { PaneFileEntry, PaneState, RequestedSort, SelectedRows, ServicesSelection }

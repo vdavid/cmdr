@@ -17,15 +17,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import type { RevealHandlerState, RevealHandlerStatus } from '#lib/ipc/bindings.js'
 
 const getRevealHandlerState = vi.fn<() => Promise<RevealHandlerStatus>>()
 const setRevealHandlerEnabled = vi.fn<(enabled: boolean) => Promise<RevealHandlerStatus>>()
-// Hoisted: the card imports settings search, whose import graph calls `isMacOS()`
-// while modules load, before a plain `const` here would exist.
-const isMacOS = vi.hoisted(() => vi.fn<() => boolean>(() => true))
-
 vi.mock('#lib/ipc/bindings.js', () => ({
   commands: {
     getRevealHandlerState: () => getRevealHandlerState(),
@@ -33,10 +30,9 @@ vi.mock('#lib/ipc/bindings.js', () => ({
   },
 }))
 
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => isMacOS(),
-}))
+// Hoisted: the card imports settings search, whose import graph calls `isMacOS()`
+// while modules load.
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 import RevealHandlerCard from './RevealHandlerCard.svelte'
 
@@ -76,7 +72,7 @@ const HELD_BY_PATH_FINDER: RevealHandlerState = {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  isMacOS.mockReturnValue(true)
+  withPlatform('macos')
   getRevealHandlerState.mockResolvedValue(unblocked({ kind: 'notRegistered' }))
 })
 
@@ -128,7 +124,7 @@ describe('when the card renders nothing at all', () => {
   })
 
   it('does not even ask the backend when this is not a Mac', async () => {
-    isMacOS.mockReturnValue(false)
+    withPlatform('linux')
 
     const target = await mountCard()
 

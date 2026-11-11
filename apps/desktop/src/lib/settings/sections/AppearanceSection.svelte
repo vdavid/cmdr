@@ -13,7 +13,7 @@
     import { getSettingDefinition, getSetting, setSetting, onSpecificSettingChange } from '#lib/settings/index.js'
     import { createShouldShow, anyVisible } from '#lib/settings/settings-search.js'
     import { openAppearanceSettings } from '#lib/tauri-commands/index.js'
-    import { isMacOS } from '#lib/shortcuts/key-capture.js'
+    import { isMacOS } from '#lib/platform/index.js'
     import { systemStrings } from '#lib/system-strings.svelte.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { trackLanguageChanged } from '#lib/intl/language-analytics.js'

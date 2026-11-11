@@ -1,6 +1,6 @@
 //! Everything handed to `tauri::Builder` before `setup` runs: the
 //! `cmdr-media://` URI scheme, and every plugin including the three registered
-//! conditionally.
+//! conditionally and the one that tells each webview its platform.
 //!
 //! This is the half of launch that is genuinely INDEPENDENT: no registration
 //! here cares which one ran before it, and none of them observes app state.
@@ -28,6 +28,29 @@ pub fn configure(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::W
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(crate::downloads::global_shortcut::plugin_builder())
+        .plugin(platform_plugin())
+}
+
+/// The platform the frontend's `#lib/platform` reports: Rust's own name for the target OS, which is
+/// one of the three values its `Platform` type allows (`macos`, `linux`, `windows`) because the
+/// crate root refuses every other target (`cmdr_host`, `docs/guides/platform-seams.md`).
+const FRONTEND_PLATFORM: &str = std::env::consts::OS;
+
+/// Hands every webview its platform before any of its scripts run, as `window.__CMDR_PLATFORM__`.
+///
+/// A plugin's init script reaches every webview the app creates, the config's main window and each
+/// one the frontend opens later (viewer, Settings, …), so no window can paint without it. It's an
+/// init script rather than an IPC command because the frontend reads the platform synchronously,
+/// some of it at module load. Read-only, so nothing in the page can change its mind later. See
+/// `apps/desktop/src/lib/platform/DETAILS.md`.
+fn platform_plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::new("cmdr-platform")
+        .js_init_script(platform_init_script())
+        .build()
+}
+
+fn platform_init_script() -> String {
+    format!("Object.defineProperty(window, '__CMDR_PLATFORM__', {{ value: '{FRONTEND_PLATFORM}' }});")
 }
 
 /// The `cmdr-media://` async scheme the file viewer serves images and PDFs
@@ -149,4 +172,21 @@ fn register_updater(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri
 #[cfg(target_os = "macos")]
 fn register_updater(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     builder
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn platform_init_script_names_the_running_os() {
+        assert!(["macos", "linux", "windows"].contains(&FRONTEND_PLATFORM));
+        assert_eq!(
+            platform_init_script(),
+            format!(
+                "Object.defineProperty(window, '__CMDR_PLATFORM__', {{ value: '{}' }});",
+                std::env::consts::OS
+            )
+        );
+    }
 }

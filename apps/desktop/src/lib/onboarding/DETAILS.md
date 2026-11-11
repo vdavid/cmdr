@@ -836,7 +836,7 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 - `#lib/settings`: `getSetting`, `setSetting`, `forceSave` (the `onboarding.*` keys: the FDA choice, the completed flag,
   and Step 3's terms acceptance)
 - `#lib/legal/terms`: `TERMS_VERSION`, `TERMS_URL` (Step 3's terms checkbox)
-- `#lib/shortcuts/key-capture`: `isMacOS`
+- `#lib/platform`: `isMacOS`
 - `#lib/system-strings.svelte`: localized system pane names
 - `#lib/ui`: `Button`, `LinkButton`
 - `#lib/beta-links`: `GITHUB_REPO_URL`, `ALTERNATIVE_TO_URL`, `ABOUT_DAVID_URL` (Step 3's two checklist links and

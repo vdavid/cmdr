@@ -16,12 +16,10 @@ import { describe, it, expect, vi } from 'vitest'
 
 // The registry gates several commands on `isMacOS()` AT MODULE LOAD (`file.quickLook`,
 // the Finder-parity ⌘I, the cloud commands), so a `beforeAll` spy is too late — the
-// arrays are already `[]` by then and those combos would go unchecked. Stub the UA from
+// arrays are already `[]` by then and those combos would go unchecked. Pin macOS from
 // a `vi.hoisted` block, which runs before the imports, so this walks the real macOS
 // default set we ship.
-vi.hoisted(() => {
-  vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' })
-})
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 import { commands } from '#lib/commands/command-registry.js'
 import { findConflictsForShortcut, getAllConflicts } from './conflict-detector'

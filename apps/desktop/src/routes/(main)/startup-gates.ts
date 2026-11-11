@@ -26,7 +26,7 @@ import { runWhatsNewStartupTrigger } from '#lib/whats-new/whats-new-trigger.svel
 import { forceSave, getSetting, setSetting } from '#lib/settings/index.js'
 import { isE2eRun } from '#lib/app-mode.js'
 import { notifyOnboardingComplete } from '#lib/updates/updater.svelte.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { getAppLogger } from '#lib/logging/logger.js'

@@ -1,12 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { queueKeyAction } from './queue-keys'
 
-// `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
-const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
-beforeEach(() => {
-  navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
-})
-afterEach(() => navigatorSpy.mockReset())
+// `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and Vitest runs off macOS.
+beforeEach(() => withPlatform('macos'))
 
 function key(init: KeyboardEventInit): KeyboardEvent {
   return new KeyboardEvent('keydown', init)

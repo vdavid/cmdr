@@ -145,6 +145,16 @@ every window. The demo keeps that shape, so secondary windows share its state, a
 - Verified in headless Chromium against `pnpm build:demo` (2026-11-05): Dark and Light from Settings repaint the main
   window, the Settings panel, the menu bar, and the lights; System with the OS flipped to dark follows it.
 
+## Platform
+
+- On desktop, a backend init script defines `window.__CMDR_PLATFORM__` in every webview before any app module runs
+  (`apps/desktop/src/lib/platform/DETAILS.md`). `webview.ts` stands in for it per frame through `platform.ts`, which
+  defines the same read-only global, so the main window and every panel read one answer.
+- Decision: the visitor's own OS, from the user agent (Mac → `macos`, Windows → `windows`, anything else → `linux`), not
+  a fixed `macos`. Why: the platform picks the shortcut modifiers, and they have to match the keyboard under the
+  visitor's hands; ⌘ on a PC keyboard is the Windows key, which the browser and the OS keep. The demo is the one place
+  that reads the user agent for this: a page has no other signal, and app code never does.
+
 ## The menu bar
 
 - **What**: a strip at the top of the page (`menu-bar.svelte.ts`, first in `<body>`, so the app's flex column starts

@@ -27,7 +27,7 @@ import {
   readWriteBlocker,
 } from './blocker-notices'
 import { addToast, dismissToast } from '#lib/ui/toast/index.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 // `updateState` lives in its own module to avoid an import cycle: toast components read it directly,
 // and this module also imports those toast components. Re-exported here so existing consumers
 // (Settings section, command-dispatch, tests) keep using the old import path.

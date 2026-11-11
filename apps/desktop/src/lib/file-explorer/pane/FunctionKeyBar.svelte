@@ -6,7 +6,8 @@
         getFirstShiftShortcutReactive,
         getFirstShortcutReactive,
     } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
-    import { isMacOS, toAriaKeyShortcut, toPlatformShortcut } from '#lib/shortcuts/key-capture.js'
+    import { isMacOS } from '#lib/platform/index.js'
+    import { toAriaKeyShortcut, toPlatformShortcut } from '#lib/shortcuts/key-capture.js'
     import { canOpenTerminalIn } from '#lib/open-terminal/terminal-target.js'
     import { fnKeyToCommand } from './function-key-commands'
     import { tString } from '#lib/intl/messages.svelte.js'

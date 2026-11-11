@@ -1,6 +1,6 @@
 /**
- * The macOS branch of `checkForUpdates()`, which `updater.test.ts` can't reach: jsdom's userAgent
- * has no "Macintosh", so that file exercises the Tauri-plugin branch throughout.
+ * The macOS branch of `checkForUpdates()`, which `updater.test.ts` can't reach: it runs off macOS,
+ * Vitest's default, so that file exercises the Tauri-plugin branch throughout.
  *
  * What's covered here is the read-only-bundle gate. An install that can't write its own `.app`
  * (App Translocation, or a still-mounted disk image) used to download ~63 MB every poll interval
@@ -45,7 +45,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
 }))
 
 // The whole point of this file: take the macOS branch, where the three custom commands live.
-vi.mock('#lib/shortcuts/key-capture.js', () => ({ isMacOS: () => true }))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 vi.mock('#lib/ui/toast/index.js', () => ({ addToast: addToastMock, dismissToast: vi.fn() }))
 

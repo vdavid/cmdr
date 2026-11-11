@@ -92,12 +92,9 @@ vi.mock('#lib/ai/cloud-consent.svelte.js', () => ({
   CLOUD_CONSENT_ANCHOR: 'settings-ai-cloud-consent',
 }))
 
-// Force macOS in jsdom so the wizard renders step 1 (StepFda) instead of skipping it.
+// Run on macOS so the wizard renders step 1 (StepFda) instead of skipping it.
 // Resume-rule behaviour on Linux is unit-tested in onboarding-state.test.ts.
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return { ...actual, isMacOS: () => true }
-})
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 function mountWizard(onComplete: () => void = () => {}) {
   const target = document.createElement('div')

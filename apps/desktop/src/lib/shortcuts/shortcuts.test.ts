@@ -199,8 +199,7 @@ describe('key-capture', () => {
   })
 
   describe('formatKeyCombo', () => {
-    // Note: These tests assume non-macOS environment (userAgent check)
-    // In a real test environment, we'd mock navigator.userAgent
+    // Off macOS, Vitest's default platform.
 
     it('formats single key', () => {
       const event = createKeyEvent('p')

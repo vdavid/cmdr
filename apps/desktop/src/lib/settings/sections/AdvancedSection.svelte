@@ -27,7 +27,7 @@
     import { confirmDialog } from '#lib/utils/confirm-dialog.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { getAppLogger } from '#lib/logging/logger.js'
-    import { isMacOS } from '#lib/shortcuts/key-capture.js'
+    import { isMacOS } from '#lib/platform/index.js'
     import { revealItemInDir } from '@tauri-apps/plugin-opener'
     import { appLogDir } from '@tauri-apps/api/path'
     import { getVersion } from '@tauri-apps/api/app'

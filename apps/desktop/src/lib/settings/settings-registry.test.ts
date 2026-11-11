@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { _setSystemLocalesForTests } from '#lib/intl/os-locales.js'
 import {
   settingsRegistry,
@@ -14,14 +15,9 @@ import { tString } from '#lib/intl/messages.svelte.js'
 
 /**
  * On a Mac by default, so the tree under test holds every setting, `macOSOnly` ones too
- * (`isMacOS()` reads false under jsdom). Tests that need another platform say so.
+ * (Vitest runs off macOS otherwise). Tests that need another platform say so.
  */
-const isMacOS = vi.hoisted(() => vi.fn(() => true))
-
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => isMacOS(),
-}))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 /** Not an E2E run by default; the Linux E2E case says so. */
 const isE2eRun = vi.hoisted(() => vi.fn(() => false))
@@ -358,7 +354,7 @@ describe('appearance.showFunctionKeyBar', () => {
 
 describe('buildSectionTree', () => {
   afterEach(() => {
-    isMacOS.mockReturnValue(true)
+    withPlatform('macos')
     isE2eRun.mockReturnValue(false)
   })
 
@@ -374,13 +370,13 @@ describe('buildSectionTree', () => {
   // #943: off macOS there's no on-device image engine, so the backend starts no
   // scheduler and the page has nothing it can honestly offer.
   it('drops the Image indexing page off macOS, keeping Drive indexing', () => {
-    isMacOS.mockReturnValue(false)
+    withPlatform('linux')
     expect(indexingPages()).toEqual(['Drive indexing'])
   })
 
   // The Linux E2E build runs a fake engine, so the image-indexing specs keep running there.
   it('keeps the Image indexing page in an E2E run off macOS', () => {
-    isMacOS.mockReturnValue(false)
+    withPlatform('linux')
     isE2eRun.mockReturnValue(true)
     expect(indexingPages()).toEqual(['Drive indexing', 'Image indexing'])
   })

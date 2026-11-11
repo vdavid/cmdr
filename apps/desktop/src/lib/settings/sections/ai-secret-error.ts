@@ -1,5 +1,5 @@
 import { tString } from '#lib/intl/messages.svelte.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import type { AiApiKeyError } from '#lib/ipc/bindings.js'
 import { TypedFailure, failureOf } from '#lib/ipc/typed-failure.js'
 

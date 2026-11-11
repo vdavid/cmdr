@@ -1,6 +1,6 @@
 /**
- * Tier 3 a11y tests for `FinderExtensionCard.svelte`. Its own file, because forcing `isMacOS()`
- * true would change what other sections render: same reason as `RevealHandlerCard.a11y.test.ts`.
+ * Tier 3 a11y tests for `FinderExtensionCard.svelte`. Its own file, because macOS file-wide
+ * would change what other sections render: same reason as `RevealHandlerCard.a11y.test.ts`.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -17,10 +17,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
   },
 }))
 
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => true,
-}))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 import FinderExtensionCard from './FinderExtensionCard.svelte'
 

@@ -7,7 +7,8 @@
  * the app fails.
  */
 
-import { describe, it, vi, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, vi, expect, beforeEach, afterEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import type {
   Initiator,
@@ -173,11 +174,10 @@ function menuCtx(): CommandDispatchContext {
   }
 }
 
-// `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
-const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+// `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and Vitest runs off macOS.
 
 beforeEach(() => {
-  navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
+  onTestFinished(withPlatform('macos'))
   closeOperationLog()
   document.body.innerHTML = ''
   _resetDedupForTests()
@@ -187,9 +187,7 @@ beforeEach(() => {
   ipc.getOperationLogTree.mockImplementation((_id, request) => Promise.resolve(folderCopy(request.selection)))
 })
 
-afterEach(() => {
-  navigatorSpy.mockReset()
-})
+afterEach(() => {})
 
 describe('the operation list', () => {
   it('goes into the picked operation’s items on → and on Enter', async () => {

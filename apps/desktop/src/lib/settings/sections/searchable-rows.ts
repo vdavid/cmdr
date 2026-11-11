@@ -13,7 +13,7 @@
  */
 
 import { tString } from '#lib/intl/messages.svelte.js'
-import { isMacOS } from '#lib/shortcuts/key-capture.js'
+import { isMacOS } from '#lib/platform/index.js'
 import type { SearchableEntry, SearchableRow } from '../types'
 import { adbRows } from './AdbSection.rows'
 import { advancedRows } from './AdvancedSection.rows'

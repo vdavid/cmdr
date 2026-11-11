@@ -1,10 +1,7 @@
-import { describe, expect, it, beforeEach, beforeAll, afterAll } from 'vitest'
+import { describe, expect, it, beforeEach, beforeAll, afterAll, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import { AiSecretFailure, describeSecretError } from './ai-secret-error'
-
-function setUserAgent(value: string): void {
-  Object.defineProperty(navigator, 'userAgent', { value, configurable: true })
-}
 
 // The titles/bodies resolve through the i18n catalog (`tString`); pin the base
 // locale so the asserted en copy is deterministic.
@@ -15,10 +12,8 @@ afterAll(() => {
   _setLocaleForTests(null)
 })
 
-beforeEach(() => {
-  // Default to macOS for tests; overridden case-by-case below. `isMacOS()` reads `userAgent`.
-  setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
-})
+// macOS by default; a Linux case says so.
+beforeEach(() => withPlatform('macos'))
 
 describe('describeSecretError', () => {
   it('recognises the typed AiApiKeyError access_denied variant on macOS', () => {
@@ -31,7 +26,7 @@ describe('describeSecretError', () => {
   })
 
   it('recognises access_denied on Linux', () => {
-    setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36')
+    onTestFinished(withPlatform('linux'))
     const err = { type: 'access_denied', message: 'org.freedesktop.Secret.Error.IsLocked' }
     const out = describeSecretError(err, 'save')
     expect(out.title).toContain('keyring denied access')

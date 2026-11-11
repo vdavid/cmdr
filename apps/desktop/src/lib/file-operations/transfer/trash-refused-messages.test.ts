@@ -6,20 +6,17 @@
  * gets "try again" under a folded disclosure, which is the report that started this.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import type { TrashRefusalKind } from '#lib/ipc/bindings.js'
 
 // `vi.hoisted`, because the mock factories below are hoisted above this file's imports
 // and run while another module is still loading: a plain `const` is still in its TDZ then.
-const { isMacOS, fdaIsMissing } = vi.hoisted(() => ({
-  isMacOS: vi.fn<() => boolean>(() => true),
+const { fdaIsMissing } = vi.hoisted(() => ({
   fdaIsMissing: vi.fn<() => boolean>(() => false),
 }))
 
-vi.mock('#lib/shortcuts/key-capture.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/key-capture.js')>()),
-  isMacOS: () => isMacOS(),
-}))
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 vi.mock('#lib/onboarding/fda-status.svelte.js', () => ({
   fdaIsMissing: () => fdaIsMissing(),
 }))
@@ -43,7 +40,7 @@ function refused(reason: TrashRefusalKind, itemCount = 7, onlineOnly = false) {
 describe('a refused trash', () => {
   beforeEach(() => {
     _setLocaleForTests('en-US')
-    isMacOS.mockReturnValue(true)
+    withPlatform('macos')
     fdaIsMissing.mockReturnValue(false)
   })
 
@@ -119,7 +116,7 @@ describe('a refused trash', () => {
 
     it('stays away off macOS, where the permission does not exist', () => {
       fdaIsMissing.mockReturnValue(true)
-      isMacOS.mockReturnValue(false)
+      withPlatform('linux')
       expect(refused('notPermitted').suggestion).not.toContain('full disk access')
     })
 
