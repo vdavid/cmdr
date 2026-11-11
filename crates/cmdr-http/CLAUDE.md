@@ -8,7 +8,8 @@ The one door every Cmdr HTTP client is built through: `client_builder()` is `req
 - `lib.rs`: `client_builder()`, the injectable `builder_with` the end-to-end tests drive, and `warm_up_pac()`.
 - `route.rs`: the decision order (`decide`) and the loopback / link-local test.
 - `env.rs`: the `*_PROXY` / `NO_PROXY` variables, read once.
-- `system.rs`: CFNetwork's verdict per URL (`mac::entries_for`) and the walk over its list (`first_route`).
+- `system/`: `OsSystem`, this OS's verdict per URL, behind `platform/`: macOS asks CFNetwork (`entries_for`, then
+  `first_route`); Linux and Windows read no system layer yet and answer direct.
 - `pac.rs`: PAC files (and so WPAD), run by macOS, with a per-host answer cache.
 
 ## Must-knows

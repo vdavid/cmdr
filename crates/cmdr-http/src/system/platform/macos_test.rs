@@ -13,7 +13,7 @@ use objc2_cf_network::{
 use objc2_core_foundation::{CFArray, CFDictionary, CFNumber, CFRetained, CFString};
 use reqwest::Url;
 
-use super::mac::{entries_for, settings};
+use super::{entries_for, settings};
 use crate::Route;
 use crate::entries::{Entry, Pac, PacSource, first_route};
 use crate::pac::{ANSWER_BUDGET, MacPac};
