@@ -43,8 +43,8 @@ Anything else in production, including employment, contract work, and business a
   activates even with no server.
 - **Per person, not per machine.** One license covers all of that person's own machines.
 - **All features, Cmdr AI included.** AI is bring-your-own-key, so there is nothing metered and nothing extra to buy
-  (`product-facts.md`). When the Pro plan ships (`pricing.md`), a license bought before it keeps AI with the buyer's own
-  key or the on-device model for the length of the update window; only the hosted allowance is Pro-only.
+  (`product-facts.md`). If a Pro plan ships (`pricing.md`), a license bought before it keeps AI with the buyer's own key
+  or the on-device model for the length of the update window; only the hosted allowance is Pro-only.
 - **One year of updates**, then the last entitled version stays theirs forever, renewal or not.
 - A 30-day, no-questions-asked refund (`apps/website/src/pages/refund.astro`).
 - Paddle is the merchant of record, so the invoice comes from Paddle and VAT/sales tax is handled there. EU business

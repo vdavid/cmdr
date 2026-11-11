@@ -10,6 +10,8 @@
 !pnpm-lock.yaml
 !CHANGELOG.md
 !feature-status.json
+# The language count's source (`apps/website/src/lib/shipped-languages.ts`)
+!apps/desktop/src-tauri/src/intl/shipped_locales.gen.rs
 
 # Allow website app
 !apps/website/

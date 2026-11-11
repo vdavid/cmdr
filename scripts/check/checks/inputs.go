@@ -359,6 +359,7 @@ var websiteInputs = []string{
 	".dockerignore",
 	"CHANGELOG.md",
 	"feature-status.json",
+	"apps/desktop/src-tauri/src/intl/shipped_locales.gen.rs", // the language count (`src/lib/shipped-languages.ts`)
 	"pnpm-lock.yaml",
 }
 

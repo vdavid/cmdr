@@ -565,7 +565,7 @@ export const roadmapSections: RoadmapSection[] = [
           {
             date: '(Aug 30)',
             title: 'Add language flavors',
-            description: 'Traditional Chinese, British and Australian English. 13 langs now.',
+            description: 'Traditional Chinese, British and Australian English. 13 langs now.', // language-count-ignore: 13 (the count that day)
             done: true,
           },
         ],
@@ -661,7 +661,7 @@ export const roadmapSections: RoadmapSection[] = [
           {
             date: '(Oct 2)',
             title: 'Russian',
-            description: 'A community translation. With es-419 also recently added, 15 languages now.',
+            description: 'A community translation. With es-419 also recently added, 15 languages now.', // language-count-ignore: 15 (the count that day)
             done: true,
           },
           {
@@ -753,13 +753,13 @@ export const roadmapSections: RoadmapSection[] = [
           {
             date: '(Oct 29)',
             title: 'Ukrainian',
-            description: 'Full Ukrainian translation. Cmdr has 16 langs now.',
+            description: 'Full Ukrainian translation. Cmdr has 16 langs now.', // language-count-ignore: 16 (the count that day)
             done: true,
           },
           {
             date: '(Oct 31)',
             title: 'Czech',
-            description: 'Czech translation, reviewed by a native speaker. Cmdr has 17 langs now.',
+            description: 'Czech translation, reviewed by a native speaker. Cmdr has 17 langs now.', // language-count-ignore: 17 (the count that day)
             done: true,
           },
         ],

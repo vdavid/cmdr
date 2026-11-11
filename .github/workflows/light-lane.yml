@@ -131,11 +131,12 @@ jobs:
           ./scripts/check/check --ci --check oxfmt,changelog-security
 
       # `website-trust-sources` lives here, not in the website lane: the map's patterns name files
-      # anywhere in the repo, so a rename outside `apps/website/` can break it.
+      # anywhere in the repo, so a rename outside `apps/website/` can break it. `copy-language-count`
+      # too: a new catalog under `apps/desktop/` is what makes the brand listings' count stale.
       - name: Check the docs
         if: ${{ !cancelled() && steps.ready.outcome == 'success' }}
         run: |
-          ./scripts/check/check --ci --check docs-reachable,docs-dead-links,website-trust-sources,docs-section-refs,docs-table-hygiene,docs-link-text,claude-md-details-sibling,file-length,claude-md-length
+          ./scripts/check/check --ci --check docs-reachable,docs-dead-links,website-trust-sources,copy-language-count,docs-section-refs,docs-table-hygiene,docs-link-text,claude-md-details-sibling,file-length,claude-md-length
 
       # Here rather than in the Svelte lane: the guides and each locale's `mechanics.json` sit
       # under `docs/i18n/`, which no app filter watches, and the unused-keys scan reads the Rust

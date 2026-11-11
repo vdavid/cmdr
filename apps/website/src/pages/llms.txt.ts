@@ -1,6 +1,7 @@
 import type { APIContext } from 'astro'
 import { getCollection } from 'astro:content'
 import { version, dmgUrls } from '../lib/release'
+import { shippedLanguageCount } from '../lib/shipped-languages'
 
 export async function GET(context: APIContext) {
   const site = context.site!.origin
@@ -46,11 +47,11 @@ The full tour, with clips and an honest status (stable, beta, alpha, planned) pe
 - **File viewer**: Text, Markdown, images, PDFs, binary, and hex views, with search; opens 10+ GB files instantly.
 - **Full-disk index and search**: A live local index powers folder sizes in the listing and search that answers in well under a second, plus on-device image search.
 - **Optional AI** (off by default): A free on-device model or your own provider key. Natural-language search, Ask Cmdr chat about your files, AI rename, and AI file organization; anything that changes files waits for approval.
-- **Polish**: Follows macOS theme and accessibility settings, works with VoiceOver, translated into 17 languages.
+- **Polish**: Follows macOS theme and accessibility settings, works with VoiceOver, translated into ${shippedLanguageCount} languages.
 
 ## Pricing
 
-- **Personal**: Free. The whole file manager, your own devices, automatic updates. Cmdr AI is free during the beta and later moves to a Pro plan with hosted models included. No commercial use.
+- **Personal**: Free. The whole file manager, your own devices, automatic updates. Cmdr AI is free during the beta and runs on your own provider key or fully on-device; a Pro plan with hosted models may come later. No commercial use.
 - **Commercial**: $59, paid once. All features including Cmdr AI, commercial use, per user, your own devices. One year of updates included, then $39/year to keep receiving them. The last version you were entitled to stays yours forever.
 - **Enterprise**: for larger teams and organizations, where IT deploys Cmdr, security reviews it, and finance wants one invoice against a PO. Quoted by hand, no published price. Email sales@getcmdr.com.
 

@@ -13,6 +13,10 @@ covers local models, and image search runs an on-device CLIP model with no provi
 - A perpetual license with unlimited AI carries no growing cost liability for us. Bundled inference would.
 - Equally, "AI has to be paid to keep this sustainable" is a weaker story than it would be with inference on us. A paid
   AI tier sells the integration, not the tokens.
+- **A Pro plan with hosted models may come later, and the copy says exactly that.** Its timing is private (the vault's
+  `Cmdr pricing.md`): ❌ no public surface names a date or promises it ships. Every public mention says AI runs on your
+  own key or on-device today and that a Pro plan "may come later", never that AI "moves to" one. The pricing copy rules:
+  `pricing.md` § The live tiers.
 - AI adoption sits around 12% of installs. That is partly setup friction (sign up with a provider, create a key, paste
   it), so read it as a friction number as much as a value verdict.
 

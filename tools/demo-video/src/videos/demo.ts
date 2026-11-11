@@ -200,7 +200,7 @@ const script: Section[] = [
     minBars: 6,
     title: 'Made with care.',
     phrases: [
-      { say: 'Fifteen languages,', show: '15 languages,' },
+      { say: 'Seventeen languages,', show: '17 languages,' },
       { say: 'real dark and light modes,', show: 'real dark and light modes,' },
       { say: 'VoiceOver,', show: 'VoiceOver,' },
       {

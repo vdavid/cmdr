@@ -270,6 +270,11 @@ Mechanism + schema: `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` me
    appear in the picker, with the documented `<tag>` → base → `en` fallback per key. A locale ships once it's
    translated, passes the checks, and is overflow-checked — human review is opportunistic, not a gate (see the override
    above). The runtime mechanism is in `i18n.md` § "Add a new locale".
+9. **Bump the public language count.** The website, `llms.txt`, and `llms-full.txt` count the shipped catalogs at build
+   time, so they follow on their own. The static copy (the brand listings, the blog's Total Commander table, the demo
+   video script) doesn't, and `copy-language-count` fails until it says the new number. An overlay counts too: the
+   number is every entry in the Settings language list. Mechanics: `scripts/check/checks/DETAILS.md` § Language count in
+   public copy.
 
 ## Add a regional variant (an overlay)
 

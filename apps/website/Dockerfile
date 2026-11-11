@@ -39,6 +39,10 @@ RUN node apps/website/scripts/fetch-live-manifest.ts
 # changelog page and the feature-status page / badge labels respectively
 COPY CHANGELOG.md feature-status.json ./
 
+# The app's shipped-locale table, which `src/lib/shipped-languages.ts` counts for the "translated
+# into N languages" copy.
+COPY apps/desktop/src-tauri/src/intl/shipped_locales.gen.rs ./apps/desktop/src-tauri/src/intl/
+
 # The browser demo bundle, which the build copies into dist/demo/ (src/plugins/demo.ts). CI builds
 # it (Rust to WASM, then the desktop frontend) and publishes it as an image, so this box never
 # compiles Rust. The deploy passes `DEMO_IMAGE_DIGEST`, the digest CI pushed and signed into the

@@ -33,6 +33,7 @@ func TestEveryScannerGateHasALiteral(t *testing.T) {
 		"scanner patterns": {
 			rawSqliteOpenPattern, testSleepRegex, testGatedCfgRegex, fixedTempDirRegex, pluralizeNounSuffixRe,
 			crateRefPattern, e2eSelDatasetRegex, lockBareUnwrapPattern, lockExpectPattern, handRolledFixtureRegex,
+			languageCountRe,
 		},
 	}
 	for name, list := range gates {

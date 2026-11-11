@@ -1978,6 +1978,18 @@ var AllChecks = []CheckDefinition{
 		Run:             RunDocsLinkText,
 	},
 	{
+		ID:              "copy-language-count",
+		Nickname:        "language-count",
+		DisplayName:     "stated language count matches the shipped catalogs",
+		App:             AppOther,
+		Tech:            "📝 Docs",
+		DependsOn:       nil,
+		IsFast:          true, // one git listing and a gated regex per line
+		JoinsScopedRuns: true,
+		Inputs:          languageCountInputs,
+		Run:             RunCopyLanguageCount,
+	},
+	{
 		ID:          "analytics-event-catalog",
 		Nickname:    "event-catalog",
 		DisplayName: "PostHog events match their catalog",

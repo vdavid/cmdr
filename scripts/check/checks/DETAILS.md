@@ -977,6 +977,24 @@ leaves the page, the caller sees a generic network failure, and dev serves no CS
 `?r=` lookup were both dead in production for months with nothing failing anywhere. Violations it can't see (third-party
 scripts) reach Discord through `/csp-report` (`apps/api-server/src/website/DETAILS.md` § CSP reports).
 
+## Language count in public copy
+
+`copy-language-count` (`IsFast`, `JoinsScopedRuns`, run in CI's repo-wide docs step) counts the `SHIPPED_LOCALES`
+entries in `apps/desktop/src-tauri/src/intl/shipped_locales.gen.rs` and fails on any stated language count that differs.
+It scans the tracked text files under `README.md`, `brand/`, `apps/website/src/`, the `en` catalog, and
+`tools/demo-video/src/` (minus `CLAUDE.md` / `DETAILS.md`). A count is digits or a number word from ten up, or "a
+dozen", before "languages" or "langs" (an inline tag between is allowed, for the blog table's
+`<span title="languages">langs</span>`). Smaller number words are never a claim about Cmdr ("the two languages agree").
+
+- **Why the generated table, not the catalog dirs**: it's the Settings language list, it leaves out the gitignored
+  `en-XA` pseudolocale a local dir count would include, and `shipped-locales-fresh` already holds it equal to the dirs.
+- **Why a check and not only derivation**: the website derives the number (`apps/website/src/lib/shipped-languages.ts`,
+  the same table read through `?raw`), but the listings are pasted into forms, a blog post's Markdown is served raw, and
+  the demo video's spoken line is TTS input. The count went stale on all of them each time a catalog landed.
+- **Opt-out**: a same-line `language-count-ignore: <n>[, <n>…]` (in a `//` or `<!-- -->` comment) excuses exactly those
+  numbers: a roadmap entry's count on its day, Total Commander's 45 in the comparison table, a note as it was sent. A
+  marker naming a number its line doesn't state fails as stale, so it can't outlive its reason.
+
 ## IPC dead code
 
 `desktop-ipc-unused` (`IsFast`, an error) fails on an exported wrapper in `apps/desktop/src/lib/tauri-commands/*.ts`
@@ -2476,11 +2494,12 @@ doubles as production code.
   (warn-only and MOTHBALLED, run by name only; `❌` rules per subsystem, absolute and per 1,000 source lines, on a
   strict ratchet), resident-doc-budget (warn-only; caps the always-resident root-CLAUDE.md + @-imports + rules bundle),
   docs-reachable (errors when a CLAUDE.md/DETAILS.md/docs file isn't reachable from the root CLAUDE.md), docs-dead-links
-  (errors on a doc link, or a bare backtick path naming a doc, whose local target doesn't exist), docs-link-text (errors
-  on a Markdown link whose text is its own target path), claude-md-details-sibling (errors when a non-root CLAUDE.md
-  lacks/doesn't reference a sibling DETAILS.md), analytics-event-catalog (errors when an emitted PostHog event has no
-  catalog bullet, or a bullet has no emitter), docs-table-hygiene (errors on any 2-column table or any table column
-  wider than 100 chars in agent-facing docs), changelog-commit-links, workflows-rustup (forbids
+  (errors on a doc link, or a bare backtick path naming a doc, whose local target doesn't exist), copy-language-count
+  (errors when public copy states a language count other than the shipped catalogs'; § "Language count in public copy"),
+  docs-link-text (errors on a Markdown link whose text is its own target path), claude-md-details-sibling (errors when a
+  non-root CLAUDE.md lacks/doesn't reference a sibling DETAILS.md), analytics-event-catalog (errors when an emitted
+  PostHog event has no catalog bullet, or a bullet has no emitter), docs-table-hygiene (errors on any 2-column table or
+  any table column wider than 100 chars in agent-facing docs), changelog-commit-links, workflows-rustup (forbids
   `rustup target/component add` in workflows), e2e-rust-image-pin (errors when the Linux E2E `Dockerfile.base`'s `rust:`
   image or `RUSTUP_TOOLCHAIN` names a version other than `rust-toolchain.toml`'s channel; a stale image made rustup
   re-download the toolchain in every container), website-pnpm-bootstrap-in-step (errors when the hash-locked pnpm

@@ -8,10 +8,11 @@ change that misses one spot leaves the site quoting two different numbers, or wo
 Two tiers, one of them paid.
 
 - **Personal**: free. The whole file manager, unlimited machines of your own, automatic updates. Personal use only. Cmdr
-  AI is included **"free during the beta"**, in those words: the page says it later moves to a Pro plan with hosted
-  models, and that the file manager stays free for personal use. ❌ Never write "free forever" on any surface, and never
-  describe Cmdr AI as part of the free tier without the beta qualifier: the wording has to leave room for the Pro plan
-  without it reading as a rug pull.
+  AI is included **"free during the beta"**, in those words: the page says it runs on your own key or on-device, that a
+  Pro plan with hosted models **may come later**, and that the file manager stays free for personal use. ❌ Never write
+  "free forever" on any surface, and never describe Cmdr AI as part of the free tier without the beta qualifier: the
+  wording has to leave room for the Pro plan without it reading as a rug pull. ❌ Equally, never promise the Pro plan
+  ("moves to", "is coming", a date): it's under consideration, not decided (`product-facts.md`).
 - **Commercial**: **$59, paid once**, per person, on as many of that person's own machines as they like. Every feature,
   Cmdr AI included. One year of updates is included; after that year, **$39/year** keeps new versions coming, and the
   last version the buyer was entitled to stays theirs forever whether or not they renew.
@@ -28,9 +29,9 @@ unlimited AI on a one-time license costs nothing to serve. The page and FAQ prom
 keeps Cmdr AI on the buyer's own key or the on-device model for the length of their update window, ❌ so the license
 server has to keep honoring that however the plans change later.
 
-A **Pro plan** for hosted AI models is announced on the page without a price or a date. Its design and pricing live in
-David's vault (`Cmdr pricing.md` there) and ❌ don't belong in this repo until it ships; here, only the copy constraint
-above matters.
+A **Pro plan** for hosted AI models is mentioned on the page as something that may come later, without a price or a
+date. Its design and pricing live in David's vault (`Cmdr pricing.md` there) and ❌ don't belong in this repo until it
+ships; here, only the copy constraint above matters.
 
 ### Retired
 

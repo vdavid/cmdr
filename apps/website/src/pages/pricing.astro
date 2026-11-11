@@ -64,7 +64,7 @@ const faq = [
     },
     {
         question: 'Do I pay extra for Cmdr AI?',
-        answer: "Not during the beta: Cmdr AI is free for everyone right now. It runs on an API key you bring from a provider you pick, or fully on-device with a local model. Later, Cmdr AI moves to a Pro plan that includes hosted models, so you won't need an API key at all. The file manager itself stays free for personal use, and a Commercial license bought today keeps Cmdr AI with your own key or the on-device model for as long as your updates run.",
+        answer: "Not during the beta: Cmdr AI is free for everyone right now. It runs on an API key you bring from a provider you pick, or fully on-device with a local model. A Pro plan that includes hosted models, so you won't need an API key at all, may come later. The file manager itself stays free for personal use, and a Commercial license bought today keeps Cmdr AI with your own key or the on-device model for as long as your updates run.",
     },
     {
         question: 'Can I see the source code?',
@@ -242,11 +242,13 @@ const faq = [
             </div>
         </div>
 
-        <!-- The beta note is the promise that lets Cmdr AI move to a Pro plan later without
-             anyone feeling rug-pulled: say it here, on the page people screenshot. -->
+        <!-- The beta note leaves room for a Pro plan later without anyone feeling rug-pulled: say it
+             here, on the page people screenshot. "May come later", never a date: none is promised.
+             `docs/business/pricing.md` § The live tiers. -->
         <p class="mx-auto mb-16 max-w-3xl text-center text-sm text-text-tertiary">
-            Cmdr AI is free for everyone while Cmdr is in beta. Later it moves to a Pro plan with hosted models included,
-            so you won't need an API key. The file manager itself stays free for personal use.
+            Cmdr AI is free for everyone while Cmdr is in beta, on your own API key or fully on-device. A Pro plan with
+            hosted models included, so you won't need an API key, may come later. The file manager itself stays free for
+            personal use.
         </p>
 
         <!-- FAQ Section: ld+json and visible cards both render from the `faq` array in frontmatter -->

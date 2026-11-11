@@ -9,6 +9,7 @@ import ShowcaseClipRow from './ShowcaseClipRow.astro'
 import ShowcaseSection from './ShowcaseSection.astro'
 import Icon from './icons/Icon.astro'
 import type { IconName } from './icons/icon-map'
+import { shippedLanguageCount } from '../lib/shipped-languages'
 
 const reach = [
   {
@@ -224,7 +225,7 @@ const reach = [
     <ShowcaseSection id="follows-your-preferences" eyebrow="Nice and polished" title="Follows your preferences" flip>
         <p>Cmdr respects your Mac’s look (color, theme, etc.) and accessibility (motion, zoom, contrast, etc.) settings.</p>
         <p>It lets you use VoiceOver, works with keyboard only, mouse only, and has WCAG AA+ contrast levels everywhere.</p>
-        <p>Translated into 17 languages. Switch between them without restarting.</p>
+        <p>Translated into {shippedLanguageCount} languages. Switch between them without restarting.</p>
         <p class="text-base"><a href="/trust/accessibility-guide">Accessibility guide</a></p>
         <ProductClip
                 slot="media"

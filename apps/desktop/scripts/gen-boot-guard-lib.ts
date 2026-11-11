@@ -7,7 +7,7 @@
  * bundle at all, so it can't call `t()` and can't import anything. This module
  * resolves the three `main.oldWebkit.*` keys against every shipped catalog and
  * hands the guard a plain object it can index by `navigator.language`, which is
- * how a screen outside the app still speaks 14 languages and still tracks the
+ * how a screen outside the app still speaks every shipped language and still tracks the
  * catalog when a translator edits it.
  *
  * Two jobs beyond the lookup:

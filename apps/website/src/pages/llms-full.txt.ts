@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content'
 import { version, dmgUrls } from '../lib/release'
 import { CHAPTER_IDS, cardsByChapter, chapterLabels } from '../lib/features-page'
 import latestRelease from '../../public/latest.json'
+import { shippedLanguageCount } from '../lib/shipped-languages'
 
 export async function GET(context: APIContext) {
   const site = context.site!.origin
@@ -32,7 +33,7 @@ export async function GET(context: APIContext) {
 
 > The fastest two-pane file manager for macOS. Every folder sized. Every file found.
 
-Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS (Linux in alpha), built with Rust, Tauri 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search and keyboard-driven everything. Optional AI features (natural-language search, Ask Cmdr chat, AI rename, and AI file organization) are off by default and can run fully on-device. Free for personal use, source-available under BSL 1.1.
+Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS (Linux in alpha), built with Rust, Tauri 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search and keyboard-driven everything. Optional AI features (natural-language search, Ask Cmdr chat, AI rename, and AI file organization) are off by default and can run fully on-device. Translated into ${shippedLanguageCount} languages. Free for personal use, source-available under BSL 1.1.
 
 Current version: ${version}
 Release date: ${latestRelease.pub_date.split('T')[0]}
@@ -74,7 +75,7 @@ ${featureLines}
 ### Personal (free)
 
 - The whole file manager
-- Cmdr AI, free during the beta (later it moves to a Pro plan with hosted models included; the file manager stays free for personal use)
+- Cmdr AI, free during the beta, on your own provider key or the on-device model (a Pro plan with hosted models may come later; the file manager stays free for personal use)
 - Unlimited machines
 - Automatic updates
 - No commercial use
@@ -107,7 +108,7 @@ Nothing breaks. The last version you were entitled to keeps working, for as long
 
 ### Do I pay extra for Cmdr AI?
 
-Not during the beta: Cmdr AI is free for everyone right now. It runs on an API key you bring from a provider you pick, or fully on-device with a local model. Later, Cmdr AI moves to a Pro plan that includes hosted models, so no API key is needed. The file manager itself stays free for personal use, and a Commercial license bought today keeps Cmdr AI with your own key or the on-device model for as long as your updates run.
+Not during the beta: Cmdr AI is free for everyone right now. It runs on an API key you bring from a provider you pick, or fully on-device with a local model. A Pro plan that includes hosted models, so no API key is needed, may come later. The file manager itself stays free for personal use, and a Commercial license bought today keeps Cmdr AI with your own key or the on-device model for as long as your updates run.
 
 ### Can I see the source code?
 

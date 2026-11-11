@@ -14,20 +14,24 @@ v0.47.0 changed nothing here (checked 2026-09-24): AlternativeTo shows no versio
 description, tags, or features became false. Its new features (the viewer's long lines, favorite letter shortcuts, the
 "Allow cloud AI" switch) are too small to buy room under the 3,000-character cap.
 
-v0.48.0 and v0.49.0 changed one line (checked 2026-10-01): Latin American Spanish made it 14 languages, a same-length
-edit. Their other additions (hex and binary viewer modes, tab drag and drop, streaming compression, SFTP free space)
-don't make anything false and are too small to buy room under the cap.
+v0.48.0 and v0.49.0 changed one line (checked 2026-10-01): Latin American Spanish raised the language count, a
+same-length edit. Their other additions (hex and binary viewer modes, tab drag and drop, streaming compression, SFTP
+free space) don't make anything false and are too small to buy room under the cap.
 
 v0.53.0 rewrote the description (2026-10-15) in the voice of David's MacUpdate rewrite: labeled bullets, plainer claims,
-and the newer features (multi-rename, VoiceOver, S3, on-server SMB copies). It also fixed the language count: Russian
-shipped in v0.50.0, so it's 15, not 14.
+and the newer features (multi-rename, VoiceOver, S3, on-server SMB copies). It also fixed the language count, which had
+missed Russian (shipped in v0.50.0).
 
 v0.54.0 and v0.55.0 changed nothing here (checked 2026-10-22), so there's nothing to submit for them. No line became
-false: still 15 languages, and the alpha features the description names are still alpha (`feature-status.json`). Restic
-backups (new, alpha), Markdown in the viewer, WebDAV trusting a NAS's self-signed certificate, and the data-safety sweep
-add to what's there without contradicting it, and with 8 characters left under the cap, adding any of them means cutting
-something else. The Features box "Command line interface" stays unchecked: the new `cmdr <path>` command only opens a
-folder in the app, which isn't what that box promises.
+false: the language count still held, and the alpha features the description names are still alpha
+(`feature-status.json`). Restic backups (new, alpha), Markdown in the viewer, WebDAV trusting a NAS's self-signed
+certificate, and the data-safety sweep add to what's there without contradicting it, and with 8 characters left under
+the cap, adding any of them means cutting something else. The Features box "Command line interface" stays unchecked: the
+new `cmdr <path>` command only opens a folder in the app, which isn't what that box promises.
+
+**Not yet submitted** (edited 2026-11-11): Ukrainian and Czech raised the language count, so the Localization line and
+the Supported languages field below changed. The description stays the same length. The live page keeps the old count
+until the next edit goes in. The `copy-language-count` check keeps the count here equal to the shipped catalogs.
 
 ## Main info
 
@@ -61,7 +65,7 @@ Core features:
 - Archives: Browse zip, tar, and 7z files like folders, and create or extract them.
 - Speed: Lists 50,000 files near-instantly, the built-in viewer opens a 10 GB file in 1 sec, with search!
 - Accessibility: Follows macOS accessibility settings. VoiceOver, WCAG 2.2 AA and APCA-verified contrasts in dark+light modes, and everything works with the keyboard.
-- Localization: Translated into 15 languages.
+- Localization: Translated into 17 languages.
 
 Extra features:
 
@@ -86,10 +90,10 @@ AI features (optional, off by default, can stay 100% local with a built-in LLM):
 
 ## More info
 
-- **Supported languages**: English, German, Spanish, French, Hungarian, Dutch, Portuguese, Russian, Swedish, Vietnamese,
-  Chinese. (The 15 locales the app ships, with British and Australian English folded into English and Latin American
-  Spanish into Spanish: `apps/desktop/src/lib/intl/messages`. Traditional/Simplified Chinese split is not supported in
-  their list.)
+- **Supported languages**: English, Czech, German, Spanish, French, Hungarian, Dutch, Portuguese, Russian, Swedish,
+  Ukrainian, Vietnamese, Chinese. (The locales the app ships, `apps/desktop/src/lib/intl/messages`, with British and
+  Australian English folded into English and Latin American Spanish into Spanish. Traditional/Simplified Chinese split
+  is not supported in their list.)
 - **Pricing**: `Free for personal use`. Model `Purchase`, min `$59`, max `$59`. One figure in both fields, so the page
   renders a single price rather than a range: v0.46.0 retired the $59/year subscription and the $199 perpetual, leaving
   Commercial at $59 paid once (a year of updates included, $39/year after that to keep getting them). Enterprise
@@ -162,7 +166,7 @@ Leave unchecked, deliberately:
 Their optional box for the reviewing admin. For the v0.53.0 edit:
 
 ```
-Hi! I've refreshed the description for v0.53.0: Cmdr now works with VoiceOver, got multi-rename and S3 support, and speaks 15 languages (Russian added to the list). Thanks!
+Hi! I've refreshed the description for v0.53.0: Cmdr now works with VoiceOver, got multi-rename and S3 support, and speaks 15 languages (Russian added to the list). Thanks! <!-- language-count-ignore: 15 (as sent) -->
 ```
 
 The note that went with the v0.46.0 edit, kept for reference (it's where the licensing mislabel ask went in):

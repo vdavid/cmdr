@@ -13,6 +13,7 @@ import StatusPill from '../components/StatusPill.astro'
 import Icon from '../components/icons/Icon.astro'
 import { cardsByChapter, chapterLabels } from '../lib/features-page'
 import { statusToDefinitionMap, type FeatureStatus } from '../lib/feature-status'
+import { shippedLanguageCount } from '../lib/shipped-languages'
 
 /**
  * The feature tour: one chapter per area, each a `ShowcaseSection` with its clips (every slug in
@@ -306,7 +307,7 @@ const extras = [
             </p>
             <div slot="media" class="space-y-16 md:space-y-20">
                 <ShowcaseClipRow title="Speaks your language">
-                    <p>Translated into 17 languages. Pick one in Settings and the whole app switches on the spot.</p>
+                    <p>Translated into {shippedLanguageCount} languages. Pick one in Settings and the whole app switches on the spot.</p>
                     <ProductClip
                         slot="clip"
                         slug="language-switch"

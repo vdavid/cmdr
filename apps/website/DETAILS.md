@@ -210,6 +210,12 @@ was deleted.)
   agents; each blog post also has a Markdown mirror at `/blog/{slug}/index.md`. `llms-full.txt`'s feature list is
   generated from `feature-status.json` (grouped by `src/lib/features-page.ts`), so it follows the JSON on its own; keep
   the rest of both files in sync by hand when product facts (pricing, features, system requirements) change.
+- **Language count**: every page that states how many languages Cmdr speaks (the landing tour, `/features`, both llms
+  files, the accessibility report) reads `shippedLanguageCount` from `src/lib/shipped-languages.ts`, which counts the
+  desktop's generated shipped-locale table at build time. ❌ Never type the number. Copy the build can't reach (blog
+  posts, `brand/listings/`) is held to it by `copy-language-count` (`scripts/check/checks/DETAILS.md` § Language count
+  in public copy). Gotcha: the site deploys from `main`, so a catalog landing there raises the number before a release
+  ships it; `docs/guides/trust-page-review.md` once caught "12 languages" live while the app shipped 11.
 - **`/features`**: one `ShowcaseSection` chapter per area, each with its product clips (every `CLIP_SLUGS` slug once)
   and then that area's `FeatureCards` (masonry columns, since the notes run from one line to ten). Chapter placement and
   the JSON completeness check live in `src/lib/features-page.ts`; the hairline between chapters comes from

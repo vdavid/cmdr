@@ -67,8 +67,8 @@ That's what keeps `screenshots/` (a sibling holding translator tooling; `capture
 was 4.5% of the whole frontend riding in every silent update before it was kept out, verified 2026-09-02) from becoming
 a language or reaching the bundle: a chunk exists only for a tag the manifest names. `vite-locale-catalogs.test.ts` and
 `messages.svelte.test.ts` pin it. The `en-XA/` pseudolocale (gitignored) ships exactly when it's on disk at build time.
-The plugin was chosen over a lazy `import.meta.glob` because a glob makes one chunk per FILE (39 areas × 14 locales), so
-a switch would be dozens of requests and the per-tag merge would move into the runtime.
+The plugin was chosen over a lazy `import.meta.glob` because a glob makes one chunk per FILE (every area × every
+locale), so a switch would be dozens of requests and the per-tag merge would move into the runtime.
 
 `resolveRaw(locale, key)` walks a fallback CHAIN, first hit wins: the locale's own catalog, then each ancestor tag it
 may inherit from, then `en` (the base, always present), then the key string itself, so a missing key renders as its own

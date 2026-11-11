@@ -13,7 +13,7 @@
  *
  * ## Why a plugin, not `import.meta.glob`
  *
- * A lazy glob over `messages/*\/*.json` makes one chunk per FILE (39 areas × 14 locales), so a
+ * A lazy glob over `messages/*\/*.json` makes one chunk per FILE (every area × every locale), so a
  * language switch would be dozens of requests, and the per-tag merge and the shipped-tag list
  * would move into the runtime. Here a switch is one request, the merge happens at build time, and
  * the shipped list is data in the manifest.

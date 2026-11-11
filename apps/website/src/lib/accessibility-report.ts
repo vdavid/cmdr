@@ -16,6 +16,8 @@
  * Write straight quotes; `smart-quotes.ts` curls them in the built HTML. Remarks are plain text.
  */
 
+import { shippedLanguageCount } from './shipped-languages'
+
 export type Conformance =
   | 'supports'
   | 'partially-supports'
@@ -259,7 +261,7 @@ const wcagA: CriterionRow[] = [
     name: 'Language of page',
     level: 'A',
     conformance: 'supports',
-    remark: 'Every window declares the language the user chose for the app (17 languages).',
+    remark: `Every window declares the language the user chose for the app (${shippedLanguageCount} languages).`,
   },
   {
     id: '3.2.1',
