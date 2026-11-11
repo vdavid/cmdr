@@ -5,11 +5,9 @@
 use std::ffi::OsString;
 use std::fs::{File, Metadata};
 use std::path::Path;
-use std::time::SystemTime;
 
 use super::super::{
-    ClassOutcome, MetadataCaps, MetadataClasses, ParentOpening, RemovalLock, StagedItem, StagedTimes, Unblock,
-    UserFlags, Xattr,
+    ClassOutcome, MetadataCaps, MetadataClasses, ParentOpening, RemovalLock, StagedItem, Unblock, UserFlags, Xattr,
 };
 
 /// The browser build reads no ACLs, so it can never hold one.
@@ -93,17 +91,4 @@ pub const LOCAL_DISK_CAPS: MetadataCaps = MetadataCaps {
     staged_flags: UserFlags::NONE,
 };
 
-pub(crate) const CREATED_SETTABLE: bool = false;
-
-pub(crate) fn set_dates(item: StagedItem<'_>, _created: Option<SystemTime>, times: StagedTimes) -> std::io::Result<()> {
-    let file_times = times.file_times();
-    match item {
-        StagedItem::File(file) => file.set_times(file_times),
-        StagedItem::Path(path) => File::open(path)?.set_times(file_times),
-        StagedItem::Link(_) => Err(std::io::ErrorKind::Unsupported.into()),
-    }
-}
-
-pub(crate) fn is_unsupported(_e: &std::io::Error) -> bool {
-    false
-}
+pub(crate) use super::std_dates::{CREATED_SETTABLE, is_unsupported, set_dates};

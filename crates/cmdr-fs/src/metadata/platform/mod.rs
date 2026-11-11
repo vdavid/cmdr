@@ -17,6 +17,9 @@ use super::{ClassOutcome, MetadataCaps, ParentOpening, RemovalLock, Unblock, Use
 #[cfg(unix)]
 mod unix;
 
+#[cfg(any(target_os = "linux", target_family = "wasm"))]
+mod std_dates;
+
 #[cfg_attr(target_os = "macos", path = "macos.rs")]
 #[cfg_attr(target_os = "linux", path = "linux.rs")]
 #[cfg_attr(target_os = "windows", path = "windows.rs")]

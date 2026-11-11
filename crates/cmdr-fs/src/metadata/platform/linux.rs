@@ -3,13 +3,10 @@
 //! way macOS's Locked does.
 
 use std::ffi::OsString;
-use std::fs::{File, Metadata};
+use std::fs::Metadata;
 use std::path::Path;
-use std::time::SystemTime;
 
-use super::super::{
-    ClassOutcome, MetadataCaps, MetadataClasses, RemovalLock, StagedItem, StagedTimes, Unblock, UserFlags,
-};
+use super::super::{ClassOutcome, MetadataCaps, MetadataClasses, RemovalLock, Unblock, UserFlags};
 use crate::log_private::LogPrivate;
 
 pub use super::unix::Acl;
@@ -79,21 +76,6 @@ pub const LOCAL_DISK_CAPS: MetadataCaps = MetadataCaps {
     staged_flags: UserFlags::NONE,
 };
 
-/// No settable birth date on Linux.
-pub(crate) const CREATED_SETTABLE: bool = false;
-
-/// One `futimens`. std's path setter is unstable, so a folder is opened for its fd; a link's
-/// own dates would need `utimensat(AT_SYMLINK_NOFOLLOW)`.
-pub(crate) fn set_dates(item: StagedItem<'_>, _created: Option<SystemTime>, times: StagedTimes) -> std::io::Result<()> {
-    let file_times = times.file_times();
-    match item {
-        StagedItem::File(file) => file.set_times(file_times),
-        StagedItem::Path(path) => File::open(path)?.set_times(file_times),
-        StagedItem::Link(_) => Err(std::io::ErrorKind::Unsupported.into()),
-    }
-}
-
-/// Only `Unsupported` says the destination can't hold the class.
-pub(crate) fn is_unsupported(_e: &std::io::Error) -> bool {
-    false
-}
+/// No settable birth date on Linux, and dates through `std` (`futimens`); a link's own dates
+/// would need `utimensat(AT_SYMLINK_NOFOLLOW)`.
+pub(crate) use super::std_dates::{CREATED_SETTABLE, is_unsupported, set_dates};
