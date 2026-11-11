@@ -21,8 +21,8 @@ use crate::tools::{ToolCtx, ToolError, ToolId, execute_tool, get_all_tools};
 
 /// What a client reads at `initialize` to decide when to reach for this server.
 const INSTRUCTIONS: &str = concat!(
-    "Controls a running Cmdr file manager instance, a keyboard-driven two-pane file ",
-    "explorer for macOS. Use these tools when the user asks to navigate directories, browse ",
+    "Controls a running instance of Cmdr, a keyboard-driven two-pane file manager. Use these ",
+    "tools when the user asks to navigate directories, browse ",
     "files, manage selections, copy files, change view settings, or interact with dialogs in ",
     "Cmdr.\n\n",
     "Start by reading the cmdr://state resource to understand current pane paths, cursor ",
