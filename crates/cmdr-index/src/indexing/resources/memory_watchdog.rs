@@ -182,14 +182,17 @@ static WATCHDOG_RUNNING: AtomicBool = AtomicBool::new(false);
 ///
 /// Spawns ONE task (idempotent across volumes) that reads the footprint every 5
 /// seconds, for the whole process lifetime. Where this OS has no footprint reader
-/// (the first read answers `None`), nothing starts.
+/// (a read answers `None`), nothing starts, and the next volume start asks again.
 pub fn start(events: std::sync::Arc<dyn crate::EventSink>) {
-    // Idempotent: only the first caller spawns the single global watchdog.
-    if WATCHDOG_RUNNING.swap(true, Ordering::SeqCst) {
+    // Probe BEFORE latching: a single read that comes back empty on an OS that has a reader
+    // must not leave the watchdog off for the whole process. The next volume start tries again.
+    if cmdr_fs::process_memory::current_footprint().is_none() {
+        static NO_READING_LOGGED: std::sync::Once = std::sync::Once::new();
+        NO_READING_LOGGED.call_once(|| log::info!("Memory watchdog: no footprint reading here, so it isn't running"));
         return;
     }
-    if cmdr_fs::process_memory::current_footprint().is_none() {
-        log::info!("Memory watchdog: this OS gives no footprint reading, so it doesn't run");
+    // Idempotent: only the first caller spawns the single global watchdog.
+    if WATCHDOG_RUNNING.swap(true, Ordering::SeqCst) {
         return;
     }
     crate::indexing::host::runtime::spawn(run_watchdog(events));
