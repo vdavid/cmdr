@@ -3,6 +3,7 @@ package checks
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -298,11 +299,52 @@ func SharedTargetFeatureArgs() []string {
 // this rather than assembling its own, so a new lane inherits the alignment
 // instead of rediscovering it.
 func HostCargoLaneArgs(rootDir string) ([]string, error) {
-	selection, err := HostCargoSelectionArgs(rootDir)
+	members, err := WorkspaceMembers(rootDir)
 	if err != nil {
 		return nil, err
 	}
-	return append(selection, SharedTargetFeatureArgs()...), nil
+	hostOS := cargoOSName(runtime.GOOS)
+	builds := map[string]bool{}
+	for _, m := range members {
+		builds[m.Name] = m.BuildsOn(hostOS)
+	}
+	selection := CargoSelectionArgs(members, hostOS)
+	return append(selection, SharedTargetFeatureArgsFor(builds)...), nil
+}
+
+// SharedTargetFeatureArgsFor is SharedTargetFeatureArgs narrowed to the packages
+// a selection holds. Cargo refuses a `pkg/feature` whose package isn't selected
+// ("none of the selected packages contains this feature"), which on a Windows
+// host is every lane while the app crate doesn't build there.
+func SharedTargetFeatureArgsFor(selected map[string]bool) []string {
+	shared := SharedTargetFeatureArgs()
+	var kept []string
+	for _, feature := range strings.Split(shared[len(shared)-1], ",") {
+		if pkg, _, _ := strings.Cut(feature, "/"); selected[pkg] {
+			kept = append(kept, feature)
+		}
+	}
+	if len(kept) == 0 {
+		return nil
+	}
+	return []string{"--features", strings.Join(kept, ",")}
+}
+
+// rustHostTriple asks the pinned rustc (run from the repo root, so
+// `rust-toolchain.toml` picks it) for the host's target triple.
+func rustHostTriple(rootDir string) (string, error) {
+	cmd := exec.Command("rustc", "-vV")
+	cmd.Dir = rootDir
+	output, err := RunCommand(cmd, true)
+	if err != nil {
+		return "", fmt.Errorf("failed to get rust host triple: %w", err)
+	}
+	for line := range strings.SplitSeq(output, "\n") {
+		if rest, ok := strings.CutPrefix(line, "host:"); ok {
+			return strings.TrimSpace(rest), nil
+		}
+	}
+	return "", fmt.Errorf("could not parse host triple from `rustc -vV` output")
 }
 
 // cargoOSName maps a Go `GOOS` onto cargo's `target_os` spelling. They agree

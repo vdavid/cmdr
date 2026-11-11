@@ -17,3 +17,5 @@ rusqlite = { version = "0.41", features = ["bundled"] }
 # is the first in its own process, so the shared-page-cache factory has nothing to
 # protect here. The check runner reads this key.
 kind = "tool"
+# Not on Windows yet; see `docs/tooling/ci.md` § Windows lane.
+platforms = ["linux", "macos"]

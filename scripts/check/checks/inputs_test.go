@@ -415,6 +415,7 @@ var realTreeReadingTests = map[string][]string{
 	"TestGatedCheckFiltersCoverTheirChecks":                    {".github/workflows/ci.yml", "scripts/check/checks"},
 	"TestLaneCheckInputsFlagAMissingCheckInput":                {".github/workflows", "scripts/check/checks"},
 	"TestLaneCheckInputsFlagAMissingLaneStepInput":             {".github/workflows", "scripts/check/checks"},
+	"TestStandaloneLaneFlagsAMissingPushPath":                  {".github/workflows", ".github/actions", "scripts/check/checks"},
 	"TestGlobalInputsCoverWhatNoCheckCanReach":                 {"scripts/check/checks"},
 	"TestGoCompileLanesReadOnlyGoSources":                      {"scripts", "apps/desktop/scripts"},
 	"TestGoTestsInputsCoverTheRealTreeItsTestsRead":            {"scripts/check/checks"},

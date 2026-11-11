@@ -21,7 +21,8 @@ import (
 //   - Rule 6: every filter a lane's caller reads (in its `if:` or `with:`) lists the lane file,
 //     every local composite action it uses (transitively), `ci.yml`, and `.mise.toml`. A lane file
 //     named outright in another lane's filter fails too, since then an edit to one lane reruns
-//     two, and a `*-lane.yml` no ci.yml job calls is dead.
+//     two, and a `*-lane.yml` no ci.yml job calls is dead unless it triggers itself (rule 9,
+//     `ci-standalone-lanes.go`).
 //   - Rule 7: a filter that gates one check in the light lane (`ciFilterGatedChecks`) covers that
 //     check's whole fingerprint (`Inputs`, `GlobalInputs`, and the runner files its `Run`
 //     reaches), so a check that used to run on every change still runs whenever anything it
@@ -192,7 +193,8 @@ func validateLaneFilters(rootDir, ciYml string) []string {
 		violations = append(violations, ctx.checkCaller(id, lane, jobs[id], laneFilters[lane])...)
 	}
 	violations = append(violations, foreignLaneFiles(ctx.filters, laneFilters)...)
-	return append(violations, uncalledLaneFiles(rootDir, laneFilters)...)
+	violations = append(violations, uncalledLaneFiles(rootDir, laneFilters)...)
+	return append(violations, validateStandaloneLanes(rootDir, laneFilters)...)
 }
 
 // jobLaneFile returns the local reusable workflow a job calls, or "".
@@ -258,7 +260,8 @@ func foreignLaneFiles(filters map[string][]string, laneFilters map[string]map[st
 	return violations
 }
 
-// uncalledLaneFiles flags a `*-lane.yml` no ci.yml job calls.
+// uncalledLaneFiles flags a `*-lane.yml` no ci.yml job calls and that has no trigger
+// of its own.
 func uncalledLaneFiles(rootDir string, laneFilters map[string]map[string]bool) []string {
 	entries, err := os.ReadDir(filepath.Join(rootDir, ".github", "workflows"))
 	if err != nil {
@@ -267,6 +270,10 @@ func uncalledLaneFiles(rootDir string, laneFilters map[string]map[string]bool) [
 	var violations []string
 	for _, e := range entries {
 		if _, called := laneFilters[e.Name()]; strings.HasSuffix(e.Name(), "-lane.yml") && !called {
+			if content, err := os.ReadFile(filepath.Join(rootDir, ".github", "workflows", e.Name())); err == nil &&
+				isStandaloneWorkflow(string(content)) {
+				continue // it triggers itself; rule 9 holds its `push.paths` to its inputs
+			}
 			violations = append(violations, fmt.Sprintf(
 				".github/workflows/%s: no ci.yml job calls this lane file, so it runs nowhere", e.Name()))
 		}

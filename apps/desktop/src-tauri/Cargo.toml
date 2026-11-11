@@ -8,6 +8,10 @@ license = "LicenseRef-BSL-1.1"
 default-run = "Cmdr"
 publish = false  # Private application, not for crates.io
 
+[package.metadata.cmdr]
+# Not on Windows yet; see `docs/tooling/ci.md` § Windows lane.
+platforms = ["linux", "macos"]
+
 # The house lint set lives in the workspace root's `[workspace.lints]`, so every
 # crate we write shares one definition. Unlike the crate-root `#![deny(…)]` block
 # it replaced, this also covers the bins, tests, benches, and build script.

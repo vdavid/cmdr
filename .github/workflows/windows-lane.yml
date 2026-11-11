@@ -1,0 +1,141 @@
+name: Windows lane
+
+# The Windows lane. Cmdr doesn't build for Windows yet, so this lane is NOT part of `ci.yml`:
+# its result never reaches `CI OK` or `CI light`, `pnpm land` never waits for it, and it saves
+# no lane marker. It answers two questions on native `windows-latest`:
+#
+#   1. Do the members declared for Windows still compile there? `desktop-rust-clippy` selects
+#      every member whose `platforms` allows Windows (all but the `windowsPending` list in
+#      `scripts/check/checks/member-coverage-allowlist.json`). A red clippy is the lane's red.
+#   2. Where does every other member stop? `desktop-rust-windows-breaks` checks them all in one
+#      `cargo check --keep-going` and publishes a per-member break report to the job summary
+#      and as the `windows-break-report` artifact. It never fails on a break.
+#
+# It runs after a land touches what the Rust lanes compile, and on demand on any branch
+# (`gh workflow run windows-lane.yml --ref <branch>`). Why then, what it costs, and how it gets
+# promoted into `ci.yml` once green: `docs/tooling/ci.md` § Windows lane.
+on:
+  push:
+    branches: [main]
+    # What the two checks read (`ci-coverage` holds this list to their fingerprints), the lane
+    # file, the action it uses, and the toolchain pins.
+    paths:
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'clippy.toml'
+      - '.cargo/**'
+      - '.config/nextest.toml'
+      - 'crates/**'
+      - 'vendor/**'
+      - 'apps/desktop/src-tauri/**'
+      - 'apps/desktop/scripts/download-llama-server.go'
+      # Files outside the crates that Rust code embeds or tests against.
+      - 'CHANGELOG.md'
+      - 'apps/desktop/src/lib/ask-cmdr/ask-cmdr-tool-label-keys.ts'
+      - 'apps/desktop/src/lib/commands/command-ids.ts'
+      - 'apps/desktop/src/lib/intl/messages/**'
+      - 'apps/desktop/src/lib/ipc/bindings.ts'
+      - 'apps/desktop/src/lib/logging/bridge-redaction-cases.json'
+      - 'apps/desktop/src/lib/logging/log-markers.json'
+      - 'apps/desktop/src/lib/settings/types.ts'
+      - 'apps/desktop/src/lib/units/drive-figure-cases.json'
+      - 'apps/desktop/src/lib/units/free-percent-cases.json'
+      - 'apps/desktop/test/fixtures/encodings/**'
+      - 'apps/website/public/mdm/**'
+      - 'apps/website/src/lib/trust-mdm.ts'
+      - 'scripts/check.sh'
+      - 'scripts/check/**'
+      - '.mise.toml'
+      - '.github/workflows/windows-lane.yml'
+      - '.github/actions/install-mise/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run per ref: a newer push replaces the one in flight. Each `main` commit checks a superset
+# of the one before it, and nothing waits on this run.
+concurrency:
+  group: windows-lane-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lane:
+    name: Clippy and the break report
+    runs-on: windows-latest
+    # Cold every time (no Rust cache, § Windows lane says why): clippy over the small
+    # must-compile set, then a `cargo check` of the whole remaining tree.
+    timeout-minutes: 75
+    # Git Bash, on purpose: every step is the same POSIX shell the other lanes use, and the
+    # check runner is called directly rather than through `pnpm check` (no Node here).
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # GitHub's Windows image converts LF to CRLF on checkout, and a few test fixtures and
+      # `include_str!`s would then differ from every other OS's tree. Long paths, because a
+      # nested `target/` path passes Windows' old 260-character limit.
+      - name: Keep the tree's line endings, allow long paths
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.longpaths true
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Go alone: the check runner is the only tool this lane needs from `.mise.toml`.
+      - name: Install Go with mise
+        uses: ./.github/actions/install-mise
+        with:
+          install_args: go
+          cache_save: ${{ github.ref == 'refs/heads/main' }}
+
+      # The channel `rust-toolchain.toml` pins, with clippy and nothing else. Left to itself,
+      # rustup would also install the file's two Apple targets, the browser target, rustfmt,
+      # and rust-analyzer, none of which a Windows check uses. `RUSTUP_TOOLCHAIN` then makes
+      # every cargo call use this install rather than read the file again.
+      - name: Install the pinned Rust toolchain with clippy only
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)
+          if [ -z "$channel" ]; then
+            echo "::error::Couldn't read the pinned channel from rust-toolchain.toml."
+            exit 1
+          fi
+          rustup toolchain install "$channel" --profile minimal --component clippy
+          echo "RUSTUP_TOOLCHAIN=$channel" >>"$GITHUB_ENV"
+          RUSTUP_TOOLCHAIN="$channel" rustc -vV
+
+      - name: Build check tool
+        id: check-tool
+        working-directory: ./scripts/check
+        run: go build -o check.exe .
+
+      - name: Run clippy on the members declared for Windows
+        run: ./scripts/check/check.exe --check desktop-rust-clippy --ci
+
+      # Runs even when clippy went red: the report is about the other members.
+      - name: Check every other member and write the break report
+        if: ${{ !cancelled() && steps.check-tool.outcome == 'success' }}
+        env:
+          CMDR_WINDOWS_BREAKS_DIR: ${{ runner.temp }}/windows-breaks
+        run: ./scripts/check/check.exe --check desktop-rust-windows-breaks --ci
+
+      - name: Publish the break report to the job summary
+        if: ${{ !cancelled() }}
+        run: |
+          summary="$RUNNER_TEMP/windows-breaks/summary.md"
+          if [ -f "$summary" ]; then
+            cat "$summary" >>"$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::No break report was written; the step before this one says why."
+          fi
+
+      - name: Upload the break report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: windows-break-report
+          path: ${{ runner.temp }}/windows-breaks/
+          if-no-files-found: warn

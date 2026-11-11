@@ -73,7 +73,8 @@ compile_error!("Cmdr builds for macOS, Linux, and Windows only; see docs/guides/
 
 "Unknown" means an OS outside macOS, Linux, and Windows. Windows is known on purpose, before it has arms: a Windows
 build fails, where it fails, at each seam still missing its `windows.rs`, and that per-seam list is exactly what the
-Windows CI lane is for. Making Windows "unknown" until it's done would hide all of it behind one error.
+Windows CI lane is for (`docs/tooling/ci.md` § Windows lane). Making Windows "unknown" until it's done would hide all of
+it behind one error.
 
 A crate that also builds for the browser (`cmdr-fs`, `cmdr-listing`, …) widens the gate to
 `not(any(cmdr_host, target_family = "wasm"))`. The app's root carries the gate today; crates gain it as they take the

@@ -85,6 +85,9 @@ CheckDefinition{
 - **`CIOnly: true`** runs the check only under `--ci` (or when named explicitly). Two uses: the slow-but-authoritative
   variant of a check whose fast local variant lives elsewhere (`cargo-udeps` paired with `cargo-machete`), and a check
   whose cost per catch doesn't justify a place in the local loop (`jscpd-rust`, the five `<provider>-smoke` lanes).
+- **`NoNodeModules: true`** says the check reads nothing a `pnpm install` provides. A run that selects only such checks
+  skips the install its `App` would otherwise trigger (every desktop check asks for one). `desktop-rust-clippy` and
+  `desktop-rust-windows-breaks` carry it, because the Windows lane runs them with Go and Rust only.
 - **`DependsOn`** is a flat slice of IDs. Formatters before linters, linters before tests, type checkers before tests.
   Blocked checks (dep failed) get `StatusBlocked` automatically.
 - **`CpuWeight`** is the average number of CPU cores the check keeps busy while running (cold/working profile, rounded).
@@ -1774,7 +1777,11 @@ no Go edit:
   error, not a silent default.
 - **`platforms`** is the target-OS allowlist the member claims for itself, in cargo's `target_os` spelling. Empty means
   portable. `CargoSelectionArgs` turns it into `--workspace --exclude <name>` for every lane whose target can't build
-  it.
+  it. Every member that doesn't compile for Windows yet declares `["linux", "macos"]`, so on a Windows host
+  `desktop-rust-clippy` selects exactly the members that must compile there; `HostCargoLaneArgs` drops a `pkg/feature`
+  whose package the selection excludes (cargo refuses one). Taking the restriction off is how a member joins Windows;
+  putting one on is a ratchet loosening, which `workspace-member-coverage` refuses unless
+  `member-coverage-allowlist.json` names the member (§ "The Windows ratchet").
 
 **Gotcha: `--workspace` moves a macOS-only member from the dependency graph into the SELECTION set, where its target
 gate no longer applies.** `cmdr-fsevent-stream` was only ever a `cfg(target_os = "macos")` dependency of `cmdr`, so no
@@ -2135,6 +2142,16 @@ It asserts three things:
   `AppTreeOnly` — that one makes `ScannerRoots` hand back no roots, and a scanner with no roots scans nothing and
   passes. The default breadth is app + tool; anything narrower needs a `Why`.
 
+### The Windows ratchet
+
+`workspace-member-coverage` also holds the members' `platforms` to the `windowsPending` list in
+`member-coverage-allowlist.json`: a member that builds on Linux but leaves out Windows must be listed with a reason, or
+the check fails. So a member can leave the Windows lane's must-compile list only by an allowlist edit, which needs
+David's OK (§ "Allowlist consent"), never by a quiet manifest line in a change that broke its Windows build. The other
+direction is free: once a member's restriction is gone, a local run drops its entry (CI reports it as stale). A
+macOS-only member (`cmdr-fsevent-stream`) is Apple by design, not a port in progress, so it's out of scope. The lane and
+the break report: `docs/tooling/ci.md` § Windows lane.
+
 `rustScannerJurisdictions` isn't documentation: each scanner resolves its own roots through `ScannerRoots` /
 `ScannerMemberKinds`, and an undeclared check ID is an error rather than an empty list (an empty list reads as "scanned
 nothing" and passes). Anything narrower than every first-party member carries a `Why`. The narrowings today:
@@ -2322,12 +2339,15 @@ notices file.
 
 Checks by app and tech:
 
-- **Desktop / Rust**: tools-module-boundary (`mcp` imports no `agent`, `tools` imports no `mcp`, and `tools` imports
-  only the `agent` modules on its list), rustfmt, clippy, finder-extension-compile (macOS only: both slices of the Swift
-  Finder extension through `build.sh compile`, in the macOS lane), clippy-mimalloc (pre-release lane, macOS only, CI
-  nightly; clippy with `cmdr/mimalloc` in a private target dir, so the global-allocator path macOS doesn't ship can't
-  rot), rustdoc (`cargo doc --all-features --document-private-items` over every first-party member, with every doc lint
-  in `rustdocDeniedLints` denied and any leftover warning failing the check too; the vendored fork is skipped because
+- **Desktop / Rust**: windows-breaks (CI-only, the Windows lane: one `cargo check --keep-going` over every member not
+  yet declared for Windows, natively on a Windows host or for `CMDR_WINDOWS_BREAKS_TARGET` elsewhere, written to
+  `summary.md` and `errors.md`; it never fails on a break; `docs/tooling/ci.md` § Windows lane), tools-module-boundary
+  (`mcp` imports no `agent`, `tools` imports no `mcp`, and `tools` imports only the `agent` modules on its list),
+  rustfmt, clippy, finder-extension-compile (macOS only: both slices of the Swift Finder extension through
+  `build.sh compile`, in the macOS lane), clippy-mimalloc (pre-release lane, macOS only, CI nightly; clippy with
+  `cmdr/mimalloc` in a private target dir, so the global-allocator path macOS doesn't ship can't rot), rustdoc
+  (`cargo doc --all-features --document-private-items` over every first-party member, with every doc lint in
+  `rustdocDeniedLints` denied and any leftover warning failing the check too; the vendored fork is skipped because
   `--all-features` turns on two mutually exclusive arms there), cargo-deny, cargo-machete, cargo-udeps (CI-only), fuzz
   (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a target loosens
   its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding, and takes inputs past
