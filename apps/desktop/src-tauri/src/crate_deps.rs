@@ -29,8 +29,8 @@ use proptest as _;
 #[cfg(test)]
 use env_logger as _;
 //noinspection ALL
-// smb2 crate is used in network/smb_client module (macOS + Linux)
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+// `smb2` is named only by tests (fixture sessions against the SMB containers); the
+// production SMB client reaches it through `cmdr-smb`.
 use smb2 as _;
 
 //noinspection ALL
@@ -48,9 +48,6 @@ use tauri_plugin_mcp_bridge as _;
 // tauri_plugin_updater is only registered on non-macOS (custom updater handles macOS)
 #[cfg(target_os = "macos")]
 use tauri_plugin_updater as _;
-// cmdr-adb is used in the adb/ module for Android-over-ADB support (macOS + Linux)
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-use cmdr_adb as _;
 //noinspection ALL
 // `bytes` is a dev-dependency the MTP upload cells build their fake source streams
 // out of, and every one of them is behind `virtual-mtp`. The lanes that don't pass

@@ -66,7 +66,6 @@ static ROOT_HISTORY: LazyLock<RootHistory> = LazyLock::new(RootHistory::default)
 /// arrival (a renamed drive) is caught by [`VolumeFacts::now`], which records
 /// every live root it reads.
 pub(crate) fn start_root_history() {
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     for share in crate::network::known_shares::saved_shares() {
         if let (Some(id), Some(mount_path)) = (share.volume_id, share.mount_path) {
             ROOT_HISTORY.record(&id, &mount_path);
@@ -91,7 +90,6 @@ impl VolumeFacts {
         let manager = get_volume_manager();
         let mut volumes: Vec<VolumeFact> = Vec::new();
 
-        #[cfg(any(target_os = "macos", target_os = "linux"))]
         let saved_shares = crate::network::known_shares::saved_shares();
 
         for (id, volume) in manager.list_volumes_with_handles() {
@@ -113,74 +111,68 @@ impl VolumeFacts {
             };
             // A share reads as the switcher spells it ("naspi on naspolya") when
             // a saved row names it; the mount's own name is only the share's.
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             let name = saved_shares
                 .iter()
                 .find(|share| share.volume_id.as_deref() == Some(id.as_str()))
                 .map(crate::network::smb_share_label::saved)
                 .unwrap_or_else(|| volume.name().to_string());
-            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-            let name = volume.name().to_string();
             let share = (kind == VolumeKind::Smb).then(|| share_identity(&id)).flatten();
             volumes.push(fact(id, name, kind, root, true, volume.connection_state(), None, share));
         }
 
-        #[cfg(any(target_os = "macos", target_os = "linux"))]
-        {
-            for place in crate::server_volumes::server_places() {
-                if known(&volumes, &place.id) {
-                    continue;
-                }
-                let Some(kind) = kind_of_fs_type(place.fs_type) else {
-                    continue;
-                };
-                let stored = StoredScan::read(&place.id);
-                let Some(root) = volume_root(RootSources {
-                    index_meta: stored.root.as_deref(),
-                    saved: Some(&place.app_root),
-                    ..RootSources::default()
-                }) else {
-                    continue;
-                };
-                volumes.push(fact(
-                    place.id,
-                    place.name,
-                    kind,
-                    root,
-                    false,
-                    Some(place.state),
-                    Some(stored),
-                    None,
-                ));
+        for place in crate::server_volumes::server_places() {
+            if known(&volumes, &place.id) {
+                continue;
             }
-            for share in saved_shares {
-                let (Some(id), Some(mount_path)) = (share.volume_id.clone(), share.mount_path.clone()) else {
-                    continue;
-                };
-                if known(&volumes, &id) {
-                    continue;
-                }
-                let stored = StoredScan::read(&id);
-                let Some(root) = volume_root(RootSources {
-                    index_meta: stored.root.as_deref(),
-                    saved: Some(&mount_path),
-                    ..RootSources::default()
-                }) else {
-                    continue;
-                };
-                let name = crate::network::smb_share_label::saved(&share);
-                let identity = share_identity(&id);
-                volumes.push(fact(
-                    id,
-                    name,
-                    VolumeKind::Smb,
-                    root,
-                    false,
-                    Some(ConnectionState::Saved),
-                    Some(stored),
-                    identity,
-                ));
+            let Some(kind) = kind_of_fs_type(place.fs_type) else {
+                continue;
+            };
+            let stored = StoredScan::read(&place.id);
+            let Some(root) = volume_root(RootSources {
+                index_meta: stored.root.as_deref(),
+                saved: Some(&place.app_root),
+                ..RootSources::default()
+            }) else {
+                continue;
+            };
+            volumes.push(fact(
+                place.id,
+                place.name,
+                kind,
+                root,
+                false,
+                Some(place.state),
+                Some(stored),
+                None,
+            ));
+        }
+        for share in saved_shares {
+            let (Some(id), Some(mount_path)) = (share.volume_id.clone(), share.mount_path.clone()) else {
+                continue;
+            };
+            if known(&volumes, &id) {
+                continue;
             }
+            let stored = StoredScan::read(&id);
+            let Some(root) = volume_root(RootSources {
+                index_meta: stored.root.as_deref(),
+                saved: Some(&mount_path),
+                ..RootSources::default()
+            }) else {
+                continue;
+            };
+            let name = crate::network::smb_share_label::saved(&share);
+            let identity = share_identity(&id);
+            volumes.push(fact(
+                id,
+                name,
+                VolumeKind::Smb,
+                root,
+                false,
+                Some(ConnectionState::Saved),
+                Some(stored),
+                identity,
+            ));
         }
 
         // A device listed but not dialed yet (a phone waiting for its "Allow USB
@@ -259,31 +251,16 @@ impl StoredScan {
 
 /// Which server, share, and account an SMB volume is ([`identity_of`]).
 fn share_identity(volume_id: &str) -> Option<ShareIdentity> {
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
-    {
-        identity_of(
-            crate::network::known_shares::share_by_volume_id(volume_id).as_ref(),
-            crate::network::smb_server_guid::live_share(volume_id).as_ref(),
-        )
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        let _ = volume_id;
-        None
-    }
+    identity_of(
+        crate::network::known_shares::share_by_volume_id(volume_id).as_ref(),
+        crate::network::smb_server_guid::live_share(volume_id).as_ref(),
+    )
 }
 
 /// A share's identity from its saved row, else from what its live direct session
 /// answered (`network::smb_server_guid`). A saved row with no GUID yet borrows the
 /// live session's, since both name the one volume id. Each GUID keeps the proof
 /// it was learned with. Pure.
-#[cfg_attr(
-    not(any(target_os = "macos", target_os = "linux")),
-    allow(
-        dead_code,
-        reason = "only the SMB platforms read a share's identity; the tests call it everywhere"
-    )
-)]
 pub(crate) fn identity_of(row: Option<&KnownNetworkShare>, live: Option<&LiveShare>) -> Option<ShareIdentity> {
     let live_guid = live.map(|live| (live.server_guid.as_str(), live.proof));
     let Some(row) = row else {

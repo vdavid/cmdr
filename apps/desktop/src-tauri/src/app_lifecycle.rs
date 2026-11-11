@@ -13,7 +13,6 @@
 use tauri::{AppHandle, Manager, Window, Wry};
 
 use crate::downloads;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
 use crate::network;
 use crate::{ai, crash_reporter, data_wipe, file_viewer, mcp, quit, search, security_log, window_state};
 #[cfg(target_os = "macos")]
@@ -30,7 +29,6 @@ use crate::{dock, drag_image_detection, mtp, reveal};
 fn stop_background_services() {
     ai::manager::shutdown();
     mcp::stop_mcp_server();
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     network::discovery_gate::shut_down();
     #[cfg(target_os = "linux")]
     crate::volumes_linux::watcher::stop_volume_watcher();

@@ -301,6 +301,14 @@ plist = "1.10.3"
 # render the same changelog, and for the viewer's rendered Markdown view. `html` only: the default
 # `getopts` feature is the crate's own CLI.
 pulldown-cmark = { version = "0.13.6", default-features = false, features = ["html"] }
+# mDNS discovery for network host browsing (pure Rust, cross-platform).
+# 0.21.5 is the floor: older releases retry a failed multicast join every 5 s forever
+# on Macs with VM or container bridges. See `src/network/DETAILS.md`.
+mdns-sd = { version = "0.21.7", features = ["logging"] }
+# SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
+# When bumping: also re-vendor the test containers per
+# apps/desktop/test/smb-servers/.compose/VENDORED.md
+smb2 = { version = "0.43.0", features = ["serde"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -327,14 +335,6 @@ freedesktop-icons = "0.4"
 # workaround, the registrar wiring, and the frontend events stay here in `mtp/`.
 # It carries `mtp-rs`, which the app no longer names directly.
 cmdr-mtp = { path = "../../../crates/cmdr-mtp" }
-# mDNS discovery for network host browsing (pure Rust, cross-platform).
-# 0.21.5 is the floor: older releases retry a failed multicast join every 5 s forever
-# on Macs with VM or container bridges. See `src/network/DETAILS.md`.
-mdns-sd = { version = "0.21.7", features = ["logging"] }
-# SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
-# When bumping: also re-vendor the test containers per
-# apps/desktop/test/smb-servers/.compose/VENDORED.md
-smb2 = { version = "0.43.0", features = ["serde"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # The custom updater's trust check: unpacking the release tarball and requiring Cmdr's Developer

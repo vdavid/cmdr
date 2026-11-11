@@ -12,11 +12,11 @@ Per-stub behavior and rationale. `CLAUDE.md` holds the invariants; the catalog b
   compatibility. A mount answers `MountError::Unexpected`, and the three "Connect directly" commands answer
   `UpgradeResult::NotSmbMount`: nothing on these platforms is an SMB mount, so that's the one real variant that holds.
   ⚠️ Nothing compiles this file on macOS or Linux (the only platforms built and the only ones in CI), so drift from
-  `commands/network.rs` is caught by reading alone. Argument lists match the real commands (compared 2026-09-30). Four
+  `commands/network.rs` is caught by reading alone. Argument lists match the real commands (compared 2026-09-30). Two
   stubs still answer `Result<_, String>` where the real command answers a typed error, which breaks the JSON-shape
-  invariant: `reconnect_volume`, `reconnect_volume_with_credentials`, and `remember_volume_sign_in`
-  (`ReconnectError`), `disconnect_smb_volume`
-  (`EjectError`), and `connect_to_server` (`AddServerError`). Each needs a variant chosen for "not available here".
+  invariant: `disconnect_smb_volume` (`EjectError`) and `connect_to_server` (`AddServerError`). Each needs a variant
+  chosen for "not available here". The sign-in commands (`commands/volume_sign_in.rs`) and the SFTP, WebDAV, S3, NFS,
+  server, and ADB commands are real on every platform, so they have no stub.
 - **`permissions.rs`**: `check_full_disk_access` / `check_full_disk_access_quiet` return `true`;
   `open_privacy_settings` and the appearance/System-Settings deep-link commands return errors.
 - **`text_size.rs`** (non-macOS, so also Linux): `get_system_text_size_multiplier` returns `1.0` (no system scaling).

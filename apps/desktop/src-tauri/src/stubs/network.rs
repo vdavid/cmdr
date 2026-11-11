@@ -423,54 +423,6 @@ pub async fn upgrade_to_smb_volume_with_credentials(
     UpgradeResult::NotSmbMount
 }
 
-/// Reconnects an SMB volume (stub: returns error).
-#[tauri::command]
-#[specta::specta]
-pub async fn reconnect_volume(_volume_id: String) -> Result<(), String> {
-    Err("Direct SMB connection not supported on this platform".to_string())
-}
-
-/// What a sign-in that connected has to tell the person (mirrors the real command's type).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct SignedInReply {
-    pub remember_refused: bool,
-}
-
-/// Reconnects an SMB volume with credentials (stub: returns error).
-#[tauri::command]
-#[specta::specta]
-pub async fn reconnect_volume_with_credentials(
-    _volume_id: String,
-    _username: String,
-    _password: String,
-    _remember: bool,
-) -> Result<SignedInReply, String> {
-    Err("Direct SMB connection not supported on this platform".to_string())
-}
-
-/// Files a connected sign-in's credentials (stub: returns error).
-#[tauri::command]
-#[specta::specta]
-pub async fn remember_volume_sign_in(
-    _volume_id: String,
-    _username: String,
-    _password: String,
-    _remember: bool,
-) -> Result<SignedInReply, String> {
-    Err("Direct SMB connection not supported on this platform".to_string())
-}
-
-/// What a sign-in on this volume may ask for (stub: the trait's own default).
-///
-/// ❗ `Password`, ❌ never `Nothing`: a wrong `Nothing` is a volume with no way
-/// to sign in, and this platform has no volume that could answer better.
-#[tauri::command]
-#[specta::specta]
-pub async fn get_volume_sign_in_state(_volume_id: String) -> cmdr_fs::volume::SignInShape {
-    cmdr_fs::volume::SignInShape::Password
-}
-
 /// Probe for a Finder-saved SMB password (stub: always false).
 #[tauri::command]
 #[specta::specta]
