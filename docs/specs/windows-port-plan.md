@@ -156,9 +156,10 @@ its prerequisites; tasks without any can start any time. Order within a phase is
    `cmdr-local`, the `xattr` dev-dependencies too; `notify` stays `linux` in `cmdr-index` until task 12 gives Windows a
    watcher arm. Of the nine ungated `std::os::unix` imports, two remained (`cmdr-local/src/reading.rs`,
    `cmdr-git/src/repo.rs`), now gated.
-4. [XS] Win. Honest app manifest: move `url`, `semver`, `plist`, `pulldown-cmark`, `ammonia`, `unicode-normalization`,
-   `urlencoding` out of the `any(macos, linux)` table; gate the five unix-only tests and the ungated `std::os::unix`
-   uses (`file_viewer/source.rs:12`, `open_with_copies.rs:31`, `measure.rs:121`).
+4. [XS] Win. **Done**. Honest app manifest: `url`, `semver`, `plist`, `pulldown-cmark`, `unicode-normalization`, and
+   `urlencoding` sit in `[dependencies]` (`ammonia` and the viewer's positional read had already moved to
+   `cmdr-viewer`), and the six unix-only tests carry `cfg(unix)`. `open_with_copies.rs` and `measure.rs` keep their
+   `MetadataExt` inode reads for task 9's vocabulary: a `cfg(unix)` there would add cfgs outside a seam.
 5. [S] Windows (cheap insurance). Non-blocking Windows CI lane: `windows-lane.yml` mirroring `macos-lane.yml`, native
    `cargo check` + clippy on `windows-latest`, a ratcheting allowlist of members that must compile (`platforms` metadata
    gains `"windows"`), promoted to blocking once green. Turns the audits' static guesses into a real break list. Needs 3

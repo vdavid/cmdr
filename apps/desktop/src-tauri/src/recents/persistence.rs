@@ -173,6 +173,7 @@ mod tests {
 
     /// A file that's there but can't be read (mode 000) is set aside before the next add writes
     /// a one-entry list over it.
+    #[cfg(unix)]
     #[test]
     fn an_unreadable_file_survives_the_next_add() {
         use std::os::unix::fs::PermissionsExt;

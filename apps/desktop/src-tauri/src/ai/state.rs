@@ -253,6 +253,7 @@ mod tests {
 
     /// An `ai-state.json` that's there but can't be read (mode 000) is set aside before the next
     /// state change writes the defaults over the install record and the dismissal.
+    #[cfg(unix)]
     #[test]
     fn an_unreadable_state_file_survives_the_next_save() {
         use std::os::unix::fs::PermissionsExt;

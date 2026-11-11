@@ -141,6 +141,7 @@ mod tests {
 
     /// A decision log that's there but can't be read (mode 000) is left as it is: folding one
     /// decision into "nothing" and writing that would replace every lesson in it.
+    #[cfg(unix)]
     #[test]
     fn an_unreadable_log_is_never_written_over() {
         use std::os::unix::fs::PermissionsExt;

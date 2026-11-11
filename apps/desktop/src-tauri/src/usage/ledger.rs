@@ -116,6 +116,7 @@ mod tests {
 
     /// A ledger that's there but can't be read (mode 000) is set aside before today's launch is
     /// written as the only day.
+    #[cfg(unix)]
     #[test]
     fn an_unreadable_ledger_survives_the_next_launch() {
         use std::os::unix::fs::PermissionsExt;

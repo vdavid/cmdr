@@ -286,6 +286,21 @@ genai = "=0.7.3"
 # v1 line is for Tauri 1, v2 RC line is the active branch for Tauri 2.
 tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
 specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
+# NFD normalization for APFS collation and SMB path normalization
+unicode-normalization = "0.1"
+# Percent-decoding for MCP resource URI query strings (cross-platform).
+urlencoding = "2.1.3"
+# Parsing the base URL a WebDAV sign-in form types, before the backend sees it.
+url = "2"
+# Semver comparison: the custom updater (macOS) and the cross-platform What's-new changelog slicer.
+semver = "1"
+# Property lists: macOS bundle and Dock plists, and the managed-policy values (`managed_policy/`),
+# which the test-build plist-file override also reads on Linux.
+plist = "1.10.3"
+# CommonMark rendering for the What's-new popup, so a lead renders the way GitHub and the website
+# render the same changelog, and for the viewer's rendered Markdown view. `html` only: the default
+# `getopts` feature is the crate's own CLI.
+pulldown-cmark = { version = "0.13.6", default-features = false, features = ["html"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -304,7 +319,6 @@ cocoon = "0.5"
 zbus = "5"
 # Native file icons: XDG icon theme lookup (pure Rust, no GTK dependency)
 freedesktop-icons = "0.4"
-# MIME type guessing from file extensions (for icon name resolution)
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # The MTP backend: device discovery, the PTP session layer, and the `Volume` over
@@ -321,21 +335,6 @@ mdns-sd = { version = "0.21.7", features = ["logging"] }
 # When bumping: also re-vendor the test containers per
 # apps/desktop/test/smb-servers/.compose/VENDORED.md
 smb2 = { version = "0.43.0", features = ["serde"] }
-# NFD normalization for APFS collation and SMB path normalization
-unicode-normalization = "0.1"
-# Percent-decoding for MCP resource URI query strings (cross-platform).
-urlencoding = "2.1.3"
-# Parsing the base URL a WebDAV sign-in form types, before the backend sees it.
-url = "2"
-# Semver comparison: the custom updater (macOS) and the cross-platform What's-new changelog slicer.
-semver = "1"
-# Property lists: macOS bundle and Dock plists, and the managed-policy values (`managed_policy/`),
-# which the test-build plist-file override also reads on Linux.
-plist = "1.10.3"
-# CommonMark rendering for the What's-new popup, so a lead renders the way GitHub and the website
-# render the same changelog, and for the viewer's rendered Markdown view. `html` only: the default
-# `getopts` feature is the crate's own CLI.
-pulldown-cmark = { version = "0.13.6", default-features = false, features = ["html"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # The custom updater's trust check: unpacking the release tarball and requiring Cmdr's Developer
@@ -345,9 +344,9 @@ pulldown-cmark = { version = "0.13.6", default-features = false, features = ["ht
 # on the `Desktop (Rust)` lane).
 cmdr-update-trust = { path = "../../../crates/cmdr-update-trust" }
 # Percent-encoding the folder inside Warp's `warp://action/new_window?path=…` URI
-# ("open terminal here"). Sits here rather than in the macOS+Linux table above for the
+# ("open terminal here"). Sits here rather than in `[dependencies]` for the
 # reason `cmdr-update-trust` gives: `file_system/terminal.rs` is macOS-only, so on Linux the lib never
-# touches it. `urlencoding` (macOS+Linux table) can't do the job: it escapes `/` too, and
+# touches it. `urlencoding` can't do the job: it escapes `/` too, and
 # the scheme wants a literal path. Already in the lockfile via `cmdr-webdav`.
 percent-encoding = "2"
 # The updater touches the installed bundle's mtime with it (`updater/installer.rs`), and
