@@ -1644,7 +1644,7 @@
   },
   "fileOperations.rollbackConfirm.titleRest": "Roll back the rest?",
   "@fileOperations.rollbackConfirm.titleRest": {
-    "description": "Title of the rollback confirmation when the operation is already PARTLY rolled back and the person asked to roll back everything that’s left. The body under it still says what happens to the files. Sibling of fileOperations.rollbackConfirm.title, which covers the first time round."
+    "description": "Title of the rollback confirmation when the operation is already PARTLY rolled back and the person asked to roll back everything that’s left. The body under it still says what happens to the files. Sibling of fileOperations.rollbackConfirm.title, which covers the first time round. It shares its English with the \"Roll back the rest\" buttons (fileOperations.rollbackConfirm.rollBackRest, operationLog.dialog.rollBackRest) apart from the \"?\", but it may take your language's question form for dialog titles while the buttons stay nominal; record that split in the term-consistency allowlist."
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "This deletes the files and folders the operation created. Cmdr skips anything it isn’t sure about, so a few may stay behind.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {

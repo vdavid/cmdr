@@ -36,7 +36,7 @@
     "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
     "@iconify-json/lucide": "1.2.142",
-    "@lhci/cli": "^0.15.1",
+    "@lhci/cli": "^0.16.0",
     "@playwright/test": "^1.61.1",
     "@types/hast": "3.0.5",
     "eslint": "^10.7.0",

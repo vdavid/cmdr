@@ -170,6 +170,10 @@
         "reason": "`Visszagörgetés…` is the progress window's title, the ellipsis carrying the ongoing state; the operation log's status cell is `Visszagörgetés folyamatban`, beside capability cells (`Visszagörgethető`), where the bare noun would be ambiguous."
       },
       {
+        "source": "Roll back the rest",
+        "reason": "English shares one string between a question title and two buttons, split only by the `?`. The confirmation title asks the user (`fileOperations.rollbackConfirm.titleRest` = `Visszagörgeted a többit?`, the house form for question titles, parallel to its sibling `Visszagörgeted ezt a műveletet?`); the buttons are nominal (`fileOperations.rollbackConfirm.rollBackRest` and `operationLog.dialog.rollBackRest` = `A többi visszagörgetése`), and those two stay identical. Same split as `Send report`; the `rollback` ruling in `docs/i18n/hu/terms.json`."
+      },
+      {
         "source": "Send report",
         "reason": "The dialog title asks the user (`Elküldöd a jelentést?`, the house form for question titles); the button is the nominal `Jelentés küldése`."
       },
@@ -602,6 +606,10 @@
       {
         "source": "Select",
         "reason": "Выбор names a menu or AI capability; Выбрать is an action in a selection control."
+      },
+      {
+        "source": "Select all",
+        "reason": "Two different acts, per the `select` ruling and its exceptions in `docs/i18n/ru/terms.json`. `menu.select.all` and `commands.selectionSelectAll.label` mark every file in a pane, which is Total Commander's `Выделить все` (the product owner's selection vocabulary). `operationLog.tree.selectAll` is the item tree's header checkbox, which TICKS every rollbackable row: list-item choosing, so `Выбрать все`, like the tree's `Откатить выбранные`, `Выбрано: …`, and `commands.operationLogSelectAll.label` (`Выбрать все объекты`). Nothing in a pane gets marked there."
       },
       {
         "source": "Show hidden files",
