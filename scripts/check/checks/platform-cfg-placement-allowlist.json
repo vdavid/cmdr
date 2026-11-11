@@ -564,7 +564,7 @@
       "outsideSeam": 3
     },
     "crates/cmdr-fs/src/process_memory/mod.rs": {
-      "outsideSeam": 18
+      "outsideSeam": 16
     },
     "crates/cmdr-fs/src/tcc_paths.rs": {
       "outsideSeam": 4
@@ -631,9 +631,6 @@
     },
     "crates/cmdr-index/src/indexing/reconcile/reconciler/dir_read.rs": {
       "outsideSeam": 2
-    },
-    "crates/cmdr-index/src/indexing/resources/memory_watchdog.rs": {
-      "outsideSeam": 19
     },
     "crates/cmdr-index/src/indexing/resources/mod.rs": {
       "outsideSeam": 1

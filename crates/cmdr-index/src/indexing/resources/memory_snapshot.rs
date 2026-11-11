@@ -9,16 +9,14 @@
 //! `MemoryAttribution` here turns the numbers into the log's verdict, so the
 //! claim can never contradict the figures beside it.
 //!
-//! macOS-only, like the watchdog's policy loop (`memory_watchdog.rs`).
+//! macOS-only: `platform/macos.rs` hands it to the watchdog, which runs on every OS with a
+//! footprint reader.
 
 use std::sync::atomic::Ordering;
 
 use cmdr_fs::pluralize::grouped;
 
-/// Bytes as gibibytes, for log formatting.
-pub(super) fn gb(bytes: u64) -> f64 {
-    bytes as f64 / (1024.0 * 1024.0 * 1024.0)
-}
+use super::memory_watchdog::gb;
 
 /// Bytes as mebibytes, for log formatting.
 fn mb(bytes: u64) -> f64 {
@@ -223,21 +221,14 @@ impl MemorySnapshot {
         )
     }
 
-    /// Build the memory-warning report. Falls back to whatever the caller already
-    /// knows (`phys_footprint`) if the full snapshot couldn't be gathered.
-    pub(super) fn memory_warning_event(
-        snapshot: Option<&MemorySnapshot>,
-        phys_footprint: u64,
-        action: crate::MemoryWatchdogAction,
-    ) -> crate::IndexEvent {
-        crate::IndexEvent::MemoryWarning {
-            phys_footprint_bytes: phys_footprint,
-            resident_bytes: snapshot.map_or(phys_footprint, |s| s.resident_size),
-            global_allocator: cmdr_fs::process_memory::GLOBAL_ALLOCATOR,
-            rust_heap_bytes: snapshot.map_or(0, |s| s.rust_heap.held_bytes()),
-            system_malloc_bytes: snapshot.map_or(0, |s| s.system_malloc_in_use),
-            untracked_bytes: snapshot.map_or(0, MemorySnapshot::untracked),
-            action,
+    /// What a trip reports, in the portable shape the watchdog builds its events from.
+    pub(super) fn breakdown(&self) -> super::platform::Breakdown {
+        super::platform::Breakdown {
+            report: self.report(),
+            resident_bytes: self.resident_size,
+            rust_heap_bytes: self.rust_heap.held_bytes(),
+            system_malloc_bytes: self.system_malloc_in_use,
+            untracked_bytes: self.untracked(),
         }
     }
 }

@@ -211,7 +211,7 @@ pub fn recompute_index_to_db(
     now_secs: u64,
 ) -> Result<MeasureOutcome, String> {
     // Walk + score (the read/compute phase).
-    let footprint_before = cmdr_fs::process_memory::current_phys_footprint();
+    let footprint_before = cmdr_fs::process_memory::current_footprint();
     let walk_started = std::time::Instant::now();
     let conn = IndexStore::open_read_connection(index_db).map_err(|e| e.to_string())?;
     // A dev tool measuring a database file has no volume behind it, so no stop signal.
@@ -269,7 +269,7 @@ pub fn recompute_index_to_db(
 /// either reading failed (or the platform has no Mach `task_info`).
 #[cfg(any(test, feature = "tooling"))]
 fn footprint_growth(before: Option<u64>) -> Option<u64> {
-    match (cmdr_fs::process_memory::current_phys_footprint(), before) {
+    match (cmdr_fs::process_memory::current_footprint(), before) {
         (Some(now), Some(before)) => Some(now.saturating_sub(before)),
         _ => None,
     }
