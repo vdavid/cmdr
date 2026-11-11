@@ -191,8 +191,10 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 10. [M] Win. Typed OS-error classes in `cmdr-fs` (`VolumeError::from_io_at` classifies; "in use by another app" gets its
     own class), consumers in `cmdr-operations`, `friendly_error`, `transport_fault`, and a subagent sweep over the
     network backends' synthesized errnos.
-11. [S] Win. Mount façade in `cmdr-local` (`mounts::list`, `is_mount_point`, `user_mount_prefixes`); callers in
-    `cmdr-operations` and `cmdr-index` stop naming the OS.
+11. [S] Win. **Done**. Mount façade: `cmdr_local::mounts` (`list`, `is_mount_point`) and `user_mount_prefixes` in
+    `cmdr_fs::mount_layout` (pure path knowledge, so the index asks it without depending on `cmdr-local`), each behind a
+    `platform/` seam. The write engine's mount guards and the index's external-volume routing and volume-root classifier
+    stop naming the OS.
 12. [S] Win. Watcher backend trait in `cmdr-index`: FSEvents and `notify` behind one `DriveWatcher`, replay as a backend
     property, the test journal as a third backend. Windows then needs only the dep widened and a smoke test.
 13. [S] Win (Linux gains a watchdog). Process stats behind one module with per-OS readers; the memory watchdog consumes

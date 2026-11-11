@@ -227,21 +227,18 @@ pub(in crate::indexing) const EXCLUDED_PREFIXES: &[&str] = &["/dev/", "/proc/"];
 /// NOT under one of these (a boot-disk path, or a cloud-drive folder in the home
 /// dir) stays on `root`, whose index owns it. Single-sourced with the scan
 /// exclusions via the `external_mount_prefixes_are_excluded` test, so the two
-/// can't drift.
-#[cfg(target_os = "macos")]
-pub(in crate::indexing) const EXTERNAL_MOUNT_PREFIXES: &[&str] = &["/Volumes/"];
-#[cfg(target_os = "linux")]
-pub(in crate::indexing) const EXTERNAL_MOUNT_PREFIXES: &[&str] = &["/mnt/", "/media/"];
-#[cfg(target_os = "windows")]
-pub(in crate::indexing) const EXTERNAL_MOUNT_PREFIXES: &[&str] = &[];
+/// can't drift. The OS's user-mount layout (`cmdr_fs::mount_layout::user_mount_prefixes`).
+pub(in crate::indexing) fn external_mount_prefixes() -> &'static [&'static str] {
+    cmdr_fs::mount_layout::user_mount_prefixes()
+}
 
-/// Whether `path` sits on a mounted external volume ([`EXTERNAL_MOUNT_PREFIXES`]),
+/// Whether `path` sits on a mounted external volume ([`external_mount_prefixes`]),
 /// so it belongs to that mount's own index rather than `root`'s. Pure string work
 /// (no syscall), safe on the enrichment / dir-stats hot path. A cheap fast-reject
 /// for the common boot-disk / cloud-drive path: it returns `false` before routing
 /// ever touches the `VolumeManager` registry.
 pub(in crate::indexing) fn is_on_mounted_external_volume(path: &str) -> bool {
-    EXTERNAL_MOUNT_PREFIXES
+    external_mount_prefixes()
         .iter()
         .any(|prefix| path.starts_with(prefix) || path == prefix.trim_end_matches('/'))
 }

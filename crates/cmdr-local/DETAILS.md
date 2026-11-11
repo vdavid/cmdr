@@ -362,7 +362,7 @@ with the preview and `scan_walk`.
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to its measured surface (12 root promises, nine public modules, 39 items, no
+`index-crate-isolation` holds this crate to its measured surface (13 root promises, ten public modules, 41 items, no
 handle), with no headroom. A backend's API is the `Volume` trait, `cmdr-fs`'s promise, so everything counted serves an
 app read of a local disk that doesn't go through a volume:
 
@@ -373,6 +373,10 @@ app read of a local disk that doesn't go through a volume:
   (`patch_listing_after_local_mutation`): the watcher, `tags.rs`, and `create.rs`'s instant row.
 - **`space`** (`get_space_info_for_path`, `get_volume_space`) and **`live_space`** (`live_volume_space`,
   `expect_space_change`): the index's tier-2 progress, the copy pre-flight, the IPC command, and the space poller.
+- **`mounts`** (`list`, `is_mount_point`): the one door to the mount table, per OS behind `mounts/platform/`, so the
+  write engine's mount guards never name the OS. Raised the ceiling by one module and two items (2026-11-11): the wider
+  surface is the better design, because every caller that moves onto it is a two-arm OS dispatch gone, and once the
+  app's volume code reads its records through it too, `mount_table` and `linux_mounts` can go private.
 - **The mount probes**: `filesystem_kind` (seven, counting `probe_mount_for_path`'s three platform arms), `mount_table`
   (four), `statfs` (three), `nsurl` (two), and `linux_mounts` (16, the `/proc/mounts` and `mountinfo` readers
   `volumes_linux/` builds on). The counter reads source, so each platform's module counts whatever the build target.

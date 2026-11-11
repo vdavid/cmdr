@@ -61,6 +61,7 @@ pub mod linux_mounts;
 pub mod live_space;
 #[cfg(target_os = "macos")]
 pub mod mount_table;
+pub mod mounts;
 pub mod mutation;
 #[cfg(target_os = "macos")]
 pub mod nsurl;

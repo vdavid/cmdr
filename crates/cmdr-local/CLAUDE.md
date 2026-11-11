@@ -12,7 +12,8 @@ local volume space, and the mount probes. Tauri-free; the app builds every local
 - **reading.rs** (the local reader the watcher and `tags.rs` read through too; `read_dir` + `lstat`) with
   **reading/bulk.rs** (macOS: the `getattrlistbulk` lister APFS and HFS+ take), **mutation.rs** (the listing patch a
   local mutation sends), **space.rs** + **live_space.rs**, and the OS probes: **filesystem_kind.rs**,
-  **mount_table.rs**, **statfs.rs**, **nsurl.rs**, **linux_mounts.rs** (Linux).
+  **mount_table.rs**, **statfs.rs**, **nsurl.rs**, **linux_mounts.rs** (Linux), and **mounts/**, the one door to the
+  mount table (`list`, `is_mount_point`) that callers ask instead of naming the OS.
 
 ## Must-knows
 

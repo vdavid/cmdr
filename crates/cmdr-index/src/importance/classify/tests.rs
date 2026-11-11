@@ -150,7 +150,7 @@ fn a_marker_doesnt_promote_home_or_a_volume_root() {
         PathClass::Neutral,
         "a marker at the boot volume root doesn't promote the whole disk"
     );
-    for root in MOUNT_PREFIXES {
+    for root in cmdr_fs::mount_layout::user_mount_prefixes() {
         let mount = format!("{root}backup");
         assert_eq!(
             path_class_with_marker(&mount, home, Some(0)),
@@ -188,7 +188,7 @@ fn a_marker_still_promotes_a_real_project_dir() {
 #[test]
 fn volume_roots_are_the_disk_root_and_one_level_under_a_mount_prefix() {
     assert!(is_volume_root("/"));
-    for prefix in MOUNT_PREFIXES {
+    for prefix in cmdr_fs::mount_layout::user_mount_prefixes() {
         assert!(is_volume_root(&format!("{prefix}backup")), "{prefix}backup");
         assert!(
             !is_volume_root(&format!("{prefix}backup/photos")),

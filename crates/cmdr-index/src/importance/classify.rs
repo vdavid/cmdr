@@ -376,26 +376,16 @@ const TEMP_ROOTS: &[&str] = &[
     "/private/var/folders",
 ];
 
-/// The path prefixes under which one more component names a mounted volume, so
-/// `/Volumes/backup` is a volume root while `/Volumes/backup/photos` is an ordinary
-/// folder inside it. Per-platform, since the mount layout is.
-#[cfg(target_os = "macos")]
-const MOUNT_PREFIXES: &[&str] = &["/Volumes/"];
-/// See the macOS arm.
-#[cfg(target_os = "linux")]
-const MOUNT_PREFIXES: &[&str] = &["/mnt/", "/media/"];
-/// See the macOS arm. No mount convention we recognize, so only `/` is a root.
-#[cfg(target_os = "windows")]
-const MOUNT_PREFIXES: &[&str] = &[];
-
 /// Whether `path` is the root of a volume: the disk root `/`, or exactly one
-/// component under a [`MOUNT_PREFIXES`] entry.
+/// component under one of the OS's user-mount prefixes
+/// (`cmdr_fs::mount_layout::user_mount_prefixes`: `/Volumes/backup` is a root,
+/// `/Volumes/backup/photos` a folder inside it).
 pub fn is_volume_root(path: &str) -> bool {
     let trimmed = path.trim_end_matches('/');
     if trimmed.is_empty() {
         return true; // the disk root `/`.
     }
-    MOUNT_PREFIXES.iter().any(|prefix| {
+    cmdr_fs::mount_layout::user_mount_prefixes().iter().any(|prefix| {
         trimmed
             .strip_prefix(prefix)
             .is_some_and(|rest| !rest.is_empty() && !rest.contains('/'))
@@ -531,7 +521,7 @@ fn scoring_policy_parts() -> Vec<&'static str> {
     let mut parts: Vec<&str> = vec!["rules", SCORING_RULES_VERSION, "temp_roots"];
     parts.extend_from_slice(TEMP_ROOTS);
     parts.push("mount_prefixes");
-    parts.extend_from_slice(MOUNT_PREFIXES);
+    parts.extend_from_slice(cmdr_fs::mount_layout::user_mount_prefixes());
     parts.push("system_roots");
     parts.extend_from_slice(SYSTEM_ROOTS);
     parts.push("bundle_suffixes");
