@@ -19,6 +19,8 @@
 //!   and a listing with none that fits is `ExportNotFound`; only when the server
 //!   won't list does `MNT` walk ever-shorter prefixes.
 
+mod platform;
+
 use std::future::Future;
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -95,31 +97,16 @@ pub(crate) struct MountedExport {
 pub(crate) fn credential_for(identity: &NfsIdentity) -> Credential {
     Credential::sys(&AuthSys {
         stamp: random_u32(),
-        machine_name: machine_name(),
+        machine_name: platform::machine_name(),
         uid: identity.uid,
         gid: identity.gid,
         gids: identity.credential_gids(),
     })
 }
 
-/// This machine's host name, or empty when the OS won't say.
-fn machine_name() -> String {
-    let mut buf = [0u8; 256];
-    // SAFETY: `buf` is valid for `buf.len()` bytes for the whole call, and
-    // `gethostname` writes at most that many.
-    let status = unsafe { libc::gethostname(buf.as_mut_ptr().cast(), buf.len()) };
-    if status != 0 {
-        return String::new();
-    }
-    let len = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());
-    String::from_utf8_lossy(&buf[..len]).into_owned()
-}
-
 /// The uid and gid this process runs as: who `EXPORT` asks as.
 fn this_process() -> NfsIdentity {
-    // SAFETY: `getuid` and `getgid` take nothing, can't fail, and touch no
-    // memory of ours.
-    let (uid, gid) = unsafe { (libc::getuid(), libc::getgid()) };
+    let (uid, gid) = platform::process_ids();
     NfsIdentity::new(uid, gid)
 }
 

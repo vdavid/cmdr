@@ -120,11 +120,15 @@ Our own ONC RPC client, no dependency (§ "The dependency decision").
 
 ## The dial
 
-`dial.rs`: resolve (IPv4 and IPv6, each address in order) → portmap `GETPORT` for MOUNT v3 and NFS v3 over TCP (an
+`dial/`: resolve (IPv4 and IPv6, each address in order) → portmap `GETPORT` for MOUNT v3 and NFS v3 over TCP (an
 explicit port skips the NFS lookup; MOUNT always comes from portmap) → `EXPORT` and `MNT` → `FSINFO` and `GETATTR` on
 the root, under a 15 s budget with 5 s per connect. It answers `MountedExport` (the client, the addresses and credential
 a redial needs, the resolved split, the root, `FsInfo`); `connect_nfs` dials NFS alone, `unmount` is best-effort `UMNT`.
 The volume redials through the whole `mount` (§ "The volume").
+
+- **Who asks**: `dial/platform/` answers the machine name and the uid and gid `AUTH_SYS` carries for `EXPORT`
+  (`gethostname`, `getuid`, `getgid` on both Unixes). Windows has no uid, so it asks as `nobody` (65534), what a server
+  maps an unknown caller to anyway, with `COMPUTERNAME` as the machine name.
 
 - **The split**: the longest listed export the typed path is at or under; a listing with none that fits is
   `ExportNotFound`. Only when `EXPORT` is refused does `MNT` walk ever-shorter prefixes, and a refusal on the walk moves
