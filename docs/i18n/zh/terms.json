@@ -147,7 +147,6 @@
     "confidence": "confirmed",
     "decision": "Cloud AI consent",
     "exceptions": {
-      "search.coverage.denied": "\"Wasn't allowed to look inside\" is a permission refusal, rendered 没有权限查看 like the rest of the permission copy.",
       "errors.write.trashRefused.message.folderNotWritable": "English sense: “isn’t allowed to change” is a file-system permission, not granting consent, so it takes 没有权限"
     },
     "forms": "Allow all → 全部允许; settings label 允许使用云端 AI (允许 alone reads as missing a verb); Android's own button quoted as “允许” with 点按",

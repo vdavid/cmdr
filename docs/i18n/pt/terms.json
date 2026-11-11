@@ -2986,7 +2986,7 @@
     "forms": "masculine (os instantâneos dele); a backup’s snapshots → os instantâneos de um backup",
     "note": "The literal restic folder name “Browse snapshots” stays English wherever it appears as a folder name in a path.",
     "exceptions": {
-      "search.coverage.declined": "Shipped before this ruling, about APFS snapshot folders (pastas de snapshot); left as is pending a native review of whether it should align to instantâneo (Disk Utility’s pt-BR wording), see review-queue.md."
+      "search.coverage.line.declined": "Shipped before this ruling, about APFS snapshot folders (pastas de snapshot); left as is pending a native review of whether it should align to instantâneo (Disk Utility’s pt-BR wording), see review-queue.md."
     },
     "confidence": "high",
     "sources": "MS terminology pt-BR (snapshot → instantâneo; volume snapshot → instantâneo de volume); shipped pt catalog (fileExplorer.readOnly.gitPortalMessage)"
