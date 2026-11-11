@@ -45,6 +45,6 @@ Full details: `DETAILS.md`.
 - **Every cache write is epoch-guarded** (`cache_icon(epoch, ..)`, FE `applyIconsToCache(.., epoch)`), epoch taken
   BEFORE asking macOS, or a fetch outliving a flush restores the old look. `DETAILS.md` § Flushes.
 - **Disk-cache staleness token is the folder's mtime**, ❌ not a watcher: Finder bumps it when re-iconing.
-- **Linux skips NSWorkspace** (XDG lookup): `special:*` degrades to the generic folder.
-- **The macOS fetch is ours (`macos_workspace.rs`), not a crate**: a crate can hard-link a framework newer than our
+- **Providers live in `platform/`**; off macOS `special:*` degrades to the generic folder.
+- **The macOS fetch is ours (`platform/macos/workspace.rs`), not a crate**: a crate can hard-link a framework newer than our
   floor. `DETAILS.md`.

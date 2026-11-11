@@ -12,6 +12,7 @@ mod objc_exception;
 mod os_crash_report;
 mod panic_courier;
 mod pending_delivery;
+mod platform;
 #[cfg(unix)]
 mod signal_handler;
 mod survival;
@@ -354,11 +355,8 @@ pub fn init<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     // read would let a panic in `process_pending_crash` overwrite the report it was reading.
     let _ = CRASH_PATH.set(crash_path);
 
-    #[cfg(unix)]
-    install_signal_handlers(&raw_crash_path);
-    // After `process_pending_crash` read the previous session's sidecar, never before.
-    #[cfg(target_os = "macos")]
-    objc_exception::install(&data_dir.join(objc_exception::FILE_NAME));
+    // After `process_pending_crash` read the previous session's raw file and sidecar, never before.
+    platform::install_native_crash_hooks(&raw_crash_path, &data_dir);
 }
 
 /// Returns the pending crash report from a previous session, if any.
@@ -510,15 +508,8 @@ fn write_first_crash_report(crash_path: Option<&Path>, already_written: &AtomicB
 /// signal path must use the base recorded in the raw file, since a relaunched process
 /// has a different ASLR slide.
 fn current_image_base_hex() -> Option<String> {
-    #[cfg(unix)]
-    {
-        let base = signal_handler::current_image_base();
-        (base != 0).then(|| format!("0x{base:x}"))
-    }
-    #[cfg(not(unix))]
-    {
-        None
-    }
+    let base = platform::current_image_base();
+    (base != 0).then(|| format!("0x{base:x}"))
 }
 
 fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
@@ -538,7 +529,7 @@ fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
         panic_message: sanitized_message,
         backtrace_frames,
         thread_name,
-        thread_count: current_thread_count(),
+        thread_count: platform::current_thread_count(),
         app_version: env!("CARGO_PKG_VERSION").to_string(),
         os_version: crate::platform::os_version(),
         arch: std::env::consts::ARCH.to_string(),
@@ -651,11 +642,6 @@ fn parse_backtrace_frames(backtrace_str: &str) -> Vec<String> {
         .collect()
 }
 
-#[cfg(unix)]
-fn install_signal_handlers(raw_crash_path: &Path) {
-    signal_handler::install(raw_crash_path);
-}
-
 /// Records that the app is still running, so a crash file THIS session wrote stops
 /// claiming the app didn't outlive its panic.
 ///
@@ -764,54 +750,4 @@ fn now_iso8601() -> String {
 /// snapshot so error reports can carry the same uptime the crash reporter records.
 pub(crate) fn uptime_secs() -> f64 {
     APP_START_TIME.get().map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0)
-}
-
-fn current_thread_count() -> usize {
-    #[cfg(target_os = "macos")]
-    {
-        // Mach API: get thread list for the current task, return the count.
-        unsafe extern "C" {
-            fn mach_task_self() -> libc::mach_port_t;
-        }
-        // SAFETY: `thread_list` and `thread_count` are live locals whose addresses are valid
-        // out-params for `task_threads`. On `KERN_SUCCESS` the kernel hands back an allocated
-        // array of `thread_count` ports in `thread_list`; we hand that exact array and its byte
-        // size (`thread_count * size_of::<mach_port_t>()`) back to `vm_deallocate`, freeing it
-        // exactly once. We deallocate only on `KERN_SUCCESS`, where the out-params are valid.
-        unsafe {
-            let mut thread_list: libc::mach_port_t = 0;
-            let mut thread_count: u32 = 0;
-            let kr = libc::task_threads(
-                mach_task_self(),
-                std::ptr::addr_of_mut!(thread_list) as *mut *mut libc::mach_port_t,
-                &raw mut thread_count,
-            );
-            if kr == libc::KERN_SUCCESS {
-                // Deallocate the thread list (we only needed the count)
-                libc::vm_deallocate(
-                    mach_task_self(),
-                    thread_list as libc::vm_address_t,
-                    (thread_count as usize) * size_of::<libc::mach_port_t>(),
-                );
-                thread_count as usize
-            } else {
-                0
-            }
-        }
-    }
-    #[cfg(target_os = "linux")]
-    {
-        if let Ok(status) = std::fs::read_to_string("/proc/self/status") {
-            for line in status.lines() {
-                if let Some(count) = line.strip_prefix("Threads:") {
-                    return count.trim().parse().unwrap_or(0);
-                }
-            }
-        }
-        0
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        0
-    }
 }

@@ -29,6 +29,8 @@ use std::path::Path;
 use cmdr_fs::entry::TagRef;
 pub use cmdr_fs::icons::packages::PKG_KEY_PREFIX;
 
+use super::platform::tag_tinting_disabled;
+
 /// Byte offset of the Finder flags within a `com.apple.FinderInfo` buffer.
 ///
 /// `com.apple.FinderInfo` is a 32-byte blob. Its first 16 bytes are the
@@ -60,12 +62,6 @@ pub fn finder_info_has_custom_icon(finder_info: &[u8]) -> bool {
 /// "syncable" flag) included; the bare `com.apple.icon.folder` draws nothing (verified on macOS
 /// 27.0.1, `NSWorkspace iconForFile:` on folders built with `xattr -w`, 2026-10-29).
 const FOLDER_CUSTOMIZATION_XATTR: &str = "com.apple.icon.folder#S";
-
-/// Global-domain key behind Finder > Settings > Tags > "Tint folders based on tags". Absent (the
-/// default) means tinting is on (verified on macOS 27.0.1: `defaults write -g … -bool true` turns
-/// a red-tagged custom folder back to the accent color, 2026-10-29).
-#[cfg(target_os = "macos")]
-const TAG_TINTING_DISABLED_KEY: &str = "AppleDisableTagBasedIconTinting";
 
 /// The longest emoji value Cmdr draws, in code points. A ZWJ family with skin tones is 11; anything
 /// longer can't be one glyph, so the folder falls back to the recolored macOS bitmap.
@@ -162,29 +158,6 @@ pub fn custom_folder_icon(path: &Path) -> Option<CustomFolderIcon> {
         Vec::new()
     };
     classify_custom_folder_icon(&finder_info, customization.as_deref(), &tags, tag_tinting_disabled)
-}
-
-/// Reads Finder's "Tint folders based on tags" switch, re-syncing the global domain first so a
-/// change made while Cmdr runs is seen. CFPreferences is thread-safe, so no main-thread hop.
-#[cfg(target_os = "macos")]
-fn tag_tinting_disabled() -> bool {
-    use objc2_core_foundation::{CFPreferencesAppSynchronize, CFPreferencesGetAppBooleanValue, CFString};
-    // SAFETY: `kCFPreferencesAnyApplication` is an immutable `'static` `CFStringRef` the framework
-    // initialises before any Rust in this process runs; reading it is `unsafe` only because it
-    // crosses the FFI boundary.
-    let application = unsafe { objc2_core_foundation::kCFPreferencesAnyApplication };
-    // A failed sync only means reading the cached value, still a valid answer.
-    let _ = CFPreferencesAppSynchronize(application);
-    let key = CFString::from_str(TAG_TINTING_DISABLED_KEY);
-    // SAFETY: `key` and `application` are live `CFString`s for the whole call, and a null
-    // out-pointer is documented as "don't report validity".
-    unsafe { CFPreferencesGetAppBooleanValue(&key, application, std::ptr::null_mut()) }
-}
-
-/// Off macOS there are no Finder tags, so this is never reached with a colored one.
-#[cfg(not(target_os = "macos"))]
-fn tag_tinting_disabled() -> bool {
-    false
 }
 
 #[cfg(test)]

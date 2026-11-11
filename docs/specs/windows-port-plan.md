@@ -222,8 +222,11 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 22. [M] Win. The OS-mount half of `network/` (`mount*.rs`, `smb_smbutil.rs`, `smb_smbclient.rs`, `netfs_wedge.rs`,
     `os_mount_notice.rs`, `keychain.rs`) moves behind `network/os_mount/platform/`; delete `stubs/network.rs` and
     `stubs/mtp.rs`. Needs 21.
-23. [S] Win. Small-module seams: icons, intl UI locale, the viewer's positional read, the size measurer's inode dedup
-    (onto task 9's vocabulary), the crash reporter's native-crash hook. Needs 7.
+23. [S] Win. **Done** except the size measurer's inode dedup, which waits for task 9's vocabulary (with
+    `open_with_copies.rs`'s inode check). Seams: `icons/platform/` (path and id lookups, the per-path threads, the
+    autorelease pool, tag tinting; `macos_workspace.rs` moved under it), `intl/platform/` (the UI locale's two answers),
+    `cmdr-viewer`'s `platform/` (`positioned_read`: `pread`, `seek_read` on Windows, a refusal in the browser), and
+    `crash_reporter/platform/` (native-crash hooks, image base, thread count; the next-launch reader keeps its cfgs).
 
 ### Phase 4: frontend seams
 

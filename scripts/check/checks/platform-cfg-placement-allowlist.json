@@ -91,8 +91,7 @@
       "outsideSeam": 3
     },
     "apps/desktop/src-tauri/src/crash_reporter/mod.rs": {
-      "negated": 2,
-      "outsideSeam": 11
+      "outsideSeam": 3
     },
     "apps/desktop/src-tauri/src/crash_reporter/next_launch.rs": {
       "negated": 3,
@@ -241,12 +240,7 @@
       "outsideSeam": 24
     },
     "apps/desktop/src-tauri/src/icons/mod.rs": {
-      "negated": 5,
-      "outsideSeam": 18
-    },
-    "apps/desktop/src-tauri/src/icons/per_path.rs": {
-      "negated": 1,
-      "outsideSeam": 3
+      "outsideSeam": 2
     },
     "apps/desktop/src-tauri/src/index_host.rs": {
       "negated": 1,
@@ -263,10 +257,6 @@
     "apps/desktop/src-tauri/src/intl/live_locale.rs": {
       "negated": 1,
       "outsideSeam": 10
-    },
-    "apps/desktop/src-tauri/src/intl/mod.rs": {
-      "negated": 3,
-      "outsideSeam": 6
     },
     "apps/desktop/src-tauri/src/ipc.rs": {
       "negated": 8,
@@ -896,9 +886,6 @@
     },
     "crates/cmdr-update-trust/src/main.rs": {
       "outsideSeam": 2
-    },
-    "crates/cmdr-viewer/src/source.rs": {
-      "outsideSeam": 1
     },
     "crates/cmdr-viewer/src/watcher.rs": {
       "negated": 3,

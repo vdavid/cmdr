@@ -61,6 +61,8 @@ binary-warning classifier.
 - `log_view.rs`: `ViewedBackend`, the backend wrapper that applies a session's `RowText`. See § "The debug log's view"
 - `source.rs`: the floor every backend imports. `ByteSource` (positioned `read_at`), `SharedSource`, `LocalFileSource`
   (`pread` on a held `File`), `OpenedFile` (source + size + name), `open_local`. See § "Byte sources"
+- `platform/`: `positioned_read`, the one OS seam under `source.rs`: `pread` on macOS and Linux, `seek_read` on Windows,
+  a typed refusal in the browser.
 - `volume_source.rs`: `VolumeSource`, a `ByteSource` over a volume's positioned reads (`PositionedRead`: a held
   `VolumeRandomReader`, SMB today, or `read_range` through `RangeReader`) with a small block cache, plus
   `open_on_volume` / `size_on_volume`. See § "A file read through its volume"

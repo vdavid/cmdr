@@ -6,7 +6,7 @@ detection-timing decision, and disk-cache mechanism live here.
 This is the Rust `src/icons/` module. (`src-tauri/icons/`, a sibling at the crate root, holds the app *bundle* icons,
 unrelated.)
 
-## Asking macOS for the pixels (`macos_workspace.rs`)
+## Asking macOS for the pixels (`platform/macos/workspace.rs`)
 
 `NSWorkspace.iconForFile:` answers an `NSImage`, a resolution-independent recipe rather than a buffer, so every fetch draws it: allocate an `NSBitmapImageRep` at the target size, wrap it in an `NSGraphicsContext`, draw, and read `bitmapData`. The bitmap is `RGBA8`, non-planar and tightly packed, which is exactly what `image::RgbaImage::from_raw` adopts with no copy of its own.
 
