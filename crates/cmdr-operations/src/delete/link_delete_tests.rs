@@ -39,7 +39,7 @@ impl Drive {
         std::fs::write(dir.join("project/notes.txt"), b"notes").unwrap();
         std::fs::create_dir_all(dir.join("photos")).unwrap();
         std::fs::write(dir.join("photos/keep.jpg"), b"the only copy").unwrap();
-        std::os::unix::fs::symlink(dir.join("photos"), dir.join("project/data")).unwrap();
+        cmdr_fs::testing::symlink(dir.join("photos"), dir.join("project/data")).unwrap();
         let volume = Arc::new(LocalPosixVolume::local_folder(
             "Drive",
             &*dir,

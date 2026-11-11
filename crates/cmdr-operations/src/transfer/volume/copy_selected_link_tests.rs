@@ -10,8 +10,8 @@
 //! dialog does, and copy through it.
 
 use crate::testing::TestOperations;
+use cmdr_fs::testing::symlink;
 use std::collections::HashSet;
-use std::os::unix::fs::symlink;
 use std::time::{Duration, Instant};
 
 use super::copy::copy_volumes_with_progress;

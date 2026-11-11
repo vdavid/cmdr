@@ -142,7 +142,7 @@ fn test_copy_preserves_symlinks() {
     fs::write(&target_file, "target content").unwrap();
 
     let symlink = src_dir.join("link");
-    std::os::unix::fs::symlink(&target_file, &symlink).unwrap();
+    cmdr_fs::testing::symlink(&target_file, &symlink).unwrap();
 
     #[cfg(target_os = "macos")]
     {
@@ -170,7 +170,7 @@ fn test_copy_handles_broken_symlink() {
     // Create a symlink to a nonexistent target
     let nonexistent = src_dir.join("nonexistent");
     let symlink = src_dir.join("broken_link");
-    std::os::unix::fs::symlink(&nonexistent, &symlink).unwrap();
+    cmdr_fs::testing::symlink(&nonexistent, &symlink).unwrap();
 
     #[cfg(target_os = "macos")]
     {
@@ -205,7 +205,7 @@ fn test_copy_detects_symlink_loop() {
     fs::write(a_dir.join("file.txt"), "content").unwrap();
 
     let loop_link = a_dir.join("b");
-    std::os::unix::fs::symlink(&a_dir, &loop_link).unwrap();
+    cmdr_fs::testing::symlink(&a_dir, &loop_link).unwrap();
 
     // The copy should detect the loop during scanning
     // We can't easily test the full copy operation without a Tauri app handle,

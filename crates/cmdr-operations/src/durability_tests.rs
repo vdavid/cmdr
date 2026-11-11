@@ -388,7 +388,7 @@ fn a_created_symlink_skips_the_data_sync_but_flushes_its_directory() {
     let links = dir.join("links");
     fs::create_dir_all(&links).unwrap();
     let link = links.join("dangling");
-    std::os::unix::fs::symlink(dir.join("nowhere"), &link).unwrap();
+    cmdr_fs::testing::symlink(dir.join("nowhere"), &link).unwrap();
     let log = test_hook::record(|_| None);
 
     let result = flush(std::slice::from_ref(&link), &[], &HashSet::new());

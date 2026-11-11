@@ -476,7 +476,7 @@ fn a_source_reached_through_a_symlinked_parent_is_a_self_collision() {
     let original = real.join("photo.jpg");
     fs::write(&original, b"pixels").unwrap();
     let link = tmp.join("link");
-    std::os::unix::fs::symlink(&real, &link).unwrap();
+    cmdr_fs::testing::symlink(&real, &link).unwrap();
     let original_ino = inode(&original);
 
     let state = make_state(&engine);

@@ -213,7 +213,7 @@ async fn a_source_reached_through_a_symlinked_parent_finds_no_conflicts() {
     std::fs::create_dir(&real).expect("create real dir");
     std::fs::write(real.join("photo.jpg"), b"bytes").expect("write source");
     let link = dir.path().join("link");
-    std::os::unix::fs::symlink(&real, &link).expect("symlink the parent");
+    cmdr_fs::testing::symlink(&real, &link).expect("symlink the parent");
     engine.volumes().register(
         "self-collision-scan-symlink",
         Arc::new(LocalPosixVolume::local_folder(

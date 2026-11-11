@@ -99,7 +99,7 @@ fn disk_home(label: &str) -> (TestDir, PathBuf) {
 fn a_path_through_a_symlinked_folder_reaches_the_home_folder() {
     let (root, home) = disk_home("home-guard-symlinked-parent");
     let link = root.join("people");
-    std::os::unix::fs::symlink(root.join("Users"), &link).expect("symlink");
+    cmdr_fs::testing::symlink(root.join("Users"), &link).expect("symlink");
 
     let hit = home_folder_hit(&home, &[link.join("me")], true).map(|hit| hit.relation);
     assert_eq!(hit, Some(HomeFolderRelation::IsHome));
@@ -113,7 +113,7 @@ fn a_symlink_pointing_at_the_home_folder_stays_deletable() {
     // Deleting the link removes the link, never the folder it points at.
     let (root, home) = disk_home("home-guard-symlink-itself");
     let link = root.join("my-home");
-    std::os::unix::fs::symlink(&home, &link).expect("symlink");
+    cmdr_fs::testing::symlink(&home, &link).expect("symlink");
 
     assert_eq!(home_folder_hit(&home, &[link], true), None);
 }
@@ -125,7 +125,7 @@ fn a_home_folder_given_through_a_symlink_still_guards_its_real_path() {
     // is one under every temp dir here).
     let (root, home) = disk_home("home-guard-home-via-link");
     let link = root.join("home-link");
-    std::os::unix::fs::symlink(&home, &link).expect("symlink");
+    cmdr_fs::testing::symlink(&home, &link).expect("symlink");
     let real_home = std::fs::canonicalize(&home).expect("canonical");
 
     let hit = home_folder_hit(&link, &[real_home], true).map(|hit| hit.relation);

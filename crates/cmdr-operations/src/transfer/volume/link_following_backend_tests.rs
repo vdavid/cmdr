@@ -105,7 +105,7 @@ impl Volume for LinkFollowingVolume {
             if let Some((name, target)) = &self.link_takes_freed_name
                 && from == name
             {
-                std::os::unix::fs::symlink(target, self.inner.root().join(name)).expect("racing symlink");
+                cmdr_fs::testing::symlink(target, self.inner.root().join(name)).expect("racing symlink");
             }
             Ok(())
         })
@@ -264,7 +264,7 @@ fn plant_target(root: &Path) {
 }
 
 fn link(root: &Path, at: &str, to: &str) {
-    std::os::unix::fs::symlink(root.join(to), root.join(at)).expect("symlink");
+    cmdr_fs::testing::symlink(root.join(to), root.join(at)).expect("symlink");
 }
 
 fn is_link(root: &Path, rel: &str) -> bool {

@@ -103,7 +103,7 @@ fn an_entry_with_no_identity_is_left_alone() {
 fn a_copied_symlink_that_dangles_is_still_recognized() {
     let tmp = tempfile::tempdir().unwrap();
     let link = tmp.path().join("shortcut");
-    std::os::unix::fs::symlink(tmp.path().join("nothing-here"), &link).unwrap();
+    cmdr_fs::testing::symlink(tmp.path().join("nothing-here"), &link).unwrap();
     let recorded = WrittenFile::local(link.clone());
 
     assert_eq!(recheck_local(&recorded), Recheck::Act);

@@ -362,8 +362,8 @@ async fn test_create_file_does_not_clobber_existing() {
 
 #[tokio::test]
 async fn test_symlink_to_file_detected() {
+    use cmdr_fs::testing::symlink;
     use std::fs;
-    use std::os::unix::fs::symlink;
 
     // Create a test file and symlink in /tmp
     let test_dir = TestDir::new("symlink_file_test");
@@ -388,8 +388,8 @@ async fn test_symlink_to_file_detected() {
 
 #[tokio::test]
 async fn test_symlink_to_directory_detected() {
+    use cmdr_fs::testing::symlink;
     use std::fs;
-    use std::os::unix::fs::symlink;
 
     let test_dir = TestDir::new("symlink_dir_test");
 
@@ -410,7 +410,7 @@ async fn test_symlink_to_directory_detected() {
 
 #[tokio::test]
 async fn test_broken_symlink_still_exists() {
-    use std::os::unix::fs::symlink;
+    use cmdr_fs::testing::symlink;
 
     let test_dir = TestDir::new("broken_symlink_test");
 
@@ -811,8 +811,8 @@ async fn test_get_space_info() {
 
 #[tokio::test]
 async fn test_list_directory_includes_symlinks() {
+    use cmdr_fs::testing::symlink;
     use std::fs;
-    use std::os::unix::fs::symlink;
 
     let test_dir = TestDir::new("symlink_list_test");
 

@@ -480,9 +480,7 @@ mod refusing_folder_tests {
     /// mean macOS is where this behavior is actually covered. Don't "simplify"
     /// the guard away to make the tests look universal.
     fn a_folder_can_refuse_us() -> bool {
-        // SAFETY: (test) `geteuid` takes no arguments, shares no memory, and can't fail — it
-        // just returns the caller's effective uid. We compare the returned integer to 0.
-        unsafe { libc::geteuid() != 0 }
+        !cmdr_fs::testing::is_root()
     }
 
     /// A folder nobody can write into, and the file sitting in it.
@@ -611,7 +609,7 @@ mod path_exists_or_is_symlink_tests {
     //! symlink and silently clobbered (or failed mid-batch with a confusing
     //! ENOENT against the target's parent).
     use super::*;
-    use std::os::unix::fs::symlink;
+    use cmdr_fs::testing::symlink;
     use tempfile::TempDir;
 
     #[test]

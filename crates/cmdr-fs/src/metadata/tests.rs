@@ -97,7 +97,7 @@ mod macos {
         std::fs::create_dir(&inheriting).expect("mkdir");
         crate::testing::metadata_fixture::add_acl_entry(&inheriting, "everyone deny delete,only_inherit,file_inherit");
         let link = fixture.join("link");
-        std::os::unix::fs::symlink(&locked, &link).expect("symlink");
+        crate::testing::symlink(&locked, &link).expect("symlink");
 
         assert_eq!(removal_lock(&locked), RemovalLock::Locked);
         assert_eq!(removal_lock(&acl), RemovalLock::Locked);
@@ -136,7 +136,7 @@ mod macos {
         let fixture = MetadataFixture::new("metadata_clear_link");
         let target = locked_and_acld(&fixture, "target.txt");
         let link = fixture.join("link");
-        std::os::unix::fs::symlink(&target, &link).expect("symlink");
+        crate::testing::symlink(&target, &link).expect("symlink");
 
         assert_eq!(clear_blockers(&link), Unblock::NothingToClear);
 
@@ -341,7 +341,7 @@ mod macos {
         std::fs::write(&target, b"x").expect("write");
         let target_birth = birth_secs(&target);
         let link = fixture.join("link");
-        std::os::unix::fs::symlink(&target, &link).expect("symlink");
+        crate::testing::symlink(&target, &link).expect("symlink");
 
         let report = apply_staged(StagedItem::Link(&link), &rich_carried(), fixture_times());
 

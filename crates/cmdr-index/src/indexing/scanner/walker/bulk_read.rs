@@ -315,7 +315,7 @@ mod tests {
         std::fs::write(root.join("náïve-unïcode.txt"), b"unicode name").unwrap();
         std::fs::create_dir(root.join("subdir")).unwrap();
         std::fs::create_dir(root.join("empty_dir")).unwrap();
-        std::os::unix::fs::symlink(root.join("small.txt"), root.join("link.txt")).unwrap();
+        cmdr_fs::testing::symlink(root.join("small.txt"), root.join("link.txt")).unwrap();
         // A hardlink pair (nlink == 2) to check link-count parsing.
         std::fs::hard_link(root.join("small.txt"), root.join("small_alias.txt")).unwrap();
 

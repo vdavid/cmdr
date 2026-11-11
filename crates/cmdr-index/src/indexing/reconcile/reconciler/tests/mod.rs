@@ -15,7 +15,6 @@ use crate::indexing::stress_test_helpers::{TestInstanceGuard, check_db_consisten
 use crate::indexing::volume::IndexVolumeKind;
 use crate::indexing::watch::watcher::FsEventFlags;
 use crate::indexing::writer::AggSource;
-use std::os::unix::ffi::OsStrExt;
 use std::time::Duration;
 
 mod bulk_window;

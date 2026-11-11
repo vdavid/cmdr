@@ -147,7 +147,7 @@ impl Tree {
         std::fs::create_dir_all(root.join("outside")).expect("outside");
         std::fs::write(root.join("dir/plain.txt"), b"PLAIN").expect("plain");
         std::fs::write(root.join("outside/keep.txt"), b"KEEP").expect("keep");
-        std::os::unix::fs::symlink("../outside", root.join("dir/link")).expect("link");
+        cmdr_fs::testing::symlink("../outside", root.join("dir/link")).expect("link");
         Self { dir }
     }
 

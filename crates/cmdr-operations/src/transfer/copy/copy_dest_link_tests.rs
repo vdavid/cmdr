@@ -71,7 +71,7 @@ fn plant_incoming_album(root: &Path) -> PathBuf {
 fn plant_album_holding_a_link(root: &Path, target: &Path) -> PathBuf {
     let dst = root.join("dst");
     fs::create_dir_all(dst.join("album")).unwrap();
-    std::os::unix::fs::symlink(target, dst.join("album/link")).unwrap();
+    cmdr_fs::testing::symlink(target, dst.join("album/link")).unwrap();
     dst
 }
 
@@ -263,7 +263,7 @@ fn a_copy_leaves_a_top_level_dest_link_alone() {
     fs::write(incoming.join("new.txt"), "NEW").unwrap();
     let dst = dir.join("dst");
     fs::create_dir_all(&dst).unwrap();
-    std::os::unix::fs::symlink(&target, dst.join("link")).unwrap();
+    cmdr_fs::testing::symlink(&target, dst.join("link")).unwrap();
 
     let result = copy_files_with_progress_inner(
         &CollectorEventSink::new(),
@@ -290,7 +290,7 @@ fn a_destination_that_is_itself_a_link_still_takes_the_copy() {
     fs::create_dir_all(real.join("album")).unwrap();
     fs::write(real.join("album/kept.txt"), "KEPT").unwrap();
     let dst = dir.join("dst");
-    std::os::unix::fs::symlink(&real, &dst).unwrap();
+    cmdr_fs::testing::symlink(&real, &dst).unwrap();
 
     let events = CollectorEventSink::new();
     let result = copy_files_with_progress_inner(

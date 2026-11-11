@@ -185,7 +185,7 @@ async fn planning_skips_local_symlinks_and_special_files_without_a_stat_each() {
     let temp = tempfile::tempdir().expect("tempdir");
     std::fs::create_dir_all(temp.path().join("tree")).expect("mkdir");
     std::fs::write(temp.path().join("tree/real.txt"), b"real").expect("write");
-    std::os::unix::fs::symlink("real.txt", temp.path().join("tree/link")).expect("symlink");
+    cmdr_fs::testing::symlink("real.txt", temp.path().join("tree/link")).expect("symlink");
     let _socket = std::os::unix::net::UnixListener::bind(temp.path().join("tree/sock")).expect("bind a socket file");
     let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
         "source",

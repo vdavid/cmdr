@@ -135,7 +135,8 @@ fn an_old_name_matches_in_either_unicode_form() {
 /// names is followed or overwritten.
 #[cfg(unix)]
 mod private_folder {
-    use std::os::unix::fs::{PermissionsExt, symlink};
+    use cmdr_fs::testing::symlink;
+    use std::os::unix::fs::PermissionsExt;
     use std::path::{Path, PathBuf};
 
     use super::super::names_file::read;

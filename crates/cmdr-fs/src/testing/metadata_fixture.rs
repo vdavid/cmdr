@@ -154,7 +154,7 @@ impl MetadataFixture {
     /// modification dates (set with `FSOPT_NOFOLLOW`, so the target's stay as they are).
     pub fn symlink(&self, name: &str, target: &Path) -> PathBuf {
         let path = self.dir.join(name);
-        std::os::unix::fs::symlink(target, &path).expect("fixture: create the symlink");
+        crate::testing::symlink(target, &path).expect("fixture: create the symlink");
         set_times(&path, BIRTH_SECS, MODIFIED_SECS, ACCESSED_SECS, Follow::No);
         path
     }

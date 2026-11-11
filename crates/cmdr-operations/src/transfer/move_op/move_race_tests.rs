@@ -63,7 +63,7 @@ fn a_landing_on_a_free_name_refuses_a_dangling_symlink_too() {
     let source = tmp.path().join("notes.txt");
     let dest = tmp.path().join("landed.txt");
     fs::write(&source, b"the file being moved").unwrap();
-    std::os::unix::fs::symlink(tmp.path().join("nothing-here"), &dest).unwrap();
+    cmdr_fs::testing::symlink(tmp.path().join("nothing-here"), &dest).unwrap();
 
     let result = rename_onto_free_name(&source, Announced::assumed(&dest));
 

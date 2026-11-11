@@ -296,7 +296,7 @@ fn a_dangling_symlink_counts_as_taken() {
     let temp = TempDir::new().unwrap();
     let target = temp.path().join("notes.txt");
     fs::write(&target, b"x").unwrap();
-    std::os::unix::fs::symlink(temp.path().join("gone"), temp.path().join("notes (1).txt")).unwrap();
+    cmdr_fs::testing::symlink(temp.path().join("gone"), temp.path().join("notes (1).txt")).unwrap();
 
     let picked = next_available_name(&target, &ClaimedNames::default());
     assert_eq!(picked.file_name().unwrap().to_string_lossy(), "notes (2).txt");

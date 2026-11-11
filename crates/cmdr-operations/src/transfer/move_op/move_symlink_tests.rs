@@ -16,7 +16,7 @@ use super::test_support::{run_cross_fs_move, run_same_fs_move};
 use super::*;
 use crate::testing::TestOperations;
 use crate::types::ConflictResolution;
-use std::os::unix::fs::symlink;
+use cmdr_fs::testing::symlink;
 
 /// The fixture every cell here starts from: a target directory holding one file
 /// that lives OUTSIDE the moved selection, so anything that reaches it is

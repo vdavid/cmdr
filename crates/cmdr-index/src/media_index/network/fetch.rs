@@ -453,14 +453,9 @@ mod tests {
     #[test]
     #[cfg(unix)]
     fn fs_fetch_times_out_on_a_hung_read_and_reports_a_disconnect() {
-        use std::os::unix::ffi::OsStrExt;
         let dir = tempfile::tempdir().expect("temp");
         let fifo = dir.path().join("hung.jpg");
-        let c_path = std::ffi::CString::new(fifo.as_os_str().as_bytes()).expect("path has no interior NUL");
-        // SAFETY: `c_path` is a NUL-terminated C string that outlives the call, and
-        // `mkfifo` only reads it. A non-zero return is a plain errno, checked below.
-        let made = unsafe { libc::mkfifo(c_path.as_ptr(), 0o600) };
-        assert_eq!(made, 0, "mkfifo failed: {}", std::io::Error::last_os_error());
+        cmdr_fs::testing::make_fifo(&fifo).expect("mkfifo");
 
         let budget = Duration::from_millis(50);
         let started = std::time::Instant::now();

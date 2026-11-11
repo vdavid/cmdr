@@ -15,7 +15,7 @@ async fn test_scan_for_copy_counts_a_nested_link_as_one_entry_without_following_
     std::fs::write(test_dir.join("real/big.bin"), vec![0u8; 4096]).unwrap();
     std::fs::create_dir_all(test_dir.join("tree")).unwrap();
     std::fs::write(test_dir.join("tree/keep.txt"), b"kept").unwrap();
-    std::os::unix::fs::symlink("../real", test_dir.join("tree/link")).unwrap();
+    cmdr_fs::testing::symlink("../real", test_dir.join("tree/link")).unwrap();
     let volume = LocalPosixVolume::local_folder("Test", test_dir.to_path_buf(), VolumeHost::detached());
 
     let scan = volume.scan_for_copy(Path::new("/tree")).await.unwrap();

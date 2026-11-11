@@ -104,12 +104,14 @@ the next section.
 - `mapped_file_faults/`: the SIGBUS recovery that turns a read of a mapped file whose disk went away into zeros, and the
   generation a reader checks to distrust what it read meanwhile. § "Mapped-file faults".
 - `testing/`: behind the `testing` feature. `TestDir`, the two waits, and `unique_test_id` (a pid-and-counter key for a
-  test-owned entry in a global map) in `mod.rs`; `tcp_proxy.rs` (`TcpProxy`, a loopback proxy a network backend's test
-  puts in front of a shared Docker fixture to cut the connection, refused or silent, without touching a container other
-  runs lease; its header has the usage); on macOS, `disk_images/` (the synthetic APFS/HFS+ image harness and its guarded
-  runner, § "`testing::disk_images`") and `metadata_fixture.rs` (files and folders carrying birth, flags, an ACL,
-  xattrs, and mode, for the copy-keeps-metadata cells; its `Drop` unlocks and strips ACLs so a Locked leftover can't
-  fail the cleanup).
+  test-owned entry in a global map) in `mod.rs`; `platform/` (the OS half of the fixtures: `symlink`, `is_root`,
+  `can_create_symlinks`, and Unix's `make_fifo`, so a test asks a capability rather than an OS and no test calls
+  `std::os::unix::fs::symlink` or `geteuid` itself); `tcp_proxy.rs` (`TcpProxy`, a loopback proxy a network backend's
+  test puts in front of a shared Docker fixture to cut the connection, refused or silent, without touching a container
+  other runs lease; its header has the usage); on macOS, `disk_images/` (the synthetic APFS/HFS+ image harness and its
+  guarded runner, § "`testing::disk_images`") and `metadata_fixture.rs` (files and folders carrying birth, flags, an
+  ACL, xattrs, and mode, for the copy-keeps-metadata cells; its `Drop` unlocks and strips ACLs so a Locked leftover
+  can't fail the cleanup).
 
 ## The browser build
 

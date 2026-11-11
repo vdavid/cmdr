@@ -561,7 +561,7 @@ mod tests {
         let dst_link = temp_dir.join("dest_link");
 
         fs::write(&target, "target content").unwrap();
-        std::os::unix::fs::symlink(&target, &src_link).unwrap();
+        cmdr_fs::testing::symlink(&target, &src_link).unwrap();
 
         let result = copy_symlink(&src_link, &dst_link);
         assert!(result.is_ok());
@@ -580,7 +580,7 @@ mod tests {
         let dst_link = temp_dir.join("dest_broken_link");
 
         // Create a symlink to a nonexistent target
-        std::os::unix::fs::symlink(&nonexistent, &src_link).unwrap();
+        cmdr_fs::testing::symlink(&nonexistent, &src_link).unwrap();
 
         let result = copy_symlink(&src_link, &dst_link);
         assert!(result.is_ok());
