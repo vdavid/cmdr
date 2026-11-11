@@ -1170,8 +1170,9 @@ Managed Macs get each new version as a pkg pushed from the MDM, and setting `Dis
 `pkgbuild` and a warning about `._` entries when an agent runs it: the agent's process stamps `com.apple.provenance` on
 every file it copies, which nothing can strip (verified on macOS 27.0, 2026-10-07, building from 0.50.0).
 
-**Not verified yet**: a signed, notarized build (no certificate), and an install through a real MDM. Both are open on
-`getcmdr/cmdr#118`.
+**Verified**: the pipeline's signed, notarized pkg (verified on `v0.60.1-pipelinetest.1`, `pkgutil --check-signature`,
+`spctl -a -t install`, and `stapler validate`, with the expanded pkg's `Cmdr.app` byte-identical to the universal DMG's,
+2026-11-11), and an install through a real MDM (`getcmdr/cmdr#118`).
 
 ### Setting up the installer certificate
 
@@ -1186,8 +1187,7 @@ every file it copies, which nothing can strip (verified on macOS 27.0, 2026-10-0
 4. Optional local proof before a release:
    `./scripts/build-pkg.sh --sign "Developer ID Installer: Rymdskottkarra AB (83H6YAQMNP)"` signs from the login
    keychain and runs `pkgutil --check-signature`.
-5. The next release attaches the pkg. Then update `/trust` (the `DevTodo` under "Deploying Cmdr") and this section's
-   "Not verified yet".
+5. The next release attaches the pkg.
 
 ### Renewing the Developer ID Installer certificate
 

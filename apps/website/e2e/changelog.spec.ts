@@ -48,7 +48,9 @@ test.describe('Changelog', () => {
 
     expect(headings.length).toBeGreaterThan(0)
     for (const heading of headings) {
-      const version = /^\[(\d+\.\d+\.\d+)\] - \d{4}-\d{2}-\d{2}$/.exec(heading.text)?.[1]
+      // A pre-release suffix is a real heading too: a pipeline test's release branch carries
+      // `[0.60.1-pipelinetest.1]`, and `changelog.ts`'s `releaseHeadingPattern` anchors it.
+      const version = /^\[(\d+\.\d+\.\d+[0-9A-Za-z.+-]*)\] - \d{4}-\d{2}-\d{2}$/.exec(heading.text)?.[1]
       expect(version, `visible heading "${heading.text}"`).toBeDefined()
       expect(heading.id).toBe(`v${version}`)
     }
