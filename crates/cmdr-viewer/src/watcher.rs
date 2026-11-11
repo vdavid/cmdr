@@ -179,7 +179,6 @@ impl ViewerWatcherManager {
                 path: canonical.clone(),
                 subscribers: Vec::new(),
                 last_size: initial_size,
-                #[cfg(unix)]
                 last_ino: initial_ino,
                 drop_token: Arc::new(()),
             }));

@@ -3,6 +3,8 @@
 //! Consolidates all platform-specific logic for extracting file metadata
 //! (sizes, mtime, inode, nlink) into a single struct and function.
 
+mod platform;
+
 use cmdr_fs::file_identity::{FileId, link_count};
 
 /// Snapshot of filesystem metadata fields relevant to indexing.
@@ -48,14 +50,8 @@ pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_sy
         };
     }
 
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        let blocks = metadata.blocks();
-        // Saturating: release builds don't check overflow, so a bogus block
-        // count from a network filesystem would wrap into a small, wrong size.
-        let physical_size = if blocks > 0 { blocks.saturating_mul(512) } else { 0 };
-        metadata_from_raw(
+    match platform::allocated_bytes(metadata) {
+        Some(physical_size) => metadata_from_raw(
             metadata.len(),
             physical_size,
             modified_at,
@@ -63,19 +59,17 @@ pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_sy
             link_count(metadata).unwrap_or(1),
             is_dir,
             is_symlink,
-        )
-    }
-
-    // No allocated-block count in std's metadata here, so the logical size stands in.
-    #[cfg(windows)]
-    {
-        let size = metadata.len();
-        MetadataSnapshot {
-            logical_size: Some(size),
-            physical_size: Some(size),
-            modified_at,
-            inode: node_number(metadata),
-            nlink: link_count(metadata),
+        ),
+        // No allocated-block count from this OS, so the logical size stands in.
+        None => {
+            let size = metadata.len();
+            MetadataSnapshot {
+                logical_size: Some(size),
+                physical_size: Some(size),
+                modified_at,
+                inode: node_number(metadata),
+                nlink: link_count(metadata),
+            }
         }
     }
 }
@@ -93,10 +87,6 @@ fn node_number(metadata: &std::fs::Metadata) -> Option<u64> {
 /// funnel through it, so a bulk-read entry and a `symlink_metadata` entry can't
 /// diverge on how sizes/inode/nlink are mapped. `physical_size` is bytes (the caller
 /// has already applied `st_blocks * 512` or read `ATTR_FILE_ALLOCSIZE`).
-#[cfg_attr(
-    any(target_os = "linux", target_os = "windows"),
-    allow(dead_code, reason = "only the macOS bulk reader calls this directly today")
-)]
 pub(super) fn metadata_from_raw(
     logical_size: u64,
     physical_size: u64,
@@ -133,21 +123,7 @@ pub(super) fn metadata_from_raw(
     }
 }
 
-/// Extract mtime from metadata, platform-independently.
+/// Extract mtime from metadata, in whole seconds since the epoch.
 fn extract_mtime(metadata: &std::fs::Metadata) -> Option<u64> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        let mtime = metadata.mtime();
-        if mtime >= 0 { Some(mtime as u64) } else { None }
-    }
-
-    #[cfg(windows)]
-    {
-        metadata
-            .modified()
-            .ok()
-            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-            .map(|d| d.as_secs())
-    }
+    platform::modified_secs(metadata)
 }

@@ -406,3 +406,31 @@ async fn the_plan_lists_the_selection_in_tree_order() {
         ]
     );
 }
+
+/// ❗ Pins today's answer when the OS can't tell files apart
+/// (`cmdr_fs::file_identity::Sameness::Unknown`; every Windows file until it has
+/// a file-id reader): a compress whose archive name already exists is refused as
+/// "inside the source" even though the archive is a different file. Cautious, not
+/// honest; the intended rule is in `cmdr_fs::file_identity`'s module docs.
+#[tokio::test]
+async fn unknown_identity_today_refuses_a_compress_onto_any_existing_archive() {
+    let dir = cmdr_fs::testing::TestDir::new("fresh_plan_unknown_identity");
+    let source_file = dir.join("notes.txt");
+    let archive = dir.join("archive.zip");
+    std::fs::write(&source_file, b"notes").unwrap();
+    std::fs::write(&archive, b"an older, unrelated archive").unwrap();
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
+        "Local",
+        "/",
+        crate::host::testing::pane_order_host(),
+    ));
+    let runtime = Handle::current();
+    let validate = || validate_aliases(&runtime, &local, std::slice::from_ref(&source_file), &local, &archive);
+
+    assert!(validate().await.is_ok(), "with ids known, a different file is no alias");
+    let _unknown = cmdr_fs::testing::hide_identity_of(&[&source_file, &archive]);
+    assert!(matches!(
+        validate().await,
+        Err(WriteOperationError::DestinationInsideSource { .. })
+    ));
+}

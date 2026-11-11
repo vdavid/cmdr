@@ -69,3 +69,22 @@ mod on_a_real_disk {
         );
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn a_hidden_identity_reads_as_unknown_until_the_guard_drops() {
+    let dir = tempfile::tempdir().unwrap();
+    let (a, b) = (dir.path().join("a"), dir.path().join("b"));
+    fs::write(&a, b"1").unwrap();
+    fs::write(&b, b"2").unwrap();
+    {
+        let _hidden = hide_identity_of(&[&a]);
+        let (ma, mb) = (fs::metadata(&a).unwrap(), fs::metadata(&b).unwrap());
+        assert_eq!(same_node(&ma, &mb), Sameness::Unknown);
+        assert_eq!(same_device(&ma, &mb), Sameness::Unknown);
+        assert_eq!(link_count(&ma), None);
+        assert!(FileId::of(&mb).is_some(), "only the named path hides");
+    }
+    let (ma, mb) = (fs::metadata(&a).unwrap(), fs::metadata(&b).unwrap());
+    assert_eq!(same_node(&ma, &mb), Sameness::Different);
+}

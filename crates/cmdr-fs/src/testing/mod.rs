@@ -46,6 +46,7 @@ pub mod scan_recording;
 pub mod tcp_proxy;
 mod wedged_volume;
 
+pub use crate::file_identity::{HiddenIdentities, hide_identity_of};
 #[cfg(cmdr_host)]
 pub use platform::*;
 pub use wedged_volume::WedgedVolume;

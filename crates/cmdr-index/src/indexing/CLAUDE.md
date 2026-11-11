@@ -53,8 +53,8 @@ read it before non-trivial work there.
 
 Four loose shared leaves sit beside the areas, all because homing them in any one area would invert a dependency:
 
-- `metadata.rs`: the single platform-specific metadata-extraction primitive (`extract_metadata`, `MetadataSnapshot`),
-  used by scanner, reconcile, watch, and verifier.
+- `metadata/`: the single platform-specific metadata-extraction primitive (`extract_metadata`, `MetadataSnapshot`), used
+  by scanner, reconcile, watch, and verifier.
 - `hold.rs`: `VolumeHold`, a start's stake in its volume, and the wait a removable stop answers from. A leaf so the
   workers that read a drive can carry a share without importing `lifecycle::state`.
 - `deletes.rs`: the delete generation — how many batches of index deletes have gone out since the drive was last proved
