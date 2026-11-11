@@ -207,11 +207,11 @@ describe('the operation list', () => {
     })
   })
 
-  it('shows the ALPHA badge', async () => {
+  it('shows the BETA badge', async () => {
     setEntries([opRow({})])
     const target = await mountDialog()
-    // StatusBadge renders the raw status text ('alpha'); CSS uppercases it visually.
-    expect(target.querySelector('.feature-status-badge')?.textContent).toBe('alpha')
+    // StatusBadge renders the raw status text ('beta'); CSS uppercases it visually.
+    expect(target.querySelector('.feature-status-badge')?.textContent).toBe('beta')
   })
 
   it('shows the empty state when no operations are logged', async () => {

@@ -53,7 +53,7 @@
 
     const log = getAppLogger('operationLogDialog')
 
-    // Alpha badge policy: the status comes from the repo-root feature-status.json.
+    // Badge policy: the status comes from the repo-root feature-status.json.
     const badge = getBadgeStatus('operation-log')
 
     const tree = createOperationTreeSource()

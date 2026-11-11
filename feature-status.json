@@ -16,8 +16,8 @@
     {
       "id": "select-files",
       "name": "Select files dialog",
-      "status": "alpha",
-      "note": "Wildcard and regex matching work well; AI selection is cloud-only and still misses edge cases."
+      "status": "stable",
+      "note": "Wildcard and regex matching work well; AI selection is cloud-only and can misread an unusual request."
     },
     {
       "id": "image-search",
@@ -28,80 +28,80 @@
     {
       "id": "archives",
       "name": "Archives",
-      "status": "alpha",
+      "status": "stable",
       "note": "Browse, create, edit, and extract zip, tar, and 7z archives like folders, including password-protected ones. Also .app and .xlsx, .docx, and .pptx files."
     },
     {
       "id": "operation-log",
       "name": "Operation log",
-      "status": "alpha",
+      "status": "beta",
       "note": "A durable history of every copy, move, delete, and rename. Pick an operation to see every item it touched, check the ones to roll back, and roll back all of it or only some. Operations that can't be reversed say why. Can be turned off in Settings."
     },
     {
       "id": "multi-rename",
       "name": "Multi-rename tool",
-      "status": "alpha",
+      "status": "stable",
       "note": "Rename a whole selection at once, Total Commander style: name and extension masks, search and replace, case changes, counters, and photo and music details like capture dates and track numbers, with a live preview of every row before anything changes. One Undo reverses the whole batch.",
       "issueUrl": "https://github.com/getcmdr/cmdr/issues/372"
     },
     {
       "id": "ask-cmdr",
       "name": "Ask Cmdr",
-      "status": "alpha",
-      "note": "Chat with an AI agent about your files. It can find them, look inside them (text, PDFs, photos, archives, etc., even on phones and servers), sees your past operations, knows your important folders, can connect a NAS you saved, and can proactively suggest move/rename/delete/unzip actions, which you can review and approve/reject. Fully optional (you can use Cmdr as just a regular file manager!). Early stage with rough edges. It can browse and tag on its own, but anything that changes, opens, or deletes files waits for your yes, and it can't read keys, passwords, or browser data. Can use an on-device model for complete privacy, and nothing reaches a cloud AI until you allow it."
+      "status": "beta",
+      "note": "Chat with an AI agent about your files. It can find them, look inside them (text, PDFs, photos, archives, etc., even on phones and servers), sees your past operations, knows your important folders, can connect a NAS you saved, and can proactively suggest move/rename/delete/unzip actions, which you can review and approve/reject. Fully optional (you can use Cmdr as just a regular file manager!). It can browse and tag on its own, but anything that changes, opens, or deletes files waits for your yes, and it can't read keys, passwords, or browser data. Can use an on-device model for complete privacy, and nothing reaches a cloud AI until you allow it."
     },
     {
       "id": "network-drives",
       "name": "Network drives (SMB)",
-      "status": "beta",
-      "note": "Browsing and fast direct transfers work on common NAS setups, with server-side copies within a share, saved servers and shares, account switching, accented names, encryption (which you can require), DFS namespace roots and links, browsing during a copy, and unreliable servers. Constantly testing with more real-world servers."
+      "status": "stable",
+      "note": "Browsing and fast direct transfers work on common NAS setups, with server-side copies within a share, saved servers and shares, account switching, accented names, encryption (which you can require), DFS namespace roots and links, browsing during a copy, and unreliable servers."
     },
     {
       "id": "android-devices",
       "name": "Android devices (MTP)",
-      "status": "beta",
+      "status": "stable",
       "note": "Fast transfers on most devices, but macOS sometimes claims the device first and some phones need a reconnect."
     },
     {
       "id": "android-adb",
       "name": "Android devices (ADB)",
-      "status": "alpha",
+      "status": "beta",
       "note": "Browse and index a phone's whole filesystem over USB debugging, with the phone's Allow prompt handled right in the pane. Tested on a Pixel; needs Android's platform tools installed."
     },
     {
       "id": "sftp",
       "name": "SFTP servers",
-      "status": "alpha",
-      "note": "Save an SFTP server once and open it from the volume switcher, with a root and start folder, free space, SSH host-key checks, key files, and passwords in your Keychain. Not yet tested against many real-world servers."
+      "status": "stable",
+      "note": "Save an SFTP server once and open it from the volume switcher, with a root and start folder, free space, SSH host-key checks, key files, and passwords in your Keychain."
     },
     {
       "id": "webdav",
       "name": "WebDAV servers",
-      "status": "alpha",
-      "note": "Open Nextcloud, ownCloud, Synology, and other WebDAV servers like folders, with a root and start folder, passwords in your Keychain, and a NAS's self-signed certificate trusted on first use. Not yet tested against many real-world servers."
+      "status": "beta",
+      "note": "Open Nextcloud, ownCloud, Synology, and other WebDAV servers like folders, with a root and start folder, passwords in your Keychain, and a NAS's self-signed certificate trusted on first use."
     },
     {
       "id": "nfs",
       "name": "NFS shares",
-      "status": "alpha",
-      "note": "Open a NAS's NFS exports directly, with no sudo or system mount: browse, copy both ways, rename, and delete, with folders refreshing when another computer changes them. Brand new and tested on a Linux NFS server."
+      "status": "beta",
+      "note": "Open a NAS's NFS exports directly, with no sudo or system mount: browse, copy both ways, rename, and delete, with folders refreshing when another computer changes them. Tested on a Linux NFS server."
     },
     {
       "id": "s3",
       "name": "S3 storage",
-      "status": "alpha",
-      "note": "Browse, copy, move, rename, and delete in buckets on AWS, R2, B2, Wasabi, Hetzner, Google Cloud Storage, Spaces, or any S3-compatible server, with cost estimates at list prices and share links. Tested live on all seven providers, but brand new."
+      "status": "beta",
+      "note": "Browse, copy, move, rename, and delete in buckets on AWS, R2, B2, Wasabi, Hetzner, Google Cloud Storage, Spaces, or any S3-compatible server, with cost estimates at list prices and share links. Tested live on all seven providers."
     },
     {
       "id": "restic-backups",
       "name": "Restic backups",
-      "status": "alpha",
-      "note": "Open a restic backup on any drive or server and browse its snapshots like folders, read-only, then copy files out to restore them. The password stays in your Keychain. Brand new and tested on one real NAS repo."
+      "status": "beta",
+      "note": "Open a restic backup on any drive or server and browse its snapshots like folders, read-only, then copy files out to restore them. The password stays in your Keychain. Tested on a real NAS repo."
     },
     {
       "id": "git-browser",
       "name": "Git browser",
-      "status": "beta",
+      "status": "stable",
       "note": "Browse history, branches, tags, stashes, and worktrees like folders, open any file from them in the viewer, and copy one out. Lists up to 100,000 commits in about a second."
     },
     {
@@ -113,14 +113,14 @@
     {
       "id": "download-notifications",
       "name": "Download notifications",
-      "status": "beta",
+      "status": "stable",
       "note": "Catches downloads and jumps to the latest with one key."
     },
     {
       "id": "go-to-path",
       "name": "Go to folder",
-      "status": "beta",
-      "note": "Paste or type any path and jump there; it's new, so recents and edge-case path handling are still settling."
+      "status": "stable",
+      "note": "Paste or type any path and jump there, with your recent paths to pick from."
     },
     {
       "id": "file-explorer",
@@ -173,7 +173,7 @@
     {
       "id": "ai-rename",
       "name": "AI rename",
-      "status": "alpha",
+      "status": "beta",
       "note": "Describe the names you want and Cmdr proposes them, reading the text inside your images. Every row shows the file and the evidence behind its name, you allow, edit, or deny each one, and the whole batch is one click from undone."
     },
     {

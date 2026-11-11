@@ -1,6 +1,6 @@
 /**
- * E2E for the alpha "Ask Cmdr" chat rail: it toggles open from BOTH the View menu item and
- * the ⌘⌥A keyboard shortcut (with the ALPHA badge), focuses the composer on open and
+ * E2E for the beta "Ask Cmdr" chat rail: it toggles open from BOTH the View menu item and
+ * the ⌘⌥A keyboard shortcut (with the BETA badge), focuses the composer on open and
  * returns focus to the panes on Escape, streams a reply end-to-end, and shows a tool-running turn the
  * same live and after reopening its thread.
  *
@@ -34,10 +34,10 @@ import {
 } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
-/** The ALPHA stability badge is present in the open rail's header. */
-function alphaBadgeShown(page: TauriPage): Promise<boolean> {
+/** The BETA stability badge is present in the open rail's header. */
+function betaBadgeShown(page: TauriPage): Promise<boolean> {
   return page.evaluate<boolean>(
-    `(document.querySelector('.ask-cmdr-rail .feature-status-badge')?.textContent || '').trim().toLowerCase() === 'alpha'`,
+    `(document.querySelector('.ask-cmdr-rail .feature-status-badge')?.textContent || '').trim().toLowerCase() === 'beta'`,
   )
 }
 
@@ -236,11 +236,11 @@ test.describe('Ask Cmdr rail', () => {
     expect(await offGateShown(page)).toBe(false)
   })
 
-  test('opens from the View menu item with the ALPHA badge', async ({ tauriPage }) => {
+  test('opens from the View menu item with the BETA badge', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     await dispatchMenuCommand(page, 'askCmdr.toggle')
     await expect.poll(() => railOpen(page), { timeout: waitBudget(3000) }).toBe(true)
-    expect(await alphaBadgeShown(page)).toBe(true)
+    expect(await betaBadgeShown(page)).toBe(true)
   })
 
   test('opens from the ⌘⌥A keyboard shortcut', async ({ tauriPage }) => {
