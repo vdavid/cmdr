@@ -90,9 +90,12 @@ focused-pane change (per plan G15).
 ## Apply-on-commit
 
 The matcher runs at COMMIT time (Enter / button click), not at preview time. The preview list above the footer shows the
-matching rows live as the user types; pressing Enter re-runs the matcher one more time against the open-time snapshot
-and hands the matched indices to `applyIndicesToFocusedPane(indices, mode)`. We do NOT mutate the focused pane's
-selection while the user previews, matching Total Commander's "+" / "-" behaviour.
+matching rows live as the user types, a page at a time like every `QueryDialog` list (`runQuery` answers the first
+`page.limit` matches and the full count; `loadMore` slices further into the SAME run's `lastMatchedIndices`, so an edit
+made since can't change what a page shows). Only shown rows get adapted into `SearchResultEntry`s, which keeps a
+100,000-file folder's `*` cheap. Pressing Enter re-runs the matcher one more time against the open-time snapshot and
+hands the matched indices to `applyIndicesToFocusedPane(indices, mode)`. We do NOT mutate the focused pane's selection
+while the user previews, matching Total Commander's "+" / "-" behaviour.
 
 ## Mid-dialog AI-provider fallback
 

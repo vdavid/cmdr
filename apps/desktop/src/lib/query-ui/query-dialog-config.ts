@@ -40,6 +40,7 @@ import type { SearchResultEntry } from '#lib/tauri-commands/index.js'
 import type { SoftDialogId } from '#lib/ui/dialog-registry.js'
 import type { QueryFilterState, SearchMode } from './query-filter-state.svelte'
 import type { QueryStreamSource } from './query-stream'
+import type { QueryAnswer, QueryPage } from './result-paging'
 import type { RecentItemAdapter, RecentItemKey } from './recent-items/recent-items-types'
 import type { RecentItemsStore } from './recent-items/recent-items-state.svelte'
 
@@ -312,13 +313,25 @@ export interface QueryDialogConfig<E = unknown> {
   resultsExtra?: import('svelte').Snippet
 
   /**
-   * Executes the query in the consumer's data source. Receives nothing; reads
-   * what it needs off `state`. Returns the result set. QueryDialog handles
-   * writing `state.results` / `state.totalCount` / `state.cursorIndex` and
-   * `state.lastDialogEvent = 'results-arrived'`. Do NOT write any of those from
-   * inside `runQuery`.
+   * Executes the query in the consumer's data source, answering with up to `page.limit`
+   * rows (ranked) plus the full match count. Reads the question off `state`. QueryDialog
+   * handles writing `state.results` / `state.totalCount` / `state.cursorIndex` and
+   * `state.lastDialogEvent = 'results-arrived'`. Do NOT write any of those from inside
+   * `runQuery`.
    */
-  runQuery: () => Promise<{ entries: SearchResultEntry[]; totalCount: number }>
+  runQuery: (page: QueryPage) => Promise<QueryAnswer>
+
+  /**
+   * The LAST run's question asked again for up to `page.limit` rows, for when the list's
+   * end comes into view (`result-paging.ts`). Every consumer pages, so it's required.
+   *
+   * ❗ The question is the run's, ❌ never re-read off `state`: the user may have edited the
+   * bar or a chip since without re-running (auto-apply off, or inside its debounce), and a
+   * page of a different question appended to this list would be silently wrong. Capture
+   * what the run asked. It also must not repeat a run's side effects (Search's coverage
+   * note and analytics). `null` means there's nothing more to give for that run.
+   */
+  loadMore: (page: QueryPage) => Promise<QueryAnswer | null>
 
   /**
    * Optional transport for a query that answers over TIME rather than in one promise.

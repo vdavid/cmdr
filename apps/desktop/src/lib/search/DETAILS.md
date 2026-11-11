@@ -85,6 +85,9 @@ Everything Search-specific sits in a module beside it, one per job, each unit-te
 - **`search-runners.ts`** — both run paths and the `buildRunQuery` they share (bar + filters + AI pattern + the scope,
   whose parse is async): `runQuery` is the one-shot index answer the debounce takes, `streamingSource` is every run the
   user asked for. It also writes the coverage note on both paths, cleared before the ask and filled from the answer.
+  `loadMore` is the dialog's pager (`query-ui/DETAILS.md` § Paging): it re-sends the payload the latest run SENT, with a
+  larger `limit` and none of a run's side effects (no note, no analytics), so a bar edited since without re-running
+  can't splice another question's rows in. A walk adopted on reopen has no payload in this mount, and pages nothing.
 - **`search-run-tracking.ts`** — the run clock and the one `search_used` event per run, plus the two CTA events. The
   vocabulary is `search-analytics.ts`; this is the wiring.
 - **`ai-translate.ts`** — calls `translate_search_query` and returns `{ caveat, apply }` to QueryDialog; `apply()` holds
@@ -95,9 +98,9 @@ Everything Search-specific sits in a module beside it, one per job, each unit-te
 - **`snapshot-promotion.ts`** — "Show all in main window" (⌥⏎): builds the `SearchSnapshot`, mints an id, pins via
   `setLastAttemptId`, hands a still-running walk to `walk-handoff.svelte.ts`, and persists the recent-search entry. It
   and "Go to file" are the only two call sites that add to recent searches.
-- **`snapshot-fill.ts`** — the index asked for as many rows as a PANE holds rather than the 30 a dialog list wants. Both
-  fillers go through it: the promotion before it mints the snapshot, and a handed-off walk's ending. It never shrinks a
-  pane and never blocks an open.
+- **`snapshot-fill.ts`** — the index asked for as many rows as a PANE holds rather than the page or two a dialog list
+  holds. Both fillers go through it: the promotion before it mints the snapshot, and a handed-off walk's ending. It
+  never shrinks a pane and never blocks an open.
 - **`recent-search-adapter.ts`** — the row adapter + key (the only seam where Search-specific fields like `scope` /
   `excludeSystemDirs` leak into the chip's tooltip), plus pick (LOADS, never runs) and remove.
 
@@ -573,8 +576,8 @@ Click on the footer's "Open in pane" button promotes the current result set into
    `SearchSnapshot` from THAT answer plus live state (`getMode()` / `getQuery()` / filters / scope / flags), live run or
    not: the index answers for what it covers right away, and a still-running walk appends on top and tops the pane up at
    its end. The rows on screen are the fallback: a failed ask, or an answer no bigger than them. ❌ Never promote
-   `getResults()` alone — it holds the 30 the dialog renders, and the pane holds 10,000. The live run is read AFTER that
-   ask (a getter), so a walk that ended meanwhile isn't handed off.
+   `getResults()` alone — it holds the pages the dialog has scrolled through, and the pane holds 10,000. The live run is
+   read AFTER that ask (a getter), so a walk that ended meanwhile isn't handed off.
 2. Mints a fresh id via `nextSnapshotId()` and stores via `getOrCreate(id, snapshot)`.
 3. Pins the snapshot via `setLastAttemptId(id)` so refcount stays ≥1 even before history pushes.
 4. Calls `addRecentSearch(historyEntry)`. **This is the one and only call site that adds to recent searches** (per plan

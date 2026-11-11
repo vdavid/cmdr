@@ -134,6 +134,32 @@ describe('ColumnList virtual window', () => {
   })
 })
 
+describe('ColumnList reaching the end', () => {
+  it('tells the consumer once the rows in view near the end, and not before', async () => {
+    const onReachEnd = vi.fn()
+    // 10 rows in view of 100: the end is 90 rows off, overscan or not.
+    await render({ rows: items(100), onReachEnd })
+    expect(onReachEnd).not.toHaveBeenCalled()
+
+    // Rows 80–89 in view: within `REACH_END_ROWS` of row 100.
+    layout.scroll(VIEWPORT, 80 * ROW_PX)
+    flushSync()
+    expect(onReachEnd).toHaveBeenCalled()
+  })
+
+  it('tells the consumer at once when the whole list fits', async () => {
+    const onReachEnd = vi.fn()
+    await render({ rows: items(5), onReachEnd })
+    expect(onReachEnd).toHaveBeenCalled()
+  })
+
+  it('stays quiet over an empty list', async () => {
+    const onReachEnd = vi.fn()
+    await render({ rows: [], onReachEnd })
+    expect(onReachEnd).not.toHaveBeenCalled()
+  })
+})
+
 describe('ColumnList content-sized rows', () => {
   it('draws every row with no spacers, however far the viewport is from them', async () => {
     const target = await render({ rows: items(300), virtualized: false })

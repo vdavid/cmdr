@@ -307,6 +307,34 @@ the close: the dialog is un-closable by keyboard until the window reloads. `canc
 since a run the backend never registered is one it has nothing to cancel. One such run in the Playwright suite left the
 search dialog open for the remaining 44 tests on its shard.
 
+### Paging: the list grows as it's scrolled
+
+Every consumer pages; there's no opt-in. A run asks for `RESULTS_PAGE_SIZE` (30) rows through `runQuery({ limit })`, and
+when the list's end comes into view the runner asks the SAME question again for `RESULTS_PAGE_STEP` (200) more through
+`config.loadMore({ limit })`, up to `MAX_LISTED_RESULTS` (10,000, the backend's `MAX_RESULT_ROWS`). The numbers and the
+merge live in `result-paging.ts`; the run state in `query-runner.svelte.ts`.
+
+- **The trigger is `ColumnList.onReachEnd`**, which fires when the rows IN VIEW come within 10 of the end. Scrolling and
+  the cursor keys share it, because a cursor move scrolls its row into view. `#lib/ui/DETAILS.md` § ColumnList.
+- **"The same question" is the consumer's to keep, ❌ never re-read off `state`.** The bar or a chip may have been
+  edited since without a re-run (auto-apply off, or inside its debounce), and a page of that other question appended to
+  this list would be silently wrong. Search re-sends the payload its last run SENT; Selection slices the last run's
+  match list. A `loadMore` must also skip a run's side effects (Search's coverage note and analytics).
+- **A page only ever ADDS.** It comes back ranked from the top, so `appendUnseen` keeps every row on screen in its place
+  and appends the unseen ones by path; nothing reorders under the reader and nothing leaves the screen. A live walk's
+  batches go through the same merge, since a page from the index can already hold a row the walk sends later.
+- **Under a live walk, the walk keeps streaming at the limit it started with** (it can't be widened mid-flight), so a
+  page comes from the index and the walk's batches keep landing on top. The run's own counter stays the total's owner:
+  the index can't count what the walk hasn't written yet. Once a page has grown the list, the completion re-rank is
+  skipped, for the same reason a moved cursor skips it (Decision 8): the user scrolled into it to get there.
+- **Every answer carries its run's generation**, bumped by every run, by emptying the bar, and by adopting a run. A page
+  (or a one-shot answer) for a list that's gone is dropped. The one-shot path got the guard with paging: without it, a
+  debounced answer landing after a ⏎ walk started overwrote the walk's rows and cleared its spinner.
+- **One page in flight, and none that loops.** A page that adds nothing, or fails (toasted once, rows kept), parks
+  paging until the total moves; a live total climbs, and the index may have caught up.
+- **↓ off the last row holds while more is coming**, instead of looping to the top: the list's end isn't the results'
+  end, and the page it already asked for is on its way.
+
 ### Count-only results
 
 Count-only is Search-only (`config.filterChipsExtras.countOnly` / `onToggleCountOnly`; Selection leaves both undefined
@@ -390,13 +418,16 @@ index loads, so the re-run still lands.
 ### Test coverage
 
 `QueryDialog.svelte.test.ts` (orchestrator) pins the title rendering, primary + secondary action callbacks, ⌘N / ⌘H, the
-IME guard, and the `lastDialogEvent` ownership. Two siblings mount the dialog over a streaming source:
-`QueryDialog.escape.svelte.test.ts` (Escape stops a live run before it closes) and
+IME guard, the `lastDialogEvent` ownership, and ↓ holding at a partial list's end. Two siblings mount the dialog over a
+streaming source: `QueryDialog.escape.svelte.test.ts` (Escape stops a live run before it closes) and
 `QueryDialog.run-on-mount.svelte.test.ts` (a run asked for at mount starts once). The `QueryDialog` block of
 `dialog.a11y.test.ts` runs axe-core across loading / index-ready / AI-on against a minimal Search-shaped config.
 Search's full integration tests live in the `lib/search/SearchDialog.<concern>.svelte.test.ts` family (session,
 shortcuts, ai, auto-apply, open-in-pane, scope, images, coverage, handoff) plus the `SearchDialog` block of
 `lib/search/search.a11y.test.ts`, and they mount QueryDialog through the Search wrapper.
+
+Paging has its own runner suite, `query-runner.paging.test.ts` (one-shot and live, the merge, the generation guard,
+parking), over the pure `result-paging.test.ts`.
 
 The four controller modules carry their own suites (`query-runner.test.ts`, `recent-popover.test.ts`,
 `query-shortcuts.test.ts`, `result-actions.test.ts`), which is where a rule is cheapest to pin: the nothing-to-run
@@ -581,8 +612,9 @@ Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below
 - **`⌥A`**: Mode chip: AI (global inside the dialog; only when AI is enabled)
 - **`⌥F`**: Mode chip: Filename (global)
 - **`⌥R`**: Mode chip: Regex (global)
-- **`↑` / `↓`**: Move the cursor through the results list (loops top<->bottom). With NO results, `↓` opens the
-  recent-items dropdown instead (see § Recent-items dropdown)
+- **`↑` / `↓`**: Move the cursor through the results list (loops top<->bottom, except that `↓` holds on the last row
+  while more pages are coming: § Paging). With NO results, `↓` opens the recent-items dropdown instead (see §
+  Recent-items dropdown)
 - **`PageUp` / `PageDown`**: Page the cursor by the rows on screen, less one. The math is the house list's
   (`ColumnList.cursorTarget`, `#lib/ui/list-cursor.ts`), asked with `wrap` and `textField`: `Home` / `End` stay the
   query field's caret keys, as the editable-combobox pattern has them, so they don't move the cursor

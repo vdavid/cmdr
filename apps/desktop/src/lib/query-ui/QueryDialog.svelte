@@ -514,6 +514,10 @@
         if (next === undefined || next === null) return false
         e.preventDefault()
         if (next < 0) return true
+        const from = config.state.getCursorIndex()
+        // ↓ off the last row wraps to the top, but only off the list's REAL end. With more
+        // rows to come it holds on the last one, which has already asked for them.
+        if (next < from && e.key === 'ArrowDown' && runner.hasMoreResults) return true
         config.state.setCursorIndex(next)
         // D8: cursor moves keep ⏎ on "go-to-file" as the user browses the list.
         config.state.setLastDialogEvent('cursor-moved')
@@ -767,6 +771,7 @@
             emptyExamples={config.emptyState.examples}
             onPickPath={config.onPickPath}
             onRowMenu={openRowMenu}
+            onReachEnd={runner.loadMoreResults}
         />
 
         {#if config.resultsExtra}

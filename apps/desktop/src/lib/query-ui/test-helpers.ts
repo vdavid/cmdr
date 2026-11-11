@@ -82,6 +82,7 @@ export function makeQueryDialogConfig(overrides: Partial<QueryDialogConfig> = {}
     isIndexAvailable: true,
     isIndexReady: true,
     runQuery: () => Promise.resolve({ entries: [], totalCount: 0 }),
+    loadMore: () => Promise.resolve(null),
     onPickPath: () => {},
     onPickExample: () => {},
     onRowMenu: () => {},

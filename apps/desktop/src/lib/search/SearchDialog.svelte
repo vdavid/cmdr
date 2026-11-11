@@ -362,6 +362,7 @@
         isIndexReady: lifecycle.isIndexReady,
 
         runQuery: runners.runQuery,
+        loadMore: runners.loadMore,
         streamingSource: runners.streamingSource,
         translateAi,
 

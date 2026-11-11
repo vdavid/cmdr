@@ -21,6 +21,7 @@
     import { claimKey } from '#lib/shortcuts/claim-key.js'
     import {
         OVERSCAN_ROWS,
+        reachesEnd,
         revealScrollTop,
         scrollMapping,
         visibleRange,
@@ -50,6 +51,7 @@
         onKeydown,
         onRowClick,
         onRowContextMenu,
+        onReachEnd,
         isGroupHeading,
         groupHeading,
         headerClass = '',
@@ -178,6 +180,21 @@
         containerWidth,
         drawnRows: drawn.length,
     }))
+
+    // Tells a consumer that grows the list that its end is in view. Fires on every move
+    // while it holds; the consumer keeps one page in flight.
+    $effect(() => {
+        const atEnd = reachesEnd({
+            count,
+            rowHeight: rowHeightPx,
+            scrollTop: scrollTop * mapping.ratio,
+            viewportHeight,
+        })
+        if (!atEnd || !onReachEnd) return
+        untrack(() => {
+            onReachEnd()
+        })
+    })
 
     // Tells a windowed source which rows are on screen, so it can fetch them.
     $effect(() => {

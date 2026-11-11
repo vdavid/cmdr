@@ -123,6 +123,7 @@ describe('QueryDialog a11y', () => {
       isIndexAvailable: opts.isIndexAvailable,
       isIndexReady: opts.isIndexReady,
       runQuery: () => Promise.resolve({ entries: [], totalCount: 0 }),
+      loadMore: () => Promise.resolve(null),
       primaryAction: {
         label: 'Show all in main window',
         shortcutHint: '⌥⏎',
