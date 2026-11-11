@@ -268,12 +268,14 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     `isMacOS()` calls (in 28 files) now ask `hasCapability()`, settings' `macOSOnly` and `needsImageIndexing` became one
     `needsCapability`, and CSS keys the title bar on `data-overlay-title-bar`. Left as platform questions: 11 (key
     glyphs, the macOS updater flow, the old-macOS notice); for 26: 5 keymap sites; for 27: 10 copy variants.
-26. [S] Win. Per-platform default keymap: explicit per-platform overrides where mechanical mapping is wrong, retire the
-    `⌃`→Shift hack, fix the `Ctrl+D` clash, conflict tests for all three platforms plus OS-reserved combos (Windows,
-    GNOME). Needs 24.
-27. [M] Win (Linux needs it). Platform-variant copy: intl injects a `platform` argument, the ~230 macOS-flavored English
-    values and the `.mac`/`.other` key pairs become ICU `select` or neutral wording, i18n checks learn it. David reviews
-    the English. Needs 24.
+26. [S] Win. Per-platform default keymap ([#1102](https://github.com/getcmdr/cmdr/issues/1102), decisions open):
+    explicit per-platform defaults where mechanical mapping is wrong, close to Total Commander's, retire the `⌃`→Shift
+    hack, fix the `Ctrl+D` clashes and the off-macOS key bugs, conflict tests for all three platforms plus OS- and
+    desktop-reserved combos. Survey and proposed keymap: `docs/notes/windows-port/keymap-survey.md`. Needs 24.
+27. [M] Win (Linux needs it). Platform-variant copy ([#1103](https://github.com/getcmdr/cmdr/issues/1103), decisions
+    open): intl injects `platform`, and the 478 Mac-flavored rows get each platform's own wording (ICU `select`; one
+    shared wording only where the platforms agree), the `.mac`/`.other` pairs collapse, i18n checks learn it. David
+    reviews the English. Survey and proposal: `docs/notes/windows-port/copy-survey.md`. Needs 24.
 28. [L] Win. Translate task 27's changed strings into the 13 languages (translator agents, per
     `docs/guides/i18n-translation.md`). Needs 27.
 29. [S] Windows, lint half is a win. Path wire format: `lib/path` learns `C:/` and `//server/share` roots,
