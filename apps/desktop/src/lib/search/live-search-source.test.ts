@@ -85,7 +85,7 @@ function sourceRecordingRunState(): { source: ReturnType<typeof createLiveSearch
     rank: (entries) => entries,
     onRowsVolume: () => {},
     onRunState: (state) => {
-      states.push(state as RunState)
+      states.push(state)
     },
   })
   return { source, states }

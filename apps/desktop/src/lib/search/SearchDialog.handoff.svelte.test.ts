@@ -261,16 +261,16 @@ describe('an index answer that replaces a live run', () => {
     // The index knows 1,439 matches: a dialog-sized ask gets 30 rows, a pane-sized one all.
     searchFilesMock.mockImplementation((query) =>
       Promise.resolve({
-        entries: rows((query.limit ?? 0) > 30 ? 1439 : 30) as unknown[],
+        entries: rows((query.limit ?? 0) > 30 ? 1439 : 30),
         totalCount: 1439,
         targetVolumeId: 'root',
       }),
     )
     testSettings.autoApply = true
-    let openedSnapshot: string | null = null
+    const opened: { snapshotId: string | null } = { snapshotId: null }
     const { overlay, closeDialog } = await mountDialog({
       onShowAllInMainWindow: (id) => {
-        openedSnapshot = id
+        opened.snapshotId = id
       },
     })
 
@@ -301,8 +301,8 @@ describe('an index answer that replaces a live run', () => {
 
     // The regression (#1067): the stale live run was handed off, so the pane opened with the
     // dialog's 30 and a "Still searching" toast waited forever on a run nobody followed.
-    expect(openedSnapshot).not.toBeNull()
-    expect(getSnapshot(openedSnapshot ?? '')?.entries.length).toBe(1439)
+    expect(opened.snapshotId).not.toBeNull()
+    expect(getSnapshot(opened.snapshotId ?? '')?.entries.length).toBe(1439)
     expect(getToasts()).toEqual([])
     expect(releaseSearchIndexMock.mock.calls).toEqual([[null]])
   })
