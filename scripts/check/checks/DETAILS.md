@@ -2805,7 +2805,8 @@ Two name sets, with different reach because the two are named differently in cod
   every reference, the line-based walk misreported 22 correct sites against one true finding. An import sits at the top
   of its scope, where the walk is reliable, and it is the shape that breaks the build. A module gated
   `#[cfg(any(target_os = "macos", target_os = "linux"))]` is excluded: it exists in the Linux lane, so naming it needs
-  no gate.
+  no gate. So is a macOS `mod x;` with a second declaration of the same name in the same file under any other gate (a
+  `not(target_os = "macos")` stand-in, or one arm per OS like `network::mount`'s `mount.rs` / `mount_linux.rs`).
 
 Four things that detection has to get right, each learned from a miss:
 
