@@ -121,6 +121,13 @@ mimalloc = { version = "0.1", optional = true }
 # for `crates/cmdr-listing-wasm`) doesn't have. The modules using them are gated in
 # `lib.rs`; `DETAILS.md` § "The browser build".
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
+# The fallback runtime's worker pool (`volume::host`). A browser has no threads.
+tokio = { version = "1", features = ["rt-multi-thread"] }
+
+# The Unix host primitives. Narrower than the section above because none of the
+# first three builds for Windows (`xattr` imports `std::os::unix` unconditionally,
+# `uzers` and `exacl` are POSIX-only), and every `libc` call here is a Unix one.
+[target.'cfg(unix)'.dependencies]
 # Every Unix this crate builds on: the mapped-file fault recovery (`mmap`,
 # `siginfo_t`, `/proc/self/maps` on Linux) runs on both, and on macOS also Mach
 # `task_info`, the malloc-zone walk, and `pthread_set_qos_class_self_np`.
@@ -131,10 +138,8 @@ uzers = "0.12.2"
 # the marker that tells a cloud provider's tree from an ordinary folder.
 xattr = "1"
 # ACLs for `metadata`: the post-landing half reads and writes them, and the removal
-# helpers strip a `deny delete` one. Every OS: Linux carries POSIX ACLs through it.
+# helpers strip a `deny delete` one. Both Unixes: Linux carries POSIX ACLs through it.
 exacl = "0.13"
-# The fallback runtime's worker pool (`volume::host`). A browser has no threads.
-tokio = { version = "1", features = ["rt-multi-thread"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 # A browser's randomness source (`crypto.getRandomValues`) for the scratch-name

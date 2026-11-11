@@ -11,6 +11,10 @@ on a crate for every local primitive (the backend, the reader, the no-replace re
 depending on the app. Folding it into `cmdr-fs` was rejected: that crate is shared vocabulary every backend builds on,
 and the local backend brings objc2/NSURL and the live-space memo with it.
 
+**Decision**: `xattr` and `libc` are `cfg(unix)` dependencies **Why**: the backend is a POSIX one, and neither builds
+for Windows the way it's used here. A Windows local disk is a sibling backend behind the same `Volume` trait, not `cfg`
+arms through this one (`docs/notes/windows-port/crates-audit.md` § cmdr-local).
+
 **Decision**: `LocalPosixVolume` takes a `VolumeHost` at construction, like every backend crate **Why**: its couplings
 were the app's LOCAL machinery rather than a protocol: the pane patch after a mutation, the watch-coverage oracle, and
 the panes' name order, plus space, macOS metadata, and the mount probes. The first three are `ListingHost` calls

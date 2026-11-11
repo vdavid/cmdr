@@ -161,7 +161,10 @@ tempfile = "3"
 tokio = { version = "1", features = ["rt-multi-thread", "test-util"] }
 # Hostile names in their composed and decomposed forms.
 unicode-normalization = "0.1"
-# Setting and reading back the xattrs the metadata cells check, on both platforms.
+
+[target.'cfg(unix)'.dev-dependencies]
+# Setting and reading back the xattrs the metadata cells check, on both Unixes.
+# `xattr` doesn't build for Windows.
 xattr = "1"
 
 # The self dev-dependency above turns `testing` on for this target, so it needs

@@ -114,7 +114,11 @@ zip = { version = "9.4.1", default-features = false, features = ["zstd"] }
 # shape as `cmdr-fs`'s, so no second copy enters the graph.
 tokio-util = { version = "0.7.18", default-features = false }
 # The mutator's metadata-preservation tests read back what it wrote: mtime through
-# `filetime`, Finder tags through `xattr`. Both are already in the workspace graph
-# at these versions.
+# `filetime`, Finder tags through `xattr` (below). Both are already in the
+# workspace graph at these versions.
 filetime = "0.2"
+
+[target.'cfg(unix)'.dev-dependencies]
+# The Finder-tag half of the metadata-preservation tests. Unix-only: `xattr`
+# doesn't build for Windows.
 xattr = "1"

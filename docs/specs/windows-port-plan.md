@@ -152,8 +152,10 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 
 ### Phase 1: make platform code honest and checkable
 
-3. [XS] Win. Honest crate manifests: `xattr`, `uzers`, `exacl`, `libc` under `cfg(unix)`; `notify` under `not(macos)` in
-   `cmdr-index`; gate the nine ungated `std::os::unix` imports (crates audit T1 list).
+3. [XS] Win. **Done**. Honest crate manifests: `xattr`, `uzers`, `exacl`, `libc` under `cfg(unix)` in `cmdr-fs` and
+   `cmdr-local`, the `xattr` dev-dependencies too; `notify` stays `linux` in `cmdr-index` until task 12 gives Windows a
+   watcher arm. Of the nine ungated `std::os::unix` imports, two remained (`cmdr-local/src/reading.rs`,
+   `cmdr-git/src/repo.rs`), now gated.
 4. [XS] Win. Honest app manifest: move `url`, `semver`, `plist`, `pulldown-cmark`, `ammonia`, `unicode-normalization`,
    `urlencoding` out of the `any(macos, linux)` table; gate the five unix-only tests and the ungated `std::os::unix`
    uses (`file_viewer/source.rs:12`, `open_with_copies.rs:31`, `measure.rs:121`).
