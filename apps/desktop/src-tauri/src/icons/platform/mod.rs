@@ -11,6 +11,10 @@ use image::DynamicImage;
 #[cfg_attr(target_os = "windows", path = "windows.rs")]
 mod imp;
 
+/// Extended-attribute reads, shared by the macOS and Linux arms.
+#[cfg(unix)]
+mod unix;
+
 /// Each path's icon as a data URL (`None` when the OS has none), keyed `path:{path}`.
 pub(super) type PathIcons = Vec<(String, Option<String>)>;
 
@@ -20,6 +24,7 @@ const _: fn(&str, bool) -> Option<String> = icon_for_id;
 const _: fn(&str, bool) -> Option<DynamicImage> = fresh_extension_icon;
 const _: fn(fn() -> bool) -> bool = with_object_pool;
 const _: fn() -> bool = tag_tinting_disabled;
+const _: fn(&Path, &str) -> Option<Vec<u8>> = extended_attribute;
 
 /// The OS's icon for the file or folder at `path`, as a data URL, or `None` when the OS has
 /// none for it.
@@ -43,3 +48,7 @@ pub(super) use imp::with_object_pool;
 
 /// Whether the user turned off tag-based folder tinting. False where the OS has no tags.
 pub(super) use imp::tag_tinting_disabled;
+
+/// The extended attribute `name` on `path`, or `None` when it's absent, unreadable, or the OS
+/// keeps no such attributes.
+pub(super) use imp::extended_attribute;
