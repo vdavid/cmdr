@@ -13,7 +13,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
     openPrivacySettings: vi.fn(),
     checkFullDiskAccess: vi.fn(),
     checkFullDiskAccessQuiet: vi.fn(),
-    getMacosMajorVersion: vi.fn(),
+    getOsMajorVersion: vi.fn(),
   },
   events: {},
 }))
@@ -43,7 +43,7 @@ describe('permission wrappers', () => {
   })
 
   it('rejects a macOS version read that broke, instead of answering 0', async () => {
-    vi.mocked(commands.getMacosMajorVersion).mockRejectedValueOnce(new Error('IPC bridge gone'))
+    vi.mocked(commands.getOsMajorVersion).mockRejectedValueOnce(new Error('IPC bridge gone'))
     await expect(getMacosMajorVersion()).rejects.toThrow()
   })
 })

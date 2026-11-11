@@ -1,7 +1,7 @@
 //! Cross-platform appearance/system event payloads.
 //!
-//! These events are emitted from platform-gated modules (`accent_color.rs` /
-//! `accent_color_linux.rs`, macOS-only `text_size.rs` and `intl/live_locale.rs`), but `collect_events!`
+//! These events are emitted from per-OS code (the `system_look/platform/` arms and
+//! macOS-only `intl/live_locale.rs`), but `collect_events!`
 //! in `ipc.rs` can't `#[cfg]`-gate inline, so their typed payload structs live
 //! here in an always-compiled module. The emit sites just build and `.emit()`
 //! them. Same pattern the MTP and network modules use (structs in an

@@ -314,14 +314,13 @@ All under `apps/desktop/src-tauri/src/`.
   `tauri-plugin-window-state`. Placement only; the frontend shows the window
 - `main_window_show.rs`: The backend's fallback that shows the main window when the frontend hasn't within 10 s (a
   WebKit that can't run the bundle, a startup that never finishes). Off in E2E
-- `text_size.rs`: macOS Accessibility text-size watcher (undocumented Apple APIs, risk notes in source). Emits
-  `system-text-size-changed`
-- `glass_tint.rs`: macOS 27 Liquid Glass slider reader (undocumented `NSGlassTintAmount`, re-read on app activation;
-  risk notes in source). Emits `glass-tint-changed`; the frontend side is `#lib/glass-material`
-- `display_accessibility.rs`: macOS Accessibility > Display options (Reduce transparency, Increase contrast,
-  Differentiate without color, Invert colors, Show borders) as one typed value, live. Emits
-  `display-accessibility-changed`; the frontend side is `#lib/display-accessibility`, which turns them into classes on
-  `<html>`. Also re-keys the icon caches (`icons::apply_display_accessibility`)
+- `system_look/`: what the OS says about how things should look, one command each, per OS behind `platform/`: the accent
+  color (macOS `NSColor`, Linux XDG portal), Accessibility > Display options (Reduce transparency, Increase contrast,
+  Differentiate without color, Invert colors, Show borders; also re-keys the icon caches via
+  `icons::apply_display_accessibility`), the macOS 27 Liquid Glass slider (undocumented `NSGlassTintAmount`), and Text
+  Size (undocumented Apple APIs; risk notes in each macOS source). Emits `accent-color-changed`,
+  `display-accessibility-changed`, `glass-tint-changed`, and `system-text-size-changed`; the frontend sides are
+  `#lib/display-accessibility` and `#lib/glass-material`
 - `system_strings.rs`: Localized macOS pane labels from `.loctable` system bundles (loctable catalog + risks in source).
   Also the ordered `AppleLanguages` read that `intl/` walks
 - `intl/`: What the OS says about language and region. Walks the user's ordered macOS language preferences against the
@@ -688,7 +687,7 @@ for backend work and live in `apps/desktop/src-tauri/CLAUDE.md` § Platform cons
 
 - **Full Disk Access**: probed to detect grant state and to register Cmdr in the System Settings list (the two are
   separate jobs, and registration is macOS-version-dependent). The full mechanism lives in one place: the module doc of
-  `src-tauri/src/permissions.rs`. Prompt on first launch. See `permissions.rs` and
+  `src-tauri/src/permissions/platform/macos.rs`. Prompt on first launch. See `permissions/` and
   `apps/desktop/src/lib/onboarding/CLAUDE.md`.
 - **Keychain**: stores network credentials and trial state. Uses `security-framework` crate.
 - **copyfile(3)**: preserves xattrs, ACLs, resource forks. `COPYFILE_CLONE` for instant APFS clones.

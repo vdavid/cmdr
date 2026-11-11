@@ -80,7 +80,7 @@ export const appAnswers: AnswerTable = {
   isE2eMode: off,
   isForceOnboarding: off,
   getOsLocales: () => ({ ui: navigator.language, format: navigator.language }),
-  getMacosMajorVersion: () => 26,
+  getOsMajorVersion: () => 26,
   getSystemTextSizeMultiplier: () => 1,
   getAccentColor: () => '#007aff',
   getGlassTintAmount: none,

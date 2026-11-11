@@ -20,11 +20,11 @@ mod pasteboard;
 #[cfg(all(target_os = "macos", feature = "playwright-e2e"))]
 mod mock;
 
+// How each OS reaches its clipboard: the pasteboard reads and writes the commands go through.
+pub(crate) mod platform;
 mod state;
 
-pub use state::clear_cut_state;
-#[cfg(target_os = "macos")]
-pub use state::{get_cut_state, set_cut_state};
+pub use state::{clear_cut_state, get_cut_state, set_cut_state};
 
 /// The kind of clipboard content pasted as a file. Drives the paste toast's
 /// noun (text / image / PDF); the file name's extension carries the finer detail

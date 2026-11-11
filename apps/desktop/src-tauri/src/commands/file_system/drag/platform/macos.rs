@@ -1,14 +1,11 @@
-//! Tauri commands for native drag operations and self-drag overlay.
+//! macOS: an `NSDraggingSession` built on the main thread (`crate::native_drag`), a file-url or a
+//! file-promise layout by the session's locality, and the self-drag image swap
+//! (`crate::drag_image_swap`).
 
-#[cfg(target_os = "macos")]
 use crate::file_system::volume::manager::path_routes_over_its_parent;
-#[cfg(target_os = "macos")]
 use crate::native_drag::{self, DragSessionLocality};
-#[cfg(target_os = "macos")]
 use std::path::PathBuf;
-#[cfg(target_os = "macos")]
 use std::sync::mpsc::channel;
-#[cfg(target_os = "macos")]
 use tauri::Manager;
 
 /// Resolves a source volume id to its drag-session locality.
@@ -28,7 +25,6 @@ use tauri::Manager;
 /// openable `/Volumes/…` paths. Promise-only drags are rejected by every target
 /// except Finder, so the mistake looks like "drag to Mail/browser silently does
 /// nothing" while a Finder drop keeps working.
-#[cfg(target_os = "macos")]
 fn locality_for_volume(volume_id: Option<&str>) -> DragSessionLocality {
     let Some(volume_id) = volume_id else {
         return DragSessionLocality::Local;
@@ -52,7 +48,6 @@ fn locality_for_volume(volume_id: Option<&str>) -> DragSessionLocality {
 /// ❗ One locality for the whole session, decided here: a mixed session is
 /// impossible by construction (one pane, one volume), and the pasteboard plan is
 /// keyed on a single value.
-#[cfg(target_os = "macos")]
 fn session_locality(paths: &[PathBuf], source_volume_id: Option<&str>) -> DragSessionLocality {
     if paths.iter().any(|p| path_routes_over_its_parent(p)) {
         return DragSessionLocality::Virtual;
@@ -60,18 +55,8 @@ fn session_locality(paths: &[PathBuf], source_volume_id: Option<&str>) -> DragSe
     locality_for_volume(source_volume_id)
 }
 
-/// Begins a native drag with the given file paths. Used for single-file drags
-/// where the frontend has the path directly (no listing-cache lookup needed),
-/// and for the search-results pane's paths-by-value drag.
-///
-/// `source_volume_id` lets the caller declare the session's source volume so the
-/// pasteboard layout can strip materializable representations for virtual
-/// volumes (the FE drag-start path has this id since the recorded-identity work).
-/// Absent (`None`) defaults to a local session — back-compatible.
-#[cfg(target_os = "macos")]
-#[tauri::command]
-#[specta::specta]
-pub fn start_drag_paths(
+/// Builds the session for `paths` on the main thread.
+pub(crate) fn start_drag(
     app: tauri::AppHandle,
     paths: Vec<String>,
     icon_path: String,
@@ -85,23 +70,9 @@ pub fn start_drag_paths(
     run_drag_on_main_thread(&app, path_bufs, PathBuf::from(icon_path), locality, source_volume_id)
 }
 
-/// Stub for non-macOS platforms. Returns an error since drag is not yet implemented.
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub fn start_drag_paths(
-    _app: tauri::AppHandle,
-    _paths: Vec<String>,
-    _icon_path: String,
-    _source_volume_id: Option<String>,
-) -> Result<(), String> {
-    Err("Drag operation is not yet supported on this platform".to_string())
-}
-
 /// Hops to the AppKit main thread, builds the drag session, and returns synchronously.
 /// `NSDraggingItem`s and the source class are not `Send`, so everything happens inside
 /// the closure; the result travels back via a one-shot channel.
-#[cfg(target_os = "macos")]
 fn run_drag_on_main_thread(
     app: &tauri::AppHandle,
     paths: Vec<PathBuf>,
@@ -121,48 +92,18 @@ fn run_drag_on_main_thread(
     rx.recv().map_err(|_| "Failed to receive drag result")?
 }
 
-// ============================================================================
-// Self-drag overlay (dynamic drag image swapping)
-// ============================================================================
-
-/// Marks a self-drag as active and stores the rich image path so the native swizzle can:
-/// - Hide the OS drag image over our window (swap to transparent in `draggingEntered:`)
-/// - Show the rich image outside the window (swap back in `draggingExited:`)
-#[cfg(target_os = "macos")]
-#[tauri::command]
-#[specta::specta]
-pub fn prepare_self_drag_overlay(rich_image_path: String) {
+/// Marks the self-drag active with its rich image.
+pub(crate) fn prepare_self_drag_overlay(rich_image_path: String) {
     crate::drag_image_swap::set_self_drag_active(rich_image_path);
 }
 
-/// No-op on non-macOS platforms.
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub fn prepare_self_drag_overlay(_rich_image_path: String) {}
-
-/// Clears self-drag state after drop or cancellation.
-#[cfg(target_os = "macos")]
-#[tauri::command]
-#[specta::specta]
-pub fn clear_self_drag_overlay() {
+/// Clears the self-drag state.
+pub(crate) fn clear_self_drag_overlay() {
     crate::drag_image_swap::clear_self_drag_state();
 }
 
-/// No-op on non-macOS platforms.
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub fn clear_self_drag_overlay() {}
-
-/// Pushes the resolved drop operation for the current self-drag down to the native swizzle.
-/// The swizzled `draggingEntered:`/`draggingUpdated:` reads this and overrides wry's hardcoded
-/// `Copy` return so the OS-rendered "+" badge tracks our chosen op (Copy → +, Move → no badge).
-/// Unknown values are ignored.
-#[cfg(target_os = "macos")]
-#[tauri::command]
-#[specta::specta]
-pub fn set_self_drag_resolved_op(operation: String) {
+/// Pushes the resolved operation to the swizzle; unknown values are ignored.
+pub(crate) fn set_self_drag_resolved_op(operation: String) {
     use crate::drag_image_swap::SelfDragOp;
     let op = match operation.as_str() {
         "copy" => SelfDragOp::Copy,
@@ -172,27 +113,7 @@ pub fn set_self_drag_resolved_op(operation: String) {
     crate::drag_image_swap::set_self_drag_resolved_op(op);
 }
 
-/// No-op on non-macOS platforms.
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub fn set_self_drag_resolved_op(_operation: String) {}
-
-/// Lets a promised drop's folder go (`drop_in/folders.rs`): its transfer dialog was
-/// cancelled, or the drop hit no target. A folder a started copy reads from stays
-/// until that copy ends. A few local removals, so the write tier's 5 s.
-#[tauri::command]
-#[specta::specta]
-pub async fn release_promise_drop(drop_id: String) {
-    // Nothing to release (claimed, or already gone) is the normal no-op, so the answer
-    // goes nowhere: the frontend has nothing to say about it either way.
-    let _released = cmdr_fs::deadline::blocking_with_timeout(std::time::Duration::from_secs(5), false, move || {
-        crate::drop_in::folders::release_drop(&drop_id)
-    })
-    .await;
-}
-
-#[cfg(all(test, target_os = "macos"))]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::file_system::volume::Volume;

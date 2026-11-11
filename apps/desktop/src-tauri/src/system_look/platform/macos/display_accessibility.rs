@@ -71,15 +71,21 @@ fn should_show_borders(workspace: &NSWorkspace) -> bool {
     shows.as_bool()
 }
 
-/// Tauri command: returns the macOS Accessibility > Display options the UI mirrors.
-///
+/// The Accessibility > Display options the UI mirrors, read off the blocking pool.
+pub(crate) async fn display_accessibility(app: AppHandle) -> DisplayAccessibility {
+    tauri::async_runtime::spawn_blocking(move || read_on_main_thread(app))
+        .await
+        .unwrap_or_else(|e| {
+            warn!("Reading display accessibility options stopped ({e}), defaulting to all off");
+            DisplayAccessibility::default()
+        })
+}
+
 /// `NSWorkspace` accessibility queries are main-thread-only, so we hop to the
 /// AppKit main thread via `run_on_main_thread` and read there, mirroring
-/// `get_accent_color`. Returns all-off (the safe default) if the main-thread hop
+/// the accent color's read. Returns all-off (the safe default) if the main-thread hop
 /// or channel fails.
-#[tauri::command]
-#[specta::specta]
-pub fn get_display_accessibility(app: AppHandle) -> DisplayAccessibility {
+fn read_on_main_thread(app: AppHandle) -> DisplayAccessibility {
     let (tx, rx) = std::sync::mpsc::channel();
     if app
         .run_on_main_thread(move || {
@@ -101,7 +107,7 @@ pub fn get_display_accessibility(app: AppHandle) -> DisplayAccessibility {
 /// Starts observing `NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification`.
 /// Emits `display-accessibility-changed` with the fresh options whenever the user
 /// changes their Accessibility > Display options in System Settings.
-pub fn observe_display_accessibility_changes<R: Runtime>(app_handle: AppHandle<R>) {
+pub(crate) fn observe_display_accessibility_changes<R: Runtime>(app_handle: AppHandle<R>) {
     // This runs at startup on the main thread (called from the Tauri setup hook).
     let mtm = MainThreadMarker::new().expect("observe_display_accessibility_changes runs on the main thread");
     let initial = read_display_accessibility(mtm);

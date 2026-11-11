@@ -5,14 +5,4 @@
 //! that enable the core file manager functionality to work.
 
 #[cfg(not(target_os = "linux"))]
-pub mod accent_color;
-#[cfg(not(target_os = "macos"))]
-pub mod display_accessibility;
-#[cfg(not(target_os = "macos"))]
-pub mod glass_tint;
-#[cfg(not(target_os = "linux"))]
-pub mod permissions;
-#[cfg(not(target_os = "macos"))]
-pub mod text_size;
-#[cfg(not(target_os = "linux"))]
 pub mod volumes;

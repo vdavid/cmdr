@@ -486,7 +486,7 @@
         "apps/desktop/src/lib/file-explorer/**",
         "apps/desktop/src/lib/ui/**",
         "apps/desktop/src/lib/display-accessibility.ts",
-        "apps/desktop/src-tauri/src/display_accessibility.rs",
+        "apps/desktop/src-tauri/src/system_look/platform/macos/display_accessibility.rs",
         "apps/desktop/src/app.css"
       ]
     },
@@ -535,7 +535,7 @@
       "paths": [
         "apps/desktop/src/lib/settings/definitions/appearance.ts",
         "apps/desktop/src/lib/display-accessibility.ts",
-        "apps/desktop/src-tauri/src/display_accessibility.rs",
+        "apps/desktop/src-tauri/src/system_look/platform/macos/display_accessibility.rs",
         "apps/desktop/src/app.css"
       ]
     },

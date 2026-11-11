@@ -20,29 +20,16 @@
 
 #[cfg(target_os = "macos")]
 mod controller;
+// What each OS does for the three commands, and the state they keep.
+pub(crate) mod platform;
 
 #[cfg(target_os = "macos")]
 pub use controller::QuickLookController;
 
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
-
-/// Wraps the controller in a `Mutex` for `tauri::State`. On non-macOS the inner
-/// type is `()` so the same `app.manage(...)` call site compiles everywhere.
-#[cfg(target_os = "macos")]
-pub type QuickLookState = Mutex<QuickLookController>;
-#[cfg(not(target_os = "macos"))]
-pub type QuickLookState = Mutex<()>;
 
 /// Initialize the empty controller. Call from `lib.rs::setup` after `MenuState`.
-#[cfg(target_os = "macos")]
-pub fn init_state() -> QuickLookState {
-    Mutex::new(QuickLookController::new())
-}
-#[cfg(not(target_os = "macos"))]
-pub fn init_state() -> QuickLookState {
-    Mutex::new(())
-}
+pub(crate) use platform::init_state;
 
 /// Payload for the `quick-look-key` event emitted by the panel delegate.
 /// Mirrors the relevant fields of a DOM `KeyboardEvent` so the frontend can

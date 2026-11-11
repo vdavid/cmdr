@@ -329,7 +329,7 @@ export async function showParentRowContextMenu(parentPath: string, anchor: MenuA
  * @param path - Absolute path to the file.
  */
 export async function showInFinder(path: string): Promise<void> {
-  const res = await commands.showInFinder(path)
+  const res = await commands.revealInFileManager(path)
   if (res.status === 'error') throwIpcError(res.error)
 }
 

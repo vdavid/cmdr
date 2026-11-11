@@ -63,8 +63,8 @@ Key files:
 - `drag-out-toast.ts`: Pure `composeDragOutCompleteToast(payload)` — success counts via the shared transfer-toast
   composer, failure toast naming the file(s). Unit-tested
 - `drag-image-renderer.ts`: Canvas rendering for rich OS drag preview (retina-aware, fading edges)
-- `commands/file_system/drag.rs`: the `start_drag_paths` Tauri command; it hops to the AppKit main thread before calling
-  into `native_drag::start_drag`
+- `commands/file_system/drag/`: the `start_drag_paths` Tauri command (`mod.rs`), whose macOS arm (`platform/macos.rs`)
+  it hops to the AppKit main thread before calling into `native_drag::start_drag`
 - `native_drag.rs`: Builds `NSPasteboardItem`s as above, wraps each in an `NSDraggingItem`, and begins the dragging
   session via a custom `CmdrDragSource` that returns the permissive op mask
 

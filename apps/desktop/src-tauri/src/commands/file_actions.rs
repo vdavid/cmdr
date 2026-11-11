@@ -1,11 +1,11 @@
 //! Direct file-action commands invoked from the command palette, context menus,
-//! and menu items: reveal in Finder, Get Info, open in the text editor the user
+//! and menu items: reveal in the file manager, Get Info, open in the text editor the user
 //! chose (plus the editor list its Settings row shows), copy text to the clipboard,
 //! and the iCloud make-available-offline / remove-download pair. Thin pass-throughs
-//! that shell out or delegate to `file_system`.
+//! that shell out or delegate to `file_system`. What differs per OS is `platform/`.
 
-#[cfg(target_os = "linux")]
-use std::process::Command;
+mod platform;
+
 use tauri::{AppHandle, Runtime};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tokio::time::Duration;
@@ -32,90 +32,30 @@ const TERMINAL_APPS_TIMEOUT: Duration = Duration::from_secs(2);
 #[cfg(target_os = "macos")]
 const OPEN_TERMINAL_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// Get Info is one no-prompt permission read and one `spawn` of `osascript`. The
-/// window, or the first-time prompt, appears after the command has answered.
-#[cfg(target_os = "macos")]
-const GET_INFO_TIMEOUT: Duration = Duration::from_secs(5);
-
 /// Listing text editors is one LaunchServices query plus a name and an icon read
 /// per app. Same bound as the terminal list, for a picked app on a slow mount.
 #[cfg(target_os = "macos")]
 const TEXT_EDITORS_TIMEOUT: Duration = Duration::from_secs(2);
-
-/// Opening a file is one `spawn` of `open`; the wait is for the installed-app
-/// lookup in front of it and the name read behind it.
-#[cfg(target_os = "macos")]
-const OPEN_IN_EDITOR_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// The default-app name is a LaunchServices lookup plus a name read, no file I/O. The
 /// toast is worth a short wait at most, so it words the nameless variant past this.
 #[cfg(target_os = "macos")]
 const DEFAULT_APP_NAME_TIMEOUT: Duration = Duration::from_millis(500);
 
-/// Show a file in Finder (reveal in parent folder)
+/// Reveals a file in the OS's file manager: Finder on macOS, the default file manager (its parent
+/// folder) on Linux.
 #[tauri::command]
 #[specta::specta]
-#[cfg(all(target_os = "macos", feature = "playwright-e2e"))]
-pub fn show_in_finder(path: String) -> Result<(), String> {
-    // Finder would take the front position and write a `.DS_Store` into the fixture tree.
-    crate::open_mock::record(path);
-    Ok(())
+pub fn reveal_in_file_manager(path: String) -> Result<(), String> {
+    platform::reveal_in_file_manager(path)
 }
 
-/// Show a file in Finder (reveal in parent folder)
+/// Opens the OS's Get Info window for a file, or says why it won't (`file_system::get_info`).
+/// A no-op where the OS has no such window.
 #[tauri::command]
 #[specta::specta]
-#[cfg(all(target_os = "macos", not(feature = "playwright-e2e")))]
-pub fn show_in_finder(path: String) -> Result<(), String> {
-    crate::reveal::finder_handoff::reveal_in_finder(&path)
-}
-
-/// Show a file in the default file manager (open parent folder via xdg-open)
-#[tauri::command]
-#[specta::specta]
-#[cfg(target_os = "linux")]
-pub fn show_in_finder(path: String) -> Result<(), String> {
-    let parent = std::path::Path::new(&path)
-        .parent()
-        .unwrap_or(std::path::Path::new("/"));
-    Command::new("xdg-open")
-        .arg(parent)
-        .spawn()
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-pub fn show_in_finder(_path: String) -> Result<(), String> {
-    Err("Show in file manager is not available on this platform".to_string())
-}
-
-/// Opens Finder's Get Info window for a file, or says why macOS won't let it
-/// (`file_system::get_info`).
-#[tauri::command]
-#[specta::specta]
-#[cfg(target_os = "macos")]
 pub async fn get_info(path: String) -> Result<(), GetInfoError> {
-    blocking_typed_result_with_timeout(
-        GET_INFO_TIMEOUT,
-        || GetInfoError::TimedOut,
-        |detail| {
-            crate::log_error!(target: "file_actions", "get_info panicked: {detail}");
-            GetInfoError::TimedOut
-        },
-        move || crate::file_system::get_info::open_get_info(std::path::Path::new(&path)),
-    )
-    .await
-}
-
-/// No Get Info window off macOS; a no-op.
-#[tauri::command]
-#[specta::specta]
-#[cfg(not(target_os = "macos"))]
-pub fn get_info(_path: String) -> Result<(), GetInfoError> {
-    Ok(())
+    platform::get_info(path).await
 }
 
 /// Opens a file in the text editor `app_choice` names.
@@ -132,82 +72,12 @@ pub fn get_info(_path: String) -> Result<(), GetInfoError> {
 /// `file_system::text_editor`), so a suite run piles up no editor windows.
 #[tauri::command]
 #[specta::specta]
-#[cfg(target_os = "macos")]
 pub async fn open_in_editor(
     path: String,
     app_choice: String,
     ask_about_other_editors: bool,
 ) -> Result<EditorOpenReport, OpenInEditorError> {
-    blocking_typed_result_with_timeout(
-        OPEN_IN_EDITOR_TIMEOUT,
-        || OpenInEditorError::TimedOut,
-        |detail| {
-            crate::log_error!(target: "file_actions", "open_in_editor panicked: {detail}");
-            OpenInEditorError::TimedOut
-        },
-        move || {
-            crate::file_system::text_editor::open_in_editor(
-                std::path::Path::new(&path),
-                &app_choice,
-                ask_about_other_editors,
-            )
-        },
-    )
-    .await
-}
-
-/// Linux: `xdg-open` decides, as it always did. Both choice arguments are ignored
-/// (there's no Settings row off macOS), and there's nothing to report beyond the
-/// launch.
-#[tauri::command]
-#[specta::specta]
-#[cfg(all(target_os = "linux", not(feature = "playwright-e2e")))]
-pub fn open_in_editor(
-    path: String,
-    _app_choice: String,
-    _ask_about_other_editors: bool,
-) -> Result<EditorOpenReport, OpenInEditorError> {
-    Command::new("xdg-open")
-        .arg(&path)
-        .spawn()
-        .map_err(|e| OpenInEditorError::LaunchRefused {
-            errno: e.raw_os_error(),
-        })?;
-    Ok(EditorOpenReport {
-        outcome: crate::file_system::text_editor::EditorOpenOutcome::Opened,
-        opened_in_name: None,
-        other_editors_installed: None,
-    })
-}
-
-#[tauri::command]
-#[specta::specta]
-#[cfg(all(not(any(target_os = "macos", target_os = "linux")), not(feature = "playwright-e2e")))]
-pub fn open_in_editor(
-    _path: String,
-    _app_choice: String,
-    _ask_about_other_editors: bool,
-) -> Result<EditorOpenReport, OpenInEditorError> {
-    Err(OpenInEditorError::LaunchRefused { errno: None })
-}
-
-/// E2E variant off macOS (the Linux Docker lane): record the file instead of
-/// launching, into the same `crate::open_mock` store as `open_path`, so no orphan
-/// windows leak. The macOS E2E build records inside `file_system::text_editor`.
-#[tauri::command]
-#[specta::specta]
-#[cfg(all(not(target_os = "macos"), feature = "playwright-e2e"))]
-pub fn open_in_editor(
-    path: String,
-    _app_choice: String,
-    _ask_about_other_editors: bool,
-) -> Result<EditorOpenReport, OpenInEditorError> {
-    crate::open_mock::record(path);
-    Ok(EditorOpenReport {
-        outcome: crate::file_system::text_editor::EditorOpenOutcome::Opened,
-        opened_in_name: None,
-        other_editors_installed: None,
-    })
+    platform::open_in_editor(path, app_choice, ask_about_other_editors).await
 }
 
 /// The text editors on this Mac, the system default, and which one `app_choice`

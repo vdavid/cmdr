@@ -297,7 +297,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::menu::show_function_key_bar_context_menu,
                     crate::commands::menu::show_viewer_context_menu,
                     crate::commands::menu::show_queue_row_context_menu,
-                    crate::commands::file_actions::show_in_finder,
+                    crate::commands::file_actions::reveal_in_file_manager,
                     crate::commands::quick_look::quick_look_open,
                     crate::commands::quick_look::quick_look_set_path,
                     crate::commands::quick_look::quick_look_close,
@@ -772,21 +772,9 @@ macro_rules! ipc_command_manifest {
                 dispatch_only: []
             }
             // Accent color.
-            cfg(target_os = "macos") {
+            cfg(all()) {
                 typed: [
-                    crate::accent_color::get_accent_color,
-                ]
-                dispatch_only: []
-            }
-            cfg(target_os = "linux") {
-                typed: [
-                    crate::accent_color_linux::get_accent_color,
-                ]
-                dispatch_only: []
-            }
-            cfg(not(any(target_os = "macos", target_os = "linux"))) {
-                typed: [
-                    crate::stubs::accent_color::get_accent_color,
+                    crate::system_look::get_accent_color,
                 ]
                 dispatch_only: []
             }
@@ -837,75 +825,35 @@ macro_rules! ipc_command_manifest {
             }
             // Accessibility > Display options (Reduce transparency, Increase contrast,
             // Differentiate without color).
-            cfg(target_os = "macos") {
+            cfg(all()) {
                 typed: [
-                    crate::display_accessibility::get_display_accessibility,
-                ]
-                dispatch_only: []
-            }
-            cfg(not(target_os = "macos")) {
-                typed: [
-                    crate::stubs::display_accessibility::get_display_accessibility,
+                    crate::system_look::get_display_accessibility,
                 ]
                 dispatch_only: []
             }
             // Liquid Glass slider.
-            cfg(target_os = "macos") {
+            cfg(all()) {
                 typed: [
-                    crate::glass_tint::get_glass_tint_amount,
-                ]
-                dispatch_only: []
-            }
-            cfg(not(target_os = "macos")) {
-                typed: [
-                    crate::stubs::glass_tint::get_glass_tint_amount,
+                    crate::system_look::get_glass_tint_amount,
                 ]
                 dispatch_only: []
             }
             // System text size.
-            cfg(target_os = "macos") {
+            cfg(all()) {
                 typed: [
-                    crate::text_size::get_system_text_size_multiplier,
-                ]
-                dispatch_only: []
-            }
-            cfg(not(target_os = "macos")) {
-                typed: [
-                    crate::stubs::text_size::get_system_text_size_multiplier,
+                    crate::system_look::get_system_text_size_multiplier,
                 ]
                 dispatch_only: []
             }
             // Permissions.
-            cfg(target_os = "macos") {
+            cfg(all()) {
                 typed: [
                     crate::permissions::check_full_disk_access,
                     crate::permissions::check_full_disk_access_quiet,
-                    crate::permissions::get_macos_major_version,
+                    crate::permissions::get_os_major_version,
                     crate::permissions::open_privacy_settings,
                     crate::permissions::open_appearance_settings,
                     crate::permissions::open_system_settings_url,
-                ]
-                dispatch_only: []
-            }
-            cfg(target_os = "linux") {
-                typed: [
-                    crate::permissions_linux::check_full_disk_access,
-                    crate::permissions_linux::check_full_disk_access_quiet,
-                    crate::permissions_linux::get_macos_major_version,
-                    crate::permissions_linux::open_privacy_settings,
-                    crate::permissions_linux::open_appearance_settings,
-                    crate::permissions_linux::open_system_settings_url,
-                ]
-                dispatch_only: []
-            }
-            cfg(not(any(target_os = "macos", target_os = "linux"))) {
-                typed: [
-                    crate::stubs::permissions::check_full_disk_access,
-                    crate::stubs::permissions::check_full_disk_access_quiet,
-                    crate::stubs::permissions::get_macos_major_version,
-                    crate::stubs::permissions::open_privacy_settings,
-                    crate::stubs::permissions::open_appearance_settings,
-                    crate::stubs::permissions::open_system_settings_url,
                 ]
                 dispatch_only: []
             }

@@ -144,16 +144,14 @@ async fn read_accent_color() -> String {
     FALLBACK_ACCENT_HEX.to_owned()
 }
 
-/// Tauri command: returns the current Linux accent color as a hex string.
-#[tauri::command]
-#[specta::specta]
-pub async fn get_accent_color() -> String {
+/// The accent color: the XDG portal, then `gsettings`, then the brand fallback.
+pub(crate) async fn accent_color(_app: AppHandle) -> String {
     read_accent_color().await
 }
 
 /// Starts observing XDG Portal `SettingChanged` signal for live accent color updates.
 /// Emits `accent-color-changed` events to the frontend, matching macOS behavior.
-pub fn observe_accent_color_changes<R: Runtime>(app_handle: AppHandle<R>) {
+pub(crate) fn observe_accent_color_changes<R: Runtime>(app_handle: AppHandle<R>) {
     tauri::async_runtime::spawn(async move {
         let initial = read_accent_color().await;
         debug!("Linux accent color: {initial}");

@@ -32,7 +32,7 @@ pub fn get_automated_run() -> crate::test_mode::AutomatedRun {
 ///
 /// The frontend uses this to bypass the `isOnboarded` gate and force the
 /// onboarding wizard open on every launch (mirrors `CMDR_MOCK_LICENSE` /
-/// `CMDR_E2E_MODE`). Pair with `CMDR_MOCK_FDA` (in `permissions.rs`) to
+/// `CMDR_E2E_MODE`). Pair with `CMDR_MOCK_FDA` (in `permissions/platform/macos.rs`) to
 /// drive each step's variants without ever touching real System Settings.
 ///
 /// Synchronous + no filesystem access, so no `blocking_with_timeout` needed.

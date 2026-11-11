@@ -83,10 +83,8 @@ fn read_system_multiplier() -> f32 {
     multiplier
 }
 
-/// Tauri command: returns the current system text-size multiplier.
-#[tauri::command]
-#[specta::specta]
-pub fn get_system_text_size_multiplier() -> f32 {
+/// The current Text Size multiplier.
+pub(crate) fn text_size_multiplier() -> f32 {
     read_system_multiplier()
 }
 
@@ -95,7 +93,7 @@ pub fn get_system_text_size_multiplier() -> f32 {
 ///
 /// The observer is intentionally never removed; we want updates for the entire
 /// session.
-pub fn observe_system_text_size_changes<R: Runtime>(app_handle: AppHandle<R>) {
+pub(crate) fn observe_system_text_size_changes<R: Runtime>(app_handle: AppHandle<R>) {
     let initial = read_system_multiplier();
     debug!("Initial system text size multiplier: {initial:.2}x");
 

@@ -1,12 +1,7 @@
 //! Tauri commands for clipboard file operations (copy/cut/paste).
 
-#[cfg(target_os = "macos")]
 use std::collections::HashSet;
-#[cfg(target_os = "macos")]
 use std::path::PathBuf;
-
-#[cfg(target_os = "macos")]
-use objc2::MainThreadMarker;
 
 use crate::clipboard;
 use cmdr_operations::MutationError;
@@ -29,7 +24,6 @@ pub struct ClipboardReadResult {
 /// Paths by value, never row numbers: the frontend resolves a pane's selection
 /// through the revision-checked `get_selection_snapshot` first, because a watcher
 /// insert renumbers rows and old row numbers would name the neighbor.
-#[cfg(target_os = "macos")]
 #[tauri::command]
 #[specta::specta]
 pub async fn copy_paths_to_clipboard(app: tauri::AppHandle, paths: Vec<String>) -> Result<usize, String> {
@@ -41,16 +35,7 @@ pub async fn copy_paths_to_clipboard(app: tauri::AppHandle, paths: Vec<String>) 
 
     let count = paths.len();
 
-    let (tx, rx) = std::sync::mpsc::channel();
-    app.run_on_main_thread(move || {
-        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
-        let result = clipboard::write_file_urls_to_clipboard(mtm, &paths);
-        let _ = tx.send(result);
-    })
-    .map_err(|e| format!("Couldn't run on main thread: {e}"))?;
-
-    rx.recv()
-        .map_err(|e| format!("Couldn't receive pasteboard result: {e}"))??;
+    clipboard::platform::write_file_urls(app, paths)?;
 
     clipboard::clear_cut_state();
 
@@ -58,7 +43,6 @@ pub async fn copy_paths_to_clipboard(app: tauri::AppHandle, paths: Vec<String>) 
 }
 
 /// Writes the given paths directly to the system clipboard and marks them as cut.
-#[cfg(target_os = "macos")]
 #[tauri::command]
 #[specta::specta]
 pub async fn cut_paths_to_clipboard(app: tauri::AppHandle, paths: Vec<String>) -> Result<usize, String> {
@@ -71,16 +55,7 @@ pub async fn cut_paths_to_clipboard(app: tauri::AppHandle, paths: Vec<String>) -
     let count = paths.len();
     let cut_paths = paths.clone();
 
-    let (tx, rx) = std::sync::mpsc::channel();
-    app.run_on_main_thread(move || {
-        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
-        let result = clipboard::write_file_urls_to_clipboard(mtm, &paths);
-        let _ = tx.send(result);
-    })
-    .map_err(|e| format!("Couldn't run on main thread: {e}"))?;
-
-    rx.recv()
-        .map_err(|e| format!("Couldn't receive pasteboard result: {e}"))??;
+    clipboard::platform::write_file_urls(app, paths)?;
 
     clipboard::set_cut_state(cut_paths);
 
@@ -91,22 +66,10 @@ pub async fn cut_paths_to_clipboard(app: tauri::AppHandle, paths: Vec<String>) -
 ///
 /// If the clipboard contents no longer match the recorded cut state (the user copied
 /// something else), the stale cut state is automatically cleared.
-#[cfg(target_os = "macos")]
 #[tauri::command]
 #[specta::specta]
 pub async fn read_clipboard_files(app: tauri::AppHandle) -> Result<ClipboardReadResult, String> {
-    // Read from pasteboard on the main thread
-    let (tx, rx) = std::sync::mpsc::channel();
-    app.run_on_main_thread(move || {
-        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
-        let result = clipboard::read_file_urls_from_clipboard(mtm);
-        let _ = tx.send(result);
-    })
-    .map_err(|e| format!("Couldn't run on main thread: {e}"))?;
-
-    let clipboard_paths = rx
-        .recv()
-        .map_err(|e| format!("Couldn't receive pasteboard result: {e}"))??;
+    let clipboard_paths = clipboard::platform::read_file_urls(app)?;
 
     // Check cut state: if set, verify paths match (order-insensitive)
     let is_cut = if let Some(cut_paths) = clipboard::get_cut_state() {
@@ -150,20 +113,10 @@ pub async fn read_clipboard_files(app: tauri::AppHandle) -> Result<ClipboardRead
 ///
 /// Used by the frontend to paste text into input fields. Going through Rust bypasses
 /// WebKit's `navigator.clipboard.readText()` permission popup.
-#[cfg(target_os = "macos")]
 #[tauri::command]
 #[specta::specta]
 pub async fn read_clipboard_text(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    let (tx, rx) = std::sync::mpsc::channel();
-    app.run_on_main_thread(move || {
-        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
-        let text = clipboard::read_text_from_clipboard(mtm);
-        let _ = tx.send(text);
-    })
-    .map_err(|e| format!("Couldn't run on main thread: {e}"))?;
-
-    rx.recv()
-        .map_err(|e| format!("Couldn't receive pasteboard result: {e}"))
+    clipboard::platform::read_text(app)
 }
 
 /// Reads the highest-intent non-file clipboard flavor (image / PDF / text) and
@@ -178,7 +131,6 @@ pub async fn read_clipboard_text(app: tauri::AppHandle) -> Result<Option<String>
 /// thread (that decode can be hundreds of ms — never on the UI thread), and hands
 /// the result to `clipboard::paste_file::write_payload_replying`.
 /// `directory` is tilde-expanded for the local `root` volume only.
-#[cfg(target_os = "macos")]
 #[tauri::command]
 #[specta::specta]
 pub async fn paste_clipboard_as_file(
@@ -186,68 +138,7 @@ pub async fn paste_clipboard_as_file(
     volume_id: Option<String>,
     directory: String,
 ) -> Result<clipboard::PasteClipboardReply, MutationError> {
-    // 1. Read the RAW flavors on the main thread (NSPasteboard requires it). This
-    // does the minimum on-main: just copies bytes off the pasteboard.
-    let (tx, rx) = std::sync::mpsc::channel();
-    app.run_on_main_thread(move || {
-        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
-        let data = clipboard::read_pasteboard_data(mtm);
-        let _ = tx.send(data);
-    })
-    .map_err(|e| MutationError::Unexpected {
-        detail: format!("the main-thread hop didn't run: {e}").into(),
-    })?;
-
-    let data = rx.recv().map_err(|e| MutationError::Unexpected {
-        detail: format!("the pasteboard read didn't come back: {e}").into(),
-    })?;
-
-    // 2. Pick the highest-intent flavor OFF the main thread, in a blocking task —
-    // the TIFF→PNG decode is CPU-bound and can be hundreds of ms, so it must not
-    // sit on the UI thread OR block the async reactor.
-    let payload = tokio::task::spawn_blocking(move || clipboard::pick_clipboard_payload(data))
-        .await
-        .map_err(|e| MutationError::Unexpected {
-            detail: format!("the clipboard decode task didn't finish: {e}").into(),
-        })?;
-
-    // Tilde-expand for the local `root` volume only; volume paths are volume-relative.
-    let expanded = if volume_id.as_deref().unwrap_or("root") == "root" {
-        crate::commands::file_system::expand_tilde(&directory)
-    } else {
-        directory
-    };
-
-    // 3. Write, detached: a slow write (a large image onto a busy share) answers
-    // `StillRunning` and reports its end on `clipboard-paste-settled`, never a
-    // timeout that drops the write mid-flight.
-    clipboard::write_payload_replying(
-        volume_id,
-        PathBuf::from(expanded),
-        payload,
-        super::settled::broadcast_settled(app, std::convert::identity),
-    )
-    .await
-}
-
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub async fn read_clipboard_text(_app: tauri::AppHandle) -> Result<Option<String>, String> {
-    Err("Clipboard operations are not yet supported on this platform".to_string())
-}
-
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub async fn paste_clipboard_as_file(
-    _app: tauri::AppHandle,
-    _volume_id: Option<String>,
-    _directory: String,
-) -> Result<clipboard::PasteClipboardReply, MutationError> {
-    Err(MutationError::Volume {
-        error: cmdr_fs::volume::VolumeError::NotSupported,
-    })
+    clipboard::platform::paste_as_file(app, volume_id, directory).await
 }
 
 /// Clears the in-process cut state without touching the system clipboard.
@@ -255,27 +146,4 @@ pub async fn paste_clipboard_as_file(
 #[specta::specta]
 pub fn clear_clipboard_cut_state() {
     clipboard::clear_cut_state();
-}
-
-// --- Linux stubs ---
-
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub async fn read_clipboard_files(_app: tauri::AppHandle) -> Result<ClipboardReadResult, String> {
-    Err("Clipboard file operations are not yet supported on this platform".to_string())
-}
-
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub async fn copy_paths_to_clipboard(_app: tauri::AppHandle, _paths: Vec<String>) -> Result<usize, String> {
-    Err("Clipboard file operations are not yet supported on this platform".to_string())
-}
-
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub async fn cut_paths_to_clipboard(_app: tauri::AppHandle, _paths: Vec<String>) -> Result<usize, String> {
-    Err("Clipboard file operations are not yet supported on this platform".to_string())
 }

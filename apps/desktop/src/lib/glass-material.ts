@@ -1,7 +1,7 @@
 /**
  * The macOS 27 Liquid Glass slider (Appearance), mirrored onto `<html>` as the `--glass-tint`
  * variable, `0` clearest to `1` most tinted, which drives the glass fill and blur in `app.css`.
- * The backend re-reads it whenever the app becomes active (`src-tauri/src/glass_tint.rs`).
+ * The backend re-reads it whenever the app becomes active (`src-tauri/src/system_look/platform/macos/glass_tint.rs`).
  *
  * The other setting that shapes the material, Reduce transparency, arrives as the
  * `reduce-transparency` class from `#lib/display-accessibility`, alongside the other macOS

@@ -25,7 +25,7 @@ Cmd+X sets a Cmdr-internal cut flag, and the move-vs-copy decision happens at pa
 - **Both file URLs and plain text are written**, so pasting into a text editor gives newline-separated paths (matches
   Finder).
 - **MTP paths are excluded**: they can't be a `public.file-url`. The UI suggests F5/F6.
-- **Linux is stubbed**: `#[cfg(target_os = "macos")]` gates all NSPasteboard code. Linux needs `text/uri-list` (future).
+- **Each OS's pasteboard access is `platform/`**; Linux and Windows answer "not supported" (Linux needs `text/uri-list`).
 - **Paste-content-as-file uses a SEPARATE `ClipboardData` static from the file-URL `ClipboardEntry`.** Don't merge them
   — a content paste would clobber a pending file copy. Flavor precedence + the markdown sniff live in `payload.rs` (pure,
   testable); the write is `paste_file.rs` over the engine's `create_numbered_file`. See `DETAILS.md` § Paste clipboard content as a

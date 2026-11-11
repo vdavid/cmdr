@@ -2607,8 +2607,11 @@ export const commands = {
    */
   showQueueRowContextMenu: (entries: QueueRowMenuEntry[], shortcuts: ContextMenuShortcuts) =>
     typedError<null, string>(__TAURI_INVOKE('show_queue_row_context_menu', { entries, shortcuts })),
-  // Show a file in Finder (reveal in parent folder)
-  showInFinder: (path: string) => typedError<null, string>(__TAURI_INVOKE('show_in_finder', { path })),
+  /**
+   *  Reveals a file in the OS's file manager: Finder on macOS, the default file manager (its parent
+   *  folder) on Linux.
+   */
+  revealInFileManager: (path: string) => typedError<null, string>(__TAURI_INVOKE('reveal_in_file_manager', { path })),
   /**
    *  Open (or re-open) Quick Look on the given path. Answers whether the panel opened: `false`
    *  for a volume whose paths macOS can't preview, so the frontend drops its optimistic
@@ -2620,8 +2623,8 @@ export const commands = {
     typedError<null, string>(__TAURI_INVOKE('quick_look_set_path', { path, volumeId })),
   quickLookClose: () => typedError<null, string>(__TAURI_INVOKE('quick_look_close')),
   /**
-   *  Opens Finder's Get Info window for a file, or says why macOS won't let it
-   *  (`file_system::get_info`).
+   *  Opens the OS's Get Info window for a file, or says why it won't (`file_system::get_info`).
+   *  A no-op where the OS has no such window.
    */
   getInfo: (path: string) => typedError<null, GetInfoError>(__TAURI_INVOKE('get_info', { path })),
   /**
@@ -4684,7 +4687,7 @@ export const commands = {
    *
    *  The frontend uses this to bypass the `isOnboarded` gate and force the
    *  onboarding wizard open on every launch (mirrors `CMDR_MOCK_LICENSE` /
-   *  `CMDR_E2E_MODE`). Pair with `CMDR_MOCK_FDA` (in `permissions.rs`) to
+   *  `CMDR_E2E_MODE`). Pair with `CMDR_MOCK_FDA` (in `permissions/platform/macos.rs`) to
    *  drive each step's variants without ever touching real System Settings.
    *
    *  Synchronous + no filesystem access, so no `blocking_with_timeout` needed.
@@ -5943,11 +5946,8 @@ export const commands = {
   confirmWithCheckbox: (request: CheckboxConfirmRequest) =>
     __TAURI_INVOKE<CheckboxConfirm>('confirm_with_checkbox', { request }),
   /**
-   *  Tauri command: returns the current macOS accent color as a hex string.
-   *
-   *  `NSColor` is main-thread-only, so we hop to the AppKit main thread via
-   *  `run_on_main_thread` and read there, mirroring the clipboard commands.
-   *  Returns the brand fallback if the main-thread hop or channel fails.
+   *  Tauri command: returns the system accent color as a hex string (for example, `#007aff`), or the
+   *  brand gold when the OS doesn't say.
    */
   getAccentColor: () => __TAURI_INVOKE<string>('get_accent_color'),
   /**
@@ -6036,16 +6036,12 @@ export const commands = {
    */
   addCmdrToDock: () => typedError<null, DockPinFailure>(__TAURI_INVOKE('add_cmdr_to_dock')),
   /**
-   *  Tauri command: returns the macOS Accessibility > Display options the UI mirrors.
-   *
-   *  `NSWorkspace` accessibility queries are main-thread-only, so we hop to the
-   *  AppKit main thread via `run_on_main_thread` and read there, mirroring
-   *  `get_accent_color`. Returns all-off (the safe default) if the main-thread hop
-   *  or channel fails.
+   *  Tauri command: returns the Accessibility > Display options the UI mirrors, all off where the
+   *  OS has none.
    */
   getDisplayAccessibility: () => __TAURI_INVOKE<DisplayAccessibility>('get_display_accessibility'),
   /**
-   *  Tauri command: the Liquid Glass slider value in `0.0..=1.0`, or `None` when macOS doesn't
+   *  Tauri command: the Liquid Glass slider value in `0.0..=1.0`, or `None` when the OS doesn't
    *  report one.
    */
   getGlassTintAmount: () => __TAURI_INVOKE<number | null>('get_glass_tint_amount'),
@@ -6073,7 +6069,8 @@ export const commands = {
    */
   checkFullDiskAccessQuiet: () => __TAURI_INVOKE<boolean>('check_full_disk_access_quiet'),
   /**
-   *  Returns the macOS major version (e.g. `13` for Ventura, `14` for Sonoma).
+   *  The OS's major version: on macOS, `13` for Ventura and `14` for Sonoma; `0` off macOS, where
+   *  nothing asks.
    *
    *  Used by the onboarding modal to tailor copy + the deep-link host:
    *  Ventura+ has the new System Settings app with the
@@ -6081,7 +6078,7 @@ export const commands = {
    *  macOS uses the legacy System Preferences `preference.security` host with
    *  new entries appended at the end.
    */
-  getMacosMajorVersion: () => __TAURI_INVOKE<number>('get_macos_major_version'),
+  getOsMajorVersion: () => __TAURI_INVOKE<number>('get_os_major_version'),
   /**
    *  Opens System Settings directly on the Full Disk Access pane.
    *

@@ -13,8 +13,9 @@ drags. macOS only (backend commands + swizzle gated `#[cfg(target_os = "macos")]
   label, canvas drag preview.
 - `drag-analytics.ts`: `drop_received` (every `handleDrop` arm, refusals too), `drag_out_completed`.
 - Browser-image (file-promise) drops: `../pane/promise-drop*.ts`, backend `src-tauri/src/drop_in/`.
-- Backend: `native_drag.rs` (+ `native_drag/type_plan.rs`), `commands/file_system/drag.rs`, `drag_image_detection.rs`,
-  `drag_image_swap.rs`. Self-drag consumption lives in `pane/drag-drop-controller.svelte.ts`.
+- Backend: `native_drag.rs` (+ `native_drag/type_plan.rs`), `commands/file_system/drag/` (its macOS arm in
+  `platform/macos.rs`), `drag_image_detection.rs`, `drag_image_swap.rs`. Self-drag consumption lives in
+  `pane/drag-drop-controller.svelte.ts`.
 
 ## Must-knows
 

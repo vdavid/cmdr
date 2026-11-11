@@ -1,19 +1,15 @@
 # Stubs module
 
-Compilation stubs for platform-specific modules on platforms that aren't macOS and aren't Linux. Never compiled on
-macOS. Most sub-modules are gated `#[cfg(not(target_os = "linux"))]` since Linux has real implementations (volumes,
-accent color, permissions); `text_size.rs`, `display_accessibility.rs`, and `glass_tint.rs` are gated
-`#[cfg(not(target_os = "macos"))]` because those signals are macOS-only.
+Compilation stubs for what has no platform seam yet, on platforms that aren't macOS and aren't Linux. Never compiled
+on macOS. One sub-module is left, `volumes.rs`, gated `#[cfg(not(target_os = "linux"))]` since Linux has a real
+implementation; it goes when the volumes seam lands. Everything else answers per OS from its own `platform/` seam
+(`docs/guides/platform-seams.md`), whose Windows arm holds what a stub here used to.
 
 ## Module map
 
-- **`mod.rs`**: declares the sub-modules with the cfg gates above.
-- **`permissions.rs`**, **`accent_color.rs`**, **`volumes.rs`**: non-macOS/non-Linux
-  stubs returning empty/success values; types mirror the macOS shapes for JSON compatibility.
-- **`text_size.rs`**: non-macOS `get_system_text_size_multiplier` returns `1.0`. The in-app `appearance.textSize`
-  slider still works on every platform.
-- **`display_accessibility.rs`** / **`glass_tint.rs`**: report "every display option off" and "no Liquid Glass slider"
-  (there's no observer to stub: each OS's installers are `../platform/startup/`).
+- **`mod.rs`**: declares `volumes` with the gate above.
+- **`volumes.rs`**: the non-macOS/non-Linux volume list and space reads; types mirror the macOS shapes for JSON
+  compatibility.
 
 Per-stub behavior is cataloged in `DETAILS.md`.
 
