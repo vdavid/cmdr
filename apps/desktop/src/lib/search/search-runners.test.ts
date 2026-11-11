@@ -20,7 +20,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
 
 // The live transport is Tauri events all the way down, and nothing here walks.
 vi.mock('./live-search-source', () => ({
-  createLiveSearchSource: () => ({ start: () => Promise.resolve(() => {}), cancel: () => {} }),
+  createLiveSearchSource: () => ({ start: () => Promise.resolve(() => {}), cancel: () => {}, forgetRun: () => {} }),
 }))
 
 function makeRunners() {
