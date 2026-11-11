@@ -37,6 +37,11 @@ The report includes:
   cross-breakdowns (country × architecture, country × version, daily × version)
 - **Active use**: daily active installs (heartbeat); got-the-latest-release per day by version (distinct update-enabled
   installs that checked); license activations, active devices
+- **Settings adoption**: what installs run with, resolved against each version's defaults
+- **Feature usage**: per `feature-status.json` feature, distinct installs (and their share of the window's active
+  installs) and event count, with a breakdown (by event, or an Ask Cmdr `outcome`, a search `mode`); a feature whose
+  events no release has sent yet reads "no data yet", not 0%. The section ends with what each row counts. This is the
+  per-release feature-status review's input. The mapping: `apps/api-server/src/admin/DETAILS.md` § Feature usage.
 - **Payment**: revenue, transactions, active subscriptions
 - **Retention**: churn rate, subscriptions by status
 

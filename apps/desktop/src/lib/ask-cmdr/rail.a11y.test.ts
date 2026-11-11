@@ -407,7 +407,7 @@ describe('AskCmdrMessage a11y', () => {
 /**
  * Tier 3 a11y tests for `AskCmdrRail.svelte`.
  *
- * The whole rail: header (title + ALPHA badge + new-chat + close), the thread, the
+ * The whole rail: header (title + BETA badge + new-chat + close), the thread, the
  * soft-cap nudge, and the composer. Covers the empty state, a populated thread, and the
  * over-soft-cap nudge. The trigger store is mocked to a plain object so the rail + its
  * child composer mount without the full explorer-state chain.

@@ -36,6 +36,8 @@ use super::{
     EngineEvents, InstantMutationFact, OperationErrorReport, OperationVolumes, OwnWrites, Pacing, UnregisteredVolume,
     VolumeAnswer,
 };
+use cmdr_operation_log::rollback::RollbackReport;
+use cmdr_operation_log::types::Initiator;
 
 /// Records every engine-wide fact it hears.
 // DEFAULT-OK: a recorder that has heard nothing yet is exactly empty lists.
@@ -51,6 +53,8 @@ pub struct RecordingEngineEvents {
     pub transfers_finished: Mutex<Vec<Vec<String>>>,
     pub leftovers_kept: Mutex<Vec<LeftoversKeptEvent>>,
     pub instant_mutations: Mutex<Vec<InstantMutationFact>>,
+    /// `(initiator, narrowed, report)` per reversal that ran.
+    pub rollbacks: Mutex<Vec<(Initiator, bool, RollbackReport)>>,
     pub error_reports: Mutex<Vec<OperationErrorReport>>,
     pub scan_wait_progress: Mutex<Vec<WriteProgressEvent>>,
 }
@@ -73,6 +77,11 @@ impl EngineEvents for RecordingEngineEvents {
     }
     fn instant_mutation_settled(&self, fact: InstantMutationFact) {
         self.instant_mutations.lock_ignore_poison().push(fact);
+    }
+    fn rollback_settled(&self, initiator: Initiator, narrowed: bool, report: &RollbackReport) {
+        self.rollbacks
+            .lock_ignore_poison()
+            .push((initiator, narrowed, report.clone()));
     }
     fn error_report(&self, report: OperationErrorReport) {
         self.error_reports.lock_ignore_poison().push(report);

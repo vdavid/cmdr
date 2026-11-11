@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import type { DashboardData } from '../../../lib/server/fetch-all.js'
 import { formatReport } from './format-report.js'
+import type { FeatureUsageData } from '../../../lib/feature-usage.js'
 
 // A characterization test: the report is consumed by agents and by David, so the exact text is the
 // contract. Each case pins the whole output string, not a sample of it, and the fixtures are built to
@@ -18,6 +19,62 @@ const site = (pv: number, prevPv: number, visitors: number, prevVisitors: number
 })
 
 /** Every source loaded, with enough shape to reach each breakdown. */
+const richFeatureUsage: FeatureUsageData = {
+  range: '90d',
+  since: '2026-05-04T03:04:05.000Z',
+  activeInstalls: 40,
+  features: [
+    {
+      id: 'tabs',
+      name: 'Tabs',
+      sources: ['tab_opened'],
+      installs: 0,
+      events: 0,
+      everSeen: true,
+      parts: [],
+    },
+    {
+      id: 'ask-cmdr',
+      name: 'Ask Cmdr',
+      sources: ['ask_cmdr_turn'],
+      installs: 3,
+      events: 12,
+      everSeen: true,
+      parts: [
+        { key: 'answered', installs: 3, events: 10 },
+        { key: 'failed', installs: 1, events: 2 },
+      ],
+    },
+    {
+      id: 'multi-rename',
+      name: 'Multi-rename tool',
+      sources: ['multi_rename_applied'],
+      installs: 0,
+      events: 0,
+      everSeen: false,
+      parts: [],
+    },
+    {
+      id: 'archives',
+      name: 'Archives',
+      sources: ['pane_navigated[volume_kind=archive]', 'archive_edit_completed'],
+      installs: 30,
+      events: 4_321,
+      everSeen: true,
+      parts: [{ key: 'pane_navigated', installs: 30, events: 4_321 }],
+    },
+    {
+      id: 'git-browser',
+      name: 'Git browser',
+      sources: ['pane_navigated[volume_kind=git-portal]'],
+      installs: 1,
+      events: 1,
+      everSeen: true,
+      parts: [],
+    },
+  ],
+}
+
 const richData: DashboardData = {
   selection: { range: '90d', end: null },
   updatedAt: '2026-08-02T03:04:05.000Z',
@@ -351,6 +408,7 @@ const richData: DashboardData = {
       ],
     },
   },
+  featureUsage: { ok: true, data: richFeatureUsage },
 }
 
 /** Every source down. */
@@ -367,6 +425,7 @@ const allFailedData: DashboardData = {
   license: { ok: false, error: 'License server: not configured (missing env vars)' },
   feedbackAndErrors: { ok: false, error: 'Feedback & errors: timed out after 20s' },
   settingsAdoption: { ok: false, error: 'Settings adoption: timed out after 20s' },
+  featureUsage: { ok: false, error: 'Feature usage: timed out after 20s' },
 }
 
 /** Every source loaded, every collection empty: the "present but nothing in it" shape. */
@@ -404,6 +463,17 @@ const emptyData: DashboardData = {
   license: { ok: true, data: { totalActivations: 0, activeDevices: null } },
   feedbackAndErrors: { ok: true, data: { feedback: [], errorReports: [] } },
   settingsAdoption: { ok: true, data: { settings: [], totalInstalls: 0, unresolvedInstalls: 0 } },
+  featureUsage: {
+    ok: true,
+    data: {
+      range: '30d',
+      since: '2026-07-03T03:04:05.000Z',
+      activeInstalls: 0,
+      features: [
+        { id: 'search', name: 'Search', sources: ['search_used'], installs: 0, events: 0, everSeen: true, parts: [] },
+      ],
+    },
+  },
 }
 
 /** Half the sources down: the sections that read two sources have to degrade one at a time. */
@@ -426,6 +496,7 @@ const mixedData: DashboardData = {
     },
   },
   settingsAdoption: { ok: false, error: 'Settings adoption: offline' },
+  featureUsage: { ok: false, error: 'Feature usage: offline' },
 }
 
 const richReport = `# Cmdr analytics report (90d)
@@ -591,6 +662,26 @@ Settings people change (most-moved first; the other 1 setting sits at its defaul
   mediaIndex.enabled: default off, 10 installs, 80% on default, most common change: on (2)
   indexing.enabled: default on, 26 installs, 92% on default, most common change: off (2)
 
+## Feature usage: which features do people use?
+
+- Active installs (beat at least once since 2026-05-04): 40
+
+An install counts toward a feature once it fired any of that feature's events in the window; the share is of active installs. "No data yet" means no release has sent the event yet, so it isn't a zero.
+
+Per feature (id from feature-status.json, most-used first):
+  archives (Archives): 30 installs (75%), 4,321 events; pane_navigated 4,321 (30 installs)
+  ask-cmdr (Ask Cmdr): 3 installs (7.5%), 12 events; answered 10 (3 installs), failed 2 (1 install)
+  git-browser (Git browser): 1 install (2.5%), 1 event
+  tabs (Tabs): 0 installs (0%), 0 events
+  multi-rename (Multi-rename tool): no data yet
+
+Counted from:
+  tabs: tab_opened
+  ask-cmdr: ask_cmdr_turn
+  multi-rename: multi_rename_applied
+  archives: pane_navigated[volume_kind=archive], archive_edit_completed
+  git-browser: pane_navigated[volume_kind=git-portal]
+
 ## Payment: how many pay?
 
 - Revenue: $128.00
@@ -662,6 +753,10 @@ Couldn't load: Cloudflare: timed out after 20s
 
 Couldn't load: Settings adoption: timed out after 20s
 
+## Feature usage: which features do people use?
+
+Couldn't load: Feature usage: timed out after 20s
+
 ## Payment: how many pay?
 
 Couldn't load: Paddle: not configured (missing env vars)
@@ -717,6 +812,18 @@ GitHub stars: 0 total
 
 - No installs to read yet (settings adoption fills as beta testers run a build that reports a config).
 
+## Feature usage: which features do people use?
+
+- Active installs (beat at least once since 2026-07-03): 0
+
+An install counts toward a feature once it fired any of that feature's events in the window; the share is of active installs. "No data yet" means no release has sent the event yet, so it isn't a zero.
+
+Per feature (id from feature-status.json, most-used first):
+  search (Search): 0 installs (–), 0 events
+
+Counted from:
+  search: search_used
+
 ## Payment: how many pay?
 
 - Revenue: $0.00
@@ -769,6 +876,10 @@ Couldn't load: Cloudflare: offline
 ## Settings adoption: what do people actually turn on?
 
 Couldn't load: Settings adoption: offline
+
+## Feature usage: which features do people use?
+
+Couldn't load: Feature usage: offline
 
 ## Payment: how many pay?
 

@@ -301,17 +301,26 @@ export function getChildWindowRect(label: string) {
   return commands.getChildWindowRect(label)
 }
 
-/** Saves the rect for a child window label. Called from the move/resize listeners on Settings and Debug. */
+/** Saves the rect for a child window label. Called from the child windows' move/resize listeners. */
 export function setChildWindowRect(label: string, rect: ChildWindowRect): Promise<void> {
   return commands.setChildWindowRect(label, rect)
 }
 
 /**
- * Hides a child window, then destroys it a moment later. Call it through `closeSelfWindow`
- * (`#lib/child-window-close`) rather than directly; that module says why the wait is in Rust.
+ * Slides a child window out, hides it, then destroys it a moment later. Call it through
+ * `closeSelfWindow` (`#lib/child-window-close`) rather than directly; that module says why the
+ * wait is in Rust.
  */
 export function closeChildWindow(label: string): Promise<void> {
   return commands.closeChildWindow(label)
+}
+
+/**
+ * Shows a child window that was created hidden, sliding it in on macOS. Call it through
+ * `#lib/child-window-show`; a no-op on a window that's already up.
+ */
+export function showChildWindow(label: string): Promise<void> {
+  return commands.showChildWindow(label)
 }
 
 /**

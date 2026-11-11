@@ -979,6 +979,13 @@ impl EngineEvents for TableWatchingEvents {
     fn transfer_finished(&self, _volume_ids: &[String]) {}
     fn leftovers_kept(&self, _notice: LeftoversKeptEvent) {}
     fn instant_mutation_settled(&self, _fact: InstantMutationFact) {}
+    fn rollback_settled(
+        &self,
+        _initiator: cmdr_operation_log::types::Initiator,
+        _narrowed: bool,
+        _report: &cmdr_operation_log::rollback::RollbackReport,
+    ) {
+    }
     fn error_report(&self, _report: OperationErrorReport) {
         self.reports.fetch_add(1, Ordering::SeqCst);
         let probe = self

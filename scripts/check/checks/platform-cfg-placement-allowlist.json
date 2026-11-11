@@ -18,12 +18,17 @@
     "apps/desktop/src-tauri/src/app_lifecycle.rs": {
       "outsideSeam": 5
     },
+    "apps/desktop/src-tauri/src/child_window_lifecycle/ledger.rs": {
+      "negated": 2,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/child_window_lifecycle/mod.rs": {
+      "negated": 3,
+      "outsideSeam": 10
+    },
     "apps/desktop/src-tauri/src/clipboard/mod.rs": {
       "negated": 3,
       "outsideSeam": 15
-    },
-    "apps/desktop/src-tauri/src/commands/child_window_state.rs": {
-      "outsideSeam": 1
     },
     "apps/desktop/src-tauri/src/commands/confirm_dialog.rs": {
       "negated": 3,

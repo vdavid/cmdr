@@ -100,6 +100,8 @@ vi.mock('#lib/text-size.svelte.js', () => ({
   cleanupTextSize: vi.fn(),
 }))
 vi.mock('#lib/window-positioning.js', () => ({ trackOwnRect: vi.fn(() => Promise.resolve(() => {})) }))
+vi.mock('#lib/child-window-show.js', () => ({ showSelfWindow: vi.fn() }))
+vi.mock('#lib/child-window-close.js', () => ({ closeSelfWindow: vi.fn(() => Promise.resolve()) }))
 // `<Size>` inside the rows reads the reactive settings layer, which needs a live
 // settings store the unit environment doesn't have.
 vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({ getFileSizeFormat: () => 'decimal' }))

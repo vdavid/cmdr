@@ -10,7 +10,11 @@
  * stable dedup id so spamming ⌘J doesn't stack copies.
  */
 
-import { downloadsWatcherStatus, goToLatestDownload as goToLatestDownloadCommand } from '#lib/tauri-commands/index.js'
+import {
+  downloadsWatcherStatus,
+  goToLatestDownload as goToLatestDownloadCommand,
+  trackEvent,
+} from '#lib/tauri-commands/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import {
@@ -43,16 +47,37 @@ const log = getAppLogger('downloads')
  *
  * The helper is a no-op when `explorer` is `undefined` (HMR or pre-mount).
  */
-export async function goToLatestDownload(explorer: ExplorerAPI | undefined): Promise<void> {
+export async function goToLatestDownload(
+  explorer: ExplorerAPI | undefined,
+  trigger: LatestDownloadTrigger,
+): Promise<void> {
   if (!explorer) {
     log.debug('goToLatestDownload: no explorer; skipping (HMR or pre-mount)')
     return
   }
+  const outcome = await jumpToLatest(explorer)
+  void trackEvent('download_jump_used', { trigger, outcome })
+}
 
+/**
+ * What set a jump to the latest download going: `command` is ⌘J, the Go menu, and
+ * the palette (one `downloads.goToLatest` command, so they don't split further);
+ * `global_shortcut` is the system-wide hotkey. A required parameter, so a new
+ * entry point decides what it reports. The toast's jump is `goToDownload`'s.
+ */
+export type LatestDownloadTrigger = 'command' | 'global_shortcut'
+
+/**
+ * How a download jump ended, for `download_jump_used`: `revealed` landed on the
+ * file; `unreachable` had a file but no pane could show it; `empty` found no
+ * download; `no_access` can't watch Downloads (Full Disk Access).
+ */
+type DownloadJumpOutcome = 'revealed' | 'unreachable' | 'empty' | 'no_access'
+
+async function jumpToLatest(explorer: ExplorerAPI): Promise<DownloadJumpOutcome> {
   const result = await goToLatestDownloadCommand()
   if (result.status === 'ok') {
-    await revealDownloadInBestPane(explorer, result.data.parentDir, result.data.fileName)
-    return
+    return revealDownloadInBestPane(explorer, result.data.parentDir, result.data.fileName)
   }
 
   // Exhaustive switch on the typed enum. Never branch on the error message —
@@ -60,11 +85,11 @@ export async function goToLatestDownload(explorer: ExplorerAPI | undefined): Pro
   switch (result.error.kind) {
     case 'empty':
       await showEmptyToast(explorer)
-      return
+      return 'empty'
     case 'watcherUnavailable':
     case 'downloadsDirUnresolved':
       showFdaToast()
-      return
+      return 'no_access'
   }
 }
 
@@ -91,7 +116,9 @@ export async function goToDownload(
     log.debug('goToDownload: no explorer; skipping (HMR or pre-mount)')
     return
   }
-  await revealDownloadInBestPane(explorer, parentDir, fileName)
+  const outcome = await revealDownloadInBestPane(explorer, parentDir, fileName)
+  // The toast's own jump: it goes to the file it advertised, not the latest.
+  void trackEvent('download_jump_used', { trigger: 'toast', outcome })
 }
 
 /**
@@ -100,10 +127,14 @@ export async function goToDownload(
  * real local volume; if it can't (drive gone), show the shared
  * "couldn't reach that location's drive" toast instead of navigating wrong.
  */
-async function revealDownloadInBestPane(explorer: ExplorerAPI, parentDir: string, fileName: string): Promise<void> {
+async function revealDownloadInBestPane(
+  explorer: ExplorerAPI,
+  parentDir: string,
+  fileName: string,
+): Promise<DownloadJumpOutcome> {
   const location = await resolveLocationOrToast(parentDir)
-  if (!location) return
-  await revealFileInBestPane(explorer, location, fileName)
+  if (!location) return 'unreachable'
+  return (await revealFileInBestPane(explorer, location, fileName)) ? 'revealed' : 'unreachable'
 }
 
 async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {

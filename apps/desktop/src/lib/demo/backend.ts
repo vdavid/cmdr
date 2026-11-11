@@ -22,6 +22,11 @@ import { tString } from '#lib/intl/messages.svelte.js'
 import { formatInteger } from '#lib/intl/number-format.js'
 import { formatRoundSize } from '#lib/units/byte-size.js'
 import { createWindowHost, type WindowHost } from './windows.js'
+import { enterFormatOf } from '#lib/file-explorer/pane/archive-enter-policy.js'
+import { OPENING_TOAST_ID } from '#lib/file-explorer/pane/opening-toast.js'
+
+/** Long enough to read the two-sentence archive notice. */
+const ARCHIVE_NOTICE_MS = 8000
 
 type Handler = (payload: Payload) => unknown
 
@@ -84,6 +89,9 @@ export function createDemoBackend(): DemoBackend {
         // eslint-disable-next-line no-console -- the demo's developer reads the devtools console
         console.warn('[demo] a viewer link the demo does not open', refusal)
       }
+    } else if (event === 'demo://archive-refused') {
+      // A listing asked to enter an archive (Browse picked in Settings, or a typed path).
+      sayArchivesStayClosed()
     } else if (event === 'demo://media-token-dropped') {
       const { token } = payload as { token: string }
       const url = mediaUrls.get(token)
@@ -157,14 +165,40 @@ export function createDemoBackend(): DemoBackend {
   )
   const menu = startMenuEngine()
 
+  /**
+   * The demo doesn't browse archives, and says so. Under the "Opening…" toast's id, so it takes
+   * that toast's place when an open raised one.
+   */
+  function sayArchivesStayClosed(): void {
+    addToast(tString('ui.demoArchive.notBrowsable'), {
+      id: OPENING_TOAST_ID,
+      level: 'info',
+      timeoutMs: ARCHIVE_NOTICE_MS,
+    })
+  }
+
+  /** Whether `path` names an archive a person browses: the engine's flag, and the app's own format rule. */
+  async function isBrowsableArchive(path: string): Promise<boolean> {
+    const name = path.slice(path.lastIndexOf('/') + 1)
+    const isArchive = await engine.isArchiveName(name)
+    return enterFormatOf({ name, isDirectory: false, isArchive }) === 'zip'
+  }
+
   // The demo's "default app" for a file is Cmdr's own viewer: Enter opens it, through the event the
   // main window already answers (`open-file-viewer`). A folder or package keeps `openPath`'s refusal.
   // What's a file is the live volume's answer (`stat_paths_kinds`), so a file a copy, move, or
-  // rename landed opens too, and one a delete removed doesn't.
+  // rename landed opens too, and one a delete removed doesn't. An archive gets the notice in the
+  // viewer's place: the seeded Enter setting sends it here (`plugins.ts`).
   async function openInViewer(payload: Payload): Promise<boolean> {
     const path = demoPath(String(payload.path))
     const kinds = (await engine.invoke('stat_paths_kinds', { paths: [path] })) as TimedOut<(boolean | null)[]>
     if (kinds.data[0] !== false) return false
+    if (await isBrowsableArchive(path)) {
+      // A task later: the app raises "Opening…" once its app-name lookup answers, which takes only
+      // microtasks here, and the notice has to land after it to replace it.
+      setTimeout(sayArchivesStayClosed, 0)
+      return true
+    }
     emit('open-file-viewer', { path }, { kind: 'label', label: 'main' })
     return true
   }

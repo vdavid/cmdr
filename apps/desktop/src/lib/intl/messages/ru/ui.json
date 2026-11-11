@@ -20,6 +20,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "В этом демо нельзя заходить в архивы. В настоящем приложении архивы можно просматривать, редактировать и распаковывать, а еще сжимать файлы.",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "Параметры",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

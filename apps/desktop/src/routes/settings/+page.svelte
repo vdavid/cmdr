@@ -35,6 +35,7 @@
     import { getAppLogger } from '#lib/logging/logger.js'
     import { trackOwnRect } from '#lib/window-positioning.js'
     import { closeSelfWindow } from '#lib/child-window-close.js'
+    import { showSelfWindow } from '#lib/child-window-show.js'
 
     const log = getAppLogger('settings')
 
@@ -301,6 +302,10 @@
             initialized = true
 
             await tick()
+
+            // The opener creates this window hidden; it looks right now, so show it
+            // (`#lib/child-window-show`). A no-op on an E2E window, which is created visible.
+            showSelfWindow()
 
             if (parsed) {
                 void landDeepLink(parsed, urlAnchor)

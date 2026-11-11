@@ -98,9 +98,10 @@ Same harness, same machine, only the close delay changed:
 ## What shipped
 
 `closeSelfWindow()` (`apps/desktop/src/lib/child-window-close.ts`) asks the backend to hide the window and destroy it
-`WINDOW_CLOSE_DEFER_MS` (100 ms) later, in `commands/child_window_state.rs`. Every self-closing child window uses it:
-`routes/settings/+page.svelte`, `lib/settings/sections/LicenseSection.svelte`, `routes/viewer/+page.svelte`, and
-`routes/debug/+page.svelte`.
+`HIDE_TO_DESTROY` (100 ms) later, in `apps/desktop/src-tauri/src/child_window_lifecycle/mod.rs`. Every self-closing
+child window uses it, and every other close (the red button, ⌘W, a `close()` call) reaches the same path through a
+`CloseRequested` handler that prevents the default close. Since child windows slide out on close, the slide runs before
+the hide, so the 100 ms after the hide is untouched.
 
 The hide is option 1 below, taken after the delay alone proved insufficient: `CRASH-SK5RW` (0.39.0) and `CRASH-V2SCH`
 (0.45.1) are both post-mitigation `SIGSEGV`s from one install, sharing a 17-frame outer path through the main run loop

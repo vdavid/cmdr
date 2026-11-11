@@ -23,6 +23,7 @@
         activateWindowMenu,
         type RowText,
     } from '#lib/tauri-commands/index.js'
+    import { showSelfWindow } from '#lib/child-window-show.js'
     import { goto } from '$app/navigation'
     import { eventMatchesCommand } from '#lib/shortcuts/index.js'
     import { createViewerNavigation } from './viewer-navigation.svelte'
@@ -1089,6 +1090,12 @@
         // Apply compounded text size after settings are loaded so the user's
         // persisted slider value is honored on first paint.
         await initTextSize()
+
+        // The opener creates this window hidden; it looks right now, so show it
+        // (`#lib/child-window-show`). The file itself may take minutes (a phone pull), so the
+        // show doesn't wait for it.
+        await tick()
+        showSelfWindow()
 
         const params = new URLSearchParams(window.location.search)
         const pathParam = params.get('path')

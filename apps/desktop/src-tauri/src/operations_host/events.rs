@@ -11,6 +11,8 @@ use tauri_specta::Event as _;
 
 use super::wire;
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_operation_log::rollback::RollbackReport;
+use cmdr_operation_log::types::{Initiator, RollbackState};
 use cmdr_operations::host::{
     AsideAttempt, EngineEvents, InstantMutationFact, InstantOp, InstantOutcome, InstantTarget, OperationErrorReport,
     TreeFailure,
@@ -89,6 +91,10 @@ impl EngineEvents for TauriEngineEvents {
             InstantOp::CreateFolder => crate::analytics::events::capture("folder_created", props),
             InstantOp::CreateFile => crate::analytics::events::capture("file_created", props),
         }
+    }
+
+    fn rollback_settled(&self, initiator: Initiator, narrowed: bool, report: &RollbackReport) {
+        crate::analytics::events::capture("operation_rollback_run", rollback_props(initiator, narrowed, report));
     }
 
     fn error_report(&self, report: OperationErrorReport) {
@@ -245,11 +251,74 @@ fn instant_props(fact: InstantMutationFact) -> Value {
     })
 }
 
+/// `operation_rollback_run`'s props: who asked, whole or narrowed (`scope`), how many
+/// items the run EXAMINED (reversed plus skipped, bucketed; rows a selection left out
+/// were never looked at), and how it ended. A cancel wins; otherwise the state the
+/// original op landed in decides, and a run that wasn't stopped yet left the op as it
+/// was is `failed` (the journal couldn't hand over its rows). Reads only the report's
+/// counts and states, ❌ never its skips' example file names.
+fn rollback_props(initiator: Initiator, narrowed: bool, report: &RollbackReport) -> Value {
+    let outcome = if report.canceled {
+        "cancelled"
+    } else {
+        match report.final_state {
+            RollbackState::RolledBack => "done",
+            RollbackState::PartiallyRolledBack => "partial",
+            RollbackState::Rollbackable | RollbackState::NotRollbackable | RollbackState::RollingBack => "failed",
+        }
+    };
+    let examined = report.reversed.saturating_add(report.skipped);
+    json!({
+        "initiator": initiator.as_token(),
+        "scope": if narrowed { "partial" } else { "all" },
+        "item_count": crate::analytics::item_count_bucket(usize::try_from(examined).unwrap_or(usize::MAX)),
+        "outcome": outcome,
+    })
+}
+
 #[cfg(test)]
 mod tests {
-    use cmdr_operation_log::types::Initiator;
-
     use super::*;
+
+    fn report(reversed: u64, skipped: u64, canceled: bool, final_state: RollbackState) -> RollbackReport {
+        RollbackReport {
+            reversed,
+            skipped,
+            left_out: 0,
+            skips: Vec::new(),
+            canceled,
+            final_state,
+        }
+    }
+
+    /// Pinned word for word: the dashboard maps these tokens.
+    #[test]
+    fn rollback_props_carry_the_scope_bucket_and_outcome_tokens() {
+        assert_eq!(
+            rollback_props(
+                Initiator::User,
+                true,
+                &report(2, 1, false, RollbackState::PartiallyRolledBack)
+            ),
+            json!({
+                "initiator": Initiator::User.as_token(),
+                "scope": "partial",
+                "item_count": crate::analytics::item_count_bucket(3),
+                "outcome": "partial",
+            })
+        );
+        let outcome = |r: RollbackReport| rollback_props(Initiator::User, false, &r)["outcome"].clone();
+        assert_eq!(outcome(report(3, 0, false, RollbackState::RolledBack)), "done");
+        assert_eq!(
+            outcome(report(1, 0, true, RollbackState::PartiallyRolledBack)),
+            "cancelled"
+        );
+        assert_eq!(outcome(report(0, 0, false, RollbackState::Rollbackable)), "failed");
+        assert_eq!(
+            rollback_props(Initiator::Agent, false, &report(1, 0, false, RollbackState::RolledBack))["scope"],
+            "all"
+        );
+    }
 
     /// The props are what the dashboards query on, so their keys and tokens are
     /// pinned word for word.

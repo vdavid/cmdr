@@ -44,6 +44,7 @@ const h = vi.hoisted(() => {
     findSimilar:
       vi.fn<(payload: { volumeId: string; sourcePath: string; limit: number | null }) => Promise<SimilarImage[]>>(),
     settings: { values: settingValues, liveChange: settingListeners },
+    trackEvent: vi.fn<(name: string, props?: Record<string, unknown>) => Promise<void>>(() => Promise.resolve()),
   }
 })
 
@@ -57,6 +58,8 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   mediaIndexDropThumbnailTokens: (t: string[]) => h.dropTokens(t),
   mediaIndexFindSimilar: (volumeId: string, sourcePath: string, limit: number | null) =>
     h.findSimilar({ volumeId, sourcePath, limit }),
+  trackEvent: (name: string, props?: Record<string, unknown>) => h.trackEvent(name, props),
+  itemCountBucket: (count: number) => (count <= 0 ? '0' : count === 1 ? '1' : '2+'),
 }))
 
 vi.mock('#lib/settings/index.js', () => ({
@@ -145,6 +148,20 @@ describe('ImageSearchResults master-toggle gating', () => {
 
     expect(target.querySelector('.image-results')).toBeNull()
     expectNoIpc()
+    expect(h.trackEvent).not.toHaveBeenCalled()
+  })
+
+  it('a settled query reports image_search_used once, with its mode, outcome, and hit bucket', async () => {
+    mountGrid()
+    await settle()
+
+    expect(h.trackEvent).toHaveBeenCalledTimes(1)
+    expect(h.trackEvent).toHaveBeenCalledWith('image_search_used', {
+      mode: 'text',
+      outcome: 'results',
+      result_bucket: '1',
+      semantic: false,
+    })
   })
 
   it('feature ON renders the section and runs the OCR search', async () => {

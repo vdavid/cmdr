@@ -7,6 +7,7 @@
 //! `rename_used`. Cmdr's answer is `TauriEngineEvents`, in the app's
 //! `operations_host::events`.
 
+use cmdr_operation_log::rollback::RollbackReport;
 use cmdr_operation_log::types::Initiator;
 
 use super::super::types::{LeftoversKeptEvent, OperationsChanged, WriteProgressEvent};
@@ -45,6 +46,13 @@ pub trait EngineEvents: Send + Sync {
     /// it ended. Exactly one per op, from the wrapper around its whole driver.
     fn instant_mutation_settled(&self, fact: InstantMutationFact);
 
+    /// A rollback's reversal finished, however it ended: who asked, whether the
+    /// gate handed it a narrowed selection, and the run's own report. Exactly one
+    /// per reversal that ran, from the managed inverse's single exit; a dispatch the
+    /// gate refused never ran one and reports nothing here. The report's skips name
+    /// an example file each: an answer reads its counts and states, ❌ never those.
+    fn rollback_settled(&self, initiator: Initiator, narrowed: bool, report: &RollbackReport);
+
     /// Something went wrong badly enough to raise an error report.
     fn error_report(&self, report: OperationErrorReport);
 
@@ -67,6 +75,7 @@ impl EngineEvents for NoEngineEvents {
     fn transfer_finished(&self, _volume_ids: &[String]) {}
     fn leftovers_kept(&self, _notice: LeftoversKeptEvent) {}
     fn instant_mutation_settled(&self, _fact: InstantMutationFact) {}
+    fn rollback_settled(&self, _initiator: Initiator, _narrowed: bool, _report: &RollbackReport) {}
     fn error_report(&self, _report: OperationErrorReport) {}
     fn scan_wait_progress(&self, _event: WriteProgressEvent) {}
 }

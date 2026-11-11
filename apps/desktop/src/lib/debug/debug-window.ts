@@ -17,10 +17,11 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { Effect, EffectState } from '@tauri-apps/api/window'
-import { getShouldReduceTransparency } from '#lib/tauri-commands/index.js'
+import { getShouldReduceTransparency, raiseChildWindow } from '#lib/tauri-commands/index.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { decorateChildWindowTitle } from '#lib/app-mode.js'
 import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '#lib/window-positioning.js'
+import { scheduleShowFallback } from '#lib/child-window-show.js'
 
 const log = getAppLogger('debug')
 
@@ -38,7 +39,9 @@ export const DEBUG_MIN_HEIGHT = 480
 export async function openDebugWindow(): Promise<void> {
   const existing = await WebviewWindow.getByLabel('debug')
   if (existing) {
-    await existing.setFocus()
+    // Not `setFocus()`: it does nothing to a minimized or hidden window, and the backend also
+    // brings back a window caught mid-close.
+    await raiseChildWindow('debug')
     return
   }
 
@@ -73,6 +76,9 @@ export async function openDebugWindow(): Promise<void> {
     resizable: true,
     decorations: true,
     focus: true,
+    // Created hidden; the debug page shows it, sliding in, once it's ready
+    // (`#lib/child-window-show`).
+    visible: false,
     // Translucent glass backdrop, mirroring Settings — unless the user reduces
     // transparency (then opaque). Requires `tauri/macos-private-api` (already
     // enabled for Settings).
@@ -83,6 +89,7 @@ export async function openDebugWindow(): Promise<void> {
     hiddenTitle: true,
     trafficLightPosition: new LogicalPosition(20, 29),
   })
+  scheduleShowFallback('debug')
 
   // Apply NSVisualEffectView Sidebar material after creation — only when
   // transparency is allowed. Same reasoning as `settings-window.ts`:

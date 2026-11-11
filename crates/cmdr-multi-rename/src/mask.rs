@@ -327,6 +327,16 @@ impl Mask {
         self.0.iter().any(|token| matches!(token, Token::Media(_)))
     }
 
+    /// Whether it numbers the rows (`[C]`).
+    pub(crate) fn uses_counter(&self) -> bool {
+        self.0.iter().any(|token| matches!(token, Token::Counter(_)))
+    }
+
+    /// Whether it writes a date or time (`[Y]`, `[h]`, `[Y-M-D]`, …).
+    pub(crate) fn uses_date(&self) -> bool {
+        self.0.iter().any(|token| matches!(token, Token::Date(_)))
+    }
+
     /// The mask's text for `row`, or the first media field it has no text for.
     /// A field still being read wins over every other gap: its value may yet come.
     pub fn render(&self, row: &RowFacts<'_>) -> Result<String, FieldGap> {

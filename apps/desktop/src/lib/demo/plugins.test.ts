@@ -29,6 +29,11 @@ describe('in-memory store plugin', () => {
     expect(call('plugin:store|get', { rid, key: 'appearance.appColor' })).toEqual(['cmdr-gold', true])
   })
 
+  it('seeds Enter on an archive to Open, so it reaches the demo’s own answer and never a listing', () => {
+    const rid = load('settings.json')
+    expect(call('plugin:store|get', { rid, key: 'behavior.archiveEnter.zip' })).toEqual(['open', true])
+  })
+
   it('seeds a 125% zoom, through the app’s own text size setting', () => {
     const rid = load('settings.json')
     expect(call('plugin:store|get', { rid, key: 'appearance.textSize' })).toEqual([125, true])

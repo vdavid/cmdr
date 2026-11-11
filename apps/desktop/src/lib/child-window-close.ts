@@ -1,5 +1,8 @@
 /**
- * The one way a child webview (Settings, file viewer, Debug) closes itself.
+ * The one way a child webview (Settings, file viewer, Debug, Keyboard shortcuts, the queue) closes
+ * itself. Closes from outside the page (the red button, ⌘W, a `close()` call) reach the same Rust
+ * close through `CloseRequested`, so every close slides out and tears down the same way
+ * (`src-tauri/src/child_window_lifecycle/`).
  *
  * A webview must never destroy itself from inside the handler that asked it to. Two separate
  * problems say so:
@@ -11,7 +14,7 @@
  * 2. **Linux / webkit2gtk IPC stall.** Destroying the webview on the same GTK main-loop tick
  *    that handled the key stalls IPC queued behind it from other webviews.
  *
- * ❗ The hide-and-wait lives in RUST (`commands/child_window_state.rs`), not here, and that is
+ * ❗ The hide-and-wait lives in RUST (`child_window_lifecycle/`), not here, and that is
  * the point of this module being a one-line wrapper. WebKit throttles timers in a hidden page to
  * roughly 1 Hz, so a `setTimeout` inside a webview that just hid itself can slip by a second or
  * more and leave an invisible window alive, still holding a web content process. A Rust timer
@@ -27,7 +30,7 @@ import { getAppLogger } from '#lib/logging/logger.js'
 const log = getAppLogger('windowClose')
 
 /**
- * Ask the backend to hide this window and then destroy it.
+ * Ask the backend to slide this window out, hide it, and then destroy it.
  *
  * Returns once the request is in; the window goes away a moment later. Safe to call twice (a
  * second call finds no window and does nothing), so a race between Escape and the red button

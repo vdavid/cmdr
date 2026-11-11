@@ -72,7 +72,8 @@ fn raise_ns_window(ns_window: *mut objc2::runtime::AnyObject) -> Result<(), Stri
 }
 
 /// Bring an already-open child window (Settings, Keyboard shortcuts, the operation queue) to the
-/// front, restoring it first if it's minimized or hidden. The openers call this when the window
+/// front, restoring it first if it's minimized or hidden, and cancelling its close if it's mid-close
+/// (`crate::child_window_lifecycle::cancel_close`). The openers call this when the window
 /// already exists; E2E runs skip it there, so a test run never steals focus.
 ///
 /// Best-effort: a failure leaves a log line, since the opener has nothing better to show.
@@ -92,6 +93,8 @@ pub fn raise_child_window(app: AppHandle, label: String) {
                 log::warn!(target: "ui", "raise_child_window: no window with label {label}");
                 return;
             };
+            // A reopen while the window is still closing brings it back instead of losing it.
+            crate::child_window_lifecycle::cancel_close(&window);
             match window.ns_window() {
                 Ok(ptr) => {
                     if let Err(e) = raise_ns_window(ptr as *mut AnyObject) {
@@ -113,6 +116,7 @@ pub fn raise_child_window(app: AppHandle, label: String) {
             log::warn!(target: "ui", "raise_child_window: no window with label {label}");
             return;
         };
+        crate::child_window_lifecycle::cancel_close(&window);
         for (step, result) in [
             ("unminimize", window.unminimize()),
             ("show", window.show()),

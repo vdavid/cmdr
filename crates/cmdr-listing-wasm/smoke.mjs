@@ -220,6 +220,26 @@ async function smokeSearch() {
   }
 }
 
+// The name check the page asks before it opens a file (`isArchiveName`), and the refusal a listing
+// of an archive file sends ahead of the volume's own "that's a file".
+if (!DemoListing.isArchiveName('fonts.tar.gz') || DemoListing.isArchiveName('notes.md'))
+  fail('isArchiveName disagrees with the listing about what an archive is')
+{
+  recent.length = 0
+  const zip = '/Users/you/smoke.zip'
+  await demo.invoke('create_file', { volumeId: 'root', parentPath: '/Users/you', name: 'smoke.zip', initiator: 'user' })
+  const refused = waitFor('demo://archive-refused', (p) => p.path === zip, 5000)
+  await demo.invoke('list_directory_start_streaming', {
+    volumeId: 'root',
+    path: zip,
+    includeHidden: false,
+    sortBy: 'name',
+    sortOrder: 'ascending',
+    listingId: 'smoke-archive',
+  })
+  await refused
+}
+
 console.log(`listing-wasm smoke: OK (${events.length} events, ${DemoListing.commands().length} commands)`)
 // The engine's six-hour orphan reaper holds a timer, which would keep Node alive.
 process.exit(0)

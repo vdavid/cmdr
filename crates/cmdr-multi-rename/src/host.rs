@@ -18,6 +18,7 @@ use futures_util::future::BoxFuture;
 use crate::error::{MultiRenameError, ReadOnlyPlace};
 use crate::media::{Loader, ProgressEmit};
 use crate::plan::PreviewRow;
+use crate::started::MultiRenameStarted;
 
 /// The host's answers to a Multi-Rename engine.
 pub trait MultiRenameHost: Send + Sync {
@@ -54,6 +55,14 @@ pub trait MultiRenameHost: Send + Sync {
 
     /// The write engine apply starts renames on.
     fn operations(&self) -> Result<Operations, MultiRenameError>;
+
+    /// One apply ended with `result`, from a spec using the rule kinds `rules`
+    /// (fixed tokens like `name_mask` or `counter`, in the sheet's order; empty when
+    /// the session was gone before apply could read it). Categories only: what the
+    /// desktop counts for analytics. The browser demo counts nothing, hence the no-op.
+    fn rename_applied(&self, rules: &[&'static str], result: &Result<MultiRenameStarted, MultiRenameError>) {
+        let _ = (rules, result);
+    }
 }
 
 /// Where a rename lands, as [`MultiRenameHost::rename_place`] answers.

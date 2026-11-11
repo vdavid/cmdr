@@ -10,8 +10,8 @@ notification, both, neither) and owns go-to-latest navigation. Backend counterpa
   settings enum.
 - **`global-shortcut-bridge.svelte.ts`**: one `global-shortcut-fired` subscription; calls `goToLatestDownload` plus the
   first-trigger warn toast.
-- **`go-to-latest.ts`**: `goToLatestDownload(explorer)` (ring + scan fallback) and `goToDownload(explorer, dir, name)`
-  (a specific file).
+- **`go-to-latest.ts`**: `goToLatestDownload(explorer, trigger)` (ring + scan fallback),
+  `goToDownload(explorer, dir, name)` (one file).
 - **`DownloadToastContent.svelte`**: the teaching toast (collapsible; two shortcut hints; jump/stop buttons).
 - Helpers and the `GlobalShortcut*` / `LatestDownload*` components: see the DETAILS.md per-file rundown.
 

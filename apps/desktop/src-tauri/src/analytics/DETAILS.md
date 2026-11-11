@@ -179,6 +179,8 @@ Open set, no enum, no schema:
   `crate::analytics::events::capture("my_event", serde_json::json!({ "kind": some_enum }))`.
 - **Frontend event**: `import { trackEvent } from '#lib/tauri-commands'`, then `void trackEvent('my_event', { kind: someEnum })`.
 - Name internals after the UI; keep props categorical.
+- If it measures a `feature-status.json` feature, add it to `featureUsageDefinitions`
+  (`apps/api-server/src/admin/DETAILS.md` § Feature usage), so the dashboard's Feature usage section counts it.
 
 ## Reading a zero (before calling it a bug)
 
@@ -402,6 +404,45 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   against `reveal_handler_answered{answer: yes}`: `heldByOtherApp` here is another file manager winning the race
   between the toast being drawn and the button being pressed, which is the one number that would justify re-reading the
   state at click time.
+- `operation_log_opened` (frontend, `#lib/operation-log/operation-log-trigger.svelte.ts` `openOperationLog`): no props.
+  The menu item, ⌥⌘L, and the palette all arrive as the one `log.operationLog` command, so a `trigger` couldn't split
+  them. Past the already-open guard, so a menu-plus-accelerator double fire counts once. The denominator
+  `operation_rollback_run` reads against.
+- `operation_rollback_run` (backend, `crates/cmdr-operations/src/rollback.rs` `spawn_managed_inverse` hands
+  `EngineEvents::rollback_settled` the initiator, whether the gate narrowed it, and the `RollbackReport`;
+  `operations_host/events.rs` `rollback_props` captures it, reading only counts and states): `initiator`
+  (the `Initiator` token), `scope` (`all` / `partial`: whether the gate handed the run a narrowed selection),
+  `item_count` bucket (items the run EXAMINED, reversed plus skipped; rows a selection left out aren't counted),
+  `outcome` (`done` / `partial` / `cancelled` / `failed`, read off the `RollbackReport`: a cancel wins, then
+  `final_state`, and a run that ended untouched without a cancel is `failed`). One per reversal that RAN, from either
+  entry point (the dialog's dispatch, a multi-operation Undo, the MCP rollback); a refusal at the gate ran nothing and
+  reports nothing. Never a path, a name, or a skip's example file.
+- `multi_rename_applied` (backend, `apps/desktop/src-tauri/src/multi_rename/analytics.rs`, from
+  `AppHost::rename_applied`, which `MultiRename::apply` in `crates/cmdr-multi-rename/src/run.rs` calls at its single
+  exit, so the sheet and the MCP tool both count): `item_count` bucket (rows the rename took, `0` on a refusal),
+  `rules` (the crate-private `rule_kinds.rs` tokens the spec used, comma-joined in a fixed order, or `none`:
+  `name_mask` / `ext_mask` / `counter` / `date` / `media_meta` / `search_replace` / `case` / `greek_to_latin` /
+  `remove_diacritics` / `normalize_unicode`), `outcome` (`started`, or the `MultiRenameError` variant's token:
+  `preview_out_of_date`, `still_reading`, `nothing_to_rename`, `read_only`, `not_connected`, `couldnt_start`,
+  `timed_out`, `session_closed`, `spec_invalid`, `selection_gone`, `failed`). Every press of Start reports, refusals
+  too. `started` means the bulk rename began; how it ended is the operation's. ❌ Never a mask, search, replacement, or
+  name. The browser demo's apply doesn't report (no analytics there).
+- `go_to_folder_used` (frontend, `#lib/go-to-path/go-to-path.ts` `goToPath`, once per jump from the ⌘G dialog):
+  `outcome` (`navigated` / `selected_file` / `nearest_ancestor`, the pane accepting it; `not_found`, the resolver's
+  `invalid`; `refused`, no volume for the target or a pane that declined; `unresolved`, the resolver's typed refusal;
+  `handed_off`, a server address the sign-in sheet took). Never the typed input or a path.
+- `image_search_used` (frontend, `#lib/search/image-search-analytics.ts`, from `ImageSearchResults.svelte`): `mode`
+  (`text`, the dialog's query over CLIP descriptions plus OCR; `similar`, a tile's look-alikes), `outcome` (`results` /
+  `no_results` / `failed`), `result_bucket` (`itemCountBucket` of every hit before the tile cap), `semantic` (any hit
+  came from the CLIP pass, so `false` everywhere reads as OCR-only installs). Its own event, not a prop on `search_used`:
+  the grid runs its own debounced query on its own clock. It fires per SETTLED query (each typing pause, like
+  `search_used{trigger: autoApply}`), only when both `mediaIndex.enabled` and `mediaIndex.showInSearch` are on; "Back to
+  search" restores without reporting again. Never the query, a path, or a snippet.
+- `download_jump_used` (frontend, `#lib/downloads/go-to-latest.ts`): `trigger` (`command`: ⌘J, the Go menu, and the
+  palette, one `downloads.goToLatest` command; `global_shortcut`: the system-wide hotkey; `toast`: the download toast's
+  own jump, to the file it advertised rather than the latest), `outcome` (`revealed` / `unreachable`, a file no pane
+  could show / `empty`, no download found / `no_access`, Downloads can't be watched). `trigger` is
+  `goToLatestDownload`'s required parameter, so a new entry point decides what it reports. Never a file name or path.
 
 ## Session length, in detail
 

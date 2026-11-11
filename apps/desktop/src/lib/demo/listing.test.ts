@@ -18,6 +18,9 @@ vi.mock('virtual:cmdr-listing-wasm', () => ({
     static handles(command: string): boolean {
       return command === 'list_directory_start_streaming'
     }
+    static isArchiveName(name: string): boolean {
+      return name.endsWith('.zip')
+    }
     constructor(tree: unknown, onEvent: (event: string, payload: unknown) => void) {
       engine.tree = tree
       engine.onEvent = onEvent
@@ -49,6 +52,8 @@ describe('listing engine', () => {
     const handle = startListingEngine(() => undefined)
     expect(await handle.handles('list_directory_start_streaming')).toBe(true)
     expect(await handle.handles('get_volume_space')).toBe(false)
+    expect(await handle.isArchiveName('fonts.zip')).toBe(true)
+    expect(await handle.isArchiveName('notes.md')).toBe(false)
     expect(engine.tree).toMatchObject({ volumeId: DEMO_VOLUME_ID, root: DEMO_ROOT })
   })
 
@@ -101,6 +106,7 @@ describe('listing engine', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const handle = startListingEngine(() => undefined)
     expect(await handle.handles('list_directory_start_streaming')).toBe(false)
+    expect(await handle.isArchiveName('a.zip')).toBe(false)
     await expect(handle.invoke('list_directory_start_streaming', {})).rejects.toThrow()
     expect(error).toHaveBeenCalledTimes(1)
   })

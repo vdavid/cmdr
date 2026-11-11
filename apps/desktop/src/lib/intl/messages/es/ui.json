@@ -19,6 +19,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "En esta demo no puedes entrar en los archivos comprimidos. En la app real puedes explorarlos, editarlos y extraerlos, y también comprimir archivos.",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "Opciones",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

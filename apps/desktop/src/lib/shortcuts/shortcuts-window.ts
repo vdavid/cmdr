@@ -21,6 +21,7 @@ import { raiseChildWindow } from '#lib/tauri-commands/index.js'
 import { getEffectiveScale } from '#lib/text-size.svelte.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } from '#lib/app-mode.js'
+import { scheduleShowFallback } from '#lib/child-window-show.js'
 import {
   centerOnMain,
   nearestMonitor,
@@ -87,6 +88,9 @@ export async function openShortcutsWindow(): Promise<void> {
     minimizable: true,
     closable: true,
     focus: !isE2e,
+    // Created hidden; the shortcuts page shows it, sliding in, once it's ready
+    // (`#lib/child-window-show`). E2E keeps the immediate show.
+    visible: isE2e,
     // Overlay title bar with hidden title and the traffic lights tucked into the
     // top-left, matching the Settings/Viewer windows. Our own header row paints
     // the title and the "Edit shortcuts" link beneath the lights.
@@ -94,6 +98,7 @@ export async function openShortcutsWindow(): Promise<void> {
     hiddenTitle: true,
     trafficLightPosition: new LogicalPosition(14, 18),
   })
+  if (!isE2e) scheduleShowFallback('shortcuts')
   // E2E: push the window behind everything so a run's windows don't pop in front
   // of the developer's work. No-op outside E2E. See `orderChildWindowToBackInE2e`.
   void orderChildWindowToBackInE2e(win)

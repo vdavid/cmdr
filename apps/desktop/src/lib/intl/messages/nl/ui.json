@@ -20,6 +20,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "In deze demo kun je niet in archieven kijken. In de echte app kun je in archieven bladeren, ze bewerken en uitpakken, en bestanden comprimeren.",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "Opties",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"
