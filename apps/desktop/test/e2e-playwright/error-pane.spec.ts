@@ -19,8 +19,9 @@ type PageLike = TauriPage | BrowserPageAdapter
 
 const IS_LINUX = os.platform() === 'linux'
 
-// `listing_error_from_errno` maps specific macOS errnos to specific reasons.
-// The non-macOS fallback maps every errno to `CouldntReadUnknown`, hence one title.
+// The spec injects macOS's numbers (60, 13). `listing_error_from_class` gives each
+// macOS errno class its own reason; off macOS only nine transient classes keep one,
+// and Linux reads 60 as `ENOSTR` and 13 as an `EACCES` it doesn't name, hence one title.
 const ETIMEDOUT_TITLE = IS_LINUX ? 'Couldn’t read this folder' : 'Connection timed out'
 const EACCES_TITLE = IS_LINUX ? 'Couldn’t read this folder' : 'No permission'
 

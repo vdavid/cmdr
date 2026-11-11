@@ -103,9 +103,9 @@ tempfile = { version = "3", optional = true }
 notify = "8"
 
 [target.'cfg(unix)'.dependencies]
-# `getattrlistbulk` in the bulk directory reader (macOS), and raw errno matching
-# in the network fetch path (both). Every call site is behind a `cfg`, so this
-# stays at `unix` rather than being declared for all targets.
+# `getattrlistbulk` in the bulk directory reader (macOS), the scanner's `EPERM`
+# seal probe, and the `cfg(unix)` tests that name errnos. Every call site is behind
+# a `cfg`, so this stays at `unix` rather than being declared for all targets.
 libc = "0.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]

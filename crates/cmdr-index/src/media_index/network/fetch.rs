@@ -699,6 +699,7 @@ mod tests {
 
     /// The characterization table, every errno: the nine that say the mount is gone
     /// pause, a missing file is its own answer, and every other one skips the file.
+    #[cfg(unix)]
     #[test]
     fn every_errno_keeps_its_fetch_answer() {
         let transport_loss = [
@@ -730,6 +731,7 @@ mod tests {
 
     /// The errno line between "this FILE is bad" and "the MOUNT is gone": network-
     /// transport errnos pause (disconnect), anything else skips (unreadable).
+    #[cfg(unix)]
     #[test]
     fn io_errors_classify_by_errno_kind() {
         use std::io::{Error, ErrorKind};

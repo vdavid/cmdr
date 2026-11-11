@@ -21,7 +21,7 @@ use crate::volume::{LockedContainer, VolumeError};
 // get exercised end-to-end via `listing_error_from_volume_error`.
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn make_io_error(errno: i32) -> VolumeError {
+pub(super) fn make_io_error(errno: i32) -> VolumeError {
     VolumeError::IoError {
         message: format!("test error {}", errno).into(),
         raw_os_error: Some(errno),
@@ -927,49 +927,6 @@ fn git_typed_variant_preserves_path_with_colon_chars() {
             listing.raw_detail.contains(path),
             "raw_detail {:?} should preserve path {path:?}",
             listing.raw_detail
-        );
-    }
-}
-
-/// The characterization table for Linux, every errno: the nine `std` reads as a
-/// connection blip or a busy resource are `Transient` with their own reason, and
-/// every other one is the unknown read problem, retry hint on, no action.
-#[cfg(target_os = "linux")]
-#[test]
-fn every_linux_errno_keeps_its_listing_outcome() {
-    let path = Path::new("/p");
-    let busy = ListingErrorReason::ResourceBusy { path: "/p".to_string() };
-    let transient = [
-        (libc::EINTR, ListingErrorReason::Interrupted),
-        (libc::ENOMEM, ListingErrorReason::NotEnoughMemory),
-        (libc::EBUSY, busy),
-        (libc::EAGAIN, ListingErrorReason::TemporarilyUnavailable),
-        (libc::ENETDOWN, ListingErrorReason::NetworkDown),
-        (libc::ECONNABORTED, ListingErrorReason::ConnectionDropped),
-        (libc::ECONNRESET, ListingErrorReason::ConnectionReset),
-        (libc::ETIMEDOUT, ListingErrorReason::ConnectionTimedOutErrno),
-        (libc::ESTALE, ListingErrorReason::StaleConnection),
-    ];
-    let unknown = ListingErrorReason::CouldntReadUnknown { path: "/p".to_string() };
-    for code in 0..=4096 {
-        let listed = listing_error_from_volume_error(&make_io_error(code), path);
-        let (category, reason) = match transient.iter().find(|(errno, _)| *errno == code) {
-            Some((_, reason)) => (ErrorCategory::Transient, reason),
-            None => (ErrorCategory::Serious, &unknown),
-        };
-        assert_eq!(listed.category, category, "errno {code}");
-        assert_eq!(
-            std::mem::discriminant(&listed.reason),
-            std::mem::discriminant(reason),
-            "errno {code}: {:?}",
-            listed.reason
-        );
-        assert!(listed.retry_hint, "errno {code}");
-        assert_eq!(listed.action_kind, None, "errno {code}");
-        assert_eq!(
-            listed.raw_detail,
-            format!("I/O error: test error {code}"),
-            "errno {code}"
         );
     }
 }
