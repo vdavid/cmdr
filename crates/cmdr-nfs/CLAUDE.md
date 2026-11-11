@@ -8,7 +8,7 @@ export opens from an unprivileged process with no OS mount. WebDAV's lifecycle (
 - `params.rs` (`NfsServer`, `NfsIdentity`, `NfsConnectionParams`), `errors.rs` (every variant from a number the server
   sent).
 - `xdr.rs` (bounded codec), `transport.rs` (`RpcConnection`), `proto/` (`rpc`, `portmap`, `mount`, `nfs3`'s
-  `Nfs3Client`), `dial.rs` (resolve → portmap → split + `MNT`).
+  `Nfs3Client`), `dial/` (resolve → portmap → split + `MNT`).
 - `volume/`: `NfsVolume` and `connect_nfs_volume` (`mod.rs`), `handles.rs`, `streams.rs`, `writes.rs`, `mutation.rs`,
   `copy.rs`, `poll.rs`, `reconnect.rs`; `fake_nfs.rs` is the in-process server.
 
