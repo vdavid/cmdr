@@ -256,18 +256,13 @@ impl WalkPolicy {
 
 /// The device a path sits on. On a mount point this is the MOUNTED filesystem's,
 /// which is what makes the difference from its parent's the boundary signal.
-#[cfg(unix)]
+/// `None` where the OS can't name a device, so no walk ever cuts at a boundary there.
 fn device_of(path: &Path) -> Option<u64> {
-    use std::os::unix::fs::MetadataExt;
-    std::fs::symlink_metadata(path).ok().map(|meta| meta.dev())
-}
-
-/// No device identity to compare, so no walk ever cuts at a boundary here. The
-/// LOCAL guarded walker is macOS / Linux only, so nothing reaches this in
-/// practice.
-#[cfg(not(unix))]
-fn device_of(_path: &Path) -> Option<u64> {
-    None
+    std::fs::symlink_metadata(path)
+        .ok()
+        .as_ref()
+        .and_then(cmdr_fs::file_identity::device_of)
+        .map(cmdr_fs::file_identity::DeviceId::raw)
 }
 
 /// One entry a walk discovered, in the shape a live consumer needs it.

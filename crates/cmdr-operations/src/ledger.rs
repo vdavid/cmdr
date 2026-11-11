@@ -15,6 +15,8 @@
 use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
+use cmdr_fs::file_identity::FileId;
+
 use cmdr_fs::volume::LandedModified;
 
 use super::displaced_entry::DisplacedEntry;
@@ -166,10 +168,10 @@ impl WrittenIdentity {
         }
     }
 
-    /// The node id of an entry the caller already stat'd. `None` off Unix, where
-    /// there is none to read.
+    /// The node id of an entry the caller already stat'd. `None` where the OS's
+    /// metadata carries none.
     pub(crate) fn node_of_stat(meta: &Metadata) -> Option<NodeId> {
-        crate::local_disk::file_id(meta).map(|(dev, ino)| NodeId { dev, ino })
+        FileId::of(meta).map(NodeId)
     }
 
     /// The size this entry was recorded with, for the journal row that mirrors
@@ -182,13 +184,10 @@ impl WrittenIdentity {
     }
 }
 
-/// A local filesystem node, as `(dev, ino)`. Equal pairs are the same file: the
-/// device disambiguates inode numbers, which are only unique per filesystem.
+/// A local filesystem node. Equal ids are the same file: the device disambiguates
+/// node numbers, which are only unique per filesystem.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct NodeId {
-    dev: u64,
-    ino: u64,
-}
+pub(crate) struct NodeId(FileId);
 
 // ============================================================================
 // The local copy's ledger

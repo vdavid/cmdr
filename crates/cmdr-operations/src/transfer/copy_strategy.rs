@@ -65,11 +65,11 @@ use super::chunked_copy::is_network_filesystem;
 /// Handles non-existent destination paths by checking the parent directory.
 #[cfg(target_os = "macos")]
 fn is_same_apfs_volume(source: &Path, dest: &Path) -> bool {
-    use std::os::unix::fs::MetadataExt;
+    use cmdr_fs::file_identity::{Sameness, same_device};
 
     // Check same volume via device ID (works even when dest doesn't exist: we check parent)
-    let src_dev = match std::fs::metadata(source) {
-        Ok(m) => m.dev(),
+    let src_meta = match std::fs::metadata(source) {
+        Ok(m) => m,
         Err(_) => return false,
     };
     let dest_check_path = if dest.exists() {
@@ -80,11 +80,11 @@ fn is_same_apfs_volume(source: &Path, dest: &Path) -> bool {
             _ => return false,
         }
     };
-    let dest_dev = match std::fs::metadata(&dest_check_path) {
-        Ok(m) => m.dev(),
+    let dest_meta = match std::fs::metadata(&dest_check_path) {
+        Ok(m) => m,
         Err(_) => return false,
     };
-    if src_dev != dest_dev {
+    if same_device(&src_meta, &dest_meta) != Sameness::Same {
         return false;
     }
 

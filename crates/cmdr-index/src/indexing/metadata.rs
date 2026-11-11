@@ -3,6 +3,8 @@
 //! Consolidates all platform-specific logic for extracting file metadata
 //! (sizes, mtime, inode, nlink) into a single struct and function.
 
+use cmdr_fs::file_identity::{FileId, link_count};
+
 /// Snapshot of filesystem metadata fields relevant to indexing.
 #[derive(Debug, Clone)]
 pub(crate) struct MetadataSnapshot {
@@ -37,28 +39,13 @@ pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_sy
     }
 
     if is_dir {
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::MetadataExt;
-            let ino = metadata.ino();
-            return MetadataSnapshot {
-                logical_size: None,
-                physical_size: None,
-                modified_at,
-                inode: if ino != 0 { Some(ino) } else { None },
-                nlink: None,
-            };
-        }
-        #[cfg(not(unix))]
-        {
-            return MetadataSnapshot {
-                logical_size: None,
-                physical_size: None,
-                modified_at,
-                inode: None,
-                nlink: None,
-            };
-        }
+        return MetadataSnapshot {
+            logical_size: None,
+            physical_size: None,
+            modified_at,
+            inode: node_number(metadata),
+            nlink: None,
+        };
     }
 
     #[cfg(unix)]
@@ -72,24 +59,31 @@ pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_sy
             metadata.len(),
             physical_size,
             modified_at,
-            metadata.ino(),
-            metadata.nlink(),
+            node_number(metadata).unwrap_or(0),
+            link_count(metadata).unwrap_or(1),
             is_dir,
             is_symlink,
         )
     }
 
-    #[cfg(not(unix))]
+    // No allocated-block count in std's metadata here, so the logical size stands in.
+    #[cfg(windows)]
     {
         let size = metadata.len();
         MetadataSnapshot {
             logical_size: Some(size),
             physical_size: Some(size),
             modified_at,
-            inode: None,
-            nlink: None,
+            inode: node_number(metadata),
+            nlink: link_count(metadata),
         }
     }
+}
+
+/// The 64-bit node number the store keeps, `None` for `0` (the "no inode" some
+/// filesystems report) or where the OS gives none.
+fn node_number(metadata: &std::fs::Metadata) -> Option<u64> {
+    FileId::of(metadata).and_then(FileId::node_u64).filter(|&ino| ino != 0)
 }
 
 /// Build a [`MetadataSnapshot`] from already-extracted raw filesystem values,
@@ -148,7 +142,7 @@ fn extract_mtime(metadata: &std::fs::Metadata) -> Option<u64> {
         if mtime >= 0 { Some(mtime as u64) } else { None }
     }
 
-    #[cfg(not(unix))]
+    #[cfg(windows)]
     {
         metadata
             .modified()

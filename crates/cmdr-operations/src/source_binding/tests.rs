@@ -387,8 +387,7 @@ async fn a_local_expectation_for_a_path_only_the_volume_has_is_dropped() {
     let expected = ExpectedSources::new([(
         path.clone(),
         SourceFingerprint::Local {
-            device: 1,
-            inode: 2,
+            id: Some(cmdr_fs::file_identity::FileId::from_stored(1, 2)),
             content: LocalContent::File {
                 size: 8,
                 modified_nanos: None,
@@ -418,8 +417,7 @@ async fn a_local_expectation_for_a_path_only_the_volume_has_is_dropped() {
 #[test]
 fn a_local_fingerprint_journals_its_mtime_in_whole_seconds() {
     let fingerprint = SourceFingerprint::Local {
-        device: 1,
-        inode: 2,
+        id: Some(cmdr_fs::file_identity::FileId::from_stored(1, 2)),
         content: LocalContent::File {
             size: 4096,
             // Truncated, not rounded: `Duration::as_secs` on the read side floors
@@ -481,8 +479,7 @@ fn a_remote_fingerprint_with_no_mtime_journals_none() {
 #[test]
 fn a_directory_journals_no_size_and_no_mtime() {
     let fingerprint = SourceFingerprint::Local {
-        device: 1,
-        inode: 2,
+        id: Some(cmdr_fs::file_identity::FileId::from_stored(1, 2)),
         content: LocalContent::Directory,
     };
     assert_eq!(fingerprint.journal_snapshot(), (None, None));

@@ -61,12 +61,12 @@
 //! last month.
 
 use std::ffi::OsString;
-use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::file_identity::{FileId, Sameness, same_device};
 use cmdr_fs::log_private::LogPrivate;
 use rusqlite::{Connection, OptionalExtension};
 
@@ -140,10 +140,11 @@ pub(super) fn resolve(path: &Path) -> Option<MirrorItem> {
 /// drive it against a fixture instead of the user's real Drive.
 fn resolve_in(accounts: &[MirrorAccount], path: &Path) -> Option<MirrorItem> {
     let target = std::fs::metadata(path).ok()?;
+    let target_inode = node_number(&target)?;
     for account in accounts {
         // The mirror folder itself, which no downward walk can reach: its Drive ID is
         // sitting in `root_config`.
-        if let Some(root) = account.roots.iter().find(|root| root.inode == target.ino()) {
+        if let Some(root) = account.roots.iter().find(|root| root.inode == target_inode) {
             return Some(MirrorItem {
                 id: root.item_id.clone(),
                 kind: DriveItemKind::Folder,
@@ -152,7 +153,7 @@ fn resolve_in(accounts: &[MirrorAccount], path: &Path) -> Option<MirrorItem> {
         let Some((root, components)) = walk_up_to_root(path, &target, &account.roots) else {
             continue;
         };
-        if let Some(item) = resolve_within_account(account, root, &components, target.ino()) {
+        if let Some(item) = resolve_within_account(account, root, &components, target_inode) {
             return Some(item);
         }
     }
@@ -182,10 +183,10 @@ fn walk_up_to_root<'a>(
         // Following symlinks on purpose: it's what lets the CloudStorage spelling of a
         // mirrored path land on the same root as the folder it points at.
         let meta = std::fs::metadata(parent).ok()?;
-        if meta.dev() != target.dev() {
+        if same_device(&meta, target) != Sameness::Same {
             return None;
         }
-        if let Some(root) = roots.iter().find(|root| root.inode == meta.ino()) {
+        if let Some(root) = roots.iter().find(|root| Some(root.inode) == node_number(&meta)) {
             components.reverse();
             return Some((root, components));
         }
@@ -425,6 +426,12 @@ fn read_roots(conn: &Connection) -> Vec<MirrorRoot> {
         return Vec::new();
     };
     rows.flatten().collect()
+}
+
+/// The 64-bit node number the mirror database keys a folder by, `None` where the OS
+/// gives none (no folder then matches).
+fn node_number(metadata: &std::fs::Metadata) -> Option<u64> {
+    FileId::of(metadata).and_then(FileId::node_u64)
 }
 
 #[cfg(test)]

@@ -23,6 +23,7 @@ use cmdr_fs::mac_only_files::MacOnlyFiles;
 use super::state::FileInfo;
 use super::validation::is_symlink_loop;
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::file_identity::{DeviceId, device_of, first_sighting};
 use cmdr_fs::volume::CopyScanResult;
 use cmdr_fs::volume::host::listings::ListingHost;
 /// Per-regular-file hook fired by the walk, receiving the file path and size (the `WalkContext::on_file` field).
@@ -245,7 +246,7 @@ pub(super) fn walk_dir_recursive<E>(
     (ctx.park_while_paused)();
 
     let metadata = fs::symlink_metadata(path).map_err(|e| (ctx.on_io_error)(path, e))?;
-    let device = crate::local_disk::device_of(&metadata);
+    let device = device_of(&metadata);
 
     if metadata.is_symlink() {
         // Symlinks contribute their own (tiny) target-string length, never
@@ -261,7 +262,7 @@ pub(super) fn walk_dir_recursive<E>(
         // compares against the inode-dedup'd index estimate. `progress_bytes`
         // mirrors `dedup_bytes` per file so the delete active phase can sum a
         // running dedup'd total. See `CopyScanResult` for the consumer split.
-        let counts = file_bytes_count_toward_total(&metadata, seen_inodes);
+        let counts = first_sighting(&metadata, seen_inodes);
         let size = metadata.len();
         *total_bytes += size;
         if counts {
@@ -370,7 +371,7 @@ pub(super) fn walk_dir_recursive<E>(
 )]
 fn walk_cached_entries<E>(
     parent_path: &Path,
-    parent_device: u64,
+    parent_device: Option<DeviceId>,
     source_root: &Path,
     cached: Vec<FileEntry>,
     files: &mut Vec<FileInfo>,
@@ -473,7 +474,13 @@ fn walk_cached_entries<E>(
 /// Whether the walk leaves out `name`, listed in `dir`: a Mac-only file the
 /// transfer skips ([`WalkContext::mac_only`]), or an AppleDouble sidecar the
 /// kernel already serves as its sibling's xattrs ([`WalkContext::sidecars`]).
-fn is_left_out<E>(ctx: &WalkContext<'_, E>, dir: &Path, dir_device: u64, name: &OsStr, is_directory: bool) -> bool {
+fn is_left_out<E>(
+    ctx: &WalkContext<'_, E>,
+    dir: &Path,
+    dir_device: Option<DeviceId>,
+    name: &OsStr,
+    is_directory: bool,
+) -> bool {
     if ctx.mac_only.leaves_out(name, is_directory) {
         return true;
     }
@@ -485,26 +492,4 @@ fn is_left_out<E>(ctx: &WalkContext<'_, E>, dir: &Path, dir_device: u64, name: &
         );
     }
     sidecar
-}
-
-/// Returns `true` if this file's bytes should count toward the running scan
-/// total. On Unix, dedupes hardlinks via inode: a file with `nlink > 1` only
-/// contributes bytes the first time its inode is seen; subsequent occurrences
-/// of the same inode skip the addition. Files with `nlink == 1` (the vast
-/// majority) skip the `HashSet` check entirely. On non-Unix, always returns
-/// `true` (`std::fs::Metadata` has no `nlink` accessor there).
-fn file_bytes_count_toward_total(metadata: &fs::Metadata, seen_inodes: &mut HashSet<u64>) -> bool {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        if metadata.nlink() <= 1 {
-            return true;
-        }
-        seen_inodes.insert(metadata.ino())
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = (metadata, seen_inodes);
-        true
-    }
 }

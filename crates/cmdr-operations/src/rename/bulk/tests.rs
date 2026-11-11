@@ -56,8 +56,7 @@ fn planning_row(source: &str, destination: &str) -> BulkRenameRow {
         source: PathBuf::from(source),
         destination: PathBuf::from(destination),
         expected_fingerprint: SourceFingerprint::Local {
-            device: 0,
-            inode: 0,
+            id: Some(cmdr_fs::file_identity::FileId::from_stored(0, 0)),
             content: super::super::super::source_binding::LocalContent::File {
                 size: 0,
                 modified_nanos: None,

@@ -2,6 +2,7 @@ use std::ffi::OsStr;
 use std::path::Path;
 
 use super::*;
+use crate::file_identity::DeviceId;
 
 fn sidecar_on(name: &str, volume_keeps_sidecars: bool, existing_sibling: Option<&str>) -> bool {
     is_sidecar_name(OsStr::new(name), volume_keeps_sidecars, |sibling| {
@@ -62,14 +63,14 @@ fn the_rule_probes_lazily_and_once_per_device() {
         true
     });
 
-    assert!(!rule.is_sidecar(dir, 7, OsStr::new("plain.txt")));
+    assert!(!rule.is_sidecar(dir, Some(DeviceId::from_raw(7)), OsStr::new("plain.txt")));
     assert_eq!(probes.load(Ordering::Relaxed), 0, "a plain name never probes");
 
-    rule.is_sidecar(dir, 7, OsStr::new("._a"));
-    rule.is_sidecar(dir, 7, OsStr::new("._b"));
+    rule.is_sidecar(dir, Some(DeviceId::from_raw(7)), OsStr::new("._a"));
+    rule.is_sidecar(dir, Some(DeviceId::from_raw(7)), OsStr::new("._b"));
     assert_eq!(probes.load(Ordering::Relaxed), 1, "one probe per device");
 
-    rule.is_sidecar(dir, 8, OsStr::new("._c"));
+    rule.is_sidecar(dir, Some(DeviceId::from_raw(8)), OsStr::new("._c"));
     assert_eq!(probes.load(Ordering::Relaxed), 2, "a new device probes again");
 }
 

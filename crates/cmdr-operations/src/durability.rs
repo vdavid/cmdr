@@ -17,6 +17,7 @@ use std::sync::Arc;
 
 use super::event_sinks::OperationEventSink;
 use super::state::WriteOperationState;
+use cmdr_fs::file_identity::{DeviceId, device_of};
 use cmdr_fs::log_private::LogPrivate;
 
 /// What a flush couldn't make durable: the path it was syncing and the OS error
@@ -112,7 +113,7 @@ pub(super) fn flush_created_destinations(
 
     // A filesystem that doesn't do directory fsync answers that for every
     // directory on it, so it's said once per destination volume per operation.
-    let mut warned_volumes: HashSet<Option<u64>> = HashSet::new();
+    let mut warned_volumes: HashSet<Option<DeviceId>> = HashSet::new();
     for dir in directories_gaining_entries(created_files, created_dirs) {
         match fsync_dir(&dir) {
             Ok(()) => {}
@@ -186,8 +187,8 @@ fn refuses_directory_fsync(e: &io::Error) -> bool {
 /// The device a directory lives on, to group the "doesn't support directory
 /// fsync" warning by volume. `None` when it can't be read, which groups those
 /// directories together rather than warning for each.
-fn volume_of(dir: &Path) -> Option<u64> {
-    fs::metadata(dir).ok().map(|meta| crate::local_disk::device_of(&meta))
+fn volume_of(dir: &Path) -> Option<DeviceId> {
+    fs::metadata(dir).ok().as_ref().and_then(device_of)
 }
 
 /// `fdatasync`s one created file. A symlink carries no data of its own, and

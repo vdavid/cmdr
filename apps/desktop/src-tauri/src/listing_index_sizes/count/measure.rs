@@ -118,8 +118,6 @@ async fn measure_through_volume(
 
 /// The local walk. Runs on a blocking thread.
 pub(super) fn walk_local(root: &Path, job: &Job, live: &Live) -> Result<Measured, MeasureError> {
-    use std::os::unix::fs::MetadataExt;
-
     if job.is_cancelled() {
         return Err(MeasureError::Stopped);
     }
@@ -150,7 +148,7 @@ pub(super) fn walk_local(root: &Path, job: &Job, live: &Live) -> Result<Measured
                 Ok(meta) => {
                     live.files.fetch_add(1, Ordering::Relaxed);
                     live.bytes.fetch_add(meta.len(), Ordering::Relaxed);
-                    if meta.nlink() <= 1 || seen_inodes.insert(meta.ino()) {
+                    if cmdr_fs::file_identity::first_sighting(&meta, &mut seen_inodes) {
                         physical += meta.len();
                     }
                 }

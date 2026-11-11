@@ -415,8 +415,9 @@ then stay pending). The watcher's recompute and the chip's handshake go through 
 - **Packed-refs off the startup disk is read, ❌ never mapped.** gix maps a `packed-refs` over 32 KiB, and its one knob
   (`set_packed_buffer_mmap_threshold(u64::MAX)`) turns that into a read. `is_on_the_startup_disk` compares the common
   dir's device with `/`'s and the home directory's; anything else counts as a disk that can go away, a second internal
-  volume included, which costs only memory. Off Unix there's no device number to compare, so every disk counts as one
-  that can go away. The startup devices are read once into a static: a fact about the machine, not state.
+  volume included, which costs only memory. A device the OS can't name (`cmdr_fs::file_identity::device_of` answers
+  `None`) counts as one that can go away. The startup devices are read once into a static: a fact about the machine, not
+  state.
 - **One allocation from a repo's object data is capped** at `OBJECT_ALLOC_LIMIT` (twice `tree::MAX_BLOB_BYTES`), via
   `gitoxide.objects.allocLimit` on the FULL-trust open options only: a size field decoded from zeros mustn't size an
   allocation, and a reduced-trust repo already gets gix's own 16 MiB cap, which an explicit limit would raise.

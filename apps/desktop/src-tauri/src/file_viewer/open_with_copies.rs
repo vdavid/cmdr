@@ -28,12 +28,12 @@
 //!   to take. Each copy is checked again right before it goes, so an app saving while
 //!   the sweep sorts can't slip in between the check and the removal.
 
-use std::os::unix::fs::MetadataExt as _;
 use std::path::{Path, PathBuf};
 #[cfg(any(target_os = "macos", test))]
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use cmdr_fs::file_identity::FileId;
 use cmdr_fs::log_private::LogPrivate;
 use serde::{Deserialize, Serialize};
 
@@ -94,7 +94,7 @@ pub(super) fn record_pull(copy: &Path) {
             file_name,
             size: meta.len(),
             modified,
-            inode: meta.ino(),
+            inode: FileId::of(&meta).and_then(FileId::node_u64).ok_or("no inode")?,
             pulled_at: FileTime::of(SystemTime::now()).ok_or("no clock")?,
         };
         let json = serde_json::to_vec(&record).map_err(|e| e.to_string())?;
@@ -120,7 +120,7 @@ fn untouched_record(folder: &Path) -> Option<PullRecord> {
     let meta = std::fs::symlink_metadata(folder.join(&record.file_name)).ok()?;
     let as_pulled = meta.is_file()
         && meta.len() == record.size
-        && meta.ino() == record.inode
+        && FileId::of(&meta).and_then(FileId::node_u64) == Some(record.inode)
         && meta.modified().ok().and_then(FileTime::of) == Some(record.modified);
     (only_the_pull && as_pulled).then_some(record)
 }

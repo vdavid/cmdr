@@ -14,7 +14,7 @@ fn a_mount_point_whose_parent_cant_be_read_is_still_a_boundary() {
     let path = Path::new("/cmdr-no-such-parent/mounted");
     let _hook = test_hook::answer_each(vec![(path.to_path_buf(), Some(true))]);
 
-    assert!(is_mount_boundary(path, 0), "the mount table lists it");
+    assert!(is_mount_boundary(path, None), "the mount table lists it");
 }
 
 /// The same parent with a table that can't be read: the caller is about to
@@ -24,7 +24,7 @@ fn an_unreadable_parent_and_an_unreadable_table_answer_boundary() {
     let path = Path::new("/cmdr-no-such-parent/unknown");
     let _hook = test_hook::answer_each(vec![(path.to_path_buf(), None)]);
 
-    assert!(is_mount_boundary(path, 0), "nothing says it isn't a mount");
+    assert!(is_mount_boundary(path, None), "nothing says it isn't a mount");
 }
 
 /// And a table that answers "not listed" still clears it: an unreadable parent
@@ -34,5 +34,5 @@ fn an_unreadable_parent_the_table_doesnt_list_is_no_boundary() {
     let path = Path::new("/cmdr-no-such-parent/plain");
     let _hook = test_hook::answer_each(vec![(path.to_path_buf(), Some(false))]);
 
-    assert!(!is_mount_boundary(path, 0));
+    assert!(!is_mount_boundary(path, None));
 }

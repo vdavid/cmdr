@@ -561,8 +561,8 @@ fn test_validate_destination_writable_readonly() {
 // ============================================================================
 
 #[test]
-fn test_is_same_file_different_files() {
-    use super::is_same_file;
+fn test_may_be_same_file_different_files() {
+    use super::may_be_same_file;
 
     let temp_dir = create_temp_dir("same_file_diff");
     let file1 = temp_dir.join("file1.txt");
@@ -570,12 +570,25 @@ fn test_is_same_file_different_files() {
     fs::write(&file1, "content1").unwrap();
     fs::write(&file2, "content2").unwrap();
 
-    assert!(!is_same_file(&file1, &file2));
+    assert!(!may_be_same_file(&file1, &file2));
+}
+
+/// A destination that doesn't exist is no file at all, so it can't be the source: the
+/// one "no" that doesn't need an id.
+#[test]
+fn test_may_be_same_file_missing_destination() {
+    use super::may_be_same_file;
+
+    let temp_dir = create_temp_dir("same_file_missing");
+    let file = temp_dir.join("file.txt");
+    fs::write(&file, "content").unwrap();
+
+    assert!(!may_be_same_file(&file, &temp_dir.join("not-there.txt")));
 }
 
 #[test]
-fn test_is_same_file_via_symlink() {
-    use super::is_same_file;
+fn test_may_be_same_file_via_symlink() {
+    use super::may_be_same_file;
 
     let temp_dir = create_temp_dir("same_file_symlink");
     let file = temp_dir.join("original.txt");
@@ -584,12 +597,12 @@ fn test_is_same_file_via_symlink() {
     std::os::unix::fs::symlink(&file, &link).unwrap();
 
     // file and link resolve to the same inode
-    assert!(is_same_file(&file, &link));
+    assert!(may_be_same_file(&file, &link));
 }
 
 #[test]
-fn test_is_same_file_via_hardlink() {
-    use super::is_same_file;
+fn test_may_be_same_file_via_hardlink() {
+    use super::may_be_same_file;
 
     let temp_dir = create_temp_dir("same_file_hardlink");
     let file = temp_dir.join("original.txt");
@@ -598,12 +611,12 @@ fn test_is_same_file_via_hardlink() {
     fs::hard_link(&file, &link).unwrap();
 
     // Hard links share the same inode
-    assert!(is_same_file(&file, &link));
+    assert!(may_be_same_file(&file, &link));
 }
 
 #[test]
-fn test_is_same_file_nonexistent_dest() {
-    use super::is_same_file;
+fn test_may_be_same_file_nonexistent_dest() {
+    use super::may_be_same_file;
 
     let temp_dir = create_temp_dir("same_file_noexist");
     let file = temp_dir.join("exists.txt");
@@ -611,7 +624,7 @@ fn test_is_same_file_nonexistent_dest() {
     fs::write(&file, "content").unwrap();
 
     // Should return false when destination doesn't exist
-    assert!(!is_same_file(&file, &missing));
+    assert!(!may_be_same_file(&file, &missing));
 }
 
 // ============================================================================

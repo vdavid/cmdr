@@ -18,6 +18,8 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use cmdr_fs::file_identity::FileId;
+
 use super::event_sinks::OperationEventSink;
 use super::queued_sources::{kept_after_queue_local, kept_after_queue_on, local_source_is_gone};
 use super::state::WriteOperationState;
@@ -34,10 +36,9 @@ pub enum SourceFingerprint {
     /// A source on the local filesystem, where `(device, inode)` is a real
     /// identity the kernel maintains.
     Local {
-        /// The device the source lives on.
-        device: u64,
-        /// Its inode on that device.
-        inode: u64,
+        /// Which node the source is. `None` where the OS's metadata carries no id,
+        /// which leaves `content` alone to tell a replaced source apart.
+        id: Option<FileId>,
         /// What its bytes looked like.
         content: LocalContent,
     },
@@ -115,9 +116,10 @@ impl SourceFingerprint {
                     .map(|time| time.as_nanos()),
             }
         };
-        // Off unix there's no identity to read, so every entry shares `(0, 0)`.
-        let (device, inode) = crate::local_disk::file_id(&metadata).unwrap_or((0, 0));
-        Some(Self::Local { device, inode, content })
+        Some(Self::Local {
+            id: FileId::of(&metadata),
+            content,
+        })
     }
 
     /// Reads a remote source's identity now, through the volume that owns it.

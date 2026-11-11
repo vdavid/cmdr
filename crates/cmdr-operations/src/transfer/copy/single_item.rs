@@ -34,7 +34,7 @@ use crate::transfer_tree::TreeLeaf;
 use crate::types::{
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
 };
-use crate::validation::{is_same_file, path_exists_or_is_symlink, validate_path_length};
+use crate::validation::{may_be_same_file, path_exists_or_is_symlink, validate_path_length};
 
 /// Operation-wide context for the per-file milestone emit. Bundled into one
 /// struct so the six emit sites in [`copy_single_item`] don't each restate
@@ -624,7 +624,7 @@ pub(in crate::transfer) fn copy_single_item(
         }
 
         // Prevent copying a file over itself via symlinks (same inode + device)
-        if is_same_file(source, &actual_dest) {
+        if may_be_same_file(source, &actual_dest) {
             log::warn!(
                 "copy: skipping {}: source and destination resolve to the same file",
                 LogPrivate::file_path(source)

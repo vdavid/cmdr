@@ -49,13 +49,12 @@ pub fn current_event_id(_root: &std::path::Path) -> u64 {
 pub fn journal_uuid(root: &Path) -> Option<String> {
     use core_foundation::base::TCFType;
     use core_foundation::uuid::{CFUUID, CFUUIDGetUUIDBytes};
-    use std::os::unix::fs::MetadataExt;
 
     #[cfg(test)]
     if fake_journal::covers(root) {
         return None;
     }
-    let dev = i32::try_from(std::fs::metadata(root).ok()?.dev()).ok()?;
+    let dev = i32::try_from(cmdr_fs::file_identity::device_of(&std::fs::metadata(root).ok()?)?.raw()).ok()?;
     // SAFETY: takes a plain device number and returns an owned ref or null.
     let uuid_ref = unsafe { cmdr_fsevent_stream::ffi::FSEventsCopyUUIDForDevice(dev) };
     if uuid_ref.is_null() {

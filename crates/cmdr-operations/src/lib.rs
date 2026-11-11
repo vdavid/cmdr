@@ -278,7 +278,7 @@ use state::OperationIntent;
 use transfer::volume::{move_volumes_with_progress, move_within_same_volume_with_progress};
 #[cfg(test)]
 use validation::{
-    ensure_destination_dir, is_same_file, is_same_filesystem, validate_destination_not_inside_source,
+    ensure_destination_dir, is_same_filesystem, may_be_same_file, validate_destination_not_inside_source,
     validate_destination_writable, validate_path_length, validate_source_names_are_distinct, validate_sources,
 };
 

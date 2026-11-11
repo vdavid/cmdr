@@ -9,6 +9,7 @@
 //! files, so the trait side stays in `local_posix.rs` and the work lives here.
 
 use super::LocalPosixVolume;
+use cmdr_fs::file_identity::FileId;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{
     CarriedMetadata, LandedMetadata, MetadataClasses, MetadataReport, StagedItem, StagedTimes, UserFlags, apply_landed,
@@ -43,8 +44,7 @@ struct LocalPosixReadStream {
 /// What a copy carries on from after an outage (`Volume::resume_read_stream`).
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct LocalVersion {
-    dev: u64,
-    ino: u64,
+    id: Option<FileId>,
     len: u64,
     mtime: (i64, i64),
     ctime: (i64, i64),
@@ -54,8 +54,7 @@ impl LocalVersion {
     fn of(stat: &std::fs::Metadata) -> Self {
         use std::os::unix::fs::MetadataExt as _;
         Self {
-            dev: stat.dev(),
-            ino: stat.ino(),
+            id: FileId::of(stat),
             len: stat.len(),
             mtime: (stat.mtime(), stat.mtime_nsec()),
             ctime: (stat.ctime(), stat.ctime_nsec()),

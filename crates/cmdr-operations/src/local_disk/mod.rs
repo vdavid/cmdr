@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::listings::ListingHost;
-use cmdr_fs::volume::{MutationEvent, NodeIdentity, Volume, VolumeError};
+use cmdr_fs::volume::{MutationEvent, Volume, VolumeError};
 
 /// The errnos the shared classifiers compare against, by name.
 pub(crate) mod errno {
@@ -57,21 +57,7 @@ mod posix;
 
 #[cfg(target_os = "macos")]
 pub(crate) use posix::{BsdFlags, bsd_flags, read_xattr};
-pub(crate) use posix::{WriteProbe, file_id, home_dir, is_locked_item, is_mount_point, write_probe};
-
-/// The device `metadata` lives on (`st_dev`).
-pub(crate) fn device_of(metadata: &std::fs::Metadata) -> u64 {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        metadata.dev()
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = metadata;
-        0
-    }
-}
+pub(crate) use posix::{WriteProbe, home_dir, is_locked_item, is_mount_point, write_probe};
 
 /// The permission bits of `permissions` (`st_mode`).
 pub(crate) fn mode_of(permissions: &std::fs::Permissions) -> u32 {
@@ -145,19 +131,6 @@ pub(crate) fn symlink(target: &Path, link: &Path) -> std::io::Result<()> {
     {
         let _ = (target, link);
         Err(no_local_disk())
-    }
-}
-
-/// What a local entry's identity is, for a ledger or a journal row.
-pub(crate) fn node_identity(metadata: &std::fs::Metadata) -> Option<NodeIdentity> {
-    #[cfg(unix)]
-    {
-        NodeIdentity::of(metadata)
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = metadata;
-        None
     }
 }
 

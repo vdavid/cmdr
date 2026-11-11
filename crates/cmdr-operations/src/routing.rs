@@ -104,7 +104,7 @@ fn validate_leaves_for_route(
 /// give the answer the engine that will actually run gives, and the two engines
 /// answer identity differently. Same fork as `copy_between_volumes` makes: a
 /// both-local transfer is handed to the local engine, whose rule is `dev+ino`
-/// (`validation::is_same_file`, which settles a symlinked parent and a
+/// (`validation::may_be_same_file`, which settles a symlinked parent and a
 /// case- or NFC/NFD-differing route); everything else stays on the cross-volume
 /// engine, whose rule is one volume, the same parent, and a folded leaf
 /// (`is_the_same_item`).
@@ -122,7 +122,7 @@ pub(crate) fn transfer_would_land_on_its_source(
     dest_path: &Path,
 ) -> bool {
     match (source_volume.local_path(), dest_volume.local_path()) {
-        (Some(source_root), Some(dest_root)) => super::validation::is_same_file(
+        (Some(source_root), Some(dest_root)) => super::validation::may_be_same_file(
             &source_root.join(source_path),
             &cmdr_fs::volume::root_anchored(&dest_root, dest_path),
         ),

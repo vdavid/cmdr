@@ -26,9 +26,9 @@
 use std::path::{Component, Path, PathBuf};
 
 use super::Operations;
-use super::local_disk::file_id;
 use super::mutation_error::MutationError;
 use super::types::{HomeFolderAction, HomeFolderRelation, WriteOperationError};
+use cmdr_fs::file_identity::FileId;
 
 /// A source that names the home folder, or a folder holding it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -140,11 +140,12 @@ fn lexical(path: &Path) -> PathBuf {
     out
 }
 
-/// The (dev, inode) of the home folder and of every folder above it, under each
-/// spelling the disk gives it. Empty off unix, where no file has one.
+/// The file ids of the home folder and of every folder above it, under each
+/// spelling the disk gives it. Empty where the OS gives no file id, which leaves
+/// the lexical check alone.
 struct HomeIdentities {
-    home: Vec<(u64, u64)>,
-    holders: Vec<(u64, u64)>,
+    home: Vec<FileId>,
+    holders: Vec<FileId>,
 }
 
 impl HomeIdentities {
@@ -201,8 +202,8 @@ fn data_volume_twin(canonical: &Path) -> Option<PathBuf> {
     }
 }
 
-fn identity(meta: std::io::Result<std::fs::Metadata>) -> Option<(u64, u64)> {
-    file_id(&meta.ok()?)
+fn identity(meta: std::io::Result<std::fs::Metadata>) -> Option<FileId> {
+    FileId::of(&meta.ok()?)
 }
 
 #[cfg(test)]

@@ -465,7 +465,7 @@ fn a_mixed_batch_duplicates_the_local_source_and_copies_the_other() {
 }
 
 /// The lexical `source.parent() == destination` test missed a symlinked parent.
-/// `is_same_file` compares `dev+ino` through `fs::metadata`, which FOLLOWS
+/// `may_be_same_file` compares `dev+ino` through `fs::metadata`, which FOLLOWS
 /// symlinks, so the same file reached by another route still counts.
 #[test]
 fn a_source_reached_through_a_symlinked_parent_is_a_self_collision() {

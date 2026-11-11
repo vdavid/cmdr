@@ -21,6 +21,7 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 use cmdr_fs::benchmark;
 use cmdr_fs::entry::{FileEntry, get_group_name, get_owner_name, is_hidden_by_name};
+use cmdr_fs::file_identity::{FileId, link_count};
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::host::listings::ListingHost;
 use cmdr_fs::volume::{ListingProgress, SupportedDates};
@@ -511,8 +512,8 @@ pub(crate) fn entry_from_metadata(
     // same inode. Directories don't share inodes the way files do, and a
     // single-link file has nothing to dedupe, so leaving them `None` keeps the
     // dedup decision file-shaped.
-    let inode = if metadata.is_file() && metadata.nlink() > 1 {
-        Some(metadata.ino())
+    let inode = if metadata.is_file() && link_count(metadata).is_some_and(|links| links > 1) {
+        FileId::of(metadata).and_then(FileId::node_u64)
     } else {
         None
     };

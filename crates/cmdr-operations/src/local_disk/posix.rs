@@ -1,24 +1,10 @@
-//! The POSIX questions the shared code asks about a local path: a file's
-//! `(dev, ino)`, whether this process may write a folder, a file's BSD flags, a
+//! The POSIX questions the shared code asks about a local path: whether this
+//! process may write a folder, a file's BSD flags, a
 //! mount point, an extended attribute, and the home folder. Natively each is the
 //! call its caller made before; in the browser build, the answer of a host with
 //! no local disk.
 
 use std::path::{Path, PathBuf};
-
-/// `metadata`'s `(st_dev, st_ino)`; `None` off unix, where there's none to read.
-pub(crate) fn file_id(metadata: &std::fs::Metadata) -> Option<(u64, u64)> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        Some((metadata.dev(), metadata.ino()))
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = metadata;
-        None
-    }
-}
 
 /// What `access(path, W_OK)` said.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

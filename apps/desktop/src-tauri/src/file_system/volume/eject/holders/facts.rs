@@ -296,8 +296,8 @@ impl Surroundings {
 
 /// The device a path sits on, from its own `lstat`.
 fn device_of(path: &Path) -> Option<u64> {
-    use std::os::unix::fs::MetadataExt;
-    std::fs::symlink_metadata(path).ok().map(|metadata| metadata.dev())
+    let metadata = std::fs::symlink_metadata(path).ok()?;
+    cmdr_fs::file_identity::device_of(&metadata).map(cmdr_fs::file_identity::DeviceId::raw)
 }
 
 /// Everything the rules need about `pid`, gathered in rule order.
