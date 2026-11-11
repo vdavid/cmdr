@@ -465,13 +465,16 @@ var surfaceGuardedCrates = []struct {
 		// the pre-flight, the IPC command), and the mount probes (`filesystem_kind`,
 		// `mount_table`, `statfs`, `nsurl` on macOS, `linux_mounts` on Linux, all
 		// counted whatever the platform). Most of the 39 items are `linux_mounts`'
-		// `/proc/mounts` readers and the mount-table records. Item-by-item:
-		// `crates/cmdr-local/DETAILS.md` § "The public surface is capped".
+		// `/proc/mounts` readers and the mount-table records. Raised to 13 / 10 / 41
+		// on 2026-11-11 for `mounts` (`list`, `is_mount_point`), the one door to the
+		// mount table, so the write engine stops naming the OS; the per-OS modules
+		// stay public while the app's volume code still reads their records.
+		// Item-by-item: `crates/cmdr-local/DETAILS.md` § "The public surface is capped".
 		Name: "cmdr-local",
 		Ceilings: surfaceCeilings{
-			RootPromises:   12,
-			PublicModules:  9,
-			SubsystemItems: 39,
+			RootPromises:   13,
+			PublicModules:  10,
+			SubsystemItems: 41,
 		},
 	},
 	{

@@ -63,6 +63,9 @@ pub mod mac_only_files;
 #[cfg(unix)]
 pub mod mapped_file_faults;
 pub mod metadata;
+// Host-only: the browser has no mounts.
+#[cfg(cmdr_host)]
+pub mod mount_layout;
 pub mod name_fold;
 pub mod path_hash;
 pub mod path_locations;

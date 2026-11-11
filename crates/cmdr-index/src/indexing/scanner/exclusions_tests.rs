@@ -12,7 +12,7 @@ use super::*;
 /// test fails loudly before that ships.
 #[test]
 fn external_mount_prefixes_are_excluded() {
-    for prefix in EXTERNAL_MOUNT_PREFIXES {
+    for prefix in external_mount_prefixes() {
         assert!(
             EXCLUDED_PREFIXES.contains(prefix),
             "{prefix} must be in EXCLUDED_PREFIXES so root's scan disowns the mount",

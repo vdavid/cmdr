@@ -622,9 +622,6 @@
     "crates/cmdr-http/src/lib.rs": {
       "outsideSeam": 1
     },
-    "crates/cmdr-index/src/importance/classify.rs": {
-      "outsideSeam": 3
-    },
     "crates/cmdr-index/src/importance/last_used.rs": {
       "outsideSeam": 5
     },
@@ -677,7 +674,7 @@
       "outsideSeam": 1
     },
     "crates/cmdr-index/src/indexing/scanner/exclusions.rs": {
-      "outsideSeam": 9
+      "outsideSeam": 6
     },
     "crates/cmdr-index/src/indexing/scanner/mod.rs": {
       "outsideSeam": 2
@@ -782,10 +779,10 @@
       "outsideSeam": 1
     },
     "crates/cmdr-operations/src/local_disk/mod.rs": {
-      "outsideSeam": 14
+      "outsideSeam": 11
     },
     "crates/cmdr-operations/src/local_disk/posix.rs": {
-      "outsideSeam": 9
+      "outsideSeam": 6
     },
     "crates/cmdr-operations/src/overwrite.rs": {
       "outsideSeam": 1

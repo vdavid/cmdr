@@ -95,16 +95,11 @@ pub(crate) fn is_locked_item(path: &Path) -> bool {
 /// Whether `root` is where a filesystem is mounted, by the OS mount table; `None`
 /// when the table can't say (or there's no local disk).
 pub(crate) fn is_mount_point(root: &Path) -> Option<bool> {
-    let root = root.to_string_lossy();
-    #[cfg(target_os = "macos")]
+    #[cfg(not(target_family = "wasm"))]
     {
-        cmdr_local::mount_table::is_mount_point(&root)
+        cmdr_local::mounts::is_mount_point(root)
     }
-    #[cfg(target_os = "linux")]
-    {
-        cmdr_local::linux_mounts::is_mount_point(&root)
-    }
-    #[cfg(any(windows, target_family = "wasm"))]
+    #[cfg(target_family = "wasm")]
     {
         let _ = root;
         None
