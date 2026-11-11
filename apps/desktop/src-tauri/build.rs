@@ -10,6 +10,9 @@ fn main() {
     }
     println!("cargo:rerun-if-changed=../scripts/download-llama-server.go");
 
+    // `cmdr_host`, which the crate root's unknown-target `compile_error!` asks.
+    cmdr_platform_cfg::emit();
+
     generate_command_ids();
 
     // Ensure resources/ai/ is populated before tauri-build validates the

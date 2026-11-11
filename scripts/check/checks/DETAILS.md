@@ -17,7 +17,7 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
   analyzers); `inputs.go` holds the shared `Inputs` path sets.
 - **An allowlist is a sibling JSON named `<check>-allowlist.json`**, and it's NEVER hand-edited: the owning check
   shrink-wraps it on local runs, so you run the check and commit its rewrite (§ "Allowlist consent"). The shared
-  staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist shrink-wrap". Sixteen
+  staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist shrink-wrap". Seventeen
   exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the two with no § of their
   own (both are exempt-with-reason lists whose checks FAIL on a dead or redundant entry rather than auto-removing it).
   `macos-availability-selectors.json` is a sibling JSON that isn't an allowlist: it's the SDK's own answer, cached so
@@ -1126,6 +1126,40 @@ compiles that code), then the tests. Only `cmdr-operations` has them today (its 
   can't share the build. `workspace-member-coverage` lists it as a targeted `-p` lane for that reason.
 - **Adding a crate**: give it a `shuttle` feature over an optional `shuttle` dependency, swap its primitives through a
   `cfg`'d re-export (`crates/cmdr-operations/src/sync_primitives.rs` is the model), and add it to `shuttleCrates`.
+
+## Platform cfg placement
+
+`desktop-rust-platform-cfg-placement` (`IsFast`, app and crates) holds production Rust to the platform-seam convention
+in `docs/guides/platform-seams.md`. It counts two things per file, against `platform-cfg-placement-allowlist.json`:
+
+- **`negated`**: a `not(…)` around an OS predicate (`not(target_os = "macos")`, `not(unix)`,
+  `not(any(target_os = "macos", target_os = "linux"))`), anywhere, seams included. Such an arm means "every other OS",
+  which reads as Linux today and silently takes Windows in tomorrow with Linux's answer.
+- **`outsideSeam`**: any OS cfg (`target_os`, `target_vendor`, `unix`, `windows`, `target_family = "unix"|"windows"`) in
+  a file with no directory named exactly `platform` on its path.
+
+A site that's both counts in both, so converting a negation (`not(macos)` → `target_os = "linux"`) and moving a split
+into a seam each lower their own number.
+
+**Decision**: `target_family = "wasm"` and `cmdr_host` are not OS cfgs. **Why**: they pick between the desktop and the
+browser build, a feature boundary rather than an OS arm, and the crate-root `compile_error!` is written in them.
+
+**Decision**: test code is out of jurisdiction: dedicated test files (`isRustTestFile`), `#[cfg(test)]` and `#[test]`
+items (`findRustTestRegions`), and any item behind a test-only gate (`test`, or an `all(…)` with `test` as a term).
+`any(test, …)` counts, since it holds in a production build. **Why**: a test of one OS's behavior is allowed to say
+which OS; the convention is about which code decides the platform at run time.
+
+**Parsing**: each `cfg(`, `cfg_attr(`, and `cfg!(` is found in the masked source (`rust-source.go`), so prose and string
+literals can't produce a site, and its predicate is read from the original text at the same offsets, since masking
+blanks the `"macos"` too. A `cfg_attr` contributes only its first argument. A predicate the small parser can't read
+whole is left alone rather than guessed at.
+
+**Decision**: the allowlist keys on the FILE, valued in the two counts, with no slack buffer, exactly like
+`lock-poison-allowlist.json` (§ "The lock-poison swallow lane" has the why). Seeded at the convention's introduction
+(2026-11-11: 261 files, 351 negated, 1,569 outside a seam). Local runs ratchet each number down and drop a file at zero;
+raising one needs David's OK (§ "Allowlist consent"). Zero isn't the target everywhere: the `mod` gate of a feature that
+exists only on macOS (Quick Look, the Services menu) is a fair entry, and counting it keeps each new one a deliberate
+call rather than a habit.
 
 ## Allowlist shrink-wrap
 
@@ -2308,13 +2342,14 @@ Checks by app and tech:
   sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide shared page cache
   is always installed before SQLite initializes), error-string-match, lock-poison (two lanes: an error-level one for an
   acquisition that records no poison-handling choice, and a warn-only one for a failure that's silently discarded, on a
-  per-file ratchet), log-private-values (an unmarked path, name, or identity in a log macro, strict with no allowlist,
-  and a marked value made into a `String`; § "The log-private-values check"), test-sleep (flags a fixed `thread::sleep`
-  / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a genuine
-  sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on
-  `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's live
-  fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing
-  opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
+  per-file ratchet), platform-cfg-placement (negated OS cfgs, and OS cfgs outside a `platform/` seam, on a per-file
+  ratchet; § "Platform cfg placement"), log-private-values (an unmarked path, name, or identity in a log macro, strict
+  with no allowlist, and a marked value made into a `String`; § "The log-private-values check"), test-sleep (flags a
+  fixed `thread::sleep` / `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a
+  genuine sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built
+  on `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's
+  live fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load
+  bearing opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
   `CachedScanResult` / `SourceHint` / `VolumePreflight` / `WrittenFile` in test code, so a fixture can only be one of
   the shapes a named constructor actually builds; it ships with ZERO findings on purpose and is a regression fence
   rather than a finder — the shapes are already clean, and the point is that the next test author can't undo that by
@@ -2754,7 +2789,10 @@ references. Gated declarations count from ANY file, resolved the way rustc resol
 its macOS half in a sibling: `text_editor.rs` declares
 `#[cfg(target_os = "macos")] #[path = "text_editor_macos.rs"] mod imp;`. A gated module's files are its own file AND the
 children in its sibling directory (Rust 2018 keeps both), falling back to the directory's `mod.rs` only without the
-file; dropping the file once the directory existed flagged every import in it (`moduleFiles`).
+file; dropping the file once the directory existed flagged every import in it (`moduleFiles`). A platform seam's macOS
+arm counts too: `#[cfg_attr(target_os = "macos", path = "macos.rs")] mod imp;` compiles that file only on macOS
+(`macOSSeamArmFiles`, `docs/guides/platform-seams.md`). The module resolution lives in
+`desktop-rust-cfg-gate-modules.go`.
 
 Two name sets, with different reach because the two are named differently in code:
 

@@ -1,0 +1,40 @@
+//! The macOS arm of the platform-identity seam.
+
+/// `macOS <version>` from `sw_vers -productVersion`, or `macOS (unknown version)`.
+pub(crate) fn os_version() -> String {
+    if let Ok(output) = std::process::Command::new("sw_vers").arg("-productVersion").output() {
+        let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !version.is_empty() {
+            return format!("macOS {version}");
+        }
+    }
+    "macOS (unknown version)".to_string()
+}
+
+/// Reads `NSProcessInfo.operatingSystemVersion` (macOS 10.10), cached: the answer can't change
+/// while the process runs, and callers sit on menu-build paths.
+pub(crate) fn macos_at_least(major: i64, minor: i64) -> bool {
+    use objc2_foundation::NSProcessInfo;
+    use std::sync::OnceLock;
+
+    static RUNNING: OnceLock<(i64, i64)> = OnceLock::new();
+    let (running_major, running_minor) = *RUNNING.get_or_init(|| {
+        let version = NSProcessInfo::processInfo().operatingSystemVersion();
+        (version.majorVersion as i64, version.minorVersion as i64)
+    });
+    (running_major, running_minor) >= (major, minor)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn macos_at_least_brackets_the_running_version() {
+        // Every Mac that can build this is past the bundle's floor, and none is
+        // running macOS 99. Anything else would mean the probe read garbage.
+        assert!(macos_at_least(10, 15));
+        assert!(macos_at_least(11, 0));
+        assert!(!macos_at_least(99, 0));
+    }
+}

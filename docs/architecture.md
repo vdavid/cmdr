@@ -251,7 +251,9 @@ All under `apps/desktop/src-tauri/src/`.
   `apps/desktop/src-tauri/src/usage/CLAUDE.md`
 - `prod_instance.rs`: The one definition of "this process is not a real user's production install" (the env vars every
   dev, E2E, and capture launcher sets). Read by the analytics gate and the updater's update-check gate
-- `platform.rs`: Shared platform-identity helpers (`os_version()`), used by crash + error reports and the heartbeat
+- `platform/`: Which OS and version this is (`os_version()`, `macos_at_least()`, Linux's `LinuxDistro`), used by crash +
+  error reports and the heartbeat. The first platform seam: every OS split takes the shape in
+  `docs/guides/platform-seams.md`
 - `licensing/`: Ed25519 license verification, server validation
 - `settings/`: Settings persistence (tauri-plugin-store)
 - `priority/`: Who gets the volume, and which of its folders come first. The per-volume signals background work yields
@@ -410,13 +412,13 @@ All under `apps/desktop/src-tauri/src/`.
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
 `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-http`, `cmdr-listing`,
 `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-menu`, `cmdr-operation-log`,
-`cmdr-operations`, `cmdr-recents`, `cmdr-search`, `cmdr-viewer`, `cmdr-multi-rename`, and `cmdr-update-trust` carry no
-`tauri` dependency and no reach into the app, and neither do `cmdr-listing-wasm` and the two dev CLIs;
-`index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`,
-`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`,
-`cmdr-listing`, `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`,
-`cmdr-operations`, `cmdr-recents`, `cmdr-search`, and `cmdr-multi-rename` at the numbers their audits landed on. The
-vendored fork is an ordinary member.
+`cmdr-operations`, `cmdr-recents`, `cmdr-search`, `cmdr-viewer`, `cmdr-multi-rename`, `cmdr-platform-cfg`, and
+`cmdr-update-trust` carry no `tauri` dependency and no reach into the app, and neither do `cmdr-listing-wasm` and the
+two dev CLIs; `index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of
+`cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`,
+`cmdr-restic`, `cmdr-listing`, `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`,
+`cmdr-operations`, `cmdr-recents`, `cmdr-search`, `cmdr-multi-rename`, and `cmdr-platform-cfg` at the numbers their
+audits landed on. The vendored fork is an ordinary member.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -509,6 +511,9 @@ vendored fork is an ordinary member.
   behind it: loopback and link-local always direct, then the `*_PROXY` variables, then macOS's own verdict per URL
   (manual proxy, bypass list, PAC, WPAD). The app, `cmdr-webdav`, and `cmdr-s3` all build on it, and `clippy.toml`
   refuses a bare reqwest client. See `crates/cmdr-http/CLAUDE.md`
+- `crates/cmdr-platform-cfg/`: the named platform cfgs (`cmdr_host`), a build dependency each member's `build.rs` calls
+  so the whole workspace asks the platform question in the same words. See `crates/cmdr-platform-cfg/CLAUDE.md`, and
+  `docs/guides/platform-seams.md` for the seam shape they serve
 - `crates/cmdr-update-trust/`: what makes a macOS update archive a Cmdr release (the installer's extraction plus Cmdr's
   Developer ID code signature), shared by the updater and the release gate binary `cmdr-vet-update`. See
   `crates/cmdr-update-trust/CLAUDE.md`

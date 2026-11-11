@@ -639,6 +639,22 @@ var surfaceGuardedCrates = []struct {
 		},
 	},
 	{
+		// Measured 2026-11-11, at creation, and set to exactly what the crate exposes,
+		// with no headroom.
+		//
+		// One root promise, `emit`, the call every member's build script makes. The
+		// cfg names and the host-OS list stay private: a member asks the cfg, never
+		// the list, so the list can't be copied out and drift. A second item is a
+		// second way to decide the platform, argued in
+		// `crates/cmdr-platform-cfg/DETAILS.md` first.
+		Name: "cmdr-platform-cfg",
+		Ceilings: surfaceCeilings{
+			RootPromises:   1,
+			PublicModules:  0,
+			SubsystemItems: 0,
+		},
+	},
+	{
 		// Measured 2026-11-04, at the extraction, and set to exactly what the crate
 		// exposes, with no headroom.
 		//

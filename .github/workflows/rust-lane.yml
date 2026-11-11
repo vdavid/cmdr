@@ -163,6 +163,9 @@ jobs:
       - name: Check lock-poison
         run: ./scripts/check/check --check desktop-rust-lock-poison --ci
 
+      - name: Check platform-cfg-placement
+        run: ./scripts/check/check --check desktop-rust-platform-cfg-placement --ci
+
       - name: Check tools-module-boundary
         run: ./scripts/check/check --check tools-module-boundary --ci
 

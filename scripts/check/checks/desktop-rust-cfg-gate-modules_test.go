@@ -154,6 +154,39 @@ mod tests;
 	}
 }
 
+// A platform seam picks its macOS arm with `cfg_attr(target_os = "macos", path = …)`, so the
+// arm and the files it pulls in are as absent from the Linux build as a gated module. The Linux
+// arm beside it is not, and still has to gate a macOS-only import.
+func TestRunCfgGate_SkipsTheMacOSArmOfAPlatformSeam(t *testing.T) {
+	seam := func(linuxArm string) string {
+		root := writeCfgGateModuleWorkspace(t, "fn main() {}\n")
+		appSrc := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
+		mustWrite(t, filepath.Join(appSrc, "lib.rs"), `mod commands;
+mod memory;
+#[cfg(target_os = "macos")]
+mod native_drag;
+`)
+		platform := filepath.Join(appSrc, "memory", "platform")
+		mustWrite(t, filepath.Join(appSrc, "memory", "mod.rs"), "mod platform;\n")
+		mustWrite(t, filepath.Join(platform, "mod.rs"), `#[cfg_attr(target_os = "macos", path = "macos/mod.rs")]
+#[cfg_attr(target_os = "linux", path = "linux.rs")]
+mod imp;
+`)
+		mustWrite(t, filepath.Join(platform, "macos", "mod.rs"), "use crate::native_drag::DragSessionLocality;\nmod vm;\n")
+		mustWrite(t, filepath.Join(platform, "macos", "vm.rs"), "use crate::native_drag::DragSessionLocality;\n")
+		mustWrite(t, filepath.Join(platform, "linux.rs"), linuxArm)
+		return root
+	}
+
+	if _, err := RunCfgGate(&CheckContext{RootDir: seam("fn none() {}\n")}); err != nil {
+		t.Fatalf("the macOS arm of a seam and its children need no gate, got: %v", err)
+	}
+	_, err := RunCfgGate(&CheckContext{RootDir: seam("use crate::native_drag::DragSessionLocality;\n")})
+	if err == nil || !strings.Contains(err.Error(), "linux.rs:1") {
+		t.Fatalf("expected the Linux arm's ungated import flagged, got: %v", err)
+	}
+}
+
 // A gated `foo.rs` with its children in a sibling `foo/` (Rust 2018's non-`mod.rs` layout):
 // the directory existing must not hide `foo.rs` itself, which is just as absent from the
 // Linux build.

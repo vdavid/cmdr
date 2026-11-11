@@ -471,6 +471,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunLockPoison,
 	},
 	{
+		ID:          "desktop-rust-platform-cfg-placement",
+		Nickname:    "platform-cfg-placement",
+		DisplayName: "platform cfgs stay in seams",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      inputs(rustScanInputs(KindApp, KindTool), runnerDataInputs("platform-cfg-placement-allowlist.json")),
+		Run:         RunPlatformCfgPlacement,
+	},
+	{
 		ID:          "tools-module-boundary",
 		DisplayName: "the tool layer's boundary",
 		App:         AppDesktop,

@@ -61,7 +61,7 @@ Each concern module's Tauri commands are registered from their real module path 
 
 ### Tauri commands
 
-Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `check_ai_connection`, `get_ai_model_limits`, `start_ai_download`, `cancel_ai_download`, `stream_folder_suggestions`, `cancel_folder_suggestions`. (`get_system_memory_info` lives in top-level `system_memory.rs`.)
+Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `check_ai_connection`, `get_ai_model_limits`, `start_ai_download`, `cancel_ai_download`, `stream_folder_suggestions`, `cancel_folder_suggestions`. (`get_system_memory_info` lives in top-level `system_memory/`.)
 API keys: `save_ai_api_key`, `get_ai_api_key_status`, `delete_ai_api_key` (in `api_keys.rs`).
 Also: `uninstall_ai` (the Uninstall button in `AiLocalSection.svelte`). There's no separate opt-out flag: `ai.provider` is the single source of truth for whether AI is on.
 

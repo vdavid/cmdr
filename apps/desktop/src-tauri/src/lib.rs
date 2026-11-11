@@ -9,6 +9,13 @@
 // live in `crate_deps.rs`.
 #![warn(unused_crate_dependencies)]
 
+// An unknown target is one outside macOS, Linux, and Windows (`cmdr_host`, set by `build.rs`
+// through `cmdr-platform-cfg`). Windows is known: it fails, if it fails, at each platform seam
+// still missing its arm, which is the per-seam list the Windows lane exists to show.
+// `docs/guides/platform-seams.md`.
+#[cfg(not(cmdr_host))]
+compile_error!("Cmdr builds for macOS, Linux, and Windows only; see docs/guides/platform-seams.md");
+
 // These host primitives live in `cmdr-fs` so every crate in the workspace shares
 // one copy, and are re-exported here at their original paths: poison-free
 // locking, the count/noun formatter, thread QoS, the process-memory readers, and
@@ -92,8 +99,6 @@ mod install_location;
 mod instance_lock;
 mod intl;
 pub mod licensing;
-#[cfg(target_os = "linux")]
-pub(crate) mod linux_distro;
 #[cfg(target_os = "linux")]
 mod linux_icons;
 mod listing_host;

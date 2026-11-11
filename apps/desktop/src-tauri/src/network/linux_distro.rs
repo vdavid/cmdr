@@ -1,7 +1,6 @@
-//! Smbclient install hint, delegating to the crate-level `LinuxDistro`.
+//! Smbclient install hint, delegating to `crate::platform::LinuxDistro`.
 
 /// Returns the distro-specific install command for smbclient, or `None` if unknown.
-#[cfg(target_os = "linux")]
 pub fn smbclient_install_command() -> Option<String> {
-    crate::linux_distro::LinuxDistro::detect()?.install_command("smbclient")
+    crate::platform::LinuxDistro::detect()?.install_command("smbclient")
 }
