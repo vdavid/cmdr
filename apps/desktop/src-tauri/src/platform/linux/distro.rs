@@ -27,7 +27,6 @@ static DETECTED: OnceLock<Option<LinuxDistro>> = OnceLock::new();
 impl LinuxDistro {
     /// Returns the detected distro, reading `/etc/os-release` once.
     /// Returns `None` if the file is missing or unparseable.
-    #[cfg(target_os = "linux")]
     pub fn detect() -> Option<&'static Self> {
         DETECTED
             .get_or_init(|| {

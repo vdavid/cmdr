@@ -165,11 +165,11 @@ its prerequisites; tasks without any can start any time. Order within a phase is
    `embedBootstrapper`), and `windows/app.manifest` (`longPathAware`, per-monitor-v2 DPI) through `build.rs`.
    `macos-private-api` stays on for every target: tauri-build refuses a per-target feature, and it's a no-op since Tauri
    2.12.1 (`apps/desktop/src-tauri/DETAILS.md` § "Tauri config per platform").
-7. [S] Win. Platform-seam convention: a new platform-seams guide in `docs/guides/` (the shape in win 1), named cfgs from
-   a build script (precedent `cmdr_mimalloc`: `cmdr_apple`, `cmdr_unix_host`, `cmdr_host`), the crate-root
-   `compile_error!`, and a `platform-cfg-placement` check (crates + app) that refuses `not(target_os = "macos")` in
-   production code and keeps platform cfgs inside `platform/` seams, with a shrink-wrapping per-file allowlist at
-   today's counts. Pilot on `platform.rs`, `system_memory.rs`, `diagnostics_snapshot.rs`, `linux_distro.rs`.
+7. [S] Win. **Done**. `docs/guides/platform-seams.md`; one named cfg, `cmdr_host`, from the `cmdr-platform-cfg` build
+   dependency (`cmdr_apple` and `cmdr_unix_host` would only respell `target_os = "macos"` and `unix`); the app root's
+   unknown-target `compile_error!` (Windows is known); `platform-cfg-placement` counting negated OS cfgs and unseamed
+   ones per file (seeded at 351 and 1,569 over 261 files); `platform/`, `system_memory/`, and `diagnostics_snapshot/`
+   piloted, `linux_distro.rs` folded into `platform/linux/`.
 8. [S] Win. Convert the crates' 58 `not(macos)` and 67 `any`/`not(any)` gates to the named cfgs, shrinking the
    allowlist. Needs 7.
 

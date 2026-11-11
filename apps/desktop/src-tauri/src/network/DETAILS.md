@@ -25,7 +25,7 @@ of the app build.
   - `smb_cache.rs`: 30-second in-memory cache for share lists, keyed by server address
   - `smb_smbutil.rs`: `smbutil view -G` fallback for older Samba/NAS servers (macOS); on Linux delegates to `smb_smbclient`
   - `smb_smbclient.rs`: `smbclient -L` fallback for Linux (requires `samba-client` package)
-  - `linux_distro.rs`: Thin wrapper calling `crate::linux_distro::LinuxDistro` for smbclient install hints; `cfg(target_os = "linux")` gated
+  - `linux_distro.rs`: Thin wrapper calling `crate::platform::LinuxDistro` for smbclient install hints; Linux-only, gated where `network/mod.rs` declares it
   - The protocol layer under all of them is the `cmdr-smb` crate: the addr builder, the guest / authenticated `smb2::SmbClient` listing calls, the `classify_*` / `is_auth_error` classification, and the `ShareInfo` / `AuthMode` / `ShareListResult` / `ShareListError` vocabulary. `crates/cmdr-smb/DETAILS.md` says what belongs there and what stays here
   - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by four upgrade paths (startup, mount-time watcher, pane-open, manual "Connect directly"). Contains `shares_to_adopt` (the adopter pass's pick from the kernel mount table), `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by all three fire-and-forget auto-upgrade paths), `try_smb_upgrade`, the per-volume upgrade lock, and the bounded mount-identity read.
   - `smb_pane_upgrade.rs`: the pane-open upgrade. A pane landing on an OS-mounted share Cmdr hasn't upgraded tries the direct connection for that one share, behind a per-share cooldown (§ "A pane on an OS-mounted share tries the direct connection").

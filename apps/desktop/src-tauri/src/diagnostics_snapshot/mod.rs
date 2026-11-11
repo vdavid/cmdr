@@ -17,6 +17,10 @@ use std::path::Path;
 
 use crate::system_memory::SystemMemoryInfo;
 
+// What each OS can say about itself, behind a platform seam whose `mod.rs` pins the set.
+mod platform;
+use platform::{cpu_logical, cpu_physical, hardware_model, os_build, thermal_state, volume_space};
+
 /// Stable machine identity and capacity, plus an optional live snapshot. See the module docs for
 /// why `live` is absent on crash reports.
 // No `Eq`: `live.uptime_secs` is an `f64`.
@@ -88,9 +92,9 @@ impl SystemSnapshot {
         let (free, total) = volume_space(data_dir);
         Self {
             os_build: os_build(),
-            mac_model: sysctl_string("hw.model"),
-            cpu_physical: sysctl_u32("hw.physicalcpu").unwrap_or(0),
-            cpu_logical: sysctl_u32("hw.logicalcpu").unwrap_or(0),
+            mac_model: hardware_model(),
+            cpu_physical: cpu_physical().unwrap_or(0),
+            cpu_logical: cpu_logical().unwrap_or(0),
             preferred_language: crate::system_strings::preferred_language(),
             total_memory_bytes: crate::system_memory::get_system_memory_info_inner().total_bytes,
             data_volume_free_bytes: free,
@@ -99,23 +103,6 @@ impl SystemSnapshot {
             index_db_sizes: sizes,
             live: None,
         }
-    }
-}
-
-/// macOS build number via `sw_vers -buildVersion` (for example `25F80`).
-fn os_build() -> Option<String> {
-    #[cfg(target_os = "macos")]
-    {
-        let output = std::process::Command::new("sw_vers")
-            .arg("-buildVersion")
-            .output()
-            .ok()?;
-        let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        (!s.is_empty()).then_some(s)
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        None
     }
 }
 
@@ -163,133 +150,6 @@ fn index_db_sizes(drive_index_dir: &Path) -> Vec<u64> {
 
 fn file_len(path: &Path) -> u64 {
     std::fs::metadata(path).map(|m| m.len()).unwrap_or(0)
-}
-
-/// Free (available-to-user) and total bytes of the volume holding `path`, via `statfs`.
-/// `path` is the local app data dir, so this never hits a slow network mount.
-fn volume_space(path: &Path) -> (Option<u64>, Option<u64>) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::ffi::OsStrExt;
-        let Ok(c_path) = std::ffi::CString::new(path.as_os_str().as_bytes()) else {
-            return (None, None);
-        };
-        // SAFETY: `libc::statfs` is a C struct of plain integers, so an all-zero bit pattern is a
-        // valid (empty) value to initialize before the OS fills it in.
-        let mut stat: libc::statfs = unsafe { std::mem::zeroed() };
-        // SAFETY: `c_path` is a valid NUL-terminated path and `stat` is a live, correctly-sized
-        // `statfs` the call writes into; we read its fields only after `rc == 0`.
-        let rc = unsafe { libc::statfs(c_path.as_ptr(), &mut stat) };
-        if rc != 0 {
-            return (None, None);
-        }
-        let block_size = stat.f_bsize as u64;
-        let total = (stat.f_blocks as u64).saturating_mul(block_size);
-        let free = (stat.f_bavail as u64).saturating_mul(block_size);
-        (Some(free), Some(total))
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = path;
-        (None, None)
-    }
-}
-
-/// macOS thermal pressure label, or `None` off macOS.
-#[cfg(target_os = "macos")]
-fn thermal_state() -> Option<String> {
-    use objc2_foundation::NSProcessInfo;
-
-    let info = NSProcessInfo::processInfo();
-    // `thermalState` is a thread-safe Foundation property (no AppKit / main-thread requirement).
-    // The returned newtype wraps the raw `NSProcessInfoThermalState`: 0 nominal … 3 critical.
-    let label = match info.thermalState().0 {
-        0 => "nominal",
-        1 => "fair",
-        2 => "serious",
-        3 => "critical",
-        _ => "unknown",
-    };
-    Some(label.to_string())
-}
-
-#[cfg(not(target_os = "macos"))]
-fn thermal_state() -> Option<String> {
-    None
-}
-
-/// Reads a string `sysctl` (for example `hw.model`). macOS only.
-#[cfg(target_os = "macos")]
-fn sysctl_string(name: &str) -> Option<String> {
-    let c_name = std::ffi::CString::new(name).ok()?;
-    let mut size: libc::size_t = 0;
-    // SAFETY: `c_name` is a valid NUL-terminated string. Passing a null value pointer asks
-    // `sysctlbyname` to report only the required buffer length, which it writes into `size`.
-    let rc = unsafe {
-        libc::sysctlbyname(
-            c_name.as_ptr(),
-            std::ptr::null_mut(),
-            &mut size,
-            std::ptr::null_mut(),
-            0,
-        )
-    };
-    if rc != 0 || size == 0 {
-        return None;
-    }
-    let mut buf = vec![0u8; size];
-    // SAFETY: `buf` holds exactly `size` bytes as just reported by the sizing call; `sysctlbyname`
-    // writes at most `size` bytes and updates `size` to the actual length.
-    let rc = unsafe {
-        libc::sysctlbyname(
-            c_name.as_ptr(),
-            buf.as_mut_ptr().cast(),
-            &mut size,
-            std::ptr::null_mut(),
-            0,
-        )
-    };
-    if rc != 0 {
-        return None;
-    }
-    // `size` includes the trailing NUL.
-    let s = String::from_utf8_lossy(&buf[..size.saturating_sub(1)])
-        .trim()
-        .to_string();
-    (!s.is_empty()).then_some(s)
-}
-
-/// Reads an integer `sysctl` (for example `hw.physicalcpu`). macOS only.
-#[cfg(target_os = "macos")]
-fn sysctl_u32(name: &str) -> Option<u32> {
-    let c_name = std::ffi::CString::new(name).ok()?;
-    let mut value: i32 = 0;
-    let mut size = size_of::<i32>() as libc::size_t;
-    // SAFETY: `c_name` is a valid NUL-terminated string and `value` is a live `i32` whose size
-    // matches `size`; `sysctlbyname` writes a single int into `value`.
-    let rc = unsafe {
-        libc::sysctlbyname(
-            c_name.as_ptr(),
-            std::ptr::from_mut(&mut value).cast(),
-            &mut size,
-            std::ptr::null_mut(),
-            0,
-        )
-    };
-    if rc != 0 || value < 0 {
-        return None;
-    }
-    Some(value as u32)
-}
-
-#[cfg(not(target_os = "macos"))]
-fn sysctl_string(_name: &str) -> Option<String> {
-    None
-}
-
-#[cfg(not(target_os = "macos"))]
-fn sysctl_u32(_name: &str) -> Option<u32> {
-    None
 }
 
 #[cfg(test)]

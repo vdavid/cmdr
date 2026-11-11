@@ -53,6 +53,9 @@ name = "cmdr_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
+# The named platform cfgs (`cmdr_host`), one definition the whole workspace shares:
+# `docs/guides/platform-seams.md` § "Named cfgs".
+cmdr-platform-cfg = { path = "../../../crates/cmdr-platform-cfg" }
 tauri-build = { version = "2", features = [] }
 
 [dependencies]

@@ -1,0 +1,957 @@
+{
+  "$comment": "Accepted platform cfgs per production Rust file, seeded when the platform-seam convention landed: `negated` counts OS predicates under a `not(…)` (an arm for \"every other OS\"), `outsideSeam` counts OS cfgs outside a `platform/` directory. A strict ratchet: local runs lower each number to the current count and drop a file that reaches zero, and raising one needs David's OK (scripts/check/checks/DETAILS.md § Allowlist consent). The fix for a file over its number is to name the OSes an arm is for and move the split behind a seam (docs/guides/platform-seams.md), not to bump the number.",
+  "files": {
+    "apps/desktop/src-tauri/src/ai/extract.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/ai/mod.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/ai/process.rs": {
+      "negated": 4,
+      "outsideSeam": 9
+    },
+    "apps/desktop/src-tauri/src/analytics/install_channel.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/app_lifecycle.rs": {
+      "outsideSeam": 8
+    },
+    "apps/desktop/src-tauri/src/clipboard/mod.rs": {
+      "negated": 3,
+      "outsideSeam": 16
+    },
+    "apps/desktop/src-tauri/src/clipboard/state.rs": {
+      "negated": 1,
+      "outsideSeam": 8
+    },
+    "apps/desktop/src-tauri/src/commands/child_window_state.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/commands/clipboard.rs": {
+      "negated": 5,
+      "outsideSeam": 13
+    },
+    "apps/desktop/src-tauri/src/commands/confirm_dialog.rs": {
+      "negated": 3,
+      "outsideSeam": 7
+    },
+    "apps/desktop/src-tauri/src/commands/file_actions.rs": {
+      "negated": 4,
+      "outsideSeam": 25
+    },
+    "apps/desktop/src-tauri/src/commands/file_system/drag.rs": {
+      "negated": 4,
+      "outsideSeam": 16
+    },
+    "apps/desktop/src-tauri/src/commands/file_viewer.rs": {
+      "negated": 5,
+      "outsideSeam": 9
+    },
+    "apps/desktop/src-tauri/src/commands/indexing.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/commands/menu.rs": {
+      "negated": 4,
+      "outsideSeam": 22
+    },
+    "apps/desktop/src-tauri/src/commands/menu_state.rs": {
+      "negated": 1,
+      "outsideSeam": 7
+    },
+    "apps/desktop/src-tauri/src/commands/mod.rs": {
+      "outsideSeam": 13
+    },
+    "apps/desktop/src-tauri/src/commands/network.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/commands/quick_look.rs": {
+      "negated": 3,
+      "outsideSeam": 9
+    },
+    "apps/desktop/src-tauri/src/commands/settings.rs": {
+      "negated": 2,
+      "outsideSeam": 7
+    },
+    "apps/desktop/src-tauri/src/commands/sync_status.rs": {
+      "negated": 1,
+      "outsideSeam": 4
+    },
+    "apps/desktop/src-tauri/src/commands/volumes.rs": {
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/commands/window_ordering.rs": {
+      "negated": 2,
+      "outsideSeam": 8
+    },
+    "apps/desktop/src-tauri/src/config.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/crash_reporter/mod.rs": {
+      "negated": 2,
+      "outsideSeam": 11
+    },
+    "apps/desktop/src-tauri/src/crash_reporter/next_launch.rs": {
+      "negated": 3,
+      "outsideSeam": 11
+    },
+    "apps/desktop/src-tauri/src/crash_reporter/signal_handler.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/crate_deps.rs": {
+      "negated": 1,
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/data_wipe/mod.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/drop_in/folders.rs": {
+      "negated": 1,
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/drop_in/mod.rs": {
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/error_reporter/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/error_reporter/preview_file.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/favorites/reach.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/favorites/store.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/favorites/target.rs": {
+      "negated": 1,
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/file_system/cloud_actions.rs": {
+      "negated": 2,
+      "outsideSeam": 7
+    },
+    "apps/desktop/src-tauri/src/file_system/default_app.rs": {
+      "negated": 1,
+      "outsideSeam": 6
+    },
+    "apps/desktop/src-tauri/src/file_system/get_info.rs": {
+      "outsideSeam": 6
+    },
+    "apps/desktop/src-tauri/src/file_system/google_drive/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/file_system/index_provider.rs": {
+      "negated": 6,
+      "outsideSeam": 17
+    },
+    "apps/desktop/src-tauri/src/file_system/mod.rs": {
+      "negated": 2,
+      "outsideSeam": 21
+    },
+    "apps/desktop/src-tauri/src/file_system/open_with.rs": {
+      "negated": 4,
+      "outsideSeam": 6
+    },
+    "apps/desktop/src-tauri/src/file_system/packages.rs": {
+      "negated": 1,
+      "outsideSeam": 7
+    },
+    "apps/desktop/src-tauri/src/file_system/tags.rs": {
+      "negated": 1,
+      "outsideSeam": 17
+    },
+    "apps/desktop/src-tauri/src/file_system/text_editor.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/drive_release/mod.rs": {
+      "negated": 4,
+      "outsideSeam": 7
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/drive_release/release.rs": {
+      "negated": 1,
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/drive_release/resume.rs": {
+      "negated": 1,
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/eject/deadlines.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/eject/escalate.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/eject/holders/facts.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/eject/holders/facts/nested_images.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/eject/holders/scan.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/eject/in_flight.rs": {
+      "negated": 9,
+      "outsideSeam": 9
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/eject/mod.rs": {
+      "negated": 4,
+      "outsideSeam": 18
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/eject/unmount_tool.rs": {
+      "outsideSeam": 11
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/manager.rs": {
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/manager/roots.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/mod.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/mount_registration.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/file_system/watcher.rs": {
+      "negated": 3,
+      "outsideSeam": 7
+    },
+    "apps/desktop/src-tauri/src/file_viewer/materialize.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/file_viewer/open_with_copies.rs": {
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/file_viewer/open_with_extract.rs": {
+      "outsideSeam": 24
+    },
+    "apps/desktop/src-tauri/src/icons/mod.rs": {
+      "negated": 5,
+      "outsideSeam": 18
+    },
+    "apps/desktop/src-tauri/src/icons/per_path.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/index_host.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/instance_lock.rs": {
+      "negated": 1,
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/intl/format_locale.rs": {
+      "negated": 1,
+      "outsideSeam": 7
+    },
+    "apps/desktop/src-tauri/src/intl/live_locale.rs": {
+      "negated": 1,
+      "outsideSeam": 10
+    },
+    "apps/desktop/src-tauri/src/intl/mod.rs": {
+      "negated": 3,
+      "outsideSeam": 6
+    },
+    "apps/desktop/src-tauri/src/ipc.rs": {
+      "negated": 8,
+      "outsideSeam": 34
+    },
+    "apps/desktop/src-tauri/src/lib.rs": {
+      "negated": 5,
+      "outsideSeam": 69
+    },
+    "apps/desktop/src-tauri/src/licensing/device_id.rs": {
+      "outsideSeam": 4
+    },
+    "apps/desktop/src-tauri/src/listing_host/mod.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/listing_host/mounts.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/listing_host/volumes.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/location/facts.rs": {
+      "negated": 4,
+      "outsideSeam": 11
+    },
+    "apps/desktop/src-tauri/src/logging/mod.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/logging/rotating_file.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/managed_policy/cache.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/managed_policy/ceiling.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/managed_policy/egress.rs": {
+      "negated": 2,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/managed_policy/mod.rs": {
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/managed_policy/source.rs": {
+      "negated": 2,
+      "outsideSeam": 6
+    },
+    "apps/desktop/src-tauri/src/mcp/port_file.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/menu/context_menu_header.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/menu/file_context_menu.rs": {
+      "negated": 3,
+      "outsideSeam": 26
+    },
+    "apps/desktop/src-tauri/src/menu/install.rs": {
+      "outsideSeam": 9
+    },
+    "apps/desktop/src-tauri/src/menu/item_states.rs": {
+      "outsideSeam": 4
+    },
+    "apps/desktop/src-tauri/src/menu/menu_handlers.rs": {
+      "negated": 1,
+      "outsideSeam": 18
+    },
+    "apps/desktop/src-tauri/src/menu/menu_structure.rs": {
+      "negated": 2,
+      "outsideSeam": 13
+    },
+    "apps/desktop/src-tauri/src/menu/mnemonics.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/menu/mod.rs": {
+      "negated": 4,
+      "outsideSeam": 51
+    },
+    "apps/desktop/src-tauri/src/menu/open_with.rs": {
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/menu/rebuild.rs": {
+      "negated": 1,
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/menu/tag_row/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/mtp/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/mtp/watcher.rs": {
+      "outsideSeam": 8
+    },
+    "apps/desktop/src-tauri/src/network/mdns_discovery.rs": {
+      "outsideSeam": 4
+    },
+    "apps/desktop/src-tauri/src/network/mod.rs": {
+      "outsideSeam": 4
+    },
+    "apps/desktop/src-tauri/src/network/netfs_wedge.rs": {
+      "negated": 1,
+      "outsideSeam": 6
+    },
+    "apps/desktop/src-tauri/src/network/server_identity.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/network/smb_client.rs": {
+      "negated": 2,
+      "outsideSeam": 4
+    },
+    "apps/desktop/src-tauri/src/network/smb_connect_directly.rs": {
+      "negated": 1,
+      "outsideSeam": 6
+    },
+    "apps/desktop/src-tauri/src/network/smb_direct_switch.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/network/smb_mount_gate.rs": {
+      "negated": 1,
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/network/smb_pane_upgrade.rs": {
+      "outsideSeam": 4
+    },
+    "apps/desktop/src-tauri/src/network/smb_saved_shares.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/network/smb_server_address.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/network/smb_share_label.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/network/smb_smbclient.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/network/smb_smbutil.rs": {
+      "negated": 6,
+      "outsideSeam": 15
+    },
+    "apps/desktop/src-tauri/src/network/smb_upgrade.rs": {
+      "negated": 1,
+      "outsideSeam": 6
+    },
+    "apps/desktop/src-tauri/src/notifications.rs": {
+      "negated": 1,
+      "outsideSeam": 4
+    },
+    "apps/desktop/src-tauri/src/operations_host/backend_suites/mod.rs": {
+      "outsideSeam": 57
+    },
+    "apps/desktop/src-tauri/src/operations_host/backend_suites/network_dates_test_support.rs": {
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/operations_host/terminal_effects.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/priority/roots.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/quick_look/mod.rs": {
+      "negated": 3,
+      "outsideSeam": 7
+    },
+    "apps/desktop/src-tauri/src/quit/relaunch.rs": {
+      "negated": 1,
+      "outsideSeam": 19
+    },
+    "apps/desktop/src-tauri/src/restricted_paths/mod.rs": {
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/reveal/mod.rs": {
+      "outsideSeam": 7
+    },
+    "apps/desktop/src-tauri/src/secrets/mod.rs": {
+      "negated": 2,
+      "outsideSeam": 9
+    },
+    "apps/desktop/src-tauri/src/secrets/plain_file.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/security_log/mod.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/space_poller/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/spotlight.rs": {
+      "negated": 1,
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/stubs/mod.rs": {
+      "negated": 8,
+      "outsideSeam": 8
+    },
+    "apps/desktop/src-tauri/src/subprocess.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/system_strings.rs": {
+      "negated": 2,
+      "outsideSeam": 14
+    },
+    "apps/desktop/src-tauri/src/tauri_builder.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/tools/actions/app.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/tools/actions/async_tools.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/tools/actions/cpu.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/tools/actions/eject.rs": {
+      "negated": 1,
+      "outsideSeam": 5
+    },
+    "apps/desktop/src-tauri/src/tools/actions/indexing.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/tools/actions/memory.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "apps/desktop/src-tauri/src/tools/actions/nav.rs": {
+      "negated": 2,
+      "outsideSeam": 8
+    },
+    "apps/desktop/src-tauri/src/tools/actions/search/result.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/tools/actions/tags.rs": {
+      "negated": 1,
+      "outsideSeam": 13
+    },
+    "apps/desktop/src-tauri/src/tools/ask_plans.rs": {
+      "negated": 2,
+      "outsideSeam": 4
+    },
+    "apps/desktop/src-tauri/src/tools/connect.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/tools/mod.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/tools/propose/rename/preflight.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/tools/read/volumes.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/tools/resources/volumes.rs": {
+      "negated": 12,
+      "outsideSeam": 22
+    },
+    "apps/desktop/src-tauri/src/ui_state/pane_state.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/volume_listing.rs": {
+      "negated": 3,
+      "outsideSeam": 15
+    },
+    "apps/desktop/src-tauri/src/volumes/disk_image.rs": {
+      "outsideSeam": 1
+    },
+    "apps/desktop/src-tauri/src/volumes/disk_units.rs": {
+      "outsideSeam": 2
+    },
+    "apps/desktop/src-tauri/src/volumes/lifecycle.rs": {
+      "outsideSeam": 3
+    },
+    "crates/cmdr-adb/src/errors.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-adb/src/server.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-archive/src/mutation/mutator.rs": {
+      "negated": 2,
+      "outsideSeam": 4
+    },
+    "crates/cmdr-fs/src/apple_double.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-fs/src/durable.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-fs/src/firmlinks.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-fs/src/icons/special_folders.rs": {
+      "outsideSeam": 4
+    },
+    "crates/cmdr-fs/src/lib.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-fs/src/mapped_file_faults/image_ranges.rs": {
+      "negated": 1,
+      "outsideSeam": 1
+    },
+    "crates/cmdr-fs/src/mapped_file_faults/mod.rs": {
+      "outsideSeam": 4
+    },
+    "crates/cmdr-fs/src/mapped_file_faults/proc_maps.rs": {
+      "negated": 1,
+      "outsideSeam": 1
+    },
+    "crates/cmdr-fs/src/metadata/blockers.rs": {
+      "negated": 2,
+      "outsideSeam": 7
+    },
+    "crates/cmdr-fs/src/metadata/carried.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-fs/src/metadata/flags.rs": {
+      "negated": 1,
+      "outsideSeam": 7
+    },
+    "crates/cmdr-fs/src/metadata/mod.rs": {
+      "negated": 2,
+      "outsideSeam": 4
+    },
+    "crates/cmdr-fs/src/metadata/staged.rs": {
+      "negated": 3,
+      "outsideSeam": 9
+    },
+    "crates/cmdr-fs/src/name_fold.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-fs/src/process_cpu/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-fs/src/process_memory/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 18
+    },
+    "crates/cmdr-fs/src/tcc_paths.rs": {
+      "negated": 1,
+      "outsideSeam": 4
+    },
+    "crates/cmdr-fs/src/testing/mod.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-fs/src/thread_cpu.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-fs/src/thread_qos.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-fs/src/validation.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-fs/src/volume/friendly_error/errno.rs": {
+      "negated": 1,
+      "outsideSeam": 4
+    },
+    "crates/cmdr-fs/src/volume/friendly_error/provider.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-fs/src/volume/node_identity.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-http/src/entries.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-http/src/lib.rs": {
+      "negated": 2,
+      "outsideSeam": 4
+    },
+    "crates/cmdr-http/src/system.rs": {
+      "negated": 1,
+      "outsideSeam": 5
+    },
+    "crates/cmdr-index/src/importance/classify.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-index/src/importance/last_used.rs": {
+      "negated": 1,
+      "outsideSeam": 5
+    },
+    "crates/cmdr-index/src/indexing/handle/mod.rs": {
+      "negated": 4,
+      "outsideSeam": 9
+    },
+    "crates/cmdr-index/src/indexing/lifecycle/cover/bootstrap.rs": {
+      "negated": 2,
+      "outsideSeam": 4
+    },
+    "crates/cmdr-index/src/indexing/lifecycle/cover/test_support.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/indexing/lifecycle/manager/network_scan.rs": {
+      "negated": 2,
+      "outsideSeam": 4
+    },
+    "crates/cmdr-index/src/indexing/lifecycle/phases/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/indexing/lifecycle/state.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/indexing/lifecycle/state/queries.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/indexing/lifecycle/state/startup.rs": {
+      "outsideSeam": 4
+    },
+    "crates/cmdr-index/src/indexing/metadata.rs": {
+      "negated": 4,
+      "outsideSeam": 7
+    },
+    "crates/cmdr-index/src/indexing/network_scanner/mod.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-index/src/indexing/paths/routing.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-index/src/indexing/reconcile/reconciler/dir_read.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/indexing/resources/memory_watchdog.rs": {
+      "negated": 2,
+      "outsideSeam": 19
+    },
+    "crates/cmdr-index/src/indexing/resources/mod.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-index/src/indexing/resources/subsystem_stop.rs": {
+      "negated": 1,
+      "outsideSeam": 1
+    },
+    "crates/cmdr-index/src/indexing/scanner/boot_tree_mounts.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-index/src/indexing/scanner/exclusions.rs": {
+      "negated": 2,
+      "outsideSeam": 9
+    },
+    "crates/cmdr-index/src/indexing/scanner/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 4
+    },
+    "crates/cmdr-index/src/indexing/scanner/refusal.rs": {
+      "negated": 2,
+      "outsideSeam": 5
+    },
+    "crates/cmdr-index/src/indexing/scanner/walker/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-index/src/indexing/store/collation.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/indexing/testing.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/indexing/transports/mod.rs": {
+      "outsideSeam": 3
+    },
+    "crates/cmdr-index/src/indexing/transports/mtp/watch.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/indexing/transports/smb/mod.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-index/src/indexing/transports/smb/watch.rs": {
+      "outsideSeam": 8
+    },
+    "crates/cmdr-index/src/indexing/watch/watcher.rs": {
+      "negated": 2,
+      "outsideSeam": 22
+    },
+    "crates/cmdr-index/src/indexing/watch/watcher/journal.rs": {
+      "negated": 2,
+      "outsideSeam": 5
+    },
+    "crates/cmdr-index/src/indexing/writer/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/indexing/writer/pending_rollups.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/media_index/backend/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-index/src/media_index/clip/install.rs": {
+      "negated": 1,
+      "outsideSeam": 6
+    },
+    "crates/cmdr-index/src/media_index/clip/mod.rs": {
+      "negated": 3,
+      "outsideSeam": 8
+    },
+    "crates/cmdr-index/src/media_index/scheduler/lifecycle.rs": {
+      "negated": 2,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-index/src/media_index/thermal.rs": {
+      "negated": 2,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-local/src/filesystem_kind.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-local/src/lib.rs": {
+      "outsideSeam": 5
+    },
+    "crates/cmdr-local/src/local_posix.rs": {
+      "negated": 1,
+      "outsideSeam": 5
+    },
+    "crates/cmdr-local/src/reading.rs": {
+      "negated": 6,
+      "outsideSeam": 17
+    },
+    "crates/cmdr-local/src/space.rs": {
+      "outsideSeam": 4
+    },
+    "crates/cmdr-menu/src/ids.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-menu/src/spec.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-mtp/src/connection/mod.rs": {
+      "negated": 1,
+      "outsideSeam": 4
+    },
+    "crates/cmdr-mtp/src/volume/mapping.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-multi-rename/src/names_file.rs": {
+      "negated": 2,
+      "outsideSeam": 8
+    },
+    "crates/cmdr-operations/src/delete/cloud_trash.rs": {
+      "negated": 2,
+      "outsideSeam": 6
+    },
+    "crates/cmdr-operations/src/delete/trash.rs": {
+      "negated": 2,
+      "outsideSeam": 11
+    },
+    "crates/cmdr-operations/src/error_classification.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-operations/src/free_space.rs": {
+      "negated": 2,
+      "outsideSeam": 5
+    },
+    "crates/cmdr-operations/src/home_folder.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-operations/src/lib.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-operations/src/local_disk/mod.rs": {
+      "negated": 22,
+      "outsideSeam": 34
+    },
+    "crates/cmdr-operations/src/local_disk/posix.rs": {
+      "negated": 4,
+      "outsideSeam": 12
+    },
+    "crates/cmdr-operations/src/overwrite.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-operations/src/overwrite_aside_park.rs": {
+      "negated": 1,
+      "outsideSeam": 1
+    },
+    "crates/cmdr-operations/src/rename.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-operations/src/scan_walker.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-operations/src/state.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-operations/src/status_cache.rs": {
+      "outsideSeam": 3
+    },
+    "crates/cmdr-operations/src/testing/mod.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-operations/src/testing/trash_cleanup.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-operations/src/transfer/chunked_copy.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-operations/src/transfer/copy/single_item.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-operations/src/transfer/copy_strategy.rs": {
+      "negated": 5,
+      "outsideSeam": 19
+    },
+    "crates/cmdr-operations/src/transfer/mod.rs": {
+      "outsideSeam": 2
+    },
+    "crates/cmdr-operations/src/transfer/move_op/mod.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-operations/src/transfer/volume/extract_quarantine.rs": {
+      "negated": 1,
+      "outsideSeam": 3
+    },
+    "crates/cmdr-operations/src/validation.rs": {
+      "negated": 4,
+      "outsideSeam": 9
+    },
+    "crates/cmdr-s3/src/volume/mutation.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-search/src/name_rules.rs": {
+      "outsideSeam": 1
+    },
+    "crates/cmdr-sftp/src/errors.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-update-trust/src/lib.rs": {
+      "outsideSeam": 4
+    },
+    "crates/cmdr-update-trust/src/main.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-viewer/src/source.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
+    "crates/cmdr-viewer/src/watcher.rs": {
+      "negated": 3,
+      "outsideSeam": 9
+    },
+    "crates/cmdr-webdav/src/volume/mutation.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    }
+  }
+}

@@ -36,11 +36,12 @@ type ScannerJurisdiction struct {
 // rustScannerJurisdictions is the single declaration of which members each Rust
 // source scanner reaches. Adding a scanner without an entry fails this check.
 var rustScannerJurisdictions = map[string]ScannerJurisdiction{
-	"desktop-rust-lock-poison":        {Kinds: []MemberKind{KindApp, KindTool}},
-	"desktop-rust-log-private-values": {Kinds: []MemberKind{KindApp, KindTool}},
-	"desktop-rust-error-string-match": {Kinds: []MemberKind{KindApp, KindTool}},
-	"desktop-rust-test-sleep":         {Kinds: []MemberKind{KindApp, KindTool}},
-	"desktop-rust-fixed-temp-dir":     {Kinds: []MemberKind{KindApp, KindTool}},
+	"desktop-rust-lock-poison":            {Kinds: []MemberKind{KindApp, KindTool}},
+	"desktop-rust-platform-cfg-placement": {Kinds: []MemberKind{KindApp, KindTool}},
+	"desktop-rust-log-private-values":     {Kinds: []MemberKind{KindApp, KindTool}},
+	"desktop-rust-error-string-match":     {Kinds: []MemberKind{KindApp, KindTool}},
+	"desktop-rust-test-sleep":             {Kinds: []MemberKind{KindApp, KindTool}},
+	"desktop-rust-fixed-temp-dir":         {Kinds: []MemberKind{KindApp, KindTool}},
 	"desktop-rust-no-hand-rolled-fixture": {
 		Kinds: []MemberKind{KindApp, KindTool},
 		Why:   "a test that hand-builds a cross-boundary scan type is the same mistake wherever it lives",
