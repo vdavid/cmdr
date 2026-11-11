@@ -7,9 +7,13 @@
  * future copy edit lands in the catalog AND here together, never silently.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { beforeEach, describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import { tString } from '#lib/intl/messages.svelte.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
+
+// These goldens pin the English a Mac shows, so they read the macOS branch of platform-variant copy.
+beforeEach(() => withPlatform('macos'))
 
 beforeAll(() => {
   _setLocaleForTests('en-US')

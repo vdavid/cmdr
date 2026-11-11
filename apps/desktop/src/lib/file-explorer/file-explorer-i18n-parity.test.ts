@@ -18,12 +18,16 @@
  * by mutating `Intl` globals. Mirrors the transfer pilot's
  * `file-operations/transfer/transfer-complete-toast.test.ts`.
  */
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { beforeEach, afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import fileExplorerCatalog from '#lib/intl/messages/en/fileExplorer.json'
+import { withPlatform } from '#lib/platform/test-platform.js'
+
+// These goldens pin the English a Mac shows, so they read the macOS branch of platform-variant copy.
+beforeEach(() => withPlatform('macos'))
 
 beforeAll(() => {
   _setLocaleForTests('en-US')

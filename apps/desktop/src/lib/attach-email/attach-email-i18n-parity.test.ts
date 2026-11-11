@@ -6,9 +6,13 @@
  * the catalog AND here together, never silently.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { beforeEach, describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import { getMessage, t, tString } from '#lib/intl/messages.svelte.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
+
+// These goldens pin the English a Mac shows, so they read the macOS branch of platform-variant copy.
+beforeEach(() => withPlatform('macos'))
 
 /** Render a rich-text message the way `<Trans>` would, flattened back to plain text. */
 function renderFlat(key: 'common.attachEmail', params: Record<string, unknown>): string {

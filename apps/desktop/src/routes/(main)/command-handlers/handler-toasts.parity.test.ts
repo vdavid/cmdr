@@ -43,6 +43,10 @@ import { tabHandlers } from './tab-handlers'
 import { fileHandlers } from './file-handlers'
 import { viewHandlers } from './view-handlers'
 import type { CommandHandlerContext } from './types'
+import { withPlatform } from '#lib/platform/test-platform.js'
+
+// These goldens pin the English a Mac shows, so they read the macOS branch of platform-variant copy.
+beforeEach(() => withPlatform('macos'))
 
 const mockedToast = vi.mocked(addToast)
 

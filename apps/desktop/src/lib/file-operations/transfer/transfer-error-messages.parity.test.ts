@@ -57,6 +57,7 @@ interface Case {
   name: string
   error: WriteOperationError
   op?: TransferOperationType
+  /** The OS the case runs on: macOS unless `false`. */
   mac?: boolean
   expected: FriendlyErrorMessage
 }
@@ -1337,7 +1338,8 @@ const cases: Case[] = [
 describe('write-error copy parity (getUserFriendlyMessage renders the English catalog byte-for-byte)', () => {
   for (const c of cases) {
     it(c.name, () => {
-      if (c.mac !== undefined) setMacOS(c.mac)
+      // A case without `mac` pins the English a Mac shows; `mac: false` pins the other-OS branch.
+      setMacOS(c.mac ?? true)
       const actual = getUserFriendlyMessage(c.error, c.op ?? 'copy')
       expect(actual.title, `${c.name} title`).toBe(c.expected.title)
       expect(actual.message, `${c.name} message`).toBe(c.expected.message)

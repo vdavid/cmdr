@@ -13,12 +13,16 @@
  * pre-change Rust copy: fix the FE factory, do NOT regenerate the golden.
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import golden from './__fixtures__/friendly_error_golden.json'
 import { getListingErrorMessage, type ListingErrorReason } from './listing-error-messages'
 import { getGitErrorMessage, type FriendlyGitErrorKind } from './git-error-messages'
 import { getProviderSuggestion, type Provider, type ProviderCategory } from './provider-error-messages'
 import type { FriendlyErrorMessage } from './friendly-error-message'
+import { withPlatform } from '#lib/platform/test-platform.js'
+
+// These goldens pin the English a Mac shows, so they read the macOS branch of platform-variant copy.
+beforeEach(() => withPlatform('macos'))
 
 interface GoldenEntry {
   category: string

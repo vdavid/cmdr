@@ -12,12 +12,15 @@
  * carve-out below stays because the label is state-dependent, not because the
  * registry treats that command specially. The three platform-conditional commands
  * (`file.showInFinder` / `file.getInfo` / `file.quickLook`) resolve their name
- * by `isMacOS()`; the test runs off macOS, Vitest's default, so it pins the
- * non-macOS labels and asserts the macOS catalog keys exist separately.
+ * by `isMacOS()` when the module loads. These goldens pin the English a Mac
+ * shows, so the platform is switched to macOS before the registry is imported;
+ * the other-OS labels are pinned directly from the catalog below.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { commands, updateCliCommandName, updateLicenseCommandName } from './command-registry'
 import { tString } from '#lib/intl/messages.svelte.js'
+
+vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 /** id → exact pre-migration English `name`. */
 const EXPECTED_NAMES: Record<string, string> = {
@@ -192,8 +195,8 @@ const EXPECTED_NAMES: Record<string, string> = {
   'file.deletePermanently': 'Delete permanently',
   'file.goToTrash': 'Go to trash',
   'dialog.confirm': 'Confirm the dialog on screen',
-  // Platform-conditional names resolve to the non-macOS label here.
-  'file.showInFinder': 'Show in file manager',
+  // Platform-conditional names resolve to the macOS label here.
+  'file.showInFinder': 'Show in Finder',
   'file.openTerminalHere': 'Open terminal here',
   'file.copyPath': 'Copy path to clipboard',
   'file.copyCurrentDirectoryPath': 'Copy current folder path',
@@ -201,8 +204,8 @@ const EXPECTED_NAMES: Record<string, string> = {
   'file.copyShareLink': 'Copy share link (seven days)',
   'file.copyShareLinkOneDay': 'Copy share link (one day)',
   'file.copyShareLinkOneHour': 'Copy share link (one hour)',
-  'file.getInfo': 'File properties',
-  'file.quickLook': 'Preview',
+  'file.getInfo': 'Get info',
+  'file.quickLook': 'Quick look',
   'file.contextMenu': 'Open context menu',
   'cloud.makeOffline': 'Make available offline',
   'cloud.removeDownload': 'Remove download',
@@ -369,11 +372,11 @@ describe('command registry en parity', () => {
     expect(name()).toBe('Install “cmdr” command')
   })
 
-  it('the macOS platform-conditional labels exist in the catalog with the right English', () => {
-    // Vitest runs off macOS, so the registry resolves the `.other` labels above.
-    // Pin the macOS variants directly so a catalog edit can't drift them.
-    expect(tString('commands.fileShowInFinder.mac.label')).toBe('Show in Finder')
-    expect(tString('commands.fileGetInfo.mac.label')).toBe('Get info')
-    expect(tString('commands.fileQuickLook.mac.label')).toBe('Quick look')
+  it('the other-OS platform-conditional labels exist in the catalog with the right English', () => {
+    // The registry resolves the macOS labels above. Pin the other-OS variants
+    // directly so a catalog edit can't drift them.
+    expect(tString('commands.fileShowInFinder.other.label')).toBe('Show in file manager')
+    expect(tString('commands.fileGetInfo.other.label')).toBe('File properties')
+    expect(tString('commands.fileQuickLook.other.label')).toBe('Preview')
   })
 })

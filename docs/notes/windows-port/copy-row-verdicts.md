@@ -90,8 +90,8 @@ New capabilities needed: `local_network_permission`, `local_ai`, `safe_save_file
   listens for inbound traffic. The direct SMB client only dials out (TCP 445), which never prompts. Confirm on the task
   56/QA Windows pass.
 - **MTP on Windows**: shared, not exclusive. Plan D2 (`docs/specs/windows-port-plan.md`) ships MTP through `mtp-rs`'s
-  WPD backend, Windows' own MTP stack, which File Explorer uses at the same time (`mtp-rs` `crates/mtp-rs/README.md` §
-  Windows). No ptpcamerad-style suppression exists or is needed. `crates/cmdr-mtp/Cargo.toml` still lists
+  WPD backend, Windows' own MTP stack, which File Explorer uses at the same time (the `mtp-rs` repo's README § Windows).
+  No ptpcamerad-style suppression exists or is needed. `crates/cmdr-mtp/Cargo.toml` still lists
   `platforms = ["linux", "macos"]`; task 56 builds the Windows arm.
 - **WebDAV (and S3) trust store**: the OS's, on every OS. `crates/cmdr-webdav/src/tls_trust.rs:PinningVerifier` wraps
   `rustls-platform-verifier` (Security.framework on macOS, the Windows certificate store via CryptoAPI, the system CA

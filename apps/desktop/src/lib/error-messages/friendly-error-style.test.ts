@@ -16,7 +16,7 @@
  * one more of its own — ❌ never a serial, a diagnostic, or a protocol word.
  */
 
-import { describe, expect, it, beforeAll, afterAll } from 'vitest'
+import { beforeEach, describe, expect, it, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { wordConnectRefusal, type ConnectRefusalKind } from '#lib/servers/connect-refusals.js'
@@ -28,6 +28,10 @@ import { getListingErrorMessage, type ListingErrorReason } from './listing-error
 import { getGitErrorMessage, type FriendlyGitErrorKind } from './git-error-messages'
 import { getProviderSuggestion, type Provider, type ProviderCategory } from './provider-error-messages'
 import type { FriendlyErrorMessage } from './friendly-error-message'
+import { withPlatform } from '#lib/platform/test-platform.js'
+
+// These goldens pin the English a Mac shows, so they read the macOS branch of platform-variant copy.
+beforeEach(() => withPlatform('macos'))
 
 // "error" / "failed" are forbidden everywhere (the always-on rule). The
 // trivializing words are also forbidden, EXCEPT where the pre-change Rust copy
