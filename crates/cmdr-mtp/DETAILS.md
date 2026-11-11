@@ -58,7 +58,7 @@ is itself a promise), are the 21.
 Two public modules is the whole tree a host can name a path into: `volume` (for `MtpVolume` and, gated, `testing`) and
 `virtual_device`. **❗ `connection` is PRIVATE**, even though the session layer is most of this crate: every name the
 app uses is a root re-export, so nothing reaches the caches, the priority gate, the event loop, or the reset recovery by
-module path. `MtpReadSession`, `map_mtp_error`, `MTP_READ_WINDOW`, and the whole `errors` module stay `pub(crate)` for
+module path. `MtpReadSession`, `map_mtp_error`, `MTP_READ_PACING`, and the whole `errors` module stay `pub(crate)` for
 the same reason.
 
 `virtual_device` costs 10 of the 12 subsystem items, which reads oddly for a fixture, and `volume` costs the other two
@@ -98,12 +98,13 @@ listings; in-flight USB calls always finish before cancellation returns.
 no stat. `notify_mutation` pays it after each self-mutation (create, delete, rename), which is fine because those are
 infrequent. ❌ Never call it in a hot path.
 
-**A dropped read stream is safe.** `MtpReadStream` reads about one `MTP_READ_WINDOW` per call, as `GetPartialObject64`
-windows or, on a device without partial reads, one held-open `GetObject` whose session keeps the device lock between
-calls (`src/connection/DETAILS.md` § "Bounded-window reads" owns both paths and the cancel). Between windows nothing is
-in flight, so a cancel, pause, or drop has nothing to stop. Mid-transfer, `cancel_and_release` and a plain drop both
-stop the transfer through `FileDownload::cancel` before the device lock goes back. A stream dropped WHILE a read call is
-in flight is still safe: mtp-rs flags the pipe and the next op drains it under the operation lock.
+**A dropped read stream is safe.** `MtpReadStream` reads at most `MTP_READ_PACING.call_limit` (8 MiB) per call, from
+time-paced `GetPartialObject64` windows or, on a device without partial reads, one held-open `GetObject` whose session
+keeps the device lock between calls (`src/connection/DETAILS.md` § "Bounded-window reads" owns both paths and the
+cancel). Between windows nothing is in flight, so a cancel, pause, or drop has nothing to stop. Mid-transfer,
+`cancel_and_release` and a plain drop both stop the transfer through `FileDownload::cancel` before the device lock goes
+back. A stream dropped WHILE a read call is in flight is still safe: mtp-rs flags the pipe and the next op drains it
+under the operation lock.
 
 **A conflict scan settles a missing destination through `get_metadata`, not a `NotFound` arm.** Every other backend
 reads `VolumeError::NotFound` from the destination listing as "nothing clashes" and answers an empty list. MTP confirms

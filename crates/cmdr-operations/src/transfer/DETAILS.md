@@ -1939,12 +1939,13 @@ copy, so naive per-window yielding thrashes under rapid nav. Two guards: (1) **d
 ~400 ms) — after foreground drains, stay parked until the device is quiet for the window; if a new foreground op arrives
 during it, re-park. A burst of listings is served as ONE suspension, not one park per window. (2) **min-progress floor**
 (`MIN_PROGRESS_FLOOR_BYTES`, ~4 MiB) — after a resume, the copy must move at least the floor before honoring the next
-yield, so continuous foreground nav can't starve the copy to zero throughput. The floor is currently SMALLER than one
-read window (`MTP_READ_WINDOW`, 8 MiB), so it's effectively "one window"; re-tune both together on real hardware. The
-destination arm exempts a single-shot write from it (§ above); the source arm never does, since a read window is a read
-window whatever the destination promised. The floor baseline (`last_resume_offset`) resets at the end of the arm on
-every resume. Both durations/sizes are injectable fields on `CheckpointStream` (defaulting to the constants) so tests
-set debounce ≈ 0 and a tiny floor for determinism; the production constants are tuned against a real device.
+yield, so continuous foreground nav can't starve the copy to zero throughput. An MTP read yields only at a window's end
+(windows take ~2 s, never under 1 MiB, and each call hands over at most 8 MiB: `MTP_READ_PACING`), so the floor is
+effectively "at least one window"; re-tune both together on real hardware. The destination arm exempts a single-shot
+write from it (§ above); the source arm never does, since a read window is a read window whatever the destination
+promised. The floor baseline (`last_resume_offset`) resets at the end of the arm on every resume. Both durations/sizes
+are injectable fields on `CheckpointStream` (defaulting to the constants) so tests set debounce ≈ 0 and a tiny floor for
+determinism; the production constants are tuned against a real device.
 
 **Cancel-awareness.** A cancel (or a sibling's failure: both fire `state.stop_work`) during an auto-yield must not be
 slept through and must not hang. The debounce wait and every `wait_until_foreground_idle` park (both arms) is RACED

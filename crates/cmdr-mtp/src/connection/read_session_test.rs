@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use cmdr_fs::testing::wait_until_async;
 
-use super::{MtpConnectionManager, MtpReadSession};
+use super::{MTP_READ_PACING, MtpConnectionManager, MtpReadSession, ReadPacing};
 use crate::testing::{ConnectedDevice, connect_fixture, device_lock, test_connection_manager};
 use crate::virtual_device::{
     VirtualDeviceFixture, rescan_virtual_device, setup_virtual_mtp_device,
@@ -44,7 +44,13 @@ async fn connect_with_big_file(fixture: VirtualDeviceFixture) -> ConnectedDevice
 
 async fn open(device: &ConnectedDevice) -> MtpReadSession {
     test_connection_manager()
-        .open_read_session(&device.id, device.storage_id, "/big.bin", 0, WINDOW)
+        .open_read_session(
+            &device.id,
+            device.storage_id,
+            "/big.bin",
+            0,
+            ReadPacing::fixed_window(WINDOW),
+        )
         .await
         .expect("open the read session")
 }
@@ -137,6 +143,38 @@ async fn windows_free_the_device_between_calls_so_a_listing_slips_in() {
     let assembled = read_rest(&mut session, &device, first).await;
     assert_eq!(assembled, payload(), "windows reassemble to the exact source bytes");
     assert_eq!(session.bytes_read(), FILE_LEN as u64);
+    device.teardown(test_connection_manager()).await;
+}
+
+/// Production pacing, end to end on the virtual device: a file past the first
+/// adaptive window reads byte-exact and the device is free after EOF. The
+/// per-call bound on a window longer than the limit is pinned against a script
+/// in `read_window_test.rs`, since the virtual device's windows take no time.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn production_pacing_reads_a_multi_window_file_byte_exact() {
+    let _guard = device_lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let limit = MTP_READ_PACING.call_limit as usize;
+    let source: Vec<u8> = (0..limit + 3 * 1024 * 1024 + 4321)
+        .map(|i| ((i * 13 + 5) % 251) as u8)
+        .collect();
+    std::fs::write(fixture.root().join("internal/paced.bin"), &source).expect("seed paced.bin on the device");
+    rescan_virtual_device();
+    let device = connect_fixture(test_connection_manager(), fixture).await;
+
+    let mut session = test_connection_manager()
+        .open_read_session(&device.id, device.storage_id, "/paced.bin", 0, MTP_READ_PACING)
+        .await
+        .expect("open the read session");
+    let mut assembled = Vec::new();
+    while let Some(window) = next_window(&mut session, &device).await {
+        assembled.extend_from_slice(&window);
+    }
+    assert_eq!(
+        assembled, source,
+        "time-paced windows reassemble to the exact source bytes"
+    );
+    assert!(!device_locked(&device).await, "nothing holds the device after EOF");
     device.teardown(test_connection_manager()).await;
 }
 

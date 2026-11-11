@@ -11,11 +11,8 @@
 //! and a path the device really doesn't hold answers the TYPED
 //! `MtpConnectionError::ObjectNotFound` carrying the path that was asked for.
 
-use crate::connection::{MtpConnectionError, MtpDeleteScope};
+use crate::connection::{MTP_READ_PACING, MtpConnectionError, MtpDeleteScope};
 use crate::testing::{connect_virtual_device, device_lock, test_connection_manager};
-
-/// Plenty for the fixture's few-byte files, so one window reads the whole object.
-const WINDOW: u32 = 64 * 1024;
 
 /// A read of a file whose folder nobody listed heals the cache and succeeds.
 ///
@@ -30,7 +27,13 @@ async fn a_read_below_folders_nobody_listed_heals_and_succeeds() {
         .len();
 
     let session = test_connection_manager()
-        .open_read_session(&device.id, device.storage_id, "/DCIM/Burst/burst-001.jpg", 0, WINDOW)
+        .open_read_session(
+            &device.id,
+            device.storage_id,
+            "/DCIM/Burst/burst-001.jpg",
+            0,
+            MTP_READ_PACING,
+        )
         .await;
 
     match session {
@@ -77,7 +80,13 @@ async fn an_object_already_deleted_answers_object_not_found_with_its_path() {
     );
 
     let read = manager
-        .open_read_session(&device.id, device.storage_id, "Documents/report.txt", 0, WINDOW)
+        .open_read_session(
+            &device.id,
+            device.storage_id,
+            "Documents/report.txt",
+            0,
+            MTP_READ_PACING,
+        )
         .await;
     assert!(
         matches!(&read, Err(MtpConnectionError::ObjectNotFound { path, .. }) if path == "/Documents/report.txt"),

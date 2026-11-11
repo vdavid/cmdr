@@ -16,14 +16,16 @@
 
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 
-/// Bytes per read window, or 0 for the production default.
+/// Bytes per fixed read window, or 0 for the production pacing.
 static READ_WINDOW_OVERRIDE: AtomicU32 = AtomicU32::new(0);
 
 /// How many `MtpVolume::list_directory` calls have happened since the last reset.
 static LIST_DIRECTORY_CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-/// Shrinks the bounded read window to `window` bytes, so a small fixture file
-/// spans several windows; 0 restores the production `MTP_READ_WINDOW`.
+/// Reads in fixed windows of `window` bytes, one per call, so a small fixture
+/// file spans several windows; 0 restores the production pacing
+/// (`MTP_READ_PACING`: about two seconds per window, which a virtual device's
+/// instant transfers would turn into one window per file).
 ///
 /// Set it back to 0 when the test is done. A leftover override doesn't break a
 /// later test's assertions, but it does make its reads needlessly chatty.

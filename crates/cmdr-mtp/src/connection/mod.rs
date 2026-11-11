@@ -74,7 +74,7 @@ use errors::map_mtp_error;
 #[cfg(any(test, feature = "testing"))]
 pub use events::RecordingMtpDeviceEvents;
 pub use events::{MtpDeviceEvent, MtpDeviceEvents, no_device_events};
-pub(crate) use file_ops::{MtpReadSession, UploadedFile};
+pub(crate) use file_ops::{MtpReadSession, ReadPacing, UploadedFile};
 pub use handle_resolver::ResolvedMtpObject;
 pub use mutation_ops::MtpDeleteScope;
 use scheduler::{DevicePriorityGate, ForegroundGuard};
@@ -116,16 +116,24 @@ const USB_TRANSFER_TIMEOUT_SECS: u64 = 30;
 /// waiting its turn.
 const DEVICE_LOCK_WAIT_SECS: u64 = 300;
 
-/// Window size for one bounded MTP read transaction (`GetPartialObject64`), and
-/// the most one `read_next_window` call returns on the held-open path too.
+/// How a streamed MTP read spreads a file over device transactions, and the
+/// most one `read_next_window` call returns.
 ///
-/// 8 MiB is the spike-validated value: large enough for healthy USB throughput,
-/// small enough that the per-window device-lock hold (~80 ms on a Pixel) lets a
-/// foreground listing slip in between windows. It's the throughput-vs-yield-
-/// latency knob, tuned on real hardware. The volume backend's read stream
-/// caches this at open and can shrink it in tests. See
+/// Windows follow mtp-rs's default pacing: each `GetPartialObject64` is sized
+/// from the measured link speed to take about `DEFAULT_MAX_CANCEL_DELAY` (2 s),
+/// so a listing queued behind a copy waits about that long on a slow cable as
+/// much as on a fast one. If 2 s proves too slow for browsing during a copy,
+/// the next step is `MaxCancelDelay(Duration::from_secs(1))`.
+///
+/// A time-paced window can run to tens of MiB on a fast link, so the per-call
+/// memory bound is its own number: 8 MiB plus one 64 KiB chunk, on both the
+/// windowed and the held-open path. The volume backend's read stream reads this
+/// at open, and a test swaps in small fixed windows. The decision and its why:
 /// [DETAILS.md](DETAILS.md) § "Bounded-window reads".
-pub(crate) const MTP_READ_WINDOW: u32 = 8 * 1024 * 1024;
+pub(crate) const MTP_READ_PACING: ReadPacing = ReadPacing {
+    download: mtp_rs::DownloadPacing::MaxCancelDelay(mtp_rs::DEFAULT_MAX_CANCEL_DELAY),
+    call_limit: 8 * 1024 * 1024,
+};
 
 /// Why an MTP device was disconnected.
 ///

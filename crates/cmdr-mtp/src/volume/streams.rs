@@ -3,7 +3,7 @@
 //! mtp-rs on the way up.
 
 use super::mapping::map_mtp_error;
-use crate::connection::{MtpConnectionManager, MtpReadSession};
+use crate::connection::{MtpConnectionManager, MtpReadSession, ReadPacing};
 use cmdr_fs::volume::{StreamLength, VolumeError, VolumeReadStream};
 use std::future::Future;
 use std::pin::Pin;
@@ -45,21 +45,22 @@ pub fn volume_read_stream_to_chunk_stream<'a>(
     )
 }
 
-/// Bytes-per-window for a [`MtpReadStream`]. Production uses the session layer's
-/// `MTP_READ_WINDOW`; a test shrinks it through `testing::set_read_window` so a
-/// small fixture spans several windows.
-pub(super) fn mtp_read_window() -> u32 {
+/// How a [`MtpReadStream`] paces its windows. Production uses the session
+/// layer's `MTP_READ_PACING`; a test swaps in small fixed windows through
+/// `testing::set_read_window` so a small fixture spans several windows.
+pub(super) fn mtp_read_pacing() -> ReadPacing {
     #[cfg(any(test, feature = "testing"))]
     {
         let override_window = super::testing::read_window_override();
         if override_window != 0 {
-            return override_window;
+            return ReadPacing::fixed_window(override_window);
         }
     }
-    crate::connection::MTP_READ_WINDOW
+    crate::connection::MTP_READ_PACING
 }
 
-/// Bounded-window MTP read stream: about one `MTP_READ_WINDOW` per `next_chunk`.
+/// Bounded-window MTP read stream: at most `MTP_READ_PACING.call_limit` bytes
+/// per `next_chunk`.
 ///
 /// On a phone, each window is one `GetPartialObject64` and the one-per-device PTP
 /// session is free between them, so a foreground listing slips in at window

@@ -1,7 +1,9 @@
 //! How much one `read_next_window` call takes from a download, against a
 //! scripted one. Real USB streams a held-open `GetObject` as 64 KiB reads, but the
 //! virtual device hands a whole object over as ONE chunk, so the bound that keeps
-//! a held-open transfer's memory flat is only observable here.
+//! a held-open transfer's memory flat is only observable here. The same goes for
+//! a time-paced window longer than the call limit, which the virtual device's
+//! instant transfers never produce.
 
 use std::collections::VecDeque;
 
@@ -93,6 +95,44 @@ async fn a_windowed_read_returns_at_each_window_boundary() {
     }
     let eof = pull_window(&mut source, WINDOW, WINDOW).await.expect("scripted chunks");
     assert!(eof.is_empty(), "EOF reads as an empty window");
+}
+
+#[tokio::test]
+async fn a_window_longer_than_the_call_limit_spans_calls_and_keeps_the_session() {
+    // A time-paced window on a fast link: ten chunks in one window, then a
+    // two-chunk one. Each call stays within the limit, the session stays busy
+    // until the long window ends, and the next window starts a fresh call.
+    let mut source = Scripted::windowed(12, vec![10, 12]);
+    let mut calls = Vec::new();
+    loop {
+        let window = pull_window(&mut source, WINDOW, WINDOW).await.expect("scripted chunks");
+        if window.is_empty() {
+            break;
+        }
+        calls.push((window.len(), source.holds_session()));
+    }
+    assert_eq!(
+        calls,
+        vec![(WINDOW, true), (WINDOW, true), (2 * CHUNK, false), (2 * CHUNK, false),],
+        "the call limit bounds memory; the window, not the call, decides when the device is free"
+    );
+}
+
+#[tokio::test]
+async fn a_short_window_hands_back_no_more_memory_than_it_holds() {
+    // The capacity is a guess at the call limit; a time-paced window that ends
+    // after one chunk must not carry the rest of that guess along with it.
+    let mut source = Scripted::windowed(1, vec![1]);
+    let window = pull_window(&mut source, 64 * CHUNK, 64 * CHUNK)
+        .await
+        .expect("scripted chunks");
+    assert_eq!(window.len(), CHUNK);
+    assert!(
+        window.capacity() < 2 * CHUNK,
+        "capacity {} kept for a {}-byte window",
+        window.capacity(),
+        window.len()
+    );
 }
 
 #[tokio::test]

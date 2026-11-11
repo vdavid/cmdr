@@ -5,7 +5,7 @@
 use super::MtpVolume;
 use super::cancel::MtpCancelBridge;
 use super::mapping::map_mtp_error;
-use super::streams::{MtpReadStream, mtp_read_window, volume_read_stream_to_chunk_stream};
+use super::streams::{MtpReadStream, mtp_read_pacing, volume_read_stream_to_chunk_stream};
 use crate::connection::{MtpConnectionError, MtpDeleteScope, UploadedFile, twins};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::log_error::LogError;
@@ -655,14 +655,14 @@ impl Volume for MtpVolume {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
 
-            // The window size (`mtp_read_window()`, shrinkable in tests) and the
+            // The pacing (`mtp_read_pacing()`, small fixed windows in tests) and the
             // start `offset` (non-zero resumes a reopened read; see
             // `CheckpointStream`) are baked into the `FileDownload` here. A
             // non-zero offset on a device without partial reads is refused at
             // open: that device can only hand over whole objects.
             let session = self
                 .manager
-                .open_read_session(&self.device_id, self.storage_id, &mtp_path, offset, mtp_read_window())
+                .open_read_session(&self.device_id, self.storage_id, &mtp_path, offset, mtp_read_pacing())
                 .await
                 .map_err(map_mtp_error)?;
 

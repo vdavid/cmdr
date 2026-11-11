@@ -46,20 +46,20 @@ const FOREGROUND_YIELD_DEBOUNCE: Duration = Duration::from_millis(400);
 /// foreground yield. Without it, continuous foreground nav would park the copy
 /// before every window and starve it to zero throughput.
 ///
-/// At 4 MiB this is SMALLER than one bounded read window (`MTP_READ_WINDOW`,
-/// 8 MiB), so in practice the floor resolves to "at least one full window between
-/// yields" — the copy always reads one more 8 MiB window before it can yield
-/// again. That's the intended guarantee; the 4 MiB value just never bites
-/// distinctly from the window today (real-device verified to feel right).
+/// An MTP read hands over at most 8 MiB per call (`MTP_READ_PACING.call_limit`),
+/// from windows mtp-rs sizes to about 2 s of transfer (never under 1 MiB), and a
+/// call that ends mid-window answers "don't yield" (its session still holds the
+/// device). So the copy yields only at a window's end, and 4 MiB means "at least
+/// one window, a few on a slow link, between yields". Real-device verified to
+/// feel right with fixed 8 MiB windows; re-verify against the time-paced ones.
 ///
 /// ⚠️ Don't naively raise this to a "big" number to make it look meaningful: the
 /// gate SKIPS the yield until this many bytes have moved since the last resume,
 /// and the count starts at zero for EVERY file, so a floor ≥ a typical file size
 /// means the copy never yields at all for files smaller than the floor — i.e. it
 /// would disable navigate-during-transfer for normal files. If you want it to
-/// read as a real multi-window guard, raise it to a small multiple of
-/// `MTP_READ_WINDOW` (e.g. 2-4× = "N windows between yields"); that changes
-/// behavior, so re-verify on a real device.
+/// read as a real multi-window guard, raise it to a small multiple of the 8 MiB
+/// call limit (e.g. 2-4×); that changes behavior, so re-verify on a real device.
 ///
 /// The destination arm exempts a SINGLE-SHOT write from the floor for exactly
 /// that reason: such a write holds nothing open on the server while it drains, so

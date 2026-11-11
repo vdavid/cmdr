@@ -68,27 +68,44 @@ a _background_ gate user that yields TO foreground, so raising `foreground_pendi
 forever (livelock). See "Bounded-window reads" below.
 
 **Bounded-window reads (download + drag-out).** `open_read_session` resolves the handle and, under the device lock,
-starts an mtp-rs `FileDownload` (`download_with_pacing(.., DownloadPacing::FixedWindow(window))`, which reads
-`total_size` via one `get_object_info`; the storage handle comes from `storage_cache`), returning an `MtpReadSession`
-the caller caches. Each `read_next_window` returns about one window (`MTP_READ_WINDOW` = 8 MiB, the
-throughput-vs-yield-latency knob). mtp-rs picks how the file crosses the wire, and Cmdr follows two rules on either
-path:
+starts an mtp-rs `FileDownload` (`download_with_pacing(.., pacing.download)`, which reads `total_size` via one
+`get_object_info`; the storage handle comes from `storage_cache`), returning an `MtpReadSession` the caller caches. The
+`ReadPacing` it takes is two numbers: how mtp-rs sizes each window, and `call_limit`, the most one `read_next_window`
+returns. Production is `MTP_READ_PACING`: mtp-rs's default time-paced windows (`MaxCancelDelay(2 s)`) and an 8 MiB call
+limit. mtp-rs picks how the file crosses the wire, and Cmdr follows two rules on either path:
 
 - **Windows** (the device has a partial read reaching the file's end, so every Android phone): one `GetPartialObject64`
-  per window, ~80 ms on a Pixel. **Between windows nothing is in flight and the PTP session is free**, so each call
-  takes the device lock for its window and gives it back, and a foreground listing/nav slips in at window granularity:
-  the whole "navigate the phone during a copy" property.
+  per window, sized from the measured link speed to take about 2 s (the first is 8 MiB, none under 1 MiB). **Between
+  windows nothing is in flight and the PTP session is free**, so `read_next_window` gives the device lock back whenever
+  a window ends, and a foreground listing/nav slips in at window granularity: the whole "navigate the phone during a
+  copy" property. A window longer than `call_limit` (a fast link) spans several calls, and the session keeps the lock
+  and its `ReadHold` between them, exactly as on the held-open path below.
 - **One held-open `GetObject`** (no partial read at all, like libhaze or a simple PTP responder, or only the 32-bit one
   and a file past 4 GiB, like some cameras): the session is busy from open to EOF. `MtpReadSession` then OWNS the device
   lock across calls (an `OwnedMutexGuard` from `acquire_device_lock_owned`, same 300 s wait) for exactly as long as
   `FileDownload::holds_session()` is `true`, and drops it the moment the download frees the session. Each call still
-  returns at most a window plus one 64 KiB chunk (`pull_window`), so memory stays flat on a 5 GB file. Foreground ops
-  wait for the whole file, as they must: there's only one session. 0.37 refused these devices outright.
+  returns at most `call_limit` plus one 64 KiB chunk (`pull_window`), so memory stays flat on a 5 GB file. Foreground
+  ops wait for the whole file, as they must: there's only one session. 0.37 refused these devices outright.
+
+**The per-call memory bound is `call_limit`, on both paths.** A time-paced window has no byte size up front (at 40 MB/s
+it's ~80 MB), so the bound can't come from the window. mtp-rs streams each window as 64 KiB reads, and `pull_window`
+stops at `call_limit` (8 MiB) or the window's end, whichever comes first. Its buffer is preallocated to the limit and
+shrunk when a short window leaves it under half full, since the read stream hands it on as `Bytes`, which keeps the
+whole allocation alive in the copy pipeline.
+
+**Decision: time-paced windows, not a fixed 8 MiB.** Why: a fixed byte window costs whatever the link makes it cost. 8
+MiB is ~80 ms on a Pixel over a good cable, but 8 s at 1 MB/s (a slow cable, a USB 2 hub, a slow phone), and browsing
+the phone during a copy waits that long for every listing. A window sized to ~2 s of transfer keeps that wait the same
+whatever the link speed, and costs ~1% throughput (each window adds ~15–20 ms on a Pixel 9 Pro XL, per mtp-rs 0.38.0's
+`CHANGELOG.md`). If 2 s proves too slow for browsing during a copy, the next step is 1 s (`MTP_READ_PACING` carries the
+same note). Tests can't use it: the virtual device's windows take no time, so the pacer would size every window after
+the first to the rest of the file. They pass `ReadPacing::fixed_window(n)` (or `testing::set_read_window`) instead.
 
 **Why the lock can't go back mid-transfer.** A foreground op would take Cmdr's lock and block inside mtp-rs's own
 operation lock, waiting for the transfer, while the transfer's next call waits for Cmdr's lock: a deadlock, until the
 300 s lock wait fails the read. Buffering the rest of the file under one call instead would cost its whole size in RAM.
-Pinned by `read_session_test.rs` (virtual device, both paths) and `read_window_test.rs` (the per-call bound, against a
+Pinned by `read_session_test.rs` (virtual device, both paths, plus production pacing end to end) and
+`read_window_test.rs` (the per-call bound on a held-open transfer and on a window longer than the limit, against a
 scripted download, since the virtual device hands a held-open object over as ONE chunk where real USB streams 64 KiB
 reads).
 

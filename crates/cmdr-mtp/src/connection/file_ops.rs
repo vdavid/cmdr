@@ -26,14 +26,16 @@ use cmdr_fs::rt::Runtime;
 /// mtp-rs reads the file one of two ways, and this session doesn't choose:
 ///
 /// - **Windows** (the device has a partial read that reaches the file's end):
-///   one `GetPartialObject64` per `window_size`, and the PTP session is free
-///   between them, so each [`read_next_window`] takes the device lock for its
-///   one window and gives it back.
+///   one `GetPartialObject64` per window (about 2 s of transfer in
+///   production, see [`ReadPacing`]), and the PTP session is free between
+///   them, so [`read_next_window`] gives the device lock back whenever a
+///   window ends. A window longer than `call_limit` spans several calls and
+///   keeps the lock between them, exactly like the held-open path below.
 /// - **One held-open `GetObject`** (no partial read, or only the 32-bit one and
 ///   a file past 4 GiB): the PTP session is busy from open to EOF. The session
 ///   then OWNS the device lock across calls (`held`) for exactly as long as
-///   [`FileDownload::holds_session`] says, while each call still returns about
-///   one window, so memory stays bounded.
+///   [`FileDownload::holds_session`] says, while each call still returns at
+///   most `call_limit`, so memory stays bounded.
 ///
 /// Giving the lock back mid-transfer would deadlock: a foreground op takes
 /// Cmdr's lock and blocks inside mtp-rs's own operation lock, waiting for the
@@ -59,7 +61,7 @@ pub(crate) struct MtpReadSession {
     /// `tokio::spawn`).
     runtime: Runtime,
     /// The most one call returns (one more transfer chunk at worst).
-    window_size: u32,
+    call_limit: u32,
     total_size: u64,
     modified: Option<SystemTime>,
     /// File offset of the next byte this session hands out. Kept here rather
@@ -188,6 +190,37 @@ impl Drop for MtpReadSession {
     }
 }
 
+/// How a read session spreads a file over device transactions, and the most
+/// one [`read_next_window`] call returns (one more transfer chunk at worst).
+///
+/// The two are separate because a time-paced window has no byte size known up
+/// front: on a fast link one can run to tens of MiB, and `call_limit` is what
+/// keeps each call's buffer bounded anyway. Production is
+/// [`MTP_READ_PACING`](super::MTP_READ_PACING).
+///
+/// [`read_next_window`]: MtpConnectionManager::read_next_window
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ReadPacing {
+    /// What mtp-rs sizes each `GetPartialObject64` by.
+    pub(crate) download: DownloadPacing,
+    /// The most one call returns, in bytes, on either path.
+    pub(crate) call_limit: u32,
+}
+
+impl ReadPacing {
+    /// Windows of exactly `bytes`, one per call: what a test uses to make a
+    /// small fixture span several windows on the virtual device, whose
+    /// instant transfers would otherwise teach the adaptive pacer an enormous
+    /// speed.
+    #[cfg(any(test, feature = "testing"))]
+    pub(crate) const fn fixed_window(bytes: u32) -> Self {
+        Self {
+            download: DownloadPacing::FixedWindow(bytes),
+            call_limit: bytes,
+        }
+    }
+}
+
 /// What [`pull_window`] reads from: mtp-rs's [`FileDownload`], or a cell's
 /// scripted stand-in. The virtual device hands a whole held-open object over as
 /// ONE chunk where real USB streams 64 KiB reads, so the per-call memory bound
@@ -211,8 +244,13 @@ impl ChunkSource for FileDownload {
 
 /// One call's worth of a download: chunks until the session frees (a window
 /// ended) or `limit` bytes are in, whichever comes first, so a held-open
-/// transfer returns at most `limit` plus one chunk. Empty at EOF. The caller
-/// holds the device lock.
+/// transfer, or a time-paced window longer than `limit`, returns at most
+/// `limit` plus one chunk. Empty at EOF. The caller holds the device lock.
+///
+/// `capacity` is a guess: a time-paced window can end well short of it. A
+/// buffer that came back under half full is shrunk, because the read stream
+/// hands it on as `Bytes`, which keeps the whole allocation alive while the
+/// copy pipeline queues it.
 pub(super) async fn pull_window<S: ChunkSource>(
     source: &mut S,
     limit: usize,
@@ -224,6 +262,9 @@ pub(super) async fn pull_window<S: ChunkSource>(
         if !source.holds_session() || window.len() >= limit {
             break;
         }
+    }
+    if window.len() < window.capacity() / 2 {
+        window.shrink_to_fit();
     }
     Ok(window)
 }
@@ -247,14 +288,14 @@ impl MtpConnectionManager {
 
     /// Opens a streamed read of a file from `offset`: resolves the object
     /// handle, then, under the device lock, starts an mtp-rs [`FileDownload`]
-    /// paced at `window_size` (which reads `total_size` via one
+    /// paced by `pacing.download` (which reads `total_size` via one
     /// `get_object_info`; the storage handle comes from the per-device cache).
     /// The caller feeds the returned [`MtpReadSession`] to [`read_next_window`].
     ///
     /// On a windowed device the lock is released before returning. On a device
     /// that needs one held-open transfer, mtp-rs starts it here and the session
-    /// keeps the lock (see [`MtpReadSession`]). `window_size` is
-    /// `MTP_READ_WINDOW` in production; tests shrink it.
+    /// keeps the lock (see [`MtpReadSession`]). `pacing` is `MTP_READ_PACING`
+    /// in production; tests use small fixed windows.
     ///
     /// Takes NO `foreground_guard`: a transfer is a *background* user of the
     /// device gate (it yields TO foreground), so raising `foreground_pending`
@@ -268,7 +309,7 @@ impl MtpConnectionManager {
         storage_id: u32,
         path: &str,
         offset: u64,
-        window_size: u32,
+        pacing: ReadPacing,
     ) -> Result<MtpReadSession, MtpConnectionError> {
         debug!(
             "MTP open_read_session: device={}, storage={}, path={}, offset={}",
@@ -286,11 +327,7 @@ impl MtpConnectionManager {
             .await
             .map_err(|e| self.map_device_read_error(e, device_id, path))?;
         let download = storage
-            .download_with_pacing(
-                object_handle,
-                ByteRange::From(offset),
-                DownloadPacing::FixedWindow(window_size),
-            )
+            .download_with_pacing(object_handle, ByteRange::From(offset), pacing.download)
             .await
             .map_err(|e| self.map_device_read_error(e, device_id, path))?;
 
@@ -314,22 +351,23 @@ impl MtpConnectionManager {
             held: None,
             gate: Some(target.gate),
             runtime: self.host().runtime(),
-            window_size,
+            call_limit: pacing.call_limit,
             path: path.to_string(),
         };
         session.keep_device_while_busy(device);
         Ok(session)
     }
 
-    /// Reads the next window of a session opened with [`open_read_session`]:
-    /// about `window_size` bytes (one more transfer chunk at worst), or
+    /// Reads the next part of a session opened with [`open_read_session`]: at
+    /// most `call_limit` bytes (one more transfer chunk at worst), or
     /// `Ok(None)` at EOF.
     ///
     /// Under the device lock, it pulls mtp-rs chunks until the download frees
-    /// the PTP session (a window ended) or the window is full. If the session
-    /// is still busy then (a held-open transfer), the lock stays with the
-    /// session for the next call; otherwise it's released on return, so a
-    /// foreground listing/nav slips in between windows. mtp-rs owns the window
+    /// the PTP session (a window ended) or `call_limit` is reached. If the
+    /// session is still busy then (a held-open transfer, or a time-paced window
+    /// longer than `call_limit`), the lock stays with the session for the next
+    /// call; otherwise it's released on return, so a foreground listing/nav
+    /// slips in between windows. mtp-rs owns the window
     /// bookkeeping: offsets, clamp-to-remaining, EOF, short reads, and the
     /// 0-byte-before-EOF stall, which surfaces as an error.
     ///
@@ -362,7 +400,7 @@ impl MtpConnectionManager {
             None => acquire_device_lock_owned(&session.device_arc, device_id, "read_window").await?,
         };
 
-        let limit = session.window_size as usize;
+        let limit = session.call_limit as usize;
         let remaining = session.total_size.saturating_sub(session.delivered);
         let capacity = usize::try_from(remaining).unwrap_or(usize::MAX).min(limit);
         let outcome = match session.download.as_mut() {
