@@ -179,10 +179,6 @@
     "apps/desktop/src-tauri/src/file_system/volume/manager.rs": {
       "outsideSeam": 3
     },
-    "apps/desktop/src-tauri/src/file_system/volume/manager/roots.rs": {
-      "negated": 1,
-      "outsideSeam": 2
-    },
     "apps/desktop/src-tauri/src/file_system/volume/mod.rs": {
       "outsideSeam": 2
     },
@@ -634,7 +630,7 @@
       "outsideSeam": 11
     },
     "crates/cmdr-operations/src/error_classification.rs": {
-      "outsideSeam": 2
+      "outsideSeam": 1
     },
     "crates/cmdr-operations/src/free_space.rs": {
       "outsideSeam": 4
@@ -646,7 +642,7 @@
       "outsideSeam": 1
     },
     "crates/cmdr-operations/src/local_disk/mod.rs": {
-      "outsideSeam": 11
+      "outsideSeam": 10
     },
     "crates/cmdr-operations/src/local_disk/posix.rs": {
       "outsideSeam": 6

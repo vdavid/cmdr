@@ -7,8 +7,8 @@
 //! holds the drive-index size lookup used to render directory sizes in conflict
 //! UI.
 
-use crate::local_disk::errno;
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, LogError, write_plain};
+use cmdr_fs::os_error::OsErrorClass;
 use std::collections::HashSet;
 use std::fs;
 use std::io;
@@ -162,16 +162,16 @@ pub(super) fn unconfirmed_copy(
     })
 }
 
-/// The errnos a filesystem answers for a directory fsync it doesn't support at
-/// all. Raw `libc` values, which differ by platform: Linux's `ENOTSUP` and
+/// The classes a filesystem answers for a directory fsync it doesn't support at
+/// all. By class, because the numbers differ by platform: Linux's `ENOTSUP` and
 /// `EOPNOTSUPP` are one number, macOS keeps them apart, and `ENOSYS` is 78 on
 /// macOS and 38 on Linux (`durability_tests.rs` pins each one).
-const DIRECTORY_FSYNC_UNSUPPORTED: [i32; 5] = [
-    errno::ENOTSUP,
-    errno::EOPNOTSUPP,
-    errno::EINVAL,
-    errno::ENOSYS,
-    errno::ENOTTY,
+const DIRECTORY_FSYNC_UNSUPPORTED: [OsErrorClass; 5] = [
+    OsErrorClass::Unsupported,
+    OsErrorClass::OperationNotSupported,
+    OsErrorClass::InvalidArgument,
+    OsErrorClass::NotImplemented,
+    OsErrorClass::InappropriateIoctl,
 ];
 
 /// Whether a directory fsync failed because the filesystem doesn't do directory
@@ -180,8 +180,7 @@ const DIRECTORY_FSYNC_UNSUPPORTED: [i32; 5] = [
 /// files. Every other errno (`EIO`, `ENOSPC`, `EROFS`, `ENXIO`, `ENOENT`,
 /// `EACCES`, …), and an error carrying none, stays a failure that keeps sources.
 fn refuses_directory_fsync(e: &io::Error) -> bool {
-    e.raw_os_error()
-        .is_some_and(|errno| DIRECTORY_FSYNC_UNSUPPORTED.contains(&errno))
+    OsErrorClass::of_io(e).is_some_and(|class| DIRECTORY_FSYNC_UNSUPPORTED.contains(&class))
 }
 
 /// The device a directory lives on, to group the "doesn't support directory

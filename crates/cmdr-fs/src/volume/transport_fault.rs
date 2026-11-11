@@ -1,5 +1,6 @@
 //! [`VolumeError::transport_fault`]: the one answer to "did the link fail, or did
-//! the other end say no?", and [`is_transport_errno`], the one errno set behind it.
+//! the other end say no?". The one OS set behind it is
+//! [`OsErrorClass::is_transport`].
 //!
 //! Every layer that reacts to a dropped connection asks this, typed: the transfer
 //! engine's per-file retry and outage wait, its settle of an unanswered create,
@@ -9,6 +10,7 @@
 //! `ECONNRESET` and the other didn't).
 
 use super::VolumeError;
+use crate::os_error::OsErrorClass;
 
 /// Which way the link failed. The noun the retry policy, the outage wait, and the
 /// error UX key off, so each can say WHY it waited without re-deriving it.
@@ -31,9 +33,9 @@ pub enum TransportFault {
     /// person's pause caused it, so a retry policy ❌ must not count it as a
     /// failed attempt.
     PauseOutlasted,
-    /// The OS reported a transport errno ([`is_transport_errno`]), typically from
-    /// an OS-mounted network share. Carries it.
-    TransportErrno(i32),
+    /// The OS reported a dropped link ([`OsErrorClass::is_transport`]), typically
+    /// from an OS-mounted network share. Carries its class.
+    OsTransport(OsErrorClass),
 }
 
 impl VolumeError {
@@ -41,7 +43,7 @@ impl VolumeError {
     /// the data, or a person's decision.
     ///
     /// Matched exhaustively on purpose: a new variant must decide, never inherit
-    /// an answer from a wildcard. Classification is by variant and errno, ❌ never
+    /// an answer from a wildcard. Classification is by variant and OS error class, ❌ never
     /// by message text.
     #[must_use]
     pub fn transport_fault(&self) -> Option<TransportFault> {
@@ -52,9 +54,11 @@ impl VolumeError {
             Self::StaleDestinationHandle(_) => Some(TransportFault::StaleHandle),
             Self::PauseOutlasted(_) => Some(TransportFault::PauseOutlasted),
             Self::IoError {
-                raw_os_error: Some(code),
-                ..
-            } => is_transport_errno(*code).then_some(TransportFault::TransportErrno(*code)),
+                raw_os_error: Some(_), ..
+            } => self
+                .os_class()
+                .filter(|class| class.is_transport())
+                .map(TransportFault::OsTransport),
 
             // Below: a decision, a refusal, or a fact about the data. Asking again
             // gets the same answer.
@@ -88,26 +92,4 @@ impl VolumeError {
             | Self::FriendlyGit(_) => None,
         }
     }
-}
-
-/// Whether `code` is an errno that means "the link went away", not "the request
-/// was refused".
-///
-/// Decided through [`std::io::ErrorKind`], which is portable and needs no `libc`
-/// (this crate declares `libc` per target OS on purpose).
-#[must_use]
-pub fn is_transport_errno(code: i32) -> bool {
-    use std::io::ErrorKind;
-
-    matches!(
-        std::io::Error::from_raw_os_error(code).kind(),
-        ErrorKind::BrokenPipe
-            | ErrorKind::ConnectionReset
-            | ErrorKind::ConnectionAborted
-            | ErrorKind::NotConnected
-            | ErrorKind::TimedOut
-            | ErrorKind::NetworkDown
-            | ErrorKind::NetworkUnreachable
-            | ErrorKind::HostUnreachable
-    )
 }

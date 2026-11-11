@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use crate::error_detail::ErrorDetail;
 use crate::log_error::{ErrorLogText, ErrorText, write_plain};
 use crate::log_private::LogPrivate;
+use crate::os_error::OsErrorClass;
 use crate::volume::git_error::FriendlyGitError;
 use crate::volume::locked_container::LockedContainer;
 
@@ -250,8 +251,8 @@ pub enum VolumeError {
     /// [`EncryptionRequired`](Self::EncryptionRequired) is Cmdr's: the same server answers the
     /// same until its settings change, so it's ❌ never retried. SMB-only.
     EncryptionUnavailable(String),
-    /// Anything the backend couldn't classify further. The classifier
-    /// re-dispatches on `raw_os_error` when one is present.
+    /// Anything the backend couldn't classify further. The classifiers
+    /// re-dispatch on its [`os_class`](Self::os_class) when it carries a code.
     IoError {
         /// What the OS or backend reported, for the technical-details panel.
         message: ErrorDetail,
@@ -412,11 +413,11 @@ impl VolumeError {
     /// [`InvalidName`](Self::InvalidName). As an `IoError` each reached the user
     /// as a generic failure with a Retry that could only fail again.
     ///
-    /// ❗ Everything else stays an `IoError` carrying its errno, which classifiers
-    /// dispatch on: `note_root_failure` promotes a mount on `ETIMEDOUT` /
-    /// `ENOTCONN` / `ESTALE`, transfer retry treats those as a blip, and every
-    /// backend spells a non-empty folder `ENOTEMPTY`. ❌ Never lift one of those
-    /// into a typed variant here.
+    /// ❗ Everything else stays an `IoError` carrying its errno, whose
+    /// [`os_class`](Self::os_class) classifiers dispatch on: `note_root_failure`
+    /// promotes a mount on a timeout, a lost connection, or a stale handle, transfer
+    /// retry treats those as a blip, and every backend spells a non-empty folder
+    /// [`OsErrorClass::NotEmpty`]. ❌ Never lift one of those into a typed variant here.
     pub fn from_io_at(err: &std::io::Error, path: impl AsRef<std::path::Path>) -> Self {
         use std::io::ErrorKind;
 
@@ -472,6 +473,15 @@ impl VolumeError {
             Self::PermissionDenied { raw_os_error, .. } | Self::IoError { raw_os_error, .. } => *raw_os_error,
             _ => None,
         }
+    }
+
+    /// What the carried code means, for every caller that decides on it: the class
+    /// of [`raw_os_error`](Self::raw_os_error), read the way the OS that produced it
+    /// numbers it. `None` when the variant carries no code. ❌ Never compare the
+    /// number itself.
+    #[must_use]
+    pub fn os_class(&self) -> Option<OsErrorClass> {
+        self.raw_os_error().map(OsErrorClass::of_code)
     }
 
     /// `, errno=13` for a log line when the variant carries an errno, and nothing otherwise.

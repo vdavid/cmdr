@@ -42,7 +42,7 @@ pub mod reconnect_error;
 /// PROBE a mount to find out (a `statfs` on a wedged one blocks 30–120 s, see
 /// `volumes/DETAILS.md` § "Hung mounts"), so the evidence has to arrive as a
 /// failed operation. Call this wherever one is observed with its volume ID in
-/// hand; it does no I/O, and an errno that says something about the FILE rather
+/// hand; it does no I/O, and an OS error that says something about the FILE rather
 /// than the mount changes nothing.
 pub fn note_root_failure(volume_id: &str, error: &VolumeError) {
     let VolumeError::IoError {
@@ -52,7 +52,7 @@ pub fn note_root_failure(volume_id: &str, error: &VolumeError) {
     else {
         return;
     };
-    if !manager::is_stale_mount_errno(*errno) {
+    if !error.os_class().is_some_and(manager::is_stale_mount) {
         return;
     }
 

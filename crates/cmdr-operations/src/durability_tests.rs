@@ -396,3 +396,26 @@ fn a_created_symlink_skips_the_data_sync_but_flushes_its_directory() {
     assert_eq!(result, Ok(()));
     assert_eq!(log.dirs(), vec![links]);
 }
+
+/// The characterization table, every errno: a directory fsync the filesystem doesn't
+/// do at all (five names, four numbers on Linux) is tolerated, and every other errno,
+/// or none, stays a failure that keeps the sources.
+#[cfg(unix)]
+#[test]
+fn every_errno_keeps_its_directory_fsync_answer() {
+    let unsupported = [
+        libc::ENOTSUP,
+        libc::EOPNOTSUPP,
+        libc::EINVAL,
+        libc::ENOSYS,
+        libc::ENOTTY,
+    ];
+    for code in 0..=4096 {
+        assert_eq!(
+            refuses_directory_fsync(&io::Error::from_raw_os_error(code)),
+            unsupported.contains(&code),
+            "errno {code}"
+        );
+    }
+    assert!(!refuses_directory_fsync(&io::Error::other("no OS code")));
+}

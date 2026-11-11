@@ -67,6 +67,7 @@ pub mod metadata;
 #[cfg(cmdr_host)]
 pub mod mount_layout;
 pub mod name_fold;
+pub mod os_error;
 pub mod path_hash;
 pub mod path_locations;
 pub mod pluralize;

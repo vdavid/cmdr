@@ -1,6 +1,7 @@
 //! Maps raw `std::io::Error` values into typed `WriteOperationError` variants.
 //!
-//! Only `errno` and `ErrorKind` are consulted, never the formatted message. The
+//! Only the errno's `OsErrorClass` and `ErrorKind` are consulted, never the
+//! formatted message. The
 //! `IoResultExt` extension trait and the
 //! `From<std::io::Error>` impl are the two entry points local-FS code uses to
 //! attach a typed variant (and a path) to an IO failure; the native copy calls
@@ -9,26 +10,25 @@
 
 use std::path::Path;
 
-use crate::local_disk::errno;
+use cmdr_fs::os_error::OsErrorClass;
 
 use super::types::{PermissionSide, ReadOnlySide, WriteOperationError};
 
 /// Classifies a raw `std::io::Error` into a specific `WriteOperationError` variant.
 ///
-/// Only `errno` and `ErrorKind` are consulted — never the formatted message.
+/// Only the errno's class and `ErrorKind` are consulted — never the formatted message.
 /// Backend errors (SMB, MTP, etc.) are typed and flow through
 /// `transfer/volume/transfer_error.rs::map_volume_error`, so this function only sees
-/// `std::io::Error` values produced by local-FS calls, which always carry a
-/// `raw_os_error()` on Unix. Pre-fix the function had a lowercase-substring
+/// `std::io::Error` values produced by local-FS calls, which always carry an OS
+/// code on Unix. Pre-fix the function had a lowercase-substring
 /// fallback (`"disconnect"`, `"read-only"`, `"connection"`, `"operation not
 /// permitted"`, …) that quietly misclassified errors on localized macOS
 /// (the wording localizes; the substrings don't match) and was the exact
 /// shape AGENTS.md bans.
 pub(super) fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperationError {
-    #[cfg(unix)]
-    if let Some(code) = e.raw_os_error() {
-        match code {
-            errno::EROFS => {
+    if let Some(class) = OsErrorClass::of_io(e) {
+        match class {
+            OsErrorClass::ReadOnlyFilesystem => {
                 // EROFS came back from a WRITE, so the refusing half is the
                 // destination by construction.
                 return WriteOperationError::ReadOnlyDevice {
@@ -37,19 +37,21 @@ pub(super) fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperat
                     side: ReadOnlySide::Destination,
                 };
             }
-            errno::ENAMETOOLONG => return WriteOperationError::NameTooLong { path },
+            OsErrorClass::NameTooLong => return WriteOperationError::NameTooLong { path },
             // The refused write measured nothing, so it's the sizeless variant.
-            errno::ENOSPC | errno::EDQUOT => return WriteOperationError::DestinationFull { path },
-            // The one transport errno set, shared with the transfer engine's
-            // retry and outage wait, so both agree on what "the link dropped" is.
-            code if cmdr_fs::volume::is_transport_errno(code) => {
+            OsErrorClass::NoSpace | OsErrorClass::QuotaExceeded => {
+                return WriteOperationError::DestinationFull { path };
+            }
+            // The one transport set, shared with the transfer engine's retry and
+            // outage wait, so both agree on what "the link dropped" is.
+            class if class.is_transport() => {
                 return WriteOperationError::ConnectionInterrupted { path };
             }
             // Both are a drive that isn't there any more: `ENODEV` from a mount
             // that's gone, `ENXIO` from a device node whose hardware left. The
             // SIDE is filled in at the operation's boundary, where the volumes
             // it was handed at start are still known (`transfer_sides.rs`).
-            errno::ENODEV | errno::ENXIO => return WriteOperationError::DeviceDisconnected { path, side: None },
+            OsErrorClass::DeviceGone => return WriteOperationError::DeviceDisconnected { path, side: None },
             _ => {} // Fall through to ErrorKind classification
         }
     }
@@ -87,8 +89,13 @@ pub(super) fn classify_copy_io_error(err: &std::io::Error, source: &Path, destin
         err.kind(),
         std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::AlreadyExists
     ) || matches!(
-        err.raw_os_error(),
-        Some(errno::EROFS | errno::ENOSPC | errno::EDQUOT | errno::ENAMETOOLONG)
+        OsErrorClass::of_io(err),
+        Some(
+            OsErrorClass::ReadOnlyFilesystem
+                | OsErrorClass::NoSpace
+                | OsErrorClass::QuotaExceeded
+                | OsErrorClass::NameTooLong
+        )
     );
     let path = if refused_by_destination { destination } else { source };
     classify_io_error(err, path.display().to_string())
@@ -265,5 +272,102 @@ mod tests {
                 "genuine failure must still log at error and auto-report: {err:?}"
             );
         }
+    }
+
+    /// What one errno's write failure becomes, and which end the native copy names.
+    #[cfg(unix)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum Outcome {
+        PermissionDenied(crate::types::PermissionRefusal),
+        SourceNotFound,
+        DestinationExists,
+        DeviceDisconnected,
+        DestinationFull,
+        ReadOnlyDevice,
+        NameTooLong,
+        ConnectionInterrupted,
+        IoError,
+    }
+
+    /// The outcome, and the path the error names.
+    #[cfg(unix)]
+    fn outcome_of(err: &WriteOperationError) -> (Outcome, &str) {
+        match err {
+            WriteOperationError::PermissionDenied { refusal, path, .. } => (Outcome::PermissionDenied(*refusal), path),
+            WriteOperationError::SourceNotFound { path } => (Outcome::SourceNotFound, path),
+            WriteOperationError::DestinationExists { path } => (Outcome::DestinationExists, path),
+            WriteOperationError::DeviceDisconnected { path, side: None } => (Outcome::DeviceDisconnected, path),
+            WriteOperationError::DestinationFull { path } => (Outcome::DestinationFull, path),
+            WriteOperationError::ReadOnlyDevice {
+                path,
+                side: ReadOnlySide::Destination,
+                device_name: None,
+            } => (Outcome::ReadOnlyDevice, path),
+            WriteOperationError::NameTooLong { path } => (Outcome::NameTooLong, path),
+            WriteOperationError::ConnectionInterrupted { path } => (Outcome::ConnectionInterrupted, path),
+            WriteOperationError::IoError { path, .. } => (Outcome::IoError, path),
+            other => panic!("an outcome the table doesn't know: {other:?}"),
+        }
+    }
+
+    /// The characterization table, every errno: what a local write failure becomes,
+    /// and whether a native copy's failure names the destination. Each named errno
+    /// is listed; every other one is a generic failure naming the source.
+    #[cfg(unix)]
+    #[test]
+    fn every_errno_keeps_its_write_outcome_and_its_side() {
+        use crate::types::PermissionRefusal::{FolderPermissions, SystemProtected};
+
+        let named = [
+            (libc::EPERM, Outcome::PermissionDenied(SystemProtected), true),
+            (libc::EACCES, Outcome::PermissionDenied(FolderPermissions), true),
+            (libc::ENOENT, Outcome::SourceNotFound, false),
+            (libc::EEXIST, Outcome::DestinationExists, true),
+            (libc::ENXIO, Outcome::DeviceDisconnected, false),
+            (libc::ENODEV, Outcome::DeviceDisconnected, false),
+            (libc::ENOSPC, Outcome::DestinationFull, true),
+            (libc::EDQUOT, Outcome::DestinationFull, true),
+            (libc::EROFS, Outcome::ReadOnlyDevice, true),
+            (libc::ENAMETOOLONG, Outcome::NameTooLong, true),
+            (libc::EPIPE, Outcome::ConnectionInterrupted, false),
+            (libc::ECONNRESET, Outcome::ConnectionInterrupted, false),
+            (libc::ECONNABORTED, Outcome::ConnectionInterrupted, false),
+            (libc::ENOTCONN, Outcome::ConnectionInterrupted, false),
+            (libc::ETIMEDOUT, Outcome::ConnectionInterrupted, false),
+            (libc::ENETDOWN, Outcome::ConnectionInterrupted, false),
+            (libc::ENETUNREACH, Outcome::ConnectionInterrupted, false),
+            (libc::EHOSTUNREACH, Outcome::ConnectionInterrupted, false),
+        ];
+        let (source, destination) = (Path::new("/src/a"), Path::new("/dst/a"));
+        for code in 0..=4096 {
+            let (outcome, names_destination) = named
+                .iter()
+                .find(|(errno, ..)| *errno == code)
+                .map_or((Outcome::IoError, false), |&(_, outcome, side)| (outcome, side));
+            let err = std::io::Error::from_raw_os_error(code);
+            let classified = classify_io_error(&err, "/p".to_string());
+            assert_eq!(outcome_of(&classified), (outcome, "/p"), "errno {code}");
+            let copied = classify_copy_io_error(&err, source, destination);
+            let expected = if names_destination { destination } else { source };
+            let expected = expected.display().to_string();
+            assert_eq!(outcome_of(&copied), (outcome, expected.as_str()), "errno {code}");
+        }
+    }
+
+    /// A refusal's advice, every errno: only `EACCES` and `EPERM` say who refused.
+    #[cfg(unix)]
+    #[test]
+    fn every_errno_keeps_its_permission_advice() {
+        use crate::types::PermissionRefusal;
+
+        for code in 0..=4096 {
+            let expected = match code {
+                libc::EACCES => PermissionRefusal::FolderPermissions,
+                libc::EPERM => PermissionRefusal::SystemProtected,
+                _ => PermissionRefusal::Unclassified,
+            };
+            assert_eq!(PermissionRefusal::from_errno(Some(code)), expected, "errno {code}");
+        }
+        assert_eq!(PermissionRefusal::from_errno(None), PermissionRefusal::Unclassified);
     }
 }

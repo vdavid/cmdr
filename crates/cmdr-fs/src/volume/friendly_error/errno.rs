@@ -1,7 +1,8 @@
-//! `errno → ListingError`.
+//! `OsErrorClass → ListingError`.
 //!
 //! macOS-only mapping with a non-macOS fallback. Called from
-//! `volume_error::listing_error_from_volume_error` for `IoError` with a `raw_os_error`.
+//! `volume_error::listing_error_from_volume_error` for an `IoError` that carries an OS
+//! code, with that code's class (`crate::os_error`).
 //! Kept separate because it's a bulk of independent errno arms, and folding it in
 //! with the rest of the classification would dwarf the genuinely semantic logic.
 //!
@@ -13,13 +14,20 @@ use std::path::Path;
 #[cfg(target_os = "macos")]
 use super::ErrorActionKind;
 use super::{ErrorCategory, ListingError, ListingErrorReason};
+use crate::os_error::OsErrorClass;
 use crate::volume::VolumeError;
 
-/// Maps a raw macOS errno to a `ListingError`.
+/// Maps a macOS errno's class to a `ListingError`; `errno` is the number itself, for
+/// the technical detail.
 #[cfg(target_os = "macos")]
-pub(super) fn listing_error_from_errno(errno: i32, path: &Path, _err: &VolumeError) -> ListingError {
+pub(super) fn listing_error_from_class(
+    class: OsErrorClass,
+    errno: i32,
+    path: &Path,
+    _err: &VolumeError,
+) -> ListingError {
     let path_display = path.display().to_string();
-    let raw_detail = format!("{} (os error {})", errno_name(errno), errno);
+    let raw_detail = format!("{} (os error {})", errno_name(class), errno);
 
     // Helper: a transient errno with no path param and no special action.
     let transient = |reason: ListingErrorReason| ListingError {
@@ -49,25 +57,24 @@ pub(super) fn listing_error_from_errno(errno: i32, path: &Path, _err: &VolumeErr
         raw_detail: raw_detail.clone(),
     };
 
-    match errno {
+    match class {
         // ── Transient (retry-worthy) ────────────────────────────────────
-        4 => transient(ListingErrorReason::Interrupted),      // EINTR
-        12 => transient(ListingErrorReason::NotEnoughMemory), // ENOMEM
-        16 => transient(ListingErrorReason::ResourceBusy { path: path_display }), // EBUSY
-        35 => transient(ListingErrorReason::TemporarilyUnavailable), // EAGAIN
-        50 => transient(ListingErrorReason::NetworkDown),     // ENETDOWN
-        52 => transient(ListingErrorReason::NetworkConnectionDropped), // ENETRESET
-        53 => transient(ListingErrorReason::ConnectionDropped), // ECONNABORTED
-        54 => transient(ListingErrorReason::ConnectionReset), // ECONNRESET
-        60 => transient(ListingErrorReason::ConnectionTimedOutErrno), // ETIMEDOUT
-        64 => transient(ListingErrorReason::HostDown),        // EHOSTDOWN
-        70 => transient(ListingErrorReason::StaleConnection), // ESTALE
-        77 => transient(ListingErrorReason::LockUnavailable), // ENOLCK
-        89 => transient(ListingErrorReason::CancelledErrno),  // ECANCELED
+        OsErrorClass::Interrupted => transient(ListingErrorReason::Interrupted),
+        OsErrorClass::OutOfMemory => transient(ListingErrorReason::NotEnoughMemory),
+        OsErrorClass::Busy => transient(ListingErrorReason::ResourceBusy { path: path_display }),
+        OsErrorClass::WouldBlock => transient(ListingErrorReason::TemporarilyUnavailable),
+        OsErrorClass::NetworkDown => transient(ListingErrorReason::NetworkDown),
+        OsErrorClass::NetworkReset => transient(ListingErrorReason::NetworkConnectionDropped),
+        OsErrorClass::ConnectionAborted => transient(ListingErrorReason::ConnectionDropped),
+        OsErrorClass::ConnectionReset => transient(ListingErrorReason::ConnectionReset),
+        OsErrorClass::TimedOut => transient(ListingErrorReason::ConnectionTimedOutErrno),
+        OsErrorClass::HostDown => transient(ListingErrorReason::HostDown),
+        OsErrorClass::Stale => transient(ListingErrorReason::StaleConnection),
+        OsErrorClass::NoLocks => transient(ListingErrorReason::LockUnavailable),
+        OsErrorClass::Canceled => transient(ListingErrorReason::CancelledErrno),
 
         // ── NeedsAction ─────────────────────────────────────────────────
-        // EPERM: action_kind = OpenPrivacySettings.
-        1 => ListingError {
+        OsErrorClass::NotPermitted => ListingError {
             category: ErrorCategory::NeedsAction,
             reason: ListingErrorReason::NotPermitted { path: path_display },
             provider: None,
@@ -75,9 +82,8 @@ pub(super) fn listing_error_from_errno(errno: i32, path: &Path, _err: &VolumeErr
             retry_hint: false,
             raw_detail,
         },
-        2 => needs_action(ListingErrorReason::PathNotFoundErrno { path: path_display }), // ENOENT
-        // EACCES: action_kind = OpenPrivacySettings.
-        13 => ListingError {
+        OsErrorClass::NotFound => needs_action(ListingErrorReason::PathNotFoundErrno { path: path_display }),
+        OsErrorClass::AccessDenied => ListingError {
             category: ErrorCategory::NeedsAction,
             reason: ListingErrorReason::NoPermissionErrno { path: path_display },
             provider: None,
@@ -85,57 +91,74 @@ pub(super) fn listing_error_from_errno(errno: i32, path: &Path, _err: &VolumeErr
             retry_hint: false,
             raw_detail,
         },
-        17 => needs_action(ListingErrorReason::AlreadyExistsErrno { path: path_display }), // EEXIST
-        18 => needs_action(ListingErrorReason::CrossDeviceOperation),                      // EXDEV
-        20 => needs_action(ListingErrorReason::NotAFolder { path: path_display }),         // ENOTDIR
-        21 => needs_action(ListingErrorReason::IsAFolderErrno { path: path_display }),     // EISDIR
-        28 => needs_action(ListingErrorReason::DiskFullErrno),                             // ENOSPC
-        30 => needs_action(ListingErrorReason::ReadOnlyVolumeErrno),                       // EROFS
-        45 => needs_action(ListingErrorReason::NotSupportedErrno),                         // ENOTSUP
-        51 => needs_action(ListingErrorReason::NetworkUnreachable),                        // ENETUNREACH
-        61 => needs_action(ListingErrorReason::ConnectionRefused),                         // ECONNREFUSED
-        62 => needs_action(ListingErrorReason::SymlinkLoopErrno { path: path_display }),   // ELOOP
-        63 => needs_action(ListingErrorReason::NameTooLongErrno),                          // ENAMETOOLONG
-        65 => needs_action(ListingErrorReason::HostUnreachable),                           // EHOSTUNREACH
-        66 => needs_action(ListingErrorReason::FolderNotEmpty { path: path_display }),     // ENOTEMPTY
-        69 => needs_action(ListingErrorReason::QuotaExceeded),                             // EDQUOT
-        80 => needs_action(ListingErrorReason::AuthRequiredEauth),                         // EAUTH
-        81 => needs_action(ListingErrorReason::AuthRequiredEneedauth),                     // ENEEDAUTH
-        82 => needs_action(ListingErrorReason::DevicePoweredOff),                          // EPWROFF
-        93 => needs_action(ListingErrorReason::AttributeNotFound),                         // ENOATTR
+        OsErrorClass::AlreadyExists => needs_action(ListingErrorReason::AlreadyExistsErrno { path: path_display }),
+        OsErrorClass::CrossDevice => needs_action(ListingErrorReason::CrossDeviceOperation),
+        OsErrorClass::NotADirectory => needs_action(ListingErrorReason::NotAFolder { path: path_display }),
+        OsErrorClass::IsADirectory => needs_action(ListingErrorReason::IsAFolderErrno { path: path_display }),
+        OsErrorClass::NoSpace => needs_action(ListingErrorReason::DiskFullErrno),
+        OsErrorClass::ReadOnlyFilesystem => needs_action(ListingErrorReason::ReadOnlyVolumeErrno),
+        OsErrorClass::Unsupported => needs_action(ListingErrorReason::NotSupportedErrno),
+        OsErrorClass::NetworkUnreachable => needs_action(ListingErrorReason::NetworkUnreachable),
+        OsErrorClass::ConnectionRefused => needs_action(ListingErrorReason::ConnectionRefused),
+        OsErrorClass::LinkLoop => needs_action(ListingErrorReason::SymlinkLoopErrno { path: path_display }),
+        OsErrorClass::NameTooLong => needs_action(ListingErrorReason::NameTooLongErrno),
+        OsErrorClass::HostUnreachable => needs_action(ListingErrorReason::HostUnreachable),
+        OsErrorClass::NotEmpty => needs_action(ListingErrorReason::FolderNotEmpty { path: path_display }),
+        OsErrorClass::QuotaExceeded => needs_action(ListingErrorReason::QuotaExceeded),
+        OsErrorClass::AuthFailed => needs_action(ListingErrorReason::AuthRequiredEauth),
+        OsErrorClass::AuthNeeded => needs_action(ListingErrorReason::AuthRequiredEneedauth),
+        OsErrorClass::DevicePoweredOff => needs_action(ListingErrorReason::DevicePoweredOff),
+        OsErrorClass::NoAttribute => needs_action(ListingErrorReason::AttributeNotFound),
 
         // ── Serious ─────────────────────────────────────────────────────
-        5 => serious(ListingErrorReason::DiskReadProblem { path: path_display }), // EIO
-        22 => serious(ListingErrorReason::UnexpectedSystemResponse),              // EINVAL
-        83 => serious(ListingErrorReason::DeviceProblem),                         // EDEVERR
+        OsErrorClass::Io => serious(ListingErrorReason::DiskReadProblem { path: path_display }),
+        OsErrorClass::InvalidArgument => serious(ListingErrorReason::UnexpectedSystemResponse),
+        OsErrorClass::DeviceError => serious(ListingErrorReason::DeviceProblem),
 
-        // ── Unknown errno ───────────────────────────────────────────────
-        _ => serious(ListingErrorReason::CouldntReadUnknown { path: path_display }),
+        // ── No reason of its own ────────────────────────────────────────
+        // Listed, not wildcarded, so a new class decides where it goes.
+        OsErrorClass::DeviceGone
+        | OsErrorClass::InUseByAnotherApp
+        | OsErrorClass::InappropriateIoctl
+        | OsErrorClass::NotImplemented
+        | OsErrorClass::OperationNotSupported
+        | OsErrorClass::FileTooLarge
+        | OsErrorClass::TooManyLinks
+        | OsErrorClass::BrokenPipe
+        | OsErrorClass::NotConnected
+        | OsErrorClass::Remote
+        | OsErrorClass::Protocol
+        | OsErrorClass::BadMessage
+        | OsErrorClass::Other => serious(ListingErrorReason::CouldntReadUnknown { path: path_display }),
     }
 }
 
-/// Fallback for non-macOS platforms: the retry-worthy errnos the macOS table calls
-/// transient, read through `std`'s own per-platform `ErrorKind` mapping (so no
-/// errno number is assumed), and everything else as an unknown read problem.
+/// Fallback for every other platform: nine of the classes the macOS table calls
+/// transient (the ones `std`'s `ErrorKind` named when this read through it), and
+/// everything else as an unknown read problem. Windows gets the same answer until
+/// its codes are characterized: by class, so no number is assumed.
 ///
 /// The transient arm matters beyond the copy: a stalled listing retries exactly
 /// the `Transient` category (`crates/cmdr-listing/src/stall.rs` in the app).
-#[cfg(any(target_os = "linux", target_family = "wasm"))]
-pub(super) fn listing_error_from_errno(errno: i32, path: &Path, err: &VolumeError) -> ListingError {
-    use std::io::ErrorKind;
-
-    let transient = match std::io::Error::from_raw_os_error(errno).kind() {
-        ErrorKind::Interrupted => Some(ListingErrorReason::Interrupted),
-        ErrorKind::OutOfMemory => Some(ListingErrorReason::NotEnoughMemory),
-        ErrorKind::ResourceBusy => Some(ListingErrorReason::ResourceBusy {
+#[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
+pub(super) fn listing_error_from_class(
+    class: OsErrorClass,
+    _errno: i32,
+    path: &Path,
+    err: &VolumeError,
+) -> ListingError {
+    let transient = match class {
+        OsErrorClass::Interrupted => Some(ListingErrorReason::Interrupted),
+        OsErrorClass::OutOfMemory => Some(ListingErrorReason::NotEnoughMemory),
+        OsErrorClass::Busy => Some(ListingErrorReason::ResourceBusy {
             path: path.display().to_string(),
         }),
-        ErrorKind::WouldBlock => Some(ListingErrorReason::TemporarilyUnavailable),
-        ErrorKind::NetworkDown => Some(ListingErrorReason::NetworkDown),
-        ErrorKind::ConnectionAborted => Some(ListingErrorReason::ConnectionDropped),
-        ErrorKind::ConnectionReset => Some(ListingErrorReason::ConnectionReset),
-        ErrorKind::TimedOut => Some(ListingErrorReason::ConnectionTimedOutErrno),
-        ErrorKind::StaleNetworkFileHandle => Some(ListingErrorReason::StaleConnection),
+        OsErrorClass::WouldBlock => Some(ListingErrorReason::TemporarilyUnavailable),
+        OsErrorClass::NetworkDown => Some(ListingErrorReason::NetworkDown),
+        OsErrorClass::ConnectionAborted => Some(ListingErrorReason::ConnectionDropped),
+        OsErrorClass::ConnectionReset => Some(ListingErrorReason::ConnectionReset),
+        OsErrorClass::TimedOut => Some(ListingErrorReason::ConnectionTimedOutErrno),
+        OsErrorClass::Stale => Some(ListingErrorReason::StaleConnection),
         _ => None,
     };
     let (category, reason) = match transient {
@@ -157,47 +180,48 @@ pub(super) fn listing_error_from_errno(errno: i32, path: &Path, err: &VolumeErro
     }
 }
 
-/// Returns the C constant name for a macOS errno.
+/// The C constant name of a macOS errno, by its class: the names the table above
+/// reads, and `UNKNOWN` for the rest.
 #[cfg(target_os = "macos")]
-fn errno_name(errno: i32) -> &'static str {
-    match errno {
-        1 => "EPERM",
-        2 => "ENOENT",
-        4 => "EINTR",
-        5 => "EIO",
-        12 => "ENOMEM",
-        13 => "EACCES",
-        16 => "EBUSY",
-        17 => "EEXIST",
-        18 => "EXDEV",
-        20 => "ENOTDIR",
-        21 => "EISDIR",
-        22 => "EINVAL",
-        28 => "ENOSPC",
-        30 => "EROFS",
-        35 => "EAGAIN",
-        45 => "ENOTSUP",
-        50 => "ENETDOWN",
-        51 => "ENETUNREACH",
-        52 => "ENETRESET",
-        53 => "ECONNABORTED",
-        54 => "ECONNRESET",
-        60 => "ETIMEDOUT",
-        61 => "ECONNREFUSED",
-        62 => "ELOOP",
-        63 => "ENAMETOOLONG",
-        64 => "EHOSTDOWN",
-        65 => "EHOSTUNREACH",
-        66 => "ENOTEMPTY",
-        69 => "EDQUOT",
-        70 => "ESTALE",
-        77 => "ENOLCK",
-        80 => "EAUTH",
-        81 => "ENEEDAUTH",
-        82 => "EPWROFF",
-        83 => "EDEVERR",
-        89 => "ECANCELED",
-        93 => "ENOATTR",
+fn errno_name(class: OsErrorClass) -> &'static str {
+    match class {
+        OsErrorClass::NotPermitted => "EPERM",
+        OsErrorClass::NotFound => "ENOENT",
+        OsErrorClass::Interrupted => "EINTR",
+        OsErrorClass::Io => "EIO",
+        OsErrorClass::OutOfMemory => "ENOMEM",
+        OsErrorClass::AccessDenied => "EACCES",
+        OsErrorClass::Busy => "EBUSY",
+        OsErrorClass::AlreadyExists => "EEXIST",
+        OsErrorClass::CrossDevice => "EXDEV",
+        OsErrorClass::NotADirectory => "ENOTDIR",
+        OsErrorClass::IsADirectory => "EISDIR",
+        OsErrorClass::InvalidArgument => "EINVAL",
+        OsErrorClass::NoSpace => "ENOSPC",
+        OsErrorClass::ReadOnlyFilesystem => "EROFS",
+        OsErrorClass::WouldBlock => "EAGAIN",
+        OsErrorClass::Unsupported => "ENOTSUP",
+        OsErrorClass::NetworkDown => "ENETDOWN",
+        OsErrorClass::NetworkUnreachable => "ENETUNREACH",
+        OsErrorClass::NetworkReset => "ENETRESET",
+        OsErrorClass::ConnectionAborted => "ECONNABORTED",
+        OsErrorClass::ConnectionReset => "ECONNRESET",
+        OsErrorClass::TimedOut => "ETIMEDOUT",
+        OsErrorClass::ConnectionRefused => "ECONNREFUSED",
+        OsErrorClass::LinkLoop => "ELOOP",
+        OsErrorClass::NameTooLong => "ENAMETOOLONG",
+        OsErrorClass::HostDown => "EHOSTDOWN",
+        OsErrorClass::HostUnreachable => "EHOSTUNREACH",
+        OsErrorClass::NotEmpty => "ENOTEMPTY",
+        OsErrorClass::QuotaExceeded => "EDQUOT",
+        OsErrorClass::Stale => "ESTALE",
+        OsErrorClass::NoLocks => "ENOLCK",
+        OsErrorClass::AuthFailed => "EAUTH",
+        OsErrorClass::AuthNeeded => "ENEEDAUTH",
+        OsErrorClass::DevicePoweredOff => "EPWROFF",
+        OsErrorClass::DeviceError => "EDEVERR",
+        OsErrorClass::Canceled => "ECANCELED",
+        OsErrorClass::NoAttribute => "ENOATTR",
         _ => "UNKNOWN",
     }
 }

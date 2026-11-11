@@ -2541,7 +2541,7 @@ pub use scan_recorder::ScanRecorder;
 pub use scan_stop::{ScanStop, ScanStopSignal};
 pub use scan_walk::{ScanSource, Walking, conflicts_against, fold_batch, scan_conflicts, scan_one, scan_trees};
 pub use transfer_hold::TransferHold;
-pub use transport_fault::{TransportFault, is_transport_errno};
+pub use transport_fault::TransportFault;
 pub use types::*;
 pub use usb_speed::UsbSpeed;
 pub use write_progress::{StreamLength, StreamWriteProgress};
