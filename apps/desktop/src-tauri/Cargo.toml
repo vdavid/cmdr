@@ -253,8 +253,6 @@ walkdir = "2"
 # Drive indexing: SQLite store and macOS FSEvents watcher (the parallel directory
 # walker is now the in-tree `indexing::scanner::walker`, not a dependency)
 rusqlite = { version = "0.41", features = ["bundled", "collation", "fallible_uint"] }
-# Extended attributes: Finder tags, per-path icons, and Google Drive's item ids.
-xattr = "1"
 sysinfo = { version = "0.40.1", default-features = false, features = ["system"] }
 time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 # Playwright E2E testing plugin: socket bridge for direct webview injection (optional, feature-gated, dev-only).
@@ -322,6 +320,9 @@ cmdr-mtp = { path = "../../../crates/cmdr-mtp" }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+# Extended attributes: Finder tags, per-path icons, and Google Drive's item ids. Unix only: the
+# crate imports `std::os::unix` unconditionally, and Windows reads come through each seam's arm.
+xattr = "1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Credential storage via Linux secret service (GNOME Keyring / KDE Wallet).

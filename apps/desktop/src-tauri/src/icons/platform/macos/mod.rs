@@ -11,6 +11,7 @@ use objc2::rc::autoreleasepool;
 
 use super::super::image_to_data_url;
 use super::PathIcons;
+pub(crate) use super::unix::extended_attribute;
 use crate::config::ICON_SIZE;
 
 /// 8 MB stack per thread: enough for deep FileProvider XPC chains that

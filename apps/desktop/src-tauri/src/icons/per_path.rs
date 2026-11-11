@@ -29,7 +29,7 @@ use std::path::Path;
 use cmdr_fs::entry::TagRef;
 pub use cmdr_fs::icons::packages::PKG_KEY_PREFIX;
 
-use super::platform::tag_tinting_disabled;
+use super::platform::{extended_attribute, tag_tinting_disabled};
 
 /// Byte offset of the Finder flags within a `com.apple.FinderInfo` buffer.
 ///
@@ -144,14 +144,11 @@ pub fn customization_emoji(customization: &[u8]) -> Option<String> {
 /// `dir` glyph). No NSWorkspace, no LaunchServices, so no TCC popup. Only for the visible paths
 /// the frontend asks about, ❌ never during bulk listing.
 pub fn custom_folder_icon(path: &Path) -> Option<CustomFolderIcon> {
-    let finder_info = match xattr::get(path, "com.apple.FinderInfo") {
-        Ok(Some(buf)) => buf,
-        _ => return None,
-    };
+    let finder_info = extended_attribute(path, "com.apple.FinderInfo")?;
     if !finder_info_has_custom_icon(&finder_info) {
         return None;
     }
-    let customization = xattr::get(path, FOLDER_CUSTOMIZATION_XATTR).ok().flatten();
+    let customization = extended_attribute(path, FOLDER_CUSTOMIZATION_XATTR);
     let tags = if customization.is_some() {
         crate::file_system::tags::read_tags(path)
     } else {

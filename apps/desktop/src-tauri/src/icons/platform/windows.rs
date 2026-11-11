@@ -36,3 +36,9 @@ pub(crate) fn with_object_pool<T, F: FnOnce() -> T>(f: F) -> T {
 pub(crate) fn tag_tinting_disabled() -> bool {
     false
 }
+
+/// No reader yet (an NTFS alternate data stream is where these would live), so a folder never
+/// reads as custom-iconed.
+pub(crate) fn extended_attribute(_path: &Path, _name: &str) -> Option<Vec<u8>> {
+    None
+}
