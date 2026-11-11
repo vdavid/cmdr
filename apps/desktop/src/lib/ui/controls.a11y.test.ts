@@ -16,6 +16,7 @@ import { mount, tick, createRawSnippet, type ComponentProps } from 'svelte'
 import Button from './Button.svelte'
 import Checkbox from './Checkbox.svelte'
 import CloseButton from './CloseButton.svelte'
+import CopyButton from './CopyButton.svelte'
 import LinkButton from './LinkButton.svelte'
 import RadioGroup, { type RadioItem } from './RadioGroup.svelte'
 import Switch from './Switch.svelte'
@@ -131,6 +132,20 @@ describe('CloseButton a11y', () => {
     const ring = createRawSnippet(() => ({ render: () => '<svg aria-hidden="true" viewBox="0 0 22 22"></svg>' }))
     mount(CloseButton, { target, props: { ariaLabel: 'Dismiss notification', onclick: () => {}, children: ring } })
     await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `CopyButton.svelte`: the glyph has no visible text, so its
+ * `aria-label` (what it copies) is the whole accessible name.
+ */
+describe('CopyButton a11y', () => {
+  it('has no a11y violations and is named by what it copies', async () => {
+    const target = container()
+    mount(CopyButton, { target, props: { text: '/a\n/b', label: 'Copy the full list of folders' } })
+    await tick()
+    expect(target.querySelector('button')?.getAttribute('aria-label')).toBe('Copy the full list of folders')
     await expectNoA11yViolations(target)
   })
 })

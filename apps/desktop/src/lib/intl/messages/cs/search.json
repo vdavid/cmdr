@@ -127,26 +127,6 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
-  "search.coverage.uncovered.local": "Cmdr zatím nezaindexoval {drive}, takže toto hledání přeskočilo:",
-  "@search.coverage.uncovered.local": {
-    "sourceHash": "8fe8ce1"
-  },
-  "search.coverage.uncovered.network": "Cmdr síťové disky neindexuje, pokud o to nepožádáte, takže toto hledání přeskočilo:",
-  "@search.coverage.uncovered.network": {
-    "sourceHash": "0066012"
-  },
-  "search.coverage.uncovered.unavailable": "Cmdr zatím neumí prohledat {drive}, takže toto hledání přeskočilo:",
-  "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "6f9cb5b"
-  },
-  "search.coverage.uncovered.indexing": "Cmdr ještě indexuje {drive} a k těmto složkám se zatím nedostal, takže toto hledání přeskočilo:",
-  "@search.coverage.uncovered.indexing": {
-    "sourceHash": "9cf6003"
-  },
-  "search.coverage.unresolved": "{count, plural, one {Index Cmdru tuto složku zatím nepokrývá, takže ji toto hledání přeskočilo:} few {Index Cmdru tyto složky zatím nepokrývá, takže je toto hledání přeskočilo:} many {Index Cmdru tyto složky zatím nepokrývá, takže je toto hledání přeskočilo:} other {Index Cmdru tyto složky zatím nepokrývá, takže je toto hledání přeskočilo:}}",
-  "@search.coverage.unresolved": {
-    "sourceHash": "6afa798"
-  },
   "search.coverage.walk.cancelled": "Toto hledání jste zastavili, takže ukazuje, co Cmdr do té doby našel. Vše, co cestou přečetl, zůstává uložené, takže další hledání naváže tam, kde přestal.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
@@ -163,14 +143,6 @@
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },
-  "search.coverage.denied": "{count, plural, one {Cmdr nedostal povolení nahlédnout do této složky, takže z ní ve výsledcích nic není:} few {Cmdr nedostal povolení nahlédnout do těchto složek, takže z nich ve výsledcích nic není:} many {Cmdr nedostal povolení nahlédnout do těchto složek, takže z nich ve výsledcích nic není:} other {Cmdr nedostal povolení nahlédnout do těchto složek, takže z nich ve výsledcích nic není:}}",
-  "@search.coverage.denied": {
-    "sourceHash": "c71fc2e"
-  },
-  "search.coverage.failedRoots": "{count, plural, one {Tuto složku se Cmdru nepodařilo otevřít, takže z ní ve výsledcích nic není:} few {Tyto složky se Cmdru nepodařilo otevřít, takže z nich ve výsledcích nic není:} many {Tyto složky se Cmdru nepodařilo otevřít, takže z nich ve výsledcích nic není:} other {Tyto složky se Cmdru nepodařilo otevřít, takže z nich ve výsledcích nic není:}}",
-  "@search.coverage.failedRoots": {
-    "sourceHash": "9b978eb"
-  },
   "search.coverage.deniedFullDiskAccess": "S plným přístupem k disku může Cmdr prohledávat i takové složky.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
@@ -178,14 +150,6 @@
   "search.coverage.setUpFullDiskAccess": "Nastavit plný přístup k disku",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
-  },
-  "search.coverage.declined": "{count, plural, one {Cmdr do složek se snímky nenahlíží, takže z této složky ve výsledcích nic není:} few {Cmdr do složek se snímky nenahlíží, takže z těchto složek ve výsledcích nic není:} many {Cmdr do složek se snímky nenahlíží, takže z těchto složek ve výsledcích nic není:} other {Cmdr do složek se snímky nenahlíží, takže z těchto složek ve výsledcích nic není:}}",
-  "@search.coverage.declined": {
-    "sourceHash": "85465f3"
-  },
-  "search.coverage.stillCovering": "{count, plural, one {Tuto složku právě prochází jiné hledání, takže se její soubory za chvíli objeví:} few {Tyto složky právě prochází jiné hledání, takže se jejich soubory za chvíli objeví:} many {Tyto složky právě prochází jiné hledání, takže se jejich soubory za chvíli objeví:} other {Tyto složky právě prochází jiné hledání, takže se jejich soubory za chvíli objeví:}}",
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "toto umístění",
   "@search.coverage.unnamedDrive": {

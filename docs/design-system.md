@@ -925,8 +925,20 @@ body is one Tab away as well as one hover, which a native `title` never manages.
 `radio-row` is for a `RadioGroup`'s `itemTrailing` slot, where the row is taller than one line and the glyph belongs on
 the label's line. Details and the geometry it assumes: `apps/desktop/src/lib/ui/DETAILS.md` § InfoTip.
 
+`tone` picks the glyph by whether the thing it explains asks anything of the reader: `info` (the default ⓘ) for context
+they may skip, `warning` (`triangle-alert` in `--color-warning-text`) when there's something to act on, like a
+permission they could grant. It isn't a severity scale. The search coverage note's lines are the reference caller: a
+refused folder warns while Full Disk Access is on offer and drops to ⓘ once it isn't.
+
 `cmdr/prefer-ui-primitive` enforces this: a `<button>` whose only meaningful child is `<Icon name="info">` is an
 `InfoTip`, whatever class it wears.
+
+### Copy button (app)
+
+`CopyButton.svelte` is the quiet, icon-only Copy: a 12px `copy` glyph in an 18px bare button, tertiary at rest and
+tinted on hover, that puts `text` on the clipboard and shows a `check` for two seconds. `label` says WHAT it copies and
+is both the accessible name and the hover hint. Reach for it beside a line that only summarizes the text it copies (the
+search coverage note's folder lists); a string the surface is about, shown in full, belongs in `CopyBox`.
 
 ### Status glyph (app)
 

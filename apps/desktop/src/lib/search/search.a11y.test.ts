@@ -146,13 +146,13 @@ describe('CoverageNote a11y', () => {
 
   it('the uncovered note with its offer has no violations', async () => {
     const target = mountNote(UNCOVERED, () => {})
-    expect(target.querySelector('.coverage-note button')).not.toBeNull()
+    expect(target.querySelector('.coverage-note .actions button')).not.toBeNull()
     await expectNoA11yViolations(target)
   })
 
   it('the note without an offer (a silenced drive) has no violations', async () => {
     const target = mountNote(UNCOVERED, null)
-    expect(target.querySelector('.coverage-note button')).toBeNull()
+    expect(target.querySelector('.coverage-note .actions button')).toBeNull()
     await expectNoA11yViolations(target)
   })
 
@@ -161,6 +161,29 @@ describe('CoverageNote a11y', () => {
       { uncoveredScopes: [], unresolvedScopes: ['/Users/test/gone', '/Users/test/also-gone'], volumeId: 'root' },
       null,
     )
+    await expectNoA11yViolations(target)
+  })
+
+  it('a live note with a warning line, an info line, and their folder tips has no violations', async () => {
+    const target = mountNote(
+      {
+        uncoveredScopes: [],
+        unresolvedScopes: [],
+        volumeId: 'root',
+        live: {
+          walk: 'completed',
+          permissionDenied: ['/Users/test/Library/Mail'],
+          offLimits: Array.from({ length: 18 }, (_, i) => `/System/Library/AssetsV2/f${String(i)}`),
+          declined: [],
+          stillCovering: [],
+          abandonedGround: false,
+          abandonedLocations: 0,
+          failedRoots: [],
+        },
+      },
+      null,
+    )
+    expect(target.querySelectorAll('.coverage-line')).toHaveLength(2)
     await expectNoA11yViolations(target)
   })
 

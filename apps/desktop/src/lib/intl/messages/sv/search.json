@@ -127,26 +127,6 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
-  "search.coverage.uncovered.local": "Cmdr har inte indexerat {drive} än, så den här sökningen hoppade över:",
-  "@search.coverage.uncovered.local": {
-    "sourceHash": "8fe8ce1"
-  },
-  "search.coverage.uncovered.network": "Cmdr indexerar bara nätverksenheter när du ber om det, så den här sökningen hoppade över:",
-  "@search.coverage.uncovered.network": {
-    "sourceHash": "0066012"
-  },
-  "search.coverage.uncovered.unavailable": "Cmdr kan inte söka i {drive} än, så den här sökningen hoppade över:",
-  "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "6f9cb5b"
-  },
-  "search.coverage.uncovered.indexing": "Cmdr indexerar fortfarande {drive} och har inte nått de här mapparna än, så den här sökningen hoppade över dem:",
-  "@search.coverage.uncovered.indexing": {
-    "sourceHash": "9cf6003"
-  },
-  "search.coverage.unresolved": "{count, plural, one {Cmdrs index täcker inte den här mappen än, så sökningen hoppade över den:} other {Cmdrs index täcker inte de här mapparna än, så sökningen hoppade över dem:}}",
-  "@search.coverage.unresolved": {
-    "sourceHash": "6afa798"
-  },
   "search.coverage.walk.cancelled": "Du stoppade den här sökningen, så du ser vad Cmdr hade hunnit hitta. Allt som lästes på vägen är sparat, så en ny sökning fortsätter därifrån.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
@@ -163,14 +143,6 @@
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },
-  "search.coverage.denied": "{count, plural, one {Cmdr fick inte titta in i den här mappen, så inget därifrån finns bland resultaten:} other {Cmdr fick inte titta in i de här mapparna, så inget därifrån finns bland resultaten:}}",
-  "@search.coverage.denied": {
-    "sourceHash": "c71fc2e"
-  },
-  "search.coverage.failedRoots": "{count, plural, one {Cmdr kunde inte öppna den här mappen, så inget därifrån finns bland resultaten:} other {Cmdr kunde inte öppna de här mapparna, så inget därifrån finns bland resultaten:}}",
-  "@search.coverage.failedRoots": {
-    "sourceHash": "9b978eb"
-  },
   "search.coverage.deniedFullDiskAccess": "Med full skivtillgång kan Cmdr söka i sådana mappar också.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
@@ -178,14 +150,6 @@
   "search.coverage.setUpFullDiskAccess": "Ställ in full skivtillgång",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
-  },
-  "search.coverage.declined": "{count, plural, one {Cmdr tittar med flit inte in i ögonblicksbildsmappar, så inget därifrån finns bland resultaten:} other {Cmdr tittar med flit inte in i ögonblicksbildsmappar, så inget därifrån finns bland resultaten:}}",
-  "@search.coverage.declined": {
-    "sourceHash": "85465f3"
-  },
-  "search.coverage.stillCovering": "{count, plural, one {En annan sökning går igenom den här mappen just nu, så dess filer dyker upp strax:} other {En annan sökning går igenom de här mapparna just nu, så deras filer dyker upp strax:}}",
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "den här enheten",
   "@search.coverage.unnamedDrive": {

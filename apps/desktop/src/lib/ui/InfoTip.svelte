@@ -38,9 +38,16 @@
          *   `RadioGroup`'s.
          */
         align?: 'inline' | 'radio-row'
+        /**
+         * What the glyph says before anyone opens it. `info` (the default, ⓘ) for context
+         * the reader may skip; `warning` (a triangle, in the warning color) when the thing
+         * it explains asks something of them, like a permission they could grant. ❌ Not a
+         * severity scale: pick by whether there's anything to act on.
+         */
+        tone?: 'info' | 'warning'
     }
 
-    const { label, text, children, size = 14, align = 'inline' }: Props = $props()
+    const { label, text, children, size = 14, align = 'inline', tone = 'info' }: Props = $props()
 
     /**
      * The tooltip adopts THIS element, never the `hidden` wrapper around it: an adopted
@@ -56,10 +63,11 @@
     type="button"
     class="info-tip"
     class:radio-row={align === 'radio-row'}
+    class:warning={tone === 'warning'}
     aria-label={label}
     use:tooltip={param}
 >
-    <Icon name="info" {size} aria-hidden="true" />
+    <Icon name={tone === 'warning' ? 'triangle-alert' : 'info'} {size} aria-hidden="true" />
 </button>
 {#if children}
     <div hidden>
@@ -107,6 +115,13 @@
 
     .info-tip:hover {
         color: var(--color-text-primary);
+    }
+
+    /* The darker text variant, not the brand `--color-warning`: it holds the non-text
+       contrast floor on the tinted surfaces a warning glyph tends to sit on. */
+    .info-tip.warning,
+    .info-tip.warning:hover {
+        color: var(--color-warning-text);
     }
 
     .info-tip:focus-visible {

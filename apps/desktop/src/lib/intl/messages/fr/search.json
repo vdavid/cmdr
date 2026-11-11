@@ -127,26 +127,6 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
-  "search.coverage.uncovered.local": "Cmdr n’a pas encore indexé {drive}, cette recherche a donc ignoré :",
-  "@search.coverage.uncovered.local": {
-    "sourceHash": "8fe8ce1"
-  },
-  "search.coverage.uncovered.network": "Cmdr n’indexe les disques réseau que si vous le demandez, cette recherche a donc ignoré :",
-  "@search.coverage.uncovered.network": {
-    "sourceHash": "0066012"
-  },
-  "search.coverage.uncovered.unavailable": "Cmdr ne peut pas encore rechercher dans {drive}, cette recherche a donc ignoré :",
-  "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "6f9cb5b"
-  },
-  "search.coverage.uncovered.indexing": "Cmdr indexe encore {drive} et n’a pas encore atteint ces dossiers, donc cette recherche les a ignorés :",
-  "@search.coverage.uncovered.indexing": {
-    "sourceHash": "9cf6003"
-  },
-  "search.coverage.unresolved": "{count, plural, one {L’index de Cmdr ne couvre pas encore ce dossier, la recherche l’a donc ignoré :} many {L’index de Cmdr ne couvre pas encore ces dossiers, la recherche les a donc ignorés :} other {L’index de Cmdr ne couvre pas encore ces dossiers, la recherche les a donc ignorés :}}",
-  "@search.coverage.unresolved": {
-    "sourceHash": "6afa798"
-  },
   "search.coverage.walk.cancelled": "Vous avez arrêté cette recherche, vous voyez donc ce que Cmdr avait trouvé jusque-là. Tout ce qu’il a lu en chemin est conservé, et une nouvelle recherche repart de là.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
@@ -163,14 +143,6 @@
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },
-  "search.coverage.denied": "{count, plural, one {Cmdr n’a pas eu l’autorisation de regarder dans ce dossier, rien de son contenu n’est donc dans les résultats :} many {Cmdr n’a pas eu l’autorisation de regarder dans ces dossiers, rien de leur contenu n’est donc dans les résultats :} other {Cmdr n’a pas eu l’autorisation de regarder dans ces dossiers, rien de leur contenu n’est donc dans les résultats :}}",
-  "@search.coverage.denied": {
-    "sourceHash": "c71fc2e"
-  },
-  "search.coverage.failedRoots": "{count, plural, one {Cmdr n’a pas pu ouvrir ce dossier, rien de son contenu n’est donc dans les résultats :} many {Cmdr n’a pas pu ouvrir ces dossiers, rien de leur contenu n’est donc dans les résultats :} other {Cmdr n’a pas pu ouvrir ces dossiers, rien de leur contenu n’est donc dans les résultats :}}",
-  "@search.coverage.failedRoots": {
-    "sourceHash": "9b978eb"
-  },
   "search.coverage.deniedFullDiskAccess": "Avec l’accès complet au disque, Cmdr peut chercher dans des dossiers comme ceux-ci.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
@@ -178,14 +150,6 @@
   "search.coverage.setUpFullDiskAccess": "Configurer l’accès complet au disque",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
-  },
-  "search.coverage.declined": "{count, plural, one {Cmdr ne regarde pas dans les dossiers d’instantanés, exprès, rien de son contenu n’est donc dans les résultats :} many {Cmdr ne regarde pas dans les dossiers d’instantanés, exprès, rien de leur contenu n’est donc dans les résultats :} other {Cmdr ne regarde pas dans les dossiers d’instantanés, exprès, rien de leur contenu n’est donc dans les résultats :}}",
-  "@search.coverage.declined": {
-    "sourceHash": "85465f3"
-  },
-  "search.coverage.stillCovering": "{count, plural, one {Une autre recherche parcourt ce dossier en ce moment, ses fichiers arriveront donc dans un instant :} many {Une autre recherche parcourt ces dossiers en ce moment, leurs fichiers arriveront donc dans un instant :} other {Une autre recherche parcourt ces dossiers en ce moment, leurs fichiers arriveront donc dans un instant :}}",
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "ce disque",
   "@search.coverage.unnamedDrive": {

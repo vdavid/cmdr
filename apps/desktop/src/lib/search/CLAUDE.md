@@ -38,9 +38,9 @@ menu facts). `search-state.svelte.ts` is the façade over these, `searchable-fol
   `scope` state, or every recent search bakes in a machine-specific one.
 - **Enter walks; auto-apply doesn't** (Decision 7). `streamingSource` takes every user-triggered run; the debounce takes
   `runQuery`, the only path reporting a drive with no index, so the uncovered note lives there.
-- **Unread ground arrives as TWO typed lists**: `permissionDenied` offers the FDA route (macOS, only when Cmdr lacks
-  it), `declined` ❌ never does. `walk: completed` isn't exhaustive (`abandonedGround` is a third way to come up short);
-  `rankLiveResults` is ORDERING, not membership.
+- **Unread ground is typed**: only `permissionDenied` (TCC) offers FDA; `offLimits` and `declined` ❌ never, yet stay
+  shown. Each list is ONE `CoverageLine` (DETAILS § The coverage note). `walk: completed` isn't exhaustive
+  (`abandonedGround`); `rankLiveResults` is ORDERING, not membership.
 - **The index-load hint waits 500 ms, then yields**: its only input is `pendingIndexVolumeId` (so a drive with no index
   never opens it), and `hasSearched` hands the wait to `QueryResults`.
 - **One volume per search, and ONE prop names it**: `searchVolume` drives the readiness gate, the coverage voice, and

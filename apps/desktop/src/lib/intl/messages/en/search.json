@@ -220,48 +220,129 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
-  "search.coverage.uncovered.local": "Cmdr hasn’t indexed {drive} yet, so this search skipped:",
-  "@search.coverage.uncovered.local": {
-    "description": "Note above the search results when the search covered a local drive that has no index, so it had nothing to look through. A list of the skipped folder paths follows the colon, which is why the sentence ends open. Conversational; avoid the words 'error' and 'failed'.",
+  "search.coverage.line.failedRoots": "{count, plural, one {Cmdr couldn’t open one folder, so nothing from it is in the results.} other {Cmdr couldn’t open {countText} folders, so nothing from them is in the results.}}",
+  "@search.coverage.line.failedRoots": {
+    "description": "Note above the search results about folders Cmdr tried to look through and couldn't open, while the drive itself was still reachable (for example, the network drive didn't recognize that folder name, or the folder was removed a moment ago). Their contents are missing from the results, so an empty list doesn't mean nothing matched. Searching again tries them again. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
     "placeholders": {
-      "drive": "the drive's display name (e.g. Macintosh HD), or the generic phrase from search.coverage.unnamedDrive when the drive isn't mounted any more"
+      "count": "how many folders, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (for example 1,497)"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
-  "search.coverage.uncovered.network": "Cmdr doesn’t index network drives unless you ask, so this search skipped:",
-  "@search.coverage.uncovered.network": {
-    "description": "The network-drive version of search.coverage.uncovered.local, shown when the search covered a network share with no index. It explains that this is by design rather than nudging the user to index, because indexing a network drive is deliberately opt-in. A list of the skipped folder paths follows the colon.",
+  "search.coverage.line.denied": "{count, plural, one {macOS didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {macOS didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}",
+  "@search.coverage.line.denied": {
+    "description": "Note above the search results about folders macOS's privacy protection kept Cmdr out of, so their contents are missing from the results. These are the ones Full Disk Access opens: when Cmdr doesn't have that permission yet, the offer below (search.coverage.deniedFullDiskAccess) follows. 'macOS' is the operating system's name and stays as-is. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
     "placeholders": {
-      "drive": "unused here, but available so both variants take the same parameters"
+      "count": "how many folders, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (for example 1,497)"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
-  "search.coverage.uncovered.unavailable": "Cmdr can’t search {drive} yet, so this search skipped:",
-  "@search.coverage.uncovered.unavailable": {
-    "description": "The server version of search.coverage.uncovered.local, shown when the search was started from a server Cmdr reaches over SFTP or WebDAV. Search works by reading a drive index, and Cmdr can't build one for a server yet, so unlike the other variants there's nothing to turn on and pressing Enter won't help: no offer appears with it. It says plainly that search isn't available there, not that anything went wrong. A list of the skipped folder paths follows the colon, which is why the sentence ends open. Avoid the words 'error' and 'failed'.",
+  "search.coverage.line.offLimits": "{count, plural, one {The system keeps one folder closed to Cmdr, so nothing from it is in the results.} other {The system keeps {countText} folders closed to Cmdr, so nothing from them is in the results.}}",
+  "@search.coverage.line.offLimits": {
+    "description": "Note above the search results about folders the operating system never lets Cmdr read, whatever the user grants it: folders only the system or another user account may open, and folders macOS protects for itself. Nothing for the user to fix, so this one explains rather than offers, and it must not suggest a permission or a setting. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
     "placeholders": {
-      "drive": "the server's display name (e.g. nas.local), or the generic phrase from search.coverage.unnamedDrive when it isn't in the volume list"
+      "count": "how many folders, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (for example 1,497)"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
-  "search.coverage.uncovered.indexing": "Cmdr is still indexing {drive} and hasn’t reached these folders yet, so this search skipped:",
-  "@search.coverage.uncovered.indexing": {
-    "description": "The still-being-indexed version of search.coverage.uncovered.local, shown when the drive's very first index is running right now and hasn't got to the folder searched in. It replaces the “this drive isn’t indexed” wording, which would read as nothing happening while indexing is under way, and no “Index this drive” offer appears with it. A list of the skipped folder paths follows the colon, which is why the sentence ends open. Conversational; avoid the words 'error' and 'failed'.",
+  "search.coverage.line.declined": "{count, plural, one {Cmdr doesn’t look inside snapshot folders, so one is left out of the results.} other {Cmdr doesn’t look inside snapshot folders, so {countText} are left out of the results.}}",
+  "@search.coverage.line.declined": {
+    "description": "Note above the search results about snapshot folders on a network drive, which Cmdr never looks inside on purpose: their contents are copies of files it has already seen, and one such folder can report several times the drive's real size. There is nothing for the user to fix, so this one explains rather than offers. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
     "placeholders": {
-      "drive": "the drive's display name (e.g. Macintosh HD), or the generic phrase from search.coverage.unnamedDrive"
+      "count": "how many folders, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (for example 1,497)"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
-  "search.coverage.unresolved": "{count, plural, one {Cmdr’s index doesn’t cover this folder yet, so this search skipped it:} other {Cmdr’s index doesn’t cover these folders yet, so this search skipped them:}}",
-  "@search.coverage.unresolved": {
-    "description": "Note above the search results when the drive IS indexed but the folder searched in isn't in that index yet (a partly indexed drive, or a path that no longer exists). It deliberately says what Cmdr knows rather than claiming the folder doesn't exist, because both cases look the same from the index. A list of the skipped folder paths follows the colon.",
+  "search.coverage.line.stillCovering": "{count, plural, one {Another search is going through one folder right now, so its files will turn up in a moment.} other {Another search is going through {countText} folders right now, so their files will turn up in a moment.}}",
+  "@search.coverage.line.stillCovering": {
+    "description": "Note above the search results when a second search is already reading the same folders, so this one left them to it. The files aren't lost: the other search saves what it reads, so a repeat search a moment later includes them. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all.",
     "placeholders": {
-      "count": "how many folder paths were skipped, driving the singular/plural choice"
+      "count": "how many folders, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (for example 1,497)"
     },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
+  "search.coverage.line.unresolved": "{count, plural, one {Cmdr’s index doesn’t cover one folder yet, so this search skipped it.} other {Cmdr’s index doesn’t cover {countText} folders yet, so this search skipped them.}}",
+  "@search.coverage.line.unresolved": {
+    "description": "Note above the search results when the drive IS indexed but the folder searched in isn't in that index yet (a partly indexed drive, or a path that no longer exists). It deliberately says what Cmdr knows rather than claiming the folder doesn't exist, because both cases look the same from the index. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all.",
+    "placeholders": {
+      "count": "how many folders, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (for example 1,497)"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
+  "search.coverage.line.uncovered.local": "{count, plural, one {Cmdr hasn’t indexed {drive} yet, so this search skipped one folder.} other {Cmdr hasn’t indexed {drive} yet, so this search skipped {countText} folders.}}",
+  "@search.coverage.line.uncovered.local": {
+    "description": "Note above the search results when the search covered a local drive that has no index, so it had nothing to look through. Conversational. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "count": "how many folders, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (for example 1,497)",
+      "drive": "the drive's display name (for example Macintosh HD), or the generic phrase from search.coverage.unnamedDrive when the drive isn't mounted any more"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
+  "search.coverage.line.uncovered.network": "{count, plural, one {Cmdr doesn’t index network drives unless you ask, so this search skipped one folder.} other {Cmdr doesn’t index network drives unless you ask, so this search skipped {countText} folders.}}",
+  "@search.coverage.line.uncovered.network": {
+    "description": "The network-drive version of search.coverage.line.uncovered.local, shown when the search covered a network share with no index. It explains that this is by design rather than nudging the user to index, because indexing a network drive is deliberately opt-in. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all.",
+    "placeholders": {
+      "count": "how many folders, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (for example 1,497)",
+      "drive": "unused here, but available so every variant takes the same parameters"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
+  "search.coverage.line.uncovered.unavailable": "{count, plural, one {Cmdr can’t search {drive} yet, so this search skipped one folder.} other {Cmdr can’t search {drive} yet, so this search skipped {countText} folders.}}",
+  "@search.coverage.line.uncovered.unavailable": {
+    "description": "The server version of search.coverage.line.uncovered.local, shown when the search was started from a server Cmdr reaches over SFTP or WebDAV. Search works by reading a drive index, and Cmdr can't build one for a server yet, so unlike the other variants there's nothing to turn on and pressing Enter won't help: no offer appears with it. It says plainly that search isn't available there, not that anything went wrong. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "count": "how many folders, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (for example 1,497)",
+      "drive": "the server's display name (for example nas.local), or the generic phrase from search.coverage.unnamedDrive when it isn't in the volume list"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr is still indexing {drive} and hasn’t reached one folder yet, so this search skipped it.} other {Cmdr is still indexing {drive} and hasn’t reached {countText} folders yet, so this search skipped them.}}",
+  "@search.coverage.line.uncovered.indexing": {
+    "description": "The still-being-indexed version of search.coverage.line.uncovered.local, shown when the drive's very first index is running right now and hasn't got to the folder searched in. It replaces the 'this drive isn't indexed' wording, which would read as nothing happening while indexing is under way, and no 'Index this drive' offer appears with it. Conversational. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
+    "placeholders": {
+      "count": "how many folders, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators (for example 1,497)",
+      "drive": "the drive's display name (for example Macintosh HD), or the generic phrase from search.coverage.unnamedDrive"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
+  "search.coverage.list.show": "Show the folders",
+  "@search.coverage.list.show": {
+    "description": "Screen-reader name of the small icon at the start of a coverage-note line (a warning triangle or an info circle). Focusing or hovering it shows a numbered list of the folders that line is about. Short; it's never shown as visible text.",
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
+  "search.coverage.list.more": "{count, plural, one {+{countText} more} other {+{countText} more}}",
+  "@search.coverage.list.more": {
+    "description": "The last line of the numbered folder list in a coverage-note tooltip, when there are more folders than the tooltip shows (it shows 15). Says how many are left out; the copy button beside the icon copies them all. Very short.",
+    "placeholders": {
+      "count": "how many folders the tooltip leaves out, driving the singular/plural choice",
+      "countText": "the same number, already formatted with thousands separators"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
+  },
+  "search.coverage.list.copy": "Copy the full list of folders",
+  "@search.coverage.list.copy": {
+    "description": "Hover hint and screen-reader name of the small copy button at the end of a coverage-note line. Pressing it copies every folder path that line is about, one per line, including the ones the tooltip leaves out.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
@@ -298,24 +379,6 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
-  "search.coverage.denied": "{count, plural, one {Cmdr wasn’t allowed to look inside this folder, so nothing from it is in the results:} other {Cmdr wasn’t allowed to look inside these folders, so nothing from them is in the results:}}",
-  "@search.coverage.denied": {
-    "description": "Note above the search results listing folders the app was refused access to, so their contents are missing from the results. A list of the folder paths follows the colon. On macOS this is usually the Full Disk Access permission, and when the app doesn't have it the offer below (search.coverage.deniedFullDiskAccess) follows. Avoid the words 'error' and 'failed'.",
-    "placeholders": {
-      "count": "how many folders were refused, driving the singular/plural choice"
-    },
-    "screenshot": "search-dialog.png",
-    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
-  },
-  "search.coverage.failedRoots": "{count, plural, one {Cmdr couldn’t open this folder, so nothing from it is in the results:} other {Cmdr couldn’t open these folders, so nothing from them is in the results:}}",
-  "@search.coverage.failedRoots": {
-    "description": "Note above the search results listing folders Cmdr tried to look through and couldn't open, while the drive itself was still reachable (for example, the network drive didn't recognize that folder name, or the folder was removed a moment ago). Their contents are missing from the results, so an empty list doesn't mean nothing matched. A list of the folder paths follows the colon. Searching again tries them again. Avoid the words 'error' and 'failed'.",
-    "placeholders": {
-      "count": "how many folders couldn't be opened, driving the singular/plural choice"
-    },
-    "screenshot": "search-dialog.png",
-    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
-  },
   "search.coverage.deniedFullDiskAccess": "With full disk access, Cmdr can search folders like these.",
   "@search.coverage.deniedFullDiskAccess": {
     "description": "Line under the list of refused folders, shown only on macOS and only when Cmdr doesn't have Full Disk Access yet. It says what would open them, and the button below it (search.coverage.setUpFullDiskAccess) goes to the setup. 'Full disk access' is the macOS permission; use the system's own wording for it in your language.",
@@ -327,24 +390,6 @@
   "@search.coverage.setUpFullDiskAccess": {
     "description": "Button under the refused folders that opens Cmdr's Full Disk Access setup (the same page the first-run setup shows). Short: it renders as a small button. 'Full disk access' is the macOS permission; use the system's own wording for it in your language.",
     "placeholders": {},
-    "screenshot": "search-dialog.png",
-    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
-  },
-  "search.coverage.declined": "{count, plural, one {Cmdr doesn’t look inside snapshot folders, so nothing from this one is in the results:} other {Cmdr doesn’t look inside snapshot folders, so nothing from these is in the results:}}",
-  "@search.coverage.declined": {
-    "description": "Note above the search results listing snapshot folders on a network drive, which Cmdr never looks inside on purpose: their contents are copies of files it has already seen, and one such folder can report several times the drive's real size. A list of the folder paths follows the colon. There is nothing for the user to fix, so this one explains rather than offers. Avoid the words 'error' and 'failed'.",
-    "placeholders": {
-      "count": "how many snapshot folders were skipped, driving the singular/plural choice"
-    },
-    "screenshot": "search-dialog.png",
-    "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
-  },
-  "search.coverage.stillCovering": "{count, plural, one {Another search is going through this folder right now, so its files will turn up in a moment:} other {Another search is going through these folders right now, so their files will turn up in a moment:}}",
-  "@search.coverage.stillCovering": {
-    "description": "Note above the search results when a second search is already reading the same folders, so this one left them to it. The files aren't lost: the other search saves what it reads, so a repeat search a moment later includes them. A list of the folder paths follows the colon.",
-    "placeholders": {
-      "count": "how many folders another search is already reading, driving the singular/plural choice"
-    },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
