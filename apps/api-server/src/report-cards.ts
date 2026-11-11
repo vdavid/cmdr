@@ -132,14 +132,17 @@ export function buildPersonalComment(input: PersonalCommentInput): string | null
 }
 
 /**
- * `macOS <version>`, without doubling the prefix when the client already sent one.
+ * The OS name a card shows, from the report's `osVersion`.
  *
- * Older clients send a bare `15.3.1`, some send `macOS 10.15.8`. ERR-KVERS was titled
- * "macOS macOS 10.15.8" before this existed.
+ * Every app version sends a full name (the desktop's `platform::os_version`): `macOS 26.0`,
+ * Linux's `PRETTY_NAME` such as `Ubuntu 24.04 LTS`, else the bare `std::env::consts::OS`. Those
+ * pass through as sent. Only a bare version number, as hand-made requests and test fixtures carry,
+ * gets the `macOS` prefix. ERR-KVERS was titled "macOS macOS 10.15.8", and Linux reports
+ * "macOS Ubuntu …", while this prefixed everything.
  */
-function macOsLabel(osVersion: string): string {
+function osLabel(osVersion: string): string {
   const trimmed = osVersion.trim()
-  return /^macos\b/i.test(trimmed) ? trimmed : `macOS ${trimmed}`
+  return /^\d/.test(trimmed) ? `macOS ${trimmed}` : trimmed
 }
 
 /** The three parts of an issue, built before anything touches the network. */
@@ -210,7 +213,7 @@ export function buildErrorReportIssue(input: ErrorReportIssueInput): IssueConten
     `**Report id**: \`${input.id}\``,
     `**Kind**: ${kindLine}${input.filedFromAmendment ? ', with a note the reporter added afterwards' : ''}`,
     `**App version**: ${input.appVersion}`,
-    `**OS**: ${macOsLabel(input.osVersion)} · **Arch**: ${input.arch}`,
+    `**OS**: ${osLabel(input.osVersion)} · **Arch**: ${input.arch}`,
     `**Bundle**: ${formatBytes(input.sizeBytes)}, uploaded ${uploadedAt} UTC`,
     `**R2 key**: \`${input.r2Key}\``,
     ...(input.feedbackCard ? [`**Sent with**: the feedback on #${String(input.feedbackCard)}`] : []),
@@ -221,7 +224,7 @@ export function buildErrorReportIssue(input: ErrorReportIssueInput): IssueConten
   ].join('\n')
 
   return {
-    title: `Error report ${input.id}: ${titleKind} on ${input.appVersion} (${macOsLabel(input.osVersion)})`,
+    title: `Error report ${input.id}: ${titleKind} on ${input.appVersion} (${osLabel(input.osVersion)})`,
     body,
     labels: cardLabels('error-report', input.email),
   }
@@ -270,7 +273,7 @@ export function buildCrashIssue(input: CrashIssueInput): IssueContent {
     `**What happened**: ${fateLine}`,
     `**Where**: \`${input.topFunction}\` · **Signal**: ${input.signal}`,
     `**App version**: ${input.appVersion}`,
-    `**OS**: ${macOsLabel(input.osVersion)} · **Arch**: ${input.arch}`,
+    `**OS**: ${osLabel(input.osVersion)} · **Arch**: ${input.arch}`,
     `**Reported**: ${input.createdAt.replace('T', ' ').slice(0, 16)} UTC`,
   ]
   if (input.panicMessage) lines.push('', '**Panic message**', '', fencedBlock(input.panicMessage))
@@ -290,7 +293,7 @@ export function buildCrashIssue(input: CrashIssueInput): IssueContent {
   )
 
   return {
-    title: `${what}${idPart} in ${clip(input.topFunction, 80)} (${input.signal}) on ${input.appVersion} (${macOsLabel(input.osVersion)})`,
+    title: `${what}${idPart} in ${clip(input.topFunction, 80)} (${input.signal}) on ${input.appVersion} (${osLabel(input.osVersion)})`,
     body: truncate(lines.join('\n'), SAFE_TEXT_BUDGET),
     labels: cardLabels('crash-report', input.email),
   }
@@ -340,7 +343,7 @@ export function buildFeedbackIssue(input: FeedbackIssueInput): IssueContent {
   const body = [
     `**Feedback row**: \`${String(input.rowId)}\` in the D1 \`feedback\` table`,
     `**App version**: ${input.appVersion}`,
-    `**OS**: ${macOsLabel(input.osVersion)}`,
+    `**OS**: ${osLabel(input.osVersion)}`,
     ...feedbackLogsLines(input.logs),
     '',
     '**What they wrote**',
@@ -358,7 +361,7 @@ export function buildFeedbackIssue(input: FeedbackIssueInput): IssueContent {
   ].join('\n')
 
   return {
-    title: `Feedback #${String(input.rowId)} on ${input.appVersion} (${macOsLabel(input.osVersion)})`,
+    title: `Feedback #${String(input.rowId)} on ${input.appVersion} (${osLabel(input.osVersion)})`,
     body: truncate(body, SAFE_TEXT_BUDGET),
     labels: cardLabels('feedback', input.email),
   }
