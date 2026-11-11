@@ -3161,8 +3161,8 @@ export const commands = {
    */
   cloudAiConsentRevokePendingChanged: () => __TAURI_INVOKE<void>('cloud_ai_consent_revoke_pending_changed'),
   /**
-   *  Returns system memory breakdown using macOS `host_statistics64` for accurate,
-   *  non-overlapping categories (unlike `sysinfo` where used + available > total).
+   *  Returns the system memory breakdown, in non-overlapping categories (unlike `sysinfo`'s, where
+   *  used + available > total).
    */
   getSystemMemoryInfo: () => __TAURI_INVOKE<SystemMemoryInfo>('get_system_memory_info'),
   /**
@@ -22474,8 +22474,8 @@ export type VolumeError =
    */
   | { type: 'encryptionUnavailable'; data: string }
   /**
-   *  Anything the backend couldn't classify further. The classifier
-   *  re-dispatches on `raw_os_error` when one is present.
+   *  Anything the backend couldn't classify further. The classifiers
+   *  re-dispatch on its [`os_class`](Self::os_class) when it carries a code.
    */
   | {
       type: 'ioError'
