@@ -51,15 +51,21 @@ var icuArgumentPattern = regexp.MustCompile(`\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*[,}
 // both would just duplicate.
 var transTagPattern = regexp.MustCompile(`<([A-Za-z_][A-Za-z0-9_]*)\s*/?>`)
 
+// injectedArguments are the ICU arguments the runtime passes to EVERY format
+// call, whether or not the message names them: `platform`, which picks a
+// `{platform, select, …}` block's branch (`apps/desktop/src/lib/intl/DETAILS.md`
+// § "Platform variants"). A tag sharing one collides as a param would.
+var injectedArguments = []string{"platform"}
+
 // collidingNames returns the names used as BOTH a tag and an ICU argument in one
 // message, sorted, deduplicated. Empty when the message is well-formed.
 func collidingNames(message string) []string {
 	args := make(map[string]bool)
+	for _, name := range injectedArguments {
+		args[name] = true
+	}
 	for _, m := range icuArgumentPattern.FindAllStringSubmatch(message, -1) {
 		args[m[1]] = true
-	}
-	if len(args) == 0 {
-		return nil
 	}
 
 	seen := make(map[string]bool)

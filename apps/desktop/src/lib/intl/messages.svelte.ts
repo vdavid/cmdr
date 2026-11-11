@@ -33,7 +33,9 @@ import { inheritableAncestors } from './locale-inheritance'
 import { setDocumentLanguage } from './document-language'
 import { rememberedStartupCatalog, rememberStartupCatalog } from './startup-catalog'
 import type { MessageKey } from './keys.gen'
+import { PLATFORM_SELECT_PREFIX, pickPlatformBranch } from './platform-select'
 import { displayPath } from '#lib/utils/display-path.js'
+import { getPlatform, type Platform } from '#lib/platform/index.js'
 import enCatalog from 'virtual:cmdr-catalog/en'
 import { loaders, manifestMessages, shippedLocales } from 'virtual:cmdr-locale-manifest'
 
@@ -387,7 +389,8 @@ export function _resetCaptureForTests(): void {
 
 /**
  * The raw catalog value for `key` (RAW string, no ICU parsing), via the
- * fallback chain. Reads the version rune first so it's reactive in markup.
+ * fallback chain, with a platform block cut down to this OS's branch
+ * (`platform-select.ts`). Reads the version rune first so it's reactive in markup.
  */
 export function getMessage(key: MessageKey): string {
   // Read the rune UNCONDITIONALLY and FIRST. See the reactivity note above.
@@ -395,11 +398,17 @@ export function getMessage(key: MessageKey): string {
   localeVersion
   if (__CMDR_E2E_BUILD__ && captureActive) recordCapturedKey(key)
   const locale = getUiLocale()
-  return resolveRaw(locale, key)
+  const value = resolveRaw(locale, key)
+  return value.startsWith(PLATFORM_SELECT_PREFIX) ? pickPlatformBranch(value, getPlatform()) : value
 }
 
-/** Params accepted by `t()`: primitives, dates, or `<tag>` handler functions. */
-export type TranslationParams = Record<string, PrimitiveType | Date | FormatXMLElementFn<unknown>>
+/**
+ * Params accepted by `t()`: primitives, dates, or `<tag>` handler functions.
+ * `platform` is the runtime's to inject (`format`), so passing it is a type error.
+ */
+export type TranslationParams = Record<string, PrimitiveType | Date | FormatXMLElementFn<unknown>> & {
+  platform?: never
+}
 
 /**
  * The result of `t()`: a string for plain/interpolated messages, or an array of
@@ -438,7 +447,25 @@ export function t(key: MessageKey, params?: TranslationParams): TranslationResul
   localeVersion
   if (__CMDR_E2E_BUILD__ && captureActive) recordCapturedKey(key)
   const locale = getUiLocale()
-  return asShown(getCompiled(locale, key).format(params))
+  return format(getCompiled(locale, key), params)
+}
+
+/** One frozen `{ platform }` per platform, for the no-params call: `t()` runs per visible row in some lists. */
+const BARE_PLATFORM_PARAMS: Readonly<Record<Platform, Readonly<{ platform: Platform }>>> = Object.freeze({
+  macos: Object.freeze({ platform: 'macos' }),
+  windows: Object.freeze({ platform: 'windows' }),
+  linux: Object.freeze({ platform: 'linux' }),
+})
+
+/**
+ * The ONE format call: injects `platform`, so a `{platform, select, …}` block
+ * renders this OS's branch (Linux reads `other`). Last in the spread, so even an
+ * untyped caller can't override it. A format ARG, not part of the compiled
+ * cache's key, so a cached message serves every platform.
+ */
+function format(compiled: IntlMessageFormat, params: TranslationParams | undefined): TranslationResult {
+  const platform = getPlatform()
+  return asShown(compiled.format(params === undefined ? BARE_PLATFORM_PARAMS[platform] : { ...params, platform }))
 }
 
 /**
@@ -479,7 +506,7 @@ export function tStringIn(locale: string, key: MessageKey, params?: TranslationP
   if (unloaded !== undefined && !import.meta.env.PROD) {
     throw new Error(`tStringIn("${locale}"): the "${unloaded}" catalog is not loaded in this window`)
   }
-  const result = asShown(getCompiled(locale, key).format(params))
+  const result = format(getCompiled(locale, key), params)
   if (typeof result !== 'string') {
     throw new Error(`Message "${key}" produced rich-text output; use <Trans> or t() and read the array`)
   }

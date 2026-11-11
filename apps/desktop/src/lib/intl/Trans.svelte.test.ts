@@ -4,7 +4,8 @@
  * Svelte component, in the locale's word order, with no `{@html}` (XSS-safe by
  * construction).
  */
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, onTestFinished, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, unmount, flushSync } from 'svelte'
 import { _setCatalogForTests, _clearCompiledCacheForTests } from './messages.svelte'
 import { _setLocaleForTests } from './locale'
@@ -72,5 +73,31 @@ describe('<Trans>', () => {
     expect(button?.textContent).toBe('img onerror=alert(2)')
 
     void unmount(component)
+  })
+})
+
+describe('<Trans> with a platform block', () => {
+  it('renders the branch of the platform it runs on, its tag as a real component', () => {
+    _setCatalogForTests('en', {
+      'common.downloadsFdaHint':
+        '{platform, select, macos {Allow it in <settingsLink>System Settings</settingsLink>.} windows {Allow it in <settingsLink>Settings</settingsLink>.} other {Check your file permissions.}}',
+    })
+    _setLocaleForTests('en-US')
+    onTestFinished(withPlatform('windows'))
+
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const windows = mount(TransFixture, { target, props: { messageKey: 'common.downloadsFdaHint' } })
+    flushSync()
+    const host = target.querySelector('[data-test="trans-host"]')
+    expect(host?.textContent).toBe('Allow it in Settings.')
+    expect(host?.querySelector('button.link-button')?.textContent).toBe('Settings')
+    void unmount(windows)
+
+    withPlatform('linux')
+    const linux = mount(TransFixture, { target, props: { messageKey: 'common.downloadsFdaHint' } })
+    flushSync()
+    expect(target.querySelector('[data-test="trans-host"]')?.textContent).toBe('Check your file permissions.')
+    void unmount(linux)
   })
 })

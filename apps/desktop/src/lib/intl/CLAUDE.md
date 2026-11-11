@@ -9,7 +9,7 @@ Two locale sources: the UI LANGUAGE for catalog text and numbers, the OS REGION 
   both, `_setFormatLocaleForTests` splits them.
 - `os-locales.ts`: the OS's two answers. `loadSystemLocales()` fetches the Rust pair per window, `pickUiLocale(setting)`
   maps the language half (`null` = no override), `watchSystemLocales()` follows a live change.
-- `language-analytics.ts`: language events (shipped tags only), fired off the PICK, never a subscription
+- `language-analytics.ts`: language events, fired off the PICK, never a subscription
   (`src-tauri/src/analytics/DETAILS.md`).
 - `number-format.ts`: the memoized `getNumberFormatter`, `formatInteger`, `formatCompactCount`, `formatMoney`,
   `getGroupSeparator`. `list-format.ts`: joins (and, or, unit); `createListFormat`, the sole `Intl.ListFormat` door
@@ -27,25 +27,24 @@ Two locale sources: the UI LANGUAGE for catalog text and numbers, the OS REGION 
 ## Must-knows
 
 - **`t()`/`getMessage()` MUST read the locale-version rune FIRST, before any cache lookup**, or `{t('key')}` won't
-  re-run on a language change. `setLocale()` bumps it, `_setLocaleForTests` doesn't, and `state_referenced_locally` is
-  suppressed: `messages.svelte.test.ts`'s reactivity test is the only guard.
-
+  re-run on a language change. `state_referenced_locally` is suppressed: `messages.svelte.test.ts`'s reactivity test is
+  the only guard.
 - **A window holds `en` + its language's catalogs; the rest load on demand** (`scripts/vite-locale-catalogs.ts`).
   `setLocale()` loads, THEN switches in one step; latest call wins. `test-setup.ts` preloads all; a `vi.resetModules()`
   test must await. Text from EVERY language: the manifest (`manifestMessage`).
 - **❌ The runtime never imports the logger or `#lib/settings`**: boot hands them in (`DETAILS.md` § Tests).
-- **Locale dirs come from the plugin's `listLocales()` alone**, keeping `screenshots/` out. ❌ No second discovery path.
+- **Locale dirs come from the plugin's `listLocales()` alone** (keeps `screenshots/` out).
 - **❌ A fallback never crosses a SCRIPT boundary**, so `zh-Hant` skips Simplified `zh` and lands on English. Go through
   `inheritableAncestors()`, as the checks and Rust do. Regional fallback (`pt-PT` → `pt`) must keep working:
   `DETAILS.md`.
-- **Picker labels take the WHOLE shipped list** (`zh` is `简体中文` only beside `zh-Hant`). ❌ Never decorate
-  unconditionally.
+- **Picker labels take the WHOLE shipped list** (`zh` is `简体中文` only beside `zh-Hant`).
 - **Both locale answers come from Rust, ❌ never the webview tag**, which drops the region override. Go through
-  `pickUiLocale()`; secondary windows call `initWindowLanguageSync()` (`routes/window-route-coverage.test.ts`).
-  `watchSystemLocales()` takes ONE subscriber per window: hang new reactions off it. Depth: `DETAILS.md`,
-  `apps/desktop/src-tauri/src/intl/DETAILS.md`.
+  `pickUiLocale()`; secondary windows call `initWindowLanguageSync()`. `watchSystemLocales()` takes ONE subscriber per
+  window: hang new reactions off it. Depth: `apps/desktop/src-tauri/src/intl/DETAILS.md`.
 - **Error copy uses `getMessage()` (raw), NOT `t()`/ICU**: its `{system_settings}` tokens and `esc()` entities collide
   with ICU. Only plural/select sentences use `t()`.
+- **Per-OS copy is one whole-value `{platform, select, …}` block**: `t()` injects `platform`, `getMessage()` splits
+  (`platform-select.ts`). Vitest runs as Linux. `DETAILS.md` § Platform variants.
 - **`<Trans>` renders tag content via a zero-arg `{#snippet content()}`** (snippets aren't callable:
   `invalid_snippet_arguments`). No `{@html}`, so XSS-safe. An unmatched tag renders NOTHING (`i18n-trans-snippets`).
 - **Only the runtime writes `<html lang>`** (`setLocale()` and the startup catalog), with the RESOLVED catalog tag
@@ -56,7 +55,7 @@ Two locale sources: the UI LANGUAGE for catalog text and numbers, the OS REGION 
 - **Format ONLY through this layer + `#lib/settings/format-utils`** (`formatInteger`/`formatNumber`,
   `formatSizeForDisplay`, `formatDateForDisplay`). ❌ Never hardcode a locale or build an `Intl` formatter in feature
   code (`cmdr/no-raw-locale-format`).
-- **Both readers stay SSR-safe and uncached** (a cache here would hide a switch), but **keep `Intl` formatters memoized
-  by (locale, options)**: they run per visible row, so per-call construction regresses scroll.
+- **Both readers stay SSR-safe and uncached** (a cache would hide a switch), but **memoize `Intl` formatters by (locale,
+  options)**: they run per visible row.
 
 Depth (runtime, catalog loading, ICU split, `'system'`, language vs region, grouping, titles): `DETAILS.md`.

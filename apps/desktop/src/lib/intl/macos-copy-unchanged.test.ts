@@ -25,6 +25,7 @@ import { IntlMessageFormat } from 'intl-messageformat'
 import { describe, expect, it } from 'vitest'
 
 import { isRawKey } from '../../../scripts/i18n-catalog-lib.ts'
+import { pickPlatformBranch } from './platform-select'
 import {
   BASELINE_RELATIVE_PATH,
   desktopPath,
@@ -41,15 +42,15 @@ const ACCEPTED_ENGLISH_CHANGES: Readonly<Partial<Record<string, string>>> = {
 
 /**
  * The 14 `.mac`/`.other` pairs and the key each folds into. The survivor names
- * the UI concept without the OS suffix; the menu pair keeps `showInFileManager`
- * (lead ruling). Renaming a survivor when the pairs collapse updates this map,
+ * the UI concept without the OS suffix; the two Show-in-Finder pairs survive as
+ * `showInFileManager` (lead ruling). Renaming a survivor when the pairs collapse updates this map,
  * never the baseline.
  */
 const COLLAPSED_PAIRS: readonly { mac: string; other: string; survivor: string }[] = [
   {
     mac: 'commands.fileShowInFinder.mac.label',
     other: 'commands.fileShowInFinder.other.label',
-    survivor: 'commands.fileShowInFinder.label',
+    survivor: 'commands.fileShowInFileManager.label',
   },
   {
     mac: 'commands.fileGetInfo.mac.label',
@@ -98,16 +99,15 @@ const COLLAPSED_PAIRS: readonly { mac: string; other: string; survivor: string }
   { mac: 'menu.file.showInFinder', other: 'menu.file.showInFileManager', survivor: 'menu.file.showInFileManager' },
 ]
 
-const PLATFORM_BLOCK_PREFIX = '{platform, select,'
-
 const baseline = JSON.parse(readFileSync(desktopPath(BASELINE_RELATIVE_PATH), 'utf8')) as MacosCopyBaseline
 
-/** The text macOS reads from a catalog value. */
-function macosBranch(locale: string, key: string, value: string): string {
-  if (value.startsWith(PLATFORM_BLOCK_PREFIX)) {
-    throw new Error(`${locale} ${key} is a platform block: read its macOS branch with \`pickPlatformBranch\` here`)
-  }
-  return value
+/**
+ * The text macOS reads from a catalog value: a block's `macos` branch, or `other`
+ * where the block has none. A value that starts like a block but doesn't split
+ * comes back whole, so it shows as drift.
+ */
+function macosBranch(value: string): string {
+  return pickPlatformBranch(value, 'macos')
 }
 
 /** Whether two values render the same: ICU by AST, raw by text. */
@@ -146,7 +146,7 @@ function macosCopyDrift(): string[] {
         drift.push(`${locale} ${pair.mac}: gone, and its survivor ${pair.survivor} doesn't exist`)
         continue
       }
-      const actual = macosBranch(locale, pair.survivor, survivor.value)
+      const actual = macosBranch(survivor.value)
       if (!rendersSame(pair.survivor, expectedValues[pair.mac], actual)) {
         drift.push(
           `${locale} ${pair.survivor} (was ${pair.mac}): ${JSON.stringify(expectedValues[pair.mac])} → ${JSON.stringify(actual)}`,
@@ -161,7 +161,7 @@ function macosCopyDrift(): string[] {
         drift.push(`${locale} ${key}: gone`)
         continue
       }
-      const actual = macosBranch(locale, key, resolved.value)
+      const actual = macosBranch(resolved.value)
       if (rendersSame(key, expected, actual)) continue
       const accepted = ACCEPTED_ENGLISH_CHANGES[key]
       if (accepted !== undefined && resolved.from === 'en' && actual === accepted) continue

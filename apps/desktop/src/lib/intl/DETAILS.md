@@ -19,7 +19,8 @@ resolves user-facing text from JSON catalogs under `messages/<locale>/`, reading
 - **`getMessage(key)`** returns the RAW catalog string with NO ICU parsing, for callers that do their own composition
   and must not hit ICU's brace/apostrophe grammar, specifically the error pipeline (`#lib/error-messages` `compose.ts` +
   `expandSystemStrings` + snarkdown). Its `{system_settings}` tokens and `esc()` HTML entities would collide with ICU
-  placeholders. Same fallback chain as `t()`, just no `format()`.
+  placeholders. Same fallback chain as `t()`, just no `format()`; a platform block comes back as this OS's branch (§
+  Platform variants).
 - **`tStringIn(locale, key, params?)`** is `tString` in a given locale, down that locale's own chain. A non-reactive
   snapshot for the rare reader that needs text the user isn't reading: Settings search indexes English as a fallback
   (`../settings/DETAILS.md` § Search). Only for a language the window holds (§ Loading catalogs on demand). ❌ Never for
@@ -212,6 +213,31 @@ widened per migrated area). In a markup sink it follows the expression: a raw li
 of a ternary or `||`/`??`, or a `const` (`$derived`, concise `$derived.by`, or plain) holding one. It can't see through
 a call, a block-bodied `$derived.by`, `let`/`$state`, props, or object args (`use:tooltip={{ text }}`). The rule file's
 header is canonical.
+
+### Platform variants
+
+A value that reads differently per OS is ONE whole-value block, `{platform, select, macos {…} windows {…} other {…}}`,
+in every family. `other` is Linux and every context without a backend (Vitest, a plain browser); a block carries at
+least two of the three branches, `other` always, in that order and canonical spelling (`{platform, select, ` with one
+space after each comma). Never a block inside a sentence, never `{platform}` interpolated.
+
+- **ICU family**: `t()` and `tStringIn()` share one private `format()` that passes `{ ...params, platform }`
+  (`getPlatform()`, last so no caller overrides it; a frozen `{ platform }` per OS when there are no params). The engine
+  does the select, so plurals nested in a branch work and `Trans.svelte` needs nothing. `platform` is a format ARG, not
+  part of the compiled cache's key, so one compiled message serves a platform flip. `TranslationParams` carries
+  `& { platform?: never }`: passing it is a type error (a plain `Omit` on a `Record<string, …>` would do nothing), and
+  `i18n-tag-param-collision` reserves the name, since a `<platform>` tag would shadow the injected arg.
+- **Raw families**: `platform-select.ts` is the one splitter. `parsePlatformSelect()` brace-matches with ICU's
+  apostrophe quoting (`''` literal; a lone `'` before `{`, `}`, `<`, or `>` opens a run the next lone `'` closes), and
+  answers `null` for anything that isn't a well-formed block. `pickPlatformBranch(value, platform)` maps `linux` and a
+  missing branch to `other` and returns a non-block unchanged. `getMessage()` runs it behind a prefix test, so raw
+  `errors.*` and any ICU key read raw get this OS's branch. A raw body therefore never has a lone `'` before `{`, `}`,
+  `<`, or `>`: ICU would quote there and the raw reader wouldn't, and a native key (`menu.*`) is read both ways
+  (`row-menu.ts` formats `menu.volume.eject` through `t()`).
+- **Other readers**: the macOS-copy test reads each value's macOS branch through `pickPlatformBranch`. A script that
+  needs a branch imports the same file by path (it's dependency-free for that); ❌ never a second splitter.
+- **Tests**: `withPlatform('macos' | 'windows' | 'linux')` from `#lib/platform/test-platform` moves both the select and
+  the split; Vitest's fallback is Linux, so an assertion on macOS text names macOS.
 
 ### The frozen macOS copy
 

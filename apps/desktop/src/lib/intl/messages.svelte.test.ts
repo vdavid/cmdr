@@ -8,11 +8,13 @@
  * `_setLocaleForTests` (value only, no rune bump) would NOT re-render: that's
  * the seam distinction Decision 6 warns about.
  */
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, onTestFinished } from 'vitest'
 import { mount, unmount, flushSync } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import {
   t,
   tString,
+  tStringIn,
   getMessage,
   setLocale,
   availableLocales,
@@ -250,6 +252,74 @@ describe('getMessage() raw accessor', () => {
     _setCatalogForTests(TEST_LOCALE, { 'transfer.trash': 'RAW EXACT' })
     _setLocaleForTests(TEST_LOCALE)
     expect(getMessage('transfer.trash')).toBe('RAW EXACT')
+  })
+})
+
+describe('platform variants', () => {
+  const ICU_BLOCK =
+    '{platform, select, macos {Moved {count, plural, one {# file} other {# files}} to the Trash} windows {Moved {count, plural, one {# file} other {# files}} to the Recycle Bin} other {Moved {count, plural, one {# file} other {# files}} to the trash}}'
+  const RAW_BLOCK =
+    '{platform, select, macos {Open {system_settings} and unlock it.} other {Run `chmod u+w` on it, e.g. via a terminal.}}'
+
+  function seed(): void {
+    _setCatalogForTests(TEST_LOCALE, {
+      'transfer.trash': ICU_BLOCK,
+      'errors.write.fileLocked.message': RAW_BLOCK,
+    })
+    _setLocaleForTests(TEST_LOCALE)
+  }
+
+  it('t() renders the branch of the platform it runs on, with no cache reset between flips', () => {
+    seed()
+    onTestFinished(withPlatform('macos'))
+    expect(tString('transfer.trash', { count: 2 })).toBe('Moved 2 files to the Trash')
+    withPlatform('windows')
+    expect(tString('transfer.trash', { count: 1 })).toBe('Moved 1 file to the Recycle Bin')
+    withPlatform('linux')
+    expect(tString('transfer.trash', { count: 3 })).toBe('Moved 3 files to the trash')
+    withPlatform('macos')
+    expect(tString('transfer.trash', { count: 1 })).toBe('Moved 1 file to the Trash')
+  })
+
+  it('t() with no params still selects', () => {
+    _setCatalogForTests(TEST_LOCALE, { 'transfer.trash': '{platform, select, macos {Finder} other {Files}}' })
+    _setLocaleForTests(TEST_LOCALE)
+    onTestFinished(withPlatform('macos'))
+    expect(t('transfer.trash')).toBe('Finder')
+    withPlatform('windows')
+    expect(t('transfer.trash')).toBe('Files')
+  })
+
+  it('getMessage() returns the raw branch text, tokens untouched', () => {
+    seed()
+    onTestFinished(withPlatform('macos'))
+    expect(getMessage('errors.write.fileLocked.message')).toBe('Open {system_settings} and unlock it.')
+    withPlatform('windows')
+    expect(getMessage('errors.write.fileLocked.message')).toBe('Run `chmod u+w` on it, e.g. via a terminal.')
+    withPlatform('linux')
+    expect(getMessage('errors.write.fileLocked.message')).toBe('Run `chmod u+w` on it, e.g. via a terminal.')
+    withPlatform('macos')
+    expect(getMessage('errors.write.fileLocked.message')).toBe('Open {system_settings} and unlock it.')
+  })
+
+  it('tStringIn() picks the branch too', () => {
+    _setCatalogForTests('en', { 'transfer.trash': ICU_BLOCK })
+    onTestFinished(() => {
+      _setCatalogForTests('en', null)
+    })
+    onTestFinished(withPlatform('windows'))
+    expect(tStringIn('en', 'transfer.trash', { count: 2 })).toBe('Moved 2 files to the Recycle Bin')
+    withPlatform('macos')
+    expect(tStringIn('en', 'transfer.trash', { count: 2 })).toBe('Moved 2 files to the Trash')
+  })
+
+  it('a caller can’t pass `platform` itself', () => {
+    seed()
+    onTestFinished(withPlatform('macos'))
+    // @ts-expect-error `platform` is the runtime's to inject
+    const forced = tString('transfer.trash', { count: 1, platform: 'windows' })
+    // And even an untyped caller loses: the runtime's answer wins.
+    expect(forced).toBe('Moved 1 file to the Trash')
   })
 })
 

@@ -63,6 +63,24 @@ func TestCollidingNamesFindsTagsThatShadowParams(t *testing.T) {
 	}
 }
 
+// The runtime injects `platform` into every format call, so a `<platform>` tag
+// collides with it even when the message itself names no `{platform}`.
+func TestCollidingNamesReservesTheInjectedPlatformArgument(t *testing.T) {
+	cases := map[string][]string{
+		"Open <platform>Settings</platform>.":                                                    {"platform"},
+		"Restart <platform/> now.":                                                               {"platform"},
+		"{platform, select, macos {<platform>Finder</platform>} other {Files}}":                  {"platform"},
+		"{platform, select, macos {<link>Finder</link>} other {Files}}":                          nil,
+		"<b>{count, plural, one {# file} other {# files}}</b> on <platformName>x</platformName>": nil,
+	}
+	for message, want := range cases {
+		got := collidingNames(message)
+		if strings.Join(got, ",") != strings.Join(want, ",") {
+			t.Errorf("collidingNames(%q) = %v, want %v", message, got, want)
+		}
+	}
+}
+
 // The ICU `plural` / `select` argument name is a param name like any other, so a
 // tag sharing it collides just the same.
 func TestCollidingNamesCatchesAPluralArgumentName(t *testing.T) {

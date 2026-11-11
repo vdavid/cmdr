@@ -27,9 +27,10 @@ boundary: `../CLAUDE.md`.
   reads a lone one before `{`/`<`/`#` as an escape and swallows what follows.
 - **The RAW families never meet ICU**, so their apostrophes stay SINGLE and their `{token}`s are literal replacement
   targets: `errors.*`, plus the NATIVE ones Rust draws (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)
-  through `menu_t`, never `t()`. `i18n-icu` (ERROR) fails a raw value carrying `''`: nothing collapses it there, so the
-  real menu bar shows two apostrophes. No capture can photograph a native surface, so its `@key` description is the
-  whole translator aid: which menu, what it does, VERB or NOUN. `isRawKey()` is the single source; `DETAILS.md`.
+  through `menu_t`, never `t()`. `i18n-icu` (ERROR) fails a raw value carrying `''`: the menu bar would show two. A
+  per-OS raw value is the same whole-value `{platform, select, …}` block, split by `../platform-select.ts`. A native
+  key's `@key` description is the whole translator aid (no capture sees it): which menu, what it does, VERB or NOUN.
+  `isRawKey()` is the single source; `DETAILS.md`.
 - **A `<tag>` name must never equal a param name in the same message.** `Trans.svelte` merges the tag snippets into the
   interpolation params, so a shared name resolves to the tag handler and the sentence renders a stringified function
   instead of the value. Name the tag for its role, the param for its content: `<processName>{process}</processName>`.
