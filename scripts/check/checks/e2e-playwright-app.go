@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -222,7 +221,7 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 	}
 	cmd.Stdout = lf
 	cmd.Stderr = lf
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.SysProcAttr = ownProcessGroup()
 
 	if err := cmd.Start(); err != nil {
 		lf.Close()
@@ -269,12 +268,12 @@ func cleanupTauriApp(cmd *exec.Cmd, exited <-chan struct{}, dataDir, socketPath 
 		return
 	}
 
-	_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
+	stopProcessGroup(cmd.Process.Pid)
 
 	select {
 	case <-exited:
 	case <-time.After(processKillGrace):
-		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		killProcessGroup(cmd.Process.Pid)
 		<-exited
 	}
 

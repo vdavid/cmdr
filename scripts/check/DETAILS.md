@@ -241,8 +241,11 @@ pnpm check [flags]
   value itself. `stacklease.go` keeps the core (`Acquire`, `decideAction`, `Reconcile`, `Release`, `PrintStatus`,
   service resolution); `log.go` the two log sinks and the `OnReconcileStart`/`OnTeardown` hooks; `confighash.go` the
   config-hash stamp and compare; `leases.go` the per-holder lease files and the dead-PID sweep; `keymaterial.go` the
-  host-key-material heal/wait pair; `soloreset.go` the resets a lease runs when it starts alone; `lock.go` the flock,
-  `compose.go` the real `Composer`
+  host-key-material heal/wait pair; `soloreset.go` the resets a lease runs when it starts alone; `lock.go` the stack
+  lock (on `filelock`), `compose.go` the real `Composer`
+- **`filelock/`**: The one exclusive file lock, an arm per OS (`flock` on Unix, `LockFileEx` on Windows), held by
+  `stacklease` and the CSV logs. With it and `checks/procgroup_*.go` (a child's own process group, and stopping it), the
+  runner builds for Windows, which `scripts-go-vet` holds it to (a `GOOS=windows` pass over this module)
 - **`stack-lease/`**: Thin `package main` CLI onto `stacklease` (`acquire`/`release`/`reconcile`/`status`, each taking
   the stack name first) that the bash scripts shell out to
 - **`linux-cache/`**: `package main` CLI (`seed` / `promote`) that `scripts/worktree-hooks/` shells out to, handing the

@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"cmdr/scripts/check/checks"
+	"cmdr/scripts/check/filelock"
 )
 
 // projectLogDirName is this repo's subdirectory under the shared check-runner
@@ -92,10 +92,10 @@ func appendCSVRows(mu *sync.Mutex, fileName string, header []string, rows [][]st
 		return
 	}
 	defer f.Close()
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+	if err := filelock.Lock(f); err != nil {
 		return
 	}
-	defer func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN) }()
+	defer func() { _ = filelock.Unlock(f) }()
 
 	info, err := f.Stat()
 	if err != nil {

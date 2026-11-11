@@ -2,10 +2,17 @@ package checks
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 )
+
+// windowsVettedModule is the one module that must also build for Windows: the
+// check runner itself, which the Windows CI lane runs natively. Vetting it as
+// `GOOS=windows` catches a Unix-only syscall in seconds, on any host, instead of
+// at the lane's "Build check tool" step.
+const windowsVettedModule = "scripts/check"
 
 // RunGoVet runs go vet to find likely mistakes.
 func RunGoVet(ctx *CheckContext) (CheckResult, error) {
@@ -36,6 +43,15 @@ func RunGoVet(ctx *CheckContext) (CheckResult, error) {
 			output, err := RunCommand(vetCmd, true)
 			if err != nil {
 				allIssues = append(allIssues, fmt.Sprintf("[%s]\n%s", modLabel, output))
+			}
+
+			if filepath.ToSlash(modLabel) == windowsVettedModule {
+				winCmd := exec.Command("go", "vet", "./...")
+				winCmd.Dir = modDir
+				winCmd.Env = append(os.Environ(), "GOOS=windows")
+				if output, err := RunCommand(winCmd, true); err != nil {
+					allIssues = append(allIssues, fmt.Sprintf("[%s, GOOS=windows]\n%s", modLabel, output))
+				}
 			}
 		}
 	}
