@@ -7,8 +7,7 @@ use std::path::Path;
 use cmdr_fs::volume::SpaceInfo;
 use tauri::AppHandle;
 
-use crate::volume_listing::NetworkMount;
-use crate::volumes::{LocationInfo, SmbMountInfo, VolumeInfo};
+use crate::volumes::{LocationInfo, NetworkMount, SmbMountInfo, VolumeInfo};
 
 #[cfg_attr(target_os = "macos", path = "macos/mod.rs")]
 #[cfg_attr(target_os = "linux", path = "linux/mod.rs")]
@@ -96,10 +95,10 @@ pub(crate) use imp::live_volume_space;
 
 /// Starts watching for mounts and unmounts, registering and announcing each. Call once, from
 /// the setup hook.
-pub(crate) use imp::start_volume_watcher;
+pub(crate) use imp::watcher::start_volume_watcher;
 
 /// Stops what [`start_volume_watcher`] started, where something outlives the window. Idempotent.
-pub(crate) use imp::stop_volume_watcher;
+pub(crate) use imp::watcher::stop_volume_watcher;
 
 /// The `fs_type` the synthetic `network` volume reports: whatever this OS calls an SMB mount, so
 /// a consumer classifying by fs type sees a share and not an unknown filesystem.

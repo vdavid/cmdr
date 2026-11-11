@@ -4,11 +4,8 @@
 
 use std::path::Path;
 
+use crate::volumes::{DEFAULT_VOLUME_ID, LocationCategory, LocationInfo, NetworkMount, SmbMountInfo, VolumeInfo};
 use cmdr_fs::volume::SpaceInfo;
-use tauri::AppHandle;
-
-use crate::volume_listing::NetworkMount;
-use crate::volumes::{DEFAULT_VOLUME_ID, LocationCategory, LocationInfo, SmbMountInfo, VolumeInfo};
 
 /// What the synthetic `network` volume reports as its `fs_type`: the SMB name the other arms
 /// report, since this one mounts no shares.
@@ -119,6 +116,11 @@ pub(crate) fn live_volume_space(_path: &str) -> Option<SpaceInfo> {
     None
 }
 
-pub(crate) fn start_volume_watcher(_app: &AppHandle) {}
+/// No mount watching yet.
+pub(crate) mod watcher {
+    use tauri::AppHandle;
 
-pub(crate) fn stop_volume_watcher() {}
+    pub(crate) fn start_volume_watcher(_app: &AppHandle) {}
+
+    pub(crate) fn stop_volume_watcher() {}
+}

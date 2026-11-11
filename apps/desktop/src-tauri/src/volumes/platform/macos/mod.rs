@@ -32,7 +32,7 @@ use std::path::Path;
 
 use crate::volumes::{DEFAULT_VOLUME_ID, LocationCategory, LocationInfo, SmbMountInfo, VolumeInfo};
 
-pub(crate) use crate::volumes::ConnectionState;
+pub(crate) use crate::file_system::volume::ConnectionState;
 pub(crate) use cloud::{get_cloud_drives, resolve_cloud_drive_for_path};
 pub(crate) use cmdr_local::live_space::live_volume_space;
 pub(crate) use fs_type::{
@@ -48,13 +48,9 @@ pub(crate) use nsurl::{
     volume_name_from_path,
 };
 pub(crate) use smb::{enrich_from_volume_registry, get_smb_mount_info, parse_smb_mount_source};
-pub(crate) use watcher::start_volume_watcher;
 
 /// What the synthetic `network` volume reports as its `fs_type`: what macOS calls an SMB mount.
 pub(crate) const NETWORK_FS_TYPE: &str = "smbfs";
-
-/// Nothing to stop: the `NSWorkspace` observers end with the process.
-pub(crate) fn stop_volume_watcher() {}
 
 /// Whether a MOUNT ROOT is served by a cloud provider's own filesystem, so its
 /// entries cost a round trip to that provider's daemon rather than a disk read.

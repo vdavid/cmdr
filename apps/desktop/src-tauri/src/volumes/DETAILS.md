@@ -8,8 +8,14 @@ Depth and rationale for the seam and the macOS arm. `CLAUDE.md` holds the must-k
 `platform/mod.rs` pins every fn an arm answers (the locations, the mount a path sits on, the SMB mounts, the mount
 table's identity and rows, the live space reading, the watcher's start and stop, and `NETWORK_FS_TYPE`, which the
 synthetic `network` volume reports), and `mod.rs` re-exports them, so a caller asks `crate::volumes` and never names an
-OS. The model (`LocationInfo`, `LocationCategory`, `SmbMountInfo`, `DEFAULT_VOLUME_ID`) is defined once in `mod.rs`: the
-frontend reads one shape everywhere, and a field one OS forgets is a compile error, not a drifted twin.
+OS. The model (`LocationInfo`, `LocationCategory`, `SmbMountInfo`, `NetworkMount`, `DEFAULT_VOLUME_ID`) is defined once
+in `model.rs`: the frontend reads one shape everywhere, and a field one OS forgets is a compile error, not a drifted
+twin.
+
+**Decision**: `model.rs` is a leaf, and the seam takes the watcher's start and stop from each arm's `watcher` module,
+❌ never through the arm's root. **Why**: the watchers announce through `volume_broadcast`, which lists through
+`volume_listing`, which reads the model and the arm root. A model in `mod.rs` beside the seam's re-exports, or a watcher
+re-exported by the arm root, closes that into a module cycle (`desktop-rust-module-cycles`).
 `platform/windows.rs` lists the root and three home folders and answers "nothing here" to every mount-table question.
 
 What only one OS has stays in its arm, re-exported under a positive gate: on macOS, disk images, whole-disk units, the
