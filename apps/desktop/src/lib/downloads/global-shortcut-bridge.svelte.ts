@@ -68,5 +68,5 @@ async function handleFired(explorer: ExplorerAPI | undefined): Promise<void> {
     })
   }
 
-  await goToLatestDownload(explorer)
+  await goToLatestDownload(explorer, 'global_shortcut')
 }

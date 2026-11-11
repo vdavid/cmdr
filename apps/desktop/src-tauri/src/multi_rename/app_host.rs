@@ -186,4 +186,12 @@ impl MultiRenameHost for AppHost {
                 },
             })
     }
+
+    fn rename_applied(
+        &self,
+        rules: &[&'static str],
+        result: &Result<super::run::MultiRenameStarted, MultiRenameError>,
+    ) {
+        super::analytics::emit_applied(rules, result);
+    }
 }

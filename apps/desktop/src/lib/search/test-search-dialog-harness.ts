@@ -44,6 +44,8 @@ import { vi } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import { writable } from 'svelte/store'
 import type { SearchResultEntry, TranslateResult } from '#lib/ipc/bindings.js'
+// The real bucket ladder: a pure function, and the image grid's analytics reads it.
+import { itemCountBucket } from '#lib/tauri-commands/analytics.js'
 
 /** Type-only, so naming the component here still imports nothing at runtime. */
 type SearchDialogComponent = typeof import('./SearchDialog.svelte').default
@@ -208,6 +210,7 @@ export function tauriCommandsMock(): Record<string, unknown> {
     showFileContextMenu: vi.fn(() => Promise.resolve()),
     showInFinder: vi.fn(() => Promise.resolve()),
     trackEvent: vi.fn(() => Promise.resolve()),
+    itemCountBucket,
     // The image-OCR grid (`ImageSearchResults`, rendered via `resultsExtra`) reaches these.
     mediaIndexSearchOcr: mediaSearchOcrMock,
     mediaIndexSearchSemantic: mediaSearchSemanticMock,

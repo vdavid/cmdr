@@ -6,6 +6,8 @@ semantics; read it first). The sheet is `src/lib/multi-rename/`, the IPC `comman
 ## Module map
 
 - `mod.rs` re-exports the crate (`pub use cmdr_multi_rename::*`), so the app names it `crate::multi_rename::…`.
+- `analytics.rs` `multi_rename_applied`, one per apply via `AppHost::rename_applied` (catalog:
+  `analytics/DETAILS.md`).
 - `app_host.rs` the app's engine (`app_multi_rename`, a `LazyLock` on Tauri's runtime), its `MultiRenameHost` answers
   (volume reads, Results, `rename_place`, `io_budget`, the write engine), and the `MultiRenameMediaProgress` event.
 - `app_files.rs` `LAST_SPEC`, `FIELD_HISTORY`, their `RecentEntry` impls, and `results_path`. `preset_store.rs` the

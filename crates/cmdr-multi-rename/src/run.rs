@@ -20,6 +20,7 @@ use cmdr_operations::{BulkRenameRow, OperationEventSink, SourceFingerprint};
 use crate::error::MultiRenameError;
 use crate::host::RenamePlace;
 use crate::plan::PreviewRow;
+use crate::rule_kinds::rule_tokens;
 use crate::session::{MultiRename, Prepared};
 
 /// A started rename.
@@ -93,7 +94,26 @@ impl MultiRename {
     /// Renames the rows preview `preview_id` showed as ready, if they're still
     /// exactly that. Returns once the operation has started; progress, the queue,
     /// and Undo follow it by its id.
+    ///
+    /// Every apply, refused or started, reports once to the host
+    /// ([`MultiRenameHost::rename_applied`](crate::MultiRenameHost::rename_applied)),
+    /// from here: the one exit every caller (the sheet, the MCP tool) passes.
     pub async fn apply(
+        &self,
+        events: Arc<dyn OperationEventSink>,
+        session_id: String,
+        preview_id: u64,
+    ) -> Result<MultiRenameStarted, MultiRenameError> {
+        let rules = self
+            .spec_of(&session_id, preview_id)
+            .map(|spec| rule_tokens(&spec))
+            .unwrap_or_default();
+        let result = self.apply_inner(events, session_id, preview_id).await;
+        self.host().rename_applied(&rules, &result);
+        result
+    }
+
+    async fn apply_inner(
         &self,
         events: Arc<dyn OperationEventSink>,
         session_id: String,

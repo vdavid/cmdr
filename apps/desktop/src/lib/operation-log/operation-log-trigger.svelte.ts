@@ -9,7 +9,12 @@
  * (one source of truth), so an append can't desync from what's shown.
  */
 
-import { getOperationLogDetail, getRecentOperationLogEntries, type OperationRow } from '#lib/tauri-commands/index.js'
+import {
+  getOperationLogDetail,
+  getRecentOperationLogEntries,
+  trackEvent,
+  type OperationRow,
+} from '#lib/tauri-commands/index.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 
 const log = getAppLogger('operationLog')
@@ -51,6 +56,9 @@ export function closeOperationLog(): void {
 export async function openOperationLog(): Promise<void> {
   if (operationLogState.open) return
 
+  // No `trigger` prop: the menu item, ⌥⌘L, and the palette all arrive as the one
+  // `log.operationLog` command. Past the guard, so a double-fire counts once.
+  void trackEvent('operation_log_opened')
   operationLogState.open = true
   operationLogState.loading = true
   operationLogState.loadError = false

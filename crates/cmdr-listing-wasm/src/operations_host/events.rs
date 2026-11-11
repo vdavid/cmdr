@@ -6,6 +6,8 @@
 
 use std::sync::Arc;
 
+use cmdr_operation_log::rollback::RollbackReport;
+use cmdr_operation_log::types::Initiator;
 use cmdr_operations::host::{EngineEvents, InstantMutationFact, OperationErrorReport};
 use cmdr_operations::{LeftoversKeptEvent, OperationsChanged, WriteProgressEvent};
 
@@ -38,6 +40,8 @@ impl EngineEvents for DemoEngineEvents {
     }
 
     fn instant_mutation_settled(&self, _fact: InstantMutationFact) {}
+
+    fn rollback_settled(&self, _initiator: Initiator, _narrowed: bool, _report: &RollbackReport) {}
 
     fn error_report(&self, report: OperationErrorReport) {
         // The ledger runs unpersisted on purpose in a page; nothing to tell anyone.

@@ -279,11 +279,11 @@ describe('characterization — module-delegate arms', () => {
     expect(toggleCliCommand).toHaveBeenCalledOnce()
   })
 
-  it('downloads.goToLatest → goToLatestDownload(explorerRef)', async () => {
+  it("downloads.goToLatest → goToLatestDownload(explorerRef, 'command')", async () => {
     const explorer = makeExplorerSpy()
     const ctx = makeCtx(explorer)
     await handleCommandExecute('downloads.goToLatest', ctx)
-    expect(goToLatestDownload).toHaveBeenCalledExactlyOnceWith(ctx.getExplorer())
+    expect(goToLatestDownload).toHaveBeenCalledExactlyOnceWith(ctx.getExplorer(), 'command')
   })
 
   it('file.goToTrash → goToTrash(explorerRef)', async () => {

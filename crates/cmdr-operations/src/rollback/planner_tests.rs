@@ -5,6 +5,7 @@
 //! these cells live here, beside it. Its pure decision helpers are unit-tested in
 //! that crate.
 
+mod analytics_tests;
 #[cfg(target_os = "macos")]
 mod blocked_items_tests;
 mod case_twin_tests;
