@@ -50,6 +50,11 @@ and Linux branches is task 28 and comes after.
 
 If a sibling doc isn't on disk when a milestone that consumes it starts, stop and report; don't guess its content.
 
+**Precedence, top wins**: `copy-decisions.md`, then this plan's § "Copy resolution" (which settles every conflict found
+between the docs below), then `copy-row-verdicts.md` for a row it names (its texts come from the code and the D4 Windows
+10 target), then `copy-glossary-evidence.md` (term verdicts and its row corrections), then the proposal. Both sibling
+docs are on disk at `0327ab051d`.
+
 ## What the code says (fresh look at `f0e0d8639b`)
 
 ### Runtime (`apps/desktop/src/lib/intl/messages.svelte.ts`)
@@ -290,6 +295,116 @@ right after task 27 lands and pause releases until it's done (recommended; trans
 teach the stale check a "macOS branch current, other branches pending" class that strict mode lets through while Windows
 and Linux have no public build. (b) is a release-gate change, so it needs David's go.
 
+## Copy resolution (what milestones 6b–12 write)
+
+Read with the precedence in § Inputs. Everything here is settled; a milestone agent applies it, never re-chooses.
+
+### Branch-writing rules
+
+1. **Change a branch only for its platform.** A `windows` or `other` branch differs from the old English only where that
+   OS needs different words. No drive-by polish: a reworded Linux branch throws away 13 locales' carried translations (§
+   How English lands). So `ai.secretError.genericBody`'s `other` keeps the old English byte-for-byte ("If it persists,
+   restart the app."), and a pair's `other` keeps the old `.other` text unless the platform needs a change (the old
+   "e.g. via chmod" stays in `errors.write.fileLocked.suggestion` and the `permissionDenied` pair until a copy pass).
+   The two accepted macOS changes are the only style edits.
+2. **"Keep the macOS text" means the branch folds.** A verdict that leaves Windows "open" (keep macOS text) makes the
+   `windows` branch equal the branch macOS reads, so the script folds it away. `goToPath.dialog.inputPlaceholder` then
+   needs no block at all: its new English is one plain value ("…for example ~/Documents"), an accepted change.
+3. **The Linux actor rule is writing, not substitution.** Where a Linux branch says "The system wouldn't/couldn't/
+   blocked …" (about a dozen proposal rows: `errors.write.trashRefused.message.*`, `.suggestion.other`,
+   `errors.mutation.trashRefused`, `fileExplorer.open.didNotOpen`, `fileExplorer.networkMount.mountingSlow`, …),
+   rephrase with Cmdr or the item as the subject, as the verdicts did for `trashRefused.message.notPermitted` ("Cmdr
+   wasn't allowed to touch {count} of the items you picked."). Keep "your system" where it names a place or a setting
+   ("your system's network settings"), "this computer" for the machine, and "Linux" only for a platform fact (the crash
+   report sends the distribution name). Mark every branch written this way `written: true` in `copy-final.json`.
+4. **New English follows `docs/style-guide.md`**: no "error" or "failed", no "just/simple/easy", no em dash, no "e.g.",
+   curly ’ in prose, Oxford comma, sentence case, active voice. Windows: "Select", not "Click"; "turn on", not "enable";
+   "drive", not "disk", for the PC's own storage; never "PC" and "computer" in one string (evidence § Corrections). The
+   apply script lints this (milestone 6b).
+5. **Settings keywords are copy too.** A `settings.*.keywords` value that needs a Windows term (`skipConfirmation` gains
+   "recycle bin") gets a block like any other value, since rule 1 of § Loud rules covers it. Palette keywords are code
+   literals (`keywords:` in `lib/commands/sources/*.ts`): add `'home'` to `nav.goHome` and `'recycle bin'` to the trash
+   commands there (milestone 11).
+
+### Conflicts between the docs, settled
+
+- **Terminal vs PowerShell (Windows)**: every Windows "In Terminal, run/try …" becomes "In PowerShell, …" (verdicts:
+  Windows Terminal is the default only on Windows 11). The proposal's Windows `networkDown`, `connectionReset`,
+  `connectionTimedOut*`, `hostDown`, `networkUnreachable`, `connectionRefused`, `hostUnreachable`, `symlinkLoopErrno`,
+  and `errors.git.gitDirPermissionDenied` suggestions all still say "In Terminal". `symlinkLoopErrno` takes the
+  verdicts' `Get-ChildItem` text; the evidence's `cmd /c dir /AL` is unused. Linux keeps "In a terminal".
+- **Disconnect vs unmount vs eject**: Windows "disconnect" for a mapped network drive, Linux "unmount" for a network
+  mount, "eject" for removable drives everywhere. `errors.listing.authRequiredEneedauth.suggestion` gets no Linux branch
+  (verdicts: ENEEDAUTH is BSD-only), so the evidence's Linux "Unmount the volume…" rewording is unused.
+- **Exit vs close (Windows)**: the decision stands over the evidence's Microsoft citations; David sees the flag on the
+  review page (milestone 13). Per key, by register:
+  - Action, Windows "Exit": `commands.appQuit.label` ("Exit Cmdr"), `settings.dataWipe.quit` ("Exit Cmdr"),
+    `settings.dataWipe.confirm` ("Delete all and exit"), `main.quit.title` ("Exit while an operation is running?" /
+    "Exit while {countText} operations are running?"), `main.quit.quitNow` ("Exit now"), `ui.toolAsk.quit.title` ("Exit
+    Cmdr?").
+  - Narration, Windows "close": `settings.dataWipe.description` ("…Cmdr closes afterwards."; the proposal's Windows text
+    still says "quits"), `settings.dataWipe.intro` / `introWithSize` ("then closes"), `askCmdr.decision.interrupted`,
+    `askCmdr.tool.quit.done`, `askCmdr.tool.quit.tried`, `crashReporter.dialog.body.ended`,
+    `operationLog.rollback.interruptedNotice`, and three keys the proposal never listed: `askCmdr.tool.quit.doing`
+    ("Closing Cmdr"), `main.quit.countdown` ("Closing in …"), `main.quit.countdownAria` ("…until Cmdr closes on its
+    own").
+  - Linux "Quit" / "quit" in both registers, so Linux folds into the macOS branch on every key above.
+  - Not variants: `menu.app.quit`, `shortcuts.system.forceQuit`, `onboarding.stepFda.step3`,
+    `updates.moveToApplicationsDialog.howTo` (macOS-only); `main.oldWebkit.quit` (the Linux "Quit" equals macOS, so only
+    its title and body get a block); `errors.provider.appBased.serious` names another app (Windows "Close and reopen",
+    Linux keeps "Quit and reopen").
+- **Delete labels vs Recycle Bin sentences (Windows)**. The label register is the F8/Shift+F8 action's name on a button,
+  menu row, or palette command; everything else (titles, confirmations, progress, toasts, errors, settings descriptions,
+  queue rows, Ask Cmdr narration) is the sentence register and names "the Recycle Bin". Per key:
+  - Label "Delete": `fileOperations.delete.confirmMoveToTrash`, `suggestedOps.action.trash`,
+    `suggestedOps.approve.trash` ("Delete {countText} {count, plural, one {file} other {files}}"), the `trash` arm of
+    `fileOperations.sourcesGone.continue` ("Delete the rest"), `commands.editUndoTrash.label` / `.one` / `.many` and
+    `menu.edit.undoTrash*` ("Undo delete", "Undo delete of “{name}”", "Undo delete of {countText} items"),
+    `fileExplorer.renameConflict.overwriteTrash` / `overwriteTrashFolder` ("Overwrite and delete old file" / "…old
+    folder"), `settings.fileOperations.skipConfirmation.label` ("Skip confirmation for copy, move, and delete").
+  - **The permanent sibling says "permanently" on Windows** wherever the trash label now reads "Delete" on the same
+    surface, or the two become indistinguishable: `fileOperations.delete.confirmDelete` ("Delete permanently"),
+    `suggestedOps.action.delete` ("Delete permanently"), `suggestedOps.approve.delete` ("Delete {countText} … files
+    permanently"), the `delete` arm of `sourcesGone.continue` ("Delete the rest permanently"). The proposal never listed
+    these four; they're new `select` rows. `menu.file.delete` / `deletePermanently` and the `commands.fileDelete*`
+    labels already read "Delete" / "Delete permanently" everywhere: no change.
+  - Names the place: `fileOperations.delete.trashSwitch` ("Move to the Recycle Bin"; it's an on/off switch, so the
+    evidence's "Delete" would read as "deleting on/off"); `fileOperations.transferDialog.titleVerbOnly` (`other` arm
+    "Move to the Recycle Bin") and `titleWithCounts` (`other` arm "Move {phrase} to the Recycle Bin"), because the
+    decision's own sentence example is this confirmation title, which beats the evidence's "Delete" here;
+    `commands.fileGoToTrash.label` and `fileOperations.trash.goToTrashAction` ("Go to Recycle Bin", no article, as File
+    Explorer's "Empty Recycle Bin").
+  - Every other trash row is a sentence: the proposal's Windows text, with the evidence's article fix
+    (`canceledAlertTitle`: "Move to the Recycle Bin canceled").
+- **Linux trash casing**: the Linux branch keeps the macOS branch's casing, so it folds into it; no casing pass in task
+  27 (evidence: low priority).
+- **`en-GB` / `en-AU` Linux trash word**: the evidence already mined it: GNOME and Xfce en-GB say "Wastebasket", KDE
+  "wastebin", so no desktop-neutral British word exists. The overlays' `other` branch keeps the overlay's existing macOS
+  word ("Bin"), which passes the no-"trash" test, until task 59's desktop value. This also keeps every overlay's branch
+  set equal to `en`'s: ❌ an overlay never adds a branch its source folded away (`desktop-i18n-platform-select` rejects
+  it).
+- **KDE names** ("KDE Wallet Manager", Plasma 6 shortcut path) and the GNOME "Preferences" ellipsis live in
+  `linuxDesktops`, ignored until task 59; the generic Linux branch says "your keyring".
+
+### Rows beyond the proposal's `strings`
+
+- **The 109 `reviewedNoChange` rows** were judged before the decisions. The decisions overturn these, which become
+  `select` rows with Windows "user folder": `errors.write.homeFolder.title`, `.message.isHome`, `.message.holdsHome`,
+  `errors.write.homeFolderMove.title`, `errors.write.homeFolderRename.title`, `commands.navGoHome.label` ("Go to user
+  folder"), `indexing.phase.home`, `stateRecovery.appStatus.title`, `fileExplorer.errorPane.goHome`,
+  `fileExplorer.unreachable.openHome`; plus `settings.fileOperations.skipConfirmation.keywords` (Windows adds "recycle
+  bin"). The eject rows stay neutral (Windows "Eject" for removable drives).
+- **Values the proposal never scanned**: its scan ran at `009bdb32fb`, and its term list was narrower than the
+  decisions. A grep of today's `en` for Quit, Finder, macOS, Mac, Trash, Keychain, Spotlight, Quick Look, Dock, System
+  Settings, home folder, Terminal, Get Info, and `{system_settings}` finds five values in none of its lists: the three
+  Quit keys above, `errors.git.permissionDenied.suggestion` (sends Linux and Windows users to
+  `{system_settings} > {privacy_and_security}`; reachable wherever git reports EACCES, so it gets Windows and Linux
+  branches), and `errors.listing.tccRestricted.suggestion` (macOS-only, skip). Milestone 6b makes this scan a script
+  step; each catalog milestone reruns it on its catalogs, since `main` moves under the plan.
+- **Leftover Mac or wrong-OS words inside proposal branches**: beyond the evidence's three Linux rows, the proposal's
+  Windows branches carry "In Terminal" (above), "Cmdr quits" (`dataWipe.description`), "disk" for the PC's drive (the
+  evidence's five rows), and "When enabled" (`directSmbConnection`). The lint in milestone 6b catches the class.
+
 ## Milestones
 
 Each runs as one agent, sequentially, in this worktree, and ends in one commit (or a short series) with these green:
@@ -303,7 +418,13 @@ and the new `desktop-i18n-platform-select` once it exists, PLUS the disk-reading
 `cd apps/desktop && pnpm vitest run scripts/i18n-en-overlays.test.ts scripts/i18n-es-overlay.test.ts scripts/gen-pseudolocale.test.ts scripts/gen-boot-guard-lib.test.ts`
 and the touched area's `*i18n-parity.test.ts`. Stale WARNs from migrated keys are expected from milestone 7 on; no other
 new warning is. A milestone whose copy is asserted by a Playwright spec runs `desktop-e2e-linux` for that spec
-(`./scripts/e2e-linux.sh --grep …`), since the shared specs run on Linux and see `other` branches. Report in ≤350 words.
+(`./scripts/e2e-linux.sh --grep …`), since the shared specs run on Linux and see `other` branches. From milestone 7 on,
+"which tests assert this copy" is mechanical, not remembered: the apply script's report (milestone 6b) lists every file
+under `apps/desktop/src`, `apps/desktop/test`, and `apps/desktop/scripts` that contains a literal run (12+ characters,
+split at placeholders) of a migrated key's old English or of any branch, plus every file naming the key. Each catalog
+milestone runs the Vitest files in that list by name (`svelte-tests-related` can't see a JSON edge), wraps the
+macOS-text assertions in `withPlatform('macos')`, adds `withPlatform('windows')` / `'linux'` cases where the branch is
+the point, and runs the listed E2E specs on Linux. Report in ≤350 words.
 
 ### 1. Characterize macOS text
 
@@ -429,16 +550,37 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
   look rows (`macos_only` in `bar.rs`), the macOS Local Network block in Settings, `listing.showTags`, the Local AI
   option, and `showSafeSaveFiles`, the bundle row, and the full-screen rows where the verdicts confirm they mean nothing
   off macOS. New capability fields go in `src-tauri/src/platform/capabilities.rs` with an answer in every arm,
-  `NO_CAPABILITIES`, the demo's `lib/demo/platform.ts`, and `pnpm bindings:regen`.
+  `NO_CAPABILITIES`, the demo's `lib/demo/platform.ts`, and `pnpm bindings:regen`. The verdicts' full gate list also
+  names `homebrew_cask` (onboarding star note) and `global_shortcuts` (Wayland); both are in scope here. After the
+  gates, audit every surface that LISTS commands or settings for the gated ones: settings search honors
+  `needsCapability` (`settings/settings-search.ts`), but the Keyboard shortcuts section renders the full command
+  registry (`KeyboardShortcutsSection.controller.svelte.ts`), so `file.getInfo` and `file.quickLook` stay listed on
+  Linux under their `other` labels; check the MCP and Ask Cmdr command listings the same way (review note (copy) 4).
 - **Scope (6b)**:
   - `docs/notes/windows-port/copy-final.json`: the resolved rows the script reads. Same keys as the proposal plus
-    `branches: { macos, windows?, other }` (final English), `collapseFrom` for pairs, `status` (`apply`, `gated`,
-    `none`, `open`), `sources` (which doc decided it). The milestone writes the schema, a generator that seeds it from
-    the proposal, and resolves nothing beyond the pairs and the two `macosChanged` rows; milestones 7–11 resolve their
-    own catalogs into it.
+    `branches: { macos, windows?, other }` (final English, before folding), `collapseFrom: { mac, other }` for pairs
+    (explicit, since the menu pair's survivor `menu.file.showInFileManager` is its `.other` side while its `@key` and
+    `macos` text come from `menu.file.showInFinder`), `status` (`apply`, `gated`, `none`, `open`), `register` (`label`,
+    `sentence`, `action`, or `narration`; required on every row touching Trash or Quit, seeded from § Copy resolution's
+    per-key lists), `written: true` on a branch an agent wrote rather than copied from a doc (shown flagged on David's
+    review page), and `sources` (which doc decided each branch). The seed generator takes the proposal's `strings`, then
+    the § Copy resolution additions (overturned `reviewedNoChange` rows, the four permanent-delete siblings, the five
+    unscanned values), and a verdict may promote a `none` row to `apply` (`errors.provider.appBased.serious`). The
+    milestone writes the schema and the generator and resolves nothing beyond the pairs and the two `macosChanged` rows;
+    milestones 7–11 resolve their own catalogs into it.
+  - The **scan and lint** step of the apply script (also runnable alone, `--scan <catalog>`): (1) greps every current
+    `en` value for the Mac vocabulary (§ Copy resolution's term list, plus "this Mac", "click", "enable", "disk") and
+    lists any hit that is in no `copy-final.json` row and no gated key list, so an unscanned value can't slip through;
+    (2) lints every `windows` and `other` branch: rule 4 of § Branch-writing rules, no macOS word (Finder, macOS, Mac,
+    Quick Look, Spotlight, Keychain, Dock, ⌘/⌥/⌃, `{system_settings}`-style tokens) in either, no "Trash" or "Quit" or
+    "Terminal" in `windows`, no "Recycle Bin" or "disconnect" (for a mount) in `other`. A hit blocks the row unless it
+    carries `lintException` with a reason. `friendly-error-style.test.ts` covers only errors; this lint is the net for
+    everything else.
   - `docs/style-guide.md` § "Platform vocabulary": the canonical per-OS English glossary (decision file's glossary as
-    corrected by `copy-glossary-evidence.md`): each term with its macOS, Windows, and Linux word, both registers for
-    Trash and Quit, and the Linux actor rule. Every other doc points here. `copy-decisions.md` keeps the why.
+    corrected by `copy-glossary-evidence.md` and settled in § Copy resolution): each term with its macOS, Windows, and
+    Linux word, both registers for Trash and Quit with the rule that tells them apart (and the permanent-sibling rule),
+    Terminal → PowerShell on Windows, disconnect vs unmount vs eject, and the Linux actor rule. Every other doc points
+    here. `copy-decisions.md` keeps the why.
   - `apps/desktop/scripts/apply-platform-copy.ts` (+ `.test.ts`): reads `copy-final.json` rows for named catalogs,
     builds the English block (dedupes branches, keeps `’`, raw rules for raw keys), rewrites `en` values, applies § How
     English lands to every locale and overlay (reading `@key.sourceHash` to decide which branches carry a translation),
@@ -447,8 +589,8 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
     term-consistency allowlist, the capture report), writes `en-GB`/`en-AU` blocks for the agent to spell and restamp,
     preserves each file's key order (`i18n-catalog-lib.ts` has no writer: write like `sync-locale-keys.ts` does,
     `JSON.stringify(file, null, 2)` + newline, then `oxfmt` on anything that isn't a catalog), and prints a per-locale
-    report (branches carried, branches English, pre-stale keys, overlay keys needing a spelling pass). Runs
-    `pnpm intl:keys` and `pnpm intl:native-strings` at the end.
+    report (branches carried, branches English, pre-stale keys, overlay keys needing a spelling pass) plus the test-file
+    list from § Milestones' preamble. Runs `pnpm intl:keys` and `pnpm intl:native-strings` at the end.
 - **Intentions**: 478 rows by hand would drift; a script makes every locale edit mechanical and the review a diff of
   `copy-final.json`. TypeScript, not Go, deliberately: the catalog reader/writer, `sourceHash`, the overlay source
   resolution, and the ICU parser all live in `apps/desktop/scripts/` TS already, and a Go copy of them would be a second
@@ -458,8 +600,10 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
 - **Test plan**: 6a: component and unit tests under `withCapabilities()`; `desktop-e2e-linux` for touched specs. 6b:
   script fixture tests (plain row, Windows-only change, Linux-only change, raw row with `{system_settings}` in `macos`
   only, pair collapse with a locale missing `.other`, a pair key named in a fixture `terms.json` and `decisions.md`,
-  `es-419` fork whose `es` branch carries a Spain-only form, `en-GB` fork, pre-stale key, `{windows, other}` row); then
-  a dry run over every catalog reporting what it would do, without writing.
+  `es-419` fork whose `es` branch carries a Spain-only form, `en-GB` fork, pre-stale key, `{windows, other}` row, a
+  plural toast folding to `{windows, other}` with a `ru` `other` keeping `few`/`many`, a lint hit blocked and one passed
+  by `lintException`, an unscanned Mac value reported); then a dry run over every catalog reporting what it would do,
+  without writing.
 - **DONE**: gates landed and tested, glossary written, script tested, `copy-final.json` seeded.
 
 ### 7. Collapse the 14 pairs, switch on the lint
@@ -502,13 +646,17 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
 
 - **Scope**: `errors.write.*` (40, minus the pairs from milestone 7), `fileOperations.*` (26), `transfer.*` (4),
   `queue.*`, `operationLog.*`, `suggestedOps.*`, `lowDiskSpace.*`.
-- **Intentions**: the Trash rows are the bulk: labels say "Delete" / "Delete permanently" on Windows, sentences name
-  "the Recycle Bin" (glossary). Toasts with plurals keep their `plural` inside each branch.
+- **Intentions**: the Trash rows are the bulk: § Copy resolution's per-key Delete/Recycle Bin list decides each key's
+  register, including the four permanent-delete siblings the proposal never listed. Toasts with plurals keep their
+  `plural` inside each branch.
 - **Landmines**: Playwright `file-operations.spec.ts` and friends assert trash copy on both OSes; adjust per platform.
   F8 / Shift+F8 labels show in the function-key bar, palette, and menus: one key each, check every surface. A Linux
   (`other`) branch that says "Trash" in a key `en-GB`/`en-AU` fork fails `i18n-en-overlays.test.ts` ("no American trash
-  in overlay copy", pinned key list) unless the overlay's `other` branch gets a British word (review note 1); its
-  Windows branch reads "Recycle Bin", which the lowercase-` bin` ruling test leaves alone.
+  in overlay copy", pinned key list) unless the overlay's `other` branch gets a British word: it keeps the overlay's
+  "Bin" (§ Copy resolution); its Windows branch reads "Recycle Bin", which the lowercase-` bin` ruling test leaves
+  alone. The specs the grep found asserting trash copy on Linux today: `archive-editing.spec.ts` ("no trash inside an
+  archive"), `mtp.spec.ts`, `mcp-agent-tools.spec.ts` ("to trash"); Linux keeps macOS casing, so they should hold, but
+  run them.
 - **Test plan**: transfer dialog and toast tests × 3 platforms; `desktop-e2e-linux` for the touched specs.
 - **DONE**: as milestone 8, plus `file-operations/` docs touched.
 
@@ -529,11 +677,15 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
   (34), `main` (31), `ai` (9), `askCmdr` (12), `updates`, `shortcuts`, `crashReporter`, `errorReporter`, `downloads`,
   `search`, `queryUi`, `viewer`, `ui`, `goToPath`, `multiRename`, `notifications`, `stateRecovery`, `common`. Split into
   11a (`fileExplorer`, `servers`, `commands`, `menu`, `mtp`, `adb`) and 11b (the rest) if needed.
-- **Intentions**: `menu.*` rows regenerate `native_strings.gen.rs`; Quit rows follow the two registers (decision file:
-  "Exit Cmdr" as the action, "closed" in narration; Linux "Quit" in both). `code` rows (runtime data) follow the
-  verdicts. Any `main.oldWebkit.*` change must respect the boot-guard landmine.
+- **Intentions**: `menu.*` rows regenerate `native_strings.gen.rs`; Quit rows follow § Copy resolution's per-key
+  register list (Windows "Exit" for the action, "close" in narration; Linux "Quit" in both). `code` rows (runtime data)
+  follow the verdicts. Any `main.oldWebkit.*` change must respect the boot-guard landmine.
 - **Landmines**: `commands.*` labels feed the palette's fuzzy search and the shortcut settings: test both. The home
-  folder command gets "Go to user folder" on Windows with "home" kept as a palette search alias (decision file).
+  folder command gets "Go to user folder" on Windows with "home" kept as a palette search alias (decision file): add
+  `'home'` to `nav.goHome`'s `keywords` in `lib/commands/sources/file-list.ts`, and `'recycle bin'` to the trash
+  commands' keywords. The Quit keys include three the proposal never listed (`askCmdr.tool.quit.doing`,
+  `main.quit.countdown`, `main.quit.countdownAria`; § Copy resolution); `quit-gate.spec.ts` asserts "Quitting in 15
+  seconds" and stays green on Linux. `error-pane.spec.ts` asserts "Go to home folder", which Linux keeps.
 - **Test plan**: as milestone 10; Rust menu tests per seam arm for changed menu rows.
 - **DONE**: every `apply` row in `copy-final.json` applied; every `open` row listed in `copy-decisions.md`.
 
@@ -545,10 +697,18 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
   says which branch is which surface. The translator rule, canonical in `translator-instructions.md` (embedded in every
   brief): "In a platform select, each branch uses that OS's own localized term (Windows' own word for the Recycle Bin,
   File Explorer, Settings), sourced from that OS's localization, never the macOS term carried over."
-  `i18n-translation.md` § New feature points there and says how a branch-level stale key is worked. `@key.screenshot`
-  shows the macOS branch only: the description says so where it matters. Add the English half of the new termbase
-  concepts (`recycle-bin`, `file-explorer`, `this-pc`, `credential-manager`, `user-folder`, `task-manager`, `exit`, …)
-  to `docs/i18n/concepts.json`; per-locale rulings are task 28.
+  `i18n-translation.md` § New feature points there and says how a branch-level stale key is worked.
+  `i18n-translation.md` § Term-choice principles 1–2 become per branch: today principle 2 says "prefer the macOS Finder
+  term" over the Microsoft one, which is right for the `macos` branch only. Rewritten: the `macos` branch mines
+  `<tag>/macOS/` (Finder term wins); the `windows` branch mines `<tag>/microsoft-terminology/` and
+  `<tag>/microsoft-style-guides/` (Microsoft term wins, so pt-BR "Excluir" is right there); the `other` branch mines
+  `<tag>/gnome-nautilus/`, `<tag>/kde-dolphin/`, and `<tag>/xfce-thunar/` and picks the word they share, or the
+  desktop-neutral one where they split (desktop words wait for task 59). It also says what the pile lacks: the TBX has
+  no Windows shell labels ("This PC", "Eject"), and `zh-Hant` carries only Microsoft sources. The brief
+  (`i18n-brief-lib.ts`) labels each branch of a block with its OS and those pile folders. `@key.screenshot` shows the
+  macOS branch only: the description says so where it matters. Add the English half of the new termbase concepts
+  (`recycle-bin`, `file-explorer`, `this-pc`, `credential-manager`, `user-folder`, `task-manager`, `exit`, …) to
+  `docs/i18n/concepts.json`; per-locale rulings are task 28.
 - **Landmines**: an `en` description edit doesn't change the value hash, so it never marks a translation stale; don't
   restamp anything. Use a script for the 349 snippet rewrites, then read the diff.
 - **Test plan**: `i18n-citations` and doc checks green.
@@ -561,10 +721,15 @@ This is the biggest non-copy milestone; split it into 6a (gates) and 6b (the res
   § The specs lists this plan (added with it) and later loses it on wipe; `docs/design-principles.md` §
   "Platform-native, not generic" points at the glossary; `docs/guides/i18n.md` § "Add or change a user-facing string"
   gets a line on platform blocks; every touched `CLAUDE.md`/`DETAILS.md` re-read. The lead publishes a review page
-  rendering `copy-final.json` (key, surface, macOS / Windows / Linux English) for David: the plan entry's "David reviews
-  the English". `apply-platform-copy.ts` is deleted (git keeps it); `macos-copy-unchanged.test.ts` and its baseline STAY
-  until task 28 finishes, since they keep translator agents off the `macos` branches, and task 28's entry says to delete
-  them at its end.
+  rendering `copy-final.json` for David, the plan entry's "David reviews the English": per row the key, the surface
+  (`whereInUi`), the macOS, Windows, and Linux English as each OS renders it (after folding, plurals and selects
+  expanded to their arms), the register, and a diff against the proposal. It leads with what needs his eye: every
+  `written: true` branch (the Linux actor rewrites, the permanent-delete siblings), the Exit-vs-close flag, the settled
+  conflicts, and the rows left `open`. Publish it once milestone 11 lands, not at close-out, so his edits land before
+  task 28 starts: a translator working from English David then changes is a wasted round (review note (copy) 6).
+  `apply-platform-copy.ts` is deleted (git keeps it); `macos-copy-unchanged.test.ts` and its baseline STAY until task 28
+  finishes, since they keep translator agents off the `macos` branches, and task 28's entry says to delete them at its
+  end.
 - **Test plan**: `pnpm check --only-slow` (backgrounded by the lead), then the adversarial conformance review and the
   docs audit (`docs/guides/multi-agent-refactors.md` § Close out).
 - **DONE**: landed via `pnpm land`, task 28 ready to start.
@@ -642,3 +807,50 @@ left open.
 3. The menu pair's survivor is `menu.file.showInFileManager`: the key names the concept.
 4. Plural gaps that the stricter rule exposes in carried translations are listed for task 28, never baselined.
 5. Milestones 4 and 6 run as their a/b halves, one agent each. Milestone 7 stays one commit.
+
+## Review notes (copy)
+
+Copy, data, and executability review against `0327ab051d`. The fixes are in the plan above (§ Inputs precedence, § Copy
+resolution, milestones 6a, 6b, 9, 11–13, and the test-discovery line in the milestones preamble); these are the judgment
+calls left.
+
+1. **No drive-by rewording** (§ Branch-writing rules 1) keeps carried translations on Linux, at the cost of shipping old
+   style nits ("e.g. via chmod") in `other` branches until a copy pass. David may prefer the polish now; it only costs
+   Linux readers English text until task 28.
+2. **The `en-GB`/`en-AU` Linux trash word** changes lead ruling 1's "milestone 9 mines it": the evidence already did,
+   and found no desktop-neutral British word (GNOME/Xfce "Wastebasket", KDE "wastebin"). The plan keeps the overlays'
+   "Bin" on Linux so overlays never need a branch `en` folded away. "Wastebasket" is the alternative if David wants
+   GNOME's word as the generic one.
+3. **The command pair's survivor name.** The "stem without the suffix" rule makes `commands.fileShowInFinder.label`,
+   which names an OS, against the reasoning of lead ruling 3. Recommended: `commands.fileShowInFileManager.label`. The
+   command id `file.showInFinder` stays either way: ids are persisted in people's shortcut customizations
+   (`shortcuts-store.ts`), so renaming one is a migration, out of scope.
+4. **Gated commands in list surfaces.** The Keyboard shortcuts section lists the whole registry, so Linux shows "File
+   properties" and "Preview" rows for commands that do nothing there. Recommended: that section skips commands whose
+   `showInPalette` is a `hasCapability()` false (or a new `needsCapability` on the command), decided in milestone 6a.
+5. **Termbase after task 28.** Milestone 5 makes the termbase skip English-carryover branches, but a TRANSLATED
+   `windows` branch using the Microsoft word (pt-BR "Excluir") is then judged against the locale's macOS ruling
+   ("Apagar") and may hit its `avoid` list. Recommended: milestone 5 also gives `terms.json` rulings optional per-OS
+   forms (empty in task 27) and judges each branch against its OS's form; otherwise task 28 needs baseline raises, which
+   need David's OK.
+6. **Review timing.** The review page moves to "after milestone 11" so David's English edits land before task 28. If he
+   can't review in that window, task 28 should wait rather than translate English that may still change.
+7. **Eject for network volumes on Windows.** "Eject" stays neutral, but if `menu.volume.eject` / the volume eject
+   tooltips also show on an SMB mount, Windows says "Disconnect" and Linux "Unmount" there. Unverified; milestone 11
+   checks which volumes the eject rows reach before calling them neutral.
+8. **The permanent-delete siblings** (`confirmDelete`, `suggestedOps.action.delete`, `approve.delete`,
+   `sourcesGone.continue`'s `delete` arm) gain a Windows-only "permanently". It follows from the decision's two labels
+   ("Delete" / "Delete permanently") but changes four keys nobody proposed, so it's on David's review page.
+
+## Lead rulings on the copy review notes
+
+1. No drive-by rewording stands: a branch that reads the same as today keeps its 13 translations.
+2. `en-GB` and `en-AU` keep "Bin" on Linux. This replaces the mining step in the first rulings' item 1.
+3. The command pair's survivor is `commands.fileShowInFileManager.label`; the command id stays.
+4. A command gains `needsCapability`, and every surface that lists commands (palette, Keyboard shortcuts, menus) skips
+   one whose capability is off. Milestone 6a.
+5. `terms.json` rulings gain optional per-OS forms, empty for now, and the termbase judges each branch against its OS's
+   form. Milestone 5.
+6. Task 28 starts after David has reviewed the English.
+7. Milestone 11 checks which volumes the eject rows reach before calling "Eject" neutral.
+8. The four permanent-delete siblings gain "permanently" on Windows and are flagged on the review page.
