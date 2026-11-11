@@ -93,8 +93,6 @@ export function createSearchPaneKeys(deps: SearchPaneKeysDeps): SearchPaneKeys {
     claimKey(e)
 
     switch (action.kind) {
-      case 'noop':
-        return
       case 'open-cursor':
         deps.openCursorItem()
         return
