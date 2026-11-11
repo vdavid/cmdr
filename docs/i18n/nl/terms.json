@@ -3292,7 +3292,7 @@
     "chosen": "momentopname",
     "confidence": "high",
     "exceptions": {
-      "search.coverage.declined": "APFS system snapshot folders, a technical folder kind: snapshotmappen names them the way the disk does."
+      "search.coverage.line.declined": "APFS system snapshot folders, a technical folder kind: snapshotmappen names them the way the disk does."
     },
     "forms": "pl. momentopnames (the catalog's form; momentopnamen also correct); git snapshot → git-momentopname; a backup's snapshots → de momentopnames van een back-up",
     "sources": "macOS Finder (de back-up van de momentopname met de datum …), Microsoft terminology (momentopname), shipped catalog (fileExplorer.readOnly.gitPortalMessage, fileExplorer.git.useTransferToCopyOut)"

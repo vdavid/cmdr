@@ -193,7 +193,6 @@
     "confidence": "high",
     "decision": "The cloud AI toggle",
     "exceptions": {
-      "search.coverage.denied": "Wasn't allowed to look inside (a macOS permission refusal) → 沒有權限.",
       "errors.write.trashRefused.message.folderNotWritable": "English sense: “isn’t allowed to change” is a file-system permission, not granting consent, so it takes 沒有權限"
     },
     "forms": "toggle 允許使用雲端 AI; Android's own dialog button is quoted 「允許」",

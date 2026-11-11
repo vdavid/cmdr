@@ -20,6 +20,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushSync, tick } from 'svelte'
 import { writable } from 'svelte/store'
+import CoverageLine from './CoverageLine.svelte'
 import CoverageNote from './CoverageNote.svelte'
 import IndexLoadHint from './IndexLoadHint.svelte'
 import SearchDialog from './SearchDialog.svelte'
@@ -118,6 +119,33 @@ afterEach(() => {
  * back empty (message, the skipped scope paths, and the per-drive offer) must have no
  * axe violations, in both the offered and the silenced shape.
  */
+/**
+ * Tier 3 a11y tests for `CoverageLine.svelte`: one coverage list as a line. Its two
+ * buttons carry no visible text, so their `aria-label`s are their whole names, and the
+ * folder list sits in the tip's hidden host until the tooltip adopts it.
+ */
+describe('CoverageLine a11y', () => {
+  function mountLine(actionable: boolean, count: number) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const paths = Array.from({ length: count }, (_, i) => `/private/var/f${String(i)}`)
+    mount(CoverageLine, {
+      target,
+      props: { line: { kind: 'offLimits', paths, actionable }, message: 'Some folders are closed to Cmdr.' },
+    })
+    flushSync()
+    return target
+  }
+
+  it('an info line with a short list has no violations', async () => {
+    await expectNoA11yViolations(mountLine(false, 2))
+  })
+
+  it('a warning line with a capped list has no violations', async () => {
+    await expectNoA11yViolations(mountLine(true, 20))
+  })
+})
+
 describe('CoverageNote a11y', () => {
   const UNCOVERED: Note = {
     uncoveredScopes: ['/Volumes/naspi/photos'],
