@@ -30,7 +30,7 @@ import { resolveTerminalFolder } from '#lib/open-terminal/terminal-target.js'
 import { getShowVirtualGitPortal } from '#lib/settings/reactive-settings.svelte.js'
 import { openTerminalHereForFolder } from '#lib/open-terminal/open-terminal-here.js'
 import { tString } from '#lib/intl/messages.svelte.js'
-import { displayPath } from '#lib/utils/display-path.js'
+import { copiedPath, displayPath } from '#lib/utils/display-path.js'
 import { formatNumber } from '#lib/file-explorer/selection/selection-info-utils.js'
 import { extractFilename } from '#lib/file-explorer/operations/selection-adjustment.js'
 import { trackEvent } from '#lib/tauri-commands/index.js'
@@ -78,7 +78,8 @@ async function withEntryUnderCursor(
 const COPIED_PATH_TOAST_WIDTH_PX = 432
 
 /**
- * Puts `path` on the clipboard and confirms it with a transient info toast that
+ * Puts `path` on the clipboard as the OS spells it (`copiedPath`: `C:\Users\ada` on
+ * Windows) and confirms it with a transient info toast that
  * shows what landed there.
  *
  * The toast joins a one-slot group rather than reusing a fixed toast id: dedup by
@@ -87,7 +88,7 @@ const COPIED_PATH_TOAST_WIDTH_PX = 432
  * one, which also restarts the auto-dismiss timer.
  */
 async function copyPathAndAnnounce(path: string): Promise<void> {
-  await copyToClipboard(path)
+  await copyToClipboard(copiedPath(path))
   addToast(CopiedPathToastContent, {
     level: 'info',
     props: { path: displayPath(path) },
@@ -109,7 +110,7 @@ const CLIPBOARD_LINE_SEPARATOR = '\n'
  * either kind replaces the first instead of stacking.
  */
 async function copyPathsAndAnnounce(paths: string[]): Promise<void> {
-  await copyToClipboard(paths.join(CLIPBOARD_LINE_SEPARATOR))
+  await copyToClipboard(paths.map(copiedPath).join(CLIPBOARD_LINE_SEPARATOR))
   addToast(
     tString('fileExplorer.clipboard.copiedPaths', { countText: formatNumber(paths.length), count: paths.length }),
     {

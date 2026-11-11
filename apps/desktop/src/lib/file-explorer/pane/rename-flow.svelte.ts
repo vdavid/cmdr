@@ -20,6 +20,7 @@ import { createRenameToolCommit } from './rename-tool-commit'
 import type { Initiator } from '#lib/tauri-commands/index.js'
 import { captureFocusOrigin, restoreFocus as restoreFocusTo, type FocusOrigin } from '#lib/ui/focus-restore.js'
 import { startedByWhenGuarded, type ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
+import { lastName } from '#lib/path/grammar.js'
 
 export interface RenameFlowDeps {
   rename: ReturnType<typeof createRenameState>
@@ -609,7 +610,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
 
       const commitTarget = options?.commitTarget
       if (commitTarget && initialName !== undefined) {
-        const name = commitTarget.path.slice(commitTarget.path.lastIndexOf('/') + 1)
+        const name = lastName(commitTarget.path)
         if (!activateRename({ ...commitTarget, name }, initialName)) return
         if (rename.severity === 'error') {
           // Nobody is typing into an editor here, so the reason goes out and the session ends.

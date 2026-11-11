@@ -28,6 +28,8 @@ function location(
     isDiskImage: false,
     sharesDiskWithOthers: false,
     isCloudMount: false,
+    // The in-memory volume compares names exactly.
+    caseSensitive: true,
     connectionState: null,
     pinned: null,
     landingPath: null,

@@ -27,6 +27,7 @@ type Spec = [name: string, size: number, daysAgo: number]
 
 function files(dir: string, specs: Spec[]): DemoEntry[] {
   return specs.map(([name, size, daysAgo]) => ({
+    // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- the browser demo's own POSIX tree
     path: `${dir}/${name}`,
     kind: 'file',
     size,
@@ -35,12 +36,14 @@ function files(dir: string, specs: Spec[]): DemoEntry[] {
 }
 
 function dirs(parent: string, names: string[], daysAgo = 3): DemoEntry[] {
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- the browser demo's own POSIX tree
   return names.map((name, i) => ({ path: `${parent}/${name}`, kind: 'dir', modifiedMs: NOW - (daysAgo + i) * DAY }))
 }
 
 /** 1,200 numbered photos, so a visitor can feel how a big folder scrolls and sorts. */
 function bigFolder(dir: string): DemoEntry[] {
   return Array.from({ length: 1200 }, (_, i) => ({
+    // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- the browser demo's own POSIX tree
     path: `${dir}/IMG_${String(i + 1).padStart(4, '0')}.heic`,
     kind: 'file',
     size: 1_800_000 + ((i * 7919) % 2_400_000),

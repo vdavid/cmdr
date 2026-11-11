@@ -11,6 +11,7 @@ import { pathExists, pathExistsChecked } from '#lib/tauri-commands/index.js'
 import { withTimeout } from '#lib/utils/timing.js'
 import type { ConnectionState } from '../types'
 import { probeTimeoutMs } from './connection-state'
+import { parentOrRoot } from '#lib/path/grammar.js'
 
 export interface ResolveValidPathOptions {
   /**
@@ -200,9 +201,10 @@ async function walkUp(
     if (bounds.volumeRoot && path === bounds.volumeRoot) {
       return bounds.keepSilentRoot && answer === 'unknown' ? path : null
     }
-    // Go to parent
-    const lastSlash = path.lastIndexOf('/')
-    path = lastSlash > 0 ? path.substring(0, lastSlash) : '/'
+    // Go to parent. A drive or share root (`C:/`) is its own parent: the walk ends there.
+    const parent = parentOrRoot(path)
+    if (parent === path) break
+    path = parent
   }
   return null
 }

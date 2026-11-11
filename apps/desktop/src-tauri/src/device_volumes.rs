@@ -163,6 +163,7 @@ fn location_from_entry(entry: DeviceVolumeEntry) -> LocationInfo {
         is_disk_image: false,
         shares_disk_with_others: false,
         is_cloud_mount: false,
+        case_sensitive: crate::volumes::DEVICE_STORAGE_CASE_SENSITIVE,
         fs_type: Some(entry.fs_type.to_string()),
         supports_trash: false,
         connection_state: None,

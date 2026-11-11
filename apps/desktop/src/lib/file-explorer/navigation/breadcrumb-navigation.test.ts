@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { splitPathSegments } from './path-segments'
 import { enrichBreadcrumbSegments, type BreadcrumbNavContext } from './breadcrumb-navigation'
 
@@ -134,5 +135,32 @@ describe('enrichBreadcrumbSegments', () => {
     const dotGit = segs.find((s) => s.text === '.git')
     expect(dotGit?.gitPortal).toBe(true)
     expect(dotGit?.target).toBe('/Users/dave/repo/.git')
+  })
+})
+
+describe('a Windows drive volume', () => {
+  const driveCtx = (currentPath: string): BreadcrumbNavContext => ({
+    volumeId: 'c',
+    volumePath: 'C:/',
+    currentPath,
+    userHomePath: 'C:/Users/ada',
+    isSearchResults: false,
+  })
+
+  it('navigates each segment to its real path under the drive root', () => {
+    onTestFinished(withPlatform('windows'))
+    const segs = enrich('/Users/ada/Documents', driveCtx('C:/Users/ada/Documents'))
+    expect(segs.map((s) => s.target)).toEqual([null, 'C:/Users', 'C:/Users/ada', null])
+  })
+
+  it('shows the tooltip path with backslashes', () => {
+    onTestFinished(withPlatform('windows'))
+    const segs = enrich('/Users/ada/Documents', driveCtx('C:/Users/ada/Documents'))
+    expect(segs[2].displayPath).toBe('\\Users\\ada')
+  })
+
+  it('keeps slashes in the tooltip off Windows', () => {
+    onTestFinished(withPlatform('linux'))
+    expect(enrich('/etc/ssl', rootCtx('/etc/ssl'))[1].displayPath).toBe('/etc')
   })
 })

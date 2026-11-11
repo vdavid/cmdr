@@ -340,6 +340,12 @@ export interface VolumeInfo {
    * directory on the data volume and stays indexable.
    */
   isCloudMount?: boolean
+  /**
+   * Whether names here tell `Ada` from `ada`: the volume's own answer (Rust's `LocationInfo.case_sensitive`),
+   * ❌ never the OS's. What `#lib/path/grammar`'s comparisons take wherever typed text meets this volume's listing.
+   * `undefined` compares exactly, as a path spelled by the backend always matches itself.
+   */
+  caseSensitive?: boolean
   /** Filesystem type from statfs (for example, "apfs", "smbfs", "exfat") */
   fsType?: string
   /** Whether this volume supports macOS trash. `undefined` means unknown (treat as `true`). */

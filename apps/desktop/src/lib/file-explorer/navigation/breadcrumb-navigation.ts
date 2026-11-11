@@ -21,6 +21,7 @@ import { parseMtpPath, constructMtpPath } from '#lib/mtp/index.js'
 import { volumeScheme } from '#lib/volume-scheme.js'
 import { constructAdbPath, parseAdbPath } from '#lib/adb/adb-path-utils.js'
 import type { PathSegment } from './path-segments'
+import { shownSeparator, volumePrefix } from '#lib/path/grammar.js'
 
 export interface BreadcrumbNavContext {
   /** The pane's volume id (drives the MTP and ADB branches). */
@@ -96,7 +97,7 @@ function targetFor(segments: PathSegment[], index: number, ctx: BreadcrumbNavCon
     if (!ctx.userHomePath) return null
     base = ctx.userHomePath
   } else if (ctx.volumePath && ctx.volumePath !== '/') {
-    base = ctx.volumePath
+    base = volumePrefix(ctx.volumePath)
   } else {
     base = ''
   }
@@ -114,6 +115,8 @@ export function enrichBreadcrumbSegments(
   ctx: BreadcrumbNavContext,
 ): ClickableBreadcrumbSegment[] {
   const lastIndex = segments.length - 1
+  // The tooltip reads the way the bar does: `\` between a Windows local path's names.
+  const separator = shownSeparator(ctx.currentPath)
   return segments.map((seg, i) => {
     // The current folder (last) and the empty root marker have nothing to navigate to.
     const clickable = !ctx.isSearchResults && i < lastIndex && seg.text !== ''
@@ -123,7 +126,7 @@ export function enrichBreadcrumbSegments(
       displayPath: segments
         .slice(0, i + 1)
         .map((s) => s.text)
-        .join('/'),
+        .join(separator),
     }
   })
 }

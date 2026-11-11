@@ -7,6 +7,8 @@
  * pure function both the view and its tests can reach.
  */
 
+import { lastName } from '#lib/path/grammar.js'
+
 /** One row of a snapshot pane, as much of it as the menu needs. */
 export interface SnapshotRow {
   path: string
@@ -67,6 +69,5 @@ export function snapshotContextMenuRows<Row extends SnapshotRow>(
  * and relative input out of exactly this arithmetic, and there is none here.
  */
 export function snapshotBasename(path: string): string {
-  const idx = path.lastIndexOf('/')
-  return idx >= 0 ? path.slice(idx + 1) : path
+  return lastName(path)
 }

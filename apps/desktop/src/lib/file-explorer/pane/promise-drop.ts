@@ -15,6 +15,7 @@ import { tString } from '#lib/intl/messages.svelte.js'
 import { formatInteger } from '#lib/intl/number-format.js'
 import type { DragPayloadKind, DropSource, PromiseDropFailure } from '#lib/tauri-commands/index.js'
 import type { DropOutcome } from '../drag/drag-analytics'
+import { lastName } from '#lib/path/grammar.js'
 
 /**
  * Whether a drag carrying `kind` may light drop targets up. `null` (the native
@@ -45,7 +46,7 @@ export function hostOf(url: string | null | undefined): string | null {
 }
 
 function leafName(path: string): string {
-  return path.split('/').pop() || path
+  return lastName(path) || path
 }
 
 /**

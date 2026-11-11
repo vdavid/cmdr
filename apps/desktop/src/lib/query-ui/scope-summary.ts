@@ -51,6 +51,7 @@ export function scopeSummaryFor(input: ScopeSummaryInput): string {
  * `scheme://host/share` remote path.
  */
 function folderNameOf(path: string): string {
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a display label: the last non-empty name, scheme roots handled below, a drive root reading as its letter
   const segments = path.split('/').filter((s) => s.length > 0)
   const last = segments.at(-1) ?? ''
   if (last === '~') return ''

@@ -39,6 +39,7 @@ const _: fn(&str) -> Option<SpaceInfo> = live_volume_space;
 const _: fn(&AppHandle) = start_volume_watcher;
 const _: fn() = stop_volume_watcher;
 const _: &str = NETWORK_FS_TYPE;
+const _: bool = LOCAL_DISK_CASE_SENSITIVE;
 
 /// Every location the switcher lists, deduplicated: favorites, the main volume, attached and
 /// network mounts, and cloud drives. Blocking: run it off the async thread
@@ -103,6 +104,11 @@ pub(crate) use imp::watcher::stop_volume_watcher;
 /// The `fs_type` the synthetic `network` volume reports: whatever this OS calls an SMB mount, so
 /// a consumer classifying by fs type sees a share and not an unknown filesystem.
 pub(crate) use imp::NETWORK_FS_TYPE;
+
+/// Whether this OS's local disks tell `Ada` from `ada`, the answer every local-disk row's
+/// `case_sensitive` carries. Read from no mount: a per-mount `pathconf` could block on a dead
+/// one, so each arm states what its local filesystems do by default.
+pub(crate) use imp::LOCAL_DISK_CASE_SENSITIVE;
 
 // What only macOS has: disk images, whole-disk units, the DiskArbitration unmount approver, and
 // the readers the eject and SMB paths use beyond the seam.

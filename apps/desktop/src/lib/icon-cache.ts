@@ -379,6 +379,7 @@ export function getAccentTintedCustomFolderEmoji(directoryPath: string): string 
 export function evictPerPathIconsForDir(dirPath: string): void {
   if (!dirPath) return
   // Normalize to a child-prefix: keys are `path:/abs/child` or `pkg:/abs/child`.
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a child-prefix test; a root (`/`, `C:/`) already ends in `/`
   const childPrefix = dirPath.endsWith('/') ? dirPath : `${dirPath}/`
   let removed = false
   for (const key of memoryCache.keys()) {

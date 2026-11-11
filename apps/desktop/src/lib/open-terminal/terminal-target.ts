@@ -101,6 +101,7 @@ function outermostHoldingFolder(path: string, virtualGitPortalOn: boolean): stri
 
 /** The working tree a virtual `.git` portal path belongs to (the folder holding its `.git`), or `null`. */
 function gitWorkingTree(path: string): string | null {
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- finds a `.git` portal component by name; the working tree above it is rejoined with the same `/`
   const components = path.split('/')
   const gitAt = virtualGitBoundaryIndex(components)
   if (gitAt === -1) return null

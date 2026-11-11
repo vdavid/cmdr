@@ -717,6 +717,7 @@ export function paneFolderIsPolledForDeletion(volumeId: string, path: string): b
  */
 export function capabilitiesForPane(volumeId: string, path: string | undefined): VolumeCapabilities {
   if (path === undefined) return capabilitiesFor(volumeId)
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- routed boundaries are folder NAMES; a drive or share root splits to a first component no boundary names
   return routedCapabilities(path.split('/')) ?? capabilitiesFor(volumeId)
 }
 

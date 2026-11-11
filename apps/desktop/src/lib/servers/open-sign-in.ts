@@ -512,6 +512,7 @@ function headerAddressOf(
   parsed: ReturnType<typeof parseServerPath>,
 ): string {
   if (owner.protocol === 'smb' && place) return `smb://${owner.address}/${place.name}`
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- an S3 server path, whose first `/` component is the bucket
   const bucket = parsed?.protocol === 's3' ? parsed.path.split('/')[0] : ''
   return bucket ? `${owner.address}/${bucket}` : owner.address
 }

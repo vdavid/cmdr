@@ -17,6 +17,7 @@ import { boundShortcuts } from '#lib/shortcuts/index.js'
 import { isVolumeEjectable } from '../navigation/eject-predicate'
 import type { VolumeChangePayload } from './types'
 import { displayPath } from '#lib/utils/display-path.js'
+import { volumePrefix } from '#lib/path/grammar.js'
 
 export interface BreadcrumbDisplayPathInput {
   currentPath: string
@@ -59,9 +60,11 @@ function volumeDisplayPath(input: BreadcrumbDisplayPathInput): string {
   if (scheme === 'mtp') return getMtpDisplayPath(currentPath)
   if (scheme === 'adb') return getAdbDisplayPath(currentPath)
 
-  // For non-root volumes, strip the volume path prefix
+  // For non-root volumes, strip the volume path prefix. A drive or share root keeps
+  // its `/` for the path below it (`C:/Users` reads `/Users`, shown `\Users` on Windows).
   if (volumePath !== '/') {
-    return currentPath.startsWith(volumePath) ? currentPath.slice(volumePath.length) || '/' : currentPath
+    const prefix = volumePrefix(volumePath)
+    return currentPath.startsWith(prefix) ? currentPath.slice(prefix.length) || '/' : currentPath
   }
 
   // Root volume: paths starting with ~ are already user-friendly

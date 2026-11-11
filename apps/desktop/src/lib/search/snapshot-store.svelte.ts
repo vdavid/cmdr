@@ -27,6 +27,7 @@
 
 import type { SearchResultEntry, SortColumn, SortOrder } from '#lib/ipc/bindings.js'
 import { tString } from '#lib/intl/messages.svelte.js'
+import { isPathOnVolume } from '#lib/path/canonical.js'
 
 /** Maximum entries we keep in a single snapshot. Excess matches are truncated. */
 export const SNAPSHOT_ENTRIES_CAP = 10_000
@@ -394,8 +395,7 @@ export function getRefCount(id: string): number {
  * signal, so reusing it here is consistent.
  */
 export function removeEntryFromAllSnapshots(path: string): string[] {
-  const insidePrefix = `${path}/`
-  const survives = (candidate: string): boolean => candidate !== path && !candidate.startsWith(insidePrefix)
+  const survives = (candidate: string): boolean => !isPathOnVolume(candidate, path)
   const mutatedIds: string[] = []
   for (const [id, entry] of store.entries()) {
     const filtered = entry.entries.filter((e) => survives(e.path))

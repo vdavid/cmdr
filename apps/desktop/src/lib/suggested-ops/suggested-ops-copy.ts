@@ -159,12 +159,14 @@ export function rowFacts(op: SuggestedOpView, live: LiveFact | undefined): RowFa
 
 /** The last path segment: the name a row leads with. */
 export function fileName(path: string): string {
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a row may end in `/` (an S3 folder key); a drive root shows as its letter
   const trimmed = path.endsWith('/') && path.length > 1 ? path.slice(0, -1) : path
   return trimmed.slice(trimmed.lastIndexOf('/') + 1)
 }
 
 /** Everything before the name, or `''` for a bare name. */
 export function parentFolder(path: string): string {
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a row may end in `/` (an S3 folder key); a drive root shows as its letter
   const trimmed = path.endsWith('/') && path.length > 1 ? path.slice(0, -1) : path
   const slash = trimmed.lastIndexOf('/')
   if (slash < 0) return ''

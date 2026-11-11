@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, onTestFinished } from 'vitest'
-import { withCapabilities } from '#lib/platform/test-platform.js'
+import { withCapabilities, withPlatform } from '#lib/platform/test-platform.js'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import {
   validateDisallowedChars,
@@ -126,6 +126,20 @@ describe('validateDirectoryPath', () => {
     const result = validateDirectoryPath('Documents/folder')
     expect(result.severity).toBe('error')
     expect(result.message).toBe('Path must be absolute (start with /)')
+  })
+
+  it('accepts a drive or UNC path, either slash, on Windows', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(validateDirectoryPath('C:/Users/ada').severity).toBe('ok')
+    expect(validateDirectoryPath('C:\\Users\\ada').severity).toBe('ok')
+    expect(validateDirectoryPath('\\\\server\\share\\x').severity).toBe('ok')
+    expect(validateDirectoryPath('/Users/ada').severity).toBe('ok')
+    expect(validateDirectoryPath('Documents\\folder').severity).toBe('error')
+  })
+
+  it.each(['macos', 'linux'] as const)('rejects a drive-shaped path as relative on %s', (platform) => {
+    onTestFinished(withPlatform(platform))
+    expect(validateDirectoryPath('C:/Users/ada').severity).toBe('error')
   })
 
   it('rejects path with null byte', () => {

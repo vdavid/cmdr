@@ -35,6 +35,7 @@ import noRawBindingsImport from './eslint-plugins/no-raw-bindings-import.js'
 import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
 import noRawCommandDispatch from './eslint-plugins/no-raw-command-dispatch.js'
 import noRawKeyMatch from './eslint-plugins/no-raw-key-match.js'
+import noRawPathArithmetic from './eslint-plugins/no-raw-path-arithmetic.js'
 import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
 import noRawArkImport from './eslint-plugins/no-raw-ark-import.js'
 import demoIsolation from './eslint-plugins/demo-isolation.js'
@@ -335,6 +336,7 @@ export default tseslint.config(
           'no-explorer-state-writes': noExplorerStateWrites,
           'no-raw-command-dispatch': noRawCommandDispatch,
           'no-raw-key-match': noRawKeyMatch,
+          'no-raw-path-arithmetic': noRawPathArithmetic,
           'no-raw-lucide-import': noRawLucideImport,
           'no-raw-ark-import': noRawArkImport,
           'demo-isolation': demoIsolation,
@@ -377,6 +379,10 @@ export default tseslint.config(
       // warn — the failure mode is silent (a second command fires) and the fix is
       // mechanical. See `lib/shortcuts/CLAUDE.md`.
       'cmdr/no-raw-key-match': 'error',
+      // Local path arithmetic goes through `#lib/path`, which knows Windows' `C:/` and
+      // `//server/share/` roots: a raw `lastIndexOf('/')` on `C:/Users` cuts the drive off.
+      // Keyed on path-NAMED values; off for tests below. See the rule's header.
+      'cmdr/no-raw-path-arithmetic': 'error',
       'cmdr/no-raw-lucide-import': 'error',
       // Each `@ark-ui/svelte` primitive is wrapped once in a house component
       // under `lib/ui/` (named 1:1 after Ark); feature/section code uses those
@@ -565,6 +571,8 @@ export default tseslint.config(
       'no-restricted-properties': 'off',
       // Tests use literal copy for fixtures and assertions, on purpose.
       'cmdr/no-raw-user-facing-string': 'off',
+      // Fixtures spell paths by hand, and assertions build expected ones, on purpose.
+      'cmdr/no-raw-path-arithmetic': 'off',
       // Tests assert the root-base output (`/icons/sync-synced.svg`) and mock icon URLs.
       'cmdr/no-root-relative-asset': 'off',
       // Fixtures legitimately spell out `1024 * 1024` to build expected values.

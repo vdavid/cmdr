@@ -28,6 +28,7 @@ import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { asMutationError } from '../mutation-error'
+import { isVolumeRoot, lastName, parentOrRoot } from '#lib/path/grammar.js'
 
 const log = getAppLogger('fileOperations')
 
@@ -149,7 +150,8 @@ async function firstTrashedItemPath(operationId: string): Promise<{ dir: string;
   const landed = detail?.items.find((item) => item.rowRole === 'rollbackUnit' && item.destPath !== null)
   if (!landed?.destPath) return null
 
-  const lastSlash = landed.destPath.lastIndexOf('/')
-  if (lastSlash <= 0) return null
-  return { dir: landed.destPath.slice(0, lastSlash), name: landed.destPath.slice(lastSlash + 1) }
+  // An item right under a volume root (`/x`, `C:/x`) has no folder to reveal it in.
+  const dir = parentOrRoot(landed.destPath)
+  if (isVolumeRoot(dir)) return null
+  return { dir, name: lastName(landed.destPath) }
 }

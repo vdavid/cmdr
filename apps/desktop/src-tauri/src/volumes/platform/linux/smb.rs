@@ -209,6 +209,7 @@ mod enrichment_tests {
             is_disk_image: false,
             shares_disk_with_others: false,
             is_cloud_mount: false,
+            case_sensitive: crate::volumes::SERVER_PLACE_CASE_SENSITIVE,
             connection_state: None,
             pinned: None,
             landing_path: None,

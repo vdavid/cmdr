@@ -9,6 +9,7 @@ import type { WriteConflictEvent } from '#lib/ipc/bindings.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { isPathOnVolume, isPlainFilesystemPath, parentOf, toCanonical } from '#lib/path/canonical.js'
 import { suggestCompressArchiveName } from './transfer-compress-name'
+import { joinPath } from '#lib/path/grammar.js'
 
 /**
  * Generates a dialog title with proper pluralization for files and folders.
@@ -83,6 +84,7 @@ export function containingFolder(path: string): string | null {
  */
 export function getFolderName(path: string): string {
   if (path === '/') return '/'
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a label: a root's trailing slash goes so its own name shows (`C:/` reads `C:`)
   const normalized = path.endsWith('/') ? path.slice(0, -1) : path
   const parts = normalized.split('/')
   const last = parts[parts.length - 1] || '/'
@@ -108,7 +110,9 @@ export function getFolderName(path: string): string {
  * @param volumeDisplayName - The volume's display name from the volume store
  */
 export function deriveTransferLabel(path: string, volumeRootPath: string, volumeDisplayName: string): string {
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- both sides trimmed alike, so `C:/` and `//server/share/` compare as their roots
   const normPath = path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- both sides trimmed alike, so `C:/` and `//server/share/` compare as their roots
   const normRoot = volumeRootPath.endsWith('/') && volumeRootPath !== '/' ? volumeRootPath.slice(0, -1) : volumeRootPath
   const atRoot = normPath === '' || normPath === '/' || normPath === normRoot
   if (atRoot && volumeDisplayName !== '') {
@@ -190,6 +194,7 @@ export function toBackendSelectionOrCursor(
  */
 export function toVolumeRelativePath(fullPath: string, volumePath: string): string {
   if (volumePath === '/') return fullPath
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a root's trailing slash is trimmed so the volume-relative rest keeps its leading `/` (`C:/Users` → `/Users`)
   const root = volumePath.endsWith('/') ? volumePath.slice(0, -1) : volumePath
   if (isPathOnVolume(fullPath, root)) return fullPath.slice(root.length) || '/'
   // A non-local volume whose caller already spelled the path volume-relative
@@ -276,6 +281,7 @@ export function joinPathLeaf(folder: string, leaf: string): string {
  * to refuse, ❌ never the folder's own name one level up.
  */
 export function splitPathLeaf(path: string): { folder: string; leaf: string } {
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- the path box holds a volume-relative path, `/`-led on every volume
   const slash = path.lastIndexOf('/')
   if (slash === -1) return { folder: '/', leaf: path }
   const folder = path.slice(0, slash).replace(/\/+$/, '')
@@ -302,8 +308,8 @@ export function resolveTransferFilename(
 
 /** `~/` expands from home; anything not absolute resolves from the source folder. */
 function toAbsoluteTarget(entered: string, sourceFolder: string, homePath: string): string {
-  const expanded = entered.startsWith('~/') && homePath ? `${homePath}/${entered.slice(2)}` : entered
-  return expanded.startsWith('/') ? expanded : `${sourceFolder}/${expanded}`
+  const expanded = entered.startsWith('~/') && homePath ? joinPath(homePath, entered.slice(2)) : entered
+  return expanded.startsWith('/') ? expanded : joinPath(sourceFolder, expanded)
 }
 
 /** Collapse `.` / `..` and split off the leaf. */

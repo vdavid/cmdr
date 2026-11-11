@@ -11,6 +11,10 @@ use cmdr_fs::volume::SpaceInfo;
 /// report, since this one mounts no shares.
 pub(crate) const NETWORK_FS_TYPE: &str = "smbfs";
 
+/// NTFS, ReFS, FAT, and exFAT fold case (a per-directory case-sensitive NTFS flag exists, off by
+/// default).
+pub(crate) const LOCAL_DISK_CASE_SENSITIVE: bool = false;
+
 /// The home folders that exist, then the root, then home itself.
 pub(crate) fn list_locations() -> Vec<LocationInfo> {
     let home = dirs::home_dir().unwrap_or_default();
@@ -48,6 +52,7 @@ fn row(id: &str, name: &str, path: &Path, category: LocationCategory) -> Locatio
         is_disk_image: false,
         shares_disk_with_others: false,
         is_cloud_mount: false,
+        case_sensitive: LOCAL_DISK_CASE_SENSITIVE,
         connection_state: None,
         pinned: None,
         landing_path: None,

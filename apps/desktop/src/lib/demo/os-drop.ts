@@ -104,6 +104,7 @@ async function walk(entry: FileSystemEntry, path: string, into: DroppedItem[]): 
   if (entry.isDirectory) {
     into.push({ path, kind: 'folder', size: 0 })
     for (const child of await childrenOf(entry as FileSystemDirectoryEntry)) {
+      // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a dropped folder's tree in the browser demo, `/`-separated by the File System API
       await walk(child, `${path}/${child.name}`, into)
     }
   } else if (entry.isFile) {

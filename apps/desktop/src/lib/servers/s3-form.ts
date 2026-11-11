@@ -219,6 +219,7 @@ const PRESET_HOSTS: { re: RegExp; fill: (part: string) => Partial<S3FormFields> 
 export function s3FieldsFromAppPath(path: string): { accessKeyId: string; fields: S3FormFields } | null {
   const parsed = parseServerPath(path)
   if (parsed?.protocol !== 's3') return null
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- an S3 server path, whose first `/` component is the bucket
   const bucket = parsed.path.split('/')[0] ?? ''
   const preset = PRESET_HOSTS.map(({ re, fill }) => {
     const match = re.exec(parsed.host)

@@ -70,6 +70,7 @@ import type { VolumeCapabilities } from './volume-capabilities'
 import * as benchmark from '#lib/benchmark.js'
 import { isEventForCurrentLoad } from './listing-token'
 import { trackLiveListing, untrackLiveListing } from './listing-liveness'
+import { lastName } from '#lib/path/grammar.js'
 
 const log = getAppLogger('fileExplorer')
 
@@ -667,7 +668,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     const parentRow = deps.getHasParent() ? 1 : 0
     let foundRowIndex: number | undefined
     if (cursor.rowPath !== undefined) {
-      const name = cursor.rowPath.slice(cursor.rowPath.lastIndexOf('/') + 1)
+      const name = lastName(cursor.rowPath)
       const found = await findFileIndex(deps.getListingId(), name, includeHidden)
       if (found !== null) foundRowIndex = found + parentRow
     }

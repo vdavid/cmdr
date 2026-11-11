@@ -16,6 +16,7 @@ import { getShowVirtualGitPortal } from '#lib/settings/reactive-settings.svelte.
 import { VIRTUAL_GIT_CATEGORIES } from '../git/path-detection'
 import { RESTIC_VIEW_FOLDER_NAME } from '../restic/path-detection'
 import type { VolumeKind } from './volume-capabilities'
+import { lastName } from '#lib/path/grammar.js'
 
 /** The icon-id prefixes the backend reserves for view rows (`FileIcon.svelte` draws them). */
 const VIEW_ROW_ICON_PREFIXES = ['restic:', 'git:'] as const
@@ -45,7 +46,7 @@ export function isOverlayRow(entry: { iconId: string }, paneKind: VolumeKind): b
 /** The names an overlay could add to a listing of `panePath`, so a lookup asks only for those. */
 export function overlayRowCandidates(panePath: string, gitPortalOn: boolean): string[] {
   const names: string[] = [RESTIC_VIEW_FOLDER_NAME]
-  if (gitPortalOn && panePath.split('/').at(-1) === '.git') names.push(...VIRTUAL_GIT_CATEGORIES)
+  if (gitPortalOn && lastName(panePath) === '.git') names.push(...VIRTUAL_GIT_CATEGORIES)
   return names
 }
 

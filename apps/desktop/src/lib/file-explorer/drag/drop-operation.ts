@@ -5,6 +5,7 @@
 //   - Otherwise               → Copy
 
 import type { VolumeInfo } from '#lib/file-explorer/types.js'
+import { isPathOnVolume } from '#lib/path/canonical.js'
 
 export interface ModifierState {
   altHeld: boolean
@@ -20,7 +21,7 @@ export function findVolumeIdForPath(path: string, volumes: readonly VolumeInfo[]
   let best: VolumeInfo | null = null
   for (const v of volumes) {
     if (!v.path) continue
-    const matches = v.path === '/' ? path.startsWith('/') : path === v.path || path.startsWith(`${v.path}/`)
+    const matches = isPathOnVolume(path, v.path)
     if (matches && (!best || v.path.length > best.path.length)) {
       best = v
     }

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { displayPath, withoutPicks } from './display-path'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
+import { copiedPath, displayPath, withoutPicks } from './display-path'
 
 /** A twin's row path, the way the MTP backend lists it (`cmdr_fs::twin_path`). */
 function twinRowPath(folder: string, handle: number, name: string): string {
@@ -60,5 +61,33 @@ describe('withoutPicks', () => {
   it('keeps an S3 path whole, since a copied path has to find its account again', () => {
     const path = 's3://AKIAEXAMPLEKEY@h:443/photos/\u00004/a.jpg'
     expect(withoutPicks(path)).toBe('s3://AKIAEXAMPLEKEY@h:443/photos/a.jpg')
+  })
+})
+
+describe('a local path on each platform', () => {
+  it('reads with backslashes on Windows, a twin pick still taken out', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(displayPath('C:/Users/ada/notes.txt')).toBe('C:\\Users\\ada\\notes.txt')
+    expect(displayPath('//server/share/x')).toBe('\\\\server\\share\\x')
+    expect(displayPath(twinRowPath('C:/DCIM', 4, 'a.jpg'))).toBe('C:\\DCIM\\a.jpg')
+  })
+
+  it('leaves prose holding a path, and every scheme URL, alone on Windows', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(displayPath('Copy C:/a to D:/b')).toBe('Copy C:/a to D:/b')
+    expect(displayPath('sftp://ada@nas.local:22/home/ada')).toBe('sftp://ada@nas.local:22/home/ada')
+  })
+
+  it.each(['macos', 'linux'] as const)('leaves every path alone on %s', (platform) => {
+    onTestFinished(withPlatform(platform))
+    expect(displayPath('/Users/ada/a\\b')).toBe('/Users/ada/a\\b')
+    expect(displayPath('C:/Users/ada')).toBe('C:/Users/ada')
+    expect(copiedPath('/Users/ada/notes.txt')).toBe('/Users/ada/notes.txt')
+  })
+
+  it('copies the shown form of a path on Windows, an S3 account kept', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(copiedPath('C:/Users/ada/notes.txt')).toBe('C:\\Users\\ada\\notes.txt')
+    expect(copiedPath('s3://AKIA@host:9000/bucket/a')).toBe('s3://AKIA@host:9000/bucket/a')
   })
 })

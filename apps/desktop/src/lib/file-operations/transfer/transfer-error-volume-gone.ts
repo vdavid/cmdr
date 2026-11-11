@@ -132,5 +132,6 @@ function serverConnectionLostMessage(
 
 /** The last segment of a backend path: the name a person recognizes the file by. */
 function lastPathSegment(path: string): string {
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a display name: the last non-empty name, a drive root reading as its letter
   return path.split('/').findLast((segment) => segment !== '') ?? path
 }

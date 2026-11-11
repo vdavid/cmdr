@@ -17,6 +17,7 @@
     import type { KnownSize, RollbackSupport } from '#lib/ipc/bindings.js'
     import { answerDecisionKey, CONFLICT_KEYS, DECISION_KEYS_ARM_MS, type DecisionChoice } from '../decision-keys'
     import { rollbackBlockedTooltipKey } from '../reversal-wording'
+    import { lastName } from '#lib/path/grammar.js'
 
     interface Props {
         /** The conflict to resolve (one clash; the BE re-prompts per remaining clash). */
@@ -60,7 +61,7 @@
     // the Rollback row — serves every clash type. Variants differ only in the row
     // labels, the red warning block above the filename for a file↔folder swap
     // (worded per direction), and the "Overwrite" button copy for file→folder.
-    const fileName = $derived(conflictEvent.destinationPath.split('/').pop() ?? '')
+    const fileName = $derived(lastName(conflictEvent.destinationPath))
     /** Which `f001` this is. A copy of a deep tree raises one prompt per clash,
      *  and a QA pass over 1,600 folders that each held an `f001` got 1,600
      *  identical-looking questions. The folder is what tells them apart, so it

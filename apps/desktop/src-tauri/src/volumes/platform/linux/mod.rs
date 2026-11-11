@@ -47,6 +47,10 @@ use crate::volumes::{DEFAULT_VOLUME_ID, LocationCategory, LocationInfo, SmbMount
 /// What the synthetic `network` volume reports as its `fs_type`: what Linux calls an SMB mount.
 pub(crate) const NETWORK_FS_TYPE: &str = "cifs";
 
+/// ext4, Btrfs, XFS, and a CIFS mount (the kernel client compares exactly unless mounted `nocase`)
+/// all compare names exactly.
+pub(crate) const LOCAL_DISK_CASE_SENSITIVE: bool = true;
+
 /// The `(fs type, source)` of the mount `path` lexically lies on, from `/proc/mounts` alone.
 pub(crate) fn mount_type_and_source_for(path: &Path) -> Option<(String, String)> {
     linux_mounts::mount_entry_for_path(path).map(|entry| (entry.fstype, entry.device))
@@ -123,6 +127,7 @@ fn favorite_location(
         is_disk_image: false,
         shares_disk_with_others: false,
         is_cloud_mount: false,
+        case_sensitive: LOCAL_DISK_CASE_SENSITIVE,
         connection_state: None,
         pinned: None,
         landing_path: None,
@@ -154,6 +159,7 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
         is_disk_image: false,
         shares_disk_with_others: false,
         is_cloud_mount: false,
+        case_sensitive: LOCAL_DISK_CASE_SENSITIVE,
         connection_state: None,
         pinned: None,
         landing_path: None,
@@ -200,6 +206,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         is_disk_image: false,
         shares_disk_with_others: false,
         is_cloud_mount: false,
+        case_sensitive: LOCAL_DISK_CASE_SENSITIVE,
         connection_state: None,
         pinned: None,
         landing_path: None,
@@ -356,6 +363,20 @@ mod tests {
         let target = row.favorite_target.expect("a favorite row carries its target");
         assert_eq!(target.discovered.on_disk, OnDisk::No);
         assert_eq!(target.reach, FavoriteReach::NotFound);
+    }
+
+    /// Linux's local disks compare names exactly, so the main volume and a favorite on it say so,
+    /// and a GVFS share, whose server folds case, doesn't.
+    #[test]
+    fn local_disks_are_case_sensitive_and_a_gvfs_share_is_not() {
+        let mounts = vec![proc_mount("/dev/sda1", "/", "ext4")];
+        assert!(get_main_volume(&mounts).expect("a root row").case_sensitive);
+        assert!(favorite_location(favorite("/home/nobody/gone"), &with_a_share(), |_| false).case_sensitive);
+        let share = network_mounts::gvfs_share_location(
+            "/run/user/1000/gvfs/smb-share:server=nas,share=public".into(),
+            "public".into(),
+        );
+        assert!(!share.case_sensitive);
     }
 
     #[test]

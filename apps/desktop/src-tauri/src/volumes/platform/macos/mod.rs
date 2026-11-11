@@ -52,6 +52,11 @@ pub(crate) use smb::{enrich_from_volume_registry, get_smb_mount_info, parse_smb_
 /// What the synthetic `network` volume reports as its `fs_type`: what macOS calls an SMB mount.
 pub(crate) const NETWORK_FS_TYPE: &str = "smbfs";
 
+/// APFS and HFS+ fold case by default. A case-sensitive APFS volume exists, but telling it apart
+/// takes a `pathconf` on the mount, which can hang on a share, so every macOS row reads as the
+/// default: the stated assumption.
+pub(crate) const LOCAL_DISK_CASE_SENSITIVE: bool = false;
+
 /// Whether a MOUNT ROOT is served by a cloud provider's own filesystem, so its
 /// entries cost a round trip to that provider's daemon rather than a disk read.
 ///
@@ -146,6 +151,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             is_disk_image,
             shares_disk_with_others: false,
             is_cloud_mount,
+            case_sensitive: LOCAL_DISK_CASE_SENSITIVE,
             connection_state: None,
             pinned: None,
             landing_path: None,
@@ -249,6 +255,7 @@ fn favorite_location(
         is_disk_image: false,
         shares_disk_with_others: false,
         is_cloud_mount: false,
+        case_sensitive: LOCAL_DISK_CASE_SENSITIVE,
         connection_state: None,
         pinned: None,
         landing_path: None,
@@ -293,6 +300,7 @@ fn get_main_volume() -> Option<LocationInfo> {
             is_disk_image: false,
             shares_disk_with_others: false,
             is_cloud_mount: false,
+            case_sensitive: LOCAL_DISK_CASE_SENSITIVE,
             connection_state: None,
             pinned: None,
             landing_path: None,
@@ -323,6 +331,7 @@ pub(crate) fn location_for_test() -> LocationInfo {
         is_disk_image: false,
         shares_disk_with_others: false,
         is_cloud_mount: false,
+        case_sensitive: LOCAL_DISK_CASE_SENSITIVE,
         connection_state: None,
         pinned: None,
         landing_path: None,

@@ -57,6 +57,7 @@
         if (entry.networkHost) {
             return `${entry.networkHost.name} (${entry.networkHost.hostname})`
         }
+        // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a debug-only label
         const parts = entry.path.split('/')
         const lastPart = parts[parts.length - 1] || parts[parts.length - 2] || entry.path
         if (entry.volumeId !== 'root' && entry.volumeId !== 'network') {

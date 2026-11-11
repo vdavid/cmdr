@@ -12740,6 +12740,15 @@ export type LocationInfo = {
    */
   isCloudMount: boolean
   /**
+   *  Whether names here tell `Ada` from `ada`: what the frontend's path and name
+   *  comparisons follow wherever typed text meets this volume's listing
+   *  (`apps/desktop/src/lib/path/grammar.ts`). ❗ The VOLUME's property, ❌ never
+   *  inferred from the OS: a local disk answers its OS arm's
+   *  `LOCAL_DISK_CASE_SENSITIVE`, and a share, a phone, and a server place each
+   *  answer their own const beside `DEFAULT_VOLUME_ID`.
+   */
+  caseSensitive: boolean
+  /**
    *  How live this volume's SESSION is: the switcher dot, the pane's connect
    *  views, and the reconnect subscription all read it. Set for every volume a
    *  connecting backend serves (SMB, SFTP, WebDAV, ADB) plus a saved-but-not-

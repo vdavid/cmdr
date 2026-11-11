@@ -36,6 +36,7 @@ import type { MessageKey } from './keys.gen'
 import { PLATFORM_SELECT_PREFIX, pickPlatformBranch } from './platform-select'
 import { displayPath } from '#lib/utils/display-path.js'
 import { getPlatform, type Platform } from '#lib/platform/index.js'
+import { shownPath } from '#lib/path/grammar.js'
 import enCatalog from 'virtual:cmdr-catalog/en'
 import { loaders, manifestMessages, shippedLocales } from 'virtual:cmdr-locale-manifest'
 
@@ -458,14 +459,31 @@ const BARE_PLATFORM_PARAMS: Readonly<Record<Platform, Readonly<{ platform: Platf
 })
 
 /**
- * The ONE format call: injects `platform`, so a `{platform, select, …}` block
- * renders this OS's branch (Linux reads `other`). Last in the spread, so even an
- * untyped caller can't override it. A format ARG, not part of the compiled
- * cache's key, so a cached message serves every platform.
+ * The ONE format call, behind `t()` and `tStringIn()`. It injects `platform`, so a
+ * `{platform, select, …}` block renders this OS's branch (Linux reads `other`): last in
+ * the spread, so even an untyped caller can't override it, and a format ARG, not part of
+ * the compiled cache's key, so a cached message serves every platform. And it spells each
+ * param that IS a local path the way this OS shows it ({@link withShownPaths}).
  */
 function format(compiled: IntlMessageFormat, params: TranslationParams | undefined): TranslationResult {
   const platform = getPlatform()
-  return asShown(compiled.format(params === undefined ? BARE_PLATFORM_PARAMS[platform] : { ...params, platform }))
+  if (params === undefined) return asShown(compiled.format(BARE_PLATFORM_PARAMS[platform]))
+  return asShown(compiled.format({ ...withShownPaths(params, platform), platform }))
+}
+
+/**
+ * `params` with each param that IS a local path spelled as a person reads it (on
+ * Windows, `C:\Users\ada`; `#lib/path/grammar`'s `shownPath`). Per param, because
+ * `asShown` sees the whole message, where a `/` may be prose. Off Windows nothing changes,
+ * so the params pass through untouched.
+ */
+function withShownPaths(params: TranslationParams, platform: Platform): TranslationParams {
+  if (platform !== 'windows') return params
+  const shown: TranslationParams = {}
+  for (const [name, value] of Object.entries(params)) {
+    shown[name] = typeof value === 'string' ? shownPath(value, 'windows') : value
+  }
+  return shown
 }
 
 /**

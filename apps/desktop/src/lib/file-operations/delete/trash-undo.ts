@@ -20,6 +20,7 @@ import { tString } from '#lib/intl/messages.svelte.js'
 import { joinSentences } from '#lib/intl/sentence-join.js'
 import { addToast, dismissToast } from '#lib/ui/toast/index.js'
 import { getAppLogger } from '#lib/logging/logger.js'
+import { lastName } from '#lib/path/grammar.js'
 
 const log = getAppLogger('fileOperations')
 
@@ -88,7 +89,7 @@ export function trashUndoTarget(): TrashUndoTarget | null {
   // completion counts what the OS refused, but doesn't say which.
   if (sourcePaths.length === 1) {
     const path = sourcePaths[0]
-    return { kind: 'one', name: path.slice(path.lastIndexOf('/') + 1) }
+    return { kind: 'one', name: lastName(path) }
   }
   return { kind: 'unknown' }
 }

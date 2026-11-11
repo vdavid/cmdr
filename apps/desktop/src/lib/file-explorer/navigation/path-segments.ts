@@ -24,6 +24,7 @@ export interface PathSegment {
  */
 export function splitPathSegments(displayPath: string): PathSegment[] {
   if (displayPath.length === 0) return []
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- splits the DISPLAY path, `/`-separated on every root (`breadcrumb-bar.ts` makes it volume-relative)
   const raw = displayPath.split('/')
   const segments: PathSegment[] = []
   let inGit = false

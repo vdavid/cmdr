@@ -104,6 +104,7 @@
     import Menu from '#lib/ui/Menu.svelte'
     import { homeDir } from '@tauri-apps/api/path'
     import { type CanonicalPath, parentOf, toCanonical } from '#lib/path/canonical.js'
+    import { shownSeparator } from '#lib/path/grammar.js'
     import { getVolumes as getStoreVolumes } from '#lib/stores/volume-store.svelte.js'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getUsageBar, formatBarTooltip, formatDiskSpaceStatus } from '../disk-space-utils'
@@ -661,6 +662,9 @@
             isSearchResults: isSearchResultsView,
         }),
     )
+
+    // What sits between the names: `\` for a Windows local path, `/` everywhere else.
+    const breadcrumbSeparator = $derived(shownSeparator(currentPath))
 
     // The path fitted into the bar's width: a segment that doesn't fit shows its start and end
     // around a middle `…` (`breadcrumb-fit.ts`, unit-tested), so no segment drops off the end.
@@ -2187,7 +2191,7 @@
             onSwitchPane={() => onSwitchVolumeChooserPane?.()}
         />
         <!-- A middle-truncated segment shows its short form and speaks its full name. -->
-        <span class="path" use:breadcrumbFit.observe>{#each clickableBreadcrumbSegments as seg, i (i)}{@const shown = breadcrumbFit.shown[i] ?? seg.text}{#if hasSeparatorBefore(i, seg.text)}<span class="path-sep">/</span>{/if}{#if seg.target !== null}<button
+        <span class="path" use:breadcrumbFit.observe>{#each clickableBreadcrumbSegments as seg, i (i)}{@const shown = breadcrumbFit.shown[i] ?? seg.text}{#if hasSeparatorBefore(i, seg.text)}<span class="path-sep">{breadcrumbSeparator}</span>{/if}{#if seg.target !== null}<button
                     type="button"
                     class="path-segment"
                     class:git-portal={seg.gitPortal}

@@ -79,6 +79,7 @@ import { announceOperationBlocked } from './operation-start-gate'
 import type { SoftDialogId } from '#lib/ui/dialog-registry.js'
 import { formatByteSize } from '#lib/units/index.js'
 import { pluralize } from '#lib/utils/pluralize.js'
+import { joinPath } from '#lib/path/grammar.js'
 
 const log = getAppLogger('fileExplorer')
 
@@ -1050,7 +1051,7 @@ export function createDialogState(deps: DialogStateDeps) {
       // landed path), and an archive-inner path isn't openable in an external
       // editor anyway. The cursor still lands on it after the edit's refresh.
       if (pathCrossesArchiveBoundary(currentPath)) return
-      const fullPath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`
+      const fullPath = joinPath(currentPath, fileName)
       deps.onOpenInEditor(fullPath)
     },
 

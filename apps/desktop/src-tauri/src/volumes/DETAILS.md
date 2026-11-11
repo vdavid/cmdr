@@ -55,6 +55,22 @@ pCloud, else `Other` carrying the first `-`-segment), and `locate` resolves a pa
 context menu can't drift on who owns a path. The file context menu needs the same answer plus what each provider can
 DO (`supports_eviction`), which is why the enum sits in `file_system/` rather than in `crate::volumes`.
 
+## Case sensitivity
+
+Every row carries `case_sensitive`: whether names on it tell `Ada` from `ada`, which the frontend's path comparisons
+follow (`apps/desktop/src/lib/path/DETAILS.md` § "Case sensitivity is the volume's"). It's the volume's property, ❌
+never inferred from the OS by a caller, and no row asks the mount: a `pathconf(_PC_CASE_SENSITIVE)` or a probe file is a
+call on the mount, which can hang on a dead share (§ Hung mounts). So each answer is a stated default:
+
+- A local disk answers its arm's pinned `LOCAL_DISK_CASE_SENSITIVE`: `false` on macOS (APFS and HFS+ fold case by
+  default; a case-sensitive APFS volume reads wrong, the one known gap), `true` on Linux (ext4, Btrfs, XFS; a CIFS mount
+  too, since the kernel client compares exactly unless mounted `nocase`), `false` on Windows (NTFS, ReFS, FAT, exFAT).
+  The macOS arm gives every row this answer, network mounts included, since it can't tell them apart without a call.
+- A GVFS SMB share, a saved share, and the `smb://` network row: `SMB_SHARE_CASE_SENSITIVE` (`false`; Windows servers
+  and Samba's default fold case).
+- An MTP or ADB storage: `DEVICE_STORAGE_CASE_SENSITIVE` (`false`; FAT and exFAT cards, Android's shared storage).
+- A server place (SFTP, WebDAV, S3, NFS): `SERVER_PLACE_CASE_SENSITIVE` (`true`).
+
 ## Which mounts get a row
 
 **Decision**: `is_user_facing_mount` admits a mount when the OS doesn't mark it `MNT_DONTBROWSE`, or when

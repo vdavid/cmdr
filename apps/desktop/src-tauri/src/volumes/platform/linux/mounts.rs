@@ -146,6 +146,7 @@ fn get_mounted_volumes_with(mounts: &[MountEntry], volume_id: impl Fn(&str) -> S
             is_disk_image: false,
             shares_disk_with_others: false,
             is_cloud_mount: false,
+            case_sensitive: crate::volumes::LOCAL_DISK_CASE_SENSITIVE,
             connection_state: None,
             pinned: None,
             landing_path: None,

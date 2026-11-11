@@ -278,9 +278,13 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     reviews the English. Survey and proposal: `docs/notes/windows-port/copy-survey.md`. Needs 24.
 28. [L] Win. Translate task 27's changed strings into the 13 languages (translator agents, per
     `docs/guides/i18n-translation.md`). Needs 27.
-29. [S] Windows, lint half is a win. Path wire format: `lib/path` learns `C:/` and `//server/share` roots,
-    `caseSensitive` per volume, `\` in the display formatter, an ESLint rule steering raw local `split('/')` /
-    `lastIndexOf('/')` to `lib/path`. Needs D1.
+29. [S] Windows, lint half is a win. **Done**. `lib/path/grammar.ts` holds the grammar (drive and UNC roots, a shared
+    case table with Rust in `cmdr-fs`'s `path_grammar_cases.json`), `LocationInfo.case_sensitive` comes from the
+    `volumes/` seam (macOS `false`, Linux `true`, Windows `false`; no frontend site consults it yet,
+    `lib/path/DETAILS.md` § "Case sensitivity is the volume's"), `shownPath` is the one `\` formatter behind
+    `displayPath`, `t()` params, Copy path, and the breadcrumb, Go to path sends `fromUserInput`, and
+    `cmdr/no-raw-path-arithmetic` steers path-named `split('/')` / `lastIndexOf('/')` / `+ '/'` to `lib/path` (57 hits
+    on 55 lines: 28 lines fixed, 27 opted out with a reason).
 
 ### Phase 5: release and services for N platforms
 

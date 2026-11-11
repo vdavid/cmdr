@@ -1,12 +1,14 @@
+import { foldedForCompare, isLocalPath, lastName, parentOrRoot, type CaseRule } from './grammar'
+
 declare const __canonicalBrand: unique symbol
 
 /**
  * An absolute path safe for `dirname` / `basename` arithmetic.
  *
- * Includes local filesystem paths (start with `/`) and virtual-volume URLs
- * (`mtp://...`, `adb://...`, `smb://...`, `search-results://...`). Excludes `~`-rooted
- * paths, relative paths, and anything that would silently break `lastIndexOf('/')`
- * style derivations.
+ * Includes local app paths (`/…`; on Windows `C:/…` and `//server/share/…`, the grammar
+ * in `./grammar.ts`) and virtual-volume URLs (`mtp://...`, `adb://...`, `smb://...`,
+ * `search-results://...`). Excludes `~`-rooted paths, relative paths, and anything that
+ * would silently break `lastIndexOf('/')` style derivations.
  *
  * Construct only via `toCanonical`. Never cast.
  */
@@ -30,13 +32,14 @@ export function toCanonical(raw: string, homeDir: string): CanonicalPath {
     if (!homeDir) throw new Error('toCanonical: homeDir is empty, cannot expand ~/')
     return (homeDir + raw.slice(1)) as CanonicalPath
   }
-  if (raw.startsWith('/') || VIRTUAL_SCHEME.test(raw)) return raw as CanonicalPath
+  if (VIRTUAL_SCHEME.test(raw) || isLocalPath(raw)) return raw as CanonicalPath
   throw new Error(`toCanonical: not absolute or ~-rooted: ${JSON.stringify(raw)}`)
 }
 
 /**
- * True when `raw` names a file an OS API can open by path on its own: an
- * absolute POSIX path, with no virtual-volume scheme in front of it.
+ * True when `raw` names a file an OS API can open by path on its own: a local
+ * app path (`/…`, or on Windows `C:/…` and `//server/share/…`), with no
+ * virtual-volume scheme in front of it.
  *
  * The question `CanonicalPath` deliberately does NOT answer. The brand admits
  * virtual-volume URLs because slash arithmetic is safe on them, but `mtp://…`,
@@ -51,7 +54,7 @@ export function toCanonical(raw: string, homeDir: string): CanonicalPath {
  * purpose, since the callers guarding an outbound path hold raw paths.
  */
 export function isPlainFilesystemPath(raw: string): boolean {
-  return raw.startsWith('/')
+  return isLocalPath(raw)
 }
 
 /**
@@ -66,22 +69,28 @@ export function isPlainFilesystemPath(raw: string): boolean {
  * `/` really does carry: its root is `<prefix><server-side root>`, so an SFTP
  * volume at `/` spells itself `sftp://ada@nas.local:22/`.
  *
+ * Case folds only when the volume says it doesn't tell `Ada` from `ada`
+ * (`VolumeInfo.caseSensitive`); without a rule the match is exact.
+ *
  * Takes plain `string`s on purpose: callers hold raw paths off IPC, persisted
  * tab state, and volume records, none of them branded.
  */
-export function isPathOnVolume(path: string, volumePath: string): boolean {
-  if (path === volumePath) return true
-  const prefix = volumePath.endsWith('/') ? volumePath : volumePath + '/'
-  return path.startsWith(prefix)
+export function isPathOnVolume(path: string, volumePath: string, rule: CaseRule = { caseSensitive: true }): boolean {
+  const [p, v] = rule.caseSensitive ? [path, volumePath] : [foldedForCompare(path), foldedForCompare(volumePath)]
+  if (p === v) return true
+  const prefix = v.endsWith('/') ? v : v + '/'
+  return p.startsWith(prefix)
 }
 
-/** Returns the parent of a canonical path. `parentOf('/') === '/'`. */
+/**
+ * Returns the parent of a canonical path. A root is its own parent: `parentOf('/') === '/'`,
+ * and on Windows `parentOf('C:/') === 'C:/'` and `parentOf('//server/share/x') === '//server/share/'`.
+ */
 export function parentOf(p: CanonicalPath): CanonicalPath {
-  const i = p.lastIndexOf('/')
-  return (i <= 0 ? '/' : p.slice(0, i)) as CanonicalPath
+  return parentOrRoot(p) as CanonicalPath
 }
 
-/** Returns the final segment. `basenameOf('/') === ''`. */
+/** Returns the final segment. `basenameOf('/') === ''`, and so for `C:/` and `//server/share/`. */
 export function basenameOf(p: CanonicalPath): string {
-  return p.slice(p.lastIndexOf('/') + 1)
+  return lastName(p)
 }

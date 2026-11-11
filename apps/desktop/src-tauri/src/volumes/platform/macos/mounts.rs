@@ -387,6 +387,7 @@ fn build_attached_location(
         is_disk_image,
         shares_disk_with_others: false,
         is_cloud_mount,
+        case_sensitive: crate::volumes::LOCAL_DISK_CASE_SENSITIVE,
         connection_state: None,
         pinned: None,
         landing_path: None,

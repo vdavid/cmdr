@@ -29,6 +29,7 @@ import { renderMutationError } from '#lib/file-operations/mutation-error-message
 import { getAppLogger } from '#lib/logging/logger.js'
 import type { RenameTarget } from './rename-state.svelte'
 import type { ExtensionChangePolicy } from '#lib/settings/index.js'
+import { joinPath } from '#lib/path/grammar.js'
 
 const log = getAppLogger('rename')
 
@@ -151,7 +152,7 @@ export async function performRename(
   volumeId?: string,
 ): Promise<RenameResult> {
   const fromPath = target.path
-  const toPath = target.parentPath + '/' + newName
+  const toPath = joinPath(target.parentPath, newName)
 
   // Whichever comes first: the rename's end, or the backend saying it's still
   // running. The second hands the caller `settled` so the editor needn't wait.

@@ -54,6 +54,7 @@
     import { parseOcrSnippet } from './ocr-snippet'
     import { resolveMediaHitPath } from './media-path'
     import { imageSearchOutcome, reportImageSearch } from './image-search-analytics'
+    import { lastName } from '#lib/path/grammar.js'
 
     interface Props {
         /** Live query text from the Search bar. */
@@ -140,8 +141,7 @@
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
     function fileName(path: string): string {
-        const parts = path.split('/')
-        return parts[parts.length - 1] || path
+        return lastName(path) || path
     }
 
     async function releaseTokens(): Promise<void> {

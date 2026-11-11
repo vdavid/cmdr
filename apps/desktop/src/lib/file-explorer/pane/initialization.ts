@@ -168,8 +168,10 @@ export async function loadPersistedState(): Promise<InitializedState> {
     const rightTarget = rightActiveTab ?? resolvedRightPaneTabs.tabs[0]
     if (!leftActiveTab) log.warn('E2E path override: left active tab ID mismatch, using first tab')
     if (!rightActiveTab) log.warn('E2E path override: right active tab ID mismatch, using first tab')
+    // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- the E2E fixture root, a POSIX path on every runner today
     leftTarget.path = `${e2eStartPath}/left`
     leftTarget.volumeId = defaultId
+    // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- the E2E fixture root, a POSIX path on every runner today
     rightTarget.path = `${e2eStartPath}/right`
     rightTarget.volumeId = defaultId
   }

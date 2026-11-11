@@ -1,6 +1,6 @@
 /**
  * The path a person reads: a same-named twin's PICK and an S3 account's access
- * key id taken out.
+ * key id taken out, and on Windows a local path spelled with `\`.
  *
  * A device can hold two items with one name in a folder, so each one's row path
  * carries a pick segment (NUL plus a handle) right before the shared name:
@@ -15,10 +15,17 @@
  * `s3://<host>:<port>/<bucket>/…`. The rule is
  * `cmdr_fs::volume::without_s3_key_ids` in Rust, which keeps it out of the logs.
  *
+ * On Windows a local app path reads as Windows spells it (`C:\Users\ada`,
+ * `\\server\share\x`): `#lib/path/grammar`'s `shownPath` is the one formatter.
+ * It turns text that IS one path, never a path somewhere inside prose, where a `/`
+ * could just as well be "and/or"; a message's path PARAMS get it in `t()`.
+ *
  * Every place that turns a path, or text holding one, into something SHOWN goes
  * through `displayPath`. Something COPIED goes through `withoutPicks` only: a
- * pasted S3 path has to find its account again (Go to path).
+ * pasted S3 path has to find its account again (Go to path). A copied PATH
+ * ("Copy path") goes through `copiedPath`, so Windows pastes `C:\Users\ada`.
  */
+import { shownPath } from '#lib/path/grammar.js'
 
 const PICK = '\u0000'
 
@@ -40,9 +47,21 @@ const S3_ACCOUNT = /s3:\/\/[A-Za-z0-9\-_.~+=]+@/g
 /** One code point that continues a word, so an `s3://` right after it isn't at a word start. */
 const CONTINUES_A_WORD = /^[\p{L}\p{N}+.-]$/u
 
-/** `text` as a person reads it: every pick segment and every S3 access key id taken out. */
+/**
+ * `text` as a person reads it: every pick segment and every S3 access key id taken out,
+ * and on Windows text that is one local path spelled with `\`.
+ */
 export function displayPath(text: string): string {
-  return withoutS3KeyIds(withoutPicks(text))
+  return shownPath(withoutS3KeyIds(withoutPicks(text)))
+}
+
+/**
+ * A path as "Copy path" puts it on the clipboard: its picks taken out, and on Windows a
+ * local path spelled with `\`, the form every Windows app pastes. An S3 path keeps its
+ * account, so Go to path can find it again.
+ */
+export function copiedPath(path: string): string {
+  return shownPath(withoutPicks(path))
 }
 
 /** `text` with every S3 app path's access key id taken out. Text without one comes back as is. */

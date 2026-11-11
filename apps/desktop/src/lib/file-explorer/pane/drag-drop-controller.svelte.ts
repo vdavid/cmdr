@@ -47,6 +47,7 @@ import type { TransferOperationType } from '../types'
 import type { PaneAccess } from './pane-access'
 import type { createDialogState } from './dialog-state.svelte'
 import type { DragAutoScrollFrameResult } from '../drag/drag-auto-scroll'
+import { lastName } from '#lib/path/grammar.js'
 
 type DialogState = ReturnType<typeof createDialogState>
 type ResolvedDropTarget = ReturnType<typeof resolveDropTarget>
@@ -103,6 +104,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
   let home = ''
   ;(deps.homeDir ?? homeDir)()
     .then((dir) => {
+      // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- the home folder is never a volume root, so its trailing slash can go
       home = dir.endsWith('/') ? dir.slice(0, -1) : dir
     })
     .catch(() => undefined)
@@ -303,8 +305,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
 
   /** Extracts the last path component as a display name. */
   function extractFolderName(path: string): string {
-    const segments = path.split('/')
-    return segments[segments.length - 1] || path
+    return lastName(path) || path
   }
 
   /** Builds overlay file infos from drag paths, using self-drag data when available for proper icons. */

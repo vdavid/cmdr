@@ -43,6 +43,7 @@ export type RevealPath = (target: PathTarget) => Promise<void>
 
 /** What a line shows for a path: its last segment. The root, which has none, shows as itself. */
 export function placeName(path: string): string {
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a row may end in `/` (an S3 folder key); a drive root shows as its letter
   const trimmed = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
   const name = trimmed.slice(trimmed.lastIndexOf('/') + 1)
   return name.length > 0 ? name : trimmed

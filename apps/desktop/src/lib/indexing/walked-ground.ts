@@ -1,3 +1,4 @@
+import { isVolumeRoot } from '#lib/path/grammar.js'
 /**
  * What ground on one volume is under a walker right now, and whether a given row
  * is affected by it.
@@ -43,7 +44,8 @@ export function isPathAffectedByWalk(ground: WalkedGround, path: string): boolea
 /** Drop a trailing separator so `/a/b/` and `/a/b` are the same folder. The
  *  volume root itself (`/`) keeps its one character. */
 function normalize(path: string): string {
-  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- trims a trailing slash; a root (`/`, `C:/`) keeps its own
+  return path.length > 1 && path.endsWith('/') && !isVolumeRoot(path) ? path.slice(0, -1) : path
 }
 
 /** Whether `path` IS `ancestor` or sits somewhere below it, by whole segments. */

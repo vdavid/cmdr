@@ -25,6 +25,7 @@ pub(super) fn gvfs_share_location(path: String, share: String) -> LocationInfo {
         is_disk_image: false,
         shares_disk_with_others: false,
         is_cloud_mount: false,
+        case_sensitive: crate::volumes::SMB_SHARE_CASE_SENSITIVE,
         connection_state: None,
         pinned: None,
         landing_path: None,

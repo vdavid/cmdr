@@ -1,7 +1,9 @@
 /** Client-side filename validation for instant keystroke feedback. */
 
 import { tString } from '#lib/intl/messages.svelte.js'
+import { fromUserInput, isLocalPath } from '#lib/path/grammar.js'
 import { fileExtension, kindOfRenamedName, type NameKind } from './file-extension'
+import { joinPath } from '#lib/path/grammar.js'
 
 /** Defaults match macOS. Call initPathLimits() at startup to get platform-specific values from the backend. */
 let maxNameBytes = 255
@@ -70,7 +72,7 @@ export function validateNameLength(name: string, isDir = false): ValidationResul
 
 /** Validates full path byte length (max 1024 bytes). */
 export function validatePathLength(parentPath: string, name: string): ValidationResult {
-  const fullPath = parentPath.endsWith('/') ? parentPath + name.trim() : parentPath + '/' + name.trim()
+  const fullPath = joinPath(parentPath, name.trim())
   const byteLength = new TextEncoder().encode(fullPath).length
   if (byteLength >= maxPathBytes) {
     return {
@@ -166,7 +168,10 @@ export function validateExtensionChange(
 }
 
 /**
- * Checks if the new name matches an existing sibling (case-insensitive on APFS).
+ * Checks if the new name matches an existing sibling, case-insensitively on every
+ * volume: on a case-insensitive one (APFS, NTFS, SMB) that's a real clash, and on a
+ * case-sensitive one a case-only twin is still worth a warning (it's not a refusal).
+ * So this deliberately ignores the volume's `caseSensitive`.
  * Exception: case-only rename of the same file produces no warning.
  */
 export function validateConflict(newName: string, siblingNames: string[], originalName: string): ValidationResult {
@@ -192,11 +197,13 @@ export function validateDirectoryPath(path: string): ValidationResult {
     return { severity: 'error', message: tString('fileOperations.validation.pathEmpty') }
   }
 
-  // Accept absolute paths (`/…`) and the home shortcut (`~` or `~/…`). `~` is the
-  // app's internal stand-in for the user's home dir, expanded to an absolute path
-  // by the backend. A bare `~foo` (no slash) isn't a home shortcut, so it stays
-  // rejected as relative.
-  if (!trimmed.startsWith('/') && trimmed !== '~' && !trimmed.startsWith('~/')) {
+  // Accept absolute paths (`/…`, which is also how a volume-relative destination
+  // reads on every volume; on Windows also `C:/…` or `C:\…` and a UNC share) and
+  // the home shortcut (`~` or `~/…`). `~` is the app's internal stand-in for the
+  // user's home dir, expanded to an absolute path by the backend. A bare `~foo` (no
+  // slash) isn't a home shortcut, so it stays rejected as relative.
+  const isAbsolute = trimmed.startsWith('/') || isLocalPath(fromUserInput(trimmed))
+  if (!isAbsolute && trimmed !== '~' && !trimmed.startsWith('~/')) {
     return { severity: 'error', message: tString('fileOperations.validation.pathNotAbsolute') }
   }
 

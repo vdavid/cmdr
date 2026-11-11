@@ -10,7 +10,8 @@
  *   follows the NEW volume, network and device-only MTP targets skip the load,
  *   and a disk image gets no space poll at all.
  */
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished, type Mock } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 const { ipc, eject, mtp, volumeStore, boundCombos } = vi.hoisted<{
   ipc: { showBreadcrumbContextMenu: Mock }
@@ -38,6 +39,18 @@ import { breadcrumbDisplayPath, createBreadcrumbHandlers, type BreadcrumbHandler
 describe('breadcrumbDisplayPath', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('reads a drive or share volume from its root down, on Windows', () => {
+    onTestFinished(withPlatform('windows'))
+    const input = { userHomePath: 'C:/Users/ada', isSearchResultsView: false, searchLabel: undefined }
+    expect(breadcrumbDisplayPath({ ...input, currentPath: 'C:/Users/ada', volumeId: 'c', volumePath: 'C:/' })).toBe(
+      '/Users/ada',
+    )
+    expect(breadcrumbDisplayPath({ ...input, currentPath: 'C:/', volumeId: 'c', volumePath: 'C:/' })).toBe('/')
+    expect(
+      breadcrumbDisplayPath({ ...input, currentPath: '//nas/media/x', volumeId: 'u', volumePath: '//nas/media/' }),
+    ).toBe('/x')
   })
 
   it('replaces the home prefix with `~` on the root volume', () => {

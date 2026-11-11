@@ -74,6 +74,7 @@
     import { t, tString } from '#lib/intl/messages.svelte.js'
     import { isRenameInPlace, resolveTransferTarget } from './transfer-target'
     import { dependOn } from '#lib/utils/reactivity.js'
+    import { joinPath } from '#lib/path/grammar.js'
 
     const log = getAppLogger('transferDialog')
 
@@ -427,7 +428,7 @@
     const pathError = $derived.by(() => {
         if (isRenameMode) return renamePathError()
         if (singleTransfer && !namedTarget) return validateNotEmpty('').message
-        const structural = validateDirectoryPath(namedTarget ? `${namedTarget.parent}/${namedTarget.name}` : editedPath)
+        const structural = validateDirectoryPath(namedTarget ? joinPath(namedTarget.parent, namedTarget.name) : editedPath)
         if (structural.severity === 'error') return structural.message
         // `fullPath` is already rooted; `anchorOnVolume` passes a path on the volume through.
         return getPathValidationError(

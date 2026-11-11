@@ -16,6 +16,7 @@ export interface ConflictPreviewCopy {
 }
 
 function copyOf(fixtures: ConflictPreviewFixtures, name: string): ConflictPreviewCopy {
+  // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a gallery fixture's own POSIX path
   return { sourcePath: `${fixtures.fromDir}/${name}`, destinationDir: fixtures.toDir }
 }
 

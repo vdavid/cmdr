@@ -25,6 +25,7 @@ import { isPathOnVolume } from '#lib/path/canonical.js'
 import { resolveLocation } from './resolve-location'
 import type { ExplorerAPI } from '../../../routes/(main)/explorer-api'
 import type { Location } from '#lib/tauri-commands/index.js'
+import { lastName, parentOrRoot } from '#lib/path/grammar.js'
 
 const log = getAppLogger('navigation')
 
@@ -72,9 +73,8 @@ export async function resolveLocationOrToast(dir: string): Promise<Location | nu
  * shows the shared toast and skips navigation.
  */
 export async function revealSearchResultInPane(explorer: PaneRevealAPI, pane: Pane, filePath: string): Promise<void> {
-  const lastSlash = filePath.lastIndexOf('/')
-  const parentDir = lastSlash > 0 ? filePath.slice(0, lastSlash) : '/'
-  const fileName = filePath.slice(lastSlash + 1)
+  const parentDir = parentOrRoot(filePath)
+  const fileName = lastName(filePath)
   const location = await resolveLocationOrToast(parentDir)
   if (!location) return
   await navigateToFileInPane(explorer, pane, location, fileName)
@@ -233,9 +233,8 @@ export async function revealPathInBestPane(
     if (location) await navigateToDirInBestPane(explorer, location)
     return
   }
-  const lastSlash = target.path.lastIndexOf('/')
-  const parentDir = lastSlash > 0 ? target.path.slice(0, lastSlash) : '/'
-  const fileName = target.path.slice(lastSlash + 1)
+  const parentDir = parentOrRoot(target.path)
+  const fileName = lastName(target.path)
   const location = await resolveLocationOrToast(parentDir)
   if (!location) return
   await revealFileInBestPane(explorer, location, fileName)

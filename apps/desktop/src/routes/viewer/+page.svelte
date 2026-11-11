@@ -86,6 +86,7 @@
     import { createViewerMedia } from './viewer-media.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import Trans from '#lib/intl/Trans.svelte'
+    import { lastName } from '#lib/path/grammar.js'
 
     const log = getAppLogger('viewer')
 
@@ -1255,7 +1256,7 @@
 
     {#if (loading || navigation.navigating) && pull.visible}
         <PullProgressPanel
-            fileName={filePath.split('/').pop() ?? filePath}
+            fileName={lastName(filePath)}
             bytesDone={pull.bytesDone}
             bytesTotal={pull.bytesTotal}
             fraction={pull.fraction}

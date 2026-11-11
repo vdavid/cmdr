@@ -24,6 +24,7 @@ import { formatRoundSize } from '#lib/units/byte-size.js'
 import { createWindowHost, type WindowHost } from './windows.js'
 import { enterFormatOf } from '#lib/file-explorer/pane/archive-enter-policy.js'
 import { OPENING_TOAST_ID } from '#lib/file-explorer/pane/opening-toast.js'
+import { lastName } from '#lib/path/grammar.js'
 
 /** Long enough to read the two-sentence archive notice. */
 const ARCHIVE_NOTICE_MS = 8000
@@ -179,7 +180,7 @@ export function createDemoBackend(): DemoBackend {
 
   /** Whether `path` names an archive a person browses: the engine's flag, and the app's own format rule. */
   async function isBrowsableArchive(path: string): Promise<boolean> {
-    const name = path.slice(path.lastIndexOf('/') + 1)
+    const name = lastName(path)
     const isArchive = await engine.isArchiveName(name)
     return enterFormatOf({ name, isDirectory: false, isArchive }) === 'zip'
   }

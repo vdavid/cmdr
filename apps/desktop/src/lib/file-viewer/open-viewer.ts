@@ -2,6 +2,7 @@ import { LogicalPosition } from '@tauri-apps/api/dpi'
 
 import { cascadeFromMain, clampToMonitor, nearestMonitor, readMainRect, readMonitors } from '#lib/window-positioning.js'
 import { getMessage } from '#lib/intl/messages.svelte.js'
+import { lastName } from '#lib/path/grammar.js'
 
 const VIEWER_WIDTH = 800
 const VIEWER_HEIGHT = 600
@@ -52,7 +53,7 @@ export async function openFileViewer(
 
   const win = new WebviewWindow(label, {
     url: `/viewer?path=${encodedPath}&volume=${encodedVolume}${tail ? '&tail=1' : ''}${logView ? '&log=1' : ''}`,
-    title: decorateChildWindowTitle(filePath.split('/').pop() ?? getMessage('viewer.window.fallbackTitle')),
+    title: decorateChildWindowTitle(lastName(filePath) || getMessage('viewer.window.fallbackTitle')),
     width: VIEWER_WIDTH,
     height: VIEWER_HEIGHT,
     minWidth: 400,

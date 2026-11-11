@@ -144,6 +144,16 @@ describe('t() resolution', () => {
       'From: /DCIM/IMG_1.JPG',
     )
   })
+
+  it('shows a local path param with backslashes on Windows, and as is elsewhere', () => {
+    _setLocaleForTests('en-US')
+    onTestFinished(withPlatform('windows'))
+    expect(tString('fileOperations.delete.fromPath', { path: 'C:/Users/ada' })).toBe('From: C:\\Users\\ada')
+    onTestFinished(withPlatform('macos'))
+    expect(tString('fileOperations.delete.fromPath', { path: 'C:/Users/ada' })).toBe('From: C:/Users/ada')
+    onTestFinished(withPlatform('linux'))
+    expect(tString('fileOperations.delete.fromPath', { path: '/home/ada' })).toBe('From: /home/ada')
+  })
 })
 
 describe('the script boundary in the fallback chain', () => {

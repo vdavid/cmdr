@@ -17,6 +17,7 @@ import { getVolumes } from '#lib/stores/volume-store.svelte.js'
 import { performRename, type RenameConflictResolution, type RenameResult } from '../rename/rename-operations'
 import type { RenameSessionId, RenameTarget, createRenameState } from '../rename/rename-state.svelte'
 import { paneOffersTrash } from './trash-availability'
+import { joinPath } from '#lib/path/grammar.js'
 
 export interface ExtensionDialogState {
   oldExtension: string
@@ -54,7 +55,7 @@ export function createRenameDialogAnswers(deps: RenameDialogAnswersDeps) {
 
   /** The overwrite-to-Trash answer: the clobbered file goes to the Trash, then the rename runs. */
   function trashThenRename(target: RenameTarget, trimmedName: string, sessionId: RenameSessionId, volumeId: string) {
-    const conflictPath = target.parentPath + '/' + trimmedName
+    const conflictPath = joinPath(target.parentPath, trimmedName)
     void moveToTrash(conflictPath, target.initiator)
       .then(() => performRename(target, trimmedName, true, volumeId))
       .then((result) => {

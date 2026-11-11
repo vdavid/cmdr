@@ -68,6 +68,13 @@ pub struct LocationInfo {
     /// ❗ `false` for a `~/Library/CloudStorage` folder, which is an ordinary directory on the
     /// data volume that the cloud-drive arm publishes and the index reads at local speed.
     pub is_cloud_mount: bool,
+    /// Whether names here tell `Ada` from `ada`: what the frontend's path and name
+    /// comparisons follow wherever typed text meets this volume's listing
+    /// (`apps/desktop/src/lib/path/grammar.ts`). ❗ The VOLUME's property, ❌ never
+    /// inferred from the OS: a local disk answers its OS arm's
+    /// `LOCAL_DISK_CASE_SENSITIVE`, and a share, a phone, and a server place each
+    /// answer their own const beside `DEFAULT_VOLUME_ID`.
+    pub case_sensitive: bool,
     /// How live this volume's SESSION is: the switcher dot, the pane's connect
     /// views, and the reconnect subscription all read it. Set for every volume a
     /// connecting backend serves (SMB, SFTP, WebDAV, ADB) plus a saved-but-not-
@@ -160,6 +167,18 @@ impl PublishedLocation for LocationInfo {
 
 /// Default volume ID for the root filesystem.
 pub const DEFAULT_VOLUME_ID: &str = "root";
+
+/// An SMB share folds case: Windows servers do, and so does Samba's default for the clients
+/// Cmdr is. A mounted share's GVFS row, a saved share, and the `smb://` network row answer it.
+pub(crate) const SMB_SHARE_CASE_SENSITIVE: bool = false;
+
+/// A phone's storage (MTP, ADB) folds case: FAT and exFAT cards do, and so does Android's shared
+/// storage.
+pub(crate) const DEVICE_STORAGE_CASE_SENSITIVE: bool = false;
+
+/// A server place (SFTP, WebDAV, S3, NFS) compares names exactly, as a POSIX server, a URL path,
+/// and an object key all do. A Windows server behind SFTP would fold, but nothing tells us which.
+pub(crate) const SERVER_PLACE_CASE_SENSITIVE: bool = true;
 
 /// The volume-shaped name for the same struct: discovery calls every entry a
 /// location, and everything downstream of it calls the ones backed by a mount a

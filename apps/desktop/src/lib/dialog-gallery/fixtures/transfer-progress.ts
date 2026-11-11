@@ -19,6 +19,7 @@ export interface TransferProgressRun {
 
 function copyOf(fixtures: TransferPreviewFixtures, name: string): TransferProgressRun {
   return {
+    // eslint-disable-next-line cmdr/no-raw-path-arithmetic -- a gallery fixture's own POSIX path
     sourcePaths: [`${fixtures.fromDir}/${name}`],
     sourceFolderPath: fixtures.fromDir,
     destinationPath: fixtures.toDir,

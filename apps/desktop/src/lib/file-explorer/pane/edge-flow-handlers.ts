@@ -28,6 +28,7 @@ import type { VolumeInfo } from '../types'
 import type { NavigateIntent, NavigateResult, NavigateTo } from './navigate'
 import type { ReturnPoint } from './return-point'
 import type { CancelLoadingPayload, ListingLoad } from './types'
+import { lastName, parentOrRoot } from '#lib/path/grammar.js'
 
 const log = getAppLogger('fileExplorer')
 
@@ -57,9 +58,7 @@ export interface EdgeFlowHandlers {
 function selectionOnReturn(shown: Location, cancelled: ListingLoad): string | undefined {
   if (shown.volumeId !== cancelled.volumeId) return undefined
   if (shown.path === cancelled.path) return cancelled.selectName
-  const cut = cancelled.path.lastIndexOf('/')
-  const parent = cut <= 0 ? '/' : cancelled.path.slice(0, cut)
-  return parent === shown.path ? cancelled.path.slice(cut + 1) : undefined
+  return parentOrRoot(cancelled.path) === shown.path ? lastName(cancelled.path) : undefined
 }
 
 export function createEdgeFlowHandlers(deps: EdgeFlowHandlersDeps): EdgeFlowHandlers {
@@ -93,7 +92,7 @@ export function createEdgeFlowHandlers(deps: EdgeFlowHandlersDeps): EdgeFlowHand
   }
 
   function walkUpFrom(pane: 'left' | 'right', cancelled: ListingLoad): void {
-    const parentPath = cancelled.path.substring(0, Math.max(1, cancelled.path.lastIndexOf('/')))
+    const parentPath = parentOrRoot(cancelled.path)
     // Asking the load's own volume: the boot disk says "gone" for a phone's or server's folders.
     // No `connectionState`, so a live session keeps the short 1 s step: the user just cancelled
     // because this volume was slow, and waiting out its stalls is what they declined.

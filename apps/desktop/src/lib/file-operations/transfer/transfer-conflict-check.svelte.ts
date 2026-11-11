@@ -37,6 +37,7 @@ import {
 import { pluralize } from '#lib/utils/pluralize.js'
 import { withTimeout } from '#lib/utils/timing.js'
 import type { Logger } from '#lib/logging/logger.js'
+import { lastName } from '#lib/path/grammar.js'
 
 /** The frontend's own bound on the check, in ms.
  *
@@ -123,7 +124,7 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
     // is unavailable (e.g. the source volume vanished).
     const sourcePaths = deps.getSourcePaths()
     const sourceItems: SourceItemInput[] = sourcePaths.map((path) => {
-      const name = deps.getDestinationName?.() ?? (path.split('/').pop() || path)
+      const name = deps.getDestinationName?.() ?? (lastName(path) || path)
       return {
         name,
         size: 0,

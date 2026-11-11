@@ -150,6 +150,7 @@ async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<V
                 is_disk_image: false,
                 shares_disk_with_others: false,
                 is_cloud_mount: false,
+                case_sensitive: crate::volumes::SMB_SHARE_CASE_SENSITIVE,
                 connection_state: None,
                 pinned: None,
                 landing_path: None,
