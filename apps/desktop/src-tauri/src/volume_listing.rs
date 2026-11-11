@@ -11,18 +11,7 @@
 use std::time::Duration;
 
 use crate::volumes::list_locations;
-pub(crate) use crate::volumes::{LocationCategory, LocationInfo};
-
-/// The network mount a path lexically lies on, read from the kernel's cached mount table
-/// (`getfsstat(MNT_NOWAIT)` on macOS, `/proc/mounts` on Linux): ❌ never a `statfs` on the path,
-/// which on a slow share waits on the server.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct NetworkMount {
-    /// Where it's mounted, for example `/Volumes/naspi`.
-    pub mount_point: String,
-    /// What the switcher calls it, from the table alone (an SMB share reads "share on server").
-    pub name: String,
-}
+pub(crate) use crate::volumes::{LocationCategory, LocationInfo, NetworkMount};
 
 /// The network mount `path` lies on: the deepest mount point that's a whole-segment prefix of it.
 /// `None` when that mount is a local disk, or the table couldn't be read. Lexical, so a symlink on

@@ -44,6 +44,9 @@ pub fn start_volume_watcher(app: &AppHandle) {
     install_observers();
 }
 
+/// Nothing to stop: the `NSWorkspace` observers end with the process.
+pub(crate) fn stop_volume_watcher() {}
+
 fn install_observers() {
     if OBSERVER_INSTALLED.set(()).is_err() {
         return;

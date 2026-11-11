@@ -11,12 +11,15 @@
 //! The discovery primitives are split across themed submodules, mirroring the macOS arm; this
 //! module holds the orchestrators that assemble them, and re-exports what the seam reaches.
 
-mod watcher;
+// Reached by the seam directly, ❌ never through this root: the watcher announces through
+// `volume_broadcast`, which lists through this root, so a re-export here closes a module cycle.
+pub(crate) mod watcher;
 
 mod cloud;
 mod fs_type;
 mod ids;
 mod mounts;
+mod network_mounts;
 mod smb;
 
 #[cfg(test)]
@@ -32,7 +35,6 @@ pub(crate) use mounts::{mount_rows, registrable_mount_roots};
 pub(crate) use smb::{enrich_from_volume_registry, get_smb_mount_info, parse_gvfs_smb_dirname, smb_mounts};
 // `/proc/mounts` and a GVFS folder name are both the table, so one reader answers both questions.
 pub(crate) use smb::get_smb_mount_info as smb_mount_info_at;
-pub(crate) use watcher::{start_volume_watcher, stop_volume_watcher};
 
 use cmdr_fs::volume::published_locations::dedupe_locations;
 use cmdr_local::linux_mounts::{self, MountEntry};
@@ -68,7 +70,7 @@ pub fn list_locations() -> Vec<LocationInfo> {
         .chain(get_main_volume(&mounts))
         .chain(get_mounted_volumes(&mounts))
         .chain(cloud::get_cloud_drives(&mounts))
-        .chain(smb::get_network_mounts());
+        .chain(network_mounts::get_network_mounts());
     dedupe_locations(locations)
 }
 
@@ -173,7 +175,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
     if let Some(root) = smb::gvfs_share_root(path) {
         let dirname = Path::new(root).file_name()?.to_str()?;
         let gvfs = parse_gvfs_smb_dirname(dirname)?;
-        return Some(smb::gvfs_share_location(root.to_string(), gvfs.share));
+        return Some(network_mounts::gvfs_share_location(root.to_string(), gvfs.share));
     }
     let (mount_point, fs_type, source) = get_mount_point(path)?;
 
@@ -212,7 +214,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
 }
 
 /// The twin of macOS `volumes::network_mount_under`, named as `resolve_path_volume_fast` names it.
-pub(crate) fn network_mount_under(path: &Path) -> Option<crate::volume_listing::NetworkMount> {
+pub(crate) fn network_mount_under(path: &Path) -> Option<crate::volumes::NetworkMount> {
     network_mount_in(&linux_mounts::parse_proc_mounts()?, path)
 }
 
@@ -222,10 +224,10 @@ pub(crate) fn network_mount_under(path: &Path) -> Option<crate::volume_listing::
 /// FUSE root the table names: one FUSE mount serves every share, and its root is a volume no row
 /// lists, so a favorite saved on it reads "unplugged" (`DETAILS.md` § "A path inside a GVFS share
 /// resolves to the share").
-fn network_mount_in(mounts: &[MountEntry], path: &Path) -> Option<crate::volume_listing::NetworkMount> {
+fn network_mount_in(mounts: &[MountEntry], path: &Path) -> Option<crate::volumes::NetworkMount> {
     if let Some(root) = path.to_str().and_then(smb::gvfs_share_root) {
         let dirname = Path::new(root).file_name()?.to_str()?;
-        return Some(crate::volume_listing::NetworkMount {
+        return Some(crate::volumes::NetworkMount {
             mount_point: root.to_string(),
             name: parse_gvfs_smb_dirname(dirname)?.share,
         });
@@ -234,7 +236,7 @@ fn network_mount_in(mounts: &[MountEntry], path: &Path) -> Option<crate::volume_
     if cmdr_fs::filesystem_kind::mount_is_local_disk(Some(&entry.device), Some(&entry.fstype)) {
         return None;
     }
-    Some(crate::volume_listing::NetworkMount {
+    Some(crate::volumes::NetworkMount {
         mount_point: entry.mountpoint.clone(),
         name: mounts::mount_display_name(&entry.mountpoint),
     })
@@ -264,7 +266,7 @@ mod tests {
         let network = |path: &str| network_mount_in(&mounts, Path::new(path));
         assert_eq!(
             network("/mnt/media/films"),
-            Some(crate::volume_listing::NetworkMount {
+            Some(crate::volumes::NetworkMount {
                 mount_point: "/mnt/media".to_string(),
                 name: "media".to_string(),
             })
@@ -285,7 +287,7 @@ mod tests {
         let share = "/run/user/1000/gvfs/smb-share:server=nas,share=public";
         assert_eq!(
             network_mount_in(&mounts, Path::new(&format!("{share}/docs/2026"))),
-            Some(crate::volume_listing::NetworkMount {
+            Some(crate::volumes::NetworkMount {
                 mount_point: share.to_string(),
                 name: "public".to_string(),
             })
@@ -293,7 +295,7 @@ mod tests {
         // Anything else GVFS serves has no row of its own, and the resolver answers the FUSE root.
         assert_eq!(
             network_mount_in(&mounts, Path::new("/run/user/1000/gvfs/sftp:host=nas/home")),
-            Some(crate::volume_listing::NetworkMount {
+            Some(crate::volumes::NetworkMount {
                 mount_point: "/run/user/1000/gvfs".to_string(),
                 name: mounts::mount_display_name("/run/user/1000/gvfs"),
             })

@@ -75,17 +75,17 @@ pub(super) fn mount_entry_for_test(mount_point: &str, fs_type: &str) -> MountEnt
 /// The network mount `path` lies on, from the same non-blocking table: what the favorites add gate
 /// asks before it `statfs`es anything, so a folder on a slow share it already knows costs no round
 /// trip. `None` on a local disk. See `crate::volume_listing::network_mount_under`.
-pub(crate) fn network_mount_under(path: &Path) -> Option<crate::volume_listing::NetworkMount> {
+pub(crate) fn network_mount_under(path: &Path) -> Option<crate::volumes::NetworkMount> {
     network_mount_in(&enumerate_mounts()?, path)
 }
 
 /// [`network_mount_under`] over a table already read.
-fn network_mount_in(mounts: &[MountEntry], path: &Path) -> Option<crate::volume_listing::NetworkMount> {
+fn network_mount_in(mounts: &[MountEntry], path: &Path) -> Option<crate::volumes::NetworkMount> {
     let mount = mount_under(mounts, path)?;
     if cmdr_fs::filesystem_kind::mount_is_local_disk(Some(&mount.mount_from), Some(&mount.fs_type)) {
         return None;
     }
-    Some(crate::volume_listing::NetworkMount {
+    Some(crate::volumes::NetworkMount {
         mount_point: mount.mount_point.clone(),
         name: network_name(mount),
     })
