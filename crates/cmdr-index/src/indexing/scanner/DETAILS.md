@@ -8,7 +8,7 @@ This area owns the LOCAL fresh-scan walker and the shared exclusion policy. Poin
 in `../writer/DETAILS.md`; the serial LOCAL reconcile walk (which reuses the `GuardedReader` + `LOCAL_LIST_TIMEOUT` from
 here) and the cost budget in `../reconcile/DETAILS.md`; `IndexPathSpace` + mount-relative resolution in
 `../paths/DETAILS.md`; the registry, phase machine, and `IndexVolumeKind` capability axes in `../lifecycle/DETAILS.md`;
-the shared `extract_metadata` primitive at `../metadata.rs` (documented in the [hub](../DETAILS.md)). The network
+the shared `extract_metadata` primitive at `../metadata/mod.rs` (documented in the [hub](../DETAILS.md)). The network
 (SMB/MTP) walker is a different scanner entirely: `../network_scanner/DETAILS.md`.
 
 ## Module structure

@@ -815,3 +815,96 @@ fn a_mixed_move_batch_leaves_the_local_source_and_moves_the_other() {
     assert!(events.inner.conflicts.lock_ignore_poison().is_empty());
     assert_eq!(events.inner.complete.lock_ignore_poison()[0].files_processed, 2);
 }
+
+// ============================================================================
+// Unknown identity: what a platform with no file ids gets today
+// ============================================================================
+//
+// ❗ These pin the CURRENT answer when the OS can't say whether source and
+// destination are one file (`cmdr_fs::file_identity::Sameness::Unknown`; every
+// Windows file until it has a file-id reader). It's non-destructive but not
+// honest: two DIFFERENT files read as a self-collision. The intended rule (in
+// `cmdr_fs::file_identity`'s module docs) is the ordinary conflict flow, with
+// an overwrite that refuses on `Unknown`; the windows-port plan's local-backend
+// task changes these cells when it lands that.
+
+/// Copy: a different file under the same name, with neither identity known, is
+/// duplicated to a ` (N)` name with no prompt, as a self-collision would be.
+#[test]
+fn unknown_identity_today_duplicates_a_different_file_without_asking() {
+    let engine = TestOperations::new();
+    let tmp = create_temp_dir("unknown_copy");
+    let folder = tmp.join("folder");
+    let elsewhere = tmp.join("elsewhere");
+    fs::create_dir_all(&folder).unwrap();
+    fs::create_dir_all(&elsewhere).unwrap();
+    fs::write(folder.join("photo.jpg"), b"the one already there").unwrap();
+    let incoming = elsewhere.join("photo.jpg");
+    fs::write(&incoming, b"a different photo").unwrap();
+    let _unknown = cmdr_fs::testing::hide_identity_of(&[&incoming, &folder.join("photo.jpg")]);
+
+    let state = make_state(&engine);
+    let events = ConflictResponderSink::new(&state, ConflictResolution::Skip, false);
+    copy_files_with_progress_inner(
+        &events,
+        "op-unknown-copy",
+        &state,
+        std::slice::from_ref(&incoming),
+        &folder,
+        &WriteOperationConfig::default(),
+    )
+    .expect("the copy must succeed");
+
+    assert!(
+        events.inner.conflicts.lock_ignore_poison().is_empty(),
+        "today: no prompt, because Unknown reads as a self-collision"
+    );
+    assert_eq!(dir_children(&folder), vec!["photo (1).jpg", "photo.jpg"]);
+    assert_eq!(fs::read(folder.join("photo.jpg")).unwrap(), b"the one already there");
+    assert_eq!(fs::read(folder.join("photo (1).jpg")).unwrap(), b"a different photo");
+}
+
+/// Move: a different file under the same name, with neither identity known,
+/// counts as already in place: nothing moves, and nothing is lost.
+#[test]
+fn unknown_identity_today_leaves_a_move_onto_a_different_file_in_place() {
+    let engine = TestOperations::new();
+    let tmp = create_temp_dir("unknown_move");
+    let folder = tmp.join("folder");
+    let elsewhere = tmp.join("elsewhere");
+    fs::create_dir_all(&folder).unwrap();
+    fs::create_dir_all(&elsewhere).unwrap();
+    let existing = folder.join("photo.jpg");
+    fs::write(&existing, b"the one already there").unwrap();
+    let incoming = elsewhere.join("photo.jpg");
+    fs::write(&incoming, b"a different photo").unwrap();
+    let _unknown = cmdr_fs::testing::hide_identity_of(&[&incoming, &existing]);
+
+    let state = make_state(&engine);
+    let events = ConflictResponderSink::new(&state, ConflictResolution::Skip, true);
+    move_files_with_progress_inner(
+        &events,
+        "op-unknown-move",
+        &state,
+        std::slice::from_ref(&incoming),
+        &folder,
+        &WriteOperationConfig::default(),
+    )
+    .expect("the move must succeed");
+
+    assert!(
+        events.inner.conflicts.lock_ignore_poison().is_empty(),
+        "today: no prompt"
+    );
+    assert_eq!(
+        fs::read(&incoming).unwrap(),
+        b"a different photo",
+        "the source stays where it was"
+    );
+    assert_eq!(
+        fs::read(&existing).unwrap(),
+        b"the one already there",
+        "the destination is untouched"
+    );
+    assert_eq!(dir_children(&folder), vec!["photo.jpg"]);
+}

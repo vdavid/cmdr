@@ -9,7 +9,7 @@ machine / manager wiring in `../lifecycle/DETAILS.md`; the reconciler, the per-s
 post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.md`; the writer message protocol
 (`MoveEntryV2` / `DeleteSubtreeById` / delta propagation) and the honest-sizes model in `../writer/DETAILS.md`;
 `IndexPathSpace`, firmlink normalization, and the FAT/exFAT inode-nulling rule in `../paths/DETAILS.md`; the
-`extract_metadata` primitive at `../metadata.rs` (documented in the [hub](../DETAILS.md)).
+`extract_metadata` primitive at `../metadata/mod.rs` (documented in the [hub](../DETAILS.md)).
 
 ## Module structure
 

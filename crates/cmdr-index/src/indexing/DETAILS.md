@@ -33,11 +33,11 @@ public-API facade; the areas:
 - **`transports/DETAILS.md`** — per-transport enable + live watch (`smb/`, `mtp/`, `local_external/`).
 - **`tests/DETAILS.md`** — whole-pipeline integration + stress tests + the disk-image fixture.
 
-`metadata.rs` is a loose shared leaf (see below). IPC: `commands/indexing.rs`. FE: `src/lib/indexing/`. Search: the
+`metadata/` is a loose shared leaf (see below). IPC: `commands/indexing.rs`. FE: `src/lib/indexing/`. Search: the
 top-level `search/` module (local-disk-only by design; the coupling is the shared `WRITER_GENERATION`, documented in
 `writer/DETAILS.md`).
 
-## The shared metadata leaf (`metadata.rs`)
+## The shared metadata leaf (`metadata/`)
 
 `MetadataSnapshot` + `extract_metadata()`: the single location for platform-specific metadata extraction (logical /
 physical size, mtime, inode, nlink). Used by the scanner, the reconciler, the verifier, and the event loop — a true

@@ -620,9 +620,6 @@
     "crates/cmdr-index/src/indexing/lifecycle/state/startup.rs": {
       "outsideSeam": 4
     },
-    "crates/cmdr-index/src/indexing/metadata.rs": {
-      "outsideSeam": 5
-    },
     "crates/cmdr-index/src/indexing/network_scanner/mod.rs": {
       "outsideSeam": 1
     },
@@ -805,9 +802,6 @@
     },
     "crates/cmdr-update-trust/src/main.rs": {
       "outsideSeam": 2
-    },
-    "crates/cmdr-viewer/src/watcher.rs": {
-      "outsideSeam": 1
     },
     "crates/cmdr-webdav/src/volume/mutation.rs": {
       "outsideSeam": 2

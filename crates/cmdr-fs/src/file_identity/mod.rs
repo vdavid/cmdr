@@ -5,8 +5,26 @@
 //! ❗ [`Sameness::Unknown`] is not [`Sameness::Different`]. A caller guarding data (a copy
 //! onto itself, a move that deletes its source) asks [`Sameness::may_be_same`] and takes
 //! the cautious branch when the OS can't tell. `DETAILS.md` § "File identity".
+//!
+//! **The rule a transfer follows**, per destination name that's already taken:
+//! - `Same` (the source itself, under another spelling): today's in-place handling, a copy
+//!   duplicating to a ` (N)` name and a move doing nothing.
+//! - `Different`: the ordinary conflict flow.
+//! - `Unknown`: the ordinary conflict flow too, asking like any name clash, ❌ never "already
+//!   in place" and never a silent skip; and an overwrite the person then picks must itself
+//!   refuse on `Unknown`, since the two might be one file and the overwrite would destroy it.
+//!
+//! Today's callers still take the cautious-but-silent branch on `Unknown` (`may_be_same`: a
+//! copy duplicates, a move counts the item in place, a compress onto an existing archive is
+//! refused), which `unknown_identity_today_*` tests pin until the Windows local backend
+//! brings the rule above with its refusal copy. Unknown never arises on macOS or Linux.
 
 mod platform;
+
+#[cfg(any(test, feature = "testing"))]
+mod hidden;
+#[cfg(any(test, feature = "testing"))]
+pub use hidden::{HiddenIdentities, hide_identity_of};
 
 use std::collections::HashSet;
 use std::fs::Metadata;
@@ -40,7 +58,12 @@ impl FileId {
     /// The node `metadata` describes (follows a link only if the read that produced
     /// `metadata` did). `None` where this OS's metadata doesn't carry one.
     pub fn of(metadata: &Metadata) -> Option<Self> {
-        platform::file_id(metadata)
+        let id = platform::file_id(metadata)?;
+        #[cfg(any(test, feature = "testing"))]
+        if hidden::hides(id) {
+            return None;
+        }
+        Some(id)
     }
 
     /// The device the node lives on.
@@ -68,12 +91,20 @@ impl FileId {
 
 /// The device `metadata`'s node lives on. `None` where this OS's metadata doesn't say.
 pub fn device_of(metadata: &Metadata) -> Option<DeviceId> {
+    #[cfg(any(test, feature = "testing"))]
+    if platform::file_id(metadata).is_some_and(hidden::hides) {
+        return None;
+    }
     platform::device_of(metadata)
 }
 
 /// How many names the node has (`st_nlink`). `None` where this OS's metadata doesn't say,
 /// which a hardlink dedup reads as "count it": over-counting a size beats losing one.
 pub fn link_count(metadata: &Metadata) -> Option<u64> {
+    #[cfg(any(test, feature = "testing"))]
+    if platform::file_id(metadata).is_some_and(hidden::hides) {
+        return None;
+    }
     platform::link_count(metadata)
 }
 

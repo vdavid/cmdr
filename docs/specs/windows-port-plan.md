@@ -292,6 +292,12 @@ Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5
     green. Needs 9, 10, 34.
 36. [M] Windows. `cmdr-operations` arms: `CopyFileExW` strategy (with ReFS/Dev Drive block clone), Recycle Bin via
     `trash` with identity, read-only as "locked" in `clear_blockers`, sharing violations as a typed refusal. Needs 35.
+    Plus the honest `Unknown`-identity rule (`cmdr_fs::file_identity` module docs): a move onto a taken name with
+    unknown identity goes through the conflict flow instead of counting as already in place (`move_op/mod.rs` and
+    `conflict_preflight.rs`), a copy asks instead of duplicating (`copy/mod.rs`, `free_space.rs`, `scan_dry_run.rs`,
+    `routing.rs`), the per-file guard in `copy/single_item.rs` refuses an overwrite instead of skipping, and a compress
+    onto an existing archive asks instead of refusing (`archive_edit/fresh_plan.rs`). Needs a typed refusal with its own
+    copy ("can't tell whether these are the same file"); the `unknown_identity_today_*` tests flip with it.
 37. [S] Windows. Cloud Files placeholders (OneDrive and friends: sync badges, cloud trash) and Mark of the Web on
     extract (`cmdr-operations` + `cmdr-archive`). Needs 36.
 38. [S] Windows. Identity and system bundle: secrets via `windows-native-keyring-store` (❗ a blocker: off macOS and
