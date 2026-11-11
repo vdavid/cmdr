@@ -32,6 +32,11 @@ Second, a whole PHASE whose steps are independent of each other, so lifting it h
   behind a `cfg` (MCP bridge in debug, Playwright under its feature, Tauri's updater off macOS). Nothing here observes
   app state or cares what registered before it, which is exactly what makes the cut safe. A new order-free registration
   goes here.
+- `platform::startup::install(app)`: each OS's own installers (macOS: the system-look observers, mouse navigation,
+  Services, the volume watcher and unmount approver, `ptpcamerad`, the updater's state; Linux: the volume watcher, the
+  portal accent color, the title-bar revert; Windows: none yet), one arm per OS behind a pinned signature. They observe
+  or hook the OS and don't depend on each other; the call sits at the strictest point any of them needs, which its doc
+  names. An installer whose position is part of its contract (the E2E activation policy, first) stays on the spine.
 - `crate_deps`: the `use foo as _;` markers `unused_crate_dependencies` needs. Lint artifacts rather than structure, and
   a marker satisfies the lint from anywhere in the crate.
 

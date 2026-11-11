@@ -1,5 +1,6 @@
 //! Platform identity: which OS this is, and which version. Shared by the diagnostics and
-//! analytics pipelines (crash reports, error reports, the heartbeat).
+//! analytics pipelines (crash reports, error reports, the heartbeat). Each OS's startup
+//! installers sit beside it in `startup/`.
 //!
 //! A platform seam (`docs/guides/platform-seams.md`): one arm per OS, picked below, and every
 //! signature the arms owe pinned, so an arm that drifts fails to compile at the pin.
@@ -8,6 +9,8 @@
 #[cfg_attr(target_os = "linux", path = "linux/mod.rs")]
 #[cfg_attr(target_os = "windows", path = "windows.rs")]
 mod imp;
+
+pub(crate) mod startup;
 
 const _: fn() -> String = os_version;
 const _: fn(i64, i64) -> bool = macos_at_least;
