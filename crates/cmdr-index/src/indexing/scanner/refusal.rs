@@ -28,6 +28,10 @@ use crate::indexing::store::UnreadableCause;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Seal {
     /// SIP (`SF_RESTRICTED`) or a data vault (`lstat` itself refused).
+    #[cfg_attr(
+        all(not(target_os = "macos"), not(test)),
+        expect(dead_code, reason = "only macOS seals a folder; elsewhere `seal_of` answers `Open`")
+    )]
     Sealed,
     /// Nothing about the folder itself says it's sealed.
     Open,
