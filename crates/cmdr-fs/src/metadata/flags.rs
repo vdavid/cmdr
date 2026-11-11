@@ -2,11 +2,6 @@
 //! bits, so nothing outside this file handles a raw flag word.
 
 use std::ops::BitOr;
-use std::path::Path;
-
-use super::ClassOutcome;
-#[cfg(target_os = "macos")]
-use crate::log_private::LogPrivate;
 
 /// A set of the user-settable flags Finder shows. `SF_*` system flags are never
 /// in it: a non-root process can't set or clear them, and a copy never tries.
@@ -56,77 +51,4 @@ impl BitOr for UserFlags {
     fn bitor(self, rhs: Self) -> Self {
         Self(self.0 | rhs.0)
     }
-}
-
-#[cfg(target_os = "macos")]
-impl UserFlags {
-    const BSD_BITS: [(UserFlags, u32); 4] = [
-        (UserFlags::HIDDEN, libc::UF_HIDDEN),
-        (UserFlags::LOCKED, libc::UF_IMMUTABLE),
-        (UserFlags::APPEND_ONLY, libc::UF_APPEND),
-        (UserFlags::NO_DUMP, libc::UF_NODUMP),
-    ];
-
-    /// The set's bits out of a raw `st_flags` word; every other bit is ignored.
-    pub(super) fn from_bsd(raw: u32) -> Self {
-        Self::BSD_BITS
-            .iter()
-            .filter(|(_, bit)| raw & bit != 0)
-            .fold(Self::NONE, |set, (flag, _)| set | *flag)
-    }
-
-    /// The raw `st_flags` bits of this set.
-    pub(super) fn to_bsd(self) -> u32 {
-        Self::BSD_BITS
-            .iter()
-            .filter(|(flag, _)| self.contains(*flag))
-            .fold(0, |raw, (_, bit)| raw | bit)
-    }
-}
-
-/// `path`'s own flags word (never a symlink's target's).
-#[cfg(target_os = "macos")]
-pub(super) fn read_raw(path: &Path) -> std::io::Result<u32> {
-    use std::os::macos::fs::MetadataExt as _;
-    std::fs::symlink_metadata(path).map(|meta| meta.st_flags())
-}
-
-// `lchflags(2)` is in libSystem, but the `libc` this workspace locks doesn't
-// declare it yet.
-#[cfg(target_os = "macos")]
-unsafe extern "C" {
-    fn lchflags(path: *const libc::c_char, flags: libc::c_uint) -> libc::c_int;
-}
-
-/// Sets `path`'s own flags word to exactly `raw` (`lchflags`, never following a link).
-#[cfg(target_os = "macos")]
-pub(super) fn write_raw(path: &Path, raw: u32) -> std::io::Result<()> {
-    use std::os::unix::ffi::OsStrExt as _;
-    let c_path = std::ffi::CString::new(path.as_os_str().as_bytes())
-        .map_err(|_| std::io::Error::from(std::io::ErrorKind::InvalidInput))?;
-    // SAFETY: `c_path` is a NUL-terminated path that outlives the call, `lchflags`
-    // reads nothing else, and the declaration above matches its libSystem signature.
-    if unsafe { lchflags(c_path.as_ptr(), raw) } == 0 {
-        Ok(())
-    } else {
-        Err(std::io::Error::last_os_error())
-    }
-}
-
-/// Adds `flags` to what `path` already wears.
-#[cfg(target_os = "macos")]
-pub(super) fn add_flags(path: &Path, flags: UserFlags) -> ClassOutcome {
-    match read_raw(path).and_then(|raw| write_raw(path, raw | flags.to_bsd())) {
-        Ok(()) => ClassOutcome::Kept,
-        Err(e) => {
-            log::debug!(target: "metadata", "couldn't set the flags on {}: {e}", LogPrivate::path(path));
-            ClassOutcome::Refused
-        }
-    }
-}
-
-/// Linux's `chattr` flags need `CAP_LINUX_IMMUTABLE`, and Hidden is a dot-name.
-#[cfg(any(target_os = "linux", target_family = "wasm"))]
-pub(super) fn add_flags(_path: &Path, _flags: UserFlags) -> ClassOutcome {
-    ClassOutcome::NotApplicable
 }

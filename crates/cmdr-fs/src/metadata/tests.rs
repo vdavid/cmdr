@@ -121,13 +121,13 @@ mod macos {
     fn a_system_flag_outranks_the_users_lock() {
         let never = || panic!("the flags decide it");
         assert_eq!(
-            blockers::lock_of(libc::SF_IMMUTABLE | libc::UF_IMMUTABLE, never),
+            platform::lock_of(libc::SF_IMMUTABLE | libc::UF_IMMUTABLE, never),
             RemovalLock::SystemLocked
         );
-        assert_eq!(blockers::lock_of(libc::SF_APPEND, never), RemovalLock::SystemLocked);
-        assert_eq!(blockers::lock_of(libc::UF_APPEND, never), RemovalLock::Locked);
-        assert_eq!(blockers::lock_of(libc::UF_HIDDEN, || false), RemovalLock::Free);
-        assert_eq!(blockers::lock_of(0, || true), RemovalLock::Locked);
+        assert_eq!(platform::lock_of(libc::SF_APPEND, never), RemovalLock::SystemLocked);
+        assert_eq!(platform::lock_of(libc::UF_APPEND, never), RemovalLock::Locked);
+        assert_eq!(platform::lock_of(libc::UF_HIDDEN, || false), RemovalLock::Free);
+        assert_eq!(platform::lock_of(0, || true), RemovalLock::Locked);
     }
 
     /// The link is what's being removed; the user's Locked target stays Locked.

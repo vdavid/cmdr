@@ -211,8 +211,10 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     tests' own `cfg(unix)` gates stay until a Windows lane can say which ones compile there.
 16. [XS] Win. **Done**. `cmdr-http`: `MacSystem` → `OsSystem` behind `system/platform/`; the PAC warm-up thread is the
     macOS arm's; Linux and Windows answer direct explicitly. The crate checks clean for `x86_64-pc-windows-gnu`.
-17. [S] Win (moderate). `cmdr-fs` metadata classes: per-OS bodies into `metadata/platform/`, ordering rules stay in
-    `mod.rs`; `cmdr-local`'s caps constant moves beside them. Needs 7.
+17. [S] Win (moderate). **Done**. `cmdr-fs` metadata classes: every per-OS body is in `metadata/platform/` (a shared
+    `unix.rs`, macOS, Linux, the browser, and a body-less Windows arm), the ordering rules stay in the class modules,
+    and `cmdr-local`'s caps constant is `cmdr_fs::metadata::LOCAL_DISK_CAPS` beside them. Linux's behavior is pinned
+    first (`metadata/linux_characterization_tests.rs`).
 
 ### Phase 3: app seams
 

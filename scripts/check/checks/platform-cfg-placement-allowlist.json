@@ -480,9 +480,6 @@
     "crates/cmdr-fs/src/apple_double.rs": {
       "outsideSeam": 3
     },
-    "crates/cmdr-fs/src/archive_format.rs": {
-      "outsideSeam": 1
-    },
     "crates/cmdr-fs/src/durable.rs": {
       "outsideSeam": 1
     },
@@ -509,24 +506,6 @@
     },
     "crates/cmdr-fs/src/mapped_file_faults/proc_maps.rs": {
       "outsideSeam": 1
-    },
-    "crates/cmdr-fs/src/metadata/blockers.rs": {
-      "outsideSeam": 10
-    },
-    "crates/cmdr-fs/src/metadata/carried.rs": {
-      "outsideSeam": 8
-    },
-    "crates/cmdr-fs/src/metadata/flags.rs": {
-      "outsideSeam": 7
-    },
-    "crates/cmdr-fs/src/metadata/mod.rs": {
-      "outsideSeam": 8
-    },
-    "crates/cmdr-fs/src/metadata/mode.rs": {
-      "outsideSeam": 1
-    },
-    "crates/cmdr-fs/src/metadata/staged.rs": {
-      "outsideSeam": 11
     },
     "crates/cmdr-fs/src/name_fold.rs": {
       "outsideSeam": 2
@@ -670,7 +649,7 @@
       "outsideSeam": 5
     },
     "crates/cmdr-local/src/local_posix.rs": {
-      "outsideSeam": 5
+      "outsideSeam": 3
     },
     "crates/cmdr-local/src/reading.rs": {
       "outsideSeam": 18

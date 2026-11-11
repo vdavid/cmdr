@@ -40,12 +40,10 @@ mod carried;
 mod classes;
 mod flags;
 mod mode;
+mod platform;
 mod staged;
 
 use std::path::Path;
-
-#[cfg(unix)]
-use crate::log_private::LogPrivate;
 
 pub use blockers::{
     OpenedFolder, ParentOpening, RemovalLock, RemovalRefusal, Unblock, clear_blockers, open_parent_folder,
@@ -169,15 +167,7 @@ impl MetadataReport {
     }
 }
 
-/// An ACL as the helper carries it: opaque entries, read and written whole.
-#[cfg(unix)]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Acl(Vec<exacl::AclEntry>);
-
-/// The browser build reads no ACLs, so it can never hold one.
-#[cfg(target_family = "wasm")]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Acl(std::convert::Infallible);
+pub use platform::{Acl, LOCAL_DISK_CAPS};
 
 /// The metadata that goes on an item only after its landing rename, because on
 /// the staged item it would refuse that rename or a later one.
@@ -203,7 +193,7 @@ impl LandedMetadata {
     pub fn of_source_acl(source: &Path) -> Self {
         Self {
             mode: None,
-            acl: read_acl(source),
+            acl: platform::read_acl(source),
             flags: UserFlags::NONE,
         }
     }
@@ -259,99 +249,22 @@ pub fn apply_landed(path: &Path, set: &LandedMetadata) -> MetadataReport {
     note_helper_call();
     let mode = match set.mode {
         None => ClassOutcome::Absent,
-        Some(mode) => write_mode(path, mode),
+        Some(mode) => platform::write_mode_at(path, mode),
     };
     let acl = match &set.acl {
         None => ClassOutcome::Absent,
-        Some(acl) => write_acl(path, acl),
+        Some(acl) => platform::write_acl(path, acl),
     };
     let flags = if set.flags.is_empty() {
         ClassOutcome::Absent
     } else {
-        flags::add_flags(path, set.flags)
+        platform::add_flags(path, set.flags)
     };
     MetadataReport {
         mode,
         acl,
         flags,
         ..MetadataReport::ABSENT
-    }
-}
-
-/// `chmod` by path. Only ever a folder, which isn't a link, so following one
-/// can't reach anywhere else.
-#[cfg(unix)]
-fn write_mode(path: &Path, mode: u32) -> ClassOutcome {
-    use std::os::unix::fs::PermissionsExt as _;
-    match std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode)) {
-        Ok(()) => ClassOutcome::Kept,
-        Err(e) => {
-            log::debug!(target: "metadata", "couldn't set mode {mode:o} on {}: {e}", LogPrivate::path(path));
-            ClassOutcome::Refused
-        }
-    }
-}
-
-// The browser build has no host filesystem: no mode or ACL to read or write
-// (`DETAILS.md` § "The browser build").
-#[cfg(target_family = "wasm")]
-fn write_mode(_path: &Path, _mode: u32) -> ClassOutcome {
-    ClassOutcome::NotApplicable
-}
-
-#[cfg(target_family = "wasm")]
-fn read_acl(_path: &Path) -> Option<Acl> {
-    None
-}
-
-#[cfg(target_family = "wasm")]
-fn write_acl(_path: &Path, acl: &Acl) -> ClassOutcome {
-    match acl.0 {}
-}
-
-#[cfg(target_os = "macos")]
-fn read_acl(path: &Path) -> Option<Acl> {
-    match exacl::getfacl(path, exacl::AclOption::SYMLINK_ACL) {
-        Ok(entries) if !entries.is_empty() => Some(Acl(entries)),
-        Ok(_) => None,
-        Err(e) => {
-            log::debug!(target: "metadata", "couldn't read the ACL of {}: {e}", LogPrivate::path(path));
-            None
-        }
-    }
-}
-
-#[cfg(target_os = "linux")]
-fn read_acl(path: &Path) -> Option<Acl> {
-    match exacl::getfacl(path, None) {
-        // A named user or group, or a default ACL, is what makes it more than the mode.
-        Ok(entries)
-            if entries
-                .iter()
-                .any(|e| !e.name.is_empty() || e.flags.contains(exacl::Flag::DEFAULT)) =>
-        {
-            Some(Acl(entries))
-        }
-        Ok(_) => None,
-        Err(e) => {
-            log::debug!(target: "metadata", "couldn't read the ACL of {}: {e}", LogPrivate::path(path));
-            None
-        }
-    }
-}
-
-#[cfg(unix)]
-fn write_acl(path: &Path, acl: &Acl) -> ClassOutcome {
-    #[cfg(target_os = "macos")]
-    let written = exacl::setfacl(&[path], &acl.0, exacl::AclOption::SYMLINK_ACL);
-    #[cfg(target_os = "linux")]
-    let written = exacl::setfacl(&[path], &acl.0, None);
-    match written {
-        Ok(()) => ClassOutcome::Kept,
-        Err(e) => {
-            log::debug!(target: "metadata", "couldn't set the ACL on {}: {e}", LogPrivate::path(path));
-            ClassOutcome::Refused
-        }
     }
 }
 
@@ -376,3 +289,6 @@ fn note_helper_call() {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(test, target_os = "linux"))]
+mod linux_characterization_tests;

@@ -18,7 +18,7 @@ use cmdr_fs::entry::FileEntry;
 #[cfg(feature = "playwright-e2e")]
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::metadata::{CarriedMetadata, MetadataCaps, MetadataClasses, MetadataReport, Unblock, UserFlags};
+use cmdr_fs::metadata::{CarriedMetadata, MetadataCaps, MetadataClasses, MetadataReport, Unblock};
 use cmdr_fs::volume::MountClass;
 use cmdr_fs::volume::Presence;
 use cmdr_fs::volume::host::VolumeHost;
@@ -291,31 +291,9 @@ impl LocalPosixVolume {
 }
 
 impl LocalPosixVolume {
-    /// What local disk keeps of a copy routed through the volume engine, and
-    /// what its streams report off the open's `stat` and fd. Every user flag
-    /// waits for the landing (`staged_flags` is empty): the copy puts them on
-    /// with `apply_metadata` once the file has its final name, since Locked
-    /// refuses the rename and the set goes on as one. Linux can't set a
-    /// creation date (`statx` reads it) and has no user flags.
-    #[cfg(target_os = "macos")]
-    pub const METADATA_CAPS: MetadataCaps = MetadataCaps {
-        stores: MetadataClasses::ALL,
-        reports: MetadataClasses::ALL,
-        folder_stores: MetadataClasses::ALL,
-        folder_dates: true,
-        staged_flags: UserFlags::NONE,
-    };
-    /// See the macOS twin.
-    #[cfg(target_os = "linux")]
-    pub const METADATA_CAPS: MetadataCaps = MetadataCaps {
-        stores: MetadataClasses::MODE.union(MetadataClasses::XATTRS),
-        reports: MetadataClasses::CREATED
-            .union(MetadataClasses::MODE)
-            .union(MetadataClasses::XATTRS),
-        folder_stores: MetadataClasses::MODE.union(MetadataClasses::XATTRS),
-        folder_dates: true,
-        staged_flags: UserFlags::NONE,
-    };
+    /// What local disk keeps of a copy routed through the volume engine
+    /// ([`cmdr_fs::metadata::LOCAL_DISK_CAPS`], per OS beside the classes it describes).
+    pub const METADATA_CAPS: MetadataCaps = cmdr_fs::metadata::LOCAL_DISK_CAPS;
 }
 
 impl Volume for LocalPosixVolume {

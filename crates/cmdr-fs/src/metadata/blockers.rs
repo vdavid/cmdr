@@ -16,8 +16,6 @@ use std::io;
 use std::path::Path;
 
 use super::LandedMetadata;
-#[cfg(unix)]
-use crate::log_private::LogPrivate;
 
 /// What [`clear_blockers`] did to one item.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,53 +34,7 @@ pub enum Unblock {
 /// `uchg` refuses an ACL write. Never follows a symlink. On Linux there's never
 /// anything to clear (module docs).
 pub fn clear_blockers(path: &Path) -> Unblock {
-    #[cfg(target_os = "macos")]
-    {
-        super::note_helper_call();
-        clear_on_macos(path)
-    }
-    #[cfg(any(target_os = "linux", target_family = "wasm"))]
-    {
-        let _ = path;
-        Unblock::NothingToClear
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn clear_on_macos(path: &Path) -> Unblock {
-    use super::{Acl, UserFlags, flags};
-
-    let Ok(raw) = flags::read_raw(path) else {
-        return Unblock::NothingToClear;
-    };
-    if raw & (libc::SF_IMMUTABLE | libc::SF_APPEND) != 0 {
-        return Unblock::Refused;
-    }
-    let mut cleared = LandedMetadata::default();
-    let blocking = UserFlags::from_bsd(raw).intersection(UserFlags::RENAME_BLOCKERS);
-    if !blocking.is_empty() {
-        if let Err(e) = flags::write_raw(path, raw & !blocking.to_bsd()) {
-            log::debug!(target: "metadata", "couldn't unlock {}: {e}", LogPrivate::path(path));
-            return Unblock::Refused;
-        }
-        cleared.flags = blocking;
-    }
-    match exacl::getfacl(path, exacl::AclOption::SYMLINK_ACL) {
-        Ok(entries) if !entries.is_empty() => {
-            if let Err(e) = exacl::setfacl(&[path], &[], exacl::AclOption::SYMLINK_ACL) {
-                log::debug!(target: "metadata", "couldn't strip the ACL of {}: {e}", LogPrivate::path(path));
-                return Unblock::Refused;
-            }
-            cleared.acl = Some(Acl(entries));
-        }
-        Ok(_) => {}
-        Err(e) => log::debug!(target: "metadata", "couldn't read the ACL of {}: {e}", LogPrivate::path(path)),
-    }
-    if cleared.is_empty() {
-        Unblock::NothingToClear
-    } else {
-        Unblock::Cleared(cleared)
-    }
+    super::platform::clear_blockers(path)
 }
 
 /// What stands between an item and a rename or an unlink of it, as a move that
@@ -106,50 +58,7 @@ pub enum RemovalLock {
 /// the move then meets the refusal where it would have anyway. Always
 /// [`RemovalLock::Free`] off macOS (module docs).
 pub fn removal_lock(path: &Path) -> RemovalLock {
-    #[cfg(target_os = "macos")]
-    {
-        let Ok(raw) = super::flags::read_raw(path) else {
-            return RemovalLock::Free;
-        };
-        lock_of(raw, || {
-            exacl::getfacl(path, exacl::AclOption::SYMLINK_ACL)
-                .map(|entries| entries.iter().any(denies_removal))
-                .unwrap_or(false)
-        })
-    }
-    #[cfg(any(target_os = "linux", target_family = "wasm"))]
-    {
-        let _ = path;
-        RemovalLock::Free
-    }
-}
-
-/// [`removal_lock`]'s verdict from a raw `st_flags` word, asking `acl_denies`
-/// only when the flags alone don't decide it (it's a syscall).
-#[cfg(target_os = "macos")]
-pub(super) fn lock_of(raw: u32, acl_denies: impl FnOnce() -> bool) -> RemovalLock {
-    use super::UserFlags;
-    if raw & (libc::SF_IMMUTABLE | libc::SF_APPEND) != 0 {
-        RemovalLock::SystemLocked
-    } else if !UserFlags::from_bsd(raw)
-        .intersection(UserFlags::RENAME_BLOCKERS)
-        .is_empty()
-        || acl_denies()
-    {
-        RemovalLock::Locked
-    } else {
-        RemovalLock::Free
-    }
-}
-
-/// Whether one ACL entry refuses removing the item it's on, or anything out of
-/// it. Any principal counts: telling whether `everyone` or a group reaches this
-/// process would cost more than the rare extra question.
-#[cfg(target_os = "macos")]
-fn denies_removal(entry: &exacl::AclEntry) -> bool {
-    !entry.allow
-        && !entry.flags.contains(exacl::Flag::ONLY_INHERIT)
-        && entry.perms.intersects(exacl::Perm::DELETE | exacl::Perm::DELETE_CHILD)
+    super::platform::removal_lock(path)
 }
 
 /// What [`open_parent_folder`] did to the folder holding an item.
@@ -173,6 +82,18 @@ pub struct OpenedFolder {
 }
 
 impl OpenedFolder {
+    /// An opened `path`, which `restore` puts back on close.
+    #[cfg_attr(
+        target_family = "wasm",
+        expect(dead_code, reason = "the browser build has no folder to open")
+    )]
+    pub(super) fn new(path: std::path::PathBuf, restore: LandedMetadata) -> Self {
+        Self {
+            path,
+            restore: Some(restore),
+        }
+    }
+
     /// Puts the folder's own mode, ACL, and flags back, in the order
     /// [`super::apply_landed`] keeps.
     pub fn close(mut self) -> super::MetadataReport {
@@ -200,50 +121,7 @@ impl Drop for OpenedFolder {
 /// a reversal now empties. ❗ The folder isn't removed here: what's opened is put
 /// back by [`OpenedFolder::close`].
 pub fn open_parent_folder(child: &Path) -> ParentOpening {
-    // The browser build has no folder modes to change (`DETAILS.md` § "The browser build").
-    #[cfg(target_family = "wasm")]
-    {
-        let _ = child;
-        ParentOpening::NothingToOpen
-    }
-    #[cfg(unix)]
-    open_host_parent_folder(child)
-}
-
-#[cfg(unix)]
-fn open_host_parent_folder(child: &Path) -> ParentOpening {
-    use std::os::unix::fs::PermissionsExt as _;
-
-    let Some(folder) = child.parent().filter(|p| !p.as_os_str().is_empty()) else {
-        return ParentOpening::NothingToOpen;
-    };
-    let mode = match std::fs::symlink_metadata(folder) {
-        Ok(meta) if meta.is_dir() => meta.permissions().mode() & 0o7777,
-        _ => return ParentOpening::NothingToOpen,
-    };
-    let mut restore = match clear_blockers(folder) {
-        Unblock::Cleared(cleared) => cleared,
-        Unblock::NothingToClear => LandedMetadata::default(),
-        Unblock::Refused => return ParentOpening::Refused,
-    };
-    const OWNER_WRITE_SEARCH: u32 = 0o300;
-    if mode & OWNER_WRITE_SEARCH != OWNER_WRITE_SEARCH {
-        super::note_helper_call();
-        if let Err(e) = std::fs::set_permissions(folder, std::fs::Permissions::from_mode(mode | OWNER_WRITE_SEARCH)) {
-            log::debug!(target: "metadata", "couldn't open {} for a removal: {e}", LogPrivate::dir_path(folder));
-            super::apply_landed(folder, &restore);
-            return ParentOpening::Refused;
-        }
-        restore = restore.with_mode(mode);
-    }
-    if restore.is_empty() {
-        ParentOpening::NothingToOpen
-    } else {
-        ParentOpening::Opened(OpenedFolder {
-            path: folder.to_path_buf(),
-            restore: Some(restore),
-        })
-    }
+    super::platform::open_parent_folder(child)
 }
 
 /// Why a `remove_*_clearing_blockers` call left the item in place.

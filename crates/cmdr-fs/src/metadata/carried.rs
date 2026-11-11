@@ -10,15 +10,7 @@ use std::fs::{File, Metadata};
 use std::path::Path;
 use std::time::SystemTime;
 
-use super::{MetadataClasses, UserFlags};
-#[cfg(unix)]
-use crate::log_private::LogPrivate;
-
-/// The xattr macOS stamps on every file a process writes. The kernel ignores a
-/// write of it (verified on macOS 27.0, `xattr -w` then `-p` reads back the
-/// writer's own value, 2026-10-11), so copying it costs a read and a write for
-/// nothing: a copy never carries it.
-const PROVENANCE_XATTR: &str = "com.apple.provenance";
+use super::{MetadataClasses, UserFlags, platform};
 
 /// Gatekeeper's mark on a download. A copy carries it like any xattr, but a
 /// destination that can't hold it loses nothing a person would miss.
@@ -67,7 +59,7 @@ impl CarriedMetadata {
     /// class that costs a call) are read only when wanted.
     pub fn of_local_file_wanting(file: &File, meta: &Metadata, wanted: MetadataClasses) -> Self {
         let xattrs = if wanted.contains(MetadataClasses::XATTRS) {
-            local_xattrs(file)
+            platform::local_xattrs(file)
         } else {
             Vec::new()
         };
@@ -83,7 +75,7 @@ impl CarriedMetadata {
     /// file has costs nothing like reading them (a resource fork can be large).
     pub fn outline_of_local_file(file: &File, meta: &Metadata, wanted: MetadataClasses) -> Self {
         let xattrs = if wanted.contains(MetadataClasses::XATTRS) {
-            local_xattr_names(file)
+            platform::local_xattr_names(file)
         } else {
             Vec::new()
         };
@@ -170,7 +162,7 @@ impl CarriedMetadata {
             created: meta.created().ok(),
             mode: None,
             flags: UserFlags::NONE,
-            xattrs: xattrs_at(path),
+            xattrs: platform::xattrs_at(path),
         }
     }
 
@@ -180,7 +172,7 @@ impl CarriedMetadata {
     /// one `listxattr`.
     pub fn of_local_dir(path: &Path, meta: &Metadata) -> Self {
         Self {
-            xattrs: xattrs_at(path),
+            xattrs: platform::xattrs_at(path),
             ..Self::of_local_stat(meta)
         }
     }
@@ -188,131 +180,11 @@ impl CarriedMetadata {
     /// The classes a local item's stat answers: creation date, mode, and
     /// (macOS) flags. No call at all.
     pub fn of_local_stat(meta: &Metadata) -> Self {
-        #[cfg(unix)]
-        let mode = {
-            use std::os::unix::fs::PermissionsExt as _;
-            Some(meta.permissions().mode() & 0o7777)
-        };
-        // The browser build has no host filesystem, so no mode bits.
-        #[cfg(target_family = "wasm")]
-        let mode = None;
         Self {
             created: meta.created().ok(),
-            mode,
-            flags: flags_of(meta),
+            mode: platform::mode_of(meta),
+            flags: platform::flags_of(meta),
             xattrs: Vec::new(),
         }
-    }
-}
-
-/// The xattrs worth carrying off the open `file`. A file with none costs one
-/// `flistxattr`.
-#[cfg(unix)]
-fn local_xattrs(file: &File) -> Vec<Xattr> {
-    use xattr::FileExt as _;
-    match file.list_xattr() {
-        Ok(names) => names
-            .filter(carries)
-            .filter_map(|name| match file.get_xattr(&name) {
-                Ok(Some(value)) => Some(Xattr { name, value }),
-                Ok(None) => None,
-                Err(e) => {
-                    // allowed-log-private: an xattr key (`com.apple.…`), the triage clue, not a file's name
-                    log::debug!(target: "metadata", "couldn't read xattr {name:?}: {e}");
-                    None
-                }
-            })
-            .collect(),
-        Err(e) => {
-            log::debug!(target: "metadata", "couldn't list a source's xattrs: {e}");
-            Vec::new()
-        }
-    }
-}
-
-/// The names of the xattrs worth carrying off the open `file`, each with an
-/// empty value.
-#[cfg(unix)]
-fn local_xattr_names(file: &File) -> Vec<Xattr> {
-    use xattr::FileExt as _;
-    match file.list_xattr() {
-        Ok(names) => names
-            .filter(carries)
-            .map(|name| Xattr {
-                name,
-                value: Vec::new(),
-            })
-            .collect(),
-        Err(e) => {
-            log::debug!(target: "metadata", "couldn't list a source's xattrs: {e}");
-            Vec::new()
-        }
-    }
-}
-
-/// The xattrs a copy carries off the item at `path` itself. `xattr::list` and
-/// `xattr::get` never follow a link (`XATTR_NOFOLLOW`).
-#[cfg(unix)]
-fn xattrs_at(path: &Path) -> Vec<Xattr> {
-    match xattr::list(path) {
-        Ok(names) => names
-            .filter(carries)
-            .filter_map(|name| match xattr::get(path, &name) {
-                Ok(Some(value)) => Some(Xattr { name, value }),
-                Ok(None) => None,
-                Err(e) => {
-                    // allowed-log-private: an xattr key (`com.apple.…`), the triage clue, not a file's name
-                    log::debug!(target: "metadata", "couldn't read xattr {name:?}: {e}");
-                    None
-                }
-            })
-            .collect(),
-        Err(e) => {
-            log::debug!(target: "metadata", "couldn't list the xattrs of {}: {e}", LogPrivate::path(path));
-            Vec::new()
-        }
-    }
-}
-
-// The browser build has no host filesystem, so no xattrs to read
-// (`DETAILS.md` § "The browser build").
-#[cfg(target_family = "wasm")]
-fn local_xattrs(_file: &File) -> Vec<Xattr> {
-    Vec::new()
-}
-
-#[cfg(target_family = "wasm")]
-fn local_xattr_names(_file: &File) -> Vec<Xattr> {
-    Vec::new()
-}
-
-#[cfg(target_family = "wasm")]
-fn xattrs_at(_path: &Path) -> Vec<Xattr> {
-    Vec::new()
-}
-
-#[cfg(target_os = "macos")]
-fn flags_of(meta: &Metadata) -> UserFlags {
-    use std::os::macos::fs::MetadataExt as _;
-    UserFlags::from_bsd(meta.st_flags())
-}
-
-#[cfg(any(target_os = "linux", target_family = "wasm"))]
-fn flags_of(_meta: &Metadata) -> UserFlags {
-    UserFlags::NONE
-}
-
-/// Whether a copy carries the xattr `name`. On macOS everything but provenance;
-/// on Linux only `user.*`: `system.posix_acl_*` is the ACL (`exacl` carries it),
-/// and `trusted.*` and `security.*` need privileges a desktop app doesn't have.
-#[cfg_attr(
-    target_family = "wasm",
-    allow(dead_code, reason = "the browser build reads no xattrs")
-)]
-fn carries(name: &OsString) -> bool {
-    if cfg!(target_os = "macos") {
-        name != PROVENANCE_XATTR
-    } else {
-        name.as_encoded_bytes().starts_with(b"user.")
     }
 }
