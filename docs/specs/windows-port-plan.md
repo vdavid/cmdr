@@ -310,7 +310,20 @@ Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5
     `conflict_preflight.rs`), a copy asks instead of duplicating (`copy/mod.rs`, `free_space.rs`, `scan_dry_run.rs`,
     `routing.rs`), the per-file guard in `copy/single_item.rs` refuses an overwrite instead of skipping, and a compress
     onto an existing archive asks instead of refusing (`archive_edit/fresh_plan.rs`). Needs a typed refusal with its own
-    copy ("can't tell whether these are the same file"); the `unknown_identity_today_*` tests flip with it.
+    copy ("can't tell whether these are the same file"); the `unknown_identity_today_*` tests flip with it. Plus the
+    typed-OS-error gaps task 10 left for the Windows arms (35 and 36 between them):
+    - A backend-built error carries its class only through `host_code`, and Windows has no Win32 code for `Busy`,
+      `WouldBlock`, `LinkLoop`, `Protocol`, `BadMessage`, `FileTooLarge`, `TooManyLinks`, `Remote`, or
+      `DeviceNotConfigured`, so `io_of_class` yields `raw_os_error: None` there: WebDAV's `423 Locked` and NFS's
+      `JUKEBOX` lose their transient class and read as serious. And `Io`'s host code is `ERROR_CRC` (23), so a generic
+      NFS fault would print a CRC error in the technical detail. The honest fix: a backend-built `VolumeError` carries
+      its `OsErrorClass` directly (wire format unchanged), and only a real OS error carries a code.
+    - Deciders still on raw errnos, each a local-disk or OS-call site: `cmdr-local` `local_posix.rs` (the no-replace
+      rename's fallback, ~131; the write-access probe, ~947), `local_posix/links.rs` (~33), `reading/bulk.rs` (~164);
+      `cmdr-fs` `durable.rs` (~18); the app's `network/smb_connect_failure.rs` (~219, its log detail); and `cmdr-smb`
+      `volume/mapping.rs` (`local_errno`).
+    - ADB passes any device errno it doesn't name through raw (`cmdr-adb` `errors.rs`'s `other` arm): a Linux number,
+      which a macOS or Windows host misreads. It wants a device-errno → class table.
 37. [S] Windows. Cloud Files placeholders (OneDrive and friends: sync badges, cloud trash) and Mark of the Web on
     extract (`cmdr-operations` + `cmdr-archive`). Needs 36.
 38. [S] Windows. Identity and system bundle: secrets via `windows-native-keyring-store` (❗ a blocker: off macOS and

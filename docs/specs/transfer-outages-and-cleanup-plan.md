@@ -232,8 +232,8 @@ writer now closes its handle and names what still leaks (smb2#24's dropped `asyn
 (exhaustive match, no wildcard; `TransportFault` names the kind: timeout, connection lost, session reset, stale handle,
 transport errno). `retry::is_retryable` becomes a thin call to it (or is deleted in its favor); `volume_outage`
 (`wait_after_failure` and its module docs), `interrupted_landing::create_went_unanswered`, and `stream_pipe.rs` (~412,
-the cancel-race arm) ask it. The transport-errno set lives ONCE, in `cmdr-fs` (for example
-`cmdr_fs::volume::is_transport_errno(i32)`), adds EPIPE and ECONNABORTED, and
+the cancel-race arm) ask it. The transport-errno set lives ONCE, in `cmdr-fs` (today
+`cmdr_fs::os_error::OsErrorClass::is_transport`), adds EPIPE and ECONNABORTED, and
 `error_classification.rs::classify_io_error` asks it too (today its `ConnectionInterrupted` list already disagrees with
 `retry.rs`: it lacks ECONNRESET). Classify via `std::io::Error::from_raw_os_error(code).kind()` (`BrokenPipe`,
 `ConnectionReset`, `ConnectionAborted`, `NotConnected`, `TimedOut`, `NetworkDown`, `NetworkUnreachable`,

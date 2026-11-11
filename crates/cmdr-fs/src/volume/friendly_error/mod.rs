@@ -410,3 +410,6 @@ pub enum ListingErrorReason {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod errno_tests;
