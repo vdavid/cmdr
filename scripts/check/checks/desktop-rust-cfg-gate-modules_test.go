@@ -228,6 +228,27 @@ pub mod tags_io;
 	}
 }
 
+// The same name declared once per OS, each arm at its own path (`network::mount`): the Linux
+// declaration is what the Linux lane compiles, so the name isn't macOS-only.
+func TestRunCfgGate_IgnoresAMacOSModuleWithALinuxTwin(t *testing.T) {
+	root := writeCfgGateModuleWorkspace(t, "use crate::mount::MountError;\n\nfn main() {}\n")
+	appSrc := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
+	mustWrite(t, filepath.Join(appSrc, "lib.rs"), `mod commands;
+#[cfg(target_os = "macos")]
+#[path = "mount.rs"]
+pub mod mount;
+#[cfg(target_os = "linux")]
+#[path = "mount_linux.rs"]
+pub mod mount;
+`)
+	mustWrite(t, filepath.Join(appSrc, "mount.rs"), "pub struct MountError;\n")
+	mustWrite(t, filepath.Join(appSrc, "mount_linux.rs"), "pub struct MountError;\n")
+
+	if _, err := RunCfgGate(&CheckContext{RootDir: root}); err != nil {
+		t.Fatalf("a module with a Linux twin exists on Linux, got: %v", err)
+	}
+}
+
 func TestMacOSOnlyModulePaths_NestedModule(t *testing.T) {
 	srcDir := t.TempDir()
 	mustWrite(t, filepath.Join(srcDir, "lib.rs"), "#[cfg(any(target_os = \"macos\", target_os = \"linux\"))]\nmod mtp;\n")

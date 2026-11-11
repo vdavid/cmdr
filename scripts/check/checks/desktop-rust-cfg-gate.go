@@ -293,9 +293,10 @@ func modulePathPrefix(srcDir, path string) (string, bool) {
 }
 
 // findMacOSOnlyModules returns the names of `mod x;` declarations gated on macOS and
-// nothing else, leaving out one with an off-macOS stand-in under the same name
-// (`#[cfg(not(target_os = "macos"))] #[path = "…"] mod x;`): that name exists in the
-// Linux lane too.
+// nothing else, leaving out one that a second declaration of the same name stands in for
+// off macOS: a `#[cfg(not(target_os = "macos"))] #[path = "…"] mod x;`, or one arm per OS
+// (`#[cfg(target_os = "linux")] #[path = "mount_linux.rs"] mod mount;`). Either way the name
+// exists in the Linux lane too.
 func findMacOSOnlyModules(lines []string) []string {
 	var gated []string
 	standIns := map[string]bool{}
@@ -304,15 +305,17 @@ func findMacOSOnlyModules(lines []string) []string {
 		if matches == nil {
 			continue
 		}
+		macOSOnly := false
 		for _, attrText := range directAttributesAbove(lines, i) {
 			if isExclusivelyMacOSGateAttribute(attrText) {
-				gated = append(gated, matches[1])
+				macOSOnly = true
 				break
 			}
-			if strings.Contains(attrText, `not(target_os = "macos")`) {
-				standIns[matches[1]] = true
-				break
-			}
+		}
+		if macOSOnly {
+			gated = append(gated, matches[1])
+		} else {
+			standIns[matches[1]] = true
 		}
 	}
 	var result []string
