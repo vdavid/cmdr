@@ -15,7 +15,7 @@
 //!   registered `MtpVolume`, and the `DeviceVolumeProvider`.
 //! - `macos_workaround`: suppressing and restoring `ptpcamerad` (macOS only).
 //!
-//! MTP works on macOS and Linux; `stubs::mtp` serves the commands elsewhere.
+//! MTP works on every OS `mtp-rs` reaches (on Windows, through WPD).
 
 mod auto_connect;
 pub mod events;

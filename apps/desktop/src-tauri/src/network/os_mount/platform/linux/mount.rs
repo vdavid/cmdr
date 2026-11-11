@@ -4,77 +4,10 @@
 //! GNOME/GTK desktops without requiring root privileges. Mounts appear under
 //! `/run/user/<uid>/gvfs/` or a similar GVFS-managed path.
 
+use crate::network::os_mount::{MountError, MountResult};
 use cmdr_fs::log_private::LogPrivate;
 use log::debug;
-use serde::{Deserialize, Serialize};
 use std::process::Command;
-
-/// Result of a successful mount operation.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MountResult {
-    /// Path to the mounted share (for example, "/run/user/1000/gvfs/smb-share:...").
-    pub mount_path: String,
-    pub already_mounted: bool,
-}
-
-/// Why a mount didn't go through, as data the frontend words. The same JSON shape
-/// as `mount.rs::MountError`, which documents each variant.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
-pub enum MountError {
-    HostUnreachable {
-        server: String,
-    },
-    Timeout {
-        server: String,
-    },
-    /// Never produced here: only macOS's NetFS sign-in helper wedges.
-    SignInHelperStuck {
-        server: String,
-    },
-    ShareNotFound {
-        server: String,
-        share: String,
-    },
-    AuthRequired {
-        server: String,
-        share: String,
-    },
-    AuthFailed {
-        server: String,
-    },
-    PermissionDenied {
-        server: String,
-        share: String,
-        username: String,
-    },
-    Cancelled {
-        share: String,
-    },
-    /// Never produced here: `gio` doesn't say which SMB versions it lacks.
-    UnsupportedProtocol {
-        server: String,
-    },
-    /// Never produced here: `gio` has no separate "signed in, but no mount" answer.
-    MountRefused {
-        server: String,
-        share: String,
-    },
-    /// The system reported the share connected, and no mount of it is there.
-    MountMissing {
-        server: String,
-        share: String,
-    },
-    /// `gio` isn't installed, so there's nothing to mount with.
-    GvfsMissing,
-    Unexpected {
-        server: String,
-        share: String,
-        /// What `gio` or the spawn said, for the log. ❌ Never shown to a person.
-        detail: String,
-    },
-}
 
 /// Checks if `gio` is available on the system.
 fn is_gio_available() -> bool {
@@ -152,7 +85,7 @@ fn match_gvfs_mount<'a>(
 
 /// Mount an SMB share synchronously using `gio mount`.
 ///
-/// `crate::network::mount_share` is the async entry point, shared with macOS. Its
+/// `crate::network::os_mount::mount_share` is the async entry point, shared with macOS. Its
 /// second opinion on a "not found" applies here too: `gio mount`'s "No such file or
 /// directory" is no more specific than NetFS's `ENOENT`.
 pub(crate) fn mount_share_sync(

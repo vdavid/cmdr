@@ -13692,8 +13692,7 @@ export type ModelWindowView = {
  *  ❌ No sentences: the frontend words every variant from the catalog
  *  (`file-explorer/network/mount-error-messages.ts`), so a translated UI never shows
  *  an English one (ERR-SHUSC). `server` is the address the mount used; the pane
- *  names the host by its own name where it has one. `mount_linux.rs` and
- *  `stubs/network.rs` carry the same JSON shape.
+ *  names the host by its own name where it has one. Every OS's arm answers this one type.
  */
 export type MountError =
   // Nothing answered at the server's address: the connection was refused or had no route.
@@ -13704,7 +13703,7 @@ export type MountError =
    *  macOS's network sign-in helper (`NetAuthSysAgent`) looks wedged: a mount
    *  waited it out while the server answered on its SMB port, or an earlier one
    *  is still stuck in it. Only restarting the helper clears it
-   *  (`network/netfs_wedge.rs`). macOS only.
+   *  (`network/os_mount/netfs_wedge.rs`). macOS only.
    */
   | { type: 'sign_in_helper_stuck'; server: string }
   // The server has no share by that name, or offers none to this identity.
@@ -18711,7 +18710,7 @@ export type ServerConnectOutcome =
   /**
    *  SMB on macOS only: the server answers, and macOS's network sign-in helper
    *  (`NetAuthSysAgent`) looks wedged, so no mount can go through until it's
-   *  restarted (`network/netfs_wedge.rs`).
+   *  restarted (`network/os_mount/netfs_wedge.rs`).
    */
   | { outcome: 'sign_in_helper_stuck' }
   // No route, refused, DNS, or a transport-level breakdown.

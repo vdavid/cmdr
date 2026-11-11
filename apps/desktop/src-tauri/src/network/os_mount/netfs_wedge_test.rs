@@ -225,13 +225,3 @@ async fn a_call_that_came_back_meanwhile_keeps_its_plain_answer() {
         }
     );
 }
-
-/// The pid lookup the restart check rides on finds a process by its name.
-#[cfg(target_os = "macos")]
-#[test]
-fn a_running_process_is_found_by_name() {
-    let own = std::process::id();
-    let name = process_name(own).expect("this process has a name");
-    assert!(pids_named(&name).contains(&own));
-    assert!(pids_named("no-such-process-cmdr-test").is_empty());
-}

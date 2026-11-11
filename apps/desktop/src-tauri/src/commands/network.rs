@@ -377,7 +377,7 @@ pub async fn list_shares_with_credentials(
 
 // --- Mount Commands ---
 
-use crate::network::mount::{self, MountError, MountResult};
+use crate::network::os_mount::{self, MountError, MountResult};
 
 /// Mounts an SMB share to the local filesystem.
 ///
@@ -433,7 +433,7 @@ pub async fn mount_network_share(
     // keep it from saving the old address again (`remember_mount_since`).
     let set_out = crate::network::connect_wiring::DialTicket::now();
     let (cancel, _filed) = crate::network::file_mount_attempt(attempt_id.as_deref());
-    let result = crate::network::mount_share(
+    let result = os_mount::mount_share(
         server.clone(),
         share.clone(),
         username.clone(),
@@ -577,7 +577,7 @@ pub async fn disconnect_network_host(host: NetworkHost) -> Result<Vec<String>, S
 
     let targets = crate::network::server_identity::smb_servers_of(&host);
     let result = blocking_with_timeout(Duration::from_secs(15), vec![], move || {
-        mount::unmount_smb_shares_from_host(&targets)
+        os_mount::unmount_smb_shares_from_host(&targets)
     })
     .await;
 

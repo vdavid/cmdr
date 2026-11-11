@@ -35,15 +35,9 @@ pub(crate) struct ReachFacts {
 impl ReachFacts {
     /// The settings as they are now.
     pub(crate) fn now() -> Self {
-        #[cfg(any(target_os = "macos", target_os = "linux"))]
-        return Self {
+        Self {
             mtp_enabled: crate::mtp::connection_manager().is_enabled(),
             adb_enabled: crate::adb::volume_wiring::is_adb_enabled(),
-        };
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        Self {
-            mtp_enabled: false,
-            adb_enabled: false,
         }
     }
 }

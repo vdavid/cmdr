@@ -104,7 +104,7 @@ pub enum ServerConnectOutcome {
     TimedOut,
     /// SMB on macOS only: the server answers, and macOS's network sign-in helper
     /// (`NetAuthSysAgent`) looks wedged, so no mount can go through until it's
-    /// restarted (`network/netfs_wedge.rs`).
+    /// restarted (`network/os_mount/netfs_wedge.rs`).
     SignInHelperStuck,
     /// No route, refused, DNS, or a transport-level breakdown.
     Unreachable,

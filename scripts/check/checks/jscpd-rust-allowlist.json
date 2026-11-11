@@ -16,7 +16,7 @@
       "lines": 13,
       "reason": "TODO: `quick_look_open` and `quick_look_set_path` differ by one method call and share the rest: the `volume_supports_local_fs` gate with its debug line, the 2 s `blocking_with_timeout`, the channel, the `run_on_main_thread` closure that pulls `QuickLookState` and locks it, and the `rx.recv()` reply. Extract `on_quick_look_main(app, volume_id, path, skip_label, action)` in this file, taking the controller call as the closure, so one command passes `ctrl.open_on_main(app, path)` and the other `ctrl.set_path_on_main(path)`. The three commands stay separate `#[tauri::command]` functions, which is what the module doc argues for; only their bodies collapse."
     },
-    "apps/desktop/src-tauri/src/network/smb_smbclient.rs ↔ apps/desktop/src-tauri/src/network/smb_smbutil.rs": {
+    "apps/desktop/src-tauri/src/network/os_mount/platform/linux/smbclient.rs ↔ apps/desktop/src-tauri/src/network/os_mount/platform/smbutil_output.rs": {
       "lines": 21,
       "reason": "The assertion tail of two parser tests, one per share-listing CLI (`parse_smbclient_output` and `parse_smbutil_output`), each fed a fixture in that tool's own column layout; the assertions spell out the shared `ShareInfo` contract (four disk shares survive, `IPC$` and `ADMIN$` are filtered, a missing comment reads as `None`). An `assert_nas_shares` helper would need a test-support module reachable from both files and would move the expectations away from the fixture that produces them, so a red run would name a helper line instead of the case that broke."
     },

@@ -587,8 +587,8 @@ macro_rules! ipc_command_manifest {
                     crate::commands::error_reporter::get_auto_sent_report_preview,
                 ]
             }
-            // MTP devices, and the stubs every other target answers with.
-            cfg(any(target_os = "macos", target_os = "linux")) {
+            // MTP devices, through `mtp-rs` on every OS.
+            cfg(all()) {
                 typed: [
                     crate::commands::mtp::set_mtp_enabled,
                     crate::commands::mtp::connect_mtp_device,
@@ -607,20 +607,12 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
-            cfg(not(any(target_os = "macos", target_os = "linux"))) {
-                typed: [
-                    crate::stubs::mtp::set_mtp_enabled,
-                    crate::stubs::mtp::connect_mtp_device,
-                    crate::stubs::mtp::get_ptpcamerad_workaround_command,
-                ]
-                dispatch_only: []
-            }
             // The bindings a user runs must not move when a lane turns on a test-only feature: the
             // regen runs while the crate compiles its own tests (that's where `export_bindings_test`
             // writes the file), so holding these back there is what lets every cargo lane share one
             // feature set, and so one `target/`. The E2E specs reach them by raw invoke.
             // `scripts/check/checks/DETAILS.md` § "One feature set across the cargo lanes".
-            cfg(all(feature = "virtual-mtp", any(target_os = "macos", target_os = "linux"))) {
+            cfg(feature = "virtual-mtp") {
                 typed unless cfg(test): [
                     crate::commands::mtp::rescan_virtual_mtp,
                     crate::commands::mtp::pause_virtual_mtp_watcher,
@@ -651,8 +643,8 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
-            // Network hosts and shares.
-            cfg(any(target_os = "macos", target_os = "linux")) {
+            // Network hosts and shares, and signing in to a volume that asked, whatever its backend.
+            cfg(all()) {
                 typed: [
                     crate::commands::network::list_network_hosts,
                     crate::commands::network::resolve_host,
@@ -679,26 +671,26 @@ macro_rules! ipc_command_manifest {
                     crate::commands::network::upgrade_to_smb_volume_using_saved_password,
                     crate::commands::network::get_smb_direct_connection_enabled,
                     crate::commands::network::set_smb_direct_connection_enabled,
-                ]
-                dispatch_only: []
-            }
-            // Signing in to a volume that asked, whatever its backend. Between the two SMB halves
-            // only so `bindings.ts` keeps its order.
-            cfg(all()) {
-                typed: [
                     crate::commands::volume_sign_in::reconnect_volume,
                     crate::commands::volume_sign_in::reconnect_volume_with_credentials,
                     crate::commands::volume_sign_in::remember_volume_sign_in,
                     crate::commands::volume_sign_in::get_volume_sign_in_state,
+                    crate::commands::network::disconnect_smb_volume,
                 ]
                 dispatch_only: []
             }
+            // Eject: the volumes seam's, macOS and Linux for now. Between the network halves only
+            // so `bindings.ts` keeps its order.
             cfg(any(target_os = "macos", target_os = "linux")) {
                 typed: [
-                    crate::commands::network::disconnect_smb_volume,
                     crate::commands::eject::eject_volume,
                     crate::commands::eject::eject_all_on_disk,
                     crate::commands::eject::get_ejecting_volume_ids,
+                ]
+                dispatch_only: []
+            }
+            cfg(all()) {
+                typed: [
                     crate::commands::network::set_smb_account_preference,
                     crate::commands::network::disconnect_network_host,
                     crate::commands::network::note_network_action,
@@ -776,39 +768,6 @@ macro_rules! ipc_command_manifest {
                     crate::commands::servers::forget_saved_smb_host,
                     crate::commands::servers::forget_saved_smb_host_password,
                     crate::commands::confirm_dialog::confirm_with_checkbox,
-                ]
-                dispatch_only: []
-            }
-            cfg(not(any(target_os = "macos", target_os = "linux"))) {
-                typed: [
-                    crate::stubs::network::note_network_action,
-                    crate::stubs::network::set_servers_view_shown,
-                    crate::stubs::network::set_network_enabled,
-                    crate::stubs::network::list_network_hosts,
-                    crate::stubs::network::resolve_host,
-                    crate::stubs::network::connect_to_server,
-                    crate::stubs::network::get_network_discovery_state,
-                    crate::stubs::network::list_shares_on_host,
-                    crate::stubs::network::prefetch_shares,
-                    crate::stubs::network::get_known_share_by_name,
-                    crate::stubs::network::update_known_share,
-                    crate::stubs::network::get_username_hint,
-                    crate::stubs::network::save_smb_credentials,
-                    crate::stubs::network::get_smb_credentials,
-                    crate::stubs::network::has_cached_smb_credentials,
-                    crate::stubs::network::delete_smb_credentials,
-                    crate::stubs::network::is_using_credential_file_fallback,
-                    crate::stubs::network::list_shares_with_credentials,
-                    crate::stubs::network::mount_network_share,
-                    crate::stubs::network::upgrade_to_smb_volume,
-                    crate::stubs::network::upgrade_to_smb_volume_with_credentials,
-                    crate::stubs::network::system_has_saved_smb_password,
-                    crate::stubs::network::upgrade_to_smb_volume_using_saved_password,
-                    crate::stubs::network::get_smb_direct_connection_enabled,
-                    crate::stubs::network::set_smb_direct_connection_enabled,
-                    crate::stubs::network::disconnect_smb_volume,
-                    crate::stubs::network::set_smb_account_preference,
-                    crate::stubs::network::disconnect_network_host,
                 ]
                 dispatch_only: []
             }

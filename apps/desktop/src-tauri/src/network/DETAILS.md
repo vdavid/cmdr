@@ -21,11 +21,9 @@ of the app build.
 - **Manual servers**: `manual_servers.rs`: User-added servers via the "Add server" sheet. Parses addresses, checks TCP reachability (`manual_servers_reachability.rs`), persists to `manual-servers.json`, and injects synthetic `NetworkHost` entries with `source: Manual` into the discovery cache as pinned hosts, except one saved without contact until its first mount (§ "A manual server saved without contact"). Loaded at startup. An entry's `displayName` is a name a person typed, read through `label()` / `is_named()` (§ "A manual server's name").
 - **E2E testing**: `virtual_smb_hosts.rs`: Injects 14 synthetic `NetworkHost` entries for smb2's consumer Docker containers. Hosts come from `SMB_E2E_{SVC}_HOST` (default `localhost`). Ports come from `SMB_E2E_{SVC}_PORT` when set, else `smb2::testing::*_port()` (which reads `SMB_CONSUMER_*_PORT`, default 10480+). `SMB_E2E_*_PORT` is the test-suite contract (same var the frontend fixture reads), so backend and fixture agree on which port to connect to. This matters inside Docker where containers listen on `:445` internally but `SMB_CONSUMER_*_PORT` would point at the host-side mapping. Gated behind `smb-e2e` Cargo feature. Never enabled in production.
 - **Share listing**: Split across multiple files:
-  - `smb_client.rs`: Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb2 first, falls back to smbutil (macOS only)
+  - `smb_client.rs`: Top-level share-listing entry point; orchestrates guest -> keychain -> prompt auth flow; tries smb2 first, then the OS's own share-list tool (`os_mount::list_shares_cli_*`)
   - `smb_cache.rs`: 30-second in-memory cache for share lists, keyed by server address
-  - `smb_smbutil.rs`: `smbutil view -G` fallback for older Samba/NAS servers (macOS); on Linux delegates to `smb_smbclient`
-  - `smb_smbclient.rs`: `smbclient -L` fallback for Linux (requires `samba-client` package)
-  - `linux_distro.rs`: Thin wrapper calling `crate::platform::LinuxDistro` for smbclient install hints; Linux-only, gated where `network/mod.rs` declares it
+  - The OS's share-list tools, one per arm of `os_mount/platform/`: `macos/smbutil.rs` (`smbutil view -G`, for older Samba/NAS servers; its output parser is `smbutil_output.rs`, compiled for the tests everywhere), `linux/smbclient.rs` (`smbclient -L`, needs the `samba-client` package; `linux/distro.rs` turns `crate::platform::LinuxDistro` into its install hint), and none on Windows yet. Only Linux's takes a password (`list_shares_cli_with_password` answers `None` on macOS)
   - The protocol layer under all of them is the `cmdr-smb` crate: the addr builder, the guest / authenticated `smb2::SmbClient` listing calls, the `classify_*` / `is_auth_error` classification, and the `ShareInfo` / `AuthMode` / `ShareListResult` / `ShareListError` vocabulary. `crates/cmdr-smb/DETAILS.md` says what belongs there and what stays here
   - `smb_upgrade.rs`: Upgrade OS-mounted SMB volumes to direct smb2 connections. Shared by four upgrade paths (startup, mount-time watcher, pane-open, manual "Connect directly"). Contains `shares_to_adopt` (the adopter pass's pick from the kernel mount table), `register_smb_volume`, `resolve_and_register_smb_volume` (the shared resolve+creds+register used by all three fire-and-forget auto-upgrade paths), `try_smb_upgrade`, the per-volume upgrade lock, and the bounded mount-identity read.
   - `smb_pane_upgrade.rs`: the pane-open upgrade. A pane landing on an OS-mounted share Cmdr hasn't upgraded tries the direct connection for that one share, behind a per-share cooldown (§ "A pane on an OS-mounted share tries the direct connection").
@@ -34,12 +32,13 @@ of the app build.
   - `smb_connect_failure.rs`: why an smb2 connect didn't get in, read by type. A `Refusal` (who the attempt went out as, and whether sign-in or the share said no, with the log advice for each) or an `UpgradeFailure` (read off a `FailedDial` plus `MountEvidence` by `of_dial`, § "This Mac refusing the route"); plus `UpgradeError` and `log_direct_connect_failure`. Shared by `share_access.rs` and both upgrade paths (§ "An auth rejection says what was actually rejected").
   - `smb_connect_directly.rs`: the manual "Connect directly" upgrade, with Cmdr's stored credentials, the sign-in sheet's, or Finder's saved password. Behind the three `upgrade_to_smb_volume*` commands, the MCP `upgrade_smb_to_direct` tool, and the indexer's `ensure_direct_smb`. Owns `UpgradeResult` (§ "Connect directly answers a gone volume").
   - `smb_direct_switch.rs`: the per-share "Use Cmdr's fast direct connection" switch, read and set by volume id for the volume switcher. Behind `get_smb_direct_connection_enabled` / `set_smb_direct_connection_enabled`. Owns `DirectConnectionSwitch` (§ "The per-share direct-connection switch").
-- **Mounting** (platform-specific via `#[path]` in `mod.rs`):
-  - `mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts, each success confirmed against `statfs` (§ "A reported mount counts once it's there"); also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
-  - `mount_linux.rs`: Linux `gio mount` for GVFS-based user-space mounts, confirmed the same way
-  - `share_access.rs`: both platforms' second opinion on a mount's "not found", asked of the server itself through
-    `mod.rs::mount_share`, the one async mount entry point both platforms share (§ "A share that says not found")
-  - `mount_watch.rs`: the `warn` while a mount call is stuck in the system's mount service. `mount_share` moves a
+- **Mounting** (`os_mount/`, a platform seam: `os_mount/platform/mod.rs` pins each arm's fns; `MountResult` and `MountError` are defined once in `os_mount/mod.rs`):
+  - `os_mount/platform/macos/mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts, each success confirmed against `statfs` (§ "A reported mount counts once it's there"); also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
+  - `os_mount/platform/linux/mount.rs`: Linux `gio mount` for GVFS-based user-space mounts, confirmed the same way
+  - `os_mount/platform/windows.rs`: no OS mount yet; a mount answers `MountError::Unexpected`
+  - `share_access.rs`: every OS's second opinion on a mount's "not found", asked of the server itself through
+    `os_mount::mount_share`, the one async mount entry point every arm shares (§ "A share that says not found")
+  - `os_mount/mount_watch.rs`: the `warn` while a mount call is stuck in the system's mount service. `mount_share` moves a
     `MountWatch` into the blocking work, so it logs every 15 s (`SLOW_MOUNT`) for as long as the call is out, even past
     `DEFAULT_MOUNT_TIMEOUT_MS` (the timeout frees the caller, not the thread), and once more with the total when the call
     returns. Why: after a network change macOS's `NetAuthSysAgent` can wedge until `killall NetAuthSysAgent`, NetFS
@@ -138,7 +137,7 @@ guest/credentials toggle. `keychain.rs` delegates to `crate::secrets::store()` f
 (macOS Keychain, Linux Secret Service, encrypted file fallback). Passwords never stored in our settings file.
 `CMDR_SECRET_STORE=file` forces the plain file backend in dev and E2E builds (set by `tauri-wrapper.ts`); release builds ignore it (`secrets/CLAUDE.md`).
 
-To make this hold, every NetFS mount sets `UIOption = NoUI` (`open_option_entries` in `mount.rs`). Without it, NetFS
+To make this hold, every NetFS mount sets `UIOption = NoUI` (`open_option_entries` in `macos/mount.rs`). Without it, NetFS
 hands auth *failures* to NetAuthAgent even when we pass explicit credentials: the agent pops a system dialog ("You
 entered an invalid username or password...") on top of Cmdr, blocks the mount call while open, and returns
 `kNetAuthErrorInternal` (-6600) when dismissed. With `NoUI`, the same failure returns immediately as a typed code
@@ -216,13 +215,13 @@ discovery has paired the two.
 
 The fallback paths:
 - **macOS:** `smbutil view -G -N` (guest) or `smbutil view -N` (Keychain-backed; smbutil reads the system Keychain itself). **No authenticated smbutil fallback**; see the credential-channel note below.
-- **Linux:** `smbclient -L` (from `samba-client` package), guest or authenticated. If `smbclient` is not installed, returns a `MissingDependency` error with a distro-specific install command (detected via `/etc/os-release`). The `smb_smbutil.rs` Linux stubs delegate to `smb_smbclient.rs`.
+- **Linux:** `smbclient -L` (from `samba-client` package), guest or authenticated. If `smbclient` is not installed, returns a `MissingDependency` error with a distro-specific install command (detected via `/etc/os-release`). The Linux arm's `list_shares_cli_*` delegate to it.
 - **Other platforms:** stubs return `ProtocolError`.
 
 When smb2's authenticated listing returns empty or errors, the fallback diverges by platform (`smb_client.rs::list_shares_smb2`): **Linux** retries via `smbclient -A` (safe authfile); **macOS** surfaces the underlying smb2 failure (classified via `classify_error`, or `AuthFailed` on an empty result) so the user gets a real error and can still mount through the secure NetFS path.
 
 **Credential channel (keeping the password out of argv):** `smbclient` gets credentials via a 0o600 temp
-authentication file passed as `-A <file>` (`smb_smbclient.rs::write_smbclient_auth_file`), never `-U user%pass`, so the
+authentication file passed as `-A <file>` (`os_mount/platform/linux/smbclient.rs::write_smbclient_auth_file`), never `-U user%pass`, so the
 password never lands in the world-readable process argument list (`ps aux` / `/proc/<pid>/cmdline`). The temp file is
 created inside the blocking task and dropped (unlinked) the moment the call returns, success or error.
 
@@ -406,7 +405,7 @@ server+share+port already mounted, skipping NetFS entirely.
 ### A mount gets its own session unless it shares server and account
 
 NetFS reuses an existing SMB session to the same HOSTNAME whatever the port, and a guest mount names no user to tell it
-otherwise. So `mount.rs::needs_own_session` also sets `ForceNewSession` when another SMB mount is up on the same machine
+otherwise. So `macos/mount.rs::needs_own_session` also sets `ForceNewSession` when another SMB mount is up on the same machine
 at a different port (another server), or on this server under a different account (guest counts as its own account).
 Without it, with 11482's `public` mounted at `public-1`, mounting 11480's `public` got NetFS's OK and nothing mounted
 (it rode 11482's session), and a guest mount of 11480's `public` next to 11482's `testuser` mount came up as
@@ -422,7 +421,7 @@ is `localhost`), so they take a machine-wide lock: `mount_test.rs::NetfsFixtureL
 
 NetFS has answered `0` for a share that never got mounted. In ERR-SHUSC, `observermch/data` came back OK, yet no FSEvents
 mount followed, `/Volumes` held only `Macintosh HD`, and the returned path listed as "Path not found". Why NetFS said so
-isn't known, so the code defends instead of explaining. `mount.rs::settle_netfs_answer` is the one place a NetFS code
+isn't known, so the code defends instead of explaining. `macos/mount.rs::settle_netfs_answer` is the one place a NetFS code
 becomes a `MountResult`, and a success (`0` or `EEXIST`) lands on the first sighting where `statfs` finds the mount:
 
 - **Where it looks, in order**: NetFS's own `mountpoints` answer, the disambiguation guess (`public-1`, which NetFS
@@ -437,14 +436,14 @@ becomes a `MountResult`, and a success (`0` or `EEXIST`) lands on the first sigh
   no credential answers it.
 
 Linux has the same shape: a zero exit from `gio mount` counts only for a folder GVFS lists under `/run/user/<uid>/gvfs`
-whose name says it's this share (`mount_linux.rs::find_gvfs_mount`, § "Linux GVFS folder names" below).
+whose name says it's this share (`linux/mount.rs::find_gvfs_mount`, § "Linux GVFS folder names" below).
 
 **No second guard in `register_smb_volume`.** Every caller hands it a live mount: the mount command only after the
 check above, and the watcher and the startup pass take the path from a `statfs` read that just succeeded. A mount whose
 identity reads `None` still dials, under the id built from the caller's server, port, and share.
 
 Pinned by `mount_test.rs` (`a_netfs_success_with_no_mount_of_the_share_is_not_a_mount` and its siblings, over fabricated
-`statfs` rows, since NetFS can't be made to lie on demand), `mount_linux.rs::a_share_is_found_by_its_port_and_account`,
+`statfs` rows, since NetFS can't be made to lie on demand), `linux/mount.rs::a_share_is_found_by_its_port_and_account`,
 and `NetworkMountView.test.ts` for the pane.
 
 ### Linux GVFS folder names
@@ -471,9 +470,9 @@ words it from the `errors.mount.*` catalog (`apps/desktop/src/lib/file-explorer/
 naming the host the way the pane shows it rather than by its address. ERR-SHUSC is why: a Hungarian UI showed the
 backend's English `Share "data" not found on "observermch"`.
 
-- **Every producer answers with data**: `mount.rs::error_from_code` (NetFS codes), `settle_netfs_answer`
-  (`MountMissing`), `share_access::clarified`, `mount_linux.rs::classify_mount_error` (`gio` stderr), and
-  `network::mount_share`'s timeout, cancel, and join-failure arms (`netfs_wedge::read_given_up`). Each keeps its diagnostic
+- **Every producer answers with data**: `macos/mount.rs::error_from_code` (NetFS codes), `settle_netfs_answer`
+  (`MountMissing`), `share_access::clarified`, `linux/mount.rs::classify_mount_error` (`gio` stderr), and
+  `network::os_mount::mount_share`'s timeout, cancel, and join-failure arms (`netfs_wedge::read_given_up`). Each keeps its diagnostic
   detail in the log.
 - **A variant exists where the fix differs.** `UnsupportedProtocol` (NetFS `-5996`) is fixed in the server's settings.
   `MountRefused` (NetAuth `-6602`) signed in and was still turned down, so ❌ it's not an auth question: the sign-in
@@ -485,7 +484,7 @@ backend's English `Share "data" not found on "observermch"`.
 - **A guest turned away is `AuthRequired`, ❌ never `AuthFailed`**: a guest typed no password to be wrong. NetFS answers a
   guest on a server that lets only accounts in with an auth code that maps to `AuthFailed` (-6600 in the field;
   verified on macOS 26.6.2 / 25G83 against the `auth` fixture, `smb_integration_mount_guest_on_an_accounts_only_server_asks_for_credentials`,
-  2026-09-11), so `network::mount_share` reads a guest's `AuthFailed` as `AuthRequired` on both platforms
+  2026-09-11), so `network::os_mount::mount_share` reads a guest's `AuthFailed` as `AuthRequired` on both platforms
   (`share_access::refusal_for_identity`). `gio`'s "permission denied" for a guest reads the same inside
   `classify_mount_error`, which is also the reading `share_access::clarified` gives any guest turned away.
 - **The wire tags are snake_case** (`share_not_found`), and `smb-sign-in.ts` branches on them. Change a variant on both
@@ -497,10 +496,10 @@ follow the error-copy rules).
 
 ## A mount Cmdr gave up on, and a wedged sign-in helper
 
-`network::mount_share` waits on `mount_share_sync` until the timeout or the caller's `CancellationToken`, whichever
+`network::os_mount::mount_share` waits on `mount_share_sync` until the timeout or the caller's `CancellationToken`, whichever
 comes first. Neither stops the NetFS call: its blocking thread stays inside `NetFSMountURLSync`. That matters because of
 the wedge in § Gotchas ("A wedged `NetAuthSysAgent` hangs every NetFS mount"): every call queues on the stuck daemon,
-so a retry only stacks another thread behind the first. `netfs_wedge.rs` owns both answers (#604, ERR-PRTPK); the
+so a retry only stacks another thread behind the first. `os_mount/netfs_wedge.rs` owns both answers (#604, ERR-PRTPK); the
 `warn` lines a stuck call leaves in the log come from `mount_watch.rs` (§ Module map), which rides the same thread.
 
 - **Reading a mount it gave up on** (`read_given_up`): waited at least `SUSPECT_AFTER` (10 s; a healthy mount takes
@@ -656,7 +655,7 @@ read refusals through the same `RefusedAt::of`, so the two can't disagree about 
 ## A share that says not found
 
 The kernel mount can't tell a missing share from a refused one. A guest mount of a share guests can list but not open
-and a mount of a share that doesn't exist both return `ENOENT`, which `mount.rs::error_from_code` maps to
+and a mount of a share that doesn't exist both return `ENOENT`, which `macos/mount.rs::error_from_code` maps to
 `ShareNotFound`. A wrong password is not one of them: it comes back as an auth code (`AuthFailed`). (verified on macOS
 26.6.2 / 25G83, `mount_share` against the `both` fixture's `private` share as guest, as `testuser` with a wrong and then
 the right password, and against a share that doesn't exist, 2026-09-10.) The server itself answers precisely: guest

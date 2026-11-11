@@ -5,18 +5,8 @@ Per-stub behavior and rationale. `CLAUDE.md` holds the invariants; the catalog b
 ## Per-stub behavior (non-macOS, non-Linux unless noted)
 
 - **`accent_color.rs`**: `get_accent_color` returns `"#d4a006"` (brand gold fallback).
-- **`mtp.rs`**: `connect_mtp_device` returns `MtpConnectionError::NotSupported`, `set_mtp_enabled` is a no-op, and
-  `get_ptpcamerad_workaround_command` returns an empty string. Stub types `MtpDeviceInfo`, `MtpStorageInfo`,
-  `ConnectedDeviceInfo`.
-- **`network.rs`**: all network commands return empty results or errors; types mirror the macOS shapes for JSON
-  compatibility. A mount answers `MountError::Unexpected`, and the three "Connect directly" commands answer
-  `UpgradeResult::NotSmbMount`: nothing on these platforms is an SMB mount, so that's the one real variant that holds.
-  ⚠️ Nothing compiles this file on macOS or Linux (the only platforms built and the only ones in CI), so drift from
-  `commands/network.rs` is caught by reading alone. Argument lists match the real commands (compared 2026-09-30). Two
-  stubs still answer `Result<_, String>` where the real command answers a typed error, which breaks the JSON-shape
-  invariant: `disconnect_smb_volume` (`EjectError`) and `connect_to_server` (`AddServerError`). Each needs a variant
-  chosen for "not available here". The sign-in commands (`commands/volume_sign_in.rs`) and the SFTP, WebDAV, S3, NFS,
-  server, and ADB commands are real on every platform, so they have no stub.
+- No network or MTP stub: SMB browsing, the server commands, and MTP compile on every OS, and the OS-mount part answers
+  per OS behind `network/os_mount/platform/` (Windows refuses a mount with `MountError::Unexpected`).
 - **`permissions.rs`**: `check_full_disk_access` / `check_full_disk_access_quiet` return `true`;
   `open_privacy_settings` and the appearance/System-Settings deep-link commands return errors.
 - **`text_size.rs`** (non-macOS, so also Linux): `get_system_text_size_multiplier` returns `1.0` (no system scaling).

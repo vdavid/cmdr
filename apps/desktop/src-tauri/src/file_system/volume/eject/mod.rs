@@ -612,7 +612,7 @@ async fn stop_indexes_blocking(
 /// flows to the frontend.
 ///
 /// On other platforms the OS-level unmount isn't wired up yet (mirrors
-/// `network::mount::unmount_smb_shares_from_host`), so it drops the smb2 session
+/// `network::os_mount::unmount_smb_shares_from_host`), so it drops the smb2 session
 /// directly via `Volume::on_unmount`; the OS mount stays alive for the user to
 /// eject from the file manager.
 ///
