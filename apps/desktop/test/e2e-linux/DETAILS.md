@@ -279,10 +279,10 @@ re-sync the `Dockerfile.base` lib list against the new `nativeDeps.js`.
 ## Ubuntu test VM (faster than CI roundtrips)
 
 David runs a UTM-Apple-Virtualization Ubuntu VM that mounts the repo via VirtioFS. File edits on the Mac side are
-visible inside the VM immediately, so iterating on Linux-only test code (`accent_color_linux`, `volume::mtp_linux`, GVFS
-/ D-Bus paths) is much faster than pushing to CI. Setup is in `CONTRIBUTING.md` § "Linux testing (Ubuntu VM)". The host
-is on DHCP, so the IP rotates; ask the user, or run `ip -4 addr show enp0s1 | awk '/inet /{print $2}'` inside the VM.
-User is `veszelovszki`; SSH is key-based.
+visible inside the VM immediately, so iterating on Linux-only test code (the Linux arm of `system_look`,
+`volume::mtp_linux`, GVFS / D-Bus paths) is much faster than pushing to CI. Setup is in `CONTRIBUTING.md` § "Linux
+testing (Ubuntu VM)". The host is on DHCP, so the IP rotates; ask the user, or run
+`ip -4 addr show enp0s1 | awk '/inet /{print $2}'` inside the VM. User is `veszelovszki`; SSH is key-based.
 
 Iterate loop from the Mac:
 

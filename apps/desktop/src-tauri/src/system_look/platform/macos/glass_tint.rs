@@ -81,11 +81,8 @@ fn read_glass_tint() -> Option<f32> {
     tint_from_preference(&value)
 }
 
-/// Tauri command: the Liquid Glass slider value in `0.0..=1.0`, or `None` when macOS doesn't
-/// report one.
-#[tauri::command]
-#[specta::specta]
-pub async fn get_glass_tint_amount() -> Option<f32> {
+/// The slider value, read off the blocking pool (the CFPreferences sync is an XPC round-trip).
+pub(crate) async fn glass_tint_amount() -> Option<f32> {
     tauri::async_runtime::spawn_blocking(read_glass_tint)
         .await
         .unwrap_or_else(|e| {
@@ -110,7 +107,7 @@ fn record_if_changed(tint: Option<f32>) -> bool {
 
 /// Starts re-reading the slider whenever the app becomes active, and emits
 /// `glass-tint-changed` when the value moved.
-pub fn observe_glass_tint_changes<R: Runtime>(app_handle: AppHandle<R>) {
+pub(crate) fn observe_glass_tint_changes<R: Runtime>(app_handle: AppHandle<R>) {
     use objc2_app_kit::NSApplicationDidBecomeActiveNotification;
     use objc2_foundation::{NSNotification, NSNotificationCenter};
 

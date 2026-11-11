@@ -7,7 +7,7 @@
 //! frontend owns the settings store.
 //!
 //! The wire types compile on every platform: Linux's `xdg-open` arm and the
-//! off-macOS `playwright-e2e` arm of `commands/file_actions.rs::open_in_editor`
+//! off-macOS `playwright-e2e` arm of `open_in_editor` (`commands/file_actions/platform/linux.rs`)
 //! answer with them too. Everything else is macOS only, in `text_editor_macos.rs`.
 //!
 //! Evidence, the pick canonicalization, and what's verified about `open -t`:

@@ -6,8 +6,8 @@ use tauri::{AppHandle, Manager, TitleBarStyle};
 pub(crate) fn install(app: &AppHandle) {
     crate::volumes_linux::watcher::start_volume_watcher(app);
 
-    // Observe system accent color changes and emit events to frontend.
-    crate::accent_color_linux::observe_accent_color_changes(app.clone());
+    // Follow the portal's accent color and emit events to the frontend.
+    crate::system_look::observe_changes(app.clone());
 
     // titleBarStyle is "Overlay" in JSON for macOS (needed so trafficLightPosition is applied at
     // window creation time; setting it at runtime resets the position). On Linux/GTK, Overlay

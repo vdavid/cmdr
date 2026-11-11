@@ -46,11 +46,12 @@ Frosted-glass material, and two per-window modules feed them the two macOS setti
   `--glass-backdrop` to `none`, so a surface using the tokens needs no rule of its own. `prefers-reduced-motion`
   WKWebView does honor, so that one stays a media query.
 - **The Liquid Glass slider** (macOS 27 Appearance). The backend reads the undocumented `NSGlassTintAmount` global
-  default, re-reading it each time the app becomes active (`apps/desktop/src-tauri/src/glass_tint.rs` has why no
-  notification works), and `#lib/glass-material` sets `--glass-tint` (0 clearest to 1 most tinted, 0.5 when macOS
-  reports none). The glass fill's opacity and the blur grow with it, as native menus do. Toasts ride it with a higher
-  opacity floor (`--glass-toast-opacity`), since they hold paragraphs over busy lists; tooltips and the unblurred Ask
-  Cmdr drop hint use the fixed `--color-bg-glass-steady` instead.
+  default, re-reading it each time the app becomes active
+  (`apps/desktop/src-tauri/src/system_look/platform/macos/glass_tint.rs` has why no notification works), and
+  `#lib/glass-material` sets `--glass-tint` (0 clearest to 1 most tinted, 0.5 when macOS reports none). The glass fill's
+  opacity and the blur grow with it, as native menus do. Toasts ride it with a higher opacity floor
+  (`--glass-toast-opacity`), since they hold paragraphs over busy lists; tooltips and the unblurred Ask Cmdr drop hint
+  use the fixed `--color-bg-glass-steady` instead.
 
 **Gotcha: the MCP bridge's `webview_screenshot` never paints `backdrop-filter`.** Every glass surface reads as bare
 translucency in it, with the text underneath sharp through the fill, so a menu or popover over a busy list (a dialog's
@@ -70,10 +71,10 @@ Menu-like surfaces (`Menu`, `Select`, the breadcrumb popup) also take the macOS 
 `#lib/display-accessibility` (inited per window) mirrors four macOS Accessibility > Display options onto `<html>` as
 classes: `reduce-transparency`, `increase-contrast`, `differentiate-without-color`, and `show-borders`. The backend
 reads all four from `NSWorkspace` in one typed `DisplayAccessibility` value and re-reads them on every
-`NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification` (`apps/desktop/src-tauri/src/display_accessibility.rs`),
-so they follow System Settings live. The same value carries Invert colors, which gets no class: it only changes the
-icons macOS draws, which `#lib/icon-cache` follows itself (`apps/desktop/src-tauri/src/icons/DETAILS.md` § Flushes and
-in-flight fetches).
+`NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification`
+(`apps/desktop/src-tauri/src/system_look/platform/macos/display_accessibility.rs`), so they follow System Settings live.
+The same value carries Invert colors, which gets no class: it only changes the icons macOS draws, which
+`#lib/icon-cache` follows itself (`apps/desktop/src-tauri/src/icons/DETAILS.md` § Flushes and in-flight fetches).
 
 - **Why classes**: WKWebView ignores `prefers-reduced-transparency` (verified, see the module doc), and CSS has no query
   for Differentiate without color or Show borders at all. `increase-contrast` is ALSO on when `prefers-contrast: more`

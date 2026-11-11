@@ -813,15 +813,15 @@ wizard's footer remains consistent for the other steps (Back + Next / Finish / R
 ## Key gotchas
 
 - **Deep-link host changed in Ventura.** macOS 13+ uses `com.apple.settings.PrivacySecurity.extension`; older macOS uses
-  `com.apple.preference.security`. `openPrivacySettings()` picks via `get_macos_major_version`. The same version informs
+  `com.apple.preference.security`. `openPrivacySettings()` picks via `get_os_major_version`. The same version informs
   the modal copy: macOS 12 and older append new FDA entries at the end of the list (instead of alphabetical).
 - **Getting Cmdr into the FDA list is a separate concern from detecting FDA, and it's macOS-version-dependent.** The
   mechanism (detect via a file `read()`; register via a directory `open()` on macOS 13+, file reads on macOS 12) lives
-  in one place: the module doc of `src-tauri/src/permissions.rs`. Don't restate it here. Onboarding-relevant parts only:
-  registration rides the heavy `check_full_disk_access` (fired at boot, on step-1 mount, and right before opening System
-  Settings), and the "+" button fallback (step 1's `step-tip`) stays as the backstop for the edge cases that still
-  wouldn't list Cmdr (a machine where none of the probe dirs exist, or a future OS change). References:
-  [Apple Developer Forums #809549](https://developer.apple.com/forums/thread/809549),
+  in one place: the module doc of `src-tauri/src/permissions/platform/macos.rs`. Don't restate it here.
+  Onboarding-relevant parts only: registration rides the heavy `check_full_disk_access` (fired at boot, on step-1 mount,
+  and right before opening System Settings), and the "+" button fallback (step 1's `step-tip`) stays as the backstop for
+  the edge cases that still wouldn't list Cmdr (a machine where none of the probe dirs exist, or a future OS change).
+  References: [Apple Developer Forums #809549](https://developer.apple.com/forums/thread/809549),
   [Apple Developer Forums #757768](https://developer.apple.com/forums/thread/757768).
 - **The wizard renders the app behind it.** First launch lands on `~`, so what peeks through the backdrop is friendly.
   No "white screen until wizard done" code path.

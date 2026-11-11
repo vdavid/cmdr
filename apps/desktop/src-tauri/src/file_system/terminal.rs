@@ -20,7 +20,7 @@
 //! the `commands/file_actions.rs` wrappers, the `ipc.rs` registration, and the menu
 //! item are all `#[cfg(target_os = "macos")]`, so on a Linux build the two commands
 //! don't exist for the frontend to call. A Linux port would add its own module under
-//! the same command names, the way `permissions` and `permissions_linux` pair up.
+//! the same command names, the way the platform seams' arms pin them.
 //!
 //! Rationale, and why there's no window-vs-tab control: `DETAILS.md` § "Open
 //! terminal here".

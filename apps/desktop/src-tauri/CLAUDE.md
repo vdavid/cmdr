@@ -30,7 +30,7 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
   `clippy::undocumented_unsafe_blocks`.
 - ❌ AppKit/Cocoa main-thread-only calls (NSWindow, NSColor, NSPasteboard, NSApplication, drag) must take or assert an
   `objc2::MainThreadMarker`, and a sync `#[tauri::command]` must NOT touch AppKit: hop via `app.run_on_main_thread()`
-  and return through an `mpsc` channel (pattern: `accent_color.rs`, `commands/clipboard.rs`). Which Apple APIs are
+  and return through an `mpsc` channel (pattern: `src/system_look/platform/macos/accent_color.rs`, `src/clipboard/platform/macos.rs`). Which Apple APIs are
   thread-safe and exempt: `DETAILS.md`.
 
 ## Tauri commands and capabilities

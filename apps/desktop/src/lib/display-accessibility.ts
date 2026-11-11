@@ -16,7 +16,7 @@
  * Classes, not media queries: WKWebView never reflects `prefers-reduced-transparency` (verified:
  * with the setting on, AppKit reports `true` while the webview's `matchMedia` reports `false`),
  * and no media query exists for Differentiate without color or Show borders at all. So the Rust backend reads all
- * three from `NSWorkspace` (`src-tauri/src/display_accessibility.rs`). Increase contrast ALSO
+ * three from `NSWorkspace` (`src-tauri/src/system_look/platform/macos/display_accessibility.rs`). Increase contrast ALSO
  * honors `prefers-contrast: more`, so a webview that does reflect it (Linux) gets the same class.
  *
  * Follows live OS changes without a restart. Call `initDisplayAccessibility()` once per window on

@@ -5,13 +5,13 @@ keys keep navigating the file list while the panel tracks the cursor.
 
 ## Module map
 
-- **`mod.rs`**: module root. `QuickLookState = Mutex<QuickLookController>` (`Mutex<()>` on non-macOS), `init_state()`,
-  and the `QuickLookKeyEvent` serde payload.
+- **`mod.rs`**: module root, `init_state()`, and the `QuickLookKeyEvent` serde payload. **`platform/`**: each OS's
+  three command bodies and `QuickLookState` (`Mutex<QuickLookController>` on macOS, `Mutex<()>` elsewhere).
 - **`controller.rs`**: macOS-only. `QuickLookController` (bookkeeping), `QuickLookDelegate` (data source + delegate +
   close observer), `define_class!` glue, key-event translation, and state-machine unit tests.
 
-The three Tauri commands (`quick_look_open`, `quick_look_set_path`, `quick_look_close`) live in `commands/quick_look.rs`, not
-here, to keep this module thin. Two events flow out: `quick-look-key` (keyboard events the panel didn't want, payload
+The three Tauri commands (`quick_look_open`, `quick_look_set_path`, `quick_look_close`) live in `commands/quick_look.rs`, one
+each, over `platform/`. Two events flow out: `quick-look-key` (keyboard events the panel didn't want, payload
 mirrors a DOM `KeyboardEvent`; the FE re-routes through the focused pane) and `quick-look-closed` (fires whenever the
 panel leaves the screen: our `orderOut:`, the ✕ button, or Esc; the FE flips `isOpen = false`).
 

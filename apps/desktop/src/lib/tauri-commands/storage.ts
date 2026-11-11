@@ -422,7 +422,7 @@ export async function getRestrictedPaths(): Promise<string[]> {
  * A rejection means the IPC bridge broke, and reaches the caller rather than reading as 0.
  */
 export async function getMacosMajorVersion(): Promise<number> {
-  return commands.getMacosMajorVersion()
+  return commands.getOsMajorVersion()
 }
 
 /**

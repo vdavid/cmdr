@@ -216,10 +216,13 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 
 ### Phase 3: app seams
 
-18. [M] Win. One IPC command per feature: collapse the 63 duplicated commands (file actions, permissions, accent color,
-    clipboard, drag, Quick Look, Get Info) onto platform fns, delete the matching `stubs/`, rename platform-named
-    commands (`show_in_finder` → `reveal_in_file_manager`, `get_macos_major_version` → `get_os_version`; the frontend
-    changes for renames only). Needs 7.
+18. [M] Win. **Done** for every command not tied to volumes (task 20 retires `stubs/volumes.rs`). One command each over
+    a pinned seam: `permissions/`, `system_look/` (accent color, display options, Liquid Glass, text size; the startup
+    arms call its `observe_changes`), `clipboard/platform/`, `commands/file_system/drag/platform/`,
+    `quick_look/platform/`, and `commands/file_actions/platform/` (reveal, Get Info, open in editor). Renamed
+    `show_in_finder` → `reveal_in_file_manager` and `get_macos_major_version` → `get_os_major_version` (it answers a
+    major number); the frontend wrappers keep their names. Still macOS-only by design: Dock, updater, reveal handler,
+    CLI install, memory diagnostics, terminal and editor lists, Services. Left: `system_has_saved_smb_password`'s pair.
 19. [S] Win. **Done**. Startup seam: `platform/startup/` with one pinned `install(app)` per OS, called once in the setup
     hook after the volume broadcast and before the MTP watcher, the first volume list, and the menu bar. It holds the
     order-free installers (macOS observers, mouse navigation, Services, volume watcher, unmount approver, `ptpcamerad`,

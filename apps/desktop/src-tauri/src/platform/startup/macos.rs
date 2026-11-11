@@ -23,24 +23,16 @@ pub(crate) fn install(app: &AppHandle) {
     // suppressed. No-op if it was already enabled.
     crate::mtp::macos_workaround::ensure_ptpcamerad_enabled();
 
-    // Observe system accent color changes and emit events to frontend.
-    crate::accent_color::observe_accent_color_changes(app.clone());
-
-    // Observe Accessibility > Display option changes (Reduce transparency, Increase contrast,
-    // Differentiate without color).
-    crate::display_accessibility::observe_display_accessibility_changes(app.clone());
-
-    // Follow the macOS 27 Appearance > Liquid Glass slider.
-    crate::glass_tint::observe_glass_tint_changes(app.clone());
+    // Follow the accent color, Accessibility > Display (Reduce transparency, Increase contrast,
+    // Differentiate without color), the macOS 27 Liquid Glass slider, and Text Size, emitting
+    // events to the frontend.
+    crate::system_look::observe_changes(app.clone());
 
     // Watch the mouse's back / forward navigation. macOS only: the mouse's own driver decides
     // what the press becomes, and a Logi Options+ mouse posts a swipe gesture with no button
     // behind it, so AppKit is the only layer that sees both shapes. On Linux the frontend reads
     // the buttons off the DOM.
     crate::mouse_nav::install(app.clone());
-
-    // Observe Accessibility > Display > Text Size changes.
-    crate::text_size::observe_system_text_size_changes(app.clone());
 
     // Before the menu bar is built: AppKit decides what the Services submenu may contain from
     // the send types the app has registered.

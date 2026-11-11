@@ -29,10 +29,6 @@ mod ipc;
 
 mod logging;
 
-#[cfg(target_os = "macos")]
-mod accent_color;
-#[cfg(target_os = "linux")]
-mod accent_color_linux;
 mod adb;
 pub mod agent;
 mod ai;
@@ -63,8 +59,6 @@ mod data_wipe;
 pub mod dev_fixtures;
 mod device_volumes;
 mod diagnostics_snapshot;
-#[cfg(target_os = "macos")]
-mod display_accessibility;
 // The macOS Dock: reading `persistent-apps` and putting Cmdr in it. No other platform has one.
 #[cfg(target_os = "macos")]
 mod dock;
@@ -91,8 +85,6 @@ mod after_update;
 // Is this copy of Cmdr in an Applications folder? Shared by the Dock pin and the reveal handler,
 // which must not disagree about it. macOS-only, like both of them and the `running_bundle()` it
 // asks.
-#[cfg(target_os = "macos")]
-mod glass_tint;
 #[cfg(target_os = "macos")]
 mod install_location;
 mod instance_lock;
@@ -124,10 +116,7 @@ mod notifications;
 mod open_mock;
 mod operation_log_host;
 mod operations_host;
-#[cfg(target_os = "macos")]
 mod permissions;
-#[cfg(target_os = "linux")]
-mod permissions_linux;
 mod platform;
 pub mod priority;
 mod prod_instance;
@@ -170,6 +159,8 @@ mod spotlight;
 mod state_recovery;
 mod subprocess;
 mod system_events;
+// What the OS says about how things should look: accent, Display options, Liquid Glass, Text Size.
+mod system_look;
 mod system_memory;
 mod system_strings;
 mod tauri_builder;
@@ -181,8 +172,6 @@ pub mod test_mode;
 /// The sanctioned way to wait for background work in a Rust test. See `docs/testing.md`.
 #[cfg(test)]
 pub(crate) mod test_support;
-#[cfg(target_os = "macos")]
-mod text_size;
 pub mod tools;
 mod ui_state;
 /// Why a volume id has no registered volume: not connected yet, or gone.
@@ -203,8 +192,8 @@ mod whats_new;
 mod window_events;
 mod window_state;
 
-// Non-macOS stubs (Linux has real implementations for everything;
-// other platforms use stubs for all platform-specific features)
+// The volume list's stand-in where neither `volumes` nor `volumes_linux` builds; the last stub
+// without a platform seam.
 #[cfg(not(target_os = "macos"))]
 mod stubs;
 
@@ -489,12 +478,7 @@ pub fn run() {
             // resolution stacks several TCC prompts (MediaLibrary, AppData, Desktop,
             // Documents, Downloads, ...) on top of our in-app onboarding modal.
             // See `crate::fda_gate` and `volumes/CLAUDE.md` § "FDA gate".
-            #[cfg(target_os = "macos")]
             let os_fda_granted_for_gate = permissions::check_full_disk_access();
-            #[cfg(target_os = "linux")]
-            let os_fda_granted_for_gate = permissions_linux::check_full_disk_access();
-            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-            let os_fda_granted_for_gate = stubs::permissions::check_full_disk_access();
             fda_gate::set_fda_pending(fda_gate::is_fda_pending(
                 saved_settings.full_disk_access_choice,
                 os_fda_granted_for_gate,

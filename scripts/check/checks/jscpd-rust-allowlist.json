@@ -8,21 +8,9 @@
       "lines": 11,
       "reason": "`read_schema_version`, the `prepare_cached` plus `query_map` plus absent-means-zero match each durable store uses to read its own `meta` table, typed to `AgentStoreError` in one copy and `OperationLogStoreError` in the other, with `stamp_schema_version` and `bootstrap_meta` sitting beside it in the same shape. The two ladders are deliberately separate copies of one tiny mechanism so that neither durable DB's schema discipline can be changed by editing the other's helper, a decision recorded in `agent/store/DETAILS.md` § Why a second durable DB, mirroring the operation log, which names the duplicated `token_enum!` macro as the same call. Revisit if a third durable store lands and all three can agree on one error type."
     },
-    "apps/desktop/src-tauri/src/commands/clipboard.rs": {
-      "lines": 14,
-      "reason": "TODO: the pasteboard main-thread hop, spelled out in `copy_paths_to_clipboard` and `cut_paths_to_clipboard`: an `mpsc::channel`, `app.run_on_main_thread` with a `MainThreadMarker` calling `clipboard::write_file_urls_to_clipboard`, then `rx.recv()` with its two `map_err` sentences. Extract `write_paths_on_main(app, paths) -\u003e Result\u003c(), String\u003e` into `crate::clipboard` (the hop is behavior, and `commands/CLAUDE.md` says this layer carries none), with a `read_paths_on_main` beside it for `read_clipboard_files`. Each command is then left with what differs: its own empty-input refusal, and the `clear_cut_state` or `set_cut_state` call. `src-tauri/CLAUDE.md` cites this file as the AppKit main-thread-hop pattern, so repoint that line at the helper in the same change."
-    },
-    "apps/desktop/src-tauri/src/commands/quick_look.rs": {
-      "lines": 13,
-      "reason": "TODO: `quick_look_open` and `quick_look_set_path` differ by one method call and share the rest: the `volume_supports_local_fs` gate with its debug line, the 2 s `blocking_with_timeout`, the channel, the `run_on_main_thread` closure that pulls `QuickLookState` and locks it, and the `rx.recv()` reply. Extract `on_quick_look_main(app, volume_id, path, skip_label, action)` in this file, taking the controller call as the closure, so one command passes `ctrl.open_on_main(app, path)` and the other `ctrl.set_path_on_main(path)`. The three commands stay separate `#[tauri::command]` functions, which is what the module doc argues for; only their bodies collapse."
-    },
     "apps/desktop/src-tauri/src/network/os_mount/platform/linux/smbclient.rs ↔ apps/desktop/src-tauri/src/network/os_mount/platform/smbutil_output.rs": {
       "lines": 21,
       "reason": "The assertion tail of two parser tests, one per share-listing CLI (`parse_smbclient_output` and `parse_smbutil_output`), each fed a fixture in that tool's own column layout; the assertions spell out the shared `ShareInfo` contract (four disk shares survive, `IPC$` and `ADMIN$` are filtered, a missing comment reads as `None`). An `assert_nas_shares` helper would need a test-support module reachable from both files and would move the expectations away from the fixture that produces them, so a red run would name a helper line instead of the case that broke."
-    },
-    "crates/cmdr-listing-wasm/src/operations_host/volumes.rs ↔ crates/cmdr-operations/src/host/volumes.rs": {
-      "lines": 16,
-      "reason": "`OperationVolumes` trait-method signatures with constant bodies: the browser demo's `DemoVolumes` and the engine's test-only `NoOperationVolumes` both answer \"no archive or git-portal routes\" (`routes_over_its_parent`, `path_is_inside_archive`, `path_crosses_archive_boundary`, `forget_archive_index`). Folding them into trait defaults would let a host that DOES serve archives (the desktop's) compile without answering, and silently treat an edit inside a `.zip` as a plain path, so each host spells its answer out. Revisit if a third archive-less host appears: then a named `NoArchiveRoutes` helper the host delegates to pays for itself."
     },
     "crates/cmdr-adb/src/volume/volume_impl.rs ↔ crates/cmdr-webdav/src/volume/volume_impl.rs": {
       "lines": 105,
@@ -47,6 +35,10 @@
     "crates/cmdr-index/src/media_index/network/enrich.rs": {
       "lines": 14,
       "reason": "TODO: the per-image decision ladder shared by `run_sequential` and `run_parallel`'s dispatcher: the cancel and idle checks, `os_join`, the `is_excluded` / `should_enrich` skip, the `done` and `bytes_done` bump, and the `needs_enrichment` / `needs_clip` staleness pair. Extract a pure `fn classify_image(...) -\u003e ImageStep` beside them, with `ImageStep::{Pause(PauseReason), Skip, Enrich { want_vision, want_clip, os_path }}`, and let each arm keep only its own exit shape: the sequential one returns `finish_paused(...)`, the dispatcher sets `reason` and breaks so it can join its workers. Which images a pass touches and when it pauses is the data-safety contract written in `network/CLAUDE.md`, so the two arms agreeing should be a property of the code rather than of two copies staying in step."
+    },
+    "crates/cmdr-listing-wasm/src/operations_host/volumes.rs ↔ crates/cmdr-operations/src/host/volumes.rs": {
+      "lines": 16,
+      "reason": "`OperationVolumes` trait-method signatures with constant bodies: the browser demo's `DemoVolumes` and the engine's test-only `NoOperationVolumes` both answer \"no archive or git-portal routes\" (`routes_over_its_parent`, `path_is_inside_archive`, `path_crosses_archive_boundary`, `forget_archive_index`). Folding them into trait defaults would let a host that DOES serve archives (the desktop's) compile without answering, and silently treat an edit inside a `.zip` as a plain path, so each host spells its answer out. Revisit if a third archive-less host appears: then a named `NoArchiveRoutes` helper the host delegates to pays for itself."
     },
     "crates/cmdr-local/src/local_posix.rs ↔ crates/cmdr-smb/src/volume/volume_impl.rs": {
       "lines": 16,

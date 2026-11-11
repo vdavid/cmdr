@@ -57,14 +57,20 @@ fn read_accent_color(_mtm: MainThreadMarker) -> String {
     format!("#{r8:02x}{g8:02x}{b8:02x}")
 }
 
-/// Tauri command: returns the current macOS accent color as a hex string.
-///
+/// The accent color, read off the blocking pool.
+pub(crate) async fn accent_color(app: AppHandle) -> String {
+    tauri::async_runtime::spawn_blocking(move || read_on_main_thread(app))
+        .await
+        .unwrap_or_else(|e| {
+            warn!("Reading the accent color stopped ({e}), using fallback");
+            FALLBACK_ACCENT_HEX.to_owned()
+        })
+}
+
 /// `NSColor` is main-thread-only, so we hop to the AppKit main thread via
 /// `run_on_main_thread` and read there, mirroring the clipboard commands.
 /// Returns the brand fallback if the main-thread hop or channel fails.
-#[tauri::command]
-#[specta::specta]
-pub fn get_accent_color(app: AppHandle) -> String {
+fn read_on_main_thread(app: AppHandle) -> String {
     let (tx, rx) = std::sync::mpsc::channel();
     if app
         .run_on_main_thread(move || {
@@ -86,7 +92,7 @@ pub fn get_accent_color(app: AppHandle) -> String {
 /// Starts observing `NSSystemColorsDidChangeNotification`.
 /// Emits `accent-color-changed` with the new hex value whenever the user
 /// changes their accent color in System Settings or switches light/dark mode.
-pub fn observe_accent_color_changes<R: Runtime>(app_handle: AppHandle<R>) {
+pub(crate) fn observe_accent_color_changes<R: Runtime>(app_handle: AppHandle<R>) {
     // This runs at startup on the main thread (called from the Tauri setup hook).
     let mtm = MainThreadMarker::new().expect("observe_accent_color_changes runs on the main thread");
     let initial = read_accent_color(mtm);

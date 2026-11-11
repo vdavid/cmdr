@@ -5,7 +5,7 @@
 //! already-read `ClipboardPayload` plus a target directory, so the pick →
 //! sniff → unique-name → write path is unit-testable against a `TempDir` with no
 //! Tauri runtime or `MainThreadMarker`. The command layer
-//! (`commands/clipboard.rs`) reads the payload on the main thread and calls in.
+//! (`commands/clipboard.rs`, through `platform/macos.rs`) reads the payload on the main thread and calls in.
 //! The write itself is the engine's instant op
 //! (`Operations::create_numbered_file`): `pasted.<ext>`, `pasted (1).<ext>`,
 //! … as one managed, journaled create.

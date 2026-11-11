@@ -221,9 +221,7 @@ fn probe_fda_quiet() -> bool {
 /// Cmdr on in System Settings. Keep `check_full_disk_access` for the
 /// one-shot registration moments (it's the one that gets Cmdr into the FDA
 /// list); this one is purely for detection.
-#[tauri::command]
-#[specta::specta]
-pub fn check_full_disk_access_quiet() -> bool {
+pub(crate) fn check_full_disk_access_quiet() -> bool {
     if let Some(mocked) = mock_fda_override(true) {
         return mocked;
     }
@@ -235,9 +233,7 @@ pub fn check_full_disk_access_quiet() -> bool {
 /// `true` if granted. See the module doc for the detect-vs-register mechanism
 /// and the macOS-version split. For repeated, side-effect-free polling, use
 /// `check_full_disk_access_quiet`.
-#[tauri::command]
-#[specta::specta]
-pub fn check_full_disk_access() -> bool {
+pub(crate) fn check_full_disk_access() -> bool {
     if let Some(mocked) = mock_fda_override(false) {
         return mocked;
     }
@@ -312,9 +308,7 @@ pub fn check_full_disk_access() -> bool {
 /// `PrivacySecurity.extension` URL host and an alphabetical FDA list; older
 /// macOS uses the legacy System Preferences `preference.security` host with
 /// new entries appended at the end.
-#[tauri::command]
-#[specta::specta]
-pub fn get_macos_major_version() -> u32 {
+pub(crate) fn os_major_version() -> u32 {
     let Ok(output) = std::process::Command::new("sw_vers").arg("-productVersion").output() else {
         return 13; // assume modern if sw_vers is unavailable
     };
@@ -334,21 +328,13 @@ pub fn get_macos_major_version() -> u32 {
 /// Picks the deep-link host based on macOS version: Ventura+ uses the new
 /// `PrivacySecurity.extension`, older macOS uses the legacy
 /// `preference.security` host. Both anchor on `Privacy_AllFiles`.
-#[tauri::command]
-#[specta::specta]
-pub async fn open_privacy_settings() -> Result<(), String> {
-    // Off the IPC thread: waiting on `open` (and `sw_vers` for the host) takes a few hundred
-    // milliseconds, which a sync command would spend blocking the app.
-    tauri::async_runtime::spawn_blocking(|| {
-        let url = if get_macos_major_version() >= 13 {
-            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles"
-        } else {
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
-        };
-        open_with("open", url)
-    })
-    .await
-    .map_err(|e| format!("the task opening System Settings stopped: {e}"))?
+pub(crate) fn open_privacy_settings() -> Result<(), String> {
+    let url = if os_major_version() >= 13 {
+        "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles"
+    } else {
+        "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+    };
+    open_with("open", url)
 }
 
 /// Hands `url` to `program` (`open` in production) and waits for it to exit. Split out so a test
@@ -393,9 +379,7 @@ mod open_with_tests {
 }
 
 /// Opens System Settings > Appearance.
-#[tauri::command]
-#[specta::specta]
-pub fn open_appearance_settings() -> Result<(), String> {
+pub(crate) fn open_appearance_settings() -> Result<(), String> {
     std::process::Command::new("open")
         .arg("x-apple.systempreferences:com.apple.Appearance-Settings.extension")
         .spawn()
@@ -410,9 +394,7 @@ pub fn open_appearance_settings() -> Result<(), String> {
 /// default URL allowlist only covers `http`/`https`/`mailto`/`tel` and would reject
 /// the `x-apple.systempreferences:` scheme silently. Restricting the input to that
 /// scheme keeps the surface tight (no arbitrary URL execution from the webview).
-#[tauri::command]
-#[specta::specta]
-pub fn open_system_settings_url(url: String) -> Result<(), String> {
+pub(crate) fn open_system_settings_url(url: String) -> Result<(), String> {
     if !url.starts_with("x-apple.systempreferences:") {
         return Err(format!(
             "Refusing to open URL with scheme other than `x-apple.systempreferences:`: {url}"

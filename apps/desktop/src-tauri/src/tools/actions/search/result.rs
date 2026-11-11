@@ -365,25 +365,13 @@ fn coverage_notes(answer: &LiveAnswer, system_dirs_excluded: bool) -> Vec<String
     notes
 }
 
-/// Whether pointing at Full Disk Access would actually open a refused folder:
-/// on macOS, and only while Cmdr doesn't already hold it. With FDA granted the
-/// refusal is something else (a locked folder), and the advice would do nothing.
-/// The dialog gates its offer on the same conditions
-/// (`coverage-note.ts::offersFullDiskAccess`).
-///
-/// ⚠️ The platform half is a `#[cfg]`, ❌ never `cfg!(target_os = "macos") && …`:
-/// `cfg!` is a runtime value, so the `crate::permissions` call still has to COMPILE
-/// on Linux, where that module doesn't exist. It didn't.
-#[cfg(target_os = "macos")]
+/// Whether pointing at Full Disk Access would actually open a refused folder: only while Cmdr
+/// doesn't already hold it, which off macOS it always does (no such grant exists there, so a
+/// refusal is ordinary file permissions). With FDA granted the refusal is something else (a
+/// locked folder), and the advice would do nothing. The dialog gates its offer on the same
+/// conditions (`coverage-note.ts::offersFullDiskAccess`).
 fn full_disk_access_would_help() -> bool {
     !crate::permissions::check_full_disk_access_quiet()
-}
-
-/// No such permission exists off macOS: a refusal there is ordinary file
-/// permissions, which Cmdr can't grant itself either.
-#[cfg(not(target_os = "macos"))]
-fn full_disk_access_would_help() -> bool {
-    false
 }
 
 /// The line for folders the OS refused a walk: the only half of the unreadable

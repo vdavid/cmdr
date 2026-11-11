@@ -2,7 +2,7 @@
 //!
 //! Gated behind the `playwright-e2e` Cargo feature so prod and dev binaries
 //! never link this code. The three exported functions match the signatures
-//! of `pasteboard.rs` so the call sites in `commands/clipboard.rs` stay
+//! of `pasteboard.rs` so the call sites in `platform/macos.rs` stay
 //! identical between configurations.
 //!
 //! Backed by the shared `store` module; the prod module's runtime

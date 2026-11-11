@@ -1,7 +1,7 @@
 # Native drag (macOS)
 
 macOS-only native drag-and-drop OUT of Cmdr. Builds the `NSDraggingSession` that carries dragged files to other apps
-(Finder, terminals, editors). Driven by `start_drag_paths` in `commands/file_system/drag.rs`,
+(Finder, terminals, editors). Driven by `start_drag_paths` in `../commands/file_system/drag/platform/macos.rs`,
 which hops to the AppKit main thread and calls `start_drag`. The whole module is `#[cfg(target_os = "macos")]`.
 
 ## Files

@@ -264,7 +264,7 @@ fn install_close_key_monitor(app: &AppHandle<Wry>) -> bool {
         if event_ref.windowNumber() != panel.windowNumber() || try_current_delegate(&panel).is_none() {
             return event.as_ptr();
         }
-        let Some(state) = app.try_state::<crate::quick_look::QuickLookState>() else {
+        let Some(state) = app.try_state::<crate::quick_look::platform::QuickLookState>() else {
             return event.as_ptr();
         };
         if !state.lock_ignore_poison().is_open {
@@ -403,7 +403,7 @@ define_class!(
         #[unsafe(method(quickLookPanelWillClose:))]
         fn panel_will_close(&self, _notification: *const NSNotification) {
             let app = self.ivars().app.clone();
-            if let Some(state) = app.try_state::<crate::quick_look::QuickLookState>() {
+            if let Some(state) = app.try_state::<crate::quick_look::platform::QuickLookState>() {
                 state.lock_ignore_poison().mark_closed();
             }
             if let Err(e) = QuickLookClosed.emit(&app) {

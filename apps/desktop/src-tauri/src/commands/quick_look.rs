@@ -6,157 +6,30 @@
 //! `isOpen` and picks the right call. See `crate::quick_look` for the full
 //! design (and the why-singleton, why-main-thread, why-events arguments).
 //!
-//! All three commands wrap their main-thread hop in `blocking_with_timeout` (2 s)
-//! so a wedged AppKit pump never freezes the IPC blocking pool.
+//! Each OS's half is `quick_look/platform/`; on macOS all three wrap their main-thread hop in
+//! `blocking_with_timeout` (2 s) so a wedged AppKit pump never freezes the IPC blocking pool.
 
-#[cfg(target_os = "macos")]
-use crate::ignore_poison::IgnorePoison;
 use tauri::AppHandle;
-// `run_on_main_thread` / `state` come from `Manager`, used only on macOS where
-// the real panel lives; the other platforms have no-op stubs.
-#[cfg(target_os = "macos")]
-use tauri::Manager;
+
+use crate::quick_look::platform;
 
 /// Open (or re-open) Quick Look on the given path. Answers whether the panel opened: `false`
 /// for a volume whose paths macOS can't preview, so the frontend drops its optimistic
 /// open state (no close event will ever follow a panel that never showed).
 #[tauri::command]
 #[specta::specta]
-#[cfg(target_os = "macos")]
 pub async fn quick_look_open(app: AppHandle, path: String, volume_id: String) -> Result<bool, String> {
-    use cmdr_fs::deadline::blocking_with_timeout;
-    use std::sync::mpsc::channel;
-    use tokio::time::Duration;
-
-    if !volume_supports_local_fs(&volume_id) {
-        log::debug!(
-            target: "quick_look",
-            "skipping open: volume {volume_id} doesn't support local fs access (path={path})",
-            path = cmdr_fs::log_private::LogPrivate::path(&path)
-        );
-        return Ok(false);
-    }
-
-    let app_inner = app.clone();
-    let path_inner = path;
-    blocking_with_timeout(Duration::from_secs(2), Err("timed out".to_string()), move || {
-        let (tx, rx) = channel();
-        let app_for_closure = app_inner.clone();
-        let path_main = std::path::PathBuf::from(path_inner);
-        app_inner
-            .run_on_main_thread(move || {
-                let state = app_for_closure.state::<crate::quick_look::QuickLookState>();
-                let opened = state.lock_ignore_poison().open_on_main(&app_for_closure, path_main);
-                let _ = tx.send(opened);
-            })
-            .map_err(|e| format!("run_on_main_thread failed: {e}"))?;
-        rx.recv().map_err(|_| "main-thread reply lost".to_string())
-    })
-    .await
+    platform::open(app, path, volume_id).await
 }
 
 #[tauri::command]
 #[specta::specta]
-#[cfg(target_os = "macos")]
 pub async fn quick_look_set_path(app: AppHandle, path: String, volume_id: String) -> Result<(), String> {
-    use cmdr_fs::deadline::blocking_with_timeout;
-    use std::sync::mpsc::channel;
-    use tokio::time::Duration;
-
-    if !volume_supports_local_fs(&volume_id) {
-        log::debug!(
-            target: "quick_look",
-            "skipping set_path: volume {volume_id} doesn't support local fs access (path={path})",
-            path = cmdr_fs::log_private::LogPrivate::path(&path)
-        );
-        return Ok(());
-    }
-
-    let app_inner = app.clone();
-    let path_inner = path;
-    blocking_with_timeout(Duration::from_secs(2), Err("timed out".to_string()), move || {
-        let (tx, rx) = channel();
-        let app_for_closure = app_inner.clone();
-        let path_main = std::path::PathBuf::from(path_inner);
-        app_inner
-            .run_on_main_thread(move || {
-                let state = app_for_closure.state::<crate::quick_look::QuickLookState>();
-                state.lock_ignore_poison().set_path_on_main(path_main);
-                let _ = tx.send(());
-            })
-            .map_err(|e| format!("run_on_main_thread failed: {e}"))?;
-        rx.recv().map_err(|_| "main-thread reply lost".to_string())?;
-        Ok::<(), String>(())
-    })
-    .await
+    platform::set_path(app, path, volume_id).await
 }
 
 #[tauri::command]
 #[specta::specta]
-#[cfg(target_os = "macos")]
 pub async fn quick_look_close(app: AppHandle) -> Result<(), String> {
-    use cmdr_fs::deadline::blocking_with_timeout;
-    use std::sync::mpsc::channel;
-    use tokio::time::Duration;
-
-    let app_inner = app.clone();
-    blocking_with_timeout(Duration::from_secs(2), Err("timed out".to_string()), move || {
-        let (tx, rx) = channel();
-        let app_for_closure = app_inner.clone();
-        app_inner
-            .run_on_main_thread(move || {
-                let state = app_for_closure.state::<crate::quick_look::QuickLookState>();
-                crate::quick_look::QuickLookController::close_on_main(&state);
-                let _ = tx.send(());
-            })
-            .map_err(|e| format!("run_on_main_thread failed: {e}"))?;
-        rx.recv().map_err(|_| "main-thread reply lost".to_string())?;
-        Ok::<(), String>(())
-    })
-    .await
-}
-
-#[tauri::command]
-#[specta::specta]
-#[cfg(not(target_os = "macos"))]
-pub async fn quick_look_open(_app: AppHandle, _path: String, _volume_id: String) -> Result<bool, String> {
-    Ok(false)
-}
-
-#[tauri::command]
-#[specta::specta]
-#[cfg(not(target_os = "macos"))]
-pub async fn quick_look_set_path(_app: AppHandle, _path: String, _volume_id: String) -> Result<(), String> {
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-#[cfg(not(target_os = "macos"))]
-pub async fn quick_look_close(_app: AppHandle) -> Result<(), String> {
-    Ok(())
-}
-
-/// Helper: returns true if the named volume's paths are OS-visible (local
-/// POSIX, OS-mounted shares, direct SMB while its share is mounted). False for
-/// MTP and other protocol-only volumes, and for a direct SMB share whose mount
-/// has gone away — those have no NSURL the Quick Look panel can preview.
-///
-/// ❌ Not `supports_local_fs_access()`: that asks whether CMDR reads through
-/// `std::fs`, and direct SMB answers `false` while its `/Volumes/…` paths are
-/// exactly the NSURL the panel needs. Keying on it made Quick Look a silent
-/// no-op on a direct-SMB pane.
-#[cfg(target_os = "macos")]
-fn volume_supports_local_fs(volume_id: &str) -> bool {
-    let manager = crate::file_system::volume::manager::get_volume_manager();
-    match manager.get(volume_id) {
-        Some(volume) => volume.paths_are_os_visible(),
-        None => {
-            // Unknown volume id — assume yes so we don't accidentally silence
-            // working previews. The frontend always sends a real id for entries
-            // it just listed.
-            log::debug!(target: "quick_look", "volume {volume_id} not found; assuming local fs access");
-            true
-        }
-    }
+    platform::close(app).await
 }

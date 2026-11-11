@@ -66,7 +66,7 @@ markdown sniff, and the flavor mapping are unit-testable with no Tauri runtime o
   returns the injected `ClipboardData`; both feed the same `pick`, so precedence is identical across configurations.
 - **The write** is `paste_file.rs` (`write_payload_to_dir`): it maps the payload to content and hands it to the
   engine's numbered-create instant op (`crates/cmdr-operations/src/create_numbered.rs`), whose docs carry the write
-  rules. The command (`commands/clipboard.rs::paste_clipboard_as_file`) reads the raw flavors on the main thread,
+  rules. The command (`commands/clipboard.rs::paste_clipboard_as_file`, its macOS half in `platform/macos.rs`) reads the raw flavors on the main thread,
   picks/converts off-main, then hands the payload to `write_payload_replying`: a slow write answers `stillRunning`
   and reports its end (the file, or the typed refusal) on `clipboard-paste-settled`, never a timeout that drops the
   write. The reply and event types (`PasteClipboardReply`, `ClipboardPasteSettled`) live in `mod.rs` beside

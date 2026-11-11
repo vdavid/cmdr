@@ -6,9 +6,7 @@
 //! appropriate settings panels.
 
 /// Always returns `true` on Linux (no app sandboxing).
-#[tauri::command]
-#[specta::specta]
-pub fn check_full_disk_access() -> bool {
+pub(crate) fn check_full_disk_access() -> bool {
     true
 }
 
@@ -16,23 +14,17 @@ pub fn check_full_disk_access() -> bool {
 /// quiet poller so the generated bindings type-check identically across
 /// platforms; the onboarding FDA step never polls on Linux (it doesn't
 /// render there), but the command must exist for the bindings.
-#[tauri::command]
-#[specta::specta]
-pub fn check_full_disk_access_quiet() -> bool {
+pub(crate) fn check_full_disk_access_quiet() -> bool {
     true
 }
 
-/// Stub: macOS version is meaningless on Linux. Returns `0`.
-#[tauri::command]
-#[specta::specta]
-pub fn get_macos_major_version() -> u32 {
+/// `0`: the number only ever meant macOS's version.
+pub(crate) fn os_major_version() -> u32 {
     0
 }
 
 /// Opens the system privacy/security settings if a desktop environment is available.
-#[tauri::command]
-#[specta::specta]
-pub fn open_privacy_settings() -> Result<(), String> {
+pub(crate) fn open_privacy_settings() -> Result<(), String> {
     // GNOME: gnome-control-center privacy
     // KDE: systemsettings (no direct privacy section URL)
     // Fallback: xdg-open is unlikely to have a privacy URI, so return an error.
@@ -40,9 +32,7 @@ pub fn open_privacy_settings() -> Result<(), String> {
 }
 
 /// Stub: `x-apple.systempreferences:` URLs only exist on macOS.
-#[tauri::command]
-#[specta::specta]
-pub fn open_system_settings_url(_url: String) -> Result<(), String> {
+pub(crate) fn open_system_settings_url(_url: String) -> Result<(), String> {
     Err("System Settings deep links only exist on macOS.".to_string())
 }
 
@@ -56,9 +46,7 @@ pub fn open_system_settings_url(_url: String) -> Result<(), String> {
 ///
 /// Panel name note: the `background` panel contains style, accent color, and wallpaper
 /// settings on both Ubuntu and vanilla GNOME.
-#[tauri::command]
-#[specta::specta]
-pub fn open_appearance_settings() -> Result<(), String> {
+pub(crate) fn open_appearance_settings() -> Result<(), String> {
     let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default().to_uppercase();
     log::debug!("open_appearance_settings: XDG_CURRENT_DESKTOP='{desktop}'");
 

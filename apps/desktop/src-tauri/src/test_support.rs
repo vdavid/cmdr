@@ -295,7 +295,7 @@ impl Volume for SlowVolume {
 /// A volume that answers the two capability questions and nothing else.
 ///
 /// The fixture for a seam that decides from flags alone: the favorites add gate
-/// (`commands/favorites.rs`), the drag-locality seam (`commands/file_system/drag.rs`). Every I/O
+/// (`commands/favorites.rs`), the drag-locality seam (`commands/file_system/drag/platform/macos.rs`). Every I/O
 /// method is `unreachable!`, which is the point: a stub that could be listed would invite a test
 /// asserting something the seam under test doesn't own, and a seam that starts reading the disk
 /// fails loudly here instead of quietly passing.
