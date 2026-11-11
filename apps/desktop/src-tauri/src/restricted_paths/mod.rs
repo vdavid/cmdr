@@ -177,7 +177,8 @@ fn install_did_become_active_observer() {
     }
     // ❗ The DEFAULT center: `NSApplication` posts its own activation there. The `NSWorkspace`
     // center never delivers it, so an observer there silently never fires (verified on macOS
-    // 27.0: the same observer in `glass_tint.rs` stayed silent on the workspace center and fired
+    // 27.0: the same observer in
+    // `system_look/platform/macos/glass_tint.rs` stayed silent on the workspace center and fired
     // on the default one, 2026-09-30).
     let center = NSNotificationCenter::defaultCenter();
     let block = RcBlock::new(move |_n: NonNull<NSNotification>| {

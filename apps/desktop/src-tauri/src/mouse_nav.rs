@@ -125,7 +125,8 @@ fn action_for(event_type: NSEventType, button_number: isize, delta_x: f64) -> Ac
 ///
 /// The monitor lives for the whole session: there's no teardown point, and the
 /// buttons should work for as long as the app is up. Same shape as the
-/// notification observers in `accent_color.rs` / `display_accessibility.rs`.
+/// notification observers in `system_look/platform/macos/accent_color.rs` /
+/// `display_accessibility.rs`.
 pub fn install<R: Runtime>(app_handle: AppHandle<R>) {
     // Compile-time proof of the AppKit main thread; `addLocalMonitor…` is an
     // AppKit call, and the setup hook is where we are.

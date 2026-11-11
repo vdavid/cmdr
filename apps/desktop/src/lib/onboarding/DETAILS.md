@@ -195,8 +195,8 @@ registration storm (`mmap` + `NSData` + `read_dir` of the parent) plus per-call 
 get Cmdr into the FDA list. Polling that twice a second would spam syscalls and the log, so the quiet command is a
 single side-effect-free `read()` per candidate file with no steady-state logging. Both share the same `CMDR_MOCK_FDA`
 override and the same `fda_probe_files()` candidate list (factored into `probe_fda_quiet()` / `mock_fda_override()` in
-`permissions.rs`). Keep `checkFullDiskAccess` for the one-shot registration moments (the re-probe before
-`openPrivacySettings`, the step-2 banner probe).
+`src-tauri/src/permissions/platform/macos.rs`). Keep `checkFullDiskAccess` for the one-shot registration moments (the
+re-probe before `openPrivacySettings`, the step-2 banner probe).
 
 The restart stays required even on live detection: the FDA gate is set once at boot, so the new permission only takes
 effect on relaunch (same reason as the Allow path; see § "Allow path requires a restart"). Detection only swaps the copy
@@ -716,9 +716,10 @@ Two env vars (mirror `CMDR_MOCK_LICENSE`):
 
 - `CMDR_FORCE_ONBOARDING=1` (read by `is_force_onboarding()` Tauri command in the backend): opens the wizard regardless
   of persisted state. Useful for design iteration without touching settings.
-- `CMDR_MOCK_FDA=granted|denied|notgranted` (read in `permissions.rs::check_full_disk_access`): overrides the TCC probe
-  so all banner branches can be tested without ever opening real System Settings. `granted` → `true`; `denied` /
-  `notgranted` → `false`. The wizard distinguishes them via the persisted setting + a fresh probe on step-2 entry.
+- `CMDR_MOCK_FDA=granted|denied|notgranted` (read in `check_full_disk_access`,
+  `src-tauri/src/permissions/platform/macos.rs`): overrides the TCC probe so all banner branches can be tested without
+  ever opening real System Settings. `granted` → `true`; `denied` / `notgranted` → `false`. The wizard distinguishes
+  them via the persisted setting + a fresh probe on step-2 entry.
 
 Run with both: `CMDR_FORCE_ONBOARDING=1 CMDR_MOCK_FDA=notgranted pnpm dev`.
 

@@ -138,7 +138,7 @@ describe('meetsWebkitFloor', () => {
 describe('isBelowSupportedMacOs', () => {
   it('calls Catalina and Big Sur below the supported range', async () => {
     const mod = await import('./webkit-compat')
-    // `get_macos_major_version` reports `10` on Catalina, not `10.15`.
+    // `get_os_major_version` reports `10` on Catalina, not `10.15`.
     expect(mod.isBelowSupportedMacOs(10)).toBe(true)
     expect(mod.isBelowSupportedMacOs(11)).toBe(true)
   })

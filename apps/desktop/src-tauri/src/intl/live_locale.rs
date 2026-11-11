@@ -127,8 +127,8 @@ impl<T: PartialEq + Clone + Send + Sync + 'static> LocaleWatcher<T> {
 /// Two notification names feed one watcher, and they carry different halves of
 /// the answer. `AppleLanguagePreferencesChangedNotification` is the distributed
 /// notification the System Settings pane posts when the LANGUAGE order moves;
-/// it's undocumented in the same way `text_size.rs`'s accessibility notification
-/// is, with the same fallback story (if Apple stops posting it, the language
+/// it's undocumented in the same way `system_look/platform/macos/text_size.rs`'s
+/// accessibility notification is, with the same fallback story (if Apple stops posting it, the language
 /// still resolves correctly on the next launch).
 /// `NSCurrentLocaleDidChangeNotification` is the documented signal and tracks
 /// `AppleLocale`, which is where the REGION override lives, so it's what carries

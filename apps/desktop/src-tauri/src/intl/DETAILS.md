@@ -241,7 +241,8 @@ restart their apps after a change like that; doing the right thing without askin
 `live_locale.rs` registers two notification observers from the Tauri `setup` hook, both feeding one `LocaleWatcher`:
 
 - `AppleLanguagePreferencesChangedNotification` on `NSDistributedNotificationCenter`. **This is the one that carries a
-  language change.** Undocumented, on the same terms as the accessibility notification `text_size.rs` watches; if Apple
+  language change.** Undocumented, on the same terms as the accessibility notification
+  `system_look/platform/macos/text_size.rs` watches; if Apple
   stops posting it the language still resolves correctly at the next launch. The System Settings pane that owns the
   setting posts it (`/System/Library/ExtensionKit/Extensions/Localization.appex` carries the literal name, next to its
   `AppleDate…` / `AppleNumber…` / `AppleTime…` siblings; verified on macOS 26.5.2, `strings`, 2026-08-19).
