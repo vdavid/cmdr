@@ -127,6 +127,58 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
+  "search.coverage.line.failedRoots": "{count, plural, one {A Cmdr nem tudott megnyitni egy mappát, ezért semmi sincs belőle a találatok között.} other {A Cmdr nem tudott megnyitni {countText} mappát, ezért semmi sincs belőlük a találatok között.}}",
+  "@search.coverage.line.failedRoots": {
+    "sourceHash": "36c41ae"
+  },
+  "search.coverage.line.denied": "{count, plural, one {A macOS nem engedte, hogy a Cmdr belenézzen egy mappába, ezért semmi sincs belőle a találatok között.} other {A macOS nem engedte, hogy a Cmdr belenézzen {countText} mappába, ezért semmi sincs belőlük a találatok között.}}",
+  "@search.coverage.line.denied": {
+    "sourceHash": "c2b388f"
+  },
+  "search.coverage.line.offLimits": "{count, plural, one {A rendszer zárva tart egy mappát a Cmdr előtt, ezért semmi sincs belőle a találatok között.} other {A rendszer zárva tart {countText} mappát a Cmdr előtt, ezért semmi sincs belőlük a találatok között.}}",
+  "@search.coverage.line.offLimits": {
+    "sourceHash": "f5210c1"
+  },
+  "search.coverage.line.declined": "{count, plural, one {A Cmdr nem néz bele a pillanatkép-mappákba, ezért egy ilyen mappa kimarad a találatok közül.} other {A Cmdr nem néz bele a pillanatkép-mappákba, ezért {countText} ilyen mappa kimarad a találatok közül.}}",
+  "@search.coverage.line.declined": {
+    "sourceHash": "a6d9d17"
+  },
+  "search.coverage.line.stillCovering": "{count, plural, one {Egy másik keresés épp most néz át egy mappát, úgyhogy a fájljai mindjárt előkerülnek.} other {Egy másik keresés épp most néz át {countText} mappát, úgyhogy a fájljaik mindjárt előkerülnek.}}",
+  "@search.coverage.line.stillCovering": {
+    "sourceHash": "5bc369b"
+  },
+  "search.coverage.line.unresolved": "{count, plural, one {A Cmdr indexe még nem fed le egy mappát, ezért ez a keresés kihagyta.} other {A Cmdr indexe még nem fed le {countText} mappát, ezért ez a keresés kihagyta őket.}}",
+  "@search.coverage.line.unresolved": {
+    "sourceHash": "171990c"
+  },
+  "search.coverage.line.uncovered.local": "{count, plural, one {A Cmdr még nem indexelte ezt: {drive}. Ezért ez a keresés kihagyott egy mappát.} other {A Cmdr még nem indexelte ezt: {drive}. Ezért ez a keresés kihagyott {countText} mappát.}}",
+  "@search.coverage.line.uncovered.local": {
+    "sourceHash": "90bcb54"
+  },
+  "search.coverage.line.uncovered.network": "{count, plural, one {A Cmdr csak akkor indexeli a hálózati meghajtókat, ha kéred, ezért ez a keresés kihagyott egy mappát.} other {A Cmdr csak akkor indexeli a hálózati meghajtókat, ha kéred, ezért ez a keresés kihagyott {countText} mappát.}}",
+  "@search.coverage.line.uncovered.network": {
+    "sourceHash": "037099f"
+  },
+  "search.coverage.line.uncovered.unavailable": "{count, plural, one {A Cmdr még nem tud keresni itt: {drive}. Ezért ez a keresés kihagyott egy mappát.} other {A Cmdr még nem tud keresni itt: {drive}. Ezért ez a keresés kihagyott {countText} mappát.}}",
+  "@search.coverage.line.uncovered.unavailable": {
+    "sourceHash": "ea5ef3c"
+  },
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {A Cmdr még indexeli ezt: {drive}. Egy mappához még nem ért el, ezért ez a keresés kihagyta.} other {A Cmdr még indexeli ezt: {drive}. {countText} mappához még nem ért el, ezért ez a keresés kihagyta őket.}}",
+  "@search.coverage.line.uncovered.indexing": {
+    "sourceHash": "8e8cd2f"
+  },
+  "search.coverage.list.show": "Mappák megjelenítése",
+  "@search.coverage.list.show": {
+    "sourceHash": "ce62bd8"
+  },
+  "search.coverage.list.more": "{count, plural, one {+{countText} további} other {+{countText} további}}",
+  "@search.coverage.list.more": {
+    "sourceHash": "854ed7a"
+  },
+  "search.coverage.list.copy": "A teljes mappalista másolása",
+  "@search.coverage.list.copy": {
+    "sourceHash": "cf110de"
+  },
   "search.coverage.walk.cancelled": "Leállítottad ezt a keresést, ezért azt látod, amit a Cmdr addig talált. Amit közben elolvasott, az megmarad, így egy újabb keresés onnan folytatja.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"

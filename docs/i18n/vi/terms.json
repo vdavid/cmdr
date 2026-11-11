@@ -553,6 +553,9 @@
   "close": {
     "chosen": "đóng",
     "confidence": "high",
+    "exceptions": {
+      "search.coverage.line.offLimits": "“keeps folders closed to Cmdr” is access, not closing a window, so it reads as the system never opening them (không bao giờ mở … cho Cmdr)"
+    },
     "sources": "macOS (Đóng)"
   },
   "cloud-ai": {

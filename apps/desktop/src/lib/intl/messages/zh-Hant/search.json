@@ -127,6 +127,58 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
+  "search.coverage.line.failedRoots": "{count, plural, other {Cmdr 無法開啟 {countText} 個資料夾，所以結果裡沒有資料夾裡的東西。}}",
+  "@search.coverage.line.failedRoots": {
+    "sourceHash": "36c41ae"
+  },
+  "search.coverage.line.denied": "{count, plural, other {macOS 不讓 Cmdr 查看 {countText} 個資料夾裡面，所以結果裡沒有資料夾裡的東西。}}",
+  "@search.coverage.line.denied": {
+    "sourceHash": "c2b388f"
+  },
+  "search.coverage.line.offLimits": "{count, plural, other {系統不對 Cmdr 開放 {countText} 個資料夾，所以結果裡沒有資料夾裡的東西。}}",
+  "@search.coverage.line.offLimits": {
+    "sourceHash": "f5210c1"
+  },
+  "search.coverage.line.declined": "{count, plural, other {Cmdr 不會查看快照資料夾裡面，所以有 {countText} 個沒有列入結果。}}",
+  "@search.coverage.line.declined": {
+    "sourceHash": "a6d9d17"
+  },
+  "search.coverage.line.stillCovering": "{count, plural, other {另一次搜尋現在正在讀取 {countText} 個資料夾，所以裡面的檔案等一下就會出現。}}",
+  "@search.coverage.line.stillCovering": {
+    "sourceHash": "5bc369b"
+  },
+  "search.coverage.line.unresolved": "{count, plural, other {有 {countText} 個資料夾還不在 Cmdr 的索引裡，所以這次搜尋略過了。}}",
+  "@search.coverage.line.unresolved": {
+    "sourceHash": "171990c"
+  },
+  "search.coverage.line.uncovered.local": "{count, plural, other {Cmdr 還沒為 {drive} 建立索引，所以這次搜尋略過了 {countText} 個資料夾。}}",
+  "@search.coverage.line.uncovered.local": {
+    "sourceHash": "90bcb54"
+  },
+  "search.coverage.line.uncovered.network": "{count, plural, other {Cmdr 只在你要求時才為網路磁碟機建立索引，所以這次搜尋略過了 {countText} 個資料夾。}}",
+  "@search.coverage.line.uncovered.network": {
+    "sourceHash": "037099f"
+  },
+  "search.coverage.line.uncovered.unavailable": "{count, plural, other {Cmdr 還無法搜尋 {drive}，所以這次搜尋略過了 {countText} 個資料夾。}}",
+  "@search.coverage.line.uncovered.unavailable": {
+    "sourceHash": "ea5ef3c"
+  },
+  "search.coverage.line.uncovered.indexing": "{count, plural, other {Cmdr 仍在為 {drive} 建立索引，有 {countText} 個資料夾還沒處理到，所以這次搜尋略過了。}}",
+  "@search.coverage.line.uncovered.indexing": {
+    "sourceHash": "8e8cd2f"
+  },
+  "search.coverage.list.show": "顯示這些資料夾",
+  "@search.coverage.list.show": {
+    "sourceHash": "ce62bd8"
+  },
+  "search.coverage.list.more": "{count, plural, other {還有 {countText} 個}}",
+  "@search.coverage.list.more": {
+    "sourceHash": "854ed7a"
+  },
+  "search.coverage.list.copy": "複製完整的資料夾列表",
+  "@search.coverage.list.copy": {
+    "sourceHash": "cf110de"
+  },
   "search.coverage.walk.cancelled": "你停止了這次搜尋，所以這裡是 Cmdr 當時已經找到的結果。過程中讀過的東西都留著，下次再搜尋就會從那裡接著跑。",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"

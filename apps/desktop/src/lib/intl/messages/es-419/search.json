@@ -23,6 +23,34 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "4f8589b"
   },
+  "search.coverage.line.failedRoots": "{count, plural, one {Cmdr no pudo abrir una carpeta, así que su contenido no aparece en los resultados.} many {Cmdr no pudo abrir {countText} carpetas, así que su contenido no aparece en los resultados.} other {Cmdr no pudo abrir {countText} carpetas, así que su contenido no aparece en los resultados.}}",
+  "@search.coverage.line.failedRoots": {
+    "sourceHash": "b82f677"
+  },
+  "search.coverage.line.denied": "{count, plural, one {macOS no dejó que Cmdr mirara dentro de una carpeta, así que su contenido no aparece en los resultados.} many {macOS no dejó que Cmdr mirara dentro de {countText} carpetas, así que su contenido no aparece en los resultados.} other {macOS no dejó que Cmdr mirara dentro de {countText} carpetas, así que su contenido no aparece en los resultados.}}",
+  "@search.coverage.line.denied": {
+    "sourceHash": "467cdd9"
+  },
+  "search.coverage.line.unresolved": "{count, plural, one {El índice de Cmdr aún no cubre una carpeta, así que esta búsqueda la omitió.} many {El índice de Cmdr aún no cubre {countText} carpetas, así que esta búsqueda las omitió.} other {El índice de Cmdr aún no cubre {countText} carpetas, así que esta búsqueda las omitió.}}",
+  "@search.coverage.line.unresolved": {
+    "sourceHash": "e4e4d1a"
+  },
+  "search.coverage.line.uncovered.local": "{count, plural, one {Cmdr aún no ha indexado {drive}, así que esta búsqueda omitió una carpeta.} many {Cmdr aún no ha indexado {drive}, así que esta búsqueda omitió {countText} carpetas.} other {Cmdr aún no ha indexado {drive}, así que esta búsqueda omitió {countText} carpetas.}}",
+  "@search.coverage.line.uncovered.local": {
+    "sourceHash": "a9c931a"
+  },
+  "search.coverage.line.uncovered.network": "{count, plural, one {Cmdr no indexa las unidades de red salvo que se lo pidas, así que esta búsqueda omitió una carpeta.} many {Cmdr no indexa las unidades de red salvo que se lo pidas, así que esta búsqueda omitió {countText} carpetas.} other {Cmdr no indexa las unidades de red salvo que se lo pidas, así que esta búsqueda omitió {countText} carpetas.}}",
+  "@search.coverage.line.uncovered.network": {
+    "sourceHash": "6a601c3"
+  },
+  "search.coverage.line.uncovered.unavailable": "{count, plural, one {Cmdr aún no puede buscar en {drive}, así que esta búsqueda omitió una carpeta.} many {Cmdr aún no puede buscar en {drive}, así que esta búsqueda omitió {countText} carpetas.} other {Cmdr aún no puede buscar en {drive}, así que esta búsqueda omitió {countText} carpetas.}}",
+  "@search.coverage.line.uncovered.unavailable": {
+    "sourceHash": "ef2a1e8"
+  },
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr sigue indexando {drive} y aún no ha llegado a una carpeta, así que esta búsqueda la omitió.} many {Cmdr sigue indexando {drive} y aún no ha llegado a {countText} carpetas, así que esta búsqueda las omitió.} other {Cmdr sigue indexando {drive} y aún no ha llegado a {countText} carpetas, así que esta búsqueda las omitió.}}",
+  "@search.coverage.line.uncovered.indexing": {
+    "sourceHash": "93941d7"
+  },
   "search.coverage.walk.cancelled": "Detuviste esta búsqueda, así que ves lo que Cmdr había encontrado hasta ese momento. Todo lo que leyó por el camino queda guardado, y una nueva búsqueda continúa desde ahí.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "c36aaac"

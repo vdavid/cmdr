@@ -222,7 +222,7 @@
   },
   "search.coverage.line.failedRoots": "{count, plural, one {Cmdr couldn’t open one folder, so nothing from it is in the results.} other {Cmdr couldn’t open {countText} folders, so nothing from them is in the results.}}",
   "@search.coverage.line.failedRoots": {
-    "description": "Note above the search results about folders Cmdr tried to look through and couldn't open, while the drive itself was still reachable (for example, the network drive didn't recognize that folder name, or the folder was removed a moment ago). Their contents are missing from the results, so an empty list doesn't mean nothing matched. Searching again tries them again. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
+    "description": "Note above the search results about folders Cmdr tried to look through and couldn't open, while the drive itself was still reachable (for example, the network drive didn't recognize that folder name, or the folder was removed a moment ago). Their contents are missing from the results, so an empty list doesn't mean nothing matched. Searching again tries them again. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. The English singular branch reads 'one folder'; in languages whose 'one' category also covers other numbers, put that wording in an =1 branch. The line only appears when at least one folder is affected, so 0 never reaches it. Avoid the words 'error' and 'failed'.",
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)"
@@ -232,7 +232,7 @@
   },
   "search.coverage.line.denied": "{count, plural, one {macOS didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {macOS didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}",
   "@search.coverage.line.denied": {
-    "description": "Note above the search results about folders macOS's privacy protection kept Cmdr out of, so their contents are missing from the results. These are the ones Full Disk Access opens: when Cmdr doesn't have that permission yet, the offer below (search.coverage.deniedFullDiskAccess) follows. 'macOS' is the operating system's name and stays as-is. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
+    "description": "Note above the search results about folders macOS's privacy protection kept Cmdr out of, so their contents are missing from the results. These are the ones Full Disk Access opens: when Cmdr doesn't have that permission yet, the offer below (search.coverage.deniedFullDiskAccess) follows. 'macOS' is the operating system's name and stays as-is. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. The English singular branch reads 'one folder'; in languages whose 'one' category also covers other numbers, put that wording in an =1 branch. The line only appears when at least one folder is affected, so 0 never reaches it. Avoid the words 'error' and 'failed'.",
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)"
@@ -242,7 +242,7 @@
   },
   "search.coverage.line.offLimits": "{count, plural, one {The system keeps one folder closed to Cmdr, so nothing from it is in the results.} other {The system keeps {countText} folders closed to Cmdr, so nothing from them is in the results.}}",
   "@search.coverage.line.offLimits": {
-    "description": "Note above the search results about folders the operating system never lets Cmdr read, whatever the user grants it: folders only the system or another user account may open, and folders macOS protects for itself. Nothing for the user to fix, so this one explains rather than offers, and it must not suggest a permission or a setting. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
+    "description": "Note above the search results about folders the operating system never lets Cmdr read, whatever the user grants it: folders only the system or another user account may open, and folders macOS protects for itself. Nothing for the user to fix, so this one explains rather than offers, and it must not suggest a permission or a setting. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. The English singular branch reads 'one folder'; in languages whose 'one' category also covers other numbers, put that wording in an =1 branch. The line only appears when at least one folder is affected, so 0 never reaches it. Avoid the words 'error' and 'failed'.",
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)"
@@ -252,7 +252,7 @@
   },
   "search.coverage.line.declined": "{count, plural, one {Cmdr doesn’t look inside snapshot folders, so one is left out of the results.} other {Cmdr doesn’t look inside snapshot folders, so {countText} are left out of the results.}}",
   "@search.coverage.line.declined": {
-    "description": "Note above the search results about snapshot folders on a network drive, which Cmdr never looks inside on purpose: their contents are copies of files it has already seen, and one such folder can report several times the drive's real size. There is nothing for the user to fix, so this one explains rather than offers. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
+    "description": "Note above the search results about snapshot folders on a network drive, which Cmdr never looks inside on purpose: their contents are copies of files it has already seen, and one such folder can report several times the drive's real size. There is nothing for the user to fix, so this one explains rather than offers. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. The English singular branch reads 'one folder'; in languages whose 'one' category also covers other numbers, put that wording in an =1 branch. The line only appears when at least one folder is affected, so 0 never reaches it. Avoid the words 'error' and 'failed'.",
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)"
@@ -262,7 +262,7 @@
   },
   "search.coverage.line.stillCovering": "{count, plural, one {Another search is going through one folder right now, so its files will turn up in a moment.} other {Another search is going through {countText} folders right now, so their files will turn up in a moment.}}",
   "@search.coverage.line.stillCovering": {
-    "description": "Note above the search results when a second search is already reading the same folders, so this one left them to it. The files aren't lost: the other search saves what it reads, so a repeat search a moment later includes them. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all.",
+    "description": "Note above the search results when a second search is already reading the same folders, so this one left them to it. The files aren't lost: the other search saves what it reads, so a repeat search a moment later includes them. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. The English singular branch reads 'one folder'; in languages whose 'one' category also covers other numbers, put that wording in an =1 branch. The line only appears when at least one folder is affected, so 0 never reaches it.",
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)"
@@ -272,7 +272,7 @@
   },
   "search.coverage.line.unresolved": "{count, plural, one {Cmdr’s index doesn’t cover one folder yet, so this search skipped it.} other {Cmdr’s index doesn’t cover {countText} folders yet, so this search skipped them.}}",
   "@search.coverage.line.unresolved": {
-    "description": "Note above the search results when the drive IS indexed but the folder searched in isn't in that index yet (a partly indexed drive, or a path that no longer exists). It deliberately says what Cmdr knows rather than claiming the folder doesn't exist, because both cases look the same from the index. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all.",
+    "description": "Note above the search results when the drive IS indexed but the folder searched in isn't in that index yet (a partly indexed drive, or a path that no longer exists). It deliberately says what Cmdr knows rather than claiming the folder doesn't exist, because both cases look the same from the index. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. The English singular branch reads 'one folder'; in languages whose 'one' category also covers other numbers, put that wording in an =1 branch. The line only appears when at least one folder is affected, so 0 never reaches it.",
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)"
@@ -282,7 +282,7 @@
   },
   "search.coverage.line.uncovered.local": "{count, plural, one {Cmdr hasn’t indexed {drive} yet, so this search skipped one folder.} other {Cmdr hasn’t indexed {drive} yet, so this search skipped {countText} folders.}}",
   "@search.coverage.line.uncovered.local": {
-    "description": "Note above the search results when the search covered a local drive that has no index, so it had nothing to look through. Conversational. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
+    "description": "Note above the search results when the search covered a local drive that has no index, so it had nothing to look through. Conversational. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. The English singular branch reads 'one folder'; in languages whose 'one' category also covers other numbers, put that wording in an =1 branch. The line only appears when at least one folder is affected, so 0 never reaches it. Avoid the words 'error' and 'failed'.",
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)",
@@ -293,7 +293,7 @@
   },
   "search.coverage.line.uncovered.network": "{count, plural, one {Cmdr doesn’t index network drives unless you ask, so this search skipped one folder.} other {Cmdr doesn’t index network drives unless you ask, so this search skipped {countText} folders.}}",
   "@search.coverage.line.uncovered.network": {
-    "description": "The network-drive version of search.coverage.line.uncovered.local, shown when the search covered a network share with no index. It explains that this is by design rather than nudging the user to index, because indexing a network drive is deliberately opt-in. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all.",
+    "description": "The network-drive version of search.coverage.line.uncovered.local, shown when the search covered a network share with no index. It explains that this is by design rather than nudging the user to index, because indexing a network drive is deliberately opt-in. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. The English singular branch reads 'one folder'; in languages whose 'one' category also covers other numbers, put that wording in an =1 branch. The line only appears when at least one folder is affected, so 0 never reaches it.",
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)",
@@ -304,7 +304,7 @@
   },
   "search.coverage.line.uncovered.unavailable": "{count, plural, one {Cmdr can’t search {drive} yet, so this search skipped one folder.} other {Cmdr can’t search {drive} yet, so this search skipped {countText} folders.}}",
   "@search.coverage.line.uncovered.unavailable": {
-    "description": "The server version of search.coverage.line.uncovered.local, shown when the search was started from a server Cmdr reaches over SFTP or WebDAV. Search works by reading a drive index, and Cmdr can't build one for a server yet, so unlike the other variants there's nothing to turn on and pressing Enter won't help: no offer appears with it. It says plainly that search isn't available there, not that anything went wrong. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
+    "description": "The server version of search.coverage.line.uncovered.local, shown when the search was started from a server Cmdr reaches over SFTP or WebDAV. Search works by reading a drive index, and Cmdr can't build one for a server yet, so unlike the other variants there's nothing to turn on and pressing Enter won't help: no offer appears with it. It says plainly that search isn't available there, not that anything went wrong. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. The English singular branch reads 'one folder'; in languages whose 'one' category also covers other numbers, put that wording in an =1 branch. The line only appears when at least one folder is affected, so 0 never reaches it. Avoid the words 'error' and 'failed'.",
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)",
@@ -315,7 +315,7 @@
   },
   "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr is still indexing {drive} and hasn’t reached one folder yet, so this search skipped it.} other {Cmdr is still indexing {drive} and hasn’t reached {countText} folders yet, so this search skipped them.}}",
   "@search.coverage.line.uncovered.indexing": {
-    "description": "The still-being-indexed version of search.coverage.line.uncovered.local, shown when the drive's very first index is running right now and hasn't got to the folder searched in. It replaces the 'this drive isn't indexed' wording, which would read as nothing happening while indexing is under way, and no 'Index this drive' offer appears with it. Conversational. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. Avoid the words 'error' and 'failed'.",
+    "description": "The still-being-indexed version of search.coverage.line.uncovered.local, shown when the drive's very first index is running right now and hasn't got to the folder searched in. It replaces the 'this drive isn't indexed' wording, which would read as nothing happening while indexing is under way, and no 'Index this drive' offer appears with it. Conversational. It's one line: the folder paths sit in a tooltip behind the icon before it, and a copy button after it copies them all. The English singular branch reads 'one folder'; in languages whose 'one' category also covers other numbers, put that wording in an =1 branch. The line only appears when at least one folder is affected, so 0 never reaches it. Avoid the words 'error' and 'failed'.",
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)",
@@ -332,7 +332,7 @@
   },
   "search.coverage.list.more": "{count, plural, one {+{countText} more} other {+{countText} more}}",
   "@search.coverage.list.more": {
-    "description": "The last line of the numbered folder list in a coverage-note tooltip, when there are more folders than the tooltip shows (it shows 15). Says how many are left out; the copy button beside the icon copies them all. Very short.",
+    "description": "The last line of the numbered folder list in a coverage-note tooltip, when there are more folders than the tooltip shows (it shows 15). Says how many are left out; the copy button beside the icon copies them all. Very short. The two English branches are identical on purpose: the plural exists for languages where 'more' agrees with the count.",
     "placeholders": {
       "count": "how many folders the tooltip leaves out, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators"

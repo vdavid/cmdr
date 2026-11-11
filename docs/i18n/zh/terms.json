@@ -604,6 +604,9 @@
     "accept": ["关掉"],
     "chosen": "关闭",
     "confidence": "confirmed",
+    "exceptions": {
+      "search.coverage.line.offLimits": "\"keeps one folder closed to Cmdr\" is access, not closing a window: 系统不向 Cmdr 开放 (open to). 关闭 would read as the system shutting the folder."
+    },
     "forms": "button 关闭; \"close some apps\" in prose → 关掉",
     "sources": "macOS AppKit"
   },

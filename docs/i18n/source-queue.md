@@ -31,5 +31,27 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   (hu: title `Visszagörgeted a többit?`, buttons `A többi visszagörgetése`; it's the one warn left). Either the check
   should ignore a trailing "?" split, or hu needs an allowlist entry. The `titleRest` description should name the
   constraint either way. (hu, sv, zh, zh-Hant)
+- `search.coverage.line.uncovered.*`: `{drive}` is either a name or the generic phrase from
+  `search.coverage.unnamedDrive`, so case-marking languages read stiffly ("ezt: ez a meghajtó"), and in `.unavailable`
+  it actually holds a SERVER name. Give the generic case its own variant key, or a server param of its own. (hu, ru)
+- `search.coverage.line.uncovered.indexing`: the English singular "hasn't reached one folder yet, so this search skipped
+  it" reads oddly; "hasn't reached this folder yet" is clearer. (sv, fr)
+- `close` concept matches "keeps … closed to Cmdr" (access, not closing) in `search.coverage.line.offLimits`; add it to
+  `notMatch` in `concepts.json` (cs and ru carry exceptions meanwhile). `look-inside` is defined as the AI reading a
+  file, yet `search.coverage.line.denied` / `.declined` use it for a walk entering folders: widen or exclude. (cs, ru)
+- "system" (the OS, `search.coverage.line.offLimits`) has no concept yet, and every locale coined its own word; add one
+  sourced from Apple's localized macOS. (sv, zh, zh-Hant, uk)
+- vi: `search.coverage.deniedFullDiskAccess` and `search.coverage.setUpFullDiskAccess` say `quyền truy cập toàn bộ đĩa`,
+  but Apple's pane is `Quyền truy cập đầy đủ vào ổ đĩa` (vi `style.md`). Re-translate both. (vi)
+- "Couldn't X" sentences naming Cmdr as the subject (`search.coverage.line.failedRoots`) collide with a style guide's
+  impersonal pattern ("X ließ sich nicht öffnen") because `dont-translate` demands "Cmdr". Decide whether an actor-only
+  "Cmdr" may drop in translation. (de)
+- `pnpm i18n:brief`'s regional-overlay section names vocabulary forks only; `es-419` also forks the compound perfect to
+  the preterite ("no pudo"), which cost a failed check. Name tense forks there. (es)
+- Briefs for brand-new keys: run `sync-locale-keys.ts` before `pnpm i18n:brief`, or the brief describes skeletons the
+  catalog doesn't hold yet. (cs, de, es, fr, nl, pt, sv)
+- `operationLog.tree.selectAll` ("Выбрать все", ticking checkboxes) vs `commands.selectionSelectAll.label` /
+  `menu.select.all` ("Выделить все") is a deliberate split (d6c47e8dcf), but it's the one `i18n-terms` warn left in ru:
+  needs a reasoned allowlist entry. (ru)
 - `errors.write.trashRefused.message.ownedByAnotherUser`: "their folder" can read as the other ACCOUNT's folder rather
   than the folder holding the items; "the folder holding them" (as in `message.folderNotWritable`) is clearer. (all)

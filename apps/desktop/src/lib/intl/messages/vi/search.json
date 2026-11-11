@@ -127,6 +127,58 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
+  "search.coverage.line.failedRoots": "{count, plural, other {Cmdr không mở được {countText} thư mục, nên không có gì từ đó trong kết quả.}}",
+  "@search.coverage.line.failedRoots": {
+    "sourceHash": "36c41ae"
+  },
+  "search.coverage.line.denied": "{count, plural, other {macOS không cho Cmdr xem bên trong {countText} thư mục, nên không có gì từ đó trong kết quả.}}",
+  "@search.coverage.line.denied": {
+    "sourceHash": "c2b388f"
+  },
+  "search.coverage.line.offLimits": "{count, plural, other {Hệ thống không bao giờ mở {countText} thư mục cho Cmdr, nên không có gì từ đó trong kết quả.}}",
+  "@search.coverage.line.offLimits": {
+    "sourceHash": "f5210c1"
+  },
+  "search.coverage.line.declined": "{count, plural, other {Cmdr không xem bên trong thư mục ảnh chụp nhanh, nên {countText} thư mục không nằm trong kết quả.}}",
+  "@search.coverage.line.declined": {
+    "sourceHash": "a6d9d17"
+  },
+  "search.coverage.line.stillCovering": "{count, plural, other {Một lần tìm kiếm khác đang duyệt {countText} thư mục ngay lúc này, nên tệp trong đó sẽ xuất hiện trong chốc lát.}}",
+  "@search.coverage.line.stillCovering": {
+    "sourceHash": "5bc369b"
+  },
+  "search.coverage.line.unresolved": "{count, plural, other {Lần tìm kiếm này đã bỏ qua {countText} thư mục mà chỉ mục của Cmdr chưa bao gồm.}}",
+  "@search.coverage.line.unresolved": {
+    "sourceHash": "171990c"
+  },
+  "search.coverage.line.uncovered.local": "{count, plural, other {Cmdr chưa lập chỉ mục {drive}, nên lần tìm kiếm này đã bỏ qua {countText} thư mục.}}",
+  "@search.coverage.line.uncovered.local": {
+    "sourceHash": "90bcb54"
+  },
+  "search.coverage.line.uncovered.network": "{count, plural, other {Cmdr chỉ lập chỉ mục ổ đĩa mạng khi bạn yêu cầu, nên lần tìm kiếm này đã bỏ qua {countText} thư mục.}}",
+  "@search.coverage.line.uncovered.network": {
+    "sourceHash": "037099f"
+  },
+  "search.coverage.line.uncovered.unavailable": "{count, plural, other {Cmdr chưa thể tìm kiếm trên {drive}, nên lần tìm kiếm này đã bỏ qua {countText} thư mục.}}",
+  "@search.coverage.line.uncovered.unavailable": {
+    "sourceHash": "ea5ef3c"
+  },
+  "search.coverage.line.uncovered.indexing": "{count, plural, other {Cmdr vẫn đang lập chỉ mục {drive}, nên lần tìm kiếm này đã bỏ qua {countText} thư mục mà Cmdr chưa tới.}}",
+  "@search.coverage.line.uncovered.indexing": {
+    "sourceHash": "8e8cd2f"
+  },
+  "search.coverage.list.show": "Hiển thị các thư mục",
+  "@search.coverage.list.show": {
+    "sourceHash": "ce62bd8"
+  },
+  "search.coverage.list.more": "{count, plural, other {+{countText} nữa}}",
+  "@search.coverage.list.more": {
+    "sourceHash": "854ed7a"
+  },
+  "search.coverage.list.copy": "Sao chép toàn bộ danh sách thư mục",
+  "@search.coverage.list.copy": {
+    "sourceHash": "cf110de"
+  },
   "search.coverage.walk.cancelled": "Bạn đã dừng lần tìm kiếm này, nên đây là những gì Cmdr tìm được đến lúc đó. Mọi thứ đã đọc dọc đường đều được lưu lại, nên tìm kiếm lại sẽ đi tiếp từ đó.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"

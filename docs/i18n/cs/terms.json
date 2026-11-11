@@ -202,7 +202,10 @@
     "accept": ["zavř", "zavír"],
     "forms": "button → Zavřít; Close tab → Zavřít záložku",
     "confidence": "high",
-    "sources": "macOS AppKit/Finder (Zavřít okno, Zavřít vše); DC; Dolphin; MS (Zavřít)"
+    "sources": "macOS AppKit/Finder (Zavřít okno, Zavřít vše); DC; Dolphin; MS (Zavřít)",
+    "exceptions": {
+      "search.coverage.line.offLimits": "English \"keeps closed\" means off-limits (no access), not the close action; Czech says Systém do složky Cmdr nepouští"
+    }
   },
   "column": {
     "chosen": "sloupec",

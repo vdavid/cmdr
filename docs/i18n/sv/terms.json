@@ -2028,7 +2028,7 @@
     "confidence": "tentative",
     "decision": "Ask Cmdr looks inside files",
     "exceptions": {
-      "search.coverage.line.declined": "The negation splits the verb: tittar med flit inte in i."
+      "search.coverage.line.declined": "The negation splits the verb: tittar inte in i."
     },
     "forms": "Tittar in i filer / Tittade in i filer; tittar in i en fil bara när du frågar om den",
     "sources": "sibling tool lines (Tittar på ett förslag); no direct source"

@@ -127,6 +127,58 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
+  "search.coverage.line.failedRoots": "{count, plural, =1 {Cmdr не удалось открыть одну папку, поэтому ее содержимого нет в результатах.} one {Cmdr не удалось открыть {countText} папку, поэтому их содержимого нет в результатах.} few {Cmdr не удалось открыть {countText} папки, поэтому их содержимого нет в результатах.} many {Cmdr не удалось открыть {countText} папок, поэтому их содержимого нет в результатах.} other {Cmdr не удалось открыть {countText} папки, поэтому их содержимого нет в результатах.}}",
+  "@search.coverage.line.failedRoots": {
+    "sourceHash": "36c41ae"
+  },
+  "search.coverage.line.denied": "{count, plural, =1 {macOS не дала Cmdr заглянуть в одну папку, поэтому ее содержимого нет в результатах.} one {macOS не дала Cmdr заглянуть в {countText} папку, поэтому их содержимого нет в результатах.} few {macOS не дала Cmdr заглянуть в {countText} папки, поэтому их содержимого нет в результатах.} many {macOS не дала Cmdr заглянуть в {countText} папок, поэтому их содержимого нет в результатах.} other {macOS не дала Cmdr заглянуть в {countText} папки, поэтому их содержимого нет в результатах.}}",
+  "@search.coverage.line.denied": {
+    "sourceHash": "c2b388f"
+  },
+  "search.coverage.line.offLimits": "{count, plural, =1 {Система не пускает Cmdr в одну папку, поэтому ее содержимого нет в результатах.} one {Система не пускает Cmdr в {countText} папку, поэтому их содержимого нет в результатах.} few {Система не пускает Cmdr в {countText} папки, поэтому их содержимого нет в результатах.} many {Система не пускает Cmdr в {countText} папок, поэтому их содержимого нет в результатах.} other {Система не пускает Cmdr в {countText} папки, поэтому их содержимого нет в результатах.}}",
+  "@search.coverage.line.offLimits": {
+    "sourceHash": "f5210c1"
+  },
+  "search.coverage.line.declined": "{count, plural, =1 {Cmdr не заглядывает в папки снимков, поэтому одна такая папка не вошла в результаты.} one {Cmdr не заглядывает в папки снимков, поэтому {countText} такая папка не вошла в результаты.} few {Cmdr не заглядывает в папки снимков, поэтому {countText} такие папки не вошли в результаты.} many {Cmdr не заглядывает в папки снимков, поэтому {countText} таких папок не вошло в результаты.} other {Cmdr не заглядывает в папки снимков, поэтому {countText} такие папки не вошли в результаты.}}",
+  "@search.coverage.line.declined": {
+    "sourceHash": "a6d9d17"
+  },
+  "search.coverage.line.stillCovering": "{count, plural, =1 {Другой поиск сейчас проверяет одну папку, поэтому ее файлы скоро появятся.} one {Другой поиск сейчас проверяет {countText} папку, поэтому их файлы скоро появятся.} few {Другой поиск сейчас проверяет {countText} папки, поэтому их файлы скоро появятся.} many {Другой поиск сейчас проверяет {countText} папок, поэтому их файлы скоро появятся.} other {Другой поиск сейчас проверяет {countText} папки, поэтому их файлы скоро появятся.}}",
+  "@search.coverage.line.stillCovering": {
+    "sourceHash": "5bc369b"
+  },
+  "search.coverage.line.unresolved": "{count, plural, =1 {Индекс Cmdr пока не охватывает одну папку, поэтому поиск ее пропустил.} one {Индекс Cmdr пока не охватывает {countText} папку, поэтому поиск их пропустил.} few {Индекс Cmdr пока не охватывает {countText} папки, поэтому поиск их пропустил.} many {Индекс Cmdr пока не охватывает {countText} папок, поэтому поиск их пропустил.} other {Индекс Cmdr пока не охватывает {countText} папки, поэтому поиск их пропустил.}}",
+  "@search.coverage.line.unresolved": {
+    "sourceHash": "171990c"
+  },
+  "search.coverage.line.uncovered.local": "{count, plural, =1 {Cmdr еще не проиндексировал диск {drive}, поэтому поиск пропустил одну папку.} one {Cmdr еще не проиндексировал диск {drive}, поэтому поиск пропустил {countText} папку.} few {Cmdr еще не проиндексировал диск {drive}, поэтому поиск пропустил {countText} папки.} many {Cmdr еще не проиндексировал диск {drive}, поэтому поиск пропустил {countText} папок.} other {Cmdr еще не проиндексировал диск {drive}, поэтому поиск пропустил {countText} папки.}}",
+  "@search.coverage.line.uncovered.local": {
+    "sourceHash": "90bcb54"
+  },
+  "search.coverage.line.uncovered.network": "{count, plural, =1 {Cmdr индексирует сетевые диски только по вашему запросу, поэтому поиск пропустил одну папку.} one {Cmdr индексирует сетевые диски только по вашему запросу, поэтому поиск пропустил {countText} папку.} few {Cmdr индексирует сетевые диски только по вашему запросу, поэтому поиск пропустил {countText} папки.} many {Cmdr индексирует сетевые диски только по вашему запросу, поэтому поиск пропустил {countText} папок.} other {Cmdr индексирует сетевые диски только по вашему запросу, поэтому поиск пропустил {countText} папки.}}",
+  "@search.coverage.line.uncovered.network": {
+    "sourceHash": "037099f"
+  },
+  "search.coverage.line.uncovered.unavailable": "{count, plural, =1 {Cmdr пока не может искать на сервере {drive}, поэтому поиск пропустил одну папку.} one {Cmdr пока не может искать на сервере {drive}, поэтому поиск пропустил {countText} папку.} few {Cmdr пока не может искать на сервере {drive}, поэтому поиск пропустил {countText} папки.} many {Cmdr пока не может искать на сервере {drive}, поэтому поиск пропустил {countText} папок.} other {Cmdr пока не может искать на сервере {drive}, поэтому поиск пропустил {countText} папки.}}",
+  "@search.coverage.line.uncovered.unavailable": {
+    "sourceHash": "ea5ef3c"
+  },
+  "search.coverage.line.uncovered.indexing": "{count, plural, =1 {Cmdr еще индексирует диск {drive} и пока не дошел до одной папки, поэтому поиск ее пропустил.} one {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папки, поэтому поиск их пропустил.} few {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папок, поэтому поиск их пропустил.} many {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папок, поэтому поиск их пропустил.} other {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папки, поэтому поиск их пропустил.}}",
+  "@search.coverage.line.uncovered.indexing": {
+    "sourceHash": "8e8cd2f"
+  },
+  "search.coverage.list.show": "Показать папки",
+  "@search.coverage.list.show": {
+    "sourceHash": "ce62bd8"
+  },
+  "search.coverage.list.more": "{count, plural, one {еще {countText}} few {еще {countText}} many {еще {countText}} other {еще {countText}}}",
+  "@search.coverage.list.more": {
+    "sourceHash": "854ed7a"
+  },
+  "search.coverage.list.copy": "Скопировать полный список папок",
+  "@search.coverage.list.copy": {
+    "sourceHash": "cf110de"
+  },
   "search.coverage.walk.cancelled": "Поиск остановлен по вашему запросу. Показано все, что Cmdr успел найти. Прочитанные данные сохранены, поэтому повторный поиск продолжится с этого места.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
