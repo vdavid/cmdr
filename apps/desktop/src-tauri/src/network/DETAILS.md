@@ -36,7 +36,7 @@ of the app build.
   - `os_mount/platform/macos/mount.rs`: macOS `NetFSMountURLSync` for native `/Volumes/` mounts, each success confirmed against `statfs` (§ "A reported mount counts once it's there"); also `unmount_smb_shares_from_host` (iterates `/Volumes/`, matches via `statfs`, unmounts via `diskutil`)
   - `os_mount/platform/linux/mount.rs`: Linux `gio mount` for GVFS-based user-space mounts, confirmed the same way
   - `os_mount/platform/windows.rs`: no OS mount yet; a mount answers `MountError::Unexpected`
-  - `share_access.rs`: every OS's second opinion on a mount's "not found", asked of the server itself through
+  - `os_mount/share_access.rs`: every OS's second opinion on a mount's "not found", asked of the server itself through
     `os_mount::mount_share`, the one async mount entry point every arm shares (§ "A share that says not found")
   - `os_mount/mount_watch.rs`: the `warn` while a mount call is stuck in the system's mount service. `mount_share` moves a
     `MountWatch` into the blocking work, so it logs every 15 s (`SLOW_MOUNT`) for as long as the call is out, even past

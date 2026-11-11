@@ -1901,7 +1901,7 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   refusing a file rewritten meanwhile (§ "Carrying a handle across a reconnect"), through `black_hole_proxy.rs`.
 - `src/connection_integration_test.rs` — the three answers `try_open_share` hears from the `both` fixture: a guest
   refused at TreeConnect, the allowed account let in, and a missing share's bad network name. What the app makes of them
-  is `apps/desktop/src-tauri/src/network/share_access_test.rs`.
+  is `apps/desktop/src-tauri/src/network/os_mount/share_access_test.rs`.
 - **The byte path is three files split by contract**, all declared from `volume/mod.rs`. A new byte-path cell adds
   itself to the matching contract rather than growing one file; a cell that straddles goes where its ASSERTION lives,
   not where its setup does.

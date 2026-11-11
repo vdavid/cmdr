@@ -13,8 +13,8 @@
 //! means for the identity the mount used. Evidence and the decision table:
 //! `DETAILS.md` § "A share that says not found".
 
-use super::os_mount::MountError;
-use super::smb_connect_failure::{RefusedAt, SignInIdentity};
+use super::MountError;
+use crate::network::smb_connect_failure::{RefusedAt, SignInIdentity};
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_smb::volume::SmbConnectionParams;
 use smb2::ErrorKind;
