@@ -19,7 +19,7 @@ const viteConfigRelPath = "apps/desktop/vite.config.js"
 // a moving baseline that tracks what browsers have "widely available" (Safari
 // 16.4 as of Vite 8). An unset target therefore hands the floor to whatever
 // Vite's current major thinks is modern, which drifts UP on a routine dep bump
-// while `tauri.conf.json`'s `minimumSystemVersion` stays where it is. The gap
+// while `tauri.macos.conf.json`'s `minimumSystemVersion` stays where it is. The gap
 // is silent: nothing warns, the build is green, and the app white-screens on
 // the first syntax the old WebKit can't parse.
 //
@@ -65,7 +65,7 @@ type viteTargetPin struct {
 // viteBuildTargetViolation returns the reason this pin doesn't hold the floor,
 // or "" when it does.
 func viteBuildTargetViolation(pin viteTargetPin) string {
-	const fix = "Pin it to the oldest Safari the macOS floor in `apps/desktop/src-tauri/tauri.conf.json` implies,\n" +
+	const fix = "Pin it to the oldest Safari the macOS floor in `apps/desktop/src-tauri/tauri.macos.conf.json` implies,\n" +
 		"e.g. `target: 'safari15'` for macOS 12 Monterey."
 	switch {
 	case !pin.found:

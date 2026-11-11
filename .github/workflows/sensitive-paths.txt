@@ -31,7 +31,7 @@ scripts/build-pkg.sh
 crates/cmdr-update-trust/**
 apps/desktop/src-tauri/src/updater/**
 apps/desktop/src-tauri/updater-backup.pub
-apps/desktop/src-tauri/tauri.conf.json
+apps/desktop/src-tauri/tauri*.conf.json
 
 # Dependencies and toolchains
 **/Cargo.toml

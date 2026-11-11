@@ -89,7 +89,7 @@ worth knowing before you touch the shell: `pnpm dev` does NOT hot-reload an edit
 server), and the guard's copy comes from the message catalog rather than the HTML. How and why:
 `src/lib/utils/DETAILS.md` § Old-WebKit boot guard.
 
-The bundle's `minimumSystemVersion` in `src-tauri/tauri.conf.json` (10.15) and `build.target` in `vite.config.js`
+The bundle's `minimumSystemVersion` in `src-tauri/tauri.macos.conf.json` (10.15) and `build.target` in `vite.config.js`
 (`safari15`) are the other two halves of the same story: `docs/notes/system-requirements-and-es2025.md`.
 
 The runtime half is `src-tauri/src/platform.rs::macos_at_least`, which anything newer than the 10.15 floor has to ask

@@ -220,8 +220,8 @@ On desktop the OS draws the close, minimize, and zoom buttons over each window's
 absolutely placed over its frame (`windows.ts`).
 
 - Placement has one source, the app's own numbers: the main window's `trafficLightPosition` is read from
-  `tauri.conf.json` (imported), and a panel's from the `create_webview_window` options its opener sends (Settings (20,
-  29), Keyboard shortcuts (14, 18), viewer and queue (9, 17), as `LogicalPosition` serializes, `{ x, y }`).
+  `tauri.macos.conf.json` (imported), and a panel's from the `create_webview_window` options its opener sends (Settings
+  (20, 29), Keyboard shortcuts (14, 18), viewer and queue (9, 17), as `LogicalPosition` serializes, `{ x, y }`).
   `lightsInset` turns one into the close button's corner: `x` as is, `y - 9` for the top (tao grows the title-bar
   container to the button's frame plus `y`, and AppKit pins the button to the container's bottom).
 - Measured, not guessed (macOS 27.0.1, Cmdr 0.59.0, 2026-11-04): `screencapture -l` of the running app's windows at 2x,

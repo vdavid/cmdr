@@ -16,7 +16,7 @@ afterEach(() => {
 })
 
 describe('traffic lights', () => {
-  it("places each window's lights from its trafficLightPosition, the main window's from tauri.conf.json", () => {
+  it("places each window's lights from its trafficLightPosition, the main window's from tauri.macos.conf.json", () => {
     // Measured on macOS 27 off the real windows: (9, 17) draws at (9, 8), (20, 29) at (20, 20).
     expect(lightsInset({ x: 9, y: 17 })).toEqual({ left: 9, top: 8 })
     expect(lightsInset({ x: 20, y: 29 })).toEqual({ left: 20, top: 20 })

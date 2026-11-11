@@ -160,9 +160,11 @@ its prerequisites; tasks without any can start any time. Order within a phase is
    `cargo check` + clippy on `windows-latest`, a ratcheting allowlist of members that must compile (`platforms` metadata
    gains `"windows"`), promoted to blocking once green. Turns the audits' static guesses into a real break list. Needs 3
    and 4 to get past dependency resolution.
-6. [XS] Win. Tauri config split: macOS keys into `tauri.macos.conf.json`, `macos-private-api` feature gated to macOS,
-   explicit per-OS `bundle.targets`, a `tauri.windows.conf.json` (NSIS, `currentUser`, `embedBootstrapper`, app manifest
-   with `longPathAware` and per-monitor-v2 DPI).
+6. [XS] Win. **Done**. Tauri config split: macOS keys into `tauri.macos.conf.json`, Linux's into
+   `tauri.linux.conf.json`, explicit per-OS `bundle.targets`, a `tauri.windows.conf.json` (NSIS, `currentUser`,
+   `embedBootstrapper`), and `windows/app.manifest` (`longPathAware`, per-monitor-v2 DPI) through `build.rs`.
+   `macos-private-api` stays on for every target: tauri-build refuses a per-target feature, and it's a no-op since Tauri
+   2.12.1 (`apps/desktop/src-tauri/DETAILS.md` § "Tauri config per platform").
 7. [S] Win. Platform-seam convention: a new platform-seams guide in `docs/guides/` (the shape in win 1), named cfgs from
    a build script (precedent `cmdr_mimalloc`: `cmdr_apple`, `cmdr_unix_host`, `cmdr_host`), the crate-root
    `compile_error!`, and a `platform-cfg-placement` check (crates + app) that refuses `not(target_os = "macos")` in

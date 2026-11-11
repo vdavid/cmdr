@@ -119,7 +119,7 @@ Go to https://github.com/getcmdr/cmdr/settings/secrets/actions and add these:
 - [x] `APPLE_API_KEY`: Key ID from App Store Connect (2.2)
 - [x] `APPLE_API_KEY_BASE64`: base64-encoded `.p8` file (2.2)
 
-## Phase 4: Update `tauri.conf.json`
+## Phase 4: Update `tauri.macos.conf.json`
 
 ### Add signing identity
 
@@ -239,7 +239,7 @@ Add this right after the certificate import step:
   (Or `src-tauri/target/universal-apple-darwin/release/bundle/macos/Cmdr.app` if you built the universal binary.)
 
   You should see your signing identity and `Authority=Developer ID Application: ...` in the output. If it says `ad-hoc`
-  or has no identity, the certificate isn't in your keychain or the `signingIdentity` in `tauri.conf.json` doesn't
+  or has no identity, the certificate isn't in your keychain or the `signingIdentity` in `tauri.macos.conf.json` doesn't
   match.
 
 ## Phase 7: Test in CI

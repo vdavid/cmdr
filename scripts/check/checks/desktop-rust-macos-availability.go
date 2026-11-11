@@ -17,10 +17,14 @@ import (
 // resolves its own jurisdiction.
 const macOSAvailabilityCheckID = "desktop-rust-macos-availability"
 
-// tauriConfRelPath holds the deployment floor this check enforces:
+// tauriConfRelPath is the Tauri config every platform shares; Tauri merges the
+// platform's own `tauri.<os>.conf.json` over it.
+const tauriConfRelPath = "apps/desktop/src-tauri/tauri.conf.json"
+
+// tauriMacOSConfRelPath holds the deployment floor this check enforces:
 // `bundle.macOS.minimumSystemVersion` is the version the bundle claims to run on,
 // and every Objective-C selector we call has to exist that far back.
-const tauriConfRelPath = "apps/desktop/src-tauri/tauri.conf.json"
+const tauriMacOSConfRelPath = "apps/desktop/src-tauri/tauri.macos.conf.json"
 
 // macOSAvailabilitySelectorsFile caches what the SDK headers say, so the check
 // still runs where the SDK doesn't exist. CI's Linux lanes have no SDK (and its macOS
@@ -185,7 +189,7 @@ func RunMacOSAvailability(ctx *CheckContext) (CheckResult, error) {
 		}
 		return CheckResult{}, fmt.Errorf(
 			"found %d Objective-C %s newer than the macOS %s this bundle claims to run on (%s). On an older Mac the selector doesn't exist, and the unrecognized-selector exception aborts the app rather than returning an error. Use an older API that answers the same question, or gate the call on the running version (`crate::platform::macos_at_least`) and mark it with `%s <reason>`:\n%s",
-			len(violations), Pluralize(len(violations), "call", "calls"), floor, tauriConfRelPath,
+			len(violations), Pluralize(len(violations), "call", "calls"), floor, tauriMacOSConfRelPath,
 			AllowNewerSelectorComment,
 			strings.TrimRight(sb.String(), "\n"),
 		)
@@ -265,7 +269,7 @@ func storedSelectorsForFloor(path string, floor macOSVersion) (map[string]macOSV
 	if stored.Floor != floor.String() {
 		return nil, fmt.Errorf(
 			"%s was built for macOS %s but %s now says %s; re-run this check on a Mac to rebuild it from the SDK",
-			macOSAvailabilitySelectorsFile, stored.Floor, tauriConfRelPath, floor)
+			macOSAvailabilitySelectorsFile, stored.Floor, tauriMacOSConfRelPath, floor)
 	}
 	return parseSelectorVersions(stored)
 }
@@ -378,10 +382,10 @@ func writeSelectorIndex(path string, index macOSSelectorIndex) error {
 // macOSDeploymentFloor reads `bundle.macOS.minimumSystemVersion`, the version the
 // shipped bundle promises to run on.
 func macOSDeploymentFloor(rootDir string) (macOSVersion, error) {
-	path := filepath.Join(rootDir, tauriConfRelPath)
+	path := filepath.Join(rootDir, tauriMacOSConfRelPath)
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return macOSVersion{}, fmt.Errorf("couldn't read %s: %w", tauriConfRelPath, err)
+		return macOSVersion{}, fmt.Errorf("couldn't read %s: %w", tauriMacOSConfRelPath, err)
 	}
 	var conf struct {
 		Bundle struct {
@@ -391,13 +395,13 @@ func macOSDeploymentFloor(rootDir string) (macOSVersion, error) {
 		} `json:"bundle"`
 	}
 	if err := json.Unmarshal(raw, &conf); err != nil {
-		return macOSVersion{}, fmt.Errorf("couldn't parse %s: %w", tauriConfRelPath, err)
+		return macOSVersion{}, fmt.Errorf("couldn't parse %s: %w", tauriMacOSConfRelPath, err)
 	}
 	version, ok := parseMacOSVersion(conf.Bundle.MacOS.MinimumSystemVersion)
 	if !ok {
 		return macOSVersion{}, fmt.Errorf(
 			"%s has no usable `bundle.macOS.minimumSystemVersion` (got %q); this check has no floor to enforce without it",
-			tauriConfRelPath, conf.Bundle.MacOS.MinimumSystemVersion)
+			tauriMacOSConfRelPath, conf.Bundle.MacOS.MinimumSystemVersion)
 	}
 	return version, nil
 }

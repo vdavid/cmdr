@@ -12,7 +12,7 @@ fn main() {
 
     generate_command_ids();
 
-    // Ensure resources/ai/ is populated before tauri_build::build() validates the
+    // Ensure resources/ai/ is populated before tauri-build validates the
     // resource glob in tauri.conf.json. The Go script is idempotent (skips when
     // .version matches) and symlinks from the main clone in worktrees instead of
     // re-downloading. Without this, a fresh worktree's first `cargo check` fails
@@ -33,11 +33,10 @@ fn main() {
     //
     // Nothing is written to the source tree at build time, so no ordering between concurrent
     // builds can produce a wrong capability set.
-    #[cfg(not(feature = "playwright-e2e"))]
-    tauri_build::build();
+    let attributes = tauri_build::Attributes::new().windows_attributes(windows_attributes());
 
     #[cfg(feature = "playwright-e2e")]
-    {
+    let attributes = {
         // tauri-build emits the capabilities `rerun-if-changed` itself only on its default path;
         // with a custom pattern it's ours to declare, for both directories the glob covers.
         println!("cargo:rerun-if-changed=capabilities");
@@ -51,12 +50,31 @@ fn main() {
         // `capabilities/**/*` (`tauri-plugin/src/build/mod.rs`, passing `None`). That only matters
         // under `build.removeUnusedCommands`, which Cmdr doesn't set: turning it on would strip the
         // playwright plugin's commands from this build. See `capabilities/CLAUDE.md`.
-        if let Err(error) =
-            tauri_build::try_build(tauri_build::Attributes::new().capabilities_path_pattern("./capabilities*/**/*"))
-        {
-            panic!("tauri-build failed: {error:#}");
-        }
+        attributes.capabilities_path_pattern("./capabilities*/**/*")
+    };
+
+    if let Err(error) = tauri_build::try_build(attributes) {
+        panic!("tauri-build failed: {error:#}");
     }
+}
+
+/// The Windows executable's application manifest: `windows/app.manifest` instead of
+/// tauri-build's default, for long paths and per-monitor-v2 DPI awareness (why:
+/// `DETAILS.md` § "Tauri config per platform").
+///
+/// Read only for a Windows target, so no other build watches the file or reads it. tauri-build
+/// itself reads `WindowsAttributes` only for a Windows target, so elsewhere this is its default.
+fn windows_attributes() -> tauri_build::WindowsAttributes {
+    const APP_MANIFEST: &str = "windows/app.manifest";
+
+    let attributes = tauri_build::WindowsAttributes::new();
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
+        return attributes;
+    }
+    println!("cargo:rerun-if-changed={APP_MANIFEST}");
+    let manifest =
+        std::fs::read_to_string(APP_MANIFEST).unwrap_or_else(|error| panic!("couldn't read {APP_MANIFEST}: {error}"));
+    attributes.app_manifest(manifest)
 }
 
 /// Compiles the frontend's authoritative command-id tuple into a Rust slice.

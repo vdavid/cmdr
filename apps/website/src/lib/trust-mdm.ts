@@ -12,7 +12,7 @@
  * The app's designated requirement, exactly as `codesign -d -r-` prints it for a release build.
  * `/trust` shows it, and `public/mdm/cmdr-full-disk-access.mobileconfig` grants Full Disk Access to
  * it. A Rust test (`managed_policy/pppc_profile_test.rs`) checks both against the bundle id and the
- * Team ID in `tauri.conf.json`, so a signing change can't silently break the profile.
+ * Team ID in `tauri.macos.conf.json`, so a signing change can't silently break the profile.
  */
 export const codeRequirement =
   'identifier "com.veszelovszki.cmdr" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and certificate leaf[subject.OU] = "83H6YAQMNP"'

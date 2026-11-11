@@ -197,7 +197,7 @@ export default defineConfig(async () => ({
     // Vite's default target is `ESBUILD_BASELINE_WIDELY_AVAILABLE_TARGET`, a
     // moving "widely available" baseline (Safari 16.4 as of Vite 8), so leaving
     // it unset lets a routine Vite major bump raise the browser floor above the
-    // macOS version `tauri.conf.json`'s `minimumSystemVersion` promises, and the
+    // macOS version `tauri.macos.conf.json`'s `minimumSystemVersion` promises, and the
     // app just white-screens on a syntax it can't parse. Monterey ships Safari
     // 15.0 and a fully patched Catalina tops out at 15.6.1, so 15.0 is the worst
     // case on both. `build.cssTarget` follows `build.target`, so the CSS is

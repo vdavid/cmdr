@@ -1,6 +1,6 @@
 <!--
     Title-bar overlay toolbar for the viewer. Matches the main window's overlay
-    style (see `tauri.conf.json` § titleBarStyle and `open-viewer.ts` mirror).
+    style (see `tauri.macos.conf.json` § titleBarStyle and `open-viewer.ts` mirror).
     Reserves 72 px on the left for the macOS traffic lights and lets the empty
     space remain draggable via `data-tauri-drag-region`. The pickers opt out of
     the drag region with their own click handlers so the user can interact with

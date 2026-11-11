@@ -11,7 +11,7 @@
         "apps/desktop/src/lib/settings/definitions/ai.ts",
         "apps/desktop/src-tauri/Entitlements.plist",
         "apps/desktop/src-tauri/Info.plist",
-        "apps/desktop/src-tauri/tauri.conf.json",
+        "apps/desktop/src-tauri/tauri*.conf.json",
         "docs/open-source-policy.md",
         ".github/workflows/release*.yml"
       ]
@@ -35,7 +35,7 @@
       "paths": [
         "apps/desktop/src-tauri/src/managed_policy/egress.rs",
         "apps/desktop/src-tauri/src/server_request.rs",
-        "apps/desktop/src-tauri/tauri.conf.json",
+        "apps/desktop/src-tauri/tauri*.conf.json",
         "apps/desktop/src-tauri/src/updater/**",
         "apps/desktop/src-tauri/src/update_schedule.rs",
         "apps/desktop/src/lib/updates/**",
@@ -117,7 +117,7 @@
         "apps/desktop/src-tauri/src/file_viewer/markdown_image_fetch.rs",
         "crates/cmdr-viewer/src/markdown_images.rs",
         "apps/desktop/src-tauri/src/config.rs",
-        "apps/desktop/src-tauri/tauri.conf.json",
+        "apps/desktop/src-tauri/tauri*.conf.json",
         "apps/desktop/src-tauri/Info.plist",
         ".github/workflows/release-pipeline.yml",
         "scripts/build-pkg.sh",
@@ -212,7 +212,7 @@
       "page": "/trust",
       "anchor": "signing",
       "paths": [
-        "apps/desktop/src-tauri/tauri.conf.json",
+        "apps/desktop/src-tauri/tauri*.conf.json",
         "apps/desktop/src-tauri/Entitlements.plist",
         "apps/desktop/src-tauri/updater-backup.pub",
         "apps/website/src/lib/trust-mdm.ts",
@@ -335,7 +335,7 @@
       "page": "/trust",
       "anchor": "product-information",
       "paths": [
-        "apps/desktop/src-tauri/tauri.conf.json",
+        "apps/desktop/src-tauri/tauri*.conf.json",
         ".github/workflows/release-pipeline.yml",
         "apps/desktop/src-tauri/src/mcp/server.rs",
         "apps/desktop/src-tauri/src/mcp/auth.rs",
@@ -369,7 +369,7 @@
         "Cargo.toml",
         "clippy.toml",
         "crates/*/Cargo.toml",
-        "apps/desktop/src-tauri/tauri.conf.json",
+        "apps/desktop/src-tauri/tauri*.conf.json",
         "scripts/check/checks/desktop-rust-error-string-match.go",
         "scripts/check/checks/index-crate-isolation.go",
         "scripts/check/checks/desktop-workflows-hardening.go",
@@ -443,7 +443,7 @@
       "paths": [
         "apps/desktop/src-tauri/src/updater/**",
         "apps/desktop/src-tauri/src/after_update.rs",
-        "apps/desktop/src-tauri/tauri.conf.json",
+        "apps/desktop/src-tauri/tauri*.conf.json",
         "crates/cmdr-update-trust/**",
         "apps/desktop/src-tauri/src/managed_policy/**"
       ]
@@ -457,7 +457,7 @@
       "page": "/trust/development",
       "anchor": "platforms",
       "paths": [
-        "apps/desktop/src-tauri/tauri.conf.json",
+        "apps/desktop/src-tauri/tauri*.conf.json",
         "apps/desktop/src/lib/utils/webkit-compat.ts",
         "apps/desktop/src/app.html",
         "apps/desktop/vite.config.js",
@@ -476,7 +476,7 @@
     {
       "page": "/trust/accessibility",
       "anchor": "details",
-      "paths": ["apps/desktop/src-tauri/tauri.conf.json", "apps/desktop/src/lib/intl/messages/*/settings.json"]
+      "paths": ["apps/desktop/src-tauri/tauri*.conf.json", "apps/desktop/src/lib/intl/messages/*/settings.json"]
     },
     {
       "page": "/trust/accessibility",
