@@ -126,4 +126,4 @@ item once settled, and record the outcome in `terms.json` or `decisions.md`.
   term-consistency allowlist.
 - **`Выбрать все` on the Operation log tree's header checkbox** (`operationLog.tree.selectAll`) matches the tree's other
   checkbox strings, but the English "Select all" ties it to `menu.select.all` (`Выделить все`) through term-consistency,
-  so `i18n-terms` warns until David OKs a `reviewed` entry in the term-consistency allowlist.
+  so the split is recorded as a `reviewed` term-consistency allowlist entry (`Select all`), pending David's OK on it.

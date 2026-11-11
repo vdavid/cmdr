@@ -26,11 +26,6 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - `operationLog.dialog.selectedCount` drives its plural with the TOTAL, but "selected" agrees with the checked count
   (`3 sur 12 sélectionnés`), so fr falls back to a colon form. Pass the checked count as the plural driver. Likewise
   `operationLog.tree.backfillProgress` has no plural driver at all for "Read {doneText} … items". (cs, es, fr, pt, sv)
-- `fileOperations.rollbackConfirm.titleRest` ("Roll back the rest?") and the `rollBackRest` buttons differ only by the
-  "?", so `i18n-terms` treats them as one string and forbids a question-shaped title where a style guide asks for one
-  (hu: title `Visszagörgeted a többit?`, buttons `A többi visszagörgetése`; it's the one warn left). Either the check
-  should ignore a trailing "?" split, or hu needs an allowlist entry. The `titleRest` description should name the
-  constraint either way. (hu, sv, zh, zh-Hant)
 - `search.coverage.line.uncovered.*`: `{drive}` is either a name or the generic phrase from
   `search.coverage.unnamedDrive`, so case-marking languages read stiffly ("ezt: ez a meghajtó"), and in `.unavailable`
   it actually holds a SERVER name. Give the generic case its own variant key, or a server param of its own. (hu, ru)
@@ -50,8 +45,5 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   the preterite ("no pudo"), which cost a failed check. Name tense forks there. (es)
 - Briefs for brand-new keys: run `sync-locale-keys.ts` before `pnpm i18n:brief`, or the brief describes skeletons the
   catalog doesn't hold yet. (cs, de, es, fr, nl, pt, sv)
-- `operationLog.tree.selectAll` ("Выбрать все", ticking checkboxes) vs `commands.selectionSelectAll.label` /
-  `menu.select.all` ("Выделить все") is a deliberate split (d6c47e8dcf), but it's the one `i18n-terms` warn left in ru:
-  needs a reasoned allowlist entry. (ru)
 - `errors.write.trashRefused.message.ownedByAnotherUser`: "their folder" can read as the other ACCOUNT's folder rather
   than the folder holding the items; "the folder holding them" (as in `message.folderNotWritable`) is clearer. (all)

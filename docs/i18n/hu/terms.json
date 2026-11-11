@@ -3371,7 +3371,7 @@
   "rollback": {
     "chosen": "visszagörgetés",
     "accept": ["visszagörget", "görgethető vissza"],
-    "forms": "the button → Visszagörgetés; the progress title → Visszagörgetés…; status cells: Visszagörgethető / Nem görgethető vissza / Visszagörgetés folyamatban / Visszagörgetve / Részben visszagörgetve; Roll back the rest → A többi visszagörgetése",
+    "forms": "the button → Visszagörgetés; the progress title → Visszagörgetés…; status cells: Visszagörgethető / Nem görgethető vissza / Visszagörgetés folyamatban / Visszagörgetve / Részben visszagörgetve; Roll back the rest (both buttons) → A többi visszagörgetése; its confirmation title asks: Roll back the rest? → Visszagörgeted a többit? (the te question, like Roll this operation back? → Visszagörgeted ezt a műveletet?)",
     "avoid": [
       {
         "form": "visszavonás",
