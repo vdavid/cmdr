@@ -3,7 +3,8 @@
 
 use tauri::{AppHandle, Manager};
 
-/// Starts every macOS installer, in the order the setup hook ran them before they moved here.
+/// Starts every macOS installer. A step whose position matters says so in its own comment (the
+/// Services menu goes in before the menu bar is built).
 pub(crate) fn install(app: &AppHandle) {
     // Read which File Provider domains exist and what their extensions declare, on a thread of
     // its own, so the first right-click in Dropbox or Google Drive already finds its actions.
