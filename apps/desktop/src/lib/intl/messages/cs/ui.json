@@ -20,6 +20,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "V tomto demu nelze do archivů vstupovat. Ve skutečné aplikaci můžete archivy procházet, upravovat a rozbalovat a také komprimovat soubory.",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "Možnosti",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

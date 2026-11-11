@@ -20,6 +20,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "Bạn không thể vào tệp nén trong bản demo này. Trong ứng dụng thật, bạn có thể duyệt, chỉnh sửa và giải nén tệp nén, cũng như nén tệp.",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "Tùy chọn",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

@@ -20,6 +20,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "In dieser Demo kannst du nicht in Archive hineinschauen. In der richtigen App kannst du Archive durchsehen, bearbeiten und entpacken sowie Dateien komprimieren.",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "Optionen",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"
