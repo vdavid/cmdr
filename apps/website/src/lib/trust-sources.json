@@ -46,7 +46,7 @@
         "apps/desktop/src-tauri/src/crash_reporter/**",
         "apps/desktop/src-tauri/src/error_reporter/**",
         "apps/desktop/src-tauri/src/redact/**",
-        "apps/desktop/src-tauri/src/diagnostics_snapshot.rs",
+        "apps/desktop/src-tauri/src/diagnostics_snapshot/**",
         "apps/desktop/src-tauri/src/licensing/**",
         "apps/desktop/src-tauri/src/feedback.rs",
         "apps/desktop/src-tauri/src/commands/feedback.rs",
