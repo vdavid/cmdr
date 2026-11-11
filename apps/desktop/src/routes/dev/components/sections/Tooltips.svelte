@@ -54,6 +54,14 @@
         </div>
 
         <div class="cell">
+            <p class="caption">InfoTip, warning tone</p>
+            <span class="anchor">
+                Three folders need a permission
+                <InfoTip label="Show the folders" tone="warning" text="Full Disk Access opens these." />
+            </span>
+        </div>
+
+        <div class="cell">
             <p class="caption">StatusGlyph</p>
             <span class="anchor">
                 Restricted folder

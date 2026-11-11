@@ -81,7 +81,7 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **Restic backups** (`errors.write.sourcesSpanVolumes.*`, `*.restic*`): "view" (a read-only virtual folder view such as
   a backup's snapshots or an archive's inside) is `visualização`, the macOS word for a Finder view; confirm
   `Parte da sua seleção está dentro de uma visualização` is understandable, or suggest a clearer noun. Also confirm
-  `search.coverage.declined`'s `pastas de snapshot` (APFS) should stay, or align to `instantâneo` like the restic
+  `search.coverage.line.declined`'s `pastas de snapshot` (APFS) should stay, or align to `instantâneo` like the restic
   strings.
 - **Media fields in Multi-rename** (`multiRename.mediaPicker.insertedMark`, `multiRename.*Tags*`): a field's name has
   either gender (`Data de captura`, `Título`), so `inserted` after it became `já na máscara`; confirm it reads right

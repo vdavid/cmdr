@@ -171,8 +171,13 @@ what it walks (desktop: `cmdr-index`'s cover walk, pumped by `apps/desktop/src-t
 
 - **`SearchRuns`** is the registry as a value: register (a `RunOrigin::Dialog { order }` supersedes every dialog run of
   a smaller or equal order, and a late-arriving earlier one starts superseded; an `Agent` run neither supersedes nor is
-  superseded), cancel one, cancel all, and `cancel_dialog_runs_except`. The host holds one per process. Superseding is
-  not cancelling: a superseded run stops reporting and its walk keeps filling the index (Decision 11).
+  superseded), cancel one, cancel all, `cancel_dialog_runs_except`, and `is_live` (registered, not superseded, and its
+  terminal fact not yet sent). The host holds one per process. Superseding is not cancelling: a superseded run stops
+  reporting and its walk keeps filling the index (Decision 11).
+- **`LiveRun::is_live` flips BEFORE the terminal fact goes out** (`ResultStream::finish` / `fail` call `mark_ended`
+  first), ❌ never after, and ❌ never read off registration alone: the run deregisters only after it emitted. A caller
+  that installs its listeners and then reads `true` is guaranteed the ending; "Open in pane" relies on it
+  (`apps/desktop/src/lib/search/walk-handoff.svelte.ts`).
 - **`ResultStream`** batches (at most `BATCH_ROWS` rows per progress fact, at most `BATCH_INTERVAL` between them),
   dedupes the walk against the index half by path hash, caps rows while the count keeps rising, sums both halves'
   exclusion drops, and keeps the run's last phase so the terminal fact repeats what the run WAS doing. Its clock is

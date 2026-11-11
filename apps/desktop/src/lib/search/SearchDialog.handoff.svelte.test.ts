@@ -20,22 +20,35 @@ import SearchDialog from './SearchDialog.svelte'
 import type { SearchResultEntry } from '#lib/ipc/bindings.js'
 import { clearSearchState, setQuery } from './search-state.svelte'
 import { _resetWalkHandoffForTesting } from './walk-handoff.svelte'
-import { _resetForTesting as resetSnapshots } from './snapshot-store.svelte'
+import { _resetForTesting as resetSnapshots, getSnapshot } from './snapshot-store.svelte'
+import { clearAllToasts, getToasts } from '#lib/ui/toast/toast-store.svelte.js'
 
-const { searchFilesStreamingMock, releaseSearchIndexMock, cancelSearchMock, liveListeners } = vi.hoisted(() => ({
+const {
+  searchFilesMock,
+  searchFilesStreamingMock,
+  releaseSearchIndexMock,
+  cancelSearchMock,
+  liveListeners,
+  testSettings,
+} = vi.hoisted(() => ({
+  searchFilesMock: vi.fn((_query: { limit?: number | null }) =>
+    Promise.resolve({ entries: [] as unknown[], totalCount: 0, targetVolumeId: 'root' }),
+  ),
   searchFilesStreamingMock: vi.fn(() => Promise.resolve({ runId: 'ignored', targetVolumeId: 'root' })),
   releaseSearchIndexMock: vi.fn(() => Promise.resolve()),
   cancelSearchMock: vi.fn(() => Promise.resolve(true)),
   liveListeners: { progress: new Set<(event: unknown) => void>() },
+  testSettings: { autoApply: false },
 }))
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   prepareSearchIndex: vi.fn(() => Promise.resolve({ ready: true, entryCount: 10, loading: false })),
-  searchFiles: vi.fn(() => Promise.resolve({ entries: [], totalCount: 0 })),
+  searchFiles: searchFilesMock,
   searchFilesStreaming: searchFilesStreamingMock,
   cancelSearch: cancelSearchMock,
+  isSearchRunLive: vi.fn(() => Promise.resolve(true)),
   onSearchProgress: vi.fn((handler: (event: unknown) => void) => {
     liveListeners.progress.add(handler)
     return Promise.resolve(() => liveListeners.progress.delete(handler))
@@ -71,7 +84,7 @@ vi.mock('../../routes/viewer/media-view', () => ({
 vi.mock('#lib/settings/index.js', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'ai.provider') return 'off'
-    if (key === 'search.autoApply') return false
+    if (key === 'search.autoApply') return testSettings.autoApply
     if (key === 'mediaIndex.enabled') return false
     if (key === 'mediaIndex.showInSearch') return false
     if (key === 'indexing.silencedDrives') return '[]'
@@ -121,7 +134,11 @@ beforeEach(() => {
   _resetWalkHandoffForTesting()
   releaseSearchIndexMock.mockClear()
   cancelSearchMock.mockClear()
+  searchFilesMock.mockClear()
+  searchFilesStreamingMock.mockClear()
   liveListeners.progress.clear()
+  testSettings.autoApply = false
+  clearAllToasts()
 })
 
 afterEach(() => {
@@ -138,7 +155,9 @@ afterEach(() => {
 })
 
 /** Mounts the dialog and returns its overlay plus a close-and-unmount helper. */
-async function mountDialog(): Promise<{ overlay: Element; closeDialog: () => Promise<void> }> {
+async function mountDialog(
+  props: { onShowAllInMainWindow?: (snapshotId: string) => void } = {},
+): Promise<{ overlay: Element; closeDialog: () => Promise<void> }> {
   const target = document.createElement('div')
   document.body.appendChild(target)
   const component = mount(SearchDialog, {
@@ -147,6 +166,7 @@ async function mountDialog(): Promise<{ overlay: Element; closeDialog: () => Pro
       onNavigate: () => {},
       onClose: () => {},
       scopePresets: { currentFolder: '/w', currentFolderUnavailableReason: '', volumeRoot: '/' },
+      ...props,
     },
   })
   live.push({ component, target })
@@ -228,5 +248,62 @@ describe('handing a running walk to a pane', () => {
     // The default, and the reason the case above needs saying at all: a walk nobody is
     // waiting on is work the app promises not to do.
     expect(releaseSearchIndexMock).toHaveBeenCalledWith(null)
+  })
+})
+
+/** `count` distinct rows, so a pane's size says which answer filled it. */
+function rows(count: number): SearchResultEntry[] {
+  return Array.from({ length: count }, (_, i) => entry(`report-${String(i)}.pdf`))
+}
+
+describe('an index answer that replaces a live run', () => {
+  it('opens the pane with every hit and hands off no walk the dialog stopped following', async () => {
+    // The index knows 1,439 matches: a dialog-sized ask gets 30 rows, a pane-sized one all.
+    searchFilesMock.mockImplementation((query) =>
+      Promise.resolve({
+        entries: rows((query.limit ?? 0) > 30 ? 1439 : 30),
+        totalCount: 1439,
+        targetVolumeId: 'root',
+      }),
+    )
+    testSettings.autoApply = true
+    const opened: { snapshotId: string | null } = { snapshotId: null }
+    const { overlay, closeDialog } = await mountDialog({
+      onShowAllInMainWindow: (id) => {
+        opened.snapshotId = id
+      },
+    })
+
+    // Enter starts a live run that hasn't said anything yet...
+    setQuery('report')
+    overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    await settle()
+    expect(searchFilesStreamingMock).toHaveBeenCalledTimes(1)
+
+    // ...and a keystroke's auto-apply answers from the index instead. The dialog stops
+    // following the live run here: its events, terminal one included, never reach it.
+    vi.useFakeTimers()
+    try {
+      const input = overlay.querySelector<HTMLInputElement>('.query-bar input.text-field-control')
+      if (!input) throw new Error('query input not found')
+      input.value = 'reports'
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      vi.advanceTimersByTime(1000)
+    } finally {
+      vi.useRealTimers()
+    }
+    await settle()
+    expect(overlay.querySelectorAll('.result-row').length).toBeGreaterThan(0)
+
+    overlay.querySelector<HTMLButtonElement>('[aria-label="Show all in main window"]')?.click()
+    await settle()
+    await closeDialog()
+
+    // The regression (#1067): the stale live run was handed off, so the pane opened with the
+    // dialog's 30 and a "Still searching" toast waited forever on a run nobody followed.
+    expect(opened.snapshotId).not.toBeNull()
+    expect(getSnapshot(opened.snapshotId ?? '')?.entries.length).toBe(1439)
+    expect(getToasts()).toEqual([])
+    expect(releaseSearchIndexMock.mock.calls).toEqual([[null]])
   })
 })

@@ -74,6 +74,11 @@ pub(crate) fn cancel_live_run(run_id: &str) -> bool {
     RUNS.cancel(run_id)
 }
 
+/// Whether the run named will still report its ending ([`SearchRuns::is_live`]).
+pub(crate) fn is_live_run(run_id: &str) -> bool {
+    RUNS.is_live(run_id)
+}
+
 /// Stop every run and every walk behind them: the app quitting.
 pub(crate) fn cancel_all_live_runs() {
     RUNS.cancel_all();

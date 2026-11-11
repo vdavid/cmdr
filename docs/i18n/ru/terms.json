@@ -917,7 +917,10 @@
     "accept": ["закр"],
     "forms": "button Закрыть; progress Закрытие; closed → закрыто",
     "confidence": "high",
-    "sources": "macOS Finder LocalizableMerged FR26 (Close → Закрыть); macOS 27.0 live sweep (Close → Закрыть 170×)"
+    "sources": "macOS Finder LocalizableMerged FR26 (Close → Закрыть); macOS 27.0 live sweep (Close → Закрыть 170×)",
+    "exceptions": {
+      "search.coverage.line.offLimits": "\"Keeps folders closed to Cmdr\" is access, not closing a window: «Система не пускает Cmdr в {countText} папки»."
+    }
   },
   "cloud-ai": {
     "chosen": "облачный ИИ",

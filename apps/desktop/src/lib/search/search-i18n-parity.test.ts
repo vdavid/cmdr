@@ -63,25 +63,35 @@ describe('search toast and tooltip parity (en)', () => {
 })
 
 describe('coverage note parity (en)', () => {
-  it('says a local drive has no index, and names the drive', () => {
-    expect(tString('search.coverage.uncovered.local', { drive: 'Macintosh HD' })).toBe(
-      'Cmdr hasn’t indexed Macintosh HD yet, so this search skipped:',
+  it('says a local drive has no index, names the drive, and counts what it skipped', () => {
+    expect(tString('search.coverage.line.uncovered.local', { count: 1, countText: '1', drive: 'Macintosh HD' })).toBe(
+      'Cmdr hasn’t indexed Macintosh HD yet, so this search skipped one folder.',
     )
   })
 
   it('gives a network drive its own voice, with no nudge to index it', () => {
-    expect(tString('search.coverage.uncovered.network', { drive: 'Naspolya' })).toBe(
-      'Cmdr doesn’t index network drives unless you ask, so this search skipped:',
+    expect(tString('search.coverage.line.uncovered.network', { count: 2, countText: '2', drive: 'Naspolya' })).toBe(
+      'Cmdr doesn’t index network drives unless you ask, so this search skipped 2 folders.',
     )
   })
 
   it('says what the index knows about an unresolved path, never that the folder is gone', () => {
-    expect(tString('search.coverage.unresolved', { count: 1 })).toBe(
-      'Cmdr’s index doesn’t cover this folder yet, so this search skipped it:',
+    expect(tString('search.coverage.line.unresolved', { count: 1, countText: '1' })).toBe(
+      'Cmdr’s index doesn’t cover one folder yet, so this search skipped it.',
     )
-    expect(tString('search.coverage.unresolved', { count: 2 })).toBe(
-      'Cmdr’s index doesn’t cover these folders yet, so this search skipped them:',
+    expect(tString('search.coverage.line.unresolved', { count: 1497, countText: '1,497' })).toBe(
+      'Cmdr’s index doesn’t cover 1,497 folders yet, so this search skipped them.',
     )
+  })
+
+  it('says a folder nothing can open is closed, and offers nothing for it', () => {
+    expect(tString('search.coverage.line.offLimits', { count: 18, countText: '18' })).toBe(
+      'The system keeps 18 folders closed to Cmdr, so nothing from them is in the results.',
+    )
+  })
+
+  it('ends a capped folder list with how many it left out', () => {
+    expect(tString('search.coverage.list.more', { count: 3, countText: '3' })).toBe('+3 more')
   })
 
   it('resolves the offer, its dismissal, and the unnamed-drive stand-in', () => {

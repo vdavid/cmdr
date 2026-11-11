@@ -385,6 +385,7 @@ mod tests {
         for flag in [
             "stillWalking",
             "permissionDenied",
+            "offLimits",
             "declined",
             "unresolvedScopes",
             "stillCovering",

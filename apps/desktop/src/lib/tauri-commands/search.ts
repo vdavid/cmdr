@@ -84,6 +84,15 @@ export async function cancelSearch(runId: string): Promise<boolean> {
   return res.data
 }
 
+/**
+ * Whether a live search will still report its ending (registered, not superseded, not
+ * ended). Read AFTER installing the listeners that wait for that ending: a `true` then
+ * means the terminal event can't slip past them.
+ */
+export async function isSearchRunLive(runId: string): Promise<boolean> {
+  return commands.isSearchRunLive(runId)
+}
+
 /** A live search's batches, and where the run has got to. */
 export function onSearchProgress(handler: (event: SearchProgressEvent) => void): Promise<UnlistenFn> {
   return events.searchProgress.listen((event) => {

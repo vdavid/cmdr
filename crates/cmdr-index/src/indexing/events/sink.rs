@@ -351,7 +351,9 @@ pub enum IndexEvent {
         /// What broke.
         report: IndexErrorReport,
     },
-    /// A path was unreadable because the OS denied access.
+    /// A path was unreadable because macOS's privacy protection denied access: the
+    /// kind Full Disk Access lifts. A refusal nothing lifts (POSIX permissions, SIP)
+    /// isn't reported here (`scanner/refusal.rs`).
     ///
     /// The host decides whether that's worth surfacing; the index only reports
     /// the observation.

@@ -15,7 +15,7 @@ use super::walker::{DirTask, DirVisitor, RawDirEntry, RawFileType, WalkReadError
 use super::{CoveredEntry, EmitPacer, EntrySender, MARK_CHUNK, ScanError, ScanProgress, WalkPolicy};
 use crate::indexing::events::{Diagnostic, IndexErrorReport, IndexEvent};
 use crate::indexing::metadata;
-use crate::indexing::store::EntryRow;
+use crate::indexing::store::{EntryRow, UnreadableCause};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::firmlinks;
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -116,14 +116,18 @@ pub(super) struct InsertVisitor {
 ///
 /// `pub(super)` so the scan driver can send one mark message per cause.
 ///
-/// Two lists rather than a `Vec<(i64, UnreadableCause)>` because the marks go out
-/// as one message per cause over a batch of ids, and because the split is the
-/// decision worth being able to read at a glance: a refusal is the user's to fix
-/// and permanent until they do, while abandoned ground is Cmdr's to retry.
+/// One list per cause rather than a `Vec<(i64, UnreadableCause)>` because the
+/// marks go out as one message per cause over a batch of ids, and because the
+/// split is the decision worth being able to read at a glance: a TCC refusal is
+/// the user's to fix, an off-limits one nobody's, and abandoned ground is Cmdr's
+/// to retry.
 #[derive(Default)]
 pub(super) struct UnreadableIds {
-    /// Reads the OS refused (permission denied).
+    /// Reads macOS's privacy protection refused: Full Disk Access opens these.
     pub(super) denied: Vec<i64>,
+    /// Reads the OS refused for good: POSIX permissions, SIP, a data vault, and
+    /// every refusal off macOS (`refusal.rs`).
+    pub(super) off_limits: Vec<i64>,
     /// Reads that timed out, failed with any other errno, or were pruned unread by
     /// the walker's consecutive-failure budget.
     pub(super) abandoned: Vec<i64>,
@@ -477,12 +481,18 @@ impl DirVisitor for InsertVisitor {
     fn visit_read_error(&self, dir: &DirTask, err: &WalkReadError) {
         match err {
             WalkReadError::Io(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
-                // Surface TCC-restricted paths so the sidebar can show the "limited
-                // by macOS" styling. The host filters to known TCC prefixes.
-                self.writer
-                    .events()
-                    .emit(IndexEvent::PathAccessDenied { path: dir.path.clone() });
-                self.unreadable_ids.lock_ignore_poison().denied.push(dir.id);
+                match super::refusal::refusal_cause(&dir.path, e) {
+                    UnreadableCause::Denied => {
+                        // Surface TCC-restricted paths so the sidebar can show the
+                        // "limited by macOS" styling. The host filters to known TCC
+                        // prefixes. Only this kind: Full Disk Access opens nothing else.
+                        self.writer
+                            .events()
+                            .emit(IndexEvent::PathAccessDenied { path: dir.path.clone() });
+                        self.unreadable_ids.lock_ignore_poison().denied.push(dir.id);
+                    }
+                    _ => self.unreadable_ids.lock_ignore_poison().off_limits.push(dir.id),
+                }
                 log::debug!("Scanner: skipping errored dir {}: {e}", LogPrivate::dir_path(&dir.path));
             }
             WalkReadError::Io(e) => {

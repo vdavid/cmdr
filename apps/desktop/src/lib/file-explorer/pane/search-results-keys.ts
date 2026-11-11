@@ -9,7 +9,7 @@
  * Covers David's round-2 P-series items:
  *   - P1: PgUp / PgDown
  *   - P2: Home / End
- *   - P3: Left / Right (intentional no-op for now in a flat snapshot)
+ *   - P3: Left / Right jump to the first / last row, like Full view
  *   - P4: Space toggles selection at cursor (already wired in round 1)
  *   - P5: Shift+Up / Shift+Down extends selection
  *   - P7: F3 (view) / F4 (edit) route into the file action commands
@@ -29,7 +29,6 @@ export type SearchPaneKeyAction =
   | { kind: 'toggle-selection-and-advance' }
   | { kind: 'view-file' }
   | { kind: 'edit-file' }
-  | { kind: 'noop' }
 
 export interface SearchPaneKeyContext {
   /** Current cursor index inside the snapshot. */
@@ -58,8 +57,7 @@ function pageStep(visibleItems: number): number {
 }
 
 /**
- * Discrete actions (Enter, F3, F4, Insert, Left, Right) that don't depend on counts or
- * modifiers. Split out from the main dispatch to keep cyclomatic complexity in check.
+ * Discrete actions (Enter, F3, F4, Insert) that don't depend on counts or modifiers. Split out from the main dispatch to keep cyclomatic complexity in check.
  */
 function discreteAction(key: string): SearchPaneKeyAction | null {
   switch (key) {
@@ -71,12 +69,6 @@ function discreteAction(key: string): SearchPaneKeyAction | null {
       return { kind: 'edit-file' }
     case 'Insert':
       return { kind: 'toggle-selection-and-advance' }
-    // Round-2 P3: a flat snapshot has no parent-folder semantics. Explicit no-op so the
-    // outer dispatcher can call preventDefault + stopPropagation and not let the event
-    // reach the full-pane handler (whose Left / Right jumps to first / last row).
-    case 'ArrowLeft':
-    case 'ArrowRight':
-      return { kind: 'noop' }
     default:
       return null
   }
@@ -115,10 +107,11 @@ function moveAction(
     const raw = cursorIndex - pageStep(visibleItems)
     return { kind: 'move-cursor', index: clamp(raw, count), overflow: raw < 0, shiftKey }
   }
-  if (key === 'Home') {
+  // Left / Right jump to the first / last row, the same as Home / End and as Full view.
+  if (key === 'Home' || key === 'ArrowLeft') {
     return { kind: 'move-cursor', index: 0, overflow: true, shiftKey }
   }
-  if (key === 'End') {
+  if (key === 'End' || key === 'ArrowRight') {
     return { kind: 'move-cursor', index: Math.max(0, count - 1), overflow: true, shiftKey }
   }
   return null
@@ -126,14 +119,14 @@ function moveAction(
 
 /**
  * Returns the action the snapshot pane should take for a given keyboard event, or `null` when
- * the event isn't one we handle. The caller (`FilePane.handleSearchResultsKeyDown`) decides what
- * to do with `'noop'` versus `null`: `'noop'` means we ARE handling the key (call `preventDefault`
- * + don't bubble to the regular pane handler), `null` means leave it alone.
+ * the event isn't one we handle. Any action means we ARE handling the key: the caller
+ * (`FilePane.handleSearchResultsKeyDown`) calls `preventDefault` + `stopPropagation` so it doesn't
+ * also reach the regular pane handler. `null` means leave it alone.
  *
  * Modifier semantics:
  *   - Cmd / Ctrl modify behavior elsewhere (Cmd+A select all, Cmd+arrow back/forward) and so are
  *     rejected here, so we don't accidentally eat them.
- *   - Shift on ArrowUp / ArrowDown / PageUp / PageDown / Home / End extends the selection.
+ *   - Shift on the arrows / PageUp / PageDown / Home / End extends the selection.
  *   - Alt+Up / Alt+Down mirror Home / End (per the full-pane navigation convention).
  */
 export function computeSearchPaneKeyAction(

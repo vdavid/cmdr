@@ -45,7 +45,7 @@ drive, or server, the quoted name stands alone in an impersonal frame («{name}�
 `{system_settings}` paths and other OS tokens follow a colon (`errors.listing.*`,
 `fileExplorer.restrictedFolder.tooltip`).
 
-### Fallback inserts stay nominative (`search.coverage.uncovered.*`, `walk.interrupted`, `errors.write.readOnlyDevice.*`)
+### Fallback inserts stay nominative (`coverage.line.uncovered.*`, `walk.interrupted`, `errors.write.readOnlyDevice.*`)
 
 `{drive}` can be «цей диск» and `{deviceName}` «Місце призначення», so they take an accusative object or subject slot,
 or a colon frame («{deviceName}: тільки для читання»), never a locative.

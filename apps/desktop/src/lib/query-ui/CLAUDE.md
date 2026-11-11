@@ -7,8 +7,9 @@ Primitives shared by Search and Selection. Chips: `filter-chips/CLAUDE.md`. Cons
 
 - `QueryDialog.svelte` + `query-dialog-config.ts`: the shared orchestrator (a `ModalDialog`, one `QueryDialogConfig`
   prop per consumer), wiring and layout only. Logic sits in four tested siblings: `query-runner.svelte.ts`,
-  `recent-popover.svelte.ts`, `query-shortcuts.ts`, `result-actions.ts`, plus `query-stream.ts`. Their two silent traps
-  (`getConfig` stays a GETTER; `highlightedFields` is ONE mutated `SvelteSet`): DETAILS § The controller split.
+  `recent-popover.svelte.ts`, `query-shortcuts.ts`, `result-actions.ts`, plus `query-stream.ts` and `result-paging.ts`.
+  Their two silent traps (`getConfig` stays a GETTER; `highlightedFields` is ONE mutated `SvelteSet`): DETAILS § The
+  controller split.
 - UI pieces (`QueryBar`, `ModeChips`, `AiPromptStrip`, `QueryResults` (states + cells over `#lib/ui/ColumnList`),
   `EmptyState`, `PathPills`, `recent-items/*`), pure helpers (`result-column-widths.ts`, `ai-summary.ts`,
   `apply-ai-filters.ts`), `query-filter-state.svelte.ts`, and `filter-chips/`. Subsets and adapters: DETAILS § Files.
@@ -40,6 +41,9 @@ Primitives shared by Search and Selection. Chips: `filter-chips/CLAUDE.md`. Cons
   Never gate the list on `isSearching` alone, or a live run hides every row it finds. Auto-apply takes `runQuery`, never
   the stream; Escape STOPS a run before closing, and `cancelLive()` answers ONCE per run, or a run whose terminal event
   never comes traps the dialog. DETAILS § Streaming.
+- **Every list PAGES** (30 rows, +200 as its end scrolls into view, `result-paging.ts`). `config.loadMore` re-asks the
+  LAST RUN's question, ❌ never re-reads `state` (an unrun edit would splice another query's rows in); a page only
+  appends unseen rows, by path. DETAILS § Paging.
 - **AI mode never auto-applies** (cost); filename/regex do, behind `search.autoApply` (1,000 ms, IME-gated). An AI
   translation overwrites `query` + `mode`, so `getLastAiPrompt()` holds what the user typed.
 - **Type-in-AI is leave-alone-if-null; size/date reset first. ❌ Don't "consistency-fix" this**: each AI run resets

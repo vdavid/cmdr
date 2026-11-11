@@ -10,6 +10,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import { writable } from 'svelte/store'
+import { RESULTS_PAGE_SIZE } from '#lib/query-ui/result-paging.js'
 import SelectionDialog from './SelectionDialog.svelte'
 import { clearSelectionState, selectionQueryState } from './selection-state.svelte'
 import type { FileEntry } from '#lib/file-explorer/types.js'
@@ -728,6 +729,28 @@ describe('SelectionDialog', () => {
     expect(matched).toHaveLength(1)
     // Only the two real entries (indices 1 and 2), NOT index 0 (`..`).
     expect(matched[0]).toEqual([1, 2])
+    cleanup()
+  })
+
+  it('previews the first page of a big match, counts all of it, and commits all of it', async () => {
+    const matched: number[][] = []
+    const names = Array.from({ length: RESULTS_PAGE_SIZE + 5 }, (_, i) => `file-${String(i)}.txt`)
+    const { overlay, cleanup } = await mountDialog({
+      entries: names.map((name) => buildEntry(name)),
+      onCommit: (idxs) => matched.push(idxs),
+    })
+    const input = overlay.querySelector('input[type="text"], input:not([type])') as HTMLInputElement
+    input.value = '*.txt'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+    await new Promise((r) => setTimeout(r, 1100))
+    await tick()
+    // The rest arrive as the list's end scrolls into view (`query-runner.paging.test.ts`).
+    expect(selectionQueryState.getResults()).toHaveLength(RESULTS_PAGE_SIZE)
+    expect(selectionQueryState.getTotalCount()).toBe(names.length)
+    dispatchKey(overlay, 'Enter')
+    await tick()
+    expect(matched[0]).toHaveLength(names.length)
     cleanup()
   })
 

@@ -11,17 +11,24 @@
 /// read this" — which is what every ordinary row carries and what a successful
 /// listing restores (`mark_dirs_listed` clears the column).
 ///
-/// It's a CAUSE rather than a flag because the three reach the user as different
-/// sentences: one is a permission they can grant, one is a decision Cmdr made for
-/// them, and one is ground Cmdr will come back to. Telling them apart from the
+/// It's a CAUSE rather than a flag because the four reach the user as different
+/// sentences: one is a permission they can grant, one is a lock nobody can open,
+/// one is a decision Cmdr made for them, and one is ground Cmdr will come back to. Telling them apart from the
 /// paths alone would mean matching folder names, which would break the moment a
 /// NAS vendor renamed a directory.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnreadableCause {
-    /// A walk tried to read it and the OS refused (permission denied). The
-    /// durable, user-fixable case: on macOS, granting Full Disk Access and
-    /// searching again heals it, because the successful listing clears the mark.
+    /// A walk tried to read it and macOS's privacy protection (TCC) refused:
+    /// `EPERM` on a folder that isn't sealed (`scanner/refusal.rs`). The durable,
+    /// user-fixable case: granting Full Disk Access and searching again heals it,
+    /// because the successful listing clears the mark.
     Denied,
+    /// A walk tried to read it and the OS refused in a way no permission the user
+    /// can grant Cmdr changes: plain POSIX permissions (`EACCES`, a root-only
+    /// folder), SIP (`EPERM` on an `SF_RESTRICTED` folder), or a data vault, and
+    /// every refusal off macOS. Durable like [`Denied`](Self::Denied), but ❌
+    /// never offered Full Disk Access: that's advice that does nothing.
+    OffLimits,
     /// No walk will read it at all, by Cmdr's own choice: a NAS snapshot
     /// directory, whose per-snapshot hardlinked copies both whole-volume scanners
     /// refuse on purpose (44 TB reported on a 10 TB volume). Nothing for the user
@@ -50,6 +57,7 @@ impl UnreadableCause {
             Some(Self::Denied) => 1,
             Some(Self::Declined) => 2,
             Some(Self::Abandoned) => 3,
+            Some(Self::OffLimits) => 4,
         }
     }
 
@@ -62,6 +70,7 @@ impl UnreadableCause {
             0 => None,
             2 => Some(Self::Declined),
             3 => Some(Self::Abandoned),
+            4 => Some(Self::OffLimits),
             _ => Some(Self::Denied),
         }
     }

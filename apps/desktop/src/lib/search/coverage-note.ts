@@ -23,11 +23,17 @@ export interface LiveCoverage {
    */
   walk: WalkEnding
   /**
-   * Folders a walk tried to read and was REFUSED, absolute. The half a user can act
-   * on: on macOS it's usually Full Disk Access, and granting it heals the mark on
-   * the next search.
+   * Folders a walk tried to read and macOS's privacy protection REFUSED, absolute.
+   * The half a user can act on: granting Full Disk Access heals the mark on the next
+   * search.
    */
   permissionDenied: string[]
+  /**
+   * Folders the OS refused for good: plain file permissions (root-only folders), SIP,
+   * and every refusal off macOS. Shown, ❌ never offered Full Disk Access: nothing
+   * the user can grant opens them (`crates/cmdr-index` `scanner/refusal.rs`).
+   */
+  offLimits: string[]
   /**
    * Folders no walk will read at all, by Cmdr's own choice: a NAS snapshot tree,
    * hardlinked per snapshot (44 TB reported on a 10 TB volume). Nothing for the
@@ -119,10 +125,12 @@ export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote |
   const short = coverage.walk === 'interrupted' || coverage.walk === 'cancelled' || coverage.abandonedGround
   const uncoveredScopes = coverage.uncoveredScopes ?? []
   const failedRoots = coverage.failedRoots ?? []
+  const offLimits = coverage.offLimits ?? []
   if (
     !short &&
     failedRoots.length === 0 &&
     coverage.permissionDenied.length === 0 &&
+    offLimits.length === 0 &&
     coverage.declined.length === 0 &&
     coverage.stillCovering.length === 0 &&
     coverage.unresolvedScopes.length === 0 &&
@@ -137,6 +145,7 @@ export function coverageNoteFromRun(coverage: SearchRunCoverage): CoverageNote |
     live: {
       walk: coverage.walk,
       permissionDenied: coverage.permissionDenied,
+      offLimits,
       declined: coverage.declined,
       stillCovering: coverage.stillCovering,
       abandonedGround: coverage.abandonedGround,
@@ -200,4 +209,84 @@ export function offersFullDiskAccess(input: {
 }): boolean {
   if (!input.isMac || input.hasFullDiskAccess) return false
   return (input.note?.live?.permissionDenied.length ?? 0) > 0
+}
+
+/** Which list a coverage-note line is about. Each kind is its own sentence. */
+export type CoverageLineKind =
+  | 'failedRoots'
+  | 'denied'
+  | 'offLimits'
+  | 'declined'
+  | 'stillCovering'
+  | 'uncovered'
+  | 'unresolved'
+
+/** One line of the note: a sentence, the folders behind its icon, and whether it asks anything of the reader. */
+export interface CoverageLine {
+  kind: CoverageLineKind
+  /** Every folder the line is about, in the backend's order. Never empty. */
+  paths: string[]
+  /**
+   * Whether the note offers a way out for THIS line (Full Disk Access, indexing the
+   * drive, pressing Enter). Picks the icon: a warning where there's something to do,
+   * an info glyph where there isn't. ❌ Never derived from the kind alone: a refused
+   * folder is informational once Cmdr already has Full Disk Access.
+   */
+  actionable: boolean
+}
+
+/** The ways out the note is offering right now, as the dialog decided them. */
+export interface CoverageOffers {
+  /** The Full Disk Access setup is on screen (`offersFullDiskAccess`). */
+  fullDiskAccess: boolean
+  /** "Index this drive" is on screen. */
+  indexDrive: boolean
+  /** The "press Enter" line is on screen: an index-only answer on a drive Enter can walk. */
+  pressEnter: boolean
+}
+
+/**
+ * The note's lines, split into the two families the strip renders apart: ground
+ * nothing will read (the abandoned-ground footnote sits under these), and ground this
+ * run didn't get to. Empty lists produce no line.
+ */
+export function coverageLines(
+  note: CoverageNote,
+  offers: CoverageOffers,
+): { unread: CoverageLine[]; unsearched: CoverageLine[] } {
+  const live = note.live
+  const line = (kind: CoverageLineKind, paths: string[] | undefined, actionable = false): CoverageLine[] =>
+    paths && paths.length > 0 ? [{ kind, paths, actionable }] : []
+  return {
+    unread: [
+      // First: a folder the walk set out to read is usually the scope itself, so it's
+      // the whole reason the list is empty.
+      ...line('failedRoots', live?.failedRoots),
+      ...line('denied', live?.permissionDenied, offers.fullDiskAccess),
+      ...line('offLimits', live?.offLimits),
+      ...line('declined', live?.declined),
+    ],
+    unsearched: [
+      ...line('stillCovering', live?.stillCovering),
+      ...line('uncovered', note.uncoveredScopes, offers.indexDrive || offers.pressEnter),
+      ...line('unresolved', note.unresolvedScopes, offers.pressEnter),
+    ],
+  }
+}
+
+/**
+ * How many folders a line's tooltip lists before it says "+N more". The tooltip never
+ * scrolls, so the cap is what keeps it on screen; the copy button carries the rest.
+ */
+export const TOOLTIP_FOLDER_CAP = 15
+
+/** What a line's tooltip shows: the first folders, and how many it leaves to the copy button. */
+export function tooltipFolders(paths: string[]): { shown: string[]; more: number } {
+  const shown = paths.slice(0, TOOLTIP_FOLDER_CAP)
+  return { shown, more: paths.length - shown.length }
+}
+
+/** What a line's copy button puts on the clipboard: every folder, one per line. */
+export function foldersAsText(paths: string[]): string {
+  return paths.join('\n')
 }

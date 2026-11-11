@@ -23,11 +23,11 @@ menu facts). `search-state.svelte.ts` is the façade over these, `searchable-fol
 - **"Open in pane" promotes to the `search-results://` virtual volume.** Refcount is the ONLY lifetime authority (a tab
   close transfers ref ownership to the `ClosedTab`). Destination write ops are blocked there; source ops run, and ❌
   never re-derive their rows: `resolveSnapshotEntries` decides.
-- **The DIALOG lists 30 rows; a PANE gets every hit**, via `snapshot-fill.ts`. ❌ Never promote `getResults()`, and ❌
-  never let a top-up shrink a pane.
+- **The DIALOG pages; a PANE gets every hit**, via `snapshot-fill.ts`. ❌ Never promote `getResults()`, and ❌ never let
+  a top-up shrink a pane.
 - **"Open in pane" during a live walk KEEPS the walk** (`walk-handoff.svelte.ts`), so the close must NAME it
-  (`releaseSearchIndex(handedOffRunId())`) or the walk dies silently as the pane appears. Its ENDING fills the pane. A
-  reopen ADOPTS through `source.resume`, ❌ never re-runs.
+  (`releaseSearchIndex(handedOffRunId())`). ❌ Never hand off a run the dialog stopped following or `isSearchRunLive`
+  denies. A reopen ADOPTS through `source.resume`, ❌ never re-runs.
 - **A vanished file leaves every snapshot from ONE place**, `snapshot-purge.ts`, off `write-source-item-done`'s
   `sourceRemoved` flag, ❌ never its `outcome`. ❌ Never purge from a dialog or pane: a snapshot outlives both.
 - **A snapshot pane's header sorts the SNAPSHOT**, ❌ never the tab and ❌ never view-side: replacing `entries` carries
@@ -38,9 +38,9 @@ menu facts). `search-state.svelte.ts` is the façade over these, `searchable-fol
   `scope` state, or every recent search bakes in a machine-specific one.
 - **Enter walks; auto-apply doesn't** (Decision 7). `streamingSource` takes every user-triggered run; the debounce takes
   `runQuery`, the only path reporting a drive with no index, so the uncovered note lives there.
-- **Unread ground arrives as TWO typed lists**: `permissionDenied` offers the FDA route (macOS, only when Cmdr lacks
-  it), `declined` ❌ never does. `walk: completed` isn't exhaustive (`abandonedGround` is a third way to come up short);
-  `rankLiveResults` is ORDERING, not membership.
+- **Unread ground is typed**: only `permissionDenied` (TCC) offers FDA; `offLimits` and `declined` ❌ never, yet stay
+  shown. Each list is ONE `CoverageLine` (DETAILS § The coverage note). `walk: completed` isn't exhaustive
+  (`abandonedGround`); `rankLiveResults` is ORDERING, not membership.
 - **The index-load hint waits 500 ms, then yields**: its only input is `pendingIndexVolumeId` (so a drive with no index
   never opens it), and `hasSearched` hands the wait to `QueryResults`.
 - **One volume per search, and ONE prop names it**: `searchVolume` drives the readiness gate, the coverage voice, and

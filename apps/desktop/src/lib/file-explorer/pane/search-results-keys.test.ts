@@ -99,13 +99,34 @@ describe('computeSearchPaneKeyAction', () => {
     })
   })
 
-  describe('P3: Left / Right are explicit no-ops', () => {
-    it('ArrowLeft returns a noop action (intentional swallow)', () => {
-      expect(computeSearchPaneKeyAction(key('ArrowLeft'), ctx)).toEqual({ kind: 'noop' })
+  describe('P3: Left / Right jump to the first and last row, like Full view', () => {
+    it('ArrowLeft jumps to the first row', () => {
+      expect(computeSearchPaneKeyAction(key('ArrowLeft'), ctx)).toEqual({
+        kind: 'move-cursor',
+        index: 0,
+        overflow: true,
+        shiftKey: false,
+      })
     })
 
-    it('ArrowRight returns a noop action', () => {
-      expect(computeSearchPaneKeyAction(key('ArrowRight'), ctx)).toEqual({ kind: 'noop' })
+    it('ArrowRight jumps to the last row', () => {
+      expect(computeSearchPaneKeyAction(key('ArrowRight'), ctx)).toEqual({
+        kind: 'move-cursor',
+        index: 49,
+        overflow: true,
+        shiftKey: false,
+      })
+    })
+
+    it('Shift+ArrowRight extends the selection to the last row', () => {
+      const a = asMove(computeSearchPaneKeyAction(key('ArrowRight', { shift: true }), ctx))
+      expect(a.index).toBe(49)
+      expect(a.shiftKey).toBe(true)
+    })
+
+    it('ArrowRight on an empty snapshot returns index 0', () => {
+      const a = asMove(computeSearchPaneKeyAction(key('ArrowRight'), { cursorIndex: 0, count: 0, visibleItems: 10 }))
+      expect(a.index).toBe(0)
     })
   })
 

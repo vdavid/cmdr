@@ -10,13 +10,17 @@
 
 use super::state::{CoverageKind, SearchRunCoverage, WalkEnding};
 
-/// Directories nothing is going to walk, split by WHOSE refusal it was: the three
+/// Directories nothing is going to walk, split by WHOSE refusal it was: the four
 /// are different sentences on screen, and only the first is one the user can act
 /// on (`crates/cmdr-index`'s `UnreadableCause`).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UnreadableGround {
-    /// A walk tried and the OS refused.
+    /// A walk tried and macOS's privacy protection refused: Full Disk Access
+    /// opens these.
     pub permission_denied: Vec<String>,
+    /// A walk tried and the OS refused for good (POSIX permissions, SIP): no
+    /// permission the user can grant Cmdr opens these.
+    pub off_limits: Vec<String>,
     /// No walk will read it: a NAS snapshot tree.
     pub declined: Vec<String>,
     /// A walk tried and gave up (a wedged mount, a vanished directory). Cmdr comes
@@ -27,7 +31,12 @@ pub struct UnreadableGround {
 impl UnreadableGround {
     /// One order, no duplicates, however many scopes contributed.
     pub fn settle(&mut self) {
-        for list in [&mut self.permission_denied, &mut self.declined, &mut self.abandoned] {
+        for list in [
+            &mut self.permission_denied,
+            &mut self.off_limits,
+            &mut self.declined,
+            &mut self.abandoned,
+        ] {
             list.sort_unstable();
             list.dedup();
         }
@@ -121,6 +130,7 @@ impl CoverageFacts {
             walk: self.walk,
             kind: self.kind,
             permission_denied: self.unreadable.permission_denied,
+            off_limits: self.unreadable.off_limits,
             declined: self.unreadable.declined,
             still_covering: self.still_covering,
             capped,

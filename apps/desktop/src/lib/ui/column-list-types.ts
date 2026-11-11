@@ -178,6 +178,13 @@ interface ColumnListBaseProps<T> {
   onRowClick?: (index: number) => void
   /** Right-click on a data row. The list calls `preventDefault` when this is set. */
   onRowContextMenu?: (payload: ColumnListRowEvent<T>) => void
+  /**
+   * The rows in view came within `REACH_END_ROWS` of the end (or the whole list fits), for a
+   * consumer that grows the list as it's scrolled (the query dialogs' paging). Called again
+   * on every scroll or row-count change while that holds, so the consumer de-duplicates
+   * (one page in flight at a time). Never called before the list has a layout.
+   */
+  onReachEnd?: () => void
   /** Consumer hook classes on the header and each row (test selectors, contrast audits). */
   headerClass?: string
   rowClass?: string

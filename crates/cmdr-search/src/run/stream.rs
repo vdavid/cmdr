@@ -288,6 +288,9 @@ impl<'a> ResultStream<'a> {
             WalkEnding::NothingToWalk => SearchPhase::ReadingIndex,
             _ => self.last_phase,
         });
+        // Before the fact goes out, never after: `LiveRun::is_live` promises a caller
+        // that saw `true` the ending is still on its way.
+        self.run.mark_ended();
         if !self.run.wants_events() {
             return;
         }
@@ -304,6 +307,7 @@ impl<'a> ResultStream<'a> {
 
     /// The run couldn't run at all.
     pub fn fail(self, error: SearchRunError, message: String) {
+        self.run.mark_ended();
         if !self.run.wants_events() {
             return;
         }

@@ -460,6 +460,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::search::sort_search_results,
                     crate::commands::search::search_files_streaming,
                     crate::commands::search::cancel_search,
+                    crate::commands::search::is_search_run_live,
                     crate::commands::search::release_search_index,
                     crate::commands::search::translate_search_query,
                     crate::commands::search::parse_search_scope,

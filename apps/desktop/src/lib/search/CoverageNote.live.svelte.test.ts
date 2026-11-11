@@ -23,6 +23,7 @@ function liveNote(live: Partial<LiveCoverage>): Note {
     live: {
       walk: 'completed',
       permissionDenied: [],
+      offLimits: [],
       declined: [],
       stillCovering: [],
       abandonedGround: false,
@@ -32,6 +33,9 @@ function liveNote(live: Partial<LiveCoverage>): Note {
     },
   }
 }
+
+/** The count params every one-folder line takes. */
+const one = { count: 1, countText: '1' }
 
 /** Mounts the strip and hands back its text with the markup's whitespace collapsed. */
 function noteText(note: Note | null, onGrantFullDiskAccess: (() => void) | null = null, isIndexing = false): string {
@@ -99,7 +103,7 @@ describe('a live run that came back short', () => {
         abandonedLocations: 2,
       }),
     )
-    const denied = text.indexOf(tString('search.coverage.denied', { count: 1 }))
+    const denied = text.indexOf(tString('search.coverage.line.denied', one))
     const gaveUp = text.indexOf(tString('search.coverage.walk.abandonedCount', { count: 2, countText: '2' }))
     expect(denied).toBeGreaterThanOrEqual(0)
     expect(gaveUp).toBeGreaterThan(denied)
@@ -108,7 +112,7 @@ describe('a live run that came back short', () => {
   it('names a folder it could not open, and offers no Enter it already pressed', () => {
     const folder = '/Volumes/naspi/papers/Rymdskottkärra AB'
     const text = noteText(liveNote({ failedRoots: [folder] }))
-    expect(text).toContain(tString('search.coverage.failedRoots', { count: 1 }))
+    expect(text).toContain(tString('search.coverage.line.failedRoots', one))
     expect(text).toContain(folder)
     expect(text).not.toContain(tString('search.coverage.pressEnter'))
   })
@@ -123,7 +127,7 @@ describe('ground the run did not read', () => {
     const note = liveNote({ permissionDenied: ['/Users/me/Documents'] })
     const withoutRoute = noteText(note)
     expect(withoutRoute).toContain('/Users/me/Documents')
-    expect(withoutRoute).toContain(tString('search.coverage.denied', { count: 1 }))
+    expect(withoutRoute).toContain(tString('search.coverage.line.denied', one))
     // No route: the fact is still stated, the offer isn't. A gap with no way out
     // is still a gap.
     expect(withoutRoute).not.toContain(tString('search.coverage.setUpFullDiskAccess'))
@@ -138,20 +142,20 @@ describe('ground the run did not read', () => {
     // offering one here would be advice that does nothing.
     const text = noteText(liveNote({ declined: ['/Volumes/naspi/@eaDir'] }), () => {})
     expect(text).toContain('/Volumes/naspi/@eaDir')
-    expect(text).toContain(tString('search.coverage.declined', { count: 1 }))
+    expect(text).toContain(tString('search.coverage.line.declined', one))
     expect(text).not.toContain(tString('search.coverage.setUpFullDiskAccess'))
   })
 
   it('keeps the two apart when a run met both', () => {
     const text = noteText(liveNote({ permissionDenied: ['/Users/me/Documents'], declined: ['/Volumes/naspi/@eaDir'] }))
-    expect(text).toContain(tString('search.coverage.denied', { count: 1 }))
-    expect(text).toContain(tString('search.coverage.declined', { count: 1 }))
+    expect(text).toContain(tString('search.coverage.line.denied', one))
+    expect(text).toContain(tString('search.coverage.line.declined', one))
   })
 
   it('says another search is covering the rest, never that it is lost', () => {
     const text = noteText(liveNote({ stillCovering: ['/Users/me/Music'] }))
     expect(text).toContain('/Users/me/Music')
-    expect(text).toContain(tString('search.coverage.stillCovering', { count: 1 }))
+    expect(text).toContain(tString('search.coverage.line.stillCovering', one))
   })
 })
 
@@ -165,12 +169,83 @@ describe('a drive whose first index is still running', () => {
 
   it('says the indexing is under way rather than that the drive is unindexed', () => {
     const text = noteText(uncovered, null, true)
-    expect(text).toContain(tString('search.coverage.uncovered.indexing', { drive: 'Backups' }))
+    expect(text).toContain(tString('search.coverage.line.uncovered.indexing', { ...one, drive: 'Backups' }))
     // ❌ Never the "hasn't indexed it yet" wording: it reads as nothing happening.
-    expect(text).not.toContain(tString('search.coverage.uncovered.local', { drive: 'Backups' }))
+    expect(text).not.toContain(tString('search.coverage.line.uncovered.local', { ...one, drive: 'Backups' }))
   })
 
   it('keeps the plain wording when nothing is indexing', () => {
-    expect(noteText(uncovered)).toContain(tString('search.coverage.uncovered.local', { drive: 'Backups' }))
+    expect(noteText(uncovered)).toContain(tString('search.coverage.line.uncovered.local', { ...one, drive: 'Backups' }))
+  })
+})
+
+describe('each list as one line', () => {
+  /** Mounts the strip and hands back its root, for the line's icon and copy button. */
+  function mountNote(note: Note, onGrantFullDiskAccess: (() => void) | null = null): HTMLElement {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(CoverageNote, {
+      target,
+      props: {
+        note,
+        driveName: 'Backups',
+        isNetwork: false,
+        isIndexing: false,
+        canBeIndexed: true,
+        onIndexDrive: null,
+        onSilenceDrive: () => {},
+        onGrantFullDiskAccess,
+      },
+    })
+    flushSync()
+    return target
+  }
+
+  const line = (root: HTMLElement, kind: string): HTMLElement | null => root.querySelector(`[data-kind="${kind}"]`)
+  const isWarning = (el: HTMLElement | null): boolean =>
+    el?.querySelector('.info-tip')?.classList.contains('warning') ?? false
+
+  it('says a folder the system keeps closed is closed, and never offers a permission for it', () => {
+    const root = mountNote(liveNote({ offLimits: ['/private/var/root'] }), () => {})
+    const text = root.textContent
+    expect(text).toContain(tString('search.coverage.line.offLimits', one))
+    expect(text).toContain('/private/var/root')
+    expect(text).not.toContain(tString('search.coverage.setUpFullDiskAccess'))
+    expect(isWarning(line(root, 'offLimits'))).toBe(false)
+    root.remove()
+  })
+
+  it('warns over a refusal only while Full Disk Access would open it', () => {
+    const note = liveNote({ permissionDenied: ['/Users/me/Library/Mail'] })
+    const offered = mountNote(note, () => {})
+    expect(isWarning(line(offered, 'denied'))).toBe(true)
+    offered.remove()
+    const notOffered = mountNote(note)
+    expect(isWarning(line(notOffered, 'denied'))).toBe(false)
+    notOffered.remove()
+  })
+
+  it('numbers at most 15 folders in the tooltip and says how many more there are', () => {
+    const paths = Array.from({ length: 18 }, (_, i) => `/System/Library/AssetsV2/f${String(i)}`)
+    const root = mountNote(liveNote({ offLimits: paths }))
+    const el = line(root, 'offLimits')
+    expect(el?.querySelectorAll('ol li')).toHaveLength(15)
+    expect(el?.textContent).toContain(tString('search.coverage.list.more', { count: 3, countText: '3' }))
+    expect(el?.textContent).not.toContain(paths[15])
+    root.remove()
+  })
+
+  it('gives every line its copy button and a keyboard-reachable folder list', () => {
+    const root = mountNote(liveNote({ declined: ['/Volumes/naspi/@eaDir'], stillCovering: ['/Users/me/Music'] }))
+    for (const kind of ['declined', 'stillCovering']) {
+      const el = line(root, kind)
+      expect(el?.querySelector('button.info-tip')?.getAttribute('aria-label')).toBe(
+        tString('search.coverage.list.show'),
+      )
+      expect(el?.querySelector('button.copy-button')?.getAttribute('aria-label')).toBe(
+        tString('search.coverage.list.copy'),
+      )
+    }
+    root.remove()
   })
 })

@@ -72,6 +72,10 @@
   "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"
   },
+  "ui.copyButton.copied": "Đã sao chép",
+  "@ui.copyButton.copied": {
+    "sourceHash": "8d525e5"
+  },
   "ui.shortcutChip.customizeAria": "Tùy chỉnh phím tắt {commandName}",
   "@ui.shortcutChip.customizeAria": {
     "sourceHash": "a1d00b2"

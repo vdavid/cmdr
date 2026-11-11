@@ -193,7 +193,6 @@
     "confidence": "high",
     "decision": "The cloud AI toggle",
     "exceptions": {
-      "search.coverage.denied": "Wasn't allowed to look inside (a macOS permission refusal) → 沒有權限.",
       "errors.write.trashRefused.message.folderNotWritable": "English sense: “isn’t allowed to change” is a file-system permission, not granting consent, so it takes 沒有權限"
     },
     "forms": "toggle 允許使用雲端 AI; Android's own dialog button is quoted 「允許」",
@@ -714,6 +713,9 @@
     "accept": ["關掉", "關著"],
     "chosen": "關閉",
     "confidence": "confirmed",
+    "exceptions": {
+      "search.coverage.line.offLimits": "Closed to Cmdr is access, not a window or file closing: 不對 Cmdr 開放 (not open to Cmdr) reads natural where 關閉/關著 would read as the folder being shut."
+    },
     "forms": "button and label → 關閉; advice (close some apps, close it) → 關掉; closed to everyone → 關著",
     "sources": "AP-TW = AP-HK, MS"
   },
@@ -2615,6 +2617,18 @@
     "forms": "network connection → 網路連線; the switcher group → 網路",
     "sources": "AP-TW (33), MS, TC"
   },
+  "network-drive": {
+    "accept": ["網路磁碟"],
+    "avoid": [
+      {
+        "form": "網絡磁碟",
+        "why": "AP-HK's 網絡; Taiwan default per network"
+      }
+    ],
+    "chosen": "網路磁碟機",
+    "confidence": "high",
+    "sources": "MS TBX (84430 network drive → 網路磁碟機), TC (連線網路磁碟機 / 中斷網路磁碟機; 網路磁碟 in a type list); catalog (settings.mediaIndex.networkVolumes.*, search.imageResults.networkOff, errors.listing.*)"
+  },
   "network-share": {
     "accept": ["共享"],
     "chosen": "共享資料夾",
@@ -3768,7 +3782,7 @@
         "why": "MS's database/report snapshot-set sense, not a single point-in-time copy"
       }
     ],
-    "sources": "AP-HK Finder (DA9 備份快照), MS (2051744 快照); catalog (fileExplorer.readOnly.gitPortalMessage, fileExplorer.git.useTransferToCopyOut, search.coverage.declined)"
+    "sources": "AP-HK Finder (DA9 備份快照), MS (2051744 快照); catalog (fileExplorer.readOnly.gitPortalMessage, fileExplorer.git.useTransferToCopyOut, search.coverage.line.declined)"
   },
   "software": {
     "accept": ["硬體"],

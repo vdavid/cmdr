@@ -472,7 +472,7 @@ tool-result JSON the model reads.
     the model to say WHICH drive it covered before offering the others.
   - **What the coverage block obliges the model to say**, field by field: `stillWalking` and `abandonedGround` make the
     list a lower bound (❗ never "no matches"), `permissionDenied` names refused folders and offers Full Disk Access
-    only where it would help, `declined` explains rather than offers (snapshot trees are nothing to fix),
+    only where it would help, `offLimits` names folders the OS keeps closed for good and offers nothing, `declined` explains rather than offers (snapshot trees are nothing to fix),
     `stillCovering` says those results arrive later rather than being lost, `unresolvedScopes` is ❌ never "that folder
     doesn't exist" (Cmdr can't tell a typo from unwalked ground), and `hiddenByExcludes` says the count is filtered.
     The default system/cache/build tier is right for "find my invoice" and exactly wrong for "where is my disk space

@@ -127,25 +127,57 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
-  "search.coverage.uncovered.local": "Cmdr hat {drive} noch nicht indiziert, deshalb hat diese Suche Folgendes übersprungen:",
-  "@search.coverage.uncovered.local": {
-    "sourceHash": "8fe8ce1"
+  "search.coverage.line.failedRoots": "{count, plural, one {Cmdr konnte einen Ordner nicht öffnen, deshalb ist nichts daraus in den Ergebnissen.} other {Cmdr konnte {countText} Ordner nicht öffnen, deshalb ist nichts daraus in den Ergebnissen.}}",
+  "@search.coverage.line.failedRoots": {
+    "sourceHash": "36c41ae"
   },
-  "search.coverage.uncovered.network": "Cmdr indiziert Netzlaufwerke nur auf Wunsch, deshalb hat diese Suche Folgendes übersprungen:",
-  "@search.coverage.uncovered.network": {
-    "sourceHash": "0066012"
+  "search.coverage.line.denied": "{count, plural, one {macOS hat Cmdr nicht in einen Ordner hineinschauen lassen, deshalb ist nichts daraus in den Ergebnissen.} other {macOS hat Cmdr nicht in {countText} Ordner hineinschauen lassen, deshalb ist nichts daraus in den Ergebnissen.}}",
+  "@search.coverage.line.denied": {
+    "sourceHash": "c2b388f"
   },
-  "search.coverage.uncovered.unavailable": "Cmdr kann {drive} noch nicht durchsuchen, deshalb hat diese Suche Folgendes übersprungen:",
-  "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "6f9cb5b"
+  "search.coverage.line.offLimits": "{count, plural, one {Das System hält einen Ordner für Cmdr geschlossen, deshalb ist nichts daraus in den Ergebnissen.} other {Das System hält {countText} Ordner für Cmdr geschlossen, deshalb ist nichts daraus in den Ergebnissen.}}",
+  "@search.coverage.line.offLimits": {
+    "sourceHash": "f5210c1"
   },
-  "search.coverage.uncovered.indexing": "Cmdr indiziert {drive} noch und hat diese Ordner bisher nicht erreicht, deshalb hat die Suche sie übersprungen:",
-  "@search.coverage.uncovered.indexing": {
-    "sourceHash": "9cf6003"
+  "search.coverage.line.declined": "{count, plural, one {Cmdr schaut nicht in Snapshot-Ordner hinein, deshalb fehlt einer in den Ergebnissen.} other {Cmdr schaut nicht in Snapshot-Ordner hinein, deshalb fehlen {countText} in den Ergebnissen.}}",
+  "@search.coverage.line.declined": {
+    "sourceHash": "a6d9d17"
   },
-  "search.coverage.unresolved": "{count, plural, one {Der Index von Cmdr enthält diesen Ordner noch nicht, deshalb hat die Suche ihn übersprungen:} other {Der Index von Cmdr enthält diese Ordner noch nicht, deshalb hat die Suche sie übersprungen:}}",
-  "@search.coverage.unresolved": {
-    "sourceHash": "6afa798"
+  "search.coverage.line.stillCovering": "{count, plural, one {Eine andere Suche geht gerade einen Ordner durch, seine Dateien tauchen also gleich auf.} other {Eine andere Suche geht gerade {countText} Ordner durch, ihre Dateien tauchen also gleich auf.}}",
+  "@search.coverage.line.stillCovering": {
+    "sourceHash": "5bc369b"
+  },
+  "search.coverage.line.unresolved": "{count, plural, one {Der Index von Cmdr enthält einen Ordner noch nicht, deshalb hat diese Suche ihn übersprungen.} other {Der Index von Cmdr enthält {countText} Ordner noch nicht, deshalb hat diese Suche sie übersprungen.}}",
+  "@search.coverage.line.unresolved": {
+    "sourceHash": "171990c"
+  },
+  "search.coverage.line.uncovered.local": "{count, plural, one {Cmdr hat {drive} noch nicht indiziert, deshalb hat diese Suche einen Ordner übersprungen.} other {Cmdr hat {drive} noch nicht indiziert, deshalb hat diese Suche {countText} Ordner übersprungen.}}",
+  "@search.coverage.line.uncovered.local": {
+    "sourceHash": "90bcb54"
+  },
+  "search.coverage.line.uncovered.network": "{count, plural, one {Cmdr indiziert Netzlaufwerke nur auf Wunsch, deshalb hat diese Suche einen Ordner übersprungen.} other {Cmdr indiziert Netzlaufwerke nur auf Wunsch, deshalb hat diese Suche {countText} Ordner übersprungen.}}",
+  "@search.coverage.line.uncovered.network": {
+    "sourceHash": "037099f"
+  },
+  "search.coverage.line.uncovered.unavailable": "{count, plural, one {Cmdr kann {drive} noch nicht durchsuchen, deshalb hat diese Suche einen Ordner übersprungen.} other {Cmdr kann {drive} noch nicht durchsuchen, deshalb hat diese Suche {countText} Ordner übersprungen.}}",
+  "@search.coverage.line.uncovered.unavailable": {
+    "sourceHash": "ea5ef3c"
+  },
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr indiziert {drive} noch und hat einen Ordner bisher nicht erreicht, deshalb hat diese Suche ihn übersprungen.} other {Cmdr indiziert {drive} noch und hat {countText} Ordner bisher nicht erreicht, deshalb hat diese Suche sie übersprungen.}}",
+  "@search.coverage.line.uncovered.indexing": {
+    "sourceHash": "8e8cd2f"
+  },
+  "search.coverage.list.show": "Ordner anzeigen",
+  "@search.coverage.list.show": {
+    "sourceHash": "ce62bd8"
+  },
+  "search.coverage.list.more": "{count, plural, one {+{countText} weiterer} other {+{countText} weitere}}",
+  "@search.coverage.list.more": {
+    "sourceHash": "854ed7a"
+  },
+  "search.coverage.list.copy": "Vollständige Liste der Ordner kopieren",
+  "@search.coverage.list.copy": {
+    "sourceHash": "cf110de"
   },
   "search.coverage.walk.cancelled": "Du hast diese Suche gestoppt, deshalb siehst du, was Cmdr bis dahin gefunden hatte. Alles auf dem Weg Gelesene ist gespeichert, eine erneute Suche macht dort weiter.",
   "@search.coverage.walk.cancelled": {
@@ -163,14 +195,6 @@
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },
-  "search.coverage.denied": "{count, plural, one {Cmdr durfte nicht in diesen Ordner hineinsehen, deshalb ist nichts daraus in den Ergebnissen:} other {Cmdr durfte nicht in diese Ordner hineinsehen, deshalb ist nichts daraus in den Ergebnissen:}}",
-  "@search.coverage.denied": {
-    "sourceHash": "c71fc2e"
-  },
-  "search.coverage.failedRoots": "{count, plural, one {Cmdr konnte diesen Ordner nicht öffnen, deshalb ist nichts daraus in den Ergebnissen:} other {Cmdr konnte diese Ordner nicht öffnen, deshalb ist nichts daraus in den Ergebnissen:}}",
-  "@search.coverage.failedRoots": {
-    "sourceHash": "9b978eb"
-  },
   "search.coverage.deniedFullDiskAccess": "Mit vollständigem Festplattenzugriff kann Cmdr auch solche Ordner durchsuchen.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
@@ -178,14 +202,6 @@
   "search.coverage.setUpFullDiskAccess": "Festplattenzugriff einrichten",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
-  },
-  "search.coverage.declined": "{count, plural, one {Cmdr sieht absichtlich nicht in Snapshot-Ordner hinein, deshalb ist nichts daraus in den Ergebnissen:} other {Cmdr sieht absichtlich nicht in Snapshot-Ordner hinein, deshalb ist nichts daraus in den Ergebnissen:}}",
-  "@search.coverage.declined": {
-    "sourceHash": "85465f3"
-  },
-  "search.coverage.stillCovering": "{count, plural, one {Eine andere Suche geht diesen Ordner gerade durch, seine Dateien tauchen also gleich auf:} other {Eine andere Suche geht diese Ordner gerade durch, ihre Dateien tauchen also gleich auf:}}",
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "dieses Laufwerk",
   "@search.coverage.unnamedDrive": {

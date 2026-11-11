@@ -181,7 +181,6 @@
     "decision": "Android over ADB",
     "exceptions": {
       "fileOperations.validation.extensionChangeBlocked": "A rule, not a grant: Det går inte att ändra filtillägget.",
-      "search.coverage.denied": "Wasn't allowed to is fick inte in Swedish; tillåta would need a passive construction.",
       "errors.write.trashRefused.message.folderNotWritable": "English sense: “isn’t allowed to change” is a file-system permission, not granting consent, so it takes få (får inte ändra)"
     },
     "forms": "button Tillåt / Tillåt alla; switch label Tillåt moln-AI; Android's own button quoted bare: tryck på Tillåt",
@@ -2029,7 +2028,7 @@
     "confidence": "tentative",
     "decision": "Ask Cmdr looks inside files",
     "exceptions": {
-      "search.coverage.declined": "The negation splits the verb: tittar med flit inte in i."
+      "search.coverage.line.declined": "The negation splits the verb: tittar inte in i."
     },
     "forms": "Tittar in i filer / Tittade in i filer; tittar in i en fil bara när du frågar om den",
     "sources": "sibling tool lines (Tittar på ett förslag); no direct source"

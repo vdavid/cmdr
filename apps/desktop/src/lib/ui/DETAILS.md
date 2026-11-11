@@ -58,6 +58,7 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`LinkButton.svelte`**: Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned
   `cursor: pointer`
 - **`CopyBox.svelte`**: Copyable monospace text, a command or a path (+ Copy button)
+- **`CopyButton.svelte`**: the quiet icon-only Copy, for a line that summarizes what it copies; check glyph for 2 s
 - **`LiveAnnouncer.svelte`**: a live region with `announce(message)`, polite unless `politeness="assertive"`, mounted
   empty with its owner (a region inserted with its message says nothing); the same text twice is heard twice. File
   panes, the command palette, the Settings sidebar, and the toast stack (one of each politeness) speak through them.
@@ -66,7 +67,8 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`AlertDialog.svelte`**: Single-action confirmation dialog built on `ModalDialog`
 - **`ProgressBar.svelte`**: Reusable progress bar (just the bar, no labels or layout)
 - **`Size.svelte`**: Canonical inline byte-count renderer: human-friendly + rainbow tier color
-- **`InfoTip.svelte`**: info glyph parking a long explanation in a tooltip; plain `text` or a rich `children` snippet
+- **`InfoTip.svelte`**: info glyph parking a long explanation in a tooltip; plain `text` or a rich `children` snippet;
+  `tone="warning"` swaps in the warning triangle where there's something to act on
 - **`StatusGlyph.svelte`**: `InfoTip`'s non-interactive twin: a 12px glyph marking a condition on the thing beside it,
   its one sentence serving as both accessible name and tooltip
 - **`SectionCard.svelte`**: macOS-style grouped card with optional label above; used for Debug/Settings groupings
@@ -699,6 +701,10 @@ line:
   vertical padding, landing it on the LABEL's line. `content-box` keeps that padding outside the line box. `StepAi`'s
   local-model option is the caller. ❌ Don't reach for it in a row whose first line isn't `--font-size-sm` text with
   `--spacing-xs` above it: the numbers are `RadioGroup`'s, and nothing checks the match.
+
+`tone` is `info` (the default) or `warning`, chosen by whether the explained thing asks anything of the reader, ❌ not
+by how serious it sounds. The warning glyph takes `--color-warning-text` rather than the brand `--color-warning`, which
+misses the non-text contrast floor on tinted surfaces.
 
 Not every info glyph is an `InfoTip`. A non-interactive one marking a row's state is `StatusMarker`; a purely decorative
 one leading a banner or dialog header is a bare `<Icon>` in a `<span>` (`AdbHint`, `TransferErrorDialog`).
@@ -1845,6 +1851,11 @@ table or data grid, and its `Listbox` owns selection and keys itself, which is e
   ❗ the consumer must cover ALL of `start`–`end`, not just `start`: AI suggestions once checked only `start`, and the
   bottom of the drawn range sat on blank placeholders whenever it ran past the held page's end. `rowKey` keys an array's
   rows; a windowed source is keyed by index.
+- **`onReachEnd`** is for a consumer that grows the list as it's scrolled (the query dialogs' paging): it fires when the
+  rows IN VIEW (not the overscan) come within `REACH_END_ROWS` (10) of the end, which a list short enough to fit meets
+  at once, and again on every scroll or count change while that holds, so the consumer keeps one request in flight. It
+  stays quiet before the list has a layout (`reachesEnd`), so jsdom never pages. Overscan was the wrong yardstick: at 20
+  rows it covers a whole 30-row first page, so every list would ask for more the moment it opened.
 - **A cell always reads its OWN row, even while it tears down** (`heldRowOf`). Each block reads its row through its
   drawn item (`{ index, key }`), checks the row at that index still has its key (`liveRowOf`), and hands its cells the
   last row it drew when it doesn't. Ark's checkbox reads its props on the way out, and a block keyed by its row but

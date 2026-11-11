@@ -927,6 +927,7 @@ export {
   sortSearchResults,
   searchFilesStreaming,
   cancelSearch,
+  isSearchRunLive,
   onSearchProgress,
   onSearchComplete,
   onSearchCancelled,

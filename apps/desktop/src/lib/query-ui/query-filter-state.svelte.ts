@@ -88,6 +88,7 @@ export const SEARCH_AUTO_APPLY_DEBOUNCE_MS = 1000
  * stays the one-stop import for the dialog's state surface.
  */
 import { deriveEnterAction, type LastDialogEvent } from './enter-action'
+import { RESULTS_PAGE_SIZE } from './result-paging'
 export { deriveEnterAction, type LastDialogEvent }
 
 /**
@@ -365,7 +366,9 @@ export function createQueryFilterState(options: CreateQueryFilterStateOptions = 
       modifiedAfter: null,
       modifiedBefore: null,
       isDirectory: typeFilterToIsDirectory(typeFilter),
-      limit: 30,
+      // The first page. A one-shot run and a page set their own (`QueryPage`); a live walk
+      // streams at this one for its whole life, since it can't be widened mid-flight.
+      limit: RESULTS_PAGE_SIZE,
     }
 
     if (caseSensitive) {

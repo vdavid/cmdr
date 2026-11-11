@@ -18,11 +18,12 @@
 //!   its child directories and classify each.
 //! - `listed_epoch == 0 && unreadable_cause != 0` ⇒ **unreadable**. Nothing is
 //!   coming for this subtree right now, and the cause says which kind of nothing:
-//!   a walk tried and was refused (permission denied), no walk will read it at all
+//!   a walk tried and was refused (by TCC, which Full Disk Access lifts, or for
+//!   good: POSIX permissions, SIP), no walk will read it at all
 //!   (a NAS snapshot directory, whose per-snapshot tree is the one thing the
 //!   network scanner refuses on purpose), or a walk tried and gave up (a wedged
 //!   mount, a vanished directory). Not frontier, reported rather than silently
-//!   dropped, and reported in three lists rather than one — they reach the user as
+//!   dropped, and reported in four lists rather than one — they reach the user as
 //!   different sentences, and only the first is something they can act on.
 //! - `listed_epoch == 0` ⇒ **frontier**. Cut here and hand the subtree to the walk.
 //!
@@ -137,12 +138,18 @@ pub struct CoverageMap {
     /// emits them as it finds them, and no caller should read the order as meaning
     /// anything.
     pub frontier: Vec<String>,
-    /// Directories a walk tried to read and was REFUSED (permission denied), as
-    /// absolute paths. Not offered again, and reported rather than dropped: a
+    /// Directories a walk tried to read and macOS's privacy protection REFUSED,
+    /// as absolute paths. Not offered again, and reported rather than dropped: a
     /// search over them is honestly narrow, and this is the half the user can act
-    /// on — on macOS, granting Full Disk Access and searching again heals it,
-    /// because the successful listing clears the mark.
+    /// on — granting Full Disk Access and searching again heals it, because the
+    /// successful listing clears the mark.
     pub permission_denied: Vec<String>,
+    /// Directories a walk tried to read and the OS refused for good: POSIX
+    /// permissions, SIP, a data vault, and every refusal off macOS
+    /// ([`UnreadableCause::OffLimits`]). Reported, never dropped, and ❌ never
+    /// merged into [`permission_denied`](Self::permission_denied): Full Disk
+    /// Access opens none of them.
+    pub off_limits: Vec<String>,
     /// Directories no walk is going to read at all, by Cmdr's own choice: a NAS
     /// snapshot tree, whose per-snapshot hardlinked copies both whole-volume
     /// scanners refuse on purpose. Nothing for the user to fix; it's here so a
@@ -249,6 +256,7 @@ pub(crate) fn coverage_on_volume(
     let uncovered = || CoverageMap {
         frontier: vec![normalized.clone()],
         permission_denied: Vec::new(),
+        off_limits: Vec::new(),
         declined: Vec::new(),
         abandoned: Vec::new(),
         token: CoverageToken::UNINDEXED,
@@ -302,6 +310,7 @@ pub(crate) fn coverage_for_scope(
     let CoverageDimension::Listing = dimension;
     let mut frontier = Vec::new();
     let mut permission_denied = Vec::new();
+    let mut off_limits = Vec::new();
     let mut declined = Vec::new();
     let mut abandoned = Vec::new();
     let token = walk_coverage(
@@ -312,6 +321,7 @@ pub(crate) fn coverage_for_scope(
         &mut |verdict, path| match verdict {
             Verdict::Frontier => frontier.push(path.to_string()),
             Verdict::Unreadable(UnreadableCause::Denied) => permission_denied.push(path.to_string()),
+            Verdict::Unreadable(UnreadableCause::OffLimits) => off_limits.push(path.to_string()),
             Verdict::Unreadable(UnreadableCause::Declined) => declined.push(path.to_string()),
             Verdict::Unreadable(UnreadableCause::Abandoned) => abandoned.push(path.to_string()),
             Verdict::Covered | Verdict::Listed => {}
@@ -320,6 +330,7 @@ pub(crate) fn coverage_for_scope(
     Ok(CoverageMap {
         frontier,
         permission_denied,
+        off_limits,
         declined,
         abandoned,
         token,

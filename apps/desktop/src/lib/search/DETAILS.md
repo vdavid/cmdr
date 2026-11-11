@@ -85,6 +85,9 @@ Everything Search-specific sits in a module beside it, one per job, each unit-te
 - **`search-runners.ts`** — both run paths and the `buildRunQuery` they share (bar + filters + AI pattern + the scope,
   whose parse is async): `runQuery` is the one-shot index answer the debounce takes, `streamingSource` is every run the
   user asked for. It also writes the coverage note on both paths, cleared before the ask and filled from the answer.
+  `loadMore` is the dialog's pager (`query-ui/DETAILS.md` § Paging): it re-sends the payload the latest run SENT, with a
+  larger `limit` and none of a run's side effects (no note, no analytics), so a bar edited since without re-running
+  can't splice another question's rows in. A walk adopted on reopen has no payload in this mount, and pages nothing.
 - **`search-run-tracking.ts`** — the run clock and the one `search_used` event per run, plus the two CTA events. The
   vocabulary is `search-analytics.ts`; this is the wiring.
 - **`ai-translate.ts`** — calls `translate_search_query` and returns `{ caveat, apply }` to QueryDialog; `apply()` holds
@@ -95,9 +98,9 @@ Everything Search-specific sits in a module beside it, one per job, each unit-te
 - **`snapshot-promotion.ts`** — "Show all in main window" (⌥⏎): builds the `SearchSnapshot`, mints an id, pins via
   `setLastAttemptId`, hands a still-running walk to `walk-handoff.svelte.ts`, and persists the recent-search entry. It
   and "Go to file" are the only two call sites that add to recent searches.
-- **`snapshot-fill.ts`** — the index asked for as many rows as a PANE holds rather than the 30 a dialog list wants. Both
-  fillers go through it: the promotion before it mints the snapshot, and a handed-off walk's ending. It never shrinks a
-  pane and never blocks an open.
+- **`snapshot-fill.ts`** — the index asked for as many rows as a PANE holds rather than the page or two a dialog list
+  holds. Both fillers go through it: the promotion before it mints the snapshot, and a handed-off walk's ending. It
+  never shrinks a pane and never blocks an open.
 - **`recent-search-adapter.ts`** — the row adapter + key (the only seam where Search-specific fields like `scope` /
   `excludeSystemDirs` leak into the chip's tooltip), plus pick (LOADS, never runs) and remove.
 
@@ -106,8 +109,15 @@ file" / path-pill / row-menu exits through `onNavigate`, `onClearState` wiring �
 AI-provider subscription so the AI chip appears / disappears with the setting. It does not own the overlay element, the
 keyboard handler, the IME guard, the auto-apply debounce, the popover toggle, or any other orchestration concern.
 
-The wrapper holds the two locals a run outlives: `liveRun` (the run in flight, plain and not `$state` — it changes per
-batch and nothing renders it) and `handedOffRun` (the run a pane is now fed by, so the close can name it).
+The wrapper holds the two locals a run outlives: `liveRun` (the run the dialog is FOLLOWING, plain and not `$state` — it
+changes per batch and nothing renders it) and `handedOffRun` (the run a pane is now fed by, so the close can name it).
+`liveRun` is written only by `live-search-source.ts`'s `onRunState`, which names the most recently followed run (started
+or adopted through `resume`) and clears the moment the dialog stops following it: its ending, the teardown the runner
+calls when it drops the subscription (a newer run, the bar emptied, the dialog closing), or `forgetRun` when an index
+answer (`runQuery`) replaces it, which covers a start still in flight that has no teardown yet. ❗ A run the dialog
+stopped following never reports its ending there, so a stale `liveRun` is a handoff waiting forever: that was the 30-row
+pane under a "Still searching" toast that never ended. Pinned by `live-search-source.test.ts` and
+`SearchDialog.handoff.svelte.test.ts`.
 
 The route (`+page.svelte`) mounts SearchDialog with its props: `onNavigate`, `onClose`, `scopePresets`, `searchVolume`,
 `onShowAllInMainWindow`.
@@ -231,8 +241,17 @@ The one-shot path (`search-runners.ts`) clears the note before the IPC and write
 screen and a run that throws can't leave a stale caveat under a fresh answer. A LIVE run does the same through its
 source's `onCoverage` (`null` on start, the terminal answer at the end); what it fills in is § The live search.
 `CoverageNote.svelte` renders it through QueryDialog's `resultsNotice` slot, directly above the results it qualifies.
-Both lists are checked independently rather than as an either/or: they're mutually exclusive today by construction, and
-a reader that assumed so would go silent if that changed.
+
+**Each list is one line** (`CoverageLine.svelte`, fed by `coverage-note.ts::coverageLines`): an icon, a counted
+sentence, and a quiet `CopyButton`. Printing every path made a search over `/` that met 18 refused folders cover every
+result at the default dialog height (#1070). The folders sit in the icon's tooltip (an `InfoTip`, so Tab and screen
+readers reach them too), numbered so the count checks out at a glance and capped at `TOOLTIP_FOLDER_CAP` (15) with "+N
+more", since a tooltip never scrolls; the copy button carries every path, one per line. The icon follows actionability,
+❌ never the kind alone: a line is `actionable` when the note offers a way out for it (Full Disk Access for `denied`,
+indexing or Enter for `uncovered`, Enter for `unresolved`), and only then is it a warning triangle. The offers
+themselves (the FDA button, "Index this drive", "Press Enter") stay visible outside the tooltip. Both lists are checked
+independently rather than as an either/or: they're mutually exclusive today by construction, and a reader that assumed
+so would go silent if that changed.
 
 The per-drive offer ("Index this drive") shows only for an **uncovered** gap (an unresolved path is on a drive that's
 already indexed, so there's nothing to turn on), only for a drive the live volume list can name, and never for a drive
@@ -242,8 +261,8 @@ on `SearchResult.targetVolumeId` — the volume the BACKEND routed to — becaus
 pane isn't on, and offering to index the wrong one would be worse than saying nothing.
 
 **A volume no index can serve** (a server over SFTP or WebDAV) gets neither the offer nor the "press Enter" line. Its
-gap reads `search.coverage.uncovered.unavailable`, because there's nothing to turn on and the live run doesn't walk it
-either: it answers with the same `uncoveredScopes` (`src-tauri/src/search/DETAILS.md` § Honesty). The gate is the
+gap reads `search.coverage.line.uncovered.unavailable`, because there's nothing to turn on and the live run doesn't walk
+it either: it answers with the same `uncoveredScopes` (`src-tauri/src/search/DETAILS.md` § Honesty). The gate is the
 volume's `canBeIndexed` capability through `capabilitiesFor`, the answer the switcher's index badge reads, ❌ never its
 kind or id.
 
@@ -280,13 +299,16 @@ still (`runTitleOverride`).
 **The coverage note gained a `live` half** (`coverageNoteFromRun`): how the walk ended, folders nothing will read, and
 ground another walk already holds. Three notes on the copy:
 
-- **Ground nothing will read arrives as TWO lists, and stays two.** `permissionDenied` is a folder somebody refused
-  Cmdr; `declined` is a NAS snapshot tree Cmdr won't read on purpose. Two sentences, and only the first has a way out:
-  when the run met a refusal, this is macOS, and Cmdr doesn't have Full Disk Access yet
-  (`coverage-note.ts::offersFullDiskAccess`), the note offers the setup and `SearchDialog` routes into the onboarding
-  wizard's FDA step — the same page first launch shows, never a second one. ❌ Never offer it over `declined`: no
-  permission opens a snapshot tree, so it would send someone to System Settings to fix nothing. ❌ Don't infer the cause
-  from a path's basename either; that's what the typed cause on the wire is for.
+- **Ground nothing will read arrives as THREE lists, and stays three.** `permissionDenied` is a folder macOS's privacy
+  protection refused Cmdr; `offLimits` is one the OS keeps closed for good (root-only, SIP, a data vault; how the walk
+  tells them apart is `crates/cmdr-index/src/indexing/scanner/DETAILS.md` § "Which refusal Full Disk Access opens");
+  `declined` is a NAS snapshot tree Cmdr won't read on purpose. Three sentences, every one SHOWN (a silently dropped
+  folder makes a short list read as exhaustive), and only the first has a way out: when the run met a refusal, this is
+  macOS, and Cmdr doesn't have Full Disk Access yet (`coverage-note.ts::offersFullDiskAccess`), the note offers the
+  setup and `SearchDialog` routes into the onboarding wizard's FDA step — the same page first launch shows, never a
+  second one. ❌ Never offer it over `offLimits` or `declined`: no permission opens a SIP folder or a snapshot tree, so
+  it would send someone to System Settings to fix nothing. ❌ Don't infer the cause from a path's basename either;
+  that's what the typed cause on the wire is for.
 - **The probe is `checkFullDiskAccessQuiet`, and only when a refusal is on screen.** The loud `checkFullDiskAccess`
   fires a TCC-registration storm per denial, and this runs per search. `hasFullDiskAccess` starts at `true`, so nothing
   is offered before the probe answers: an offer that appears and then vanishes is worse than one a moment late.
@@ -563,9 +585,11 @@ Click on the footer's "Open in pane" button promotes the current result set into
 `search-results://<id>` virtual volume. `snapshot-promotion.ts::promoteResultsToPane`:
 
 1. Asks the index the run's own question again with the pane's row ceiling (`snapshot-fill.ts`), and builds the
-   `SearchSnapshot` from THAT answer plus live state (`getMode()` / `getQuery()` / filters / scope / flags). The rows on
-   screen are the fallback: a failed ask, an answer no bigger than them, or a live walk still filling them in. ❌ Never
-   promote `getResults()` alone — it holds the 30 the dialog renders, and the pane holds 10,000.
+   `SearchSnapshot` from THAT answer plus live state (`getMode()` / `getQuery()` / filters / scope / flags), live run or
+   not: the index answers for what it covers right away, and a still-running walk appends on top and tops the pane up at
+   its end. The rows on screen are the fallback: a failed ask, or an answer no bigger than them. ❌ Never promote
+   `getResults()` alone — it holds the pages the dialog has scrolled through, and the pane holds 10,000. The live run is
+   read AFTER that ask (a getter), so a walk that ended meanwhile isn't handed off.
 2. Mints a fresh id via `nextSnapshotId()` and stores via `getOrCreate(id, snapshot)`.
 3. Pins the snapshot via `setLastAttemptId(id)` so refcount stays ≥1 even before history pushes.
 4. Calls `addRecentSearch(historyEntry)`. **This is the one and only call site that adds to recent searches** (per plan
@@ -612,6 +636,14 @@ Four parts, and they're split across three files for one reason each:
 `release_search_index` cancels every run BUT that one. A `null` there kills the walk the instant the pane appears: the
 pane fills with whatever had arrived, the toast says "still searching" over a walk that isn't, and nothing reports a
 problem. Pinned by `SearchDialog.handoff.svelte.test.ts`.
+
+**It waits only on a run that will still report its ending.** Once its listeners are in, `confirmStillLive` asks the
+backend (`is_search_run_live`, `LiveRun::is_live`: registered, not superseded, terminal fact not yet sent). The backend
+marks a run ended BEFORE it sends that fact, so a `true` read after the listeners went in means the ending can't slip
+past. A `false` settles silently: no toast, nothing held, and the pane already holds the index's answer. The running
+toast goes up only after a `true`, so it can't be the one that waits forever. An ask that fails stops the walk (nobody
+would hear it) and settles. A reopened dialog that adopted the walk and presses "Open in pane" again hands the same run
+on to the new pane, because `resume` follows the run too.
 
 **Four ways it settles, and only one stops the walk.** The terminal event, a new search superseding the run
 (`supersedeHandedOffWalk`, called from `createLiveSearchSource.start` — no terminal event is coming for a superseded

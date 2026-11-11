@@ -124,18 +124,21 @@ Two additions serve the search frontier (`../read/DETAILS.md` § "The coverage f
 it: the descent rule reads one and refuses to answer without the other.
 
 **`entries.unreadable_cause`** (schema v16) marks a directory nothing is going to read into right now, and says WHY.
-This is the CANONICAL description of the three causes; everywhere else points here.
+This is the CANONICAL description of the four causes; everywhere else points here.
 
-- **`Denied` (1)** — a walk tried and the OS refused. The user's to fix: on macOS, granting Full Disk Access and
-  searching again heals it.
+- **`Denied` (1)** — a walk tried and macOS's privacy protection (TCC) refused. The user's to fix: granting Full Disk
+  Access and searching again heals it.
+- **`OffLimits` (4)** — a walk tried and the OS refused for good: POSIX permissions, SIP, a data vault, and every
+  refusal off macOS. Nobody's to fix from Cmdr, so it's shown and never offered Full Disk Access. Which refusal earns
+  which of these two is `../scanner/DETAILS.md` § "Ground the walk couldn't read".
 - **`Declined` (2)** — no walk will read it at all, by Cmdr's own choice: a NAS snapshot tree
   (`../network_scanner/DETAILS.md`). A standing policy, nothing to fix.
 - **`Abandoned` (3)** — a walk tried and gave up: the read stalled past the watchdog, or `readdir` failed with an errno
-  that isn't `EACCES`, or the walker's consecutive-failure budget pruned the task unread. Cmdr's to RETRY, on the
-  backoff in `../writer/abandoned_retry.rs`.
+  that isn't permission denied, or the walker's consecutive-failure budget pruned the task unread. Cmdr's to RETRY, on
+  the backoff in `../writer/abandoned_retry.rs`.
 
-`0` is the ordinary state, "something may yet read this". A CAUSE rather than a flag because the three reach the user as
-different sentences and only the first is one they can act on; telling them apart from the paths would mean matching
+`0` is the ordinary state, "something may yet read this". A CAUSE rather than a flag because the four reach the user as
+different sentences and only `Denied` is one they can act on; telling them apart from the paths would mean matching
 folder names, which isn't an option. An unknown stored value reads as `Denied`, the truthful half of any cause a future
 schema could add. Deliberately NOT folded into `listed_epoch`: an unreadable directory was never listed, so it stays at
 `0` and keeps absorbing its ancestors' `min_subtree_epoch` to `0`, which is what keeps sizes honest.
