@@ -83,7 +83,8 @@ included, § "One-pass sequential extract"). Only the layout facts that none of 
   ACTS", the late-tick guard).
 - **`transfer_probe_registry.rs` is the engine's table of live transfers**, a third `#[path]` child: `Probes` (one per
   engine, in its `EngineStores`, reached through the op's scope), `register_operation`, and the guard that leaves the
-  table. The watchdog holds the table weakly and ends at the first tick after the guard removes its probe.
+  table. `register_operation` hands the watchdog a lookup closure over a weak handle to the table, so the watchdog ends
+  at the first tick after the guard removes its probe and never names `Probes` (registry → watchdog stays one-way).
 - **`metadata_matrix_tests.rs` pins what a LOCAL copy or move keeps of each metadata class** (birth, flags, ACL, xattrs,
   mode, symlink dates, folders), one cell per path and class, over `cmdr_fs::testing::metadata_fixture`. A cell still
   pinning a bug or a loss carries a `// FLIPS` comment saying what would turn it; it reaches the move engines through

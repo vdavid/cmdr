@@ -12,7 +12,7 @@
 use super::SmbVolume;
 use super::session::TransferLease;
 use super::state::RanOn;
-use super::write_stream::{ClosedWriter, WriteCarries};
+use super::write_carries::{ClosedWriter, WriteCarries};
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{StreamLength, StreamWriteProgress, StreamWritten, VolumeError, VolumeReadStream};

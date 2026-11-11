@@ -103,7 +103,13 @@ pub(in crate::transfer) fn register_operation(
         started: crate::rt::now(),
     });
     probes.insert(operation_id, Arc::clone(&probe));
-    spawn_watchdog(&runtime, Arc::downgrade(&probes), operation_id.to_owned());
+    let table = Arc::downgrade(&probes);
+    let id = operation_id.to_owned();
+    spawn_watchdog(
+        &runtime,
+        move || table.upgrade().and_then(|probes| probes.get(&id)),
+        operation_id.to_owned(),
+    );
     OperationProbeGuard {
         operation_id: operation_id.to_owned(),
         probe,

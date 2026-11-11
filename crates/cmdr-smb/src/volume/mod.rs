@@ -53,6 +53,7 @@ mod state;
 mod transfer_session;
 mod volume_impl;
 mod watcher;
+mod write_carries;
 mod write_stream;
 mod xattrs;
 

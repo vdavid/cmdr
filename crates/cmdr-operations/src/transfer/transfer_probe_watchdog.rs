@@ -9,15 +9,15 @@
 //! `vocabulary` and `ends` do. Time the watchdog couldn't see (the late-tick
 //! rule and its CPU evidence) is its own child, `transfer_probe_unseen.rs`.
 
+use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::sync::{Arc, Weak};
 use std::time::Duration;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 use super::super::super::host::OperationErrorReport;
 use super::super::super::types::WriteOperationPhase;
-use super::{InboundWindow, NO_INBOUND_RATE, OperationProbe, Probes, TaskPhase, TaskProbe};
+use super::{InboundWindow, NO_INBOUND_RATE, OperationProbe, TaskPhase, TaskProbe};
 
 /// How often the watchdog samples an operation, and how long a transfer may
 /// show zero byte movement before it is called out IN THE LOG.
@@ -457,17 +457,24 @@ impl WatchdogState {
 /// a user who force-quits after 20 minutes should leave behind more than one
 /// record of it.
 ///
-/// Spawns the watchdog on the operation's runtime. It holds the probe table
-/// weakly, a background loop that must not keep a dropped engine alive, and
-/// ends at the first tick after the operation's guard removed it.
-pub(super) fn spawn_watchdog(runtime: &cmdr_fs::rt::Runtime, probes: Weak<Probes>, operation_id: String) {
+/// Spawns the watchdog on the operation's runtime. Each tick it asks `live`
+/// for the probe, and ends at the first tick that gets `None`: the operation's
+/// guard removed it, or its engine is gone. The registry supplies `live`
+/// (holding its table weakly, so this background loop can't keep a dropped
+/// engine alive); taking a lookup rather than the table keeps the dependency
+/// one-way, registry → watchdog.
+pub(super) fn spawn_watchdog(
+    runtime: &cmdr_fs::rt::Runtime,
+    live: impl Fn() -> Option<Arc<OperationProbe>> + Send + 'static,
+    operation_id: String,
+) {
     runtime.spawn(async move {
         let mut watchdog = WatchdogState::new();
         let mut cpu = CpuWitness::default();
         let started = crate::rt::now();
         loop {
             crate::rt::time::sleep(STALL_TICK).await;
-            let Some(probe) = probes.upgrade().and_then(|probes| probes.get(&operation_id)) else {
+            let Some(probe) = live() else {
                 return; // operation finished (its guard removed it), or its engine is gone
             };
             let now = crate::rt::since(started);

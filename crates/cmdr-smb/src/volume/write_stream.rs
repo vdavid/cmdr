@@ -11,9 +11,10 @@ use super::dfs_links::is_behind_dfs_link;
 use super::session::{LeaseOn, SessionLease, TransferLease};
 use super::stamping::{source_times, stamped};
 use super::state::RanOn;
+use super::write_carries::{CarriedForWrite, ClosedWriter, WriteCarries};
 use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::metadata::{CarriedMetadata, ClassOutcome, MetadataClasses, Xattr};
+use cmdr_fs::metadata::{MetadataClasses, Xattr};
 use cmdr_fs::pluralize::pluralize_grouped;
 use cmdr_fs::volume::{MutationEvent, StreamLength, StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode};
 use log::debug;
@@ -74,31 +75,6 @@ pub(super) fn one_frame_write_limit(dest_is_scratch: bool, max_write: u64, quick
     } else {
         max_write
     }
-}
-
-/// What a write learned closing its file, for its report.
-pub(super) struct ClosedWriter {
-    pub(super) xattrs_kept: ClassOutcome,
-    /// The server refused the dates.
-    pub(super) times_refused: bool,
-    /// The bytes the server acknowledged once `finish()` drained the window.
-    pub(super) confirmed: u64,
-}
-
-/// What a write puts on its file beside the bytes, asked of the source stream
-/// once, before its first chunk.
-pub(super) struct CarriedForWrite {
-    carried: CarriedMetadata,
-    times: Option<smb2::FileTimes>,
-}
-
-/// What [`SmbVolume::close_writer`] puts on a streamed-into file, and the
-/// session it does that on beside the writer.
-pub(super) struct WriteCarries<'a> {
-    pub(super) tree: &'a smb2::client::Tree,
-    /// For the xattrs beside the writer, which owns its own connection.
-    pub(super) side_conn: &'a mut smb2::client::Connection,
-    pub(super) carried: &'a CarriedForWrite,
 }
 
 /// A source that yielded `got` bytes after declaring `StreamLength::Known(declared)`,
