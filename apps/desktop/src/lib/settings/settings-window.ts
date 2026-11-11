@@ -27,6 +27,7 @@ import { getEffectiveScale } from '#lib/text-size.svelte.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } from '#lib/app-mode.js'
 import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '#lib/window-positioning.js'
+import { scheduleShowFallback } from '#lib/child-window-show.js'
 import type { SettingId } from './types'
 
 const log = getAppLogger('settings')
@@ -223,6 +224,10 @@ export async function openSettingsWindow(surface: SettingsSurface, section?: str
     resizable: true,
     decorations: true,
     focus: !isE2e,
+    // Created hidden; the settings page shows it, sliding in, once it's ready
+    // (`#lib/child-window-show`). E2E keeps the immediate show, since
+    // `orderChildWindowToBackInE2e` below owns that window's ordering.
+    visible: isE2e,
     // Translucent glass backdrop via the macOS `NSVisualEffectView` material,
     // UNLESS the user reduces transparency (then open opaque). The settings
     // window is the only one that opts into vibrancy; the main window is plain
@@ -260,6 +265,9 @@ export async function openSettingsWindow(surface: SettingsSurface, section?: str
         })
     })
   }
+
+  // Shows the window anyway if its page never gets to (`#lib/child-window-show`).
+  if (!isE2e) scheduleShowFallback('settings')
 
   // E2E: push the window behind everything so a run's Settings windows don't pop
   // in front of the developer's work. No-op outside E2E. See `orderChildWindowToBackInE2e`.

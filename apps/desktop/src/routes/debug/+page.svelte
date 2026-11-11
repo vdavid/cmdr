@@ -3,6 +3,7 @@
     import ToastContainer from '#lib/ui/toast/ToastContainer.svelte'
     import { trackOwnRect } from '#lib/window-positioning.js'
     import { closeSelfWindow } from '#lib/child-window-close.js'
+    import { showSelfWindow } from '#lib/child-window-show.js'
     import { initWindowSettings, initWindowLanguageSync } from '#lib/settings/window-settings.js'
     import { initAccentColor, cleanupAccentColor } from '#lib/accent-color.js'
     import { initGlassMaterial, cleanupGlassMaterial } from '#lib/glass-material.js'
@@ -197,6 +198,11 @@
         } catch (error) {
             log.error('Failed to initialize debug window appearance: {error}', { error })
         }
+
+        // The opener creates this window hidden; it looks right now, so show it
+        // (`#lib/child-window-show`).
+        await tick()
+        showSelfWindow()
 
         // Save position/size while open so reopening lands in the same spot
         // (in-memory cache, reset on app start).

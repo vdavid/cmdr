@@ -17,10 +17,10 @@ Depth and rationale for the frontend file viewer. `CLAUDE.md` holds the must-kno
 - **Timestamp-based unique window labels (`viewer-${Date.now()}`).** Each viewer needs its own Tauri `WebviewWindow`
   label. Using the file path would prevent opening the same file twice. Timestamps are unique enough (millisecond
   resolution) and need no escaping.
-- **Double `requestAnimationFrame` before `window.close()`.** WebKit on macOS can crash if you destroy a `WebPageProxy`
-  while it's recalculating content insets. A single `requestAnimationFrame` isn't enough: the current frame must
-  complete AND the next start. This also means you must NOT call `setFocus()` on another window before closing, as that
-  can trigger the dying window to recalculate.
+- **The viewer closes through `closeSelfWindow()`.** WebKit on macOS can crash if you destroy a `WebPageProxy` while
+  it's recalculating content insets, so the page never destroys its own window: the backend slides it out, hides it, and
+  destroys it on a delay (`src-tauri/src/child_window_lifecycle/DETAILS.md`). This also means you must NOT call
+  `setFocus()` on another window before closing, as that can trigger the dying window to recalculate.
 - **FullLoad files measure per-line wrapped heights from the real DOM when word wrap is on** (not a canvas predictor).
   `measureLineHeightsViaDom` lays every line out in a hidden probe styled like `.word-wrap .line-text` and reads each
   `getBoundingClientRect().height`; a prefix-sum array (`Float64Array`) gives O(1) `getLineTop(n)` and O(log n)

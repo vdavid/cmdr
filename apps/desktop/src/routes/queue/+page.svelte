@@ -1,7 +1,8 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
-    import { getCurrentWindow } from '@tauri-apps/api/window'
+    import { closeSelfWindow } from '#lib/child-window-close.js'
+    import { showSelfWindow } from '#lib/child-window-show.js'
     import type { UnlistenFn } from '@tauri-apps/api/event'
     import { initWindowSettings, initWindowLanguageSync } from '#lib/settings/window-settings.js'
     import { initAccentColor, cleanupAccentColor } from '#lib/accent-color.js'
@@ -441,13 +442,7 @@
     }
 
     function closeWindow(): void {
-        // Defer the close past the current event-loop tick so any in-flight IPC
-        // ack settles before the webview is destroyed. `setTimeout(0)`, not rAF
-        // (throttled when unfocused on macOS). Mirrors Settings / Shortcuts.
-        const win = getCurrentWindow()
-        setTimeout(() => {
-            void win.close()
-        }, 0)
+        void closeSelfWindow()
     }
 
     function handleKeydown(event: KeyboardEvent): void {
@@ -487,6 +482,11 @@
             // events that arrive while they're being set up would be lost.
             await initOperationSessions()
             initialized = true
+
+            // The opener creates this window hidden; it looks right now, so show it
+            // (`#lib/child-window-show`). A no-op on an E2E window, which is created visible.
+            await tick()
+            showSelfWindow()
 
             // Remember position/size within the session so a reopen lands in place.
             unlistenRectTracking = await trackOwnRect('queue')

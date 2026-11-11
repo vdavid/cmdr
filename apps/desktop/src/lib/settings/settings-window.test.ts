@@ -26,6 +26,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   trackEvent,
   raiseChildWindow,
 }))
+vi.mock('#lib/child-window-show.js', () => ({ scheduleShowFallback: vi.fn() }))
 
 import { shortcutAnchorId, commandIdFromShortcutAnchor, openSettingsWindow } from './settings-window'
 

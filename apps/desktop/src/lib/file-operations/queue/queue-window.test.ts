@@ -7,13 +7,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { getByLabel, once, warn, emitTo, webviewWindow, raiseChildWindow } = vi.hoisted(() => ({
+const { getByLabel, once, warn, emitTo, webviewWindow, raiseChildWindow, scheduleShowFallback } = vi.hoisted(() => ({
   getByLabel: vi.fn<(label: string) => Promise<unknown>>(),
+  scheduleShowFallback: vi.fn<(label: string) => void>(),
   raiseChildWindow: vi.fn<(label: string) => Promise<void>>(() => Promise.resolve()),
   once: vi.fn<(event: string, handler: (event: { payload: unknown }) => void) => Promise<() => void>>(),
   warn: vi.fn(),
   emitTo: vi.fn<(...args: unknown[]) => Promise<void>>(() => Promise.resolve()),
-  webviewWindow: vi.fn<(label: string, options: { focus?: boolean }) => void>(),
+  webviewWindow: vi.fn<(label: string, options: { focus?: boolean; visible?: boolean }) => void>(),
 }))
 
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
@@ -49,6 +50,7 @@ vi.mock('#lib/window-positioning.js', () => ({
   readSavedRect: () => Promise.resolve(null),
   resolveChildPosition: vi.fn(),
 }))
+vi.mock('#lib/child-window-show.js', () => ({ scheduleShowFallback }))
 
 import { openQueueWindow } from './queue-window'
 
@@ -59,6 +61,13 @@ beforeEach(() => {
 })
 
 describe('openQueueWindow', () => {
+  it('creates the window hidden, for its page to slide in, with a fallback show', async () => {
+    await openQueueWindow()
+
+    expect(webviewWindow).toHaveBeenCalledWith('queue', expect.objectContaining({ visible: false }))
+    expect(scheduleShowFallback).toHaveBeenCalledWith('queue')
+  })
+
   it('logs a window the OS refused to create, rather than failing silently', async () => {
     await openQueueWindow()
 

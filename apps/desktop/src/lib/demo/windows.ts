@@ -352,6 +352,8 @@ export function createWindowHost(emit: Emit, onClosed: (label: string) => void =
       if (panel) focusPanel(panel)
       return null
     },
+    // The demo's panels are never hidden, so there's nothing to show.
+    show_child_window: () => null,
   }
 
   return {

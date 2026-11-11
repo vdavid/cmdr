@@ -249,6 +249,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::child_window_state::get_child_window_rect,
                     crate::commands::child_window_state::set_child_window_rect,
                     crate::commands::child_window_state::close_child_window,
+                    crate::commands::child_window_state::show_child_window,
                     crate::commands::window_ordering::raise_child_window,
                     crate::commands::file_viewer::viewer_open,
                     crate::commands::file_viewer::viewer_open_as_text,

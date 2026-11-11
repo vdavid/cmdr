@@ -341,12 +341,12 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `open_terminal_here`, and `show_in_finder` all record into `crate::open_mock` instead of launching under
   `playwright-e2e`, so a suite run leaves no orphan windows, and `get_info` skips Finder there too: Finder takes the
   front position, which blanks capture shots.
-- **`child_window_state.rs`**: also `close_child_window(label)`, the only way a child webview closes itself. It hides
-  the window and destroys it 100 ms later, in Rust rather than in the page, because WebKit throttles timers in a hidden
-  page to roughly 1 Hz. `docs/notes/child-window-close-webkit-crash.md`.
+- **`child_window_state.rs`**: also `show_child_window(label)` and `close_child_window(label)`, pass-throughs to
+  `crate::child_window_lifecycle` (the slide in and out, and the WebKit-safe close every close path lands in; see its
+  `CLAUDE.md`). `raise_child_window` cancels a close under way, so a reopen brings the window back.
 - **`child_window_state.rs`**: `get_child_window_rect` / `set_child_window_rect(label, rect)` cache per-label
-  child-window geometry via `State<ChildWindowRectStore>`. In-memory and session-only, never on disk; used by Settings
-  and Debug. Viewers don't use it (they cascade, see `lib/window-positioning.ts`). Only the main window persists across
+  child-window geometry via `State<ChildWindowRectStore>`, dropping writes while the window slides. In-memory and
+  session-only, never on disk; used by every singleton child window. Viewers don't use it (they cascade, see `lib/window-positioning.ts`). Only the main window persists across
   launches, via `window_state/`.
 - **`settings.rs`**: port availability check, watcher debounce, menu accelerator updates, live-apply setters for
   `network.directSmbConnection`, `advanced.showSafeSaveFiles`, `advanced.showStagingTempFiles`,

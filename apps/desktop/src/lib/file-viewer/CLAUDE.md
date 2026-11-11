@@ -45,9 +45,10 @@ Rationale for each in `DETAILS.md` § Key decisions.
 
 These guard against macOS WebKit crashes and toggle loops. Keep them; the why is in `DETAILS.md`.
 
-- **Double `requestAnimationFrame` before `window.close()`.** WebKit on macOS can crash if you destroy a `WebPageProxy`
-  while it recalculates content insets; one rAF isn't enough (the current frame must complete AND the next start). Also
-  do NOT call `setFocus()` on another window before closing: that can trigger the dying window to recalculate.
+- **The viewer closes through `closeSelfWindow()`, ❌ never `getCurrentWindow().close()`.** WebKit on macOS can crash if
+  a `WebPageProxy` is destroyed mid-recalculation, so the backend slides the window out, hides it, and destroys it on a
+  delay (`src-tauri/src/child_window_lifecycle/CLAUDE.md`). Also do NOT call `setFocus()` on another window before
+  closing: that can trigger the dying window to recalculate.
 - **The `canClose` flag gates `closeWindow()`**, queuing an Escape pressed before the mount settles (WebKit crashes
   closing a half-initialized window). It flips right after mount, ❌ not when the open resolves: a phone pull can run
   for minutes.

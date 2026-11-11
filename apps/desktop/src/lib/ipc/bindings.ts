@@ -2225,27 +2225,27 @@ export const commands = {
     } | null>('get_child_window_rect', { label }),
   /**
    *  Saves the rect for a child window label. Called from the frontend's
-   *  move/resize listeners on Settings and Debug.
+   *  move/resize listeners on the child windows (`trackOwnRect`).
    */
   setChildWindowRect: (label: string, rect: ChildWindowRect) =>
     __TAURI_INVOKE<void>('set_child_window_rect', { label, rect }),
   /**
-   *  Hide a child window, then destroy it a moment later.
-   *
-   *  ❗ This runs in RUST rather than in the window's own webview on purpose. WebKit throttles timers
-   *  in a hidden page to roughly 1 Hz, so a `setTimeout` inside a webview that just hid itself can
-   *  slip by a second or more, leaving an invisible window alive and still holding a web content
-   *  process. A Rust timer can't be throttled by the page it's about to close. It also means the
-   *  windows need no `core:window:allow-hide` in their capabilities, since nothing calls `hide` from
-   *  JavaScript.
-   *
-   *  The destroy is unconditional once scheduled: an early return between the hide and the close
-   *  would leak exactly the invisible-but-alive window this is meant to prevent.
+   *  Close a child window: slide out, hide, then destroy it a moment later. Escape and the in-page
+   *  close buttons reach it through `closeSelfWindow`; every other close (the red button, ⌘W, a
+   *  `close()` call) arrives through `CloseRequested` instead. Both land in
+   *  `crate::child_window_lifecycle::close`, which owns the WebKit-safe teardown.
    */
   closeChildWindow: (label: string) => __TAURI_INVOKE<void>('close_child_window', { label }),
   /**
+   *  Show a child window that was created hidden, sliding it in on macOS (unless Reduce motion is
+   *  on). Its page calls this once rendered; the opener calls it again after a delay as a fallback,
+   *  a no-op on a window that's already up. See `crate::child_window_lifecycle::show`.
+   */
+  showChildWindow: (label: string) => __TAURI_INVOKE<void>('show_child_window', { label }),
+  /**
    *  Bring an already-open child window (Settings, Keyboard shortcuts, the operation queue) to the
-   *  front, restoring it first if it's minimized or hidden. The openers call this when the window
+   *  front, restoring it first if it's minimized or hidden, and cancelling its close if it's mid-close
+   *  (`crate::child_window_lifecycle::cancel_close`). The openers call this when the window
    *  already exists; E2E runs skip it there, so a test run never steals focus.
    *
    *  Best-effort: a failure leaves a log line, since the opener has nothing better to show.

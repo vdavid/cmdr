@@ -25,6 +25,7 @@ import { tString } from '#lib/intl/messages.svelte.js'
 import { getEffectiveScale } from '#lib/text-size.svelte.js'
 import { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } from '#lib/app-mode.js'
 import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '#lib/window-positioning.js'
+import { scheduleShowFallback } from '#lib/child-window-show.js'
 
 const log = getAppLogger('queue')
 
@@ -135,6 +136,9 @@ export async function openQueueWindow(): Promise<void> {
     closable: true,
     decorations: true,
     focus: takesFocus,
+    // Created hidden; the queue page shows it, sliding in, once it's ready
+    // (`#lib/child-window-show`). E2E keeps the immediate show.
+    visible: !takesFocus,
     // Translucent glass backdrop via the macOS `NSVisualEffectView` material,
     // UNLESS the user reduces transparency (then open opaque). Requires
     // `tauri/macos-private-api` (enabled in `Cargo.toml`).
@@ -153,6 +157,7 @@ export async function openQueueWindow(): Promise<void> {
   void win.once('tauri://error', (event) => {
     log.warn("Couldn't create the queue window: {error}", { error: event.payload })
   })
+  if (takesFocus) scheduleShowFallback('queue')
 
   // Apply the `NSVisualEffectView` material AFTER creation (the `windowEffects`
   // creation option drops silently in this Tauri version; `setEffects` is the

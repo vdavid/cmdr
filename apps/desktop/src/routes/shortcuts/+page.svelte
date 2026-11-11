@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte'
-    import { getCurrentWindow } from '@tauri-apps/api/window'
+    import { onMount, onDestroy, tick } from 'svelte'
+    import { closeSelfWindow } from '#lib/child-window-close.js'
+    import { showSelfWindow } from '#lib/child-window-show.js'
     import { initWindowSettings, initWindowLanguageSync } from '#lib/settings/window-settings.js'
     import { initializeShortcuts } from '#lib/shortcuts/index.js'
     import { initAccentColor, cleanupAccentColor } from '#lib/accent-color.js'
@@ -32,13 +33,7 @@
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
             event.preventDefault()
-            // Defer the close past the current event-loop tick so any in-flight IPC
-            // ack settles before the webview is destroyed. Mirrors the Settings /
-            // Viewer windows. `setTimeout(0)`, not rAF (throttled when unfocused).
-            const win = getCurrentWindow()
-            setTimeout(() => {
-                void win.close()
-            }, 0)
+            void closeSelfWindow()
         }
     }
 
@@ -57,6 +52,11 @@
             await initDisplayAccessibility()
             await initTextSize()
             initialized = true
+
+            // The opener creates this window hidden; it looks right now, so show it
+            // (`#lib/child-window-show`). A no-op on an E2E window, which is created visible.
+            await tick()
+            showSelfWindow()
 
             // Remember position/size within the session so a reopen lands in place.
             unlistenRectTracking = await trackOwnRect('shortcuts')

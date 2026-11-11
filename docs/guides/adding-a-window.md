@@ -19,9 +19,12 @@ A window is four pieces plus one decision:
 - **The route shell wiring** (in `+page.svelte`): init the stores it reads (`initializeSettings`, plus feature stores),
   `initAccentColor`, `initTextSize` (so it tracks the font-size setting), `initWindowLanguageSync({ title })` (the
   language, plus a localized OS title that follows a switch; grant `core:window:allow-set-title`),
-  `trackOwnRect('<name>')` to remember position/size in-session, and an Escape handler that closes via `setTimeout(0)`
-  (NOT `requestAnimationFrame`, which is throttled in unfocused windows on macOS). Hide the `loading-screen` element on
-  mount.
+  `trackOwnRect('<name>')` to remember position/size in-session, and an Escape handler that calls `closeSelfWindow()`
+  (`#lib/child-window-close`). Hide the `loading-screen` element on mount.
+- **The slide in and out**: the opener creates the window `visible: false` outside E2E and calls
+  `scheduleShowFallback('<name>')`; the page calls `showSelfWindow()` once its appearance init has run and its content
+  rendered (`#lib/child-window-show`). The close side needs nothing: every close reaches the backend's slide-out
+  (`apps/desktop/src-tauri/src/child_window_lifecycle/CLAUDE.md`).
 
 ## The capability gotcha: perms are checked against the _calling_ window
 
@@ -48,7 +51,7 @@ matters).
 ## Checklist
 
 - **Route**: `routes/<name>/+page.svelte` with the shell wiring above.
-- **Opener**: `<feature>-window.ts`, mirroring the closest existing window.
+- **Opener**: `<feature>-window.ts`, mirroring the closest existing window, created hidden with the show fallback.
 - **Capability**: `capabilities/<name>.json` with minimal perms (or just `core:event:default` if it routes opens through
   main).
 - **Menu / command** (if user-launched): a `COMMAND_IDS` entry + registry entry + handler, and a menu item if it belongs
