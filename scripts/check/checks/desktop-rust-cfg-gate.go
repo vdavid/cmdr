@@ -7,8 +7,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/BurntSushi/toml"
 )
 
 // RunCfgGate verifies that Rust code properly gates macOS-only imports with
@@ -147,77 +145,6 @@ type violation struct {
 	// kind is "crate" or "module", so the message says which name set was hit.
 	kind string
 	name string
-}
-
-// extractMacOSCrateModules parses Cargo.toml and returns the set of Rust module names
-// (hyphens converted to underscores) for crates declared under [target.'cfg(target_os = "macos")'.dependencies].
-//
-// A crate ALSO declared unconditionally (in `[dependencies]` or `[dev-dependencies]`) is
-// left out: it links on every target through that second declaration, so naming it
-// outside a gate breaks nothing. `tar` is the live example, macOS-only for production
-// extraction and an all-target dev-dependency so the tarball-building test compiles in
-// the Linux lane.
-func extractMacOSCrateModules(cargoPath string) (map[string]bool, error) {
-	var cargo map[string]any
-	if _, err := toml.DecodeFile(cargoPath, &cargo); err != nil {
-		return nil, err
-	}
-
-	allTargets := allTargetDepNames(cargo)
-
-	// Navigate: target -> cfg(target_os = "macos") -> dependencies
-	targetSection, ok := cargo["target"]
-	if !ok {
-		return nil, nil
-	}
-	targetMap, ok := targetSection.(map[string]any)
-	if !ok {
-		return nil, nil
-	}
-
-	cfgSection, ok := targetMap[`cfg(target_os = "macos")`]
-	if !ok {
-		return nil, nil
-	}
-	cfgMap, ok := cfgSection.(map[string]any)
-	if !ok {
-		return nil, nil
-	}
-
-	depsSection, ok := cfgMap["dependencies"]
-	if !ok {
-		return nil, nil
-	}
-	depsMap, ok := depsSection.(map[string]any)
-	if !ok {
-		return nil, nil
-	}
-
-	modules := make(map[string]bool, len(depsMap))
-	for crateName := range depsMap {
-		if allTargets[crateName] {
-			continue
-		}
-		moduleName := strings.ReplaceAll(crateName, "-", "_")
-		modules[moduleName] = true
-	}
-	return modules, nil
-}
-
-// allTargetDepNames collects the crate names a manifest declares for every target, from
-// the unconditional `[dependencies]` and `[dev-dependencies]` tables.
-func allTargetDepNames(cargo map[string]any) map[string]bool {
-	names := map[string]bool{}
-	for _, table := range []string{"dependencies", "dev-dependencies"} {
-		deps, ok := cargo[table].(map[string]any)
-		if !ok {
-			continue
-		}
-		for crateName := range deps {
-			names[crateName] = true
-		}
-	}
-	return names
 }
 
 // crateRefPattern matches every path-qualified reference to a crate root on a line:

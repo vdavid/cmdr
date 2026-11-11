@@ -14,7 +14,8 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
   `desktop-svelte-*`, `website-*`, `api-server-*`, `scripts-go-*`. `registry.go` holds the single canonical ordered
   `AllChecks` list plus the filter/validation helpers; `common.go` holds the core types and command plumbing every check
   builds on; `tool-install.go` the pinned-tool installer (dev secrets, checksum-pinned binaries, `cargo-nextest`, the Go
-  analyzers); `inputs.go` holds the shared `Inputs` path sets.
+  analyzers); `inputs.go` holds the shared `Inputs` path sets. A big check may split by concern into
+  `{app}-{name}-{part}.go`, each with its own test file: `desktop-rust-cfg-gate-manifest.go` reads the manifests.
 - **An allowlist is a sibling JSON named `<check>-allowlist.json`**, and it's NEVER hand-edited: the owning check
   shrink-wraps it on local runs, so you run the check and commit its rewrite (§ "Allowlist consent"). The shared
   staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist shrink-wrap". Seventeen
