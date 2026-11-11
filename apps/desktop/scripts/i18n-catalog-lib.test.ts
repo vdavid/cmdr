@@ -33,6 +33,8 @@ import {
   hasBrandPresent,
   resolveLocaleSource,
   layerCatalogs,
+  platformBranches,
+  pairPlatformBranches,
 } from './i18n-catalog-lib.ts'
 
 describe('isMetadataKey', () => {
@@ -305,6 +307,56 @@ describe('rawTokens', () => {
 
   it('returns an empty set when there are no tokens', () => {
     expect([...rawTokens('No tokens here, just `code` and <literal>')]).toEqual([])
+  })
+})
+
+describe('platformBranches', () => {
+  it('reads a plain value as one unnamed branch', () => {
+    expect(platformBranches('Show in Finder')).toEqual([{ name: null, text: 'Show in Finder' }])
+  })
+
+  it('reads a block as its named branches, in canonical order', () => {
+    expect(platformBranches('{platform, select, macos {Finder} windows {File Explorer} other {Files}}')).toEqual([
+      { name: 'macos', text: 'Finder' },
+      { name: 'windows', text: 'File Explorer' },
+      { name: 'other', text: 'Files' },
+    ])
+  })
+
+  it('splits a raw block whose bodies hold literal tokens and <…>', () => {
+    expect(platformBranches('{platform, select, macos {Open {system_settings}} other {Run <cmd>}}')).toEqual([
+      { name: 'macos', text: 'Open {system_settings}' },
+      { name: 'other', text: 'Run <cmd>' },
+    ])
+  })
+})
+
+describe('pairPlatformBranches', () => {
+  it('pairs two plain values once, unnamed', () => {
+    expect(pairPlatformBranches('Hello', 'Hallo')).toEqual([{ name: null, source: 'Hello', locale: 'Hallo' }])
+  })
+
+  it('pairs same-named branches', () => {
+    expect(
+      pairPlatformBranches('{platform, select, macos {A} other {B}}', '{platform, select, macos {a} other {b}}'),
+    ).toEqual([
+      { name: 'macos', source: 'A', locale: 'a' },
+      { name: 'other', source: 'B', locale: 'b' },
+    ])
+  })
+
+  it('pairs by what each OS reads when the branch sets differ', () => {
+    expect(pairPlatformBranches('{platform, select, windows {W} other {O}}', 'plain')).toEqual([
+      { name: 'windows', source: 'W', locale: 'plain' },
+      { name: 'other', source: 'O', locale: 'plain' },
+    ])
+    expect(
+      pairPlatformBranches('{platform, select, macos {M} other {O}}', '{platform, select, windows {w} other {o}}'),
+    ).toEqual([
+      { name: 'macos', source: 'M', locale: 'o' },
+      { name: 'windows', source: 'O', locale: 'w' },
+      { name: 'other', source: 'O', locale: 'o' },
+    ])
   })
 })
 

@@ -4,7 +4,7 @@
  * given locales, in one command, the way a translator needs it after a batch: one
  * line per check when it's clean, the full report only for a check that isn't.
  *
- * In process, each check scoped to the tags: parity, stale, icu, plural, coverage,
+ * In process, each check scoped to the tags: parity, stale, icu, platform-select, plural, coverage,
  * dont-translate, aria-label, quoted-labels (`runLocaleCheck`'s `only`), and
  * term-consistency, termbase, mechanics (their per-locale outcomes, filtered).
  * Then, as subprocesses: the doc citations (repo-wide, it's one fast scan) and the
@@ -27,6 +27,7 @@ import { runDontTranslateCheck } from './i18n-check-dont-translate.ts'
 import { runIcuCheck } from './i18n-check-icu.ts'
 import * as mechanics from './i18n-check-mechanics.ts'
 import { runParityCheck } from './i18n-check-parity.ts'
+import { runPlatformSelectCheck } from './i18n-check-platform-select.ts'
 import { runPluralCheck } from './i18n-check-plural.ts'
 import { runQuotedLabelsCheck } from './i18n-check-quoted-labels.ts'
 import { runStaleCheck } from './i18n-check-stale.ts'
@@ -63,6 +64,7 @@ function inProcessSteps(
     { name: 'parity', run: (write) => runParityCheck({ messagesRoot, write, only }) },
     { name: 'stale', run: (write) => runStaleCheck({ messagesRoot, write, only }) },
     { name: 'icu', run: (write) => runIcuCheck({ messagesRoot, write, only }) },
+    { name: 'platform-select', run: (write) => runPlatformSelectCheck({ messagesRoot, write, only }) },
     { name: 'plural', run: (write) => runPluralCheck({ messagesRoot, write, only }) },
     { name: 'coverage', run: (write) => runCoverageCheck({ messagesRoot, write, only }) },
     { name: 'dont-translate', run: (write) => runDontTranslateCheck({ messagesRoot, write, only }) },

@@ -21,6 +21,8 @@
  *     messages on that same axis: same words in the same arrangement, whatever
  *     plural/select branch set each one uses, which is how the coverage check sees
  *     an untranslated counter whose branch categories are correctly the locale's own.
+ *     A per-OS `{platform, select, …}` block is read branch by branch
+ *     (`platformBranches`, `pairPlatformBranches`, over the runtime's splitter).
  *  3. Source hashing: `sourceHash(value)` is a git-style 7-char hex of an English
  *     value, stamped into `@key.sourceHash` by the pseudolocale generator and
  *     compared by the stale check.
@@ -51,6 +53,8 @@ import { createHash } from 'node:crypto'
 import { IntlMessageFormat } from 'intl-messageformat'
 import { isNativeKey } from './gen-native-strings-lib.ts'
 import { inheritableAncestors } from '../src/lib/intl/locale-inheritance.ts'
+import { parsePlatformSelect, pickPlatformBranch } from '../src/lib/intl/platform-select.ts'
+import type { PlatformSelectBranch } from '../src/lib/intl/platform-select.ts'
 
 /** AST element `type` constants (the `@formatjs` `TYPE` enum, inlined to avoid a deep import). */
 export const TYPE = Object.freeze({
@@ -648,6 +652,72 @@ export function isRawKey(key: string): boolean {
  */
 export function isSearchKeywordsKey(key: string): boolean {
   return key.startsWith('settings.') && key.endsWith('.keywords')
+}
+
+/** One branch of a value, as `platformBranches` reads it. `name` is `null` for a value that isn't a block. */
+export interface PlatformBranch {
+  name: PlatformSelectBranch | null
+  text: string
+}
+
+const BRANCH_ORDER: readonly PlatformSelectBranch[] = ['macos', 'windows', 'other']
+
+/** The OS that reads a branch name: `other` is Linux's (and every backend-less context's). */
+const BRANCH_READER: Readonly<Record<PlatformSelectBranch, 'macos' | 'windows' | 'linux'>> = {
+  macos: 'macos',
+  windows: 'windows',
+  other: 'linux',
+}
+
+/**
+ * The text a check must judge, branch by branch. A platform block
+ * (`{platform, select, macos {…} windows {…} other {…}}`, split by the runtime's
+ * own `parsePlatformSelect`, so both families split the same way) yields its
+ * branches in canonical order; any other value, a malformed block included,
+ * yields itself as one unnamed branch. Every check that reads catalog TEXT goes
+ * through here: a whole-value reader sees a raw block's branch bodies as
+ * `{token}`s (`rawTokens`) or strips them as spans, going blind to them.
+ * Whether a block is well formed is the platform-select check's question.
+ * @param value a catalog value, either family
+ */
+export function platformBranches(value: string): PlatformBranch[] {
+  const branches = parsePlatformSelect(value)
+  if (branches === null) return [{ name: null, text: value }]
+  return BRANCH_ORDER.flatMap((name) => {
+    const text = branches[name]
+    return text === undefined ? [] : [{ name, text }]
+  })
+}
+
+/** One pairing of `pairPlatformBranches`: the source and locale text a reader of `name`'s OS sees. */
+export interface PlatformBranchPair {
+  name: PlatformSelectBranch | null
+  source: string
+  locale: string
+}
+
+/**
+ * Pairs a locale value with its source branch by branch, for the checks that
+ * compare the two (parity, and every rule that asks "is this branch the source's
+ * same branch?"). With matching branch sets each branch meets its namesake. When
+ * the sets differ (that mismatch is the platform-select check's finding), every
+ * branch name either side carries is paired by what its OS READS on each side
+ * (`pickPlatformBranch`: a missing branch reads `other`, a plain value reads
+ * itself), so a comparison still judges what each OS would render. Two plain
+ * values give one unnamed pair.
+ * @param sourceValue the source (usually English) value
+ * @param localeValue the locale's value
+ */
+export function pairPlatformBranches(sourceValue: string, localeValue: string): PlatformBranchPair[] {
+  const sourceBranches = platformBranches(sourceValue)
+  const localeBranches = platformBranches(localeValue)
+  const present = new Set([...sourceBranches, ...localeBranches].map(({ name }) => name))
+  if (present.size === 1 && present.has(null)) return [{ name: null, source: sourceValue, locale: localeValue }]
+  return BRANCH_ORDER.filter((name) => present.has(name)).map((name) => ({
+    name,
+    source: pickPlatformBranch(sourceValue, BRANCH_READER[name]),
+    locale: pickPlatformBranch(localeValue, BRANCH_READER[name]),
+  }))
 }
 
 /**

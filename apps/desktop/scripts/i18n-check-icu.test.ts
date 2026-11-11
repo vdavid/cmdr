@@ -54,6 +54,18 @@ describe('icuError: pure classifier', () => {
   })
 })
 
+describe('icuError: platform blocks', () => {
+  it('parses an ICU block whole, so a broken branch is invalid ICU', () => {
+    expect(icuError('a.b', '{platform, select, macos {Open {label}} other {Open}}')).toBeNull()
+    expect(icuError('a.b', '{platform, select, macos {Open {label} other {Open}}')).toMatch(/invalid ICU:/)
+  })
+
+  it('never ICU-parses a raw block (its shape is the platform-select check), but still refuses doubled apostrophes', () => {
+    expect(icuError('errors.x.y', "{platform, select, macos {Here's <folder-path>} other {See `<path>`}}")).toBeNull()
+    expect(icuError('errors.x.y', "{platform, select, macos {Can''t} other {Cannot}}")).toMatch(/doubled apostrophe/)
+  })
+})
+
 describe('runIcuCheck against the committed fixture', () => {
   it('is clean: en-XA is valid ICU and the raw errors.* value is skipped', () => {
     const { lines, write } = capture()

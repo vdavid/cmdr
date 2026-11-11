@@ -136,6 +136,9 @@ jobs:
       - name: Check i18n ICU validity
         run: ./scripts/check/check --check desktop-i18n-icu --ci
 
+      - name: Check i18n platform-select shape
+        run: ./scripts/check/check --check desktop-i18n-platform-select --ci
+
       - name: Check i18n tag/param name collisions
         run: ./scripts/check/check --check desktop-i18n-tag-param-collision --ci
 

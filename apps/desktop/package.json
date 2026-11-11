@@ -40,6 +40,7 @@
     "i18n:check-stale": "node scripts/i18n-check-stale.ts",
     "i18n:check-parity": "node scripts/i18n-check-parity.ts",
     "i18n:check-icu": "node scripts/i18n-check-icu.ts",
+    "i18n:check-platform-select": "node scripts/i18n-check-platform-select.ts",
     "i18n:check-plural": "node scripts/i18n-check-plural.ts",
     "i18n:check-coverage": "node scripts/i18n-check-coverage.ts",
     "i18n:check-dont-translate": "node scripts/i18n-check-dont-translate.ts",

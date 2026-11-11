@@ -20,6 +20,14 @@
  *    compare the `{token}` brace sets (`rawTokens`) instead: the raw-pipeline
  *    analogue of placeholder parity.
  *
+ * A platform block (`{platform, select, …}`) is compared BRANCH BY BRANCH
+ * (`pairPlatformBranches`), each locale branch against the source's same branch:
+ * branches may legitimately differ from each other (`{system_settings}` only in
+ * `macos`), and a whole-value union would hide a token moved between branches.
+ * Each finding names its branch. A branch-SET mismatch is the platform-select
+ * check's finding; here a branch missing on one side pairs with what that OS
+ * reads there.
+ *
  * A key MISSING from the locale isn't a parity failure (the runtime falls back
  * through the chain, no crash); the coverage check owns missing keys. Here we
  * only inspect keys the locale actually defines.
@@ -28,7 +36,7 @@
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
-import { parseMessage, isRawKey, rawTokens } from './i18n-catalog-lib.ts'
+import { parseMessage, isRawKey, pairPlatformBranches, rawTokens } from './i18n-catalog-lib.ts'
 import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /**
@@ -53,6 +61,16 @@ function difference(a: Set<string>, b: Set<string>): string[] {
  * @param localeValue the locale's value for the same key
  */
 export function parityDetail(key: string, englishValue: string, localeValue: string): string | null {
+  const details = pairPlatformBranches(englishValue, localeValue).flatMap(({ name, source, locale }) => {
+    const detail = branchParityDetail(key, source, locale)
+    if (detail === null) return []
+    return [name === null ? detail : `${name} branch: ${detail}`]
+  })
+  return details.length === 0 ? null : details.join('; ')
+}
+
+/** `parityDetail` for one branch pair (or two plain values). */
+function branchParityDetail(key: string, englishValue: string, localeValue: string): string | null {
   if (isRawKey(key)) {
     const en = rawTokens(englishValue)
     const loc = rawTokens(localeValue)

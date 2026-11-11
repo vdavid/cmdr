@@ -825,6 +825,26 @@ var AllChecks = []CheckDefinition{
 		Run:       RunDesktopI18nIcu,
 	},
 	{
+		ID:          "desktop-i18n-platform-select",
+		Nickname:    "i18n-platform-select",
+		DisplayName: "i18n-platform-select",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// ERROR class: a per-OS value must be one whole-value
+		// `{platform, select, …}` block in canonical shape, with its source's
+		// branch set, or the raw readers split it wrong. Real CI gate.
+		DependsOn: nil,
+		IsFast:    true,
+		Inputs: inputs([]string{
+			"apps/desktop/src/lib/intl/messages/**",
+			"apps/desktop/src/lib/intl/platform-select.ts",
+			"apps/desktop/scripts/i18n-*.ts",
+			"apps/desktop/scripts/gen-native-strings-lib.ts",
+			"apps/desktop/scripts/vite-locale-catalogs.ts",
+		}),
+		Run: RunDesktopI18nPlatformSelect,
+	},
+	{
 		ID:          "desktop-i18n-tag-param-collision",
 		Nickname:    "i18n-tag-param-collision",
 		DisplayName: "i18n-tag-param-collision",

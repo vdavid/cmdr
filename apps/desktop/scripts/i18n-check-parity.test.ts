@@ -59,6 +59,75 @@ describe('parityDetail: pure comparison', () => {
   })
 })
 
+describe('parityDetail: platform blocks, per branch', () => {
+  const en =
+    '{platform, select, macos {Show {name} in Finder} windows {Show {name} in File Explorer} other {Show {name}}}'
+
+  it('is clean when every branch keeps its own placeholders', () => {
+    expect(
+      parityDetail(
+        'a.b',
+        en,
+        '{platform, select, macos {{name} im Finder zeigen} windows {Show {name} in File Explorer} other {Show {name}}}',
+      ),
+    ).toBeNull()
+  })
+
+  it('is clean when branches legitimately differ from each other', () => {
+    const differing = '{platform, select, macos {Open <link>{label}</link>} other {Open {path}}}'
+    expect(
+      parityDetail('a.b', differing, '{platform, select, macos {Öffne <link>{label}</link>} other {Öffne {path}}}'),
+    ).toBeNull()
+  })
+
+  it('flags a branch whose placeholder moved to another branch, naming the branch', () => {
+    const detail = parityDetail(
+      'a.b',
+      '{platform, select, macos {Open {label}} other {Open {path}}}',
+      '{platform, select, macos {Öffne {path}} other {Öffne {path}}}',
+    )
+    expect(detail).toMatch(/^macos branch: placeholders expected \{label\}, got \{path\}$/)
+  })
+
+  it('flags a per-branch tag mismatch', () => {
+    expect(
+      parityDetail(
+        'a.b',
+        '{platform, select, macos {Open <link>x</link>} other {Open}}',
+        '{platform, select, macos {Öffne} other {Öffne}}',
+      ),
+    ).toMatch(/macos branch: tags expected <link>, got <\(none\)>/)
+  })
+
+  it('flags a raw block whose branch dropped a {token}', () => {
+    expect(
+      parityDetail(
+        'errors.x.suggestion',
+        '{platform, select, macos {Open {system_settings}.} other {Open Settings.}}',
+        '{platform, select, macos {Öffne die Einstellungen.} other {Öffne die Einstellungen.}}',
+      ),
+    ).toMatch(/^macos branch: token mismatch: expected \{system_settings\}, got \{\(none\)\}$/)
+  })
+
+  it('is clean for a raw block whose branches carry different tokens', () => {
+    expect(
+      parityDetail(
+        'errors.x.suggestion',
+        '{platform, select, macos {Open {system_settings}.} other {Open {path}.}}',
+        '{platform, select, macos {Öffne {system_settings}.} other {Öffne {path}.}}',
+      ),
+    ).toBeNull()
+  })
+
+  it('compares a plain locale value against what each OS reads in a block', () => {
+    // The branch-set mismatch itself is the platform-select check's finding; parity
+    // still guards what each OS would render.
+    expect(parityDetail('a.b', '{platform, select, macos {Open {label}} other {Open {path}}}', 'Öffne {label}')).toBe(
+      'other branch: placeholders expected {path}, got {label}',
+    )
+  })
+})
+
 describe('runParityCheck against the committed fixture', () => {
   it('is clean: en-XA preserves every placeholder, tag, and raw token', () => {
     const { lines, write } = capture()
