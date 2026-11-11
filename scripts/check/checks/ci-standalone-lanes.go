@@ -10,8 +10,8 @@ import (
 )
 
 // Rule 9 of `ci-coverage`: a standalone lane file. Every `*-lane.yml` is a reusable
-// workflow `ci.yml` calls, except one that triggers itself (`windows-lane.yml`, which has to
-// stay outside `CI OK` until it's green). Nothing in `ci.yml` gates it, so its own
+// workflow `ci.yml` calls, except one that triggers itself and declares no `workflow_call`
+// (`windows-lane.yml`, which has to stay outside `CI OK` until it's green). Nothing in `ci.yml` gates it, so its own
 // `push.paths` is its filter, and it answers to the same contract a caller's filter does
 // (rules 6 and 8): it lists the lane file, every local action the lane uses, and
 // `.mise.toml`, and it covers the fingerprint of every check the lane runs. Without that, a
@@ -68,15 +68,19 @@ func parseOnBlock(lines []string) (events []string, pushPaths []string) {
 	return events, pushPaths
 }
 
-// isStandaloneWorkflow says whether a workflow starts on anything but `workflow_call`.
+// isStandaloneWorkflow says whether a workflow starts itself and can't be called: it names
+// at least one trigger and none of them is `workflow_call`. A lane that declares
+// `workflow_call` is built to be called, so it needs its `ci.yml` caller whatever else it
+// lists: a `workflow_dispatch` beside it runs the lane by hand, never on a PR, and counting
+// that as "triggers itself" would keep the check green on a gating lane that lost its caller.
 func isStandaloneWorkflow(content string) bool {
 	events, _ := workflowTriggers(content)
 	for _, e := range events {
-		if e != "workflow_call" {
-			return true
+		if e == "workflow_call" {
+			return false
 		}
 	}
-	return false
+	return len(events) > 0
 }
 
 // validateStandaloneLanes is rule 9, for every lane file no `ci.yml` job calls.

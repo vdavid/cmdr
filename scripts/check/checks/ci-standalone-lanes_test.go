@@ -45,6 +45,12 @@ func TestAReusableLaneIsNotStandalone(t *testing.T) {
 	if !isStandaloneWorkflow("name: X\non: [push, workflow_dispatch]\n") {
 		t.Error("the inline `on:` list form triggers itself too")
 	}
+	if isStandaloneWorkflow("name: X\non:\n  workflow_call:\n  workflow_dispatch:\n") {
+		t.Error("a lane that declares workflow_call is reusable, whatever else starts it")
+	}
+	if isStandaloneWorkflow("name: X\n") {
+		t.Error("a workflow with no trigger starts nowhere, so it doesn't stand alone")
+	}
 }
 
 // The real Windows lane passes, and dropping a path its checks read is caught with the

@@ -21,8 +21,8 @@ import (
 //   - Rule 6: every filter a lane's caller reads (in its `if:` or `with:`) lists the lane file,
 //     every local composite action it uses (transitively), `ci.yml`, and `.mise.toml`. A lane file
 //     named outright in another lane's filter fails too, since then an edit to one lane reruns
-//     two, and a `*-lane.yml` no ci.yml job calls is dead unless it triggers itself (rule 9,
-//     `ci-standalone-lanes.go`).
+//     two, and a `*-lane.yml` no ci.yml job calls is dead unless it triggers itself and declares
+//     no `workflow_call` (rule 9, `ci-standalone-lanes.go`).
 //   - Rule 7: a filter that gates one check in the light lane (`ciFilterGatedChecks`) covers that
 //     check's whole fingerprint (`Inputs`, `GlobalInputs`, and the runner files its `Run`
 //     reaches), so a check that used to run on every change still runs whenever anything it
@@ -260,8 +260,8 @@ func foreignLaneFiles(filters map[string][]string, laneFilters map[string]map[st
 	return violations
 }
 
-// uncalledLaneFiles flags a `*-lane.yml` no ci.yml job calls and that has no trigger
-// of its own.
+// uncalledLaneFiles flags a `*-lane.yml` no ci.yml job calls, unless it stands alone: it
+// triggers itself and declares no `workflow_call` (`isStandaloneWorkflow`).
 func uncalledLaneFiles(rootDir string, laneFilters map[string]map[string]bool) []string {
 	entries, err := os.ReadDir(filepath.Join(rootDir, ".github", "workflows"))
 	if err != nil {

@@ -136,9 +136,11 @@ server).
 5. The `CI OK` gate sees every job and always reports (§ Branch protection).
 6. Every filter a lane's caller reads (in its `if:` or `with:`) matches the lane file, every local composite action it
    uses (followed into nested actions), `ci.yml`, and `.mise.toml`; no filter names another lane's file outright; and
-   every `*-lane.yml` has a caller or triggers itself (`scripts/check/checks/ci-lane-files.go`). Before it,
-   `macos-lane.yml` sat only in the `finder-extension` filter (which gates one step), and no filter watched
-   `.github/actions/`, so an edit to the macOS lane's steps or to a composite action ran nothing that tested it.
+   every `*-lane.yml` has a caller, or triggers itself and declares no `workflow_call`
+   (`scripts/check/checks/ci-lane-files.go`). A lane that declares `workflow_call` needs its caller whatever else it
+   lists: a `workflow_dispatch` beside it runs the lane by hand, never on a PR. Before it, `macos-lane.yml` sat only in
+   the `finder-extension` filter (which gates one step), and no filter watched `.github/actions/`, so an edit to the
+   macOS lane's steps or to a composite action ran nothing that tested it.
 7. Each filter in `ciFilterGatedChecks` covers its check's whole fingerprint, so gating a check that used to run on
    every change never skips a change it reads. That's the light lane's sections (`scripts`, `api-server`, `dashboard`)
    and its three slow hygiene checks. Deliberate narrowings sit in `ciFilterNarrowedInputs` (one pattern) and

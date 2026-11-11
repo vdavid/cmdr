@@ -155,6 +155,25 @@ func TestLaneFiltersFlagAnUncalledLaneFile(t *testing.T) {
 	}
 }
 
+// A reusable lane that lost its caller is dead for the gate whatever else starts it: a
+// `workflow_dispatch` beside its `workflow_call` runs it by hand, never on a PR. Only a lane
+// that declares no `workflow_call` at all stands alone.
+func TestLaneFiltersFlagAnUncalledReusableLaneWithAnotherTrigger(t *testing.T) {
+	root := writeLaneFixtureRepo(t)
+	write := func(name, content string) {
+		if err := os.WriteFile(filepath.Join(root, ".github/workflows", name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("orphan-lane.yml", "name: x\non:\n  workflow_call:\n  workflow_dispatch:\n")
+	write("inline-lane.yml", "name: x\non: [workflow_call, workflow_dispatch]\n")
+	write("alone-lane.yml", "name: x\non:\n  push:\n    branches: [main]\n  workflow_dispatch:\n")
+	got := validateLaneFilters(root, ciLaneFilesFixture)
+	if len(got) != 2 || !strings.Contains(got[0], "inline-lane.yml") || !strings.Contains(got[1], "orphan-lane.yml") {
+		t.Errorf("want the two uncalled reusable lanes flagged and the standalone one left alone, got:\n%s", strings.Join(got, "\n"))
+	}
+}
+
 // The gated-check rule runs against the real repo, the only place its registry and runner
 // sources exist; the real ci.yml must pass, and dropping one input must fail by name.
 func TestGatedCheckFiltersCoverTheirChecks(t *testing.T) {
