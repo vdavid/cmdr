@@ -9,7 +9,6 @@ use crate::menu::{
     MenuState, command_id_to_menu_id, frontend_shortcut_to_accelerator, rebuild_view_mode_items,
     update_menu_item_accelerator,
 };
-#[cfg(target_os = "macos")]
 use crate::network::mdns_discovery::update_resolve_timeout;
 
 /// Check if a port is available for binding.
@@ -91,19 +90,10 @@ fn sanitize_store_name(store_name: &str) -> Option<&str> {
 
 /// Updates the mDNS service resolve timeout in milliseconds.
 /// This affects future service resolutions; ongoing resolutions keep their original timeout.
-#[cfg(target_os = "macos")]
 #[tauri::command]
 #[specta::specta]
 pub fn update_service_resolve_timeout(timeout_ms: u64) {
     update_resolve_timeout(timeout_ms);
-}
-
-/// Stub for non-macOS platforms - network discovery is not supported.
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub fn update_service_resolve_timeout(_timeout_ms: u64) {
-    // No-op on non-macOS platforms
 }
 
 /// Enable or disable automatic upgrade of SMB mounts to direct smb2 connections.
