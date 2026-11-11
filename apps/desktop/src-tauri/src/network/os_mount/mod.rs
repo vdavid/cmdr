@@ -10,10 +10,10 @@
 mod mount_watch;
 pub(crate) mod netfs_wedge;
 mod platform;
+// Asks the server itself why a mount found no share; `mount_share` below asks it for every OS.
+mod share_access;
 
 use serde::{Deserialize, Serialize};
-
-use super::share_access;
 
 pub(crate) use platform::{
     list_shares_cli_as_guest, list_shares_cli_with_keychain, list_shares_cli_with_password,

@@ -85,13 +85,10 @@ pub mod os_mount;
 // Cross-platform: `same_server` and `credential_key` are used on both macOS and Linux
 // (mount dedup, `smb_upgrade`, keychain keying).
 pub mod server_identity;
-// Asks the server itself why a mount found no share. Every OS's mount reaches it
-// through `os_mount::mount_share`.
-pub(crate) mod share_access;
 pub mod smb_client;
 pub mod smb_sign_in_diagnostics;
 // Why an smb2 connect didn't get in: who was refused, and at which step. Shared by
-// `share_access` and both upgrade paths, so they read one answer one way.
+// `os_mount::share_access` and both upgrade paths, so they read one answer one way.
 pub(crate) mod smb_connect_failure;
 
 // SMB submodules - these are implementation details of smb_client
