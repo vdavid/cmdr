@@ -43,8 +43,13 @@ trustPolicy: no-downgrade
 # Pinned to exact versions so a future republish of the same string re-trips.
 #   chokidar@4.0.3  → paulmillr/chokidar (via svelte-check)
 #   semver@5.7.2, semver@6.3.1 → npm/node-semver (old major lines, transitive)
+#   chromium-bidi@157.0.8090-0 → GoogleChromeLabs/chromium-bidi, whose source moved into the
+#     Chromium tree (`third_party/chromium-bidi`); Google's `chrome-devtools-npm` account, a
+#     listed maintainer, now publishes it from there without GitHub provenance. Pinned exactly by
+#     puppeteer-core 25.16.0 under Lighthouse CI (website devDependency). Vetted 2026-11-11.
 trustPolicyExclude:
   - chokidar@4.0.3
+  - chromium-bidi@157.0.8090-0
   - semver@5.7.2
   - semver@6.3.1
 
@@ -72,11 +77,13 @@ overrides:
   brace-expansion@5: ^5.0.12
   compression@1: ^1.8.2
   fast-uri@3: ^3.1.9
+  # `@astrojs/rss` asks for `^5.5.7`, which still allows the quadratic stop-node scan
+  # (GHSA-474x-hrwr-fgx4). It parses only our own feed XML at build time.
+  fast-xml-parser@5: ^5.12.0
   # `satori` pins `fflate` to exactly 0.7.3, even in its latest release.
   fflate@0.7: ^0.8.0
   http-cache-semantics@4: ^4.3.0
   ip-address@10: ^10.7.4
-  js-yaml@3: ^3.15.2
   postcss-selector-parser@7: ^7.1.6
   proxy-addr@2: ^2.0.8
   qs@6: ^6.16.1
@@ -84,18 +91,15 @@ overrides:
   sharp@0.35: ^0.35.4
   undici@7: ^7.30.1
   undici@8: ^8.12.2
-  # `astro`, `@astrojs/*`, `knip`, and `@cloudflare/vitest-plugin` ask for zod 4
-  # with ranges still allowing 4.6.5. Zod 3 (under Lighthouse CI) can't be moved
-  # this way; it's ignored, by version, in `osv-scanner.toml`.
+  # `astro`, `@astrojs/*`, `knip`, `chromium-bidi`, and `@cloudflare/vitest-plugin`
+  # ask for zod 4 with ranges still allowing 4.6.5 (GHSA-mrhx-c7xc-m3w5).
   zod@4: ^4.6.6
   smol-toml@1: ^1.9.0
   source-map-js@1: ^1.2.2
-  # Cross-major, both only under `@lhci/cli` (Lighthouse CI, whose latest release
-  # still asks for the old majors). `uuid` 11 keeps the CJS `require('uuid').v4`
-  # that lhci calls; `basic-ftp` 6's only break is refusing a separate FTP
+  # Cross-major, only under `@lhci/cli` (Lighthouse CI) via `get-uri`, whose latest
+  # release still asks for `basic-ftp` 5. 6's only break is refusing a separate FTP
   # transfer host, and lhci never fetches over FTP.
   basic-ftp@5: ^6.2.1
-  uuid@8: ^11.1.1
 
 # pnpm 11 requires explicit per-package build-script approval. The legacy
 # `pnpm.onlyBuiltDependencies` field in package.json is ignored.
@@ -114,3 +118,9 @@ peerDependencyRules:
     # 2026-11-10 by linting a probe `.svelte` file with `width` under
     # `display: inline`).
     stylelint-declaration-block-no-ignored-properties>stylelint: '18'
+    # 3.2.6 (under puppeteer-core under Lighthouse CI) asks for the optional peer
+    # `proxy-agent >=8.0.1`, but `@lhci/cli` 0.16.0 brings 6.5.0. Only its
+    # browser-download path (`lib/httpUtil.js`) imports it, and lhci launches the
+    # installed Chrome through chrome-launcher, so it never downloads one
+    # (checked 2026-11-11 by grepping the installed package).
+    '@puppeteer/browsers>proxy-agent': '6'
