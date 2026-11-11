@@ -199,8 +199,10 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     macOS, one `notify` backend for Linux and Windows (the `notify` dependency is now Linux and Windows), the fake
     journal as a third backend for macOS tests. Replay support and the branch-watch shape are backend properties.
     Windows still needs a smoke test on a real runner.
-13. [S] Win (Linux gains a watchdog). Process stats behind one module with per-OS readers; the memory watchdog consumes
-    the portable reading.
+13. [S] Win (Linux gains a watchdog). **Done** for memory: `cmdr_fs::process_memory::current_footprint` behind a
+    `platform/` seam (macOS `phys_footprint`, Linux `RssAnon` + `VmSwap`, Windows none yet), and the watchdog runs on
+    every OS with a reader, with a trip's breakdown per OS (`cmdr-index` `resources/platform/`). The CPU readers
+    (`process_cpu`, `thread_cpu`) still answer `None` off macOS.
 14. [S] Win. Name and path validity keyed on the destination's `filesystem_kind`, not the host OS (`cmdr-fs` validation,
     `cmdr-operations` rename validity, Multi-Rename). Start with a quick check of today's exFAT and SMB behavior on a
     Mac.

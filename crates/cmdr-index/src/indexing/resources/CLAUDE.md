@@ -18,17 +18,19 @@ these cap the WHOLE indexing pool.
 - **ONE global process-wide memory watchdog stops ALL indexing.** Warn at 8 GB, stop at 16 GB via
   `state::stop_all_indexing` (snapshot ids, then stop each). Scans run in PARALLEL; this is a catastrophe-stop for
   machine protection, NOT a usage target. `start()` is idempotent (`WATCHDOG_RUNNING`), called from `start_indexing`;
-  macOS-only, no-op stub elsewhere. Scans spawn via the `host::runtime` seam (`tokio::spawn` panics in `setup()`).
+  every OS with a footprint reader (macOS, Linux), not started without one. Scans spawn via the `host::runtime` seam
+  (`tokio::spawn` panics in `setup()`).
 - **The stop is NOT the end of the watch.** The loop runs for the process lifetime and escalates when `phys_footprint`
   keeps climbing after a stop (+2 GB, then 4, 8, 16), re-arming below the warn line. Don't reintroduce a `return` in the
   stop path: that one-shot shape let a 2026-07 incident climb 16→40 GB completely unobserved.
 - **Read the heap through `crate::process_memory`, never a zone total.** `query_rust_heap` reads whichever allocator is
   global; `query_system_malloc_zones` reads the zones beyond it. Under mimalloc the zone APIs are BLIND to the heap (a
   16.5 GB footprint once logged as a 1.6 GB heap), and `vmmap`'s `IOAccelerator` rows ARE the heap, not GPU memory.
-- **The threshold basis is `phys_footprint`, NOT RSS.** RSS counts graphics and shared mappings that aren't real memory
-  pressure, so keying the stop on RSS would let graphics trip a machine-protection stop. ❌ Don't reintroduce a
-  "resident − phys means GPU" hint: in the 2026-07 runaway that delta was 0.00 GB and the memory was the Rust heap. The
-  log's verdict comes from `MemoryAttribution`, computed from the same numbers it prints.
+- **The threshold basis is the footprint (`phys_footprint` on macOS, `RssAnon` + `VmSwap` on Linux), NOT RSS.** RSS
+  counts graphics and shared mappings that aren't real memory pressure, so keying the stop on RSS would let graphics
+  trip a machine-protection stop. ❌ Don't reintroduce a "resident − phys means GPU" hint: in the 2026-07 runaway that
+  delta was 0.00 GB and the memory was the Rust heap. The log's verdict comes from `MemoryAttribution`, computed from
+  the same numbers it prints.
 - **ONE budget covers other resident-pool subsystems** (`subsystem_stop.rs`): a subsystem (media_index image enrichment,
   which decodes HEIC/RAW) calls `register_subsystem_stop_hook` once at startup, and `stop_all_indexing` runs every hook.
   Deliberate: a second independent 16 GB ceiling over the SAME pool would let the two sum to ~2× real headroom. Hooks

@@ -1301,6 +1301,12 @@ mimalloc again means making it that build's default (the rule in `build.rs`), wh
 
 ### The readers
 
+**`current_footprint` is the one reading every OS answers** (`process_memory/platform/`): macOS's `phys_footprint` from
+`task_info`, Linux's `RssAnon` + `VmSwap` from `/proc/self/status` (anonymous memory in RAM and in swap; file-backed
+pages stay out, as `phys_footprint` leaves them out), and `None` on Windows until `K32GetProcessMemoryInfo`'s
+`PrivateUsage` is wired. The index's memory watchdog keys on it (verified on Linux 6.18, a touched 256 MiB block shows
+in the reading, `the_real_reading_sees_a_touched_allocation`, 2026-11-11). Everything below is macOS detail.
+
 Under **mimalloc**, `query_rust_heap` reads `mi_process_info` (committed bytes), and mimalloc is not a registered malloc
 zone, so `query_system_malloc_zones` sees every zone and none of the Rust heap. Under the **system allocator**, the Rust
 heap IS the default malloc zone, shared with Objective-C and C code, so `query_rust_heap` reads that zone's statistics

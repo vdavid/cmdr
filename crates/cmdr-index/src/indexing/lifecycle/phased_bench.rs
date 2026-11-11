@@ -881,7 +881,7 @@ impl Sampler {
                     if let Some(basic) = cmdr_fs::process_memory::query_basic_info() {
                         peak_resident = peak_resident.max(basic.resident_size_max);
                     }
-                    if let Some(footprint) = cmdr_fs::process_memory::current_phys_footprint() {
+                    if let Some(footprint) = cmdr_fs::process_memory::current_footprint() {
                         peak_footprint = peak_footprint.max(footprint);
                     }
                     let elapsed = started_at.elapsed();

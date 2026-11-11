@@ -23,7 +23,7 @@
 //!
 //! ## Cost
 //!
-//! A background thread samples [`crate::process_memory::current_phys_footprint`]
+//! A background thread samples [`crate::process_memory::current_footprint`]
 //! every 100 ms into an atomic; the format closures read that atomic lock-free.
 //! So the read is a syscall-free atomic load per line, and the syscall itself
 //! happens 10x/second regardless of log volume. When the env flag is unset (the
@@ -100,7 +100,7 @@ pub fn tag() -> String {
 /// Take one reading into [`CURRENT_BYTES`]. A failed query leaves the last value
 /// in place (better a slightly stale number than a flapping `0`).
 fn sample_once() {
-    if let Some(bytes) = crate::process_memory::current_phys_footprint() {
+    if let Some(bytes) = crate::process_memory::current_footprint() {
         CURRENT_BYTES.store(bytes, Ordering::Relaxed);
     }
 }

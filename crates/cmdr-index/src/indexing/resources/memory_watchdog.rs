@@ -29,33 +29,28 @@
 //! NOT expected usage (real scan memory is the accumulator maps + the 20K
 //! writer channel — hundreds of MB per normal volume).
 //!
-//! On non-macOS platforms this is a no-op stub (platform memory queries
-//! differ and can be added later).
+//! **Every OS with a footprint reader runs it** (`cmdr_fs::process_memory::current_footprint`):
+//! macOS's `phys_footprint`, Linux's anonymous resident memory plus swap. A trip's
+//! breakdown beyond the footprint is per OS (`platform/`); off macOS the footprint
+//! alone is reported. With no reader (Windows today) the watchdog doesn't start.
 
-#[cfg(target_os = "macos")]
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-#[cfg(target_os = "macos")]
-use super::memory_snapshot::{MemorySnapshot, gb};
-#[cfg(target_os = "macos")]
+use super::platform::{self, Breakdown};
 use crate::indexing::lifecycle::state;
 
 /// 8 GB in bytes.
-#[cfg(target_os = "macos")]
 const WARN_THRESHOLD: u64 = 8 * 1024 * 1024 * 1024;
 
 /// 16 GB in bytes.
-#[cfg(target_os = "macos")]
 const STOP_THRESHOLD: u64 = 16 * 1024 * 1024 * 1024;
 
 /// How often the watchdog checks memory (seconds).
-#[cfg(target_os = "macos")]
 const CHECK_INTERVAL_SECS: u64 = 5;
 
 /// How much further `phys_footprint` must climb after a stop before the
 /// watchdog shouts again. Doubles per escalation (see [`PostStop::next_step`]).
-#[cfg(target_os = "macos")]
 const FIRST_ESCALATION_STEP: u64 = 2 * 1024 * 1024 * 1024;
 
 // ── Decision logic (pure) ────────────────────────────────────────────
@@ -63,7 +58,6 @@ const FIRST_ESCALATION_STEP: u64 = 2 * 1024 * 1024 * 1024;
 /// What the watchdog decided to do on one tick. Pure output of
 /// [`WatchdogState::decide`], so the policy is unit-testable without touching
 /// Mach, the registry, or the app handle.
-#[cfg(target_os = "macos")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum WatchdogAction {
     /// Nothing to say this tick.
@@ -86,7 +80,6 @@ enum WatchdogAction {
 
 /// Book-keeping after a stop fired, so the watchdog can tell "the stop worked"
 /// from "memory is still running away".
-#[cfg(target_os = "macos")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct PostStop {
     /// `phys_footprint` at the moment of the stop.
@@ -102,7 +95,6 @@ struct PostStop {
 }
 
 /// The watchdog's memory of what it has already reacted to.
-#[cfg(target_os = "macos")]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 struct WatchdogState {
     /// Whether the warning line has already been reported at its current crossing.
@@ -112,7 +104,6 @@ struct WatchdogState {
     stopped: Option<PostStop>,
 }
 
-#[cfg(target_os = "macos")]
 impl WatchdogState {
     /// Decide what this tick's `phys_footprint` reading calls for, updating the
     /// state. Pure: no I/O, no clock, no globals.
@@ -175,10 +166,6 @@ pub(crate) fn stop_generation() -> u64 {
 
 /// Record a watchdog stop, BEFORE the stop runs, so a waiter that reads the count
 /// after seeing its volume gone can't miss it.
-#[cfg_attr(
-    all(any(target_os = "linux", target_os = "windows"), not(test)),
-    expect(dead_code, reason = "the watchdog only runs on macOS")
-)]
 pub(crate) fn note_stop() {
     STOP_GENERATION.fetch_add(1, Ordering::SeqCst);
 }
@@ -188,29 +175,25 @@ pub(crate) fn note_stop() {
 /// wins and later per-volume `start_indexing_for` calls are no-ops — without
 /// this, every volume start would spawn a redundant watchdog loop all racing to
 /// stop indexing. Never cleared: the loop runs for the process lifetime.
-#[cfg(target_os = "macos")]
 static WATCHDOG_RUNNING: AtomicBool = AtomicBool::new(false);
 
 /// Start the global memory watchdog as a fire-and-forget background task.
 ///
-/// On macOS, spawns ONE task (idempotent across volumes) that checks
-/// `phys_footprint` every 5 seconds via `task_info`, for the whole process
-/// lifetime. On other platforms, no-op.
-#[cfg(target_os = "macos")]
+/// Spawns ONE task (idempotent across volumes) that reads the footprint every 5
+/// seconds, for the whole process lifetime. Where this OS has no footprint reader
+/// (the first read answers `None`), nothing starts.
 pub fn start(events: std::sync::Arc<dyn crate::EventSink>) {
     // Idempotent: only the first caller spawns the single global watchdog.
     if WATCHDOG_RUNNING.swap(true, Ordering::SeqCst) {
         return;
     }
+    if cmdr_fs::process_memory::current_footprint().is_none() {
+        log::info!("Memory watchdog: this OS gives no footprint reading, so it doesn't run");
+        return;
+    }
     crate::indexing::host::runtime::spawn(run_watchdog(events));
 }
 
-#[cfg(any(target_os = "linux", target_os = "windows"))]
-pub fn start(_events: std::sync::Arc<dyn crate::EventSink>) {
-    // No-op on non-macOS platforms
-}
-
-#[cfg(target_os = "macos")]
 async fn run_watchdog(events: std::sync::Arc<dyn crate::EventSink>) {
     use std::time::Duration;
 
@@ -220,9 +203,10 @@ async fn run_watchdog(events: std::sync::Arc<dyn crate::EventSink>) {
     loop {
         interval.tick().await;
 
-        // Per-tick check is cheap: one `task_info` call for `phys_footprint`.
+        // Per-tick check is cheap: one `task_info` call (macOS) or one
+        // `/proc/self/status` read (Linux).
         // The full breakdown is gathered only when a threshold actually trips.
-        let phys_footprint = match cmdr_fs::process_memory::current_phys_footprint() {
+        let phys_footprint = match cmdr_fs::process_memory::current_footprint() {
             Some(b) => b,
             None => continue,
         };
@@ -248,22 +232,20 @@ async fn run_watchdog(events: std::sync::Arc<dyn crate::EventSink>) {
 }
 
 /// Crossed the warning line: log the breakdown, keep indexing.
-#[cfg(target_os = "macos")]
 fn on_warn(phys_footprint: u64) {
-    let snapshot = MemorySnapshot::capture();
+    let breakdown = platform::breakdown();
     log::warn!(
         "Memory watchdog: phys_footprint {:.2} GB crossed the {} GB warning threshold. \
          Indexing continues but the system may be under memory pressure.\n{}",
         gb(phys_footprint),
         WARN_THRESHOLD / (1024 * 1024 * 1024),
-        snapshot.as_ref().map(MemorySnapshot::report).unwrap_or_default(),
+        breakdown.as_ref().map(|b| b.report.as_str()).unwrap_or_default(),
     );
 }
 
 /// Crossed the stop line: stop every volume's index and tell the user.
-#[cfg(target_os = "macos")]
 fn on_stop(events: &dyn crate::EventSink, phys_footprint: u64) {
-    let snapshot = MemorySnapshot::capture();
+    let breakdown = platform::breakdown();
 
     // Worth an error report, with the breakdown attached: exactly the kind of
     // failure we want diagnostic context for when the user has opted in.
@@ -274,14 +256,14 @@ fn on_stop(events: &dyn crate::EventSink, phys_footprint: u64) {
             limit_bytes: STOP_THRESHOLD,
             growth_since_stop_bytes: None,
             escalation: None,
-            snapshot: snapshot.as_ref().map(|s| crate::Diagnostic(s.report())),
+            snapshot: breakdown.as_ref().map(|b| crate::Diagnostic(b.report.clone())),
         },
     });
 
     // Report the user-visible warning, carrying the discriminating figures (not
     // just RSS) so a shipped error report tells the real story.
-    events.emit(MemorySnapshot::memory_warning_event(
-        snapshot.as_ref(),
+    events.emit(warning_event(
+        breakdown.as_ref(),
         phys_footprint,
         crate::MemoryWatchdogAction::StoppedIndexing,
     ));
@@ -295,9 +277,8 @@ fn on_stop(events: &dyn crate::EventSink, phys_footprint: u64) {
 
 /// Memory kept climbing after the stop. Whatever is growing isn't (only)
 /// indexing, so say so loudly and re-run the stop in case something restarted.
-#[cfg(target_os = "macos")]
 fn on_escalate(events: &dyn crate::EventSink, phys_footprint: u64, escalations: u32, growth_since_stop: u64) {
-    let snapshot = MemorySnapshot::capture();
+    let breakdown = platform::breakdown();
 
     events.emit(crate::IndexEvent::Error {
         report: crate::IndexErrorReport::MemoryWatchdog {
@@ -306,12 +287,12 @@ fn on_escalate(events: &dyn crate::EventSink, phys_footprint: u64, escalations: 
             limit_bytes: STOP_THRESHOLD,
             growth_since_stop_bytes: Some(growth_since_stop),
             escalation: Some(escalations),
-            snapshot: snapshot.as_ref().map(|s| crate::Diagnostic(s.report())),
+            snapshot: breakdown.as_ref().map(|b| crate::Diagnostic(b.report.clone())),
         },
     });
 
-    events.emit(MemorySnapshot::memory_warning_event(
-        snapshot.as_ref(),
+    events.emit(warning_event(
+        breakdown.as_ref(),
         phys_footprint,
         crate::MemoryWatchdogAction::StillGrowingAfterStop,
     ));
@@ -322,19 +303,90 @@ fn on_escalate(events: &dyn crate::EventSink, phys_footprint: u64, escalations: 
     state::stop_all_indexing();
 }
 
+/// The user-visible memory warning: the footprint, plus the breakdown's figures where this
+/// OS gave one (the footprint stands in for RSS, and the allocator figures read zero,
+/// without).
+fn warning_event(
+    breakdown: Option<&Breakdown>,
+    phys_footprint: u64,
+    action: crate::MemoryWatchdogAction,
+) -> crate::IndexEvent {
+    crate::IndexEvent::MemoryWarning {
+        phys_footprint_bytes: phys_footprint,
+        resident_bytes: breakdown.map_or(phys_footprint, |b| b.resident_bytes),
+        global_allocator: cmdr_fs::process_memory::GLOBAL_ALLOCATOR,
+        rust_heap_bytes: breakdown.map_or(0, |b| b.rust_heap_bytes),
+        system_malloc_bytes: breakdown.map_or(0, |b| b.system_malloc_bytes),
+        untracked_bytes: breakdown.map_or(0, |b| b.untracked_bytes),
+        action,
+    }
+}
+
+/// Bytes as gibibytes, for log formatting.
+pub(super) fn gb(bytes: u64) -> f64 {
+    bytes as f64 / (1024.0 * 1024.0 * 1024.0)
+}
+
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
-    #[cfg(target_os = "macos")]
     use super::*;
 
     // ── Decision logic ───────────────────────────────────────────────
 
-    #[cfg(target_os = "macos")]
     const GB: u64 = 1024 * 1024 * 1024;
 
-    #[cfg(target_os = "macos")]
+    /// Off macOS a trip has the footprint alone: it stands in for RSS, and the allocator
+    /// figures read zero rather than a made-up split.
+    #[test]
+    fn a_warning_without_a_breakdown_carries_the_footprint_alone() {
+        let event = warning_event(None, 17 * GB, crate::MemoryWatchdogAction::StoppedIndexing);
+        let crate::IndexEvent::MemoryWarning {
+            phys_footprint_bytes,
+            resident_bytes,
+            rust_heap_bytes,
+            system_malloc_bytes,
+            untracked_bytes,
+            ..
+        } = event
+        else {
+            panic!("a memory warning");
+        };
+        assert_eq!((phys_footprint_bytes, resident_bytes), (17 * GB, 17 * GB));
+        assert_eq!((rust_heap_bytes, system_malloc_bytes, untracked_bytes), (0, 0, 0));
+    }
+
+    #[test]
+    fn a_warning_with_a_breakdown_carries_its_figures() {
+        let breakdown = Breakdown {
+            report: String::from("report"),
+            resident_bytes: 20 * GB,
+            rust_heap_bytes: 9 * GB,
+            system_malloc_bytes: GB,
+            untracked_bytes: 7 * GB,
+        };
+        let event = warning_event(
+            Some(&breakdown),
+            17 * GB,
+            crate::MemoryWatchdogAction::StillGrowingAfterStop,
+        );
+        let crate::IndexEvent::MemoryWarning {
+            resident_bytes,
+            rust_heap_bytes,
+            system_malloc_bytes,
+            untracked_bytes,
+            ..
+        } = event
+        else {
+            panic!("a memory warning");
+        };
+        assert_eq!(
+            (resident_bytes, rust_heap_bytes, system_malloc_bytes, untracked_bytes),
+            (20 * GB, 9 * GB, GB, 7 * GB)
+        );
+    }
+
     #[test]
     fn quiet_below_the_warning_line() {
         let mut state = WatchdogState::default();
@@ -342,7 +394,6 @@ mod tests {
         assert_eq!(state.decide(7 * GB), WatchdogAction::Nothing);
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn warns_once_per_crossing_of_the_warning_line() {
         let mut state = WatchdogState::default();
@@ -351,7 +402,6 @@ mod tests {
         assert_eq!(state.decide(10 * GB), WatchdogAction::Nothing, "should not re-warn");
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn dropping_back_under_the_warning_line_rearms_the_warning() {
         let mut state = WatchdogState::default();
@@ -360,7 +410,6 @@ mod tests {
         assert_eq!(state.decide(9 * GB), WatchdogAction::Warn, "should warn again");
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn crossing_the_stop_line_stops_indexing_once() {
         let mut state = WatchdogState::default();
@@ -372,7 +421,6 @@ mod tests {
         );
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn keeps_watching_after_a_stop_and_escalates_when_memory_keeps_climbing() {
         let mut state = WatchdogState::default();
@@ -387,7 +435,6 @@ mod tests {
         );
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn escalation_steps_double_so_a_runaway_does_not_spam_the_log() {
         let mut state = WatchdogState::default();
@@ -421,7 +468,6 @@ mod tests {
         );
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn recovering_under_the_warning_line_rearms_the_stop() {
         let mut state = WatchdogState::default();
@@ -435,7 +481,6 @@ mod tests {
         );
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn a_stop_that_does_not_hold_stays_observed_all_the_way_up() {
         // Regression anchor for the 2026-07 incident: the watchdog stopped
@@ -472,7 +517,6 @@ mod tests {
         );
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn thresholds_are_ordered() {
         const {

@@ -14,7 +14,7 @@
 //! an intra-doc link to a `cfg`-gated item is an unresolved link on every other
 //! platform, and `cargo doc` is deny-warnings in CI, which builds on Linux.)
 //!
-//! - [`current_phys_footprint`] / `query_task_vm_info`: the kernel's view.
+//! - [`current_footprint`] / `query_task_vm_info`: the kernel's view.
 //! - `query_basic_info`: RSS and its high-water mark.
 //! - `query_rust_heap` / `query_rust_heap_snapshot` (`rust_heap.rs`): what the
 //!   global allocator holds for the Rust heap, and (snapshot only) how much of
@@ -54,23 +54,23 @@
 //! The zone walk is heavier (it iterates every zone) and the region walk heavier
 //! still (one syscall per map entry), so both are snapshot-only.
 //!
-//! On non-macOS platforms [`current_phys_footprint`] returns `None` (the Mach
-//! queries don't exist); callers degrade gracefully.
+//! [`current_footprint`] is the one reading every OS answers (or `None` where it has
+//! no reader yet); the rest is macOS's Mach and malloc-zone detail.
 
 mod allocator;
 pub use allocator::{GLOBAL_ALLOC, GLOBAL_ALLOCATOR, GlobalAlloc, GlobalAllocator};
 
-/// The cheap read: the current process's `phys_footprint` in bytes, or `None`
-/// if the query failed or the platform has no Mach `task_info`.
-pub fn current_phys_footprint() -> Option<u64> {
-    #[cfg(target_os = "macos")]
-    {
-        query_task_vm_info().map(|vm| vm.phys_footprint)
-    }
-    #[cfg(any(target_os = "linux", target_os = "windows", target_family = "wasm"))]
-    {
-        None
-    }
+mod platform;
+
+/// The cheap read: the memory this process alone holds, in bytes, or `None` if the
+/// query failed or this OS has no reader yet. Per OS (`platform/`): macOS's
+/// `phys_footprint` (what memory pressure, jetsam, and Activity Monitor's Memory
+/// column use); Linux's anonymous resident memory plus what's swapped out
+/// (`RssAnon` + `VmSwap` from `/proc/self/status`), which, like `phys_footprint`,
+/// leaves out file-backed pages the kernel can drop. One small read per call on
+/// both, cheap enough for a 5 s watchdog tick.
+pub fn current_footprint() -> Option<u64> {
+    platform::footprint()
 }
 
 /// What we extract from a `task_vm_info` query. The watchdog's snapshot path
@@ -419,8 +419,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn current_phys_footprint_returns_positive_value() {
-        let phys = current_phys_footprint();
+    fn current_footprint_returns_positive_value() {
+        let phys = current_footprint();
         assert!(phys.is_some(), "should be able to query phys_footprint");
         assert!(phys.unwrap() > 0, "phys_footprint should be positive");
     }
