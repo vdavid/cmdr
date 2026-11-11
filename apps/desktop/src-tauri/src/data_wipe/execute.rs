@@ -302,6 +302,7 @@ mod tests {
     }
 
     /// One folder that won't go doesn't stop the rest, and the report names exactly what's left.
+    #[cfg(unix)]
     #[test]
     fn a_folder_that_refuses_is_reported_and_the_rest_still_goes() {
         use std::os::unix::fs::PermissionsExt;
@@ -374,6 +375,7 @@ mod tests {
     }
 
     /// A symlink inside the data dir is removed as a link: what it points at is the person's.
+    #[cfg(unix)]
     #[test]
     fn a_symlink_inside_a_target_never_takes_what_it_points_at() {
         let root = TestDir::new("wipe-symlink");
