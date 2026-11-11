@@ -37,7 +37,8 @@
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use super::platform::{self, Breakdown};
+use super::breakdown::{Breakdown, gb};
+use super::platform;
 use crate::indexing::lifecycle::state;
 
 /// 8 GB in bytes.
@@ -320,11 +321,6 @@ fn warning_event(
         untracked_bytes: breakdown.map_or(0, |b| b.untracked_bytes),
         action,
     }
-}
-
-/// Bytes as gibibytes, for log formatting.
-pub(super) fn gb(bytes: u64) -> f64 {
-    bytes as f64 / (1024.0 * 1024.0 * 1024.0)
 }
 
 // ── Tests ────────────────────────────────────────────────────────────

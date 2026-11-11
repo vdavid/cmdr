@@ -39,6 +39,7 @@ mod caps;
 mod carried;
 mod classes;
 mod flags;
+mod items;
 mod mode;
 mod platform;
 mod staged;
@@ -46,15 +47,46 @@ mod staged;
 use std::path::Path;
 
 pub use blockers::{
-    OpenedFolder, ParentOpening, RemovalLock, RemovalRefusal, Unblock, clear_blockers, open_parent_folder,
-    removal_lock, remove_dir_clearing_blockers, remove_file_clearing_blockers, remove_tree_clearing_blockers,
+    OpenedFolder, ParentOpening, RemovalLock, RemovalRefusal, Unblock, remove_dir_clearing_blockers,
+    remove_file_clearing_blockers, remove_tree_clearing_blockers,
 };
 pub use caps::{MetadataAsk, MetadataCaps};
-pub use carried::{CarriedMetadata, Xattr};
+pub use carried::CarriedMetadata;
 pub use classes::MetadataClasses;
 pub use flags::UserFlags;
+pub use items::{StagedItem, StagedTimes, Xattr};
 pub use mode::{default_file_mode, default_folder_mode, routed_mode};
-pub use staged::{StagedItem, StagedTimes, apply_staged};
+pub use staged::apply_staged;
+
+// The blockers' public doors sit here, not in `blockers.rs`: that module holds the types the
+// per-OS arms answer in, so a door there would make it and `platform/` import each other.
+
+/// Clears `path`'s own `uchg`/`uappnd` and strips its ACL, flags first because
+/// `uchg` refuses an ACL write. Never follows a symlink. On Linux there's never
+/// anything to clear (`blockers.rs`' module docs).
+pub fn clear_blockers(path: &Path) -> Unblock {
+    platform::clear_blockers(path)
+}
+
+/// Whether `path` itself (never a symlink's target) wears a [`RemovalLock`].
+/// System flags win over the user's lock: an item wearing both can't move
+/// either way. A deny entry that only reaches the item's future children
+/// (`only_inherit`) doesn't count, and neither does an ACL that can't be read:
+/// the move then meets the refusal where it would have anyway. Always
+/// [`RemovalLock::Free`] off macOS (`blockers.rs`' module docs).
+pub fn removal_lock(path: &Path) -> RemovalLock {
+    platform::removal_lock(path)
+}
+
+/// Opens the folder holding `child` so `child` can leave it: clears its own
+/// `uchg`/`uappnd`, strips its ACL (a `deny delete_child` refuses the unlink),
+/// and adds owner write and search when it lacks them (a `0500` folder refuses
+/// it too). For a folder a copy made and carried a source's metadata onto, which
+/// a reversal now empties. ❗ The folder isn't removed here: what's opened is put
+/// back by [`OpenedFolder::close`].
+pub fn open_parent_folder(child: &Path) -> ParentOpening {
+    platform::open_parent_folder(child)
+}
 
 /// What happened to one metadata class on one item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,6 +100,24 @@ pub enum ClassOutcome {
     NotApplicable,
     /// The source had nothing of this class to carry.
     Absent,
+}
+
+impl ClassOutcome {
+    /// The outcome that says more about what the copy lost: a refusal outranks a
+    /// class the destination can't hold, which outranks a kept one.
+    #[cfg_attr(
+        target_family = "wasm",
+        allow(dead_code, reason = "the browser build writes no xattrs")
+    )]
+    pub(super) fn worse(self, other: ClassOutcome) -> ClassOutcome {
+        use ClassOutcome::{Kept, NotApplicable, Refused};
+        match (self, other) {
+            (Refused, _) | (_, Refused) => Refused,
+            (NotApplicable, _) | (_, NotApplicable) => NotApplicable,
+            (Kept, other) | (other, Kept) => other,
+            (a, _) => a,
+        }
+    }
 }
 
 /// Per class, what one apply call did. Returned by every apply function in

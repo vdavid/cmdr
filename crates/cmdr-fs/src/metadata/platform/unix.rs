@@ -5,9 +5,7 @@ use std::fs::{File, Metadata};
 use std::os::unix::fs::PermissionsExt as _;
 use std::path::Path;
 
-use super::super::{
-    CarriedMetadata, ClassOutcome, LandedMetadata, OpenedFolder, ParentOpening, StagedItem, Unblock, Xattr,
-};
+use super::super::{ClassOutcome, LandedMetadata, OpenedFolder, ParentOpening, StagedItem, Unblock, Xattr};
 use crate::log_private::LogPrivate;
 
 /// An ACL as the helper carries it: opaque entries, read and written whole.
@@ -39,7 +37,7 @@ pub(crate) fn write_mode_staged(item: StagedItem<'_>, mode: u32) -> ClassOutcome
         Ok(()) => ClassOutcome::Kept,
         Err(e) => {
             log::debug!(target: "metadata", "couldn't set mode {mode:o}: {e}");
-            super::super::staged::refusal(&e)
+            super::refusal(&e)
         }
     }
 }
@@ -127,13 +125,13 @@ pub(crate) fn xattrs_at(path: &Path) -> Vec<Xattr> {
     }
 }
 
-pub(crate) fn write_xattrs(item: StagedItem<'_>, carried: &CarriedMetadata) -> ClassOutcome {
+pub(crate) fn write_xattrs(item: StagedItem<'_>, xattrs: &[Xattr]) -> ClassOutcome {
     use xattr::FileExt as _;
-    if carried.xattrs.is_empty() {
+    if xattrs.is_empty() {
         return ClassOutcome::Absent;
     }
     let mut outcome = ClassOutcome::Kept;
-    for xattr in &carried.xattrs {
+    for xattr in xattrs {
         let written = match item {
             StagedItem::File(file) => file.set_xattr(&xattr.name, &xattr.value),
             // `xattr::set` never follows a link, which is what both arms want.
@@ -142,7 +140,7 @@ pub(crate) fn write_xattrs(item: StagedItem<'_>, carried: &CarriedMetadata) -> C
         if let Err(e) = written {
             // allowed-log-private: an xattr key (`com.apple.…`), the triage clue, not a file's name
             log::debug!(target: "metadata", "couldn't set xattr {:?}: {e}", xattr.name);
-            outcome = super::super::staged::worse(outcome, super::super::staged::refusal(&e));
+            outcome = outcome.worse(super::refusal(&e));
         }
     }
     outcome

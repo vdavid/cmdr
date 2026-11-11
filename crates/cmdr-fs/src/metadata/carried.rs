@@ -5,26 +5,15 @@
 //! a copy's mtime, so two getters can never disagree; a local copy hands both
 //! dates to [`super::apply_staged`] beside this set ([`super::StagedTimes`]).
 
-use std::ffi::OsString;
 use std::fs::{File, Metadata};
 use std::path::Path;
 use std::time::SystemTime;
 
-use super::{MetadataClasses, UserFlags, platform};
+use super::{MetadataClasses, UserFlags, Xattr, platform};
 
 /// Gatekeeper's mark on a download. A copy carries it like any xattr, but a
 /// destination that can't hold it loses nothing a person would miss.
 const QUARANTINE_XATTR: &str = "com.apple.quarantine";
-
-/// One extended attribute: its name and its whole value.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Xattr {
-    /// The full name, namespace included (`com.apple.metadata:_kMDItemUserTags`,
-    /// `user.app`).
-    pub name: OsString,
-    /// The value, opaque bytes.
-    pub value: Vec<u8>,
-}
 
 /// The source's metadata a copy puts on what it writes, apart from the dates
 /// the stream already owns.

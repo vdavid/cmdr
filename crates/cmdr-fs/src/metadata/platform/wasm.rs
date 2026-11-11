@@ -8,8 +8,8 @@ use std::path::Path;
 use std::time::SystemTime;
 
 use super::super::{
-    CarriedMetadata, ClassOutcome, MetadataCaps, MetadataClasses, ParentOpening, RemovalLock, StagedItem, StagedTimes,
-    Unblock, UserFlags, Xattr,
+    ClassOutcome, MetadataCaps, MetadataClasses, ParentOpening, RemovalLock, StagedItem, StagedTimes, Unblock,
+    UserFlags, Xattr,
 };
 
 /// The browser build reads no ACLs, so it can never hold one.
@@ -48,8 +48,8 @@ pub(crate) fn xattrs_at(_path: &Path) -> Vec<Xattr> {
     Vec::new()
 }
 
-pub(crate) fn write_xattrs(_item: StagedItem<'_>, carried: &CarriedMetadata) -> ClassOutcome {
-    if carried.xattrs.is_empty() {
+pub(crate) fn write_xattrs(_item: StagedItem<'_>, xattrs: &[Xattr]) -> ClassOutcome {
+    if xattrs.is_empty() {
         ClassOutcome::Absent
     } else {
         ClassOutcome::NotApplicable
@@ -96,7 +96,7 @@ pub const LOCAL_DISK_CAPS: MetadataCaps = MetadataCaps {
 pub(crate) const CREATED_SETTABLE: bool = false;
 
 pub(crate) fn set_dates(item: StagedItem<'_>, _created: Option<SystemTime>, times: StagedTimes) -> std::io::Result<()> {
-    let file_times = super::super::staged::file_times(times);
+    let file_times = times.file_times();
     match item {
         StagedItem::File(file) => file.set_times(file_times),
         StagedItem::Path(path) => File::open(path)?.set_times(file_times),

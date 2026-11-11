@@ -16,7 +16,7 @@ use std::sync::atomic::Ordering;
 
 use cmdr_fs::pluralize::grouped;
 
-use super::memory_watchdog::gb;
+use super::breakdown::{Breakdown, gb};
 
 /// Bytes as mebibytes, for log formatting.
 fn mb(bytes: u64) -> f64 {
@@ -222,8 +222,8 @@ impl MemorySnapshot {
     }
 
     /// What a trip reports, in the portable shape the watchdog builds its events from.
-    pub(super) fn breakdown(&self) -> super::platform::Breakdown {
-        super::platform::Breakdown {
+    pub(super) fn breakdown(&self) -> Breakdown {
+        Breakdown {
             report: self.report(),
             resident_bytes: self.resident_size,
             rust_heap_bytes: self.rust_heap.held_bytes(),
