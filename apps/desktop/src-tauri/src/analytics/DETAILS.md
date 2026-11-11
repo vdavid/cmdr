@@ -179,6 +179,8 @@ Open set, no enum, no schema:
   `crate::analytics::events::capture("my_event", serde_json::json!({ "kind": some_enum }))`.
 - **Frontend event**: `import { trackEvent } from '#lib/tauri-commands'`, then `void trackEvent('my_event', { kind: someEnum })`.
 - Name internals after the UI; keep props categorical.
+- If it measures a `feature-status.json` feature, add it to `featureUsageDefinitions`
+  (`apps/api-server/src/admin/DETAILS.md` § Feature usage), so the dashboard's Feature usage section counts it.
 
 ## Reading a zero (before calling it a bug)
 

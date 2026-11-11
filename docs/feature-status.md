@@ -93,7 +93,8 @@ users only see `statusDefinitions`.
 
 Every release is a review point: the release procedure (`docs/guides/releasing.md`, step 5) walks this file against what
 shipped, flipping `planned` → `alpha`, graduating maturing features, and refreshing stale notes, alongside the roadmap
-update. Do it then, or any time a status genuinely changes.
+update. Do it then, or any time a status genuinely changes. How many installs use each feature: the "Feature usage"
+section of the dashboard's `/api/report` (`docs/tooling/analytics-dashboard.md`).
 
 Edit `feature-status.json`, then run `pnpm check svelte-tests` (`apps/desktop/src/lib/feature-status.test.ts` pins the
 JSON shape and the statuses of every feature that wears an in-app badge) and `pnpm check website-build` (the

@@ -29,6 +29,8 @@ import {
   errorReportsByDay,
 } from '../../../lib/feedback-and-errors.js'
 import { aggregateChannels, aggregateReferers, aggregateUaFamilies } from '../../../lib/funnel.js'
+import type { FeatureUsage, FeatureUsageData } from '../../../lib/feature-usage.js'
+import { formatFeatureShare, formatParts, noDataYet, sortFeatureUsage } from '../../../lib/feature-usage.js'
 import { boundsByDay, formatBound, largestUnseenShare, latestBound } from '../../../lib/active-installs.js'
 import {
   formatShare,
@@ -606,6 +608,44 @@ function writeSettingsAdoptionSection(w: ReportWriter, settingsAdoption: SourceR
   writeChangedSettings(w, data.settings)
 }
 
+// ── 5b. Feature usage ────────────────────────────────────────────────────────────────────────────
+
+function writeFeatureUsageRow(w: ReportWriter, feature: FeatureUsage, activeInstalls: number): void {
+  const label = `  ${feature.id} (${feature.name})`
+  if (!feature.everSeen) {
+    w.line(`${label}: ${noDataYet}`)
+    return
+  }
+  const installs = `${num(feature.installs)} ${feature.installs === 1 ? 'install' : 'installs'}`
+  const events = `${num(feature.events)} ${feature.events === 1 ? 'event' : 'events'}`
+  const head = `${label}: ${installs} (${formatFeatureShare(feature, activeInstalls)}), ${events}`
+  w.line(feature.parts.length > 0 ? `${head}; ${formatParts(feature.parts)}` : head)
+}
+
+/**
+ * Per-feature usage for the feature-status review: which features people reach for, against the
+ * window's active installs. The mapping is the api-server's (`featureUsageDefinitions`), listed at the
+ * end so a reader can check what each row counts.
+ */
+function writeFeatureUsageSection(w: ReportWriter, featureUsage: SourceResult<FeatureUsageData>): void {
+  w.section('Feature usage: which features do people use?')
+  if (!featureUsage.ok) {
+    w.line(`Couldn't load: ${featureUsage.error}`)
+    return
+  }
+  const data = featureUsage.data
+  w.line(`- Active installs (beat at least once since ${data.since.slice(0, 10)}): ${num(data.activeInstalls)}`)
+  w.blank()
+  w.line(
+    "An install counts toward a feature once it fired any of that feature's events in the window; the share " +
+      'is of active installs. "No data yet" means no release has sent the event yet, so it isn\'t a zero.',
+  )
+  w.blank()
+  w.line('Per feature (id from feature-status.json, most-used first):')
+  for (const feature of sortFeatureUsage(data.features)) writeFeatureUsageRow(w, feature, data.activeInstalls)
+  writeList(w, 'Counted from:', data.features, data.features.length, (f) => `  ${f.id}: ${f.sources.join(', ')}`)
+}
+
 // ── 6. Payment ───────────────────────────────────────────────────────────────────────────────────
 
 function writePaymentSection(w: ReportWriter, paddle: SourceResult<PaddleData>): void {
@@ -715,6 +755,7 @@ export function formatReport(data: DashboardData): string {
   writeDownloadSection(w, data.cloudflare, data.github)
   writeActiveUseSection(w, data.cloudflare, data.license)
   writeSettingsAdoptionSection(w, data.settingsAdoption)
+  writeFeatureUsageSection(w, data.featureUsage)
   writePaymentSection(w, data.paddle)
   writeRetentionSection(w, data.paddle)
   writeFeedbackSection(w, data.feedbackAndErrors)

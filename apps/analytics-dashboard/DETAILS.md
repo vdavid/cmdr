@@ -22,8 +22,9 @@ sections and pass their loaded data down.
   - Interest (`components/sections/InterestSection.svelte`) and Download (`components/sections/DownloadSection.svelte`,
     with `CountryTable.svelte` and the per-day pie tooltip), side by side from `md`.
 - `/product` — Product (`routes/product/+page.svelte`):
-  - Active use (`ActiveUseSection.svelte`), Payment (`PaymentSection.svelte`), Retention (`RetentionSection.svelte`),
-    Feedback & errors (`FeedbackErrorsSection.svelte`).
+  - Active use (`ActiveUseSection.svelte`), Settings adoption (`SettingsAdoptionSection.svelte`), Payment
+    (`PaymentSection.svelte`), Retention (`RetentionSection.svelte`), Feature usage (`FeatureUsageSection.svelte`, full
+    width), Feedback & errors (`FeedbackErrorsSection.svelte`).
 - `/links` — Link codes (`routes/links/+page.{svelte,server.ts}`): CRUD for the `?r=` short codes. See § "Link codes
   CRUD" below. The layout hides the range picker here.
 - `/licenses` — Licenses (`routes/licenses/+page.{svelte,server.ts}`): one row per license we've issued. See § "The
@@ -52,10 +53,10 @@ layout can import them without crossing the boundary gotcha below.
 1. **Per-source loaders** (`fetchFunnelSource`, `fetchUmamiSource`, `fetchCloudflareSource`, …): each wraps one source
    with its env-var guard (`guardedFetch`) and the 20s `withTimeout` cap. One place per source.
 2. **Per-page composers**: `fetchAcquisitionData` runs funnel + Umami + Cloudflare + GitHub + GitHub-stars + PostHog in
-   parallel; `fetchProductData` runs Cloudflare + Paddle + license + feedback-and-errors + settings-adoption. Each
-   page's `+page.server.ts` re-resolves the selection from the URL and calls its composer, so a page fetches only what
-   it renders.
-3. **`fetchDashboardData`**: all ten sources, used by the report endpoint (`api/report/+server.ts`) which dumps every
+   parallel; `fetchProductData` runs Cloudflare + Paddle + license + feedback-and-errors + settings-adoption +
+   feature-usage. Each page's `+page.server.ts` re-resolves the selection from the URL and calls its composer, so a page
+   fetches only what it renders.
+3. **`fetchDashboardData`**: all eleven sources, used by the report endpoint (`api/report/+server.ts`) which dumps every
    section at once. Unchanged contract.
 
 The funnel is the last 181 UTC days (180 complete plus today), or 400 when a stepped-back window and its rolling line
@@ -273,6 +274,9 @@ Each source under `src/lib/server/sources/` exports a typed fetch returning `Sou
   matched the per-country `metrics?type=event&country=XX` there.
 - `settings-adoption.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): per-setting adoption from `/admin/config-shape`,
   resolved against the per-version defaults manifest before it leaves the server (§ Settings adoption).
+- `feature-usage.ts` (Bearer via `LICENSE_SERVER_ADMIN_TOKEN`): per-feature installs and events from
+  `/admin/feature-usage`, passed through as-is (§ Feature usage). Types and views in client-safe
+  `#lib/feature-usage.ts`.
 - `worker-endpoint.ts` (shared helper): `fetchWorkerEndpoint(token, path)`, used by the worker-backed sources.
 
 ## Active installs as a range
@@ -319,6 +323,20 @@ resolved here instead, joined on the `app_version` every heartbeat already carri
 - **A value someone set back to the default counts as being on the default.** Persistence is structural, not a value
   compare, so a deliberate choice equal to the default is persisted explicitly; what adoption asks about is what the app
   runs with.
+
+## Feature usage
+
+The Product page's full-width table and the report's "Feature usage" section render `/admin/feature-usage`: per
+`feature-status.json` feature, distinct installs, their share of the range's active installs (heartbeat population),
+event count, and a breakdown.
+
+- **The feature → event mapping is the api-server's**, `featureUsageDefinitions` (`apps/api-server/src/admin/DETAILS.md`
+  § Feature usage). ❌ Never add a second copy here: the dashboard renders whatever features come back, so a new mapped
+  event needs no dashboard change.
+- **`everSeen: false` renders "no data yet", never 0%** (`formatFeatureShare`): an event no release has sent can't say
+  anything about adoption. A shipped event nobody fired is a real 0%.
+- Rows sort most-used first, never-seen last (`sortFeatureUsage`); the report then lists what each row counts
+  (`sources`), and the table shows the same on hover.
 
 ## Local QA against a local worker
 

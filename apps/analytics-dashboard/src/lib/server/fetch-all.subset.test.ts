@@ -92,7 +92,14 @@ describe('per-page data-loading split', () => {
 
   it('Product loads exactly the active-use, settings, payment, retention, and feedback sources', async () => {
     const data = await fetchProductData(emptyEnv, selection)
-    expect(sourceKeys(data)).toEqual(['cloudflare', 'feedbackAndErrors', 'license', 'paddle', 'settingsAdoption'])
+    expect(sourceKeys(data)).toEqual([
+      'cloudflare',
+      'featureUsage',
+      'feedbackAndErrors',
+      'license',
+      'paddle',
+      'settingsAdoption',
+    ])
     // It must NOT carry the Acquisition-only sources.
     expect(data).not.toHaveProperty('funnel')
     expect(data).not.toHaveProperty('umami')
@@ -106,6 +113,7 @@ describe('per-page data-loading split', () => {
     const data = await fetchDashboardData(emptyEnv, '7d')
     expect(sourceKeys(data)).toEqual([
       'cloudflare',
+      'featureUsage',
       'feedbackAndErrors',
       'funnel',
       'github',
