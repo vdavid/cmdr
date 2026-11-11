@@ -530,18 +530,10 @@ pub async fn upgrade_to_smb_volume_with_credentials(
 /// this volume's server? Attributes-only probe — **never triggers the consent dialog** —
 /// so the frontend can decide whether to offer the "Use the password macOS saved"
 /// affordance. macOS-only; returns `false` everywhere else.
-#[cfg(target_os = "macos")]
 #[tauri::command]
 #[specta::specta]
 pub async fn system_has_saved_smb_password(volume_id: String) -> Result<bool, String> {
     Ok(smb_connect_directly::system_has_saved_password(&volume_id).await)
-}
-
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-#[specta::specta]
-pub async fn system_has_saved_smb_password(_volume_id: String) -> Result<bool, String> {
-    Ok(false)
 }
 
 /// Upgrades an OS-mounted SMB volume to a direct smb2 connection using the password

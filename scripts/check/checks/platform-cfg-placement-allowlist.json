@@ -47,10 +47,6 @@
     "apps/desktop/src-tauri/src/commands/mod.rs": {
       "outsideSeam": 4
     },
-    "apps/desktop/src-tauri/src/commands/network.rs": {
-      "negated": 1,
-      "outsideSeam": 2
-    },
     "apps/desktop/src-tauri/src/commands/settings.rs": {
       "outsideSeam": 2
     },
@@ -304,10 +300,6 @@
     },
     "apps/desktop/src-tauri/src/mtp/watcher.rs": {
       "outsideSeam": 8
-    },
-    "apps/desktop/src-tauri/src/network/smb_connect_directly.rs": {
-      "negated": 1,
-      "outsideSeam": 4
     },
     "apps/desktop/src-tauri/src/network/smb_mount_gate.rs": {
       "negated": 1,
