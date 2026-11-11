@@ -73,32 +73,32 @@ the next section.
   each listed child through `ScanBoundary::leaves_out`, `crates/cmdr-operations/src/transfer/DETAILS.md` § "Mac-only
   files a transfer leaves out"), `archive_format.rs` (sole source of truth for archive detection, and the extension-only
   split of a path at its archive component), `file_extension.rs` (what counts as a name's extension, product-wide: §
-  "What counts as an extension"), `restic_view.rs` (the `Browse snapshots` name and the lexical split of a path at it,
-  here so the listing engine and the write guards ask it without linking `rustic_core`; `cmdr-restic` confirms),
-  `benchmark.rs` (the env-gated `[TIMELINE]` stderr events, `docs/guides/benchmarking-file-loading.md`),
-  `cloud_provider.rs` (macOS: which cloud provider owns a path, and what it can do; pure path rules, its module docs say
-  why it's a type), `validation.rs` (the platform's name and path-length limits, `ValidationError`, the typed refusal a
-  rename's validity check carries over IPC, and `validate_plain_leaf`, the stricter check for a name somebody else chose
-  for the user: no edge whitespace, control character, or invisible bidi, zero-width, or format character, so the name a
-  review shows is the name that lands; a transfer's per-source names go through it), `firmlinks.rs` (`normalize_path`;
-  the index and the app's watchers have to agree on it), `file_provider.rs` (the cloud-domain marker),
-  `filesystem_kind.rs`, `path_locations.rs` (how many PLACES a set of directories amounts to), `path_hash.rs` (the fixed
-  64-bit folder-path hash two resident maps key on instead of the path: search's importance weights and the media
-  coverage score cache), `git_meta` (what a git portal row's Size cell states), `restic_meta` (a restic snapshot row's
-  host, tags, and paths), `name_fold.rs` (the ONE "same name, spelled another way" key: NFC + lowercase, shared by share
-  IDs, transfer conflict buckets, the SMB spelling resolve, and cursor placement; beside it `normalize_for_comparison`,
-  the local filesystem's own key, which the drive index stores and the write engine matches sources under),
-  `log_rollup`, `log_private` + `log_detail` (`LogPrivate`, the wrapper a log site marks a user-derived value with, over
-  the ONE marker table and lexer the app's span pass reads too; `LogDetail` for external OS/server/CLI text as one
-  Debug-quoted, 1 KiB-capped field, and `LoggedText` for our own; `log_error`, the `LogError` a path-carrying error logs
-  through, `error_detail`, the message field that keeps its cause typed for it, and `log_json`, a value's JSON with its
-  fields marked; § "Marked log values"), `tcc_paths`, `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path
-  a person typed on THIS machine), `twin_path` (a same-named twin's row path: `folder_of` past its pick, and `shown`,
-  the one rule that takes a pick out of anything a person reads; `crates/cmdr-mtp/src/connection/DETAILS.md` §
-  "Same-named siblings"), `byte_size` (`format_size`, the IEC byte count log lines and model-facing answers read),
-  `thread_qos`, `thread_cpu`, `process_cpu/`, `process_memory`, `utility_pool.rs` (`UtilityPool`, a keep-alive pool of
-  `Utility`-QoS threads, so background work that comes in streams, like index walks, reuses threads instead of creating
-  one per job).
+  "What counts as an extension"), `file_identity/` (which node, which device, how many links: § "File identity"),
+  `restic_view.rs` (the `Browse snapshots` name and the lexical split of a path at it, here so the listing engine and
+  the write guards ask it without linking `rustic_core`; `cmdr-restic` confirms), `benchmark.rs` (the env-gated
+  `[TIMELINE]` stderr events, `docs/guides/benchmarking-file-loading.md`), `cloud_provider.rs` (macOS: which cloud
+  provider owns a path, and what it can do; pure path rules, its module docs say why it's a type), `validation.rs` (the
+  platform's name and path-length limits, `ValidationError`, the typed refusal a rename's validity check carries over
+  IPC, and `validate_plain_leaf`, the stricter check for a name somebody else chose for the user: no edge whitespace,
+  control character, or invisible bidi, zero-width, or format character, so the name a review shows is the name that
+  lands; a transfer's per-source names go through it), `firmlinks.rs` (`normalize_path`; the index and the app's
+  watchers have to agree on it), `file_provider.rs` (the cloud-domain marker), `filesystem_kind.rs`, `path_locations.rs`
+  (how many PLACES a set of directories amounts to), `path_hash.rs` (the fixed 64-bit folder-path hash two resident maps
+  key on instead of the path: search's importance weights and the media coverage score cache), `git_meta` (what a git
+  portal row's Size cell states), `restic_meta` (a restic snapshot row's host, tags, and paths), `name_fold.rs` (the ONE
+  "same name, spelled another way" key: NFC + lowercase, shared by share IDs, transfer conflict buckets, the SMB
+  spelling resolve, and cursor placement; beside it `normalize_for_comparison`, the local filesystem's own key, which
+  the drive index stores and the write engine matches sources under), `log_rollup`, `log_private` + `log_detail`
+  (`LogPrivate`, the wrapper a log site marks a user-derived value with, over the ONE marker table and lexer the app's
+  span pass reads too; `LogDetail` for external OS/server/CLI text as one Debug-quoted, 1 KiB-capped field, and
+  `LoggedText` for our own; `log_error`, the `LogError` a path-carrying error logs through, `error_detail`, the message
+  field that keeps its cause typed for it, and `log_json`, a value's JSON with its fields marked; § "Marked log
+  values"), `tcc_paths`, `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path a person typed on THIS
+  machine), `twin_path` (a same-named twin's row path: `folder_of` past its pick, and `shown`, the one rule that takes a
+  pick out of anything a person reads; `crates/cmdr-mtp/src/connection/DETAILS.md` § "Same-named siblings"), `byte_size`
+  (`format_size`, the IEC byte count log lines and model-facing answers read), `thread_qos`, `thread_cpu`,
+  `process_cpu/`, `process_memory`, `utility_pool.rs` (`UtilityPool`, a keep-alive pool of `Utility`-QoS threads, so
+  background work that comes in streams, like index walks, reuses threads instead of creating one per job).
 - `attr_buf.rs` (macOS): the packed record decoder every `getattrlist` / `getattrlistbulk` caller shares. § "`attr_buf`:
   the packed attribute layout".
 - `mapped_file_faults/`: the SIGBUS recovery that turns a read of a mapped file whose disk went away into zeros, and the
@@ -187,6 +187,26 @@ allows:
 
 Desktop behavior is unchanged: each native path keeps its old body, a few moved into a gated helper of their own
 (`entry.rs`'s `user_name_of`, `blockers.rs`'s `open_host_parent_folder`).
+
+## File identity
+
+`file_identity` is the one place a local identity question is asked: `FileId::of(&metadata)` (device plus a node number
+with 128 bits of room, since a ReFS file id doesn't fit in 64), `device_of`, `link_count`, `same_node` / `same_device`,
+and `first_sighting` (the hardlink dedup every size walk shares). No caller reads `st_dev`, `st_ino`, or `st_nlink`
+itself. The per-OS readers sit behind `file_identity/platform/` (the seam shape in `docs/guides/platform-seams.md`):
+both Unixes read the `stat` the metadata already holds; Windows and the browser answer `None` for now, because std's
+stable `Metadata` carries no Windows file id (that takes a handle and `GetFileInformationByHandleEx(FileIdInfo)`).
+
+**Decision**: a two-read comparison answers `Sameness` (`Same`, `Different`, `Unknown`), ❌ never a bare `bool`.
+**Why**: the stubs this replaced answered "don't know" as "not the same file", which on a platform without ids switched
+the copy-onto-itself guard off and let a move delete its only copy. A data guard asks `Sameness::may_be_same()` and
+takes the cautious branch on `Unknown`: `cmdr-operations`' `may_be_same_file` duplicates in place instead of copying
+over, a move leaves the item where it is, and a zip edit refuses. A walk total over-counts instead (`first_sighting`),
+and `same_filesystem` answers "different", so a move copies and deletes rather than renaming across volumes.
+
+**Decision**: `FileId::node_u64` for the stores that keep a 64-bit inode (the index, the operation log's `NodeIdentity`,
+the viewer's pull record). **Why**: a wide id that doesn't fit reads as `None` (unknown), never as a truncated number
+that could collide with another node's.
 
 ## What counts as an extension (`file_extension`)
 

@@ -20,6 +20,7 @@ use super::event_sinks::OperationEventSink;
 use super::state::WriteOperationState;
 use super::types::{ConflictInfo, ScanProgressEvent, WriteOperationError, WriteOperationType};
 use super::validation::is_symlink_loop;
+use cmdr_fs::file_identity::device_of;
 use cmdr_fs::log_private::LogPrivate;
 // ============================================================================
 // Dry-run scanning (with conflict detection)
@@ -97,7 +98,7 @@ fn dry_run_scan_internal(
         // same-folder folder copy is its own self-collision, and a per-leaf
         // question would be answering about `docs/a.txt` instead of `docs/`.
         let lands_on_itself = calculate_dest_path(source, source, destination)
-            .is_ok_and(|dest_path| super::validation::is_same_file(source, &dest_path));
+            .is_ok_and(|dest_path| super::validation::may_be_same_file(source, &dest_path));
         dry_run_scan_recursive(
             source,
             source,
@@ -210,7 +211,7 @@ fn dry_run_scan_recursive(
 
         // Scan contents
         let entries = fs::read_dir(path).with_path(path)?;
-        let device = crate::local_disk::device_of(&metadata);
+        let device = device_of(&metadata);
 
         for entry in entries.flatten() {
             if sidecars.is_sidecar(path, device, &entry.file_name()) {

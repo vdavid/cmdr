@@ -22,14 +22,13 @@ pub struct NodeIdentity {
 impl NodeIdentity {
     /// The identity `metadata` describes, read off an `lstat`. `None` when the
     /// filesystem keeps no birth time (or one before 1970), since an inode alone
-    /// can be reused once its node is gone.
-    #[cfg(unix)]
+    /// can be reused once its node is gone, and when the OS gives no 64-bit node
+    /// number ([`crate::file_identity::FileId::node_u64`]).
     pub fn of(metadata: &std::fs::Metadata) -> Option<Self> {
-        use std::os::unix::fs::MetadataExt;
-
+        let inode = crate::file_identity::FileId::of(metadata)?.node_u64()?;
         let born = metadata.created().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?;
         Some(Self {
-            inode: metadata.ino(),
+            inode,
             birth_nanos: i64::try_from(born.as_nanos()).ok()?,
         })
     }

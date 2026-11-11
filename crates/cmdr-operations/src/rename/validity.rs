@@ -291,13 +291,10 @@ fn check_sibling_conflict(old_path: &Path, new_path: &Path) -> (bool, bool, Opti
 /// Whether two `symlink_metadata` results name one local file (same device and
 /// inode), which is how a case-only rename on a case-insensitive volume shows up.
 ///
-/// Without an inode to compare (off unix), two paths never count as one file, so a
-/// case-only rename is indistinguishable from a conflict there.
+/// Without file ids to compare, two paths never count as one file, so a case-only
+/// rename reads as a conflict: the cautious answer, which asks before it overwrites.
 pub fn same_local_file(left: &std::fs::Metadata, right: &std::fs::Metadata) -> bool {
-    matches!(
-        (crate::local_disk::file_id(left), crate::local_disk::file_id(right)),
-        (Some(left), Some(right)) if left == right
-    )
+    cmdr_fs::file_identity::same_node(left, right) == cmdr_fs::file_identity::Sameness::Same
 }
 
 /// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's

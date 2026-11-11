@@ -183,8 +183,11 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 
 ### Phase 2: crate seams
 
-9. [S] Win. File-identity vocabulary in `cmdr-fs` (128-bit file ids for ReFS), replacing the ~30 `dev()`/`ino()`/
-   `nlink()` sites and every `not(unix)` "say no" stub in `cmdr-operations`, `cmdr-local`, `cmdr-index`, `cmdr-git`.
+9. [S] Win. **Done**. `cmdr_fs::file_identity` (`FileId` with a 128-bit node number, `device_of`, `link_count`,
+   `same_node` / `same_device` answering a three-state `Sameness`, `first_sighting` for hardlink dedup) behind a
+   `platform/` seam whose Windows arm answers "unknown". Every raw `dev()`/`ino()`/`nlink()` outside tests and every
+   `not(unix)` identity stub in the crates and the app goes through it; data guards take the cautious branch on
+   "unknown" (`cmdr-fs/DETAILS.md` § "File identity").
 10. [M] Win. Typed OS-error classes in `cmdr-fs` (`VolumeError::from_io_at` classifies; "in use by another app" gets its
     own class), consumers in `cmdr-operations`, `friendly_error`, `transport_fault`, and a subagent sweep over the
     network backends' synthesized errnos.

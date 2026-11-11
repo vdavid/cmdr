@@ -18,6 +18,7 @@ use cmdr_fs::volume::Volume;
 
 use super::state::WriteOperationState;
 use super::types::{MountedVolumeAction, WriteOperationError};
+use cmdr_fs::file_identity::{DeviceId, device_of};
 
 /// Whether the directory at `path` is where another filesystem is mounted.
 /// `dev` is the device its own `lstat` reported.
@@ -31,14 +32,15 @@ use super::types::{MountedVolumeAction, WriteOperationError};
 /// on the answer, so it's never "no" without evidence.
 ///
 /// ❗ Blocks on a `stat`, so an async caller runs it on the blocking pool.
-pub(crate) fn is_mount_boundary(path: &Path, dev: u64) -> bool {
+pub(crate) fn is_mount_boundary(path: &Path, dev: Option<DeviceId>) -> bool {
     // `/` has no parent to cross from.
     let Some(parent) = path.parent() else {
         return false;
     };
     // Following: the parent may be spelled through a link (`/tmp`), and what
     // holds `path` is the link's target.
-    if std::fs::metadata(parent).is_ok_and(|parent_meta| crate::local_disk::device_of(&parent_meta) == dev) {
+    // A device the OS can't name skips the shortcut, like an unreadable parent.
+    if dev.is_some() && std::fs::metadata(parent).is_ok_and(|parent_meta| device_of(&parent_meta) == dev) {
         return false;
     }
     // The table spells a mount point with its links resolved (`/private/tmp/…`).
@@ -123,7 +125,7 @@ pub(crate) async fn refuse_a_volume_mount_point(
         let on_disk = on_disk.into_iter().next()?;
         // A path that can't be stat'd isn't refused here: the listing that
         // follows reports it.
-        let dev = crate::local_disk::device_of(&std::fs::symlink_metadata(&on_disk).ok()?);
+        let dev = device_of(&std::fs::symlink_metadata(&on_disk).ok()?);
         is_mount_boundary(&on_disk, dev).then_some(on_disk)
     })
     .await?;

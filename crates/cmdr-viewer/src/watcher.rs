@@ -37,6 +37,7 @@ use notify_debouncer_full::{
     notify::{RecommendedWatcher, RecursiveMode},
 };
 
+use cmdr_fs::file_identity::FileId;
 use cmdr_fs::ignore_poison::IgnorePoison;
 
 /// Debounce window for raw notify events. Matches the `file_system` watcher's
@@ -61,9 +62,8 @@ struct PathState {
     subscribers: Vec<SyncSender<WatcherEvent>>,
     /// Last seen file size; drives Grew / Shrunk classification.
     last_size: u64,
-    /// Last seen inode (Unix). `None` until populated.
-    #[cfg(unix)]
-    last_ino: Option<u64>,
+    /// Last seen file id. `None` until populated, or where the OS gives none.
+    last_ino: Option<FileId>,
     /// Drop sentinel: subscriptions hold a `Weak<Arc<()>>` derived from this
     /// `Arc`. When the strong-count drops back to one (manager only), the
     /// manager unregisters the path.
@@ -174,13 +174,13 @@ impl ViewerWatcherManager {
         let needs_debouncer = !inner.states.contains_key(&canonical);
 
         if needs_debouncer {
-            let (initial_size, _initial_ino) = initial_metadata(&canonical);
+            let (initial_size, initial_ino) = initial_metadata(&canonical);
             let state = Arc::new(Mutex::new(PathState {
                 path: canonical.clone(),
                 subscribers: Vec::new(),
                 last_size: initial_size,
                 #[cfg(unix)]
-                last_ino: _initial_ino,
+                last_ino: initial_ino,
                 drop_token: Arc::new(()),
             }));
             inner.states.insert(canonical.clone(), state.clone());
@@ -327,19 +327,9 @@ fn arm_notify_stream(
     Ok(debouncer)
 }
 
-fn initial_metadata(path: &Path) -> (u64, Option<u64>) {
+fn initial_metadata(path: &Path) -> (u64, Option<FileId>) {
     match fs::metadata(path) {
-        Ok(m) => {
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::MetadataExt;
-                (m.len(), Some(m.ino()))
-            }
-            #[cfg(not(unix))]
-            {
-                (m.len(), None)
-            }
-        }
+        Ok(m) => (m.len(), FileId::of(&m)),
         Err(_) => (0, None),
     }
 }
@@ -351,21 +341,9 @@ fn classify_and_emit(state_arc: &Arc<Mutex<PathState>>) {
     let event = match metadata {
         Ok(m) => {
             let new_size = m.len();
-            #[cfg(unix)]
-            let new_ino = {
-                use std::os::unix::fs::MetadataExt;
-                Some(m.ino())
-            };
-            #[cfg(not(unix))]
-            let new_ino: Option<u64> = None;
-
-            #[cfg(unix)]
-            let inode_changed = match (state.last_ino, new_ino) {
-                (Some(prev), Some(curr)) => prev != curr,
-                _ => false,
-            };
-            #[cfg(not(unix))]
-            let inode_changed = false;
+            let new_ino = FileId::of(&m);
+            // Without an id on either side there's no swap to see, so the size decides.
+            let inode_changed = matches!((state.last_ino, new_ino), (Some(prev), Some(curr)) if prev != curr);
 
             let event = if inode_changed {
                 WatcherEvent::Replaced
@@ -378,10 +356,7 @@ fn classify_and_emit(state_arc: &Arc<Mutex<PathState>>) {
             };
 
             state.last_size = new_size;
-            #[cfg(unix)]
-            {
-                state.last_ino = new_ino;
-            }
+            state.last_ino = new_ino;
             event
         }
         Err(_) => {

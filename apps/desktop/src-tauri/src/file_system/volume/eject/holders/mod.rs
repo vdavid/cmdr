@@ -358,8 +358,8 @@ fn scan_path_with(
 /// on the thread the budget abandons, and `proc_listpidspath` `stat`s the same path
 /// anyway. ❌ Never lift it out of that thread.
 fn root_device(path: &Path) -> Option<u64> {
-    use std::os::unix::fs::MetadataExt;
-    std::fs::metadata(path).ok().map(|metadata| metadata.dev())
+    let metadata = std::fs::metadata(path).ok()?;
+    cmdr_fs::file_identity::device_of(&metadata).map(cmdr_fs::file_identity::DeviceId::raw)
 }
 
 #[cfg(test)]

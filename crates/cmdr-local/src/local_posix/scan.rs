@@ -11,6 +11,7 @@
 use super::LocalPosixVolume;
 use cmdr_fs::apple_double::SidecarRule;
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::file_identity::{device_of, first_sighting};
 use cmdr_fs::mac_only_files::MacOnlyFiles;
 use cmdr_fs::volume::ScanRecorder;
 use cmdr_fs::volume::Volume;
@@ -60,7 +61,6 @@ impl LocalPosixVolume {
                     Ok(relative) if !relative.as_os_str().is_empty() => as_called.join(relative),
                     _ => as_called.clone(),
                 };
-                use std::os::unix::fs::MetadataExt;
 
                 let mut file_count = 0;
                 let mut dir_count = 0;
@@ -100,10 +100,7 @@ impl LocalPosixVolume {
                         if let Ok(meta) = meta {
                             let len = meta.len();
                             total_bytes += len;
-                            // `nlink == 1` is the overwhelmingly common case
-                            // (no hardlinks): skip the set entirely. Only
-                            // multiply-linked inodes pay the lookup.
-                            if meta.nlink() <= 1 || seen_inodes.insert(meta.ino()) {
+                            if first_sighting(&meta, &mut seen_inodes) {
                                 dedup_bytes += len;
                             }
                         }
@@ -178,14 +175,13 @@ impl LocalPosixVolume {
             // The probe and the sibling checks are syscalls, and on a mounted
             // share one can stall, so they run where the listing itself did.
             Ok(spawn_blocking(move || {
-                use std::os::unix::fs::MetadataExt;
                 // An unreadable folder can't vouch for its device: keep everything.
                 let Ok(dir_meta) = std::fs::symlink_metadata(&abs_dir) else {
                     return entries;
                 };
                 entries
                     .into_iter()
-                    .filter(|entry| !sidecars.is_sidecar(&abs_dir, dir_meta.dev(), OsStr::new(&entry.name)))
+                    .filter(|entry| !sidecars.is_sidecar(&abs_dir, device_of(&dir_meta), OsStr::new(&entry.name)))
                     .collect()
             })
             .await
@@ -262,12 +258,11 @@ impl LocalPosixVolume {
 /// `._` name pays for the `lstat`; a sidecar is a plain file, so its device is
 /// its folder's.
 fn is_walked_sidecar(sidecars: &SidecarRule, entry: &walkdir::DirEntry) -> bool {
-    use std::os::unix::fs::MetadataExt;
     if !entry.file_name().as_encoded_bytes().starts_with(b"._") {
         return false;
     }
     let (Some(dir), Ok(meta)) = (entry.path().parent(), entry.metadata()) else {
         return false;
     };
-    sidecars.is_sidecar(dir, meta.dev(), entry.file_name())
+    sidecars.is_sidecar(dir, device_of(&meta), entry.file_name())
 }

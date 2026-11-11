@@ -14,7 +14,7 @@ use super::super::dest_name_index::fold;
 use cmdr_fs::volume::Volume;
 
 /// Whether `source_path` and `dest_path` name the same item: the question
-/// `validation::is_same_file` settles with `dev+ino` on the local-FS side, asked
+/// `validation::may_be_same_file` settles with `dev+ino` on the local-FS side, asked
 /// the only way a volume can answer it.
 ///
 /// Same volume is `Arc::ptr_eq`, which is what every path in this directory

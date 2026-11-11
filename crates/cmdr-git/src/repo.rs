@@ -240,26 +240,22 @@ fn open_options() -> gix::sec::trust::Mapping<gix::open::Options> {
 /// Whether `path` is on the disk the system or the user's home lives on, which can't go away
 /// under a mapping while Cmdr runs. Anything else (a USB drive, an SD card, a network share, a
 /// second internal volume) counts as one that can, which only costs reading packed-refs into
-/// memory.
-#[cfg(unix)]
+/// memory. A device the OS can't name counts as one that can go away: the cautious answer.
 fn is_on_the_startup_disk(path: &Path) -> bool {
-    use std::os::unix::fs::MetadataExt as _;
-    static STARTUP_DEVICES: std::sync::OnceLock<Vec<u64>> = std::sync::OnceLock::new();
+    use cmdr_fs::file_identity::{DeviceId, device_of};
+    static STARTUP_DEVICES: std::sync::OnceLock<Vec<DeviceId>> = std::sync::OnceLock::new();
     let startup = STARTUP_DEVICES.get_or_init(|| {
         [Some(PathBuf::from("/")), std::env::home_dir()]
             .into_iter()
             .flatten()
-            .filter_map(|dir| std::fs::metadata(dir).ok().map(|meta| meta.dev()))
+            .filter_map(|dir| device_of(&std::fs::metadata(dir).ok()?))
             .collect()
     });
-    std::fs::metadata(path).is_ok_and(|meta| startup.contains(&meta.dev()))
-}
-
-/// No device number to compare off Unix, so every disk counts as one that can go away: the
-/// cautious answer, which only costs reading packed-refs into memory.
-#[cfg(not(unix))]
-fn is_on_the_startup_disk(_path: &Path) -> bool {
-    false
+    std::fs::metadata(path)
+        .ok()
+        .as_ref()
+        .and_then(device_of)
+        .is_some_and(|device| startup.contains(&device))
 }
 
 fn map_discover_err(err: gix::Error) -> FriendlyGitError {

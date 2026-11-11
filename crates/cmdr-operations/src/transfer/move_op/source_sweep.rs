@@ -41,6 +41,7 @@ use crate::types::{
 use crate::validation::is_real_directory;
 
 use super::super::left_in_source::LeftInSource;
+use cmdr_fs::file_identity::device_of;
 
 /// What a source file looked like right before its copy began: size,
 /// modification time, and node. The sweep stats the original again before it
@@ -550,7 +551,7 @@ fn count_unscanned_entries(
     let (Ok(dir_meta), Ok(entries)) = (fs::symlink_metadata(dir), fs::read_dir(dir)) else {
         return 0;
     };
-    let device = crate::local_disk::device_of(&dir_meta);
+    let device = device_of(&dir_meta);
     let mut count = 0;
     for entry in entries.flatten() {
         let path = entry.path();

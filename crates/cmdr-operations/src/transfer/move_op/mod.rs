@@ -30,7 +30,7 @@ use super::super::state::WriteOperationState;
 use super::super::types::{
     SourceItemOutcome, WriteOperationConfig, WriteOperationError, WriteOperationType, WriteSourceItemDoneEvent,
 };
-use super::super::validation::{is_real_directory, is_same_file, is_same_filesystem, path_exists_or_is_symlink};
+use super::super::validation::{is_real_directory, is_same_filesystem, may_be_same_file, path_exists_or_is_symlink};
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_operation_log::rollback::ItemResult;
 use cmdr_operation_log::types::SkipReason;
@@ -409,7 +409,7 @@ pub(crate) fn move_files_with_progress_inner(
 
     // An item asked to move into the folder it already lives in is already
     // where it was asked to go: nothing to write, and it reports itself done.
-    // Identity is `dev+ino` (`is_same_file`), so a symlinked parent or a
+    // Identity is `dev+ino` (`may_be_same_file`), so a symlinked parent or a
     // case-differing path counts too. `transfer/DETAILS.md` § "Self-collision (duplicating in place)".
     //
     // Dropped HERE, above the same-FS / cross-FS split, so NEITHER engine can
@@ -422,7 +422,7 @@ pub(crate) fn move_files_with_progress_inner(
         config
             .leaves
             .leaf_of(source)
-            .is_some_and(|leaf| is_same_file(source, &destination.join(leaf)))
+            .is_some_and(|leaf| may_be_same_file(source, &destination.join(leaf)))
     });
     for source in &already_in_place {
         log::info!(

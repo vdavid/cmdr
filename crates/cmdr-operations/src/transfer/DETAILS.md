@@ -681,11 +681,11 @@ conflict policy, and neither prompts. Why the suffix is ` (N)` rather than Finde
 selection") and a 10 GB video duplicates instantly, at no extra space. Worth not losing: anything that routes a
 duplicate through a rewrite rather than the ordinary copy path pays full bytes for what the filesystem gives away.
 
-**Why identity rather than paths.** `validation.rs::is_same_file` compares `dev+ino`, which settles a symlinked parent,
-a case-differing path on APFS, and NFC/NFD normalization in one comparison. It uses `fs::metadata`, which FOLLOWS
-symlinks — that is what makes the symlinked-parent case work, so ❌ don't "fix" it to `symlink_metadata`. (`rename/`
-answers a narrower question with `symlink_metadata` because it must treat a symlink as its own entry; the two are
-deliberately different.)
+**Why identity rather than paths.** `validation.rs::may_be_same_file` compares file ids (`dev+ino` on Unix), which
+settles a symlinked parent, a case-differing path on APFS, and NFC/NFD normalization in one comparison. It uses
+`fs::metadata`, which FOLLOWS symlinks — that is what makes the symlinked-parent case work, so ❌ don't "fix" it to
+`symlink_metadata`. (`rename/` answers a narrower question with `symlink_metadata` because it must treat a symlink as
+its own entry; the two are deliberately different.)
 
 **The guard and the identity rule are one change, and a self-collision never reaches the conflict machinery.** An
 operation-level lexical verdict (`source.parent() == destination`) answers the wrong question at the wrong altitude: it
@@ -749,7 +749,7 @@ the overwrite/skip/rename radios, and hands the backend a pre-known-conflict lis
 handed `SourceItemInfo` (a name and a size, no source path) and so cannot answer at all; widening that DTO would mean
 touching three backends and every test double for a question one place can answer. That one place has to fork the way
 `copy_between_volumes` forks, because the two engines answer identity differently: both-local goes to the local engine
-and `is_same_file`'s `dev+ino`, everything else to the cross-volume engine and `is_the_same_item`'s one volume, same
+and `may_be_same_file`'s file ids, everything else to the cross-volume engine and `is_the_same_item`'s one volume, same
 parent, folded leaf. The filter is inert when the caller sends no `source_paths`, which is the pre-`sourceVolumeId`
 name-only shape.
 

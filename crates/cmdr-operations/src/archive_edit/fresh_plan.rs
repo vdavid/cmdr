@@ -541,7 +541,7 @@ pub(super) async fn validate_aliases(
             .spawn_blocking(move || {
                 super::super::validation::validate_destination_not_inside_source(&absolute_sources, &absolute_dest)?;
                 for source_path in &absolute_sources {
-                    if super::super::validation::is_same_file(source_path, &absolute_dest) {
+                    if super::super::validation::may_be_same_file(source_path, &absolute_dest) {
                         return Err(WriteOperationError::DestinationInsideSource {
                             source: source_path.display().to_string(),
                             destination: absolute_dest.display().to_string(),

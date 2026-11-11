@@ -134,16 +134,10 @@ impl Write for RotatingFile {
     }
 }
 
-#[cfg(unix)]
+/// Whether two reads are the same file. One the OS can't identify counts as ours,
+/// which is the single-process behavior.
 fn same_file(a: &std::fs::Metadata, b: &std::fs::Metadata) -> bool {
-    use std::os::unix::fs::MetadataExt as _;
-    a.dev() == b.dev() && a.ino() == b.ino()
-}
-
-/// No stable file identity in std off unix; assume ours, which is the single-process behavior.
-#[cfg(not(unix))]
-fn same_file(_a: &std::fs::Metadata, _b: &std::fs::Metadata) -> bool {
-    true
+    cmdr_fs::file_identity::same_node(a, b).may_be_same()
 }
 
 fn remove_if_present(path: &Path) -> io::Result<()> {

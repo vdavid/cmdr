@@ -32,7 +32,7 @@ use super::super::types::{
     WriteSourceItemDoneEvent,
 };
 use super::super::unique_name::{create_unique_dir, next_available_name};
-use super::super::validation::{is_same_file, validate_file_sizes_for_filesystem};
+use super::super::validation::{may_be_same_file, validate_file_sizes_for_filesystem};
 use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};
 
 mod dest_chain;
@@ -265,7 +265,7 @@ pub(crate) fn copy_files_with_progress_inner(
     // A source that already lives at the destination is a request to DUPLICATE
     // it, not a conflict: redirect its whole subtree to a free ` (N)` name here
     // and the conflict machinery is never consulted for it. Identity is
-    // `dev+ino` (`is_same_file`), which settles a symlinked parent, a
+    // `dev+ino` (`may_be_same_file`), which settles a symlinked parent, a
     // case-differing path, and NFC/NFD in one comparison.
     //
     // Asked per TOP-LEVEL source, once, BEFORE the loop: the loop iterates the
@@ -280,7 +280,7 @@ pub(crate) fn copy_files_with_progress_inner(
         let Some(file_name) = source.file_name() else { continue };
         let default_dest = destination.join(file_name);
         let original_dest = apply_dir_remap(&default_dest, &dir_remap);
-        if !is_same_file(source, &original_dest) {
+        if !may_be_same_file(source, &original_dest) {
             continue;
         }
         let unique_dest = if source.is_dir() {

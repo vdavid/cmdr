@@ -13,11 +13,12 @@ use cmdr_fs::name_fold::fold_name;
 use super::transfer::volume::native_roots;
 use super::types::{NamedLeavesRefusal, TransferLeaves, WriteOperationError};
 use super::validation::{first_shared_name, validate_path_length};
+use cmdr_fs::file_identity::FileId;
 use cmdr_fs::volume::Volume;
 
 /// How the start may tell whether two paths are one item: by name alone, or
 /// also by `dev+ino` when every path is on this machine's disk and can be
-/// statted (`is_same_file`, which settles a symlinked or case-differing route).
+/// statted (`may_be_same_file`, which settles a symlinked or case-differing route).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LeafIdentity {
     /// Folded names only: a remote volume's paths can't be statted here.
@@ -210,11 +211,11 @@ fn landing_clash(
 /// [`landing_clash`] with its stat as a seam. `Names` mode never calls `stat`:
 /// it runs for remote routes (whose paths mean nothing on this disk) and on a
 /// tokio worker for an AI proposal, where one stat of a hung mount stalls it.
-fn landing_clash_with(
+fn landing_clash_with<Id: Copy + Eq + std::hash::Hash>(
     items: &[(&Path, Option<&str>)],
     destination: &Path,
     identity: LeafIdentity,
-    stat: impl Fn(&Path) -> Option<(u64, u64)>,
+    stat: impl Fn(&Path) -> Option<Id>,
 ) -> Result<(), LandingClash> {
     for (_, leaf) in items {
         let Some(leaf) = leaf else { continue };
@@ -243,10 +244,10 @@ fn landing_clash_with(
 
     // A landing on another source replaces it before it's read (a copy) or
     // turns "a to b, b to c" into a lost file when the order runs wrong (a
-    // move). Compared folded, and by `dev+ino` where both exist, which catches
+    // move). Compared folded, and by file id where both have one, which catches
     // the same item reached through another spelling or a symlinked folder.
     let by_name: HashMap<String, &Path> = items.iter().map(|(s, _)| (folded(s), *s)).collect();
-    let by_inode: HashMap<(u64, u64), &Path> = match identity {
+    let by_inode: HashMap<Id, &Path> = match identity {
         LeafIdentity::NamesAndInodes => items.iter().filter_map(|(s, _)| Some((stat(s)?, *s))).collect(),
         LeafIdentity::Names => HashMap::new(),
     };
@@ -287,12 +288,10 @@ fn folded(path: &Path) -> String {
     fold_name(&normal.to_string_lossy()).into_owned()
 }
 
-/// `path`'s `(dev, ino)`, following symlinks the way [`crate::validation::is_same_file`] does;
-/// `None` when it doesn't exist (or off unix).
-fn file_id(path: &Path) -> Option<(u64, u64)> {
-    fs::metadata(path)
-        .ok()
-        .and_then(|meta| crate::local_disk::file_id(&meta))
+/// `path`'s file id, following symlinks the way [`crate::validation::may_be_same_file`] does;
+/// `None` when it doesn't exist or the OS gives no id, which leaves the name rules alone.
+fn file_id(path: &Path) -> Option<FileId> {
+    fs::metadata(path).ok().as_ref().and_then(FileId::of)
 }
 
 /// Refuses per-source names on a route that can't honour them: an archive
@@ -335,7 +334,7 @@ mod tests {
         let statted = std::cell::RefCell::new(Vec::new());
         let stat = |path: &Path| {
             statted.borrow_mut().push(path.to_path_buf());
-            None
+            None::<(u64, u64)>
         };
         let result = landing_clash_with(&items, Path::new("/dest"), LeafIdentity::NamesAndInodes, stat);
         assert_eq!(result, Ok(()));

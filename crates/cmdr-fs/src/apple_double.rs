@@ -28,6 +28,7 @@ use std::ffi::OsStr;
 use std::path::Path;
 use std::sync::Mutex;
 
+use crate::file_identity::DeviceId;
 use crate::ignore_poison::IgnorePoison;
 
 /// The pairing test, given whether the directory's volume keeps sidecars and a
@@ -119,7 +120,7 @@ fn native_xattrs(path: &Path) -> Option<bool> {
 /// never pays for it.
 pub struct SidecarRule {
     probe: Box<dyn Fn(&Path) -> bool + Send + Sync>,
-    keeps_sidecars_by_device: Mutex<HashMap<u64, bool>>,
+    keeps_sidecars_by_device: Mutex<HashMap<Option<DeviceId>, bool>>,
 }
 
 impl SidecarRule {
@@ -138,8 +139,11 @@ impl SidecarRule {
     }
 
     /// Whether `name`, listed in `dir` (on device `dir_device`), is a sidecar
-    /// the kernel serves as its sibling's xattrs, so a walk leaves it out.
-    pub fn is_sidecar(&self, dir: &Path, dir_device: u64, name: &OsStr) -> bool {
+    /// the kernel serves as its sibling's xattrs, so a walk leaves it out. The
+    /// probe's answer is cached per device; dirs on a device the OS can't name
+    /// share one answer, which only macOS, where every device has a number,
+    /// ever makes `true`.
+    pub fn is_sidecar(&self, dir: &Path, dir_device: Option<DeviceId>, name: &OsStr) -> bool {
         if !name.as_encoded_bytes().starts_with(b"._") {
             return false;
         }

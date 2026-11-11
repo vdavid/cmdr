@@ -575,28 +575,13 @@ fn unavailable_preflight(proposal: &RenameProposal, allowed_row_ids: &[String]) 
     finish_preflight(rows, Vec::new())
 }
 
-#[cfg(unix)]
+/// `(0, 0)` where the OS gives no file id: the size and the modified time then decide.
 fn local_fingerprint(row_id: &str, metadata: &std::fs::Metadata) -> RenameSourceFingerprint {
-    use std::os::unix::fs::MetadataExt;
+    let id = cmdr_fs::file_identity::FileId::of(metadata);
     RenameSourceFingerprint::Local {
         row_id: row_id.to_string(),
-        device: metadata.dev(),
-        inode: metadata.ino(),
-        size: metadata.len(),
-        modified_nanos: metadata
-            .modified()
-            .ok()
-            .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
-            .map(|time| time.as_nanos()),
-    }
-}
-
-#[cfg(not(unix))]
-fn local_fingerprint(row_id: &str, metadata: &std::fs::Metadata) -> RenameSourceFingerprint {
-    RenameSourceFingerprint::Local {
-        row_id: row_id.to_string(),
-        device: 0,
-        inode: 0,
+        device: id.map_or(0, |id| id.device().raw()),
+        inode: id.and_then(|id| id.node_u64()).unwrap_or(0),
         size: metadata.len(),
         modified_nanos: metadata
             .modified()

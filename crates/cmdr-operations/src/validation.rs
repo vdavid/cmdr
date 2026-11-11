@@ -4,6 +4,7 @@
 //! guard, writability and disk-space checks, same-file / same-filesystem inode
 //! comparisons, path/name length limits, and symlink-loop detection.
 
+use cmdr_fs::file_identity::{Sameness, same_device, same_node};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -353,25 +354,17 @@ pub(crate) fn validate_file_sizes_for_filesystem(
     })
 }
 
-/// Checks if source and destination resolve to the same file (same inode + device).
-/// This prevents data loss when copying a file over itself via a symlink.
-#[cfg(unix)]
-pub(crate) fn is_same_file(source: &Path, destination: &Path) -> bool {
-    let src_meta = match fs::metadata(source) {
-        Ok(m) => m,
-        Err(_) => return false,
+/// Whether `source` and `destination` may resolve to the same file (one node, with
+/// links followed), so a copy or move must not write one over the other.
+///
+/// A path that doesn't exist (or can't be stat'd) is no file at all, so it can't be
+/// the same one. Two existing paths the OS can't tell apart answer `true`: ❗ "can't
+/// tell" must never read as "different" here, or a copy truncates its own source.
+pub(crate) fn may_be_same_file(source: &Path, destination: &Path) -> bool {
+    let (Ok(src_meta), Ok(dst_meta)) = (fs::metadata(source), fs::metadata(destination)) else {
+        return false;
     };
-    let dst_meta = match fs::metadata(destination) {
-        Ok(m) => m,
-        Err(_) => return false,
-    };
-
-    crate::local_disk::file_id(&src_meta) == crate::local_disk::file_id(&dst_meta)
-}
-
-#[cfg(not(unix))]
-pub(crate) fn is_same_file(_source: &Path, _destination: &Path) -> bool {
-    false
+    same_node(&src_meta, &dst_meta).may_be_same()
 }
 
 /// Returns `true` when `path` already names something we should treat as a
@@ -450,19 +443,13 @@ pub(super) fn is_symlink_loop(path: &Path, visited: &HashSet<PathBuf>) -> bool {
 // Filesystem detection
 // ============================================================================
 
-/// Checks if two paths are on the same filesystem using device IDs.
-#[cfg(unix)]
+/// Whether two paths are known to be on the same filesystem (one device id). A device
+/// the OS can't name answers `false`, so a move takes copy-then-delete rather than a
+/// rename that might cross volumes.
 pub(crate) fn is_same_filesystem(source: &Path, destination: &Path) -> std::io::Result<bool> {
     let source_meta = fs::metadata(source)?;
     let dest_meta = fs::metadata(destination)?;
-
-    Ok(crate::local_disk::device_of(&source_meta) == crate::local_disk::device_of(&dest_meta))
-}
-
-#[cfg(not(unix))]
-pub(crate) fn is_same_filesystem(_source: &Path, _destination: &Path) -> std::io::Result<bool> {
-    // On non-Unix, assume different filesystem to be safe (will use copy+delete)
-    Ok(false)
+    Ok(same_device(&source_meta, &dest_meta) == Sameness::Same)
 }
 
 #[cfg(all(test, unix))]

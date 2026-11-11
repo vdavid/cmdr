@@ -105,6 +105,7 @@ pub struct BulkRenameStarted {
     /// would merge the two.
     pub swaps_left_out: u32,
 }
+use cmdr_fs::file_identity::FileId;
 use cmdr_operations::{LocalContent, RemoteContent, SourceFingerprint};
 
 /// Revalidates the user-selected subset of a server-owned rename proposal. The
@@ -322,8 +323,8 @@ fn map_bulk_rename_fingerprint(fingerprint: &RenameSourceFingerprint) -> SourceF
             modified_nanos,
             ..
         } => SourceFingerprint::Local {
-            device: *device,
-            inode: *inode,
+            // `(0, 0)` is the preflight's "the OS gave no file id" (`local_fingerprint`).
+            id: ((*device, *inode) != (0, 0)).then(|| FileId::from_stored(*device, u128::from(*inode))),
             // The rename review only ever accepts files, so a directory that
             // turned up under a reviewed name mismatches on the variant alone.
             content: LocalContent::File {
@@ -454,8 +455,7 @@ mod tests {
         assert_eq!(
             map_bulk_rename_fingerprint(&fingerprint),
             SourceFingerprint::Local {
-                device: 17,
-                inode: 4_242,
+                id: Some(FileId::from_stored(17, 4_242)),
                 content: LocalContent::File {
                     size: 9_001,
                     modified_nanos: Some(1_780_000_000_000_000_000),
@@ -501,8 +501,7 @@ mod tests {
                 modified_nanos: None,
             }),
             SourceFingerprint::Local {
-                device: 1,
-                inode: 2,
+                id: Some(FileId::from_stored(1, 2)),
                 content: LocalContent::File {
                     size: 3,
                     modified_nanos: None,

@@ -286,10 +286,6 @@
     "apps/desktop/src-tauri/src/logging/mod.rs": {
       "outsideSeam": 1
     },
-    "apps/desktop/src-tauri/src/logging/rotating_file.rs": {
-      "negated": 1,
-      "outsideSeam": 2
-    },
     "apps/desktop/src-tauri/src/managed_policy/cache.rs": {
       "negated": 1,
       "outsideSeam": 3
@@ -510,10 +506,6 @@
     "apps/desktop/src-tauri/src/tools/mod.rs": {
       "outsideSeam": 1
     },
-    "apps/desktop/src-tauri/src/tools/propose/rename/preflight.rs": {
-      "negated": 1,
-      "outsideSeam": 2
-    },
     "apps/desktop/src-tauri/src/tools/resources/volumes.rs": {
       "negated": 12,
       "outsideSeam": 22
@@ -624,13 +616,6 @@
     "crates/cmdr-fs/src/volume/friendly_error/provider.rs": {
       "outsideSeam": 3
     },
-    "crates/cmdr-fs/src/volume/node_identity.rs": {
-      "outsideSeam": 1
-    },
-    "crates/cmdr-git/src/repo.rs": {
-      "negated": 1,
-      "outsideSeam": 2
-    },
     "crates/cmdr-http/src/entries.rs": {
       "negated": 1,
       "outsideSeam": 2
@@ -674,8 +659,7 @@
       "outsideSeam": 4
     },
     "crates/cmdr-index/src/indexing/metadata.rs": {
-      "negated": 3,
-      "outsideSeam": 7
+      "outsideSeam": 5
     },
     "crates/cmdr-index/src/indexing/network_scanner/mod.rs": {
       "outsideSeam": 1
@@ -702,8 +686,7 @@
       "outsideSeam": 9
     },
     "crates/cmdr-index/src/indexing/scanner/mod.rs": {
-      "negated": 1,
-      "outsideSeam": 4
+      "outsideSeam": 2
     },
     "crates/cmdr-index/src/indexing/scanner/refusal.rs": {
       "outsideSeam": 5
@@ -805,12 +788,10 @@
       "outsideSeam": 1
     },
     "crates/cmdr-operations/src/local_disk/mod.rs": {
-      "negated": 2,
-      "outsideSeam": 18
+      "outsideSeam": 14
     },
     "crates/cmdr-operations/src/local_disk/posix.rs": {
-      "negated": 1,
-      "outsideSeam": 11
+      "outsideSeam": 9
     },
     "crates/cmdr-operations/src/overwrite.rs": {
       "outsideSeam": 1
@@ -819,10 +800,6 @@
       "outsideSeam": 1
     },
     "crates/cmdr-operations/src/rename.rs": {
-      "outsideSeam": 2
-    },
-    "crates/cmdr-operations/src/scan_walker.rs": {
-      "negated": 1,
       "outsideSeam": 2
     },
     "crates/cmdr-operations/src/state.rs": {
@@ -856,8 +833,7 @@
       "outsideSeam": 3
     },
     "crates/cmdr-operations/src/validation.rs": {
-      "negated": 2,
-      "outsideSeam": 7
+      "outsideSeam": 3
     },
     "crates/cmdr-s3/src/volume/mutation.rs": {
       "outsideSeam": 2
@@ -875,8 +851,7 @@
       "outsideSeam": 2
     },
     "crates/cmdr-viewer/src/watcher.rs": {
-      "negated": 3,
-      "outsideSeam": 9
+      "outsideSeam": 1
     },
     "crates/cmdr-webdav/src/volume/mutation.rs": {
       "outsideSeam": 2

@@ -211,7 +211,7 @@ pub(super) fn record_trashed(
 ) {
     let dest_identity = in_trash
         .and_then(|path| std::fs::symlink_metadata(path).ok())
-        .and_then(|metadata| crate::local_disk::node_identity(&metadata));
+        .and_then(|metadata| NodeIdentity::of(&metadata));
     record_row(
         scope,
         entry_type,
