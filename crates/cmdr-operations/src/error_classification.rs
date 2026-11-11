@@ -51,7 +51,9 @@ pub(super) fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperat
             // that's gone, `ENXIO` from a device node whose hardware left. The
             // SIDE is filled in at the operation's boundary, where the volumes
             // it was handed at start are still known (`transfer_sides.rs`).
-            OsErrorClass::DeviceGone => return WriteOperationError::DeviceDisconnected { path, side: None },
+            OsErrorClass::NoDevice | OsErrorClass::DeviceNotConfigured => {
+                return WriteOperationError::DeviceDisconnected { path, side: None };
+            }
             _ => {} // Fall through to ErrorKind classification
         }
     }

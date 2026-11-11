@@ -18,6 +18,7 @@ use crate::entry::FileEntry;
 use crate::ignore_poison::IgnorePoison;
 use crate::ignore_poison::RwLockIgnorePoison;
 use crate::metadata::{CarriedMetadata, ClassOutcome, MetadataCaps, MetadataClasses, MetadataReport};
+use crate::os_error::OsErrorClass;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
@@ -1014,16 +1015,14 @@ impl InMemoryVolume {
         }
     }
 
-    /// `ENOTEMPTY` (macOS's 66) when `path` is a folder that holds something:
+    /// [`OsErrorClass::NotEmpty`] when `path` is a folder that holds something:
     /// the refusal `Volume::delete` and a forced `Volume::rename` both owe, and
-    /// real data-safety logic leans on.
+    /// real data-safety logic leans on. It carries the host's `ENOTEMPTY`, as a
+    /// real disk's refusal would.
     fn refuse_if_held(entries: &HashMap<PathBuf, InMemoryEntry>, path: &Path) -> Result<(), VolumeError> {
         let is_dir = entries.get(path).is_some_and(|e| e.metadata.is_directory);
         if is_dir && entries.keys().any(|k| k.parent() == Some(path)) {
-            return Err(VolumeError::IoError {
-                message: "Directory not empty".into(),
-                raw_os_error: Some(66),
-            });
+            return Err(VolumeError::io_of_class("Directory not empty", OsErrorClass::NotEmpty));
         }
         Ok(())
     }

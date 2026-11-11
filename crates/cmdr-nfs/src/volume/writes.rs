@@ -36,6 +36,7 @@ use std::pin::Pin;
 use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataClasses, MetadataReport, default_file_mode, routed_mode};
+use cmdr_fs::os_error::OsErrorClass;
 use cmdr_fs::pluralize::pluralize_grouped;
 use cmdr_fs::volume::patching::patch_created;
 use cmdr_fs::volume::{StreamLength, StreamWriteProgress, StreamWritten, VolumeError, VolumeReadStream, WriteMode};
@@ -170,13 +171,13 @@ impl Reference {
         self.changes += 1;
         self.verifier = Some(now);
         if self.changes > VERIFIER_CHANGES_TOLERATED {
-            return Err(VolumeError::IoError {
-                message: ErrorDetail::path_then(
+            return Err(VolumeError::io_of_class(
+                ErrorDetail::path_then(
                     remote,
                     " couldn't be written: the server restarted twice during the write and lost what it hadn't stored",
                 ),
-                raw_os_error: Some(libc::EIO),
-            });
+                OsErrorClass::Io,
+            ));
         }
         debug!(target: "nfs", "the write verifier of {} changed; resending since the last good COMMIT", LogPrivate::file_path(remote));
         Ok(())
@@ -217,13 +218,13 @@ async fn write_all_at(up: &Upload<'_>, offset: u64, bytes: &[u8]) -> Result<Vec<
         if took == 0 {
             // ❗ Not a short write to loop on: a server that takes nothing
             // takes nothing again, and looping would hang the upload.
-            return Err(VolumeError::IoError {
-                message: ErrorDetail::path_then(
+            return Err(VolumeError::io_of_class(
+                ErrorDetail::path_then(
                     up.remote,
                     format!(": the server took none of a {}-byte write", bytes.len() - done), // allowed-pluralize-noun: a log-only diagnostic of a WRITE's size, never 1 in practice.
                 ),
-                raw_os_error: Some(libc::EIO),
-            });
+                OsErrorClass::Io,
+            ));
         }
         if answered.committed == Stable::Unstable {
             verifiers.push(answered.verifier);

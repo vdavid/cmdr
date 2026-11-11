@@ -188,9 +188,12 @@ its prerequisites; tasks without any can start any time. Order within a phase is
    `platform/` seam whose Windows arm answers "unknown". Every raw `dev()`/`ino()`/`nlink()` outside tests and every
    `not(unix)` identity stub in the crates and the app goes through it; data guards take the cautious branch on
    "unknown" (`cmdr-fs/DETAILS.md` § "File identity").
-10. [M] Win. Typed OS-error classes in `cmdr-fs` (`VolumeError::from_io_at` classifies; "in use by another app" gets its
-    own class), consumers in `cmdr-operations`, `friendly_error`, `transport_fault`, and a subagent sweep over the
-    network backends' synthesized errnos.
+10. [M] Win. **Done**. Typed OS-error classes: `cmdr_fs::os_error::OsErrorClass`, read per OS behind
+    `os_error/platform/` (POSIX names, macOS's BSD extras, Win32 and Winsock codes), with `InUseByAnotherApp` for
+    Windows' sharing and lock violations and no Unix errno producing it. `friendly_error`, `transport_fault`,
+    `cmdr-operations`, the media fetch, and the app's stale-mount promotion match the class; the NFS, SFTP, MTP, WebDAV,
+    S3, ADB, and in-memory backends build one (`VolumeError::io_of_class`) instead of a per-OS number. The code still
+    travels on the wire (`rawOsError`, `errno`) unchanged. Characterized first by every-errno sweeps.
 11. [S] Win. **Done**. Mount façade: `cmdr_local::mounts` (`list`, `is_mount_point`) and `user_mount_prefixes` in
     `cmdr_fs::mount_layout` (pure path knowledge, so the index asks it without depending on `cmdr-local`), each behind a
     `platform/` seam. The write engine's mount guards and the index's external-volume routing and volume-root classifier

@@ -3,14 +3,8 @@
 
 use crate::connection::MtpConnectionError;
 use cmdr_fs::error_detail::ErrorDetail;
+use cmdr_fs::os_error::OsErrorClass;
 use cmdr_fs::volume::VolumeError;
-
-/// `ENOTEMPTY`, which POSIX numbers differently per platform. MTP builds on
-/// macOS and Linux only, so those are the two that exist.
-#[cfg(target_os = "linux")]
-const ENOTEMPTY: i32 = 39;
-#[cfg(target_os = "macos")]
-const ENOTEMPTY: i32 = 66;
 
 /// Maps MTP connection errors to Volume errors. A message variant keeps the connection error
 /// typed in its detail, so a log line marks the path or name it carries.
@@ -58,13 +52,12 @@ pub(super) fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
         // Only a different name can work, like ADB's `ENAMETOOLONG`: ❌ never the
         // retryable `IoError`.
         MtpConnectionError::NameTooLong { .. } => VolumeError::InvalidName(ErrorDetail::of(e)),
-        // The trait contract's refusal, carrying the errno POSIX would have
-        // raised, so a caller that classifies on `raw_os_error` sees the same
-        // thing here as it does over `LocalPosixVolume` or SMB.
-        MtpConnectionError::DirectoryNotEmpty { .. } => VolumeError::IoError {
-            message: ErrorDetail::of(e),
-            raw_os_error: Some(ENOTEMPTY),
-        },
+        // The trait contract's refusal, as the class POSIX would have raised, so a
+        // caller that classifies on `os_class` sees the same thing here as it does
+        // over `LocalPosixVolume` or SMB.
+        MtpConnectionError::DirectoryNotEmpty { .. } => {
+            VolumeError::io_of_class(ErrorDetail::of(e), OsErrorClass::NotEmpty)
+        }
         _ => VolumeError::IoError {
             message: ErrorDetail::of(e),
             raw_os_error: None,

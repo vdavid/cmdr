@@ -117,7 +117,8 @@ pub(super) fn listing_error_from_class(
 
         // ── No reason of its own ────────────────────────────────────────
         // Listed, not wildcarded, so a new class decides where it goes.
-        OsErrorClass::DeviceGone
+        OsErrorClass::DeviceNotConfigured
+        | OsErrorClass::NoDevice
         | OsErrorClass::InUseByAnotherApp
         | OsErrorClass::InappropriateIoctl
         | OsErrorClass::NotImplemented

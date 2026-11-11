@@ -3,7 +3,8 @@
 use cmdr_fs::volume::VolumeError;
 use reqwest::StatusCode;
 
-use super::{Attempted, EBUSY, map_status};
+use super::{Attempted, map_status};
+use cmdr_fs::os_error::OsErrorClass;
 
 const PATH: &str = "/Photos/a.jpg";
 
@@ -52,13 +53,9 @@ fn a_412_means_already_exists_only_when_taking_a_name() {
 
 #[test]
 fn a_lock_is_ebusy() {
-    assert!(matches!(
-        map_status(StatusCode::LOCKED, PATH, Attempted::Reaching),
-        VolumeError::IoError {
-            raw_os_error: Some(EBUSY),
-            ..
-        }
-    ));
+    let locked = map_status(StatusCode::LOCKED, PATH, Attempted::Reaching);
+    assert!(matches!(locked, VolumeError::IoError { .. }));
+    assert_eq!(locked.os_class(), Some(OsErrorClass::Busy));
 }
 
 #[test]

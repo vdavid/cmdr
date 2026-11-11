@@ -615,7 +615,7 @@ async fn delete_takes_one_node_and_refuses_a_folder_with_keys_under_it(service: 
 
     let refused = volume.delete(&at("unmarked")).await;
     assert!(
-        matches!(refused, Err(VolumeError::IoError { raw_os_error: Some(code), .. }) if code == super::mutation::ENOTEMPTY),
+        matches!(&refused, Err(err @ VolumeError::IoError { .. }) if err.os_class() == Some(cmdr_fs::os_error::OsErrorClass::NotEmpty)),
         "got {refused:?}"
     );
     assert!(

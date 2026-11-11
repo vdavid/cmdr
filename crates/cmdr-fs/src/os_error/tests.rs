@@ -24,6 +24,16 @@ fn every_named_code_reads_back_as_its_class_and_every_class_has_a_code_of_its_ow
     }
 }
 
+/// On Unix each class has exactly one errno, so a backend that reports a class gets
+/// back the very number it would have named.
+#[cfg(unix)]
+#[test]
+fn every_unix_errno_round_trips_through_its_class() {
+    for &(code, class) in TABLES.iter().flat_map(|table| table.iter()) {
+        assert_eq!(class.host_code(), Some(code), "{class:?}");
+    }
+}
+
 #[test]
 fn a_code_nobody_names_is_other_and_other_has_no_code() {
     assert_eq!(OsErrorClass::of_code(-1), OsErrorClass::Other);

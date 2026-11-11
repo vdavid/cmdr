@@ -8,6 +8,7 @@
 use std::io::ErrorKind;
 
 use cmdr_fs::error_detail::ErrorDetail;
+use cmdr_fs::os_error::OsErrorClass;
 use cmdr_fs::volume::VolumeError;
 
 /// A transport-level failure on an open ADB socket.
@@ -173,14 +174,6 @@ pub const ENAMETOOLONG: i32 = 36;
 /// Linux `ENOTEMPTY`, as the DEVICE numbers it.
 pub const ENOTEMPTY_DEVICE: i32 = 39;
 
-/// `ENOTEMPTY` as the HOST numbers it, which is what the app's classifier
-/// re-dispatches `raw_os_error` against (`cmdr-sftp` makes the same translation).
-#[cfg(target_os = "linux")]
-const ENOTEMPTY_HOST: i32 = 39;
-/// `ENOTEMPTY` on macOS. Windows numbers it differently again (41 in the MSVC CRT).
-#[cfg(target_os = "macos")]
-const ENOTEMPTY_HOST: i32 = 66;
-
 /// Turns a device errno (from `STA2`/`DNT2`, or a shell probe) into the
 /// `Volume` vocabulary, for an operation on `path`.
 ///
@@ -191,8 +184,8 @@ const ENOTEMPTY_HOST: i32 = 66;
 /// name of the missing file. It goes in VERBATIM.
 ///
 /// Anything unlisted is an [`VolumeError::IoError`] carrying the number, so the
-/// app's classifier can still dispatch on it; `ENOTEMPTY` is translated to the
-/// host's number on the way (the device is Linux, the host may not be).
+/// app's classifier can still dispatch on it; `ENOTEMPTY` arrives as its class,
+/// which carries the host's number (the device is Linux, the host may not be).
 pub fn volume_error_from_errno(errno: i32, path: &str) -> VolumeError {
     match errno {
         ENOENT => VolumeError::NotFound(path.to_string()),
@@ -209,10 +202,9 @@ pub fn volume_error_from_errno(errno: i32, path: &str) -> VolumeError {
         },
         EISDIR => VolumeError::IsADirectory(path.to_string()),
         ENAMETOOLONG => VolumeError::InvalidName(ErrorDetail::path(path)),
-        ENOTEMPTY_DEVICE => VolumeError::IoError {
-            message: ErrorDetail::at_path("ENOTEMPTY on ", path),
-            raw_os_error: Some(ENOTEMPTY_HOST),
-        },
+        ENOTEMPTY_DEVICE => {
+            VolumeError::io_of_class(ErrorDetail::at_path("ENOTEMPTY on ", path), OsErrorClass::NotEmpty)
+        }
         other => VolumeError::IoError {
             message: ErrorDetail::at_path(format!("errno {other} on "), path),
             raw_os_error: Some(other),

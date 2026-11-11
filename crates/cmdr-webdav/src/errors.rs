@@ -7,6 +7,7 @@
 //! `reqwest::Error`'s typed predicates, or the `rustls::Error` under it.
 
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_fs::os_error::OsErrorClass;
 use cmdr_fs::volume::VolumeError;
 use cmdr_fs::volume::tls::{CertificatePrompt, CertificatePromptKind};
 use log::debug;
@@ -66,11 +67,6 @@ pub(crate) enum Attempted {
     TakingAName,
 }
 
-/// `EBUSY`, which is 16 on every platform Cmdr builds for (unlike `ENOTEMPTY`,
-/// which `mutation.rs` has to split). The number is what the app renders
-/// "something else is using this" from.
-pub(crate) const EBUSY: i32 = 16;
-
 /// Turns a non-success status into the `Volume` vocabulary, for an operation on
 /// `path`.
 ///
@@ -114,10 +110,9 @@ pub(crate) fn map_status(status: StatusCode, path: &str, attempted: Attempted) -
                 raw_os_error: None,
             },
         },
-        StatusCode::LOCKED => VolumeError::IoError {
-            message: format!("HTTP {status}").into(),
-            raw_os_error: Some(EBUSY),
-        },
+        // Something else holds it: the class the app renders "something else is
+        // using this" from.
+        StatusCode::LOCKED => VolumeError::io_of_class(format!("HTTP {status}"), OsErrorClass::Busy),
         StatusCode::INSUFFICIENT_STORAGE => VolumeError::StorageFull {
             message: format!("HTTP {status}").into(),
         },

@@ -30,6 +30,7 @@ use std::sync::Mutex;
 
 use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::os_error::OsErrorClass;
 use cmdr_fs::volume::VolumeError;
 use futures_util::future::join_all;
 
@@ -499,11 +500,11 @@ impl NfsVolume {
 }
 
 fn too_many_links(remote: &str) -> VolumeError {
-    VolumeError::IoError {
+    VolumeError::io_of_class(
         // allowed-pluralize-noun: `MAX_LINK_HOPS` is 40, never 1.
-        message: ErrorDetail::path_then(remote, format!(" follows more than {MAX_LINK_HOPS} links")),
-        raw_os_error: Some(libc::ELOOP),
-    }
+        ErrorDetail::path_then(remote, format!(" follows more than {MAX_LINK_HOPS} links")),
+        OsErrorClass::LinkLoop,
+    )
 }
 
 #[cfg(test)]

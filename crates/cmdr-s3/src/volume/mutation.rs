@@ -26,6 +26,7 @@ use cmdr_fs::entry::FileEntry;
 use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_fs::os_error::OsErrorClass;
 use cmdr_fs::volume::host::listings::ListingHost;
 use cmdr_fs::volume::mkdir_all::{self, LeadsTo, MakesDirectories};
 use cmdr_fs::volume::patching::{PatchSource, patch_created, patch_deleted, patch_renamed};
@@ -43,14 +44,6 @@ use crate::error::S3Error;
 use crate::ops::{self, BuildError, CopySource, ListObjectsParams, MetadataDirective, ObjectMetadata, Overwrite};
 use crate::transport::S3Client;
 use crate::xml::{parse_copy_result, parse_list_objects};
-
-/// `ENOTEMPTY`, which POSIX numbers differently per platform. The number is
-/// what the app renders "this folder still has something in it" from.
-#[cfg(target_os = "linux")]
-pub(crate) const ENOTEMPTY: i32 = 39;
-/// `ENOTEMPTY` on macOS. Windows numbers it differently again (41 in the MSVC CRT).
-#[cfg(target_os = "macos")]
-pub(crate) const ENOTEMPTY: i32 = 66;
 
 /// What holds a name, folder first (the listing's rule).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -224,10 +217,12 @@ impl S3Volume {
         };
         let target_key = match contents {
             FolderContents::Holds => {
-                return Err(VolumeError::IoError {
-                    message: ErrorDetail::path_then(remote, " still holds something"),
-                    raw_os_error: Some(ENOTEMPTY),
-                });
+                // The class the app renders "this folder still has something in
+                // it" from.
+                return Err(VolumeError::io_of_class(
+                    ErrorDetail::path_then(remote, " still holds something"),
+                    OsErrorClass::NotEmpty,
+                ));
             }
             FolderContents::MarkerOnly => prefix,
             FolderContents::Nothing if holder == Holder::Folder => return Err(VolumeError::NotFound(remote)),
