@@ -49,7 +49,7 @@ pub(crate) use execute::{
 // live.rs (a search that walks what the index can't answer for)
 pub(crate) use live::{
     AnswerEnding, LiveAnswer, SearchRunError, WalkEnding, cancel_all_live_runs, cancel_dialog_runs_except,
-    cancel_live_run,
+    cancel_live_run, is_live_run,
 };
 
 // query.rs

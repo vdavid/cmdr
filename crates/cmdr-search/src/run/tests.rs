@@ -325,3 +325,35 @@ fn closing_the_dialog_leaves_an_agents_search_and_the_kept_run_going() {
         "the agent's run is none of the dialog's business"
     );
 }
+
+#[test]
+fn a_run_is_live_until_its_ending_goes_out_and_never_once_superseded() {
+    // "Open in pane" asks this after installing its listeners, before it waits on the
+    // run's ending. A `true` for a run whose ending already went out (or will never be
+    // said) is a "Still searching" toast that never ends.
+    let runs = SearchRuns::new();
+    assert!(!runs.is_live("a-run-that-never-was"));
+
+    let run = runs.register("run-live", "volume-g", RunOrigin::Dialog { order: 30 });
+    assert!(runs.is_live("run-live"));
+    let heard = Heard::default();
+    ResultStream::new(&run, &heard, &query("report")).finish(CoverageFacts::new(
+        WalkEnding::Completed,
+        CoverageKind::Live,
+        "volume-g".to_string(),
+    ));
+    assert!(!runs.is_live("run-live"), "ended, even while it's still registered");
+    runs.deregister("run-live");
+    assert!(!runs.is_live("run-live"));
+
+    let failing = runs.register("run-live-failing", "volume-g", RunOrigin::Dialog { order: 31 });
+    ResultStream::new(&failing, &heard, &query("report")).fail(SearchRunError::Query, "Query too broad.".to_string());
+    assert!(!runs.is_live("run-live-failing"), "a refusal is an ending too");
+
+    let earlier = runs.register("run-live-earlier", "volume-g", RunOrigin::Dialog { order: 40 });
+    runs.register("run-live-later", "volume-g", RunOrigin::Dialog { order: 41 });
+    assert!(
+        !earlier.is_live(),
+        "a superseded run reports nothing, its ending included"
+    );
+}

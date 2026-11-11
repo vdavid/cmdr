@@ -28,7 +28,12 @@
 import { tString } from '#lib/intl/messages.svelte.js'
 import { formatInteger } from '#lib/intl/number-format.js'
 import type { LiveRunView, QueryStreamResumption } from '#lib/query-ui/query-stream.js'
-import type { SearchQuery, SearchResultEntry, SearchRunCoverage } from '#lib/tauri-commands/index.js'
+import {
+  isSearchRunLive,
+  type SearchQuery,
+  type SearchResultEntry,
+  type SearchRunCoverage,
+} from '#lib/tauri-commands/index.js'
 import { addToast, dismissToast } from '#lib/ui/toast/toast-store.svelte.js'
 import { observeSearchRun, type LiveRunHandlers, type LiveRunProgress } from './live-run-events'
 import { appendSnapshotEntries } from './snapshot-store.svelte'
@@ -71,8 +76,10 @@ let refillQuery: SearchQuery | null = null
 /**
  * Starts feeding `snapshotId` from the still-running `runId`, and says so.
  *
- * Called by `SearchDialog` from "Open in pane" when the run is live. `view` is where
- * the dialog had got to, so the toast opens on real numbers rather than zeroes.
+ * Called by `SearchDialog` from "Open in pane" when the dialog is still following a run.
+ * `view` is where the dialog had got to, so the toast opens on real numbers rather than
+ * zeroes. The toast goes up once the backend confirms the run will still report its
+ * ending (`confirmStillLive`); until then, and for a run that won't, there is none.
  *
  * **Returns the run id it took over**, and the caller must keep it: the dialog's close
  * stops every live run but the one it names, and this is that one. ❌ Don't have the
@@ -101,34 +108,61 @@ export function handOffWalk(params: {
     view: { ...params.view, running: true },
   })
   missedEntries = []
-  showRunningToast()
 
   const runId = params.runId
+  const isCurrent = (): boolean => getWalkHandoff()?.runId === runId
   void observeSearchRun(runId, {
     onProgress: (event) => {
-      if (getWalkHandoff()?.runId === runId) takeProgress(event)
+      if (isCurrent()) takeProgress(event)
     },
     onSettled: (matchCount, coverage) => {
-      if (getWalkHandoff()?.runId === runId) takeSettled(matchCount, coverage)
+      if (isCurrent()) takeSettled(matchCount, coverage)
     },
     onFailed: (message) => {
-      if (getWalkHandoff()?.runId === runId) takeFailed(message)
+      if (isCurrent()) takeFailed(message)
     },
   })
-    .then((stop) => {
-      // The handoff can end while the listeners are being installed (a fast walk, or
-      // the user closing the pane): tear them down rather than leaving them feeding
-      // a snapshot nobody reads.
-      if (getWalkHandoff()?.runId === runId) stopListening = stop
-      else stop()
+    .then(async (stop) => {
+      // The handoff can end while the listeners are being installed (the user closing
+      // the pane, a new search): tear them down rather than leaving them feeding a
+      // snapshot nobody reads.
+      if (!isCurrent()) {
+        stop()
+        return
+      }
+      stopListening = stop
+      await confirmStillLive(runId)
     })
     .catch(() => {
-      // No listeners means no rows and no terminal event, so the toast would sit
-      // there forever. Drop it and leave the pane with what it already has.
-      if (getWalkHandoff()?.runId === runId) settle(null)
+      // No listeners means no rows and no terminal event, so a toast would sit there
+      // forever. Leave the pane with what it already has, and stop a walk nobody hears.
+      if (!isCurrent()) return
+      stopHandedOffWalk()
+      settle(null)
     })
 
   return runId
+}
+
+/**
+ * Waits on the run's ending only once the backend says it's still to come.
+ *
+ * Asked AFTER the listeners are in, which is what makes a `true` safe: the backend marks
+ * a run ended before it sends the terminal event (`LiveRun::is_live`), so that event
+ * can't slip past. A run that already ended, was superseded, or was never registered
+ * raises no toast and holds nothing: the pane was filled from the index at promotion,
+ * and a toast waiting on an ending that's never coming says "Still searching" forever.
+ * The running toast goes up only here, so it can't be that toast.
+ */
+async function confirmStillLive(runId: string): Promise<void> {
+  const live = await isSearchRunLive(runId)
+  if (getWalkHandoff()?.runId !== runId) return
+  if (!live) {
+    settle(null)
+    return
+  }
+  // A reopened dialog may already have adopted it, and its own strip speaks for it then.
+  if (resumedInto === null) showRunningToast()
 }
 
 /** One batch: into the snapshot, into the toast, and on to a reopened dialog. */

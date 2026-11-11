@@ -45,6 +45,10 @@ pub struct LiveRun {
     cancel: CancellationToken,
     /// A newer run started. This one stops reporting; its walk carries on.
     superseded: AtomicBool,
+    /// The run has reached its terminal fact. Set BEFORE that fact goes out, so a
+    /// caller that installs its listeners and then sees [`is_live`](Self::is_live)
+    /// answer `true` is guaranteed to hear the ending.
+    ended: AtomicBool,
 }
 
 impl LiveRun {
@@ -55,6 +59,7 @@ impl LiveRun {
             origin,
             cancel: CancellationToken::new(),
             superseded: AtomicBool::new(false),
+            ended: AtomicBool::new(false),
         }
     }
 
@@ -73,6 +78,21 @@ impl LiveRun {
 
     pub fn is_cancelled(&self) -> bool {
         self.cancel.is_cancelled()
+    }
+
+    /// Whether this run's ending is still to come AND will be reported: not
+    /// superseded (a superseded run says nothing, terminal fact included) and not
+    /// ended. What "Open in pane" asks before it waits on a run's ending
+    /// (`apps/desktop/src/lib/search/walk-handoff.svelte.ts`): a `true` here, read
+    /// after the listeners are in, means the terminal event can't be missed.
+    pub fn is_live(&self) -> bool {
+        self.wants_events() && !self.ended.load(Ordering::SeqCst)
+    }
+
+    /// The run is about to report its terminal fact (or would, if anyone were
+    /// listening). [`ResultStream`](super::ResultStream)'s two endings call it first.
+    pub(super) fn mark_ended(&self) {
+        self.ended.store(true, Ordering::SeqCst);
     }
 
     /// The token to hand the walk.
@@ -143,6 +163,15 @@ impl SearchRuns {
     /// Forget a run that has reached its terminal state.
     pub fn deregister(&self, run_id: &str) {
         self.runs.lock_ignore_poison().remove(run_id);
+    }
+
+    /// Whether the run named is registered and still [`LiveRun::is_live`]. An
+    /// unknown id (never registered, or already deregistered) is `false`.
+    pub fn is_live(&self, run_id: &str) -> bool {
+        self.runs
+            .lock_ignore_poison()
+            .get(run_id)
+            .is_some_and(|run| run.is_live())
     }
 
     /// Stop one run and its walk. Returns whether there was one to stop.

@@ -169,6 +169,14 @@ pub async fn cancel_search(run_id: String) -> Result<bool, String> {
     Ok(search::cancel_live_run(&run_id))
 }
 
+/// Whether a live search will still report its ending: registered, not superseded,
+/// and its terminal event not yet sent. "Open in pane" asks before it waits on one.
+#[tauri::command]
+#[specta::specta]
+pub async fn is_search_run_live(run_id: String) -> bool {
+    search::is_live_run(&run_id)
+}
+
 /// Nudge the dialog that a volume's index is now searchable, naming the volume and
 /// its entry count.
 fn emit_index_ready(app: &tauri::AppHandle, volume_id: &str, entry_count: u64) {

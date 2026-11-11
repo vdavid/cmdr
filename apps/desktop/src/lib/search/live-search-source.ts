@@ -55,13 +55,17 @@ export interface LiveSearchSourceDeps {
    */
   onRowsVolume: (volumeId: string) => void
   /**
-   * The run in flight and where it has got to, or `null` once it has ended.
+   * The run the dialog is FOLLOWING and where it has got to, or `null` once it isn't
+   * following one: the run ended, or the dialog stopped listening to it (a newer run, an
+   * index answer replacing it, the bar emptied, the dialog closing, all through the
+   * teardown `start` and `resume` hand back), or `forgetRun` said so.
    *
    * The runner owns the run for the DIALOG's purposes and keeps its id private; this
    * is for the one thing Search does with a run the dialog is finished with — hand it
-   * to a pane and let it keep walking (`walk-handoff.svelte.ts`). ❌ Don't mirror it
-   * into reactive state: it fires per batch, and the dialog already renders the same
-   * numbers off the runner.
+   * to a pane and let it keep walking (`walk-handoff.svelte.ts`). Only the most recently
+   * followed run reports, so a late word from an earlier one can't overwrite it. ❌ Don't
+   * mirror it into reactive state: it fires per batch, and the dialog already renders
+   * the same numbers off the runner.
    */
   onRunState?: (state: { runId: string; view: LiveRunView } | null) => void
 }
@@ -93,7 +97,50 @@ export function nextRunOrder(nowMs: number = performance.timeOrigin + performanc
   return lastRunOrder
 }
 
-export function createLiveSearchSource(deps: LiveSearchSourceDeps): QueryStreamSource {
+/** Search's live transport, plus the one thing only Search needs to say to it. */
+export interface LiveSearchSource extends QueryStreamSource {
+  /**
+   * The dialog no longer follows any run: an index answer replaced the live one. The
+   * runner drops its subscription then, but a run whose start is still in flight has no
+   * teardown to call yet, so this is what keeps `onRunState` from naming a run whose
+   * rows aren't the ones on screen.
+   */
+  forgetRun: () => void
+}
+
+/** Where a run starts: resolving its coverage, with nothing found yet. */
+function startingView(): LiveRunView {
+  return {
+    phase: 'resolvingCoverage',
+    matchCount: 0,
+    dirsFound: 0,
+    currentPath: null,
+    capped: false,
+    running: true,
+    incomplete: false,
+    phaseSince: Date.now(),
+  }
+}
+
+export function createLiveSearchSource(deps: LiveSearchSourceDeps): LiveSearchSource {
+  /** The run `onRunState` speaks for; nothing else may write it. */
+  let followedRunId: string | null = null
+
+  const follow = (runId: string, view: LiveRunView): void => {
+    followedRunId = runId
+    deps.onRunState?.({ runId, view })
+  }
+  /** `runId` moved on. A word from any run but the followed one is dropped. */
+  const report = (runId: string, view: LiveRunView): void => {
+    if (followedRunId === runId) deps.onRunState?.({ runId, view })
+  }
+  /** `runId` ended, or the dialog stopped listening to it. */
+  const unfollow = (runId: string): void => {
+    if (followedRunId !== runId) return
+    followedRunId = null
+    deps.onRunState?.(null)
+  }
+
   /** The shared "the run ended" shape, from Search's own terminal answer. */
   const settle = (callbacks: QueryStreamCallbacks) => (matchCount: number, coverage: SearchRunCoverage) => {
     deps.onCoverage(coverage)
@@ -116,52 +163,75 @@ export function createLiveSearchSource(deps: LiveSearchSourceDeps): QueryStreamS
       // to a pane goes silent from here on. Telling it now is what stops its toast
       // waiting forever on a terminal event that is never coming.
       supersedeHandedOffWalk()
-      deps.onRunState?.({
-        runId,
-        view: {
-          phase: 'resolvingCoverage',
-          matchCount: 0,
-          dirsFound: 0,
-          currentPath: null,
-          capped: false,
-          running: true,
-          incomplete: false,
-          phaseSince: Date.now(),
-        },
-      })
-      const stop = await observeSearchRun(runId, {
-        onProgress: (event) => {
-          if (event.entries.length > 0) deps.onRowsVolume(event.targetVolumeId)
-          deps.onRunState?.({ runId, view: liveViewOf(event) })
-          callbacks.onProgress(event)
-        },
-        onSettled: (matchCount, coverage) => {
-          deps.onRunState?.(null)
-          settle(callbacks)(matchCount, coverage)
-        },
-        onFailed: (message) => {
-          deps.onRunState?.(null)
-          callbacks.onFailed(message)
-        },
-      })
+      follow(runId, startingView())
+      let stop: () => void
+      try {
+        stop = await observeSearchRun(runId, {
+          onProgress: (event) => {
+            if (event.entries.length > 0) deps.onRowsVolume(event.targetVolumeId)
+            report(runId, liveViewOf(event))
+            callbacks.onProgress(event)
+          },
+          onSettled: (matchCount, coverage) => {
+            unfollow(runId)
+            settle(callbacks)(matchCount, coverage)
+          },
+          onFailed: (message) => {
+            unfollow(runId)
+            callbacks.onFailed(message)
+          },
+        })
+      } catch (err) {
+        unfollow(runId)
+        throw err
+      }
 
       try {
         const query = await deps.buildQuery()
         await searchFilesStreaming(query, runId, order)
       } catch (err) {
         stop()
-        deps.onRunState?.(null)
+        unfollow(runId)
         throw err
       }
-      return stop
+      // The runner calls this the moment it stops listening, for any reason. After that,
+      // nothing this run says reaches the dialog, so it's no longer a run to hand off.
+      return () => {
+        stop()
+        unfollow(runId)
+      }
     },
 
-    resume: (callbacks: QueryStreamCallbacks): QueryStreamResumption | null =>
-      resumeHandedOffWalk({
-        onProgress: callbacks.onProgress,
-        onSettled: settle(callbacks),
-        onFailed: callbacks.onFailed,
-      }),
+    resume: (callbacks: QueryStreamCallbacks): QueryStreamResumption | null => {
+      // An adopted run is followed like a started one, so "Open in pane" from a reopened
+      // dialog hands the walk on to the new pane rather than the close cancelling it.
+      let adopted: string | null = null
+      const resumed = resumeHandedOffWalk({
+        onProgress: (event) => {
+          if (adopted !== null) report(adopted, liveViewOf(event))
+          callbacks.onProgress(event)
+        },
+        onSettled: (matchCount, coverage) => {
+          if (adopted !== null) unfollow(adopted)
+          settle(callbacks)(matchCount, coverage)
+        },
+        onFailed: (message) => {
+          if (adopted !== null) unfollow(adopted)
+          callbacks.onFailed(message)
+        },
+      })
+      if (!resumed) return null
+      const runId = resumed.runId
+      adopted = runId
+      follow(runId, resumed.view)
+      return {
+        ...resumed,
+        stop: () => {
+          resumed.stop()
+          unfollow(runId)
+        },
+      }
+    },
 
     cancel: (runId: string): void => {
       void cancelSearch(runId).catch(() => {
@@ -171,5 +241,9 @@ export function createLiveSearchSource(deps: LiveSearchSourceDeps): QueryStreamS
     },
 
     rankOnCompletion: deps.rank,
+
+    forgetRun: (): void => {
+      if (followedRunId !== null) unfollow(followedRunId)
+    },
   }
 }

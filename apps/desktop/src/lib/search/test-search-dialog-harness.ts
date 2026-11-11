@@ -184,6 +184,7 @@ export function tauriCommandsMock(): Record<string, unknown> {
     searchFiles: searchFilesMock,
     searchFilesStreaming: searchFilesStreamingMock,
     cancelSearch: vi.fn(() => Promise.resolve(true)),
+    isSearchRunLive: vi.fn(() => Promise.resolve(true)),
     onSearchProgress: vi.fn((handler: (event: unknown) => void) => {
       liveListeners.progress.add(handler)
       return Promise.resolve(() => liveListeners.progress.delete(handler))

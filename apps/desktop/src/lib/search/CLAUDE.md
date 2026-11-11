@@ -26,8 +26,8 @@ menu facts). `search-state.svelte.ts` is the façade over these, `searchable-fol
 - **The DIALOG lists 30 rows; a PANE gets every hit**, via `snapshot-fill.ts`. ❌ Never promote `getResults()`, and ❌
   never let a top-up shrink a pane.
 - **"Open in pane" during a live walk KEEPS the walk** (`walk-handoff.svelte.ts`), so the close must NAME it
-  (`releaseSearchIndex(handedOffRunId())`) or the walk dies silently as the pane appears. Its ENDING fills the pane. A
-  reopen ADOPTS through `source.resume`, ❌ never re-runs.
+  (`releaseSearchIndex(handedOffRunId())`). ❌ Never hand off a run the dialog stopped following or `isSearchRunLive`
+  denies. A reopen ADOPTS through `source.resume`, ❌ never re-runs.
 - **A vanished file leaves every snapshot from ONE place**, `snapshot-purge.ts`, off `write-source-item-done`'s
   `sourceRemoved` flag, ❌ never its `outcome`. ❌ Never purge from a dialog or pane: a snapshot outlives both.
 - **A snapshot pane's header sorts the SNAPSHOT**, ❌ never the tab and ❌ never view-side: replacing `entries` carries

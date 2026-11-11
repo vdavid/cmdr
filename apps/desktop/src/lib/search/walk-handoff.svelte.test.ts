@@ -49,6 +49,8 @@ let indexAnswer: { entries: SearchResultEntry[]; totalCount: number; targetVolum
   totalCount: 0,
 }
 const indexAsks: unknown[] = []
+/** What the backend says when asked whether the run will still report its ending. */
+let runIsLive: boolean | Error = true
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   cancelSearch: (runId: string) => {
@@ -59,6 +61,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
     indexAsks.push(query)
     return Promise.resolve(indexAnswer)
   },
+  isSearchRunLive: () => (runIsLive instanceof Error ? Promise.reject(runIsLive) : Promise.resolve(runIsLive)),
 }))
 
 vi.mock('./snapshot-sort.svelte', () => ({ resortSnapshotIfSorted: () => Promise.resolve() }))
@@ -137,7 +140,12 @@ async function handOff(runId = 'run-1', snapshotId = 'sr-1'): Promise<void> {
     view: view(),
     refillQuery: { namePattern: 'report', patternType: 'glob', limit: 30 } as unknown as SearchQuery,
   })
-  await Promise.resolve()
+  await settleHandoff()
+}
+
+/** The subscription, then the backend's word on whether the run is still live. */
+async function settleHandoff(): Promise<void> {
+  for (let i = 0; i < 3; i++) await new Promise((resolve) => setTimeout(resolve, 0))
 }
 
 /** The one running toast, or `undefined` when it isn't up. */
@@ -158,6 +166,42 @@ beforeEach(() => {
   cancelled.length = 0
   indexAnswer = { entries: [], totalCount: 0 }
   indexAsks.length = 0
+  runIsLive = true
+})
+
+describe('handing off only a run that will still report its ending', () => {
+  it('raises no toast and holds nothing for a run that already ended', async () => {
+    // The walk ended (or was superseded) before the pane's listeners went in, so its
+    // terminal event is gone. Waiting on it was the "Still searching" toast that never
+    // stopped.
+    runIsLive = false
+    await handOff()
+    expect(runningToast()).toBeUndefined()
+    expect(otherToasts()).toEqual([])
+    expect(getWalkHandoff()).toBeNull()
+    expect(observed).toBeNull()
+  })
+
+  it('stops a walk it could not confirm, rather than leave it walking for nobody', async () => {
+    runIsLive = new Error('IPC gone')
+    await handOff('run-unconfirmed')
+    expect(runningToast()).toBeUndefined()
+    expect(getWalkHandoff()).toBeNull()
+    expect(cancelled).toEqual(['run-unconfirmed'])
+  })
+
+  it('takes the ending it hears while it asks, and raises no running toast after it', async () => {
+    openSnapshot()
+    handOffWalk({ runId: 'run-fast', snapshotId: 'sr-1', label: 'report', view: view(), refillQuery: null })
+    await Promise.resolve()
+    await Promise.resolve()
+    // Listeners in; the walk ends before the backend's answer lands.
+    runIsLive = false
+    observed?.handlers.onSettled(3, coverage())
+    await settleHandoff()
+    expect(runningToast()).toBeUndefined()
+    expect(otherToasts().map((toast) => toast.level)).toEqual(['success'])
+  })
 })
 
 describe('the running state', () => {

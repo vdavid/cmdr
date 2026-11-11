@@ -94,6 +94,9 @@ export function createSearchRunners(deps: SearchRunnersDeps): SearchRunners {
   const tracker = createSearchRunTracker()
 
   async function runSearch(): Promise<{ entries: SearchResultEntry[]; totalCount: number }> {
+    // An index answer replaces whatever live run the dialog was following: its rows are
+    // about to leave the screen, so it's no longer the run "Open in pane" may hand off.
+    streamingSource.forgetRun()
     // The note belongs to the run that produced it. Dropping it up front (rather than
     // only on the way out) means a run that throws can't leave the previous run's
     // caveat sitting under a fresh answer.

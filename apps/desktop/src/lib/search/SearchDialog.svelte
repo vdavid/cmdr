@@ -147,8 +147,10 @@
     const defaultScope = $derived(resolveDefaultScope(scopePresets))
 
     /**
-     * The live run in flight, for the ONE thing that needs it after the dialog is
-     * done with it: handing the walk to a pane and letting it keep going. Plain, not
+     * The live run the dialog is following, for the ONE thing that needs it after the
+     * dialog is done with it: handing the walk to a pane and letting it keep going. The
+     * source clears it the moment the dialog stops following (`live-search-source.ts`
+     * § `onRunState`), so it never names a run whose rows aren't on screen. Plain, not
      * `$state` — it changes on every batch, and making it reactive would rebuild the
      * dialog's whole config ten times a second for a value nothing renders.
      */
@@ -205,7 +207,7 @@
         // Awaits the index's full-row answer (`snapshot-fill.ts`), so the pane opens with
         // every hit rather than the 30 this list renders. Milliseconds against the
         // in-memory index, and the dialog stays up meanwhile.
-        const promotion = await promoteResultsToPane(liveRun, runners.buildFullRowQuery)
+        const promotion = await promoteResultsToPane(() => liveRun, runners.buildFullRowQuery)
         if (!promotion) return
         if (promotion.handedOffRunId !== null) handedOffRun = promotion.handedOffRunId
         onShowAllInMainWindow?.(promotion.snapshotId)

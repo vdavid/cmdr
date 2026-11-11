@@ -131,18 +131,22 @@ function buildSnapshot(
  *
  * **The pane gets every hit, not the rows the dialog is showing.** The dialog asks for
  * 30; before minting the snapshot this asks the index the same question with the pane's
- * ceiling (`snapshot-fill.ts`), so promoting 112 matches opens 112 rows. The rows on
- * screen are the fallback, for an ask that fails or answers with no more than them.
+ * ceiling (`snapshot-fill.ts`), so promoting 112 matches opens 112 rows. That holds with
+ * a live run too: the index answers for what it covers right away, and a still-running
+ * walk appends on top and tops the pane up when it ends. The rows on screen are the
+ * fallback, for an ask that fails or answers with no more than them.
  *
- * `liveRun` is the run still walking, if any: the ONE case where a search outlives its
- * dialog, because its rows are about to be on screen in a pane. Everything after the
- * handoff — the toast, the snapshot appends, the top-up when the walk ends, handing the
- * run back if the dialog reopens — belongs to `walk-handoff.svelte.ts`.
+ * `getLiveRun` is the run the dialog is still following, if any: the ONE case where a
+ * search outlives its dialog, because its rows are about to be on screen in a pane. Read
+ * AFTER the index ask, so a walk that ended meanwhile isn't handed off. Everything after
+ * the handoff — confirming the run is still live, the toast, the snapshot appends, the
+ * top-up when the walk ends, handing the run back if the dialog reopens — belongs to
+ * `walk-handoff.svelte.ts`.
  *
  * `buildFullRowQuery` comes from `search-runners.ts`, which owns the query builder.
  */
 export async function promoteResultsToPane(
-  liveRun: { runId: string; view: LiveRunView } | null,
+  getLiveRun: () => { runId: string; view: LiveRunView } | null,
   buildFullRowQuery: () => Promise<SearchQuery>,
 ): Promise<PanePromotion | null> {
   const volumeId = getResultsVolumeId()
@@ -162,11 +166,10 @@ export async function promoteResultsToPane(
   const shownRows = getResults()
   const shownTotal = getTotalCount()
   const fullQuery = await buildFullRowQuery().catch(() => null)
-  const full = fullQuery && shownRows.length < shownTotal && liveRun === null ? await fetchAllRows(fullQuery) : null
-  // A live run's rows are still arriving, so the index can't answer for the whole scope
-  // yet; that pane is topped up when its walk ends. Either way, never take rows away
-  // from what the user is looking at.
+  const full = fullQuery && shownRows.length < shownTotal ? await fetchAllRows(fullQuery) : null
+  // Never take rows away from what the user is looking at.
   const rows = full && full.entries.length > shownRows.length ? full : { entries: shownRows, totalCount: shownTotal }
+  const liveRun = getLiveRun()
 
   const id = nextSnapshotId()
   createSnapshot(id, buildSnapshot(id, label, volumeId, rows.entries, rows.totalCount))

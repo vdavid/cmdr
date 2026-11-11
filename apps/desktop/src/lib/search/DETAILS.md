@@ -106,8 +106,15 @@ file" / path-pill / row-menu exits through `onNavigate`, `onClearState` wiring �
 AI-provider subscription so the AI chip appears / disappears with the setting. It does not own the overlay element, the
 keyboard handler, the IME guard, the auto-apply debounce, the popover toggle, or any other orchestration concern.
 
-The wrapper holds the two locals a run outlives: `liveRun` (the run in flight, plain and not `$state` — it changes per
-batch and nothing renders it) and `handedOffRun` (the run a pane is now fed by, so the close can name it).
+The wrapper holds the two locals a run outlives: `liveRun` (the run the dialog is FOLLOWING, plain and not `$state` — it
+changes per batch and nothing renders it) and `handedOffRun` (the run a pane is now fed by, so the close can name it).
+`liveRun` is written only by `live-search-source.ts`'s `onRunState`, which names the most recently followed run (started
+or adopted through `resume`) and clears the moment the dialog stops following it: its ending, the teardown the runner
+calls when it drops the subscription (a newer run, the bar emptied, the dialog closing), or `forgetRun` when an index
+answer (`runQuery`) replaces it, which covers a start still in flight that has no teardown yet. ❗ A run the dialog
+stopped following never reports its ending there, so a stale `liveRun` is a handoff waiting forever: that was the 30-row
+pane under a "Still searching" toast that never ended. Pinned by `live-search-source.test.ts` and
+`SearchDialog.handoff.svelte.test.ts`.
 
 The route (`+page.svelte`) mounts SearchDialog with its props: `onNavigate`, `onClose`, `scopePresets`, `searchVolume`,
 `onShowAllInMainWindow`.
@@ -563,9 +570,11 @@ Click on the footer's "Open in pane" button promotes the current result set into
 `search-results://<id>` virtual volume. `snapshot-promotion.ts::promoteResultsToPane`:
 
 1. Asks the index the run's own question again with the pane's row ceiling (`snapshot-fill.ts`), and builds the
-   `SearchSnapshot` from THAT answer plus live state (`getMode()` / `getQuery()` / filters / scope / flags). The rows on
-   screen are the fallback: a failed ask, an answer no bigger than them, or a live walk still filling them in. ❌ Never
-   promote `getResults()` alone — it holds the 30 the dialog renders, and the pane holds 10,000.
+   `SearchSnapshot` from THAT answer plus live state (`getMode()` / `getQuery()` / filters / scope / flags), live run or
+   not: the index answers for what it covers right away, and a still-running walk appends on top and tops the pane up at
+   its end. The rows on screen are the fallback: a failed ask, or an answer no bigger than them. ❌ Never promote
+   `getResults()` alone — it holds the 30 the dialog renders, and the pane holds 10,000. The live run is read AFTER that
+   ask (a getter), so a walk that ended meanwhile isn't handed off.
 2. Mints a fresh id via `nextSnapshotId()` and stores via `getOrCreate(id, snapshot)`.
 3. Pins the snapshot via `setLastAttemptId(id)` so refcount stays ≥1 even before history pushes.
 4. Calls `addRecentSearch(historyEntry)`. **This is the one and only call site that adds to recent searches** (per plan
@@ -612,6 +621,14 @@ Four parts, and they're split across three files for one reason each:
 `release_search_index` cancels every run BUT that one. A `null` there kills the walk the instant the pane appears: the
 pane fills with whatever had arrived, the toast says "still searching" over a walk that isn't, and nothing reports a
 problem. Pinned by `SearchDialog.handoff.svelte.test.ts`.
+
+**It waits only on a run that will still report its ending.** Once its listeners are in, `confirmStillLive` asks the
+backend (`is_search_run_live`, `LiveRun::is_live`: registered, not superseded, terminal fact not yet sent). The backend
+marks a run ended BEFORE it sends that fact, so a `true` read after the listeners went in means the ending can't slip
+past. A `false` settles silently: no toast, nothing held, and the pane already holds the index's answer. The running
+toast goes up only after a `true`, so it can't be the one that waits forever. An ask that fails stops the walk (nobody
+would hear it) and settles. A reopened dialog that adopted the walk and presses "Open in pane" again hands the same run
+on to the new pane, because `resume` follows the run too.
 
 **Four ways it settles, and only one stops the walk.** The terminal event, a new search superseding the run
 (`supersedeHandedOffWalk`, called from `createLiveSearchSource.start` — no terminal event is coming for a superseded

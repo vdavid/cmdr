@@ -3987,6 +3987,11 @@ export const commands = {
   // Stop a live search and the walk behind it. Returns whether there was one.
   cancelSearch: (runId: string) => typedError<boolean, string>(__TAURI_INVOKE('cancel_search', { runId })),
   /**
+   *  Whether a live search will still report its ending: registered, not superseded,
+   *  and its terminal event not yet sent. "Open in pane" asks before it waits on one.
+   */
+  isSearchRunLive: (runId: string) => __TAURI_INVOKE<boolean>('is_search_run_live', { runId }),
+  /**
    *  Called when the search dialog closes. Starts the idle timer, cancels any
    *  in-progress index load, and stops every live search of the DIALOG's but the
    *  one the caller asked to keep. An MCP call's run carries on: nobody watching
