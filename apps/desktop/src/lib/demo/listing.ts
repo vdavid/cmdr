@@ -17,6 +17,8 @@ export interface ListingEngineHandle {
   handles(cmd: string): Promise<boolean>
   /** Answers like `invoke`: resolves with the answer, rejects with the typed error value. */
   invoke(cmd: string, payload: Payload): Promise<unknown>
+  /** Whether a file called `name` is an archive, as the listing flags its rows. Waits for the engine; `false` without one. */
+  isArchiveName(name: string): Promise<boolean>
   /** Frees the viewer sessions (and media tokens) of the window `label`, once it closed. */
   closeViewerWindow(label: string): void
   /** A viewer media token's bytes for the window `label`, or `undefined` (an unknown token, or no engine yet). */
@@ -114,6 +116,7 @@ export function startListingEngine(sink: ListingEventSink): ListingEngineHandle 
       if (!loaded) throw new Error(`[demo] the listing engine did not load, so it can't answer ${cmd}`)
       return loaded.engine.invoke(cmd, expandPaths(payload))
     },
+    isArchiveName: async (name) => (await ready)?.DemoListing.isArchiveName(name) ?? false,
     closeViewerWindow: (label) => {
       void ready.then((loaded) => loaded?.engine.closeViewerWindow(label))
     },

@@ -46,9 +46,11 @@ out), so answers are exactly what Tauri's `invoke` resolves with.
   reads bytes generated from its path. `onEvent(name: string, payload: unknown, target?: string)` hears every event by
   its Tauri name: `listing-opening`, `listing-progress`, `listing-read-complete`, `listing-complete`, `listing-error`,
   `listing-cancelled`, `listing-stalled`, `directory-diff`, `listing-respelled`, `directory-deleted`, and the viewer's
-  `viewer-media-load`, the one with a `target` (the window label the app's `emit_to` names). Two demo-only events:
-  `demo://media-token-dropped` `{ token }` (revoke that token's `blob:` URL) and `demo://open-url` `{ url }` (a followed
-  web or mail link).
+  `viewer-media-load`, the one with a `target` (the window label the app's `emit_to` names). Three demo-only events:
+  `demo://media-token-dropped` `{ token }` (revoke that token's `blob:` URL), `demo://open-url` `{ url }` (a followed
+  web or mail link), and `demo://archive-refused` `{ path }` (a listing asked to enter that archive file).
+- `DemoListing.isArchiveName(name): boolean`: whether a file of that name is an archive, by the name check the listing
+  sets each row's `isArchive` from (`cmdr_fs::archive_format`).
 - `demo.mediaBody(token, windowLabel)`: a viewer media token's `{ mime, bytes: Uint8Array }`, or `undefined` (the app's
   404). That window hears `viewer-media-load` `Done`. `demo.closeViewerWindow(windowLabel)`: frees the window's sessions
   and tokens, the app's `Destroyed` path.
@@ -343,6 +345,12 @@ from the computer. Nothing leaves the page.
 
 - **No `listing-progress`**: `InMemoryVolume` ignores its progress callback; an in-memory read is instant anyway.
 - **No `~` expansion** on `list_directory_start_streaming` (the desktop expands it for `root`); a browser has no home.
+- **No archive route**: `OneVolume::resolve` and `DemoVolumes::resolve` pass every path through, so a path at or inside
+  an archive file reaches the in-memory volume, which answers that it's a file. Rows still carry `isArchive` (it's the
+  name check), so `list_directory_start_streaming` sends `demo://archive-refused` first, when the archive-named
+  component is a file on the volume (one metadata read, only for a path with such a component); a folder that merely has
+  an archive's name lists as a folder. What the page does with the notice: `apps/desktop/src/lib/demo/DETAILS.md` §
+  Archives. Why no route: `cmdr-archive`'s reader blocks on threads a page doesn't have.
 - **`refresh_listing` awaits the re-read in place**: the desktop's two-second cap guards hung mounts, which an in-memory
   read can't be.
 - **Font metrics live in memory only**: the desktop persists each size to `font-metrics/{font_id}.bin`, so a reload of

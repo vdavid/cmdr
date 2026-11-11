@@ -445,6 +445,22 @@ staged paths. The controller runs unchanged: hit test, transfer dialog, conflict
   headless Chromium (2026-11-04): Documents' columns fit their names, `旅行の計画.txt` included, and the 1,200-photo
   folder lays out five fitted columns.
 
+## Archives
+
+The demo doesn't browse archives (`crates/cmdr-listing-wasm/DETAILS.md` § "Where the demo differs from the app"), and
+tells the visitor with one notice, `ui.demoArchive.notBrowsable`, whichever way they try:
+
+- **Enter, a double-click, or the context menu's Open**: `plugins.ts` seeds `behavior.archiveEnter.zip` to `open`, so
+  the app sends the row to `open_path`. The backend's answer for an archive is the notice, where any other file opens in
+  the viewer. Why the seed: the registry's `ask` would offer a Browse that can only end on an error screen.
+- **A listing** (Browse picked in Settings, a typed path): the engine sends `demo://archive-refused` and the backend
+  raises the same notice. The pane still shows the volume's own "that's a file" screen under it.
+- "An archive" is the app's `zip` Enter format (`enterFormatOf`), over the engine's `isArchiveName`: a document package
+  (`.docx`) is flagged `isArchive` too, but the app opens those, so it keeps going to the viewer.
+- The notice reuses the "Opening…" toast's id and lands a task after `open_path` is asked. Why: the app raises
+  "Opening…" beside the launch, once its app-name lookup answers (microtasks here), and the notice has to replace it,
+  never be replaced by it.
+
 ## Placeholders David decides
 
 - `demo-tree.ts`: the home folder. Today a generic `/Users/you` with documents, downloads, a 1,200-photo folder to feel

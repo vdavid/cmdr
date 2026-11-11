@@ -34,6 +34,8 @@ declare module 'virtual:cmdr-listing-wasm' {
     )
     static commands(): string[]
     static handles(command: string): boolean
+    /** Whether a file called `name` is an archive, as the listing flags its rows (`isArchive`). */
+    static isArchiveName(name: string): boolean
     static setLogLevel(level: 'error' | 'warn' | 'info' | 'debug' | 'trace'): void
     invoke(command: string, args: unknown): Promise<unknown>
     /** A viewer media token's bytes; `windowLabel` hears `viewer-media-load` for it. */
