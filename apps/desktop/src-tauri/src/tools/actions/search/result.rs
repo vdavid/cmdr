@@ -81,8 +81,12 @@ pub(crate) struct SearchCoverage {
     /// How many matches an exclusion rule kept OUT of `matchCount`: the
     /// system/cache/build tier plus any `!` excludes in the scope.
     pub hidden_by_excludes: u32,
-    /// Folders the OS refused. The half somebody can act on.
+    /// Folders macOS's privacy protection refused. The half somebody can act on
+    /// (Full Disk Access).
     pub permission_denied: Vec<String>,
+    /// Folders the OS refused for good: root-only folders, SIP-protected system
+    /// folders. Nothing to grant, so explain rather than offer.
+    pub off_limits: Vec<String>,
     /// Folders Cmdr won't read at all (snapshot trees). Nothing to fix, so
     /// explain rather than offer.
     pub declined: Vec<String>,
@@ -207,6 +211,7 @@ fn shape_coverage(answer: &LiveAnswer) -> SearchCoverage {
     // reads as unfinished and every list stays empty rather than inventing one.
     let walk_finished = settled.is_some_and(|c| matches!(c.walk, WalkEnding::Completed | WalkEnding::NothingToWalk));
     let permission_denied = settled.map(|c| c.permission_denied.clone()).unwrap_or_default();
+    let off_limits = settled.map(|c| c.off_limits.clone()).unwrap_or_default();
     let declined = settled.map(|c| c.declined.clone()).unwrap_or_default();
     let still_covering = settled.map(|c| c.still_covering.clone()).unwrap_or_default();
     let unresolved_scopes = settled.map(|c| c.unresolved_scopes.clone()).unwrap_or_default();
@@ -216,6 +221,7 @@ fn shape_coverage(answer: &LiveAnswer) -> SearchCoverage {
     SearchCoverage {
         complete: walk_finished
             && permission_denied.is_empty()
+            && off_limits.is_empty()
             && declined.is_empty()
             && still_covering.is_empty()
             && unresolved_scopes.is_empty()
@@ -227,6 +233,7 @@ fn shape_coverage(answer: &LiveAnswer) -> SearchCoverage {
         capped: settled.is_some_and(|c| c.capped),
         hidden_by_excludes: settled.map_or(0, |c| c.hidden_by_excludes),
         permission_denied,
+        off_limits,
         declined,
         still_covering,
         unresolved_scopes,
@@ -268,6 +275,12 @@ fn coverage_notes(answer: &LiveAnswer, system_dirs_excluded: bool) -> Vec<String
         }
         if !coverage.permission_denied.is_empty() {
             notes.push(refusal_note(&coverage.permission_denied, full_disk_access_would_help()));
+        }
+        if !coverage.off_limits.is_empty() {
+            notes.push(format!(
+                "Note: the OS keeps {} closed to Cmdr (folders only the system or another account may read, or protected by macOS itself). Nothing Cmdr can be granted opens them.",
+                coverage.off_limits.join(", ")
+            ));
         }
         if !coverage.declined.is_empty() {
             notes.push(format!(

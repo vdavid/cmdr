@@ -17,9 +17,10 @@ use crate::search::live::{CoverageKind, UnreadableGround};
 use crate::search::volumes::{self, VolumeLoad};
 
 /// Fold one scope's coverage answer into what nothing is going to walk, keeping
-/// the index's three causes apart (`crates/cmdr-index`'s `UnreadableCause`).
+/// the index's four causes apart (`crates/cmdr-index`'s `UnreadableCause`).
 fn fold_unreadable(ground: &mut UnreadableGround, map: &cmdr_index::CoverageMap) {
     ground.permission_denied.extend(map.permission_denied.iter().cloned());
+    ground.off_limits.extend(map.off_limits.iter().cloned());
     ground.declined.extend(map.declined.iter().cloned());
     ground.abandoned.extend(map.abandoned.iter().cloned());
 }

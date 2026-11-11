@@ -14356,7 +14356,10 @@ export type MutationError =
   // The archive edit refused to start.
   | {
       type: 'archiveEditCouldntStart'
-      // The driver's own words, for the technical-details disclosure.
+      /**
+       *  Why the driver refused (its `WriteOperationError`, kept typed so a log line marks
+       *  its paths), for the technical-details disclosure.
+       */
       detail: string
     }
   // Something already holds that name.
@@ -14406,7 +14409,10 @@ export type MutationError =
    */
   | {
       type: 'unexpected'
-      // What the layer below reported, for the log and the details disclosure.
+      /**
+       *  What the layer below reported, for the log and the details disclosure. Typed when
+       *  it wraps an error of ours, so a log line marks that error's paths.
+       */
       detail: string
     }
 
@@ -18083,14 +18089,24 @@ export type SearchRunCoverage = {
    */
   kind: CoverageKind
   /**
-   *  Directories a walk tried to read and was REFUSED, as absolute paths.
+   *  Directories a walk tried to read and macOS's privacy protection (TCC)
+   *  REFUSED, as absolute paths.
    *
-   *  The half a user can act on: on macOS this is usually Full Disk Access, and
-   *  granting it heals the mark on the next search (the successful listing
-   *  clears it). ❌ Keep it apart from [`declined`](Self::declined) — offering
-   *  Full Disk Access over a snapshot folder is advice that does nothing.
+   *  The half a user can act on: granting Full Disk Access heals the mark on the
+   *  next search (the successful listing clears it). ❌ Keep it apart from
+   *  [`off_limits`](Self::off_limits) and [`declined`](Self::declined) —
+   *  offering Full Disk Access over either is advice that does nothing.
    */
   permissionDenied: string[]
+  /**
+   *  Directories a walk tried to read and the OS refused in a way no permission
+   *  the user can grant Cmdr changes: plain POSIX permissions (a root-only
+   *  folder), SIP-protected system folders, and every refusal off macOS.
+   *
+   *  Still shown, since a search over them is honestly narrow, but the copy
+   *  explains rather than offers.
+   */
+  offLimits?: string[]
   /**
    *  Directories no walk will read at all, by Cmdr's own choice: a NAS snapshot
    *  tree, whose per-snapshot hardlinked copies the scanner refuses on purpose

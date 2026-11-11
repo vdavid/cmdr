@@ -142,8 +142,9 @@ pub(super) struct MockTree {
     /// directory stays honestly unlisted — what a user pressing Esc looks like
     /// from inside the walker.
     cancel_on_read: Option<PathBuf>,
-    /// Reading these paths fails with permission denied.
-    denied: Vec<PathBuf>,
+    /// Reading these paths fails with permission denied, carrying the errno a
+    /// real refusal would (`refusal.rs` classifies on it).
+    denied: Vec<(PathBuf, i32)>,
     /// Reading this path parks until the test opens the gate.
     gated: Option<(PathBuf, Arc<ReadGate>)>,
 }
@@ -166,13 +167,17 @@ impl MockTree {
         self
     }
 
-    /// A directory the walk is allowed to find but not to read.
-    #[allow(
-        dead_code,
-        reason = "the unreadable-marking anchors use it; kept beside its siblings"
-    )]
+    /// A directory the walk is allowed to find but not to read, refused the way
+    /// macOS's privacy protection refuses (`EPERM` on an unsealed folder).
     pub(super) fn denied_at(mut self, path: impl Into<PathBuf>) -> Self {
-        self.denied.push(path.into());
+        self.denied.push((path.into(), libc::EPERM));
+        self
+    }
+
+    /// A directory refused by plain file permissions (`EACCES`), which no grant
+    /// opens.
+    pub(super) fn off_limits_at(mut self, path: impl Into<PathBuf>) -> Self {
+        self.denied.push((path.into(), libc::EACCES));
         self
     }
 
@@ -203,11 +208,8 @@ impl MockTree {
             {
                 gate.wait();
             }
-            if denied.iter().any(|d| d == path) {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::PermissionDenied,
-                    "permission denied (test)",
-                ));
+            if let Some((_, errno)) = denied.iter().find(|(d, _)| d == path) {
+                return Err(std::io::Error::from_raw_os_error(*errno));
             }
             match dirs.get(path) {
                 Some(children) => Ok(children

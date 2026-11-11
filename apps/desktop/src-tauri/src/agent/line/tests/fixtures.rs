@@ -218,7 +218,7 @@ pub(super) fn search(match_count: u64, returned: usize, complete: bool, capped: 
         "entries": entries,
         "coverage": {
             "complete": complete, "stillWalking": !complete, "foldersFound": 10, "capped": capped,
-            "hiddenByExcludes": 0, "permissionDenied": [], "declined": [], "stillCovering": [],
+            "hiddenByExcludes": 0, "permissionDenied": [], "offLimits": [], "declined": [], "stillCovering": [],
             "unresolvedScopes": [], "uncoveredScopes": [], "abandonedGround": false, "abandonedLocations": 0
         },
         "notes": []

@@ -182,12 +182,12 @@ fn unreadable_ground(volume_id: &str, root: &str) -> UnreadableGround {
         return UnreadableGround::default();
     };
     let retried = !map.abandoned.is_empty();
-    // All three causes count toward the same sentence: whatever the reason, those
-    // files aren't in the index and a search here is honestly narrow. Which of the
-    // three it was, and what (if anything) to do about it, is search's coverage
+    // Every cause counts toward the same sentence: whatever the reason, those
+    // files aren't in the index and a search here is honestly narrow. Which of
+    // them it was, and what (if anything) to do about it, is search's coverage
     // note — a badge tooltip is not where somebody grants Full Disk Access.
     let mut unread = map.permission_denied;
-    unread.extend(map.declined);
+    unread.extend(map.off_limits.into_iter().chain(map.declined));
     unread.extend(map.abandoned);
     UnreadableGround {
         locations: cmdr_fs::path_locations::location_count(&unread),

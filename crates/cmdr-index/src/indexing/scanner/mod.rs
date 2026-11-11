@@ -44,6 +44,8 @@ pub(in crate::indexing) use live_emit::{EMIT_INTERVAL, EmitPacer};
 mod insert_visitor;
 use insert_visitor::{InsertVisitor, UnreadableIds};
 
+mod refusal;
+
 mod walker;
 // The walker's test-only park point: the real-image vanish pin in `indexing/tests/`,
 // and the tests that hold a walk to prove it holds its volume (`hold.rs`).
@@ -109,6 +111,7 @@ const MARK_CHUNK: usize = 10_000;
 fn send_unreadable_marks(ids: &UnreadableIds, writer: &IndexWriter) {
     let batches = [
         (&ids.denied, UnreadableCause::Denied),
+        (&ids.off_limits, UnreadableCause::OffLimits),
         (&ids.abandoned, UnreadableCause::Abandoned),
     ];
     for (ids, cause) in batches {
@@ -893,7 +896,10 @@ fn run_scan(
         log::info!(
             "Scanner: '{}' stopped being listed, so {} went uncondemned rather than being marked on the word of reads that failed with the drive",
             work.volume_id(),
-            pluralize((condemned.denied.len() + condemned.abandoned.len()) as u64, "dir"),
+            pluralize(
+                (condemned.denied.len() + condemned.off_limits.len() + condemned.abandoned.len()) as u64,
+                "dir"
+            ),
         );
     } else {
         send_unreadable_marks(&condemned, writer);

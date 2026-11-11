@@ -78,13 +78,22 @@ pub struct SearchRunCoverage {
     /// search still needs to walk at all, and the one field here that describes
     /// the QUESTION rather than what came back from it.
     pub kind: CoverageKind,
-    /// Directories a walk tried to read and was REFUSED, as absolute paths.
+    /// Directories a walk tried to read and macOS's privacy protection (TCC)
+    /// REFUSED, as absolute paths.
     ///
-    /// The half a user can act on: on macOS this is usually Full Disk Access, and
-    /// granting it heals the mark on the next search (the successful listing
-    /// clears it). ❌ Keep it apart from [`declined`](Self::declined) — offering
-    /// Full Disk Access over a snapshot folder is advice that does nothing.
+    /// The half a user can act on: granting Full Disk Access heals the mark on the
+    /// next search (the successful listing clears it). ❌ Keep it apart from
+    /// [`off_limits`](Self::off_limits) and [`declined`](Self::declined) —
+    /// offering Full Disk Access over either is advice that does nothing.
     pub permission_denied: Vec<String>,
+    /// Directories a walk tried to read and the OS refused in a way no permission
+    /// the user can grant Cmdr changes: plain POSIX permissions (a root-only
+    /// folder), SIP-protected system folders, and every refusal off macOS.
+    ///
+    /// Still shown, since a search over them is honestly narrow, but the copy
+    /// explains rather than offers.
+    #[serde(default)]
+    pub off_limits: Vec<String>,
     /// Directories no walk will read at all, by Cmdr's own choice: a NAS snapshot
     /// tree, whose per-snapshot hardlinked copies the scanner refuses on purpose
     /// (44 TB reported on a 10 TB volume).
