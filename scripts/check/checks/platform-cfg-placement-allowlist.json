@@ -52,8 +52,7 @@
       "outsideSeam": 2
     },
     "apps/desktop/src-tauri/src/commands/settings.rs": {
-      "negated": 1,
-      "outsideSeam": 5
+      "outsideSeam": 2
     },
     "apps/desktop/src-tauri/src/commands/sync_status.rs": {
       "negated": 1,
@@ -324,9 +323,6 @@
     },
     "apps/desktop/src-tauri/src/mtp/watcher.rs": {
       "outsideSeam": 8
-    },
-    "apps/desktop/src-tauri/src/network/mdns_discovery.rs": {
-      "outsideSeam": 4
     },
     "apps/desktop/src-tauri/src/network/server_identity.rs": {
       "outsideSeam": 2
