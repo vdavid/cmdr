@@ -5505,6 +5505,7 @@ export type MessageKey =
   | 'ui.copyBox.copy'
   | 'ui.copyBox.copyAria'
   | 'ui.copyButton.copied'
+  | 'ui.demoArchive.notBrowsable'
   | 'ui.demoDrop.overBudget'
   | 'ui.dialogBoundary.closedToast'
   | 'ui.findBar.close'

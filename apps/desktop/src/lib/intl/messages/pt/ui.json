@@ -20,6 +20,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "Nesta demo, não dá para entrar em arquivos compactados. No app de verdade, você pode navegar por eles, editá-los e extraí-los, além de comprimir arquivos.",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "Opções",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

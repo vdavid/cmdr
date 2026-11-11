@@ -11,6 +11,7 @@ import type { FeedbackAndErrorsData } from './sources/feedback-and-errors.js'
 import type { FunnelData } from './sources/funnel.js'
 import type { FunnelCountriesData } from './sources/funnel-countries.js'
 import type { SettingsAdoption } from './settings-defaults.js'
+import type { FeatureUsageData } from '../feature-usage.js'
 import { fetchUmamiData } from './sources/umami.js'
 import { fetchCloudflareData } from './sources/cloudflare.js'
 import { fetchPaddleData } from './sources/paddle.js'
@@ -21,6 +22,7 @@ import { fetchFeedbackAndErrorsData } from './sources/feedback-and-errors.js'
 import { fetchFunnelData } from './sources/funnel.js'
 import { fetchFunnelCountriesData } from './sources/funnel-countries.js'
 import { fetchSettingsAdoptionData } from './sources/settings-adoption.js'
+import { fetchFeatureUsageData } from './sources/feature-usage.js'
 
 /** The shared time selection + freshness stamp every page load carries (resolved in `+layout.server.ts`). */
 export interface SelectionEnvelope {
@@ -62,13 +64,14 @@ export interface AcquisitionData extends SelectionEnvelope {
   posthog: SourceResult<PostHogData>
 }
 
-/** The Product page's sources: active use, settings adoption, payment, retention, and feedback & errors. */
+/** The Product page's sources: active use, settings adoption, feature usage, payment, retention, and feedback & errors. */
 export interface ProductData extends SelectionEnvelope {
   cloudflare: SourceResult<CloudflareData>
   paddle: SourceResult<PaddleData>
   license: SourceResult<LicenseData>
   feedbackAndErrors: SourceResult<FeedbackAndErrorsData>
   settingsAdoption: SourceResult<SettingsAdoption>
+  featureUsage: SourceResult<FeatureUsageData>
 }
 
 /** Every source, used by the agent-readable report endpoint (which dumps all sections at once). */
@@ -84,6 +87,7 @@ export interface DashboardData extends SelectionEnvelope {
   license: SourceResult<LicenseData>
   feedbackAndErrors: SourceResult<FeedbackAndErrorsData>
   settingsAdoption: SourceResult<SettingsAdoption>
+  featureUsage: SourceResult<FeatureUsageData>
 }
 
 const sourceTimeoutMs = 20_000
@@ -271,6 +275,18 @@ export function fetchSettingsAdoptionSource(
   )
 }
 
+export function fetchFeatureUsageSource(
+  env: DashboardEnv,
+  selection: DashboardSelection,
+): Promise<SourceResult<FeatureUsageData>> {
+  return guardedFetch(env.LICENSE_SERVER_ADMIN_TOKEN, 'Feature usage', () =>
+    fetchFeatureUsageData(
+      { LICENSE_SERVER_ADMIN_TOKEN: env.LICENSE_SERVER_ADMIN_TOKEN, WORKER_BASE_URL: env.WORKER_BASE_URL },
+      selection,
+    ),
+  )
+}
+
 export function fetchFeedbackAndErrorsSource(
   env: DashboardEnv,
   selection: DashboardSelection,
@@ -319,12 +335,13 @@ export async function fetchAcquisitionData(
 
 /** Fetches only the sources the Product page (`/product`) renders, in parallel. */
 export async function fetchProductData(env: DashboardEnv, selection: DashboardSelection): Promise<ProductData> {
-  const [cloudflare, paddle, license, feedbackAndErrors, settingsAdoption] = await Promise.all([
+  const [cloudflare, paddle, license, feedbackAndErrors, settingsAdoption, featureUsage] = await Promise.all([
     fetchCloudflareSource(env, selection),
     fetchPaddleSource(env, selection),
     fetchLicenseSource(env),
     fetchFeedbackAndErrorsSource(env, selection),
     fetchSettingsAdoptionSource(env, selection),
+    fetchFeatureUsageSource(env, selection),
   ])
   return {
     selection,
@@ -334,6 +351,7 @@ export async function fetchProductData(env: DashboardEnv, selection: DashboardSe
     license,
     feedbackAndErrors,
     settingsAdoption,
+    featureUsage,
   }
 }
 
@@ -352,6 +370,7 @@ export async function fetchDashboardData(env: DashboardEnv, rangeParam: string |
     license,
     feedbackAndErrors,
     settingsAdoption,
+    featureUsage,
   ] = await Promise.all([
     fetchFunnelSource(env),
     fetchUmamiSource(env, selection),
@@ -363,6 +382,7 @@ export async function fetchDashboardData(env: DashboardEnv, rangeParam: string |
     fetchLicenseSource(env),
     fetchFeedbackAndErrorsSource(env, selection),
     fetchSettingsAdoptionSource(env, selection),
+    fetchFeatureUsageSource(env, selection),
   ])
 
   return {
@@ -378,5 +398,6 @@ export async function fetchDashboardData(env: DashboardEnv, rangeParam: string |
     license,
     feedbackAndErrors,
     settingsAdoption,
+    featureUsage,
   }
 }

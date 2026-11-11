@@ -41,6 +41,7 @@ mod app_lifecycle;
 mod capabilities;
 #[cfg(target_os = "macos")]
 mod cf_plist;
+mod child_window_lifecycle;
 mod child_window_state;
 // The `cmdr` terminal command: the URL its script sends and the app menu's install link.
 // macOS-only, like the `RunEvent::Opened` delivery it feeds (`reveal/`).

@@ -149,7 +149,7 @@ async function mountDialog(
       void unmount(component)
       target.remove()
     },
-    // The first span is the title text; the ALPHA StatusBadge sits next to it in the same h2.
+    // The first span is the title text; an optional StatusBadge sits next to it in the same h2.
     getTitle: () => target.querySelector('#query-dialog-title > span')?.textContent.trim() ?? '',
   }
 }

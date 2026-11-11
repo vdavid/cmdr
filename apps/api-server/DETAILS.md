@@ -118,6 +118,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 | GET     | `/admin/heartbeat-dau`         | Bearer token  | Per-day DAU (distinct `anal_id`) + app hours (`uptime_seconds`, an hour per legacy beat)           |
 | GET     | `/admin/funnel`                | Bearer token  | Per-UTC-day acquisition funnel for the last N days (downloads, installs, DAU, D7, signups)         |
 | GET     | `/admin/funnel/countries`      | Bearer token  | The funnel window summed per country (downloads, installs, D7 cohort and retained)                 |
+| GET     | `/admin/feature-usage`         | Bearer token  | Per-feature installs + events over 7d/30d/90d vs active installs (`src/admin/` § Feature usage)    |
 | GET     | `/admin/feedback`              | Bearer token  | In-app feedback rows from D1 (full text, reply-to email, `answeredAt`), newest first               |
 | PUT     | `/admin/feedback/:id/answered` | Bearer token  | Mark one feedback row answered (`{ answered: true }`) or back to awaiting a reply (`false`)        |
 | GET     | `/admin/error-reports`         | Bearer token  | Per-bundle error-report metadata from the R2 prod prefix (`list` + custom metadata), newest first  |

@@ -328,10 +328,13 @@ check.
      development (from the commits), not the release date, adding a new `<h3>` when the month rolls over.
    - **Feature status** (`feature-status.json` at the repo root, the single source of truth behind the `/features` page
      and the in-app badges): review every feature against what shipped. Flip `planned` → `alpha` for a feature that just
-     launched, graduate `alpha` → `beta` → `stable` as one matures, and refresh any note the release made stale. Keep
-     notes to one honest line, website voice (no "I"/"we"). Schema and consumers: `docs/feature-status.md`. Graduating
-     `search` or `select-files` out of `alpha` also means updating the pinned assertion in
-     `apps/desktop/src/lib/feature-status.test.ts`. A new feature id also needs its card in
+     launched, and graduate `alpha` → `beta` → `stable` against the internal bar in `docs/feature-status.md` §
+     Graduation criteria: read its evidence (the dashboard report's "Feature usage", recent CHANGELOG "Fixed" entries
+     per feature, open `bug` issues by area) and propose each graduation to David with that evidence. Rewrite the note
+     of every feature whose status changes, and refresh any note the release made stale. Keep notes to one honest line,
+     website voice (no "I"/"we"). Schema and consumers: `docs/feature-status.md`. Changing the status of a feature that
+     wears an in-app badge also means updating the pinned assertions in `apps/desktop/src/lib/feature-status.test.ts`
+     and the badge tests that file names. A new feature id also needs its card in
      `apps/website/src/lib/features-page.ts`, and a `planned` → `alpha` flip moves its card out of the `planned`
      chapter, or the page fails to build; `release.sh` lets that file (and `features.astro`) ride the release commit
      too. Present the diff for review.

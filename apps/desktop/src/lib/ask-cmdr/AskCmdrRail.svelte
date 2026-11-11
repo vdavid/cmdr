@@ -1,6 +1,6 @@
 <!--
   The Ask Cmdr chat rail: a toggleable right-side panel next to the panes. Header (title +
-  ALPHA badge + new-chat + close), the no-provider notice when one applies, the scrolling
+  BETA badge + new-chat + close), the no-provider notice when one applies, the scrolling
   thread, the getting-long nudge, the composer, and the cost footer. A left-edge drag handle resizes it (persisted). Below ~900px it overlays the
   right pane instead of compressing the panes below their min-width.
 -->

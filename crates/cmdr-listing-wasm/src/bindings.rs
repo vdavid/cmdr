@@ -149,6 +149,12 @@ impl DemoListing {
         Demo::handles(command)
     }
 
+    /// Whether a file called `name` is an archive, as the listing flags its rows.
+    #[wasm_bindgen(js_name = isArchiveName)]
+    pub fn is_archive_name(name: &str) -> bool {
+        Demo::is_archive_name(name)
+    }
+
     /// Plans a drop from the visitor's computer (`imports.rs`): `items` is
     /// `[{ path, kind: 'file' | 'folder', size?, modifiedMs? }]`. Resolves with the
     /// plan (`{ batch, accepted, roots, refusal }`), rejects with an `ImportError`.

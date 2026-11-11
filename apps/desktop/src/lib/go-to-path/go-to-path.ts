@@ -10,7 +10,7 @@
  */
 
 import type { GoToPathResolution, RecentPathEntry } from '#lib/ipc/bindings.js'
-import { resolveGoToPath } from '#lib/tauri-commands/index.js'
+import { resolveGoToPath, trackEvent } from '#lib/tauri-commands/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
 import { getAppLogger } from '#lib/logging/logger.js'
@@ -59,7 +59,34 @@ export async function goToPath(explorer: ExplorerAPI | undefined, input: string)
     log.debug('goToPath: no explorer; skipping (HMR or pre-mount)')
     return undefined
   }
+  const { outcome, result } = await jump(explorer, input)
+  // Once per jump, from its single exit: the dialog's only route to a navigation.
+  void trackEvent('go_to_folder_used', { outcome: result })
+  return outcome
+}
 
+/**
+ * How a jump ended, for `go_to_folder_used`. `navigated` / `selected_file` /
+ * `nearest_ancestor` are the pane accepting it; `not_found` is the resolver's
+ * `invalid`; `refused` is a target with no volume or a pane that declined;
+ * `unresolved` is the resolver's own typed refusal; `handed_off` is a server
+ * address the sign-in sheet takes over.
+ */
+type GoToFolderResult =
+  | 'navigated'
+  | 'selected_file'
+  | 'nearest_ancestor'
+  | 'not_found'
+  | 'refused'
+  | 'unresolved'
+  | 'handed_off'
+
+interface Jumped {
+  outcome: GoToPathOutcome | undefined
+  result: GoToFolderResult
+}
+
+async function jump(explorer: ExplorerAPI, input: string): Promise<Jumped> {
   // ❗ Before the local resolver, always. A `sftp://` or `smb://` input joins onto
   // the pane's directory there and answers `invalid`; here it navigates to the
   // saved place, or opens the sheet on the address.
@@ -72,7 +99,7 @@ export async function goToPath(explorer: ExplorerAPI | undefined, input: string)
     // The backend's refusal is typed, so the log names the REASON; there is no
     // sentence here for a copy edit to change under it.
     log.info("goToPath: couldn't resolve {input}: {reason}", { input, reason: result.error.type })
-    return undefined
+    return { outcome: undefined, result: 'unresolved' }
   }
 
   const resolution = result.data
@@ -86,20 +113,24 @@ export async function goToPath(explorer: ExplorerAPI | undefined, input: string)
   switch (resolution.kind) {
     case 'directory': {
       const location = await resolveLocationOrToast(resolution.path)
-      if (!location) return resolution
-      if (await navigateToDirInPane(explorer, pane, location)) await recordRecent(resolution.path)
-      return resolution
+      if (!location) return { outcome: resolution, result: 'refused' }
+      if (!(await navigateToDirInPane(explorer, pane, location))) return { outcome: resolution, result: 'refused' }
+      await recordRecent(resolution.path)
+      return { outcome: resolution, result: 'navigated' }
     }
     case 'file': {
       const location = await resolveLocationOrToast(resolution.parentDir)
-      if (!location) return resolution
-      if (await navigateToFileInPane(explorer, pane, location, resolution.fileName)) await recordRecent(resolution.path)
-      return resolution
+      if (!location) return { outcome: resolution, result: 'refused' }
+      if (!(await navigateToFileInPane(explorer, pane, location, resolution.fileName))) {
+        return { outcome: resolution, result: 'refused' }
+      }
+      await recordRecent(resolution.path)
+      return { outcome: resolution, result: 'selected_file' }
     }
     case 'nearestAncestor': {
       const location = await resolveLocationOrToast(resolution.ancestorDir)
-      if (!location) return resolution
-      if (!(await navigateToDirInPane(explorer, pane, location))) return resolution
+      if (!location) return { outcome: resolution, result: 'refused' }
+      if (!(await navigateToDirInPane(explorer, pane, location))) return { outcome: resolution, result: 'refused' }
       // Snapshot the back-shortcut at toast-creation time so a later rebind
       // doesn't rewrite a visible toast (matches the downloads snapshot rule).
       const backShortcut = toDisplayShortcut(getEffectiveShortcuts('nav.back')[0] ?? '')
@@ -114,16 +145,16 @@ export async function goToPath(explorer: ExplorerAPI | undefined, input: string)
         },
       })
       await recordRecent(resolution.ancestorDir)
-      return resolution
+      return { outcome: resolution, result: 'nearest_ancestor' }
     }
     case 'invalid':
       log.debug('goToPath: invalid input {input}: {reason}', { input, reason: resolution.reason })
-      return resolution
+      return { outcome: resolution, result: 'not_found' }
   }
 }
 
 /** Acts on a `<scheme>://` input, and jumps to the place it named when there is one. */
-async function goToSchemeInput(explorer: ExplorerAPI, intent: SchemeIntent): Promise<GoToPathOutcome> {
+async function goToSchemeInput(explorer: ExplorerAPI, intent: SchemeIntent): Promise<Jumped> {
   const outcome = await actOnSchemeInput(intent, {
     // ❗ The SAME destination ⌘K's hand-off uses: the saved host's share list,
     // mounting the share the address named. An SMB connect is a share MOUNT, so
@@ -140,11 +171,13 @@ async function goToSchemeInput(explorer: ExplorerAPI, intent: SchemeIntent): Pro
       })
     },
   })
-  if (outcome.kind !== 'directory') return outcome
+  if (outcome.kind === 'handed_off') return { outcome, result: 'handed_off' }
+  if (outcome.kind !== 'directory') return { outcome, result: 'not_found' }
   const location = await resolveLocationOrToast(outcome.path)
-  if (!location) return outcome
-  if (await navigateToDirInPane(explorer, explorer.getFocusedPane(), location)) await recordRecent(outcome.path)
-  return outcome
+  if (!location) return { outcome, result: 'refused' }
+  if (!(await navigateToDirInPane(explorer, explorer.getFocusedPane(), location))) return { outcome, result: 'refused' }
+  await recordRecent(outcome.path)
+  return { outcome, result: 'navigated' }
 }
 
 /**

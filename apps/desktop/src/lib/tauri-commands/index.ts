@@ -218,6 +218,7 @@ export {
   setChildWindowRect,
   closeChildWindow,
   raiseChildWindow,
+  showChildWindow,
   updateMenuAccelerator,
   setUiLanguage,
 } from './app-state'

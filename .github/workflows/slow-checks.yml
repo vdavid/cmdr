@@ -168,9 +168,8 @@ jobs:
       # `cmdr-fs` links `libacl` through `exacl` on Linux, so every target that pulls it
       # in fails to link without the dev package.
       - name: Install native build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libacl1-dev
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
 
       - name: Build check tool
         run: go build -o check .
@@ -263,9 +262,8 @@ jobs:
 
       # Same reason as the fuzz job: `cmdr-fs` links `libacl` on Linux.
       - name: Install native build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libacl1-dev
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
 
       - name: Build check tool
         run: go build -o check .

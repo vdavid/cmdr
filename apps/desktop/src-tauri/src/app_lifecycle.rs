@@ -14,7 +14,9 @@ use tauri::{AppHandle, Manager, Window, Wry};
 
 use crate::downloads;
 use crate::network;
-use crate::{ai, crash_reporter, data_wipe, file_viewer, mcp, quit, search, security_log, window_state};
+use crate::{
+    ai, child_window_lifecycle, crash_reporter, data_wipe, file_viewer, mcp, quit, search, security_log, window_state,
+};
 #[cfg(target_os = "macos")]
 use crate::{dock, drag_image_detection, mtp, reveal};
 
@@ -34,7 +36,8 @@ fn stop_background_services() {
 }
 
 /// Per-window signals: focus re-checks the FDA gate, closing the main window quits
-/// the app through the quit gate, and a destroyed viewer window frees its session.
+/// the app through the quit gate, closing a child window runs its animated, WebKit-safe
+/// close, and a destroyed viewer window frees its session.
 pub fn on_window_event(window: &Window, event: &tauri::WindowEvent) {
     // Main-window focus re-checks the FDA gate so the Downloads
     // watcher starts/stops on transitions. Covers the "user
@@ -70,6 +73,22 @@ pub fn on_window_event(window: &Window, event: &tauri::WindowEvent) {
             stop_background_services();
             window.app_handle().exit(0);
         }
+    }
+    // Every other close of a child window (the red button, ⌘W, the Window menu, a `close()` from
+    // Rust or JS, MCP included) goes through the same slide-out, hide, and deferred destroy as
+    // Escape. The default close would destroy the webview at once, which is the WebKit teardown
+    // race `child_window_lifecycle` exists to avoid. Its final `destroy()` emits no new
+    // `CloseRequested`, so this can't loop.
+    if let tauri::WindowEvent::CloseRequested { api, .. } = event
+        && child_window_lifecycle::is_child_window(window.label())
+    {
+        api.prevent_close();
+        child_window_lifecycle::close(window.app_handle(), window.label());
+    }
+    if let tauri::WindowEvent::Destroyed = event
+        && child_window_lifecycle::is_child_window(window.label())
+    {
+        child_window_lifecycle::forget(window.label());
     }
     // Clean up app-wide resources only when the main window is destroyed
     if let tauri::WindowEvent::Destroyed = event

@@ -21,6 +21,8 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   return (`FunnelRows`), `normalizeCountry`, and the pure `assembleFunnel` (`funnel.ts` re-exports the public names).
   **`funnel-countries.ts`**: `/admin/funnel/countries` (`queryCountryRows` + the pure `assembleCountries`), reusing
   those helpers.
+- **`feature-usage.ts`**: `/admin/feature-usage` and `featureUsageDefinitions`, the feature → event mapping (§ Feature
+  usage). Tested by `feature-usage.test.ts` (real SQLite, the mapping's invariants, the route).
 - Tests: `admin-stats.test.ts`, `admin-endpoints.test.ts`, `funnel.test.ts` (route auth/validation plus the pure date
   math, zero-fill, channel, D7/D28-knowability, retention-so-far, and `byCountry` rules), `funnel-sql.test.ts` (both
   funnels' SQL on real SQLite, seeded through the `/heartbeat` INSERTs, including the country slices summing to the
@@ -227,6 +229,40 @@ D1 flattens a JSON boolean to `1` / `0`; the dashboard rebuilds the real type fr
 CHANGED), so a key absent from an install's row means "on the default" OR "the setting didn't exist in that build". Only
 the per-version defaults manifest on the dashboard separates those, and it needs the version to do it. Collapsing
 versions here would make every adoption number silently wrong for older installs.
+
+## Feature usage (`GET /admin/feature-usage`)
+
+`?range=7d|30d|90d` (default `30d`). Per feature (the repo-root `feature-status.json` ids), the distinct installs and
+event count over the window, plus an optional breakdown, against the window's active installs. The per-release
+feature-status review reads it through the dashboard's `/api/report` (§ "Feature usage" there).
+
+- **The mapping is `featureUsageDefinitions` in `feature-usage.ts`, the one place it lives.** Each entry is a feature
+  id, its name, the events that count (`{ event }`, or `{ event, prop, values }` for "only these property values", like
+  `pane_navigated` with `volume_kind=archive`), and an optional `split` (`'event'`, or a property such as `outcome`). A
+  new event is one line there; SQL, dashboard, and report follow. `feature-usage.test.ts` pins every id and name against
+  `feature-status.json`, and that no two matches can claim the same stored event.
+- **AI rename vs AI file organization** split the `suggestion_group_*` events on `verb`: `rename` is `ai-rename`, the
+  other file verbs `ai-batch`; the server verbs belong to neither.
+- **"Never stored" is not zero.** `everSeen` says whether any of the feature's events exists in the table at all
+  (`seenEventsSql`, an `EXISTS` probe per event name). The dashboard prints "no data yet" for `false`, so a mapping can
+  land before the release that ships its event without reading as 0% adoption.
+- **Denominator**: `COUNT(DISTINCT anal_id)` over `heartbeat` in the window, the `/admin/heartbeat-dau` population.
+  Suppressed and tooling installs never send (`apps/desktop/src-tauri/src/analytics/DETAILS.md` § The suppression gate)
+  and the synthetic sweep deletes the leftovers from both tables, so no query-side exclusion is needed, same as every
+  other admin endpoint.
+- **The window is on `occurred_at`** (the client's clock, RFC 3339), compared as a string against `Date.toISOString()`;
+  the heartbeat side compares `created_at` in SQLite's `YYYY-MM-DD HH:MM:SS`.
+- **Install ids never leave the Worker.** The query returns one row per (feature, part, install), and
+  `assembleFeatureUsage` folds those into counts before responding.
+
+**Decision: `CASE` arms over a per-install `GROUP BY`, folded in TypeScript.** D1 bills every row a statement reads,
+temp tables included. Measured on production, 30d, 2026-11-11 (~120,000 mapped events in the window): a join against a
+`VALUES` map read 970,000 rows (the planner put the map outside and re-read `pane_navigated` once per mapped volume
+kind); forcing the event table outside with `CROSS JOIN` read 6.6 million (a full map scan per event row); the shipped
+shape reads 118,898, each event in the window once. The mapping is interpolated, not bound, because D1 caps a statement
+at 100 bound parameters; every token passes `assertSafeToken` first. `seenEventsSql` takes its names as a `json_each`
+list because D1 rejects a `UNION ALL` of 30 probes ("too many terms in compound SELECT", production, 2026-11-11), which
+plain SQLite accepts.
 
 ## Rollup-versus-live union
 

@@ -14,16 +14,18 @@ describe('feature-status', () => {
     }
   })
 
-  it('the in-app alpha surfaces stay pinned to the JSON', () => {
-    // The Selection dialog, the Ask Cmdr settings section, and the Image search
-    // settings card, and the Multi-rename sheet wear ALPHA badges in the app; Search wears BETA. If you
-    // graduate them in feature-status.json, this test reminds you the badges
-    // change with it (that's the point of the single source of truth).
-    expect(getFeatureStatus('search')).toBe('beta')
-    expect(getFeatureStatus('select-files')).toBe('alpha')
-    expect(getFeatureStatus('ask-cmdr')).toBe('alpha')
+  it('the in-app badge surfaces stay pinned to the JSON', () => {
+    // The Image search settings card wears ALPHA; Search, Ask Cmdr (rail and settings), and
+    // the Operation log dialog wear BETA; the Selection dialog and the Multi-rename sheet are
+    // stable, so they wear nothing. The E2E specs `ask-cmdr.spec.ts` and `operation-log.spec.ts`
+    // assert the rendered badge text too. If you change a status in feature-status.json, this
+    // test reminds you the badges change with it (that's the point of the single source of truth).
     expect(getFeatureStatus('image-search')).toBe('alpha')
-    expect(getFeatureStatus('multi-rename')).toBe('alpha')
+    expect(getFeatureStatus('search')).toBe('beta')
+    expect(getFeatureStatus('ask-cmdr')).toBe('beta')
+    expect(getFeatureStatus('operation-log')).toBe('beta')
+    expect(getFeatureStatus('select-files')).toBe('stable')
+    expect(getFeatureStatus('multi-rename')).toBe('stable')
   })
 
   it('getFeatureStatus returns undefined for unknown ids', () => {
@@ -32,8 +34,9 @@ describe('feature-status', () => {
 
   it('getBadgeStatus maps alpha and beta to badges, everything else to none', () => {
     expect(getBadgeStatus('image-search')).toBe('alpha')
-    expect(getBadgeStatus('network-drives')).toBe('beta')
+    expect(getBadgeStatus('webdav')).toBe('beta')
     expect(getBadgeStatus('file-operations')).toBeUndefined() // stable: no badge by policy
+    expect(getBadgeStatus('select-files')).toBeUndefined()
     expect(getBadgeStatus('plugins')).toBeUndefined() // planned: no in-app surface
     expect(getBadgeStatus('not-a-feature')).toBeUndefined()
   })

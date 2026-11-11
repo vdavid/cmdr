@@ -15,7 +15,10 @@ const {
   getFocusedPanePathMock,
   readSchemeInputMock,
   actOnSchemeInputMock,
+  trackEventMock,
 } = vi.hoisted(() => ({
+  // `commands.trackEvent(name, propsJson)`, typed as a rest so its two strings stay one shape.
+  trackEventMock: vi.fn<(...args: string[]) => Promise<void>>(() => Promise.resolve()),
   readSchemeInputMock: vi.fn<() => Promise<unknown>>(() => Promise.resolve(null)),
   actOnSchemeInputMock: vi.fn<() => Promise<unknown>>(),
   resolveGoToPathMock: vi.fn(),
@@ -37,6 +40,7 @@ function okLocation(path: string) {
 vi.mock('#lib/ipc/bindings.js', () => ({
   commands: {
     resolveGoToPath: resolveGoToPathMock,
+    trackEvent: trackEventMock,
   },
 }))
 
@@ -107,6 +111,46 @@ describe('goToPath handler', () => {
     getFocusedPanePathMock.mockReset().mockReturnValue('/home/me')
     readSchemeInputMock.mockReset().mockResolvedValue(null)
     actOnSchemeInputMock.mockReset()
+    trackEventMock.mockClear()
+  })
+
+  describe('go_to_folder_used', () => {
+    /** The one `go_to_folder_used` the jump reported, as its parsed props. */
+    function reported(): unknown {
+      const calls = trackEventMock.mock.calls.filter(([name]) => name === 'go_to_folder_used')
+      expect(calls).toHaveLength(1)
+      return JSON.parse(calls[0][1])
+    }
+
+    it('reports navigated when the pane accepts a directory', async () => {
+      okResolve({ kind: 'directory', path: '/tmp' })
+      await goToPath(makeExplorerStub(), '/tmp')
+      expect(reported()).toEqual({ outcome: 'navigated' })
+    })
+
+    it('reports selected_file for a file target', async () => {
+      okResolve({ kind: 'file', path: '/tmp/a.txt', parentDir: '/tmp', fileName: 'a.txt' })
+      await goToPath(makeExplorerStub(), '/tmp/a.txt')
+      expect(reported()).toEqual({ outcome: 'selected_file' })
+    })
+
+    it('reports refused when the pane declines', async () => {
+      okResolve({ kind: 'directory', path: '/tmp' })
+      navigateToDirMock.mockResolvedValue(false)
+      await goToPath(makeExplorerStub(), '/tmp')
+      expect(reported()).toEqual({ outcome: 'refused' })
+    })
+
+    it('reports not_found for an invalid input', async () => {
+      okResolve({ kind: 'invalid', reason: 'empty' })
+      await goToPath(makeExplorerStub(), '')
+      expect(reported()).toEqual({ outcome: 'not_found' })
+    })
+
+    it('reports nothing without an explorer', async () => {
+      await goToPath(undefined, '/tmp')
+      expect(trackEventMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('a pasted server address', () => {

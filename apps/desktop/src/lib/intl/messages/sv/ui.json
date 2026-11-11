@@ -20,6 +20,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "Du kan inte gå in i arkiv i den här demoversionen. I den riktiga appen kan du bläddra i, redigera och extrahera arkiv samt komprimera filer.",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "Alternativ",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

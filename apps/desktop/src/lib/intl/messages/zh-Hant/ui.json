@@ -19,6 +19,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "這個線上展示無法進入封存檔。在真正的 App 裡，你可以瀏覽、編輯和解壓縮封存檔，還能把檔案壓縮起來。",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "選項",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

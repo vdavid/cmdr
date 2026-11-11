@@ -28,6 +28,7 @@ export async function openFileViewer(
 ): Promise<void> {
   const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
   const { decorateChildWindowTitle, isE2eRun, orderChildWindowToBackInE2e } = await import('#lib/app-mode.js')
+  const { scheduleShowFallback } = await import('#lib/child-window-show.js')
 
   // Use a unique label per viewer instance (timestamp-based)
   const label = `viewer-${String(Date.now())}`
@@ -62,6 +63,9 @@ export async function openFileViewer(
     maximizable: true,
     closable: true,
     focus: !isE2e,
+    // Created hidden; the viewer page shows it, sliding in, once it's ready
+    // (`#lib/child-window-show`). E2E keeps the immediate show.
+    visible: isE2e,
     // Mirror the main window's overlay title bar (see `tauri.macos.conf.json`):
     // traffic-light position `{ x: 9, y: 17 }` and a hidden title. The viewer toolbar
     // owns the title-bar row, so the picker rows sit inline with the close/min/max
@@ -70,6 +74,7 @@ export async function openFileViewer(
     trafficLightPosition: new LogicalPosition(9, 17),
     hiddenTitle: true,
   })
+  if (!isE2e) scheduleShowFallback(label)
   // E2E: push the window behind everything so a run's viewers don't pop in front
   // of the developer's work. No-op outside E2E. See `orderChildWindowToBackInE2e`.
   void orderChildWindowToBackInE2e(win)

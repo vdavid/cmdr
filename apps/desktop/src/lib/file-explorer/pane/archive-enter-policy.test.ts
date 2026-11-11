@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ARCHIVE_ENTER_FORMATS,
   enterBehaviorFromSettings,
+  enterFormatOf,
   resolveEnterPolicy,
   type ArchiveEnterSettingId,
   type EnterAction,
@@ -70,6 +71,21 @@ describe('resolveEnterPolicy classification', () => {
     const flaggedDocx = file('report.docx', true)
     expect(resolveEnterPolicy(flaggedDocx, {})).toBe('open')
     expect(resolveEnterPolicy(flaggedDocx, { zip: 'browse', ooxml: 'ask' })).toBe('ask')
+  })
+})
+
+describe('enterFormatOf', () => {
+  it('names the format an entry belongs to, by the same first-match order the policy uses', () => {
+    expect(enterFormatOf(file('photos.zip', true))).toBe('zip')
+    expect(enterFormatOf(file('backup.tar.gz', true))).toBe('zip')
+    // A document package the backend flags as an archive is still a document.
+    expect(enterFormatOf(file('report.docx', true))).toBe('ooxml')
+    expect(enterFormatOf(dir('Safari.app'))).toBe('bundle')
+  })
+
+  it('answers null for an ordinary file or folder', () => {
+    expect(enterFormatOf(file('notes.md'))).toBeNull()
+    expect(enterFormatOf(dir('Documents'))).toBeNull()
   })
 })
 

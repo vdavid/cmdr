@@ -53,6 +53,7 @@
     import { mediaUrl } from '../../routes/viewer/media-view'
     import { parseOcrSnippet } from './ocr-snippet'
     import { resolveMediaHitPath } from './media-path'
+    import { imageSearchOutcome, reportImageSearch } from './image-search-analytics'
 
     interface Props {
         /** Live query text from the Search bar. */
@@ -158,7 +159,7 @@
         totalHits = 0
     }
 
-    async function runTextSearch(seq: number): Promise<void> {
+    async function runTextSearch(seq: number, report = true): Promise<void> {
         loading = true
         try {
             // Semantic (CLIP description) search is the PRIMARY text→image signal; OCR is the
@@ -185,9 +186,21 @@
                 .map((h: OcrHit) => ({ storedPath: h.path, snippet: h.snippet, reason: 'ocr' }))
             const combined = [...semanticEntries, ...ocrEntries]
             totalHits = combined.length
+            if (report) {
+                // Reported once the hits are known, so a tile build that throws later
+                // doesn't count the same query again as `failed`.
+                report = false
+                reportImageSearch({
+                    mode: 'text',
+                    outcome: imageSearchOutcome(combined.length),
+                    hits: combined.length,
+                    semantic: semanticEntries.length > 0,
+                })
+            }
             await buildTiles(combined.slice(0, MAX_TILES), seq)
         } catch {
             if (seq !== requestSeq) return
+            if (report) reportImageSearch({ mode: 'text', outcome: 'failed', hits: 0, semantic: false })
             // A failed search reads as "no results" honestly; the volume-state line still
             // renders if we have a prior snapshot. Never surface a raw error here.
             clearResults()
@@ -199,15 +212,24 @@
     /** Re-query the grid for images similar to `source` (feature-print cosine, backend-ranked). */
     async function runSimilar(source: { storedPath: string; name: string }, seq: number): Promise<void> {
         loading = true
+        let reported = false
         try {
             const hits = await mediaIndexFindSimilar(volumeId, source.storedPath, MAX_TILES)
             if (seq !== requestSeq) return
             totalHits = hits.length
+            reported = true
+            reportImageSearch({
+                mode: 'similar',
+                outcome: imageSearchOutcome(hits.length),
+                hits: hits.length,
+                semantic: false,
+            })
             // Similar tiles carry no reason line (an image-similarity match, not text).
             const entries: TileEntry[] = hits.map((hit) => ({ storedPath: hit.path, snippet: null, reason: 'ocr' }))
             await buildTiles(entries, seq)
         } catch {
             if (seq !== requestSeq) return
+            if (!reported) reportImageSearch({ mode: 'similar', outcome: 'failed', hits: 0, semantic: false })
             clearResults()
         } finally {
             if (seq === requestSeq) loading = false
@@ -269,7 +291,8 @@
             return
         }
         const seq = ++requestSeq
-        void runTextSearch(seq)
+        // A restore of the query already counted, so it doesn't report again.
+        void runTextSearch(seq, false)
     }
 
     // Debounced fetch on query / visibility change. An empty query or a hidden dialog

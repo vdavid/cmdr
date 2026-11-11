@@ -57,6 +57,8 @@ vi.mock('#lib/display-accessibility.js', () => ({
 }))
 vi.mock('#lib/text-size.svelte.js', () => ({ initTextSize: vi.fn(resolved), cleanupTextSize: vi.fn() }))
 vi.mock('#lib/window-positioning.js', () => ({ trackOwnRect: vi.fn(noUnlisten) }))
+vi.mock('#lib/child-window-show.js', () => ({ showSelfWindow: vi.fn() }))
+vi.mock('#lib/child-window-close.js', () => ({ closeSelfWindow: vi.fn(() => Promise.resolve()) }))
 // `<Size>` inside the rows reads the reactive settings layer.
 vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({ getFileSizeFormat: () => 'decimal' }))
 

@@ -9,7 +9,7 @@ Four routes share `routes/+layout.svelte` (header: nav, dates, range picker). Th
 90d), hidden on `/licenses` and `/links`; on `/`, ‹ › step back via `?end=` (`DETAILS.md` § Selection state).
 
 - `/` (Acquisition, `routes/+page.svelte`): funnel trend charts (`?country=` scoped), country table, more sections.
-- `/product` (`routes/product/`): active use, settings adoption, payment, retention, feedback & errors.
+- `/product` (`routes/product/`): active use, settings adoption, feature usage, payment, retention, feedback & errors.
 - `/licenses` (`routes/licenses/`): every license we've issued, from `/admin/licenses`, with an editable note each.
 - `/links` (`routes/links/`): CRUD for the `?r=` short codes, proxied to the api-server admin endpoints.
 
@@ -24,7 +24,7 @@ All API keys stay server-side, behind `+server.ts` / `+page.server.ts`.
 
 ## Checks
 
-`pnpm check dashboard` runs all nine checks; don't judge a change by raw `pnpm lint`.
+`pnpm check dashboard` runs all nine checks; never raw `pnpm lint`.
 
 ## Must-knows
 

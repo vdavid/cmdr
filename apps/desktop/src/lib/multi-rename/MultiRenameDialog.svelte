@@ -80,7 +80,7 @@
      */
     const MIN_WIDTH_PX = 880
 
-    // Alpha badge policy: the status comes from the repo-root feature-status.json.
+    // Badge policy: the status comes from the repo-root feature-status.json.
     const badge = getBadgeStatus('multi-rename')
 
     // One sheet renames one session; a new session remounts it.

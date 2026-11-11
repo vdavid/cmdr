@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use crate::commands::{COMMANDS, Demo};
+use crate::commands::{ARCHIVE_REFUSED, COMMANDS, Demo};
 use crate::events::EventSink;
 use crate::tree::DemoTree;
 
@@ -330,4 +330,72 @@ async fn font_metric_writes_reject_like_the_desktop() {
     call(&demo, "store_font_metrics", ascii_widths("system-400-12")).await;
     let extended = json!({ "fontId": "system-400-12", "codePoints": [0x732B], "widths": [12.0] });
     assert_eq!(call(&demo, "extend_font_metrics", extended).await, Value::Null);
+}
+
+/// A tree with an archive file, a folder named like an archive, and a plain folder.
+fn demo_with_archives() -> (Demo, Arc<Collector>) {
+    let tree: DemoTree = serde_json::from_value(json!({
+        "volumeId": "root",
+        "root": "/",
+        "entries": [
+            { "path": "/Downloads", "kind": "dir" },
+            { "path": "/Downloads/font-pack.zip", "kind": "file", "size": 64 },
+            { "path": "/Downloads/old.zip", "kind": "dir" },
+            { "path": "/Downloads/old.zip/readme.txt", "kind": "file", "size": 8 },
+        ],
+    }))
+    .expect("tree parses");
+    let events = Arc::new(Collector::default());
+    let demo = Demo::new(tree, Arc::clone(&events) as _).expect("valid tree");
+    (demo, events)
+}
+
+/// Starts a listing of `path` and hands back every archive refusal the page heard so far.
+async fn refusals_after_listing(demo: &Demo, events: &Collector, id: &str, path: &str) -> Vec<Value> {
+    call(
+        demo,
+        "list_directory_start_streaming",
+        json!({
+            "volumeId": "root", "path": path, "includeHidden": false,
+            "sortBy": "name", "sortOrder": "ascending", "listingId": id,
+        }),
+    )
+    .await;
+    let events = events.0.lock().expect("collector lock");
+    events
+        .iter()
+        .filter(|(name, _)| name == ARCHIVE_REFUSED)
+        .map(|(_, payload)| payload.clone())
+        .collect()
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn listing_an_archive_file_tells_the_page_it_was_refused() {
+    let (demo, events) = demo_with_archives();
+    let refused = refusals_after_listing(&demo, &events, "pane-zip", "/Downloads/font-pack.zip").await;
+    assert_eq!(refused, [json!({ "path": "/Downloads/font-pack.zip" })]);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn listing_a_path_inside_an_archive_names_the_archive_it_refused() {
+    let (demo, events) = demo_with_archives();
+    let refused = refusals_after_listing(&demo, &events, "pane-inner", "/Downloads/font-pack.zip/fonts").await;
+    assert_eq!(refused, [json!({ "path": "/Downloads/font-pack.zip" })]);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_folder_named_like_an_archive_lists_without_a_refusal() {
+    let (demo, events) = demo_with_archives();
+    let done = open(&demo, &events, "pane-folder", "/Downloads/old.zip").await;
+    assert_eq!(done["totalCount"], 1);
+    let refused = refusals_after_listing(&demo, &events, "pane-plain", "/Downloads").await;
+    assert_eq!(refused, Vec::<Value>::new());
+}
+
+#[test]
+fn archive_names_are_the_listing_engines_own() {
+    assert!(Demo::is_archive_name("font-pack.zip"));
+    assert!(Demo::is_archive_name("backup.tar.gz"));
+    assert!(!Demo::is_archive_name("notes.md"));
+    assert!(!Demo::is_archive_name(".zip"));
 }

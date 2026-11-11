@@ -26,7 +26,7 @@ export const miscHandlers = {
   },
 
   'downloads.goToLatest': async ({ explorerRef }) => {
-    await goToLatestDownload(explorerRef)
+    await goToLatestDownload(explorerRef, 'command')
   },
 
   'file.goToTrash': async ({ explorerRef }) => {

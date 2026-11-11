@@ -20,6 +20,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "У цьому демо не можна заходити в архіви. У справжній програмі архіви можна переглядати, редагувати й розпаковувати, а також стискати файли.",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "Параметри",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

@@ -5,7 +5,8 @@ endpoints (`/admin/stats`, `/admin/downloads`, `/admin/active-users`, `/admin/up
 `/admin/heartbeat-dau`, `/admin/config-shape`, `/admin/feedback`, `/admin/error-reports`) plus the one write,
 `PUT /admin/feedback/:id/answered`; `funnel.ts` holds `/admin/funnel`, the one-call per-UTC-day acquisition funnel (its
 contract and pure assembly in `funnel-assemble.ts`), and `funnel-countries.ts` its per-country totals,
-`/admin/funnel/countries`.
+`/admin/funnel/countries`. `feature-usage.ts` holds `/admin/feature-usage` and `featureUsageDefinitions`, the one
+feature → event mapping (a new event is one line there).
 
 ## Must-knows
 
@@ -32,6 +33,8 @@ contract and pure assembly in `funnel-assemble.ts`), and `funnel-countries.ts` i
   latter fills in on a later beat, so only surviving installs gain one and a country's retention reads too high.
 - **`FunnelDay.byCountry` must sum to the day**: `assembleFunnel` builds the day from its slices, and every query groups
   by country rather than running once per country. DETAILS § Per-day funnel.
+- **A query over `analytics_event` must read each event row once.** D1 bills rows read, temp tables included: a
+  `VALUES`-map join behind `/admin/feature-usage` read 970,000 rows for 120,000 events. DETAILS § Feature usage.
 - **UA-family aggregation reads `resolveUaFamily` (`../user-agent.ts`)**, ❌ never a fresh classification of the raw UA:
   the stored `ua_family` outlives the `user_agent` the retention sweep clears at 90 days.
 

@@ -33,6 +33,8 @@ vi.mock('./listing.js', async () => {
           engine.calls.push(cmd)
           return Promise.resolve(`engine:${cmd}`)
         },
+        // The engine's name check, which the listing flags rows with: documents included.
+        isArchiveName: (name: string) => Promise.resolve(/\.(zip|docx)$/.test(name)),
         closeViewerWindow: (label: string) => engine.closedWindows.push(label),
         mediaBody: (token: string) =>
           token === 'known' ? { mime: 'image/png', bytes: Uint8Array.from([1, 2, 3]) } : undefined,
@@ -67,6 +69,9 @@ vi.mock('./menu-engine.js', () => ({
 import { createDemoBackend, type DemoWebview, type EventTarget } from './backend.js'
 import type { AppTheme } from './color-scheme.js'
 import { DEMO_HOME, DEMO_VOLUME_ID } from './demo-tree.js'
+import { OPENING_TOAST_ID } from '#lib/file-explorer/pane/opening-toast.js'
+import { tString } from '#lib/intl/messages.svelte.js'
+import { clearAllToasts, getToasts } from '#lib/ui/toast/index.js'
 
 function fakeWebview(label: string) {
   const heard: [string, unknown, EventTarget][] = []
@@ -227,6 +232,50 @@ describe('demo backend', () => {
       expect(main.heard).toEqual([['open-file-viewer', { path: copied }, { kind: 'label', label: 'main' }]])
     } finally {
       engine.volumeFiles.delete(copied)
+    }
+  })
+
+  it('says archives stay closed when an archive is opened, and opens no viewer', async () => {
+    vi.useFakeTimers()
+    clearAllToasts()
+    const backend = createDemoBackend()
+    const main = fakeWebview('main')
+    backend.attach(main.webview)
+    try {
+      expect(await backend.invoke('open_path', { path: '~/Downloads/font-pack.zip', volumeId: 'root' })).toBeNull()
+      expect(main.heard).toEqual([])
+      // A task later, so it lands after the app's own "Opening…" toast and replaces it.
+      expect(getToasts()).toEqual([])
+      vi.runAllTimers()
+      expect(getToasts()).toMatchObject([
+        { id: OPENING_TOAST_ID, level: 'info', content: tString('ui.demoArchive.notBrowsable') },
+      ])
+    } finally {
+      clearAllToasts()
+      vi.useRealTimers()
+    }
+  })
+
+  it('still opens a document package in the viewer: the app opens those, it doesn’t enter them', async () => {
+    const backend = createDemoBackend()
+    const main = fakeWebview('main')
+    backend.attach(main.webview)
+    const path = `${DEMO_HOME}/Documents/Meeting notes.docx`
+    expect(await backend.invoke('open_path', { path, volumeId: 'root' })).toBeNull()
+    expect(main.heard).toEqual([['open-file-viewer', { path }, { kind: 'label', label: 'main' }]])
+  })
+
+  it('says the same when the engine refused to list an archive, and keeps the notice from the app', () => {
+    clearAllToasts()
+    const backend = createDemoBackend()
+    const main = fakeWebview('main')
+    backend.attach(main.webview)
+    try {
+      engine.sink?.({ name: 'demo://archive-refused', payload: { path: `${DEMO_HOME}/Downloads/font-pack.zip` } })
+      expect(main.heard).toEqual([])
+      expect(getToasts()).toMatchObject([{ level: 'info', content: tString('ui.demoArchive.notBrowsable') }])
+    } finally {
+      clearAllToasts()
     }
   })
 

@@ -27,6 +27,10 @@
       "count": "the same number (drives the singular/plural form of the noun)"
     }
   },
+  "ui.demoArchive.notBrowsable": "You can’t enter archives in this demo. In the real app, you can browse, edit, and unpack archives, and compress files.",
+  "@ui.demoArchive.notBrowsable": {
+    "description": "Notification in the browser demo on getcmdr.com, shown when a visitor tries to open or step into an archive file (a .zip, .tar.gz, .7z, and so on). The demo can't show what's inside archives; the installed app can. The second sentence lists what the real app does with archives: browse them like folders, change their contents, unpack (extract) them, and compress files into new ones. It's information, not a problem report: nothing went wrong."
+  },
   "ui.popover.defaultAriaLabel": "Options",
   "@ui.popover.defaultAriaLabel": {
     "description": "Default aria-label naming a popover region when the caller passes none. Generic fallback meaning a small floating panel of choices."

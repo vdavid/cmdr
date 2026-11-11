@@ -9,8 +9,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { OperationRow } from '#lib/ipc/bindings.js'
 
 const getRecentMock = vi.fn<(payload: { limit: number; offset: number }) => Promise<OperationRow[]>>()
+const trackEventMock = vi.fn<(name: string, props?: Record<string, unknown>) => Promise<void>>()
 vi.mock('#lib/tauri-commands/index.js', () => ({
   getRecentOperationLogEntries: (limit: number, offset: number) => getRecentMock({ limit, offset }),
+  trackEvent: (name: string, props?: Record<string, unknown>) => trackEventMock(name, props),
 }))
 
 vi.mock('#lib/logging/logger.js', () => ({
@@ -90,6 +92,16 @@ describe('openOperationLog', () => {
     await openOperationLog()
 
     expect(getRecentMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports operation_log_opened once per real open, not per double-fire', async () => {
+    trackEventMock.mockReset()
+    getRecentMock.mockResolvedValue([row('a')])
+    await openOperationLog()
+    await openOperationLog()
+
+    expect(trackEventMock).toHaveBeenCalledTimes(1)
+    expect(trackEventMock).toHaveBeenCalledWith('operation_log_opened', undefined)
   })
 
   it('still opens on a read failure and flags loadError', async () => {

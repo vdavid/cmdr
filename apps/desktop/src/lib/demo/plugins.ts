@@ -23,6 +23,10 @@ const seeds: Record<string, Record<string, unknown>> = {
     // A browser tab is usually smaller than a Mac's display at its default zoom, and the demo reads better a bit
     // bigger. The app's own zoom setting, so Settings shows 125% and can take it back to 100%.
     'appearance.textSize': 125,
+    // The demo doesn't browse archives (DETAILS § Archives). Open sends Enter on one to `open_path`,
+    // which the backend answers with a notice, where the registry's Ask would offer a Browse that
+    // can only end on an error screen. Settings still offers all three.
+    'behavior.archiveEnter.zip': 'open',
   },
   // One `shortcut:<commandId>` key per customization, as `shortcuts-store.ts` reads them.
   'shortcuts.json': Object.fromEntries(

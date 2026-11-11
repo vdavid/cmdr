@@ -15,7 +15,9 @@ const {
   getFocusedPaneMock,
   getPaneLocationMock,
   setFocusedPaneMock,
+  trackEventMock,
 } = vi.hoisted(() => ({
+  trackEventMock: vi.fn<(name: string, props?: Record<string, unknown>) => Promise<void>>(() => Promise.resolve()),
   goToLatestDownloadMock: vi.fn(),
   downloadsWatcherStatusMock: vi.fn(),
   addToastMock: vi.fn(() => 'toast-id'),
@@ -54,6 +56,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   openPrivacySettings: openPrivacySettingsMock,
   goToLatestDownload: goToLatestDownloadMock,
   downloadsWatcherStatus: downloadsWatcherStatusMock,
+  trackEvent: trackEventMock,
 }))
 
 vi.mock('#lib/file-explorer/navigation/resolve-location.js', () => ({
@@ -131,6 +134,28 @@ describe('goToLatestDownload', () => {
     setFocusedPaneMock.mockReset()
   })
 
+  describe('download_jump_used', () => {
+    it('reports the trigger and a revealed outcome on success', async () => {
+      trackEventMock.mockClear()
+      goToLatestDownloadMock.mockResolvedValue({
+        status: 'ok',
+        data: { path: '/Users/me/Downloads/a.zip', parentDir: '/Users/me/Downloads', fileName: 'a.zip' },
+      })
+      await goToLatestDownload(makeExplorerStub(), 'global_shortcut')
+      expect(trackEventMock).toHaveBeenCalledWith('download_jump_used', {
+        trigger: 'global_shortcut',
+        outcome: 'revealed',
+      })
+    })
+
+    it('reports no_access when Downloads is not watchable', async () => {
+      trackEventMock.mockClear()
+      goToLatestDownloadMock.mockResolvedValue({ status: 'error', error: { kind: 'watcherUnavailable' } })
+      await goToLatestDownload(makeExplorerStub(), 'command')
+      expect(trackEventMock).toHaveBeenCalledWith('download_jump_used', { trigger: 'command', outcome: 'no_access' })
+    })
+  })
+
   it('navigates the focused pane and selects the file on success', async () => {
     goToLatestDownloadMock.mockResolvedValue({
       status: 'ok',
@@ -142,7 +167,7 @@ describe('goToLatestDownload', () => {
     })
     getFocusedPaneMock.mockReturnValue('right')
 
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'right',
@@ -161,7 +186,7 @@ describe('goToLatestDownload', () => {
     getFocusedPaneMock.mockReturnValue('left')
     paneShows('left', '/Users/me/Downloads')
 
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     expect(navigateMock).not.toHaveBeenCalled()
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
@@ -176,7 +201,7 @@ describe('goToLatestDownload', () => {
     getFocusedPaneMock.mockReturnValue('left')
     paneShows('right', '/Users/me/Downloads')
 
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     expect(navigateMock).not.toHaveBeenCalled()
     expect(setFocusedPaneMock).toHaveBeenCalledWith('right')
@@ -191,7 +216,7 @@ describe('goToLatestDownload', () => {
     getFocusedPaneMock.mockReturnValue('left')
     // Both panes sit elsewhere (the beforeEach default).
 
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'left',
@@ -217,7 +242,7 @@ describe('goToLatestDownload', () => {
         : { volumeId: 'root', volumePath: '/', path: '/Users/me/elsewhere' },
     )
 
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'left',
@@ -242,7 +267,7 @@ describe('goToLatestDownload', () => {
         : { volumeId: 'root', volumePath: '/', path: '/Users/me/elsewhere' },
     )
 
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'left',
@@ -262,7 +287,7 @@ describe('goToLatestDownload', () => {
       data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
     })
 
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
     const [content, options] = addToastMock.mock.calls[0] as unknown as [
@@ -297,7 +322,7 @@ describe('goToLatestDownload', () => {
     })
     getFocusedPaneMock.mockReturnValue('left')
 
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     const [, options] = addToastMock.mock.calls[0] as unknown as [unknown, { props?: { onGoToDownloads: () => void } }]
     // The other pane navigates to Downloads AFTER the toast was added, so the
@@ -317,7 +342,7 @@ describe('goToLatestDownload', () => {
       error: { kind: 'watcherUnavailable' },
     })
 
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
     const [content, options] = addToastMock.mock.calls[0] as unknown as [unknown, Record<string, unknown>]
@@ -337,7 +362,7 @@ describe('goToLatestDownload', () => {
       error: { kind: 'downloadsDirUnresolved' },
     })
 
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     expect(addToastMock).toHaveBeenCalledTimes(1)
     const [content] = addToastMock.mock.calls[0] as unknown as [unknown, Record<string, unknown>]
@@ -354,8 +379,8 @@ describe('goToLatestDownload', () => {
       data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
     })
 
-    await goToLatestDownload(makeExplorerStub())
-    await goToLatestDownload(makeExplorerStub())
+    await goToLatestDownload(makeExplorerStub(), 'command')
+    await goToLatestDownload(makeExplorerStub(), 'command')
 
     expect(addToastMock).toHaveBeenCalledTimes(2)
     // The toast store dedups by `id`: passing the same id makes the second
@@ -383,12 +408,12 @@ describe('goToLatestDownload', () => {
     paneShows('left', '/Users/me/Downloads')
     moveCursorMock.mockRejectedValue(new Error('"transaction-history.csv" not found in the left pane listing'))
 
-    await expect(goToLatestDownload(makeExplorerStub())).resolves.toBeUndefined()
+    await expect(goToLatestDownload(makeExplorerStub(), 'command')).resolves.toBeUndefined()
     expect(moveCursorMock).toHaveBeenCalledWith('left', 'transaction-history.csv', 'person')
   })
 
   it('does nothing when the explorer handle is missing (HMR / pre-mount)', async () => {
-    await goToLatestDownload(undefined)
+    await goToLatestDownload(undefined, 'command')
 
     expect(goToLatestDownloadMock).not.toHaveBeenCalled()
     expect(addToastMock).not.toHaveBeenCalled()
@@ -409,6 +434,12 @@ describe('goToDownload', () => {
     getFocusedPaneMock.mockReset().mockReturnValue('left')
     getPaneLocationMock.mockReset().mockReturnValue({ volumeId: 'root', volumePath: '/', path: '/Users/me/elsewhere' })
     setFocusedPaneMock.mockReset()
+  })
+
+  it('reports download_jump_used with the toast trigger', async () => {
+    trackEventMock.mockClear()
+    await goToDownload(makeExplorerStub(), '/Users/me/Downloads', 'report.pdf')
+    expect(trackEventMock).toHaveBeenCalledWith('download_jump_used', { trigger: 'toast', outcome: 'revealed' })
   })
 
   it('navigates the focused pane to parentDir and selects the file when neither pane shows it', async () => {

@@ -1,13 +1,13 @@
 /**
- * E2E for the alpha "Operation log" dialog: it opens BOTH from the View menu
- * item and from the ⌘⌥L keyboard shortcut, and renders with the ALPHA badge.
+ * E2E for the beta "Operation log" dialog: it opens BOTH from the View menu
+ * item and from the ⌘⌥L keyboard shortcut, and renders with the BETA badge.
  *
  * The menu path uses `dispatchMenuCommand` (menu click → on_menu_event →
  * execute-command, exactly what the native menu emits). The shortcut path
  * dispatches a real keydown so it exercises `handleGlobalKeyDown` →
  * `lookupCommand('⌘⌥L')` → the `log.operationLog` handler — the same JS dispatch a
  * key press hits. The instance's journal may be empty, so the assertion is that
- * the dialog and its ALPHA badge render (grouped-row rendering + paging are
+ * the dialog and its BETA badge render (grouped-row rendering + paging are
  * covered by the component/unit tests), not that any specific operation shows.
  */
 
@@ -21,10 +21,10 @@ function dialogOpen(page: TauriPage): Promise<boolean> {
   return page.evaluate<boolean>(`document.querySelector('#operation-log-body') !== null`)
 }
 
-/** The ALPHA stability badge is present in the open dialog's title. */
-function alphaBadgeShown(page: TauriPage): Promise<boolean> {
+/** The BETA stability badge is present in the open dialog's title. */
+function betaBadgeShown(page: TauriPage): Promise<boolean> {
   return page.evaluate<boolean>(
-    `(document.querySelector('.feature-status-badge')?.textContent || '').trim().toLowerCase() === 'alpha'`,
+    `(document.querySelector('.feature-status-badge')?.textContent || '').trim().toLowerCase() === 'beta'`,
   )
 }
 
@@ -46,18 +46,18 @@ test.describe('Operation log dialog', () => {
     await ensureAppReady(tauriPage)
   })
 
-  test('opens from the View menu item with the ALPHA badge', async ({ tauriPage }) => {
+  test('opens from the View menu item with the BETA badge', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     await dispatchMenuCommand(page, 'log.operationLog')
 
     await expect.poll(() => dialogOpen(page), { timeout: waitBudget(3000) }).toBe(true)
-    expect(await alphaBadgeShown(page)).toBe(true)
+    expect(await betaBadgeShown(page)).toBe(true)
 
     await dismissOverlay(page)
     await expect.poll(() => dialogOpen(page), { timeout: waitBudget(3000) }).toBe(false)
   })
 
-  test('opens from the ⌘⌥L keyboard shortcut with the ALPHA badge', async ({ tauriPage }) => {
+  test('opens from the ⌘⌥L keyboard shortcut with the BETA badge', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     // Re-press inside the poll: the menu test above fired `log.operationLog` from
     // the `menu` source, and the cross-source double-fire guard (dispatch-dedup.ts,
@@ -74,7 +74,7 @@ test.describe('Operation log dialog', () => {
         { timeout: waitBudget(5000) },
       )
       .toBe(true)
-    expect(await alphaBadgeShown(page)).toBe(true)
+    expect(await betaBadgeShown(page)).toBe(true)
 
     await dismissOverlay(page)
     await expect.poll(() => dialogOpen(page), { timeout: waitBudget(3000) }).toBe(false)

@@ -473,6 +473,11 @@ impl crate::Operations {
                     &runner,
                 )
                 .await;
+                // Every reversal that ran, from either entry point, ends here, so this
+                // is the one place its analytics can't be missed or doubled.
+                ops.host()
+                    .events()
+                    .rollback_settled(initiator, selection.is_some(), &outcome);
                 // Hand the tally to a caller awaiting it (a multi-operation undo). A
                 // dropped receiver (the caller went away) is not a problem: the reversal
                 // already happened and is journaled.

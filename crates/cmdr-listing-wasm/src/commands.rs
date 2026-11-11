@@ -6,9 +6,11 @@
 //! answer, `Err` what the promise rejects with (the command's serialized error,
 //! or a string for arguments that don't parse, as Tauri does).
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
+
+use cmdr_fs::archive_format::{archive_boundary_candidate, has_supported_archive_extension};
 
 use cmdr_brief_columns::{
     BriefColumnsIpcError, BriefColumnsQuery, FontMetrics, FontMetricsError, FontMetricsStore,
@@ -82,6 +84,11 @@ pub const DEVICE_SLICE: Duration = Duration::from_millis(8);
 /// the files leave of it, live.
 pub const DEVICE_CAPACITY_BYTES: u64 = 994_662_584_320;
 
+/// The demo's event for a listing that asked to enter an archive, which the demo
+/// doesn't browse (`DETAILS.md` § Archives): `{ path }`, the archive file. Not a
+/// Tauri event: the page's backend consumes it and tells the visitor.
+pub const ARCHIVE_REFUSED: &str = "demo://archive-refused";
+
 /// One engine over one in-memory volume: what the demo page talks to. The
 /// listing engine and the write engine share the volume and the panes, so a
 /// write reaches the listings through `directory-diff`.
@@ -89,6 +96,9 @@ pub const DEVICE_CAPACITY_BYTES: u64 = 994_662_584_320;
 pub struct Demo {
     listings: Listings,
     events: Arc<DemoEvents>,
+    /// The one volume, asked whether an archive-named path is a file before a
+    /// listing of it starts ([`Demo::note_archive_refusal`]).
+    volume: Arc<dyn Volume>,
     /// The page's measured fonts, in memory only: the desktop's disk cache has no
     /// counterpart, so a reload measures again.
     fonts: Arc<FontMetricsStore>,
@@ -167,6 +177,7 @@ impl Demo {
             operations_sink,
             home.map(PathBuf::from),
         );
+        let listed = Arc::clone(&volume);
         let multi_rename = Arc::new(DemoMultiRename::new(
             listings.clone(),
             page_runtime(),
@@ -178,6 +189,7 @@ impl Demo {
         Ok(Self {
             listings,
             events,
+            volume: listed,
             fonts: Arc::new(FontMetricsStore::new()),
             operations,
             sizes,
@@ -214,6 +226,26 @@ impl Demo {
             .chain(DemoOperations::commands())
     }
 
+    /// Whether a file called `name` is an archive, by the same name check the
+    /// listing sets each row's `isArchive` from.
+    pub fn is_archive_name(name: &str) -> bool {
+        has_supported_archive_extension(name)
+    }
+
+    /// Tells the page when `path` is, or reaches into, an archive FILE: the demo
+    /// has no archive route, so the listing that follows ends in the volume's
+    /// own "that's a file", and the page says why. A folder that only carries an
+    /// archive's name lists as the folder it is, and costs one metadata read.
+    async fn note_archive_refusal(&self, path: &Path) {
+        let Some((archive, _inner)) = archive_boundary_candidate(path) else {
+            return;
+        };
+        if matches!(self.volume.get_metadata(&archive).await, Ok(entry) if !entry.is_directory) {
+            self.events
+                .send(ARCHIVE_REFUSED, ArchiveRefusedEvent { path: &archive });
+        }
+    }
+
     /// The file viewer over the demo's volume.
     pub fn viewer(&self) -> &DemoViewer {
         &self.viewer
@@ -240,6 +272,7 @@ impl Demo {
         match command {
             "list_directory_start_streaming" => {
                 let a: StartArgs = parse(command, args)?;
+                self.note_archive_refusal(Path::new(&a.path)).await;
                 l.start(ListingRequest {
                     id: ListingId::new(a.listing_id.clone()),
                     volume_id: a.volume_id,
@@ -466,6 +499,12 @@ fn transfer_sources(command: &str, args: &Value) -> Option<(bool, Vec<PathBuf>)>
     ))
 }
 
+/// [`ARCHIVE_REFUSED`]'s payload.
+#[derive(Serialize)]
+struct ArchiveRefusedEvent<'a> {
+    path: &'a Path,
+}
+
 /// `ListingStatus` and `StreamingListingStartResult` in the app: the answer is
 /// always "loading", and the rest arrives as events.
 #[derive(Serialize)]
@@ -495,19 +534,19 @@ impl ListingVolumes for OneVolume {
     fn resolve<'a>(
         &'a self,
         volume_id: &'a str,
-        path: &'a std::path::Path,
+        path: &'a Path,
     ) -> std::pin::Pin<Box<dyn Future<Output = ResolvedVolume> + Send + 'a>> {
         Box::pin(async move { self.resolve_local_only(volume_id, path) })
     }
 
-    fn resolve_local_only(&self, volume_id: &str, path: &std::path::Path) -> ResolvedVolume {
+    fn resolve_local_only(&self, volume_id: &str, path: &Path) -> ResolvedVolume {
         ResolvedVolume::passthrough(self.get(volume_id), path)
     }
 
     fn unregistered<'a>(
         &'a self,
         _volume_id: &'a str,
-        _path: &'a std::path::Path,
+        _path: &'a Path,
     ) -> std::pin::Pin<Box<dyn Future<Output = Unregistered> + Send + 'a>> {
         Box::pin(async { Unregistered::Gone })
     }

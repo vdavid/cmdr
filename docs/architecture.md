@@ -314,6 +314,9 @@ All under `apps/desktop/src-tauri/src/`.
   `tauri-plugin-window-state`. Placement only; the frontend shows the window
 - `main_window_show.rs`: The backend's fallback that shows the main window when the frontend hasn't within 10 s (a
   WebKit that can't run the bundle, a startup that never finishes). Off in E2E
+- `child_window_lifecycle/`: How every child window appears and goes away: the slide in and out (honoring Reduce
+  motion), and the one WebKit-safe close every close path lands in. Frontend halves: `#lib/child-window-show`,
+  `#lib/child-window-close`. See `apps/desktop/src-tauri/src/child_window_lifecycle/CLAUDE.md`
 - `system_look/`: what the OS says about how things should look, one command each, per OS behind `platform/`: the accent
   color (macOS `NSColor`, Linux XDG portal), Accessibility > Display options (Reduce transparency, Increase contrast,
   Differentiate without color, Invert colors, Show borders; also re-keys the icon caches via
@@ -355,8 +358,9 @@ All under `apps/desktop/src-tauri/src/`.
   deadline. See `apps/desktop/src-tauri/src/quit/CLAUDE.md`, the frontend `apps/desktop/src/lib/quit/CLAUDE.md`, and the
   agent-facing surface in `apps/desktop/src-tauri/src/tools/actions/quit.rs`
 - `app_lifecycle.rs`: The two Tauri builder handlers `lib.rs` names: `on_window_event` (main-window focus, close, and
-  destroy; viewer-window teardown) and `on_run_event` (ready, an OS reveal arriving, exit requested, exit), plus the
-  shared stop-background-services path all three shutdown routes take
+  destroy; every child window's close routed to `child_window_lifecycle/`; viewer-window teardown) and `on_run_event`
+  (ready, an OS reveal arriving, exit requested, exit), plus the shared stop-background-services path all three shutdown
+  routes take
 - `reveal/`: "Reveal in Cmdr": another app's "Show in Finder" lands in a pane instead, via the undocumented
   `NSFileViewer` global default. Owns the registration state machine (macOS-only), the arriving-reveal dispatch, the
   cold-start buffer, and the `RevealDelivered` announcement. The `cmdr` terminal command and "Open in Cmdr" (a macOS

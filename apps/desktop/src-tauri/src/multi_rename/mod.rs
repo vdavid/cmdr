@@ -6,10 +6,13 @@
 
 pub use cmdr_multi_rename::*;
 
+pub(crate) mod analytics;
 pub(crate) mod app_files;
 pub(crate) mod app_host;
 pub(crate) mod preset_store;
 
+#[cfg(test)]
+mod analytics_test;
 #[cfg(test)]
 mod app_files_test;
 #[cfg(test)]

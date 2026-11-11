@@ -20,6 +20,10 @@
   "@ui.demoDrop.overBudget": {
     "sourceHash": "9a11992"
   },
+  "ui.demoArchive.notBrowsable": "Ebben a demóban nem lehet belépni az archívumokba. Az igazi appban böngészheted, szerkesztheted és kicsomagolhatod az archívumokat, és fájlokat is tömöríthetsz.",
+  "@ui.demoArchive.notBrowsable": {
+    "sourceHash": "760091f"
+  },
   "ui.popover.defaultAriaLabel": "Beállítások",
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"

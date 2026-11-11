@@ -125,6 +125,15 @@ function classify(entry: EnterCandidate): FormatDescriptor | null {
 }
 
 /**
+ * Which format's Enter setting governs an entry, or `null` for an ordinary file or folder. For a
+ * caller that needs the format itself: a document package (`ooxml`) is flagged `isArchive` too, so
+ * the flag alone can't tell it from an archive a person browses.
+ */
+export function enterFormatOf(entry: EnterCandidate): ArchiveFormatKey | null {
+  return classify(entry)?.key ?? null
+}
+
+/**
  * The Enter action for an entry given the per-format actions, or `null` when the entry
  * is neither an archive, a document package, nor a bundle (the caller then does its
  * ordinary open/browse).
