@@ -9,7 +9,7 @@ use tokio_util::sync::CancellationToken;
 use super::AdbVolume;
 use super::mapping::{stat_to_file_entry, with_link_target};
 use super::paths::join_device_path;
-use crate::errors::{EACCES, ENOENT, volume_error_from_errno};
+use crate::errors::{EACCES, ENOENT, ENOTDIR, volume_error_from_errno};
 use crate::sync::{SyncDirEntry, SyncEntryKind, SyncSession, SyncStat};
 
 /// How many entries go by between two progress reports.
@@ -261,7 +261,3 @@ impl AdbVolume {
         session.stat(target).await.ok().filter(SyncStat::exists)
     }
 }
-
-/// Linux `ENOTDIR`, which `crate::errors` has no name for: the device numbers
-/// it, and every Android is Linux.
-const ENOTDIR: i32 = 20;
