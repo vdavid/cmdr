@@ -127,26 +127,6 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
-  "search.coverage.uncovered.local": "Cmdr 還沒為 {drive} 建立索引，所以這次搜尋略過了：",
-  "@search.coverage.uncovered.local": {
-    "sourceHash": "8fe8ce1"
-  },
-  "search.coverage.uncovered.network": "除非你要求，否則 Cmdr 不會為網路磁碟機建立索引，所以這次搜尋略過了：",
-  "@search.coverage.uncovered.network": {
-    "sourceHash": "0066012"
-  },
-  "search.coverage.uncovered.unavailable": "Cmdr 還不能搜尋 {drive}，所以這次搜尋略過了：",
-  "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "6f9cb5b"
-  },
-  "search.coverage.uncovered.indexing": "Cmdr 還在為 {drive} 建立索引，還沒輪到這些資料夾，所以這次搜尋略過了：",
-  "@search.coverage.uncovered.indexing": {
-    "sourceHash": "9cf6003"
-  },
-  "search.coverage.unresolved": "{count, plural, other {Cmdr 的索引還沒涵蓋這些資料夾，所以這次搜尋略過了它們：}}",
-  "@search.coverage.unresolved": {
-    "sourceHash": "6afa798"
-  },
   "search.coverage.walk.cancelled": "你停止了這次搜尋，所以這裡是 Cmdr 當時已經找到的結果。過程中讀過的東西都留著，下次再搜尋就會從那裡接著跑。",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
@@ -163,14 +143,6 @@
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },
-  "search.coverage.denied": "{count, plural, other {Cmdr 沒有權限看這些資料夾裡面，所以結果裡沒有它們的東西：}}",
-  "@search.coverage.denied": {
-    "sourceHash": "c71fc2e"
-  },
-  "search.coverage.failedRoots": "{count, plural, other {Cmdr 無法開啟這些資料夾，所以結果裡沒有它們的東西：}}",
-  "@search.coverage.failedRoots": {
-    "sourceHash": "9b978eb"
-  },
   "search.coverage.deniedFullDiskAccess": "有了「完全取用磁碟」權限，Cmdr 就能搜尋這類資料夾。",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
@@ -178,14 +150,6 @@
   "search.coverage.setUpFullDiskAccess": "設定「完全取用磁碟」",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
-  },
-  "search.coverage.declined": "{count, plural, other {Cmdr 不會看快照資料夾裡面，所以結果裡沒有它們的東西：}}",
-  "@search.coverage.declined": {
-    "sourceHash": "85465f3"
-  },
-  "search.coverage.stillCovering": "{count, plural, other {另一次搜尋正在讀這些資料夾，所以它們的檔案等一下就會出現：}}",
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "這個磁碟機",
   "@search.coverage.unnamedDrive": {

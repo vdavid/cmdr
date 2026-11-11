@@ -127,26 +127,6 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
-  "search.coverage.uncovered.local": "Cmdr еще не проиндексировал диск {drive}, поэтому при поиске пропущено:",
-  "@search.coverage.uncovered.local": {
-    "sourceHash": "8fe8ce1"
-  },
-  "search.coverage.uncovered.network": "Cmdr индексирует сетевые диски только по вашему запросу, поэтому при поиске пропущено:",
-  "@search.coverage.uncovered.network": {
-    "sourceHash": "0066012"
-  },
-  "search.coverage.uncovered.unavailable": "Cmdr пока не может искать на диске {drive}, поэтому при поиске пропущено:",
-  "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "6f9cb5b"
-  },
-  "search.coverage.uncovered.indexing": "Cmdr еще индексирует диск {drive} и не дошел до этих папок, поэтому при поиске пропущено:",
-  "@search.coverage.uncovered.indexing": {
-    "sourceHash": "9cf6003"
-  },
-  "search.coverage.unresolved": "{count, plural, =1 {Эта папка еще не входит в индекс Cmdr, поэтому при поиске она пропущена:} one {Эти папки еще не входят в индекс Cmdr, поэтому при поиске они пропущены:} few {Эти папки еще не входят в индекс Cmdr, поэтому при поиске они пропущены:} many {Эти папки еще не входят в индекс Cmdr, поэтому при поиске они пропущены:} other {Эти папки еще не входят в индекс Cmdr, поэтому при поиске они пропущены:}}",
-  "@search.coverage.unresolved": {
-    "sourceHash": "6afa798"
-  },
   "search.coverage.walk.cancelled": "Поиск остановлен по вашему запросу. Показано все, что Cmdr успел найти. Прочитанные данные сохранены, поэтому повторный поиск продолжится с этого места.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
@@ -163,14 +143,6 @@
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },
-  "search.coverage.denied": "{count, plural, =1 {Cmdr не разрешено заглядывать в эту папку, поэтому ее содержимого нет в результатах:} one {Cmdr не разрешено заглядывать в эти папки, поэтому их содержимого нет в результатах:} few {Cmdr не разрешено заглядывать в эти папки, поэтому их содержимого нет в результатах:} many {Cmdr не разрешено заглядывать в эти папки, поэтому их содержимого нет в результатах:} other {Cmdr не разрешено заглядывать в эти папки, поэтому их содержимого нет в результатах:}}",
-  "@search.coverage.denied": {
-    "sourceHash": "c71fc2e"
-  },
-  "search.coverage.failedRoots": "{count, plural, =1 {Cmdr не удалось открыть эту папку, поэтому ее содержимого нет в результатах:} one {Cmdr не удалось открыть эти папки, поэтому их содержимого нет в результатах:} few {Cmdr не удалось открыть эти папки, поэтому их содержимого нет в результатах:} many {Cmdr не удалось открыть эти папки, поэтому их содержимого нет в результатах:} other {Cmdr не удалось открыть эти папки, поэтому их содержимого нет в результатах:}}",
-  "@search.coverage.failedRoots": {
-    "sourceHash": "9b978eb"
-  },
   "search.coverage.deniedFullDiskAccess": "С полным доступом к диску Cmdr может искать и в таких папках.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
@@ -178,14 +150,6 @@
   "search.coverage.setUpFullDiskAccess": "Настроить полный доступ к диску",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
-  },
-  "search.coverage.declined": "{count, plural, =1 {Cmdr не просматривает папки снимков, поэтому содержимого этой папки нет в результатах:} one {Cmdr не просматривает папки снимков, поэтому содержимого этих папок нет в результатах:} few {Cmdr не просматривает папки снимков, поэтому содержимого этих папок нет в результатах:} many {Cmdr не просматривает папки снимков, поэтому содержимого этих папок нет в результатах:} other {Cmdr не просматривает папки снимков, поэтому содержимого этих папок нет в результатах:}}",
-  "@search.coverage.declined": {
-    "sourceHash": "85465f3"
-  },
-  "search.coverage.stillCovering": "{count, plural, =1 {Другой поиск уже проверяет эту папку, ее файлы скоро появятся:} one {Другой поиск уже проверяет эти папки, их файлы скоро появятся:} few {Другой поиск уже проверяет эти папки, их файлы скоро появятся:} many {Другой поиск уже проверяет эти папки, их файлы скоро появятся:} other {Другой поиск уже проверяет эти папки, их файлы скоро появятся:}}",
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "без названия",
   "@search.coverage.unnamedDrive": {

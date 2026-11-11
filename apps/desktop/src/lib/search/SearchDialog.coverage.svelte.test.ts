@@ -424,12 +424,14 @@ describe('the coverage note answers "why is this empty?"', () => {
 
     await runAutoApplied(overlay, '*.pdf')
     const uncovered = noteText(target)
-    expect(uncovered).toContain(tString('search.coverage.uncovered.network', { drive: 'Naspolya' }))
+    expect(uncovered).toContain(
+      tString('search.coverage.line.uncovered.network', { count: 1, countText: '1', drive: 'Naspolya' }),
+    )
 
     searchFilesMock.mockResolvedValueOnce(result({ unresolvedScopes: ['/Users/test/gone'], targetVolumeId: 'root' }))
     await runAutoApplied(overlay, '*.png')
     const unresolved = noteText(target)
-    expect(unresolved).toContain(tString('search.coverage.unresolved', { count: 1 }))
+    expect(unresolved).toContain(tString('search.coverage.line.unresolved', { count: 1, countText: '1' }))
     expect(unresolved).not.toBe(uncovered)
   })
 
@@ -440,7 +442,9 @@ describe('the coverage note answers "why is this empty?"', () => {
 
     await runAutoApplied(overlay, '*.pdf')
 
-    expect(noteText(target)).toContain(tString('search.coverage.uncovered.local', { drive: 'Macintosh HD' }))
+    expect(noteText(target)).toContain(
+      tString('search.coverage.line.uncovered.local', { count: 1, countText: '1', drive: 'Macintosh HD' }),
+    )
   })
 })
 
@@ -536,10 +540,13 @@ describe('a server search can’t cover', () => {
     await runAutoApplied(overlay, '*.pdf')
 
     const note = noteText(target)
-    expect(note).toContain(tString('search.coverage.uncovered.unavailable', { drive: 'nas.local' }))
+    expect(note).toContain(
+      tString('search.coverage.line.uncovered.unavailable', { count: 1, countText: '1', drive: 'nas.local' }),
+    )
     expect(note).toContain(SCOPE)
     expect(note).not.toContain(tString('search.coverage.pressEnter'))
-    expect(target.querySelectorAll('.coverage-note button')).toHaveLength(0)
+    // The line's own folder tip and copy button aren't offers: nothing in `.actions`.
+    expect(target.querySelectorAll('.coverage-note .actions button')).toHaveLength(0)
   })
 
   it('says the same after Enter, whose live run doesn’t walk a server either', async () => {
@@ -551,9 +558,12 @@ describe('a server search can’t cover', () => {
     await runSearch(overlay)
 
     const note = noteText(target)
-    expect(note).toContain(tString('search.coverage.uncovered.unavailable', { drive: 'nas.local' }))
+    expect(note).toContain(
+      tString('search.coverage.line.uncovered.unavailable', { count: 1, countText: '1', drive: 'nas.local' }),
+    )
     expect(note).toContain(SCOPE)
-    expect(target.querySelectorAll('.coverage-note button')).toHaveLength(0)
+    // The line's own folder tip and copy button aren't offers: nothing in `.actions`.
+    expect(target.querySelectorAll('.coverage-note .actions button')).toHaveLength(0)
   })
 })
 

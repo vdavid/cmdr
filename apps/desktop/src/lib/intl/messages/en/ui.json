@@ -85,6 +85,10 @@
   "@ui.copyBox.copied": {
     "description": "Brief confirmation shown on the Copy button right after the string was copied, replacing the word Copy for a couple of seconds. Tight button; keep short."
   },
+  "ui.copyButton.copied": "Copied",
+  "@ui.copyButton.copied": {
+    "description": "Brief confirmation on a small icon-only copy button right after it copied something: its hover hint and screen-reader name for a couple of seconds, while the copy icon turns into a check. Keep short."
+  },
   "ui.shortcutChip.customizeAria": "Customize the {commandName} shortcut",
   "@ui.shortcutChip.customizeAria": {
     "description": "Screen-reader text inside a clickable keyboard-shortcut pill that opens shortcut customization for one command. It's read right after the key the pill shows (\"⌘C Customize the Copy shortcut\"), so keep it a phrase that follows the key naturally.",

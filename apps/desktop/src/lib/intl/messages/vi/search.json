@@ -127,26 +127,6 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
-  "search.coverage.uncovered.local": "Cmdr chưa lập chỉ mục {drive}, nên lần tìm kiếm này đã bỏ qua:",
-  "@search.coverage.uncovered.local": {
-    "sourceHash": "8fe8ce1"
-  },
-  "search.coverage.uncovered.network": "Cmdr chỉ lập chỉ mục ổ đĩa mạng khi bạn yêu cầu, nên lần tìm kiếm này đã bỏ qua:",
-  "@search.coverage.uncovered.network": {
-    "sourceHash": "0066012"
-  },
-  "search.coverage.uncovered.unavailable": "Cmdr chưa thể tìm kiếm trên {drive}, nên lần tìm kiếm này đã bỏ qua:",
-  "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "6f9cb5b"
-  },
-  "search.coverage.uncovered.indexing": "Cmdr vẫn đang lập chỉ mục {drive} và chưa tới các thư mục này, nên lượt tìm kiếm này đã bỏ qua chúng:",
-  "@search.coverage.uncovered.indexing": {
-    "sourceHash": "9cf6003"
-  },
-  "search.coverage.unresolved": "{count, plural, other {Chỉ mục của Cmdr chưa bao gồm các thư mục sau, nên lần tìm kiếm này đã bỏ qua:}}",
-  "@search.coverage.unresolved": {
-    "sourceHash": "6afa798"
-  },
   "search.coverage.walk.cancelled": "Bạn đã dừng lần tìm kiếm này, nên đây là những gì Cmdr tìm được đến lúc đó. Mọi thứ đã đọc dọc đường đều được lưu lại, nên tìm kiếm lại sẽ đi tiếp từ đó.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
@@ -163,14 +143,6 @@
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },
-  "search.coverage.denied": "{count, plural, other {Cmdr không được phép xem bên trong những thư mục này, nên không có gì từ đó trong kết quả:}}",
-  "@search.coverage.denied": {
-    "sourceHash": "c71fc2e"
-  },
-  "search.coverage.failedRoots": "{count, plural, other {Cmdr không mở được những thư mục này, nên không có gì từ đó trong kết quả:}}",
-  "@search.coverage.failedRoots": {
-    "sourceHash": "9b978eb"
-  },
   "search.coverage.deniedFullDiskAccess": "Có quyền truy cập toàn bộ đĩa, Cmdr sẽ tìm kiếm được cả trong những thư mục như vậy.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
@@ -178,14 +150,6 @@
   "search.coverage.setUpFullDiskAccess": "Thiết lập quyền truy cập toàn bộ đĩa",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
-  },
-  "search.coverage.declined": "{count, plural, other {Cmdr cố ý không xem bên trong thư mục ảnh chụp, nên không có gì từ đó trong kết quả:}}",
-  "@search.coverage.declined": {
-    "sourceHash": "85465f3"
-  },
-  "search.coverage.stillCovering": "{count, plural, other {Một lần tìm kiếm khác đang duyệt những thư mục này, nên tệp trong đó sẽ xuất hiện trong chốc lát:}}",
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "ổ đĩa này",
   "@search.coverage.unnamedDrive": {

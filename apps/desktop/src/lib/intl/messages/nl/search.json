@@ -128,26 +128,6 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
-  "search.coverage.uncovered.local": "Cmdr heeft {drive} nog niet geïndexeerd, dus deze zoekopdracht sloeg dit over:",
-  "@search.coverage.uncovered.local": {
-    "sourceHash": "8fe8ce1"
-  },
-  "search.coverage.uncovered.network": "Cmdr indexeert netwerkschijven alleen als je erom vraagt, dus deze zoekopdracht sloeg dit over:",
-  "@search.coverage.uncovered.network": {
-    "sourceHash": "0066012"
-  },
-  "search.coverage.uncovered.unavailable": "Cmdr kan {drive} nog niet doorzoeken, dus deze zoekopdracht sloeg dit over:",
-  "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "6f9cb5b"
-  },
-  "search.coverage.uncovered.indexing": "Cmdr is {drive} nog aan het indexeren en heeft deze mappen nog niet bereikt, dus deze zoekopdracht sloeg ze over:",
-  "@search.coverage.uncovered.indexing": {
-    "sourceHash": "9cf6003"
-  },
-  "search.coverage.unresolved": "{count, plural, one {De index van Cmdr bevat deze map nog niet, dus de zoekopdracht sloeg hem over:} other {De index van Cmdr bevat deze mappen nog niet, dus de zoekopdracht sloeg ze over:}}",
-  "@search.coverage.unresolved": {
-    "sourceHash": "6afa798"
-  },
   "search.coverage.walk.cancelled": "Je hebt deze zoekopdracht gestopt, dus je ziet wat Cmdr tot dan toe had gevonden. Alles wat het onderweg heeft gelezen is bewaard, dus opnieuw zoeken pakt daar de draad op.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
@@ -164,14 +144,6 @@
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },
-  "search.coverage.denied": "{count, plural, one {Cmdr mocht niet in deze map kijken, dus er staat niets uit deze map in de resultaten:} other {Cmdr mocht niet in deze mappen kijken, dus er staat niets uit deze mappen in de resultaten:}}",
-  "@search.coverage.denied": {
-    "sourceHash": "c71fc2e"
-  },
-  "search.coverage.failedRoots": "{count, plural, one {Cmdr kon deze map niet openen, dus er staat niets uit deze map in de resultaten:} other {Cmdr kon deze mappen niet openen, dus er staat niets uit deze mappen in de resultaten:}}",
-  "@search.coverage.failedRoots": {
-    "sourceHash": "9b978eb"
-  },
   "search.coverage.deniedFullDiskAccess": "Met volledige schijftoegang kan Cmdr ook in zulke mappen zoeken.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
@@ -179,14 +151,6 @@
   "search.coverage.setUpFullDiskAccess": "Volledige schijftoegang instellen",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
-  },
-  "search.coverage.declined": "{count, plural, one {Cmdr kijkt met opzet niet in snapshotmappen, dus er staat niets uit deze map in de resultaten:} other {Cmdr kijkt met opzet niet in snapshotmappen, dus er staat niets uit deze mappen in de resultaten:}}",
-  "@search.coverage.declined": {
-    "sourceHash": "85465f3"
-  },
-  "search.coverage.stillCovering": "{count, plural, one {Een andere zoekopdracht loopt deze map nu door, dus de bestanden verschijnen zo:} other {Een andere zoekopdracht loopt deze mappen nu door, dus de bestanden verschijnen zo:}}",
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "deze schijf",
   "@search.coverage.unnamedDrive": {

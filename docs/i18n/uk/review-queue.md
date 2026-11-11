@@ -135,7 +135,7 @@ record the outcome in `terms.json` or `decisions.md`).
 - **Untranslated NAS/cloud labels** (`servers.refusal.reservedPortRequired`, `servers.sheet.s3GcsKeyHelp`,
   `servers.sheet.s3PathStyle`): English «Allow connections from non-privileged ports», «Interoperability», and
   «(path-style)» kept; no uk UI found to quote.
-- **Search names** (`search.walkHandoff.*`, `search.coverage.uncovered.unavailable`, `search.coverage.pressEnter`,
+- **Search names** (`search.walkHandoff.*`, `search.coverage.line.uncovered.unavailable`, `search.coverage.pressEnter`,
   `selection.action.*.tooltip`): «Пошук «*.pdf»», «охопити пошуком {drive}», «перегляне пропущене», «на панелі у фокусі»
   vs «на активній панелі».
 - **Queue rows** (`queue.row.label`, `queue.row.itemsInFolder`, `queryUi.mode.ai.label`, `queryUi.filters.type.both`,

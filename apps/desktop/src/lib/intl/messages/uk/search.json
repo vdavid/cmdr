@@ -127,26 +127,6 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
-  "search.coverage.uncovered.local": "Cmdr ще не проіндексував {drive}, тож цей пошук пропустив:",
-  "@search.coverage.uncovered.local": {
-    "sourceHash": "8fe8ce1"
-  },
-  "search.coverage.uncovered.network": "Cmdr індексує мережеві диски лише на ваше прохання, тож цей пошук пропустив:",
-  "@search.coverage.uncovered.network": {
-    "sourceHash": "0066012"
-  },
-  "search.coverage.uncovered.unavailable": "Cmdr поки не може охопити пошуком {drive}, тож цей пошук пропустив:",
-  "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "6f9cb5b"
-  },
-  "search.coverage.uncovered.indexing": "Cmdr ще індексує {drive} і поки не дійшов до цих папок, тож цей пошук пропустив:",
-  "@search.coverage.uncovered.indexing": {
-    "sourceHash": "9cf6003"
-  },
-  "search.coverage.unresolved": "{count, plural, =1 {Індекс Cmdr поки не охоплює цю папку, тож цей пошук її пропустив:} one {Індекс Cmdr поки не охоплює ці папки, тож цей пошук їх пропустив:} few {Індекс Cmdr поки не охоплює ці папки, тож цей пошук їх пропустив:} many {Індекс Cmdr поки не охоплює ці папки, тож цей пошук їх пропустив:} other {Індекс Cmdr поки не охоплює ці папки, тож цей пошук їх пропустив:}}",
-  "@search.coverage.unresolved": {
-    "sourceHash": "6afa798"
-  },
   "search.coverage.walk.cancelled": "Ви зупинили цей пошук, тож тут те, що Cmdr устиг знайти. Усе, що він прочитав дорогою, збережено, тож повторний пошук продовжить звідти.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
@@ -163,14 +143,6 @@
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },
-  "search.coverage.denied": "{count, plural, =1 {Cmdr не дозволили зазирнути в цю папку, тож у результатах немає нічого з неї:} one {Cmdr не дозволили зазирнути в ці папки, тож у результатах немає нічого з них:} few {Cmdr не дозволили зазирнути в ці папки, тож у результатах немає нічого з них:} many {Cmdr не дозволили зазирнути в ці папки, тож у результатах немає нічого з них:} other {Cmdr не дозволили зазирнути в ці папки, тож у результатах немає нічого з них:}}",
-  "@search.coverage.denied": {
-    "sourceHash": "c71fc2e"
-  },
-  "search.coverage.failedRoots": "{count, plural, =1 {Cmdr не вдалося відкрити цю папку, тож у результатах немає нічого з неї:} one {Cmdr не вдалося відкрити ці папки, тож у результатах немає нічого з них:} few {Cmdr не вдалося відкрити ці папки, тож у результатах немає нічого з них:} many {Cmdr не вдалося відкрити ці папки, тож у результатах немає нічого з них:} other {Cmdr не вдалося відкрити ці папки, тож у результатах немає нічого з них:}}",
-  "@search.coverage.failedRoots": {
-    "sourceHash": "9b978eb"
-  },
   "search.coverage.deniedFullDiskAccess": "Коли Cmdr матиме повний доступ до диска, пошук охопить і такі папки.",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
@@ -178,14 +150,6 @@
   "search.coverage.setUpFullDiskAccess": "Налаштувати повний доступ до диска",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
-  },
-  "search.coverage.declined": "{count, plural, =1 {Cmdr не зазирає в папки знімків, тож у результатах немає нічого з цієї папки:} one {Cmdr не зазирає в папки знімків, тож у результатах немає нічого з цих папок:} few {Cmdr не зазирає в папки знімків, тож у результатах немає нічого з цих папок:} many {Cmdr не зазирає в папки знімків, тож у результатах немає нічого з цих папок:} other {Cmdr не зазирає в папки знімків, тож у результатах немає нічого з цих папок:}}",
-  "@search.coverage.declined": {
-    "sourceHash": "85465f3"
-  },
-  "search.coverage.stillCovering": "{count, plural, =1 {Інший пошук саме переглядає цю папку, тож її файли зʼявляться за мить:} one {Інший пошук саме переглядає ці папки, тож їхні файли зʼявляться за мить:} few {Інший пошук саме переглядає ці папки, тож їхні файли зʼявляться за мить:} many {Інший пошук саме переглядає ці папки, тож їхні файли зʼявляться за мить:} other {Інший пошук саме переглядає ці папки, тож їхні файли зʼявляться за мить:}}",
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "цей диск",
   "@search.coverage.unnamedDrive": {

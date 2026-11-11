@@ -8,6 +8,9 @@
      * a confident face. This strip says which scopes weren't covered, and offers the
      * per-drive indexing flow when there's a drive to act on.
      *
+     * Each list is one line (`CoverageLine.svelte`): its folders sit in a tooltip, so a
+     * search over `/` that met eighteen refused folders still leaves the results in view.
+     *
      * Presentational: `SearchDialog.svelte` owns the state, the volume lookup, and the
      * IPC. Copy branches on the TYPED fields, never on message text.
      *
@@ -19,7 +22,8 @@
     import Button from '#lib/ui/Button.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { formatNumber } from '#lib/file-explorer/selection/selection-info-utils.js'
-    import type { CoverageNote } from './coverage-note'
+    import CoverageLine from './CoverageLine.svelte'
+    import { coverageLines, type CoverageLine as Line, type CoverageNote } from './coverage-note'
 
     interface Props {
         /** The last run's coverage gap, or `null` when it covered everything asked of it. */
@@ -75,14 +79,45 @@
     /** The drive's name, or a generic stand-in when it isn't in the live volume list. */
     const drive = $derived(driveName || tString('search.coverage.unnamedDrive'))
 
-    const uncoveredMessage = $derived.by(() => {
-        // First: a server is a network drive too, and the network voice ("unless you
-        // ask") would promise an index nobody can ask for.
-        if (!canBeIndexed) return tString('search.coverage.uncovered.unavailable', { drive })
-        if (isNetwork) return tString('search.coverage.uncovered.network', { drive })
-        if (isIndexing) return tString('search.coverage.uncovered.indexing', { drive })
-        return tString('search.coverage.uncovered.local', { drive })
-    })
+    /** An index-only answer on a drive Enter can walk: the gap costs one key to close. */
+    const pressEnter = $derived(!!note && !note.live && canBeIndexed)
+
+    const lines = $derived(
+        note
+            ? coverageLines(note, {
+                  fullDiskAccess: onGrantFullDiskAccess !== null,
+                  indexDrive: onIndexDrive !== null,
+                  pressEnter,
+              })
+            : { unread: [], unsearched: [] },
+    )
+
+    /** Each list's sentence, counted. The folders themselves sit behind the line's icon. */
+    function messageFor(line: Line): string {
+        const count = line.paths.length
+        const params = { count, countText: formatNumber(count) }
+        switch (line.kind) {
+            case 'failedRoots':
+                return tString('search.coverage.line.failedRoots', params)
+            case 'denied':
+                return tString('search.coverage.line.denied', params)
+            case 'offLimits':
+                return tString('search.coverage.line.offLimits', params)
+            case 'declined':
+                return tString('search.coverage.line.declined', params)
+            case 'stillCovering':
+                return tString('search.coverage.line.stillCovering', params)
+            case 'unresolved':
+                return tString('search.coverage.line.unresolved', params)
+            case 'uncovered':
+                // First: a server is a network drive too, and the network voice ("unless
+                // you ask") would promise an index nobody can ask for.
+                if (!canBeIndexed) return tString('search.coverage.line.uncovered.unavailable', { ...params, drive })
+                if (isNetwork) return tString('search.coverage.line.uncovered.network', { ...params, drive })
+                if (isIndexing) return tString('search.coverage.line.uncovered.indexing', { ...params, drive })
+                return tString('search.coverage.line.uncovered.local', { ...params, drive })
+        }
+    }
 
     /**
      * The footnote for ground the walk gave up on. Counted in PLACES when the backend
@@ -118,32 +153,14 @@
         {#if walkMessage}
             <p class="message">{walkMessage}</p>
         {/if}
-        {#if note.live && note.live.failedRoots.length > 0}
-            <!-- A folder the walk set out to read and couldn't open, on a drive that
-                 was there. First among the lists: it's usually the scope itself, so
-                 it's the whole reason the list is empty. -->
-            <p class="message">
-                {tString('search.coverage.failedRoots', { count: note.live.failedRoots.length })}
-            </p>
-            <ul class="scopes">
-                {#each note.live.failedRoots as path (path)}
-                    <li>{path}</li>
-                {/each}
-            </ul>
-        {/if}
-        {#if note.live && note.live.permissionDenied.length > 0}
-            <!-- A folder somebody refused us. Its own sentence, and the only one of
-                 the two with a way out: on macOS that's Full Disk Access, offered
-                 only when Cmdr doesn't already have it. -->
-            <p class="message">
-                {tString('search.coverage.denied', { count: note.live.permissionDenied.length })}
-            </p>
-            <ul class="scopes">
-                {#each note.live.permissionDenied as path (path)}
-                    <li>{path}</li>
-                {/each}
-            </ul>
-            {#if onGrantFullDiskAccess}
+        <!-- Ground nothing will read, in order of what it asks of you: the folder the walk
+             set out to read (usually the scope, so the whole reason the list is empty),
+             refused (grant access), closed for good, and declined on purpose. -->
+        {#each lines.unread as line (line.kind)}
+            <CoverageLine {line} message={messageFor(line)} />
+            {#if line.kind === 'denied' && onGrantFullDiskAccess}
+                <!-- The only line with a way out of its own, so its offer stays visible
+                     outside the tooltip. -->
                 <p class="message secondary">{tString('search.coverage.deniedFullDiskAccess')}</p>
                 <div class="actions">
                     <Button variant="primary" size="mini" onclick={onGrantFullDiskAccess}>
@@ -151,58 +168,21 @@
                     </Button>
                 </div>
             {/if}
-        {/if}
-        {#if note.live && note.live.declined.length > 0}
-            <!-- Ground Cmdr won't read on purpose. ❌ Never offer a permission here:
-                 nothing the user can grant opens a snapshot tree. -->
-            <p class="message">
-                {tString('search.coverage.declined', { count: note.live.declined.length })}
-            </p>
-            <ul class="scopes">
-                {#each note.live.declined as path (path)}
-                    <li>{path}</li>
-                {/each}
-            </ul>
-        {/if}
+        {/each}
         {#if note.live?.abandonedGround}
             <!-- The third way a run comes back short, and the quiet one: the walk
                  reached the end of its frontier having given up on folders along
-                 the way. It sits UNDER the two lists rather than over them, as the
+                 the way. It sits UNDER the lists above rather than over them, as the
                  footnote to that family: it's true alongside a cancel or a
                  disconnect rather than instead of one, and unlike its neighbours it
                  asks nothing of the reader — Cmdr comes back to this ground on its
                  own. -->
             <p class="message secondary">{abandonedMessage}</p>
         {/if}
-        {#if note.live && note.live.stillCovering.length > 0}
-            <p class="message">
-                {tString('search.coverage.stillCovering', { count: note.live.stillCovering.length })}
-            </p>
-            <ul class="scopes">
-                {#each note.live.stillCovering as path (path)}
-                    <li>{path}</li>
-                {/each}
-            </ul>
-        {/if}
-        {#if note.uncoveredScopes.length > 0}
-            <p class="message">{uncoveredMessage}</p>
-            <ul class="scopes">
-                {#each note.uncoveredScopes as path (path)}
-                    <li>{path}</li>
-                {/each}
-            </ul>
-        {/if}
-        {#if note.unresolvedScopes.length > 0}
-            <p class="message">
-                {tString('search.coverage.unresolved', { count: note.unresolvedScopes.length })}
-            </p>
-            <ul class="scopes">
-                {#each note.unresolvedScopes as path (path)}
-                    <li>{path}</li>
-                {/each}
-            </ul>
-        {/if}
-        {#if !note.live && canBeIndexed}
+        {#each lines.unsearched as line (line.kind)}
+            <CoverageLine {line} message={messageFor(line)} />
+        {/each}
+        {#if pressEnter}
             <!-- An index-only answer: this run was the DEBOUNCE's, which never walks
                  (Decision 7). So the gap it reports has a way out that costs one key,
                  except on a drive no index can serve, which Enter doesn't walk either. -->
@@ -250,14 +230,6 @@
     .message.secondary {
         color: var(--color-text-tertiary);
         font-size: var(--font-size-xs);
-    }
-
-    .scopes {
-        margin: 0;
-        padding-left: var(--spacing-md);
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
-        font-family: var(--font-mono);
     }
 
     .actions {

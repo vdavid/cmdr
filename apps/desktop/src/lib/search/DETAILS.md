@@ -241,8 +241,17 @@ The one-shot path (`search-runners.ts`) clears the note before the IPC and write
 screen and a run that throws can't leave a stale caveat under a fresh answer. A LIVE run does the same through its
 source's `onCoverage` (`null` on start, the terminal answer at the end); what it fills in is § The live search.
 `CoverageNote.svelte` renders it through QueryDialog's `resultsNotice` slot, directly above the results it qualifies.
-Both lists are checked independently rather than as an either/or: they're mutually exclusive today by construction, and
-a reader that assumed so would go silent if that changed.
+
+**Each list is one line** (`CoverageLine.svelte`, fed by `coverage-note.ts::coverageLines`): an icon, a counted
+sentence, and a quiet `CopyButton`. Printing every path made a search over `/` that met 18 refused folders cover every
+result at the default dialog height (#1070). The folders sit in the icon's tooltip (an `InfoTip`, so Tab and screen
+readers reach them too), numbered so the count checks out at a glance and capped at `TOOLTIP_FOLDER_CAP` (15) with "+N
+more", since a tooltip never scrolls; the copy button carries every path, one per line. The icon follows actionability,
+❌ never the kind alone: a line is `actionable` when the note offers a way out for it (Full Disk Access for `denied`,
+indexing or Enter for `uncovered`, Enter for `unresolved`), and only then is it a warning triangle. The offers
+themselves (the FDA button, "Index this drive", "Press Enter") stay visible outside the tooltip. Both lists are checked
+independently rather than as an either/or: they're mutually exclusive today by construction, and a reader that assumed
+so would go silent if that changed.
 
 The per-drive offer ("Index this drive") shows only for an **uncovered** gap (an unresolved path is on a drive that's
 already indexed, so there's nothing to turn on), only for a drive the live volume list can name, and never for a drive
@@ -252,8 +261,8 @@ on `SearchResult.targetVolumeId` — the volume the BACKEND routed to — becaus
 pane isn't on, and offering to index the wrong one would be worse than saying nothing.
 
 **A volume no index can serve** (a server over SFTP or WebDAV) gets neither the offer nor the "press Enter" line. Its
-gap reads `search.coverage.uncovered.unavailable`, because there's nothing to turn on and the live run doesn't walk it
-either: it answers with the same `uncoveredScopes` (`src-tauri/src/search/DETAILS.md` § Honesty). The gate is the
+gap reads `search.coverage.line.uncovered.unavailable`, because there's nothing to turn on and the live run doesn't walk
+it either: it answers with the same `uncoveredScopes` (`src-tauri/src/search/DETAILS.md` § Honesty). The gate is the
 volume's `canBeIndexed` capability through `capabilitiesFor`, the answer the switcher's index badge reads, ❌ never its
 kind or id.
 
@@ -290,13 +299,16 @@ still (`runTitleOverride`).
 **The coverage note gained a `live` half** (`coverageNoteFromRun`): how the walk ended, folders nothing will read, and
 ground another walk already holds. Three notes on the copy:
 
-- **Ground nothing will read arrives as TWO lists, and stays two.** `permissionDenied` is a folder somebody refused
-  Cmdr; `declined` is a NAS snapshot tree Cmdr won't read on purpose. Two sentences, and only the first has a way out:
-  when the run met a refusal, this is macOS, and Cmdr doesn't have Full Disk Access yet
-  (`coverage-note.ts::offersFullDiskAccess`), the note offers the setup and `SearchDialog` routes into the onboarding
-  wizard's FDA step — the same page first launch shows, never a second one. ❌ Never offer it over `declined`: no
-  permission opens a snapshot tree, so it would send someone to System Settings to fix nothing. ❌ Don't infer the cause
-  from a path's basename either; that's what the typed cause on the wire is for.
+- **Ground nothing will read arrives as THREE lists, and stays three.** `permissionDenied` is a folder macOS's privacy
+  protection refused Cmdr; `offLimits` is one the OS keeps closed for good (root-only, SIP, a data vault; how the walk
+  tells them apart is `crates/cmdr-index/src/indexing/scanner/DETAILS.md` § "Which refusal Full Disk Access opens");
+  `declined` is a NAS snapshot tree Cmdr won't read on purpose. Three sentences, every one SHOWN (a silently dropped
+  folder makes a short list read as exhaustive), and only the first has a way out: when the run met a refusal, this is
+  macOS, and Cmdr doesn't have Full Disk Access yet (`coverage-note.ts::offersFullDiskAccess`), the note offers the
+  setup and `SearchDialog` routes into the onboarding wizard's FDA step — the same page first launch shows, never a
+  second one. ❌ Never offer it over `offLimits` or `declined`: no permission opens a SIP folder or a snapshot tree, so
+  it would send someone to System Settings to fix nothing. ❌ Don't infer the cause from a path's basename either;
+  that's what the typed cause on the wire is for.
 - **The probe is `checkFullDiskAccessQuiet`, and only when a refusal is on screen.** The loud `checkFullDiskAccess`
   fires a TCC-registration storm per denial, and this runs per search. `hasFullDiskAccess` starts at `true`, so nothing
   is offered before the probe answers: an offer that appears and then vanishes is worse than one a moment late.

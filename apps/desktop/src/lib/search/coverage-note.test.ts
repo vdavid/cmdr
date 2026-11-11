@@ -6,7 +6,16 @@
 import { describe, it, expect } from 'vitest'
 import type { SearchResult, SearchRunCoverage } from '#lib/tauri-commands/index.js'
 import type { CoverageNote } from './coverage-note'
-import { coverageNoteFrom, coverageNoteFromRun, isTargetIndexReady, offersFullDiskAccess } from './coverage-note'
+import {
+  TOOLTIP_FOLDER_CAP,
+  coverageLines,
+  coverageNoteFrom,
+  coverageNoteFromRun,
+  foldersAsText,
+  isTargetIndexReady,
+  offersFullDiskAccess,
+  tooltipFolders,
+} from './coverage-note'
 
 function result(overrides: Partial<SearchResult> = {}): SearchResult {
   return { entries: [], totalCount: 0, ...overrides }
@@ -60,12 +69,32 @@ describe('coverageNoteFromRun', () => {
     expect(note?.live).toEqual({
       walk: 'cancelled',
       permissionDenied: [],
+      offLimits: [],
       declined: [],
       stillCovering: [],
       abandonedGround: true,
       abandonedLocations: 0,
       failedRoots: [],
     })
+  })
+
+  it('keeps folders nothing can open apart from the ones Full Disk Access opens', () => {
+    const note = coverageNoteFromRun(
+      runCoverage({ permissionDenied: ['/Users/me/Library/Mail'], offLimits: ['/private/var/root'] }),
+    )
+    expect(note?.live?.permissionDenied).toEqual(['/Users/me/Library/Mail'])
+    expect(note?.live?.offLimits).toEqual(['/private/var/root'])
+  })
+
+  it('never goes quiet over a folder nothing can open', () => {
+    // They stay visible: David's call, so an empty list over `/` isn't read as exhaustive.
+    expect(coverageNoteFromRun(runCoverage({ offLimits: ['/usr/sbin/authserver'] }))?.live?.offLimits).toEqual([
+      '/usr/sbin/authserver',
+    ])
+  })
+
+  it('reads a backend that sends no off-limits folders as none', () => {
+    expect(coverageNoteFromRun(runCoverage({ abandonedGround: true }))?.live?.offLimits).toEqual([])
   })
 
   it('carries how many places it gave up on, so the note can say how much this is about', () => {
@@ -160,6 +189,7 @@ describe('offersFullDiskAccess', () => {
       live: {
         walk: 'completed',
         permissionDenied: [],
+        offLimits: [],
         declined: [],
         stillCovering: [],
         abandonedGround: false,
@@ -169,6 +199,11 @@ describe('offersFullDiskAccess', () => {
       },
     }
   }
+
+  it('offers NOTHING for a folder the system keeps closed', () => {
+    // SIP and root-only folders refuse WITH Full Disk Access too.
+    expect(offersFullDiskAccess({ note: note({ offLimits: ['/private/var/root'] }), ...onMacWithout })).toBe(false)
+  })
 
   const onMacWithout = { isMac: true, hasFullDiskAccess: false }
 
@@ -209,5 +244,90 @@ describe('offersFullDiskAccess', () => {
 
   it('offers nothing when there is no note at all', () => {
     expect(offersFullDiskAccess({ note: null, ...onMacWithout })).toBe(false)
+  })
+})
+
+describe('coverageLines', () => {
+  const noOffers = { fullDiskAccess: false, indexDrive: false, pressEnter: false }
+  const live = (over: Partial<NonNullable<CoverageNote['live']>>): CoverageNote => ({
+    uncoveredScopes: [],
+    unresolvedScopes: [],
+    volumeId: 'root',
+    live: {
+      walk: 'completed',
+      permissionDenied: [],
+      offLimits: [],
+      declined: [],
+      stillCovering: [],
+      abandonedGround: false,
+      abandonedLocations: 0,
+      failedRoots: [],
+      ...over,
+    },
+  })
+
+  it('gives every filled list its own line, in the order the strip reads', () => {
+    const lines = coverageLines(
+      live({
+        failedRoots: ['/a'],
+        permissionDenied: ['/b'],
+        offLimits: ['/c'],
+        declined: ['/d'],
+        stillCovering: ['/e'],
+      }),
+      noOffers,
+    )
+    expect(lines.unread.map((l) => l.kind)).toEqual(['failedRoots', 'denied', 'offLimits', 'declined'])
+    expect(lines.unsearched.map((l) => l.kind)).toEqual(['stillCovering'])
+  })
+
+  it('leaves an empty list out entirely', () => {
+    expect(coverageLines(live({}), noOffers)).toEqual({ unread: [], unsearched: [] })
+  })
+
+  it('marks a refusal actionable only while Full Disk Access is on offer', () => {
+    const note = live({ permissionDenied: ['/Users/me/Library/Mail'] })
+    expect(coverageLines(note, noOffers).unread[0].actionable).toBe(false)
+    expect(coverageLines(note, { ...noOffers, fullDiskAccess: true }).unread[0].actionable).toBe(true)
+  })
+
+  it('never marks a folder nothing can open actionable, whatever is on offer', () => {
+    const all = { fullDiskAccess: true, indexDrive: true, pressEnter: true }
+    const lines = coverageLines(live({ offLimits: ['/c'], declined: ['/d'], stillCovering: ['/e'] }), all)
+    expect([...lines.unread, ...lines.unsearched].some((l) => l.actionable)).toBe(false)
+  })
+
+  it('marks an index-only gap actionable when indexing or Enter would close it', () => {
+    const note: CoverageNote = { uncoveredScopes: ['/Volumes/usb'], unresolvedScopes: ['/x'], volumeId: 'usb' }
+    expect(coverageLines(note, noOffers).unsearched.map((l) => l.actionable)).toEqual([false, false])
+    expect(coverageLines(note, { ...noOffers, indexDrive: true }).unsearched.map((l) => l.actionable)).toEqual([
+      true,
+      false,
+    ])
+    expect(coverageLines(note, { ...noOffers, pressEnter: true }).unsearched.map((l) => l.actionable)).toEqual([
+      true,
+      true,
+    ])
+  })
+})
+
+describe('tooltipFolders', () => {
+  it('shows a short list whole', () => {
+    expect(tooltipFolders(['/a', '/b'])).toEqual({ shown: ['/a', '/b'], more: 0 })
+  })
+
+  it('caps a long list and counts what it left out, so the tooltip never scrolls', () => {
+    const paths = Array.from({ length: 18 }, (_, i) => `/f${String(i)}`)
+    const { shown, more } = tooltipFolders(paths)
+    expect(shown).toHaveLength(TOOLTIP_FOLDER_CAP)
+    expect(shown[0]).toBe('/f0')
+    expect(more).toBe(18 - TOOLTIP_FOLDER_CAP)
+  })
+})
+
+describe('foldersAsText', () => {
+  it('copies every folder, one per line, past the tooltip cap too', () => {
+    const paths = Array.from({ length: 20 }, (_, i) => `/f${String(i)}`)
+    expect(foldersAsText(paths).split('\n')).toEqual(paths)
   })
 })

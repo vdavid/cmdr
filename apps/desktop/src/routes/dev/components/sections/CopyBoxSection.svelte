@@ -1,6 +1,7 @@
 <script lang="ts">
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import CopyBox from '#lib/ui/CopyBox.svelte'
+    import CopyButton from '#lib/ui/CopyButton.svelte'
 
     const shortCommand = 'sudo killall ptpcamerad'
     const longCommand =
@@ -17,6 +18,12 @@
         <CopyBox text={longCommand} />
         <CopyBox text={path} />
         <CopyBox text={path} displayText={shortenedPath} />
+        <!-- The quiet one: for text the line beside it only summarizes (the search
+             coverage note's folder lists). Press it for the check. -->
+        <p class="quiet">
+            Two folders nothing can open
+            <CopyButton text={`${path}\n${shortCommand}`} label="Copy the full list of folders" />
+        </p>
     </div>
 </SectionCard>
 
@@ -25,5 +32,14 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-md);
+    }
+
+    .quiet {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
     }
 </style>

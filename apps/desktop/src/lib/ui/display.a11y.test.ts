@@ -401,6 +401,13 @@ describe('InfoTip a11y', () => {
     await tick()
     await expectNoA11yViolations(target)
   })
+  it('in the warning tone has no a11y violations and keeps its name', async () => {
+    const target = container()
+    mount(InfoTip, { target, props: { label: 'Show the folders', text: '/Users/me/Library/Mail', tone: 'warning' } })
+    await tick()
+    expect(target.querySelector('button')?.getAttribute('aria-label')).toBe('Show the folders')
+    await expectNoA11yViolations(target)
+  })
 })
 
 /**

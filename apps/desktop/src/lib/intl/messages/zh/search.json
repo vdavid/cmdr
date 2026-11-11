@@ -127,26 +127,6 @@
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
-  "search.coverage.uncovered.local": "Cmdr 尚未为 {drive} 建立索引，因此本次搜索跳过了：",
-  "@search.coverage.uncovered.local": {
-    "sourceHash": "8fe8ce1"
-  },
-  "search.coverage.uncovered.network": "Cmdr 只在你要求时才为网络驱动器建立索引，因此本次搜索跳过了：",
-  "@search.coverage.uncovered.network": {
-    "sourceHash": "0066012"
-  },
-  "search.coverage.uncovered.unavailable": "Cmdr 暂时还不能搜索 {drive}，因此本次搜索跳过了：",
-  "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "6f9cb5b"
-  },
-  "search.coverage.uncovered.indexing": "Cmdr 还在为 {drive} 建立索引，还没走到这些文件夹，所以这次搜索跳过了它们：",
-  "@search.coverage.uncovered.indexing": {
-    "sourceHash": "9cf6003"
-  },
-  "search.coverage.unresolved": "{count, plural, other {Cmdr 的索引尚未覆盖以下文件夹，因此本次搜索跳过了：}}",
-  "@search.coverage.unresolved": {
-    "sourceHash": "6afa798"
-  },
   "search.coverage.walk.cancelled": "你停止了这次搜索，所以这里是 Cmdr 到那时为止找到的内容。一路上读过的内容都已保存，再搜一次会从那里接着来。",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
@@ -163,14 +143,6 @@
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },
-  "search.coverage.denied": "{count, plural, other {Cmdr 没有权限查看以下文件夹的内容，因此结果中没有其中的文件：}}",
-  "@search.coverage.denied": {
-    "sourceHash": "c71fc2e"
-  },
-  "search.coverage.failedRoots": "{count, plural, other {Cmdr 无法打开以下文件夹，因此结果中没有其中的文件：}}",
-  "@search.coverage.failedRoots": {
-    "sourceHash": "9b978eb"
-  },
   "search.coverage.deniedFullDiskAccess": "开启完全磁盘访问权限后，Cmdr 就能搜索这类文件夹。",
   "@search.coverage.deniedFullDiskAccess": {
     "sourceHash": "8de9168"
@@ -178,14 +150,6 @@
   "search.coverage.setUpFullDiskAccess": "设置完全磁盘访问权限",
   "@search.coverage.setUpFullDiskAccess": {
     "sourceHash": "98226cc"
-  },
-  "search.coverage.declined": "{count, plural, other {Cmdr 有意不查看快照文件夹的内容，因此结果中没有其中的文件：}}",
-  "@search.coverage.declined": {
-    "sourceHash": "85465f3"
-  },
-  "search.coverage.stillCovering": "{count, plural, other {另一次搜索正在查看以下文件夹，其中的文件稍后就会出现：}}",
-  "@search.coverage.stillCovering": {
-    "sourceHash": "acd21dc"
   },
   "search.coverage.unnamedDrive": "此驱动器",
   "@search.coverage.unnamedDrive": {
