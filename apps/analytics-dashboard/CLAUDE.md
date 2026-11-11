@@ -24,7 +24,7 @@ All API keys stay server-side, behind `+server.ts` / `+page.server.ts`.
 
 ## Checks
 
-`pnpm check dashboard` runs all nine checks; don't judge a change by raw `pnpm lint`.
+`pnpm check dashboard` runs all nine checks; never raw `pnpm lint`.
 
 ## Must-knows
 
