@@ -658,6 +658,10 @@
     "crates/cmdr-fs/src/volume/node_identity.rs": {
       "outsideSeam": 1
     },
+    "crates/cmdr-git/src/repo.rs": {
+      "negated": 1,
+      "outsideSeam": 2
+    },
     "crates/cmdr-http/src/entries.rs": {
       "negated": 1,
       "outsideSeam": 2
@@ -819,7 +823,7 @@
     },
     "crates/cmdr-local/src/reading.rs": {
       "negated": 6,
-      "outsideSeam": 17
+      "outsideSeam": 18
     },
     "crates/cmdr-local/src/space.rs": {
       "outsideSeam": 4
