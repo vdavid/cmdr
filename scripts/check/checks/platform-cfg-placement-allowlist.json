@@ -674,9 +674,6 @@
     "crates/cmdr-index/src/indexing/transports/smb/watch.rs": {
       "outsideSeam": 8
     },
-    "crates/cmdr-index/src/indexing/watch/watcher.rs": {
-      "outsideSeam": 22
-    },
     "crates/cmdr-index/src/indexing/watch/watcher/journal.rs": {
       "outsideSeam": 5
     },

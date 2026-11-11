@@ -5,8 +5,8 @@ event loop that turns its stream into index writes.
 
 ## Module map
 
-- **watcher.rs** — the drive watcher: macOS FSEvents via `cmdr-fsevent-stream` (event ids + `sinceWhen` replay), Linux
-  inotify via `notify`. `supports_event_replay()` is the gate; `watcher/error.rs` is `WatcherError`.
+- **watcher.rs** — `DriveWatcher` over a per-OS backend (`watcher/platform/`): FSEvents (event ids + `sinceWhen` replay)
+  on macOS, `notify` elsewhere. `supports_event_replay()` gates replay; `watcher/error.rs` is `WatcherError`.
 - **branches.rs** — `WatchScope` + `BranchWatch`: how much of a volume its loop answers for, and the buffer keeping a
   cover walk off a live loop's ground.
 - **event_loop.rs + event_loop/** — `live.rs`, `rename_detect.rs`, `replay.rs` (cold start) + `replay_chunks.rs` (its
@@ -44,7 +44,7 @@ event loop that turns its stream into index writes.
 - **`AfterWalk::Forget` means "the loop already answers for this ground", ❌ never "no watcher is up"**: a failed or
   vetoed watcher still leaves ground covered. Collapse only via `collapse_to` — ❌ `branches::clear` + begin/finish
   mints a set the loop isn't reading, and fails silently.
-- **Linux watches the BRANCHES, macOS the volume root.** ❌ Don't unify them: inotify costs a watch per directory.
+- **`notify` watches the BRANCHES, FSEvents the volume root.** ❌ Don't unify them: inotify costs a watch per directory.
   `DETAILS.md` § "Platform split".
 - **Background verification is post-replay and boot-disk only.** Cost-bounding (`verify_guard.rs`) is canonical in
   `../reconcile/DETAILS.md`.

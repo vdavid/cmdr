@@ -31,7 +31,7 @@ use std::time::Duration;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use tokio::sync::mpsc;
 
-use super::{DriveWatcher, FsChangeEvent, FsEventFlags};
+use super::{FsChangeEvent, FsEventFlags, WatcherBackend};
 
 /// Scoped by root, so a real-stream test sharing the process under plain
 /// `cargo test` keeps its real journal.
@@ -65,7 +65,7 @@ pub(super) fn watcher(
     root: &Path,
     since_when: u64,
     event_sender: mpsc::UnboundedSender<FsChangeEvent>,
-) -> DriveWatcher {
+) -> FakeJournalBackend {
     let gate = GATES
         .lock_ignore_poison()
         .iter()
@@ -117,12 +117,51 @@ pub(super) fn watcher(
         // sender stays held until `stop` aborts the task.
         std::future::pending::<()>().await;
     });
-    DriveWatcher {
+    FakeJournalBackend {
         running,
         last_event_id,
         overflow: Arc::new(AtomicBool::new(false)),
-        handler: None,
         forward_task: Some(forward_task),
+    }
+}
+
+/// The third watcher backend: a fake journal's listener, stopped like a real stream.
+pub(crate) struct FakeJournalBackend {
+    running: Arc<AtomicBool>,
+    last_event_id: Arc<AtomicU64>,
+    overflow: Arc<AtomicBool>,
+    forward_task: Option<tokio::task::JoinHandle<()>>,
+}
+
+impl WatcherBackend for FakeJournalBackend {
+    /// One journal covers the whole root, as an FSEvents stream does.
+    fn watch_branch(&self, _branch: &Path) {}
+
+    fn stop(&mut self) {
+        self.running.store(false, Ordering::Relaxed);
+        if let Some(task) = self.forward_task.take() {
+            task.abort();
+        }
+    }
+
+    fn last_event_id(&self) -> u64 {
+        self.last_event_id.load(Ordering::Relaxed)
+    }
+
+    fn is_running(&self) -> bool {
+        self.running.load(Ordering::Relaxed)
+    }
+
+    fn overflow_flag(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.overflow)
+    }
+}
+
+impl Drop for FakeJournalBackend {
+    fn drop(&mut self) {
+        if self.running.load(Ordering::Relaxed) {
+            self.stop();
+        }
     }
 }
 
