@@ -155,10 +155,7 @@ pub fn set_smb_concurrency_cmd(value: u16) {
 #[tauri::command]
 #[specta::specta]
 pub fn set_require_smb_encryption(value: bool) {
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     crate::network::smb_encryption::set_user_choice(value);
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    let _ = value;
 }
 
 /// Turn LLM call logging on or off. When on, every AI model request and response is written

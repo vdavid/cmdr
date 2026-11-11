@@ -147,7 +147,6 @@ impl VolumeProvider for AppVolumeProvider {
             .ok()
     }
 
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     fn ensure_direct_smb(&self, volume_id: &str) -> EnsureDirectSmbFut<'_> {
         use crate::network::smb_connect_directly::{UpgradeResult, connect_directly};
         let volume_id = volume_id.to_string();
@@ -168,15 +167,6 @@ impl VolumeProvider for AppVolumeProvider {
                     "the volume's mount isn't responding".to_string().into(),
                 )),
             }
-        })
-    }
-
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    fn ensure_direct_smb(&self, _volume_id: &str) -> EnsureDirectSmbFut<'_> {
-        Box::pin(async move {
-            Err(SmbUpgradeRefusal::Failed(
-                "SMB is unsupported on this platform".to_string().into(),
-            ))
         })
     }
 

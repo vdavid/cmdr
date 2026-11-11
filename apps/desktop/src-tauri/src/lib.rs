@@ -33,7 +33,6 @@ mod logging;
 mod accent_color;
 #[cfg(target_os = "linux")]
 mod accent_color_linux;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod adb;
 pub mod agent;
 mod ai;
@@ -108,9 +107,7 @@ mod location;
 mod macos_icons;
 mod main_window_show;
 mod main_window_visibility;
-// What an organization's MDM profile restricts (telemetry, updates, AI). Gated like `network`, whose
-// deps (`url`, `semver`) it shares.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+// What an organization's MDM profile restricts (telemetry, updates, AI).
 mod managed_policy;
 mod mcp;
 mod menu;
@@ -122,7 +119,6 @@ mod multi_rename;
 #[cfg(target_os = "macos")]
 mod native_drag;
 mod net;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod network;
 mod notifications;
 #[cfg(feature = "playwright-e2e")]
@@ -158,18 +154,14 @@ mod send_schedule;
 // header and break its intra-doc links (see the `rustdoc` check's hint).
 mod server_request;
 // A saved SFTP, WebDAV, or S3 server moving to a new address, and everything
-// that follows it. Gated with `network`, whose stores it moves.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+// that follows it.
 mod server_move;
-// Saved servers: listed, saved, edited, dialed. Below `commands` and `agent`. Gated with `network`.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+// Saved servers: listed, saved, edited, dialed. Below `commands` and `agent`.
 mod saved_servers;
 #[cfg(target_os = "macos")]
 pub mod services_menu;
 mod settings;
-// The saved-and-live SFTP and WebDAV servers, as volume rows. Gated with
-// `network`, whose stores it reads.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+// The saved-and-live SFTP and WebDAV servers, as volume rows.
 mod server_volumes;
 mod short_id;
 mod space_poller;
@@ -359,7 +351,6 @@ pub fn run() {
             // The organization's managed policy, before anything that might send: the crash
             // reporter's next-launch path below is the first. The read is lazy anyway (no caller
             // can see an unloaded policy); this puts its one main-thread `cfprefsd` trip here.
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             managed_policy::init(app.handle());
 
             // Initialize crash reporter early, before anything that might crash
@@ -455,7 +446,6 @@ pub fn run() {
             // resolution see its storages. `device_volumes` is the seam.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             mtp::volume_wiring::install_device_provider();
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             adb::volume_wiring::install_device_provider();
 
             // `volumes-ejecting-changed`, the twin of the write engine's
@@ -554,7 +544,6 @@ pub fn run() {
             // rather than retrying for the session (`recheck_adb_install` revives it).
             // The configured binary path is seeded FIRST, or the first
             // subscription runs against whatever the environment offered.
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             {
                 adb::set_adb_binary_path(saved_settings.adb_binary_path.clone());
                 adb::set_adb_enabled_flag(saved_settings.adb_enabled.unwrap_or(true));
@@ -567,7 +556,6 @@ pub fn run() {
             volume_broadcast::emit_volumes_changed_now();
 
             // Load known network shares from disk
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::known_shares::load_known_shares(app.handle());
 
             // And the two SFTP stores: the approved host keys and the saved
@@ -589,7 +577,6 @@ pub fn run() {
             location::facts::start_root_history();
             // Saved shares recorded before Cmdr kept server GUIDs get one from a
             // credential-free probe, in the background once startup settles.
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::smb_server_guid::schedule_startup_probe();
 
             // Load persisted recent search history into the in-memory cache.
@@ -605,7 +592,6 @@ pub fn run() {
             go_to_path::history::RECENT_PATHS.load(app.handle());
 
             // Load manually-added servers and inject into discovery state
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::manual_servers::load_manual_servers(app.handle());
 
             // Drag image detection swizzle is installed in RunEvent::Ready (not here)
@@ -626,7 +612,6 @@ pub fn run() {
 
             // Sync the runtime `network.enabled` flag from settings so BE-side upgrade paths
             // can gate themselves correctly (default `true`).
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::set_network_enabled_flag(saved_settings.network_enabled.unwrap_or(true));
 
             // Discovery browses only while something needs it (`network/discovery_gate.rs`).
@@ -634,14 +619,11 @@ pub fn run() {
             // get a short warm-up browse, so the Servers view opens on known servers. Fresh
             // installs stay quiet: the first network action is what asks. E2E builds always
             // warm up so virtual hosts are populated before tests run.
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             network::mdns_discovery::install(app.handle());
 
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             let should_warm_network_at_launch = saved_settings.network_enabled.unwrap_or(true)
                 && (saved_settings.network_first_trigger_done.unwrap_or(false) || cfg!(feature = "smb-e2e"));
 
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
             if should_warm_network_at_launch {
                 network::discovery_gate::hold_for(network::discovery_gate::LAUNCH_WARM_UP);
 

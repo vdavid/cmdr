@@ -217,8 +217,11 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 20. [M] Win. Volumes seam: fold `volumes/` and `volumes_linux/` into one `volumes/` with `platform/` arms behind a
     pinned fn set, remove the `as platform` aliases and `stubs/volumes.rs`, route `listing_host/mounts.rs`,
     `space_poller`, `index_provider`, `usb_speed` through it. Needs 7, and 11 for the shared mount façade.
-21. [M] Win. Un-gate the remote backends: ADB, SFTP/WebDAV/S3/NFS wiring, `saved_servers`, `server_move`,
-    `server_volumes`, their commands, and `managed_policy` leave `any(macos, linux)`. Needs 4.
+21. [M] Win. **Done**. `adb`, `network`, `managed_policy`, `saved_servers`, `server_move`, `server_volumes`, and the
+    `nfs`/`s3`/`servers`/`sftp`/`volume_sign_in`/`webdav` commands are on every OS (their IPC groups are `cfg(all())`),
+    and `smb2` and `mdns-sd` sit in `[dependencies]` (both build for `x86_64-pc-windows-gnu`). Still macOS+Linux: MTP,
+    eject, volumes, `commands::network`, and `network/`'s OS-mount files, whose per-OS gates now mark exactly where
+    Windows lacks an arm (tasks 20 and 22). The backend crates themselves stop only in `cmdr-fs` on Windows.
 22. [M] Win. The OS-mount half of `network/` (`mount*.rs`, `smb_smbutil.rs`, `smb_smbclient.rs`, `netfs_wedge.rs`,
     `os_mount_notice.rs`, `keychain.rs`) moves behind `network/os_mount/platform/`; delete `stubs/network.rs` and
     `stubs/mtp.rs`. Needs 21.

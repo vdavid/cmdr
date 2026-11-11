@@ -593,8 +593,12 @@ macro_rules! ipc_command_manifest {
                     crate::commands::mtp::set_mtp_enabled,
                     crate::commands::mtp::connect_mtp_device,
                     crate::commands::mtp::get_ptpcamerad_workaround_command,
-                    // Android over ADB. ❌ No stub counterpart, like SFTP: the
-                    // backend is macOS + Linux only.
+                ]
+                dispatch_only: []
+            }
+            // Android over ADB: pure Rust over the local `adb` server's socket, so every OS.
+            cfg(all()) {
+                typed: [
                     crate::adb::commands::set_adb_settings,
                     crate::adb::commands::connect_adb_device,
                     crate::adb::commands::cancel_adb_connect,
@@ -675,10 +679,22 @@ macro_rules! ipc_command_manifest {
                     crate::commands::network::upgrade_to_smb_volume_using_saved_password,
                     crate::commands::network::get_smb_direct_connection_enabled,
                     crate::commands::network::set_smb_direct_connection_enabled,
+                ]
+                dispatch_only: []
+            }
+            // Signing in to a volume that asked, whatever its backend. Between the two SMB halves
+            // only so `bindings.ts` keeps its order.
+            cfg(all()) {
+                typed: [
                     crate::commands::volume_sign_in::reconnect_volume,
                     crate::commands::volume_sign_in::reconnect_volume_with_credentials,
                     crate::commands::volume_sign_in::remember_volume_sign_in,
                     crate::commands::volume_sign_in::get_volume_sign_in_state,
+                ]
+                dispatch_only: []
+            }
+            cfg(any(target_os = "macos", target_os = "linux")) {
+                typed: [
                     crate::commands::network::disconnect_smb_volume,
                     crate::commands::eject::eject_volume,
                     crate::commands::eject::eject_all_on_disk,
@@ -693,10 +709,8 @@ macro_rules! ipc_command_manifest {
             }
             // SFTP servers: host-key trust, secrets, and the server list. Connecting
             // goes through the protocol-agnostic `commands::servers` block below.
-            // ❌ Deliberately no `stubs::` counterpart — that file exists because SMB
-            // browsing is macOS-only, and stubbing SFTP would turn it off on Linux, where
-            // the Docker E2E lane runs.
-            cfg(any(target_os = "macos", target_os = "linux")) {
+            // Pure Rust, so every OS, like the WebDAV, S3, NFS, and server blocks below.
+            cfg(all()) {
                 typed: [
                     crate::commands::sftp::approve_sftp_host_key,
                     crate::commands::sftp::forget_sftp_host_key,
@@ -708,9 +722,8 @@ macro_rules! ipc_command_manifest {
                 dispatch_only: []
             }
             // WebDAV servers: certificate pins, secrets, and the server list. Connecting
-            // goes through the protocol-agnostic `commands::servers` block below. Same
-            // gate and same no-stub reasoning as the SFTP block above.
-            cfg(any(target_os = "macos", target_os = "linux")) {
+            // goes through the protocol-agnostic `commands::servers` block below.
+            cfg(all()) {
                 typed: [
                     crate::commands::webdav::approve_webdav_certificate,
                     crate::commands::webdav::forget_webdav_certificate,
@@ -722,9 +735,8 @@ macro_rules! ipc_command_manifest {
                 dispatch_only: []
             }
             // S3 accounts: the secret and the unattended-reconnect answer.
-            // Connecting goes through `commands::servers` below. Same gate and same
-            // no-stub reasoning as the SFTP block.
-            cfg(any(target_os = "macos", target_os = "linux")) {
+            // Connecting goes through `commands::servers` below.
+            cfg(all()) {
                 typed: [
                     crate::commands::s3::save_s3_credentials,
                     crate::commands::s3::get_s3_unattended_reconnect,
@@ -734,9 +746,8 @@ macro_rules! ipc_command_manifest {
                 dispatch_only: []
             }
             // NFS servers: what the add form asks before a place exists. Connecting
-            // goes through `commands::servers` below. Same gate and same no-stub
-            // reasoning as the SFTP block.
-            cfg(any(target_os = "macos", target_os = "linux")) {
+            // goes through `commands::servers` below.
+            cfg(all()) {
                 typed: [
                     crate::commands::nfs::list_nfs_exports,
                     crate::commands::nfs::guess_nfs_identity,
@@ -744,9 +755,8 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
-            // The protocol-agnostic server family, over the two blocks above. Same
-            // gate and same no-stub reasoning.
-            cfg(any(target_os = "macos", target_os = "linux")) {
+            // The protocol-agnostic server family, over the blocks above.
+            cfg(all()) {
                 typed: [
                     crate::commands::servers::list_saved_servers,
                     crate::commands::servers::connect_saved_place,
@@ -796,10 +806,6 @@ macro_rules! ipc_command_manifest {
                     crate::stubs::network::upgrade_to_smb_volume_using_saved_password,
                     crate::stubs::network::get_smb_direct_connection_enabled,
                     crate::stubs::network::set_smb_direct_connection_enabled,
-                    crate::stubs::network::reconnect_volume,
-                    crate::stubs::network::reconnect_volume_with_credentials,
-                    crate::stubs::network::remember_volume_sign_in,
-                    crate::stubs::network::get_volume_sign_in_state,
                     crate::stubs::network::disconnect_smb_volume,
                     crate::stubs::network::set_smb_account_preference,
                     crate::stubs::network::disconnect_network_host,
@@ -989,7 +995,7 @@ macro_rules! ipc_command_manifest {
                 dispatch_only: []
             }
             // What the organization's MDM profile restricts (`managed_policy/`).
-            cfg(any(target_os = "macos", target_os = "linux")) {
+            cfg(all()) {
                 typed: [
                     crate::managed_policy::view::get_managed_policy,
                 ]

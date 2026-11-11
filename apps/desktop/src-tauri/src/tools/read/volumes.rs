@@ -243,19 +243,14 @@ fn order_same_share_rows(rows: Vec<VolumeSnapshot>, shares: &[ShareRecency]) -> 
 
 /// Every saved share's tie to its share, from the saved-share store.
 fn share_recency() -> Vec<ShareRecency> {
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
-    {
-        crate::network::known_shares::saved_shares()
-            .into_iter()
-            .map(|row| ShareRecency {
-                volume_id: crate::network::known_shares::place_id(&row),
-                share_name: row.share_name,
-                last_connected_at: row.last_connected_at,
-            })
-            .collect()
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    Vec::new()
+    crate::network::known_shares::saved_shares()
+        .into_iter()
+        .map(|row| ShareRecency {
+            volume_id: crate::network::known_shares::place_id(&row),
+            share_name: row.share_name,
+            last_connected_at: row.last_connected_at,
+        })
+        .collect()
 }
 
 /// The live map: one completed listing for the volumes and the favorites, plus

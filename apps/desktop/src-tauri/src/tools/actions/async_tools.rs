@@ -466,72 +466,59 @@ pub fn execute_remove_manual_server<R: Runtime>(app: &AppHandle<R>, params: &Val
 /// could take credentials inline through `connect_directly_with_credentials`. A
 /// volume that's gone or isn't an SMB mount means the `volumeId` is wrong, so both
 /// come back as invalid params.
-///
-/// Only meaningful on macOS / Linux, where the network module exists.
 pub async fn execute_upgrade_smb_to_direct<R: Runtime>(_app: &AppHandle<R>, params: &Value) -> ToolResult {
     let volume_id = params
         .get("volumeId")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ToolError::invalid_params("Missing 'volumeId' parameter"))?;
 
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
-    {
-        use crate::network::smb_connect_directly::{CredentialsNeededReason, UpgradeResult, connect_directly};
-        // The upgrade takes no `AppHandle`, which is what lets this generic executor
-        // call it. What it can't do is kick mDNS (that needs a concrete handle), so
-        // hostname-keyed Keychain creds need mDNS already running; the
-        // `CredentialsNeeded` answer below says so.
-        match connect_directly(volume_id).await {
-            UpgradeResult::Success => Ok(json!(format!("OK: Upgraded {} to direct smb2", volume_id))),
-            UpgradeResult::CredentialsNeeded {
-                server,
-                share,
-                display_name,
-                reason,
-                ..
-            } => {
-                let server_label = if display_name.is_empty() { server } else { display_name };
-                let why = match reason {
-                    CredentialsNeededReason::NoCredential => {
-                        "Cmdr's Keychain has no password for this share. (If mDNS isn't running, hostname-keyed creds \
-                         also won't be found; trigger any network UI action first.)"
-                    }
-                    CredentialsNeededReason::CredentialRejected => "The server didn't accept the saved password.",
-                    CredentialsNeededReason::AccountNotPermitted => {
-                        "The saved account signed in, but this share doesn't let it open; a different account is needed."
-                    }
-                };
-                Ok(json!(format!(
-                    "Needs credentials: share={} on {}. {} Agents can't prompt; the user has to enter credentials via \
-                     the UI's 'Connect directly' button.",
-                    share, server_label, why
-                )))
-            }
-            UpgradeResult::NetworkError { reason, display_name } => Err(ToolError::internal(format!(
-                "Couldn't reach {} while upgrading {} ({:?}). The share is still usable over its OS mount.",
-                display_name, volume_id, reason
-            ))),
-            UpgradeResult::VolumeGone => Err(ToolError::invalid_params(format!(
-                "Volume {volume_id} isn't mounted anymore (unmounted or ejected), so there's nothing to upgrade. \
-                 See cmdr://state volumes for the current ids."
-            ))),
-            UpgradeResult::MountNotResponding => Err(ToolError::internal(format!(
-                "Volume {volume_id}'s mount didn't answer a status read in time, so nothing was dialed. The server \
-                 behind it may be asleep or unreachable; try again later."
-            ))),
-            UpgradeResult::NotSmbMount => Err(ToolError::invalid_params(format!(
-                "Volume {volume_id} isn't an SMB mount, so there's nothing to upgrade. Pick a volume whose kind is \
-                 smb and connectionState is os_mount in cmdr://state volumes."
-            ))),
+    use crate::network::smb_connect_directly::{CredentialsNeededReason, UpgradeResult, connect_directly};
+    // The upgrade takes no `AppHandle`, which is what lets this generic executor
+    // call it. What it can't do is kick mDNS (that needs a concrete handle), so
+    // hostname-keyed Keychain creds need mDNS already running; the
+    // `CredentialsNeeded` answer below says so.
+    match connect_directly(volume_id).await {
+        UpgradeResult::Success => Ok(json!(format!("OK: Upgraded {} to direct smb2", volume_id))),
+        UpgradeResult::CredentialsNeeded {
+            server,
+            share,
+            display_name,
+            reason,
+            ..
+        } => {
+            let server_label = if display_name.is_empty() { server } else { display_name };
+            let why = match reason {
+                CredentialsNeededReason::NoCredential => {
+                    "Cmdr's Keychain has no password for this share. (If mDNS isn't running, hostname-keyed creds \
+                     also won't be found; trigger any network UI action first.)"
+                }
+                CredentialsNeededReason::CredentialRejected => "The server didn't accept the saved password.",
+                CredentialsNeededReason::AccountNotPermitted => {
+                    "The saved account signed in, but this share doesn't let it open; a different account is needed."
+                }
+            };
+            Ok(json!(format!(
+                "Needs credentials: share={} on {}. {} Agents can't prompt; the user has to enter credentials via \
+                 the UI's 'Connect directly' button.",
+                share, server_label, why
+            )))
         }
-    }
-
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        let _ = volume_id;
-        Err(ToolError::internal(
-            "upgrade_smb_to_direct is only supported on macOS and Linux".to_string(),
-        ))
+        UpgradeResult::NetworkError { reason, display_name } => Err(ToolError::internal(format!(
+            "Couldn't reach {} while upgrading {} ({:?}). The share is still usable over its OS mount.",
+            display_name, volume_id, reason
+        ))),
+        UpgradeResult::VolumeGone => Err(ToolError::invalid_params(format!(
+            "Volume {volume_id} isn't mounted anymore (unmounted or ejected), so there's nothing to upgrade. \
+             See cmdr://state volumes for the current ids."
+        ))),
+        UpgradeResult::MountNotResponding => Err(ToolError::internal(format!(
+            "Volume {volume_id}'s mount didn't answer a status read in time, so nothing was dialed. The server \
+             behind it may be asleep or unreachable; try again later."
+        ))),
+        UpgradeResult::NotSmbMount => Err(ToolError::invalid_params(format!(
+            "Volume {volume_id} isn't an SMB mount, so there's nothing to upgrade. Pick a volume whose kind is \
+             smb and connectionState is os_mount in cmdr://state volumes."
+        ))),
     }
 }
 

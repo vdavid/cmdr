@@ -38,8 +38,6 @@ pub mod mtp;
 pub mod multi_rename;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod network;
-// NFS: the same gate and the same reason as `sftp`. ❌ No stub counterpart.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod nfs;
 pub mod operation_log;
 pub mod quick_look;
@@ -51,33 +49,22 @@ pub mod selection;
 pub mod state_recovery;
 // `Cmdr > Services` has no counterpart off macOS, so there's no stub either: the
 // frontend's wrapper no-ops elsewhere (`tauri-commands/app-state.ts`).
+pub mod s3;
 #[cfg(target_os = "macos")]
 pub mod services_menu;
-// S3: the same gate and the same reason as `sftp`. ❌ No stub counterpart.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub mod s3;
 pub mod settings;
 pub mod share_link;
-// The protocol-agnostic server family, over the per-protocol wiring. Same gate
-// as `sftp` and `webdav`, whose commands it faces.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+// The protocol-agnostic server family, over the per-protocol wiring.
 pub mod servers;
 // The IPC side of a mutation's late end: the engine hands it to a callback, this broadcasts it.
 pub(crate) mod settled;
-// SFTP works wherever the app does; the gate matches `network`, whose stores and
-// wiring it reaches through. ❌ No stub counterpart: stubbing it would turn SFTP
-// off on Linux, where the Docker E2E lane runs.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod sftp;
 pub mod smb_diagnostics;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 pub mod usage;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub mod volume_sign_in; // Backend-neutral sign-in commands; `stubs/network.rs` stands in elsewhere
+pub mod volume_sign_in; // Backend-neutral sign-in commands
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod volumes;
-// WebDAV: the same gate and the same reason as `sftp`. ❌ No stub counterpart.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod webdav;
 pub mod whats_new;
 pub mod window_ordering;

@@ -395,18 +395,10 @@ impl<R: Runtime> ConnectPorts for AppPorts<'_, R> {
     }
 
     fn last_connected(&self, volume_id: &str) -> Option<i64> {
-        #[cfg(any(target_os = "macos", target_os = "linux"))]
-        {
-            let row = crate::network::known_shares::share_by_volume_id(volume_id)?;
-            chrono::DateTime::parse_from_rfc3339(&row.last_connected_at)
-                .ok()
-                .map(|at| at.timestamp())
-        }
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        {
-            let _ = volume_id;
-            None
-        }
+        let row = crate::network::known_shares::share_by_volume_id(volume_id)?;
+        chrono::DateTime::parse_from_rfc3339(&row.last_connected_at)
+            .ok()
+            .map(|at| at.timestamp())
     }
 
     fn standing(&self, volume_id: &str) -> Standing {

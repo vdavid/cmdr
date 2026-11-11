@@ -143,7 +143,6 @@ pub(crate) async fn complete(local: Vec<LocationInfo>) -> Vec<LocationInfo> {
     // ones. ❗ Before enrichment for the same reason device storages are, and
     // from CACHED state only: this runs on every `volumes-changed`, and a probe
     // here would turn a refresh into a round of network traffic.
-    #[cfg(any(target_os = "macos", target_os = "linux"))]
     crate::server_volumes::append_server_volumes(&mut volumes);
 
     #[cfg(target_os = "macos")]

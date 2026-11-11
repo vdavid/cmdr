@@ -12,8 +12,8 @@ MTP, network, accent color, permissions); `text_size.rs`, `display_accessibility
   stubs returning empty/success values; types mirror the macOS shapes for JSON compatibility.
 - **`text_size.rs`**: non-macOS `get_system_text_size_multiplier` returns `1.0`. The in-app `appearance.textSize`
   slider still works on every platform.
-- **`display_accessibility.rs`** / **`glass_tint.rs`**: report "every display option off" and "no Liquid Glass slider"; their
-  observers are no-ops.
+- **`display_accessibility.rs`** / **`glass_tint.rs`**: report "every display option off" and "no Liquid Glass slider"
+  (there's no observer to stub: each OS's installers are `../platform/startup/`).
 
 Per-stub behavior is cataloged in `DETAILS.md`.
 
