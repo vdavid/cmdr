@@ -2,6 +2,7 @@ import { IntlMessageFormat } from 'intl-messageformat'
 import { describe, expect, it } from 'vitest'
 import { parsePlatformSelect, pickPlatformBranch } from './platform-select'
 
+// allowed-pluralize-noun: `} windows` is a platform block's branch keyword, not a count and a noun
 const FULL = '{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}'
 
 describe('parsePlatformSelect', () => {
@@ -71,8 +72,10 @@ describe('parsePlatformSelect', () => {
   })
 
   it('rejects a block without `other`, with an unknown branch, or with a branch twice', () => {
+    // allowed-pluralize-noun: `} windows` is a platform block's branch keyword, not a count and a noun
     expect(parsePlatformSelect('{platform, select, macos {Finder} windows {File Explorer}}')).toBeNull()
     expect(parsePlatformSelect('{platform, select, macos {Finder} linux {Files} other {Files}}')).toBeNull()
+    // allowed-pluralize-noun: `} macos` is a platform block's branch keyword, not a count and a noun
     expect(parsePlatformSelect('{platform, select, macos {Finder} macos {Finder} other {Files}}')).toBeNull()
   })
 })

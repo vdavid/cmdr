@@ -67,6 +67,18 @@
           return 'en'
         }
 
+        // A text is a plain string or a platform block's baked branches. The backend's
+        // init script defines `__CMDR_PLATFORM__` before this runs; `linux`, a missing
+        // global, or one naming no branch reads `other`, as `pickPlatformBranch` does.
+        function pickText(text) {
+          if (typeof text === 'string') return text
+          var platform = window.__CMDR_PLATFORM__
+          if (typeof platform === 'string' && Object.prototype.hasOwnProperty.call(text, platform)) {
+            return text[platform]
+          }
+          return text.other
+        }
+
         // Fire-and-forget IPC. A missing bridge or a refused command is swallowed:
         // this screen has nowhere to report either, and both callers have a fallback.
         function send(command, args) {
@@ -123,12 +135,12 @@
           var block = document.createElement('div')
           block.className = 'cmdr-boot-block'
           var heading = document.createElement('h1')
-          heading.textContent = strings.title
+          heading.textContent = pickText(strings.title)
           var body = document.createElement('p')
-          body.textContent = strings.body
+          body.textContent = pickText(strings.body)
           var button = document.createElement('button')
           button.type = 'button'
-          button.textContent = strings.quit
+          button.textContent = pickText(strings.quit)
           button.onclick = quit
           block.appendChild(heading)
           block.appendChild(body)

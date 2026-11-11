@@ -32,12 +32,20 @@ import { IntlMessageFormat } from 'intl-messageformat'
 import { inheritableAncestors, likelyScript } from '../src/lib/intl/locale-inheritance.ts'
 import { BASE_LOCALE, GENERATED_LOCALES, baseLanguageOf, loadCatalog } from './i18n-catalog-lib.ts'
 import { BOOT_GUARD_KEYS } from '../src/lib/utils/boot-guard-keys.ts'
+import { parsePlatformSelect, type PlatformSelectBranches } from '../src/lib/intl/platform-select.ts'
 
-/** The three strings one locale shows on the block screen. */
+/**
+ * One of the screen's texts: a plain string, or a platform block's branches, each
+ * ICU-formatted, which the guard picks from with `window.__CMDR_PLATFORM__`
+ * (`../src/lib/intl/DETAILS.md` § Platform variants).
+ */
+export type BootGuardText = string | PlatformSelectBranches
+
+/** The three texts one locale shows on the block screen. */
 export interface BootGuardStrings {
-  title: string
-  body: string
-  quit: string
+  title: BootGuardText
+  body: BootGuardText
+  quit: BootGuardText
 }
 
 /** Everything the inline guard needs, ready to serialize into the shell. */
@@ -83,10 +91,10 @@ export function stringsFor(
   messagesOf: (tag: string) => Messages,
 ): BootGuardStrings {
   const chain = resolutionChain(locale, available)
-  const resolve = (key: string): string => {
+  const resolve = (key: string): BootGuardText => {
     for (const tag of chain) {
       const value = messagesOf(tag)[key]
-      if (value !== undefined) return String(new IntlMessageFormat(value, tag).format())
+      if (value !== undefined) return formatText(value, tag)
     }
     throw new Error(`No catalog in [${chain.join(', ')}] defines the boot-guard key "${key}"`)
   }
@@ -95,6 +103,23 @@ export function stringsFor(
     body: resolve(BOOT_GUARD_KEYS.body),
     quit: resolve(BOOT_GUARD_KEYS.quit),
   }
+}
+
+/**
+ * ICU-formats a value with no arguments, the way the runtime would. A platform
+ * block is split first and each branch formatted on its own, so the guard (which
+ * has no ICU engine) only has to pick.
+ * @param value the catalog value
+ * @param tag the catalog it came from (ICU's locale)
+ */
+function formatText(value: string, tag: string): BootGuardText {
+  const format = (source: string): string => String(new IntlMessageFormat(source, tag).format())
+  const branches = parsePlatformSelect(value)
+  if (branches === null) return format(value)
+  const baked: PlatformSelectBranches = { other: format(branches.other) }
+  if (branches.macos !== undefined) baked.macos = format(branches.macos)
+  if (branches.windows !== undefined) baked.windows = format(branches.windows)
+  return baked
 }
 
 /**
@@ -219,8 +244,8 @@ function afterDroppingSubtag(key: string, aliases: Readonly<Record<string, strin
  * @param aliases lowercase key → tag, mutated in place
  */
 function pruneRedundant(strings: Record<string, BootGuardStrings>, aliases: Record<string, string>): void {
-  const same = (a: BootGuardStrings, b: BootGuardStrings): boolean =>
-    a.title === b.title && a.body === b.body && a.quit === b.quit
+  // Branch order is fixed by `formatText`, so equal texts serialize equally.
+  const same = (a: BootGuardStrings, b: BootGuardStrings): boolean => JSON.stringify(a) === JSON.stringify(b)
 
   for (const key of Object.keys(aliases).sort((a, b) => b.length - a.length)) {
     const tag = aliases[key]

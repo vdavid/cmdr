@@ -257,6 +257,7 @@ describe('getMessage() raw accessor', () => {
 
 describe('platform variants', () => {
   const ICU_BLOCK =
+    // allowed-pluralize-noun: `} windows` is a platform block's branch keyword, not a count and a noun
     '{platform, select, macos {Moved {count, plural, one {# file} other {# files}} to the Trash} windows {Moved {count, plural, one {# file} other {# files}} to the Recycle Bin} other {Moved {count, plural, one {# file} other {# files}} to the trash}}'
   const RAW_BLOCK =
     '{platform, select, macos {Open {system_settings} and unlock it.} other {Run `chmod u+w` on it, e.g. via a terminal.}}'

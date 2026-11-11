@@ -59,10 +59,6 @@ var pluralizeNounNonPluralWords = map[string]bool{
 	"does":     true,
 	"says":     true,
 	"shows":    true,
-	// Branch keywords of a `{platform, select, macos {…} windows {…} other {…}}`
-	// block, which follow a branch's closing brace.
-	"macos":   true,
-	"windows": true,
 }
 
 // pluralizeNounAllowSubstrings filters out obvious false positives. These

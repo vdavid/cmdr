@@ -39,8 +39,18 @@ const PAYLOAD = {
     en: { title: 'Cmdr needs a newer Safari', body: 'Install your updates.', quit: 'Quit' },
     hu: { title: 'A Cmdrnek újabb Safari kell', body: 'Telepítsd a frissítéseket.', quit: 'Kilépés' },
     'zh-Hant': { title: '需要較新的 Safari', body: '請更新。', quit: '結束' },
+    // A platform block, baked per branch: `windows` here only to prove the pick reads it.
+    sv: {
+      title: {
+        macos: 'Cmdr behöver en nyare Safari',
+        windows: 'Cmdr på Windows',
+        other: 'Cmdr behöver en nyare webbvy',
+      },
+      body: 'Installera dina uppdateringar.',
+      quit: { macos: 'Avsluta', other: 'Stäng' },
+    },
   },
-  aliases: { en: 'en', hu: 'hu', 'zh-hant': 'zh-Hant', 'zh-tw': 'zh-Hant' },
+  aliases: { en: 'en', hu: 'hu', sv: 'sv', 'zh-hant': 'zh-Hant', 'zh-tw': 'zh-Hant' },
   force: false,
 }
 
@@ -56,6 +66,8 @@ interface RunOptions {
   languages?: string[]
   force?: boolean
   invoke?: (cmd: string, args: unknown) => Promise<unknown>
+  /** What `window.__CMDR_PLATFORM__` holds; absent when omitted. */
+  platform?: unknown
 }
 
 /**
@@ -78,9 +90,10 @@ function runGuard(options: RunOptions = {}): { blocked: boolean; lang: string; t
 
   const fakeCrypto = capabilities.randomUUID ? { randomUUID: () => 'x' } : {}
   const fakeCss = { supports: (query: string) => (query.includes('selector(') ? capabilities.hasSelector : true) }
-  const fakeWindow = {
+  const fakeWindow: Record<string, unknown> = {
     __TAURI_INTERNALS__: options.invoke ? { invoke: options.invoke } : undefined,
   }
+  if ('platform' in options) fakeWindow.__CMDR_PLATFORM__ = options.platform
   const fakeNavigator = { languages: options.languages ?? ['en-US'], language: (options.languages ?? ['en-US'])[0] }
 
   const source = guardSource().replace(BOOT_GUARD_MARKER, JSON.stringify({ ...PAYLOAD, force: options.force === true }))
@@ -208,6 +221,25 @@ describe('below the floor', () => {
     expect(runGuard({ capabilities: { hasOwn: false }, languages: ['zh-TW'] }).title).toBe(
       PAYLOAD.strings['zh-Hant'].title,
     )
+  })
+
+  describe('a platform block picks the branch `window.__CMDR_PLATFORM__` names', () => {
+    const cases: [string, unknown, string, string][] = [
+      ['macOS', 'macos', 'Cmdr behöver en nyare Safari', 'Avsluta'],
+      ['Windows', 'windows', 'Cmdr på Windows', 'Stäng'],
+      ['Linux', 'linux', 'Cmdr behöver en nyare webbvy', 'Stäng'],
+      ['a missing global', undefined, 'Cmdr behöver en nyare webbvy', 'Stäng'],
+      ['a global naming an inherited property', 'constructor', 'Cmdr behöver en nyare webbvy', 'Stäng'],
+    ]
+    for (const [name, platform, title, quit] of cases) {
+      it(`reads ${name}'s words`, () => {
+        const options: RunOptions = { capabilities: { hasOwn: false }, languages: ['sv-SE'] }
+        if (platform !== undefined) options.platform = platform
+        const result = runGuard(options)
+        expect(result.title).toBe(title)
+        expect(result.quit).toBe(quit)
+      })
+    }
   })
 
   it('falls back to English for a language Cmdr does not ship', () => {

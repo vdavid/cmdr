@@ -234,6 +234,8 @@ space after each comma). Never a block inside a sentence, never `{platform}` int
   `errors.*` and any ICU key read raw get this OS's branch. A raw body therefore never has a lone `'` before `{`, `}`,
   `<`, or `>`: ICU would quote there and the raw reader wouldn't, and a native key (`menu.*`) is read both ways
   (`row-menu.ts` formats `menu.volume.eject` through `t()`).
+- **The old-WebKit boot guard** runs before this runtime exists, so the build bakes each block's branches and the ES5
+  guard picks one from `window.__CMDR_PLATFORM__` (`../utils/DETAILS.md` § Old-WebKit boot guard).
 - **Other readers**: the macOS-copy test reads each value's macOS branch through `pickPlatformBranch`. A script that
   needs a branch imports the same file by path (it's dependency-free for that); ❌ never a second splitter.
 - **Tests**: `withPlatform('macos' | 'windows' | 'linux')` from `#lib/platform/test-platform` moves both the select and

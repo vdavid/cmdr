@@ -92,6 +92,30 @@ describe('buildBootGuardData', () => {
     expect(() => buildBootGuardData({ locales: ['en'], messagesRoot: root })).toThrow(new RegExp(BOOT_GUARD_KEYS.body))
   })
 
+  it('bakes every branch of a platform block, ICU-formatted, for the guard to pick from', () => {
+    const root = fixtureRoot({
+      en: {
+        ...catalogFor('en'),
+        [BOOT_GUARD_KEYS.title]: "{platform, select, macos {Cmdr''s Mac title} other {Cmdr''s title}}",
+      },
+      de: { ...catalogFor('de'), [BOOT_GUARD_KEYS.title]: '{platform, select, macos {Mac-Titel} other {Titel}}' },
+    })
+    const data = buildBootGuardData({ locales: ['en', 'de'], messagesRoot: root })
+    expect(data.strings.en.title).toEqual({ macos: "Cmdr's Mac title", other: "Cmdr's title" })
+    expect(data.strings.de.title).toEqual({ macos: 'Mac-Titel', other: 'Titel' })
+    // A plain value still bakes one string.
+    expect(data.strings.de.body).toBe('body de')
+  })
+
+  it('keeps an overlay whose forked block differs only in one branch', () => {
+    const root = fixtureRoot({
+      en: { ...catalogFor('en'), [BOOT_GUARD_KEYS.title]: '{platform, select, macos {Mac} other {Trash}}' },
+      'en-GB': { ...catalogFor('en'), [BOOT_GUARD_KEYS.title]: '{platform, select, macos {Mac} other {Bin}}' },
+    })
+    const data = buildBootGuardData({ locales: ['en', 'en-GB'], messagesRoot: root })
+    expect(data.strings['en-GB'].title).toEqual({ macos: 'Mac', other: 'Bin' })
+  })
+
   it('carries the forced block only when asked', () => {
     const root = fixtureRoot({ en: catalogFor('en') })
     expect(buildBootGuardData({ locales: ['en'], messagesRoot: root }).force).toBe(false)
@@ -142,10 +166,14 @@ describe('the real catalogs', () => {
     const data = buildBootGuardData({ locales: listLocales() })
     expect(Object.keys(data.strings).length).toBeGreaterThan(1)
     for (const [tag, strings] of Object.entries(data.strings)) {
-      for (const [part, value] of Object.entries(strings)) {
-        expect(value, `${tag}.${part}`).not.toBe('')
-        // ICU escaping is undone at build time, so nothing doubled survives.
-        expect(value, `${tag}.${part}`).not.toContain("''")
+      for (const part of ['title', 'body', 'quit'] as const) {
+        const text = strings[part]
+        const variants: Record<string, string> = typeof text === 'string' ? { all: text } : { ...text }
+        for (const [branch, value] of Object.entries(variants)) {
+          expect(value, `${tag}.${part}.${branch}`).not.toBe('')
+          // ICU escaping is undone at build time, so nothing doubled survives.
+          expect(value, `${tag}.${part}.${branch}`).not.toContain("''")
+        }
       }
     }
   })
