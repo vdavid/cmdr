@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_fs::os_error::OsErrorClass;
 use cmdr_fs::pluralize::pluralize_with;
 use cmdr_fs::volume::host::listings::ListingHost;
 use cmdr_fs::volume::mkdir_all::{self, LeadsTo, MakesDirectories};
@@ -24,14 +25,6 @@ use super::WebdavVolume;
 use crate::errors::{Attempted, map_status, map_transport_error};
 use crate::propfind::PropfindEntry;
 use crate::transport::{Depth, MUTATION_BUDGET, ProppatchOutcome, WebdavClient, method};
-
-/// `ENOTEMPTY`, which POSIX numbers differently per platform. The number is
-/// what the app renders "this folder still has something in it" from.
-#[cfg(target_os = "linux")]
-pub(crate) const ENOTEMPTY: i32 = 39;
-/// `ENOTEMPTY` on macOS. Windows numbers it differently again (41 in the MSVC CRT).
-#[cfg(target_os = "macos")]
-pub(crate) const ENOTEMPTY: i32 = 66;
 
 impl WebdavVolume {
     /// A PUT that only lands on a name nothing holds.
@@ -206,16 +199,16 @@ fn refuse_if_held(listing: &[PropfindEntry], remote: &str) -> Result<(), VolumeE
     Err(still_holds(remote, listing.len() - 1))
 }
 
-/// The `ENOTEMPTY` a recursive verb is refused with, `held` entries counted.
+/// The `ENOTEMPTY` a recursive verb is refused with, `held` entries counted: the
+/// class the app renders "this folder still has something in it" from.
 pub(super) fn still_holds(remote: &str, held: usize) -> VolumeError {
-    VolumeError::IoError {
-        message: format!(
+    VolumeError::io_of_class(
+        format!(
             "{remote} still holds {}",
             pluralize_with(held as u64, "entry", "entries")
-        )
-        .into(),
-        raw_os_error: Some(ENOTEMPTY),
-    }
+        ),
+        OsErrorClass::NotEmpty,
+    )
 }
 
 /// What the shared `mkdir -p` walk needs from this backend: MKCOL, and this

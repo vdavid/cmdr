@@ -37,7 +37,8 @@ fn unknown_errno_is_an_io_error_carrying_the_number() {
 #[test]
 fn enotempty_is_translated_to_the_host_number() {
     let err = volume_error_from_errno(ENOTEMPTY_DEVICE, "/x");
-    assert!(matches!(err, VolumeError::IoError { raw_os_error: Some(n), .. } if n == ENOTEMPTY_HOST));
+    assert!(matches!(err, VolumeError::IoError { .. }));
+    assert_eq!(err.os_class(), Some(OsErrorClass::NotEmpty));
 }
 
 #[test]

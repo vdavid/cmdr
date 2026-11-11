@@ -34,8 +34,11 @@ pub enum OsErrorClass {
     Interrupted,
     /// The device couldn't read or write (`EIO`).
     Io,
-    /// The device the path lives on isn't there (`ENXIO`, `ENODEV`).
-    DeviceGone,
+    /// The device behind the path isn't configured any more (`ENXIO`): its
+    /// hardware left.
+    DeviceNotConfigured,
+    /// No device answers for the path (`ENODEV`): the mount is gone.
+    NoDevice,
     /// Something else holds the resource (`EBUSY`): a mount point, a device.
     Busy,
     /// Another app has the file open in a way that keeps this one out. Windows'

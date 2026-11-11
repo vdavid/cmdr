@@ -28,6 +28,7 @@ use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::default_folder_mode;
+use cmdr_fs::os_error::OsErrorClass;
 use cmdr_fs::volume::host::listings::ListingHost;
 use cmdr_fs::volume::mkdir_all::{self, LeadsTo, MakesDirectories};
 use cmdr_fs::volume::patching::{PatchSource, patch_created, patch_deleted, patch_renamed};
@@ -313,13 +314,13 @@ impl NfsVolume {
 /// A rename failed with `failed`, and its empty claim at `remote` couldn't be
 /// taken away: ❌ never silently left, so the error names the claim's path.
 fn claim_left_behind(remote: &str, failed: &VolumeError) -> VolumeError {
-    VolumeError::IoError {
-        message: ErrorDetail::path_then(
+    VolumeError::io_of_class(
+        ErrorDetail::path_then(
             remote,
             format!(" holds an empty placeholder a failed rename left behind ({failed:?})"),
         ),
-        raw_os_error: Some(libc::EIO),
-    }
+        OsErrorClass::Io,
+    )
 }
 
 impl MakesDirectories for NfsVolume {

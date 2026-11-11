@@ -33,6 +33,8 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
+use cmdr_fs::os_error::OsErrorClass;
+
 use crate::media_index::MAX_IMAGE_BYTES;
 
 /// Why a byte fetch didn't yield bytes. Typed (never string-matched — `no-string-
@@ -123,7 +125,7 @@ fn read_bounded(path: &str) -> Result<Vec<u8>, FetchError> {
     }
 }
 
-/// Classify an OS-mount I/O failure by its typed errno (never a message match):
+/// Classify an OS-mount I/O failure by its errno's `OsErrorClass` (never a message match):
 /// `NotFound` for a vanished source, [`FetchError::Disconnected`] ONLY for
 /// transport-loss errnos (the mount is gone), and everything else — permission
 /// denied, `EIO` on a corrupt region, `EISDIR` — as a per-file
@@ -136,17 +138,17 @@ fn classify_io_error(e: &std::io::Error, path: &str, op: &str) -> FetchError {
         return FetchError::NotFound;
     }
     let transport_loss = matches!(
-        e.raw_os_error(),
+        OsErrorClass::of_io(e),
         Some(
-            libc::ETIMEDOUT
-                | libc::ENOTCONN
-                | libc::ENETDOWN
-                | libc::ENETUNREACH
-                | libc::EHOSTDOWN
-                | libc::EHOSTUNREACH
-                | libc::ENODEV
-                | libc::ENXIO
-                | libc::ESTALE
+            OsErrorClass::TimedOut
+                | OsErrorClass::NotConnected
+                | OsErrorClass::NetworkDown
+                | OsErrorClass::NetworkUnreachable
+                | OsErrorClass::HostDown
+                | OsErrorClass::HostUnreachable
+                | OsErrorClass::NoDevice
+                | OsErrorClass::DeviceNotConfigured
+                | OsErrorClass::Stale
         )
     );
     if transport_loss {
@@ -693,6 +695,37 @@ mod tests {
             .fetch("/DCIM/a.jpg", Some(4096), Duration::from_secs(5))
             .expect_err("yank errors");
         assert!(matches!(err, FetchError::Disconnected(_)), "got {err:?}");
+    }
+
+    /// The characterization table, every errno: the nine that say the mount is gone
+    /// pause, a missing file is its own answer, and every other one skips the file.
+    #[test]
+    fn every_errno_keeps_its_fetch_answer() {
+        let transport_loss = [
+            libc::ETIMEDOUT,
+            libc::ENOTCONN,
+            libc::ENETDOWN,
+            libc::ENETUNREACH,
+            libc::EHOSTDOWN,
+            libc::EHOSTUNREACH,
+            libc::ENODEV,
+            libc::ENXIO,
+            libc::ESTALE,
+        ];
+        for errno in 0..=4096 {
+            let classified = classify_io_error(&std::io::Error::from_raw_os_error(errno), "/m/x.jpg", "read");
+            match classified {
+                FetchError::NotFound => assert_eq!(errno, libc::ENOENT, "errno {errno}"),
+                FetchError::Disconnected(_) => assert!(transport_loss.contains(&errno), "errno {errno}"),
+                FetchError::Unreadable(_) => {
+                    assert!(
+                        errno != libc::ENOENT && !transport_loss.contains(&errno),
+                        "errno {errno}"
+                    );
+                }
+                other => panic!("errno {errno}: {other:?}"),
+            }
+        }
     }
 
     /// The errno line between "this FILE is bad" and "the MOUNT is gone": network-

@@ -454,6 +454,20 @@ impl VolumeError {
         }
     }
 
+    /// An [`IoError`](Self::IoError) a backend read off the wire as a CLASS of OS
+    /// failure (a protocol status, a device's own errno), carrying this OS's code for
+    /// it, so every classifier and the technical detail treat it as the OS's own.
+    ///
+    /// ❌ Never fake a `libc` number instead: numbers differ per OS, and a class this
+    /// OS has no code for (`InUseByAnotherApp` on Unix) carries none rather than a
+    /// wrong one.
+    pub fn io_of_class(message: impl Into<ErrorDetail>, class: OsErrorClass) -> Self {
+        Self::IoError {
+            message: message.into(),
+            raw_os_error: class.host_code(),
+        }
+    }
+
     /// An `io::Error`'s text as an [`ErrorDetail`]. One that carries a `VolumeError` (a
     /// backend's byte stream handing it, as `io::Error::other(e)`, to a reader that only
     /// speaks `io`) keeps it typed, so a log line still marks its path; so does a carried

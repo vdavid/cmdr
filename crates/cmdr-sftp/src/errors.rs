@@ -9,6 +9,7 @@ use log::debug;
 
 use cmdr_fs::log_detail::LogDetail;
 use cmdr_fs::log_private::LogPrivate;
+use cmdr_fs::os_error::OsErrorClass;
 use cmdr_fs::volume::VolumeError;
 use openssh_sftp_client::Error as SftpError;
 use openssh_sftp_client::error::SftpErrorKind;
@@ -84,18 +85,6 @@ pub fn map_sftp_error(err: &SftpError, path: &str) -> VolumeError {
     }
 }
 
-/// `ENOTEMPTY`, which POSIX numbers differently per platform.
-///
-/// The number, not the wording, is what the app renders "this folder still has
-/// something in it" from, and every other backend reports the host platform's —
-/// so a refusal from a Linux server reaching a Mac has to arrive as the Mac's,
-/// or the same refusal reads differently depending on which backend produced it.
-#[cfg(target_os = "linux")]
-pub(crate) const ENOTEMPTY: i32 = 39;
-/// `ENOTEMPTY` on macOS. Windows numbers it differently again (41 in the MSVC CRT).
-#[cfg(target_os = "macos")]
-pub(crate) const ENOTEMPTY: i32 = 66;
-
 /// What the server says is at a path, asked only AFTER an operation on it
 /// already failed.
 ///
@@ -163,10 +152,14 @@ fn resolve(kind: SftpErrorKind, message: &str, path: &str, attempted: Attempted,
         // refusal wouldn't have arrived as the catch-all; what's left is a
         // directory that still holds something (`sftp-server.c`'s
         // `errno_to_portable`, OpenSSH 9.8, read 2026-08-22).
-        (Attempted::RemovingANode, WhatIsThere::Directory) => VolumeError::IoError {
-            message: message.to_string().into(),
-            raw_os_error: Some(ENOTEMPTY),
-        },
+        //
+        // ❗ As this Mac's own `ENOTEMPTY` (`OsErrorClass::NotEmpty`): the app renders
+        // "this folder still has something in it" from the class, and every other
+        // backend reports the host's, so a Linux server's refusal reaching a Mac
+        // reads the same as any other.
+        (Attempted::RemovingANode, WhatIsThere::Directory) => {
+            VolumeError::io_of_class(message.to_string(), OsErrorClass::NotEmpty)
+        }
         // Nothing at the path (or nothing the probe could see) says the failure
         // was about something else entirely: a full disk, a read-only export, a
         // quota. ❗ The probe may only make a report MORE accurate, never

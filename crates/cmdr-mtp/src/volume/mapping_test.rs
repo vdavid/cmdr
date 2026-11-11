@@ -95,13 +95,8 @@ fn a_refused_delete_of_a_non_empty_folder_marks_the_folder() {
         device_id: "mtp-20-5".to_string(),
         path: PATH.to_string(),
     });
-    assert!(matches!(
-        error,
-        VolumeError::IoError {
-            raw_os_error: Some(ENOTEMPTY),
-            ..
-        }
-    ));
+    assert!(matches!(error, VolumeError::IoError { .. }));
+    assert_eq!(error.os_class(), Some(OsErrorClass::NotEmpty));
     let logged = LogError(&error).to_string();
     let span = LogPrivate::dir_path(PATH).to_string();
     assert!(logged.contains(&span), "{logged:?}");

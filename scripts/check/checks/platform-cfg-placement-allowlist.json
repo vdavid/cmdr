@@ -419,9 +419,6 @@
     "apps/desktop/src-tauri/src/volume_listing.rs": {
       "outsideSeam": 3
     },
-    "crates/cmdr-adb/src/errors.rs": {
-      "outsideSeam": 2
-    },
     "crates/cmdr-adb/src/server.rs": {
       "outsideSeam": 2
     },
@@ -617,9 +614,6 @@
     "crates/cmdr-mtp/src/connection/mod.rs": {
       "outsideSeam": 4
     },
-    "crates/cmdr-mtp/src/volume/mapping.rs": {
-      "outsideSeam": 2
-    },
     "crates/cmdr-multi-rename/src/names_file.rs": {
       "outsideSeam": 8
     },
@@ -689,22 +683,13 @@
     "crates/cmdr-operations/src/validation.rs": {
       "outsideSeam": 3
     },
-    "crates/cmdr-s3/src/volume/mutation.rs": {
-      "outsideSeam": 2
-    },
     "crates/cmdr-search/src/name_rules.rs": {
       "outsideSeam": 1
-    },
-    "crates/cmdr-sftp/src/errors.rs": {
-      "outsideSeam": 2
     },
     "crates/cmdr-update-trust/src/lib.rs": {
       "outsideSeam": 4
     },
     "crates/cmdr-update-trust/src/main.rs": {
-      "outsideSeam": 2
-    },
-    "crates/cmdr-webdav/src/volume/mutation.rs": {
       "outsideSeam": 2
     }
   }

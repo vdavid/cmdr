@@ -436,7 +436,7 @@ async fn a_directory_that_still_holds_something_refuses_with_the_shared_errno() 
     let outcome = volume.delete(Path::new(&album)).await;
 
     assert!(
-        matches!(outcome, Err(VolumeError::IoError { raw_os_error: Some(errno), .. }) if errno == crate::errors::ENOTEMPTY),
+        matches!(&outcome, Err(err @ VolumeError::IoError { .. }) if err.os_class() == Some(cmdr_fs::os_error::OsErrorClass::NotEmpty)),
         "got {outcome:?}"
     );
 

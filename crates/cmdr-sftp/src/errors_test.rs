@@ -98,7 +98,7 @@ fn a_directory_that_refused_to_go_carries_the_errno_every_backend_reports() {
         WhatIsThere::Directory,
     );
     assert!(
-        matches!(resolved, VolumeError::IoError { raw_os_error: Some(errno), .. } if errno == ENOTEMPTY),
+        matches!(resolved, VolumeError::IoError { .. }) && resolved.os_class() == Some(OsErrorClass::NotEmpty),
         "got {resolved:?}"
     );
 }

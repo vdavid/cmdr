@@ -14,7 +14,7 @@ const WIN32: [(i32, OsErrorClass); 40] = [
     (14, OsErrorClass::OutOfMemory),           // ERROR_OUTOFMEMORY
     (17, OsErrorClass::CrossDevice),           // ERROR_NOT_SAME_DEVICE
     (19, OsErrorClass::ReadOnlyFilesystem),    // ERROR_WRITE_PROTECT
-    (21, OsErrorClass::DeviceGone),            // ERROR_NOT_READY
+    (21, OsErrorClass::NoDevice),              // ERROR_NOT_READY
     (23, OsErrorClass::Io),                    // ERROR_CRC
     (32, OsErrorClass::InUseByAnotherApp),     // ERROR_SHARING_VIOLATION
     (33, OsErrorClass::InUseByAnotherApp),     // ERROR_LOCK_VIOLATION

@@ -11,7 +11,8 @@ use cmdr_fs::volume::{Volume, VolumeError};
 
 use super::WebdavVolume;
 use super::fake_dav::FakeDav;
-use super::mutation::{ENOTEMPTY, still_holds};
+use super::mutation::still_holds;
+use cmdr_fs::os_error::OsErrorClass;
 
 /// Each branch a real server's answers decide, in a scratch `dir` the caller
 /// cleans: the empty folder goes with no aside left, a held one comes back (for
@@ -114,13 +115,7 @@ fn at(volume: &WebdavVolume, rel: &str) -> PathBuf {
 }
 
 fn is_not_empty(result: &Result<(), VolumeError>) -> bool {
-    matches!(
-        result,
-        Err(VolumeError::IoError {
-            raw_os_error: Some(code),
-            ..
-        }) if *code == ENOTEMPTY
-    )
+    matches!(result, Err(err @ VolumeError::IoError { .. }) if err.os_class() == Some(OsErrorClass::NotEmpty))
 }
 
 /// ❗ The bug this design closes: a file landing between the emptiness check
