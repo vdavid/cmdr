@@ -114,6 +114,7 @@ describe('arm 3: a saved place with nothing registered', () => {
       [{ outcome: 'needs_credentials' }, 'needs_credentials'],
       [{ outcome: 'auth_method_unsupported' }, 'auth_method_unsupported'],
       [{ outcome: 'certificate_untrusted' }, 'certificate_untrusted'],
+      [{ outcome: 'certificate_rejected' }, 'certificate_rejected'],
       [{ outcome: 'not_a_webdav_server' }, 'not_a_webdav_server'],
       [{ outcome: 'invalid_url' }, 'invalid_url'],
       [{ outcome: 'timed_out' }, 'timed_out'],

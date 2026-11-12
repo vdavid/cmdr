@@ -75,6 +75,7 @@ impl HttpBackend for S3VolumeInner {
                 | S3ConnectError::WrongRegion { .. }
                 | S3ConnectError::ClockSkewed
                 | S3ConnectError::CertificateUntrusted
+                | S3ConnectError::CertificateRejected
                 | S3ConnectError::NotAnS3Endpoint,
             ) => Err(DialRefusal::Transient(VolumeError::DeviceDisconnected(
                 self.volume_id.clone().into(),

@@ -68,8 +68,10 @@ table (`refusal.rs`, one cell per row in `refusal_test.rs`):
   `HeadBucket`, which a bucket-scoped key passes.
 - `HeadBucket` 404: `NoSuchBucket`. 401: `KeysRejected`. 403: `AccessDenied` (can't tell a wrong key from no rights). A
   redirect, or any answer carrying `x-amz-bucket-region`: `WrongRegion { region }`.
-- Transport failures: `TimedOut`, `CertificateUntrusted` (an `InvalidData` `io::Error` in the source chain), or
-  `Unreachable`.
+- Transport failures: `TimedOut`, `CertificateRejected` (a revoked, malformed, or badly signed certificate, read off the
+  `rustls::Error` variant by `transport::tls_refusal_verdict`, #1111), `CertificateUntrusted` (any other refusal with an
+  `InvalidData` `io::Error` in the source chain, a self-signed endpoint above all, where adding it to the trust store is
+  the fix), or `Unreachable`.
 
 **Gotcha: Garage answers a wrong secret with `AccessDenied`** (VersityGW with `SignatureDoesNotMatch`; fixture README).
 So `AccessDenied` is never `KeysRejected`, and the words for `BucketListRefused` and `AccessDenied` ask about both the

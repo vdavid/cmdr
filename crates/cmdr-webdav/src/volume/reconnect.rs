@@ -80,7 +80,7 @@ impl HttpBackend for WebdavVolumeInner {
             // stays down until a person opens it and the connect shows the prompt.
             Err(
                 WebdavConnectError::CertificateNeedsApproval(_)
-                | WebdavConnectError::CertificateUntrusted
+                | WebdavConnectError::CertificateRejected
                 | WebdavConnectError::NotAWebdavServer,
             ) => Err(DialRefusal::Transient(VolumeError::DeviceDisconnected(
                 self.volume_id.clone().into(),

@@ -432,6 +432,7 @@ fn every_dial_outcome_maps_to_the_models_vocabulary() {
         (ServerConnectOutcome::NeedsCredentials, ConnectOutcome::NeedsCredentials),
         (ServerConnectOutcome::AuthMethodUnsupported, ConnectOutcome::Rejected),
         (ServerConnectOutcome::CertificateUntrusted, ConnectOutcome::Rejected),
+        (ServerConnectOutcome::CertificateRejected, ConnectOutcome::Rejected),
         (ServerConnectOutcome::NotAWebdavServer, ConnectOutcome::Rejected),
         (ServerConnectOutcome::InvalidUrl, ConnectOutcome::Rejected),
         (ServerConnectOutcome::AccessDenied, ConnectOutcome::Rejected),

@@ -280,6 +280,7 @@ pub(crate) fn classify(outcome: &ServerConnectOutcome) -> (ConnectOutcome, &'sta
         ServerConnectOutcome::AuthenticationRejected => (Rejected, "authentication_rejected"),
         ServerConnectOutcome::AuthMethodUnsupported => (Rejected, "auth_method_unsupported"),
         ServerConnectOutcome::CertificateUntrusted => (Rejected, "certificate_untrusted"),
+        ServerConnectOutcome::CertificateRejected => (Rejected, "certificate_rejected"),
         ServerConnectOutcome::NotAWebdavServer => (Rejected, "not_a_webdav_server"),
         ServerConnectOutcome::InvalidUrl => (Rejected, "invalid_url"),
         ServerConnectOutcome::AccessDenied => (Rejected, "access_denied"),

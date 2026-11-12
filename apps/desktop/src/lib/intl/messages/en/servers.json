@@ -260,7 +260,13 @@
   },
   "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS doesn’t trust this server’s certificate. Add it in Keychain Access, then try again.} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
   "@servers.refusal.certificateUntrusted": {
-    "description": "Shown in the pane when a WebDAV server’s TLS certificate isn’t trusted by the operating system. In the macOS branch, \"Keychain Access\" is the macOS app name, which the OS ships translated: use the name your language’s macOS uses. The Windows branch quotes “Manage user certificates”, the Windows certificate tool’s name: use the name Windows shows in your language. The Linux branch names no app. The screenshot shows the macOS wording.",
+    "description": "Shown in the pane when an S3 server’s TLS certificate isn’t trusted by the operating system, usually because the server made its own (self-signed), so adding it to the system’s trusted certificates is the fix. A revoked or damaged certificate gets servers.refusal.certificateRejected instead. In the macOS branch, \"Keychain Access\" is the macOS app name, which the OS ships translated: use the name your language’s macOS uses. The Windows branch quotes “Manage user certificates”, the Windows certificate tool’s name: use the name Windows shows in your language. The Linux branch names no app. The screenshot shows the macOS wording.",
+    "screenshot": "server-sign-in-refused-local-network.png",
+    "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
+  },
+  "servers.refusal.certificateRejected": "This server’s certificate is revoked or damaged, so Cmdr won’t connect. Ask whoever runs the server to replace it.",
+  "@servers.refusal.certificateRejected": {
+    "description": "Shown in the pane and the server sheet when a WebDAV or S3 server’s TLS certificate is revoked, malformed, or badly signed. Unlike servers.refusal.certificateUntrusted, trusting it would not help and isn’t safe, so the sentence ❌ never suggests adding or trusting the certificate: it says why Cmdr stops and who can fix it (whoever runs the server). “Certificate” is the security certificate a secure (HTTPS) server presents; use your language’s usual term for it. The same on every OS.",
     "screenshot": "server-sign-in-refused-local-network.png",
     "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
   },

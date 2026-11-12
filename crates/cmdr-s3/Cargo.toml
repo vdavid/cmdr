@@ -63,6 +63,12 @@ cmdr-http = { path = "../cmdr-http" }
 # negotiates HTTP/2, and GCS once reset every app request over a header only
 # HTTP/2 refuses. `transport_test.rs` pins it.
 reqwest = { version = "0.13", default-features = false, features = ["http2", "rustls", "stream"] }
+# The typed `rustls::Error` under a refused handshake, which tells a certificate
+# that's only untrusted (self-signed: adding it is right) from a revoked or broken
+# one (`transport/mod.rs:tls_refusal_verdict`). Already in the graph through
+# reqwest's `rustls` feature at this version, the one `cmdr-webdav` names, so
+# nothing new is compiled.
+rustls = { version = "0.23.46", default-features = false, features = ["std"] }
 # A HEAD's `Last-Modified` (RFC 1123), the version `cmdr-webdav` resolves.
 httpdate = "1"
 # The price table (`cost/prices.rs`): the JSON `apps/api-server` serves and the

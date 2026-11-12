@@ -101,8 +101,8 @@ fn every_webdav_outcome_maps_to_its_superset_twin_including_the_unsupported_sche
             ServerConnectOutcome::NeedsCertificateApproval(certificate_prompt()),
         ),
         (
-            WebdavConnection::CertificateUntrusted,
-            ServerConnectOutcome::CertificateUntrusted,
+            WebdavConnection::CertificateRejected,
+            ServerConnectOutcome::CertificateRejected,
         ),
         (
             WebdavConnection::NotAWebdavServer,

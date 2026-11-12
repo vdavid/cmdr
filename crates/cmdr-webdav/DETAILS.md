@@ -54,7 +54,7 @@ The probe's answers, in connect terms:
 - **A transport failure, `is_timeout`**: `TimedOut`.
 - **A certificate macOS refused on trust (the `rustls::Error` under it)**: `CertificateNeedsApproval`, a prompt a person
   may pin (§ "Trusting a self-signed certificate").
-- **A certificate refused for any other reason (revoked, malformed, badly signed)**: `CertificateUntrusted`.
+- **A certificate refused for any other reason (revoked, malformed, badly signed)**: `CertificateRejected`.
 - **A TLS handshake that broke anywhere but the certificate, and any other transport failure, `is_connect` /
   `is_request`**: `Unreachable`.
 - **207 with a `multistatus`**: connected.
@@ -127,18 +127,18 @@ preconfigured config is taken whole, and an empty ALPN would quietly pin every s
 didn't like, or a platform verdict with no closer variant. macOS reports a self-signed leaf as exactly that last one,
 `Other("… certificate is not trusted: -67843")` (verified on macOS 27, `webdav-fixture-tls`, 2026-10-20). ❌ Revoked,
 unreadable, or badly signed certificates never are. `errors.rs` reads the `rustls::Error` under a connect failure by
-type (`tls_trust::tls_refusal`): the wrapper is a prompt, any other certificate error `CertificateUntrusted`, and
+type (`tls_trust::tls_refusal`): the wrapper is a prompt, any other certificate error `CertificateRejected`, and
 anything else in the handshake (an alert, a protocol mismatch, TLS at a plain-HTTP port, a server that can't prove the
 key its pinnable certificate names) `Unreachable`, ❗ so no prompt ever offers to trust a broken handshake.
 
 - ❗ **Reached through `cmdr_fs::volume::tls::causes`, which descends INTO an `io::Error`**: reqwest 0.13.5 nests the
   handshake's `io::Error` (`InvalidData`, holding the `rustls::Error`) inside another of kind `Other`, and
   `io::Error::source` skips what it wraps, so a plain `source()` walk never met it. Before that walk, every self-signed
-  server read as `Unreachable`, never `CertificateUntrusted` (printed off the fixture, 2026-10-20).
+  server read as `Unreachable`, never `CertificateRejected` (printed off the fixture, 2026-10-20).
 - **No re-check before pinning**, unlike an SSH key's two-phase approval: the pin is the fingerprint the person read,
   and only that exact one is ever trusted, so a server that moved to another certificate since meets the next dial as
   `Changed`. That also keeps the crate's capped surface where it is (§ "The public surface is capped").
-- **A changed certificate mid-life is a refused reconnect** (`Transient`, like `CertificateUntrusted`): an unattended
+- **A changed certificate mid-life is a refused reconnect** (`Transient`, like `CertificateRejected`): an unattended
   dial has nobody to ask, so the volume stays down until a person opens it and the connect shows the prompt.
 - **The `https`-first probe ignores pins**: a self-signed twin falls back to the typed `http` address (§ "`https` first,
   for a typed `http` address").
@@ -517,7 +517,7 @@ The sign-in UI's command surface is protocol-agnostic: `connectServer` (a brand-
 already saved) in `apps/desktop/src-tauri/src/commands/servers.rs`, documented end to end in
 `apps/desktop/src/lib/servers/DETAILS.md`. Both funnel into `network::webdav_volume_wiring::connect_and_register`, which
 answers with outcomes (`ServerConnectOutcome`, widened across protocols)
-`connected | authentication_rejected | needs_credentials | auth_method_unsupported | needs_certificate_approval | certificate_untrusted | not_a_webdav_server | timed_out | unreachable | cancelled`
+`connected | authentication_rejected | needs_credentials | auth_method_unsupported | needs_certificate_approval | certificate_rejected | not_a_webdav_server | timed_out | unreachable | cancelled`
 (`AuthMethodUnsupported` is its own variant, ❌ never folded into `AuthenticationRejected`: a Digest-only server never
 saw the password). The rest of the app's commands: `cancelServerConnect`, `disconnectPlace`,
 `saveWebdavCredentials(url, username, secret)` / `hasServerSecret` / `forgetServerSecret`, `getKnownWebdavServers` /

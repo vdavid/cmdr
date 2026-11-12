@@ -39,6 +39,7 @@ const PLAIN_REFUSALS: Record<PlainRefusalOutcome, ConnectRefusalKind> = {
   needs_credentials: 'needs_credentials',
   auth_method_unsupported: 'auth_method_unsupported',
   certificate_untrusted: 'certificate_untrusted',
+  certificate_rejected: 'certificate_rejected',
   not_a_webdav_server: 'not_a_webdav_server',
   invalid_url: 'invalid_url',
   start_folder_outside_root: 'start_folder_outside_root',

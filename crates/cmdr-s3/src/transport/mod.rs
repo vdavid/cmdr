@@ -16,7 +16,7 @@ use bytes::Bytes;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::VolumeError;
 use cmdr_fs::volume::liveness::Liveness;
-use cmdr_fs::volume::tls::has_tls_refusal;
+use cmdr_fs::volume::tls::{causes, has_tls_refusal};
 use futures_util::Stream;
 use http::{Method, StatusCode};
 use log::debug;
@@ -665,7 +665,7 @@ pub(crate) fn classify_connect_error(err: &ExchangeError) -> S3ConnectError {
     }
     if err.is_connect() {
         if has_tls_refusal(err) {
-            return S3ConnectError::CertificateUntrusted;
+            return tls_refusal_verdict(err);
         }
         return S3ConnectError::Unreachable(err.to_string());
     }
@@ -675,6 +675,35 @@ pub(crate) fn classify_connect_error(err: &ExchangeError) -> S3ConnectError {
     S3ConnectError::Transport(err.to_string())
 }
 
+/// What a refused handshake says about the certificate, read off the `rustls::Error` under it by
+/// variant, ❌ never the message: a revoked, malformed, or badly signed one is
+/// [`S3ConnectError::CertificateRejected`], which adding to a trust store would never fix (and
+/// shouldn't). Anything else, a self-signed endpoint above all, is
+/// [`S3ConnectError::CertificateUntrusted`], and so is a refusal with no `rustls::Error` to read.
+/// ❗ Through `causes`, which descends INTO an `io::Error`: its own `source()` skips the one it wraps.
+pub(crate) fn tls_refusal_verdict(err: &(dyn std::error::Error + 'static)) -> S3ConnectError {
+    let broken = causes(err)
+        .filter_map(|cause| cause.downcast_ref::<rustls::Error>())
+        .any(|refusal| {
+            matches!(
+                refusal,
+                rustls::Error::InvalidCertificate(
+                    rustls::CertificateError::Revoked
+                        | rustls::CertificateError::BadEncoding
+                        | rustls::CertificateError::BadSignature
+                )
+            )
+        });
+    if broken {
+        S3ConnectError::CertificateRejected
+    } else {
+        S3ConnectError::CertificateUntrusted
+    }
+}
+
+#[cfg(test)]
+#[path = "tls_verdict_test.rs"]
+mod tls_verdict_test;
 #[cfg(test)]
 #[path = "transport_routing_test.rs"]
 mod transport_routing_test;

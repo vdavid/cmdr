@@ -1987,6 +1987,7 @@ dependencies = [
  "percent-encoding",
  "quick-xml 0.42.0",
  "reqwest",
+ "rustls",
  "serde",
  "serde_json",
  "sha2 0.11.1",

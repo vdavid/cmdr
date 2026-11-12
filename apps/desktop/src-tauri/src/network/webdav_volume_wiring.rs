@@ -53,7 +53,7 @@ pub enum WebdavConnection {
     NeedsCertificateApproval(CertificatePrompt),
     /// The certificate was refused for a reason no pin answers (revoked,
     /// malformed, badly signed). ❌ Not approvable.
-    CertificateUntrusted,
+    CertificateRejected,
     /// The URL answers HTTP, but not WebDAV: the `PROPFIND` probe came back
     /// without a `multistatus`, or isn't understood at that path.
     NotAWebdavServer,
@@ -232,7 +232,7 @@ fn failed(error: WebdavConnectError) -> WebdavConnection {
         WebdavConnectError::NeedsCredentials => WebdavConnection::NeedsCredentials,
         WebdavConnectError::AuthMethodUnsupported => WebdavConnection::AuthMethodUnsupported,
         WebdavConnectError::CertificateNeedsApproval(prompt) => WebdavConnection::NeedsCertificateApproval(prompt),
-        WebdavConnectError::CertificateUntrusted => WebdavConnection::CertificateUntrusted,
+        WebdavConnectError::CertificateRejected => WebdavConnection::CertificateRejected,
         WebdavConnectError::NotAWebdavServer => WebdavConnection::NotAWebdavServer,
         WebdavConnectError::TimedOut => WebdavConnection::TimedOut,
         WebdavConnectError::Cancelled => WebdavConnection::Cancelled,

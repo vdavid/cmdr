@@ -7,8 +7,9 @@
  * user to fix the wrong thing: "check your password" for a server that never saw
  * one is the exact case the outcome enum was split to prevent.
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, onTestFinished } from 'vitest'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { refusalField, wordConnectRefusal, wordPaneRefusal } from './connect-refusals'
 import type { ConnectRefusalKind } from './connect-refusals'
 
@@ -18,6 +19,7 @@ const KINDS: ConnectRefusalKind[] = [
   'needs_credentials',
   'auth_method_unsupported',
   'certificate_untrusted',
+  'certificate_rejected',
   'not_a_webdav_server',
   'invalid_url',
   'timed_out',
@@ -101,6 +103,19 @@ describe('wordConnectRefusal', () => {
     expect(wordConnectRefusal('start_folder_not_found', subject)).toContain('nas.local')
     expect(wordConnectRefusal('save_unconfirmed', subject)).toContain('nas.local')
   })
+
+  it.each(['macos', 'windows', 'linux'] as const)(
+    '❌ never tells anyone on %s to trust a revoked or broken certificate (#1111)',
+    (platform) => {
+      onTestFinished(withPlatform(platform))
+      const rejected = wordConnectRefusal('certificate_rejected', subject)
+      expect(rejected).not.toBe(wordConnectRefusal('certificate_untrusted', subject))
+      for (const nudge of ['Keychain', 'trusted certificates', 'Add it', 'Manage user certificates']) {
+        expect(rejected, `says "${nudge}"`).not.toContain(nudge)
+      }
+      expect(refusalField('certificate_rejected')).toBe('form')
+    },
+  )
 
   it('❌ never blames the password when the account signed in and the place turned it away', () => {
     // The password worked. Pointing at it sends the user to fix the one thing that

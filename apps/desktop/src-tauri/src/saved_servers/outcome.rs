@@ -58,9 +58,14 @@ pub enum ServerConnectOutcome {
     /// pin it (`approve_webdav_certificate`), then dial again. Carries whether
     /// it's first contact or a pinned certificate that CHANGED.
     NeedsCertificateApproval(CertificatePrompt),
-    /// WebDAV only: the certificate was refused for a reason no pin answers
-    /// (revoked, malformed, badly signed). ❌ Not approvable.
+    /// S3 only: the OS didn't trust the endpoint's certificate (a self-signed
+    /// one), so adding it to the trust store is the fix. WebDAV asks instead
+    /// (`NeedsCertificateApproval`).
     CertificateUntrusted,
+    /// WebDAV and S3: the certificate is revoked, malformed, or badly signed, so
+    /// no trust store or pin answers it. ❌ Not approvable, and the copy never
+    /// says to trust it (#1111).
+    CertificateRejected,
     /// WebDAV only: the URL answers HTTP but not WebDAV.
     NotAWebdavServer,
     /// WebDAV and S3: the address the user typed isn't a usable `http`/`https`
@@ -165,7 +170,7 @@ pub(crate) fn outcome_from_webdav(connection: WebdavConnection) -> ServerConnect
         // Digest-only server never saw the password.
         WebdavConnection::AuthMethodUnsupported => ServerConnectOutcome::AuthMethodUnsupported,
         WebdavConnection::NeedsCertificateApproval(prompt) => ServerConnectOutcome::NeedsCertificateApproval(prompt),
-        WebdavConnection::CertificateUntrusted => ServerConnectOutcome::CertificateUntrusted,
+        WebdavConnection::CertificateRejected => ServerConnectOutcome::CertificateRejected,
         WebdavConnection::NotAWebdavServer => ServerConnectOutcome::NotAWebdavServer,
         WebdavConnection::TimedOut => ServerConnectOutcome::TimedOut,
         WebdavConnection::Unreachable => ServerConnectOutcome::Unreachable,
@@ -187,6 +192,7 @@ pub(crate) fn outcome_from_s3(connection: S3Connection) -> ServerConnectOutcome 
         S3Connection::ClockSkewed => ServerConnectOutcome::ClockSkewed,
         S3Connection::NeedsCredentials => ServerConnectOutcome::NeedsCredentials,
         S3Connection::CertificateUntrusted => ServerConnectOutcome::CertificateUntrusted,
+        S3Connection::CertificateRejected => ServerConnectOutcome::CertificateRejected,
         S3Connection::NotAnS3Endpoint => ServerConnectOutcome::NotAnS3Endpoint,
         S3Connection::InvalidProvider => ServerConnectOutcome::InvalidUrl,
         S3Connection::TimedOut => ServerConnectOutcome::TimedOut,

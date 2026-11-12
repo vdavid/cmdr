@@ -152,6 +152,7 @@ fn every_s3_outcome_keeps_its_own_superset_twin() {
         (S3Connection::InvalidProvider, "invalid_url"),
         (S3Connection::NeedsCredentials, "needs_credentials"),
         (S3Connection::CertificateUntrusted, "certificate_untrusted"),
+        (S3Connection::CertificateRejected, "certificate_rejected"),
     ];
     for (connection, wire) in cases {
         let outcome = outcome_from_s3(connection);

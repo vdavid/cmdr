@@ -364,7 +364,8 @@ Skip (no Windows/Linux path, or a macOS-only mechanism):
   … a package on Linux (pkg icon, extension-change ask, bundle Enter policy).
 - **Copy: a revoked certificate gets "add it to your trust store"**: `servers.refusal.certificateUntrusted` covers every
   non-approvable OS refusal, revoked and malformed ones included, where adding the certificate won't help. Affects the
-  macOS text too; worth its own wording pass.
+  macOS text too; worth its own wording pass. Fixed by #1111: those refusals are `certificate_rejected`
+  (`servers.refusal.certificateRejected`), and `certificateUntrusted` words only S3's self-signed case.
 - **Inconsistent Linux settings label**: the proposal names the Linux menu row "Preferences" (`menu.app.settings`) but
   the toast button that mirrors it "Settings…" (`fileExplorer.quickFilter.intro.openSettings`). Pick one; "Settings…"
   matches the window title.

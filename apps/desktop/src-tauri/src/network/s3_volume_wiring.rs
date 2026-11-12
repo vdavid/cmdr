@@ -46,8 +46,10 @@ pub enum S3Connection {
     ClockSkewed,
     /// The store held no secret, so nothing was offered.
     NeedsCredentials,
-    /// The TLS handshake didn't trust the endpoint's certificate.
+    /// The TLS handshake didn't trust the endpoint's certificate (a self-signed one).
     CertificateUntrusted,
+    /// The endpoint's certificate is revoked, malformed, or badly signed.
+    CertificateRejected,
     /// The address answers, but not as S3.
     NotAnS3Endpoint,
     /// The provider's fields can't make an endpoint.
@@ -175,6 +177,7 @@ fn failed(error: S3ConnectError) -> S3Connection {
         S3ConnectError::ClockSkewed => S3Connection::ClockSkewed,
         S3ConnectError::NeedsCredentials => S3Connection::NeedsCredentials,
         S3ConnectError::CertificateUntrusted => S3Connection::CertificateUntrusted,
+        S3ConnectError::CertificateRejected => S3Connection::CertificateRejected,
         S3ConnectError::NotAnS3Endpoint => S3Connection::NotAnS3Endpoint,
         S3ConnectError::InvalidProvider => S3Connection::InvalidProvider,
         S3ConnectError::TimedOut => S3Connection::TimedOut,

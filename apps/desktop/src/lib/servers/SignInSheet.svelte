@@ -382,7 +382,7 @@
     /**
      * The one remedy worth a button: a bare Nextcloud origin answers "nothing
      * here speaks WebDAV", and the fix is a collection path nobody knows.
-     * ownCloud shares it. ❌ `certificate_untrusted` gets no button: it's a
+     * ownCloud shares it. ❌ `certificate_rejected` gets no button: it's a
      * certificate no pin can answer (revoked, malformed), and one a pin CAN
      * answer comes back as the trust step instead.
      */

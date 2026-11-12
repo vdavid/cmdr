@@ -30,7 +30,7 @@ pub enum WebdavConnectError {
     CertificateNeedsApproval(CertificatePrompt),
     /// The certificate was refused for a reason no pin answers: revoked,
     /// malformed, or badly signed. ❌ Not approvable.
-    CertificateUntrusted,
+    CertificateRejected,
     /// The server refused the stored secret. Retrying with the same one can
     /// only fail again, and on some servers it locks the account.
     AuthenticationRejected,
@@ -152,7 +152,7 @@ pub(crate) fn map_transport_error(err: &reqwest::Error, volume_id: &str, path: &
 ///
 /// A TLS refusal is read off the `rustls::Error` under it (`tls_trust.rs`), by
 /// type: a certificate the OS refused on trust is one a person may pin, one
-/// refused for any other reason is `CertificateUntrusted`, and a handshake that
+/// refused for any other reason is `CertificateRejected`, and a handshake that
 /// broke anywhere else is the server being unreachable over TLS, ❗ so no prompt
 /// ever offers to trust it. ❌ Never by the message.
 pub(crate) fn classify_connect_error(err: &reqwest::Error, host: &str, port: u16) -> WebdavConnectError {
@@ -172,7 +172,7 @@ pub(crate) fn classify_connect_error(err: &reqwest::Error, host: &str, port: u16
                 },
             });
         }
-        TlsRefusal::Certificate => return WebdavConnectError::CertificateUntrusted,
+        TlsRefusal::Certificate => return WebdavConnectError::CertificateRejected,
         TlsRefusal::Handshake => return WebdavConnectError::Unreachable(err.to_string()),
         TlsRefusal::None => {}
     }

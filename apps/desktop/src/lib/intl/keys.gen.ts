@@ -4188,6 +4188,7 @@ export type MessageKey =
   | 'servers.refusal.authenticationRejected'
   | 'servers.refusal.bucketListRefused'
   | 'servers.refusal.bucketNotFound'
+  | 'servers.refusal.certificateRejected'
   | 'servers.refusal.certificateUnapproved'
   | 'servers.refusal.certificateUntrusted'
   | 'servers.refusal.clockSkewed'

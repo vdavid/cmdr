@@ -227,6 +227,7 @@ const REFUSAL_KINDS: ConnectRefusalKind[] = [
   'needs_credentials',
   'auth_method_unsupported',
   'certificate_untrusted',
+  'certificate_rejected',
   'not_a_webdav_server',
   'invalid_url',
   'timed_out',

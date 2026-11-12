@@ -354,8 +354,11 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
   directly" (`accountNotPermitted`).
 - `auth_method_unsupported`: the server challenged with a scheme Cmdr doesn't speak, so the secret never left. ❌ Never
   name the scheme; "Digest" means nothing to the reader.
-- `certificate_untrusted`: a certificate no pin can answer (revoked, malformed, badly signed). One macOS merely doesn't
-  trust (a self-signed NAS) comes back as `needs_certificate_approval` and the trust step instead.
+- `certificate_rejected`: a certificate nothing should trust (revoked, malformed, badly signed; WebDAV and S3). Its
+  sentence says who can fix it, ❌ never to add or trust it (#1111). On WebDAV, one the OS merely doesn't trust (a
+  self-signed NAS) comes back as `needs_certificate_approval` and the trust step instead.
+- `certificate_untrusted`: S3 only, an endpoint the OS doesn't trust (self-signed): its sentence says to add the
+  certificate to the system's trusted certificates, which is right there.
 - `certificate_unapproved` (from `needs_certificate_approval`): the sheet's trust step shows the certificate's SHA-256
   and pins it (`approveWebdavCertificate`), then dials again. No second handshake: a server that moved to another
   certificate meanwhile answers that dial as `changed`.
@@ -537,7 +540,7 @@ for nothing, while defaulting to SFTP would put an account field in front of som
 
 ❗ **A Nextcloud URL stays whole, path and all.** Nobody can tell where the base URL ends and the collection begins, and
 the backend resolves the remote root relative to the base anyway. `not_a_webdav_server` is the one refusal with a remedy
-button, because the fix is a collection path nobody knows; `certificate_untrusted` deliberately has none, since it's a
+button, because the fix is a collection path nobody knows; `certificate_rejected` deliberately has none, since it's a
 certificate no pin can answer (one a pin can comes back as the trust step instead).
 
 There is no property-testing library on the frontend, so `address-parser.test.ts`'s example table IS the contract: a

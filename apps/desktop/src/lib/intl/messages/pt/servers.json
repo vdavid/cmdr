@@ -192,6 +192,10 @@
   "@servers.refusal.certificateUntrusted": {
     "sourceHash": "b8f3b4a"
   },
+  "servers.refusal.certificateRejected": "This server’s certificate is revoked or damaged, so Cmdr won’t connect. Ask whoever runs the server to replace it.",
+  "@servers.refusal.certificateRejected": {
+    "sourceHash": "95c3159"
+  },
   "servers.refusal.notAWebdavServer": "Nenhum serviço WebDAV responde neste endereço.",
   "@servers.refusal.notAWebdavServer": {
     "sourceHash": "4c702d4"

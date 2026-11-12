@@ -41,8 +41,12 @@ pub enum S3ConnectError {
     /// The server refused the request's timestamp (`RequestTimeTooSkewed`):
     /// this Mac's clock is off by more than 15 minutes.
     ClockSkewed,
-    /// The TLS handshake was refused, which a self-signed endpoint produces.
+    /// The TLS handshake was refused on trust, which a self-signed endpoint produces: adding the
+    /// certificate to the OS's trust store is the fix.
     CertificateUntrusted,
+    /// The certificate is revoked, malformed, or badly signed (`tls_refusal_verdict`). ❌ Trusting
+    /// it fixes nothing, so nobody is told to.
+    CertificateRejected,
     /// Something answered, but not as S3: an HTML page, a bare 404.
     NotAnS3Endpoint,
     /// The probe didn't finish inside the connect budget.

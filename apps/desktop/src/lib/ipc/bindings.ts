@@ -18675,10 +18675,17 @@ export type ServerConnectOutcome =
    */
   | ({ outcome: 'needs_certificate_approval' } & CertificatePrompt)
   /**
-   *  WebDAV only: the certificate was refused for a reason no pin answers
-   *  (revoked, malformed, badly signed). ❌ Not approvable.
+   *  S3 only: the OS didn't trust the endpoint's certificate (a self-signed
+   *  one), so adding it to the trust store is the fix. WebDAV asks instead
+   *  (`NeedsCertificateApproval`).
    */
   | { outcome: 'certificate_untrusted' }
+  /**
+   *  WebDAV and S3: the certificate is revoked, malformed, or badly signed, so
+   *  no trust store or pin answers it. ❌ Not approvable, and the copy never
+   *  says to trust it (#1111).
+   */
+  | { outcome: 'certificate_rejected' }
   // WebDAV only: the URL answers HTTP but not WebDAV.
   | { outcome: 'not_a_webdav_server' }
   /**
