@@ -171,7 +171,7 @@ fn a_mac_file_row_reads_top_to_bottom() {
     assert_eq!(render(&file_menu(&facts, Platform::MacOs)), MAC_FILE_ROW);
 }
 
-const LINUX_FOLDER_ROW: &str = "\
+const WINDOWS_AND_LINUX_FOLDER_ROW: &str = "\
 header \"Photos\"
 separator
 submenu - menu.context.selection
@@ -205,10 +205,10 @@ item media_index_add_folder menu.mediaIndex.addFolder
 item media_index_exclude_folder menu.mediaIndex.excludeFolder
 ";
 
-/// Linux has none of the macOS rows and no slot (no OS to fill one); a folder has no Open group
-/// and no share link, and gets favorites and the image-search group.
+/// Windows and Linux have none of the macOS rows and no slot (no OS hook to fill one); a folder
+/// has no Open group and no share link, and gets favorites and the image-search group.
 #[test]
-fn a_linux_folder_row_has_no_mac_rows() {
+fn a_windows_or_linux_folder_row_has_no_mac_rows() {
     let facts = FileMenuFacts {
         image_index: ImageIndexMenuState {
             enabled: true,
@@ -217,7 +217,13 @@ fn a_linux_folder_row_has_no_mac_rows() {
         target: TargetFacts::default(),
         ..facts("Photos", true, EVERY_PANE_FACT)
     };
-    assert_eq!(render(&file_menu(&facts, Platform::Linux)), LINUX_FOLDER_ROW);
+    for platform in [Platform::Windows, Platform::Linux] {
+        assert_eq!(
+            render(&file_menu(&facts, platform)),
+            WINDOWS_AND_LINUX_FOLDER_ROW,
+            "on {platform:?}"
+        );
+    }
 }
 
 /// The search-results snapshot: no Rename, Duplicate, or create items, plus Show in folder keyed
@@ -270,10 +276,10 @@ fn the_selection_submenu_splits_act_now_from_the_dialogs() {
     assert!(matches!(SELECTION_ROWS[5], SelectionRow::Separator));
 }
 
-/// Every row the crate builds, in every menu, on both platforms.
+/// Every row the crate builds, in every menu, on every platform.
 fn every_menu() -> Vec<Vec<ContextRow>> {
     let mut menus = Vec::new();
-    for platform in [Platform::MacOs, Platform::Linux] {
+    for platform in Platform::ALL {
         let image_index = ImageIndexMenuState {
             enabled: true,
             ..ImageIndexMenuState::default()
@@ -416,7 +422,8 @@ fn shortcuts(pairs: &[(&str, &str)]) -> ContextMenuShortcuts {
     ContextMenuShortcuts::from_pairs(pairs.iter().copied())
 }
 
-/// Rebind Copy in Settings and the right-click menu says the new key.
+/// Rebind Copy in Settings and the right-click menu says the new key, in the spelling the
+/// frontend captures on each platform.
 #[test]
 fn a_rebound_command_shows_the_new_key() {
     let map = shortcuts(&[("file.copy", "⌘⇧K")]);
@@ -424,10 +431,14 @@ fn a_rebound_command_shows_the_new_key() {
         map.for_menu_item(FILE_COPY_ID, Platform::MacOs).as_deref(),
         Some("Cmd+Shift+K")
     );
-    assert_eq!(
-        map.for_menu_item(FILE_COPY_ID, Platform::Linux).as_deref(),
-        Some("Ctrl+Shift+K")
-    );
+    let map = shortcuts(&[("file.copy", "Ctrl+Shift+K")]);
+    for platform in [Platform::Windows, Platform::Linux] {
+        assert_eq!(
+            map.for_menu_item(FILE_COPY_ID, platform).as_deref(),
+            Some("Ctrl+Shift+K"),
+            "on {platform:?}"
+        );
+    }
 }
 
 /// A bare key stays a real label here, where the menu bar would refuse one: a popup accelerator
@@ -507,13 +518,16 @@ item viewer_context_copy menu.edit.copy [Cmd+C] disabled
 item viewer_context_select_all menu.select.all [Cmd+A]
 "
     );
-    assert_eq!(
-        render(&viewer_text_menu(true, Platform::Linux)),
-        "\
+    for platform in [Platform::Windows, Platform::Linux] {
+        assert_eq!(
+            render(&viewer_text_menu(true, platform)),
+            "\
 item viewer_context_copy menu.edit.copy [Ctrl+C]
 item viewer_context_select_all menu.select.all [Ctrl+A]
-"
-    );
+",
+            "on {platform:?}"
+        );
+    }
     assert_eq!(
         render(&parent_row_menu()),
         "item favorites_add_context menu.context.addToFavorites\n"
@@ -636,8 +650,13 @@ fn pane_facts_read_the_frontend_s_payload() {
 
 #[test]
 fn slots_appear_on_macos_only() {
-    let linux = file_menu(&facts("a", false, EVERY_PANE_FACT), Platform::Linux);
-    assert!(!linux.iter().any(|row| matches!(row, ContextRow::Slot(_))));
+    for platform in [Platform::Windows, Platform::Linux] {
+        let rows = file_menu(&facts("a", false, EVERY_PANE_FACT), platform);
+        assert!(
+            !rows.iter().any(|row| matches!(row, ContextRow::Slot(_))),
+            "on {platform:?}"
+        );
+    }
     let mac = file_menu(&facts("a", false, EVERY_PANE_FACT), Platform::MacOs);
     assert!(mac.contains(&ContextRow::Slot(Slot::Services)));
 }

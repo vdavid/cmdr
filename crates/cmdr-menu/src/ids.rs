@@ -27,7 +27,7 @@ pub const FILE_MENU_ID: &str = "menu_file";
 pub const EDIT_MENU_ID: &str = "menu_edit";
 pub const SELECT_MENU_ID: &str = "menu_select";
 pub const VIEW_MENU_ID: &str = "menu_view";
-/// The "Sort by" submenu nested under View, built with this ID on both platforms.
+/// The "Sort by" submenu nested under View, built with this ID on every platform.
 pub const SORT_BY_MENU_ID: &str = "menu_sort_by";
 pub const GO_MENU_ID: &str = "menu_go";
 pub const TAB_MENU_ID: &str = "menu_tab";

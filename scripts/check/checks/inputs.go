@@ -343,6 +343,11 @@ var svelteInputs = inputs(treeGlobs(frontendSourceRoots...), []string{
 	"apps/desktop/src-tauri/src/platform/macos.rs",
 	"apps/desktop/src-tauri/src/platform/windows.rs",
 	"apps/desktop/src-tauri/src/platform/linux/mod.rs",
+	// The menu bar's parity file, which `default-keymap.test.ts` writes and checks for staleness.
+	"crates/cmdr-menu/src/registry_default_keys.tsv",
+	// The two Rust emit sites `rust-command-id-drift.test.ts` parses.
+	"crates/cmdr-menu/src/ids.rs",
+	"apps/desktop/src-tauri/src/dock/menu/rows.rs",
 }, agentDocExclusions)
 
 // desktopAppInputs covers the whole desktop app (frontend + Rust workspace),

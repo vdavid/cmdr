@@ -1086,16 +1086,19 @@ freed when `show_file_context_menu` returned (0.20 holds an `Rc` to it).
 ## Platform differences
 
 Every difference is marked on its row in `cmdr_menu::bar`, and `cmdr-menu`'s `bar_test.rs` spells out each bar in full.
+The Windows bar has the Linux bar's rows and keys until the Windows menu model is decided (`crates/cmdr-menu/DETAILS.md`
+§ "Three platforms"), so "Linux" below reads "Windows and Linux" for the bar's data; the GTK specifics are Linux's.
 
 - **App menu**: macOS has a dedicated "cmdr" menu with About, License, and Settings. Linux has none: About sits under
   Help, Settings and License under Edit.
 - **Predefined items**: macOS has Hide, Hide Others, Show All, Quit, the Window items, and Undo/Redo. Linux has none (GTK
   has no equivalent).
 - **Accelerators**: macOS has the full set. Linux omits F2 (Rename) and the others GTK intercepts. Every ⌘ chord is
-  the same chord on Ctrl there (`cmd_or_ctrl!`), because muda reads `Cmd` as META, the Super key on GTK (#284). `both`
-  and `split` refuse a Linux `Cmd` / `Super` at compile time, and `frontend_shortcut_to_accelerator` maps a rebind's ⌘
-  to Ctrl (and ⌃ to Shift when both are held, as `toPlatformShortcut` does). It also reads the `+`-joined words a Linux
-  capture stores (`Ctrl+Shift+P`).
+  the same chord on Ctrl there (`cmd_or_ctrl!`), because muda reads `Cmd` as META, the Super key on GTK (#284).
+  `same_on_all` and `split` refuse a Windows or Linux `Cmd` / `Super` at compile time. A rebind arrives in the
+  platform's own spelling (`Ctrl+Shift+P`), which `frontend_shortcut_to_accelerator` registers as typed; it converts
+  nothing between platforms (`crates/cmdr-menu/DETAILS.md` § "Accelerators"). `bar_parity_test.rs` keeps every row's
+  default equal to the registry's first key, or excused with its reason.
 - **Mnemonics**: macOS doesn't use them. Linux gives `&` prefixes for GTK keyboard navigation, unique per submenu.
 - **Help search**: macOS has the native NSMenu search field via `setHelpMenu:`. Linux has none.
 - **System cleanup**: on macOS, objc2 strips the injected Edit items. Linux needs none.

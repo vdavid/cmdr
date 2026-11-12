@@ -591,9 +591,6 @@
     "crates/cmdr-menu/src/ids.rs": {
       "outsideSeam": 2
     },
-    "crates/cmdr-menu/src/spec.rs": {
-      "outsideSeam": 1
-    },
     "crates/cmdr-mtp/src/connection/mod.rs": {
       "outsideSeam": 4
     },

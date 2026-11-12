@@ -1,7 +1,7 @@
 //! The words `bar.rs` writes the menu bar in, and where a platform difference resolves.
 //!
-//! Plain data with no `cfg`, so both platforms' bars exist on every host: `bar_test.rs` pins the
-//! Linux bar on a Mac too. The desktop's `menu_bar_builder.rs` builds the one for
+//! Plain data with no `cfg`, so all three platforms' bars exist on every host: `bar_test.rs` pins
+//! the Windows and Linux bars on a Mac too. The desktop's `menu_bar_builder.rs` builds the one for
 //! [`Platform::current`]; the browser demo renders the macOS one.
 
 use cmdr_sort::{SortColumn, SortOrder};
@@ -33,20 +33,40 @@ impl ViewMode {
     }
 }
 
-/// The two menu bars Cmdr builds. Every platform that isn't macOS gets the Linux one.
+/// The three platforms Cmdr builds a menu bar for.
+///
+/// Windows has the Linux bar's rows and accelerators until the Windows menu model is decided
+/// (`DETAILS.md` § "Three platforms"), but it's its own value, so a row or a key can differ there
+/// without touching Linux.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Platform {
     MacOs,
+    Windows,
     Linux,
 }
 
 impl Platform {
-    /// The platform this binary was built for.
+    /// Every platform, in the order [`PerPlatform`] writes its arms.
+    pub const ALL: [Self; 3] = [Self::MacOs, Self::Windows, Self::Linux];
+
+    /// The platform this binary was built for, from the target's own OS name, so the data stays
+    /// free of `cfg`. A wasm build answers Linux, so the browser demo names its platform
+    /// explicitly.
     pub const fn current() -> Self {
-        if cfg!(target_os = "macos") {
-            Self::MacOs
-        } else {
-            Self::Linux
+        match std::env::consts::OS.as_bytes() {
+            b"macos" => Self::MacOs,
+            b"windows" => Self::Windows,
+            _ => Self::Linux,
+        }
+    }
+
+    /// The frontend's word for it (`Platform` in `lib/platform/`), which
+    /// `registry_default_keys.tsv` is keyed by.
+    pub const fn wire(self) -> &'static str {
+        match self {
+            Self::MacOs => "macos",
+            Self::Windows => "windows",
+            Self::Linux => "linux",
         }
     }
 }
@@ -55,6 +75,7 @@ impl Platform {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PerPlatform<T> {
     pub macos: T,
+    pub windows: T,
     pub linux: T,
 }
 
@@ -62,6 +83,7 @@ impl<T: Copy> PerPlatform<T> {
     pub fn on(self, platform: Platform) -> T {
         match platform {
             Platform::MacOs => self.macos,
+            Platform::Windows => self.windows,
             Platform::Linux => self.linux,
         }
     }
@@ -75,35 +97,41 @@ impl<T: Copy> PerPlatform<T> {
 /// A menu item's keyboard accelerator on each platform, in Tauri's accelerator syntax.
 pub type Accelerator = PerPlatform<Option<&'static str>>;
 
-/// No accelerator on either platform.
+/// No accelerator on any platform.
 pub const NONE: Accelerator = PerPlatform {
     macos: None,
+    windows: None,
     linux: None,
 };
 
-/// The same accelerator on both platforms. ❗ Refuses one that holds ⌘ at compile time:
+/// The same accelerator on every platform. ❗ Refuses one that holds ⌘ at compile time:
 /// [`cmd_or_ctrl!`] is the spelling for that.
-pub const fn both(accelerator: &'static str) -> Accelerator {
+pub const fn same_on_all(accelerator: &'static str) -> Accelerator {
     assert!(
         !holds_super(accelerator),
-        "a ⌘ chord is Ctrl on Linux: write it `cmd_or_ctrl!`, not `both`"
+        "a ⌘ chord is Ctrl on Windows and Linux: write it `cmd_or_ctrl!`, not `same_on_all`"
     );
     PerPlatform {
         macos: Some(accelerator),
+        windows: Some(accelerator),
         linux: Some(accelerator),
     }
 }
 
-/// A ⌘ chord on macOS and the same chord on Ctrl on Linux: `cmd_or_ctrl!("Shift+P")` is
-/// `Cmd+Shift+P` / `Ctrl+Shift+P`.
+/// A ⌘ chord on macOS and the same chord on Ctrl on Windows and Linux: `cmd_or_ctrl!("Shift+P")`
+/// is `Cmd+Shift+P` on macOS and `Ctrl+Shift+P` on the other two.
 ///
 /// ❗ Not one shared `Cmd+…` string, because muda reads `Cmd` as `Modifiers::META`, which GTK
-/// binds and prints as the Super key, so the Linux menu offered Super chords the window manager
-/// usually owns (#284). ❌ Not `CmdOrCtrl` either: it resolves by the HOST muda runs on, so
-/// `bar_test.rs` couldn't pin the Linux bar from a Mac.
+/// binds and prints as the Super key (and Win32 as the Windows key), so the Linux menu offered
+/// Super chords the window manager usually owns (#284). ❌ Not `CmdOrCtrl` either: it resolves by
+/// the HOST muda runs on, so `bar_test.rs` couldn't pin the Linux bar from a Mac.
 macro_rules! cmd_or_ctrl {
     ($chord:literal) => {
-        $crate::spec::split(concat!("Cmd+", $chord), concat!("Ctrl+", $chord))
+        $crate::spec::split(
+            concat!("Cmd+", $chord),
+            concat!("Ctrl+", $chord),
+            concat!("Ctrl+", $chord),
+        )
     };
 }
 pub(crate) use cmd_or_ctrl;
@@ -112,25 +140,33 @@ pub(crate) use cmd_or_ctrl;
 pub const fn macos(accelerator: &'static str) -> Accelerator {
     PerPlatform {
         macos: Some(accelerator),
+        windows: None,
         linux: None,
     }
 }
 
-/// One accelerator per platform. ❗ The Linux one can't hold Super, at compile time (#284).
-pub const fn split(on_macos: &'static str, on_linux: &'static str) -> Accelerator {
+/// One accelerator per platform. ❗ The Windows and Linux ones can't hold Super, at compile time
+/// (#284).
+pub const fn split(on_macos: &'static str, on_windows: &'static str, on_linux: &'static str) -> Accelerator {
+    assert!(
+        !holds_super(on_windows),
+        "`Cmd` / `Super` binds the Windows key on Windows: spell the Windows chord with Ctrl"
+    );
     assert!(
         !holds_super(on_linux),
         "`Cmd` / `Super` binds the Super key on Linux: spell the Linux chord with Ctrl"
     );
     PerPlatform {
         macos: Some(on_macos),
+        windows: Some(on_windows),
         linux: Some(on_linux),
     }
 }
 
 /// Whether one of `accelerator`'s `+`-separated tokens is a modifier muda maps to
-/// `Modifiers::META` (`Cmd`, `Command`, `Super`, case-insensitive), the Super key on Linux.
-/// `const`, so [`both`] and [`split`] can refuse one while `MENU_BAR` compiles.
+/// `Modifiers::META` (`Cmd`, `Command`, `Super`, case-insensitive): the Super key on Linux, the
+/// Windows key on Windows. `const`, so [`same_on_all`] and [`split`] can refuse one while
+/// `MENU_BAR` compiles.
 const fn holds_super(accelerator: &str) -> bool {
     let bytes = accelerator.as_bytes();
     let mut start = 0;
@@ -152,17 +188,18 @@ const fn holds_super(accelerator: &str) -> bool {
     false
 }
 
-/// How a display-only shortcut reaches the user, which is the one place the two platforms
-/// disagree about [`ItemSpec::display_accelerator`].
+/// How a display-only shortcut reaches the user, which is the one place the platforms disagree
+/// about [`ItemSpec::display_accelerator`].
 ///
 /// macOS gets it from `macos_appkit::set_display_accelerators`, as a right-aligned, dimmed
 /// run on the item's attributed title, so it reads exactly like a real key equivalent. GTK
-/// offers no such hook, so Linux spells it into the label itself. Both callers (the builder
-/// and `bar_test.rs`) go through here, so the snapshot pins what the bar really says.
+/// offers no such hook, so Linux spells it into the label itself, and Windows does the same
+/// until its menu model is decided. Both callers (the builder and `bar_test.rs`) go through
+/// here, so the snapshot pins what the bar really says.
 pub fn display_accelerator_label(label: &str, shortcut: &str, platform: Platform) -> String {
     match platform {
         Platform::MacOs => label.to_string(),
-        Platform::Linux => format!("{label} ({shortcut})"),
+        Platform::Windows | Platform::Linux => format!("{label} ({shortcut})"),
     }
 }
 
@@ -277,10 +314,11 @@ pub struct ItemSpec {
     pub accelerator: Accelerator,
     /// A shortcut the menu only SHOWS, in the frontend's display spelling (`⇧8`, `+`).
     ///
-    /// The key carries no ⌘ / ⌃ / ⌥, so registering it would swallow the character
+    /// The key carries no ⌘ / ⌃ / ⌥ (or, for Select same kind, stays free on purpose: `menu/DETAILS.md`
+    /// § "Display-only accelerators"), so registering it would swallow the character
     /// app-wide (`accelerators.rs`'s modifier floor); the file pane's keydown handler
     /// owns it instead, and this is how the menu still tells the user about it. One
-    /// glyph for both platforms: they differ in how it's DRAWN, not in what it says
+    /// glyph for every platform: they differ in how it's DRAWN, not in what it says
     /// ([`display_accelerator_label`]). Set only by [`displayed_item`], which pairs it
     /// with [`NONE`] so an item can't claim both.
     pub display_accelerator: Option<&'static str>,
@@ -315,16 +353,40 @@ impl SubmenuSpec {
     pub fn entries_on(&self, platform: Platform) -> impl Iterator<Item = &'static EntryKind> {
         self.entries
             .iter()
-            .filter(move |entry| entry.only.is_none_or(|only| only == platform))
+            .filter(move |entry| entry.on.on(platform))
             .map(|entry| &entry.kind)
     }
 }
 
+/// Which platforms a row or a menu exists on.
+pub type Platforms = PerPlatform<bool>;
+
+/// On every platform.
+pub const EVERY_PLATFORM: Platforms = PerPlatform {
+    macos: true,
+    windows: true,
+    linux: true,
+};
+
+/// On macOS alone.
+pub const MACOS_ONLY: Platforms = PerPlatform {
+    macos: true,
+    windows: false,
+    linux: false,
+};
+
+/// On Windows and Linux, which have no app menu.
+pub const WINDOWS_AND_LINUX: Platforms = PerPlatform {
+    macos: false,
+    windows: true,
+    linux: true,
+};
+
 /// One row of a submenu.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Entry {
-    /// The one platform this row exists on, or `None` for both.
-    pub only: Option<Platform>,
+    /// The platforms this row exists on.
+    pub on: Platforms,
     pub kind: EntryKind,
 }
 
@@ -340,22 +402,22 @@ pub enum EntryKind {
 /// One top-level menu in the bar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BarMenu {
-    /// The one platform this menu exists on, or `None` for both.
-    pub only: Option<Platform>,
+    /// The platforms this menu exists on.
+    pub on: Platforms,
     pub submenu: SubmenuSpec,
 }
 
 impl BarMenu {
     pub fn is_on(&self, platform: Platform) -> bool {
-        self.only.is_none_or(|only| only == platform)
+        self.on.on(platform)
     }
 }
 
-/// A top-level menu on both platforms. Its ID reaches macOS alone: nothing on Linux looks a menu
-/// up, so Linux builds it without one.
+/// A top-level menu on every platform. Its ID reaches macOS alone: nothing on Windows or Linux
+/// looks a menu up, so they build it without one.
 pub const fn menu(id: &'static str, title: &'static str, entries: &'static [Entry]) -> BarMenu {
     BarMenu {
-        only: None,
+        on: EVERY_PLATFORM,
         submenu: top_level(id, Label::Key(title), entries),
     }
 }
@@ -363,7 +425,7 @@ pub const fn menu(id: &'static str, title: &'static str, entries: &'static [Entr
 /// A top-level menu only macOS has.
 pub const fn macos_menu(id: &'static str, title: Label, entries: &'static [Entry]) -> BarMenu {
     BarMenu {
-        only: Some(Platform::MacOs),
+        on: MACOS_ONLY,
         submenu: top_level(id, title, entries),
     }
 }
@@ -372,6 +434,7 @@ const fn top_level(id: &'static str, title: Label, entries: &'static [Entry]) ->
     SubmenuSpec {
         id: PerPlatform {
             macos: Some(id),
+            windows: None,
             linux: None,
         },
         title,
@@ -387,7 +450,7 @@ pub const fn item(id: &'static str, key: &'static str, accelerator: Accelerator)
 
 /// A command item whose label isn't a single catalog key, [`Tracking::Tracked`].
 pub const fn labeled_item(id: &'static str, label: Label, accelerator: Accelerator) -> Entry {
-    both_platforms(EntryKind::Item(ItemSpec {
+    on_every_platform(EntryKind::Item(ItemSpec {
         id,
         label,
         accelerator,
@@ -400,11 +463,11 @@ pub const fn labeled_item(id: &'static str, label: Label, accelerator: Accelerat
 /// A command item whose shortcut the menu can only SHOW, [`Tracking::Tracked`].
 ///
 /// `shortcut` is the frontend's display spelling (`⇧8`, `+`, `⌥⇧=`). ❗ It is never
-/// registered: the accelerator is [`NONE`] on both platforms, by construction, because a
+/// registered: the accelerator is [`NONE`] on every platform, by construction, because a
 /// combo with no ⌘ / ⌃ / ⌥ would fire app-wide and eat that character in every text
 /// field. The file pane's keydown handler is what actually runs the command.
 pub const fn displayed_item(id: &'static str, key: &'static str, shortcut: &'static str) -> Entry {
-    both_platforms(EntryKind::Item(ItemSpec {
+    on_every_platform(EntryKind::Item(ItemSpec {
         id,
         label: Label::Key(key),
         accelerator: NONE,
@@ -415,7 +478,7 @@ pub const fn displayed_item(id: &'static str, key: &'static str, shortcut: &'sta
 }
 
 pub const fn check(id: &'static str, key: &'static str, accelerator: Accelerator, role: CheckRole) -> Entry {
-    both_platforms(EntryKind::Check(CheckSpec {
+    on_every_platform(EntryKind::Check(CheckSpec {
         id,
         label: Label::Key(key),
         accelerator,
@@ -424,43 +487,53 @@ pub const fn check(id: &'static str, key: &'static str, accelerator: Accelerator
     }))
 }
 
-pub const SEPARATOR: Entry = both_platforms(EntryKind::Separator);
+pub const SEPARATOR: Entry = on_every_platform(EntryKind::Separator);
 
 pub const fn predefined(kind: Predefined, key: &'static str) -> Entry {
-    both_platforms(EntryKind::Predefined(kind, Label::Key(key)))
+    on_every_platform(EntryKind::Predefined(kind, Label::Key(key)))
 }
 
-/// A submenu nested in another, built with the same `id` on both platforms.
+/// A submenu nested in another, built with the same `id` on every platform.
 pub const fn submenu(
     id: Option<&'static str>,
     key: &'static str,
     role: SubmenuRole,
     entries: &'static [Entry],
 ) -> Entry {
-    both_platforms(EntryKind::Submenu(SubmenuSpec {
-        id: PerPlatform { macos: id, linux: id },
+    on_every_platform(EntryKind::Submenu(SubmenuSpec {
+        id: PerPlatform {
+            macos: id,
+            windows: id,
+            linux: id,
+        },
         title: Label::Key(key),
         role,
         entries,
     }))
 }
 
+/// This row on macOS alone.
 pub const fn macos_only(entry: Entry) -> Entry {
     Entry {
-        only: Some(Platform::MacOs),
+        on: MACOS_ONLY,
         kind: entry.kind,
     }
 }
 
-pub const fn linux_only(entry: Entry) -> Entry {
+/// This row on Windows and Linux alone: where macOS keeps it in the app menu, they keep it under
+/// Edit or Help.
+pub const fn windows_and_linux(entry: Entry) -> Entry {
     Entry {
-        only: Some(Platform::Linux),
+        on: WINDOWS_AND_LINUX,
         kind: entry.kind,
     }
 }
 
-const fn both_platforms(kind: EntryKind) -> Entry {
-    Entry { only: None, kind }
+const fn on_every_platform(kind: EntryKind) -> Entry {
+    Entry {
+        on: EVERY_PLATFORM,
+        kind,
+    }
 }
 
 impl Entry {
@@ -475,7 +548,7 @@ impl Entry {
             EntryKind::Check(mut check) => {
                 check.tracked = true;
                 Self {
-                    only: self.only,
+                    on: self.on,
                     kind: EntryKind::Check(check),
                 }
             }
@@ -494,7 +567,7 @@ impl Entry {
             EntryKind::Item(mut item) => {
                 item.enabled = false;
                 Self {
-                    only: self.only,
+                    on: self.on,
                     kind: EntryKind::Item(item),
                 }
             }
@@ -507,7 +580,7 @@ impl Entry {
             EntryKind::Item(mut item) => {
                 item.tracking = tracking;
                 Self {
-                    only: self.only,
+                    on: self.on,
                     kind: EntryKind::Item(item),
                 }
             }

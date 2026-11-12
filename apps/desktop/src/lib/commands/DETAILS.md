@@ -225,6 +225,12 @@ command as an empty list, a command the OS can't offer left out (under `withCapa
 change under it. Every key change, and every added or removed command, is a reviewed line diff there; ❌ never refresh a
 snapshot without reading which lines moved and why.
 
+The same test writes the menu bar's side of the parity check, `crates/cmdr-menu/src/registry_default_keys.tsv`: each
+`menuCommands` entry's first default key per OS, under the same fixture. `cmdr-menu`'s `bar_parity_test.rs` reads it and
+fails a bar row whose accelerator isn't what that key registers (`crates/cmdr-menu/DETAILS.md` § "Parity with the
+registry"). So a moved key that has a menu row moves three things in one change: the source, this snapshot (and the TSV,
+`vitest -u`), and the row in `bar.rs`.
+
 The other per-platform keymap tests take one of two inputs. What a user on that OS gets (conflicts in
 `../shortcuts/registry-conflicts.test.ts`, `command-reachability.test.ts`) runs under the per-OS capability fixture.
 What the data says (`../shortcuts/shortcut-vocabulary.test.ts`) walks every command's raw arm, capability ignored, so a
@@ -260,7 +266,9 @@ gated command's keys are checked before its capability flips on.
    reach them; update the pinned bar in `crates/cmdr-menu/src/bar_test.rs` and its enabled states in
    `crates/cmdr-menu/src/bar_states_test.rs` alongside) or add its row to `crates/cmdr-menu/src/context/` for the
    right-click menu, and add the id to `menuCommands` in `shortcuts-store.ts`. `rust-command-id-drift.test.ts` fails if
-   `menu_id_to_command` emits an unknown id, or if `menuCommands` and the reverse map disagree.
+   `menu_id_to_command` emits an unknown id, or if `menuCommands` and the reverse map disagree. Then refresh the parity
+   TSV (`vitest -u default-keymap`): `bar_parity_test.rs` fails until the row's accelerator on each OS is what the
+   command's first default key registers there.
 
 ## Fuzzy search
 

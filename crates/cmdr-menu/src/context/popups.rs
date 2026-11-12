@@ -157,11 +157,12 @@ pub fn network_host_menu(facts: NetworkHostFacts) -> Vec<ContextRow> {
 }
 
 /// The viewer's Copy accelerator, shared by its bar's Edit > Copy and its text menu, in Tauri's
-/// syntax. ❗ `Cmd` binds to SUPER on GTK (muda maps it to META), so it splits per platform.
+/// syntax. ❗ `Cmd` binds to SUPER on GTK and to the Windows key on Win32 (muda maps it to META), so
+/// it splits per platform.
 pub const fn viewer_copy_accelerator(platform: Platform) -> &'static str {
     match platform {
         Platform::MacOs => "Cmd+C",
-        Platform::Linux => "Ctrl+C",
+        Platform::Windows | Platform::Linux => "Ctrl+C",
     }
 }
 
@@ -169,7 +170,7 @@ pub const fn viewer_copy_accelerator(platform: Platform) -> &'static str {
 pub const fn viewer_select_all_accelerator(platform: Platform) -> &'static str {
     match platform {
         Platform::MacOs => "Cmd+A",
-        Platform::Linux => "Ctrl+A",
+        Platform::Windows | Platform::Linux => "Ctrl+A",
     }
 }
 

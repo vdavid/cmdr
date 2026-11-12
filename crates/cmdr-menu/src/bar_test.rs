@@ -14,13 +14,13 @@ use crate::spec::{
     ViewMode, display_accelerator_label,
 };
 
-const PLATFORMS: [Platform; 2] = [Platform::MacOs, Platform::Linux];
+const PLATFORMS: [Platform; 3] = Platform::ALL;
 
 /// `position kind id label [accelerator] state`, nested submenus indented under their row.
 ///
 /// ❗ The Select menu's last three rows read differently here than in `LINUX_MENU_BAR`, and
 /// that's the point: a display-only shortcut rides on the macOS item's attributed title
-/// (`[display *]`) and inside the Linux item's own label (`(*)`). See `item_accelerator`.
+/// (`[display *]`) and inside the Windows and Linux item's own label (`(*)`). See `item_accelerator`.
 const MACOS_MENU_BAR: &str = "\
 menu Cmdr id=menu_app
   0 item about menu.app.about untracked
@@ -284,6 +284,130 @@ menu menu.bar.help
   8 item help_send_error_report menu.help.sendErrorReport tracked
 ";
 
+/// The Windows bar: the Linux one until the Windows menu model is decided. Its own copy, so the
+/// day the two part, the diff lands here alone.
+const WINDOWS_MENU_BAR: &str = "\
+menu menu.bar.file
+  0 item open menu.file.open tracked
+  1 item file_view menu.file.view tracked
+  2 item edit menu.file.edit tracked
+  3 separator
+  4 item file_copy menu.file.copy tracked
+  5 item file_move menu.file.move tracked
+  6 item file_duplicate menu.file.duplicate tracked
+  7 item file_compress menu.file.compress tracked
+  8 item file_new_folder menu.file.newFolder tracked
+  9 item file_new_file menu.file.newFile tracked
+  10 item file_delete menu.file.delete tracked
+  11 item file_delete_permanently menu.file.deletePermanently tracked
+  12 separator
+  13 item rename menu.file.rename tracked
+  14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
+  15 separator
+  16 item show_in_finder menu.file.showInFileManager [Alt+Ctrl+O] tracked
+menu menu.bar.edit
+  0 item undo_trash menu.edit.undoTrash disabled tracked
+  1 separator
+  2 item edit_cut menu.edit.cut [Ctrl+X] tracked
+  3 item edit_copy menu.edit.copy [Ctrl+C] tracked
+  4 item edit_paste menu.edit.paste [Ctrl+V] tracked
+  5 item edit_paste_move menu.edit.moveHere [Ctrl+Alt+V] tracked
+  6 separator
+  7 item copy_path menu.edit.copyPath [Ctrl+Alt+C] tracked
+  8 item copy_filename menu.edit.copyFilename tracked
+  9 separator
+  10 item search_files menu.edit.searchFiles [Ctrl+F] tracked
+  11 separator
+  12 item settings menu.app.settings [Ctrl+,] tracked
+  13 item enter_license_key menu.app.licenseEnter|menu.app.licenseDetails untracked
+  14 item check_for_updates menu.app.checkForUpdates tracked
+  15 item changelog menu.app.changelog tracked
+menu menu.bar.select
+  0 item select_all_files menu.select.all [Ctrl+A] tracked
+  1 item deselect_all menu.select.deselectAll [Ctrl+Shift+A] tracked
+  2 item select_same_kind menu.select.sameKind (⌥⇧=) tracked
+  3 item invert_selection menu.select.invert (*) tracked
+  4 separator
+  5 item select_files menu.select.files (+) tracked
+  6 item deselect_files menu.select.deselectFiles (-) tracked
+  7 separator
+  8 item compare_directories menu.select.compareDirectories tracked
+menu menu.bar.view
+  0 submenu menu.view.leftPane pane:left
+      0 check view_mode_full_left menu.view.fullView [Ctrl+1] view-mode:left:full
+      1 check view_mode_brief_left menu.view.briefView [Ctrl+2] view-mode:left:brief
+  1 submenu menu.view.rightPane pane:right
+      0 check view_mode_full_right menu.view.fullView view-mode:right:full
+      1 check view_mode_brief_right menu.view.briefView view-mode:right:brief
+  2 separator
+  3 check show_hidden_files menu.view.showHiddenFiles [Ctrl+Shift+.] show-hidden-files
+  4 submenu menu.view.sortBy id=menu_sort_by sort-by
+      0 check sort_by_name menu.sort.name [Ctrl+3] sort:name tracked
+      1 check sort_by_extension menu.sort.extension [Ctrl+4] sort:extension tracked
+      2 check sort_by_modified menu.sort.dateModified [Ctrl+5] sort:modified tracked
+      3 check sort_by_size menu.sort.size [Ctrl+6] sort:size tracked
+      4 check sort_by_created menu.sort.dateCreated sort:created
+      5 check sort_by_added menu.sort.dateAdded sort:added
+      6 separator
+      7 check sort_ascending menu.sort.ascending sort:ascending
+      8 check sort_descending menu.sort.descending sort:descending
+  5 submenu menu.view.zoom nested
+      0 item view_zoom_75 menu.zoom.percent75 untracked
+      1 item view_zoom_100 menu.zoom.percent100 [Ctrl+0] untracked
+      2 item view_zoom_125 menu.zoom.percent125 untracked
+      3 item view_zoom_150 menu.zoom.percent150 untracked
+      4 separator
+      5 item view_zoom_in menu.zoom.in untracked
+      6 item view_zoom_out menu.zoom.out untracked
+  6 separator
+  7 item switch_pane menu.view.switchPane tracked
+  8 item swap_panes menu.view.swapPanes [Ctrl+U] tracked
+  9 item clone_pane menu.view.clonePane [Ctrl+Shift+C] tracked
+  10 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
+  11 separator
+  12 item command_palette menu.view.commandPalette [Ctrl+Shift+P] tracked
+  13 item queue_show menu.view.operationQueue [Ctrl+Alt+Q] tracked
+  14 item operation_log menu.view.operationLog [Ctrl+Alt+L] tracked
+  15 item suggested_ops menu.view.suggestedOps tracked
+  16 item ask_cmdr menu.view.askCmdr [Ctrl+Alt+A] tracked
+menu menu.bar.go
+  0 item go_back menu.go.back [Ctrl+[] tracked
+  1 item go_forward menu.go.forward [Ctrl+]] tracked
+  2 separator
+  3 item go_parent menu.go.parentFolder [Ctrl+Up] tracked
+  4 item go_root menu.go.rootFolder [Ctrl+/] tracked
+  5 item go_home menu.go.home [Ctrl+Shift+H] tracked
+  6 separator
+  7 item go_to_path menu.go.goToPath [Ctrl+G] tracked
+  8 item go_latest_download menu.go.goToLatestDownload [Ctrl+J] tracked
+  9 separator
+  10 item favorites_add menu.go.addToFavorites tracked
+  11 item favorites_open menu.go.showFavorites [Ctrl+D] tracked
+  12 separator
+  13 item servers_connect menu.go.connectToServer [Ctrl+K] tracked
+  14 item servers_show menu.go.showServers tracked
+menu menu.bar.tab
+  0 item new_tab menu.tab.newTab [Ctrl+T] tracked
+  1 item close_tab menu.tab.closeTab [Ctrl+W] tracked
+  2 item reopen_closed_tab menu.tab.reopenClosedTab [Ctrl+Shift+T] disabled tracked
+  3 separator
+  4 item next_tab menu.tab.nextTab [Ctrl+Tab] tracked
+  5 item prev_tab menu.tab.previousTab [Ctrl+Shift+Tab] tracked
+  6 separator
+  7 item pin_tab_menu menu.tab.pinTab pin-tab
+  8 item close_other_tabs menu.tab.closeOtherTabs tracked
+menu menu.bar.help
+  0 item about menu.app.about tracked
+  1 item acknowledgements menu.app.acknowledgements untracked
+  2 separator
+  3 item help_shortcuts menu.help.keyboardShortcuts tracked
+  4 item help_accessibility menu.help.accessibility tracked
+  5 item help_whats_new menu.help.whatsNew tracked
+  6 item help_send_feedback menu.help.sendFeedback tracked
+  7 item help_debug_log menu.help.viewDebugLog tracked
+  8 item help_send_error_report menu.help.sendErrorReport tracked
+";
+
 #[test]
 fn the_macos_menu_bar() {
     assert_menu_bar(Platform::MacOs, MACOS_MENU_BAR);
@@ -292,6 +416,11 @@ fn the_macos_menu_bar() {
 #[test]
 fn the_linux_menu_bar() {
     assert_menu_bar(Platform::Linux, LINUX_MENU_BAR);
+}
+
+#[test]
+fn the_windows_menu_bar() {
+    assert_menu_bar(Platform::Windows, WINDOWS_MENU_BAR);
 }
 
 /// The builder hands each of these to its own `MenuState` field and panics when one is missing, so
@@ -386,18 +515,21 @@ fn no_item_both_registers_and_displays_a_shortcut() {
 }
 
 /// muda reads `Cmd` / `Command` / `Super` as `Modifiers::META`, which GTK draws and binds as the
-/// Super key: the window manager's, and never the chord a Linux user reaches for. So every Linux
-/// accelerator says Ctrl where the Mac says ⌘ (`menu_spec::cmd_or_ctrl!`). #284.
+/// Super key (and Win32 as the Windows key): the window manager's, and never the chord a Windows or
+/// Linux user reaches for. So every accelerator there says Ctrl where the Mac says ⌘
+/// (`spec::cmd_or_ctrl!`). #284.
 #[test]
-fn no_linux_accelerator_holds_the_super_key() {
-    for (id, accelerator) in registered_accelerators(Platform::Linux) {
-        let super_token = accelerator
-            .split('+')
-            .find(|token| ["CMD", "COMMAND", "SUPER", "META"].contains(&token.to_ascii_uppercase().as_str()));
-        assert_eq!(
-            super_token, None,
-            "`{id}` registers `{accelerator}` on Linux, which binds the Super key there, not Ctrl"
-        );
+fn no_windows_or_linux_accelerator_holds_the_super_key() {
+    for platform in [Platform::Windows, Platform::Linux] {
+        for (id, accelerator) in registered_accelerators(platform) {
+            let super_token = accelerator
+                .split('+')
+                .find(|token| ["CMD", "COMMAND", "SUPER", "META"].contains(&token.to_ascii_uppercase().as_str()));
+            assert_eq!(
+                super_token, None,
+                "`{id}` registers `{accelerator}` on {platform:?}, which binds the Super key there, not Ctrl"
+            );
+        }
     }
 }
 
@@ -509,7 +641,7 @@ fn accelerator(accelerator: Option<&str>) -> String {
     accelerator.map_or_else(String::new, |accelerator| format!(" [{accelerator}]"))
 }
 
-/// An item's label as the platform builds it, so a Linux row shows the display shortcut
+/// An item's label as the platform builds it, so a Windows or Linux row shows the display shortcut
 /// spelled into the label (`display_accelerator_label`) and a macOS one doesn't.
 fn item_label(item: &ItemSpec, platform: Platform) -> String {
     let base = label(item.label);
@@ -520,7 +652,7 @@ fn item_label(item: &ItemSpec, platform: Platform) -> String {
 }
 
 /// `[Cmd+A]` for an accelerator the platform registers, `[display *]` for one it only
-/// draws on the item's attributed title (macOS), and nothing at all on Linux, where the
+/// draws on the item's attributed title (macOS), and nothing at all on Windows and Linux, where the
 /// shortcut is already inside the label above.
 ///
 /// ❗ The two blocks below diverge for the Select menu because of this, and that is

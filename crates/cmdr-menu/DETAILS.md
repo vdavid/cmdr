@@ -40,12 +40,45 @@ app menu's rows (About, Settings, the license, Acknowledgements) and the Zoom pr
 meant "never written" they stayed live with a dialog refusing their command, so a click did nothing; the same rows on
 Linux, tracked, greyed. The desktop keeps their handles in `MenuState.untracked_items` for this alone.
 
+## Three platforms
+
+`Platform` is `MacOs`, `Windows`, and `Linux`; `PerPlatform` carries one arm each, and a row's `on` says which bars it
+sits in (`EVERY_PLATFORM`, `MACOS_ONLY`, `WINDOWS_AND_LINUX`). Nothing is a leftover: a helper names its rule
+(`same_on_all`, `cmd_or_ctrl!`, `macos`, `split(macos, windows, linux)`, `macos_only`, `windows_and_linux`).
+
+**Decision**: the Windows bar has the Linux bar's rows, accelerators, and label-spelled display shortcuts
+(`WINDOWS_MENU_BAR` in `bar_test.rs` equals `LINUX_MENU_BAR` today). **Why**: Cmdr doesn't run on Windows yet, and the
+Windows menu model (whether a Win32 accelerator fires before WebView2, what `Alt+<letter>` does with a bar present) is
+task 63 of `docs/specs/windows-port-plan.md`. Windows is its own value so that decision is a row edit with its own
+snapshot diff.
+
+## Parity with the registry
+
+**Decision**: the bar keeps its own accelerators (a reviewed snapshot, buildable standalone for the demo), and
+`bar_parity_test.rs` ties them to the frontend registry: on each platform, every row with a command
+(`menu_id_to_command`, plus the left pane's view-mode pair, which holds the active pane's keys at build) registers
+exactly what `to_accelerator(first default key, platform)` would, compared as modifier set plus key. **Why**: the bar is
+a second copy of the default keys, and nothing else noticed when the two drifted; generating the bar from the registry
+would move registry data into Rust and lose the deliberate per-platform omissions.
+
+- The registry side is `src/registry_default_keys.tsv` (`platform`, command id, first default key, one line per
+  `menuCommands` entry the OS offers under its capability fixture). The frontend's `lib/commands/default-keymap.test.ts`
+  writes it with `toMatchFileSnapshot`, so a stale file fails there; the Svelte lane's inputs include it.
+- `EXCEPTIONS` lists each row that differs on purpose with its reason: macOS's bare F-keys, Tab, and Shift+Space (the
+  bar registers them, while the floor keeps a REBIND to a bare key display-only), the keys GTK takes on Linux, rows
+  whose first default can't be an accelerator so the bar shows the second (`⌘+`, `Backspace`), Select same kind's
+  deliberate display-only `⌥⇧=`, and Duplicate's off-macOS `Ctrl+D` while it clashes with Show favorites. An exception
+  that stops differing, or names a row the bar no longer builds, fails `every_exception_still_differs`.
+
 ## Accelerators
 
-- `to_accelerator` / `to_menu_text`: the frontend's spelling (`⌘⇧P`, or `Ctrl+Shift+P` captured on Linux) into Tauri's,
-  for a platform. The bar's door has two refusals (the modifier floor and muda's key vocabulary); the popup's has none.
-  The rationale for both lives with the desktop's builder: `apps/desktop/src-tauri/src/menu/DETAILS.md` § "Display-only
-  accelerators".
+- `to_accelerator` / `to_menu_text`: the frontend's spelling into Tauri's, for a platform. The frontend sends each
+  platform its own spelling (`⌘⇧P` on macOS, `Ctrl+Shift+P` on Windows and Linux), and each modifier token names one
+  physical key on every platform: ⌘ and `Super` are the Meta key (`Cmd` on macOS, `Super` elsewhere), ⌃ and `Ctrl` are
+  Control. ❌ No platform conversion here (a ⌘ is never rewritten to Ctrl): the registry holds a key list per platform.
+  The browser demo's macOS bar reads a Windows visitor's `Ctrl+F` as `⌃F`, the key they hold (`menu_test.rs` pins it).
+- The bar's door has two refusals (the modifier floor and muda's key vocabulary); the popup's has none. The rationale
+  for both lives with the desktop's builder: `apps/desktop/src-tauri/src/menu/DETAILS.md` § "Display-only accelerators".
 - `glyphs`: Tauri's spelling back into what a macOS menu draws, modifiers in AppKit's order (⌃⌥⇧⌘). Only the demo draws
   its own bar, so only it calls this; the desktop lets AppKit draw.
 
@@ -63,7 +96,7 @@ facts of one right-click; the desktop turns rows into muda items (`context_rows.
 
 **Why**: the demo (#302) needs right-click menus that say and do exactly what the native ones do, and the desktop's
 builders couldn't be tested (a `muda::Menu` panics off the main thread), so their order and gating were pinned only for
-the one submenu that had been made data. Now `context_test.rs` snapshots every menu's rows on both platforms, and
+the one submenu that had been made data. Now `context_test.rs` snapshots every menu's rows on every platform, and
 `every_row_the_crate_builds_has_a_click` keeps a row from drawing with nothing behind it.
 
 - **Rows**: `ContextRow` is an item, a check, a submenu, the file menu's `Header` line (words the frontend rendered, so

@@ -15,8 +15,9 @@ use crate::ignore_poison::IgnorePoison;
 use super::menu_spec::{Platform, display_accelerator_label};
 use super::{MenuItemEntry, MenuState, TrackedItem};
 
-/// Convert frontend shortcut format (⌘2) to a Tauri accelerator the menu BAR may register on this
-/// platform, or `None` behind the modifier floor or for a key muda can't name.
+/// Convert a frontend shortcut (this platform's own spelling: `⌘2` on macOS, `Ctrl+2` on Windows
+/// and Linux) to a Tauri accelerator the menu BAR may register here, or `None` behind the modifier
+/// floor or for a key muda can't name.
 /// `cmdr_menu::accelerators::to_accelerator`.
 pub fn frontend_shortcut_to_accelerator(shortcut: &str) -> Option<String> {
     cmdr_menu::accelerators::to_accelerator(shortcut, Platform::current())
@@ -145,7 +146,7 @@ mod tests {
             "⌥Home",
             "⌥End",
             "⌥F4",
-            // The Linux capture form (`formatKeyCombo` off macOS).
+            // The Windows and Linux form (`formatKeyCombo` there, and their registry arms).
             "Ctrl+Shift+P",
             "Ctrl+Alt+Shift+Super+A",
             "Ctrl+↑",
@@ -158,7 +159,7 @@ mod tests {
         ];
         for (combo, platform) in combos
             .into_iter()
-            .flat_map(|combo| [(combo, Platform::MacOs), (combo, Platform::Linux)])
+            .flat_map(|combo| Platform::ALL.map(|platform| (combo, platform)))
         {
             // ❗ The contract, and the whole reason this test exists: whatever comes back has to
             // PARSE. `None` is a fine answer — it routes to the display path — but a `Some` that
@@ -204,7 +205,7 @@ mod tests {
             }
         }
 
-        for platform in [Platform::MacOs, Platform::Linux] {
+        for platform in Platform::ALL {
             for bar_menu in MENU_BAR.iter().filter(|bar_menu| bar_menu.is_on(platform)) {
                 check(&bar_menu.submenu, platform);
             }
@@ -212,11 +213,11 @@ mod tests {
     }
 
     /// Two items on one chord: the menu fires whichever registered last, and the other one's label
-    /// lies. The likeliest source is a Linux bar where a `⌘X` turned into `Ctrl+X` beside an existing
-    /// `⌃X`, so this compares what muda parses rather than the strings.
+    /// lies. The likeliest source is a Windows or Linux bar where a `cmd_or_ctrl!("X")` lands beside
+    /// an existing `Ctrl+X`, so this compares what muda parses rather than the strings.
     #[test]
     fn no_two_bar_items_share_an_accelerator() {
-        for platform in [Platform::MacOs, Platform::Linux] {
+        for platform in Platform::ALL {
             let mut seen: Vec<(muda::accelerator::Accelerator, &str)> = Vec::new();
             for (id, accelerator) in crate::menu::menu_bar::registered_accelerators(platform) {
                 let parsed: muda::accelerator::Accelerator = accelerator

@@ -1,17 +1,23 @@
-//! The menu bar on both platforms: every menu, item, separator, and accelerator, in display order.
-//! The desktop's `menu_bar_builder.rs` builds it into native menus for the running platform, the
-//! browser demo renders the macOS one, and `spec.rs` defines the words it's written in.
+//! The menu bar on macOS, Windows, and Linux: every menu, item, separator, and accelerator, in
+//! display order. The desktop's `menu_bar_builder.rs` builds it into native menus for the running
+//! platform, the browser demo renders the macOS one, and `spec.rs` defines the words it's written
+//! in. The Windows bar has the Linux bar's rows and keys until the Windows menu model is decided
+//! (`DETAILS.md` § "Three platforms").
 //!
 //! A row's position in its submenu is the position the builder registers it at for accelerator
 //! sync, so adding or moving a row can't desync the two. A new item is one row here.
 //!
+//! Each row's default accelerator equals the registry's first default key for its command on each
+//! platform, or sits on `bar_parity_test.rs`'s reasoned exception list.
+//!
 //! Where the platforms differ, the row says so:
-//! - `macos_only` / `linux_only` rows, and `macos_menu` for the app and Window menus. Linux has no
-//!   app menu, so About and the credits sit under Help, and Settings and the license under Edit.
-//! - `macos(…)` accelerators, which Linux leaves out. For the F-keys, Tab, Space, and `Cmd+Equal` /
-//!   `Cmd+Minus` that's because GTK intercepts them before the webview (and `is_focused()` fails
-//!   there), so the frontend's keydown dispatch handles them.
-//! - `cmd_or_ctrl!(…)` accelerators: ⌘ on macOS, the same chord on Ctrl on Linux.
+//! - `macos_only` / `windows_and_linux` rows, and `macos_menu` for the app and Window menus.
+//!   Windows and Linux have no app menu, so About and the credits sit under Help, and Settings and
+//!   the license under Edit.
+//! - `macos(…)` accelerators, which Windows and Linux leave out. For the F-keys, Tab, Space, and
+//!   `Cmd+Equal` / `Cmd+Minus` that's because GTK intercepts them before the webview (and
+//!   `is_focused()` fails there), so the frontend's keydown dispatch handles them.
+//! - `cmd_or_ctrl!(…)` accelerators: ⌘ on macOS, the same chord on Ctrl on Windows and Linux.
 //! - `split(…)` accelerators, spelled per platform. Labels never are: a label that reads
 //!   differently per OS is one catalog key whose value carries a branch per OS.
 //! - Top-level menu IDs, which reach macOS alone (`spec::menu`).
@@ -25,11 +31,10 @@
 //! never `Opt`, which cost Copy path and Show in Finder their accelerators in every release until
 //! 2026-09-16. The desktop's `menu/accelerators.rs` tests parse every string here with muda.
 //!
-//! ❗ A ⌘ chord is `cmd_or_ctrl!`, ❌ never a `Cmd+…` string on Linux: muda maps `"CMD"` to
-//! `Modifiers::META`, which GTK binds and prints as the Super key (#284). `both` and `split` refuse
-//! one at compile time, and `bar_test.rs` pins it. Users got Ctrl regardless, because the
-//! frontend keydown layer accepts `metaKey || ctrlKey`; it was the label (and the Super binding)
-//! that was wrong.
+//! ❗ A ⌘ chord is `cmd_or_ctrl!`, ❌ never a `Cmd+…` string on Windows or Linux: muda maps
+//! `"CMD"` to `Modifiers::META`, which GTK binds and prints as the Super key (#284), and Win32 as
+//! the Windows key. `same_on_all` and `split` refuse one at compile time, and `bar_test.rs` pins
+//! it.
 
 use crate::ids::{
     ABOUT_ID, ACKNOWLEDGEMENTS_ID, APP_MENU_ID, ASK_CMDR_ID, CALCULATE_FOLDER_SIZES_ID, CHANGELOG_ID,
@@ -54,8 +59,8 @@ use crate::spec::SortCheck::{self, Column, Order};
 use crate::spec::ViewMode;
 use crate::spec::{
     Accelerator, BarMenu, CheckRole, Entry, EntryKind, Label, NONE, Pane, Platform, Predefined, SEPARATOR, SubmenuRole,
-    SubmenuSpec, both, check, cmd_or_ctrl, displayed_item, item, labeled_item, linux_only, macos, macos_menu,
-    macos_only, menu, predefined, split, submenu,
+    SubmenuSpec, check, cmd_or_ctrl, displayed_item, item, labeled_item, macos, macos_menu, macos_only, menu,
+    predefined, same_on_all, split, submenu, windows_and_linux,
 };
 use cmdr_sort::{SortColumn, SortOrder};
 
@@ -71,9 +76,9 @@ pub const COPY_PATH_ACCELERATOR: Accelerator = cmd_or_ctrl!("Alt+C");
 
 /// "Show in Finder" / "Show in File Explorer" / "Show in file manager", here and in the file
 /// context menu. One key: its catalog value names each OS's file manager, and the host picks the
-/// words, so this crate's two-way `Platform` never chooses text.
+/// words, so this crate never chooses text by `Platform`.
 pub const SHOW_IN_FILE_MANAGER_KEY: &str = "menu.file.showInFileManager";
-pub const SHOW_IN_FILE_MANAGER_ACCELERATOR: Accelerator = split("Alt+Cmd+O", "Alt+Ctrl+O");
+pub const SHOW_IN_FILE_MANAGER_ACCELERATOR: Accelerator = split("Alt+Cmd+O", "Alt+Ctrl+O", "Alt+Ctrl+O");
 
 /// The display-only shortcut `MENU_BAR` gives `menu_id` on `platform`, if any.
 ///
@@ -149,10 +154,10 @@ pub fn menus_on(platform: Platform) -> impl Iterator<Item = &'static BarMenu> {
 /// uses everywhere). Translating it would make the one item every macOS user navigates by
 /// unrecognizable, and it would earn a `sameAsSourceJustification` in every locale for nothing.
 ///
-/// Only macOS has an app menu: Linux puts About under Help and Settings under Edit.
+/// Only macOS has an app menu: Windows and Linux put About under Help and Settings under Edit.
 pub const APP_MENU_TITLE: &str = "Cmdr";
 
-// The items the macOS app menu holds, which Linux spreads over Edit and Help.
+// The items the macOS app menu holds, which Windows and Linux spread over Edit and Help.
 const ABOUT: Entry = item(ABOUT_ID, "menu.app.about", NONE);
 /// Credits the open-source libraries Cmdr ships: app metadata, not a help topic, so on macOS it sits
 /// next to About and the license, where macOS apps that ship one put it.
@@ -168,14 +173,14 @@ pub const MENU_BAR: &[BarMenu] = &[
         APP_MENU_ID,
         Label::AppName,
         &[
-            // Untracked here, tracked on Linux (under Help and Edit), so only Linux syncs a custom
+            // Untracked here, tracked on Windows and Linux (under Help and Edit), so only they sync a custom
             // shortcut onto About and Settings.
             ABOUT.untracked(),
             ACKNOWLEDGEMENTS,
             LICENSE,
             CHECK_FOR_UPDATES,
             CHANGELOG,
-            // Re-entry to the onboarding wizard. Linux has no menu entry (palette only) by design:
+            // Re-entry to the onboarding wizard. Windows and Linux have no menu entry (palette only) by design:
             // `lib/onboarding/CLAUDE.md` § "Re-entry points".
             item(OPEN_ONBOARDING_ID, "menu.app.onboarding", NONE),
             // Its label follows the filesystem: Install, Uninstall, or Homebrew's. Built with the
@@ -219,7 +224,7 @@ pub const MENU_BAR: &[BarMenu] = &[
             ),
             SEPARATOR,
             item(RENAME_ID, "menu.file.rename", macos("F2")),
-            item(MULTI_RENAME_ID, "menu.file.multiRename", both("Ctrl+M")),
+            item(MULTI_RENAME_ID, "menu.file.multiRename", same_on_all("Ctrl+M")),
             SEPARATOR,
             item(
                 SHOW_IN_FINDER_ID,
@@ -260,18 +265,18 @@ pub const MENU_BAR: &[BarMenu] = &[
             item(
                 EDIT_PASTE_MOVE_ID,
                 "menu.edit.moveHere",
-                split("Alt+Cmd+V", "Ctrl+Alt+V"),
+                split("Alt+Cmd+V", "Ctrl+Alt+V", "Ctrl+Alt+V"),
             ),
             SEPARATOR,
             item(COPY_PATH_ID, "menu.edit.copyPath", COPY_PATH_ACCELERATOR),
             item(COPY_FILENAME_ID, "menu.edit.copyFilename", NONE),
             SEPARATOR,
             item(SEARCH_FILES_ID, "menu.edit.searchFiles", cmd_or_ctrl!("F")),
-            linux_only(SEPARATOR),
-            linux_only(SETTINGS),
-            linux_only(LICENSE),
-            linux_only(CHECK_FOR_UPDATES),
-            linux_only(CHANGELOG),
+            windows_and_linux(SEPARATOR),
+            windows_and_linux(SETTINGS),
+            windows_and_linux(LICENSE),
+            windows_and_linux(CHECK_FOR_UPDATES),
+            windows_and_linux(CHANGELOG),
         ],
     ),
     // Between Edit and View. The last three rows carry DISPLAY-only shortcuts: their keys have no
@@ -353,8 +358,8 @@ pub const MENU_BAR: &[BarMenu] = &[
                 cmd_or_ctrl!("Shift+."),
                 CheckRole::ShowHiddenFiles,
             ),
-            // GTK intercepts F-row keys but lets Cmd+digit chords through, so both platforms
-            // register these; the ⌘F3–⌘F6 alternates go through JS dispatch alone. Date created, Date
+            // GTK intercepts F-row keys but lets Cmd+digit chords through, so every platform
+            // registers these; the ⌘F3–⌘F6 alternates go through JS dispatch alone. Date created, Date
             // added, and the two order items have no shortcut to sync, so nothing tracks them. Every
             // row checks what the focused pane asked for (`sort_checks.rs`).
             submenu(
@@ -440,7 +445,7 @@ pub const MENU_BAR: &[BarMenu] = &[
             item(
                 CALCULATE_FOLDER_SIZES_ID,
                 "menu.view.calculateFolderSizes",
-                both("Alt+Shift+Enter"),
+                same_on_all("Alt+Shift+Enter"),
             ),
             SEPARATOR,
             item(COMMAND_PALETTE_ID, "menu.view.commandPalette", cmd_or_ctrl!("Shift+P")),
@@ -478,7 +483,7 @@ pub const MENU_BAR: &[BarMenu] = &[
             // the user binds in Settings > Keyboard shortcuts.
             item(FAVORITES_ADD_ID, "menu.go.addToFavorites", NONE),
             // ⌃D, matching the registry default and what Total Commander binds for the same list.
-            item(FAVORITES_OPEN_ID, "menu.go.showFavorites", both("Ctrl+D")),
+            item(FAVORITES_OPEN_ID, "menu.go.showFavorites", same_on_all("Ctrl+D")),
             SEPARATOR,
             // The servers pair. ⌘K is Finder's "Connect to Server…", and Finder keeps it in Go too.
             item(SERVERS_CONNECT_ID, "menu.go.connectToServer", cmd_or_ctrl!("K")),
@@ -500,8 +505,8 @@ pub const MENU_BAR: &[BarMenu] = &[
             )
             .disabled(),
             SEPARATOR,
-            item(NEXT_TAB_ID, "menu.tab.nextTab", both("Ctrl+Tab")),
-            item(PREV_TAB_ID, "menu.tab.previousTab", both("Ctrl+Shift+Tab")),
+            item(NEXT_TAB_ID, "menu.tab.nextTab", same_on_all("Ctrl+Tab")),
+            item(PREV_TAB_ID, "menu.tab.previousTab", same_on_all("Ctrl+Shift+Tab")),
             SEPARATOR,
             item(PIN_TAB_MENU_ID, "menu.tab.pinTab", NONE).pin_tab(),
             item(CLOSE_OTHER_TABS_ID, "menu.tab.closeOtherTabs", NONE),
@@ -520,9 +525,9 @@ pub const MENU_BAR: &[BarMenu] = &[
         HELP_MENU_ID,
         "menu.bar.help",
         &[
-            linux_only(ABOUT),
-            linux_only(ACKNOWLEDGEMENTS),
-            linux_only(SEPARATOR),
+            windows_and_linux(ABOUT),
+            windows_and_linux(ACKNOWLEDGEMENTS),
+            windows_and_linux(SEPARATOR),
             item(HELP_SHORTCUTS_ID, "menu.help.keyboardShortcuts", NONE),
             item(HELP_ACCESSIBILITY_ID, "menu.help.accessibility", NONE),
             macos_only(SEPARATOR),
@@ -537,3 +542,7 @@ pub const MENU_BAR: &[BarMenu] = &[
 #[cfg(test)]
 #[path = "bar_test.rs"]
 mod bar_test;
+
+#[cfg(test)]
+#[path = "bar_parity_test.rs"]
+mod bar_parity_test;

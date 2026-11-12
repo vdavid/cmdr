@@ -67,7 +67,7 @@ pub fn sort_check_states(sort: Option<RequestedSort>) -> Vec<(&'static str, bool
         .collect()
 }
 
-/// The Sort by submenu's spec, which `bar_test.rs` pins to exist on both platforms.
+/// The Sort by submenu's spec, which `bar_test.rs` pins to exist on every platform.
 fn sort_by_spec() -> &'static SubmenuSpec {
     fn find(entries: &'static [Entry]) -> Option<&'static SubmenuSpec> {
         entries.iter().find_map(|entry| match &entry.kind {

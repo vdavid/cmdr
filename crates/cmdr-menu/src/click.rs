@@ -66,11 +66,11 @@ mod tests {
     };
     use cmdr_sort::{SortColumn, SortOrder};
 
-    /// Every clickable row the bar builds answers, on both platforms: an item or check with no
+    /// Every clickable row the bar builds answers, on every platform: an item or check with no
     /// answer would be a dead row.
     #[test]
     fn every_item_and_check_on_the_bar_asks_for_something() {
-        for platform in [Platform::MacOs, Platform::Linux] {
+        for platform in Platform::ALL {
             for entry in every_entry(platform) {
                 let id = match entry {
                     EntryKind::Item(item) => item.id,

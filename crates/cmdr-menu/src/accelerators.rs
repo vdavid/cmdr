@@ -1,11 +1,14 @@
 //! Keyboard accelerators: the frontend's shortcut strings in Tauri's accelerator syntax, and that
 //! syntax as the glyphs a macOS menu draws.
 //!
-//! The conversion is the seam between two vocabularies. The frontend speaks macOS glyphs and
-//! canonical key words (`⌘⇧P`, `Backspace`), or off macOS the `+`-joined words it captures there
-//! (`Ctrl+Shift+P`); Tauri wants `Cmd+Shift+P`, and on Linux `Ctrl+Shift+P` for a ⌘ (#284).
-//! Anything unrecognized passes through as-is, so a glyph that leaks in here produces a garbage
-//! accelerator rather than an error, which is what the canonical-key-names test guards.
+//! The conversion is the seam between two vocabularies. The frontend sends each platform's own
+//! spelling (`formatKeyCombo`'s): macOS glyphs and canonical key words (`⌘⇧P`, `Backspace`), and
+//! on Windows and Linux `+`-joined words (`Ctrl+Shift+P`). Tauri wants `Cmd+Shift+P` and
+//! `Ctrl+Shift+P`. Each modifier token names a physical key, read the same way on every platform;
+//! nothing here turns one platform's combo into another's (the frontend's registry holds a key
+//! list per platform). Anything unrecognized passes through as-is, so a glyph that leaks in here
+//! produces a garbage accelerator rather than an error, which is what the canonical-key-names
+//! test guards.
 //!
 //! Two ways out, because a menu BAR accelerator is registered with the app and a POPUP's is only
 //! drawn: [`to_menu_text`] converts, [`to_accelerator`] converts and then refuses anything the
@@ -15,8 +18,8 @@
 
 use crate::spec::Platform;
 
-/// Convert frontend shortcut format (⌘2) to the text a menu item shows (Cmd+2, Ctrl+2 on Linux).
-/// Returns None if the shortcut is empty.
+/// Convert a frontend shortcut (`⌘2` on macOS, `Ctrl+2` on Windows and Linux) to the text a menu
+/// item shows (`Cmd+2`, `Ctrl+2`). Returns None if the shortcut is empty.
 ///
 /// No floor of any kind: a popup menu's key equivalents are never registered with the
 /// app, so a bare `Space` or `F5` there is display text and can't swallow anything.
@@ -25,9 +28,9 @@ pub fn to_menu_text(shortcut: &str, platform: Platform) -> Option<String> {
     convert(shortcut, platform).map(|(accelerator, _)| accelerator)
 }
 
-/// Convert frontend shortcut format (⌘2) to a Tauri accelerator the menu BAR may register (Cmd+2,
-/// Ctrl+2 on Linux). Returns None if the shortcut is empty, carries no ⌘ / ⌃ / ⌥ / Super, or names
-/// a key muda has no `Code` for.
+/// Convert a frontend shortcut (`⌘2` on macOS, `Ctrl+2` on Windows and Linux) to a Tauri
+/// accelerator the menu BAR may register (`Cmd+2`, `Ctrl+2`). Returns None if the shortcut is
+/// empty, carries no ⌘ / ⌃ / ⌥ / Super, or names a key muda has no `Code` for.
 ///
 /// ❗ The modifier floor is what keeps a bare key out of the menu bar. AppKit fires a
 /// registered accelerator app-wide, ahead of the webview, so a menu item bound to `*`
@@ -124,28 +127,30 @@ fn is_codeable_key(key: &str) -> bool {
     only.is_ascii_alphanumeric() || CODEABLE_PUNCTUATION.contains(only)
 }
 
-/// A modifier, whichever way the frontend spelled it.
+/// A modifier KEY, whichever way the frontend spelled it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Modifier {
-    Command,
+    /// ⌘ on a Mac keyboard, the Super key on Linux, the Windows key on Windows: one physical key
+    /// (`metaKey`), which `formatKeyCombo` writes `⌘` on macOS and `Super` elsewhere.
+    Meta,
     Control,
     Alt,
     Shift,
-    Super,
 }
 
-/// Every modifier prefix the frontend writes, in both of its spellings: macOS glyphs (`⌘⇧P`, which
-/// is how the registry ships its defaults and how a Mac captures a rebind), and the `+`-joined words
-/// `formatKeyCombo` captures off macOS (`Ctrl+Alt+Shift+Super+P`).
+/// Every modifier prefix the frontend writes, in both of its spellings: macOS glyphs (`⌘⇧P`, what
+/// `formatKeyCombo` writes on macOS), and the `+`-joined words it writes on Windows and Linux
+/// (`Ctrl+Alt+Shift+Super+P`). Both are read on every platform because a token names a key, not a
+/// platform: the browser demo's macOS bar takes a Windows visitor's `Ctrl+F`.
 const MODIFIER_PREFIXES: [(&str, Modifier); 8] = [
-    ("⌘", Modifier::Command),
+    ("⌘", Modifier::Meta),
     ("⌃", Modifier::Control),
     ("⌥", Modifier::Alt),
     ("⇧", Modifier::Shift),
     ("Ctrl+", Modifier::Control),
     ("Alt+", Modifier::Alt),
     ("Shift+", Modifier::Shift),
-    ("Super+", Modifier::Super),
+    ("Super+", Modifier::Meta),
 ];
 
 /// The modifiers `shortcut` opens with, in its own order, and the key after them.
@@ -168,20 +173,18 @@ fn split_modifiers(shortcut: &str) -> (Vec<Modifier>, &str) {
     }
 }
 
-/// The accelerator tokens for `modifiers` on `platform`.
+/// The accelerator tokens for `modifiers` on `platform`: each key's own name there, in the
+/// combo's order.
 ///
-/// ❗ On Linux ⌘ is Ctrl, ❌ never `Cmd`: muda maps `Cmd` to `Modifiers::META`, which GTK binds and
-/// prints as the Super key (#284). It's the chord the frontend dispatches ⌘ as there too
-/// (`toPlatformShortcut`), and like it, a combo holding ⌃ as well spends that one on Shift, so
-/// the two don't collapse into one Ctrl.
+/// ❗ The Meta key is `Super` off macOS, the key the user really holds. A Windows or Linux ⌘
+/// chord reaches here already spelled `Ctrl+…` (the registry's arm for that platform), so ❌ never
+/// map a Meta to Ctrl here: that was a second copy of a conversion the frontend retired.
 fn modifier_tokens(modifiers: &[Modifier], platform: Platform) -> Vec<&'static str> {
-    let holds_command = modifiers.contains(&Modifier::Command);
     let mut tokens: Vec<&'static str> = Vec::new();
     for modifier in modifiers {
         let token = match (modifier, platform) {
-            (Modifier::Command, Platform::MacOs) => "Cmd",
-            (Modifier::Command, Platform::Linux) => "Ctrl",
-            (Modifier::Control, Platform::Linux) if holds_command => "Shift",
+            (Modifier::Meta, Platform::MacOs) => "Cmd",
+            (Modifier::Meta, Platform::Windows | Platform::Linux) => "Super",
             (Modifier::Control, _) => "Ctrl",
             // ❗ `Alt`, ❌ never `Opt`: muda accepts `OPTION` and `ALT` and nothing else
             // (`muda-0.20.0/src/accelerator/mod.rs:249`), and Tauri throws the parse error away
@@ -189,7 +192,6 @@ fn modifier_tokens(modifiers: &[Modifier], platform: Platform) -> Vec<&'static s
             // all, silently. `every_accelerator_this_converter_emits_is_one_muda_can_parse` guards it.
             (Modifier::Alt, _) => "Alt",
             (Modifier::Shift, _) => "Shift",
-            (Modifier::Super, _) => "Super",
         };
         if !tokens.contains(&token) {
             tokens.push(token);
@@ -402,43 +404,52 @@ mod tests {
         );
     }
 
-    /// #284: muda reads `Cmd` as Super on GTK, so a Linux menu must never say it. ⌘ there is the
-    /// Ctrl chord the frontend dispatches it as (`toPlatformShortcut`), on the bar and in popups.
+    /// A token names a key, read alike on every platform: no combo turns into another platform's
+    /// chord here. ⌘ is the Meta key, which a Windows or Linux menu calls `Super` (the Windows
+    /// key, the Super key), and ⌃ stays Ctrl beside it. The frontend sends Windows and Linux their
+    /// own `Ctrl+…` spelling, so a ⌘ reaching those bars means the user holds that key.
     #[test]
-    fn on_linux_a_command_glyph_becomes_ctrl() {
+    fn a_modifier_token_names_the_same_key_on_every_platform() {
+        for platform in [Platform::Windows, Platform::Linux] {
+            for (combo, expected) in [
+                ("⌘F", "Super+F"),
+                ("⌃D", "Ctrl+D"),
+                ("⌃⌘C", "Ctrl+Super+C"),
+                ("⌥⇧=", "Alt+Shift+="),
+            ] {
+                assert_eq!(
+                    to_accelerator(combo, platform).as_deref(),
+                    Some(expected),
+                    "`{combo}` on {platform:?}"
+                );
+            }
+        }
+        // And words on macOS: the browser demo's macOS bar takes a Windows visitor's keymap.
         for (combo, expected) in [
-            ("⌘F", "Ctrl+F"),
-            ("⌘⇧P", "Ctrl+Shift+P"),
-            ("⌥⌘O", "Alt+Ctrl+O"),
-            ("⌘↑", "Ctrl+Up"),
-            ("⌘Backspace", "Ctrl+Backspace"),
-            ("⌃D", "Ctrl+D"),
+            ("Ctrl+F", "Ctrl+F"),
+            ("Super+E", "Cmd+E"),
+            ("Alt+Shift+P", "Alt+Shift+P"),
         ] {
             assert_eq!(
-                to_accelerator(combo, Platform::Linux).as_deref(),
-                Some(expected),
-                "`{combo}`"
-            );
-            assert_eq!(
-                to_menu_text(combo, Platform::Linux).as_deref(),
+                to_accelerator(combo, Platform::MacOs).as_deref(),
                 Some(expected),
                 "`{combo}`"
             );
         }
     }
 
-    /// ⌃ and ⌘ both land on Ctrl off macOS, so a combo holding both spends ⌃ on Shift, exactly
-    /// as `toPlatformShortcut` does: the menu has to say the chord the frontend really binds.
+    /// What a rebind captured on Windows or Linux stores (`formatKeyCombo` there: `+`-joined
+    /// words, Ctrl+Alt+Shift+Super order), and what their registry defaults are spelled in. It has
+    /// to register as the same chord, ❌ not fall through to the "unknown key" branch, which once
+    /// made every Linux rebind display-only.
     #[test]
-    fn on_linux_a_combo_holding_both_command_glyphs_mirrors_the_frontend() {
-        assert_eq!(to_accelerator("⌃⌘C", Platform::Linux).as_deref(), Some("Shift+Ctrl+C"));
+    fn a_combo_in_windows_and_linux_spelling_registers_as_typed() {
+        for platform in [Platform::Windows, Platform::Linux] {
+            a_combo_registers_as_typed_on(platform);
+        }
     }
 
-    /// What a rebind captured on Linux stores (`formatKeyCombo` off macOS: `+`-joined words,
-    /// Ctrl+Alt+Shift+Super order). It has to register as the same chord, ❌ not fall through to
-    /// the "unknown key" branch, which once made every Linux rebind display-only.
-    #[test]
-    fn a_combo_captured_on_linux_registers_as_typed() {
+    fn a_combo_registers_as_typed_on(platform: Platform) {
         for (combo, expected) in [
             ("Ctrl+F", "Ctrl+F"),
             ("Ctrl+Shift+P", "Ctrl+Shift+P"),
@@ -451,20 +462,27 @@ mod tests {
             ("Super+E", "Super+E"),
         ] {
             assert_eq!(
-                to_accelerator(combo, Platform::Linux).as_deref(),
+                to_accelerator(combo, platform).as_deref(),
                 Some(expected),
-                "`{combo}`"
+                "`{combo}` on {platform:?}"
             );
         }
     }
 
-    /// The two refusals hold for the Linux form too: Shift alone isn't a command modifier, and `+`
-    /// (the key, after the `Ctrl+` separator) has no muda `Code`. Both stay labels.
+    /// The two refusals hold for the Windows and Linux form too: Shift alone isn't a command
+    /// modifier, and `+` (the key, after the `Ctrl+` separator) has no muda `Code`. Both stay
+    /// labels.
     #[test]
-    fn a_combo_captured_on_linux_keeps_both_refusals() {
-        for (combo, text) in [("Shift+F4", "Shift+F4"), ("Ctrl++", "Ctrl++"), ("F2", "F2")] {
-            assert_eq!(to_accelerator(combo, Platform::Linux), None, "`{combo}`");
-            assert_eq!(to_menu_text(combo, Platform::Linux).as_deref(), Some(text), "`{combo}`");
+    fn a_combo_in_windows_and_linux_spelling_keeps_both_refusals() {
+        for platform in [Platform::Windows, Platform::Linux] {
+            for (combo, text) in [("Shift+F4", "Shift+F4"), ("Ctrl++", "Ctrl++"), ("F2", "F2")] {
+                assert_eq!(to_accelerator(combo, platform), None, "`{combo}` on {platform:?}");
+                assert_eq!(
+                    to_menu_text(combo, platform).as_deref(),
+                    Some(text),
+                    "`{combo}` on {platform:?}"
+                );
+            }
         }
     }
 

@@ -124,6 +124,29 @@ fn a_rebind_shows_where_the_native_bar_would_show_it() {
     assert_eq!(shortcut(&menu, "close_tab"), None);
 }
 
+/// The demo always draws the macOS bar, while its keymap follows the visitor's OS, so a Windows or
+/// Linux visitor's rebind arrives in that OS's spelling. Each modifier word names the key it is:
+/// `Ctrl+F` draws as `⌃F` (the Control key the visitor really holds), never as a converted `⌘F`,
+/// and `Super` is the key a Mac calls ⌘.
+#[test]
+fn a_windows_visitors_rebind_draws_as_the_keys_they_hold() {
+    let menu = DemoMenu::new();
+    for (command_id, shortcut_text, menu_id, drawn) in [
+        ("tab.new", "Ctrl+F", "new_tab", "⌃F"),
+        ("app.commandPalette", "Ctrl+Shift+P", "command_palette", "⌃⇧P"),
+        ("tab.close", "Super+E", "close_tab", "⌘E"),
+        // No command modifier: shown in the visitor's spelling, never registered.
+        ("file.copy", "Shift+F4", "file_copy", "Shift+F4"),
+    ] {
+        push(
+            &menu,
+            "update_menu_accelerator",
+            json!({ "commandId": command_id, "shortcut": shortcut_text }),
+        );
+        assert_eq!(shortcut(&menu, menu_id).as_deref(), Some(drawn), "`{shortcut_text}`");
+    }
+}
+
 #[test]
 fn the_view_mode_accelerator_follows_the_active_pane() {
     let menu = DemoMenu::new();

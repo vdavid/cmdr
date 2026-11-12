@@ -1,6 +1,6 @@
 # Menu system
 
-Native menu bars for macOS and Linux, built from scratch in the user's language.
+Native menu bars for macOS, Windows, and Linux, built from scratch in the user's language.
 
 ## Module map
 
