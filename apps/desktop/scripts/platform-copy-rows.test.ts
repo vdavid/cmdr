@@ -6,7 +6,6 @@
 import { describe, expect, it } from 'vitest'
 import { parsePlatformSelect } from '../src/lib/intl/platform-select.ts'
 import {
-  copyFinalIssues,
   englishValueIssues,
   englishValueOf,
   isApplyRow,

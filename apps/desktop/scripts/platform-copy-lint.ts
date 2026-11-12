@@ -20,7 +20,7 @@
  */
 
 import { SYSTEM_TOKENS, platformBranches, visibleText } from './i18n-catalog-lib.ts'
-import { BRANCH_NAMES, matchesKeyPattern, rowKeys } from './platform-copy-rows.ts'
+import { matchesKeyPattern, rowKeys } from './platform-copy-rows.ts'
 import type { ApplyRow, CopyFinal } from './platform-copy-rows.ts'
 
 /** One word rule: what it's called in a report, and what it matches in visible text. */
