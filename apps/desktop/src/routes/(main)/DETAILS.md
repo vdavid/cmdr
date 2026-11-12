@@ -27,13 +27,14 @@ here:
 - **A focused text field owns the platform's native text keys** (`native-text-keys.ts`, `nativeTextKeys(platform)`): the
   sets in `docs/notes/windows-port/keymap-decisions.md` § "Native text keys", keyed on the COMBO, never the command it
   runs, and checked before dispatch whatever scope is active. So off macOS `Ctrl+←` / `Ctrl+→` is word motion in every
-  main-window field (path bar, quick filter, rename, the Ask Cmdr composer, the search dialog) and copies the path
-  between panes everywhere else, `Ctrl+Backspace` deletes a word, never the files, and on macOS `⌘⌫` deletes to the line
-  start. The menu bar reads the same table (`crates/cmdr-menu/src/page_owned_keys.tsv`, generated from it) and never
-  registers one past a row's own key. The copy combo (⌘C, `Ctrl+C`) is the browser's while the page holds a text
-  selection, in a field or not (the error pane). `Ctrl+I` is kept apart: not native, but Switch pane would blur a rename
-  editor. The Settings window and the viewer need no such table: Settings dispatches no registry key, and the viewer
-  skips its registry keys while its search input has focus.
+  main-window field (path bar, rename, the Ask Cmdr composer, the search dialog; the quick filter is a drawn badge over
+  the file list, not a field, so its F5 / F6 / F8 stay live) and copies the path between panes everywhere else,
+  `Ctrl+Backspace` deletes a word, never the files, and on macOS `⌘⌫` deletes to the line start. The menu bar reads the
+  same table (`crates/cmdr-menu/src/page_owned_keys.tsv`, generated from it) and never registers one past a row's own
+  key. The copy combo (⌘C, `Ctrl+C`) is the browser's while the page holds a text selection, in a field or not (the
+  error pane). `Ctrl+I` is kept apart: not native, but Switch pane would blur a rename editor. The Settings window and
+  the viewer need no such table: Settings dispatches no registry key, and the viewer skips its registry keys while its
+  search input has focus.
 - **The suppressed browser defaults and the debug window are per-OS chords** (`isPrimaryChord`): select all (⌘A,
   `Ctrl+A`) when nothing claimed it, the inspector in production (⌥⌘I; `Ctrl+Shift+I` in WebKitGTK and WebView2), and
   the dev-only debug window (⌘⇧D, `Ctrl+Shift+D`), each exact, on the platform's primary modifier.
@@ -533,7 +534,7 @@ dispatch path can't rely on the keydown bail.
   (`text-field-gate.ts`, `FILE_MOVING_COMMAND_IDS`: Move to trash, Delete permanently, Move, Move here, Undo trash,
   Remove download), on any OS and whatever key it's on, F-keys included. None has a text twin. The keyboard resolver
   leaves the key unclaimed so the field gets it; the dispatch core refuses the menu road, because a bar accelerator
-  (macOS's `F8`, `⇧F8`, `F6`, `⌥⌘V`) fires before the field sees the key: ⌥⌘V in the quick filter or the path bar once
+  (macOS's `F8`, `⇧F8`, `F6`, `⌥⌘V`) fires before the field sees the key: ⌥⌘V in the path bar or a rename editor once
   moved the clipboard's files, and `⌘⌫` trashed the selection. The menu event can't tell a click from a key, so a click
   on File > Delete with a field focused does nothing too; the palette, the F-key bar, and MCP run them.
   `text-field-gate.test.ts` walks every default key of every such command on all three OSes. Off macOS Move here's

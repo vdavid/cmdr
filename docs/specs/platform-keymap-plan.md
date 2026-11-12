@@ -489,8 +489,8 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
     scroll and don't move the caret, so they're not in the macOS set; a test per platform walks the table against the
     decisions file, set for set.
   - Off macOS, `Ctrl+←/→` (copy path between panes) loses to word motion in EVERY main-window text field (path bar,
-    quick filter, rename, the Ask Cmdr composer): the table is checked before dispatch, whatever focus scope is active.
-    Test from each of those fields, plus a Settings text input and the viewer's search input.
+    rename, the Ask Cmdr composer): the table is checked before dispatch, whatever focus scope is active. Test from each
+    of those fields, plus a Settings text input and the viewer's search input.
 - **Test plan**: `global-keydown.test.ts` per platform (selected text plus the copy combo copies text; word motion in a
   text input stays with the input; outside a text input the commands still run), row-click tests under
   `withPlatform('windows')` and `'linux'` (Ctrl+click toggles, never renames; on macOS ⌘+click toggles and Ctrl+click
@@ -844,22 +844,23 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
     Settings lists the six new fixed-key rows; the palette gains Full screen; while a text field has focus no command
     that moves or removes files (`FILE_MOVING_COMMAND_IDS`: Move to trash, Delete permanently, Move, Move here, Undo
     trash, Remove download) runs from a key or the menu bar, F-keys included, so `F8`, `⇧F8`, `F6`, `⌥⌘V`, `⌘⌫`, and
-    `⌥⌘⌫` in the quick filter or the path bar go to the field, and a menu click on one of them with a field focused does
-    nothing (the menu event can't tell a click from a key); the palette and the F-key bar still run them, Move here from
-    the palette included (`text-field-gate.test.ts`); `⌘⌫`, `⌥⌫`, `⌘⌥⌫`, `⌘⌦`, and `⌥⌦` join macOS's native text keys;
-    no bar row registers a native text key past its own built key, so a pushed `⌥←` (a shadowed `⌘[`) only shows on Go
-    back (`bar_parity_test.rs`); a key the user bound to one command beats another command's default on it (item 20); a
-    rebind or reset to a bar row's own key comes back as the bar built it (item 21); and copy a macOS user reads with
-    default keys: Settings' Skip confirmation row (`settings.fileOperations.skipConfirmation.explanation`, was
-    `.description`: "F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking.
-    …" → "Copy and Move go into the other pane right away, and Delete moves to the trash without asking. …"), the
-    binary-file warning row (`settings.fileViewer.suppressBinaryWarning.explanation`, was `.description`: drops "F3
-    opens", "⇧Space (Quick Look)", and "Enter (open in the associated app)" for "Quick Look or opening it in the
-    associated app"), the global go-to-latest row
-    (`settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary`, was `.description`: "Press ⌃⌥⌘J
-    from any app to jump to your most recent download." → "Jump to your most recent download from any app with a
-    system-wide shortcut."), and the keyless and partial variant family a removed or shadowed default selects
-    (`…WithoutKey` / `…WithKey` / `…WithCopyKey`, `viewer.binaryWarning.bodyWith*`,
+    `⌥⌘⌫` in the path bar or a rename editor go to the field (the quick filter is a drawn badge, not a field, so F5 / F6
+    / F8 still act on its filtered files, pinned in `text-field-gate.test.ts`), and a menu click on one of them with a
+    field focused does nothing (the menu event can't tell a click from a key); the palette and the F-key bar still run
+    them, Move here from the palette included (`text-field-gate.test.ts`); `⌘⌫`, `⌥⌫`, `⌘⌥⌫`, `⌘⌦`, and `⌥⌦` join
+    macOS's native text keys; no bar row registers a native text key past its own built key, so a pushed `⌥←` (a
+    shadowed `⌘[`) only shows on Go back (`bar_parity_test.rs`); a key the user bound to one command beats another
+    command's default on it (item 20); a rebind or reset to a bar row's own key comes back as the bar built it (item
+    21); and copy a macOS user reads with default keys: Settings' Skip confirmation row
+    (`settings.fileOperations.skipConfirmation.explanation`, was `.description`: "F5 and F6 copy and move into the other
+    pane right away, and F8 moves to the trash without asking. …" → "Copy and Move go into the other pane right away,
+    and Delete moves to the trash without asking. …"), the binary-file warning row
+    (`settings.fileViewer.suppressBinaryWarning.explanation`, was `.description`: drops "F3 opens", "⇧Space (Quick
+    Look)", and "Enter (open in the associated app)" for "Quick Look or opening it in the associated app"), the global
+    go-to-latest row (`settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary`, was
+    `.description`: "Press ⌃⌥⌘J from any app to jump to your most recent download." → "Jump to your most recent download
+    from any app with a system-wide shortcut."), and the keyless and partial variant family a removed or shadowed
+    default selects (`…WithoutKey` / `…WithKey` / `…WithCopyKey`, `viewer.binaryWarning.bodyWith*`,
     `fileExplorer.quickLookHint.quickViewRebound`), awaiting David's copy review. Anything else that moves on macOS is a
     regression.
 19. On Linux, while any main-window dialog, overlay, or the palette is up, the main window's bar mnemonics are off and

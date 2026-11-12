@@ -99,6 +99,29 @@ describe.each(['macos', 'windows', 'linux'] as const)('on %s, with a text field 
     expect(ran).toEqual([])
   })
 
+  // The quick filter is a drawn badge over the file list, ❌ not a DOM text field, so Total
+  // Commander's "filter, then F5 / F6 / F8" stays live: focus sits on the list, never an input.
+  it('leaves F5, F6, and F8 live with focus on the file list (where the quick filter types)', () => {
+    input.blur()
+    const list = document.createElement('div')
+    list.tabIndex = 0
+    document.body.appendChild(list)
+    list.focus()
+    const shift = platform === 'macos' ? '⇧' : 'Shift+'
+    for (const [combo, commandId] of [
+      ['F5', 'file.copy'],
+      ['F6', 'file.move'],
+      ['F8', 'file.delete'],
+      [`${shift}F8`, 'file.deletePermanently'],
+    ] as const) {
+      expect(resolveGlobalKeyAction(keydownFor(combo, platform), NOTHING_OPEN), combo).toEqual({
+        kind: 'dispatch',
+        commandId,
+      })
+    }
+    list.remove()
+  })
+
   it('refuses every file-moving command from the keyboard and the menu bar, and only those roads', () => {
     for (const commandId of FILE_MOVING_COMMAND_IDS) {
       for (const source of ['keyboard', 'menu'] as const satisfies readonly DispatchSource[]) {

@@ -167,9 +167,9 @@ New commands:
   reserves neither.
 - `viewer.goBack`/`viewer.goForward` gain them too (my reading of "in the viewer too"). Free: the viewer reads ⌥-arrow
   only with Shift (`horizontalMotion`), and skips registry keys while its search input has focus.
-- Condition: in a main-window text field (rename editor, quick filter) `⌥←/→` is word motion, and `global-keydown.ts`
-  keeps ⌥ combos live there, so they'd navigate back mid-edit. They go into macOS's native text keys below. The search
-  dialog already avoids them for this reason (`query-ui/query-shortcuts.ts` header).
+- Condition: in a main-window text field (rename editor, path bar) `⌥←/→` is word motion, and `global-keydown.ts` keeps
+  ⌥ combos live there, so they'd navigate back mid-edit. They go into macOS's native text keys below. The search dialog
+  already avoids them for this reason (`query-ui/query-shortcuts.ts` header).
 
 ## Native text keys
 

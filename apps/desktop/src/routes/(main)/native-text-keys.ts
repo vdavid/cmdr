@@ -7,7 +7,7 @@
  * `formatKeyCombo` spelling, so a set may hold combos no default binds yet.
  *
  * Checked before dispatch, whatever focus scope is active: off macOS `Ctrl+←` / `Ctrl+→` (copy
- * path between panes) loses to word motion in every main-window field (path bar, quick filter,
+ * path between panes) loses to word motion in every main-window field (path bar,
  * rename, the Ask Cmdr composer, the search dialog).
  */
 import type { Platform } from '#lib/platform/index.js'

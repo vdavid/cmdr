@@ -130,7 +130,8 @@ function commandForCombo(combo: string): CommandId | undefined {
   if (toastStackOwnsKey(combo)) return undefined
   const commandId = lookupCommand(combo)
   // A key that would move or remove files is the field's while one has focus, whatever command
-  // it's bound to (`text-field-gate.ts`): F8 in the quick filter trashes nothing.
+  // it's bound to (`text-field-gate.ts`): F8 in the path bar trashes nothing. The quick filter is a drawn
+  // badge, not a field, so F5 / F6 / F8 still act on the filtered files.
   if (commandId !== undefined && isRefusedInTextField(commandId, 'keyboard', isTextInputFocused())) return undefined
   return commandId
 }

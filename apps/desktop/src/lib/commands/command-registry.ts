@@ -46,9 +46,9 @@ export const NATIVE_SHORTCUT_COMMAND_IDS = ['app.quit', 'app.hide', 'app.hideOth
 
 /**
  * The commands that move or remove FILES and have no text twin: while a text field has focus, none
- * runs from a key or the menu bar (`routes/(main)/text-field-gate.ts`), so typing in the quick
- * filter, the path bar, or the Ask Cmdr composer can never trash, delete, or move a file, whatever
- * key the user bound. `edit.cut` isn't here: with a field focused it cuts the field's text. A new
+ * runs from a key or the menu bar (`routes/(main)/text-field-gate.ts`), so typing in the path bar,
+ * a rename editor, or the Ask Cmdr composer can never trash, delete, or move a file, whatever key
+ * the user bound. The quick filter is a drawn badge, not a field, so its F5 / F6 / F8 stay live. `edit.cut` isn't here: with a field focused it cuts the field's text. A new
  * command that moves or removes files joins this list.
  */
 export const FILE_MOVING_COMMAND_IDS = [
