@@ -159,15 +159,18 @@
   },
   "commands.askCmdrFind.label": "Find in chat",
   "@commands.askCmdrFind.label": {
-    "description": "Command name, listed in the keyboard shortcuts settings and help: with focus in Ask Cmdr (the chat rail where the user chats with an AI about their files), opens a find bar that searches the open conversation. \"Ask Cmdr\" is the product name."
+    "description": "Command name, listed in the keyboard shortcuts settings and help: with focus in Ask Cmdr (the chat rail where the user chats with an AI about their files), opens a find bar that searches the open conversation. \"Ask Cmdr\" is the product name.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.askCmdrFindNext.label": "Next match in chat",
   "@commands.askCmdrFindNext.label": {
-    "description": "Command name, listed in the keyboard shortcuts settings and help: moves to the next match of the find bar in the Ask Cmdr chat rail."
+    "description": "Command name, listed in the keyboard shortcuts settings and help: moves to the next match of the find bar in the Ask Cmdr chat rail.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.askCmdrFindPrevious.label": "Previous match in chat",
   "@commands.askCmdrFindPrevious.label": {
-    "description": "Command name, listed in the keyboard shortcuts settings and help: moves to the previous match of the find bar in the Ask Cmdr chat rail."
+    "description": "Command name, listed in the keyboard shortcuts settings and help: moves to the previous match of the find bar in the Ask Cmdr chat rail.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.feedbackSend.label": "Send feedback",
   "@commands.feedbackSend.label": {

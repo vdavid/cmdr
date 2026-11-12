@@ -589,7 +589,7 @@
   "fileOperations.transferDialog.policyAskEach": "Ask for each",
   "@fileOperations.transferDialog.policyAskEach": {
     "description": "Radio option: decide per clashing file during the transfer instead of choosing now. Shown when folders will merge but nobody knows yet how many files inside them clash, maybe none, maybe many. Short control label.",
-    "screenshot": "conflict-dialog.png"
+    "screenshot": "transfer-confirmation-copy.png"
   },
   "fileOperations.transferDialog.presetOverwriteNote": "{reach, select, smaller {This dialog opened set to overwrite files already there that are smaller.} older {This dialog opened set to overwrite files already there that are older.} other {This dialog opened set to overwrite the files already there.}}",
   "@fileOperations.transferDialog.presetOverwriteNote": {
@@ -607,11 +607,13 @@
   },
   "fileOperations.transferDialog.macOnlyFiles.toggle": "Skip Mac-only hidden files (.DS_Store, ._*)",
   "@fileOperations.transferDialog.macOnlyFiles.toggle": {
-    "description": "Checkbox label in the 'To' group of the copy, move, and compress dialog. When checked, this one operation leaves out the hidden files only macOS uses (Finder’s .DS_Store and the ._ files beside items), which other systems show as clutter. Keep \".DS_Store\" and \"._*\" exactly as written: they are file names. Same wording as the setting (settings.fileOperations.macOnlyFiles.label)."
+    "description": "Checkbox label in the 'To' group of the copy, move, and compress dialog. When checked, this one operation leaves out the hidden files only macOS uses (Finder’s .DS_Store and the ._ files beside items), which other systems show as clutter. Keep \".DS_Store\" and \"._*\" exactly as written: they are file names. Same wording as the setting (settings.fileOperations.macOnlyFiles.label).",
+    "screenshot": "conflict-dialog.png"
   },
   "fileOperations.transferDialog.macOnlyFiles.dontAskAgain": "Don’t ask again",
   "@fileOperations.transferDialog.macOnlyFiles.dontAskAgain": {
-    "description": "Link right after the 'Skip Mac-only hidden files' checkbox in the copy, move, and compress dialog, shown while the setting says to ask each time. Opens Settings at that setting, where the user can pick a default (include or skip) so the dialog stops asking. A short phrase (no question mark), styled as a link."
+    "description": "Link right after the 'Skip Mac-only hidden files' checkbox in the copy, move, and compress dialog, shown while the setting says to ask each time. Opens Settings at that setting, where the user can pick a default (include or skip) so the dialog stops asking. A short phrase (no question mark), styled as a link.",
+    "screenshot": "conflict-dialog.png"
   },
   "fileOperations.transferDialog.macOnlyFiles.includingByDefault": "Including by default",
   "@fileOperations.transferDialog.macOnlyFiles.includingByDefault": {
@@ -996,8 +998,7 @@
   "fileOperations.transferProgress.policyName.askEach": "Ask for each",
   "@fileOperations.transferProgress.policyName.askEach": {
     "description": "The “ask” policy's NAME after the colon in fileOperations.transferProgress.conflictPolicyCaption: Cmdr asks about each clashing file as it comes. A noun phrase or a state, NOT a command (see fileOperations.transferProgress.policyName.skip). The same English ships as commands in the copy dialog’s radios and settings.fileOperations.defaultConflictPolicy.opt.*; if yours are imperatives, the name form here legitimately differs: record the split in apps/desktop/scripts/i18n-term-consistency-allowlist.json with that reason (a caption names a policy; the radio and the setting option are commands). Short.",
-    "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshot": "conflict-dialog.png"
   },
   "fileOperations.transferProgress.policyName.rename": "Rename",
   "@fileOperations.transferProgress.policyName.rename": {
@@ -1663,7 +1664,8 @@
   },
   "fileOperations.rollbackConfirm.bodyUndoByRestoringTags": "This gives the files the tags they had before. Cmdr skips any file whose tags changed since, so a few may keep the tags they have now.",
   "@fileOperations.rollbackConfirm.bodyUndoByRestoringTags": {
-    "description": "Body of the Rollback confirmation when the user undoes a FINISHED change to macOS Finder color tags (setting, toggling, or clearing them on one file or many). Nothing moves and nothing is deleted; only the tags change back, so keep the tone calm. Second sentence: Cmdr leaves alone every file whose tags someone changed after the operation, so the reversal can come out partial. Keep it parallel with the sibling copy, move, and rename wordings."
+    "description": "Body of the Rollback confirmation when the user undoes a FINISHED change to macOS Finder color tags (setting, toggling, or clearing them on one file or many). Nothing moves and nothing is deleted; only the tags change back, so keep the tone calm. Second sentence: Cmdr leaves alone every file whose tags someone changed after the operation, so the reversal can come out partial. Keep it parallel with the sibling copy, move, and rename wordings.",
+    "screenshot": "rollback-confirmation-undoByRestoringTags.png"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "Leave it as is",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
@@ -1963,7 +1965,7 @@
   "fileOperations.errorDialog.retry": "Retry",
   "@fileOperations.errorDialog.retry": {
     "description": "Button that re-attempts a failed copy/move/delete. Shown for errors worth trying again. Short control label.",
-    "screenshot": "transfer-error-cancelled.png"
+    "screenshot": "transfer-error-insufficient_space.png"
   },
   "fileOperations.errorDialog.copyAnyway": "Copy anyway",
   "@fileOperations.errorDialog.copyAnyway": {

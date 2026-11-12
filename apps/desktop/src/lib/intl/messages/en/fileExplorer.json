@@ -219,7 +219,7 @@
       "localNetwork": "macos branch only: the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
     },
     "screenshot": "toast-transfer-complete.png",
-    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Connect directly says there when something on this machine refused the connection (on macOS, with a button that opens System Settings)."
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Connect directly says there when something on this Mac refused the connection, with a button that opens System Settings."
   },
   "fileExplorer.pane.directConnectionBlockedAfterUpdateToast": "Cmdr updated, and macOS sometimes keeps blocking its direct connection to {server} afterwards. Switch Cmdr off and on under {localNetwork} to fix it. Until then, this share stays on the slower system connection.",
   "@fileExplorer.pane.directConnectionBlockedAfterUpdateToast": {
@@ -2893,7 +2893,8 @@
     "description": "Accessibility label and tooltip for the eject button on a mounted network share (an SMB share) in the breadcrumb and switcher. The share's sibling of fileExplorer.navigation.ejectVolumeAriaLabel. VERB phrase, imperative, with the verb this OS uses for a share: macOS says Eject (Finder's word for a server too), so the macOS branch reads exactly like fileExplorer.navigation.ejectVolumeAriaLabel; Windows says Disconnect (File Explorer's word for a mapped network drive); Linux says Unmount, never \"disconnect\". {name} is the share's display name.",
     "placeholders": {
       "name": "the display name of the share, for example media"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "fileExplorer.navigation.detachingShareAriaLabel": "{platform, select, macos {Ejecting {name}…} windows {Disconnecting {name}…} other {Unmounting {name}…}}",
   "@fileExplorer.navigation.detachingShareAriaLabel": {

@@ -45,7 +45,8 @@
   "operationLog.dialog.rollBackRest": "Roll back the rest",
   "@operationLog.dialog.rollBackRest": {
     "description": "The main button of the Operation log when the selected operation is already PARTLY rolled back and the person hasn’t narrowed the checkboxes. Pressing it (after a confirmation) rolls back everything that still hasn’t come back, so the wording says \"the rest\" rather than starting over. Match the \"Roll back the rest\" button in the confirmation that follows it (fileOperations.rollbackConfirm.rollBackRest).",
-    "screenshot": "operation-log-more-pages.png"
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.dialog.rollBackSelected": "{count, plural, one {Roll back selected ({countText})} other {Roll back selected ({countText})}}",
   "@operationLog.dialog.rollBackSelected": {
@@ -53,7 +54,9 @@
     "placeholders": {
       "count": {},
       "countText": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.dialog.selectedCount": "{count, plural, one {{selectedText} of {selectableText} selected} other {{selectedText} of {selectableText} selected}}",
   "@operationLog.dialog.selectedCount": {
@@ -62,7 +65,9 @@
       "count": {},
       "selectedText": {},
       "selectableText": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.dialog.close": "Close",
   "@operationLog.dialog.close": {
@@ -71,38 +76,49 @@
   },
   "operationLog.dialog.operations": "Operations",
   "@operationLog.dialog.operations": {
-    "description": "Heading and accessible name of the Operation log’s left-hand list, which shows recent file operations (copy, move, delete, rename), newest first. Picking one shows its items on the right."
+    "description": "Heading and accessible name of the Operation log’s left-hand list, which shows recent file operations (copy, move, delete, rename), newest first. Picking one shows its items on the right.",
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.tree.label": "Items",
   "@operationLog.tree.label": {
-    "description": "Accessible name of the Operation log’s item tree: the files and folders the selected operation touched, with a checkbox on each one that can be rolled back. Read by screen readers only."
+    "description": "Accessible name of the Operation log’s item tree: the files and folders the selected operation touched, with a checkbox on each one that can be rolled back. Read by screen readers only.",
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.tree.columnName": "Name",
   "@operationLog.tree.columnName": {
-    "description": "Column header in the Operation log’s item tree: the file or folder name."
+    "description": "Column header in the Operation log’s item tree: the file or folder name.",
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.tree.columnSize": "Size",
   "@operationLog.tree.columnSize": {
-    "description": "Column header in the Operation log’s item tree: a file’s size, or how many files a folder holds."
+    "description": "Column header in the Operation log’s item tree: a file’s size, or how many files a folder holds.",
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.tree.columnStatus": "Status",
   "@operationLog.tree.columnStatus": {
-    "description": "Column header in the Operation log’s item tree: what came of each item (rolled back, skipped, or didn’t finish). Empty for items that are still waiting."
+    "description": "Column header in the Operation log’s item tree: what came of each item (rolled back, skipped, or didn’t finish). Empty for items that are still waiting.",
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.tree.selectAll": "Select all",
   "@operationLog.tree.selectAll": {
-    "description": "Accessible name of the checkbox in the item tree’s header that checks or unchecks every item that can be rolled back. Read by screen readers only; the checkbox has no visible label."
+    "description": "Accessible name of the checkbox in the item tree’s header that checks or unchecks every item that can be rolled back. Read by screen readers only; the checkbox has no visible label.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.include": "Roll back {name}",
   "@operationLog.tree.include": {
     "description": "Accessible name of the checkbox on one row of the Operation log’s item tree: checked means this file or folder is part of the next rollback. name is the file or folder name. Read by screen readers only.",
     "placeholders": {
       "name": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.comesBackWithFolder": "Comes back with its folder.",
   "@operationLog.tree.comesBackWithFolder": {
-    "description": "Shown for an item inside a folder that was moved or trashed as one piece: the item has no checkbox of its own, because rolling back brings the whole folder back with it inside. Appears as the row’s explanation and as its greyed checkbox’s name."
+    "description": "Shown for an item inside a folder that was moved or trashed as one piece: the item has no checkbox of its own, because rolling back brings the whole folder back with it inside. Appears as the row’s explanation and as its greyed checkbox’s name.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.folderFiles": "{count, plural, one {{countText} file} other {{countText} files}}",
   "@operationLog.tree.folderFiles": {
@@ -110,31 +126,45 @@
     "placeholders": {
       "count": {},
       "countText": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.statusRemoved": "Removed",
   "@operationLog.tree.statusRemoved": {
-    "description": "Status of one item in the Operation log’s item tree after a rollback removed it: the copy (or the file or folder the operation created) is gone again. Siblings say \"Moved back\", \"Renamed back\", and \"Tags restored\" for other kinds of operations. One or two words."
+    "description": "Status of one item in the Operation log’s item tree after a rollback removed it: the copy (or the file or folder the operation created) is gone again. Siblings say \"Moved back\", \"Renamed back\", and \"Tags restored\" for other kinds of operations. One or two words.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.statusMovedBack": "Moved back",
   "@operationLog.tree.statusMovedBack": {
-    "description": "Status of one item in the Operation log’s item tree after a rollback moved it back where it came from (undoing a move or a move to the trash). One or two words."
+    "description": "Status of one item in the Operation log’s item tree after a rollback moved it back where it came from (undoing a move or a move to the trash). One or two words.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.statusRenamedBack": "Renamed back",
   "@operationLog.tree.statusRenamedBack": {
-    "description": "Status of one item in the Operation log’s item tree after a rollback gave it its old name back. One or two words."
+    "description": "Status of one item in the Operation log’s item tree after a rollback gave it its old name back. One or two words.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.statusTagsRestored": "Tags restored",
   "@operationLog.tree.statusTagsRestored": {
-    "description": "Status of one item in the Operation log’s item tree after a rollback gave it back the Finder color tags it had before. One or two words."
+    "description": "Status of one item in the Operation log’s item tree after a rollback gave it back the Finder color tags it had before. One or two words.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.statusSkipped": "Skipped",
   "@operationLog.tree.statusSkipped": {
-    "description": "Status of one item in the Operation log’s item tree that was skipped, either by the operation itself or by a rollback that wasn’t sure about it. The row’s explanation says which and why. One word."
+    "description": "Status of one item in the Operation log’s item tree that was skipped, either by the operation itself or by a rollback that wasn’t sure about it. The row’s explanation says which and why. One word.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.statusUnfinished": "Didn’t finish",
   "@operationLog.tree.statusUnfinished": {
-    "description": "Status of one item in the Operation log’s item tree that the operation never finished, so there’s nothing to roll back. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Status of one item in the Operation log’s item tree that the operation never finished, so there’s nothing to roll back. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.rollupRolledBack": "{count, plural, one {{countText} rolled back} other {{countText} rolled back}}",
   "@operationLog.tree.rollupRolledBack": {
@@ -142,7 +172,9 @@
     "placeholders": {
       "count": {},
       "countText": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.rollupSkipped": "{count, plural, one {{countText} skipped} other {{countText} skipped}}",
   "@operationLog.tree.rollupSkipped": {
@@ -150,7 +182,9 @@
     "placeholders": {
       "count": {},
       "countText": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.rollupBoth": "{rolledBack}, {skipped}",
   "@operationLog.tree.rollupBoth": {
@@ -158,45 +192,63 @@
     "placeholders": {
       "rolledBack": {},
       "skipped": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.operationSkipped": "The operation skipped this one, so there’s nothing to roll back.",
   "@operationLog.tree.operationSkipped": {
-    "description": "Explanation of an item the original operation skipped (it never copied, moved, or changed it), shown under the item tree when the row is under the cursor and read by screen readers. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Explanation of an item the original operation skipped (it never copied, moved, or changed it), shown under the item tree when the row is under the cursor and read by screen readers. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.operationUnfinished": "The operation didn’t finish this one, so there’s nothing to roll back.",
   "@operationLog.tree.operationUnfinished": {
-    "description": "Explanation of an item the original operation never finished, shown under the item tree when the row is under the cursor and read by screen readers. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Explanation of an item the original operation never finished, shown under the item tree when the row is under the cursor and read by screen readers. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.unexpandableEmpty": "This folder was empty.",
   "@operationLog.tree.unexpandableEmpty": {
-    "description": "Explanation of a folder row in the Operation log’s item tree that can’t be opened because it held nothing when the operation ran."
+    "description": "Explanation of a folder row in the Operation log’s item tree that can’t be opened because it held nothing when the operation ran.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.unexpandableNotRecorded": "Cmdr didn’t record what’s inside this folder.",
   "@operationLog.tree.unexpandableNotRecorded": {
-    "description": "Explanation of a folder row in the Operation log’s item tree that can’t be opened: the folder was moved or trashed as one piece and Cmdr kept no list of its contents. Rolling back still brings the whole folder back. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Explanation of a folder row in the Operation log’s item tree that can’t be opened: the folder was moved or trashed as one piece and Cmdr kept no list of its contents. Rolling back still brings the whole folder back. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.unexpandableCapped": "Cmdr didn’t record what’s inside this folder, because this operation held a folder of over 50,000 files.",
   "@operationLog.tree.unexpandableCapped": {
-    "description": "Explanation of a folder row in the Operation log’s item tree that can’t be opened. Cmdr stops listing contents once an operation holds a folder of over 50,000 files. Careful: it speaks about the OPERATION, not this folder, which may be a small one beside the big one. Rolling back still brings the whole folder back. Keep the number as written, with your locale’s thousands separator. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Explanation of a folder row in the Operation log’s item tree that can’t be opened. Cmdr stops listing contents once an operation holds a folder of over 50,000 files. Careful: it speaks about the OPERATION, not this folder, which may be a small one beside the big one. Rolling back still brings the whole folder back. Keep the number as written, with your locale’s thousands separator. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.otherEndFrom": "From {path}",
   "@operationLog.tree.otherEndFrom": {
     "description": "Explanation of an item in the Operation log’s item tree that landed under a different name than it came from (for example \"photo (2).jpg\" after a name clash): where it came from. path is a full file path, never translated.",
     "placeholders": {
       "path": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.otherEndTo": "To {path}",
   "@operationLog.tree.otherEndTo": {
     "description": "Explanation of an item in the Operation log’s item tree whose other end isn’t where you’d guess (for example a rename to a different name): where it went. path is a full file path, never translated.",
     "placeholders": {
       "path": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.backfilling": "Reading this operation’s items…",
   "@operationLog.tree.backfilling": {
-    "description": "Shown in the Operation log’s item tree, in place of the rows, while Cmdr prepares an older operation’s items for the first time. A progress bar joins it when that takes long. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Shown in the Operation log’s item tree, in place of the rows, while Cmdr prepares an older operation’s items for the first time. A progress bar joins it when that takes long. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.backfillProgress": "Read {doneText} of {totalText} items",
   "@operationLog.tree.backfillProgress": {
@@ -204,31 +256,45 @@
     "placeholders": {
       "doneText": {},
       "totalText": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.indexesBuilding": "Cmdr is getting your history ready after an update. The items show up in a moment.",
   "@operationLog.tree.indexesBuilding": {
-    "description": "Shown in the Operation log’s item tree, in place of the rows, on the first launch after an update while Cmdr prepares its history. It clears by itself."
+    "description": "Shown in the Operation log’s item tree, in place of the rows, on the first launch after an update while Cmdr prepares its history. It clears by itself.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.indexesUnavailable": "Cmdr couldn’t get your history ready this time, so these items can’t show yet. It tries again the next time you open Cmdr.",
   "@operationLog.tree.indexesUnavailable": {
-    "description": "Shown in the Operation log’s item tree, in place of the rows, when Cmdr couldn’t prepare its history after an update (for example, the disk was full). The operation list still shows; only the items of each operation can’t be listed. Cmdr tries again by itself at its next start. Keep it calm and plain: no blame, no technical words."
+    "description": "Shown in the Operation log’s item tree, in place of the rows, when Cmdr couldn’t prepare its history after an update (for example, the disk was full). The operation list still shows; only the items of each operation can’t be listed. Cmdr tries again by itself at its next start. Keep it calm and plain: no blame, no technical words.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.operationRunning": "This operation is still running. Its items show up here once it’s done.",
   "@operationLog.tree.operationRunning": {
-    "description": "Shown in the Operation log’s item tree, in place of the rows, when the selected operation hasn’t finished yet. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Shown in the Operation log’s item tree, in place of the rows, when the selected operation hasn’t finished yet. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.rollingBack": "This operation is rolling back. Its items show up here once that’s done.",
   "@operationLog.tree.rollingBack": {
-    "description": "Shown in the Operation log’s item tree, in place of the rows, while a rollback of the selected operation runs and Cmdr hasn’t prepared its items yet. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Shown in the Operation log’s item tree, in place of the rows, while a rollback of the selected operation runs and Cmdr hasn’t prepared its items yet. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.unreadable": "Couldn’t read this operation’s items. Pick it again to try once more.",
   "@operationLog.tree.unreadable": {
-    "description": "Shown in the Operation log’s item tree, in place of the rows, when Cmdr couldn’t read the selected operation’s items. \"Pick it again\" means selecting the operation in the list on the left. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Shown in the Operation log’s item tree, in place of the rows, when Cmdr couldn’t read the selected operation’s items. \"Pick it again\" means selecting the operation in the list on the left. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.tree.togglesCapped": "That’s as many items as Cmdr can select one by one. Select a folder instead.",
   "@operationLog.tree.togglesCapped": {
-    "description": "Shown under the Operation log’s item tree when the person has selected or deselected (ticked or unticked) so many individual items that Cmdr can’t keep track of one more. The last one didn’t take. Selecting or deselecting a whole folder still works. \"Select\" is the word the Operation log uses for its checkboxes throughout. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Shown under the Operation log’s item tree when the person has selected or deselected (ticked or unticked) so many individual items that Cmdr can’t keep track of one more. The last one didn’t take. Selecting or deselecting a whole folder still works. \"Select\" is the word the Operation log uses for its checkboxes throughout. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to the item tree on the right: a column header, a row’s status, or the line under the tree that explains the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.route.fromTo": "From {from} to {to}",
   "@operationLog.route.fromTo": {
@@ -236,71 +302,99 @@
     "placeholders": {
       "from": {},
       "to": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.route.to": "To {to}",
   "@operationLog.route.to": {
     "description": "Line under the Operation log’s detail header for a copy or a move whose items came from several places: where they went. to is a folder path, never translated.",
     "placeholders": {
       "to": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {From {from} to the Trash}}",
   "@operationLog.route.fromToTrash": {
     "description": "Line under the Operation log’s detail header for a move to the trash: where the items were. from is a folder path, never translated. In each branch, name that OS’s trash the way it does: the Trash on macOS and Linux, the Recycle Bin on Windows.",
     "placeholders": {
       "from": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.route.from": "From {from}",
   "@operationLog.route.from": {
     "description": "Line under the Operation log’s detail header for a permanent delete: where the items were. from is a folder path, never translated.",
     "placeholders": {
       "from": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.route.in": "In {path}",
   "@operationLog.route.in": {
     "description": "Line under the Operation log’s detail header for a rename, a tag change, a new file or folder, or an archive change: the folder it happened in. path is a folder path, never translated.",
     "placeholders": {
       "path": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.skipReason.unverifiablePrecondition": "Cmdr couldn’t check this against what it recorded, so it left it alone.",
   "@operationLog.skipReason.unverifiablePrecondition": {
-    "description": "Why a rollback skipped one item, shown under the Operation log’s item tree when the row is under the cursor and read by screen readers: Cmdr had no way to confirm it was still the same file, and it never touches a file it can’t vouch for. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Why a rollback skipped one item, shown under the Operation log’s item tree when the row is under the cursor and read by screen readers: Cmdr had no way to confirm it was still the same file, and it never touches a file it can’t vouch for. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the line under the item tree that explains why a rollback skipped the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.skipReason.drift": "This changed since the operation, so Cmdr left it alone.",
   "@operationLog.skipReason.drift": {
-    "description": "Why a rollback skipped one item: its size or date changed after the operation, so it may hold someone’s newer work. Shown under the item tree for the row under the cursor, and read by screen readers."
+    "description": "Why a rollback skipped one item: its size or date changed after the operation, so it may hold someone’s newer work. Shown under the item tree for the row under the cursor, and read by screen readers.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the line under the item tree that explains why a rollback skipped the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.skipReason.restoreTargetOccupied": "Something else is at the original spot now, so Cmdr didn’t overwrite it.",
   "@operationLog.skipReason.restoreTargetOccupied": {
-    "description": "Why a rollback skipped one item: putting it back would have replaced a different file sitting where it used to be. Shown under the item tree for the row under the cursor, and read by screen readers. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Why a rollback skipped one item: putting it back would have replaced a different file sitting where it used to be. Shown under the item tree for the row under the cursor, and read by screen readers. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the line under the item tree that explains why a rollback skipped the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.skipReason.dirNotEmpty": "This folder has something new in it, so Cmdr kept it.",
   "@operationLog.skipReason.dirNotEmpty": {
-    "description": "Why a rollback skipped one folder: removing a folder the operation created would have taken files added to it since. Shown under the item tree for the row under the cursor, and read by screen readers."
+    "description": "Why a rollback skipped one folder: removing a folder the operation created would have taken files added to it since. Shown under the item tree for the row under the cursor, and read by screen readers.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the line under the item tree that explains why a rollback skipped the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.skipReason.alreadyGone": "This was already back the way it was.",
   "@operationLog.skipReason.alreadyGone": {
-    "description": "Why a rollback had nothing to do for one item: someone already undid it by hand, so it counts as rolled back. Shown under the item tree for the row under the cursor, and read by screen readers."
+    "description": "Why a rollback had nothing to do for one item: someone already undid it by hand, so it counts as rolled back. Shown under the item tree for the row under the cursor, and read by screen readers.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the line under the item tree that explains why a rollback skipped the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.skipReason.vanished": "This is gone from where the operation left it, so there’s nothing to put back.",
   "@operationLog.skipReason.vanished": {
-    "description": "Why a rollback skipped one item: it was deleted or moved away after the operation (for example the Trash was emptied), so Cmdr can’t bring it back. Shown under the item tree for the row under the cursor, and read by screen readers. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Why a rollback skipped one item: it was deleted or moved away after the operation (for example the Trash was emptied), so Cmdr can’t bring it back. Shown under the item tree for the row under the cursor, and read by screen readers. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the line under the item tree that explains why a rollback skipped the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.skipReason.originalGone": "The original is gone, so Cmdr kept this copy rather than delete the only one left.",
   "@operationLog.skipReason.originalGone": {
-    "description": "Why undoing a copy skipped one file: the file it was copied from is gone or changed, so this copy is the only one left, and removing it would lose it for good. Shown under the item tree for the row under the cursor, and read by screen readers."
+    "description": "Why undoing a copy skipped one file: the file it was copied from is gone or changed, so this copy is the only one left, and removing it would lose it for good. Shown under the item tree for the row under the cursor, and read by screen readers.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the line under the item tree that explains why a rollback skipped the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.skipReason.failed": "Cmdr couldn’t roll this one back. Its log has the details.",
   "@operationLog.skipReason.failed": {
-    "description": "Why a rollback skipped one item: something unexpected stopped it (a permission, a disk that went away). \"Its log\" is Cmdr’s app log. Shown under the item tree for the row under the cursor, and read by screen readers. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+    "description": "Why a rollback skipped one item: something unexpected stopped it (a permission, a disk that went away). \"Its log\" is Cmdr’s app log. Shown under the item tree for the row under the cursor, and read by screen readers. Avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the line under the item tree that explains why a rollback skipped the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.skipReason.locked": "This is locked so that only an administrator can remove it, so Cmdr left it.",
   "@operationLog.skipReason.locked": {
-    "description": "Why undoing a copy skipped one item: it carries a system lock that only an administrator can clear. Shown under the item tree for the row under the cursor, and read by screen readers."
+    "description": "Why undoing a copy skipped one item: it carries a system lock that only an administrator can clear. Shown under the item tree for the row under the cursor, and read by screen readers.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the line under the item tree that explains why a rollback skipped the row under the cursor, so this screenshot may not show it."
   },
   "operationLog.summary.canceled": "{summary}, then canceled ({plannedText} planned)",
   "@operationLog.summary.canceled": {
@@ -309,8 +403,7 @@
       "summary": {},
       "plannedText": {}
     },
-    "screenshot": "operation-log-more-pages.png",
-    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.summary.stopped": "{summary}, then stopped ({plannedText} planned)",
   "@operationLog.summary.stopped": {
@@ -319,8 +412,7 @@
       "summary": {},
       "plannedText": {}
     },
-    "screenshot": "operation-log-more-pages.png",
-    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.summary.copy": "{count, plural, one {Copied {countText} item} other {Copied {countText} items}}",
   "@operationLog.summary.copy": {
@@ -494,11 +586,14 @@
   "operationLog.rollback.partiallyRolledBackNotice": "Cmdr rolled back what it could and left the rest as it was. Rolling back the rest takes another pass and skips anything Cmdr still isn’t sure about.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "description": "Shown under the Operation log’s detail header for an operation that is partly rolled back, when Cmdr can’t count its items yet. Two jobs: tell the person what happened to their files (some came back, the rest are where the operation left them), and say what the \"Roll back the rest\" button does. Deliberately doesn’t promise a complete reversal: the leftovers may be files Cmdr can’t match against what it recorded, and those get skipped again. \"Takes another pass\" means it goes over the operation once more. Reassuring and matter-of-fact; avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",
-    "screenshot": "operation-log-more-pages.png"
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.}}",
   "@operationLog.rollback.interruptedNotice": {
-    "description": "Shown under the Operation log’s detail header for an operation that Cmdr (or the computer) stopped mid-way, for example in a crash, so it never finished. Two facts: Cmdr’s record of it may be incomplete, and a rollback can only undo what was recorded. Calm and factual; it isn’t the person’s fault. Avoid the words error, failed, and crash. The windows branch says Cmdr \"closed\", the word Windows uses when an app stops; macOS and Linux say \"quit\"."
+    "description": "Shown under the Operation log’s detail header for an operation that Cmdr (or the computer) stopped mid-way, for example in a crash, so it never finished. Two facts: Cmdr’s record of it may be incomplete, and a rollback can only undo what was recorded. Calm and factual; it isn’t the person’s fault. Avoid the words error, failed, and crash. The windows branch says Cmdr \"closed\", the word Windows uses when an app stops; macOS and Linux say \"quit\".",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} item is back the way it was.} other {{countText} items are back the way they were.}}",
   "@operationLog.rollback.partialRolledBack": {
@@ -506,7 +601,9 @@
     "placeholders": {
       "count": {},
       "countText": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.partialHeldBack": "{count, plural, one {Cmdr skipped {countText} item it wasn’t sure about.} other {Cmdr skipped {countText} items it wasn’t sure about.}}",
   "@operationLog.rollback.partialHeldBack": {
@@ -514,7 +611,9 @@
     "placeholders": {
       "count": {},
       "countText": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.partialWaiting": "{count, plural, one {{countText} item hasn’t been rolled back yet.} other {{countText} items haven’t been rolled back yet.}}",
   "@operationLog.rollback.partialWaiting": {
@@ -522,27 +621,38 @@
     "placeholders": {
       "count": {},
       "countText": {}
-    }
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.rollbackableNoticeCopy": "Rolling back deletes the selected copies. The originals stay where they are.",
   "@operationLog.rollback.rollbackableNoticeCopy": {
-    "description": "Shown under the Operation log’s detail header for a copy that can be rolled back: what the rollback button does to the checked items in the tree below. Calm and factual."
+    "description": "Shown under the Operation log’s detail header for a copy that can be rolled back: what the rollback button does to the checked items in the tree below. Calm and factual.",
+    "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.rollback.rollbackableNoticeDelete": "Rolling back deletes the selected items this operation created.",
   "@operationLog.rollback.rollbackableNoticeDelete": {
-    "description": "Shown under the Operation log’s detail header for an operation that created things (a new file, a new folder, a compress) and can be rolled back: what the rollback button does to the checked items in the tree below."
+    "description": "Shown under the Operation log’s detail header for an operation that created things (a new file, a new folder, a compress) and can be rolled back: what the rollback button does to the checked items in the tree below.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.rollbackableNoticeMoveBack": "Rolling back moves the selected items back where they came from.",
   "@operationLog.rollback.rollbackableNoticeMoveBack": {
-    "description": "Shown under the Operation log’s detail header for a move or a move to the trash that can be rolled back: what the rollback button does to the checked items in the tree below. Nothing is deleted."
+    "description": "Shown under the Operation log’s detail header for a move or a move to the trash that can be rolled back: what the rollback button does to the checked items in the tree below. Nothing is deleted.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.rollbackableNoticeRenameBack": "Rolling back gives the selected items their old names back.",
   "@operationLog.rollback.rollbackableNoticeRenameBack": {
-    "description": "Shown under the Operation log’s detail header for a rename that can be rolled back: what the rollback button does to the checked items in the tree below."
+    "description": "Shown under the Operation log’s detail header for a rename that can be rolled back: what the rollback button does to the checked items in the tree below.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.rollbackableNoticeTagsBack": "Rolling back gives the selected items the tags they had before.",
   "@operationLog.rollback.rollbackableNoticeTagsBack": {
-    "description": "Shown under the Operation log’s detail header for a Finder color-tag change that can be rolled back: what the rollback button does to the checked items in the tree below."
+    "description": "Shown under the Operation log’s detail header for a Finder color-tag change that can be rolled back: what the rollback button does to the checked items in the tree below.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalAlreadyRollingBack": "This one is already rolling back. Watch it in the queue.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {
@@ -571,7 +681,8 @@
   "operationLog.rollback.refusalPermanentDelete": "A permanent delete leaves nothing to put back.",
   "@operationLog.rollback.refusalPermanentDelete": {
     "description": "Shown on a row of the Operation log when the user presses Roll back on a permanent delete (not a move to the trash, which Cmdr can undo). Nothing was kept, so there’s no next step to offer. Keep it short and matter-of-fact; don’t hint at a recovery that doesn’t exist. “put back” is general here (restore anything at all), so pick a verb that isn’t tied to the Trash.",
-    "screenshot": "operation-log-more-pages.png"
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string belongs to one of its other states (loading, empty, or a load error), which render in this same dialog in place of the list."
   },
   "operationLog.rollback.refusalArchiveOverwrite": "This archive replaced an older one with the same name. Cmdr doesn’t keep copies of what it replaces, so the older one can’t come back.",
   "@operationLog.rollback.refusalArchiveOverwrite": {

@@ -676,7 +676,8 @@
     "description": "VERB (imperative). Right-click item on a mounted network share (an SMB share from a NAS or another computer) in the path bar or the volume dropdown: ends the mount, so the share leaves the list. The sibling of menu.volume.eject, which says the same for a disk. Each branch uses its OS's own word for a share: the macOS branch is the word your macOS Finder uses for Eject (Finder ejects a server too), so it reads exactly like menu.volume.eject; the Windows branch is File Explorer's word for a mapped network drive (Disconnect); the Linux branch is the file manager's word for a network mount (Unmount), never \"disconnect\". Keep the {name} token exactly as written, braces included; it is replaced literally with the share name. Its busy form is menu.volume.detachShareBusy.",
     "placeholders": {
       "name": "the share's name as the system reports it, uncontrolled and possibly long (e.g. \"media\", \"Family photos\")"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "menu.volume.detachShareBusy": "{platform, select, macos {Eject ({name}) (busy)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
   "@menu.volume.detachShareBusy": {

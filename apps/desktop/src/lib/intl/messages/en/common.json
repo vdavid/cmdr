@@ -42,7 +42,7 @@
   "@common.downloadsFdaHint": {
     "description": "Hint shown while Cmdr isn't watching the Downloads folder. The macos branch gives the cause there, a missing Full Disk Access permission, and <settingsLink> wraps the inline action that opens System Settings. The other branch (Windows and Linux, which have no such permission) says what to check instead and has no link.",
     "screenshot": "settings-behavior-notifications.png",
-    "screenshotNote": "Settings > Behavior > Notifications, pictured here. Your string is the hint at the top of this section that appears only while Cmdr can’t watch the Downloads folder. On macOS that’s for lack of Full Disk Access, and the hint ends in a link that opens System Settings."
+    "screenshotNote": "Settings > Behavior > Notifications, pictured here. Your string is the hint at the top of this section that appears only while Cmdr can’t watch the Downloads folder for lack of Full Disk Access, with a link that opens System Settings."
   },
 
   "common.sizeUnit.byte": "{count, plural, one {byte} other {bytes}}",

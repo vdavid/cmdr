@@ -613,23 +613,28 @@
   },
   "settings.fileOperations.macOnlyFiles.label": "Skip Mac-only hidden files",
   "@settings.fileOperations.macOnlyFiles.label": {
-    "description": "Settings label for a three-way choice: whether copying, moving, and compressing leaves out the hidden files only macOS uses (Finder’s .DS_Store and the ._ files beside items). \"Mac-only\" means files that mean something only on a Mac; other systems show them as clutter. Same wording as the copy dialog’s toggle (fileOperations.transferDialog.macOnlyFiles.toggle)."
+    "description": "Settings label for a three-way choice: whether copying, moving, and compressing leaves out the hidden files only macOS uses (Finder’s .DS_Store and the ._ files beside items). \"Mac-only\" means files that mean something only on a Mac; other systems show them as clutter. Same wording as the copy dialog’s toggle (fileOperations.transferDialog.macOnlyFiles.toggle).",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.macOnlyFiles.description": "Skips .DS_Store and ._* files when copying/moving/compressing files.",
   "@settings.fileOperations.macOnlyFiles.description": {
-    "description": "Help text under the 'Skip Mac-only hidden files' setting. Keep \".DS_Store\" and \"._*\" exactly as written: they are file names. The slashes join the three operations (copy, move, compress) as alternatives."
+    "description": "Help text under the 'Skip Mac-only hidden files' setting. Keep \".DS_Store\" and \"._*\" exactly as written: they are file names. The slashes join the three operations (copy, move, compress) as alternatives.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.macOnlyFiles.opt.include": "Include",
   "@settings.fileOperations.macOnlyFiles.opt.include": {
-    "description": "Option of the 'Skip Mac-only hidden files' setting: copy these files like any other file. Segmented-control label, keep it short."
+    "description": "Option of the 'Skip Mac-only hidden files' setting: copy these files like any other file. Segmented-control label, keep it short.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.macOnlyFiles.opt.skip": "Skip",
   "@settings.fileOperations.macOnlyFiles.opt.skip": {
-    "description": "Option of the 'Skip Mac-only hidden files' setting: leave these files out. Segmented-control label, keep it short."
+    "description": "Option of the 'Skip Mac-only hidden files' setting: leave these files out. Segmented-control label, keep it short.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.macOnlyFiles.opt.ask": "Always ask",
   "@settings.fileOperations.macOnlyFiles.opt.ask": {
-    "description": "Option of the 'Skip Mac-only hidden files' setting, and the default: the copy, move, and compress dialog shows the choice, unticked, each time. Segmented-control label, keep it short. Same meaning as settings.fileOperations.allowFileExtensionChanges.opt.ask."
+    "description": "Option of the 'Skip Mac-only hidden files' setting, and the default: the copy, move, and compress dialog shows the choice, unticked, each time. Segmented-control label, keep it short. Same meaning as settings.fileOperations.allowFileExtensionChanges.opt.ask.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.macOnlyFiles.keywords": "hidden, metadata, clutter, junk, resource fork, archive, compress, copy, move, other systems",
   "@settings.fileOperations.macOnlyFiles.keywords": {
@@ -1262,11 +1267,13 @@
   },
   "settings.indexing.firstStaleDialogShown.label": "Suppress the out-of-date index explainer",
   "@settings.indexing.firstStaleDialogShown.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time dialog explaining that an external drive’s index may be out of date (indexing.staleDialog.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time dialog explaining that an external drive’s index may be out of date (indexing.staleDialog.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.indexing.firstStaleDialogShown.description": "The first time an external drive’s index may be out of date, Cmdr explains what that means. Turn this off to see the explanation once more. It still shows only while “Notify me if any external drive index goes stale” is on.",
   "@settings.indexing.firstStaleDialogShown.description": {
-    "description": "Help text for the “Suppress the out-of-date index explainer” switch (settings.indexing.firstStaleDialogShown.label). The quoted text must match settings.indexing.staleNotify.label; translate it the same way."
+    "description": "Help text for the “Suppress the out-of-date index explainer” switch (settings.indexing.firstStaleDialogShown.label). The quoted text must match settings.indexing.staleNotify.label; translate it the same way.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.indexing.firstStaleDialogShown.keywords": "index, stale, outdated, drive, external, dialog, explain",
   "@settings.indexing.firstStaleDialogShown.keywords": {
@@ -1333,11 +1340,13 @@
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Don’t ask about the latest-download shortcut again",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time warning toast on the first press of the global shortcut that jumps to the latest download (downloads.warnToast.message), which asks whether to keep the shortcut on. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time warning toast on the first press of the global shortcut that jumps to the latest download (downloads.warnToast.message), which asks whether to keep the shortcut on. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "The first time you press the shortcut that jumps to your latest download from any app, Cmdr asks whether to keep it on. Changing the shortcut turns this off, so a new combo gets asked about too. Turn this off to see the question once more.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
-    "description": "Help text for the “Suppress the latest-download shortcut question” switch (settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label). “Shortcut” is a keyboard shortcut; “combo” is the key combination."
+    "description": "Help text for the “Suppress the latest-download shortcut question” switch (settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label). “Shortcut” is a keyboard shortcut; “combo” is the key combination.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": "download, shortcut, hotkey, global, warning, keep, toast",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.keywords": {
@@ -1560,11 +1569,13 @@
   },
   "settings.network.requireSmbEncryption.label": "Always require SMB encryption",
   "@settings.network.requireSmbEncryption.label": {
-    "description": "Label for the toggle that makes Cmdr encrypt every SMB connection it opens itself, and refuse a server that can't encrypt. Off by default; an organization can force it on. \"SMB\" is a protocol name; keep it. In Settings > File systems > SMB/Network shares. Other messages name this setting by its label, so keep it short and stable."
+    "description": "Label for the toggle that makes Cmdr encrypt every SMB connection it opens itself, and refuse a server that can't encrypt. Off by default; an organization can force it on. \"SMB\" is a protocol name; keep it. In Settings > File systems > SMB/Network shares. Other messages name this setting by its label, so keep it short and stable.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your Mac connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} windows {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your PC connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} other {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your computer connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.}}",
   "@settings.network.requireSmbEncryption.description": {
-    "description": "Help text for the \"Always require SMB encryption\" toggle. \"Its connections\" means the direct connections Cmdr makes. \"One your Mac connected to without encryption\" (your PC on Windows, your computer on Linux) is a share the system itself mounted (for example from its file manager) over an unencrypted connection: Cmdr won't browse it while this is on. \"Guest connections\" are the ones made without signing in to an account. The last sentence: a direct connection Cmdr already has open keeps going until it next reconnects. \"Cmdr\" is the product name and \"SMB\" a protocol name; keep both."
+    "description": "Help text for the \"Always require SMB encryption\" toggle. \"Its connections\" means the direct connections Cmdr makes. \"One your Mac connected to without encryption\" (your PC on Windows, your computer on Linux) is a share the system itself mounted (for example from its file manager) over an unencrypted connection: Cmdr won't browse it while this is on. \"Guest connections\" are the ones made without signing in to an account. The last sentence: a direct connection Cmdr already has open keeps going until it next reconnects. \"Cmdr\" is the product name and \"SMB\" a protocol name; keep both.",
+    "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.requireSmbEncryption.keywords": "encrypt, encrypted, encryption, security, privacy, secure",
   "@settings.network.requireSmbEncryption.keywords": {
@@ -2031,11 +2042,13 @@
   },
   "settings.advanced.indexPauseFreeSpacePercent.label": "Pause indexing when free space is below (%)",
   "@settings.advanced.indexPauseFreeSpacePercent.label": {
-    "description": "Advanced-section label for the number input that sets the free-space percentage of the startup disk below which drive indexing pauses. \"(%)\" marks the value as a percent; keep the locale's percent sign."
+    "description": "Advanced-section label for the number input that sets the free-space percentage of the startup disk below which drive indexing pauses. \"(%)\" marks the value as a percent; keep the locale's percent sign.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr pauses drive indexing when free space on your startup disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} windows {Cmdr pauses drive indexing when free space on your system drive drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} other {Cmdr pauses drive indexing when free space on your system disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.}}",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "description": "Help text for the index pause threshold (Settings > Advanced). \"Cmdr\" is the product name (keep it). \"drive indexing\" is Cmdr's background scan that computes folder sizes; use the same term as the other indexing settings. Each branch names the boot drive in its own OS's term: \"startup disk\" on macOS, \"system drive\" on Windows, \"system disk\" on Linux; use that OS's localized term. \"one point\" means one percentage point (5% → 6%). “Low disk space warning” quotes the label of the separate setting under Behavior > Notifications (settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label); use that label's translation exactly, in your language's quote marks."
+    "description": "Help text for the index pause threshold (Settings > Advanced). \"Cmdr\" is the product name (keep it). \"drive indexing\" is Cmdr's background scan that computes folder sizes; use the same term as the other indexing settings. Each branch names the boot drive in its own OS's term: \"startup disk\" on macOS, \"system drive\" on Windows, \"system disk\" on Linux; use that OS's localized term. \"one point\" means one percentage point (5% → 6%). “Low disk space warning” quotes the label of the separate setting under Behavior > Notifications (settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label); use that label's translation exactly, in your language's quote marks.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "disk, space, full, free, index, indexing, pause, storage, threshold, percent, low",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
@@ -2071,11 +2084,13 @@
   },
   "settings.fileExplorer.quickFilterTypingHintSeen.label": "Suppress the quick filter typing hint",
   "@settings.fileExplorer.quickFilterTypingHintSeen.label": {
-    "description": "Advanced-section label for a toggle. On means a one-time tip won't show (again). The tip explains why a key like Space or * did its usual job instead of typing into the quick filter (the feature where typing narrows the file list)."
+    "description": "Advanced-section label for a toggle. On means a one-time tip won't show (again). The tip explains why a key like Space or * did its usual job instead of typing into the quick filter (the feature where typing narrows the file list).",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.quickFilterTypingHintSeen.description": "While a quick filter is on, keys like Space, -, and * type into it only while you keep typing. After a pause they do their usual job again, like Space selecting a file. The first time that happens, Cmdr explains it once. Turn this off to see that explanation again.",
   "@settings.fileExplorer.quickFilterTypingHintSeen.description": {
-    "description": "Help text for the toggle above. \"quick filter\" = the feature where typing narrows the file list. Space, -, and * are keyboard keys; keep the symbols, use the language's name for Space. \"Cmdr\" is the product name; keep it."
+    "description": "Help text for the toggle above. \"quick filter\" = the feature where typing narrows the file list. Space, -, and * are keyboard keys; keep the symbols, use the language's name for Space. \"Cmdr\" is the product name; keep it.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.quickFilterTypingHintSeen.keywords": "tip, hint, toast, filter, space, typing, wildcard",
   "@settings.fileExplorer.quickFilterTypingHintSeen.keywords": {
@@ -2153,11 +2168,13 @@
   },
   "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Suppress the Escape full-screen hint",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast saying Escape took Cmdr out of full screen (main.escapeFullScreenHint.message). “Escape” is the keyboard key; use the locale’s key name. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast saying Escape took Cmdr out of full screen (main.escapeFullScreenHint.message). “Escape” is the keyboard key; use the locale’s key name. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.exitFullScreenOnEscapeHintShown.description": "The first time Escape takes Cmdr out of full screen, Cmdr says so and offers the switch that turns this off. Turn this off to see the hint once more.",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.description": {
-    "description": "Help text for the “Suppress the Escape full-screen hint” switch (settings.advanced.exitFullScreenOnEscapeHintShown.label). “Escape” is the keyboard key; use the locale’s key name. The first “turns this off” refers to the Exit full screen on Escape switch (settings.advanced.exitFullScreenOnEscape.label)."
+    "description": "Help text for the “Suppress the Escape full-screen hint” switch (settings.advanced.exitFullScreenOnEscapeHintShown.label). “Escape” is the keyboard key; use the locale’s key name. The first “turns this off” refers to the Exit full screen on Escape switch (settings.advanced.exitFullScreenOnEscape.label).",
+    "screenshot": "settings-advanced.png"
   },
   "settings.advanced.exitFullScreenOnEscapeHintShown.keywords": "escape, full screen, fullscreen, exit, hint, toast",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.keywords": {
@@ -2175,11 +2192,13 @@
   },
   "settings.fileExplorer.quickFilter.typingWindow.label": "Quick filter typing window",
   "@settings.fileExplorer.quickFilter.typingWindow.label": {
-    "description": "Advanced-section label for a number in milliseconds. \"quick filter\" = the feature where typing narrows the file list. \"typing window\" = how long a pause between keys still counts as typing."
+    "description": "Advanced-section label for a number in milliseconds. \"quick filter\" = the feature where typing narrows the file list. \"typing window\" = how long a pause between keys still counts as typing.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.quickFilter.typingWindow.description": "How soon after the previous key Space, -, *, and other keys with an action still type into the quick filter, in milliseconds. After a longer pause they do their usual job again, like Space selecting a file. Moving the cursor ends the typing right away.",
   "@settings.fileExplorer.quickFilter.typingWindow.description": {
-    "description": "Help text for the setting above. Space, -, and * are keyboard keys; keep the symbols, use the language's name for Space. \"milliseconds\": the unit of the number the person enters."
+    "description": "Help text for the setting above. Space, -, and * are keyboard keys; keep the symbols, use the language's name for Space. \"milliseconds\": the unit of the number the person enters.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.quickFilter.typingWindow.keywords": "filter, typing, pause, delay, space, wildcard, timeout",
   "@settings.fileExplorer.quickFilter.typingWindow.keywords": {
@@ -2536,15 +2555,18 @@
   },
   "settings.finderExtension.card": "Open in Cmdr",
   "@settings.finderExtension.card": {
-    "description": "The name of a menu item in Finder's right-click menu, which opens the chosen files or folders in Cmdr. It appears there exactly as written here, and also as the heading of a settings card about that item. A short verb phrase, the way your locale's macOS names an \"Open in…\" menu item. \"Cmdr\" is the product name and stays verbatim."
+    "description": "The name of a menu item in Finder's right-click menu, which opens the chosen files or folders in Cmdr. It appears there exactly as written here, and also as the heading of a settings card about that item. A short verb phrase, the way your locale's macOS names an \"Open in…\" menu item. \"Cmdr\" is the product name and stays verbatim.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.finderExtension.label": "Show at the top of Finder’s right-click menu",
   "@settings.finderExtension.label": {
-    "description": "Label of an on/off switch in that card. Turning it on puts “Open in Cmdr” directly in Finder's right-click menu, where without it the item sits in a submenu. \"Finder\" is Apple's file manager; use Apple's name for it in your language."
+    "description": "Label of an on/off switch in that card. Turning it on puts “Open in Cmdr” directly in Finder's right-click menu, where without it the item sits in a submenu. \"Finder\" is Apple's file manager; use Apple's name for it in your language.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.finderExtension.description": "“Open in Cmdr” is always in the menu’s Services section. This moves it up to the top level, on your startup disk. It adds a small process that runs alongside Finder.",
   "@settings.finderExtension.description": {
-    "description": "Explains that switch and its one cost. \"Services\" is the macOS submenu of that name; use the word your locale's macOS uses. \"startup disk\" is Apple's term for the Mac's main drive: on other drives the item stays in Services. \"a small process\" is a little program that keeps running in the background."
+    "description": "Explains that switch and its one cost. \"Services\" is the macOS submenu of that name; use the word your locale's macOS uses. \"startup disk\" is Apple's term for the Mac's main drive: on other drives the item stays in Services. \"a small process\" is a little program that keeps running in the background.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.finderExtension.notInApplications": "Move Cmdr to your Applications folder to switch this on.",
   "@settings.finderExtension.notInApplications": {
@@ -2637,11 +2659,13 @@
   },
   "settings.behavior.textEditorHintSeen.label": "Suppress the text editor hint",
   "@settings.behavior.textEditorHintSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast after F4 (edit) mentioning that the user can pick a different text editor. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast after F4 (edit) mentioning that the user can pick a different text editor. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.textEditorHintSeen.description": "The first time F4 opens a file in the default editor while another editor is installed, Cmdr mentions that you can pick a different one. Turn this off to see the hint once more.",
   "@settings.behavior.textEditorHintSeen.description": {
-    "description": "Help text for the “Suppress the text editor hint” switch (settings.behavior.textEditorHintSeen.label). “F4” is a keyboard key; keep it."
+    "description": "Help text for the “Suppress the text editor hint” switch (settings.behavior.textEditorHintSeen.label). “F4” is a keyboard key; keep it.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
   "@settings.behavior.textEditorHintSeen.keywords": {
@@ -2676,11 +2700,13 @@
   },
   "settings.fileExplorer.git.portalIntroSeen.label": "Suppress the git folder intro",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast introducing the browsable .git folder (fileExplorer.git.portalIntro.title). “git” is the version-control tool; keep it. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast introducing the browsable .git folder (fileExplorer.git.portalIntro.title). “git” is the version-control tool; keep it. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.git.portalIntroSeen.description": "The first time a pane opens the top folder of a git repository, Cmdr introduces the .git folder, where you can browse branches, tags, and old commits like regular folders. Turn this off to see the intro once more.",
   "@settings.fileExplorer.git.portalIntroSeen.description": {
-    "description": "Help text for the “Suppress the git folder intro” switch (settings.fileExplorer.git.portalIntroSeen.label). “git” and “.git” stay as they are."
+    "description": "Help text for the “Suppress the git folder intro” switch (settings.fileExplorer.git.portalIntroSeen.label). “git” and “.git” stay as they are.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.git.portalIntroSeen.keywords": "repository, repo, branch, commit, intro, toast",
   "@settings.fileExplorer.git.portalIntroSeen.keywords": {
@@ -2688,11 +2714,13 @@
   },
   "settings.behavior.openTerminalHereToastSeen.label": "Suppress the Open terminal here hint",
   "@settings.behavior.openTerminalHereToastSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast after the first “Open terminal here” saying which app opened and where to pick another (commands.handler.openTerminalHere.hint). “Open terminal here” is a command name; translate it the same way as that command. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast after the first “Open terminal here” saying which app opened and where to pick another (commands.handler.openTerminalHere.hint). “Open terminal here” is a command name; translate it the same way as that command. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.openTerminalHereToastSeen.description": "The first time you open a folder in a terminal, Cmdr says which app it used and where to pick a different one. Turn this off to see the hint once more.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
-    "description": "Help text for the “Suppress the Open terminal here hint” switch (settings.behavior.openTerminalHereToastSeen.label)."
+    "description": "Help text for the “Suppress the Open terminal here hint” switch (settings.behavior.openTerminalHereToastSeen.label).",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.openTerminalHereToastSeen.keywords": "terminal, shell, console, command line, app, hint, toast",
   "@settings.behavior.openTerminalHereToastSeen.keywords": {
@@ -2719,11 +2747,13 @@
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Suppress the double-click-to-go-up hint",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast explaining that double-clicking the empty pane background went up to the parent folder (fileExplorer.doubleClickHint.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast explaining that double-clicking the empty pane background went up to the parent folder (fileExplorer.doubleClickHint.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.description": "The first time you double-click the empty space in a pane, Cmdr goes up a folder and says why. Turn this off to see the hint once more.",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
-    "description": "Help text for the “Suppress the double-click-to-go-up hint” switch (settings.behavior.doubleClickOnPaneNotificationSeen.label)."
+    "description": "Help text for the “Suppress the double-click-to-go-up hint” switch (settings.behavior.doubleClickOnPaneNotificationSeen.label).",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.keywords": "double-click, parent, up, background, hint, toast, tip",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.keywords": {
@@ -2731,11 +2761,13 @@
   },
   "settings.behavior.serversPinHintSeen.label": "Suppress the long Network group hint",
   "@settings.behavior.serversPinHintSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast shown once five or more servers are pinned to the volume switcher’s Network group (servers.pinHint.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast shown once five or more servers are pinned to the volume switcher’s Network group (servers.pinHint.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.serversPinHintSeen.description": "Once five or more servers are pinned to the volume switcher, Cmdr shows how to unpin some to keep its Network group short. Turn this off to see the hint once more.",
   "@settings.behavior.serversPinHintSeen.description": {
-    "description": "Help text for the “Suppress the long Network group hint” switch (settings.behavior.serversPinHintSeen.label). “Network group” is the Network section of the volume switcher (the drive list)."
+    "description": "Help text for the “Suppress the long Network group hint” switch (settings.behavior.serversPinHintSeen.label). “Network group” is the Network section of the volume switcher (the drive list).",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.serversPinHintSeen.keywords": "server, pin, unpin, network, switcher, hint, toast",
   "@settings.behavior.serversPinHintSeen.keywords": {
@@ -2775,11 +2807,13 @@
   },
   "settings.behavior.revealActivationNoticeSeen.label": "Suppress the “Show in Finder” notice",
   "@settings.behavior.revealActivationNoticeSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast shown the first time another app’s “Show in Finder” opens in Cmdr instead (main.revealActivation.title). “Finder” is the macOS app; use the OS’s localized name for “Show in Finder”. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast shown the first time another app’s “Show in Finder” opens in Cmdr instead (main.revealActivation.title). “Finder” is the macOS app; use the OS’s localized name for “Show in Finder”. On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.revealActivationNoticeSeen.description": "When Cmdr is set to catch “Show in Finder”, the first one that lands here comes with a note saying why a pane opened instead of Finder. Turn this off to see the note once more.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "description": "Help text for the “Suppress the “Show in Finder” notice” switch (settings.behavior.revealActivationNoticeSeen.label). Use the OS’s localized name for “Show in Finder”, matching main.revealActivation.title."
+    "description": "Help text for the “Suppress the “Show in Finder” notice” switch (settings.behavior.revealActivationNoticeSeen.label). Use the OS’s localized name for “Show in Finder”, matching main.revealActivation.title.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.revealActivationNoticeSeen.keywords": "reveal, show in folder, open, notice, toast",
   "@settings.behavior.revealActivationNoticeSeen.keywords": {
@@ -2787,11 +2821,13 @@
   },
   "settings.behavior.adbHintDismissed.label": "Suppress the USB debugging hint",
   "@settings.behavior.adbHintDismissed.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the line at the top of an Android phone’s pane suggesting USB debugging (adb.hint.text). Unlike a toast, it stays until closed with its ×. On means the user closed the line and it won’t show again; turning it off makes the line show again."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the line at the top of an Android phone’s pane suggesting USB debugging (adb.hint.text). Unlike a toast, it stays until closed with its ×. On means the user closed the line and it won’t show again; turning it off makes the line show again.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.adbHintDismissed.description": "A phone connected without USB debugging shows a line at the top of its pane suggesting you turn it on, so Cmdr can reach the whole phone. Closing the line with its × turns this on. Turn this off to see the line again.",
   "@settings.behavior.adbHintDismissed.description": {
-    "description": "Help text for the “Suppress the USB debugging hint” switch (settings.behavior.adbHintDismissed.label). “USB debugging” is Android’s developer option; use the name Android uses in the locale."
+    "description": "Help text for the “Suppress the USB debugging hint” switch (settings.behavior.adbHintDismissed.label). “USB debugging” is Android’s developer option; use the name Android uses in the locale.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.adbHintDismissed.keywords": "phone, mobile, debugging, developer, hint, tip",
   "@settings.behavior.adbHintDismissed.keywords": {
@@ -4189,11 +4225,13 @@
   },
   "settings.fileExplorer.quickFilterIntroSeen.label": "Suppress the quick filter explainer",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
-    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast explaining that typing in a pane filtered its list (fileExplorer.quickFilter.intro.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more."
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the one-time toast explaining that typing in a pane filtered its list (fileExplorer.quickFilter.intro.title). On means the hint was already shown and won’t show again; the app turns it on by itself the moment the hint appears, and turning it off makes the hint show once more.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.quickFilterIntroSeen.description": "The first time your typing filters a pane, Cmdr explains what happened and that Esc brings every file back. Turn this off to see the explanation once more.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
-    "description": "Help text for the “Suppress the quick filter explainer” switch (settings.fileExplorer.quickFilterIntroSeen.label). “Esc” is the Escape key; use the locale’s key name."
+    "description": "Help text for the “Suppress the quick filter explainer” switch (settings.fileExplorer.quickFilterIntroSeen.label). “Esc” is the Escape key; use the locale’s key name.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.quickFilterIntroSeen.keywords": "filter, typing, type, explain, intro, toast, tip",
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {

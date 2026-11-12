@@ -68,8 +68,7 @@
   "shortcuts.scope.askCmdr": "Ask Cmdr",
   "@shortcuts.scope.askCmdr": {
     "description": "Group heading in the Keyboard shortcuts list for keys that work while focus is in Ask Cmdr, the chat rail where the user chats with an AI about their files. \"Ask Cmdr\" is the product name; keep it as-is.",
-    "screenshot": "settings-keyboard-shortcuts.png",
-    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.favoritesMenu": "Favorites menu",

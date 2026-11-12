@@ -66,15 +66,18 @@
   },
   "askCmdr.softCap.message": "This chat is getting long. A fresh one keeps replies fast and focused.",
   "@askCmdr.softCap.message": {
-    "description": "A gentle nudge shown once an Ask Cmdr conversation fills most of what the AI model can keep in view (about 70%), or once older parts had to be set aside. Friendly, not a hard limit."
+    "description": "A gentle nudge shown once an Ask Cmdr conversation fills most of what the AI model can keep in view (about 70%), or once older parts had to be set aside. Friendly, not a hard limit.",
+    "screenshot": "ask-cmdr-tools.png"
   },
   "askCmdr.softCap.action": "Start a fresh chat",
   "@askCmdr.softCap.action": {
-    "description": "Button that starts a new Ask Cmdr conversation, shown alongside the getting-long nudge. Sentence case."
+    "description": "Button that starts a new Ask Cmdr conversation, shown alongside the getting-long nudge. Sentence case.",
+    "screenshot": "ask-cmdr-tools.png"
   },
   "askCmdr.softCap.dismiss": "Dismiss",
   "@askCmdr.softCap.dismiss": {
-    "description": "Accessible label (read by screen readers, shown nowhere) for the round × button that hides the 'This chat is getting long' nudge for this chat. A verb; sentence case."
+    "description": "Accessible label (read by screen readers, shown nowhere) for the round × button that hides the 'This chat is getting long' nudge for this chat. A verb; sentence case.",
+    "screenshot": "ask-cmdr-tools.png"
   },
   "askCmdr.tool.appState.doing": "Checking what you’re looking at",
   "@askCmdr.tool.appState.doing": {
@@ -1484,8 +1487,7 @@
   "askCmdr.sessions.clearSearch": "Clear search",
   "@askCmdr.sessions.clearSearch": {
     "description": "Accessible label and tooltip for the small × button at the end of the chats search box, which empties the box and brings back the full list of chats. Sentence case.",
-    "screenshot": "ask-cmdr-sessions.png",
-    "screenshotNote": "The Ask Cmdr chats panel, pictured here. Your string belongs to another state of it: nothing to list, an archived chat, or a row being renamed."
+    "screenshot": "ask-cmdr-sessions-no-results.png"
   },
   "askCmdr.sessions.resultsLabel": "Matching chats",
   "@askCmdr.sessions.resultsLabel": {
@@ -1511,8 +1513,7 @@
       "otherCountText": "how many other folders had changes, formatted for the language",
       "otherCount": "the same number as a raw integer, only for choosing the plural form; 0 means only the one folder"
     },
-    "screenshot": "ask-cmdr-sessions.png",
-    "screenshotNote": "The Ask Cmdr chats panel, pictured here. Your string belongs to another state of it: nothing to list, an archived chat, or a row being renamed."
+    "screenshot": "ask-cmdr-wake-digest.png"
   },
   "askCmdr.composer.attach": "Ask about selection",
   "@askCmdr.composer.attach": {

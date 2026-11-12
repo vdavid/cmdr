@@ -106,7 +106,8 @@
     "placeholders": {
       "action": "the action label, already translated (for example “Move”, “Move to Trash”)",
       "title": "the suggestion's name as the AI wrote it, in the user's language or not; never translated"
-    }
+    },
+    "screenshot": "suggested-ops-downloads-cleanup.png"
   },
   "suggestedOps.approve.move": "Move {countText} {count, plural, one {file} other {files}}",
   "@suggestedOps.approve.move": {
