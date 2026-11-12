@@ -55,8 +55,10 @@ describe('visitorCapabilities', () => {
       expect(mac[capability], capability).toBe(true)
   })
 
-  it('shows everyone else no OS-backed surface, as before capabilities existed', () => {
-    expect(visitorCapabilities('windows')).toEqual(NO_CAPABILITIES)
-    expect(visitorCapabilities('linux')).toEqual(NO_CAPABILITIES)
+  // With `appMenu`, Quit and the Hide trio are the bar's app-menu rows, so no visitor gets a
+  // Quit palette row whose IPC has no backend (`command-registry.test.ts` pins that consequence).
+  it('shows everyone else no OS-backed surface but the app menu the demo’s macOS bar draws', () => {
+    expect(visitorCapabilities('windows')).toEqual({ ...NO_CAPABILITIES, appMenu: true })
+    expect(visitorCapabilities('linux')).toEqual({ ...NO_CAPABILITIES, appMenu: true })
   })
 })

@@ -32,7 +32,6 @@ const MAC_VISITOR_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({
   textEditorChoice: true,
   cloudFileActions: true,
   colorTags: true,
-  // The demo's bar is the macOS one, whose app menu draws Quit and the Hide rows as OS rows.
   appMenu: true,
   servicesMenu: true,
   fullDiskAccess: true,
@@ -53,9 +52,18 @@ const MAC_VISITOR_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({
   processDiagnostics: true,
 })
 
+/**
+ * What every other visitor gets: no OS-backed surface, except the app menu. The demo always
+ * draws the macOS bar (`crates/cmdr-listing-wasm/src/menu.rs`), whose app menu owns Quit, Hide,
+ * Hide others, and Show all as OS rows, so for every visitor those are the bar's and Quit isn't a
+ * palette command whose IPC has no backend. This flips to `false` off macOS once the demo's bar
+ * follows the visitor's OS (task 63 of `docs/specs/windows-port-plan.md`).
+ */
+const OTHER_VISITOR_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({ ...NO_CAPABILITIES, appMenu: true })
+
 /** The demo's capabilities for a visitor on `platform`. Exported for its test. */
 export function visitorCapabilities(platform: Platform): Readonly<PlatformCapabilities> {
-  return platform === 'macos' ? MAC_VISITOR_CAPABILITIES : NO_CAPABILITIES
+  return platform === 'macos' ? MAC_VISITOR_CAPABILITIES : OTHER_VISITOR_CAPABILITIES
 }
 
 /** Defines the platform and its capabilities in `frame` before any app module reads them, read-only as on desktop. */

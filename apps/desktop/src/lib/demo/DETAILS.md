@@ -154,6 +154,11 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   a fixed `macos`. Why: the platform picks the shortcut modifiers, and they have to match the keyboard under the
   visitor's hands; ⌘ on a PC keyboard is the Windows key, which the browser and the OS keep. The demo is the one place
   that reads the user agent for this: a page has no other signal, and app code never does.
+- Capabilities follow the platform (`visitorCapabilities`): a Mac visitor gets the Mac app's, everyone else none, except
+  `appMenu`. Decision: every visitor gets `appMenu: true`. Why: the demo always draws the macOS bar, whose app menu owns
+  Quit, Hide, Hide others, and Show all as OS rows, so a Windows or Linux visitor would otherwise get a Quit palette
+  command whose `quit_app` has no backend. It flips to `false` off macOS once the demo's bar follows the visitor's OS
+  (task 63 of `docs/specs/windows-port-plan.md`).
 
 ## The menu bar
 
