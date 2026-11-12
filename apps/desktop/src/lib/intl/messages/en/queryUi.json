@@ -102,10 +102,15 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.empty.tip": "Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘Y</historyKey> shows recent searches.",
-  "@queryUi.empty.tip": {
-    "description": "Keyboard tip at the bottom of the search dialog's empty state. The <newKey> and <historyKey> tags wrap the keys, rendered as small key badges that always show the user's own keys (Ctrl+N and Ctrl+H on Windows and Linux); keep the tags around the glyphs ⌘N and ⌘Y, keep those glyphs as-is, and keep the surrounding sentence reading naturally.",
-    "screenshot": "search-dialog.png"
+  "queryUi.empty.keysTip": "Tip: <newChip>{newCombo}</newChip> starts fresh, <historyChip>{historyCombo}</historyChip> shows recent searches.",
+  "@queryUi.empty.keysTip": {
+    "description": "Keyboard tip at the bottom of the search dialog's empty state (the Search and Select files dialogs). The <newChip> and <historyChip> tags wrap the two keys, which render as small key badges; keep each tag around its placeholder and keep the sentence reading naturally around them. \"Starts fresh\" means it clears the query, filters, and results for a new search.",
+    "placeholders": {
+      "newCombo": "the key that clears the dialog for a new search, as key glyphs or key names (⌘N on a Mac, Ctrl+N on Windows and Linux); never a word",
+      "historyCombo": "the key that shows the recent searches, as key glyphs or key names (⌘Y on a Mac, Ctrl+H on Windows and Linux); never a word"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
   "queryUi.ai.cloudOff.body": "Cloud AI is off. Allow it in Settings > AI to use this.",
   "@queryUi.ai.cloudOff.body": {

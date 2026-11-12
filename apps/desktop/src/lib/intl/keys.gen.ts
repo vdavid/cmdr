@@ -3861,7 +3861,7 @@ export type MessageKey =
   | 'queryUi.dialog.runQueryUnknownReason'
   | 'queryUi.empty.aiBadge'
   | 'queryUi.empty.indexReady'
-  | 'queryUi.empty.tip'
+  | 'queryUi.empty.keysTip'
   | 'queryUi.empty.tryLine'
   | 'queryUi.filters.chip.modified'
   | 'queryUi.filters.chip.pattern'

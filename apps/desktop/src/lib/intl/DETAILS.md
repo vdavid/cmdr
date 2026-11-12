@@ -330,6 +330,11 @@ allowed moves are `ACCEPTED_ENGLISH_CHANGES` (English only) and `COLLAPSED_PAIRS
 equal the old `.mac` value). `SPLIT_KEYS` holds the reverse: a new key split off a frozen one for one case it used to
 word (a mounted share's eject words) must render the old key's frozen macOS text, in every locale, so a split carries
 each locale's translation into the new key's `macos` branch (its other branches start as English, pending translation).
+`RETIRED_KEYS` lists a frozen key deleted on purpose, which must then be gone from every catalog. That's also the route
+for a message whose SHAPE changes (new placeholders or tags, as when a literal key glyph becomes a `{combo}`): ❌ never
+edit the old key's shape under translations written for it (`i18n-parity` and `i18n-platform-select` fail every
+translated locale). Add a NEW key with the new shape and a full `@key` description, delete the old key from every
+catalog, and retire it here; the translator pass picks the new key up (until then it falls back to English).
 `ACCEPTED_TRANSLATION_CHANGES` is the one way a non-English Mac text moves: a translator's reviewed fix of a wrong
 frozen translation, one entry per (catalog, key) with the new macOS text and a reason. It covers every locale resolving
 that key from that catalog (an inheriting overlay too), and it's a requirement, not an allowance: the catalog must read

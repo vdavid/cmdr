@@ -116,18 +116,17 @@ export function desktopPath(relative: string): string {
   return join(import.meta.dirname, '..', relative)
 }
 
-/**
- * The macOS English changes David accepted, key → new text: two from `docs/notes/windows-port/copy-decisions.md`, and
- * the search dialog's tip naming recent searches' key, which moved from ⌘H (now Hide's alone) to ⌘Y.
- */
+/** The two macOS English changes David accepted (`docs/notes/windows-port/copy-decisions.md`), key → new text. */
 export const ACCEPTED_ENGLISH_CHANGES: Readonly<Partial<Record<string, string>>> = {
   'ai.secretError.genericBody':
     'Check that your Keychain is available, then try again. If it persists, restart the app.',
   'goToPath.dialog.inputPlaceholder': 'Type or paste a path, for example ~/Documents',
-  'queryUi.empty.tip': 'Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘Y</historyKey> shows recent searches.',
 }
 
-/** One frozen key deleted on purpose, from every catalog: the surface that showed it is gone. */
+/**
+ * One frozen key deleted on purpose, from every catalog: its surface is gone, or a new key with a new shape replaced
+ * it (a message can't change its placeholders or tags under translations written for the old shape).
+ */
 export interface RetiredKey {
   key: string
   /** One line: why the text went. */
@@ -140,9 +139,14 @@ export interface RetiredKey {
  */
 export const RETIRED_KEYS: readonly RetiredKey[] = [
   {
+    key: 'queryUi.empty.tip',
+    reason:
+      'it spelled its keys as Mac glyphs inside its tags (⌘N, ⌘H), so it read wrong off macOS and named Hide’s key; `queryUi.empty.keysTip` takes each OS’s live keys as placeholders, and recent searches moved to ⌘Y on macOS',
+  },
+  {
     key: 'queryUi.empty.tipAi',
     reason:
-      'its only addition to `queryUi.empty.tip` was “⌘Enter runs an AI search”, false since ⌘Enter became a no-op; Enter runs it, and the run button says so',
+      'its only addition to the plain tip was “⌘Enter runs an AI search”, false since ⌘Enter became a no-op; Enter runs it, and the run button says so',
   },
 ]
 
