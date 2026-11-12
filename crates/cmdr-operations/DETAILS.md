@@ -1511,6 +1511,19 @@ summary), emitted from `spawn_managed` / `on_settled` / `cancel_if_queued` / `se
 deliberately excludes 200 ms progress — the queue window reads the per-file `write-progress` stream for live bars. The
 manager reports it as an engine-wide fact (`EngineEvents::operations_changed`, § "The engine's host"); the app emits it.
 
+**The last snapshot the host hears is the current one.** Broadcasts race: a quick operation settles on the runtime while
+its own registration is still broadcasting on the caller's thread, so a snapshot read first can reach the host second.
+Landing last, it would leave every queue view showing a finished operation as running until something else changed the
+queue. So `emit_changed` numbers each snapshot under the records lock and sends under a `sent` lock that guards nothing
+else, dropping one older than what the host already heard. **Why drop rather than read the snapshot under `sent`**: a
+lock held across `list()` would order itself before the records, registry, and status locks for every caller of a
+broadcast; a lock around the host call alone is a leaf. So a snapshot can go unsent, and ❌ a count of snapshots heard
+is not a count of changes (`emit_count` counts attempts). An operation that settles before its registration reads its
+snapshot is never listed at all; ask `list_operations` whether it's still there, ❌ never the event history.
+`src/manager/tests/broadcast_order.rs` pins the order. (Found as a 0.1% failure of the demo's selective-rollback test
+under 256-way load, 20 in 20,000 runs on macOS, 2026-11-12: half were a stale snapshot landing last, half a reversal no
+snapshot ever listed.)
+
 A live RECORD only ever holds `Queued` / `Running` / `Paused`: `Done` and `Cancelled` are declared but never assigned,
 because `on_settled` deletes the record before anything could set them. `Failed` is the one terminal status that reaches
 a snapshot, and only through the retained-failure list below, never on a record.

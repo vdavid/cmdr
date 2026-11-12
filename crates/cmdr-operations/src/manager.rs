@@ -184,6 +184,9 @@ struct ManagerInner {
     /// removal-on-terminal discipline is untouched. DETAILS § "Retained
     /// failures".
     failures: VecDeque<RetainedFailure>,
+    /// Snapshots taken, ever: each one's number, which is how `emit_changed`
+    /// tells an older snapshot from a newer one.
+    snapshots: u64,
 }
 
 impl ManagerInner {
@@ -297,6 +300,10 @@ pub(crate) struct OperationManager {
     /// it's what lets a test assert that a mutation told the windows about
     /// itself (or, for `retain_failure`, deliberately didn't).
     emits: AtomicU64,
+    /// The number of the newest snapshot the host has heard. `emit_changed`
+    /// holds it across the host call and guards nothing else with it, so
+    /// nothing can wait on it in a cycle.
+    sent: Mutex<u64>,
 }
 
 impl OperationManager {
@@ -315,6 +322,7 @@ impl OperationManager {
                 order: Vec::new(),
                 lane_use: HashMap::new(),
                 failures: VecDeque::new(),
+                snapshots: 0,
             }),
             host,
             registry,
@@ -324,6 +332,7 @@ impl OperationManager {
             engine,
             admission_passes: AtomicU64::new(0),
             emits: AtomicU64::new(0),
+            sent: Mutex::new(0),
         }
     }
 
@@ -945,7 +954,17 @@ impl OperationManager {
 
     /// The thin registry snapshot (membership + status), FIFO order.
     pub(crate) fn list(&self) -> Vec<OperationSnapshot> {
-        let mut rows = self.inner.lock_ignore_poison().snapshot();
+        self.numbered_list().1
+    }
+
+    /// [`Self::list`] with the snapshot's number: a higher one was read off
+    /// the records later.
+    fn numbered_list(&self) -> (u64, Vec<OperationSnapshot>) {
+        let (number, mut rows) = {
+            let mut inner = self.inner.lock_ignore_poison();
+            inner.snapshots += 1;
+            (inner.snapshots, inner.snapshot())
+        };
         // The live policy is the operation's own state, and the start time is the
         // status cache's admission stamp, both joined here after the records lock
         // is released. A retained failure has neither left, so its row keeps
@@ -956,7 +975,7 @@ impl OperationManager {
             }
             row.started_at = self.status.snapshot(&row.operation_id, None).map(|s| s.started_at);
         }
-        rows
+        (number, rows)
     }
 
     /// Re-broadcasts `operations-changed` for a change the records don't hold:
@@ -1007,11 +1026,25 @@ impl OperationManager {
         self.emits.load(Ordering::SeqCst)
     }
 
+    /// Tells the host the queue as it stands. Broadcasts race (a quick
+    /// operation settles on the runtime while its registration is still
+    /// broadcasting on the caller's thread), so each snapshot is numbered under
+    /// the records lock, and one older than what the host already heard is
+    /// dropped: the newer one said everything it would, and landing after it
+    /// would leave every queue view on a list that no longer holds.
+    ///
+    /// The host call runs under the `sent` lock, the documented exception to
+    /// `src/host/CLAUDE.md`'s rule, for the same reason as the busy set's: a
+    /// stale snapshot must never land last.
     fn emit_changed(&self) {
         self.emits.fetch_add(1, Ordering::SeqCst);
-        self.host.events().operations_changed(OperationsChanged {
-            operations: self.list(),
-        });
+        let (number, operations) = self.numbered_list();
+        let mut sent = self.sent.lock_ignore_poison();
+        if number < *sent {
+            return;
+        }
+        *sent = number;
+        self.host.events().operations_changed(OperationsChanged { operations });
     }
 }
 
