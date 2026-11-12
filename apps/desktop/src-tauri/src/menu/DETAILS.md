@@ -190,7 +190,8 @@ so both answer without touching anything.
   window built without one, `AppHandle::set_menu`): Settings, the operation queue, the Keyboard shortcuts window, and
   Debug. The viewer sets its own bar, which has no mnemonics. Settings is the one that captures combos, so its shortcut
   recorder, its key filter, and the global go-to-latest recorder hold the mask while they listen
-  (`apps/desktop/src/lib/shortcuts/menu-mnemonics-capture.svelte.ts`, claims counted per window).
+  (`apps/desktop/src/lib/shortcuts/menu-mnemonics-capture.svelte.ts`, claims counted per window; a fresh load there pushes
+  the mnemonics back on once, since a reload mid-capture resets the count but not the window's mask).
 
 ## Key concepts
 

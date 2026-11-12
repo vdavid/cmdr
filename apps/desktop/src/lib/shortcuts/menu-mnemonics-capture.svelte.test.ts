@@ -48,3 +48,26 @@ describe('a shortcut recorder takes the menu bar mnemonics while it listens', ()
     expect(pushes()).toEqual([true, false, true, false])
   })
 })
+
+// A reload (or HMR) mid-capture resets the claim count, but the mask is a property of the GTK
+// window, so it would stay on with nobody left to lift it.
+describe('a fresh load gives the mnemonics back', () => {
+  async function loadIn(label: string): Promise<boolean[]> {
+    vi.resetModules()
+    vi.doMock('@tauri-apps/api/window', () => ({ getCurrentWindow: () => ({ label }) }))
+    const tauriCommands = await import('#lib/tauri-commands/index.js')
+    vi.mocked(tauriCommands.setMenuMnemonicsSuspended).mockClear()
+    await import('./menu-mnemonics-capture.svelte')
+    const calls = vi.mocked(tauriCommands.setMenuMnemonicsSuspended).mock.calls.map(([suspended]) => suspended)
+    vi.doUnmock('@tauri-apps/api/window')
+    return calls
+  }
+
+  it('in a window other than the main one', async () => {
+    expect(await loadIn('settings')).toEqual([false])
+  })
+
+  it('but never in the main window, whose dialog gate is its one writer', async () => {
+    expect(await loadIn('main')).toEqual([])
+  })
+})

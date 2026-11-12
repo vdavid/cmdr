@@ -6,8 +6,9 @@
  *
  * The main window doesn't use this: its dialog gate (`routes/(main)/menu-dialog-gate.svelte.ts`) is
  * that window's one writer. Within a window the claims count, so two recorders can't hand the
- * mnemonics back while the other still listens.
+ * mnemonics back while the other still listens, and a fresh load lifts a mask a reload left behind.
  */
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { setMenuMnemonicsSuspended } from '#lib/tauri-commands/index.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 
@@ -21,6 +22,23 @@ function push(suspended: boolean): void {
     log.warn("Couldn't switch the menu bar's mnemonics for the shortcut recorder: {error}", { error: err })
   })
 }
+
+/**
+ * A reload or HMR mid-capture resets `claims` to zero, but the mask is a property of the GTK window,
+ * so it would stay on with no claim left to lift it. A fresh load in a window other than the main
+ * one gives the mnemonics back once; the main window's dialog gate pushes its own state on load.
+ */
+function releaseMaskLeftFromBeforeThisLoad(): void {
+  let label: string
+  try {
+    label = getCurrentWindow().label
+  } catch {
+    return // Not in a Tauri window (tests, the browser demo).
+  }
+  if (label !== 'main') push(false)
+}
+
+releaseMaskLeftFromBeforeThisLoad()
 
 /** Takes the mnemonics away until the returned release runs. Idempotent release. */
 export function claimMenuMnemonics(): () => void {
