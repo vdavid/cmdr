@@ -7,7 +7,7 @@
   "@adb.connect.openSettings": {
     "sourceHash": "3f94010"
   },
-  "adb.connect.serverUnreachable": "Nástroje pro Android na tomto Macu neodpověděly.",
+  "adb.connect.serverUnreachable": "{platform, select, macos {Nástroje pro Android na tomto Macu neodpověděly.} windows {The Android tools on this PC didn’t answer.} other {The Android tools on this computer didn’t answer.}}",
   "@adb.connect.serverUnreachable": {
     "sourceHash": "b53716b"
   },
@@ -55,7 +55,7 @@
   "@adb.readiness.offline": {
     "sourceHash": "6061885"
   },
-  "adb.readiness.noPermissions": "Váš telefon je pro tento Mac přes USB nedostupný. Zkuste jiný kabel nebo port.",
+  "adb.readiness.noPermissions": "{platform, select, macos {Váš telefon je pro tento Mac přes USB nedostupný. Zkuste jiný kabel nebo port.} windows {This PC can’t reach your phone over USB. Try another cable or port.} other {This computer can’t reach your phone over USB. Try another cable or port.}}",
   "@adb.readiness.noPermissions": {
     "sourceHash": "265d7ed"
   },

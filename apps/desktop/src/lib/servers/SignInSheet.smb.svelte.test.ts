@@ -4,10 +4,11 @@
  * (`src-tauri/src/server_move_smb.rs`).
  */
 
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
 import { mount, tick } from 'svelte'
 import SignInSheet from './SignInSheet.svelte'
 import type { SignInSheetRequest } from './sign-in-contract'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -82,6 +83,8 @@ const SMB_HOST = {
 }
 
 describe('SignInSheet: editing an SMB host', () => {
+  // These pin the words a Mac reads; the Windows and Linux ones are pinned by name below.
+  beforeEach(() => withPlatform('macos'))
   beforeEach(async () => {
     const commands = await import('#lib/tauri-commands/index.js')
     vi.mocked(commands.updateSavedSmbHost).mockClear()
@@ -231,6 +234,31 @@ describe('SignInSheet: editing an SMB host', () => {
     expect(commands.cancelServerConnect).toHaveBeenCalledWith(attemptId)
     expect(done).toEqual([{ kind: 'cancelled' }])
   })
+
+  /** A network share is disconnected on Windows and unmounted on Linux, never ejected. */
+  it.each([
+    [
+      'windows',
+      'The share Photos is still connected from the old address. Disconnect it, then save again.',
+      'Disconnect and save',
+      'Cmdr disconnects every share still connected from the old address, then saves the new one.',
+    ],
+    [
+      'linux',
+      'The share Photos is still mounted from the old address. Unmount it, then save again.',
+      'Unmount and save',
+      'Cmdr unmounts every share still mounted from the old address, then saves the new one.',
+    ],
+  ] as const)(
+    'words a share still mounted from the old address in %s’s words',
+    async (platform, refusal, button, help) => {
+      onTestFinished(withPlatform(platform))
+      await refusedOverAMountedShare()
+      expect(document.body.querySelector('#server-address-refusal')?.textContent.trim()).toBe(refusal)
+      expect(document.body.querySelector('#server-eject-and-save-help')?.textContent.trim()).toBe(help)
+      expect(buttonSaying(button)).toBeTruthy()
+    },
+  )
 
   it('offers no Eject and save on a refusal that no eject fixes', async () => {
     const commands = await import('#lib/tauri-commands/index.js')

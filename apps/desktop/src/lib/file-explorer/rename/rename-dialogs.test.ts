@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, onTestFinished } from 'vitest'
 import { mount, tick } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import {
   getSettingDefinition,
   getDefaultValue,
@@ -455,7 +456,9 @@ describe('ExtensionChangeDialog wording', () => {
     expect(buttons).toEqual(['Keep .txt', 'Remove .txt'])
   })
 
+  // A folder takes an extension only as a macOS package, so only a Mac reads this arm.
   it('says what removing a package folder’s extension does to it', async () => {
+    onTestFinished(withPlatform('macos'))
     const { description } = await mountDialog('app', '', true)
 
     expect(description).toContain('remove the “.app” extension')

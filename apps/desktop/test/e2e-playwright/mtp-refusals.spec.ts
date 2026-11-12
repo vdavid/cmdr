@@ -153,7 +153,9 @@ test.describe('MTP open in another app', () => {
 
     await pressKey(tauriPage, 'Enter')
 
-    await expectAndDismissToast(tauriPage, 'it isn’t a regular file on your Mac', { timeout: waitBudget(5000) })
+    // Each OS names the machine in its own words (`fileExplorer.open.notOnThisMac`).
+    const machine = process.platform === 'darwin' ? 'your Mac' : 'your computer'
+    await expectAndDismissToast(tauriPage, `it isn’t a regular file on ${machine}`, { timeout: waitBudget(5000) })
     expect(await getOpenedPaths(tauriPage)).toEqual([])
   })
 })

@@ -71,7 +71,7 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "设置…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {设置…}}",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -171,15 +171,15 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "撤销移到废纸篓",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {撤销移到废纸篓}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "c6fea33"
   },
-  "menu.edit.undoTrashOne": "撤销将“{name}”移到废纸篓",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {撤销将“{name}”移到废纸篓}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "45494c8"
   },
-  "menu.edit.undoTrashMany": "撤销将 {countText} 个项目移到废纸篓",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {撤销将 {countText} 个项目移到废纸篓}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "bb9192a"
   },

@@ -71,7 +71,7 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "Настройки…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Настройки…}}",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -171,15 +171,15 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "Отменить перемещение в Корзину",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Отменить перемещение в Корзину}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "c6fea33"
   },
-  "menu.edit.undoTrashOne": "Отменить перемещение «{name}» в Корзину",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Отменить перемещение «{name}» в Корзину}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "45494c8"
   },
-  "menu.edit.undoTrashMany": "Отменить перемещение в Корзину (объектов: {countText})",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Отменить перемещение в Корзину (объектов: {countText})}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "bb9192a"
   },

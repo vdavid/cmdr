@@ -35,16 +35,16 @@
   "@menu.go.showFavorites": {
     "sourceHash": "f4dfe9b"
   },
-  "menu.edit.undoTrash": "Undo move to Bin",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Undo move to Bin}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "menu.edit.undoTrashOne": "Undo move to Bin of “{name}”",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Undo move to Bin of “{name}”}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "menu.edit.undoTrashMany": "Undo move to Bin of {countText} items",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Undo move to Bin of {countText} items}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "bb9192a"
+    "sourceHash": "4ad492a"
   }
 }

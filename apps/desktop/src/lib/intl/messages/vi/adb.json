@@ -7,7 +7,7 @@
   "@adb.connect.openSettings": {
     "sourceHash": "3f94010"
   },
-  "adb.connect.serverUnreachable": "Công cụ Android trên máy Mac này đã không phản hồi.",
+  "adb.connect.serverUnreachable": "{platform, select, macos {Công cụ Android trên máy Mac này đã không phản hồi.} windows {The Android tools on this PC didn’t answer.} other {The Android tools on this computer didn’t answer.}}",
   "@adb.connect.serverUnreachable": {
     "sourceHash": "b53716b"
   },
@@ -55,7 +55,7 @@
   "@adb.readiness.offline": {
     "sourceHash": "6061885"
   },
-  "adb.readiness.noPermissions": "Máy Mac này không truy cập được điện thoại của bạn qua USB. Hãy thử cáp hoặc cổng khác.",
+  "adb.readiness.noPermissions": "{platform, select, macos {Máy Mac này không truy cập được điện thoại của bạn qua USB. Hãy thử cáp hoặc cổng khác.} windows {This PC can’t reach your phone over USB. Try another cable or port.} other {This computer can’t reach your phone over USB. Try another cable or port.}}",
   "@adb.readiness.noPermissions": {
     "sourceHash": "265d7ed"
   },

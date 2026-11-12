@@ -72,7 +72,7 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "Cài đặt…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Cài đặt…}}",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -172,15 +172,15 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "Hoàn tác thao tác chuyển vào thùng rác",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Hoàn tác thao tác chuyển vào thùng rác}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "c6fea33"
   },
-  "menu.edit.undoTrashOne": "Hoàn tác thao tác chuyển “{name}” vào thùng rác",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Hoàn tác thao tác chuyển “{name}” vào thùng rác}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "45494c8"
   },
-  "menu.edit.undoTrashMany": "Hoàn tác thao tác chuyển {countText} mục vào thùng rác",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Hoàn tác thao tác chuyển {countText} mục vào thùng rác}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "bb9192a"
   },

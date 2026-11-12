@@ -73,7 +73,7 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "Instellingen…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Instellingen…}}",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -174,15 +174,15 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "Herstel verplaatsen naar prullenmand",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Herstel verplaatsen naar prullenmand}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "c6fea33"
   },
-  "menu.edit.undoTrashOne": "Herstel verplaatsen van ‘{name}’ naar prullenmand",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Herstel verplaatsen van ‘{name}’ naar prullenmand}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "45494c8"
   },
-  "menu.edit.undoTrashMany": "Herstel verplaatsen van {countText} onderdelen naar prullenmand",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Herstel verplaatsen van {countText} onderdelen naar prullenmand}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "bb9192a"
   },

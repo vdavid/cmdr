@@ -7,7 +7,7 @@
   "@adb.connect.openSettings": {
     "sourceHash": "eabd4e6"
   },
-  "adb.connect.serverUnreachable": "Las herramientas de Android en este Mac no respondieron.",
+  "adb.connect.serverUnreachable": "{platform, select, macos {Las herramientas de Android en este Mac no respondieron.} windows {The Android tools on this PC didn’t answer.} other {The Android tools on this computer didn’t answer.}}",
   "@adb.connect.serverUnreachable": {
     "sourceHash": "48ebbc0"
   },

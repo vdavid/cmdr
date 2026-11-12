@@ -3,7 +3,7 @@
   "@menu.app.licenseEnter": {
     "sourceHash": "e5dac0a"
   },
-  "menu.app.settings": "Configuración…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Configuración…}}",
   "@menu.app.settings": {
     "sourceHash": "4184f3c"
   },
@@ -11,15 +11,15 @@
   "@menu.file.showInFileManager": {
     "sourceHash": "f887b5e"
   },
-  "menu.edit.undoTrash": "Deshacer movimiento al basurero",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Deshacer movimiento al basurero}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "ae39e1f"
   },
-  "menu.edit.undoTrashOne": "Deshacer movimiento de “{name}” al basurero",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Deshacer movimiento de “{name}” al basurero}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "77a330a"
   },
-  "menu.edit.undoTrashMany": "Deshacer movimiento de {countText} elementos al basurero",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Deshacer movimiento de {countText} elementos al basurero}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "23068b5"
   },

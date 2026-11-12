@@ -89,6 +89,9 @@ describe('the trash and permanent-delete labels', () => {
     expect(tString('suggestedOps.action.delete')).toBe('Delete permanently')
     expect(tString('suggestedOps.approve.trash', count)).toBe('Delete 3 files')
     expect(tString('suggestedOps.approve.delete', count)).toBe('Delete 3 files permanently')
+    expect(tString('fileExplorer.renameConflict.overwriteTrash')).toBe('Overwrite and delete old file')
+    expect(tString('fileExplorer.renameConflict.overwriteTrashFolder')).toBe('Overwrite and delete old folder')
+    expect(tString('fileExplorer.renameConflict.overwriteDelete')).toBe('Overwrite and permanently delete old file')
     // The note that the button turned permanent names the button's own Windows label.
     expect(tString('fileOperations.delete.cloudOnlineOnlyHandedBack')).toContain('now offers Delete permanently.')
   })
@@ -99,6 +102,8 @@ describe('the trash and permanent-delete labels', () => {
     expect(tString('fileOperations.delete.confirmDelete')).toBe('Delete')
     expect(tString('fileOperations.sourcesGone.continue', { type: 'trash' })).toBe('Move the rest to trash')
     expect(tString('suggestedOps.approve.trash', count)).toBe('Move 3 files to Trash')
+    expect(tString('fileExplorer.renameConflict.overwriteTrash')).toBe('Overwrite and trash old file')
+    expect(tString('fileExplorer.renameConflict.overwriteDelete')).toBe('Overwrite and delete old file')
     expect(tString('fileOperations.delete.cloudOnlineOnlyHandedBack')).toContain('now offers Delete.')
   })
 })

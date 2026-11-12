@@ -139,7 +139,7 @@
   "@servers.hub.emptyTitle": {
     "sourceHash": "7846930"
   },
-  "servers.hub.emptyMessage": "Hãy thêm một máy chủ ở bên dưới, hoặc bật một máy Mac hay NAS trên mạng của bạn và Cmdr sẽ tìm thấy nó.",
+  "servers.hub.emptyMessage": "{platform, select, macos {Hãy thêm một máy chủ ở bên dưới, hoặc bật một máy Mac hay NAS trên mạng của bạn và Cmdr sẽ tìm thấy nó.} windows {Add one below, or turn on a PC or NAS on your network and Cmdr will find it.} other {Add one below, or turn on a computer or NAS on your network and Cmdr will find it.}}",
   "@servers.hub.emptyMessage": {
     "sourceHash": "04bdc26"
   },
@@ -187,7 +187,7 @@
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "48b9b15"
   },
-  "servers.refusal.certificateUntrusted": "macOS không tin cậy chứng nhận của máy chủ này. Hãy thêm chứng nhận đó trong Truy cập chuỗi khóa rồi thử lại.",
+  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS không tin cậy chứng nhận của máy chủ này. Hãy thêm chứng nhận đó trong Truy cập chuỗi khóa rồi thử lại.} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
   "@servers.refusal.certificateUntrusted": {
     "sourceHash": "b8f3b4a"
   },
@@ -223,7 +223,7 @@
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "Khóa của {host} được đánh dấu là đã bị xâm phạm trong cài đặt SSH của bạn trên máy Mac này. Cmdr sẽ không kết nối tới máy chủ đó.",
+  "servers.refusal.hostKeyRevoked": "{platform, select, macos {Khóa của {host} được đánh dấu là đã bị xâm phạm trong cài đặt SSH của bạn trên máy Mac này. Cmdr sẽ không kết nối tới máy chủ đó.} windows {The key for {host} is marked as compromised in your SSH settings on this PC. Cmdr won’t connect to it.} other {The key for {host} is marked as compromised in your SSH settings on this computer. Cmdr won’t connect to it.}}",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "7a25d93"
   },
@@ -247,11 +247,11 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "3fb55a6"
   },
-  "servers.refusal.secretNotStored": "Cmdr không thể lưu mật khẩu này vào chuỗi khóa. Hãy thử lại, hoặc tắt “Ghi nhớ trong chuỗi khóa” để đăng nhập mà không lưu mật khẩu.",
+  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr không thể lưu mật khẩu này vào chuỗi khóa. Hãy thử lại, hoặc tắt “Ghi nhớ trong chuỗi khóa” để đăng nhập mà không lưu mật khẩu.} windows {Cmdr couldn’t save this password. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this password in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.secretNotStored": {
     "sourceHash": "20957fe"
   },
-  "servers.refusal.savedSecretNotUpdated": "Cmdr đã lưu các thay đổi của bạn nhưng không thể cập nhật mật khẩu trong chuỗi khóa. Hãy nhấn Lưu lần nữa để thử lại.",
+  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr đã lưu các thay đổi của bạn nhưng không thể cập nhật mật khẩu trong chuỗi khóa. Hãy nhấn Lưu lần nữa để thử lại.} windows {Cmdr saved your changes but couldn’t update the saved password. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the password in your keyring. Save again to try once more.}}",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
   },
@@ -267,11 +267,11 @@
   "@servers.refusal.s3SecretMissing": {
     "sourceHash": "f1f32f2"
   },
-  "servers.refusal.s3SecretNotStored": "Cmdr không thể lưu khóa truy cập bí mật này vào chuỗi khóa. Hãy thử lại, hoặc tắt “Ghi nhớ trong chuỗi khóa” để đăng nhập mà không lưu khóa.",
+  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr không thể lưu khóa truy cập bí mật này vào chuỗi khóa. Hãy thử lại, hoặc tắt “Ghi nhớ trong chuỗi khóa” để đăng nhập mà không lưu khóa.} windows {Cmdr couldn’t save this secret access key. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this secret access key in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.s3SecretNotStored": {
     "sourceHash": "f7a9fb0"
   },
-  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr đã lưu các thay đổi của bạn nhưng không thể cập nhật khóa truy cập bí mật trong chuỗi khóa. Hãy nhấn Lưu lần nữa để thử lại.",
+  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr đã lưu các thay đổi của bạn nhưng không thể cập nhật khóa truy cập bí mật trong chuỗi khóa. Hãy nhấn Lưu lần nữa để thử lại.} windows {Cmdr saved your changes but couldn’t update the saved secret access key. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the secret access key in your keyring. Save again to try once more.}}",
   "@servers.refusal.s3SavedSecretNotUpdated": {
     "sourceHash": "1d2889d"
   },
@@ -295,7 +295,7 @@
   "@servers.refusal.regionMismatchNamed": {
     "sourceHash": "30abb0d"
   },
-  "servers.refusal.clockSkewed": "Đồng hồ của máy Mac này lệch hơn 15 phút, nên máy chủ không chấp nhận các yêu cầu của Cmdr. Hãy đặt ngày và giờ tự động trong Cài đặt hệ thống, rồi thử lại.",
+  "servers.refusal.clockSkewed": "{platform, select, macos {Đồng hồ của máy Mac này lệch hơn 15 phút, nên máy chủ không chấp nhận các yêu cầu của Cmdr. Hãy đặt ngày và giờ tự động trong Cài đặt hệ thống, rồi thử lại.} windows {This PC’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Turn on “Set time automatically” in Settings > Time & language > Date & time, then try again.} other {This computer’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in your system settings, then try again.}}",
   "@servers.refusal.clockSkewed": {
     "sourceHash": "cdee0ef"
   },
@@ -307,7 +307,7 @@
   "@servers.refusal.exportNotFound": {
     "sourceHash": "2ef1ce8"
   },
-  "servers.refusal.exportRefused": "{host} không cho máy Mac này mở thư mục chia sẻ đó. Hãy kiểm tra xem thư mục chia sẻ cho phép những máy tính nào trong cài đặt NFS của máy chủ.",
+  "servers.refusal.exportRefused": "{platform, select, macos {{host} không cho máy Mac này mở thư mục chia sẻ đó. Hãy kiểm tra xem thư mục chia sẻ cho phép những máy tính nào trong cài đặt NFS của máy chủ.} windows {{host} doesn’t let this PC open that export. Check which devices the export allows in the server’s NFS settings.} other {{host} doesn’t let this computer open that export. Check which computers the export allows in the server’s NFS settings.}}",
   "@servers.refusal.exportRefused": {
     "sourceHash": "0cebd7d"
   },
@@ -331,11 +331,11 @@
   "@servers.refusal.addressTaken": {
     "sourceHash": "5a14a92"
   },
-  "servers.refusal.secretNotMoved": "Cmdr không thể mang mật khẩu đã lưu sang địa chỉ mới, nên không có gì thay đổi. Hãy kiểm tra xem chuỗi khóa đã được mở khóa chưa, rồi nhấn Lưu lần nữa.",
+  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr không thể mang mật khẩu đã lưu sang địa chỉ mới, nên không có gì thay đổi. Hãy kiểm tra xem chuỗi khóa đã được mở khóa chưa, rồi nhấn Lưu lần nữa.} windows {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.secretNotMoved": {
     "sourceHash": "7f3c328"
   },
-  "servers.refusal.s3SecretNotMoved": "Cmdr không thể mang khóa truy cập bí mật đã lưu sang điểm cuối mới, nên không có gì thay đổi. Hãy kiểm tra xem chuỗi khóa đã được mở khóa chưa, rồi nhấn Lưu lần nữa.",
+  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr không thể mang khóa truy cập bí mật đã lưu sang điểm cuối mới, nên không có gì thay đổi. Hãy kiểm tra xem chuỗi khóa đã được mở khóa chưa, rồi nhấn Lưu lần nữa.} windows {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.s3SecretNotMoved": {
     "sourceHash": "69901e7"
   },
@@ -347,11 +347,11 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "Mục chia sẻ {name} vẫn đang được gắn kết từ địa chỉ cũ. Hãy tháo mục chia sẻ này, rồi nhấn Lưu lần nữa.",
+  "servers.refusal.shareMounted": "{platform, select, macos {Mục chia sẻ {name} vẫn đang được gắn kết từ địa chỉ cũ. Hãy tháo mục chia sẻ này, rồi nhấn Lưu lần nữa.} windows {The share {name} is still connected from the old address. Disconnect it, then save again.} other {The share {name} is still mounted from the old address. Unmount it, then save again.}}",
   "@servers.refusal.shareMounted": {
     "sourceHash": "156a61b"
   },
-  "servers.refusal.shareEjectRefused": "Cmdr không thể tháo mục chia sẻ {name}, nên chưa lưu gì. {reason}",
+  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr không thể tháo mục chia sẻ {name}, nên chưa lưu gì. {reason}} windows {Cmdr couldn’t disconnect {name}, so nothing was saved. {reason}} other {Cmdr couldn’t unmount {name}, so nothing was saved. {reason}}}",
   "@servers.refusal.shareEjectRefused": {
     "sourceHash": "1c73fa7"
   },
@@ -383,15 +383,15 @@
   "@servers.sheet.addAnywayHelp": {
     "sourceHash": "68e90b2"
   },
-  "servers.sheet.ejectAndSave": "Tháo và lưu",
+  "servers.sheet.ejectAndSave": "{platform, select, macos {Tháo và lưu} windows {Disconnect and save} other {Unmount and save}}",
   "@servers.sheet.ejectAndSave": {
     "sourceHash": "357f2dd"
   },
-  "servers.sheet.ejectAndSaveHelp": "Cmdr tháo mọi mục chia sẻ vẫn đang được gắn kết từ địa chỉ cũ, rồi lưu địa chỉ mới.",
+  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr tháo mọi mục chia sẻ vẫn đang được gắn kết từ địa chỉ cũ, rồi lưu địa chỉ mới.} windows {Cmdr disconnects every share still connected from the old address, then saves the new one.} other {Cmdr unmounts every share still mounted from the old address, then saves the new one.}}",
   "@servers.sheet.ejectAndSaveHelp": {
     "sourceHash": "a1d1206"
   },
-  "servers.sheet.ejecting": "Đang tháo…",
+  "servers.sheet.ejecting": "{platform, select, macos {Đang tháo…} windows {Disconnecting…} other {Unmounting…}}",
   "@servers.sheet.ejecting": {
     "sourceHash": "4c37167"
   },
@@ -499,7 +499,7 @@
   "@servers.sheet.nfsExportsEmptyList": {
     "sourceHash": "7558a7b"
   },
-  "servers.sheet.nfsExportsNone": "{host} không liệt kê thư mục chia sẻ nào cho máy Mac này. Hãy nhập đường dẫn của thư mục chia sẻ nếu bạn biết.",
+  "servers.sheet.nfsExportsNone": "{platform, select, macos {{host} không liệt kê thư mục chia sẻ nào cho máy Mac này. Hãy nhập đường dẫn của thư mục chia sẻ nếu bạn biết.} windows {{host} lists no exports for this PC. Type the export’s path if you know it.} other {{host} lists no exports for this computer. Type the export’s path if you know it.}}",
   "@servers.sheet.nfsExportsNone": {
     "sourceHash": "a88c0bf"
   },
@@ -543,7 +543,7 @@
   "@servers.sheet.nfsIdentityRootOwner": {
     "sourceHash": "c464fa8"
   },
-  "servers.sheet.nfsIdentityThisMac": "ID của bạn trên máy Mac này. Hãy đổi nếu các tệp trên máy chủ thuộc về người khác.",
+  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {ID của bạn trên máy Mac này. Hãy đổi nếu các tệp trên máy chủ thuộc về người khác.} windows {The user and group IDs Cmdr sends to the server. Change them if the files on the server belong to someone else.} other {Your IDs on this computer. Change them if the files on the server belong to someone else.}}",
   "@servers.sheet.nfsIdentityThisMac": {
     "sourceHash": "8bfbb0d"
   },
@@ -575,7 +575,7 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
-  "servers.sheet.secretKeptPlaceholder": "Đã lưu trong chuỗi khóa. Để trống để giữ nguyên.",
+  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Đã lưu trong chuỗi khóa. Để trống để giữ nguyên.} windows {Saved. Leave empty to keep it.} other {Saved in your keyring. Leave empty to keep it.}}",
   "@servers.sheet.secretKeptPlaceholder": {
     "sourceHash": "8711f6c"
   },
@@ -591,7 +591,7 @@
   "@servers.sheet.passphrase": {
     "sourceHash": "2510031"
   },
-  "servers.sheet.remember": "Ghi nhớ trong chuỗi khóa",
+  "servers.sheet.remember": "{platform, select, macos {Ghi nhớ trong chuỗi khóa} windows {Remember password} other {Remember in keyring}}",
   "@servers.sheet.remember": {
     "sourceHash": "3fd7384"
   },
@@ -780,7 +780,7 @@
   "@servers.sheet.autoReconnectInfoLabel": {
     "sourceHash": "edb9b82"
   },
-  "servers.sheet.needsStoredSecret": "Việc tự kết nối lại cần một mật khẩu đã ghi nhớ. Hãy bật “Ghi nhớ trong chuỗi khóa” rồi đăng nhập một lần.",
+  "servers.sheet.needsStoredSecret": "{platform, select, macos {Việc tự kết nối lại cần một mật khẩu đã ghi nhớ. Hãy bật “Ghi nhớ trong chuỗi khóa” rồi đăng nhập một lần.} windows {Reconnecting on its own needs a saved password. Turn on “Remember password” and sign in once.} other {Reconnecting on its own needs a remembered password. Turn on “Remember in keyring” and sign in once.}}",
   "@servers.sheet.needsStoredSecret": {
     "sourceHash": "32336f3"
   },
@@ -820,7 +820,7 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "macOS không nhận ra chứng nhận của {host}",
+  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS không nhận ra chứng nhận của {host}} windows {Windows doesn’t know the certificate for {host}} other {The certificate for {host} is new to this computer}}",
   "@servers.certificate.firstContactTitle": {
     "sourceHash": "ca0b44a"
   },

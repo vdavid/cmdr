@@ -71,7 +71,7 @@
   "@menu.app.cliCommandHomebrew": {
     "description": "App-menu item (macOS only), shown in place of menu.app.cliCommandInstall when the cmdr terminal command came with Cmdr's Homebrew package, so Cmdr leaves it alone; clicking it explains that Homebrew manages it. A status, not an action. Keep cmdr and Homebrew exactly as they are: cmdr is the literal word the user types in Terminal, Homebrew is a product name."
   },
-  "menu.app.settings": "Settings…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Settings…}}",
   "@menu.app.settings": {
     "description": "NOUN (plural). Opens Cmdr's Settings window. ⌘, on macOS. Use the exact word macOS uses for the same app-menu item in this language (recent macOS says \"Settings\", older versions said \"Preferences\"); matching the system is what makes it findable. The trailing … is U+2026 and must stay."
   },
@@ -171,18 +171,18 @@
   "@menu.edit.redo": {
     "description": "VERB (imperative). Standard macOS text-editing Redo (⇧⌘Z), the counterpart of menu.edit.undo. Use the exact word macOS uses for Redo in this language."
   },
-  "menu.edit.undoTrash": "Undo move to trash",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Undo move to trash}}",
   "@menu.edit.undoTrash": {
     "description": "VERB phrase (imperative). Edit menu item that puts back the files the user most recently moved to the trash in Cmdr, the same as the Undo button on the \"Moved 3 files to trash\" notification. It sits right under the text-editing Undo and Redo, so the wording must make clear it's about trashed FILES, not text. This plain wording shows, greyed out, while there's nothing to undo; once there is, menu.edit.undoTrashOne or menu.edit.undoTrashMany takes its place. \"Move to trash\" matches macOS's own \"Move to Trash\" action; use the term macOS uses in this language."
   },
-  "menu.edit.undoTrashOne": "Undo move to trash of “{name}”",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Undo move to trash of “{name}”}}",
   "@menu.edit.undoTrashOne": {
     "description": "VERB phrase (imperative). The menu.edit.undoTrash item once the user has moved exactly ONE file or folder to the trash, so the item names what it would put back. The command palette shows the same words. Match your Finder's quotation marks, as in menu.context.copyNamed, and use the same trash term as menu.edit.undoTrash. Keep the {name} token exactly as written, braces included; it is replaced literally, with no formatting, and can be any length.",
     "placeholders": {
       "name": "the trashed file or folder's name, e.g. \"report.pdf\""
     }
   },
-  "menu.edit.undoTrashMany": "Undo move to trash of {countText} items",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Undo move to trash of {countText} items}}",
   "@menu.edit.undoTrashMany": {
     "description": "VERB phrase (imperative). The menu.edit.undoTrash item once the user has moved TWO OR MORE files or folders to the trash in one go, so the item says how many it would put back. The command palette shows the same words. The native menu can't pick a plural form, so {countText} is always 2 or more: if your language inflects the noun differently across numbers of 2 and up, use a shape that reads right for every one of them (like \"items: {countText}\"). Use the same trash term as menu.edit.undoTrash. Keep the {countText} token exactly as written, braces included; it is replaced literally.",
     "placeholders": {

@@ -71,7 +71,7 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "Beállítások…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Beállítások…}}",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -171,15 +171,15 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "Kukába helyezés visszavonása",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Kukába helyezés visszavonása}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "c6fea33"
   },
-  "menu.edit.undoTrashOne": "„{name}” Kukába helyezésének visszavonása",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {„{name}” Kukába helyezésének visszavonása}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "45494c8"
   },
-  "menu.edit.undoTrashMany": "{countText} elem Kukába helyezésének visszavonása",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {{countText} elem Kukába helyezésének visszavonása}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "bb9192a"
   },

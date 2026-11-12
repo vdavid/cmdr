@@ -3,17 +3,17 @@
   "@fileExplorer.pane.directConnectionShareGoneToast": {
     "sourceHash": "d562549"
   },
-  "fileExplorer.pane.trashUnconfirmedToast": "Couldn’t confirm the file was moved to the Bin. The volume may be slow, but the file may still have been moved. Please check your Bin to be sure.",
+  "fileExplorer.pane.trashUnconfirmedToast": "{platform, select, windows {Couldn’t confirm the file was moved to the Recycle Bin. The volume may be slow, but the file may still have been moved. Please check the Recycle Bin to be sure.} other {Couldn’t confirm the file was moved to the Bin. The volume may be slow, but the file may still have been moved. Please check your Bin to be sure.}}",
   "@fileExplorer.pane.trashUnconfirmedToast": {
-    "sourceHash": "6764112"
+    "sourceHash": "46967f6"
   },
-  "fileExplorer.renameConflict.overwriteTrash": "Overwrite and bin old file",
+  "fileExplorer.renameConflict.overwriteTrash": "{platform, select, windows {Overwrite and delete old file} other {Overwrite and bin old file}}",
   "@fileExplorer.renameConflict.overwriteTrash": {
-    "sourceHash": "e0192f6"
+    "sourceHash": "4461739"
   },
-  "fileExplorer.renameConflict.overwriteTrashFolder": "Overwrite and bin old folder",
+  "fileExplorer.renameConflict.overwriteTrashFolder": "{platform, select, windows {Overwrite and delete old folder} other {Overwrite and bin old folder}}",
   "@fileExplorer.renameConflict.overwriteTrashFolder": {
-    "sourceHash": "7f94bfa"
+    "sourceHash": "c3945c1"
   },
   "fileExplorer.navigation.groupFavorites": "Favourites",
   "@fileExplorer.navigation.groupFavorites": {
@@ -47,9 +47,9 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "This folder can’t be a favourite: favourites point at folders on disks, shares, servers, and phones",
+  "fileExplorer.navigation.favoritesCantAddHere": "{platform, select, windows {This folder can’t be a favourite: favourites point at folders on drives, shares, servers, and phones} other {This folder can’t be a favourite: favourites point at folders on disks, shares, servers, and phones}}",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "03886b7"
+    "sourceHash": "8949eb3"
   },
   "fileExplorer.navigation.favoriteStatus.notFound": "This folder isn’t there any more.",
   "@fileExplorer.navigation.favoriteStatus.notFound": {

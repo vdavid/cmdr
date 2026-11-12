@@ -180,7 +180,7 @@
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
     "sourceHash": "f634743"
   },
-  "fileExplorer.pane.trashUnconfirmedToast": "Nepodařilo se potvrdit, že se soubor přesunul do koše. Svazek může být pomalý, ale soubor se možná přesto přesunul. Pro jistotu zkontrolujte koš.",
+  "fileExplorer.pane.trashUnconfirmedToast": "{platform, select, windows {Couldn’t confirm the file was moved to the Recycle Bin. The volume may be slow, but the file may still have been moved. Please check the Recycle Bin to be sure.} other {Nepodařilo se potvrdit, že se soubor přesunul do koše. Svazek může být pomalý, ale soubor se možná přesto přesunul. Pro jistotu zkontrolujte koš.}}",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "6764112"
   },
@@ -232,7 +232,7 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "Přejít do domovské složky",
+  "fileExplorer.errorPane.goHome": "{platform, select, windows {Go to user folder} other {Přejít do domovské složky}}",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -312,11 +312,11 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
-  "fileExplorer.open.notOnThisMac": "Cmdr zatím nedokáže tento soubor otevřít v jiné aplikaci, protože to není běžný soubor na vašem Macu. Zobrazíte ho klávesou {viewKey}.",
+  "fileExplorer.open.notOnThisMac": "{platform, select, macos {Cmdr zatím nedokáže tento soubor otevřít v jiné aplikaci, protože to není běžný soubor na vašem Macu. Zobrazíte ho klávesou {viewKey}.} windows {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your PC. Press {viewKey} to view it.} other {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your computer. Press {viewKey} to view it.}}",
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
-  "fileExplorer.open.didNotOpen": "Soubor {fileName} se neotevřel. macOS soubor nenašel nebo ho žádná aplikace neotevře.",
+  "fileExplorer.open.didNotOpen": "{platform, select, macos {Soubor {fileName} se neotevřel. macOS soubor nenašel nebo ho žádná aplikace neotevře.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
   },
@@ -328,7 +328,7 @@
   "@fileExplorer.functionKeyBar.terminalLabel": {
     "sourceHash": "e0926fd"
   },
-  "fileExplorer.functionKeyBar.hiddenToast": "Lišta funkčních kláves je teď skrytá. Kdykoli ji můžete znovu zapnout v <settingsLink>Nastavení</settingsLink>.",
+  "fileExplorer.functionKeyBar.hiddenToast": "{platform, select, windows {Function key bar is now hidden. Turn it back on any time later in <settingsLink>Settings</settingsLink>.} other {Lišta funkčních kláves je teď skrytá. Kdykoli ji můžete znovu zapnout v <settingsLink>Nastavení</settingsLink>.}}",
   "@fileExplorer.functionKeyBar.hiddenToast": {
     "sourceHash": "f961d3b"
   },
@@ -368,11 +368,11 @@
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
   },
-  "fileExplorer.network.osMountFallback.message": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo. Připojení funguje, ale jen přes nativní síťové připojení SMB v macOS, které je u většiny připojení 4× pomalejší (někdy i 100×) než přímé připojení Cmdru. Kliknutím na tlačítko níže to zkusíte znovu.",
+  "fileExplorer.network.osMountFallback.message": "{platform, select, macos {Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo. Připojení funguje, ale jen přes nativní síťové připojení SMB v macOS, které je u většiny připojení 4× pomalejší (někdy i 100×) než přímé připojení Cmdru. Kliknutím na tlačítko níže to zkusíte znovu.} windows {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via Windows’ own SMB connection, which is often slower than Cmdr’s direct connection. Select the button below to try again.} other {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via your system’s SMB connection (GVFS), which is often a lot slower than Cmdr’s direct connection. Click the button below to try again.}}",
   "@fileExplorer.network.osMountFallback.message": {
     "sourceHash": "cb53372"
   },
-  "fileExplorer.network.osMountFallback.shareNotOnServer": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože server hlásí, že žádnou sdílenou složku s tímto názvem nemá. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší. Tohle se samo nevyřeší: sdílená složka mohla být na serveru přejmenována nebo odstraněna, takže se vyplatí to zkontrolovat přímo tam.",
+  "fileExplorer.network.osMountFallback.shareNotOnServer": "{platform, select, macos {Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože server hlásí, že žádnou sdílenou složku s tímto názvem nemá. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší. Tohle se samo nevyřeší: sdílená složka mohla být na serveru přejmenována nebo odstraněna, takže se vyplatí to zkontrolovat přímo tam.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through Windows’ own SMB connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through your system’s SMB connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.}}",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
     "sourceHash": "3ae984e"
   },
@@ -392,7 +392,7 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshHint": "Stiskněte <key></key> nebo sem klikněte a seznam se obnoví",
+  "fileExplorer.network.browser.refreshHint": "{platform, select, windows {Press <key></key> or select here to refresh} other {Stiskněte <key></key> nebo sem klikněte a seznam se obnoví}}",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
   },
@@ -508,7 +508,7 @@
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "e394098"
   },
-  "fileExplorer.network.share.credentialsStoredLocally": "Přihlašovací údaje jsou uložené místně (systémový svazek klíčů nebyl nalezen)",
+  "fileExplorer.network.share.credentialsStoredLocally": "{platform, select, windows {Credentials stored locally (Credential Manager not available)} other {Přihlašovací údaje jsou uložené místně (systémový svazek klíčů nebyl nalezen)}}",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
@@ -544,7 +544,7 @@
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "Odstranit uložené heslo ze svazku klíčů",
+  "fileExplorer.network.share.forgetPasswordTooltip": "{platform, select, macos {Odstranit uložené heslo ze svazku klíčů} windows {Remove saved password from Credential Manager} other {Remove saved password from your keyring}}",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
@@ -584,7 +584,7 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.networkMount.mountingSlow": "Pořád se čeká, až se macOS připojí. Můžete to kdykoli zrušit.",
+  "fileExplorer.networkMount.mountingSlow": "{platform, select, macos {Pořád se čeká, až se macOS připojí. Můžete to kdykoli zrušit.} windows {Still waiting for Windows to connect. You can cancel at any time.} other {Still connecting to the share. You can cancel at any time.}}",
   "@fileExplorer.networkMount.mountingSlow": {
     "sourceHash": "e8e9040"
   },
@@ -632,7 +632,7 @@
   "@fileExplorer.unreachable.disconnect": {
     "sourceHash": "acfc5be"
   },
-  "fileExplorer.unreachable.openHome": "Otevřít domovskou složku",
+  "fileExplorer.unreachable.openHome": "{platform, select, windows {Open user folder} other {Otevřít domovskou složku}}",
   "@fileExplorer.unreachable.openHome": {
     "sourceHash": "a178b4d"
   },
@@ -724,7 +724,7 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
   },
-  "fileExplorer.edit.notOnThisMac": "Cmdr zatím nedokáže tento soubor otevřít v editoru, protože to není běžný soubor na vašem Macu. Zobrazíte ho klávesou F3.",
+  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {Cmdr zatím nedokáže tento soubor otevřít v editoru, protože to není běžný soubor na vašem Macu. Zobrazíte ho klávesou F3.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "710100c"
   },
@@ -892,7 +892,7 @@
   "@fileExplorer.restic.forgetPassword.forgotten": {
     "sourceHash": "bd4ac8e"
   },
-  "fileExplorer.restic.forgetPassword.keychainKeptIt": "Cmdr zálohu {name} zatím zamkl, ale svazek klíčů si uložené heslo ponechal. Pokud ho chcete odstranit natrvalo, smažte ho v Klíčence.",
+  "fileExplorer.restic.forgetPassword.keychainKeptIt": "{platform, select, macos {Cmdr zálohu {name} zatím zamkl, ale svazek klíčů si uložené heslo ponechal. Pokud ho chcete odstranit natrvalo, smažte ho v Klíčence.} windows {Cmdr locked {name} for now, but Credential Manager kept its saved password. To remove it for good, delete it in Credential Manager.} other {Cmdr locked {name} for now, but your keyring kept its saved password. To remove it for good, delete it in your keyring app.}}",
   "@fileExplorer.restic.forgetPassword.keychainKeptIt": {
     "sourceHash": "56adfb0"
   },
@@ -984,7 +984,7 @@
   "@fileExplorer.openWith.copyRefused.tooLargeInBackup": {
     "sourceHash": "071fe99"
   },
-  "fileExplorer.openWith.copyRefused.notEnoughSpace": "Na disku tohoto Macu není místo pro kopii souboru {fileName} o velikosti {size}, takže ho Cmdr nemůže otevřít v aplikaci {appName}. Uvolněte trochu místa a zkuste to znovu.",
+  "fileExplorer.openWith.copyRefused.notEnoughSpace": "{platform, select, macos {Na disku tohoto Macu není místo pro kopii souboru {fileName} o velikosti {size}, takže ho Cmdr nemůže otevřít v aplikaci {appName}. Uvolněte trochu místa a zkuste to znovu.} windows {Your PC doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.} other {Your computer’s disk doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.}}",
   "@fileExplorer.openWith.copyRefused.notEnoughSpace": {
     "sourceHash": "5cd8e49"
   },
@@ -996,7 +996,7 @@
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
   },
-  "fileExplorer.openWith.notOnThisMac": "Aplikace {appName} tento soubor otevřít nedokáže, protože to není běžný soubor na vašem Macu. Zobrazíte ho v Cmdru klávesou {viewKey}.",
+  "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {Aplikace {appName} tento soubor otevřít nedokáže, protože to není běžný soubor na vašem Macu. Zobrazíte ho v Cmdru klávesou {viewKey}.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
   },
@@ -1211,7 +1211,7 @@
   "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
     "sourceHash": "c655c6f"
   },
-  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "Tato velikost může být zastaralá: indexování je pozastaveno, protože startovací disk, na kterém Cmdr uchovává svůj index, je téměř plný.",
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "{platform, select, macos {Tato velikost může být zastaralá: indexování je pozastaveno, protože startovací disk, na kterém Cmdr uchovává svůj index, je téměř plný.} windows {This size may be out of date: indexing is paused because your system drive, where Cmdr keeps its index, is almost full.} other {This size may be out of date: indexing is paused because your system disk, where Cmdr keeps its index, is almost full.}}",
   "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
     "sourceHash": "29c5f81"
   },
@@ -1561,15 +1561,15 @@
   "@fileExplorer.renameConflict.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "fileExplorer.renameConflict.overwriteTrash": "Přepsat a starý soubor přesunout do koše",
+  "fileExplorer.renameConflict.overwriteTrash": "{platform, select, windows {Overwrite and delete old file} other {Přepsat a starý soubor přesunout do koše}}",
   "@fileExplorer.renameConflict.overwriteTrash": {
     "sourceHash": "e0192f6"
   },
-  "fileExplorer.renameConflict.overwriteTrashFolder": "Přepsat a starou složku přesunout do koše",
+  "fileExplorer.renameConflict.overwriteTrashFolder": "{platform, select, windows {Overwrite and delete old folder} other {Přepsat a starou složku přesunout do koše}}",
   "@fileExplorer.renameConflict.overwriteTrashFolder": {
     "sourceHash": "7f94bfa"
   },
-  "fileExplorer.renameConflict.overwriteDelete": "Přepsat a starý soubor smazat",
+  "fileExplorer.renameConflict.overwriteDelete": "{platform, select, windows {Overwrite and permanently delete old file} other {Přepsat a starý soubor smazat}}",
   "@fileExplorer.renameConflict.overwriteDelete": {
     "sourceHash": "02093d5"
   },
@@ -1589,11 +1589,11 @@
   "@fileExplorer.extensionChange.description": {
     "sourceHash": "ef7ac59"
   },
-  "fileExplorer.extensionChange.descriptionRemove": "{kind, select, folder {Opravdu chcete odstranit příponu „.{oldExt}“? macOS pak tuto položku bude zobrazovat jako obyčejnou složku, ne jako jednu položku.} other {Opravdu chcete odstranit příponu „.{oldExt}“? Váš Mac pak možná nebude vědět, která aplikace má soubor otevřít.}}",
+  "fileExplorer.extensionChange.descriptionRemove": "{platform, select, macos {{kind, select, folder {Opravdu chcete odstranit příponu „.{oldExt}“? macOS pak tuto položku bude zobrazovat jako obyčejnou složku, ne jako jednu položku.} other {Opravdu chcete odstranit příponu „.{oldExt}“? Váš Mac pak možná nebude vědět, která aplikace má soubor otevřít.}}} windows {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension?} other {Are you sure you want to remove the “.{oldExt}” extension? Windows may not know which app opens the file without it.}}} other {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension?} other {Are you sure you want to remove the “.{oldExt}” extension? Your computer may not know which app opens the file without it.}}}}",
   "@fileExplorer.extensionChange.descriptionRemove": {
     "sourceHash": "8c87a3d"
   },
-  "fileExplorer.extensionChange.descriptionAdd": "{kind, select, folder {Opravdu chcete přidat příponu „.{newExt}“? macOS pak může tuto složku zobrazovat jako jednu položku.} other {Opravdu chcete přidat příponu „.{newExt}“? Soubor se příště možná otevře v jiné aplikaci.}}",
+  "fileExplorer.extensionChange.descriptionAdd": "{platform, select, macos {{kind, select, folder {Opravdu chcete přidat příponu „.{newExt}“? macOS pak může tuto složku zobrazovat jako jednu položku.} other {Opravdu chcete přidat příponu „.{newExt}“? Soubor se příště možná otevře v jiné aplikaci.}}} other {{kind, select, folder {Are you sure you want to add the “.{newExt}” extension?} other {Are you sure you want to add the “.{newExt}” extension? Your file may open in a different app next time you open it.}}}}",
   "@fileExplorer.extensionChange.descriptionAdd": {
     "sourceHash": "c18c736"
   },
@@ -1686,7 +1686,7 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "Tato složka nemůže být v oblíbených: oblíbené položky odkazují na složky na discích, sdílených složkách, serverech a telefonech",
+  "fileExplorer.navigation.favoritesCantAddHere": "{platform, select, windows {This folder can’t be a favorite: favorites point at folders on drives, shares, servers, and phones} other {Tato složka nemůže být v oblíbených: oblíbené položky odkazují na složky na discích, sdílených složkách, serverech a telefonech}}",
   "@fileExplorer.navigation.favoritesCantAddHere": {
     "sourceHash": "03886b7"
   },
@@ -2026,7 +2026,7 @@
   "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
     "sourceHash": "5714115"
   },
-  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Indexování je pozastaveno, protože startovací disk, na kterém Cmdr uchovává svůj index, je téměř plný. Velikosti složek na tomto disku můžou být zastaralé, než bude indexování pokračovat. Pokračuje samo, jakmile bude na startovacím disku víc volného místa.",
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "{platform, select, macos {Indexování je pozastaveno, protože startovací disk, na kterém Cmdr uchovává svůj index, je téměř plný. Velikosti složek na tomto disku můžou být zastaralé, než bude indexování pokračovat. Pokračuje samo, jakmile bude na startovacím disku víc volného místa.} windows {Indexing is paused because your system drive, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.} other {Indexing is paused because your system disk, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.}}",
   "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
     "sourceHash": "68994e4"
   },
@@ -2188,7 +2188,7 @@
   "@fileExplorer.dropIn.timedOut": {
     "sourceHash": "7591ca5"
   },
-  "fileExplorer.dropIn.noFolder": "Cmdr nemohl pro přetažený soubor připravit místo. Zkontrolujte, že je na disku volné místo, a zkuste to znovu.",
+  "fileExplorer.dropIn.noFolder": "{platform, select, windows {Cmdr couldn’t make room for the dropped file. Check that your PC has free space, then try again.} other {Cmdr nemohl pro přetažený soubor připravit místo. Zkontrolujte, že je na disku volné místo, a zkuste to znovu.}}",
   "@fileExplorer.dropIn.noFolder": {
     "sourceHash": "ea7fb38"
   },
@@ -2244,7 +2244,7 @@
   "@fileExplorer.quickFilter.intro.switchToJump": {
     "sourceHash": "38642f9"
   },
-  "fileExplorer.quickFilter.intro.openSettings": "Nastavení…",
+  "fileExplorer.quickFilter.intro.openSettings": "{platform, select, windows {Settings} other {Nastavení…}}",
   "@fileExplorer.quickFilter.intro.openSettings": {
     "sourceHash": "7a04083"
   },
@@ -2264,7 +2264,7 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "sourceHash": "c350d80"
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože její soubory jsou na jiném serveru a Cmdr se tam sám nepřihlásí. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "{platform, select, macos {Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože její soubory jsou na jiném serveru a Cmdr se tam sám nepřihlásí. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
@@ -2280,15 +2280,15 @@
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
     "sourceHash": "fe17565"
   },
-  "fileExplorer.network.osMountFallback.encryptionRequired": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože server připojení zašifrovat nedokáže a v Cmdru je zapnutá volba „Vždy vyžadovat šifrování SMB“. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.",
+  "fileExplorer.network.osMountFallback.encryptionRequired": "{platform, select, macos {Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože server připojení zašifrovat nedokáže a v Cmdru je zapnutá volba „Vždy vyžadovat šifrování SMB“. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {
     "sourceHash": "14a8cb4"
   },
-  "fileExplorer.network.osMountFallback.negotiationInvalid": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože server nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl. Může to způsobit server, který nefunguje správně, ale také někdo, kdo zasahuje do připojení. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.",
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "{platform, select, macos {Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože server nepotvrdil nastavení zabezpečení, na kterém se s Cmdrem dohodl. Může to způsobit server, který nefunguje správně, ale také někdo, kdo zasahuje do připojení. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
     "sourceHash": "758e268"
   },
-  "fileExplorer.network.osMountFallback.encryptionUnavailable": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože tato sdílená složka přijímá jen šifrovaná připojení a server se s Cmdrem nedohodl na způsobu, jak připojení zašifrovat. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.",
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "{platform, select, macos {Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože tato sdílená složka přijímá jen šifrovaná připojení a server se s Cmdrem nedohodl na způsobu, jak připojení zašifrovat. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
     "sourceHash": "23dd607"
   },

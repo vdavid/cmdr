@@ -115,6 +115,8 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     shortcuts: ['⌘⇧H'],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
+    // Windows names it "Go to user folder", so "home" stays findable for muscle memory.
+    keywords: ['home'],
   },
   {
     // ErrorPane owns this key outright: it registers a CAPTURE-phase document
@@ -353,7 +355,7 @@ export const fileListCommands: CommandSource[] = [
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.editUndoTrash.description',
-    keywords: ['undo', 'trash', 'bin', 'restore', 'put back', 'recover', 'deleted'],
+    keywords: ['undo', 'trash', 'bin', 'recycle bin', 'restore', 'put back', 'recover', 'deleted'],
     // Offered only while there's a trash to undo, and named after it, the way the Edit menu
     // item greys out and relabels itself.
     paletteCondition: 'trashUndoAvailable',
@@ -369,7 +371,7 @@ export const fileListCommands: CommandSource[] = [
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileGoToTrash.description',
-    keywords: ['trash', 'bin', 'deleted', 'recover', 'restore', 'goto'],
+    keywords: ['trash', 'bin', 'recycle bin', 'deleted', 'recover', 'restore', 'goto'],
   },
   {
     id: 'file.showInFinder',

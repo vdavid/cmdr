@@ -71,7 +71,7 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "Nastavení…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Nastavení…}}",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -171,15 +171,15 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "Odvolat přesunutí do koše",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Odvolat přesunutí do koše}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "c6fea33"
   },
-  "menu.edit.undoTrashOne": "Odvolat přesunutí „{name}“ do koše",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Odvolat přesunutí „{name}“ do koše}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "45494c8"
   },
-  "menu.edit.undoTrashMany": "Odvolat přesunutí položek do koše ({countText})",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Odvolat přesunutí položek do koše ({countText})}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "bb9192a"
   },

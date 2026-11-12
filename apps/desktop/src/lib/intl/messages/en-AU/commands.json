@@ -19,13 +19,13 @@
   "@commands.favoritesAdd.description": {
     "sourceHash": "43043e8"
   },
-  "commands.fileGoToTrash.label": "Go to the Bin",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Go to the Bin}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
-  "commands.fileGoToTrash.description": "Opens the Bin of the drive you’re browsing",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Opens the Bin of the drive you’re browsing}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "6496c25"
+    "sourceHash": "e4789d0"
   },
   "commands.tagsToggleGrey.label": "Toggle grey tag",
   "@commands.tagsToggleGrey.label": {
@@ -103,20 +103,20 @@
   "@commands.multiRenameNormalizeUnicode.label": {
     "sourceHash": "fc2b801"
   },
-  "commands.editUndoTrash.label": "Undo move to Bin",
+  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Undo move to Bin}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "commands.editUndoTrash.description": "Puts back the files you last moved to the Bin",
+  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Puts back the files you last moved to the Bin}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "dca1b63"
+    "sourceHash": "6082058"
   },
-  "commands.editUndoTrash.one": "Undo move to Bin of “{name}”",
+  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Undo move to Bin of “{name}”}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "commands.editUndoTrash.many": "Undo move to Bin of {countText} {count, plural, one {item} other {items}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Undo move to Bin of {countText} {count, plural, one {item} other {items}}}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "69c4966"
+    "sourceHash": "39a5bbe"
   }
 }

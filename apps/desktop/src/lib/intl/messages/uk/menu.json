@@ -71,7 +71,7 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "Параметри…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Параметри…}}",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -171,15 +171,15 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "Відмінити переміщення в Смітник",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Відмінити переміщення в Смітник}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "c6fea33"
   },
-  "menu.edit.undoTrashOne": "Відмінити переміщення «{name}» у Смітник",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Відмінити переміщення «{name}» у Смітник}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "45494c8"
   },
-  "menu.edit.undoTrashMany": "Відмінити переміщення в Смітник (елементів: {countText})",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Відмінити переміщення в Смітник (елементів: {countText})}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "bb9192a"
   },

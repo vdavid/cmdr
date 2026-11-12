@@ -1,5 +1,6 @@
-import { describe, expect, it, beforeAll, afterAll } from 'vitest'
+import { describe, expect, it, beforeAll, afterAll, onTestFinished } from 'vitest'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import type { DeviceReadiness } from '#lib/ipc/bindings.js'
 import { deviceRowState, isStillConnecting } from './device-readiness'
 
@@ -52,7 +53,16 @@ describe('deviceRowState', () => {
       'This Mac can’t reach your phone over USB. Try another cable or port.',
     ],
   ])('disables an unavailable device and puts the reason in its tooltip', (readiness, tooltip) => {
+    onTestFinished(withPlatform('macos'))
     expect(deviceRowState(readiness)).toEqual({ openable: false, tooltip, status: null })
+  })
+
+  it.each([
+    ['windows', 'This PC can’t reach your phone over USB. Try another cable or port.'],
+    ['linux', 'This computer can’t reach your phone over USB. Try another cable or port.'],
+  ] as const)('names the machine in %s’s words when USB can’t reach the phone', (platform, tooltip) => {
+    onTestFinished(withPlatform(platform))
+    expect(deviceRowState({ kind: 'unavailable', reason: 'no_permissions' }).tooltip).toBe(tooltip)
   })
 })
 

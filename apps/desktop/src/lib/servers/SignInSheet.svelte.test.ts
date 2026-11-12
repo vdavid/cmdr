@@ -8,11 +8,12 @@
  * this). A modal is what settles it, and this is the cell that says so.
  */
 
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
 import { mount, tick } from 'svelte'
 import SignInSheet from './SignInSheet.svelte'
 import type { SignInAttemptOutcome, SignInSheetRequest, SignInSubmission } from './sign-in-contract'
 import { systemStrings } from '#lib/system-strings.svelte.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -791,6 +792,9 @@ describe('SignInSheet: edit mode', () => {
     places: [],
   }
 
+  // These pin the words a Mac reads; the Windows and Linux ones are pinned by name below.
+  beforeEach(() => withPlatform('macos'))
+
   const KNOWN_SFTP = {
     host: 'nas.local',
     port: 22,
@@ -1073,6 +1077,20 @@ describe('SignInSheet: edit mode', () => {
     await renderSheet({ mode: 'edit', server: SAVED })
 
     expect(document.body.querySelector<HTMLInputElement>('#server-secret')?.placeholder ?? '').toBe('')
+  })
+
+  /** Windows names no store on the checkbox or in the field; Linux names the keyring. */
+  it.each([
+    ['windows', 'Remember password', 'Saved. Leave empty to keep it.'],
+    ['linux', 'Remember in keyring', 'Saved in your keyring. Leave empty to keep it.'],
+  ] as const)('names the password store in %s’s words', async (platform, checkbox, placeholder) => {
+    onTestFinished(withPlatform(platform))
+    const commands = await import('#lib/tauri-commands/index.js')
+    vi.mocked(commands.hasServerSecret).mockResolvedValueOnce(true)
+    await renderSheet({ mode: 'edit', server: SAVED })
+
+    expect(document.body.querySelector<HTMLInputElement>('#server-secret')?.placeholder).toBe(placeholder)
+    expect([...document.body.querySelectorAll('label')].some((l) => l.textContent.includes(checkbox))).toBe(true)
   })
 })
 

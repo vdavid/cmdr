@@ -140,7 +140,7 @@
   "@servers.hub.emptyTitle": {
     "sourceHash": "7846930"
   },
-  "servers.hub.emptyMessage": "Ajoutez-en un ci-dessous, ou allumez un Mac ou un NAS sur votre réseau et Cmdr le trouvera.",
+  "servers.hub.emptyMessage": "{platform, select, macos {Ajoutez-en un ci-dessous, ou allumez un Mac ou un NAS sur votre réseau et Cmdr le trouvera.} windows {Add one below, or turn on a PC or NAS on your network and Cmdr will find it.} other {Add one below, or turn on a computer or NAS on your network and Cmdr will find it.}}",
   "@servers.hub.emptyMessage": {
     "sourceHash": "04bdc26"
   },
@@ -188,7 +188,7 @@
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "48b9b15"
   },
-  "servers.refusal.certificateUntrusted": "macOS n’approuve pas le certificat de ce serveur. Ajoutez-le dans Trousseaux d’accès, puis réessayez.",
+  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS n’approuve pas le certificat de ce serveur. Ajoutez-le dans Trousseaux d’accès, puis réessayez.} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
   "@servers.refusal.certificateUntrusted": {
     "sourceHash": "b8f3b4a"
   },
@@ -224,7 +224,7 @@
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "La clé du serveur {host} est marquée comme compromise dans vos réglages SSH sur ce Mac. Cmdr ne se connectera pas à ce serveur.",
+  "servers.refusal.hostKeyRevoked": "{platform, select, macos {La clé du serveur {host} est marquée comme compromise dans vos réglages SSH sur ce Mac. Cmdr ne se connectera pas à ce serveur.} windows {The key for {host} is marked as compromised in your SSH settings on this PC. Cmdr won’t connect to it.} other {The key for {host} is marked as compromised in your SSH settings on this computer. Cmdr won’t connect to it.}}",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "7a25d93"
   },
@@ -248,11 +248,11 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "3fb55a6"
   },
-  "servers.refusal.secretNotStored": "Cmdr n’a pas pu enregistrer ce mot de passe dans le trousseau. Réessayez ou désactivez « Mémoriser dans le trousseau » pour vous identifier sans l’enregistrer.",
+  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr n’a pas pu enregistrer ce mot de passe dans le trousseau. Réessayez ou désactivez « Mémoriser dans le trousseau » pour vous identifier sans l’enregistrer.} windows {Cmdr couldn’t save this password. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this password in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.secretNotStored": {
     "sourceHash": "20957fe"
   },
-  "servers.refusal.savedSecretNotUpdated": "Cmdr a enregistré vos modifications, mais n’a pas pu mettre à jour le mot de passe dans le trousseau. Enregistrez à nouveau pour réessayer.",
+  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr a enregistré vos modifications, mais n’a pas pu mettre à jour le mot de passe dans le trousseau. Enregistrez à nouveau pour réessayer.} windows {Cmdr saved your changes but couldn’t update the saved password. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the password in your keyring. Save again to try once more.}}",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
   },
@@ -268,11 +268,11 @@
   "@servers.refusal.s3SecretMissing": {
     "sourceHash": "f1f32f2"
   },
-  "servers.refusal.s3SecretNotStored": "Cmdr n’a pas pu enregistrer cette clé d’accès secrète dans le trousseau. Réessayez ou désactivez « Mémoriser dans le trousseau » pour vous identifier sans l’enregistrer.",
+  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr n’a pas pu enregistrer cette clé d’accès secrète dans le trousseau. Réessayez ou désactivez « Mémoriser dans le trousseau » pour vous identifier sans l’enregistrer.} windows {Cmdr couldn’t save this secret access key. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this secret access key in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.s3SecretNotStored": {
     "sourceHash": "f7a9fb0"
   },
-  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr a enregistré vos modifications, mais n’a pas pu mettre à jour la clé d’accès secrète dans le trousseau. Enregistrez à nouveau pour réessayer.",
+  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr a enregistré vos modifications, mais n’a pas pu mettre à jour la clé d’accès secrète dans le trousseau. Enregistrez à nouveau pour réessayer.} windows {Cmdr saved your changes but couldn’t update the saved secret access key. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the secret access key in your keyring. Save again to try once more.}}",
   "@servers.refusal.s3SavedSecretNotUpdated": {
     "sourceHash": "1d2889d"
   },
@@ -296,7 +296,7 @@
   "@servers.refusal.regionMismatchNamed": {
     "sourceHash": "30abb0d"
   },
-  "servers.refusal.clockSkewed": "L’horloge de ce Mac a plus de 15 minutes d’écart, donc le serveur n’accepte pas les requêtes de Cmdr. Activez « Régler la date et l’heure automatiquement » dans Réglages Système, puis réessayez.",
+  "servers.refusal.clockSkewed": "{platform, select, macos {L’horloge de ce Mac a plus de 15 minutes d’écart, donc le serveur n’accepte pas les requêtes de Cmdr. Activez « Régler la date et l’heure automatiquement » dans Réglages Système, puis réessayez.} windows {This PC’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Turn on “Set time automatically” in Settings > Time & language > Date & time, then try again.} other {This computer’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in your system settings, then try again.}}",
   "@servers.refusal.clockSkewed": {
     "sourceHash": "cdee0ef"
   },
@@ -308,7 +308,7 @@
   "@servers.refusal.exportNotFound": {
     "sourceHash": "2ef1ce8"
   },
-  "servers.refusal.exportRefused": "{host} ne laisse pas ce Mac ouvrir ce partage. Vérifiez quels ordinateurs le partage autorise dans les réglages NFS du serveur.",
+  "servers.refusal.exportRefused": "{platform, select, macos {{host} ne laisse pas ce Mac ouvrir ce partage. Vérifiez quels ordinateurs le partage autorise dans les réglages NFS du serveur.} windows {{host} doesn’t let this PC open that export. Check which devices the export allows in the server’s NFS settings.} other {{host} doesn’t let this computer open that export. Check which computers the export allows in the server’s NFS settings.}}",
   "@servers.refusal.exportRefused": {
     "sourceHash": "0cebd7d"
   },
@@ -332,11 +332,11 @@
   "@servers.refusal.addressTaken": {
     "sourceHash": "5a14a92"
   },
-  "servers.refusal.secretNotMoved": "Cmdr n’a pas pu emporter le mot de passe enregistré vers la nouvelle adresse, donc rien n’a changé. Vérifiez que le trousseau est déverrouillé, puis enregistrez à nouveau.",
+  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr n’a pas pu emporter le mot de passe enregistré vers la nouvelle adresse, donc rien n’a changé. Vérifiez que le trousseau est déverrouillé, puis enregistrez à nouveau.} windows {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.secretNotMoved": {
     "sourceHash": "7f3c328"
   },
-  "servers.refusal.s3SecretNotMoved": "Cmdr n’a pas pu emporter la clé d’accès secrète enregistrée vers le nouveau point de terminaison, donc rien n’a changé. Vérifiez que le trousseau est déverrouillé, puis enregistrez à nouveau.",
+  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr n’a pas pu emporter la clé d’accès secrète enregistrée vers le nouveau point de terminaison, donc rien n’a changé. Vérifiez que le trousseau est déverrouillé, puis enregistrez à nouveau.} windows {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.s3SecretNotMoved": {
     "sourceHash": "69901e7"
   },
@@ -348,11 +348,11 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "Le partage {name} est encore monté depuis l’ancienne adresse. Éjectez-le, puis enregistrez à nouveau.",
+  "servers.refusal.shareMounted": "{platform, select, macos {Le partage {name} est encore monté depuis l’ancienne adresse. Éjectez-le, puis enregistrez à nouveau.} windows {The share {name} is still connected from the old address. Disconnect it, then save again.} other {The share {name} is still mounted from the old address. Unmount it, then save again.}}",
   "@servers.refusal.shareMounted": {
     "sourceHash": "156a61b"
   },
-  "servers.refusal.shareEjectRefused": "Cmdr n’a pas pu éjecter le partage {name} et n’a donc rien enregistré. {reason}",
+  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr n’a pas pu éjecter le partage {name} et n’a donc rien enregistré. {reason}} windows {Cmdr couldn’t disconnect {name}, so nothing was saved. {reason}} other {Cmdr couldn’t unmount {name}, so nothing was saved. {reason}}}",
   "@servers.refusal.shareEjectRefused": {
     "sourceHash": "1c73fa7"
   },
@@ -384,15 +384,15 @@
   "@servers.sheet.addAnywayHelp": {
     "sourceHash": "68e90b2"
   },
-  "servers.sheet.ejectAndSave": "Éjecter et enregistrer",
+  "servers.sheet.ejectAndSave": "{platform, select, macos {Éjecter et enregistrer} windows {Disconnect and save} other {Unmount and save}}",
   "@servers.sheet.ejectAndSave": {
     "sourceHash": "357f2dd"
   },
-  "servers.sheet.ejectAndSaveHelp": "Cmdr éjecte chaque partage encore monté depuis l’ancienne adresse, puis enregistre la nouvelle.",
+  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr éjecte chaque partage encore monté depuis l’ancienne adresse, puis enregistre la nouvelle.} windows {Cmdr disconnects every share still connected from the old address, then saves the new one.} other {Cmdr unmounts every share still mounted from the old address, then saves the new one.}}",
   "@servers.sheet.ejectAndSaveHelp": {
     "sourceHash": "a1d1206"
   },
-  "servers.sheet.ejecting": "Éjection…",
+  "servers.sheet.ejecting": "{platform, select, macos {Éjection…} windows {Disconnecting…} other {Unmounting…}}",
   "@servers.sheet.ejecting": {
     "sourceHash": "4c37167"
   },
@@ -500,7 +500,7 @@
   "@servers.sheet.nfsExportsEmptyList": {
     "sourceHash": "7558a7b"
   },
-  "servers.sheet.nfsExportsNone": "{host} ne liste aucun partage pour ce Mac. Saisissez le chemin du partage si vous le connaissez.",
+  "servers.sheet.nfsExportsNone": "{platform, select, macos {{host} ne liste aucun partage pour ce Mac. Saisissez le chemin du partage si vous le connaissez.} windows {{host} lists no exports for this PC. Type the export’s path if you know it.} other {{host} lists no exports for this computer. Type the export’s path if you know it.}}",
   "@servers.sheet.nfsExportsNone": {
     "sourceHash": "a88c0bf"
   },
@@ -544,7 +544,7 @@
   "@servers.sheet.nfsIdentityRootOwner": {
     "sourceHash": "c464fa8"
   },
-  "servers.sheet.nfsIdentityThisMac": "Vos ID sur ce Mac. Modifiez-les si les fichiers du serveur appartiennent à quelqu’un d’autre.",
+  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Vos ID sur ce Mac. Modifiez-les si les fichiers du serveur appartiennent à quelqu’un d’autre.} windows {The user and group IDs Cmdr sends to the server. Change them if the files on the server belong to someone else.} other {Your IDs on this computer. Change them if the files on the server belong to someone else.}}",
   "@servers.sheet.nfsIdentityThisMac": {
     "sourceHash": "8bfbb0d"
   },
@@ -576,7 +576,7 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
-  "servers.sheet.secretKeptPlaceholder": "Valeur enregistrée dans le trousseau. Laissez vide pour la conserver.",
+  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Valeur enregistrée dans le trousseau. Laissez vide pour la conserver.} windows {Saved. Leave empty to keep it.} other {Saved in your keyring. Leave empty to keep it.}}",
   "@servers.sheet.secretKeptPlaceholder": {
     "sourceHash": "8711f6c"
   },
@@ -592,7 +592,7 @@
   "@servers.sheet.passphrase": {
     "sourceHash": "2510031"
   },
-  "servers.sheet.remember": "Mémoriser dans le trousseau",
+  "servers.sheet.remember": "{platform, select, macos {Mémoriser dans le trousseau} windows {Remember password} other {Remember in keyring}}",
   "@servers.sheet.remember": {
     "sourceHash": "3fd7384"
   },
@@ -781,7 +781,7 @@
   "@servers.sheet.autoReconnectInfoLabel": {
     "sourceHash": "edb9b82"
   },
-  "servers.sheet.needsStoredSecret": "La reconnexion automatique nécessite un mot de passe mémorisé. Activez « Mémoriser dans le trousseau » et identifiez-vous une fois.",
+  "servers.sheet.needsStoredSecret": "{platform, select, macos {La reconnexion automatique nécessite un mot de passe mémorisé. Activez « Mémoriser dans le trousseau » et identifiez-vous une fois.} windows {Reconnecting on its own needs a saved password. Turn on “Remember password” and sign in once.} other {Reconnecting on its own needs a remembered password. Turn on “Remember in keyring” and sign in once.}}",
   "@servers.sheet.needsStoredSecret": {
     "sourceHash": "32336f3"
   },
@@ -821,7 +821,7 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "macOS ne connaît pas le certificat du serveur {host}",
+  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS ne connaît pas le certificat du serveur {host}} windows {Windows doesn’t know the certificate for {host}} other {The certificate for {host} is new to this computer}}",
   "@servers.certificate.firstContactTitle": {
     "sourceHash": "ca0b44a"
   },

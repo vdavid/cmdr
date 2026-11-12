@@ -71,7 +71,7 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "Ajustes…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Ajustes…}}",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -171,15 +171,15 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "Deshacer movimiento a la papelera",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Deshacer movimiento a la papelera}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "c6fea33"
   },
-  "menu.edit.undoTrashOne": "Deshacer movimiento de “{name}” a la papelera",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Deshacer movimiento de “{name}” a la papelera}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "45494c8"
   },
-  "menu.edit.undoTrashMany": "Deshacer movimiento de {countText} elementos a la papelera",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Deshacer movimiento de {countText} elementos a la papelera}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "bb9192a"
   },

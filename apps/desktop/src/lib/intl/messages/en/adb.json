@@ -7,7 +7,7 @@
   "@adb.connect.openSettings": {
     "description": "Button beside that line; it opens the app's Settings window at the Android section, where the user can point Cmdr at the tools or re-check for them. VERB phrase, imperative. \"Settings\" is the app's own Settings window; use the word your language's macOS uses for it."
   },
-  "adb.connect.serverUnreachable": "The Android tools on this Mac didn’t answer.",
+  "adb.connect.serverUnreachable": "{platform, select, macos {The Android tools on this Mac didn’t answer.} windows {The Android tools on this PC didn’t answer.} other {The Android tools on this computer didn’t answer.}}",
   "@adb.connect.serverUnreachable": {
     "description": "Shown in the pane when the Android tools are installed but the background program they run isn't answering, so Cmdr can't reach any phone. About this Mac, never about the phone. ❌ Never name the background program or the protocol."
   },
@@ -55,7 +55,7 @@
   "@adb.readiness.offline": {
     "description": "Hover tooltip on a phone's row in the volume switcher while the row is greyed out and cannot be opened, because the phone is listed but silent. Says the two things that usually fix it. Address the user directly."
   },
-  "adb.readiness.noPermissions": "This Mac can’t reach your phone over USB. Try another cable or port.",
+  "adb.readiness.noPermissions": "{platform, select, macos {This Mac can’t reach your phone over USB. Try another cable or port.} windows {This PC can’t reach your phone over USB. Try another cable or port.} other {This computer can’t reach your phone over USB. Try another cable or port.}}",
   "@adb.readiness.noPermissions": {
     "description": "Hover tooltip on a phone's row in the volume switcher while the row is greyed out, because this computer isn't allowed to claim the phone's USB connection. About the Mac, never about the phone's own settings."
   },

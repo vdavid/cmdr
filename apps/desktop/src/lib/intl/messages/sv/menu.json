@@ -71,7 +71,7 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "Inställningar…",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Inställningar…}}",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -171,15 +171,15 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "Ångra flytt till papperskorgen",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Ångra flytt till papperskorgen}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "c6fea33"
   },
-  "menu.edit.undoTrashOne": "Ångra flytt av ”{name}” till papperskorgen",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Ångra flytt av ”{name}” till papperskorgen}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "45494c8"
   },
-  "menu.edit.undoTrashMany": "Ångra flytt av {countText} objekt till papperskorgen",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Ångra flytt av {countText} objekt till papperskorgen}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "bb9192a"
   },

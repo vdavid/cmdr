@@ -3,7 +3,8 @@
  * where it leaves the panes, and what it says.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('#lib/tauri-commands/index.js')>()
@@ -97,16 +98,25 @@ describe('forgetResticPassword', () => {
     expect(lastToast().level).toBe('info')
   })
 
-  it('warns when the Keychain kept its copy, though the backup is locked for now', async () => {
-    vi.mocked(forgetSavedContainerPassword).mockResolvedValueOnce('storeKeptIt')
-    const explorer = explorerAt(`${VIEW}/latest`)
+  it.each([
+    ['macos', 'Keychain Access'],
+    ['windows', 'Credential Manager'],
+    ['linux', 'your keyring app'],
+  ] as const)(
+    'warns when the store kept its copy, though the backup is locked for now (%s)',
+    async (platform, store) => {
+      onTestFinished(withPlatform(platform))
+      vi.mocked(forgetSavedContainerPassword).mockResolvedValueOnce('storeKeptIt')
+      const explorer = explorerAt(`${VIEW}/latest`)
 
-    await forgetResticPassword(explorer)
+      await forgetResticPassword(explorer)
 
-    expect(explorer.navigated).toHaveLength(1)
-    expect(lastToast().level).toBe('warn')
-    expect(lastToast().message).toContain('Keychain')
-  })
+      expect(explorer.navigated).toHaveLength(1)
+      expect(lastToast().level).toBe('warn')
+      // It names where to go to remove the password for good.
+      expect(lastToast().message).toContain(store)
+    },
+  )
 
   it('leaves the panes alone and says the password stays when the backup couldn’t be reached', async () => {
     vi.mocked(forgetSavedContainerPassword).mockRejectedValueOnce(new UnlockFailure({ type: 'notLocked' }))

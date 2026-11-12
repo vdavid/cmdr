@@ -4,10 +4,11 @@
  * meets a changed certificate with the alarm's face, never first contact's.
  */
 
-import { describe, expect, it, vi, afterEach } from 'vitest'
+import { describe, expect, it, vi, afterEach, onTestFinished } from 'vitest'
 import { mount, tick } from 'svelte'
 import SignInSheet from './SignInSheet.svelte'
 import type { SignInAttemptOutcome, SignInSheetRequest } from './sign-in-contract'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -63,7 +64,13 @@ const certificate = (fingerprint: string, kind: 'unknown' | 'changed') =>
   }) as const
 
 describe('SignInSheet: the certificate step', () => {
-  it('pins exactly the certificate on screen, then dials again', async () => {
+  // The title says who doesn't know the certificate, in each OS's words.
+  it.each([
+    ['macos', 'macOS doesn’t know the certificate for nas.local'],
+    ['windows', 'Windows doesn’t know the certificate for nas.local'],
+    ['linux', 'The certificate for nas.local is new to this computer'],
+  ] as const)('pins exactly the certificate on screen, then dials again (%s)', async (platform, title) => {
+    onTestFinished(withPlatform(platform))
     const { approveWebdavCertificate } = await import('#lib/tauri-commands/index.js')
     const approve = vi.mocked(approveWebdavCertificate)
     approve.mockClear()
@@ -79,7 +86,7 @@ describe('SignInSheet: the certificate step', () => {
       trust: certificate('AB:CD:EF', 'unknown'),
       attempt,
     })
-    expect(document.body.textContent).toContain('macOS doesn’t know the certificate for nas.local')
+    expect(document.body.textContent).toContain(title)
     expect(document.body.textContent).toContain('AB:CD:EF')
 
     buttonSaying('Trust and connect').click()

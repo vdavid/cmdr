@@ -1,5 +1,5 @@
 {
-  "commands.appQuit.label": "Завершити Cmdr",
+  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Завершити Cmdr}}",
   "@commands.appQuit.label": {
     "sourceHash": "b3455b4"
   },
@@ -192,7 +192,7 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "Відкриває ~/Downloads і вибирає останній файл.",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Відкриває ~/Downloads і вибирає останній файл.}}",
   "@commands.downloadsGoToLatest.description": {
     "sourceHash": "6b3fe83"
   },
@@ -316,19 +316,19 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "Відмінити переміщення в Смітник",
+  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Відмінити переміщення в Смітник}}",
   "@commands.editUndoTrash.label": {
     "sourceHash": "c6fea33"
   },
-  "commands.editUndoTrash.one": "Відмінити переміщення «{name}» у Смітник",
+  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Відмінити переміщення «{name}» у Смітник}}",
   "@commands.editUndoTrash.one": {
     "sourceHash": "45494c8"
   },
-  "commands.editUndoTrash.many": "Відмінити переміщення {countText} {count, plural, one {елемента} few {елементів} many {елементів} other {елемента}} у Смітник",
+  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Відмінити переміщення {countText} {count, plural, one {елемента} few {елементів} many {елементів} other {елемента}} у Смітник}}",
   "@commands.editUndoTrash.many": {
     "sourceHash": "69c4966"
   },
-  "commands.editUndoTrash.description": "Повертає назад файли, які ви востаннє перемістили в Смітник",
+  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Повертає назад файли, які ви востаннє перемістили в Смітник}}",
   "@commands.editUndoTrash.description": {
     "sourceHash": "dca1b63"
   },
@@ -460,7 +460,7 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "Перейти до домашньої папки",
+  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Перейти до домашньої папки}}",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
@@ -804,11 +804,11 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "Перейти до Смітника",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Перейти до Смітника}}",
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "Відкриває Смітник диска, який ви переглядаєте",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Відкриває Смітник диска, який ви переглядаєте}}",
   "@commands.fileGoToTrash.description": {
     "sourceHash": "6496c25"
   },
@@ -900,7 +900,7 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "Вилучає збережений пароль резервної копії restic, у якій ви зараз перебуваєте, із Вʼязки ключів, і резервна копія знову стає замкненою",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Вилучає збережений пароль резервної копії restic, у якій ви зараз перебуваєте, із Вʼязки ключів, і резервна копія знову стає замкненою} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
   "@commands.resticForgetPassword.description": {
     "sourceHash": "e51ac69"
   },

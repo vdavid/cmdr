@@ -232,6 +232,10 @@ dropdown):
   `getPaletteCommands()` in registry order.
 - Non-empty query: the haystack is each command's folded `displayName` plus its keywords; `fuzzySearch(haystack, query)`
   yields ranked `CommandMatch[]` (the `recents` argument is ignored).
+- Keywords are English code literals, the same on every OS, so they carry the words another OS (or an older name) uses:
+  `nav.goHome` keeps `home` because Windows names it "Go to user folder", and the trash commands carry `recycle bin`.
+  Labels change per OS through their catalog value (`docs/style-guide.md` § "Platform vocabulary");
+  `fuzzy-search.platform.test.ts` pins both, in the palette and the shortcuts editor.
 
 The engine's config: every script counts as letters (a Russian or Chinese command name is findable), accents fold on
 both sides (`tema` finds `Téma`), `intraMode: 1` (typo-tolerant within-word fuzzy, "tyoe" → "type") except for a CJK

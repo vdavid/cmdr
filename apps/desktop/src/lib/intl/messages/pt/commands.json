@@ -1,5 +1,5 @@
 {
-  "commands.appQuit.label": "Encerrar Cmdr",
+  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Encerrar Cmdr}}",
   "@commands.appQuit.label": {
     "sourceHash": "b3455b4"
   },
@@ -192,7 +192,7 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "Abre ~/Downloads e seleciona o arquivo mais recente.",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Abre ~/Downloads e seleciona o arquivo mais recente.}}",
   "@commands.downloadsGoToLatest.description": {
     "sourceHash": "6b3fe83"
   },
@@ -316,19 +316,19 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "Desfazer mover para o Lixo",
+  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Desfazer mover para o Lixo}}",
   "@commands.editUndoTrash.label": {
     "sourceHash": "c6fea33"
   },
-  "commands.editUndoTrash.one": "Desfazer mover “{name}” para o Lixo",
+  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Desfazer mover “{name}” para o Lixo}}",
   "@commands.editUndoTrash.one": {
     "sourceHash": "45494c8"
   },
-  "commands.editUndoTrash.many": "Desfazer mover {countText} {count, plural, one {item} many {itens} other {itens}} para o Lixo",
+  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Desfazer mover {countText} {count, plural, one {item} many {itens} other {itens}} para o Lixo}}",
   "@commands.editUndoTrash.many": {
     "sourceHash": "69c4966"
   },
-  "commands.editUndoTrash.description": "Coloca de volta os arquivos que você moveu por último para o Lixo",
+  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Coloca de volta os arquivos que você moveu por último para o Lixo}}",
   "@commands.editUndoTrash.description": {
     "sourceHash": "dca1b63"
   },
@@ -460,7 +460,7 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "Ir para a pasta pessoal",
+  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Ir para a pasta pessoal}}",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
@@ -804,11 +804,11 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "Ir para o Lixo",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Ir para o Lixo}}",
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "Abre o Lixo do disco em que você está navegando",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Abre o Lixo do disco em que você está navegando}}",
   "@commands.fileGoToTrash.description": {
     "sourceHash": "6496c25"
   },
@@ -900,7 +900,7 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "Remove do Acesso às Chaves a senha salva do backup do restic em que você está e bloqueia o backup de novo",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Remove do Acesso às Chaves a senha salva do backup do restic em que você está e bloqueia o backup de novo} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
   "@commands.resticForgetPassword.description": {
     "sourceHash": "e51ac69"
   },

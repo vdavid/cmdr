@@ -179,7 +179,7 @@
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
     "sourceHash": "f634743"
   },
-  "fileExplorer.pane.trashUnconfirmedToast": "无法确认文件是否已移到废纸篓。这个宗卷可能比较慢，但文件也许已经移走了。请查看废纸篓确认一下。",
+  "fileExplorer.pane.trashUnconfirmedToast": "{platform, select, windows {Couldn’t confirm the file was moved to the Recycle Bin. The volume may be slow, but the file may still have been moved. Please check the Recycle Bin to be sure.} other {无法确认文件是否已移到废纸篓。这个宗卷可能比较慢，但文件也许已经移走了。请查看废纸篓确认一下。}}",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "6764112"
   },
@@ -231,7 +231,7 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "前往个人文件夹",
+  "fileExplorer.errorPane.goHome": "{platform, select, windows {Go to user folder} other {前往个人文件夹}}",
   "@fileExplorer.errorPane.goHome": {
     "sourceHash": "74b2a8b"
   },
@@ -311,11 +311,11 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
-  "fileExplorer.open.notOnThisMac": "Cmdr 暂时还不能用其他 App 打开这个文件，因为它不是你 Mac 上的普通文件。请按 {viewKey} 查看。",
+  "fileExplorer.open.notOnThisMac": "{platform, select, macos {Cmdr 暂时还不能用其他 App 打开这个文件，因为它不是你 Mac 上的普通文件。请按 {viewKey} 查看。} windows {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your PC. Press {viewKey} to view it.} other {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your computer. Press {viewKey} to view it.}}",
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
-  "fileExplorer.open.didNotOpen": "没能打开“{fileName}”。macOS 找不到这个文件，或者没有能打开它的 App。",
+  "fileExplorer.open.didNotOpen": "{platform, select, macos {没能打开“{fileName}”。macOS 找不到这个文件，或者没有能打开它的 App。} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
   },
@@ -327,7 +327,7 @@
   "@fileExplorer.functionKeyBar.terminalLabel": {
     "sourceHash": "e0926fd"
   },
-  "fileExplorer.functionKeyBar.hiddenToast": "功能键栏现已隐藏，可随时在<settingsLink>设置</settingsLink>中重新开启。",
+  "fileExplorer.functionKeyBar.hiddenToast": "{platform, select, windows {Function key bar is now hidden. Turn it back on any time later in <settingsLink>Settings</settingsLink>.} other {功能键栏现已隐藏，可随时在<settingsLink>设置</settingsLink>中重新开启。}}",
   "@fileExplorer.functionKeyBar.hiddenToast": {
     "sourceHash": "f961d3b"
   },
@@ -367,11 +367,11 @@
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
   },
-  "fileExplorer.network.osMountFallback.message": "无法直接连接到 <shareName>{share}</shareName>。你已经连上了，但用的是 macOS 内建的 SMB 网络连接，大多数情况下它比 Cmdr 的直接连接慢 4 倍（有时能慢 100 倍）。点按下方的按钮再试一次。",
+  "fileExplorer.network.osMountFallback.message": "{platform, select, macos {无法直接连接到 <shareName>{share}</shareName>。你已经连上了，但用的是 macOS 内建的 SMB 网络连接，大多数情况下它比 Cmdr 的直接连接慢 4 倍（有时能慢 100 倍）。点按下方的按钮再试一次。} windows {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via Windows’ own SMB connection, which is often slower than Cmdr’s direct connection. Select the button below to try again.} other {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via your system’s SMB connection (GVFS), which is often a lot slower than Cmdr’s direct connection. Click the button below to try again.}}",
   "@fileExplorer.network.osMountFallback.message": {
     "sourceHash": "cb53372"
   },
-  "fileExplorer.network.osMountFallback.shareNotOnServer": "无法直接连接到 <shareName>{share}</shareName>，因为服务器说它没有这个名字的共享。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。这种情况等下去也不会好：这个共享可能在服务器上被重命名或删除了，值得去那边看看。",
+  "fileExplorer.network.osMountFallback.shareNotOnServer": "{platform, select, macos {无法直接连接到 <shareName>{share}</shareName>，因为服务器说它没有这个名字的共享。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。这种情况等下去也不会好：这个共享可能在服务器上被重命名或删除了，值得去那边看看。} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through Windows’ own SMB connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through your system’s SMB connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.}}",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
     "sourceHash": "3ae984e"
   },
@@ -391,7 +391,7 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshHint": "按 <key></key> 或点按这里刷新",
+  "fileExplorer.network.browser.refreshHint": "{platform, select, windows {Press <key></key> or select here to refresh} other {按 <key></key> 或点按这里刷新}}",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
   },
@@ -507,7 +507,7 @@
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "e394098"
   },
-  "fileExplorer.network.share.credentialsStoredLocally": "登录信息已保存在本地（未检测到系统钥匙串）",
+  "fileExplorer.network.share.credentialsStoredLocally": "{platform, select, windows {Credentials stored locally (Credential Manager not available)} other {登录信息已保存在本地（未检测到系统钥匙串）}}",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
@@ -543,7 +543,7 @@
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "从钥匙串中移除保存的密码",
+  "fileExplorer.network.share.forgetPasswordTooltip": "{platform, select, macos {从钥匙串中移除保存的密码} windows {Remove saved password from Credential Manager} other {Remove saved password from your keyring}}",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
@@ -583,7 +583,7 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.networkMount.mountingSlow": "还在等待 macOS 完成连接。你可以随时取消。",
+  "fileExplorer.networkMount.mountingSlow": "{platform, select, macos {还在等待 macOS 完成连接。你可以随时取消。} windows {Still waiting for Windows to connect. You can cancel at any time.} other {Still connecting to the share. You can cancel at any time.}}",
   "@fileExplorer.networkMount.mountingSlow": {
     "sourceHash": "e8e9040"
   },
@@ -631,7 +631,7 @@
   "@fileExplorer.unreachable.disconnect": {
     "sourceHash": "acfc5be"
   },
-  "fileExplorer.unreachable.openHome": "打开个人文件夹",
+  "fileExplorer.unreachable.openHome": "{platform, select, windows {Open user folder} other {打开个人文件夹}}",
   "@fileExplorer.unreachable.openHome": {
     "sourceHash": "a178b4d"
   },
@@ -723,7 +723,7 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
   },
-  "fileExplorer.edit.notOnThisMac": "Cmdr 暂时还不能用编辑器编辑这个文件，因为它不是你 Mac 上的普通文件。请按 F3 查看。",
+  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {Cmdr 暂时还不能用编辑器编辑这个文件，因为它不是你 Mac 上的普通文件。请按 F3 查看。} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "710100c"
   },
@@ -891,7 +891,7 @@
   "@fileExplorer.restic.forgetPassword.forgotten": {
     "sourceHash": "bd4ac8e"
   },
-  "fileExplorer.restic.forgetPassword.keychainKeptIt": "Cmdr 暂时锁定了 {name}，但保存的密码还留在钥匙串里。要彻底移除，就到“钥匙串访问”里把它删除。",
+  "fileExplorer.restic.forgetPassword.keychainKeptIt": "{platform, select, macos {Cmdr 暂时锁定了 {name}，但保存的密码还留在钥匙串里。要彻底移除，就到“钥匙串访问”里把它删除。} windows {Cmdr locked {name} for now, but Credential Manager kept its saved password. To remove it for good, delete it in Credential Manager.} other {Cmdr locked {name} for now, but your keyring kept its saved password. To remove it for good, delete it in your keyring app.}}",
   "@fileExplorer.restic.forgetPassword.keychainKeptIt": {
     "sourceHash": "56adfb0"
   },
@@ -983,7 +983,7 @@
   "@fileExplorer.openWith.copyRefused.tooLargeInBackup": {
     "sourceHash": "071fe99"
   },
-  "fileExplorer.openWith.copyRefused.notEnoughSpace": "你的 Mac 磁盘上没有足够空间存放“{fileName}”的 {size} 副本，所以 Cmdr 无法用 {appName} 打开它。请腾出一些空间，然后再试一次。",
+  "fileExplorer.openWith.copyRefused.notEnoughSpace": "{platform, select, macos {你的 Mac 磁盘上没有足够空间存放“{fileName}”的 {size} 副本，所以 Cmdr 无法用 {appName} 打开它。请腾出一些空间，然后再试一次。} windows {Your PC doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.} other {Your computer’s disk doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.}}",
   "@fileExplorer.openWith.copyRefused.notEnoughSpace": {
     "sourceHash": "5cd8e49"
   },
@@ -995,7 +995,7 @@
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
   },
-  "fileExplorer.openWith.notOnThisMac": "{appName} 无法打开这个文件，因为它不是你 Mac 上的普通文件。请按 {viewKey} 在 Cmdr 中查看。",
+  "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} 无法打开这个文件，因为它不是你 Mac 上的普通文件。请按 {viewKey} 在 Cmdr 中查看。} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
   },
@@ -1208,7 +1208,7 @@
   "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
     "sourceHash": "c655c6f"
   },
-  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "这个大小可能已过期：Cmdr 把索引存放在你的启动磁盘上，而启动磁盘快满了，因此索引已暂停。",
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "{platform, select, macos {这个大小可能已过期：Cmdr 把索引存放在你的启动磁盘上，而启动磁盘快满了，因此索引已暂停。} windows {This size may be out of date: indexing is paused because your system drive, where Cmdr keeps its index, is almost full.} other {This size may be out of date: indexing is paused because your system disk, where Cmdr keeps its index, is almost full.}}",
   "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
     "sourceHash": "29c5f81"
   },
@@ -1557,15 +1557,15 @@
   "@fileExplorer.renameConflict.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "fileExplorer.renameConflict.overwriteTrash": "覆盖并将旧文件移到废纸篓",
+  "fileExplorer.renameConflict.overwriteTrash": "{platform, select, windows {Overwrite and delete old file} other {覆盖并将旧文件移到废纸篓}}",
   "@fileExplorer.renameConflict.overwriteTrash": {
     "sourceHash": "e0192f6"
   },
-  "fileExplorer.renameConflict.overwriteTrashFolder": "覆盖并将旧文件夹移到废纸篓",
+  "fileExplorer.renameConflict.overwriteTrashFolder": "{platform, select, windows {Overwrite and delete old folder} other {覆盖并将旧文件夹移到废纸篓}}",
   "@fileExplorer.renameConflict.overwriteTrashFolder": {
     "sourceHash": "7f94bfa"
   },
-  "fileExplorer.renameConflict.overwriteDelete": "覆盖并彻底删除旧文件",
+  "fileExplorer.renameConflict.overwriteDelete": "{platform, select, windows {Overwrite and permanently delete old file} other {覆盖并彻底删除旧文件}}",
   "@fileExplorer.renameConflict.overwriteDelete": {
     "sourceHash": "02093d5"
   },
@@ -1585,11 +1585,11 @@
   "@fileExplorer.extensionChange.description": {
     "sourceHash": "ef7ac59"
   },
-  "fileExplorer.extensionChange.descriptionRemove": "{kind, select, folder {确定要移除扩展名“.{oldExt}”吗？macOS 会把这一项显示为普通文件夹，而不是单个项目。} other {确定要移除扩展名“.{oldExt}”吗？没有扩展名，你的 Mac 可能不知道该用哪个 App 打开这个文件。}}",
+  "fileExplorer.extensionChange.descriptionRemove": "{platform, select, macos {{kind, select, folder {确定要移除扩展名“.{oldExt}”吗？macOS 会把这一项显示为普通文件夹，而不是单个项目。} other {确定要移除扩展名“.{oldExt}”吗？没有扩展名，你的 Mac 可能不知道该用哪个 App 打开这个文件。}}} windows {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension?} other {Are you sure you want to remove the “.{oldExt}” extension? Windows may not know which app opens the file without it.}}} other {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension?} other {Are you sure you want to remove the “.{oldExt}” extension? Your computer may not know which app opens the file without it.}}}}",
   "@fileExplorer.extensionChange.descriptionRemove": {
     "sourceHash": "8c87a3d"
   },
-  "fileExplorer.extensionChange.descriptionAdd": "{kind, select, folder {确定要添加扩展名“.{newExt}”吗？macOS 可能会把这个文件夹显示为单个项目。} other {确定要添加扩展名“.{newExt}”吗？下次打开时，文件可能会用不同的 App 打开。}}",
+  "fileExplorer.extensionChange.descriptionAdd": "{platform, select, macos {{kind, select, folder {确定要添加扩展名“.{newExt}”吗？macOS 可能会把这个文件夹显示为单个项目。} other {确定要添加扩展名“.{newExt}”吗？下次打开时，文件可能会用不同的 App 打开。}}} other {{kind, select, folder {Are you sure you want to add the “.{newExt}” extension?} other {Are you sure you want to add the “.{newExt}” extension? Your file may open in a different app next time you open it.}}}}",
   "@fileExplorer.extensionChange.descriptionAdd": {
     "sourceHash": "c18c736"
   },
@@ -1681,7 +1681,7 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "这个文件夹不能加入个人收藏：个人收藏指向的是磁盘、共享、服务器和手机上的文件夹",
+  "fileExplorer.navigation.favoritesCantAddHere": "{platform, select, windows {This folder can’t be a favorite: favorites point at folders on drives, shares, servers, and phones} other {这个文件夹不能加入个人收藏：个人收藏指向的是磁盘、共享、服务器和手机上的文件夹}}",
   "@fileExplorer.navigation.favoritesCantAddHere": {
     "sourceHash": "03886b7"
   },
@@ -2021,7 +2021,7 @@
   "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
     "sourceHash": "5714115"
   },
-  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Cmdr 把索引存放在你的启动磁盘上，由于启动磁盘快满了，索引已暂停。在索引继续之前，此驱动器上的文件夹大小可能已过期。启动磁盘的可用空间变多后，索引会自动继续。",
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "{platform, select, macos {Cmdr 把索引存放在你的启动磁盘上，由于启动磁盘快满了，索引已暂停。在索引继续之前，此驱动器上的文件夹大小可能已过期。启动磁盘的可用空间变多后，索引会自动继续。} windows {Indexing is paused because your system drive, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.} other {Indexing is paused because your system disk, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.}}",
   "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
     "sourceHash": "68994e4"
   },
@@ -2181,7 +2181,7 @@
   "@fileExplorer.dropIn.timedOut": {
     "sourceHash": "7591ca5"
   },
-  "fileExplorer.dropIn.noFolder": "Cmdr 无法为拖放的文件腾出空间。请确认你的磁盘还有剩余空间，然后再试一次。",
+  "fileExplorer.dropIn.noFolder": "{platform, select, windows {Cmdr couldn’t make room for the dropped file. Check that your PC has free space, then try again.} other {Cmdr 无法为拖放的文件腾出空间。请确认你的磁盘还有剩余空间，然后再试一次。}}",
   "@fileExplorer.dropIn.noFolder": {
     "sourceHash": "ea7fb38"
   },
@@ -2237,7 +2237,7 @@
   "@fileExplorer.quickFilter.intro.switchToJump": {
     "sourceHash": "38642f9"
   },
-  "fileExplorer.quickFilter.intro.openSettings": "设置…",
+  "fileExplorer.quickFilter.intro.openSettings": "{platform, select, windows {Settings} other {设置…}}",
   "@fileExplorer.quickFilter.intro.openSettings": {
     "sourceHash": "7a04083"
   },
@@ -2257,7 +2257,7 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "sourceHash": "c350d80"
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "无法直接连接到 <shareName>{share}</shareName>，因为它的文件在另一台服务器上，而 Cmdr 不会自行登录那里。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "{platform, select, macos {无法直接连接到 <shareName>{share}</shareName>，因为它的文件在另一台服务器上，而 Cmdr 不会自行登录那里。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
@@ -2273,15 +2273,15 @@
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
     "sourceHash": "fe17565"
   },
-  "fileExplorer.network.osMountFallback.encryptionRequired": "无法直接连接到 <shareName>{share}</shareName>，因为服务器没法加密连接，而 Cmdr 已开启“始终要求 SMB 加密”。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。",
+  "fileExplorer.network.osMountFallback.encryptionRequired": "{platform, select, macos {无法直接连接到 <shareName>{share}</shareName>，因为服务器没法加密连接，而 Cmdr 已开启“始终要求 SMB 加密”。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {
     "sourceHash": "14a8cb4"
   },
-  "fileExplorer.network.osMountFallback.negotiationInvalid": "无法直接连接到 <shareName>{share}</shareName>，因为服务器没有确认和 Cmdr 商定好的安全设置。服务器运行不正常可能导致这种情况，有人篡改连接也可能导致。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。",
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "{platform, select, macos {无法直接连接到 <shareName>{share}</shareName>，因为服务器没有确认和 Cmdr 商定好的安全设置。服务器运行不正常可能导致这种情况，有人篡改连接也可能导致。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
     "sourceHash": "758e268"
   },
-  "fileExplorer.network.osMountFallback.encryptionUnavailable": "无法直接连接到 <shareName>{share}</shareName>，因为该共享只接受加密连接，而服务器没有和 Cmdr 商定加密方式。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。",
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "{platform, select, macos {无法直接连接到 <shareName>{share}</shareName>，因为该共享只接受加密连接，而服务器没有和 Cmdr 商定加密方式。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
     "sourceHash": "23dd607"
   },

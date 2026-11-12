@@ -12,8 +12,9 @@
  * (its shape, its endpoint, and what its `attempt` calls), ❌ never a form in the pane.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import NetworkMountView from './NetworkMountView.svelte'
 import type { MountError, NetworkHost, ShareInfo } from '../types'
 import { MountFailure } from '../network/mount-error'
@@ -717,7 +718,12 @@ describe('NetworkMountView: a mount that waits', () => {
     await unmount(component)
   })
 
-  it('says it is still waiting once the mount runs past ten seconds', async () => {
+  it.each([
+    ['macos', 'Still waiting for macOS to connect. You can cancel at any time.'],
+    ['windows', 'Still waiting for Windows to connect. You can cancel at any time.'],
+    ['linux', 'Still connecting to the share. You can cancel at any time.'],
+  ] as const)('says it is still waiting once the mount runs past ten seconds (%s)', async (platform, slow) => {
+    onTestFinished(withPlatform(platform))
     const target = document.createElement('div')
     document.body.appendChild(target)
     const component = mount(NetworkMountView, {
@@ -734,10 +740,10 @@ describe('NetworkMountView: a mount that waits', () => {
       api.openCursorItem()
       await tick()
       const hint = () => must(target.querySelector('.remote-connect .hint'), 'the line under the spinner').textContent
-      expect(hint(), 'a fresh mount says only that it takes a moment').not.toContain('Still waiting')
+      expect(hint(), 'a fresh mount says only that it takes a moment').not.toContain(slow)
       vi.advanceTimersByTime(10_000)
       await tick()
-      expect(hint()).toContain('Still waiting')
+      expect(hint()).toContain(slow)
     } finally {
       vi.useRealTimers()
     }

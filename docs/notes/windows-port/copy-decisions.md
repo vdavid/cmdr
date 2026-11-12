@@ -72,3 +72,10 @@ Rows where the code doesn't settle a platform yet, so that platform keeps the ma
   `cmdr-adb`'s `locate_adb_binary` searches what Windows has (`adb.exe`, the SDK under `%LOCALAPPDATA%`).
 - `settings.listing.showHiddenFiles.description`, Windows: "dotfiles (like .zshrc)" stays until the Windows listing
   backend decides its hidden-file rule (the hidden attribute, dotfiles, or both).
+- The eject control's words, Windows and Linux: `menu.volume.eject`, `menu.volume.ejectBusy`,
+  `fileExplorer.navigation.ejectVolumeAriaLabel`, `ejectingVolumeAriaLabel`, `ejectBusyTooltip`, and
+  `fileExplorer.pane.ejectFailedToast` say "Eject" until their call sites tell a drive from a network share. One key
+  serves both: `detach-control.ts:ejectLook` words every volume `isVolumeEjectable` says yes to, a live `os_mount` share
+  included (on Linux a GVFS mount), so the glossary's "Disconnect" (Windows) and "Unmount" (Linux) for a share can't
+  live in that value. "Eject" is right for drives today. The edit-server sheet's share rows
+  (`servers.sheet.ejectAndSave` and friends) name only shares, so they already say "Disconnect" and "Unmount".

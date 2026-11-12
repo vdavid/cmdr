@@ -1,5 +1,5 @@
 {
-  "commands.appQuit.label": "退出 Cmdr",
+  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {退出 Cmdr}}",
   "@commands.appQuit.label": {
     "sourceHash": "b3455b4"
   },
@@ -192,7 +192,7 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "打开 ~/Downloads 并选中最新的文件。",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {打开 ~/Downloads 并选中最新的文件。}}",
   "@commands.downloadsGoToLatest.description": {
     "sourceHash": "6b3fe83"
   },
@@ -316,19 +316,19 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "撤销移到废纸篓",
+  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {撤销移到废纸篓}}",
   "@commands.editUndoTrash.label": {
     "sourceHash": "c6fea33"
   },
-  "commands.editUndoTrash.one": "撤销将“{name}”移到废纸篓",
+  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {撤销将“{name}”移到废纸篓}}",
   "@commands.editUndoTrash.one": {
     "sourceHash": "45494c8"
   },
-  "commands.editUndoTrash.many": "撤销将 {countText} {count, plural, other {个项目}}移到废纸篓",
+  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {撤销将 {countText} {count, plural, other {个项目}}移到废纸篓}}",
   "@commands.editUndoTrash.many": {
     "sourceHash": "69c4966"
   },
-  "commands.editUndoTrash.description": "把你上次移到废纸篓的文件放回原处",
+  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {把你上次移到废纸篓的文件放回原处}}",
   "@commands.editUndoTrash.description": {
     "sourceHash": "dca1b63"
   },
@@ -460,7 +460,7 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "前往个人文件夹",
+  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {前往个人文件夹}}",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
@@ -804,11 +804,11 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "前往废纸篓",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {前往废纸篓}}",
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "打开你正在浏览的驱动器上的废纸篓",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {打开你正在浏览的驱动器上的废纸篓}}",
   "@commands.fileGoToTrash.description": {
     "sourceHash": "6496c25"
   },
@@ -900,7 +900,7 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "从钥匙串中移除你所在的 restic 备份保存的密码，并重新锁定这个备份",
+  "commands.resticForgetPassword.description": "{platform, select, macos {从钥匙串中移除你所在的 restic 备份保存的密码，并重新锁定这个备份} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
   "@commands.resticForgetPassword.description": {
     "sourceHash": "e51ac69"
   },

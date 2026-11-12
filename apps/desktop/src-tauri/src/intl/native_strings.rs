@@ -280,6 +280,10 @@ pub(crate) fn lock_active_locale_for_tests() -> std::sync::MutexGuard<'static, (
 }
 
 #[cfg(test)]
+#[path = "native_strings_per_os_test.rs"]
+mod per_os_test;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

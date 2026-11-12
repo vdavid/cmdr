@@ -139,7 +139,7 @@
   "@servers.hub.emptyTitle": {
     "sourceHash": "7846930"
   },
-  "servers.hub.emptyMessage": "Додайте сервер нижче або увімкніть Mac чи NAS у своїй мережі, і Cmdr його знайде.",
+  "servers.hub.emptyMessage": "{platform, select, macos {Додайте сервер нижче або увімкніть Mac чи NAS у своїй мережі, і Cmdr його знайде.} windows {Add one below, or turn on a PC or NAS on your network and Cmdr will find it.} other {Add one below, or turn on a computer or NAS on your network and Cmdr will find it.}}",
   "@servers.hub.emptyMessage": {
     "sourceHash": "04bdc26"
   },
@@ -187,7 +187,7 @@
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "48b9b15"
   },
-  "servers.refusal.certificateUntrusted": "macOS не довіряє сертифікату цього сервера. Додайте сертифікат у програмі «Ключар», а потім спробуйте ще раз.",
+  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS не довіряє сертифікату цього сервера. Додайте сертифікат у програмі «Ключар», а потім спробуйте ще раз.} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
   "@servers.refusal.certificateUntrusted": {
     "sourceHash": "b8f3b4a"
   },
@@ -223,7 +223,7 @@
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "Ключ сервера {host} позначено як скомпрометований у ваших параметрах SSH на цьому Mac. Cmdr не підʼєднуватиметься до цього сервера.",
+  "servers.refusal.hostKeyRevoked": "{platform, select, macos {Ключ сервера {host} позначено як скомпрометований у ваших параметрах SSH на цьому Mac. Cmdr не підʼєднуватиметься до цього сервера.} windows {The key for {host} is marked as compromised in your SSH settings on this PC. Cmdr won’t connect to it.} other {The key for {host} is marked as compromised in your SSH settings on this computer. Cmdr won’t connect to it.}}",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "7a25d93"
   },
@@ -247,11 +247,11 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "3fb55a6"
   },
-  "servers.refusal.secretNotStored": "Cmdr не вдалося зберегти цей пароль у Вʼязці ключів. Спробуйте ще раз або вимкніть «Зберегти пароль у Вʼязці ключів», щоб увійти без збереження пароля.",
+  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr не вдалося зберегти цей пароль у Вʼязці ключів. Спробуйте ще раз або вимкніть «Зберегти пароль у Вʼязці ключів», щоб увійти без збереження пароля.} windows {Cmdr couldn’t save this password. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this password in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.secretNotStored": {
     "sourceHash": "20957fe"
   },
-  "servers.refusal.savedSecretNotUpdated": "Cmdr зберіг ваші зміни, але не зміг оновити пароль у Вʼязці ключів. Натисніть «Зберегти» ще раз, щоб спробувати знову.",
+  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr зберіг ваші зміни, але не зміг оновити пароль у Вʼязці ключів. Натисніть «Зберегти» ще раз, щоб спробувати знову.} windows {Cmdr saved your changes but couldn’t update the saved password. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the password in your keyring. Save again to try once more.}}",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
   },
@@ -267,11 +267,11 @@
   "@servers.refusal.s3SecretMissing": {
     "sourceHash": "f1f32f2"
   },
-  "servers.refusal.s3SecretNotStored": "Cmdr не вдалося зберегти цей секретний ключ доступу у Вʼязці ключів. Спробуйте ще раз або вимкніть «Зберегти пароль у Вʼязці ключів», щоб увійти без збереження ключа.",
+  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr не вдалося зберегти цей секретний ключ доступу у Вʼязці ключів. Спробуйте ще раз або вимкніть «Зберегти пароль у Вʼязці ключів», щоб увійти без збереження ключа.} windows {Cmdr couldn’t save this secret access key. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this secret access key in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.s3SecretNotStored": {
     "sourceHash": "f7a9fb0"
   },
-  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr зберіг ваші зміни, але не зміг оновити секретний ключ доступу у Вʼязці ключів. Натисніть «Зберегти» ще раз, щоб спробувати знову.",
+  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr зберіг ваші зміни, але не зміг оновити секретний ключ доступу у Вʼязці ключів. Натисніть «Зберегти» ще раз, щоб спробувати знову.} windows {Cmdr saved your changes but couldn’t update the saved secret access key. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the secret access key in your keyring. Save again to try once more.}}",
   "@servers.refusal.s3SavedSecretNotUpdated": {
     "sourceHash": "1d2889d"
   },
@@ -295,7 +295,7 @@
   "@servers.refusal.regionMismatchNamed": {
     "sourceHash": "30abb0d"
   },
-  "servers.refusal.clockSkewed": "Годинник цього Mac розходиться з точним часом більш ніж на 15 хвилин, тож сервер не приймає запити Cmdr. У програмі «Системні параметри» увімкніть «Задавати дату і час автоматично», а потім спробуйте ще раз.",
+  "servers.refusal.clockSkewed": "{platform, select, macos {Годинник цього Mac розходиться з точним часом більш ніж на 15 хвилин, тож сервер не приймає запити Cmdr. У програмі «Системні параметри» увімкніть «Задавати дату і час автоматично», а потім спробуйте ще раз.} windows {This PC’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Turn on “Set time automatically” in Settings > Time & language > Date & time, then try again.} other {This computer’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in your system settings, then try again.}}",
   "@servers.refusal.clockSkewed": {
     "sourceHash": "cdee0ef"
   },
@@ -307,7 +307,7 @@
   "@servers.refusal.exportNotFound": {
     "sourceHash": "2ef1ce8"
   },
-  "servers.refusal.exportRefused": "Сервер {host} не дозволяє цьому Mac відкрити цю спільну папку. Перевірте в параметрах NFS на сервері, яким компʼютерам дозволено доступ до неї.",
+  "servers.refusal.exportRefused": "{platform, select, macos {Сервер {host} не дозволяє цьому Mac відкрити цю спільну папку. Перевірте в параметрах NFS на сервері, яким компʼютерам дозволено доступ до неї.} windows {{host} doesn’t let this PC open that export. Check which devices the export allows in the server’s NFS settings.} other {{host} doesn’t let this computer open that export. Check which computers the export allows in the server’s NFS settings.}}",
   "@servers.refusal.exportRefused": {
     "sourceHash": "0cebd7d"
   },
@@ -331,11 +331,11 @@
   "@servers.refusal.addressTaken": {
     "sourceHash": "5a14a92"
   },
-  "servers.refusal.secretNotMoved": "Cmdr не вдалося перенести збережений пароль на нову адресу, тож нічого не змінено. Перевірте, чи відімкнено Вʼязку ключів, а потім збережіть ще раз.",
+  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr не вдалося перенести збережений пароль на нову адресу, тож нічого не змінено. Перевірте, чи відімкнено Вʼязку ключів, а потім збережіть ще раз.} windows {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.secretNotMoved": {
     "sourceHash": "7f3c328"
   },
-  "servers.refusal.s3SecretNotMoved": "Cmdr не вдалося перенести збережений секретний ключ доступу на нову кінцеву точку, тож нічого не змінено. Перевірте, чи відімкнено Вʼязку ключів, а потім збережіть ще раз.",
+  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr не вдалося перенести збережений секретний ключ доступу на нову кінцеву точку, тож нічого не змінено. Перевірте, чи відімкнено Вʼязку ключів, а потім збережіть ще раз.} windows {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.s3SecretNotMoved": {
     "sourceHash": "69901e7"
   },
@@ -347,11 +347,11 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "Спільна папка «{name}» досі змонтована зі старої адреси. Вийміть її, а потім збережіть ще раз.",
+  "servers.refusal.shareMounted": "{platform, select, macos {Спільна папка «{name}» досі змонтована зі старої адреси. Вийміть її, а потім збережіть ще раз.} windows {The share {name} is still connected from the old address. Disconnect it, then save again.} other {The share {name} is still mounted from the old address. Unmount it, then save again.}}",
   "@servers.refusal.shareMounted": {
     "sourceHash": "156a61b"
   },
-  "servers.refusal.shareEjectRefused": "Cmdr не вдалося вийняти спільну папку «{name}», тож нічого не збережено. {reason}",
+  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr не вдалося вийняти спільну папку «{name}», тож нічого не збережено. {reason}} windows {Cmdr couldn’t disconnect {name}, so nothing was saved. {reason}} other {Cmdr couldn’t unmount {name}, so nothing was saved. {reason}}}",
   "@servers.refusal.shareEjectRefused": {
     "sourceHash": "1c73fa7"
   },
@@ -383,15 +383,15 @@
   "@servers.sheet.addAnywayHelp": {
     "sourceHash": "68e90b2"
   },
-  "servers.sheet.ejectAndSave": "Вийняти й зберегти",
+  "servers.sheet.ejectAndSave": "{platform, select, macos {Вийняти й зберегти} windows {Disconnect and save} other {Unmount and save}}",
   "@servers.sheet.ejectAndSave": {
     "sourceHash": "357f2dd"
   },
-  "servers.sheet.ejectAndSaveHelp": "Cmdr вийме всі спільні папки, ще змонтовані зі старої адреси, а потім збереже нову.",
+  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr вийме всі спільні папки, ще змонтовані зі старої адреси, а потім збереже нову.} windows {Cmdr disconnects every share still connected from the old address, then saves the new one.} other {Cmdr unmounts every share still mounted from the old address, then saves the new one.}}",
   "@servers.sheet.ejectAndSaveHelp": {
     "sourceHash": "a1d1206"
   },
-  "servers.sheet.ejecting": "Виймання…",
+  "servers.sheet.ejecting": "{platform, select, macos {Виймання…} windows {Disconnecting…} other {Unmounting…}}",
   "@servers.sheet.ejecting": {
     "sourceHash": "4c37167"
   },
@@ -499,7 +499,7 @@
   "@servers.sheet.nfsExportsEmptyList": {
     "sourceHash": "7558a7b"
   },
-  "servers.sheet.nfsExportsNone": "Сервер «{host}» не показує жодної спільної папки для цього Mac. Введіть шлях до спільної папки, якщо знаєте його.",
+  "servers.sheet.nfsExportsNone": "{platform, select, macos {Сервер «{host}» не показує жодної спільної папки для цього Mac. Введіть шлях до спільної папки, якщо знаєте його.} windows {{host} lists no exports for this PC. Type the export’s path if you know it.} other {{host} lists no exports for this computer. Type the export’s path if you know it.}}",
   "@servers.sheet.nfsExportsNone": {
     "sourceHash": "a88c0bf"
   },
@@ -543,7 +543,7 @@
   "@servers.sheet.nfsIdentityRootOwner": {
     "sourceHash": "c464fa8"
   },
-  "servers.sheet.nfsIdentityThisMac": "Ваші ID на цьому Mac. Змініть їх, якщо файли на сервері належать комусь іншому.",
+  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Ваші ID на цьому Mac. Змініть їх, якщо файли на сервері належать комусь іншому.} windows {The user and group IDs Cmdr sends to the server. Change them if the files on the server belong to someone else.} other {Your IDs on this computer. Change them if the files on the server belong to someone else.}}",
   "@servers.sheet.nfsIdentityThisMac": {
     "sourceHash": "8bfbb0d"
   },
@@ -575,7 +575,7 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
-  "servers.sheet.secretKeptPlaceholder": "Збережено у Вʼязці ключів. Залиште порожнім, щоб не змінювати.",
+  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Збережено у Вʼязці ключів. Залиште порожнім, щоб не змінювати.} windows {Saved. Leave empty to keep it.} other {Saved in your keyring. Leave empty to keep it.}}",
   "@servers.sheet.secretKeptPlaceholder": {
     "sourceHash": "8711f6c"
   },
@@ -591,7 +591,7 @@
   "@servers.sheet.passphrase": {
     "sourceHash": "2510031"
   },
-  "servers.sheet.remember": "Зберегти пароль у Вʼязці ключів",
+  "servers.sheet.remember": "{platform, select, macos {Зберегти пароль у Вʼязці ключів} windows {Remember password} other {Remember in keyring}}",
   "@servers.sheet.remember": {
     "sourceHash": "3fd7384"
   },
@@ -780,7 +780,7 @@
   "@servers.sheet.autoReconnectInfoLabel": {
     "sourceHash": "edb9b82"
   },
-  "servers.sheet.needsStoredSecret": "Щоб знову підʼєднуватися самостійно, Cmdr потрібен збережений пароль. Увімкніть «Зберегти пароль у Вʼязці ключів» і увійдіть один раз.",
+  "servers.sheet.needsStoredSecret": "{platform, select, macos {Щоб знову підʼєднуватися самостійно, Cmdr потрібен збережений пароль. Увімкніть «Зберегти пароль у Вʼязці ключів» і увійдіть один раз.} windows {Reconnecting on its own needs a saved password. Turn on “Remember password” and sign in once.} other {Reconnecting on its own needs a remembered password. Turn on “Remember in keyring” and sign in once.}}",
   "@servers.sheet.needsStoredSecret": {
     "sourceHash": "32336f3"
   },
@@ -820,7 +820,7 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "macOS не знає сертифіката сервера {host}",
+  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS не знає сертифіката сервера {host}} windows {Windows doesn’t know the certificate for {host}} other {The certificate for {host} is new to this computer}}",
   "@servers.certificate.firstContactTitle": {
     "sourceHash": "ca0b44a"
   },

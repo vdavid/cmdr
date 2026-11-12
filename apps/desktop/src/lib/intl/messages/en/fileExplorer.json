@@ -282,7 +282,7 @@
       "volume": "the name of the drive, for example Backup or Macintosh HD"
     }
   },
-  "fileExplorer.pane.trashUnconfirmedToast": "Couldn’t confirm the file was moved to Trash. The volume may be slow, but the file may still have been moved. Please check your Trash to be sure.",
+  "fileExplorer.pane.trashUnconfirmedToast": "{platform, select, windows {Couldn’t confirm the file was moved to the Recycle Bin. The volume may be slow, but the file may still have been moved. Please check the Recycle Bin to be sure.} other {Couldn’t confirm the file was moved to Trash. The volume may be slow, but the file may still have been moved. Please check your Trash to be sure.}}",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "description": "Persistent warning toast shown when moving a file to the Trash (as part of a rename-overwrite) timed out, so Cmdr can’t confirm it landed. Reassures the user it may have worked and asks them to check. \"Trash\" is the macOS Trash; keep the name."
   },
@@ -352,7 +352,7 @@
     "description": "Button on the folder error screen that returns to the previously visited folder. Only shown when there is somewhere to go back to. Keep it short: it sits in a row next to other buttons and carries a keyboard-shortcut badge.",
     "screenshot": "error-message-example.png"
   },
-  "fileExplorer.errorPane.goHome": "Go to home folder",
+  "fileExplorer.errorPane.goHome": "{platform, select, windows {Go to user folder} other {Go to home folder}}",
   "@fileExplorer.errorPane.goHome": {
     "description": "Button on the folder error screen that opens the home folder, the always-available way out. \"Home folder\" means the per-user folder the operating system gives each account (~), not a website home page. Keep it short: it sits in a row next to other buttons and carries a keyboard-shortcut badge.",
     "screenshot": "error-message-example.png"
@@ -470,14 +470,14 @@
       "appName": "the app's name as macOS shows it, for example Preview (do not translate)"
     }
   },
-  "fileExplorer.open.notOnThisMac": "Cmdr can’t open this file in another app yet, because it isn’t a regular file on your Mac. Press {viewKey} to view it.",
+  "fileExplorer.open.notOnThisMac": "{platform, select, macos {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your Mac. Press {viewKey} to view it.} windows {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your PC. Press {viewKey} to view it.} other {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your computer. Press {viewKey} to view it.}}",
   "@fileExplorer.open.notOnThisMac": {
     "description": "Info toast shown when the user presses Enter, double-clicks, or picks Open on a file that no other app can open by its path: a file on a phone or camera, on a server reached over SFTP, WebDAV, or S3, in the virtual .git folders, or on a network share Cmdr still reaches over its own connection after macOS lost track of it. Nothing opened, so the toast says why and points at the key that opens Cmdr's own viewer, which can show the file. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'.",
     "placeholders": {
       "viewKey": "the key the user has bound to View, for example F3 (do not translate)"
     }
   },
-  "fileExplorer.open.didNotOpen": "{fileName} didn’t open. macOS couldn’t find the file, or no app opens it.",
+  "fileExplorer.open.didNotOpen": "{platform, select, macos {{fileName} didn’t open. macOS couldn’t find the file, or no app opens it.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "description": "Warning toast shown when the user pressed Enter, double-clicked, or picked Open on a file, Cmdr handed it to macOS, and macOS said no: the file wasn't where it should be (for example, a network drive dropped off), or no installed app opens this kind of file. Never use the words 'error' or 'failed'.",
     "placeholders": {
@@ -496,7 +496,7 @@
     "description": "Button label on the function-key bar (macOS only) that opens the user's terminal app in the folder shown in the focused pane. Space is tight; keep it short.",
     "screenshot": "main-window.png"
   },
-  "fileExplorer.functionKeyBar.hiddenToast": "Function key bar is now hidden. Re-enable it any time later in <settingsLink>Settings</settingsLink>.",
+  "fileExplorer.functionKeyBar.hiddenToast": "{platform, select, windows {Function key bar is now hidden. Turn it back on any time later in <settingsLink>Settings</settingsLink>.} other {Function key bar is now hidden. Re-enable it any time later in <settingsLink>Settings</settingsLink>.}}",
   "@fileExplorer.functionKeyBar.hiddenToast": {
     "description": "Self-dismissing INFO toast shown after picking \"Hide function key bar\" from the bar's own right-click context menu. The <settingsLink>…</settingsLink> tag wraps the clickable link text, which names the Settings location; deep-links to the \"Show function key bar\" row in Settings > Appearance."
   },
@@ -546,7 +546,7 @@
     "description": "Button that opens the credentials form to sign in to a network host or share.",
     "screenshot": "network-sign-in-sheet.png"
   },
-  "fileExplorer.network.osMountFallback.message": "Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via macOS’s native SMB network connection, which is 4x slower for most connections (sometimes 100x) than Cmdr’s direct connection. Click the button below to try again.",
+  "fileExplorer.network.osMountFallback.message": "{platform, select, macos {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via macOS’s native SMB network connection, which is 4x slower for most connections (sometimes 100x) than Cmdr’s direct connection. Click the button below to try again.} windows {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via Windows’ own SMB connection, which is often slower than Cmdr’s direct connection. Select the button below to try again.} other {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via your system’s SMB connection (GVFS), which is often a lot slower than Cmdr’s direct connection. Click the button below to try again.}}",
   "@fileExplorer.network.osMountFallback.message": {
     "description": "Body of the notification that appears when Cmdr couldn’t open its own faster connection to a network share, so the share is running on the connection macOS provides. It explains the speed cost and points at the button below it (the \"osMountFallback.retry\" key). <shareName> wraps the share’s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"4x\" and \"100x\" are speed multipliers; write them the way your language writes multipliers. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
@@ -555,7 +555,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.osMountFallback.shareNotOnServer": "Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through macOS’s native SMB network connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.",
+  "fileExplorer.network.osMountFallback.shareNotOnServer": "{platform, select, macos {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through macOS’s native SMB network connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through Windows’ own SMB connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through your system’s SMB connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.}}",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
     "description": "Body of the same notification as \"osMountFallback.message\", for the one case where retrying cannot help: the server answered that no share by this name exists, so Cmdr shows no retry button here. It tells the reader where to look instead (the server). <shareName> wraps the share’s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
@@ -586,7 +586,7 @@
     "description": "Button in the empty network browser that re-scans the network for hosts.",
     "screenshot": "servers-hub.png"
   },
-  "fileExplorer.network.browser.refreshHint": "Press <key></key> or click here to refresh",
+  "fileExplorer.network.browser.refreshHint": "{platform, select, windows {Press <key></key> or select here to refresh} other {Press <key></key> or click here to refresh}}",
   "@fileExplorer.network.browser.refreshHint": {
     "description": "Hint in the network status bar telling the user how to refresh the host list. The empty <key></key> marks where a keyboard-shortcut chip (showing the refresh key, ⌘R unless the user rebinds it) is rendered inline; keep the tag in the sentence and reorder the surrounding words for natural grammar.",
     "placeholders": {
@@ -781,7 +781,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.share.credentialsStoredLocally": "Credentials stored locally (no system keyring detected)",
+  "fileExplorer.network.share.credentialsStoredLocally": "{platform, select, windows {Credentials stored locally (Credential Manager not available)} other {Credentials stored locally (no system keyring detected)}}",
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "description": "Info toast shown when no OS keyring is available, so credentials are kept in a local store instead.",
     "screenshot": "servers-hub.png",
@@ -845,7 +845,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "Remove saved password from Keychain",
+  "fileExplorer.network.share.forgetPasswordTooltip": "{platform, select, macos {Remove saved password from Keychain} windows {Remove saved password from Credential Manager} other {Remove saved password from your keyring}}",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "description": "Hover tooltip for the button that deletes this host’s saved password. \"Keychain\" is the macOS credential store.",
     "screenshot": "servers-hub.png",
@@ -920,7 +920,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.networkMount.mountingSlow": "Still waiting for macOS to connect. You can cancel at any time.",
+  "fileExplorer.networkMount.mountingSlow": "{platform, select, macos {Still waiting for macOS to connect. You can cancel at any time.} windows {Still waiting for Windows to connect. You can cancel at any time.} other {Still connecting to the share. You can cancel at any time.}}",
   "@fileExplorer.networkMount.mountingSlow": {
     "description": "One line under the \"Connecting to {share}…\" heading once a network share has taken more than about 10 seconds to connect. It replaces the usual \"This can take a few seconds.\" line, so the person knows the wait is real and that the Cancel button below it works. Reassurance, not an alarm.",
     "screenshot": "servers-hub.png",
@@ -989,7 +989,7 @@
   "@fileExplorer.unreachable.disconnect": {
     "description": "Button on the unreachable banner that drops the network connection (shown after auto-reconnect gave up)."
   },
-  "fileExplorer.unreachable.openHome": "Open home folder",
+  "fileExplorer.unreachable.openHome": "{platform, select, windows {Open user folder} other {Open home folder}}",
   "@fileExplorer.unreachable.openHome": {
     "description": "Button on the unreachable banner that navigates to the user’s home folder instead."
   },
@@ -1134,7 +1134,7 @@
       "moveKey": "the key currently bound to Cmdr's move command, e.g. \"F6\". The user can rebind it, so it isn't always F6."
     }
   },
-  "fileExplorer.edit.notOnThisMac": "Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your Mac. Press F3 to view it.",
+  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your Mac. Press F3 to view it.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
   "@fileExplorer.edit.notOnThisMac": {
     "description": "Info toast shown when the user presses F4 (edit) on a file with no regular file behind it on the Mac: a file on a phone or camera, on a server reached over SFTP or WebDAV, inside an archive, or in the virtual .git folders. A text editor can't open it yet, so the toast says so and points at F3, which opens Cmdr's own viewer and can show the file. \"Cmdr\" is the product name and \"F3\" a key name; keep both. Never use the words 'error' or 'failed'."
   },
@@ -1342,7 +1342,7 @@
       "name": "the backup folder’s name, for example \"m3-macbook-restic\" (never translated)"
     }
   },
-  "fileExplorer.restic.forgetPassword.keychainKeptIt": "Cmdr locked {name} for now, but Keychain kept its saved password. To remove it for good, delete it in Keychain Access.",
+  "fileExplorer.restic.forgetPassword.keychainKeptIt": "{platform, select, macos {Cmdr locked {name} for now, but Keychain kept its saved password. To remove it for good, delete it in Keychain Access.} windows {Cmdr locked {name} for now, but Credential Manager kept its saved password. To remove it for good, delete it in Credential Manager.} other {Cmdr locked {name} for now, but your keyring kept its saved password. To remove it for good, delete it in your keyring app.}}",
   "@fileExplorer.restic.forgetPassword.keychainKeptIt": {
     "description": "Warning toast after the user ran the “Forget backup password” command on a restic backup, when macOS wouldn’t let Cmdr delete the saved password (a locked keychain, or the user said no to a system prompt). The backup is locked until Cmdr restarts, but the next launch will find the password again. Use the names macOS uses in your language for its password store (Apple calls it \"Keychain\") and for its \"Keychain Access\" app. Avoid the words \"error\" and \"failed\".",
     "placeholders": {
@@ -1455,7 +1455,7 @@
       "appName": "the app the user picked, e.g. Preview or QuickTime Player. Never translate it"
     }
   },
-  "fileExplorer.openWith.copyRefused.notEnoughSpace": "Your Mac’s disk doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.",
+  "fileExplorer.openWith.copyRefused.notEnoughSpace": "{platform, select, macos {Your Mac’s disk doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.} windows {Your PC doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.} other {Your computer’s disk doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.}}",
   "@fileExplorer.openWith.copyRefused.notEnoughSpace": {
     "description": "Toast shown after the user right-clicked a file inside an archive (a zip Cmdr browses like a folder) or a Git repository’s history, picked an app under \"Open with\", and nothing opened. To open such a file, Cmdr first copies it into a temporary file on this Mac’s startup disk, and that disk doesn’t have enough free space for the copy. Suggests freeing space and trying again. Never use the words \"error\" or \"failed\".",
     "placeholders": {
@@ -1480,7 +1480,7 @@
       "appName": "the app the user picked, e.g. Preview. Never translate it"
     }
   },
-  "fileExplorer.openWith.notOnThisMac": "{appName} can’t open this file, because it isn’t a regular file on your Mac. Press {viewKey} to view it in Cmdr.",
+  "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} can’t open this file, because it isn’t a regular file on your Mac. Press {viewKey} to view it in Cmdr.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "description": "Info toast shown after the user right-clicked a file, picked an app under \"Open with\", and nothing opened, because no other app can open the file by its path: it's on a phone or camera, on a server reached over SFTP, WebDAV, or S3, or on a network share Cmdr still reaches over its own connection after macOS lost track of it. Points at the key that opens Cmdr's own viewer, which can show the file. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'.",
     "placeholders": {
@@ -1786,7 +1786,7 @@
   "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
     "description": "Tooltip (and screen-reader label) on a small warning triangle next to a folder’s size. Cmdr’s drive index stopped updating because THIS drive, the one Cmdr keeps its index on (the startup disk), is almost out of free space. The size shown is the last one Cmdr knew. Indexing resumes by itself once there’s room. Calm, not alarming; never use the words “error” or “failed”."
   },
-  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "This size may be out of date: indexing is paused because your startup disk, where Cmdr keeps its index, is almost full.",
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "{platform, select, macos {This size may be out of date: indexing is paused because your startup disk, where Cmdr keeps its index, is almost full.} windows {This size may be out of date: indexing is paused because your system drive, where Cmdr keeps its index, is almost full.} other {This size may be out of date: indexing is paused because your system disk, where Cmdr keeps its index, is almost full.}}",
   "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
     "description": "Tooltip (and screen-reader label) on a small warning triangle next to a folder’s size on a drive OTHER than the startup disk (an external drive, a network share, a phone). Cmdr keeps every drive’s index on the startup disk, which is almost full, so indexing paused for this drive too. “Startup disk” is the macOS term for the disk the Mac boots from; use the platform’s usual term. Calm; never use the words “error” or “failed”."
   },
@@ -2324,17 +2324,17 @@
     "description": "Metadata label for a file’s last-modified date in the rename-conflict comparison cards.",
     "screenshot": "rename-conflict-newer-and-larger.png"
   },
-  "fileExplorer.renameConflict.overwriteTrash": "Overwrite and trash old file",
+  "fileExplorer.renameConflict.overwriteTrash": "{platform, select, windows {Overwrite and delete old file} other {Overwrite and trash old file}}",
   "@fileExplorer.renameConflict.overwriteTrash": {
     "description": "Primary button in the rename-conflict dialog: replace the existing file, moving the old one to the trash (recoverable).",
     "screenshot": "rename-conflict-newer-and-larger.png"
   },
-  "fileExplorer.renameConflict.overwriteTrashFolder": "Overwrite and trash old folder",
+  "fileExplorer.renameConflict.overwriteTrashFolder": "{platform, select, windows {Overwrite and delete old folder} other {Overwrite and trash old folder}}",
   "@fileExplorer.renameConflict.overwriteTrashFolder": {
     "description": "Primary button in the rename-conflict dialog when a FOLDER holds the name: replace that folder, moving it and everything inside it to the trash (recoverable).",
     "screenshot": "rename-conflict-folder.png"
   },
-  "fileExplorer.renameConflict.overwriteDelete": "Overwrite and delete old file",
+  "fileExplorer.renameConflict.overwriteDelete": "{platform, select, windows {Overwrite and permanently delete old file} other {Overwrite and delete old file}}",
   "@fileExplorer.renameConflict.overwriteDelete": {
     "description": "Destructive button in the rename-conflict dialog: replace the existing file, permanently deleting the old one (not recoverable).",
     "screenshot": "rename-conflict-newer-and-larger.png"
@@ -2363,7 +2363,7 @@
     },
     "screenshot": "extension-change.png"
   },
-  "fileExplorer.extensionChange.descriptionRemove": "{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension? macOS will show this as an ordinary folder instead of a single item.} other {Are you sure you want to remove the “.{oldExt}” extension? Your Mac may not know which app opens the file without it.}}",
+  "fileExplorer.extensionChange.descriptionRemove": "{platform, select, macos {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension? macOS will show this as an ordinary folder instead of a single item.} other {Are you sure you want to remove the “.{oldExt}” extension? Your Mac may not know which app opens the file without it.}}} windows {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension?} other {Are you sure you want to remove the “.{oldExt}” extension? Windows may not know which app opens the file without it.}}} other {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension?} other {Are you sure you want to remove the “.{oldExt}” extension? Your computer may not know which app opens the file without it.}}}}",
   "@fileExplorer.extensionChange.descriptionRemove": {
     "description": "Body of the extension-change confirmation when the new name has NO extension any more (the user deleted it). The folder branch is for a macOS package folder such as an app (“Cmdr.app”), which turns into an ordinary folder without its extension; the other branch is for a file. Write each branch as complete, natural sentences. The leading dot is part of the displayed extension.",
     "placeholders": {
@@ -2372,7 +2372,7 @@
     },
     "screenshot": "extension-change-removed-extension.png"
   },
-  "fileExplorer.extensionChange.descriptionAdd": "{kind, select, folder {Are you sure you want to add the “.{newExt}” extension? macOS may show this folder as a single item instead.} other {Are you sure you want to add the “.{newExt}” extension? Your file may open in a different app next time you open it.}}",
+  "fileExplorer.extensionChange.descriptionAdd": "{platform, select, macos {{kind, select, folder {Are you sure you want to add the “.{newExt}” extension? macOS may show this folder as a single item instead.} other {Are you sure you want to add the “.{newExt}” extension? Your file may open in a different app next time you open it.}}} other {{kind, select, folder {Are you sure you want to add the “.{newExt}” extension?} other {Are you sure you want to add the “.{newExt}” extension? Your file may open in a different app next time you open it.}}}}",
   "@fileExplorer.extensionChange.descriptionAdd": {
     "description": "Body of the extension-change confirmation when the old name had NO extension and the new one has one (for example “README” to “README.md”). The folder branch is for a folder getting a macOS package extension such as “.app”, which makes Finder show it as one item; the other branch is for a file. Write each branch as complete, natural sentences. The leading dot is part of the displayed extension.",
     "placeholders": {
@@ -2513,7 +2513,7 @@
     "description": "Hover tooltip on the greyed-out \"Add current folder to favorites\" row, explaining why it can't be picked: the pane's folder is already in the list. A statement, not an error.",
     "screenshot": "toast-favorite.png"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "This folder can’t be a favorite: favorites point at folders on disks, shares, servers, and phones",
+  "fileExplorer.navigation.favoritesCantAddHere": "{platform, select, windows {This folder can’t be a favorite: favorites point at folders on drives, shares, servers, and phones} other {This folder can’t be a favorite: favorites point at folders on disks, shares, servers, and phones}}",
   "@fileExplorer.navigation.favoritesCantAddHere": {
     "description": "Hover tooltip on the greyed-out \"Add current folder to favorites\" row when the pane is somewhere a favorite could never point back to: inside an archive, in the .git history browser, in a search results list, or on the list of servers itself. Says a fact about THIS folder first, then the reason after the colon (the places a favorite CAN point at); pair it with its sibling fileExplorer.navigation.favoritesAlreadyAdded, which opens the same way. \"Shares\" are network folders, \"servers\" are machines Cmdr connects to (SFTP, WebDAV, S3), \"phones\" are Android phones and cameras over USB; keep it plain and don't name protocols. No length limit: it's a tooltip, so read naturally rather than trimming.",
     "screenshot": "servers-hub.png"
@@ -2972,7 +2972,7 @@
   "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
     "description": "Hover tooltip on the RED drive-index dot of the startup disk (the drive Cmdr keeps its index on), shown when that disk is almost out of free space and indexing paused. Cmdr keeps showing the last-known folder sizes, which may be out of date, and resumes indexing by itself once there’s room. Calm and reassuring; active voice; never use the words “error” or “failed”."
   },
-  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "Indexing is paused because your startup disk, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.",
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "{platform, select, macos {Indexing is paused because your startup disk, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.} windows {Indexing is paused because your system drive, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.} other {Indexing is paused because your system disk, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.}}",
   "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
     "description": "Hover tooltip on the RED drive-index dot of a drive OTHER than the startup disk (an external drive, a network share, a phone). Cmdr keeps every drive’s index on the startup disk, which is almost full, so indexing paused for this drive too. Folder sizes shown may be out of date; indexing resumes by itself once the startup disk has room. “Startup disk” is the macOS term for the disk the Mac boots from. Never use the words “error” or “failed”."
   },
@@ -3260,7 +3260,7 @@
   "@fileExplorer.dropIn.timedOut": {
     "description": "Toast after Cmdr waited ten minutes for another app to hand over a dropped file and gave up. Avoid the words “error” and “failed”."
   },
-  "fileExplorer.dropIn.noFolder": "Cmdr couldn’t make room for the dropped file. Check that your disk has free space, then try again.",
+  "fileExplorer.dropIn.noFolder": "{platform, select, windows {Cmdr couldn’t make room for the dropped file. Check that your PC has free space, then try again.} other {Cmdr couldn’t make room for the dropped file. Check that your disk has free space, then try again.}}",
   "@fileExplorer.dropIn.noFolder": {
     "description": "Toast when Cmdr couldn’t create the temporary folder a dropped file from another app goes into (usually a full disk). Avoid the words “error” and “failed”."
   },
@@ -3339,7 +3339,7 @@
     "description": "Button in the same toast: from now on typing in a pane moves the cursor to the best match instead of filtering. \"Jump\" is the mode's name, as in Settings. Shown once, the first time typing in a pane filters it (Filter is the default typing mode).",
     "screenshot": "quick-filter-intro.png"
   },
-  "fileExplorer.quickFilter.intro.openSettings": "Settings…",
+  "fileExplorer.quickFilter.intro.openSettings": "{platform, select, windows {Settings} other {Settings…}}",
   "@fileExplorer.quickFilter.intro.openSettings": {
     "description": "Button in the same toast: opens Settings at the \"When you type in a pane\" option. Shown once, the first time typing in a pane filters it (Filter is the default typing mode).",
     "screenshot": "quick-filter-intro.png"
@@ -3368,7 +3368,7 @@
       "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through macOS’s native SMB network connection, which is a lot slower.",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "{platform, select, macos {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through macOS’s native SMB network connection, which is a lot slower.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "description": "Body of the same notification as \"osMountFallback.message\", for a share (a DFS namespace) that lives on a different server the person hasn’t allowed Cmdr to sign in to. There is no retry button. <shareName> wraps the share’s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
@@ -3398,7 +3398,7 @@
       "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
   },
-  "fileExplorer.network.osMountFallback.encryptionRequired": "Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through macOS’s native SMB network connection, which is a lot slower.",
+  "fileExplorer.network.osMountFallback.encryptionRequired": "{platform, select, macos {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through macOS’s native SMB network connection, which is a lot slower.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {
     "description": "Body of the same notification as \"osMountFallback.message\", for a share whose server can't encrypt the connection while Cmdr's own \"Always require SMB encryption\" setting is on (set by the person, or forced on by their organization). There is no retry button. <shareName> wraps the share’s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
@@ -3407,7 +3407,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.osMountFallback.negotiationInvalid": "Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through macOS’s native SMB network connection, which is a lot slower.",
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "{platform, select, macos {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through macOS’s native SMB network connection, which is a lot slower.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
     "description": "Body of the same notification as \"osMountFallback.message\", for a share whose server didn’t confirm the connection’s security settings (the SMB version and options both sides agreed on at the start), so Cmdr closed its own connection. The innocent cause is a misbehaving server; the serious one is someone tampering with network traffic. There is no retry button. <shareName> wraps the share’s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
@@ -3416,7 +3416,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.osMountFallback.encryptionUnavailable": "Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through macOS’s native SMB network connection, which is a lot slower.",
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "{platform, select, macos {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through macOS’s native SMB network connection, which is a lot slower.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through your system’s SMB connection, which is a lot slower.}}",
   "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
     "description": "Body of the same notification as \"osMountFallback.message\", for a share that only accepts encrypted connections, where the server and Cmdr didn’t agree on an encryption method. There is no retry button. <shareName> wraps the share’s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {

@@ -1,5 +1,5 @@
 {
-  "commands.appQuit.label": "Salir de Cmdr",
+  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Salir de Cmdr}}",
   "@commands.appQuit.label": {
     "sourceHash": "b3455b4"
   },
@@ -192,7 +192,7 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "Abre ~/Downloads y selecciona el archivo más reciente.",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Abre ~/Downloads y selecciona el archivo más reciente.}}",
   "@commands.downloadsGoToLatest.description": {
     "sourceHash": "6b3fe83"
   },
@@ -316,19 +316,19 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "Deshacer movimiento a la papelera",
+  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Deshacer movimiento a la papelera}}",
   "@commands.editUndoTrash.label": {
     "sourceHash": "c6fea33"
   },
-  "commands.editUndoTrash.one": "Deshacer movimiento de “{name}” a la papelera",
+  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Deshacer movimiento de “{name}” a la papelera}}",
   "@commands.editUndoTrash.one": {
     "sourceHash": "45494c8"
   },
-  "commands.editUndoTrash.many": "Deshacer movimiento de {countText} {count, plural, one {elemento} many {elementos} other {elementos}} a la papelera",
+  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Deshacer movimiento de {countText} {count, plural, one {elemento} many {elementos} other {elementos}} a la papelera}}",
   "@commands.editUndoTrash.many": {
     "sourceHash": "69c4966"
   },
-  "commands.editUndoTrash.description": "Devuelve a su sitio los archivos que moviste a la papelera la última vez",
+  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Devuelve a su sitio los archivos que moviste a la papelera la última vez}}",
   "@commands.editUndoTrash.description": {
     "sourceHash": "dca1b63"
   },
@@ -460,7 +460,7 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "Ir a la carpeta de inicio",
+  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Ir a la carpeta de inicio}}",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
@@ -804,11 +804,11 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "Ir a la papelera",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Ir a la papelera}}",
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "Abre la papelera de la unidad que estás explorando",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Abre la papelera de la unidad que estás explorando}}",
   "@commands.fileGoToTrash.description": {
     "sourceHash": "6496c25"
   },
@@ -900,7 +900,7 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "Quita del Llavero la contraseña guardada de la copia de seguridad de restic en la que estás y vuelve a bloquearla",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Quita del Llavero la contraseña guardada de la copia de seguridad de restic en la que estás y vuelve a bloquearla} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
   "@commands.resticForgetPassword.description": {
     "sourceHash": "e51ac69"
   },

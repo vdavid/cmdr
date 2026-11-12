@@ -7,7 +7,7 @@
   "@adb.connect.openSettings": {
     "sourceHash": "3f94010"
   },
-  "adb.connect.serverUnreachable": "Las herramientas de Android en este Mac no han respondido.",
+  "adb.connect.serverUnreachable": "{platform, select, macos {Las herramientas de Android en este Mac no han respondido.} windows {The Android tools on this PC didn’t answer.} other {The Android tools on this computer didn’t answer.}}",
   "@adb.connect.serverUnreachable": {
     "sourceHash": "b53716b"
   },
@@ -55,7 +55,7 @@
   "@adb.readiness.offline": {
     "sourceHash": "6061885"
   },
-  "adb.readiness.noPermissions": "Este Mac no puede acceder a tu teléfono por USB. Prueba con otro cable u otro puerto.",
+  "adb.readiness.noPermissions": "{platform, select, macos {Este Mac no puede acceder a tu teléfono por USB. Prueba con otro cable u otro puerto.} windows {This PC can’t reach your phone over USB. Try another cable or port.} other {This computer can’t reach your phone over USB. Try another cable or port.}}",
   "@adb.readiness.noPermissions": {
     "sourceHash": "265d7ed"
   },

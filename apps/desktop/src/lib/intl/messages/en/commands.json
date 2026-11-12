@@ -1,5 +1,5 @@
 {
-  "commands.appQuit.label": "Quit Cmdr",
+  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Quit Cmdr}}",
   "@commands.appQuit.label": {
     "description": "Command name for quitting the app. Appears in the macOS app menu and the keyboard-shortcuts list. \"Cmdr\" is the brand name, do not translate it.",
     "screenshot": "settings-keyboard-shortcuts.png"
@@ -220,7 +220,7 @@
     "description": "Command name that opens the Downloads folder with the newest file selected. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.downloadsGoToLatest.description": "Opens ~/Downloads and selects the most recent file.",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Opens ~/Downloads and selects the most recent file.}}",
   "@commands.downloadsGoToLatest.description": {
     "description": "Longer help text for the \"Go to latest download\" command, shown as a secondary line in the command palette. \"~/Downloads\" is a filesystem path; keep it literally."
   },
@@ -370,19 +370,19 @@
   "@commands.appFocusNotifications.description": {
     "description": "Longer help text for the \"Move focus to the notifications\" command, shown as a secondary line in the command palette. \"Undo\" is the button on the notification after files go to the trash."
   },
-  "commands.editUndoTrash.label": "Undo move to trash",
+  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Undo move to trash}}",
   "@commands.editUndoTrash.label": {
     "description": "Command name that puts back the files the user most recently moved to the trash in Cmdr, the same thing the Undo button on the \"Moved 3 files to trash\" notification does. Appears in the command palette, the keyboard shortcuts settings, and the Edit menu. \"Move to trash\" is the action's name, as in macOS's own \"Move to Trash\".",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.editUndoTrash.one": "Undo move to trash of “{name}”",
+  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Undo move to trash of “{name}”}}",
   "@commands.editUndoTrash.one": {
     "description": "The command palette's name for commands.editUndoTrash.label once the user has moved exactly ONE file or folder to the trash, so the row names what it would put back. Same wording as menu.edit.undoTrashOne; keep the two identical.",
     "placeholders": {
       "name": "the trashed file or folder's name, e.g. \"report.pdf\""
     }
   },
-  "commands.editUndoTrash.many": "Undo move to trash of {countText} {count, plural, one {item} other {items}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Undo move to trash of {countText} {count, plural, one {item} other {items}}}}",
   "@commands.editUndoTrash.many": {
     "description": "The command palette's name for commands.editUndoTrash.label once the user has moved TWO OR MORE files or folders to the trash in one go, so the row says how many it would put back. Same meaning as menu.edit.undoTrashMany, which can't inflect; this one can, so use your language's natural plural here.",
     "placeholders": {
@@ -390,7 +390,7 @@
       "count": "the same number (drives the singular/plural form of the noun)"
     }
   },
-  "commands.editUndoTrash.description": "Puts back the files you last moved to the trash",
+  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Puts back the files you last moved to the trash}}",
   "@commands.editUndoTrash.description": {
     "description": "Longer help text for the \"Undo move to trash\" command, shown as a secondary line in the command palette."
   },
@@ -552,7 +552,7 @@
     "description": "Command name that opens the topmost folder of what the active pane shows: \"/\" on the Mac's main disk, the top of a USB drive, server, or phone, or the top of an archive when the pane is inside one (⌘/). \"Root\" is the top of a folder tree, nothing to do with plants or admin rights. Use this language's ruling for the \"root folder\" term, as in the Go menu's \"Root folder\" item.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.navGoHome.label": "Go to home folder",
+  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Go to home folder}}",
   "@commands.navGoHome.label": {
     "description": "Command name that opens the home folder in the active pane. Appears in the command palette, the Go menu, and on the button that gets users out of an error screen. \"Home folder\" means the per-user folder the operating system gives each account (~), not a website home page. Distinct from \"Go to first file\", which only moves the cursor within the current folder.",
     "screenshot": "settings-keyboard-shortcuts.png"
@@ -975,12 +975,12 @@
     "description": "Command name that deletes the selected files permanently, bypassing the trash. Appears in the command palette. The word \"permanently\" carries the warning that this can't be undone.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.fileGoToTrash.label": "Go to trash",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Go to trash}}",
   "@commands.fileGoToTrash.label": {
     "description": "Command name that opens the trash folder in the file pane, so the user can look at what they have thrown away. Appears in the command palette. \"Trash\" is the macOS Trash, so use whatever your platform calls the recoverable wastebasket. VERB phrase.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.fileGoToTrash.description": "Opens the trash of the drive you’re browsing",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Opens the trash of the drive you’re browsing}}",
   "@commands.fileGoToTrash.description": {
     "description": "One-line explanation under the \"Go to trash\" command name in the command palette. It says which trash opens, because each drive keeps its own: the one belonging to the drive shown in the active pane, not a single system-wide trash. Sentence case, no full stop; the apostrophe is doubled for ICU and renders as one."
   },
@@ -1089,7 +1089,7 @@
     "description": "Command name that removes a restic backup’s saved password from the macOS Keychain and locks the backup again, so opening it asks for the password. Acts on the backup the user is browsing, or whose snapshots folder is under the cursor. \"backup\" = a restic backup repository, a folder of encrypted backups. VERB phrase, imperative. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.resticForgetPassword.description": "Removes the saved password of the restic backup you’re in from Keychain, and locks the backup again",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Removes the saved password of the restic backup you’re in from Keychain, and locks the backup again} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
   "@commands.resticForgetPassword.description": {
     "description": "Longer help text for the \"Forget backup password\" command, shown as a secondary line in the command palette. Use the name macOS uses for its password store in your language (Apple calls it \"Keychain\"). Keep \"restic\" as is: it’s the name of the backup tool."
   },

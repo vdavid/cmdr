@@ -139,7 +139,7 @@
   "@servers.hub.emptyTitle": {
     "sourceHash": "7846930"
   },
-  "servers.hub.emptyMessage": "在下面添加一台，或者把你网络上的 Mac 或 NAS 开机，Cmdr 就会找到它。",
+  "servers.hub.emptyMessage": "{platform, select, macos {在下面添加一台，或者把你网络上的 Mac 或 NAS 开机，Cmdr 就会找到它。} windows {Add one below, or turn on a PC or NAS on your network and Cmdr will find it.} other {Add one below, or turn on a computer or NAS on your network and Cmdr will find it.}}",
   "@servers.hub.emptyMessage": {
     "sourceHash": "04bdc26"
   },
@@ -187,7 +187,7 @@
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "48b9b15"
   },
-  "servers.refusal.certificateUntrusted": "macOS 不信任这台服务器的证书。请在“钥匙串访问”中添加它，然后重试。",
+  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS 不信任这台服务器的证书。请在“钥匙串访问”中添加它，然后重试。} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
   "@servers.refusal.certificateUntrusted": {
     "sourceHash": "b8f3b4a"
   },
@@ -223,7 +223,7 @@
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "在这台 Mac 的 SSH 设置里，{host} 的主机密钥被标记为已泄露。Cmdr 不会连接到它。",
+  "servers.refusal.hostKeyRevoked": "{platform, select, macos {在这台 Mac 的 SSH 设置里，{host} 的主机密钥被标记为已泄露。Cmdr 不会连接到它。} windows {The key for {host} is marked as compromised in your SSH settings on this PC. Cmdr won’t connect to it.} other {The key for {host} is marked as compromised in your SSH settings on this computer. Cmdr won’t connect to it.}}",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "7a25d93"
   },
@@ -247,11 +247,11 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "3fb55a6"
   },
-  "servers.refusal.secretNotStored": "Cmdr 没能把这个密码存到钥匙串。请再试一次，或者关闭“记住到钥匙串”，不存密码直接登录。",
+  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr 没能把这个密码存到钥匙串。请再试一次，或者关闭“记住到钥匙串”，不存密码直接登录。} windows {Cmdr couldn’t save this password. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this password in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.secretNotStored": {
     "sourceHash": "20957fe"
   },
-  "servers.refusal.savedSecretNotUpdated": "Cmdr 已保存你的更改，但没能更新钥匙串里的密码。再保存一次即可重试。",
+  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr 已保存你的更改，但没能更新钥匙串里的密码。再保存一次即可重试。} windows {Cmdr saved your changes but couldn’t update the saved password. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the password in your keyring. Save again to try once more.}}",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
   },
@@ -267,11 +267,11 @@
   "@servers.refusal.s3SecretMissing": {
     "sourceHash": "f1f32f2"
   },
-  "servers.refusal.s3SecretNotStored": "Cmdr 没能把这个秘密访问密钥存到钥匙串。请再试一次，或者关闭“记住到钥匙串”，不存密钥直接登录。",
+  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr 没能把这个秘密访问密钥存到钥匙串。请再试一次，或者关闭“记住到钥匙串”，不存密钥直接登录。} windows {Cmdr couldn’t save this secret access key. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this secret access key in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.s3SecretNotStored": {
     "sourceHash": "f7a9fb0"
   },
-  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr 已保存你的更改，但没能更新钥匙串里的秘密访问密钥。再保存一次即可重试。",
+  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr 已保存你的更改，但没能更新钥匙串里的秘密访问密钥。再保存一次即可重试。} windows {Cmdr saved your changes but couldn’t update the saved secret access key. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the secret access key in your keyring. Save again to try once more.}}",
   "@servers.refusal.s3SavedSecretNotUpdated": {
     "sourceHash": "1d2889d"
   },
@@ -295,7 +295,7 @@
   "@servers.refusal.regionMismatchNamed": {
     "sourceHash": "30abb0d"
   },
-  "servers.refusal.clockSkewed": "这台 Mac 的时钟偏差超过 15 分钟，所以服务器不接受 Cmdr 的请求。请在“系统设置”中开启自动设置日期与时间，然后重试。",
+  "servers.refusal.clockSkewed": "{platform, select, macos {这台 Mac 的时钟偏差超过 15 分钟，所以服务器不接受 Cmdr 的请求。请在“系统设置”中开启自动设置日期与时间，然后重试。} windows {This PC’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Turn on “Set time automatically” in Settings > Time & language > Date & time, then try again.} other {This computer’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in your system settings, then try again.}}",
   "@servers.refusal.clockSkewed": {
     "sourceHash": "cdee0ef"
   },
@@ -307,7 +307,7 @@
   "@servers.refusal.exportNotFound": {
     "sourceHash": "2ef1ce8"
   },
-  "servers.refusal.exportRefused": "{host} 不让这台 Mac 打开这个共享文件夹。请在服务器的 NFS 设置里查看这个共享文件夹允许哪些电脑访问。",
+  "servers.refusal.exportRefused": "{platform, select, macos {{host} 不让这台 Mac 打开这个共享文件夹。请在服务器的 NFS 设置里查看这个共享文件夹允许哪些电脑访问。} windows {{host} doesn’t let this PC open that export. Check which devices the export allows in the server’s NFS settings.} other {{host} doesn’t let this computer open that export. Check which computers the export allows in the server’s NFS settings.}}",
   "@servers.refusal.exportRefused": {
     "sourceHash": "0cebd7d"
   },
@@ -331,11 +331,11 @@
   "@servers.refusal.addressTaken": {
     "sourceHash": "5a14a92"
   },
-  "servers.refusal.secretNotMoved": "Cmdr 没能把保存的密码带到新地址，所以什么都没改。检查一下钥匙串有没有解锁，然后再保存一次。",
+  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr 没能把保存的密码带到新地址，所以什么都没改。检查一下钥匙串有没有解锁，然后再保存一次。} windows {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.secretNotMoved": {
     "sourceHash": "7f3c328"
   },
-  "servers.refusal.s3SecretNotMoved": "Cmdr 没能把保存的秘密访问密钥带到新端点，所以什么都没改。检查一下钥匙串有没有解锁，然后再保存一次。",
+  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr 没能把保存的秘密访问密钥带到新端点，所以什么都没改。检查一下钥匙串有没有解锁，然后再保存一次。} windows {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.s3SecretNotMoved": {
     "sourceHash": "69901e7"
   },
@@ -347,11 +347,11 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "共享 {name} 仍然是通过旧地址装载的。先推出这个共享，然后再保存一次。",
+  "servers.refusal.shareMounted": "{platform, select, macos {共享 {name} 仍然是通过旧地址装载的。先推出这个共享，然后再保存一次。} windows {The share {name} is still connected from the old address. Disconnect it, then save again.} other {The share {name} is still mounted from the old address. Unmount it, then save again.}}",
   "@servers.refusal.shareMounted": {
     "sourceHash": "156a61b"
   },
-  "servers.refusal.shareEjectRefused": "Cmdr 没能推出共享 {name}，所以什么都没保存。{reason}",
+  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr 没能推出共享 {name}，所以什么都没保存。{reason}} windows {Cmdr couldn’t disconnect {name}, so nothing was saved. {reason}} other {Cmdr couldn’t unmount {name}, so nothing was saved. {reason}}}",
   "@servers.refusal.shareEjectRefused": {
     "sourceHash": "1c73fa7"
   },
@@ -383,15 +383,15 @@
   "@servers.sheet.addAnywayHelp": {
     "sourceHash": "68e90b2"
   },
-  "servers.sheet.ejectAndSave": "推出并保存",
+  "servers.sheet.ejectAndSave": "{platform, select, macos {推出并保存} windows {Disconnect and save} other {Unmount and save}}",
   "@servers.sheet.ejectAndSave": {
     "sourceHash": "357f2dd"
   },
-  "servers.sheet.ejectAndSaveHelp": "Cmdr 会先推出所有仍通过旧地址装载的共享，然后保存新地址。",
+  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr 会先推出所有仍通过旧地址装载的共享，然后保存新地址。} windows {Cmdr disconnects every share still connected from the old address, then saves the new one.} other {Cmdr unmounts every share still mounted from the old address, then saves the new one.}}",
   "@servers.sheet.ejectAndSaveHelp": {
     "sourceHash": "a1d1206"
   },
-  "servers.sheet.ejecting": "正在推出…",
+  "servers.sheet.ejecting": "{platform, select, macos {正在推出…} windows {Disconnecting…} other {Unmounting…}}",
   "@servers.sheet.ejecting": {
     "sourceHash": "4c37167"
   },
@@ -499,7 +499,7 @@
   "@servers.sheet.nfsExportsEmptyList": {
     "sourceHash": "7558a7b"
   },
-  "servers.sheet.nfsExportsNone": "{host} 没有为这台 Mac 列出任何共享文件夹。如果你知道共享文件夹的路径，就直接输入。",
+  "servers.sheet.nfsExportsNone": "{platform, select, macos {{host} 没有为这台 Mac 列出任何共享文件夹。如果你知道共享文件夹的路径，就直接输入。} windows {{host} lists no exports for this PC. Type the export’s path if you know it.} other {{host} lists no exports for this computer. Type the export’s path if you know it.}}",
   "@servers.sheet.nfsExportsNone": {
     "sourceHash": "a88c0bf"
   },
@@ -543,7 +543,7 @@
   "@servers.sheet.nfsIdentityRootOwner": {
     "sourceHash": "c464fa8"
   },
-  "servers.sheet.nfsIdentityThisMac": "你在这台 Mac 上的 ID。如果服务器上的文件属于别人，就改一下这两个 ID。",
+  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {你在这台 Mac 上的 ID。如果服务器上的文件属于别人，就改一下这两个 ID。} windows {The user and group IDs Cmdr sends to the server. Change them if the files on the server belong to someone else.} other {Your IDs on this computer. Change them if the files on the server belong to someone else.}}",
   "@servers.sheet.nfsIdentityThisMac": {
     "sourceHash": "8bfbb0d"
   },
@@ -575,7 +575,7 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
-  "servers.sheet.secretKeptPlaceholder": "已保存在钥匙串中。留空则保持不变。",
+  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {已保存在钥匙串中。留空则保持不变。} windows {Saved. Leave empty to keep it.} other {Saved in your keyring. Leave empty to keep it.}}",
   "@servers.sheet.secretKeptPlaceholder": {
     "sourceHash": "8711f6c"
   },
@@ -591,7 +591,7 @@
   "@servers.sheet.passphrase": {
     "sourceHash": "2510031"
   },
-  "servers.sheet.remember": "记住到钥匙串",
+  "servers.sheet.remember": "{platform, select, macos {记住到钥匙串} windows {Remember password} other {Remember in keyring}}",
   "@servers.sheet.remember": {
     "sourceHash": "3fd7384"
   },
@@ -780,7 +780,7 @@
   "@servers.sheet.autoReconnectInfoLabel": {
     "sourceHash": "edb9b82"
   },
-  "servers.sheet.needsStoredSecret": "自动重新连接需要一个记住的密码。请打开“记住到钥匙串”，然后登录一次。",
+  "servers.sheet.needsStoredSecret": "{platform, select, macos {自动重新连接需要一个记住的密码。请打开“记住到钥匙串”，然后登录一次。} windows {Reconnecting on its own needs a saved password. Turn on “Remember password” and sign in once.} other {Reconnecting on its own needs a remembered password. Turn on “Remember in keyring” and sign in once.}}",
   "@servers.sheet.needsStoredSecret": {
     "sourceHash": "32336f3"
   },
@@ -820,7 +820,7 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "macOS 不认识 {host} 的证书",
+  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS 不认识 {host} 的证书} windows {Windows doesn’t know the certificate for {host}} other {The certificate for {host} is new to this computer}}",
   "@servers.certificate.firstContactTitle": {
     "sourceHash": "ca0b44a"
   },

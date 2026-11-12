@@ -1,5 +1,5 @@
 {
-  "commands.appQuit.label": "Kilépés a Cmdrből",
+  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Kilépés a Cmdrből}}",
   "@commands.appQuit.label": {
     "sourceHash": "b3455b4"
   },
@@ -192,7 +192,7 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "Megnyitja a ~/Downloads mappát, és kijelöli a legutóbbi fájlt.",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Megnyitja a ~/Downloads mappát, és kijelöli a legutóbbi fájlt.}}",
   "@commands.downloadsGoToLatest.description": {
     "sourceHash": "6b3fe83"
   },
@@ -316,19 +316,19 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "Kukába helyezés visszavonása",
+  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Kukába helyezés visszavonása}}",
   "@commands.editUndoTrash.label": {
     "sourceHash": "c6fea33"
   },
-  "commands.editUndoTrash.one": "„{name}” Kukába helyezésének visszavonása",
+  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {„{name}” Kukába helyezésének visszavonása}}",
   "@commands.editUndoTrash.one": {
     "sourceHash": "45494c8"
   },
-  "commands.editUndoTrash.many": "{countText} {count, plural, one {elem} other {elem}} Kukába helyezésének visszavonása",
+  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {{countText} {count, plural, one {elem} other {elem}} Kukába helyezésének visszavonása}}",
   "@commands.editUndoTrash.many": {
     "sourceHash": "69c4966"
   },
-  "commands.editUndoTrash.description": "Visszahelyezi a legutóbb a Kukába helyezett fájlokat",
+  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Visszahelyezi a legutóbb a Kukába helyezett fájlokat}}",
   "@commands.editUndoTrash.description": {
     "sourceHash": "dca1b63"
   },
@@ -460,7 +460,7 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "Ugrás a saját mappára",
+  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Ugrás a saját mappára}}",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
@@ -804,11 +804,11 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "Ugrás a Kukába",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Ugrás a Kukába}}",
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "Megnyitja annak a meghajtónak a Kukáját, amelyet éppen böngészel",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Megnyitja annak a meghajtónak a Kukáját, amelyet éppen böngészel}}",
   "@commands.fileGoToTrash.description": {
     "sourceHash": "6496c25"
   },
@@ -900,7 +900,7 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "Eltávolítja a kulcskarikából annak a restic biztonsági mentésnek a mentett jelszavát, amelyben éppen vagy, és újra lezárja a biztonsági mentést",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Eltávolítja a kulcskarikából annak a restic biztonsági mentésnek a mentett jelszavát, amelyben éppen vagy, és újra lezárja a biztonsági mentést} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
   "@commands.resticForgetPassword.description": {
     "sourceHash": "e51ac69"
   },

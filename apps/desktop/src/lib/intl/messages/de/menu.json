@@ -72,7 +72,7 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "Einstellungen …",
+  "menu.app.settings": "{platform, select, windows {Settings} other {Einstellungen …}}",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -172,15 +172,15 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "In den Papierkorb bewegen widerrufen",
+  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {In den Papierkorb bewegen widerrufen}}",
   "@menu.edit.undoTrash": {
     "sourceHash": "c6fea33"
   },
-  "menu.edit.undoTrashOne": "Bewegen von „{name}“ in den Papierkorb widerrufen",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Bewegen von „{name}“ in den Papierkorb widerrufen}}",
   "@menu.edit.undoTrashOne": {
     "sourceHash": "45494c8"
   },
-  "menu.edit.undoTrashMany": "Bewegen von {countText} Objekten in den Papierkorb widerrufen",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Bewegen von {countText} Objekten in den Papierkorb widerrufen}}",
   "@menu.edit.undoTrashMany": {
     "sourceHash": "bb9192a"
   },

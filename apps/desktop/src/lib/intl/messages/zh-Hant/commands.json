@@ -1,5 +1,5 @@
 {
-  "commands.appQuit.label": "結束 Cmdr",
+  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {結束 Cmdr}}",
   "@commands.appQuit.label": {
     "sourceHash": "b3455b4"
   },
@@ -192,7 +192,7 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "開啟 ~/Downloads 並選取最新的檔案。",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {開啟 ~/Downloads 並選取最新的檔案。}}",
   "@commands.downloadsGoToLatest.description": {
     "sourceHash": "6b3fe83"
   },
@@ -316,19 +316,19 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "還原移至垃圾桶",
+  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {還原移至垃圾桶}}",
   "@commands.editUndoTrash.label": {
     "sourceHash": "c6fea33"
   },
-  "commands.editUndoTrash.one": "還原把「{name}」移至垃圾桶",
+  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {還原把「{name}」移至垃圾桶}}",
   "@commands.editUndoTrash.one": {
     "sourceHash": "45494c8"
   },
-  "commands.editUndoTrash.many": "還原把 {countText} 個{count, plural, other {項目}}移至垃圾桶",
+  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {還原把 {countText} 個{count, plural, other {項目}}移至垃圾桶}}",
   "@commands.editUndoTrash.many": {
     "sourceHash": "69c4966"
   },
-  "commands.editUndoTrash.description": "把你上次移到垃圾桶的檔案放回原處",
+  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {把你上次移到垃圾桶的檔案放回原處}}",
   "@commands.editUndoTrash.description": {
     "sourceHash": "dca1b63"
   },
@@ -460,7 +460,7 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "前往個人專屬資料夾",
+  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {前往個人專屬資料夾}}",
   "@commands.navGoHome.label": {
     "sourceHash": "74b2a8b"
   },
@@ -804,11 +804,11 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "前往垃圾桶",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {前往垃圾桶}}",
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "開啟你正在瀏覽的磁碟機上的垃圾桶",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {開啟你正在瀏覽的磁碟機上的垃圾桶}}",
   "@commands.fileGoToTrash.description": {
     "sourceHash": "6496c25"
   },
@@ -900,7 +900,7 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "從鑰匙圈中移除你所在的 restic 備份已儲存的密碼，並再次鎖定這個備份",
+  "commands.resticForgetPassword.description": "{platform, select, macos {從鑰匙圈中移除你所在的 restic 備份已儲存的密碼，並再次鎖定這個備份} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
   "@commands.resticForgetPassword.description": {
     "sourceHash": "e51ac69"
   },

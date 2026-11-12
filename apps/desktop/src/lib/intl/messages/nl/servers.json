@@ -141,7 +141,7 @@
   "@servers.hub.emptyTitle": {
     "sourceHash": "7846930"
   },
-  "servers.hub.emptyMessage": "Voeg er hieronder een toe, of zet een Mac of NAS in je netwerk aan, dan vindt Cmdr hem.",
+  "servers.hub.emptyMessage": "{platform, select, macos {Voeg er hieronder een toe, of zet een Mac of NAS in je netwerk aan, dan vindt Cmdr hem.} windows {Add one below, or turn on a PC or NAS on your network and Cmdr will find it.} other {Add one below, or turn on a computer or NAS on your network and Cmdr will find it.}}",
   "@servers.hub.emptyMessage": {
     "sourceHash": "04bdc26"
   },
@@ -190,7 +190,7 @@
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "48b9b15"
   },
-  "servers.refusal.certificateUntrusted": "macOS vertrouwt het certificaat van deze server niet. Voeg het in Sleutelhangertoegang toe en probeer het opnieuw.",
+  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS vertrouwt het certificaat van deze server niet. Voeg het in Sleutelhangertoegang toe en probeer het opnieuw.} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
   "@servers.refusal.certificateUntrusted": {
     "sourceHash": "b8f3b4a"
   },
@@ -226,7 +226,7 @@
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "De sleutel van {host} is in je SSH-instellingen op deze Mac gemarkeerd als gecompromitteerd. Cmdr maakt er geen verbinding mee.",
+  "servers.refusal.hostKeyRevoked": "{platform, select, macos {De sleutel van {host} is in je SSH-instellingen op deze Mac gemarkeerd als gecompromitteerd. Cmdr maakt er geen verbinding mee.} windows {The key for {host} is marked as compromised in your SSH settings on this PC. Cmdr won’t connect to it.} other {The key for {host} is marked as compromised in your SSH settings on this computer. Cmdr won’t connect to it.}}",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "7a25d93"
   },
@@ -250,11 +250,11 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "3fb55a6"
   },
-  "servers.refusal.secretNotStored": "Cmdr kon dit wachtwoord niet bewaren in Sleutelhanger. Probeer het opnieuw of zet ‘Onthoud in Sleutelhanger’ uit om in te loggen zonder het te bewaren.",
+  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr kon dit wachtwoord niet bewaren in Sleutelhanger. Probeer het opnieuw of zet ‘Onthoud in Sleutelhanger’ uit om in te loggen zonder het te bewaren.} windows {Cmdr couldn’t save this password. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this password in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.secretNotStored": {
     "sourceHash": "20957fe"
   },
-  "servers.refusal.savedSecretNotUpdated": "Cmdr heeft je wijzigingen bewaard, maar kon het wachtwoord in Sleutelhanger niet bijwerken. Bewaar opnieuw om het nog eens te proberen.",
+  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr heeft je wijzigingen bewaard, maar kon het wachtwoord in Sleutelhanger niet bijwerken. Bewaar opnieuw om het nog eens te proberen.} windows {Cmdr saved your changes but couldn’t update the saved password. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the password in your keyring. Save again to try once more.}}",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
   },
@@ -270,11 +270,11 @@
   "@servers.refusal.s3SecretMissing": {
     "sourceHash": "f1f32f2"
   },
-  "servers.refusal.s3SecretNotStored": "Cmdr kon deze geheime toegangssleutel niet bewaren in Sleutelhanger. Probeer het opnieuw of zet ‘Onthoud in Sleutelhanger’ uit om in te loggen zonder de sleutel te bewaren.",
+  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr kon deze geheime toegangssleutel niet bewaren in Sleutelhanger. Probeer het opnieuw of zet ‘Onthoud in Sleutelhanger’ uit om in te loggen zonder de sleutel te bewaren.} windows {Cmdr couldn’t save this secret access key. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this secret access key in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.s3SecretNotStored": {
     "sourceHash": "f7a9fb0"
   },
-  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr heeft je wijzigingen bewaard, maar kon de geheime toegangssleutel in Sleutelhanger niet bijwerken. Bewaar opnieuw om het nog eens te proberen.",
+  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr heeft je wijzigingen bewaard, maar kon de geheime toegangssleutel in Sleutelhanger niet bijwerken. Bewaar opnieuw om het nog eens te proberen.} windows {Cmdr saved your changes but couldn’t update the saved secret access key. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the secret access key in your keyring. Save again to try once more.}}",
   "@servers.refusal.s3SavedSecretNotUpdated": {
     "sourceHash": "1d2889d"
   },
@@ -298,7 +298,7 @@
   "@servers.refusal.regionMismatchNamed": {
     "sourceHash": "30abb0d"
   },
-  "servers.refusal.clockSkewed": "De klok van deze Mac loopt meer dan 15 minuten verkeerd, dus de server accepteert de verzoeken van Cmdr niet. Stel datum en tijd automatisch in via Systeeminstellingen en probeer het dan opnieuw.",
+  "servers.refusal.clockSkewed": "{platform, select, macos {De klok van deze Mac loopt meer dan 15 minuten verkeerd, dus de server accepteert de verzoeken van Cmdr niet. Stel datum en tijd automatisch in via Systeeminstellingen en probeer het dan opnieuw.} windows {This PC’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Turn on “Set time automatically” in Settings > Time & language > Date & time, then try again.} other {This computer’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in your system settings, then try again.}}",
   "@servers.refusal.clockSkewed": {
     "sourceHash": "cdee0ef"
   },
@@ -310,7 +310,7 @@
   "@servers.refusal.exportNotFound": {
     "sourceHash": "2ef1ce8"
   },
-  "servers.refusal.exportRefused": "{host} laat deze Mac die export niet openen. Controleer in de NFS-instellingen van de server welke computers de export toestaat.",
+  "servers.refusal.exportRefused": "{platform, select, macos {{host} laat deze Mac die export niet openen. Controleer in de NFS-instellingen van de server welke computers de export toestaat.} windows {{host} doesn’t let this PC open that export. Check which devices the export allows in the server’s NFS settings.} other {{host} doesn’t let this computer open that export. Check which computers the export allows in the server’s NFS settings.}}",
   "@servers.refusal.exportRefused": {
     "sourceHash": "0cebd7d"
   },
@@ -334,11 +334,11 @@
   "@servers.refusal.addressTaken": {
     "sourceHash": "5a14a92"
   },
-  "servers.refusal.secretNotMoved": "Cmdr kon het opgeslagen wachtwoord niet meenemen naar het nieuwe adres, dus er is niets veranderd. Controleer of Sleutelhanger ontgrendeld is en bewaar dan opnieuw.",
+  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr kon het opgeslagen wachtwoord niet meenemen naar het nieuwe adres, dus er is niets veranderd. Controleer of Sleutelhanger ontgrendeld is en bewaar dan opnieuw.} windows {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.secretNotMoved": {
     "sourceHash": "7f3c328"
   },
-  "servers.refusal.s3SecretNotMoved": "Cmdr kon de opgeslagen geheime toegangssleutel niet meenemen naar het nieuwe eindpunt, dus er is niets veranderd. Controleer of Sleutelhanger ontgrendeld is en bewaar dan opnieuw.",
+  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr kon de opgeslagen geheime toegangssleutel niet meenemen naar het nieuwe eindpunt, dus er is niets veranderd. Controleer of Sleutelhanger ontgrendeld is en bewaar dan opnieuw.} windows {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.s3SecretNotMoved": {
     "sourceHash": "69901e7"
   },
@@ -350,11 +350,11 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "De gedeelde map {name} is nog via het oude adres aangekoppeld. Werp de gedeelde map uit en bewaar dan opnieuw.",
+  "servers.refusal.shareMounted": "{platform, select, macos {De gedeelde map {name} is nog via het oude adres aangekoppeld. Werp de gedeelde map uit en bewaar dan opnieuw.} windows {The share {name} is still connected from the old address. Disconnect it, then save again.} other {The share {name} is still mounted from the old address. Unmount it, then save again.}}",
   "@servers.refusal.shareMounted": {
     "sourceHash": "156a61b"
   },
-  "servers.refusal.shareEjectRefused": "Cmdr kon de gedeelde map {name} niet uitwerpen, dus er is niets bewaard. {reason}",
+  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr kon de gedeelde map {name} niet uitwerpen, dus er is niets bewaard. {reason}} windows {Cmdr couldn’t disconnect {name}, so nothing was saved. {reason}} other {Cmdr couldn’t unmount {name}, so nothing was saved. {reason}}}",
   "@servers.refusal.shareEjectRefused": {
     "sourceHash": "1c73fa7"
   },
@@ -386,15 +386,15 @@
   "@servers.sheet.addAnywayHelp": {
     "sourceHash": "68e90b2"
   },
-  "servers.sheet.ejectAndSave": "Werp uit en bewaar",
+  "servers.sheet.ejectAndSave": "{platform, select, macos {Werp uit en bewaar} windows {Disconnect and save} other {Unmount and save}}",
   "@servers.sheet.ejectAndSave": {
     "sourceHash": "357f2dd"
   },
-  "servers.sheet.ejectAndSaveHelp": "Cmdr werpt elke gedeelde map uit die nog via het oude adres is aangekoppeld, en bewaart daarna het nieuwe adres.",
+  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr werpt elke gedeelde map uit die nog via het oude adres is aangekoppeld, en bewaart daarna het nieuwe adres.} windows {Cmdr disconnects every share still connected from the old address, then saves the new one.} other {Cmdr unmounts every share still mounted from the old address, then saves the new one.}}",
   "@servers.sheet.ejectAndSaveHelp": {
     "sourceHash": "a1d1206"
   },
-  "servers.sheet.ejecting": "Uitwerpen…",
+  "servers.sheet.ejecting": "{platform, select, macos {Uitwerpen…} windows {Disconnecting…} other {Unmounting…}}",
   "@servers.sheet.ejecting": {
     "sourceHash": "4c37167"
   },
@@ -504,7 +504,7 @@
   "@servers.sheet.nfsExportsEmptyList": {
     "sourceHash": "7558a7b"
   },
-  "servers.sheet.nfsExportsNone": "{host} toont geen exports voor deze Mac. Typ het pad van de export als je het weet.",
+  "servers.sheet.nfsExportsNone": "{platform, select, macos {{host} toont geen exports voor deze Mac. Typ het pad van de export als je het weet.} windows {{host} lists no exports for this PC. Type the export’s path if you know it.} other {{host} lists no exports for this computer. Type the export’s path if you know it.}}",
   "@servers.sheet.nfsExportsNone": {
     "sourceHash": "a88c0bf"
   },
@@ -548,7 +548,7 @@
   "@servers.sheet.nfsIdentityRootOwner": {
     "sourceHash": "c464fa8"
   },
-  "servers.sheet.nfsIdentityThisMac": "Je ID’s op deze Mac. Wijzig ze als de bestanden op de server van iemand anders zijn.",
+  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Je ID’s op deze Mac. Wijzig ze als de bestanden op de server van iemand anders zijn.} windows {The user and group IDs Cmdr sends to the server. Change them if the files on the server belong to someone else.} other {Your IDs on this computer. Change them if the files on the server belong to someone else.}}",
   "@servers.sheet.nfsIdentityThisMac": {
     "sourceHash": "8bfbb0d"
   },
@@ -580,7 +580,7 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
-  "servers.sheet.secretKeptPlaceholder": "Opgeslagen in Sleutelhanger. Laat leeg om te behouden.",
+  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Opgeslagen in Sleutelhanger. Laat leeg om te behouden.} windows {Saved. Leave empty to keep it.} other {Saved in your keyring. Leave empty to keep it.}}",
   "@servers.sheet.secretKeptPlaceholder": {
     "sourceHash": "8711f6c"
   },
@@ -596,7 +596,7 @@
   "@servers.sheet.passphrase": {
     "sourceHash": "2510031"
   },
-  "servers.sheet.remember": "Onthoud in Sleutelhanger",
+  "servers.sheet.remember": "{platform, select, macos {Onthoud in Sleutelhanger} windows {Remember password} other {Remember in keyring}}",
   "@servers.sheet.remember": {
     "sourceHash": "3fd7384"
   },
@@ -786,7 +786,7 @@
   "@servers.sheet.autoReconnectInfoLabel": {
     "sourceHash": "edb9b82"
   },
-  "servers.sheet.needsStoredSecret": "Automatisch opnieuw verbinden werkt alleen als Cmdr je wachtwoord onthoudt. Zet ‘Onthoud in Sleutelhanger’ aan en log één keer in.",
+  "servers.sheet.needsStoredSecret": "{platform, select, macos {Automatisch opnieuw verbinden werkt alleen als Cmdr je wachtwoord onthoudt. Zet ‘Onthoud in Sleutelhanger’ aan en log één keer in.} windows {Reconnecting on its own needs a saved password. Turn on “Remember password” and sign in once.} other {Reconnecting on its own needs a remembered password. Turn on “Remember in keyring” and sign in once.}}",
   "@servers.sheet.needsStoredSecret": {
     "sourceHash": "32336f3"
   },
@@ -826,7 +826,7 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "macOS kent het certificaat van {host} niet",
+  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS kent het certificaat van {host} niet} windows {Windows doesn’t know the certificate for {host}} other {The certificate for {host} is new to this computer}}",
   "@servers.certificate.firstContactTitle": {
     "sourceHash": "ca0b44a"
   },

@@ -27,19 +27,19 @@
   "@commands.favoritesAdd.description": {
     "sourceHash": "161aa45"
   },
-  "commands.editUndoTrash.label": "Deshacer movimiento al basurero",
+  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Deshacer movimiento al basurero}}",
   "@commands.editUndoTrash.label": {
     "sourceHash": "ae39e1f"
   },
-  "commands.editUndoTrash.one": "Deshacer movimiento de “{name}” al basurero",
+  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Deshacer movimiento de “{name}” al basurero}}",
   "@commands.editUndoTrash.one": {
     "sourceHash": "77a330a"
   },
-  "commands.editUndoTrash.many": "Deshacer movimiento de {countText} {count, plural, one {elemento} many {elementos} other {elementos}} al basurero",
+  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Deshacer movimiento de {countText} {count, plural, one {elemento} many {elementos} other {elementos}} al basurero}}",
   "@commands.editUndoTrash.many": {
     "sourceHash": "d100947"
   },
-  "commands.editUndoTrash.description": "Devuelve a su lugar los archivos que moviste al basurero la última vez",
+  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Devuelve a su lugar los archivos que moviste al basurero la última vez}}",
   "@commands.editUndoTrash.description": {
     "sourceHash": "ff1e685"
   },
@@ -51,11 +51,11 @@
   "@commands.fileEdit.label": {
     "sourceHash": "012941c"
   },
-  "commands.fileGoToTrash.label": "Ir al basurero",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Ir al basurero}}",
   "@commands.fileGoToTrash.label": {
     "sourceHash": "9c15ead"
   },
-  "commands.fileGoToTrash.description": "Abre el basurero de la unidad que estás explorando",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Abre el basurero de la unidad que estás explorando}}",
   "@commands.fileGoToTrash.description": {
     "sourceHash": "42d98bb"
   },
@@ -203,7 +203,7 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "b241432"
   },
-  "commands.resticForgetPassword.description": "Quita del Llavero la contraseña guardada del respaldo de restic en el que estás y vuelve a bloquearlo",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Quita del Llavero la contraseña guardada del respaldo de restic en el que estás y vuelve a bloquearlo} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
   "@commands.resticForgetPassword.description": {
     "sourceHash": "3ad0182"
   },
