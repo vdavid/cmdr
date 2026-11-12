@@ -84,13 +84,22 @@ fn a_vanished_noted_directory_doesnt_fail_the_pass() {
 /// The unsupported class is "no barrier to offer"; real I/O failures aren't.
 #[test]
 fn only_the_unsupported_class_counts_as_no_barrier() {
-    for class in SYNC_UNSUPPORTED {
-        let code = class.host_code().expect("a Unix code for each unsupported class");
-        assert!(is_sync_unsupported(&io::Error::from_raw_os_error(code)), "{class:?}");
+    // By raw errno, since a class can have no code of its own on a host:
+    // Linux's `ENOTSUP` IS `EOPNOTSUPP`, so one of the two classes has none.
+    for code in [
+        libc::ENOTSUP,
+        libc::EOPNOTSUPP,
+        libc::EINVAL,
+        libc::ENOSYS,
+        libc::ENOTTY,
+    ] {
+        assert!(is_sync_unsupported(&io::Error::from_raw_os_error(code)), "errno {code}");
     }
-    for class in [OsErrorClass::NotPermitted, OsErrorClass::AccessDenied] {
-        let code = class.host_code().unwrap();
-        assert!(!is_sync_unsupported(&io::Error::from_raw_os_error(code)), "{class:?}");
+    for code in [libc::EPERM, libc::EACCES, libc::EIO, libc::ENOSPC] {
+        assert!(
+            !is_sync_unsupported(&io::Error::from_raw_os_error(code)),
+            "errno {code}"
+        );
     }
     assert!(!is_sync_unsupported(&io::Error::other("no errno")));
 }
