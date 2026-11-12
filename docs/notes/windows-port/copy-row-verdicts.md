@@ -77,7 +77,7 @@ Each gate hides a macOS-only surface off macOS. The catalog keys listed stay mac
   `is_package` from it). Restrict the name-based package rule to macOS; then the `folder` branch of
   `fileExplorer.extensionChange.descriptionRemove` / `descriptionAdd` is unreachable off macOS and stays macOS text.
 - **Also macOS-only already, no new gate**: `main.dockPinNudge.*` (`dockPin`), `ui.toolAsk.openBundle.*` (macOS launch
-  path), `fileExplorer.navigation.driveIndex.tooltipCoalesced*` (unreachable off macOS, see the watcher finding below).
+  path).
 
 New capabilities needed: `local_network_permission`, `local_ai`, `safe_save_files`, `app_bundles`, `full_screen`,
 `homebrew_cask`, and `global_shortcuts` (below).
@@ -162,9 +162,13 @@ New capabilities needed: `local_network_permission`, `local_ai`, `safe_save_file
   in, so "the way you installed it" is the honest sentence.
 - **NFS identity on Windows**: `crates/cmdr-nfs/src/dial/platform/windows.rs:process_ids` returns `(65534, 65534)`
   (`nobody`), machine name from `COMPUTERNAME`.
-- **Drive-index overflow off macOS**: never reported. `tooltipCoalesced` counts shallow `MustScanSubDirs` anchors
-  (`crates/cmdr-index/src/indexing/reconcile/reconciler/rescan/route.rs:decide_shallow_anchor_in`), which only FSEvents
-  produces; the `notify` backend's `overflow_flag` is constant `false`.
+- **Drive-index overflow off macOS**: reported on Linux, never on Windows. `tooltipCoalesced` counts shallow
+  `MustScanSubDirs` anchors
+  (`crates/cmdr-index/src/indexing/reconcile/reconciler/rescan/route.rs:decide_shallow_anchor_in`). FSEvents raises them
+  itself; the `notify` backend names one per watched root when inotify's queue overflows
+  (`crates/cmdr-index/src/indexing/watch/watcher/platform/notify_backend.rs:rescan_anchors`). `notify` 8.2.1 reports no
+  `ReadDirectoryChangesW` overflow at all (#1128), so the Windows branch is written and unreachable until it does. The
+  usual cause differs too: caches full of small files on macOS (measured), a burst of changes elsewhere.
 - **Windows build is D4's Windows 10 22H2 and 11**: Windows Terminal is the default only on 11, while PowerShell exists
   on both. Every Windows branch that proposed "In Terminal, run …" says "In PowerShell, run …" instead (the commands it
   names, `ping`, `dir`, `icacls`, run there).
@@ -248,8 +252,10 @@ Rows from the survey's § "Rows that need David's decision", plus `split-feature
   macOS text, unreachable off macOS after the package-name fix.
 - `fileExplorer.quickLookHint.finderComparison`, `.quickView` (and the other hint keys) → macOS-only, gated
   (`quickLook`).
-- `fileExplorer.navigation.driveIndex.tooltipCoalesced` (and `…CheckRunning`, `…NoNextCheck`) → macOS-only; no variants
-  until a non-FSEvents watcher reports overflow.
+- `fileExplorer.navigation.driveIndex.tooltipCoalesced` (and `…CheckRunning`, `…NoNextCheck`) → three branches. Linux
+  "Your system lost track…" (the Linux actor rule), Windows "Windows lost track…"; both name a burst of changes as the
+  cause, and `…NoNextCheck` promises the next full check with no time off macOS (a `notify` volume rescans on every
+  launch, and "no big deal" rests on the macOS cause).
 - `fileExplorer.quickFilter.intro.openSettings` → proposal (Windows "Settings", Linux "Settings…").
 - `ai.cloudConsent.askCmdr.protectedContents` → Linux rewritten to match `sensitive.rs:RULES` exactly (no mail rule on
   Linux); Windows open, and a blocker (bugs).
@@ -337,12 +343,11 @@ Skip (no Windows/Linux path, or a macOS-only mechanism):
 
 ## Bugs spotted on the way
 
-- **Linux index silently drifts on an inotify overflow**:
-  `crates/cmdr-index/src/indexing/watch/watcher/platform/notify_backend.rs:translate_notify_event` drops
-  `EventKind::Other`, which is how `notify` 8.2.2 reports `IN_Q_OVERFLOW`
-  (`Event::new(EventKind::Other).set_flag(Flag::Rescan)`, `notify-8.2.2/src/inotify.rs`), and `overflow_flag` is a
-  constant `false` whose comment ("`notify` never reports an overflow here") is wrong. A queue overflow loses events
-  with no rescan. Fix: read `Flag::Rescan` into the overflow flag.
+- **Linux index silently drifted on an inotify overflow** (#1105, fixed):
+  `crates/cmdr-index/src/indexing/watch/watcher/platform/notify_backend.rs:translate_notify_event` dropped
+  `EventKind::Other`, which is how `notify` reports `IN_Q_OVERFLOW`
+  (`Event::new(EventKind::Other).set_flag(Flag::Rescan)`, `notify-8.2.1/src/inotify.rs`). It now names a
+  `MustScanSubDirs` anchor per watched root. Windows has the same hole one layer down, in `notify` itself (#1128).
 - **Local AI claims support on Linux ARM64**: `apps/desktop/src-tauri/src/ai/mod.rs:is_local_ai_supported` is
   `cfg!(target_arch = "aarch64") && (!cfg!(target_os = "macos") || …)`, so it's `true` on Linux aarch64 (and would be on
   Windows ARM64), while the bundled `llama-server` is the macOS ARM64 build. The `local_ai` capability above fixes the

@@ -22632,7 +22632,7 @@ export type VolumeIndexStatus = {
   scanDurationMs: number | null
   /**
    *  How many shallow `MustScanSubDirs` anchors were coalesced SINCE THE LAST
-   *  COMPLETED SWEEP — the times macOS told us it lost track of changes and we
+   *  COMPLETED SWEEP — the times the OS told us it lost track of changes and we
    *  deliberately didn't rescan (see `reconcile/reconciler/rescan/route.rs`). `0` means
    *  nothing was skipped. Feeds the tooltip's "macOS lost track of file system
    *  changes N times" line; the badge itself does NOT branch on this, because

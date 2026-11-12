@@ -199,6 +199,15 @@ pub struct EventReconciler {
     /// index one event at a time. Gathering is what makes ONE presence read cover a
     /// whole batch.
     pending_deletes: Vec<WriteMessage>,
+    /// `MustScanSubDirs` anchors the post-scan replay found in the buffer, held
+    /// until the loop is live ([`kick_pending_rescans`](Self::kick_pending_rescans)).
+    ///
+    /// The scan may have read an anchor's subtree BEFORE the events it lost, so the
+    /// scan's rows can't answer for it. They wait here rather than in
+    /// `pending_rescans` because routing isn't decided yet: a shallow one belongs to
+    /// the visible sweep, which the drain must never walk. A set, so a tree that
+    /// overflowed many times during one scan is one anchor.
+    deferred_must_scans: std::collections::BTreeSet<PathBuf>,
 }
 
 /// Everything a rescan walk needs, cloned out of the [`EventReconciler`] so the
@@ -284,6 +293,7 @@ impl EventReconciler {
             work,
             scope: None,
             pending_deletes: Vec::new(),
+            deferred_must_scans: std::collections::BTreeSet::new(),
         }
     }
 
@@ -416,6 +426,18 @@ impl EventReconciler {
                 continue;
             }
 
+            // A lost-events signal that arrived mid-scan. ❌ Never the per-event
+            // path below: it stats the anchor and re-lists nothing, so the signal
+            // would vanish. Nothing walks during replay, so it waits for the live
+            // loop, which routes it exactly like a live one.
+            if event.flags.must_scan_sub_dirs {
+                self.deferred_must_scans
+                    .insert(PathBuf::from(self.space.absolute(&event.path)));
+                last_event_id = event.event_id;
+                processed += 1;
+                continue;
+            }
+
             // Replay stays unthrottled (None): journal catch-up must converge
             // fully and fast; throttling is a live-steady-state concern.
             // Missing-parent escalations DEFER into the pending set without starting
@@ -463,7 +485,8 @@ impl EventReconciler {
         Ok(last_event_id)
     }
 
-    /// Switch from buffering to live mode. Clears the buffer.
+    /// Switch from buffering to live mode. Clears the buffer, and keeps the
+    /// `MustScanSubDirs` anchors the replay set aside for the live loop.
     pub fn switch_to_live(&mut self) {
         self.buffering = false;
         self.buffer_overflow = false;
@@ -494,17 +517,7 @@ impl EventReconciler {
             // Keep the path absolute (the reconcile walks the FS from it); the
             // mount-relative strip happens inside `reconcile_subtree`'s resolve.
             let absolute = self.space.absolute(&event.path);
-            if self.is_branch_confined() {
-                // ❌ Never the visible-scanner route here: its shallow-anchor arm
-                // rescans the WHOLE volume, which is the full drive walk a
-                // search-built index exists to not do. The throttled drain walks
-                // the anchor and nothing above it.
-                self.queue_must_scan_sub_dirs(PathBuf::from(&absolute), writer);
-                return Some(event.event_id);
-            }
-            // Depth-split routing: a shallow/root-scale anchor takes the visible
-            // scanner path; a deep/narrow one keeps the throttled reconcile drain.
-            self.route_must_scan_sub_dirs(PathBuf::from(&absolute), writer);
+            self.admit_must_scan(PathBuf::from(&absolute), writer);
             return Some(event.event_id);
         }
 

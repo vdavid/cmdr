@@ -275,6 +275,27 @@ point for the two feeders the fix targets — the live path `process_live_event`
 Depth is a proxy for "re-listing this is walk-the-world expensive"; 2–3 levels is where a reconcile stops being cheap
 and starts holding the hourglass for the better part of a full scan.
 
+`admit_must_scan` sits in front of the split and is where every watcher's lost-events signal lands, whichever OS raised
+it (`../../../watch/DETAILS.md` § "When the OS drops events"): a branch-watched volume queues the anchor on the drain
+whatever its depth, and any other volume routes by depth.
+
+### An anchor that arrives during a scan
+
+The scan may have read an anchor's subtree BEFORE the events the OS lost, so the scan's rows can't answer for it. The
+post-scan replay (`EventReconciler::replay`) therefore sets `MustScanSubDirs` events aside in `deferred_must_scans`, and
+`kick_pending_rescans` hands them to `admit_must_scan` once the loop is live. ❌ Don't send them down the per-event path
+with the rest of the buffer: it stats the anchor and re-lists nothing, which is how these signals used to vanish (on
+macOS too), and a scan is the likeliest moment for an inotify queue to overflow.
+
+- **Why they wait**: nothing walks during the replay, since a walk would read rows the replay hasn't committed. They
+  can't wait in `pending_rescans` either, because the drain would walk a shallow one, and that's the stuck-hourglass
+  walk the split exists to prevent.
+- **Why it can't storm**: a COMPLETED walk restarts the sweep window before its replay runs, so a shallow anchor from
+  that scan is coalesced and counted, and starts no second scan. A tree busy enough to overflow during every scan would
+  otherwise rescan back to back for as long as it stayed busy. A deep one meets the per-subtree throttle like any other.
+- It's a set, so a tree that overflowed many times during one scan is one anchor, and it's bounded by the buffer's own
+  cap.
+
 ## Anchor-cardinality routing (`cardinality.rs`)
 
 **The problem the throttle can't reach.** `throttle.rs` bounds how often a GIVEN anchor re-walks. It contributes nothing
@@ -359,7 +380,7 @@ word changing.
   the last COMPLETED sweep**, never a lifetime total (a lifetime counter would only measure how long the app has been
   installed). It rides `VolumeIndexStatus.coalesced_signals_since_sweep` alongside `next_sweep_due_at` (computed in
   `queries.rs`), feeding the volume tooltip's "macOS lost track of file system changes N times … next full check in N
-  hours" line.
+  hours" line (worded per OS: Linux reaches it through an inotify queue overflow).
 - **The badge deliberately stays GREEN.** Once-a-day sweeping is the DESIGNED operating state, not a fault, so it must
   not raise a fault signal; at the measured rate a Stale badge would sit yellow essentially all day. Yellow stays
   reserved for a sweep that fails to happen when it was due. `StaleDriveDialog.svelte` also excludes `root`.

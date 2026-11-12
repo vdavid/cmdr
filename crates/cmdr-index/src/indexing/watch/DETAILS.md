@@ -263,6 +263,33 @@ nothing at all. It used to fail on the first refusal, so one stale branch left e
 while its first index finished came back with its old mount point in the set, and nothing at the new one was delivered
 again (#695; the stale branch itself is fixed in `../lifecycle/DETAILS.md`).
 
+### When the OS drops events
+
+Every backend can lose events under a burst (a big `git checkout`, an `rsync`, unpacking an archive), and each says so
+differently. **Decision: they all end as `MustScanSubDirs` anchors, so one route owns the rescan, its bounds, and what
+the user is told** (`../reconcile/reconciler/rescan/DETAILS.md`). **Why**: a second mechanism per OS would need its own
+storm bounds and its own status, and the first one already has both.
+
+- **FSEvents** raises the flag itself, on the path it coalesced to (often the stream root).
+- **inotify** (`notify_backend.rs:rescan_anchors`): the kernel's queue (`fs.inotify.max_queued_events`, 16,384 by
+  default) overflows, and `notify` delivers `EventKind::Other` with `Flag::Rescan` and no path. The backend names one
+  anchor per root it holds a watch on, because the OS says only THAT it dropped events, not where. A whole-volume watch
+  has one root, which is shallow, so it takes the visible sweep and its window: the first overflow rescans, and later
+  ones are counted into the drive's tooltip until the next sweep. A branch-watched volume queues each branch on the
+  throttled single-flight drain. A burst of overflows merges to one anchor per root per flush, since the loop dedups by
+  path. This backend used to skip the event as a non-mutation, so the index drifted with no log line (#1105).
+- **`ReadDirectoryChangesW`**: nothing reaches us. `notify` ignores the completion's byte count, so a notification that
+  overflowed its 16 KiB buffer reads as an empty batch (#1128). The translation handles `Flag::Rescan` from any backend,
+  so it works the day `notify` sets it on Windows. (All three verified against the source of `notify` 8.2.1, the locked
+  version, 2026-11-12.)
+
+❌ Don't route an OS overflow through `overflow_flag`. That flag means OUR bridge dropped events (the FSEvents channel);
+the `notify` bridge is unbounded and never sets it. Its recovery is a whole-volume rescan with no window, which a tree
+that overflows during every scan would repeat back to back.
+
+An anchor that arrives DURING a scan is kept, on every OS: see the rescan doc's § "An anchor that arrives during a
+scan".
+
 ## Data flow (live + replay)
 
 ```

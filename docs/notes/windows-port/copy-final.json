@@ -106,10 +106,6 @@
       "capability": "none: the macOS launch path is its only caller"
     },
     {
-      "keys": "fileExplorer.navigation.driveIndex.tooltipCoalesced*",
-      "capability": "none: only FSEvents reports a coalesced overflow"
-    },
-    {
       "keys": "downloads.fda.openSystemSettings",
       "capability": "fullDiskAccess"
     },
@@ -5902,48 +5898,54 @@
       "file": "fileExplorer.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "gated",
+      "status": "apply",
       "branches": {
         "macos": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It’s usually caches full of small files, and Cmdr’s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.",
-        "windows": null,
-        "other": null
+        "windows": "Windows lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.",
+        "other": "Your system lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it."
       },
       "sources": {
-        "row": "verdicts § Gates: hidden off macOS (none: only FSEvents reports a coalesced overflow)"
+        "windows": "copy-row-verdicts.md § Drive-index overflow off macOS: unreachable until `notify` reports a `ReadDirectoryChangesW` overflow (#1128); worded like the Linux branch, with Windows as the actor",
+        "other": "copy-row-verdicts.md § Drive-index overflow off macOS: reachable since the `notify` backend reports an inotify queue overflow (#1105); “Your system” per the Linux actor rule, and the cause is a burst of changes, not caches"
       },
-      "whereInUi": "Volume switcher, index status tooltip after FSEvents dropped events."
+      "whereInUi": "Volume switcher, index status tooltip after the OS dropped file change events and Cmdr waited instead of rescanning.",
+      "written": ["windows", "other"]
     },
     {
       "key": "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning",
       "file": "fileExplorer.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "gated",
+      "status": "apply",
       "branches": {
         "macos": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It’s usually caches full of small files, and the check running right now will put them right.",
-        "windows": null,
-        "other": null
+        "windows": "Windows lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and the check running right now will put them right.",
+        "other": "Your system lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and the check running right now will put them right."
       },
       "sources": {
-        "row": "verdicts § Gates: hidden off macOS (none: only FSEvents reports a coalesced overflow)"
+        "windows": "copy-row-verdicts.md § Drive-index overflow off macOS (as `tooltipCoalesced`)",
+        "other": "copy-row-verdicts.md § Drive-index overflow off macOS (as `tooltipCoalesced`)"
       },
-      "whereInUi": "Same tooltip family."
+      "whereInUi": "Same tooltip family.",
+      "written": ["windows", "other"]
     },
     {
       "key": "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck",
       "file": "fileExplorer.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "gated",
+      "status": "apply",
       "branches": {
         "macos": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It’s usually caches full of small files, so it’s no big deal.",
-        "windows": null,
-        "other": null
+        "windows": "Windows lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check will fix it.",
+        "other": "Your system lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check will fix it."
       },
       "sources": {
-        "row": "verdicts § Gates: hidden off macOS (none: only FSEvents reports a coalesced overflow)"
+        "windows": "copy-row-verdicts.md § Drive-index overflow off macOS (as `tooltipCoalesced`)",
+        "other": "copy-row-verdicts.md § Drive-index overflow off macOS (as `tooltipCoalesced`); the close promises the next full check without a time, since “it’s no big deal” rests on the macOS cause (caches) and a `notify` volume rescans on every launch"
       },
-      "whereInUi": "Same tooltip family."
+      "whereInUi": "Same tooltip family.",
+      "written": ["windows", "other"]
     },
     {
       "key": "fileExplorer.tags.skipped",

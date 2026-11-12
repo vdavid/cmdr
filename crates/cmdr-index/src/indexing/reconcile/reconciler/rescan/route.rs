@@ -130,7 +130,7 @@ pub(in crate::indexing) enum ShallowAnchorAction {
     /// The window has elapsed: run the visible full sweep now.
     Sweep,
     /// Inside the window: skip the sweep. The anchor is COUNTED, not forgotten,
-    /// so the volume tooltip can tell the user how many change signals macOS lost
+    /// so the volume tooltip can tell the user how many change signals the OS lost
     /// since the last sweep, and when the next one is due.
     Coalesce,
 }

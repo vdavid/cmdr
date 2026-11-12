@@ -112,7 +112,7 @@
     let scanTooltipOpen = $state(false)
     const hasRichScanningBody = $derived(badgeState === 'scanning' && bodyActivity != null)
 
-    // The "macOS lost track of changes N times" paragraph, appended to the tooltip
+    // The "lost track of changes N times" paragraph (worded per OS), appended to the tooltip
     // whenever signals were coalesced since the last full check. Recomputed when
     // `status` changes (the manager refreshes it on index events), so the hour
     // counts can lag a live clock by a few minutes — fine for whole hours.

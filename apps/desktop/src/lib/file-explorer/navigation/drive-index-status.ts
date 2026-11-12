@@ -168,7 +168,7 @@ export function hasLastScanFacts(status: VolumeIndexStatus): boolean {
 /** The coalesced-signal note's key plus the numbers its plural branches select on. */
 export interface DriveIndexCoalescedNote {
   key: MessageKey
-  /** Signals macOS coalesced since the last completed sweep. */
+  /** Signals the OS coalesced since the last completed sweep. */
   count: number
   /** Whole hours since that sweep, never below 1; `null` while a check is
    *  running (the scan clears the completed-at marker, so there's no honest
@@ -186,7 +186,7 @@ function hoursAtLeastOne(seconds: number): number {
 }
 
 /**
- * The extra tooltip paragraph for a drive where macOS reported it had lost track
+ * The extra tooltip paragraph for a drive where the OS reported it had lost track
  * of file system changes and we deliberately waited instead of rescanning, or
  * `null` when there's nothing to say. Resolving the key is the caller's job (it
  * owns `t()`), keeping this pure.

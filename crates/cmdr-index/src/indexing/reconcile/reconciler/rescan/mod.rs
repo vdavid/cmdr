@@ -72,6 +72,24 @@ impl EventReconciler {
         }
     }
 
+    /// Hand a `MustScanSubDirs` anchor (absolute, in this volume's space) to
+    /// whichever rescan this volume owes it. Every lost-events signal a watcher
+    /// raises ends here, whichever OS raised it: FSEvents' own flag, or the anchor
+    /// the `notify` backend names per watched root when inotify's queue overflows.
+    pub(in crate::indexing) fn admit_must_scan(&mut self, anchor: PathBuf, writer: &IndexWriter) {
+        if self.is_branch_confined() {
+            // ❌ Never the visible-scanner route here: its shallow-anchor arm
+            // rescans the WHOLE volume, which is the full drive walk a
+            // search-built index exists to not do. The throttled drain walks
+            // the anchor and nothing above it.
+            self.queue_must_scan_sub_dirs(anchor, writer);
+            return;
+        }
+        // Depth-split routing: a shallow/root-scale anchor takes the visible
+        // scanner path; a deep/narrow one keeps the throttled reconcile drain.
+        self.route_must_scan_sub_dirs(anchor, writer);
+    }
+
     /// Route a `MustScanSubDirs` anchor (see [`route`]). The single entry point
     /// for the two feeders the churn-resilience fix targets — the live path
     /// (`process_live_event`) and the post-replay handoff (`event_loop::replay`):
@@ -128,12 +146,12 @@ impl EventReconciler {
     ///
     /// Two reasons reach here and share one window, because they draw on one
     /// resource (whole-volume sweeps per day) and mean the same thing to a reader:
-    /// macOS lost track of changes and we haven't re-derived the truth yet. See
+    /// the OS lost track of changes and we haven't re-derived the truth yet. See
     /// [`SweepReason`].
     ///
     /// Inside the window we do NOT sweep, and the skipped signal is not forgotten:
     /// it's COUNTED and persisted, so the volume tooltip can say how many change
-    /// signals macOS lost and when the next sweep is due. The badge deliberately
+    /// signals the OS lost and when the next sweep is due. The badge deliberately
     /// stays green — once-a-day sweeping is the DESIGNED operating state, not a
     /// fault, and a fault colour shown all day trains people to ignore it.
     ///
@@ -284,7 +302,14 @@ impl EventReconciler {
     /// Start a rescan if any are pending and none is running. Drains rescans that
     /// were DEFERRED into `pending_rescans` during buffered replay (no live queueing
     /// then); the live loop calls this once at startup so those anchors run.
+    ///
+    /// The `MustScanSubDirs` anchors a post-scan replay set aside are routed here
+    /// first, the way a live one is: a shallow one meets the sweep window the
+    /// completed walk just restarted, so it's counted and starts no second scan.
     pub(in crate::indexing) fn kick_pending_rescans(&mut self, writer: &IndexWriter) {
+        for anchor in std::mem::take(&mut self.deferred_must_scans) {
+            self.admit_must_scan(anchor, writer);
+        }
         if self.rescan_active.load(Ordering::Relaxed) {
             return;
         }

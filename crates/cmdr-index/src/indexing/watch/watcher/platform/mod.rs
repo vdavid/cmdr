@@ -31,3 +31,7 @@ pub(super) use imp::start_branches;
 
 /// Whether this OS's watcher keeps a journal of event IDs a restart replays from.
 pub(super) use imp::SUPPORTS_EVENT_REPLAY;
+
+/// What a queue overflow puts on the channel, where `notify` is the backend.
+#[cfg(all(test, target_os = "linux"))]
+pub(crate) use notify_backend::overflow_events_for_test;

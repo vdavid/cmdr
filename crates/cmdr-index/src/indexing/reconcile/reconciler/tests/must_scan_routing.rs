@@ -609,3 +609,228 @@ async fn an_external_volume_keeps_the_drain_however_many_anchors_arrive() {
 
     writer.shutdown();
 }
+
+// ── A watcher queue overflow, end to end (the `notify` backend) ──
+
+/// An inotify queue overflow schedules ONE rescan of the volume, and the
+/// overflows after it are counted instead of rescanned (#1105).
+///
+/// Driven from what the `notify` backend really puts on the channel, so the pin
+/// covers the seam that was broken: the backend dropped the overflow event, and
+/// nothing downstream ever heard that events were lost.
+#[cfg(target_os = "linux")]
+#[tokio::test]
+async fn a_watcher_queue_overflow_schedules_one_rescan_and_the_repeats_are_counted() {
+    use crate::indexing::watch::watcher::overflow_events_for_test;
+
+    let volume_id = "smb://reconciler-test-queue-overflow";
+    let (writer, _dir, conn, _instance) = setup_private_writer(volume_id);
+    let mut reconciler = EventReconciler::new_for(
+        volume_id.to_string(),
+        IndexPathSpace::root(),
+        VolumeWork::for_test("reconciler-test"),
+    );
+    reconciler.switch_to_live();
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    // A whole-volume watch has one root, and a busy tree overflows again and again.
+    let mut pending = HashSet::new();
+    for _overflow in 0..3 {
+        for event in overflow_events_for_test(&[PathBuf::from("/")]) {
+            reconciler.process_live_event(&event, &conn, &writer, &mut pending);
+        }
+    }
+
+    assert_eq!(
+        *sink.lock().unwrap(),
+        vec!["shallow MustScanSubDirs".to_string()],
+        "the first overflow schedules the rescan, and the next two don't schedule more"
+    );
+    assert_eq!(
+        sweep_record(volume_id).coalesced_since_sweep,
+        2,
+        "the repeats are counted, so the drive's status says changes were lost"
+    );
+    assert!(
+        reconciler.pending_rescans_snapshot().is_empty(),
+        "and none of them fell onto the drain as an invisible walk of the volume"
+    );
+
+    writer.shutdown();
+}
+
+/// On a volume watched branch by branch, an overflow rescans the watched branches
+/// and nothing above them, once each however often the queue overflows.
+#[cfg(target_os = "linux")]
+#[tokio::test]
+async fn a_watcher_queue_overflow_on_a_branch_watched_volume_rescans_its_branches_only() {
+    use crate::indexing::watch::watcher::overflow_events_for_test;
+
+    let volume_id = "smb://reconciler-test-queue-overflow-branches";
+    let (writer, _dir, conn, _instance) = setup_private_writer(volume_id);
+    let mut reconciler = EventReconciler::new_for(
+        volume_id.to_string(),
+        IndexPathSpace::root(),
+        VolumeWork::for_test("reconciler-test"),
+    );
+    reconciler.switch_to_live();
+    // Keep the queued anchors visible (no spawn).
+    reconciler.rescan_active.store(true, Ordering::Relaxed);
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    let watch = crate::indexing::watch::branches::live_for(volume_id);
+    let covered = vec!["/covered".to_string(), "/also-covered".to_string()];
+    watch.begin_covering(&covered);
+    watch.finish_covering(&covered, crate::indexing::watch::branches::AfterWalk::Watch);
+    reconciler.within(crate::indexing::watch::branches::WatchScope::Branches(watch));
+
+    let roots = [PathBuf::from("/covered"), PathBuf::from("/also-covered")];
+    let mut pending = HashSet::new();
+    for _overflow in 0..3 {
+        for event in overflow_events_for_test(&roots) {
+            reconciler.process_live_event(&event, &conn, &writer, &mut pending);
+        }
+    }
+
+    assert!(
+        sink.lock().unwrap().is_empty(),
+        "no whole-volume rescan: the branches are all this volume answers for"
+    );
+    let mut queued = reconciler.rescan_scopes();
+    queued.sort();
+    assert_eq!(
+        queued,
+        vec![PathBuf::from("/also-covered"), PathBuf::from("/covered")],
+        "each watched branch is queued once, on the throttled single-flight drain"
+    );
+
+    crate::indexing::watch::branches::forget(volume_id);
+    writer.shutdown();
+}
+
+// ── A `MustScanSubDirs` that lands while a scan is running ──────
+
+/// A lost-events signal that arrives DURING a scan still gets its rescan.
+///
+/// The scan may already have read the directories the lost events were about, so
+/// its rows can't answer for them. The post-scan replay used to hand the anchor to
+/// the per-event path, which stats the one directory and re-lists nothing: the
+/// signal vanished and the index drifted silently. On Linux a scan is the
+/// likeliest moment for an inotify queue overflow (#1105).
+///
+/// Nothing starts mid-replay (a walk would read rows the replay hasn't
+/// committed); the anchor waits for the loop to go live. Two signals for one
+/// anchor are one rescan.
+#[tokio::test]
+async fn a_must_scan_buffered_during_a_scan_reaches_the_scanner_once_the_loop_is_live() {
+    let volume_id = "smb://reconciler-test-buffered-root-scale";
+    let (writer, _dir, conn, _instance) = setup_private_writer(volume_id);
+    let mut reconciler = EventReconciler::new_for(
+        volume_id.to_string(),
+        IndexPathSpace::root(),
+        VolumeWork::for_test("reconciler-test"),
+    );
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    reconciler.buffer_event(make_event("/", 5, must_scan_dir_flags()));
+    reconciler.buffer_event(make_event("/", 6, must_scan_dir_flags()));
+    let last = reconciler.replay(0, &conn, &writer, &mut |_| {}).unwrap();
+    assert_eq!(
+        last, 6,
+        "the anchors count as processed, so the position moves past them"
+    );
+    assert!(sink.lock().unwrap().is_empty(), "nothing starts mid-replay");
+
+    reconciler.switch_to_live();
+    reconciler.kick_pending_rescans(&writer);
+    assert_eq!(
+        *sink.lock().unwrap(),
+        vec!["shallow MustScanSubDirs".to_string()],
+        "the buffered anchor takes the same route a live one does, once"
+    );
+
+    // The sweep tick kicks again every second: the anchor was handed over, not kept.
+    reconciler.kick_pending_rescans(&writer);
+    assert_eq!(sink.lock().unwrap().len(), 1, "a handed-over anchor isn't routed twice");
+
+    writer.shutdown();
+}
+
+/// The no-storm half: a signal lost during a scan that then COMPLETED doesn't
+/// start a second scan on its heels.
+///
+/// The completed walk restarts the sweep window (`scan_completion`'s stamp, which
+/// runs before the replay), so the anchor is coalesced and COUNTED: the drive's
+/// tooltip says changes were lost. Without the window, a tree busy enough to
+/// overflow during every scan would rescan back to back for as long as it stayed
+/// busy.
+#[tokio::test]
+async fn a_must_scan_buffered_during_a_completed_scan_is_counted_and_starts_no_second_scan() {
+    let volume_id = "smb://reconciler-test-buffered-coalesced";
+    let (writer, _dir, conn, _instance) = setup_private_writer(volume_id);
+    let mut reconciler = EventReconciler::new_for(
+        volume_id.to_string(),
+        IndexPathSpace::root(),
+        VolumeWork::for_test("reconciler-test"),
+    );
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    reconciler.buffer_event(make_event("/", 5, must_scan_dir_flags()));
+    // What a completed walk does before its replay.
+    record_sweep_completed(volume_id, now_unix());
+    reconciler.replay(0, &conn, &writer, &mut |_| {}).unwrap();
+    reconciler.switch_to_live();
+    reconciler.kick_pending_rescans(&writer);
+
+    assert!(
+        sink.lock().unwrap().is_empty(),
+        "the walk that just finished is the sweep; the signal doesn't start another"
+    );
+    assert_eq!(
+        sweep_record(volume_id).coalesced_since_sweep,
+        1,
+        "and it's counted, so the drive's status can say changes were lost"
+    );
+
+    writer.shutdown();
+}
+
+/// A DEEP anchor buffered during a scan walks on the throttled drain, like a
+/// live one: only its own subtree, single-flight.
+#[tokio::test]
+async fn a_deep_must_scan_buffered_during_a_scan_walks_on_the_drain() {
+    let volume_id = "smb://reconciler-test-buffered-deep";
+    let (writer, dir, conn, _instance) = setup_private_writer(volume_id);
+    let mut reconciler = EventReconciler::new_for(
+        volume_id.to_string(),
+        IndexPathSpace::root(),
+        VolumeWork::for_test("reconciler-test"),
+    );
+    // Keep the queued anchor visible (no spawn), as the branch-confined test does.
+    reconciler.rescan_active.store(true, Ordering::Relaxed);
+    let sink = Arc::new(Mutex::new(Vec::<String>::new()));
+    reconciler.set_recording_scan_trigger(Arc::clone(&sink));
+
+    // Never created, so the settle delay has no young directory to hold back.
+    let anchor = dir.path().join("never-created");
+    reconciler.buffer_event(make_event(&anchor.to_string_lossy(), 5, must_scan_dir_flags()));
+    reconciler.replay(0, &conn, &writer, &mut |_| {}).unwrap();
+    assert!(reconciler.rescan_scopes().is_empty(), "nothing is queued mid-replay");
+
+    reconciler.switch_to_live();
+    reconciler.kick_pending_rescans(&writer);
+
+    assert!(
+        sink.lock().unwrap().is_empty(),
+        "a deep anchor never rescans the whole volume"
+    );
+    // The path the loop works in: firmlink-normalized on a Mac (`/private/var/…`).
+    let queued = PathBuf::from(IndexPathSpace::root().absolute(&anchor.to_string_lossy()));
+    assert_eq!(reconciler.rescan_scopes(), vec![queued], "it walks on the drain");
+
+    writer.shutdown();
+}

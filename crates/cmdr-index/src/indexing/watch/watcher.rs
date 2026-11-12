@@ -55,6 +55,11 @@ pub fn supports_event_replay() -> bool {
 
 mod platform;
 
+/// What a queue overflow over `roots` puts on a watcher's channel, on the OS whose
+/// tests can drive it through the reconciler.
+#[cfg(all(test, target_os = "linux"))]
+pub(crate) use platform::overflow_events_for_test;
+
 /// What every OS's watcher does once started. The start itself is per OS (`platform/`),
 /// because what a start takes differs: a journal position, or a set of branches.
 pub(crate) trait WatcherBackend: Send {

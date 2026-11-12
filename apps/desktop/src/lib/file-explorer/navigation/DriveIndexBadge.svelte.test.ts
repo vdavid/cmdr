@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, unmount, flushSync, tick } from 'svelte'
 import type { ActivityPhase, VolumeIndexStatus } from '#lib/ipc/bindings.js'
 import type { VolumeIndexActivity } from '#lib/indexing/index.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 // The badge reads its own volume's live activity + phase from `index-state` (the
 // single live-activity source). Mock it so we can drive the scanning tooltip body.
@@ -457,7 +458,11 @@ describe('DriveIndexBadge coalesced-signal note', () => {
     })
   }
 
-  it('says nothing extra when macOS never lost track', () => {
+  // The note names who lost track, so each OS reads its own words. These are the
+  // macOS ones; the other two have their own tests below.
+  beforeEach(() => withPlatform('macos'))
+
+  it('says nothing extra when the OS never lost track', () => {
     const { target } = render(sweptStatus(0, 6))
     expect(ariaLabel(target)).not.toContain('lost track')
   })
@@ -498,6 +503,34 @@ describe('DriveIndexBadge coalesced-signal note', () => {
     // running scan cleared the marker the "in the last N hours" window reads.
     expect(label).not.toContain('next full check')
     expect(label).not.toContain('in the last')
+  })
+
+  it('names no operating system on Linux, and blames a burst of changes instead of caches', () => {
+    // Linux reaches this note through an inotify queue overflow, which a big
+    // checkout or an unpacked archive causes. Caches are the macOS finding.
+    withPlatform('linux')
+    const label = ariaLabel(render(sweptStatus(3, 6)).target)
+    expect(label).toContain('Your system lost track of file system changes 3 times in the last 24 hours')
+    expect(label).toContain('It usually happens when lots of files change at once')
+    expect(label).toContain('Cmdr’s next full check in 6 hours will fix it.')
+    expect(label).not.toContain('macOS')
+    expect(label).not.toContain('caches')
+  })
+
+  it('promises the next full check, with no time, for a Linux drive with no scheduled sweep', () => {
+    // "No big deal" rests on the macOS cause. Off macOS the changes are real ones,
+    // and the drive is checked in full on every launch, so that's the promise.
+    withPlatform('linux')
+    const label = ariaLabel(render(sweptStatus(3, null)).target)
+    expect(label).toContain('Cmdr’s next full check will fix it.')
+    expect(label).not.toContain('no big deal')
+    expect(label).not.toContain('next full check in')
+  })
+
+  it('names Windows on Windows', () => {
+    withPlatform('windows')
+    const label = ariaLabel(render(sweptStatus(3, 6)).target)
+    expect(label).toContain('Windows lost track of file system changes 3 times in the last 24 hours')
   })
 })
 
@@ -560,7 +593,7 @@ describe('DriveIndexBadge "done, with holes" footnote', () => {
         }),
       ).target,
     )
-    expect(label).toContain('macOS lost track of file system changes')
+    expect(label).toContain('lost track of file system changes')
     expect(label).toContain('Cmdr couldn’t read 4 spots on this drive')
   })
 })
