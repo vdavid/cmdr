@@ -64,16 +64,20 @@ fn apply_packages_revokes_a_detected_package_but_never_a_listed_one() {
         listing.id(),
         vec![
             ("/test/Logo.sketchbundle".to_string(), false),
-            // A failed lookup on a listed bundle mustn't turn it into a folder.
+            // A failed lookup on a listed bundle mustn't turn it into a folder (macOS).
             ("/test/Cmdr.app".to_string(), false),
         ],
     );
 
     assert_eq!(cached(&listing, "/test/Logo.sketchbundle"), (false, "dir".to_string()));
-    assert_eq!(
-        cached(&listing, "/test/Cmdr.app"),
+    // Only macOS reads a folder's name as a package (`cmdr_fs::file_extension`), so only there is
+    // `Cmdr.app` a listed bundle to protect. Elsewhere it's a plain folder before and after.
+    let listed_here = if cfg!(any(target_os = "macos", target_family = "wasm")) {
         (true, "pkg:/test/Cmdr.app".to_string())
-    );
+    } else {
+        (false, "dir".to_string())
+    };
+    assert_eq!(cached(&listing, "/test/Cmdr.app"), listed_here);
 }
 
 #[test]
