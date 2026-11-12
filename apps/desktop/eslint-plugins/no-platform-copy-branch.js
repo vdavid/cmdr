@@ -11,7 +11,8 @@
  * Whether a surface EXISTS is a capability question (`hasCapability()`), and that
  * stays legal, copy and all.
  *
- * Flags a ternary, an `if`, or a Svelte `{#if}` whose TEST calls `isMacOS()` or
+ * Flags a ternary, an `if`, a Svelte `{#if}`, an `&&` / `||`, a `switch`, or a
+ * lookup (`{ macos: … }[getPlatform()]`) whose TEST calls `isMacOS()` or
  * `getPlatform()` (directly, or through a name bound to one: `const mac =
  * isMacOS()`) and whose ARMS resolve copy: a call to `t`, `tString`, `tStringIn`,
  * or `getMessage`, a `<Trans>` element, or a string literal shaped like a message
@@ -111,6 +112,17 @@ export default {
       },
       IfStatement(node) {
         check(node, node.test, [node.consequent, node.alternate])
+      },
+      LogicalExpression(node) {
+        // `isMacOS() && tString(…)`: the left side decides whether the right side's copy shows.
+        check(node, node.left, [node.right])
+      },
+      SwitchStatement(node) {
+        check(node, node.discriminant, node.cases)
+      },
+      MemberExpression(node) {
+        // `{ macos: 'a.b', windows: 'c.d' }[getPlatform()]`: the OS indexes a table of copy.
+        if (node.computed) check(node, node.property, [node.object])
       },
       SvelteIfBlock(node) {
         // `{:else if}` is a nested SvelteIfBlock whose own test is checked on its own visit.

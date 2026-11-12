@@ -30,6 +30,10 @@
  *    the Finder menu item's title (macOS-only, baked into `Info.plist`).
  *  - Every locale's branch set equals its source's (`en`, or an overlay's
  *    layered base). The parity check then compares branch by branch.
+ *  - A locale branch is empty exactly where its source's is. An empty branch
+ *    is a decision the source makes ("this OS has nothing to say here", and the
+ *    call site renders nothing for it); a locale that empties a branch with
+ *    text leaves that OS a blank label, and no other check reads an empty body.
  *
  * Mechanism: `src/lib/intl/DETAILS.md` § "Platform variants".
  *
@@ -126,14 +130,31 @@ function blockIssues(key: string, value: string, branches: PlatformSelectBranche
   return issues
 }
 
-/** Whether the locale's branch set matches its source's. */
+/** Whether each branch is empty exactly where the source's is, for a locale with its source's branch set. */
+function emptinessIssue(
+  names: readonly PlatformSelectBranch[],
+  branches: PlatformSelectBranches,
+  source: PlatformSelectBranches,
+): string | null {
+  for (const name of names) {
+    const empty = (branches[name] ?? '').trim() === ''
+    const sourceEmpty = (source[name] ?? '').trim() === ''
+    if (empty && !sourceEmpty) return `${name} branch is empty, but its source's has text: that OS would read nothing`
+    if (!empty && sourceEmpty) {
+      return `${name} branch has text, but its source's is empty on purpose: leave it empty`
+    }
+  }
+  return null
+}
+
+/** Whether the locale's branch set matches its source's, down to which branches are empty. */
 function branchSetIssue(branches: PlatformSelectBranches | null, sourceValue: string): string | null {
   const source = parsePlatformSelect(sourceValue)
   if (branches === null) return source === null ? null : 'a plain value, but its source is a block: use the same block'
   if (source === null) return 'a block, but its source is a plain value'
   const names = branchNames(branches)
   const sourceNames = branchNames(source)
-  if (names.join() === sourceNames.join()) return null
+  if (names.join() === sourceNames.join()) return emptinessIssue(names, branches, source)
   return `branches ${formatNames(names)}, but its source has ${formatNames(sourceNames)}: use the same branch set`
 }
 

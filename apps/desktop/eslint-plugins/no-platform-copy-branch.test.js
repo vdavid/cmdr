@@ -31,10 +31,48 @@ tsTester.run('cmdr/no-platform-copy-branch', rule, {
     // A platform test that guards behavior, with no copy in its arms.
     { code: `function f() { if (!isMacOS()) return; startWatcher() }`, filename: ts },
     { code: `const modifier = getPlatform() === 'macos' ? 'metaKey' : 'ctrlKey'`, filename: ts },
+    // `&&`, `switch`, and a lookup on the OS are fine while nothing they pick is copy.
+    { code: `isMacOS() && startWatcher()`, filename: ts },
+    {
+      code: `function sep() { switch (getPlatform()) { case 'windows': return ';'; default: return ':' } }`,
+      filename: ts,
+    },
+    {
+      code: `const modifier = { macos: 'metaKey', windows: 'ctrlKey', linux: 'ctrlKey' }[getPlatform()]`,
+      filename: ts,
+    },
     // Copy outside the conditional is fine; the platform test only picks a non-copy value.
     { code: `const sep = isMacOS() ? '⌘' : 'Ctrl+'; const text = tString('a.b', { sep })`, filename: ts },
   ],
   invalid: [
+    // The shapes that say the same thing without a ternary or an `if`: `&&` / `||`, a `switch`, a lookup.
+    {
+      code: `const hint = isMacOS() && tString('onboarding.fdaBadge.tooltip')`,
+      filename: ts,
+      errors: [{ messageId: 'platformCopyBranch' }],
+    },
+    {
+      code: `const label = (!isMacOS() && tString('commands.appQuit.other.label')) || tString('commands.appQuit.mac.label')`,
+      filename: ts,
+      errors: [{ messageId: 'platformCopyBranch' }, { messageId: 'platformCopyBranch' }],
+    },
+    {
+      code: `function label() {
+        switch (getPlatform()) {
+          case 'windows':
+            return tString('commands.appQuit.windows.label')
+          default:
+            return tString('commands.appQuit.label')
+        }
+      }`,
+      filename: ts,
+      errors: [{ messageId: 'platformCopyBranch' }],
+    },
+    {
+      code: `const nameKey = { macos: 'commands.appQuit.mac.label', windows: 'commands.appQuit.windows.label', linux: 'commands.appQuit.other.label' }[getPlatform()]`,
+      filename: ts,
+      errors: [{ messageId: 'platformCopyBranch' }],
+    },
     // The `file-list.ts` shape: a ternary choosing between two message keys.
     {
       code: `const entry = { nameKey: isMacOS() ? 'commands.fileShowInFinder.mac.label' : 'commands.fileShowInFinder.other.label' }`,

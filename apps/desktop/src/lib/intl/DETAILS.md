@@ -252,14 +252,15 @@ space after each comma). Never a block inside a sentence, never `{platform}` int
   termbase judges each branch against its OS's optional `windows` / `other` forms (`docs/i18n/termbase.md`). And
   `desktop-i18n-platform-select` enforces every rule above, plus each locale's branch set matching its source's, in
   every catalog including `en`.
-- **No OS test picks copy**: `cmdr/no-platform-copy-branch` (`apps/desktop/eslint-plugins/`) flags a ternary, `if`, or
-  `{#if}` testing `isMacOS()` / `getPlatform()` (or a name bound to one) whose arms resolve copy (`t`, `tString`,
-  `tStringIn`, `getMessage`, `<Trans>`, or a key-shaped string literal). Whether a surface exists is
-  `hasCapability()`'s, and stays legal. It can't see a helper returning bare key SUFFIXES (a
+- **No OS test picks copy**: `cmdr/no-platform-copy-branch` (`apps/desktop/eslint-plugins/`) flags a ternary, `if`,
+  `{#if}`, `&&` / `||`, `switch`, or lookup testing `isMacOS()` / `getPlatform()` (or a name bound to one) whose arms
+  resolve copy (`t`, `tString`, `tStringIn`, `getMessage`, `<Trans>`, or a key-shaped string literal). Whether a surface
+  exists is `hasCapability()`'s, and stays legal. It can't see a helper returning bare key SUFFIXES (a
   `mac ? 'needsAdminMac' : 'needsAdminOther'` spliced into a key later), so don't write one.
 - **A branch may be empty** where an OS has nothing to say: `mtp.connectedToast.body`'s `windows {}`, since Windows
   shares an MTP device and the toast has no "other apps" line there. The component renders the line only for a non-empty
-  text and asks no platform question.
+  text and asks no platform question. Only the source decides that: `desktop-i18n-platform-select` fails a locale branch
+  that is empty where its source's has text (a blank label on that OS, which no other check reads), or the reverse.
 - **Tests**: `withPlatform('macos' | 'windows' | 'linux')` from `#lib/platform/test-platform` moves both the select and
   the split; Vitest's fallback is Linux, so an assertion on macOS text names macOS.
 

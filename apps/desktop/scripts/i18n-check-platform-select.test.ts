@@ -130,6 +130,7 @@ describe('platformSelectIssues: keys that must stay plain', () => {
 
 describe('platformSelectIssues: branch set against the source', () => {
   const en = '{platform, select, macos {Finder} windows {File Explorer} other {Files}}'
+  const enEmptyless = '{platform, select, windows {Recycle Bin} other {Trash}}'
 
   it('is clean for the same branch set, English carried in the untranslated branches', () => {
     expect(issues('a.b', '{platform, select, macos {Im Finder} windows {File Explorer} other {Files}}', en)).toEqual([])
@@ -147,6 +148,25 @@ describe('platformSelectIssues: branch set against the source', () => {
         '{platform, select, windows {Delete} other {Move to Trash}}',
       ),
     ).toEqual([])
+  })
+
+  it('flags a locale branch left empty where its source has text: that OS would read nothing', () => {
+    expect(issues('a.b', '{platform, select, macos {Im Finder} windows {} other {Files}}', en)).toEqual([
+      expect.stringMatching(/windows branch is empty, but its source's has text/),
+    ])
+    expect(issues('errors.x.y', '{platform, select, windows {} other {Papierkorb}}', enEmptyless)).toEqual([
+      expect.stringMatching(/windows branch is empty, but its source's has text/),
+    ])
+  })
+
+  it('flags a locale branch with text where its source is empty on purpose, and takes the empty one', () => {
+    const enEmpty = '{platform, select, macos {Cmdr paused the daemon.} windows {} other {Disable MTP to share.}}'
+    expect(
+      issues('a.b', '{platform, select, macos {Angehalten.} windows {} other {MTP abschalten.}}', enEmpty),
+    ).toEqual([])
+    expect(
+      issues('a.b', '{platform, select, macos {Angehalten.} windows {Hallo} other {MTP abschalten.}}', enEmpty),
+    ).toEqual([expect.stringMatching(/windows branch has text, but its source's is empty on purpose/)])
   })
 
   it('still flags an equal branch in a locale whose source isn’t a block', () => {
