@@ -150,9 +150,9 @@ describe('routeModifierShortcut on macos', () => {
     expect(h.calls.primary).toBe(1)
   })
 
-  it('swallows ⌘⏎ and ⇧⏎ so bare Enter stays the only Enter that acts', () => {
+  it('swallows ⌘⏎, ⌃⏎, and ⇧⏎ so bare Enter stays the only Enter that acts', () => {
     const h = makeHandlers()
-    for (const e of [key('Enter', { meta: true }), key('Enter', { shift: true })]) {
+    for (const e of [key('Enter', { meta: true }), key('Enter', { ctrl: true }), key('Enter', { shift: true })]) {
       expect(routeModifierShortcut(e, h)).toBe(true)
       expect(e.defaultPrevented).toBe(true)
     }
@@ -237,9 +237,9 @@ describe.each(['windows', 'linux'] as const)('routeModifierShortcut on %s', (pla
     expect(h.calls.primary).toBe(1)
   })
 
-  it('swallows Ctrl+Enter and Shift+Enter, so neither falls through to bare Enter', () => {
+  it('swallows Ctrl+Enter, Super+Enter, and Shift+Enter, so none falls through to bare Enter', () => {
     const h = makeHandlers()
-    for (const e of [key('Enter', { ctrl: true }), key('Enter', { shift: true })]) {
+    for (const e of [key('Enter', { ctrl: true }), key('Enter', { meta: true }), key('Enter', { shift: true })]) {
       expect(routeModifierShortcut(e, h)).toBe(true)
       expect(e.defaultPrevented).toBe(true)
     }

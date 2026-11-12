@@ -14,7 +14,6 @@
  */
 
 import { eventMatchesCommand, getEffectiveShortcuts, resolveKeyCombo } from '#lib/shortcuts/index.js'
-import { holdsPrimaryModifier } from '#lib/shortcuts/primary-modifier.js'
 import { matchesQueryKey } from './query-keys'
 import type { SearchMode } from './query-filter-state.svelte'
 
@@ -67,9 +66,9 @@ function routeModeChipShortcut(e: KeyboardEvent, handlers: ModifierShortcutHandl
 }
 
 /**
- * Routes Enter combinations: ⌥⏎ fires the primary action; any other modified Enter (the
- * platform's primary modifier, Shift, or Alt held) is an explicit no-op per R4, so bare Enter
- * is the only key that does anything, and Ctrl+Enter off macOS doesn't fall through to it.
+ * Routes Enter combinations: the primary action's key fires it; any other modified Enter (any of
+ * ⌘ / Super, Ctrl, Alt, or Shift held) is an explicit no-op per R4, so bare Enter is the only
+ * Enter that does anything else, and no modifier falls through to it.
  */
 function routeEnterCombination(e: KeyboardEvent, handlers: ModifierShortcutHandlers): boolean {
   if (matchesQueryKey(e, 'primaryAction')) {
@@ -78,7 +77,7 @@ function routeEnterCombination(e: KeyboardEvent, handlers: ModifierShortcutHandl
     return true
   }
   if (matchesQueryKey(e, 'enter') || e.key !== 'Enter') return false
-  if (holdsPrimaryModifier(e) || e.shiftKey || e.altKey) {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) {
     e.preventDefault()
     return true
   }

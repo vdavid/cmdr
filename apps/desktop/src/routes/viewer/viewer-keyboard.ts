@@ -85,12 +85,14 @@ function extendMotionFor(e: KeyboardEvent): CaretMotion | null {
 }
 
 /**
- * Shift+Arrow steps a character; ⌥ (macOS) or ⌃ (Linux, Windows) promotes it to a word.
- * macOS usually eats ⌃⇧Arrow at the system level, which costs nothing to support.
+ * Shift+Arrow steps a character; ⌥ (macOS) or Ctrl (Windows, Linux) promotes it to a word.
+ * macOS also takes ⌃⇧Arrow as a word, though the system usually eats it first, which costs
+ * nothing to support. Off macOS Alt+Shift+Arrow is no motion: Alt+← / → is Back / Forward there.
  */
 function horizontalMotion(e: KeyboardEvent, direction: MotionDirection): CaretMotion | null {
   if (!e.shiftKey) return null
   if (e.metaKey) return null
+  if (!isMacOS() && e.altKey) return null
   const byWord = e.altKey || e.ctrlKey
   return { kind: byWord ? 'word' : 'char', direction }
 }

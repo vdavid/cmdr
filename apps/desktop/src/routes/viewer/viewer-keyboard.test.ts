@@ -418,12 +418,12 @@ describe('createViewerKeyboard: keyboard selection extension', () => {
       { row: 2, offset: 0 },
     ],
     [
-      '⌃⇧Right is the same word motion, for Linux and Windows',
+      '⌃⇧Right is the same word motion (macOS usually takes it first)',
       { key: 'ArrowRight', shiftKey: true, ctrlKey: true },
       { row: 2, offset: 10 },
     ],
     [
-      '⌃⇧Left is the same word motion, for Linux and Windows',
+      '⌃⇧Left is the same word motion (macOS usually takes it first)',
       { key: 'ArrowLeft', shiftKey: true, ctrlKey: true },
       { row: 2, offset: 0 },
     ],
@@ -786,6 +786,20 @@ describe.each(['windows', 'linux'] as const)('createViewerKeyboard on %s', (plat
     press(keyboard, { key: 'End', ctrlKey: true })
     expect(scroll.scrollToStart).toHaveBeenCalledOnce()
     expect(scroll.scrollToEnd).toHaveBeenCalledOnce()
+  })
+
+  it('Ctrl+Shift+← / → extend by a word', () => {
+    const { keyboard, selection } = wire()
+    press(keyboard, { key: 'ArrowRight', shiftKey: true, ctrlKey: true })
+    expect(selection.focus).toEqual({ row: 2, offset: 10 })
+    press(keyboard, { key: 'ArrowLeft', shiftKey: true, ctrlKey: true })
+    expect(selection.focus).toEqual({ row: 2, offset: 6 })
+  })
+
+  it('Alt+Shift+← / → are not word motion (Alt+← is Back here)', () => {
+    const { keyboard, selection } = wire()
+    expect(press(keyboard, { key: 'ArrowRight', shiftKey: true, altKey: true }).defaultPrevented).toBe(false)
+    expect(selection.focus).toEqual({ row: 2, offset: 5 })
   })
 
   it('Super+Shift+Down is not a document edge (Super is the desktop’s)', () => {
