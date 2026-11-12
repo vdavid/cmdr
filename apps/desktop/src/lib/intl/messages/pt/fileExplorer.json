@@ -1465,10 +1465,6 @@
   "@fileExplorer.imageIndex.drive.done": {
     "sourceHash": "0f4f795"
   },
-  "fileExplorer.selectionInfo.nothingHere": "Nada por aqui.",
-  "@fileExplorer.selectionInfo.nothingHere": {
-    "sourceHash": "140a431"
-  },
   "fileExplorer.selectionInfo.dir": "DIR",
   "@fileExplorer.selectionInfo.dir": {
     "sourceHash": "d313ad9",

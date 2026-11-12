@@ -2174,11 +2174,6 @@
       "total": "the same count as a raw number, for singular/plural selection"
     }
   },
-  "fileExplorer.selectionInfo.nothingHere": "Nothing in here.",
-  "@fileExplorer.selectionInfo.nothingHere": {
-    "description": "Status-bar text shown below a pane when the current folder is empty.",
-    "screenshot": "main-window.png"
-  },
   "fileExplorer.selectionInfo.dir": "DIR",
   "@fileExplorer.selectionInfo.dir": {
     "description": "Status-bar marker shown in place of a size for a folder whose recursive size is not computed. Short for \"directory\"; rendered in capitals. \"DIR\" is a deliberate short form because the status bar has little room, so keep it short and don’t expand it to \"folder\"."

@@ -1457,10 +1457,6 @@
   "@fileExplorer.imageIndex.drive.done": {
     "sourceHash": "0f4f795"
   },
-  "fileExplorer.selectionInfo.nothingHere": "這裡什麼都沒有。",
-  "@fileExplorer.selectionInfo.nothingHere": {
-    "sourceHash": "140a431"
-  },
   "fileExplorer.selectionInfo.dir": "目錄",
   "@fileExplorer.selectionInfo.dir": {
     "sourceHash": "d313ad9"

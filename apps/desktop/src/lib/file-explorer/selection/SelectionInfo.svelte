@@ -312,7 +312,7 @@
 
 <div class="selection-info" data-pane-footer>
     {#if displayMode === 'empty'}
-        <span class="summary-text">{tString('fileExplorer.selectionInfo.nothingHere')}</span>
+        <!-- No words on the left: the list's own empty state says why it's empty. -->
         {#if spaceReadout}
             <span class="disk-space-text" use:tooltip={diskSpaceTooltipText(spaceReadout)}>{diskSpaceStatusText(spaceReadout)}</span>
         {/if}

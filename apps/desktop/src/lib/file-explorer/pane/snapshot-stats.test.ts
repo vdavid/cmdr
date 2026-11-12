@@ -70,7 +70,7 @@ describe('computeSnapshotStats', () => {
     expect(stats.selectedSize).toBe(100)
   })
 
-  it('reports an empty snapshot as empty, which the footer renders as "Nothing in here."', () => {
+  it('reports an empty snapshot as empty, which the footer renders as its empty mode', () => {
     const stats = computeSnapshotStats([], [])
     expect(stats.totalFiles).toBe(0)
     expect(stats.totalDirs).toBe(0)

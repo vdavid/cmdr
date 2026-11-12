@@ -114,7 +114,8 @@ the enrich/sweep wiring live in `../views/DETAILS.md` (the Finder-tags decision)
 
 Four `$derived displayMode` values, each with its condition:
 
-- `empty`: `stats.totalFiles === 0 && stats.totalDirs === 0`.
+- `empty`: `stats.totalFiles === 0 && stats.totalDirs === 0`. Only the free-space readout shows; the left side stays
+  blank, since the list's own empty state (`../views/EmptyFolderState.svelte`) already says why the pane is empty.
 - `selection-summary`: `selectedCount > 0` (any view mode). Directory recursive sizes are included when available (from
   the drive index). The `hasOnlyDirs` branch shows size triads when `totalSize > 0`; when sizes are unavailable
   (indexing off), it falls back to dir count and percentage.

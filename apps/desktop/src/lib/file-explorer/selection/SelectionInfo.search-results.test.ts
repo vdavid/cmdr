@@ -78,6 +78,14 @@ function render(props: Record<string, unknown>): HTMLElement {
   return target
 }
 
+describe('SelectionInfo on an empty pane', () => {
+  it('leaves the left side blank (the list itself says why it is empty), keeping the free space', () => {
+    const target = render({ stats: stats({ totalFiles: 0 }), volumeSpace: space })
+    expect(target.querySelector('.summary-text')).toBeNull()
+    expect(target.querySelector('.disk-space-text')).not.toBeNull()
+  })
+})
+
 describe('SelectionInfo on a search-results pane', () => {
   it('shows the live shortcut as a compact reveal hint', () => {
     setShortcut('nav.parent', 0, '⌃K')

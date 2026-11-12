@@ -2410,7 +2410,6 @@ export type MessageKey =
   | 'fileExplorer.selectionInfo.noSelectionDirs'
   | 'fileExplorer.selectionInfo.noSelectionFiles'
   | 'fileExplorer.selectionInfo.noSelectionOfMatches'
-  | 'fileExplorer.selectionInfo.nothingHere'
   | 'fileExplorer.selectionInfo.sizeNotReadyAriaLabel'
   | 'fileExplorer.selectionInfo.sizeUpdatingAriaLabel'
   | 'fileExplorer.selectionInfo.symlinkHint'
