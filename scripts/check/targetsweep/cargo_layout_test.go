@@ -174,7 +174,7 @@ func cargo(t *testing.T, ws string, args ...string) []byte {
 	t.Helper()
 	cmd := exec.Command("cargo", append(args, "--offline", "--quiet")...)
 	cmd.Dir = ws
-	cmd.Env = append(os.Environ(), "CARGO_TARGET_DIR="+filepath.Join(ws, "target"), "CARGO_INCREMENTAL=1")
+	cmd.Env = append(os.Environ(), "CARGO_TARGET_DIR="+filepath.Join(ws, "target"), "CARGO_INCREMENTAL=1", noAutoInstall)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
@@ -186,7 +186,18 @@ func cargo(t *testing.T, ws string, args ...string) []byte {
 
 var channelRE = regexp.MustCompile(`(?m)^\s*channel\s*=\s*"([^"]+)"`)
 
-// pinnedChannel reads the repo's toolchain channel, skipping when rustup doesn't have it.
+// noAutoInstall keeps this test from ever installing a toolchain. rustup installs a missing
+// (or half-installed) one on any `cargo` call under a `rust-toolchain.toml`, and two such
+// installs at once corrupt each other: on CI's light lane this test met the toolchain while
+// `TestRustTestScopeOnTheRealWorkspace`, in a package `go test` runs in parallel, was still
+// installing it, "recovered" it, and failed that test with `could not rename 'component'
+// file` (PR #1137, 2026-11-12).
+const noAutoInstall = "RUSTUP_AUTO_INSTALL=0"
+
+// pinnedChannel reads the repo's toolchain channel, skipping unless rustup has it installed
+// WHOLE: `rustup toolchain list` names a toolchain from the moment its dir exists, so the
+// test reads the installed components instead, which rustup records only when an install
+// commits.
 func pinnedChannel(t *testing.T) string {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join("..", "..", "..", "rust-toolchain.toml"))
@@ -198,14 +209,14 @@ func pinnedChannel(t *testing.T) string {
 		t.Fatal("rust-toolchain.toml has no channel")
 	}
 	channel := string(m[1])
-	out, err := exec.Command("rustup", "toolchain", "list").Output()
+	list := exec.Command("rustup", "component", "list", "--installed", "--toolchain", channel)
+	list.Env = append(os.Environ(), noAutoInstall)
+	out, err := list.Output()
 	if err != nil {
-		t.Skipf("no rustup here (%v); the layout pin needs the pinned toolchain", err)
+		t.Skipf("the pinned toolchain %s isn't installed here (%v); the layout pin needs it", channel, err)
 	}
-	for _, line := range strings.Split(string(out), "\n") {
-		if strings.HasPrefix(line, channel+"-") || line == channel {
-			return channel
-		}
+	if hasComponents(string(out), "rustc", "cargo", "rust-std") {
+		return channel
 	}
 	t.Skipf("the pinned toolchain %s isn't installed here; the layout pin needs it", channel)
 	return ""
@@ -252,5 +263,37 @@ func bumpVersion(t *testing.T, manifest string) {
 	}
 	if err := os.WriteFile(manifest, []byte(bumped), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// hasComponents reports whether rustup's installed-component listing names every one of
+// `want`, each as `<name>` or `<name>-<target triple>`.
+func hasComponents(listing string, want ...string) bool {
+	for _, w := range want {
+		found := false
+		for _, line := range strings.Split(listing, "\n") {
+			line = strings.TrimSpace(line)
+			if line == w || strings.HasPrefix(line, w+"-") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+func TestHasComponents(t *testing.T) {
+	whole := "cargo-aarch64-apple-darwin\nrust-std-aarch64-apple-darwin\nrustc-aarch64-apple-darwin\n"
+	if !hasComponents(whole, "rustc", "cargo", "rust-std") {
+		t.Error("a listing with all three components is a whole toolchain")
+	}
+	if hasComponents("cargo-aarch64-apple-darwin\nrustc-aarch64-apple-darwin\n", "rustc", "cargo", "rust-std") {
+		t.Error("a listing without rust-std isn't a whole toolchain")
+	}
+	if hasComponents("", "rustc") {
+		t.Error("an empty listing has nothing")
 	}
 }
