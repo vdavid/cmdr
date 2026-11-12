@@ -1,32 +1,37 @@
 # Per-platform default keymap: decisions (task 26, #1102)
 
 David's decisions from the #1102 comment (2026-11-12) and his later additions, checked against primary sources on
-2026-11-12. Where this file and `keymap-proposal.json` or `keymap-survey.md` disagree, this file wins. Registry facts
-are from this worktree at `5135d6d238`.
+2026-11-12. This is the table that shipped: the registry's Windows and Linux arms (`apps/desktop/src/lib/commands/`,
+pinned by `__snapshots__/default-keymap.{macos,windows,linux}.txt`) follow it, and where it and `keymap-proposal.json`
+or `keymap-survey.md` disagree, this file wins. Registry line references are from `5135d6d238`, the commit the work
+started from.
 
-## Needs David
+Total Commander's own key list (11.57's `KEYBOARD.TXT`, the source behind every "TC" below) can't be redistributed, so
+it isn't in the repo: it's David's vault note `projects/Cmdr/research/Total Commander keyboard reference.md`, local
+only. The research reports behind this file (`code-report.md`, `os-report.md`, `tc-report.md`) are in the main clone's
+`_ignored/keymap-research/`, also local only.
 
-1. **The viewer's search toggles are hardcoded `Ctrl+Alt+R` and `Ctrl+Alt+C` off macOS**
-   (`routes/viewer/viewer-keyboard.ts:handleSearchToggleKey` accepts `metaKey || ctrlKey` with `altKey`). They break the
-   "no `Ctrl+Alt+<letter>` off macOS" rule: AltGr+C types `&` on Hungarian and Czech, AltGr+R types `®` on
-   US-International. Proposed: `Alt+R` and `Alt+C` on Windows and Linux, macOS unchanged. VS Code's find widget uses
-   exactly this split (`Alt+R`/`Alt+C`, macOS `⌥⌘R`/`⌥⌘C`; verified, `microsoft/vscode`
-   `src/vs/editor/contrib/find/browser/findModel.ts` at `527b5f320f`, 2026-11-12). Same reasoning backs the Multi-rename
-   `Alt+<letter>` keys.
-2. **Search dialog commands (decision 12) clash in the scope model on every OS.** `search.newQuery` (`Ctrl+N`) meets
-   `askCmdr.newChat` (`Ctrl+N`, Main window), and `search.modeByNumber` (`Ctrl+1`–`Ctrl+3`) meets `view.fullMode`,
-   `view.briefMode`, and `sort.byName` (Main window), if the new scope's chain includes `Main window`. macOS has the
-   same clash with ⌘. Keys stay as decided; give the new scope a chain that skips `Main window`, the way
-   `Main window/Ask Cmdr` does (its shadowing is deliberate and the keys are fixed).
-3. **Multi-rename `Alt+F`, `Alt+E`, `Alt+G` vs future Windows menu access keys.** No label in `messages/en/menu.json`
-   carries a `&`, but on Linux `src-tauri/src/menu/mnemonics.rs` adds GTK mnemonics at build time (§ Reservations behind
-   the Linux keys, "Menu bar"); Windows has none today. If task 63 gives the Windows bar first-letter access keys (File,
-   Edit, Select, View, Go, Tab, Help; the Window menu is macOS-only), three option keys collide while the sheet is open.
-   Keys stay as decided; task 63 picks access letters around them, or the sheet claims Alt+letter first (whether
-   WebView2 lets a page's `preventDefault` stop a Win32 menu access key is unverified).
+## Settled with David
 
-No decided key had to change. Two keys here are new picks: Compress's Linux second key (`Alt+Shift+P`, § Linux second
-keys) and the viewer toggles above.
+1. **The viewer's search toggles** were hardcoded `Ctrl+Alt+R` and `Ctrl+Alt+C` off macOS, which breaks the "no
+   `Ctrl+Alt+<letter>` off macOS" rule: AltGr+C types `&` on Hungarian and Czech, AltGr+R types `®` on US-International.
+   Shipped: `Alt+R` and `Alt+C` on Windows and Linux, macOS `⌘⌥R` / `⌘⌥C`, as the fixed registry commands
+   `viewer.toggleSearchRegex` / `viewer.toggleSearchCase`. VS Code's find widget uses exactly this split
+   (`Alt+R`/`Alt+C`, macOS `⌥⌘R`/`⌥⌘C`; verified, `microsoft/vscode` `src/vs/editor/contrib/find/browser/findModel.ts`
+   at `527b5f320f`, 2026-11-12). Same reasoning backs the Multi-rename `Alt+<letter>` keys.
+2. **The search dialog's commands (decision 12)** would clash in the scope model on every OS: `search.newQuery` meets
+   `askCmdr.newChat`, and `search.modeByNumber` meets `view.fullMode`, `view.briefMode`, and `sort.byName`, if the
+   scope's chain includes `Main window`. Shipped: the keys as decided, in a `Main window/Search dialog` scope whose
+   chain skips `Main window`, the way `Main window/Ask Cmdr` does (its shadowing is deliberate and the keys are fixed).
+3. **Multi-rename `Alt+F`, `Alt+E`, `Alt+G` vs future Windows menu access keys.** Open, with task 63. On Linux the GTK
+   mnemonics are masked while the sheet is up (§ Reservations behind the Linux keys, "Menu bar"); Windows has no access
+   keys today. If task 63 gives the Windows bar first-letter access keys (File, Edit, Select, View, Go, Tab, Help; the
+   Window menu is macOS-only), three option keys collide while the sheet is open. Keys stay as decided; task 63 picks
+   access letters around them, or the sheet claims Alt+letter first (whether WebView2 lets a page's `preventDefault`
+   stop a Win32 menu access key is unverified).
+
+No decided key had to change. Two keys here are new picks: Compress's Linux second key (`Alt+Shift+P`, § Reservations
+behind the Linux keys) and the viewer toggles above.
 
 ## The rule
 
@@ -39,11 +44,14 @@ keys) and the viewer toggles above.
   macOS's `⌃⌥⌘J` spelled natively. The Windows / Super key in it makes it a chord no AltGr layout types (David,
   2026-11-12).
 - macOS stays as it is, plus the additions below.
-- "Mechanical" below means `toPlatformShortcut` of the macOS keys: ⌘ and ⌃ become Ctrl, ⌥ Alt, ⇧ Shift (and ⌃ becomes
-  Shift when ⌘ is also held). Every command not listed in § Changed commands keeps its mechanical keys, including
-  `app.settings` (`Ctrl+,` only), `pane.quickFilter` (`Ctrl+S`, TC's key too), `favorites.open` (`Ctrl+D`, TC's
-  hotlist), `file.multiRename` (`Ctrl+M`), and `search.open` (`Ctrl+F`, `Alt+F7`).
-- Combos are written in the registry's canonical off-macOS form (`Ctrl+Alt+Shift+Key`, `PageUp`, arrows as glyphs).
+- "Mechanical" below means what the old one-way converter made of the macOS keys: ⌘ and ⌃ became Ctrl, ⌥ Alt, ⇧ Shift
+  (and ⌃ became Shift when ⌘ was also held). The converter is gone; every command not listed in § Changed commands holds
+  those same keys, written out per OS in its source (`cmdOrCtrl`, `sameOnAll`, or a literal), including `app.settings`
+  (`Ctrl+,` only), `pane.quickFilter` (`Ctrl+S`, TC's key too), `favorites.open` (`Ctrl+D`, TC's hotlist),
+  `file.multiRename` (`Ctrl+M`), and `search.open` (`Ctrl+F`, `Alt+F7`).
+- Combos are written in the registry's canonical off-macOS form (`Ctrl+Alt+Shift+Key`, `PageUp`, arrows as glyphs). The
+  Windows / Super key is stored `Super` on both; Windows shows it as `Win` (`docs/style-guide.md` § Platform
+  vocabulary).
 
 ## Changed commands
 
@@ -66,10 +74,9 @@ Registry order, primary key first. W = Windows, L = Linux. Only commands that ex
   (Explorer, all four Linux file managers), never `Ctrl+I`.
 - `pane.clone` (Clone pane): macOS `⌘⇧C`; W `Ctrl+Shift+M`; L `Ctrl+Shift+M`. Frees `Ctrl+Shift+C` for Copy path.
 - `pane.focusControls` (Move focus to the pane controls): macOS `⌃F5`; W `Ctrl+Shift+F5`; L `Ctrl+Shift+F5`. Mechanical
-  `Ctrl+F5` is sort by modified. Already per-platform in source (`isMacOS()` ternary); moves into the new mechanism. TC
-  uses `Ctrl+Shift+F5` for "create shortcuts"; no Cmdr equivalent.
+  `Ctrl+F5` is sort by modified. TC uses `Ctrl+Shift+F5` for "create shortcuts"; no Cmdr equivalent.
 - `app.focusNotifications` (Move focus to the notifications): macOS `⌃F6`; W `Ctrl+Shift+F6`; L `Ctrl+Shift+F6`.
-  Mechanical `Ctrl+F6` is sort by size. Same ternary.
+  Mechanical `Ctrl+F6` is sort by size.
 - `pane.leftVolumeChooser` (Open left volume switcher): macOS `⌥F1`; W `Alt+F1`; L `Alt+F1`, `Ctrl+Shift+F1`, `Alt+1`.
   `Alt+F1` is dead on KDE, Xfce, and Cinnamon.
 - `pane.rightVolumeChooser` (Open right volume switcher): macOS `⌥F2`; W `Alt+F2`; L `Alt+F2`, `Ctrl+Shift+F2`, `Alt+2`.
@@ -77,7 +84,7 @@ Registry order, primary key first. W = Windows, L = Linux. Only commands that ex
   neither.)
 - `pane.moveDividerLeft` (Move pane divider left): macOS `⌃⌥←`; W `Alt+Shift+←`; L `Alt+Shift+←`. Mechanical
   `Ctrl+Alt+←` is the tab key on Windows and a workspace switch on GNOME, Xfce, and Cinnamon. Midnight Commander uses
-  the same keys for its split. Replaces today's off-macOS ternary `Ctrl+Alt+Shift+←`.
+  the same keys for its split.
 - `pane.moveDividerRight` (Move pane divider right): macOS `⌃⌥→`; W `Alt+Shift+→`; L `Alt+Shift+→`. Same.
 - `tab.next` (Next tab): macOS `⌃Tab`, `⌘⌥→`; W `Ctrl+Tab`, `Ctrl+Alt+→` (mechanical, kept by decision 11); L
   `Ctrl+Tab`. GNOME, Xfce, and Cinnamon take `Ctrl+Alt+→`.
@@ -105,8 +112,8 @@ Registry order, primary key first. W = Windows, L = Linux. Only commands that ex
   Cinnamon; `Alt+Shift+P` is Krusader's pack key and free on all five.
 - `edit.pasteAsMove` (Move here): macOS `⌘⌥V`; W `Ctrl+Shift+V`; L `Ctrl+Shift+V`. No Ctrl+Alt letter (AltGr+V is `@` on
   Hungarian and Czech). In a text field it's "paste as plain text" on Windows (Microsoft's list) and in Chromium and
-  WebKitGTK, so it's in the native text keys below: today `edit.pasteAsMove`'s handler has no text-field branch and
-  would move files while you rename.
+  WebKitGTK, so it's in the native text keys below, the bar registers no accelerator for it there, and
+  `edit.pasteAsMove`'s handler returns while a text field has focus, on every OS and from every road.
 - `file.delete` (Delete): macOS `F8`, `⌘Backspace`, `Delete`; W `F8`, `Delete`; L same. `Ctrl+Backspace` is "delete
   word" in text fields.
 - `file.deletePermanently` (Delete permanently): macOS `⇧F8`, `⇧Delete`, `⌘⌥Backspace`; W `Shift+F8`, `Shift+Delete`; L
@@ -138,17 +145,19 @@ Registry order, primary key first. W = Windows, L = Linux. Only commands that ex
   list.
 - `viewer.goForward` (Go forward to the next document): macOS `⌘]`, plus `⌥→`; W `Alt+→`; L `Alt+→`. Same.
 
-New commands (not in the registry yet):
+New commands:
 
-- `view.toggleFullScreen` (#1110): macOS none; W `F11`; L `F11`. Explorer and every browser; GNOME, KDE, Cinnamon, and
+- `view.toggleFullScreen` (#1114): macOS none; W `F11`; L `F11`. Explorer and every browser; GNOME, KDE, Cinnamon, and
   Ubuntu bind no bare `F11`, Xfce binds only `Alt+F11`. WebView2 keeps its own `F11` off in Tauri's windows (it's on
   only in windows opened when `NewWindowRequested` isn't handled). The command exists on all three OSes behind the
   `full_screen` capability, flipped on for Windows and Linux; on macOS it's a palette row with no key and no Cmdr menu
   row, since AppKit's own View menu item keeps its key and its place.
 - `search.newQuery`, `search.toggleRecent`, `search.modeByNumber` (decision 12, fixed): macOS `⌘N`, `⌘Y`, `⌘1`–`⌘3`; W
-  and L `Ctrl+N`, `Ctrl+H`, `Ctrl+1`–`Ctrl+3`. Scope caveat in § Needs David. Recent searches take each OS's browser
-  history key (Chrome's `⌘Y` on macOS, `Ctrl+H` elsewhere): on macOS `⌘H` is AppKit's Hide, which shares the dialog's
-  `App` ancestor, so the dialog's old `⌘H` clashed with it (David's call, 2026-11-12).
+  and L `Ctrl+N`, `Ctrl+H`, `Ctrl+1`–`Ctrl+3`. Their scope: § Settled with David, item 2. Recent searches take each OS's
+  browser history key (Chrome's `⌘Y` on macOS, `Ctrl+H` elsewhere): on macOS `⌘H` is AppKit's Hide, which shares the
+  dialog's `App` ancestor, so the dialog's old `⌘H` clashed with it (David's call, 2026-11-12).
+- `viewer.search`, `viewer.toggleSearchRegex`, `viewer.toggleSearchCase` (fixed): macOS `⌘F`, `⌘⌥R`, `⌘⌥C`; W and L
+  `Ctrl+F`, `Alt+R`, `Alt+C` (§ Settled with David, item 1).
 
 ## macOS additions
 
@@ -165,7 +174,8 @@ New commands (not in the registry yet):
 ## Native text keys
 
 Combos the OS's text editing owns in a focused text input; dispatch leaves them to the field whatever command they're
-bound to (the `nativeTextKeys(platform)` table the plan describes).
+bound to (`nativeTextKeys(platform)` in `apps/desktop/src/routes/(main)/native-text-keys.ts`, which a test walks set for
+set against this list).
 
 - macOS: `⌘C` with a selection, `⌘←`/`⌘→`, `⌥←`/`⌥→`, and their `⇧` forms.
 - Windows and Linux: `Ctrl+C` with a selection, `Ctrl+Insert`, `Ctrl+←`/`Ctrl+→`, `Ctrl+Shift+←`/`Ctrl+Shift+→`,
@@ -176,11 +186,11 @@ bound to (the `nativeTextKeys(platform)` table the plan describes).
 
 ## Commands on one OS only
 
-- macOS only: `app.hide`, `app.hideOthers`, `app.showAll` (#1114; off macOS they reserve nothing, so `Ctrl+H` stops
-  claiming a macOS reservation). Behind capabilities that are false on Windows and Linux today
-  (`platform/{windows,linux/mod}.rs`): `app.toggleCliCommand`, `file.getInfo`, `file.quickLook`, `file.openTerminalHere`
-  (when it gets a Windows or Linux body: `F9` only, no `Ctrl+Alt+T`, which Ubuntu, Xfce, KDE, and Cinnamon take for a
-  terminal), the five `cloud.*`, and the seven `tags.*`.
+- macOS only: `app.hide`, `app.hideOthers`, `app.showAll` (#1110; behind the `appMenu` capability, so off macOS they
+  reserve nothing and `Ctrl+H` claims no macOS reservation). Behind capabilities that are false on Windows and Linux
+  today (`platform/{windows,linux/mod}.rs`): `app.toggleCliCommand`, `file.getInfo`, `file.quickLook`,
+  `file.openTerminalHere` (when it gets a Windows or Linux body: `F9` only, no `Ctrl+Alt+T`, which Ubuntu, Xfce, KDE,
+  and Cinnamon take for a terminal), the five `cloud.*`, and the seven `tags.*`.
 - Windows and Linux only: none. (`view.toggleFullScreen` exists everywhere and holds a key only on Windows and Linux.)
 - Different on Windows and Linux: `view.briefMode`/`fullMode` key order, the volume choosers' Linux second keys,
   Compress's Linux second key, and `tab.next`/`prev`'s `Ctrl+Alt+→/←` (Windows only).
@@ -190,9 +200,12 @@ bound to (the `nativeTextKeys(platform)` table the plan describes).
 Checked both full tables (every registry command, mechanical keys plus the changes above, the commands that don't exist
 on that OS removed) pair by pair for the same combo in overlapping scopes, using `scope-hierarchy.ts`.
 
-- Windows: 201 bindings; Linux: 204. Both are clean except the search dialog's planned scope (§ Needs David).
+- Windows: 201 bindings; Linux: 204 (counted before the search dialog's and viewer's fixed keys joined the registry).
+  Both are clean, and `registry-conflicts.test.ts` keeps them so with an empty `allowedConflicts` on all three OSes;
+  `keymap-invariants.test.ts` also walks every raw arm, capability ignored, so a gated command's keys can't clash
+  either.
 - The two `Ctrl+D` clashes of the mechanical keymap are gone (Duplicate moved to `Shift+F5`, the error screen to
-  `Ctrl+Shift+D`), so `conflict-detector-registry.test.ts`'s `Ctrl+D` subtraction can go.
+  `Ctrl+Shift+D`).
 - Not a clash by scope, worth knowing: `Alt+↑` is Go to parent (File list), Move row up (Multi-rename), and Move earlier
   (operation queue window); those three scopes never meet.
 
@@ -265,11 +278,13 @@ Every new or moved Linux key against those five plus IBus and GTK:
 - Menu bar: Linux HAS access keys. `src-tauri/src/menu/mnemonics.rs` gives every GTK bar title and item a mnemonic from
   the translated label at build time, and GTK takes a title's `Alt+<letter>` before WebKit sees it, so `preventDefault`
   can't help; English titles take F, E, S, V, G, T, H, other languages differ. Item mnemonics are inert while the menu
-  is closed. So the search dialog's `Alt+F`, `Alt+S`, and `Alt+V` open a menu today, and the 11 Multi-rename keys would.
-  Fix: while a main-window dialog, overlay, or the palette is up, set the main window's `GtkWindow` mnemonic modifier to
-  an unreachable mask and restore Alt after, like a native modal (verified in the Linux E2E Docker lane with real X key
-  events through `libxdo`, 2026-11-12, at `5135d6d238`). The viewer's bar has no mnemonics, so its `Alt+R` / `Alt+C` are
-  safe.
+  is closed. So without help the search dialog's `Alt+F`, `Alt+S`, and `Alt+V` and the 11 Multi-rename keys would open a
+  menu. What shipped: while a main-window dialog, overlay, or the palette is up, the main window's `GtkWindow` mnemonic
+  modifier is an unreachable mask, and Alt comes back after the last one closes, like a native modal
+  (`apps/desktop/src-tauri/src/menu/DETAILS.md` § "A modal surface takes the mnemonics away"). Settings, the queue, the
+  Keyboard shortcuts window, and Debug wear the main bar on Linux too; Settings' shortcut recorders hold the mask while
+  they listen. `menu-mnemonic-mask.spec.ts` proves it in the Linux E2E lane with real X key events through `xdotool`.
+  The viewer's bar has no mnemonics, so its `Alt+R` / `Alt+C` are safe.
 
 ## Windows checks
 
@@ -295,13 +310,19 @@ Every new or moved Linux key against those five plus IBus and GTK:
 
 ## Outside the registry
 
-- The global go-to-latest-download hotkey (`behavior.fileSystemWatching.globalGoToLatestShortcut.binding`, default
-  `⌃⌥⌘J`) registers as `Control+Alt+Super+J` off macOS (`downloads/runtime.rs:binding_to_accelerator`). The Super key
-  keeps it clear of AltGr. Unverified against Windows' own Win+Ctrl+Alt combos.
-- The search dialog's mode chips `⌥A`/`⌥F`/`⌥R` become `Alt+A`/`Alt+F`/`Alt+R` off macOS, and its popover and scope keys
-  (`⌥S`/`⌥M`/`⌥I`, `⌥C`/`⌥V`) likewise. On Linux they need the mnemonic mask (§ Reservations behind the Linux keys,
-  "Menu bar"); on Windows `Alt+F` is the File menu access key if task 63 adds them.
-- The viewer's search toggles: § Needs David.
+- The global go-to-latest-download hotkey (`behavior.fileSystemWatching.globalGoToLatestShortcut.binding`) defaults per
+  OS: `⌃⌥⌘J` on macOS, `Ctrl+Alt+Super+J` on Windows and Linux (shown `Ctrl+Alt+Win+J` on Windows), the same physical
+  chord in each OS's spelling. It's the decided exception to "no `Ctrl+Alt+<letter>`" (§ The rule): the Super key keeps
+  it clear of AltGr. Rust mirrors the default in `downloads::runtime::DEFAULT_BINDINGS`. Unverified against Windows' own
+  Win+Ctrl+Alt combos; `Win+Alt+J` is a simpler candidate to try there.
+- The search dialog's mode chips `⌥A`/`⌥F`/`⌥R` are `Alt+A`/`Alt+F`/`Alt+R` off macOS, and its popover and scope keys
+  (`⌥S`/`⌥M`/`⌥I`, `⌥C`/`⌥V`) likewise: one per-OS table, `lib/query-ui/query-keys.ts`, which the chips render and the
+  routers match. On Linux the mnemonic mask keeps them (§ Reservations behind the Linux keys, "Menu bar"); on Windows
+  `Alt+F` is the File menu access key if task 63 adds them.
+- The viewer's search toggles: § Settled with David, item 1.
+- What each OS takes before Cmdr sees it, which Settings warns about when a user records one: one table per OS in
+  `apps/desktop/src/lib/settings/sections/system-reserved-keys.ts`, built from § Windows checks and § Reservations
+  behind the Linux keys (only verified entries). `keymap-invariants.test.ts` checks the defaults against it.
 - The handlers that still read `metaKey` as the primary modifier, outside the keymap work's surfaces:
   `docs/notes/windows-port/keymap-metakey-leftovers.md`.
 
@@ -318,6 +339,6 @@ Every new or moved Linux key against those five plus IBus and GTK:
   input-language switch) fires during `Alt+Shift+←/→`, on a machine with two layouts.
 - Windows: `Ctrl+Alt+←/→` screen rotation on legacy Intel control panels.
 - Linux: whether GTK's `Shift+F10` popup-menu binding reaches WebKitGTK's page before GTK acts, and whether the GTK menu
-  bar's accelerators fire before the page (they decide whether the text-field carve-outs work for menu-bound keys).
+  bar's accelerators fire before the page (they decide whether the native text keys work for menu-bound keys).
 - Linux: an XKB `grp:alt_shift_toggle` layout switch (not a default on the five desktops) would eat `Alt+Shift+←/→` and
   `Alt+Shift+P`. Fcitx5's defaults weren't checked.

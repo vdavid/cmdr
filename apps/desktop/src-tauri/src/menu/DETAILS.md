@@ -105,8 +105,9 @@ window focus context.
 - `tag_icons.rs` (macOS): the circle PNGs for the seven plain tag items, the look the row falls back to.
 - `rebuild.rs`: `rebuild_menu_bar`, which throws the bar away and builds a new one in the current UI language.
 - `mnemonics.rs`: `Mnemonics`, the per-submenu allocator for the Linux underline letter.
-- `mnemonic_mask.rs`: `set_window_mnemonics_suspended`, which turns a window's mnemonics off while a modal surface owns
-  its keyboard. See "A modal surface takes the mnemonics away".
+- `mnemonic_mask/`: `set_window_mnemonics_suspended` (the IPC command `set_menu_mnemonics_suspended` calls it), which
+  turns a window's mnemonics off while a modal surface owns its keyboard; `mnemonic_modifier` is the pure decision and
+  `platform/` the GTK call (Linux) or a no-op. See "A modal surface takes the mnemonics away".
 
 ## Labels come from the message catalog
 
@@ -166,10 +167,10 @@ depends on the LANGUAGE. A hand-picked English set couldn't survive nine transla
 a per-submenu uniqueness puzzle on top of translating. So `mnemonics::Mnemonics` allocates them at build time from the
 translated labels, in menu order: word-initial letters first (what people scan for), then any other letter or digit,
 then no marker at all if everything is taken (which costs one keystroke and nothing else). The menu bar's own titles get
-one allocator; each submenu gets its own. The builder runs every label through it on both platforms (a no-op on macOS),
+one allocator; each submenu gets its own. The builder runs every label through it on every platform (a no-op on macOS),
 so no row in `cmdr_menu::bar` names a mnemonic, and a new item can't get one on one platform and not the other.
 
-### A modal surface takes the mnemonics away (`mnemonic_mask.rs`)
+### A modal surface takes the mnemonics away (`mnemonic_mask/`)
 
 GTK takes a bar TITLE's `Alt+<letter>` (English: F, E, S, V, G, T, H; other languages differ) before WebKit sees the
 keydown, so `preventDefault` can't help: the search dialog's `Alt+F`, `Alt+S`, and `Alt+V` would open menus. Item
@@ -341,7 +342,7 @@ one on all three item kinds (`tauri-2.12.2/src/menu/normal.rs:110`, `check.rs:11
 own (`muda-0.20.0/src/items/normal.rs:165`) — read from the vendored sources, 2026-10-13. So the machinery this section
 describes is probably reducible to one call per item, and an in-place set would ALSO keep the item's SF Symbol and its
 attributed title instead of destroying and restoring them (see "Display-only accelerators"). Nobody has tried it; it's
-its own change, gated on the `cmdr-menu`'s `bar_test.rs` snapshot plus a live rebind on both platforms. ❗ Whatever replaces
+its own change, gated on the `cmdr-menu`'s `bar_test.rs` snapshot plus a live rebind on macOS and Linux. ❗ Whatever replaces
 this must keep parsing what it emits: `set_accelerator` swallows a string muda can't parse exactly the way
 `MenuItem::new` does (`accelerator.and_then(|s| s.as_ref().parse().ok())`).
 
@@ -404,7 +405,7 @@ while green unit tests compared the output to strings we had made up. So `accele
 a second test parses every accelerator `MENU_BAR` hardcodes. ❗ Keep both: a string comparison cannot see this class of
 bug.
 
-**Two ways the glyph reaches the user.** `ItemSpec::display_accelerator` carries ONE string for both platforms, set by
+**Two ways the glyph reaches the user.** `ItemSpec::display_accelerator` carries ONE string for every platform, set by
 `menu_spec::displayed_item`, which pairs it with `NONE` so a row can't register and display a shortcut at once
 (`cmdr-menu`'s `bar_test.rs` pins that too). `display_accelerator_label` is where they part:
 
@@ -715,7 +716,7 @@ This is why every top-level menu in `cmdr_menu::bar` carries an ID from `cmdr_me
 bar builds it with (Linux looks nothing up, so it builds its menus without one). Two IDs are shared
 with the viewer menu bar (`menu_structure.rs`): `EDIT_MENU_ID` and `HELP_MENU_ID`, because
 `cleanup_macos_menus` runs against whichever bar is installed. Only one bar is ever installed at a time,
-so the shared IDs never collide. Sort by carries `SORT_BY_MENU_ID` on both platforms.
+so the shared IDs never collide. Sort by carries `SORT_BY_MENU_ID` on every platform.
 
 ### macOS cleanup (objc2)
 
@@ -1148,7 +1149,7 @@ The Windows bar has the Linux bar's rows and keys until the Windows menu model i
 
 ## Menu structure
 
-Both platforms share: File, Edit, Select, View (with Sort by and Zoom submenus), Go, Tab, Help.
+All three platforms share: File, Edit, Select, View (with Sort by and Zoom submenus), Go, Tab, Help.
 
 The **file context menu opens with the target header** (`append_context_menu_header`, above everything else), then a
 separator, then the Open / View / Edit group. See "The context menu's header line".
@@ -1280,10 +1281,10 @@ focus-gain (see "Per-window menu activation" above).
 **Decision**: Accelerator updates via remove/recreate/reinsert instead of in-place mutation.
 **Why**: it is what the code does, and `MenuState` tracks both the `Submenu` reference and the positional index for every updatable item to make it possible. ⚠️ The reason recorded for it — that Tauri's menu API has no `set_accelerator()` — is false, and the simplification it blocks is described under "Accelerator sync". Read that before extending this machinery.
 
-**Decision**: one menu bar for both platforms, written as data (`cmdr_menu::bar`) and built by one generic builder (`menu_bar_builder.rs`), with every platform difference marked on the row it changes: `macos_only` / `linux_only` rows and menus, `macos(…)` / `split(…)` / `cmd_or_ctrl!(…)` accelerators, per-platform label keys, and top-level IDs that reach macOS alone.
-**Why**: per-platform builders write each item's ID, label, and accelerator twice, so a new item is two edits in lockstep and a drift between them goes unnoticed. As data, a new item is one row, its registration position is its index among the rows its submenu shows, and the table carries no `cfg`, so `cmdr-menu`'s `bar_test.rs` pins BOTH bars as text on any host. That's the only way to check the Linux bar on a Mac (a real `muda::Menu` panics off the main thread), and the snapshot doubles as the review surface: a menu change reads as a diff of the bar. Sort by, Zoom, and the pane view-mode submenus are rows too, so nothing about the bar lives in a helper.
+**Decision**: one menu bar for all three platforms, written as data (`cmdr_menu::bar`) and built by one generic builder (`menu_bar_builder.rs`), with every platform difference marked on the row it changes: `macos_only` / `windows_and_linux` rows and menus, `same_on_all(…)` / `macos(…)` / `split(macos, windows, linux)` / `cmd_or_ctrl!(…)` accelerators, per-platform label keys, and top-level IDs that reach macOS alone.
+**Why**: per-platform builders write each item's ID, label, and accelerator once per OS, so a new item is several edits in lockstep and a drift between them goes unnoticed. As data, a new item is one row, its registration position is its index among the rows its submenu shows, and the table carries no `cfg`, so `cmdr-menu`'s `bar_test.rs` pins EVERY bar as text on any host. That's the only way to check the Windows and Linux bars on a Mac (a real `muda::Menu` panics off the main thread), and the snapshot doubles as the review surface: a menu change reads as a diff of the bar. Sort by, Zoom, and the pane view-mode submenus are rows too, so nothing about the bar lives in a helper.
 
-A few asymmetries look accidental, and each is one row edit away: macOS keeps About and Settings out of `MenuState.items` while Linux tracks them, the Help menu's separator sits after `Keyboard shortcuts` and `Accessibility guide` on macOS but after the About group on Linux, and Duplicate's `Cmd+D` is macOS-only.
+A few asymmetries look accidental, and each is one row edit away: macOS keeps About and Settings out of `MenuState.items` while Linux tracks them, the Help menu's separator sits after `Keyboard shortcuts` and `Accessibility guide` on macOS but after the About group on Linux. (Duplicate's `Cmd+D` being macOS-only is deliberate: its Windows and Linux key is `Shift+F5`, an F-key chord the bar leaves to keydown dispatch.)
 
 **Decision**: Omit F-key and Tab/Space accelerators on Linux.
 **Why**: GTK intercepts F2-F8, Tab, and Space at the toolkit level before events reach the webview. Registering them as menu accelerators causes double-handling or silent swallowing. On Linux these keys are dispatched purely through JS keydown handlers, bypassing the native menu system entirely.
@@ -1342,7 +1343,7 @@ class of bug.
   be atomic; that's safe only because they run on the main thread alone (sync commands and `rebuild_menu_bar`), ❌ so
   never call them from a task. No test pins this: the mock runtime runs a main-thread task inline on the caller unless
   its event loop is running, so it can't stage the wait.
-- **No `Menu::default()`**: Both platforms build from scratch. The old approach inherited system
+- **No `Menu::default()`**: Every platform builds from scratch. The old approach inherited system
   defaults that added unwanted items.
 - **Tab as accelerator**: Switch pane uses Tab, which could conflict with menu bar accessibility
   navigation. If issues arise, omit the accelerator and rely on JS dispatch.

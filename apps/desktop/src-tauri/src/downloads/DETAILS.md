@@ -45,7 +45,10 @@ thread, since managed ops write from the blocking pool.
 
 ## Global go-to-latest hotkey
 
-The default global combo is `⌃⌥⌘J` (settings key `behavior.fileSystemWatching.globalGoToLatestShortcut.binding`).
+The default global combo is `⌃⌥⌘J` on macOS and `Ctrl+Alt+Super+J` on Windows and Linux, the same physical chord in
+each OS's spelling (settings key `behavior.fileSystemWatching.globalGoToLatestShortcut.binding`; Rust's startup
+fallback is `runtime::DEFAULT_BINDINGS`, a `PerPlatform` table that mirrors the setting's `platformDefault`).
+`binding_to_accelerator` reads both spellings.
 `lib.rs` calls `downloads::refresh_global_go_to_latest_shortcut(app)` at startup (after `set_fda_pending`, alongside the
 watcher refresh), every main-window `Focused(true)` event, and on the Settings flip via the
 `set_global_go_to_latest_shortcut(enabled, binding)` IPC.

@@ -13,17 +13,25 @@ Settings window. MCP tools can also modify shortcuts programmatically.
 ### Command registry (`../commands/command-registry.ts`)
 
 Lives in the sibling `src/lib/commands/` directory (which has its own CLAUDE.md). Defines all commands with default
-shortcuts:
+shortcuts, one list per OS, each in that OS's own canonical spelling:
 
 ```typescript
 {
     id: 'nav.parent',
-    name: 'Go to parent folder',
+    nameKey: 'commands.navParent.label',
     scope: 'Main window/File list',
-    shortcuts: ['Backspace', '⌘↑'],
-    showInPalette: true
+    showInPalette: true,
+    shortcuts: {
+        macos: ['Backspace', '⌘↑'],
+        windows: ['Backspace', 'Alt+↑', 'Ctrl+PageUp'],
+        linux: ['Backspace', 'Alt+↑', 'Ctrl+PageUp'],
+    },
 }
 ```
+
+The store reads a command's defaults through `defaultShortcuts(id, platform)`; nothing converts one OS's combo into
+another's. The shape, its helpers (`sameOnAll`, `cmdOrCtrl`, `macOnly`, `concatShortcuts`), and the per-OS tests:
+`../commands/DETAILS.md` § "Default keys per platform".
 
 ### Shortcuts store (`shortcuts-store.ts`)
 
@@ -107,9 +115,10 @@ otherwise they stay stale until restart and the new key doesn't actually work. T
 
 Three readers over one module-level `$state` version (bumped on every `onShortcutChange`):
 
-- `getEffectiveShortcutsReactive(commandId)` returns the full effective list (the command palette shows up to three).
-  Param is typed `CommandId`, not loose `string`. Returns a fresh array on every call (the underlying
-  `getEffectiveShortcuts` copies the store's data), so consumers can't mutate the store — don't cache the reference.
+- `getLiveShortcutsReactive(commandId)` returns every LIVE key: the effective list minus the defaults a user binding
+  shadows (§ Conflict warnings are not errors). The command palette shows up to three. Param is typed `CommandId`, not
+  loose `string`. Returns a fresh array on every call (the underlying `getLiveShortcuts` copies the store's data), so
+  consumers can't mutate the store — don't cache the reference.
 - `getFirstShortcutReactive(commandId)` is `[0]` of that list (the one menus and inline `ShortcutChip`s show).
 - `getFirstShiftShortcutReactive(commandId)` is the first entry matching `comboHasShift` (Shift in either platform
   spelling), or `undefined` — no fallback to the unshifted binding. Its one caller is the F-key bar's Shift row, where a
@@ -190,8 +199,14 @@ The chains mirror what renders together in the app:
   `Main window/Multi-rename`, `Main window/Operation log` → siblings of `Main window/File list` (under `Main window` →
   `App`, but not under the file list). A pane shows one of them INSTEAD of the file list, or — for the two header menus
   — OVER it while central dispatch is suppressed, so their keys don't collide with File-list keys.
+- `Main window/Error screen` → a sibling of the file list too (a pane shows it instead).
 - `Command palette` → inherits `Main window` → `App` (it overlays the main window).
-- `About window` and `Onboarding` → inherit `App` only (standalone/modal contexts).
+- `Main window/Ask Cmdr` and `Main window/Search dialog` → inherit `App` only, skipping `Main window`: each owns the
+  keyboard while it's up, so the search dialog's fixed `⌘N`, `⌘Y` (`Ctrl+H` off macOS), and `⌘1`–`⌘3` shadow Ask Cmdr's
+  new chat and the view modes and sorts by design. The search dialog's scope serves Search and the selection dialogs
+  alike.
+- `About window`, `Operation queue window`, `Viewer window`, and `Onboarding` → inherit `App` only (standalone/modal
+  contexts).
 
 `getActiveScopes(unknown)` returns `[]`, and `scopesOverlap` treats an empty chain as non-overlapping, so a typo'd scope
 silently can't conflict rather than throwing.
@@ -511,6 +526,9 @@ native modifier form (`⌘⇧P` vs `Ctrl+Shift+P`). The registry stores each pla
 NAMES are platform-neutral words, and the macOS glyphs are a render-time concern — see § Key capture for why that
 separation is load-bearing.
 
+Which key each command gets on each OS, and why (Total Commander first off macOS, then the native file manager, minus
+what the OS or a desktop takes): `docs/notes/windows-port/keymap-decisions.md`, the table the registry follows.
+
 ### Why delta-only persistence?
 
 Default shortcuts live in `command-registry.ts` and are baked into the app. Storing them in `shortcuts.json` would
@@ -587,7 +605,11 @@ label. The `menuCommands` array in `shortcuts-store.ts` lists all ~40 commands t
 side, `MenuState.items` is a `HashMap<String, MenuItemEntry>` that tracks regular `MenuItem`s by ID;
 `update_menu_item_accelerator()` handles the remove/recreate/reinsert cycle. View mode CheckMenuItems still use the
 separate `update_view_mode_accelerator()` path to preserve checked state. The shortcut goes over in whichever form this
-platform stores (`⌘⇧P`, or `Ctrl+Shift+P` off macOS); `menu/accelerators.rs` reads both, and turns ⌘ into Ctrl on Linux.
+platform stores (`⌘⇧P`, or `Ctrl+Shift+P` off macOS); `crates/cmdr-menu/src/accelerators.rs` reads both spellings on
+every platform and converts nothing (⌘ and `Super` are the same Meta key, so an off-macOS ⌘ chord arrives already
+spelled `Ctrl+…`). The push goes through one door, `cmdr_menu::bar::rebound_row_key`: a combo equal to the row's own bar
+key comes back exactly as the bar builds it (registered, or display-only), and any other combo takes the modifier floor
+(`src-tauri/src/menu/DETAILS.md` § Display-only accelerators).
 
 A menu-bar REBUILD (the UI language changed) throws every menu item away, so the customized accelerators are back at
 their registry defaults on brand-new objects. `resyncMenuAccelerators()` pushes them all again, driven by the

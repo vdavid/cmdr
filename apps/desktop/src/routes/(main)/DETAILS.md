@@ -403,6 +403,13 @@ of full screen" (verified on macOS 27, Tauri dev build, 2026-09-23). So the main
   switch (`EscapeFullScreenToastContent.svelte`, once per install via the hidden `…HintShown` flag). Needs the
   `core:window:allow-set-fullscreen` capability.
 
+Entering full screen from Cmdr is `view.toggleFullScreen` (`full-screen.ts`): it reads `isFullscreen()` and calls
+`setFullscreen(!…)` on the main window, on every OS that offers `fullScreen` (all three). On macOS that's tao's
+`toggleFullScreen:`, the same native full screen AppKit's View menu item enters and this Escape leaves; it has no key
+there (AppKit's item keeps its own). On Windows and Linux it's `F11`, and the Escape setting and its hint show there
+too. The macOS equivalence is read from the code, not yet checked by hand (`docs/specs/windows-port-plan.md`'s Windows
+checklist lists the macOS hand checks too).
+
 Not covered: an Escape AppKit gets before the webview is first responder (for example right after clicking the green
 full-screen button) never reaches JS, so macOS's own handling applies there.
 

@@ -32,9 +32,10 @@ calls `onExecute(commandId)` → `handleCommandExecute()` on Enter / click.
   search-as-you-type.
 - **`scrollIntoView` is mocked in tests** (`Element.prototype.scrollIntoView = vi.fn()`): jsdom doesn't implement it,
   and the palette calls it after arrow navigation. Tests crash without the mock.
-- **Shortcut chips read live effective bindings, not registry defaults.** Each row reads
-  `getEffectiveShortcutsReactive(command.id)` (capped at `MAX_SHORTCUTS_SHOWN = 3`), so a Settings/MCP rebind updates an
-  open palette without reopening. Reading `command.shortcuts` instead would show stale, no-longer-working combos.
+- **Shortcut chips read live bindings, not registry defaults.** Each row reads `getLiveShortcutsReactive(command.id)`
+  (capped at `MAX_SHORTCUTS_SHOWN = 3`): the effective keys minus defaults a user binding shadows, so a Settings/MCP
+  rebind updates an open palette without reopening and no chip names a key that runs another command. Reading
+  `command.shortcuts` instead would show stale, no-longer-working combos.
 - **Rows render `command.displayName`, and the palette is its only reader.** The fuzzy haystack is built from the same
   string, so highlight indices line up; reading `name` in one place and `displayName` in the other would highlight the
   wrong characters. `displayName` falls back to `name` unless the registry entry declares a resolver, which is how a
@@ -53,7 +54,7 @@ Add it to `#lib/commands/command-registry.ts` and handle the id in `routes/(main
 
 - `#lib/commands`: `searchCommands`, `getPaletteCommands`, `CommandMatch`.
 - `#lib/app-status-store`: `pruneRecentCommands`, `pushRecentCommand`.
-- `#lib/shortcuts/reactive-shortcuts.svelte`: `getEffectiveShortcutsReactive`.
+- `#lib/shortcuts/reactive-shortcuts.svelte`: `getLiveShortcutsReactive`.
 - `#lib/ui/ShortcutChip.svelte` and `#lib/ui/StatusBadge.svelte`.
 
 Full details (data flow, the stability-badge derivation, fuzzy-highlight rendering, and decision rationale):

@@ -3,6 +3,27 @@
 Research for task 26 of `docs/specs/windows-port-plan.md`. Read-only survey at commit `82a84788f6`, 2026-11-11.
 Machine-readable proposal: `docs/notes/windows-port/keymap-proposal.json`.
 
+## Status
+
+Superseded as a key table: `docs/notes/windows-port/keymap-decisions.md` is the table that shipped, and the registry
+follows it. This survey describes the code at `82a84788f6`, before the keymap work: the `toPlatformShortcut` converter,
+the ⌃→Shift hack, the one non-mac menu bar, and the `metaKey` reads it names are gone (`lib/commands/DETAILS.md` §
+"Default keys per platform" has today's shape). It stays for its reserved-key research and its Total Commander mapping.
+Corrections from David's #1102 comment (2026-11-12), which win over the text below:
+
+- GNOME stopped taking `Alt+F1` in GNOME 41; KDE, Xfce, and Cinnamon still take it. `Alt+F2` is taken on all five
+  desktops.
+- Xfce takes `Ctrl+F1`–`F12` and most `Alt+F` keys. Cinnamon takes `Ctrl+Alt+L`; KDE dropped it in 2022.
+- AltGr: Chromium may clear `ctrlKey` / `altKey` and set `AltGraph` when the combo types a character, which makes the
+  binding unreachable instead of misfiring. Untested in WebView2; either way the binding is broken.
+- WebView2 also takes `Shift+F5`, `Ctrl+F5`, `Ctrl+J`, `Ctrl+G`, `Ctrl+Shift+G`, `Alt+←/→`, and `F7` (until #1115 turns
+  its browser keys off). WebKitGTK reserves nothing.
+- TC 11.57 has six keys the table lacks (`Alt+Shift+F7`, `Alt+Shift+F12`, `Alt+Shift+↓`, `Shift+F7`, `Ctrl+Shift+A`
+  open-tabs list, `Ctrl+Shift+Q` separate preview window); none maps to a Cmdr command. `Ctrl+←/→` is a match.
+- Explorer's `Ctrl+D` deletes; TC's favorites meaning wins.
+- `keymap-proposal.json`'s status slips are fixed there: `pane.moveDividerLeft/Right` are `changed-convention` on
+  Windows (the key changes), and `favorites.open` is `same`.
+
 Legend: (a) fine, (b) internal clash, (c) OS-, desktop-, or webview-reserved, (d) convention mismatch or off-mac bug.
 Every OS/desktop/webview claim says verified (with source) or unverified.
 

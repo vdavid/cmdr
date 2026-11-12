@@ -1,9 +1,9 @@
 /**
  * Cross-component E2E for viewer regex search.
  *
- * This is the one E2E spec for milestone 1 of the viewer-search work. Per the
- * plan, the bulk of the search behaviour (state machine, ESC cancel,
- * case-sensitivity toggle, regex-error display) lives in unit tests
+ * This is the viewer search's one E2E spec. The bulk of the search
+ * behaviour (state machine, ESC cancel, case-sensitivity toggle, regex-error
+ * display) lives in unit tests
  * (`viewer-search.svelte.test.ts`). What only an E2E can verify is the
  * cross-component flow: the toolbar toggle → composable state → IPC → backend
  * matcher → results in the viewport.

@@ -80,8 +80,8 @@ All under `apps/desktop/src/lib/`.
 - `ipc/`: Auto-generated `tauri-specta` bindings (`bindings.ts`). Don't edit by hand; call through `tauri-commands/`
 - `tauri-commands/`: Typed TypeScript wrappers around `ipc/bindings.ts`. Canonical import path for backend IPC
 - `command-palette/`: Fuzzy command search (~77 palette-visible commands)
-- `commands/`: Typed command registry (`CommandId` union + `CommandArgs`), fuzzy search engine. Every entry path
-  dispatches through `handleCommandExecute`
+- `commands/`: Typed command registry (`CommandId` union + `CommandArgs`, default keys per OS), fuzzy search engine.
+  Every entry path dispatches through `handleCommandExecute`
 - `licensing/`: License validation, commercial reminders, expiration modals
 - `logging/`: Unified logging: LogTape config, batching bridge to Rust, verbose toggle
 - `error-reporter/`: Error report dialog (Flow A), auto-send toast (Flow B), shared `error-report-flow`

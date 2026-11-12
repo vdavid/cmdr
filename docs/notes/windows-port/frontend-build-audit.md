@@ -59,6 +59,10 @@ the shape; this doc points at them where they apply and only adds what Windows c
 
 ### Keyboard shortcuts
 
+Resolved by task 26 of `docs/specs/windows-port-plan.md` (#1102): the converter, the hack, and the `Ctrl+D` clash are
+gone, the keymap is three lists per command, and the tests run on all three OSes
+(`apps/desktop/src/lib/commands/DETAILS.md` § "Default keys per platform"). The findings below are the audit as it was.
+
 - The canonical vocabulary is already platform-aware and well-tested: `formatKeyCombo` writes `⌘⌃⌥⇧` on macOS and
   `Ctrl+Alt+Shift+Super` elsewhere (`key-capture.ts:231-261`); display glyphs are a separate layer (`toDisplayShortcut`,
   line 172). Windows works with this as-is; `metaKey` becomes `Super` (the Win key), which Windows reserves almost

@@ -61,7 +61,7 @@ Each is worth landing even if Windows never ships. Together they're most of the 
    the website; downloads and telemetry gain an explicit `os`. The Linux release falls out of the same work.
 8. **Smaller seams with Linux payoffs**: a watcher backend trait (Windows then gets watching from `notify`), one mount
    façade, process stats behind one module (Linux gains the memory watchdog it lacks), platform-variant UI copy (Linux
-   needs it too), a per-platform keymap (fixes today's `Ctrl+D` clash off macOS).
+   needs it too), a per-platform keymap (task 26, which also fixed the `Ctrl+D` clash off macOS).
 
 ## Decisions
 
@@ -126,7 +126,9 @@ Settled:
 - **Linux: dialog backdrops left a 29px strip live** at the top (`--titlebar-height` was unconditional, the title bar
   renders only on macOS). Fixed in task 24: `--titlebar-height` is 0 off macOS, the viewer's 35px override and the queue
   window's in-webview title line are macOS-only too.
-- **Off macOS, `Ctrl+D` is bound twice**, so favorites never fires in the file list. Task 26.
+- **Off macOS, `Ctrl+D` was bound twice**, so favorites never fired in the file list. Fixed in task 26: Duplicate is
+  `Shift+F5` and the error screen's details toggle `Ctrl+Shift+D` there, and the conflict test runs with an empty
+  allowlist on all three OSes.
 - **api-server titled Linux reports "macOS Ubuntu …"** (`apps/api-server/src/report-cards.ts`). Fixed (task 2):
   `osLabel` shows the OS name as the app sent it and prefixes `macOS` only onto a bare version number.
 - **Off macOS the updater skips the advisory list and trust checks** (`lib/updates/updater.svelte.ts:390-430`). Fine for
@@ -268,10 +270,25 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     `isMacOS()` calls (in 28 files) now ask `hasCapability()`, settings' `macOSOnly` and `needsImageIndexing` became one
     `needsCapability`, and CSS keys the title bar on `data-overlay-title-bar`. Left as platform questions: 11 (key
     glyphs, the macOS updater flow, the old-macOS notice); for 26: 5 keymap sites; for 27: 10 copy variants.
-26. [S] Win. Per-platform default keymap ([#1102](https://github.com/getcmdr/cmdr/issues/1102), decisions open):
-    explicit per-platform defaults where mechanical mapping is wrong, close to Total Commander's, retire the `⌃`→Shift
-    hack, fix the `Ctrl+D` clashes and the off-macOS key bugs, conflict tests for all three platforms plus OS- and
-    desktop-reserved combos. Survey and proposed keymap: `docs/notes/windows-port/keymap-survey.md`. Needs 24.
+26. [S] Win. **Done**. Per-platform default keymap ([#1102](https://github.com/getcmdr/cmdr/issues/1102), with
+    [#1110](https://github.com/getcmdr/cmdr/issues/1110) and [#1114](https://github.com/getcmdr/cmdr/issues/1114)):
+    every command's `shortcuts` is three lists, one per OS in its own spelling, written with `sameOnAll` / `cmdOrCtrl` /
+    `macOnly` / `concatShortcuts` or a literal, and nothing converts a combo at read time (`lib/commands/DETAILS.md` §
+    "Default keys per platform"). Windows and Linux follow Total Commander first, then their file managers
+    (`docs/notes/windows-port/keymap-decisions.md`, the table that shipped); macOS kept every key and gained `⌥←` / `⌥→`
+    for back and forward. Three reviewed keymap snapshots, conflict, vocabulary, reachability, and invariants tests on
+    all three OSes (no `Ctrl+Alt+<letter>` or `Super` default off macOS; the global go-to-latest hotkey's
+    `Ctrl+Alt+Super+J` is the one decided exception), and a parity test tying the menu bar's accelerators to the
+    registry (`cmdr-menu` gained `Platform::Windows`). Also: the AltGr guard and `Ctrl+<` by key position; the native
+    text keys per OS; Ctrl+click toggles off macOS; the Linux bar's mnemonics masked while a dialog is up; the search
+    dialog's and the viewer's keys as fixed registry commands (macOS recent searches moved to `⌘Y`); a user's own
+    binding beats a default; Quit and `F11` full screen off macOS, with Hide, Hide others, and Show all behind
+    `appMenu`; a per-OS reserved-keys table for Settings' warning; `Win` as Windows's name for `Super`; and every hint
+    and message naming the live key, or a keyless variant. What needs a real machine is on task 55's list. The plan
+    (`docs/specs/platform-keymap-plan.md`) goes once this lands. Needs 24.
+    - **macOS hand checks David owes**: with the search dialog open, `⌘H` hides Cmdr and `⌘Y` shows recent searches;
+      Toggle full screen from the palette enters AppKit's native full screen (same Space, the green button's state, and
+      Escape and the View menu item both leave it).
 27. [M] Win (Linux needs it). **Done**. Platform-variant copy ([#1103](https://github.com/getcmdr/cmdr/issues/1103)): a
     value that reads differently per OS is one whole-value `{platform, select, macos {…} windows {…} other {…}}` block,
     which `t()`, `getMessage()`, the native menu table, and the old-WebKit guard all resolve to the running OS's branch,
@@ -281,7 +298,8 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     reworded. The resolved English, one row per key, is `docs/notes/windows-port/copy-final.json` (299 rows applied in
     `en`, the 13 full locales, and the three overlays; macOS text unmoved in every language apart from the two accepted
     English changes). David reviewed the English (2026-11-12). Left: the rows in
-    `docs/notes/windows-port/copy-decisions.md` § Open rows, each naming what it waits on (#1126, #1102, task 59).
+    `docs/notes/windows-port/copy-decisions.md` § Open rows, each naming what it waits on (#1126, task 59); the rows
+    that waited on #1102 shipped with task 26.
 28. [L] Win. Translate task 27's changed strings into the 13 languages (translator agents, per
     `docs/guides/i18n-translation.md`). Needs 27, whose English David reviewed on 2026-11-12. A per-OS string that
     changes from here on is edited in `en` directly (`apps/desktop/src/lib/intl/DETAILS.md` § "Changing a per-OS
@@ -398,6 +416,28 @@ Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5
     root, a small spec subset. Needs the app to run on Windows (34–36).
 55. [M] Windows. Windows QA pass on a real machine: an agent drives the checklist and fixes what it finds; David QAs
     look, feel, and timing-sensitive UI.
+    - **Keyboard (from task 26; unit tests cover the data, these need the real OS)**:
+      - What WebView2 reports for AltGr (`AltGraph`, `ctrlKey`, `altKey`) on German and Hungarian layouts, for
+        LeftCtrl+LeftAlt+E, and for right Alt with empty modifiers (Multi-rename's `Alt+<letter>` would then need the
+        left Alt).
+      - The browser keys WebView2 keeps until #1115 lands: `Shift+F5`, `Ctrl+F5`, `F5`, `F3`, `F7`, `Ctrl+R`, `Ctrl+J`,
+        `Ctrl+G`, `Ctrl+Shift+G`, `Ctrl+Shift+C`, `Ctrl+0` / `Ctrl++` / `Ctrl+-`, and `Alt+←/→` reach Cmdr.
+      - `F6` and `Shift+F6` (Move, Rename), `Ctrl+M`, and `Ctrl+Shift+M` in windowed hosting: if `F6` moves focus out,
+        #1115 needs a per-key `IsBrowserAcceleratorKeyEnabled(FALSE)` for it. Also `Ctrl+PageUp/PageDown` and
+        `Ctrl+Shift+PageUp/PageDown` (Chromium's tab keys).
+      - `F11` toggles full screen (and WebView2's own `F11` stays off), and Escape leaves it.
+      - `Alt+F4` closes the main window through the quit gate (work in flight holds it and asks), and File > Exit Cmdr
+        does the same.
+      - `Ctrl+Alt+→/←` (Next and Previous tab) on Intel graphics drivers, whose legacy control panel rotates the screen.
+      - The bare `Ctrl+Shift` and `Alt+Shift` layout switches during `Ctrl+Shift+<key>` and `Alt+Shift+←/→`, on a
+        machine with two layouts.
+      - The global go-to-latest hotkey `Ctrl+Alt+Win+J` registers and isn't one of Windows' own; try `Win+Alt+J` as a
+        simpler default there.
+      - Once task 63 decides the menu model: whether a Win32 menu accelerator fires before WebView2, and what
+        `Alt+<letter>` does with a bar present (the search dialog's `Alt+F` / `Alt+S` / `Alt+V` and Multi-rename's
+        `Alt+F` / `Alt+E` / `Alt+G`).
+      - The download toast's hotkey animation: its PC key caps read `Ctrl`, `Fn`, `Win`, and `Alt` where a Windows
+        laptop has them.
 
 56. [S] Windows. MTP via `mtp-rs`'s WPD backend (D2): Windows device arrival and removal for phones, the 5–6-minute
     driver stall shown as a "the phone is busy" state with a timeout (a dropped future is safe, later calls queue behind

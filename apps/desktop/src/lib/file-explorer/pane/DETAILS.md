@@ -951,12 +951,11 @@ or doubles a real shortcut. Every handler here therefore resolves through `event
   AND the rows a listing overlay adds beside real files (a repo's `Browse snapshots`, `.git`'s category rows):
   `overlay-rows.ts` finds them by name, then confirms each by its reserved view icon id, one IPC lookup per press.
 - `selection-dialog-keys.ts` — `+` / `-` → `selection.selectFiles` / `deselectFiles`, the same registry match.
-- `handleOpenOrParentKey` — `nav.open` (`Enter` / `⌘↓`) and `nav.parent` (`Backspace` / `⌘↑`). The `⌘Backspace`
-  carve-out is now structural rather than a hand-written `!e.metaKey`: it's `file.delete`'s combo, not `nav.parent`'s,
-  so it falls through to the dispatcher and deletes.
+- `handleOpenOrParentKey` — `nav.open` (`Enter` / `⌘↓`) and `nav.parent` (`Backspace` / `⌘↑`). `⌘Backspace` needs no
+  hand-written guard: it's `file.delete`'s combo, not `nav.parent`'s, so it falls through to the dispatcher and deletes.
 - `cursor-nav-keys.ts` — one `isCursorKey` gate in front of the per-view math, covering all ten cursor commands (the
-  fixed six plus Home/End/PageUp/PageDown), with `allowShift` for the extend-selection gesture. It replaced a partial
-  `⌘←`/`⌘→` bail, so no modifier superset moves the cursor any more.
+  fixed six plus Home/End/PageUp/PageDown), with `allowShift` for the extend-selection gesture, so no modifier superset
+  moves the cursor.
 
 `type-to-jump-keys.ts` deliberately stays hand-rolled: it matches a key CLASS (any printable character) rather than a
 combo, and rejects ⌘/⌃/⌥, which is the property that matters. One exception: off macOS, AltGr (`isAltGraphHeld`) is

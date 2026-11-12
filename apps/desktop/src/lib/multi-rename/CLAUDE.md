@@ -39,7 +39,8 @@ The ⌃M sheet over `crates/cmdr-multi-rename` (the engine and its rules), hoste
   ⌘S). ↓ strictly inside a mask token is its editor's, elsewhere the field's history.
 - **F2 is also File > Rename's accelerator**: both roads end in `PresetsControl.pressOpenKey`, one toggle per press
   (`createKeyRoadEcho`). ❌ Don't call `openMenu` from a key path: the echo would close the menu it opened.
-- ⌘⌥ C/A/H/L/O/Q/T/V belong to app commands, D to the Dock, M to macOS. DETAILS § Layout and option keys.
+- macOS: ⌘⌥ C/A/H/L/O/Q/T/V are app commands', D the Dock's, M macOS's. Elsewhere: `Alt+<letter>`. DETAILS § Layout and
+  option keys.
 - **The `*-token.ts` grammars read tokens as `mask.rs` does** (`crates/cmdr-multi-rename/src/*_token_vectors.json`);
   change one there first.
 - **Tooltip and editor examples are the engine's render.** ❌ No slicing or replacing in TS. DETAILS § Tooltip examples.

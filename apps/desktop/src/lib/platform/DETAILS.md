@@ -85,9 +85,10 @@ Contexts with no backend get `'linux'` and `NO_CAPABILITIES`:
   says so with `withPlatform()` / `withCapabilities()`.
 - **A plain browser** (`vite dev` without Tauri): nothing answers IPC there anyway.
 - **The browser demo** is the exception: its fake backend defines both globals itself from the visitor's user agent
-  (`apps/desktop/src/lib/demo/platform.ts`), so a Mac visitor gets ⌘ shortcuts and the Mac app's surfaces, and everyone
-  else Ctrl and none, as the keyboard under their hands expects. A page has no other signal; the sniff lives in the
-  demo's backend, never in app code.
+  (`apps/desktop/src/lib/demo/platform.ts`), so every visitor gets their own OS's default keymap, as the keyboard under
+  their hands expects, a Mac visitor gets the Mac app's surfaces, and everyone else gets only `appMenu` (the demo always
+  draws the macOS bar, whose app menu owns Quit; `../demo/DETAILS.md` § Platform). A page has no other signal; the sniff
+  lives in the demo's backend, never in app code.
 
 Why not macOS as the fallback: off macOS is the safe direction. A Mac-only surface (Quick Look, Full Disk Access, the
 Finder extension) hiding in an odd context is harmless; one showing where nothing can answer it isn't.

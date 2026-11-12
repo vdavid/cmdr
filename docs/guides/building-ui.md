@@ -183,8 +183,9 @@ showed different numbers for the same transfer.
 
 Everything a mouse can do, a keyboard can too. Two checks hold the line:
 
-- **Commands**: `lib/commands/command-reachability.test.ts` fails when a command has no default key and no palette row,
-  unless its `KEYBOARD_PATH_NOT_NEEDED` entry says why.
+- **Commands**: `lib/commands/command-reachability.test.ts` fails when a command has no default key and no palette row
+  on any of the three OSes, unless its `KEYBOARD_PATH_NOT_NEEDED` entry says why. A new key is three, one per OS:
+  `lib/commands/DETAILS.md` § "Adding a command".
 - **Markup**: the Svelte compiler's `a11y_click_events_have_key_events`, `a11y_no_noninteractive_element_interactions`,
   and `a11y_interactive_supports_focus` warnings stay on, and `svelte-check` fails on any warning. Prefer a `<button>`
   or a primitive. When the keys live elsewhere (a listbox's input, a grid's page-level keydown, a link delegate), put

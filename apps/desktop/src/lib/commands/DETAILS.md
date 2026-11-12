@@ -251,22 +251,29 @@ The keys themselves are `docs/notes/windows-port/keymap-decisions.md`'s; a chang
    `command-registry.test.ts`; a `nameKey` with no catalog entry fails the key-gen build. The entry's `whileDialogOpen`
    is required: `BLOCKED_BY_DIALOGS` unless the command leaves the panes and the main window's UI alone. An opt-out
    (`runsOverDialogs(reason)`, or `IN_TEXT_INPUTS_ONLY`) also goes into the pinned lists in `command-registry.test.ts`.
-3. If the command carries a REQUIRED dispatch payload, declare its shape in `CommandArgsOverrides` in `types.ts`; if the
+3. Give it `shortcuts` for all three OSes (§ "Default keys per platform"): a helper whose rule fits (`cmdOrCtrl('⌘K')`),
+   or the literal where the keys differ. Pick each OS's key against `docs/notes/windows-port/keymap-decisions.md` (Total
+   Commander first off macOS) and the per-OS reserved table (`../settings/sections/system-reserved-keys.ts`); no
+   `Ctrl+Alt+<letter>` and no `Super` off macOS. Then `vitest -u default-keymap` and read the three snapshot diffs: each
+   should gain exactly the new command's line. The conflict, vocabulary, reachability, and invariants tests run on all
+   three OSes for free. A key its owning component matches by hand is `fixedKey: true` and joins `FIXED_KEY_COMMAND_IDS`
+   (read-only in Settings).
+4. If the command carries a REQUIRED dispatch payload, declare its shape in `CommandArgsOverrides` in `types.ts`; if the
    payload is OPTIONAL (dispatched both arg-less and with a payload, like the MCP `file.copy`/`move`/`delete` tools),
    use `CommandArgsOptionalOverrides` so `CommandDispatchArgs` resolves to `[args?]`. Arg-less commands skip both. The
    handler reads the payload from `hctx.dispatchArgs`. MCP-only commands dispatch from the `mcp-listeners.ts` adapter
    after a validate-parse, and are `showInPalette: false`.
-4. Add the handler to the right family module in `routes/(main)/command-handlers/`. The `commandHandlers` record is
+5. Add the handler to the right family module in `routes/(main)/command-handlers/`. The `commandHandlers` record is
    keyed by `Exclude<CommandId, DispatchExemptId>`, so a missing handler is a compile error; an intentionally
    handlerless command goes in `DISPATCH_EXEMPT_IDS` (in `command-handlers/types.ts`) with a documented reason
    (`command-handler-record.test.ts` fails if the id is in neither).
-5. No changes needed to fuzzy search or keyboard dispatch. Commands with `showInPalette: true` auto-dispatch from
+6. No changes needed to fuzzy search or keyboard dispatch. Commands with `showInPalette: true` auto-dispatch from
    keyboard shortcuts via centralized dispatch (`../shortcuts/shortcut-dispatch.ts`). For a palette-visible command,
    also add its id to `EXPECTED_PALETTE_IDS` in `command-registry.test.ts` (the palette-visible-set pin fails
    otherwise).
-6. Pin its English in `command-registry.parity.test.ts` (`EXPECTED_NAMES`, plus `EXPECTED_DESCRIPTIONS` when it has a
+7. Pin its English in `command-registry.parity.test.ts` (`EXPECTED_NAMES`, plus `EXPECTED_DESCRIPTIONS` when it has a
    description). The test asserts every registry command appears there, so a new command fails it until pinned.
-7. For a native menu item: add the id const and both map directions in `crates/cmdr-menu/src/ids.rs`, add its row to
+8. For a native menu item: add the id const and both map directions in `crates/cmdr-menu/src/ids.rs`, add its row to
    `crates/cmdr-menu/src/bar.rs` for the menu bar (rows are tracked by default, which is what lets accelerator rebinding
    reach them; update the pinned bar in `crates/cmdr-menu/src/bar_test.rs` and its enabled states in
    `crates/cmdr-menu/src/bar_states_test.rs` alongside) or add its row to `crates/cmdr-menu/src/context/` for the
