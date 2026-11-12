@@ -60,21 +60,33 @@ pub(crate) use actions::{ToolError, ToolResult, fit_to_result_budget, is_virtual
 #[cfg(target_os = "macos")]
 pub(crate) use actions::nav::{GoToFailure, GoToTarget, PaneChoice, go_to_in_pane, open_tab_in_pane};
 pub(crate) use policy::{Caller, ToolCtx};
+#[cfg(test)]
+pub(crate) use registry::Needs;
 pub(crate) use registry::{Access, Load, Tool};
 pub(crate) use subject::SubjectSpec;
 pub use table::ToolId;
 use table::table_tools;
 #[cfg(test)]
 use table::tool_schema;
-pub(crate) use table::{execute_tool, get_all_tools, tool_access, tool_load, validate_params};
+pub(crate) use table::{execute_tool, get_all_tools, tool_access, tool_load, tool_offered, validate_params};
+#[cfg(test)]
+pub(crate) use table::{tool_needs, tools_listed};
 
 use crate::agent::llm::types::ToolDeclaration;
 use policy::{Verdict, admit};
 
-/// Whether the agent can run this tool on a turn someone asked for. Background turns hear
+/// Whether the agent can run this tool on a turn someone asked for, on this OS. Background turns hear
 /// `refusedInBackground` from the gate rather than seeing a shorter list.
 fn agent_reaches(name: &str) -> bool {
-    !tool_access(name).is_some_and(|access| matches!(admit(meta::user_started_agent(), access), Verdict::Refuse(_)))
+    tool_offered(name)
+        && !tool_access(name)
+            .is_some_and(|access| matches!(admit(meta::user_started_agent(), access), Verdict::Refuse(_)))
+}
+
+/// Every tool some OS lists: what a structural test walks, so it covers a tool this host lacks.
+#[cfg(test)]
+pub(crate) fn every_listed_tool() -> Vec<Tool> {
+    tools_listed(|_| true)
 }
 
 /// The tool declarations the agent hands the provider: the core plus the tool-search pair, whatever

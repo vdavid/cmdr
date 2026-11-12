@@ -50,6 +50,9 @@ backend says what exists, and a surface asks for exactly the thing it needs.
   session, read once at startup (`XDG_SESSION_TYPE`, else `WAYLAND_DISPLAY` unset): `global-hotkey` grabs keys through
   X11 only, so on Wayland the grab fires only inside XWayland windows. The backend asks it too before registering the
   hotkey (`downloads/runtime.rs`).
+- **`processDiagnostics` is the one flag no UI asks.** It decides whether the `memory_diagnostics` and `cpu_diagnostics`
+  tools exist on this OS (`apps/desktop/src-tauri/src/tools/DETAILS.md` § The table), and it's here so every arm answers
+  it. `colorTags` gates the `tag` tool the same way.
 - **Typed in TS from Rust**: `ipc.rs` exports the struct with `.typ::<PlatformCapabilities>()`, so `bindings.ts` carries
   it like any command's type, and `Capability` is `keyof` it. No IPC command returns it; the init script is the only
   channel.

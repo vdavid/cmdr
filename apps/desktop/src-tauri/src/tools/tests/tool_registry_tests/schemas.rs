@@ -3,19 +3,19 @@
 use serde_json::json;
 
 use super::{EXPECTED_TOOL_NAMES, tool};
-use crate::tools::get_all_tools;
+use crate::tools::every_listed_tool;
 
 #[test]
 fn test_tool_names_are_exactly_the_expected_set() {
     use std::collections::BTreeSet;
-    let actual: BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();
+    let actual: BTreeSet<String> = every_listed_tool().into_iter().map(|t| t.name).collect();
     let expected: BTreeSet<String> = EXPECTED_TOOL_NAMES.iter().map(|s| (*s).to_owned()).collect();
     assert_eq!(actual, expected, "tool name set drifted from the expected list");
 }
 
 #[test]
 fn test_tab_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "tab").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -47,7 +47,7 @@ fn test_tab_tool_schema() {
 
 #[test]
 fn test_set_setting_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "set_setting").input_schema;
     let props = schema.get("properties").unwrap();
     assert!(props.get("id").is_some());
@@ -61,7 +61,7 @@ fn test_set_setting_tool_schema() {
 
 #[test]
 fn test_open_search_dialog_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "open_search_dialog").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -92,7 +92,7 @@ fn test_open_search_dialog_schema() {
 
 #[test]
 fn test_select_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "select").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -113,7 +113,7 @@ fn test_select_tool_schema() {
 
 #[test]
 fn test_move_cursor_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "move_cursor").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -131,7 +131,7 @@ fn test_move_cursor_tool_schema() {
 
 #[test]
 fn test_dialog_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "dialog").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -166,7 +166,7 @@ fn test_dialog_tool_schema() {
 
 #[test]
 fn test_dialog_confirm_schema_requires_only_the_type() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "dialog_confirm").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -177,7 +177,7 @@ fn test_dialog_confirm_schema_requires_only_the_type() {
 
 #[test]
 fn test_sort_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "sort").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -206,7 +206,7 @@ fn test_sort_tool_schema() {
 
 #[test]
 fn test_set_view_mode_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "set_view_mode").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -225,7 +225,7 @@ fn test_set_view_mode_tool_schema() {
 
 #[test]
 fn test_indexing_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "indexing").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -245,7 +245,7 @@ fn test_indexing_tool_schema() {
 
 #[test]
 fn test_await_has_index_status_condition() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "await").input_schema;
     let props = schema.get("properties").unwrap();
     assert!(
@@ -270,13 +270,13 @@ fn test_await_has_index_status_condition() {
 
 #[test]
 fn test_downloads_tool_present() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     assert_eq!(tool(&tools, "go_to_latest_download").name, "go_to_latest_download");
 }
 
 #[test]
 fn test_operations_list_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "operations_list").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -308,7 +308,7 @@ fn test_operations_list_schema() {
 
 #[test]
 fn test_operations_rollback_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "operations_rollback").input_schema;
     let props = schema.get("properties").unwrap();
     assert!(props.get("operationId").is_some());
@@ -326,7 +326,7 @@ fn test_operations_rollback_schema() {
 /// so a running instance could be asked about its panes but never about its own memory.
 #[test]
 fn test_memory_diagnostics_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "memory_diagnostics").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -343,7 +343,7 @@ fn test_memory_diagnostics_schema() {
 /// long-held call, which is what `mark` / `sinceMark` are for.
 #[test]
 fn test_cpu_diagnostics_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "cpu_diagnostics").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -358,7 +358,7 @@ fn test_cpu_diagnostics_schema() {
 
 #[test]
 fn test_queue_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "queue").input_schema;
     let props = schema.get("properties").unwrap();
 
@@ -380,7 +380,7 @@ fn test_queue_tool_schema() {
 
 #[test]
 fn test_resolve_conflict_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "resolve_conflict").input_schema;
     let props = schema.get("properties").unwrap();
     let resolutions = props
@@ -403,7 +403,7 @@ fn test_resolve_conflict_schema() {
 
 #[test]
 fn test_transfer_tools_offer_the_same_conflict_policies() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     for tool_name in ["dialog_confirm", "copy", "move"] {
         let policies = tool(&tools, tool_name).input_schema["properties"]["onConflict"]["enum"]
             .as_array()
@@ -427,7 +427,7 @@ fn test_transfer_tools_offer_the_same_conflict_policies() {
 
 #[test]
 fn test_rename_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "rename").input_schema;
     let props = schema.get("properties").unwrap();
     for key in ["pane", "name", "newName"] {
@@ -442,7 +442,7 @@ fn test_rename_tool_schema() {
 /// `copy` means "open the dialog" for everyone, and a rollback too.
 #[test]
 fn no_schema_has_a_bypass_parameter() {
-    for tool in get_all_tools() {
+    for tool in every_listed_tool() {
         let props = tool.input_schema.get("properties");
         assert!(
             props.and_then(|p| p.get("autoConfirm")).is_none(),
@@ -456,7 +456,7 @@ fn no_schema_has_a_bypass_parameter() {
 /// pane says which one: select left, nav right, and an unnamed `copy` copies the right pane's item.
 #[test]
 fn a_tool_that_starts_something_on_a_pane_requires_the_pane() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     for name in ["copy", "move", "compress", "delete", "rename", "mkdir", "mkfile", "tag"] {
         let schema = &tool(&tools, name).input_schema;
         let required = schema.get("required").unwrap().as_array().unwrap();
@@ -466,7 +466,7 @@ fn a_tool_that_starts_something_on_a_pane_requires_the_pane() {
 
 #[test]
 fn test_tag_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "tag").input_schema;
     let props = schema.get("properties").unwrap();
     for key in ["pane", "action", "names", "colors"] {
@@ -488,7 +488,7 @@ fn test_tag_tool_schema() {
 
 #[test]
 fn test_favorites_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "favorites").input_schema;
     let props = schema.get("properties").unwrap();
     for key in ["action", "path", "id", "name", "orderedIds"] {
@@ -503,7 +503,7 @@ fn test_favorites_tool_schema() {
 
 #[test]
 fn test_eject_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let schema = &tool(&tools, "eject").input_schema;
     assert!(schema["properties"].get("volumeId").is_some());
     assert_eq!(

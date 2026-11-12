@@ -39,6 +39,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::platform::PlatformCapabilities;
+
 /// A tool definition: the registry's output type, one `tools/list` element (serde `camelCase`, so
 /// `input_schema` serializes as `inputSchema`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,6 +61,32 @@ pub struct ToolHints {
     pub read_only_hint: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub destructive_hint: Option<bool>,
+}
+
+/// What an OS has to offer for a tool to exist there. A tool names one in its table entry
+/// (`needs:`), and an OS that doesn't offer it lists no such tool: the model never plans around
+/// something that can only refuse. Each maps to one [`PlatformCapabilities`] flag, so every OS
+/// answers on purpose.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Needs {
+    /// The system's color tags on files.
+    ColorTags,
+    /// Readings of Cmdr's own process: its memory map and per-thread CPU.
+    ProcessDiagnostics,
+}
+
+impl Needs {
+    pub fn met_by(self, offered: &PlatformCapabilities) -> bool {
+        match self {
+            Needs::ColorTags => offered.color_tags,
+            Needs::ProcessDiagnostics => offered.process_diagnostics,
+        }
+    }
+
+    /// Whether the OS this build runs on offers it.
+    pub fn met_here(self) -> bool {
+        self.met_by(&crate::platform::capabilities())
+    }
 }
 
 /// How the agent gets a tool's schema: declared up front, on request, or as one of the two tools
@@ -184,6 +212,7 @@ macro_rules! mcp_tools {
         subject: $subject:expr,
         access: $access:expr,
         load: $load:expr,
+        $( needs: $needs:expr, )?
         $( ask: $ask:path, )?
         run: $shape:tt $path:path
     } ),* $(,)? ) => {
@@ -290,12 +319,34 @@ macro_rules! mcp_tools {
             )*]
         }
 
-        /// Every tool in table order, but `Meta` entries: what an outside client lists.
+        /// What an outside client lists on this OS: every tool it offers, in table order, but
+        /// `Meta` entries.
         pub fn get_all_tools() -> Vec<Tool> {
+            tools_listed(Needs::met_here)
+        }
+
+        /// [`get_all_tools`] for an OS that answers `offered` for each need.
+        pub fn tools_listed(offered: impl Fn(Needs) -> bool) -> Vec<Tool> {
             table_tools()
                 .into_iter()
                 .filter(|tool| !matches!(tool_load(&tool.name), Some(Load::Meta(_))))
+                .filter(|tool| tool_needs(&tool.name).is_none_or(&offered))
                 .collect()
+        }
+
+        /// What the OS has to offer for this tool to exist there, or `None` for a tool every OS
+        /// runs (and for an unknown name).
+        pub fn tool_needs(name: &str) -> Option<Needs> {
+            match name {
+                $( $name => mcp_tools!(@needs $( $needs )?), )*
+                _ => None,
+            }
+        }
+
+        /// Whether this OS offers the tool. `false` makes it no tool at all here: off every list,
+        /// and "Unknown tool" to a call.
+        pub fn tool_offered(name: &str) -> bool {
+            tool_needs(name).is_none_or(Needs::met_here)
         }
 
         /// How the agent gets this tool's schema, or `None` for an unknown name.
@@ -359,6 +410,10 @@ macro_rules! mcp_tools {
             let Some(access) = tool_access(name) else {
                 return Err(ToolError::invalid_params(format!("Unknown tool: {name}")));
             };
+            // Not a tool on this OS, for either caller: its handler has nothing to call.
+            if !tool_offered(name) {
+                return Err(ToolError::invalid_params(format!("Unknown tool: {name}")));
+            }
             // Not on an outside client's list, so to that client it isn't a tool at all.
             if matches!(ctx.caller, super::policy::Caller::External { .. }) && matches!(tool_load(name), Some(Load::Meta(_))) {
                 return Err(ToolError::invalid_params(format!("Unknown tool: {name}")));
@@ -395,6 +450,8 @@ macro_rules! mcp_tools {
         }
     };
 
+    (@needs) => { None };
+    (@needs $n:expr) => { Some($n) };
     (@has_plan) => { false };
     (@has_plan $p:path) => { true };
     (@ask [] $app:ident, $ctx:ident, $params:ident) => { None };

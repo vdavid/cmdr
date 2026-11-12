@@ -1,4 +1,4 @@
-use crate::tools::get_all_tools;
+use crate::tools::every_listed_tool;
 use crate::ui_state::pane_state::PaneFileEntry;
 
 // =============================================================================
@@ -7,7 +7,7 @@ use crate::ui_state::pane_state::PaneFileEntry;
 
 #[test]
 fn test_tool_names_no_shell_injection() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let dangerous_chars = [
         '|', '&', ';', '$', '`', '(', ')', '{', '}', '[', ']', '<', '>', '!', '\n', '\r',
     ];
@@ -27,7 +27,7 @@ fn test_tool_names_no_shell_injection() {
 #[test]
 fn test_no_fs_tools_exist() {
     // Security: We removed fs.* tools to prevent file system access
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let fs_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("fs.")).collect();
     assert!(
         fs_tools.is_empty(),
@@ -39,7 +39,7 @@ fn test_no_fs_tools_exist() {
 #[test]
 fn test_no_shell_tools_exist() {
     // Security: We removed shell.* tools to prevent command execution
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let shell_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("shell.")).collect();
     assert!(
         shell_tools.is_empty(),
@@ -51,7 +51,7 @@ fn test_no_shell_tools_exist() {
 #[test]
 fn test_no_exec_tools_exist() {
     // Security: We should not have any exec/run tools
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let dangerous_patterns = ["exec.", "run.", "execute.", "command.", "spawn.", "process."];
 
     for tool in tools {
@@ -80,7 +80,7 @@ const MAX_TOOL_DESCRIPTION_CHARS: usize = 512;
 
 #[test]
 fn test_tools_have_bounded_descriptions() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     for tool in tools {
         assert!(
             tool.description.len() <= MAX_TOOL_DESCRIPTION_CHARS,
@@ -110,7 +110,7 @@ fn test_malicious_tool_name_injection() {
         "nav_up\x00hidden",
     ];
 
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     for name in malicious_names {
         assert!(
             !tools.iter().any(|t| t.name == name),

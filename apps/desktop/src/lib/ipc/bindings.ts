@@ -15776,6 +15776,11 @@ export type PlatformCapabilities = {
   homebrewCask: boolean
   // A system-wide shortcut works from any app (the global "go to latest download" shortcut).
   globalShortcuts: boolean
+  /**
+   *  Cmdr can read its own process's memory map and per-thread CPU (the `memory_diagnostics` and
+   *  `cpu_diagnostics` tools). No UI asks: it decides whether those tools exist on this OS.
+   */
+  processDiagnostics: boolean
 }
 
 export type PrepareResult = {

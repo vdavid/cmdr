@@ -1,10 +1,10 @@
-use crate::tools::get_all_tools;
+use crate::tools::every_listed_tool;
 
 #[test]
 fn test_all_tool_names_are_valid_identifiers() {
     // Tool names must be valid identifiers (no injection vectors)
     // MCP requires: ^[a-zA-Z0-9_-]{1,128}$
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     for tool in tools {
         assert!(
             tool.name
@@ -25,7 +25,7 @@ fn test_all_tool_names_are_valid_identifiers() {
 #[test]
 fn test_all_tool_descriptions_are_sanitized() {
     // Descriptions should not contain executable content
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     for tool in tools {
         assert!(
             !tool.description.contains("<script"),
@@ -47,7 +47,7 @@ fn test_all_tool_descriptions_are_sanitized() {
 
 #[test]
 fn test_tool_input_schemas_are_valid() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     for tool in tools {
         // All schemas must be objects
         assert!(
@@ -81,7 +81,7 @@ fn test_tool_input_schemas_are_valid() {
 
 #[test]
 fn test_no_duplicate_tool_names() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let mut names: Vec<&str> = tools.iter().map(|t| t.name.as_str()).collect();
     names.sort();
     let original_len = names.len();

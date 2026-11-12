@@ -374,7 +374,15 @@ async fn tools_list_on_the_wire_is_the_snapshot_to_the_key() {
     let listed = server.call(json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})).await;
     let snapshot: Value = serde_json::from_str(include_str!("../../tools/tests/fixtures/tools_list_snapshot.json"))
         .expect("the snapshot is JSON");
-    assert_eq!(listed["result"]["tools"], snapshot["tools"]);
+    // The snapshot is the list of an OS that offers every tool; the wire carries this OS's.
+    let offered_here: Vec<Value> = snapshot["tools"]
+        .as_array()
+        .expect("a tool array")
+        .iter()
+        .filter(|tool| crate::tools::tool_offered(tool["name"].as_str().expect("a tool name")))
+        .cloned()
+        .collect();
+    assert_eq!(listed["result"]["tools"], Value::Array(offered_here));
 }
 
 /// `resultType` belongs to 2026-07-28. An older client's reply has no such key.

@@ -112,7 +112,7 @@ fn paging_params_beside_a_proposal_are_refused() {
 /// (the schema gate refuses undeclared keys).
 #[test]
 fn the_schema_declares_every_spec_knob() {
-    let tool = crate::tools::get_all_tools()
+    let tool = crate::tools::every_listed_tool()
         .into_iter()
         .find(|t| t.name == "multi_rename")
         .expect("multi_rename is in the table");

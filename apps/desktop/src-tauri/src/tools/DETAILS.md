@@ -53,12 +53,22 @@ but `subject.rs`. Don't give `ToolId` a method that returns a type from `registr
 ## The table
 
 Every AI-callable tool is authored once in the `mcp_tools!` table in `table.rs` — name, `id`, `brief`, description, JSON
-schema, `subject`, `access`, `load`, and handler per entry. That one table generates `get_all_tools()` (the whole table but
-`Meta` entries: `tools/list`), `execute_tool()` (the dispatch), `tool_access()`, and `ToolId` (the enum, `KNOWN`, the
+schema, `subject`, `access`, `load`, an optional `needs`, and handler per entry. That one table generates `get_all_tools()` (the whole table but
+`Meta` entries and the tools this OS doesn't offer: `tools/list`), `execute_tool()` (the dispatch), `tool_access()`, and `ToolId` (the enum, `KNOWN`, the
 wire-name conversions, and serde), so the facets can't drift (§ Adding a tool). `registry.rs` also
 defines `Tool`, the `tools/list` element. Read the entries
 for the exact schemas (don't transcribe them here); the sections below summarize behavior. Wire output is pinned by
 `tests/tool_snapshot_tests.rs`.
+
+**A tool the OS can't run isn't a tool there.** An entry whose handler needs something only some OSes have names it
+(`needs: Needs::ColorTags`), and `Needs` maps each to one `PlatformCapabilities` flag, so every OS answers on purpose.
+Where the need isn't met, the tool is off `tools/list`, off the agent's declarations and its More tools list, never a
+near-miss suggestion, unknown to `tool_details`, and "Unknown tool" to a call (`tool_offered`, asked by `get_all_tools`,
+`agent_reaches`, and `execute_tool`). Why: a listed tool that can only refuse costs tokens on every call, and a model
+plans around it ("I'll tag these red"). `ToolId` still parses the name, so a thread synced from a Mac keeps its tool
+line. Today: `tag` (`colorTags`), and `memory_diagnostics` and `cpu_diagnostics` (`processDiagnostics`), all macOS.
+Structural tests walk `every_listed_tool()`, the list of an OS that offers everything, so they cover a tool the test
+host lacks; `tests/tool_platform_tests.rs` pins the gate, and the hand list of tools with a need.
 
 **The per-entry columns that aren't dispatch.**
 

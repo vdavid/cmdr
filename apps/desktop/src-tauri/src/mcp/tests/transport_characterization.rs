@@ -984,7 +984,12 @@ async fn tools_list_comes_back_in_the_table_order_every_time() {
     };
     let snapshot: Value = serde_json::from_str(include_str!("../../tools/tests/fixtures/tools_list_snapshot.json"))
         .expect("the snapshot is JSON");
-    assert_eq!(names(&first["result"]["tools"]), names(&snapshot["tools"]));
+    // The snapshot is the list of an OS that offers every tool; the wire carries this OS's.
+    let offered_here: Vec<String> = names(&snapshot["tools"])
+        .into_iter()
+        .filter(|name| crate::tools::tool_offered(name))
+        .collect();
+    assert_eq!(names(&first["result"]["tools"]), offered_here);
 }
 
 #[tokio::test(flavor = "current_thread")]

@@ -1,9 +1,9 @@
-use crate::tools::get_all_tools;
+use crate::tools::every_listed_tool;
 use crate::tools::resources::get_all_resources;
 
 #[test]
 fn test_app_tools_exist() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
 
     // App tools: quit, switch_pane, swap_panes
     let expected = ["quit", "switch_pane", "swap_panes"];
@@ -14,7 +14,7 @@ fn test_app_tools_exist() {
 
 #[test]
 fn test_nav_tools_exist() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
 
     // Navigation tools: select_volume, nav_to_path, nav_to_parent, nav_back, nav_forward, scroll_to
     let expected = [
@@ -32,7 +32,7 @@ fn test_nav_tools_exist() {
 
 #[test]
 fn test_cursor_tools_exist() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
 
     // Cursor tools: move_cursor, open_under_cursor
     let expected = ["move_cursor", "open_under_cursor"];
@@ -43,7 +43,7 @@ fn test_cursor_tools_exist() {
 
 #[test]
 fn test_view_tools_exist() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
 
     // View tools: toggle_hidden, set_view_mode, sort
     let expected = ["toggle_hidden", "set_view_mode", "sort"];
@@ -54,7 +54,7 @@ fn test_view_tools_exist() {
 
 #[test]
 fn test_file_op_tools_exist() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
 
     // File operation tools: copy, compress, delete, mkdir, refresh
     let expected = ["copy", "compress", "delete", "mkdir", "refresh"];
@@ -65,7 +65,7 @@ fn test_file_op_tools_exist() {
 
 #[test]
 fn test_context_tools_removed() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let context_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("context_")).collect();
     assert!(
         context_tools.is_empty(),
@@ -76,7 +76,7 @@ fn test_context_tools_removed() {
 
 #[test]
 fn test_select_volume_tool_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let tool = tools.iter().find(|t| t.name == "select_volume").expect("select_volume");
 
     let required = tool.input_schema.get("required").and_then(|r| r.as_array());
@@ -95,7 +95,7 @@ fn test_select_volume_tool_schema() {
 
 #[test]
 fn test_volume_tools_removed() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let volume_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("volume_")).collect();
 
     // volume_selectLeft/Right are removed, replaced by select_volume
@@ -118,7 +118,7 @@ fn test_state_resource_includes_volumes() {
 
 #[test]
 fn test_nav_to_path_schema() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let tool = tools.iter().find(|t| t.name == "nav_to_path").expect("nav_to_path");
 
     let properties = tool.input_schema.get("properties").expect("properties");
@@ -147,7 +147,7 @@ fn test_nav_to_path_schema() {
 
 #[test]
 fn test_no_params_tools_have_empty_required() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
     let no_param_prefixes = ["app.", "view.", "pane.", "nav.", "sort.", "file.", "context."];
 
     for tool in &tools {

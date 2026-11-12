@@ -1,4 +1,4 @@
-use crate::tools::get_all_tools;
+use crate::tools::every_listed_tool;
 use crate::ui_state::pane_state::{PaneFileEntry, PaneState, PaneStateStore};
 
 // =============================================================================
@@ -178,7 +178,7 @@ fn test_file_entry_optional_fields_serialize_as_null() {
 
 #[test]
 fn test_tool_names_are_case_sensitive() {
-    let tools = get_all_tools();
+    let tools = every_listed_tool();
 
     // Should find move_cursor
     assert!(tools.iter().any(|t| t.name == "move_cursor"));

@@ -20,7 +20,7 @@
 use serde_json::{Value, json};
 
 use super::policy::{Verdict, admit};
-use super::table::{table_tools, tool_access, tool_load};
+use super::table::{table_tools, tool_access, tool_load, tool_offered};
 use super::{Caller, Load, ToolError, ToolId, ToolResult, fit_to_result_budget};
 use crate::agent::chat::budget::estimate_tokens_of_value;
 use crate::agent::types::TurnOrigin;
@@ -242,7 +242,8 @@ pub async fn execute_tool_details(params: &Value) -> ToolResult {
     let mut unknown = Vec::new();
     let mut unavailable = Vec::new();
     for name in names {
-        let Some(access) = tool_access(name) else {
+        // A tool this OS doesn't offer is no tool here, the same answer a made-up name gets.
+        let Some(access) = tool_access(name).filter(|_| tool_offered(name)) else {
             unknown.push(name);
             continue;
         };

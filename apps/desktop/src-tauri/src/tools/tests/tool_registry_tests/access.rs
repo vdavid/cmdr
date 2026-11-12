@@ -9,7 +9,7 @@ use std::collections::BTreeSet;
 
 use crate::agent::types::TurnOrigin;
 use crate::tools::policy::{Caller, Refusal, Verdict, admit};
-use crate::tools::{Access, Load, ToolId, get_all_tools, tool_access, tool_load};
+use crate::tools::{Access, Load, ToolId, every_listed_tool, tool_access, tool_load};
 
 const USER_TURN: Caller = Caller::Agent {
     origin: TurnOrigin::Text,
@@ -151,7 +151,7 @@ fn every_tool_is_reachable_by_both_callers_or_carries_a_reason() {
 /// drift one table exists to prevent.
 #[test]
 fn an_outside_client_lists_the_whole_table_but_meta() {
-    let listed: BTreeSet<String> = get_all_tools().into_iter().map(|tool| tool.name).collect();
+    let listed: BTreeSet<String> = every_listed_tool().into_iter().map(|tool| tool.name).collect();
     let table: BTreeSet<String> = ToolId::KNOWN
         .iter()
         .map(|tool| tool.as_wire_name())
@@ -206,7 +206,7 @@ fn memory_needs_direct_mode_for_an_outside_client() {
 /// bypass parameter. And the agent can't call the one that exists, or see it.
 #[test]
 fn no_schema_has_a_way_past_a_person_and_the_agent_never_gets_the_one_there_is() {
-    for tool in get_all_tools() {
+    for tool in every_listed_tool() {
         let properties = tool.input_schema.get("properties");
         for bypass in ["autoConfirm", "rollback"] {
             assert!(
@@ -248,6 +248,7 @@ fn the_agent_is_told_about_every_tool_it_can_reach_on_a_turn_it_was_asked() {
     let reachable: BTreeSet<String> = ToolId::KNOWN
         .iter()
         .map(|tool| tool.as_wire_name())
+        .filter(|name| crate::tools::tool_offered(name))
         .filter(|name| !matches!(admit(USER_TURN, tool_access(name).expect("listed")), Verdict::Refuse(_)))
         .map(str::to_owned)
         .collect();
@@ -292,7 +293,7 @@ fn the_deferred_lines_come_from_the_table_in_its_order() {
 #[tokio::test]
 async fn an_outside_client_cant_reach_the_pair_in_or_out_of_direct_mode() {
     let app = tauri::test::mock_app();
-    let listed: BTreeSet<String> = get_all_tools().into_iter().map(|tool| tool.name).collect();
+    let listed: BTreeSet<String> = every_listed_tool().into_iter().map(|tool| tool.name).collect();
     for name in meta_names() {
         assert!(!listed.contains(&name), "'{name}' is listed");
         for caller in [OFF_DIRECT, DIRECT] {
@@ -361,7 +362,11 @@ fn every_tool_use_tool_names_is_one_it_is_for() {
 /// A call asking about more than one result holds says so with the counts, like every list.
 #[tokio::test]
 async fn tool_details_fits_one_result_and_says_when_it_doesnt() {
-    let every: Vec<String> = names_of_load(Load::Deferred).into_iter().collect();
+    // The ones this OS offers: a tool it lacks answers as unknown (`tool_platform_tests.rs`).
+    let every: Vec<String> = names_of_load(Load::Deferred)
+        .into_iter()
+        .filter(|name| crate::tools::tool_offered(name))
+        .collect();
     let params = serde_json::json!({ "names": every });
     let answer = crate::tools::meta::execute_tool_details(&params)
         .await
@@ -399,7 +404,8 @@ fn every_deferred_schema_fits_what_a_refusal_may_carry() {
             admit(USER_TURN, tool_access(&name).expect("listed")),
             Verdict::Refuse(_)
         );
-        assert_eq!(carried.is_none(), refused, "{name}");
+        let reachable = !refused && crate::tools::tool_offered(&name);
+        assert_eq!(carried.is_some(), reachable, "{name}");
     }
     assert!(crate::tools::meta::schema_for_a_refusal("list_dir").is_none(), "core");
     assert!(
@@ -440,7 +446,7 @@ fn a_guess_finds_the_tool_it_was_reaching_for() {
 }
 
 fn tool_description(name: &str) -> String {
-    get_all_tools()
+    every_listed_tool()
         .into_iter()
         .find(|tool| tool.name == name)
         .expect("listed")
@@ -484,7 +490,7 @@ async fn propose_server_treats_an_outside_client_as_a_turn_a_person_started() {
 /// What `tools/list` tells a client about a tool is its class, in MCP's words.
 #[test]
 fn every_listed_tool_carries_its_class_as_annotations() {
-    for tool in get_all_tools() {
+    for tool in every_listed_tool() {
         let access = tool_access(&tool.name).expect("listed");
         assert_eq!(tool.annotations, access.hints(), "{}", tool.name);
     }

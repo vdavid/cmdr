@@ -61,4 +61,7 @@ pub struct PlatformCapabilities {
     pub homebrew_cask: bool,
     /// A system-wide shortcut works from any app (the global "go to latest download" shortcut).
     pub global_shortcuts: bool,
+    /// Cmdr can read its own process's memory map and per-thread CPU (the `memory_diagnostics` and
+    /// `cpu_diagnostics` tools). No UI asks: it decides whether those tools exist on this OS.
+    pub process_diagnostics: bool,
 }

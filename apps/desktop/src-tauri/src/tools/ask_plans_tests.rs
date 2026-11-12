@@ -3,8 +3,9 @@
 use serde_json::json;
 
 use super::*;
+use crate::tools::every_listed_tool;
 use crate::tools::registry::Access;
-use crate::tools::table::{get_all_tools, tool_access, tool_has_ask_plan};
+use crate::tools::table::{tool_access, tool_has_ask_plan};
 
 fn file(activation: Activation, name: &str) -> CursorItem {
     CursorItem {
@@ -31,7 +32,7 @@ fn asks(plan: &AskPlan) -> &AskFacts {
 
 #[test]
 fn every_sensitive_tool_has_a_plan_and_nothing_else_does() {
-    for tool in get_all_tools() {
+    for tool in every_listed_tool() {
         let sensitive = tool_access(&tool.name) == Some(Access::Sensitive);
         assert_eq!(tool_has_ask_plan(&tool.name), sensitive, "{}", tool.name);
     }

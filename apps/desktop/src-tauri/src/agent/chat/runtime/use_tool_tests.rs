@@ -136,12 +136,12 @@ async fn tool_details_runs_through_the_gate_on_a_wake_too() {
     let answer = through_the_gate(
         (
             ToolId::ToolDetails,
-            json!({ "names": ["tag", "nope", "dialog_confirm"] }),
+            json!({ "names": ["sort", "nope", "dialog_confirm"] }),
         ),
         TurnOrigin::Wake,
     )
     .await;
-    assert_eq!(answer["tools"][0]["name"], "tag", "{answer}");
+    assert_eq!(answer["tools"][0]["name"], "sort", "{answer}");
     assert!(answer["tools"][0]["inputSchema"]["properties"].is_object(), "{answer}");
     assert_eq!(answer["unknown"], json!(["nope"]), "{answer}");
     assert_eq!(answer["unavailable"][0]["refusal"], "devOnly", "{answer}");

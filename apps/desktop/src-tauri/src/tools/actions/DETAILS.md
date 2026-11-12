@@ -88,7 +88,7 @@ Depth for the handlers shared with outside clients. `CLAUDE.md` holds the must-k
   `commands::memory_diagnostics::get_memory_diagnostics` straight through. It exists so the reading can be taken from
   OUTSIDE the app — the command ships in release builds precisely because the interesting numbers only appear in one
   under a real workload, and until this tool nothing could call it there. `sizesPerTag` defaults to 8 (the command
-  clamps at 24). macOS only: elsewhere it refuses rather than returning a payload of zeros a reader would take for a
+  clamps at 24). macOS only: the tool isn't offered elsewhere (`needs: ProcessDiagnostics`), since a payload of zeros would read as a
   measurement. How to read the payload: `../../commands/memory_diagnostics.rs` module docs and
   `docs/tooling/memory-debugging.md`.
 - **`multi_rename.rs`**: `multi_rename`, the Multi-Rename Tool (⌃M) for an external agent, `Access::Propose`. Every
@@ -114,8 +114,8 @@ Depth for the handlers shared with outside clients. `CLAUDE.md` holds the must-k
 - **`cpu.rs`**: `cpu_diagnostics`, `memory_diagnostics`' CPU sibling, over `cmdr_fs::process_cpu` (the FFI and the
   diff live there). `measure` (default) blocks for `windowSeconds` (default 10, max 60, the `await` tool's ceiling);
   `mark` stores one process-wide baseline and `sinceMark` diffs against it without blocking, so an idle census of
-  20 minutes never holds an MCP call open. The mark stays put, so repeated reads are cumulative. macOS only, refusing
-  elsewhere like its sibling.
+  20 minutes never holds an MCP call open. The mark stays put, so repeated reads are cumulative. macOS only, not offered
+  elsewhere, like its sibling.
 - **`tests.rs`**: unit tests for the dispatcher and shared helpers; per-category tests live alongside their handlers.
 
 ## The search result

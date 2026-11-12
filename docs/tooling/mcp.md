@@ -292,8 +292,8 @@ decide.
 
 `memory_diagnostics` asks the running app about itself: the physical footprint, both allocators' own accounting, the
 Rust heap split into live data and allocator slack, SQLite's page-cache slab, and the kernel's VM map folded by tag.
-Read-only, macOS only, and it works against a shipped release, which is the only condition the interesting numbers
-appear under.
+Read-only, macOS only (Linux and Windows don't list it, or `cpu_diagnostics`), and it works against a shipped release,
+which is the only condition the interesting numbers appear under.
 
 ```bash
 ./scripts/mcp-call.sh memory_diagnostics '{}'

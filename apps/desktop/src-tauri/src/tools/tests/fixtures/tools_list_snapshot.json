@@ -573,7 +573,7 @@
     },
     {
       "name": "tag",
-      "description": "Set macOS Finder color tags on files by name (else selection, else cursor). set: make the colors exactly (keeps colorless tags). toggle: flip each color. clear: remove all. macOS only; tags show in cmdr://state as [tags:red,blue]. The answer names the operationId; operations_rollback puts back every file's prior tags.",
+      "description": "Set macOS Finder color tags on files by name (else selection, else cursor). set: make the colors exactly (keeps colorless tags). toggle: flip each color. clear: remove all. Tags show in cmdr://state as [tags:red,blue]. The answer names the operationId; operations_rollback puts back every file's prior tags.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1657,7 +1657,7 @@
     },
     {
       "name": "memory_diagnostics",
-      "description": "What this Cmdr process is holding right now: the physical footprint, the Rust heap tagged by the global allocator holding it (mimalloc or system) and split into live data and allocator slack, the other malloc zones, SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag region-size histogram. The only reading that spans every allocator. macOS only.",
+      "description": "What this Cmdr process is holding right now: the physical footprint, the Rust heap tagged by the global allocator holding it (mimalloc or system) and split into live data and allocator slack, the other malloc zones, SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag region-size histogram. The only reading that spans every allocator.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1677,7 +1677,7 @@
     },
     {
       "name": "cpu_diagnostics",
-      "description": "Where this Cmdr process's CPU went over a window, per named thread: each live thread's CPU delta (and threads folded by name), what threads that exited inside the window spent (the process delta minus the live threads'), wakeups from TASK_POWER_INFO, context switches and syscalls, and how the thread count moved. 'measure' (default) blocks for windowSeconds; for longer windows, 'mark' a baseline and read 'sinceMark' later. Percentages are of one core. macOS only.",
+      "description": "Where this Cmdr process's CPU went over a window, per named thread: each live thread's CPU delta (and threads folded by name), what threads that exited inside the window spent (the process delta minus the live threads'), wakeups from TASK_POWER_INFO, context switches and syscalls, and how the thread count moved. 'measure' (default) blocks for windowSeconds; for longer windows, 'mark' a baseline and read 'sinceMark' later. Percentages are of one core.",
       "inputSchema": {
         "type": "object",
         "properties": {

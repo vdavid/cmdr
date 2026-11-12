@@ -15,7 +15,7 @@ use super::actions::{
 use super::ask_plans;
 use super::params;
 use super::policy::ToolCtx;
-use super::registry::{Access, Load, Tool};
+use super::registry::{Access, Load, Needs, Tool};
 use super::resources::read_tool;
 use super::schemas;
 
@@ -219,12 +219,13 @@ mcp_tools! {
         brief: "Set, toggle, or clear macOS Finder color tags on files. operations_rollback undoes it.",
         desc: "Set macOS Finder color tags on files by name (else selection, else cursor). set: \
                make the colors exactly (keeps colorless tags). toggle: flip each color. clear: \
-               remove all. macOS only; tags show in cmdr://state as [tags:red,blue]. The answer \
+               remove all. Tags show in cmdr://state as [tags:red,blue]. The answer \
                names the operationId; operations_rollback puts back every file's prior tags.",
         schema: schemas::tag_schema(),
         subject: SubjectSpec::Pane,
         access: Access::LightWrite,
         load: Load::Deferred,
+        needs: Needs::ColorTags,
         run: ctx_params tags::execute_tag
     },
 
@@ -598,11 +599,12 @@ mcp_tools! {
     "memory_diagnostics" => {
         id: MemoryDiagnostics,
         brief: "Show what Cmdr's own process holds in memory right now.",
-        desc: "What this Cmdr process is holding right now: the physical footprint, the Rust heap tagged by the global allocator holding it (mimalloc or system) and split into live data and allocator slack, the other malloc zones, SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag region-size histogram. The only reading that spans every allocator. macOS only.",
+        desc: "What this Cmdr process is holding right now: the physical footprint, the Rust heap tagged by the global allocator holding it (mimalloc or system) and split into live data and allocator slack, the other malloc zones, SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag region-size histogram. The only reading that spans every allocator.",
         schema: schemas::memory_diagnostics_schema(),
         subject: SubjectSpec::None,
         access: Access::Read,
         load: Load::Deferred,
+        needs: Needs::ProcessDiagnostics,
         run: params_only memory::execute_memory_diagnostics
     },
     // Its CPU sibling, over `cmdr_fs::process_cpu`. Same `access: Read` story: thread names are
@@ -610,11 +612,12 @@ mcp_tools! {
     "cpu_diagnostics" => {
         id: CpuDiagnostics,
         brief: "Show where Cmdr's own process spent CPU, per thread.",
-        desc: "Where this Cmdr process's CPU went over a window, per named thread: each live thread's CPU delta (and threads folded by name), what threads that exited inside the window spent (the process delta minus the live threads'), wakeups from TASK_POWER_INFO, context switches and syscalls, and how the thread count moved. 'measure' (default) blocks for windowSeconds; for longer windows, 'mark' a baseline and read 'sinceMark' later. Percentages are of one core. macOS only.",
+        desc: "Where this Cmdr process's CPU went over a window, per named thread: each live thread's CPU delta (and threads folded by name), what threads that exited inside the window spent (the process delta minus the live threads'), wakeups from TASK_POWER_INFO, context switches and syscalls, and how the thread count moved. 'measure' (default) blocks for windowSeconds; for longer windows, 'mark' a baseline and read 'sinceMark' later. Percentages are of one core.",
         schema: schemas::cpu_diagnostics_schema(),
         subject: SubjectSpec::None,
         access: Access::Read,
         load: Load::Deferred,
+        needs: Needs::ProcessDiagnostics,
         run: params_only cpu::execute_cpu_diagnostics
     },
 
@@ -813,7 +816,7 @@ mcp_tools! {
     "use_tool" => {
         id: UseTool,
         brief: "Run a tool from your More tools list.",
-        desc: "Run a tool that isn't declared here, such as sort, tab (new tabs), tag, read_resource (Cmdr's own logs and settings: uri cmdr://logs), nav_to_parent, set_view_mode, or set_setting: your instructions' More tools list has them all. name is the tool, and params its arguments, following its schema: a refusal hands you the schema if you guess wrong.",
+        desc: "Run a tool that isn't declared here, such as sort, tab (new tabs), read_resource (Cmdr's own logs and settings: uri cmdr://logs), nav_to_parent, set_view_mode, or set_setting: your instructions' More tools list has them all. name is the tool, and params its arguments, following its schema: a refusal hands you the schema if you guess wrong.",
         schema: crate::tools::meta::use_tool_schema(),
         subject: SubjectSpec::None,
         access: Access::Read,

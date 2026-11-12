@@ -7,5 +7,6 @@ mod resource_operations_tree_tests;
 mod resource_state_tests;
 mod resource_tests;
 mod tool_category_tests;
+mod tool_platform_tests;
 mod tool_registry_tests;
 mod tool_snapshot_tests;
