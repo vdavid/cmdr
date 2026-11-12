@@ -246,6 +246,14 @@ impl DeviceBarriers {
         self.timed(|| self.pass())
     }
 
+    /// How often this tracker runs a pass while its operation writes: the
+    /// operation's barrier cadence, which a caller pacing its own barriers (a
+    /// cross-volume move's held source sweeps) follows too.
+    #[must_use]
+    pub const fn interval(&self) -> Duration {
+        self.interval
+    }
+
     /// How many barriers this tracker issued, for the closing log line and the
     /// tests that pin "not one per file".
     #[must_use]

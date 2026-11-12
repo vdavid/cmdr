@@ -54,7 +54,9 @@ Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`.
   been restating privately. Shared vocabulary between the dispatcher and its engines belongs in `transfer_driver` or in
   `preflight.rs`, ❌ never in the dispatcher. One engine may hand off to the other: `move_same` calls
   `move_cross::move_volumes_with_progress` when a rename copies (§ "A same-volume move whose renames copy"), and
-  `move_cross` names nothing back, so the edge stays one-way.
+  `move_cross` names nothing back, so the edge stays one-way. `move_cross` holds each landed source in `held_sweeps.rs`
+  (one destination barrier per batch, then the sweeps it proves, `source_sweep.rs`), whose rule lives in `../DETAILS.md`
+  § Durability, "Cross-volume move".
 - **`link_carry.rs` decides which symlinks a copy lands as symlinks** (§ "A copy carries a link as the link"), read by
   `preflight.rs`, `strategy.rs`, and `merge.rs`; `stream_pipe.rs::land_link` lands one.
 - **`refused_item.rs` turns a failure into the refused-name question** for the item its caller owns (a merge walker's
@@ -124,12 +126,13 @@ Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`.
   drive; `super::super` is `volume` from there, the same as before): `move_tests.rs` (cross-volume happy path, conflict
   matrix, bulk skip, dest auto-create), `move_same_tests.rs` (the same-volume rename path), `move_cancel_tests.rs`,
   `move_failure_tests.rs` (swap-rename failure and error naming), `move_progress_tests.rs` (byte totals, scan tallies,
-  leaf granularity), and `move_merge_tests.rs` (the no-byte-lost policy matrix, which owns its own fixture trees).
-  Fixtures every suite shares (`make_state`, `make_state_with_interval_ms`, `make_volumes`, `config_default`) plus the
-  `CancelAfterFirstSink`, `SampleInFlightTableSink`, and `MoveRenameFailsDestVolume` doubles live in
-  `move_test_support.rs`, reached as `super::test_support` — a new move test adds itself to the matching subject rather
-  than growing one file. `SampleInFlightTableSink` is the only way to see the probe's in-flight table: it renders the
-  table from `emit_progress`, which the destination calls from inside `write_from_stream` and therefore inside the
+  leaf granularity), and `move_merge_tests.rs` (the no-byte-lost policy matrix, which owns its own fixture trees), plus
+  `move_held_sweep_tests.rs` (one barrier per batch, and what a stop keeps). Fixtures every suite shares (`make_state`,
+  `make_state_with_interval_ms`, `make_volumes`, `config_default`) plus the `CancelAfterFirstSink`,
+  `SampleInFlightTableSink`, and `MoveRenameFailsDestVolume` doubles live in `move_test_support.rs`, reached as
+  `super::test_support` — a new move test adds itself to the matching subject rather than growing one file.
+  `SampleInFlightTableSink` is the only way to see the probe's in-flight table: it renders the table from
+  `emit_progress`, which the destination calls from inside `write_from_stream` and therefore inside the
   `CURRENT_TASK_PROBE` scope. Outside that window the row is already gone.
 - **A `*_tests.rs` file is a `#[path]` CHILD of the module it pins**, not a sibling of it: `copy_tests/mod.rs` is
   `volume::copy::tests` and `strategy_pause_tests.rs` is `volume::strategy::pause_tests`. So inside one, `super::` is

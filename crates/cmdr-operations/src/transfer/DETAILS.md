@@ -1159,13 +1159,36 @@ replay a lost entry.
   and the destination's `Volume::flush_writes` is the closing barrier (default `Ok`: a remote backend's write is the
   server's or device's to keep once answered; `LocalPosixVolume` runs its `DeviceBarriers` pass, `cmdr-local`'s
   `DETAILS.md`). The volume copy runs it before `write-complete`, and a refusal completes with `durability_unconfirmed`
-  like the local copy. The cross-volume move runs it before EACH source sweep (it moves per top-level source, so a move
-  of one folder pays one barrier and a move of N loose files N), and a refusal keeps that source and answers
-  `SourceNotRemoved` (the copy landed, the original stayed), with the cause mapped as the DESTINATION's. Archive
-  move-out runs it before deleting anything from the archive, covering both a clean extract and the durable prefix a
-  failed one leaves. Pinned by
+  like the local copy. Archive move-out runs it before deleting anything from the archive, covering both a clean extract
+  and the durable prefix a failed one leaves. Pinned by
   `volume/move_failure_tests.rs::a_move_whose_destination_wont_confirm_its_flush_keeps_the_source` and its copy twin,
   through `FaultyOp::FlushWrites`.
+- **Cross-volume move** (`volume/move_cross.rs`, `volume/held_sweeps.rs`): **barrier each batch, sweep after it.** The
+  move copies one top-level source at a time and HOLDS each landed one (its `CarriedSource`, Skips, landed path, first
+  verdict, and journal rows) instead of sweeping it at once. Whenever the operation's barrier interval
+  (`state.barriers.interval()`, `BARRIER_INTERVAL`) has gone by since the last barrier started, and once when the loop
+  COMPLETES, it runs one `flush_writes` and then sweeps every held source in copy order. **Why** (#1148): a folder is
+  one source, but N loose files were N sources and paid N barriers (about 60 ms each on a spinning disk: 5,000 loose
+  photos onto one cost about five minutes of barriers alone). The rules:
+  - A source is swept only after a barrier that STARTED after its copy landed has confirmed. The driver is serial, so
+    every held copy finished before the batch's barrier is called, and `last_barrier` is stamped at its start.
+  - A refused barrier keeps the whole batch and answers `SourceNotRemoved` for its first source (the copy landed, the
+    original stayed), the cause mapped as the DESTINATION's. Earlier batches stay swept.
+  - A sweep that refuses one original stops there with `SourceNotRemoved` for that item; the rest of its batch stays.
+  - A cancel (before or during a batch) and a failure anywhere in the loop sweep nothing more: every held source stays
+    in both places, its last `write-source-item-done` the copy's `source_removed: false`. ❌ Only a COMPLETED loop
+    sweeps the tail; a cancel never runs a barrier or a delete it didn't have to. `write-cancelled` counts what it kept
+    in `originals_still_in_place`. Pause parks the driver with the batch held, and the next due barrier takes it.
+  - Per source, the post-sweep steps run in one order (`left_in_source`, `displaced.landed_under`, the closing
+    `write-source-item-done`, the journal rows), and sources keep copy order, so the journal's `seq` and the "last event
+    is the verdict" rule hold. Across sources, a batch's first words all come before its last ones.
+  - The trade: an original whose copy hasn't met its barrier can stay up to one interval (plus one source's copy)
+    longer, so a save over it in that window is caught by the same `SourceStamp` check as before
+    (`move_source_drift_tests.rs::an_original_saved_over_while_its_sweep_is_held_survives`). The move runs only through
+    the serial driver (`drive_transfer_serial_async`); the concurrent driver serves copies. Pinned by
+    `volume/move_held_sweep_tests.rs` (one barrier for 40 loose files, the interval pacing, a refused barrier mid-move
+    and at the close, a refused sweep, a failed copy) and
+    `volume/move_cancel_tests.rs::cross_volume_move_cancel_mid_batch_keeps_the_held_originals`.
 - **Cross-FS move** (`move_with_staging`): Phase 2 copies to staging (recording staging files and dirs), Phase 3 moves
   the staged items out. Before the flush, `landed_at` maps every recorded staged path to where it lives now. Phase 3
   records `landings` (staged → landed) for each conflict resolution and each rename a merge made

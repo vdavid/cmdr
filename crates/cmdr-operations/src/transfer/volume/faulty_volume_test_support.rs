@@ -449,6 +449,14 @@ impl<V: Volume + 'static> FaultyVolume<V> {
         self.calls.lock_ignore_poison().get(&op).copied().unwrap_or(0) >= armed.nth
     }
 
+    /// How many calls to `op` this wrapper saw: every call when nothing is
+    /// armed on `op`, only the ones at its path when a fault is armed
+    /// [`at`](Self::failing_call_at) one. For a cell that pins a call COUNT,
+    /// like "N loose files cost far fewer than N barriers" (#1148).
+    pub fn calls_to(&self, op: FaultyOp) -> usize {
+        self.calls.lock_ignore_poison().get(&op).copied().unwrap_or(0)
+    }
+
     /// Hands back the inner volume's opened stream, broken on its first read
     /// when this open is the one [`FaultyOp::ReadStream`] is armed on.
     fn breaking_its_first_read<'a>(&'a self, path: &Path, opened: OpeningStream<'a>) -> OpeningStream<'a> {
@@ -468,7 +476,10 @@ impl<V: Volume + 'static> FaultyVolume<V> {
     /// Counts this call to `op` at `path` and returns the error if it's the
     /// armed one. A fault armed at another path neither counts nor fires here.
     fn fault_for(&self, op: FaultyOp, path: &Path) -> Option<VolumeError> {
-        let armed = self.faults.get(&op)?;
+        let Some(armed) = self.faults.get(&op) else {
+            *self.calls.lock_ignore_poison().entry(op).or_insert(0) += 1;
+            return None;
+        };
         if armed.at.as_deref().is_some_and(|at| at != path) {
             return None;
         }

@@ -4,17 +4,15 @@
 //! The cancel path used to return `Err(Cancelled)` without emitting the event,
 //! which left the FE dialog open forever. Each test here pins one shape: cancel
 //! before any source is touched (cross-volume and same-volume), and cancel
-//! mid-batch, where the already-moved files must be at the destination and gone
-//! from the source, with nothing sitting on both sides or neither, and cancel
+//! mid-move, where every landed copy stays at the destination and every
+//! original no barrier proved stays at the source (never neither), and cancel
 //! while a Stop-mode clash is on screen (both paths).
 //!
 //! Shared fixtures and the `CancelAfterFirstSink` double live in
 //! `volume/move_test_support.rs` (`super::test_support`).
 
 use super::super::move_same::move_within_same_volume_with_progress;
-use super::test_support::{
-    CancelAfterFirstSink, config_default, make_state, make_state_with_interval_ms, make_volumes,
-};
+use super::test_support::{CancelAfterFirstSink, config_default, make_state, make_volumes};
 use super::*;
 use crate::event_sinks::CollectorEventSink;
 use crate::testing::TestOperations;
@@ -83,11 +81,12 @@ async fn cross_volume_move_cancel_between_sources_emits_cancelled_event() {
     assert_eq!(cancelled[0].operation_type, WriteOperationType::Move);
 }
 
-/// Cancel mid-batch (after some sources moved): completed transfers stay at
-/// dest, source is deleted for those — no data loss, no half-state for the
-/// in-progress source.
+/// Cancel mid-move (after some sources copied): every landed copy stays at the
+/// destination, and so does every original no barrier proved yet, so a file is
+/// in both places or only at its source, ❌ never neither. The cancel says how
+/// many originals it kept beside their copies (#1148, `held_sweeps.rs`).
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn cross_volume_move_cancel_mid_batch_preserves_completed() {
+async fn cross_volume_move_cancel_mid_batch_keeps_the_held_originals() {
     let engine = TestOperations::new();
     let (source, dest) = make_volumes();
     for name in ["a", "b", "c", "d", "e"] {
@@ -97,7 +96,10 @@ async fn cross_volume_move_cancel_mid_batch_preserves_completed() {
             .unwrap();
     }
 
-    let state = make_state_with_interval_ms(&engine, 0);
+    // One batch for the whole move, so the cancel always finds it held.
+    let mut state = engine.new_operation_state(std::time::Duration::ZERO);
+    state.barriers = cmdr_fs::durable::DeviceBarriers::with_interval(std::time::Duration::MAX);
+    let state = Arc::new(state);
     let events = Arc::new(CancelAfterFirstSink {
         inner: CollectorEventSink::new(),
         intent: state.intent().clone(),
@@ -133,32 +135,25 @@ async fn cross_volume_move_cancel_mid_batch_preserves_completed() {
         })
     ));
 
-    // At least one moved, but not all five.
-    let mut moved = 0;
-    for name in ["a", "b", "c", "d", "e"] {
-        if dest.exists(Path::new(&format!("/{}.txt", name))).await {
-            moved += 1;
-        }
-    }
-    assert!((1..5).contains(&moved), "expected partial move (1..5), got {moved}");
-
-    // For each moved file, source must be gone (no half-move where both sides
-    // hold the data). For each NOT-moved file, source still has it (we'd lose
-    // data otherwise).
+    // At least one copied, but not all five.
+    let mut copied = 0;
     for name in ["a", "b", "c", "d", "e"] {
         let p = format!("/{}.txt", name);
-        let at_dest = dest.exists(Path::new(&p)).await;
-        let at_source = source.exists(Path::new(&p)).await;
-        // Exactly one location has it; never both, never neither.
-        assert!(
-            at_dest != at_source,
-            "{p}: at_dest={at_dest} at_source={at_source} (data loss or duplication)",
-        );
+        if dest.exists(Path::new(&p)).await {
+            copied += 1;
+        }
+        // Copied or not, no barrier proved it, so the original stays.
+        assert!(source.exists(Path::new(&p)).await, "{p}: the original must stay");
     }
+    assert!((1..5).contains(&copied), "expected a partial move (1..5), got {copied}");
 
-    // Cancel event emitted.
     let cancelled = events.inner.cancelled.lock().unwrap();
     assert_eq!(cancelled.len(), 1);
+    assert_eq!(
+        cancelled[0].rollback.originals_still_in_place.map(|kept| kept.count),
+        Some(copied as u32),
+        "the cancel says how many originals it kept beside their copies"
+    );
 }
 
 /// Pre-cancel same-volume move: nothing renamed, `write-cancelled` emitted.

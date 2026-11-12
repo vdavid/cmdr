@@ -545,8 +545,8 @@ pub enum CancelRollbackOutcome {
     PartiallyRolledBack,
 }
 
-/// The originals a cross-filesystem move still had in their old place when it
-/// was stopped, once the whole copy was already at the destination.
+/// The originals a move still had in their old place when it was stopped,
+/// though their copies were already at the destination.
 ///
 /// **Independent of `outcome`, the same way `staged_leftovers` is.** No
 /// reversal ran here and none can: the bytes are across a filesystem boundary,
@@ -558,8 +558,11 @@ pub enum CancelRollbackOutcome {
 /// this the readout stays silent on all of it, which is the one reading a user
 /// who pressed Rollback must not be left with.
 ///
-/// Set only by `transfer/move_op/cross_fs.rs`'s phase-4 source sweep, which is
-/// the only place that state exists.
+/// Set by the two moves that copy before they delete: the local cross-FS
+/// move's phase-4 source sweep (`transfer/move_op/cross_fs.rs`), once the whole
+/// copy is at the destination and durable, and the cross-volume move
+/// (`transfer/volume/held_sweeps.rs`), for the landed sources whose originals
+/// were still waiting for the destination's barrier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct OriginalsStillInPlace {

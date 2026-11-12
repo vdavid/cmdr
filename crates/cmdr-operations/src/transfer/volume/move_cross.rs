@@ -3,9 +3,11 @@
 //! `rename(2)` can't cross a volume boundary any more than it can cross a
 //! filesystem, so a move between two volumes becomes a copy whose source only
 //! goes once the destination is in place. Unlike the LOCAL cross-FS move there
-//! is no staging tree: this engine copies and deletes PER FILE, which is why its
-//! bar already accounts for the deletion and why a stop leaves every file either
-//! at its source or at its destination, never both and never neither.
+//! is no staging tree: this engine copies one top-level source at a time and
+//! deletes each original once a destination barrier covers its copy, one
+//! barrier per batch of landed sources (`held_sweeps.rs`). A stop leaves every
+//! file at its destination, at its source, or (landed but not yet proven) at
+//! both, ❌ never neither.
 //!
 //! The dispatcher that routes here, and the same-volume rename it routes to
 //! instead, are `volume::r#move` and `volume::move_same`. The three mirror the
@@ -21,7 +23,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
-use super::super::super::journal;
 use super::super::super::locked_sources::plan_locked_on_volume;
 use super::super::super::state::WriteOperationState;
 use super::super::super::transfer_tree::{TreeLanding, TreeOrder};
@@ -35,12 +36,13 @@ use super::super::transfer_driver::{
     build_pre_skip_set, drive_transfer_serial_async, emit_source_outcome,
 };
 use super::displaced_destination::DisplacedLedger;
+use super::held_sweeps::HeldSweeps;
 use super::link_carry::LinkCarry;
 use super::preflight::SourceFileFacts;
 use super::preflight::{SourceHint, scan_volume_sources, sources_in_tree_order};
 use super::refused_item::{RefusalSubject, has_no_content, skip_if_refused};
 use super::strategy::{copy_single_path, resolve_source_is_directory};
-use super::transfer_error::{PathRole, PathedVolumeError, WriteFailure, map_volume_error, source_not_removed};
+use super::transfer_error::{PathRole, PathedVolumeError, WriteFailure, map_volume_error};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
@@ -154,11 +156,6 @@ pub async fn move_volumes_with_progress(
     };
     let locked = Arc::new(locked);
 
-    // The operation-log journal target (real source + dest volume ids), set by the
-    // `move_between_volumes` deferred. `None` in tests / the both-local shortcut,
-    // where the per-leaf record point below no-ops.
-    let journal_volumes = state.journal_volumes.clone();
-
     // Bulk-skip is **file-only** (a top-level directory matching a pre-known
     // conflict means only SOME of its children collide — dropping the whole
     // subtree would lose non-conflicting files).
@@ -250,6 +247,23 @@ pub async fn move_volumes_with_progress(
     // (`displaced_destination.rs`).
     let displaced = Arc::new(DisplacedLedger::default());
 
+    // The landed sources waiting for the destination's barrier before their
+    // originals go: one barrier per interval and one at the end, ❌ never one
+    // per source (`held_sweeps.rs`). Journals under the REAL volume ids, set by
+    // the `move_between_volumes` deferred (`None` in tests and the both-local
+    // shortcut, where it no-ops).
+    let held_sweeps = Arc::new(HeldSweeps::new(
+        Arc::clone(state),
+        Arc::clone(&events),
+        operation_id.to_string(),
+        Arc::clone(&source_volume),
+        Arc::clone(&dest_volume),
+        Arc::clone(&locked),
+        Arc::clone(&left_in_source),
+        Arc::clone(&displaced),
+        state.journal_volumes.clone(),
+    ));
+
     // Live in-flight table + stall watchdog, the same registration
     // `volume/copy.rs` makes for both of its paths. Without it
     // `state.rs::enrich_progress` misses the lookup, every `write-progress`
@@ -288,7 +302,7 @@ pub async fn move_volumes_with_progress(
     // customer here.
     super::cleanup::reap_stale_transfer_temps(state, &dest_volume, dest_path).await;
 
-    let outcome = drive_transfer_serial_async(
+    let mut outcome = drive_transfer_serial_async(
         &*events,
         state,
         operation_id,
@@ -301,7 +315,10 @@ pub async fn move_volumes_with_progress(
         &pre_skip_paths,
         &driver_config,
         super::landing::top_level_precheck(
-            state, &dest_volume, Some(Arc::clone(&op_probe)), super::landing::NewName::Respell,
+            state,
+            &dest_volume,
+            Some(Arc::clone(&op_probe)),
+            super::landing::NewName::Respell,
         ),
         super::top_level_conflict::TopLevelConflicts {
             source_volume: Arc::clone(&source_volume),
@@ -334,8 +351,7 @@ pub async fn move_volumes_with_progress(
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(crate::rt::now()));
             let leaf_ledger = Arc::clone(&leaf_ledger);
             let deep_skipped_files = Arc::clone(&deep_skipped_files);
-            let left_in_source = Arc::clone(&left_in_source);
-            let journal_volumes = journal_volumes.clone();
+            let held_sweeps = Arc::clone(&held_sweeps);
             // The move keeps an in-flight table like the copy driver's, so a
             // frozen bar during a folder move gets the same "waiting on the
             // destination" answer: a row for the top-level source in hand, plus
@@ -363,8 +379,7 @@ pub async fn move_volumes_with_progress(
                 let leaf_ledger = Arc::clone(&leaf_ledger);
                 let last_progress_time = Arc::clone(&last_progress_time);
                 let deep_skipped_files = Arc::clone(&deep_skipped_files);
-                let left_in_source = Arc::clone(&left_in_source);
-                let journal_volumes = journal_volumes.clone();
+                let held_sweeps = Arc::clone(&held_sweeps);
                 let source_path = ctx.source_path.to_path_buf();
                 let dest_item_path = ctx
                     .dest_path
@@ -372,9 +387,9 @@ pub async fn move_volumes_with_progress(
                     .to_path_buf();
                 // `Swap` ⇒ `dest_item_path` is the user's original, which the
                 // copy's landing replaces once its staged bytes are whole. That
-                // landing is inside the copy, so the source sweep below runs
-                // only after it succeeded (a move must never delete the source
-                // if the destination isn't fully in place).
+                // landing is inside the copy, so the source is held for its
+                // sweep only after it succeeded (a move must never delete the
+                // source if the destination isn't fully in place).
                 let replaces = ctx.replaces.clone();
                 // Whether the driver's conflict resolution PICKED this
                 // destination name (a `Rename`, an Overwrite that cleared it),
@@ -397,7 +412,13 @@ pub async fn move_volumes_with_progress(
                             .await
                         {
                             Ok(is_dir) => is_dir,
-                            Err(e) => return Err(map_volume_error(&source_path.display().to_string(), PathRole::Source, e)),
+                            Err(e) => {
+                                return Err(map_volume_error(
+                                    &source_path.display().to_string(),
+                                    PathRole::Source,
+                                    e,
+                                ));
+                            }
                         };
                     let source_facts = SourceFileFacts::from_hint(hint);
                     let source_size = source_facts.size;
@@ -415,9 +436,8 @@ pub async fn move_volumes_with_progress(
                     // This source's row in the in-flight table, and the number
                     // every leaf row below it hangs off. Sources run one at a
                     // time here, so the counter labels the source rows in order.
-                    let source_row = super::super::transfer_probe::TaskRow::source(
-                        source_index.fetch_add(1, Ordering::Relaxed),
-                    );
+                    let source_row =
+                        super::super::transfer_probe::TaskRow::source(source_index.fetch_add(1, Ordering::Relaxed));
 
                     // Merge context: when a source folder lands on a same-named
                     // dest folder, deep file clashes inside honor the file policy
@@ -452,15 +472,16 @@ pub async fn move_volumes_with_progress(
                     // This driver streams the source ITSELF, so from here until
                     // the next iteration nothing else could be stuck: the phase
                     // points a reader straight at the rows below. It stands
-                    // through the copy AND the source sweep after it, which the
-                    // row's own `Finalizing` phase separates.
+                    // through the copy AND any batch of held sweeps a due
+                    // barrier runs after it, which the row's own `Finalizing`
+                    // phase separates.
                     op_probe.set_driver_phase_at(
                         super::super::transfer_probe::DriverPhase::TransferringSource,
                         Some(source_row),
                         &source_path,
                     );
-                    // Held for this source's whole transfer, copy phase AND
-                    // source sweep; dropping it clears the row. Mirrors
+                    // Held for this source's whole transfer, copy phase AND any
+                    // held sweeps after it; dropping it clears the row. Mirrors
                     // `volume/copy_serial.rs`.
                     let task_probe = op_probe.begin_task(
                         source_row,
@@ -537,132 +558,61 @@ pub async fn move_volumes_with_progress(
                     };
                     // Past the last byte. Set directly on the handle rather than
                     // through the task-local, whose scope ended with the copy:
-                    // the source sweep below is a move's most dangerous
-                    // stretch, and a dump taken during it must not still claim
-                    // the task is streaming.
+                    // a batch of source sweeps may run below, a move's most
+                    // dangerous stretch, and a dump taken during it must not
+                    // still claim the task is streaming.
                     probe.set_phase(super::super::transfer_probe::TaskPhase::Finalizing);
                     // Overwrote iff the top-level Overwrite replaced a file (a
                     // swap, or in place) OR a deep-merge child did. Feeds move
                     // eligibility.
                     let source_overwrote = replaces.overwrites() || created.any_overwrote();
-                    // Where the source landed: the original's own name after an
-                    // overwrite, a DIR source's dest root otherwise.
-                    let landed_dest = dest_item_path;
 
-                    // Remove the source, from the LEDGER the copy kept, ❌ never
-                    // by walking what's on disk now (`source_sweep.rs`). What
-                    // stays is the user's only copy of something: a child the
-                    // merge skipped (the conditional policies reduce to Skip per
-                    // file, so "Overwrite all smaller / older" hits this
-                    // constantly), an item that appeared while the folder
-                    // copied, or an original saved over after the copy read it.
+                    // What stays when the source goes is the user's only copy
+                    // of something: a child the merge skipped (the conditional
+                    // policies reduce to Skip per file, so "Overwrite all
+                    // smaller / older" hits this constantly), an item that
+                    // appeared while the folder copied, or an original saved
+                    // over after the copy read it (`source_sweep.rs`).
                     let skipped = created.skipped_source_paths();
                     // The FILE count, ❌ never `skipped.len()`: one skipped
                     // folder (a refused name) is one path but every file in it.
                     deep_skipped_files.fetch_add(created.skipped_file_count(), Ordering::Relaxed);
                     // The copy landed, so the item is done with for now; the
-                    // sweep below speaks again, and its word is the last
+                    // sweep speaks again, and its word is the last
                     // (`../../DETAILS.md` § "Per-source outcomes"). A folder
                     // whose every file was declined landed nothing: a skip.
-                    let verdict = if source_is_dir && !skipped.is_empty() && created.files.lock_ignore_poison().is_empty()
-                    {
-                        SourceItemOutcome::Skipped
-                    } else {
-                        SourceItemOutcome::Done
-                    };
+                    let verdict =
+                        if source_is_dir && !skipped.is_empty() && created.files.lock_ignore_poison().is_empty() {
+                            SourceItemOutcome::Skipped
+                        } else {
+                            SourceItemOutcome::Done
+                        };
                     emit_source_outcome(&*events, &operation_id, &source_path, verdict, false);
-                    // The destination's closing barrier BEFORE the sweep: until
-                    // it holds, the original is the only copy proven on a disk
-                    // (`../DETAILS.md` § Durability). One per top-level source,
-                    // never one per file. A refusal keeps the original, and the
-                    // move says it landed but stayed.
-                    if let Err(e) = dest_volume.flush_writes().await {
-                        log::warn!(
-                            target: "write_durability",
-                            "move_between_volumes: {} stays, its copy isn't proven durable: {}",
-                            LogPrivate::path(&source_path),
-                            LogError(&e)
-                        );
-                        // The refusal is the DESTINATION's, so it's mapped as one.
-                        let landed_at = landed_dest.display().to_string();
-                        return Err(WriteOperationError::SourceNotRemoved {
-                            path: source_path.display().to_string(),
-                            cause: Box::new(map_volume_error(&landed_at, PathRole::Destination, e)),
-                            landed_at,
-                        });
-                    }
-                    let carried = if source_is_dir {
-                        super::source_sweep::CarriedSource::Folder(created.take_source_ledger())
-                    } else {
-                        super::source_sweep::CarriedSource::File(stamp_before)
-                    };
-                    let delete_result =
-                        super::source_sweep::sweep_carried_source(&state, &source_volume, &source_path, &carried, &skipped, &locked)
-                            .await
-                            .map(|kept| {
-                                left_in_source.lock_ignore_poison().note(
-                                    &source_path,
-                                    source_is_dir,
-                                    kept.appeared,
-                                    kept.changed,
-                                );
-                                // What the sweep kept is what keeps the source
-                                // standing: a Skip, a newcomer, or a change.
-                                kept.appeared == 0 && kept.changed == 0 && skipped.is_empty()
-                            });
-                    let source_removed = match delete_result {
-                        Ok(gone) => gone,
-                        Err(e) => {
-                        // Same rule as the copy phase: name the file that
-                        // actually refused to go, which for a directory source
-                        // is a leaf inside it — ❌ never `source_path`, whose
-                        // own `ENOTEMPTY` is just the symptom.
-                        log::warn!(
-                            target: "move",
-                            "move_between_volumes: source delete failed for {} (under {}) after successful copy: {}",
-                            LogPrivate::path(&e.path),
-                            LogPrivate::path(&source_path),
-                            LogError(&e.error)
-                        );
-                        // ❗ The copy LANDED, so the move didn't fail: say so.
-                        return Err(source_not_removed(&e.path, &landed_dest, e.error));
-                        }
-                    };
-                    // Moved in full, so whatever it set aside is replaced.
-                    displaced.landed_under(&landed_dest);
-                    // Swept. Whether the source is gone is the sweep's own
-                    // account of what it kept, ❌ never inferred from "it was a
-                    // move", and ❌ never a fresh probe: on an object store that
-                    // is a billed request per source the estimate doesn't count.
-                    emit_source_outcome(&*events, &operation_id, &source_path, verdict, source_removed);
-
-                    // Journal the moved leaves under the REAL volume ids: a file
-                    // source → one leaf (source on the source volume, dest on the
-                    // dest volume); a dir source → one leaf per copied file (source
-                    // rebased from the dest tail) plus the created dest dirs after
-                    // them. Per-source here (not post-loop) because the throwaway
-                    // ledger is drained per iteration; the created dirs land right
-                    // after this source's files, so their `seq` still follows the
-                    // contents within the subtree.
-                    if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
-                        let files = std::mem::take(&mut *created.files.lock_ignore_poison());
-                        let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
-                        let landed =
-                            journal::LandedTimes::read_back(&*dest_volume, &landed_dest, source_is_dir, &files).await;
-                        journal::record_volume_transfer_source(
-                            state.scope(),
-                            src_vol,
-                            &source_path,
-                            dst_vol,
-                            &landed_dest,
-                            source_is_dir,
-                            &files,
-                            (!source_is_dir).then_some(bytes as i64),
-                            &landed,
-                            source_overwrote,
-                        );
-                        journal::record_created_dirs_on(state.scope(), dst_vol, &dirs);
-                    }
+                    // Held until the destination's barrier confirms its copy:
+                    // until then the original is the only copy proven on a disk
+                    // (`held_sweeps.rs`). The sweep removes the LEDGER the copy
+                    // kept, ❌ never what's on disk now (`source_sweep.rs`).
+                    held_sweeps.hold(super::held_sweeps::HeldSource {
+                        carried: if source_is_dir {
+                            super::source_sweep::CarriedSource::Folder(created.take_source_ledger())
+                        } else {
+                            super::source_sweep::CarriedSource::File(stamp_before)
+                        },
+                        source: source_path,
+                        is_dir: source_is_dir,
+                        skipped,
+                        // The original's own name after an overwrite, a
+                        // folder's destination root otherwise.
+                        landed: dest_item_path,
+                        verdict,
+                        created_files: std::mem::take(&mut *created.files.lock_ignore_poison()),
+                        created_dirs: std::mem::take(&mut *created.dirs.lock_ignore_poison()),
+                        bytes,
+                        overwrote: source_overwrote,
+                    });
+                    // One barrier per interval, covering every source held since
+                    // the last one, ❌ never one per source (#1148).
+                    held_sweeps.sweep_if_due().await?;
 
                     // Per-file milestone emit (bumped `files_done = N`,
                     // bumped `bytes_done`) now lives in the driver's
@@ -677,13 +627,21 @@ pub async fn move_volumes_with_progress(
     )
     .await;
 
-    // Every source is done (or the loop bailed); the abandoned-temp sweep and
-    // the terminal emits below are all that is left. Mirrors
-    // `ConcurrentDriver::finish` and `copy_serial.rs`.
+    // Every source is done (or the loop bailed); the held sweeps, the
+    // abandoned-temp sweep, and the terminal emits below are all that is left.
+    // Mirrors `ConcurrentDriver::finish` and `copy_serial.rs`.
     op_probe.set_driver_phase(
         super::super::transfer_probe::DriverPhase::PostLoop,
         "post-loop bookkeeping",
     );
+    // The closing barrier and the sweeps it proves, ONLY on a completed loop: a
+    // cancel or a failure keeps every source still held, in both places
+    // (`held_sweeps.rs`). First, so `displaced` below sees what moved in full.
+    if matches!(outcome.intent, PostLoopIntent::Completed)
+        && let Err(e) = held_sweeps.sweep_held().await
+    {
+        outcome.intent = PostLoopIntent::stopped_by(e);
+    }
 
     // The ledger's count, ❌ never `outcome.files_done` (top-level sources).
     let files_done = leaf_files_done.load(Ordering::Relaxed);
@@ -750,15 +708,21 @@ pub async fn move_volumes_with_progress(
             // cancel for the move path too (mirrors
             // `copy_volumes_with_progress`); without it the outer wrapper
             // would only log the cancel and the dialog would never close.
+            // A cross-volume move has no reversal to report, but a staged
+            // partial, a renamed original, or a landed source whose original the
+            // stop kept is still news.
+            let mut rollback = CancelRollback::none()
+                .with_staged_leftovers(staged_leftovers)
+                .with_recovered(recovered);
+            let unswept = held_sweeps.unswept();
+            if unswept > 0 {
+                rollback = rollback.with_originals_still_in_place(u32::try_from(unswept).unwrap_or(u32::MAX));
+            }
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_done,
-                // A cross-volume move has no reversal to report, but a staged
-                // partial or renamed original is still news.
-                rollback: CancelRollback::none()
-                    .with_staged_leftovers(staged_leftovers)
-                    .with_recovered(recovered),
+                rollback,
             });
             Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".into(),
@@ -819,6 +783,11 @@ mod cancel_tests;
 #[cfg(test)]
 #[path = "move_failure_tests.rs"]
 mod failure_tests;
+/// One device barrier per batch of landed sources, and what a stop keeps
+/// (#1148).
+#[cfg(test)]
+#[path = "move_held_sweep_tests.rs"]
+mod held_sweep_tests;
 /// A move off a local source holding Locked items (#408).
 #[cfg(all(test, target_os = "macos"))]
 #[path = "move_locked_tests.rs"]

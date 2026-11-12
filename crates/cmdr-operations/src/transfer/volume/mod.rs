@@ -24,6 +24,7 @@ mod extract_quarantine;
 // concatenates it with the child's header and resolves the merged doc in THIS
 // scope, so the child's links to its own items break.
 mod folder_metadata;
+mod held_sweeps;
 mod item_identity;
 mod landed_flags;
 mod landing;

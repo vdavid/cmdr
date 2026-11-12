@@ -16,7 +16,7 @@ Copy and move across every volume backend. File map: `DETAILS.md` § Files. Shar
 - **Overwrite merges dirs and replaces files**, enforced at `apply_volume_conflict_resolution`, ❌ not `Volume::delete`;
   NOT reversible. A BLANKET one ❌ never crosses types (`../../../CLAUDE.md`); an answered one sets the dest ASIDE.
 - **A MOVE's source sweep deletes the walk's LEDGER, ❌ never the tree** (`source_sweep.rs`): Skips, newcomers, and
-  changes stay. A drop re-runs it WHOLE, ❌ no blind retry.
+  changes stay. A drop re-runs it WHOLE, ❌ no blind retry. Barrier first: `held_sweeps.rs`.
 - **❌ Never fabricate a destination size for the conflict dialog**: `None` (a fake `0` makes "Overwrite all smaller"
   unconditional).
 - **Skip the dest pre-check ONLY for a dir THIS op created** (`DirectoryCreation::Created`), ❌ never one that looks

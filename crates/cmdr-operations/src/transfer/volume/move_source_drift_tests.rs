@@ -305,3 +305,49 @@ async fn a_clean_folder_move_takes_everything_and_reports_nothing() {
     let complete = events.complete.lock_ignore_poison();
     assert!(complete[0].appeared_during_move.is_none());
 }
+
+/// #1148: a landed file's original waits for the batch's barrier, so the window
+/// between its copy and its sweep spans the copies after it. A save over it in
+/// that window, here while the NEXT file lands, keeps it all the same.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_original_saved_over_while_its_sweep_is_held_survives() {
+    let engine = TestOperations::new();
+    let source = source_volume();
+    source.create_file(Path::new("/a.txt"), b"old a").await.unwrap();
+    source.create_file(Path::new("/b.txt"), b"b").await.unwrap();
+    let dest = Arc::new(EditSourceAtLanding::new(vec![(
+        "b.txt",
+        save_over(&source, "/a.txt", b"new a"),
+    )]));
+    // One batch, so `/a.txt` is still held when `/b.txt` lands.
+    let mut state = engine.new_operation_state(std::time::Duration::from_millis(50));
+    state.barriers = cmdr_fs::durable::DeviceBarriers::with_interval(std::time::Duration::MAX);
+    let events = Arc::new(CollectorEventSink::new());
+
+    move_volumes_with_progress(
+        events.clone(),
+        "op-vol-drift-held",
+        &Arc::new(state),
+        Arc::clone(&source) as Arc<dyn Volume>,
+        &[PathBuf::from("/a.txt"), PathBuf::from("/b.txt")],
+        Arc::clone(&dest) as Arc<dyn Volume>,
+        Path::new("/"),
+        &VolumeCopyConfig::default(),
+    )
+    .await
+    .expect("the move completes");
+
+    assert_eq!(dest.edits_left(), 0, "precondition: the save ran before the sweep");
+    assert_eq!(read(&*source, "/a.txt").await, b"new a");
+    assert_eq!(read(&*dest, "/a.txt").await, b"old a");
+    assert!(
+        !source.exists(Path::new("/b.txt")).await,
+        "an untouched original still goes"
+    );
+    let complete = events.complete.lock_ignore_poison();
+    let left = complete[0]
+        .appeared_during_move
+        .as_ref()
+        .expect("a kept original is news");
+    assert_eq!(left.changed_count, 1);
+}

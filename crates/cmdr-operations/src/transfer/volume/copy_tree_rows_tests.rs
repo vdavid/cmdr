@@ -467,7 +467,8 @@ async fn a_same_volume_merge_that_kept_its_source_never_reports_it_removed_on_a_
 /// A cross-volume move speaks twice per source: `Done` once the copy landed,
 /// then again once the sweep ran, saying whether the original is gone. The
 /// LAST word is the verdict: a folder that kept a clashing child stays, a
-/// file that moved is gone.
+/// file that moved is gone. The sweeps wait for one barrier covering both
+/// copies (`held_sweeps.rs`), so both first words come before both last ones.
 #[tokio::test]
 async fn a_cross_volume_move_reports_each_source_twice_and_the_sweep_has_the_last_word() {
     let engine = TestOperations::new();
@@ -500,8 +501,8 @@ async fn a_cross_volume_move_reports_each_source_twice_and_the_sweep_has_the_las
         verdicts(&events),
         vec![
             verdict("/src/keep", SourceItemOutcome::Done, false),
-            verdict("/src/keep", SourceItemOutcome::Done, false),
             verdict("/src/solo.txt", SourceItemOutcome::Done, false),
+            verdict("/src/keep", SourceItemOutcome::Done, false),
             verdict("/src/solo.txt", SourceItemOutcome::Done, true),
         ]
     );
