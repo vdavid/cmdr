@@ -60,10 +60,13 @@ pub(crate) fn detach_word_for_volume_id(volume_id: &str) -> DetachWord {
     use cmdr_fs::volume::VolumeScheme;
     match VolumeScheme::of(volume_id) {
         VolumeScheme::Adb => DetachWord::Disconnect,
+        // An SMB share, on its OS mount or a direct session: the id says share on every OS, where
+        // `category` and `connectionState` don't (a Linux GVFS share carries no state). The
+        // frontend twin is `detach-control.ts:detachSubjectOf`.
+        VolumeScheme::Smb => DetachWord::Share,
         VolumeScheme::Root
         | VolumeScheme::Local
         | VolumeScheme::Path
-        | VolumeScheme::Smb
         | VolumeScheme::Sftp
         | VolumeScheme::Webdav
         | VolumeScheme::S3

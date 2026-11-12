@@ -4221,17 +4221,17 @@
       "file": "menu.json",
       "source": "rust",
       "mechanism": "neutral",
-      "status": "open",
+      "status": "none",
       "branches": {
         "macos": "Eject ({name})",
         "windows": null,
         "other": null
       },
       "sources": {
-        "row": "written: lead ruling 10 (eject rows checked against the volumes they reach)"
+        "row": "lead brief for #1117: the share case moved to its own keys"
       },
       "whereInUi": "Volume switcher row’s right-click menu, “Eject (name)”.",
-      "note": "Open (lead ruling 10): this key words the eject control for removable drives AND for a mounted network share (`detach-control.ts:ejectLook` via `isVolumeEjectable`, which says yes to a live `os_mount` session; Linux mounts shares through GVFS). One value can’t say “Eject” for a drive and “Disconnect” (Windows) / “Unmount” (Linux) for a share, so it keeps “Eject” everywhere until the call site tells the two apart (a share-specific key or a `kind` argument). Right for drives today."
+      "note": "No change: this key now words only drives, disk images, and MTP devices, which say “Eject” on every OS. A mounted network share (an `smb-` volume id) reads `menu.volume.detachShare` instead, a per-OS block (macOS “Eject”, Windows “Disconnect”, Linux “Unmount”), picked by `detach-control.ts:detachSubjectOf` and Rust’s `DetachWord::Share` (#1117)."
     },
     {
       "key": "main.dockPinNudge.title",
@@ -9693,16 +9693,16 @@
       "file": "menu.json",
       "source": "rust",
       "mechanism": "none",
-      "status": "open",
+      "status": "none",
       "branches": {
         "macos": "Eject ({name}) (busy)",
         "windows": null,
         "other": null
       },
       "sources": {
-        "row": "written: lead ruling 10 (eject rows checked against the volumes they reach)"
+        "row": "lead brief for #1117: the share case moved to its own keys"
       },
-      "note": "Open (lead ruling 10): this key words the eject control for removable drives AND for a mounted network share (`detach-control.ts:ejectLook` via `isVolumeEjectable`, which says yes to a live `os_mount` session; Linux mounts shares through GVFS). One value can’t say “Eject” for a drive and “Disconnect” (Windows) / “Unmount” (Linux) for a share, so it keeps “Eject” everywhere until the call site tells the two apart (a share-specific key or a `kind` argument). Right for drives today."
+      "note": "No change: this key now words only drives, disk images, and MTP devices, which say “Eject” on every OS. A mounted network share (an `smb-` volume id) reads `menu.volume.detachShareBusy` instead, a per-OS block (macOS “Eject”, Windows “Disconnect”, Linux “Unmount”), picked by `detach-control.ts:detachSubjectOf` and Rust’s `DetachWord::Share` (#1117)."
     },
     {
       "key": "menu.volume.ejectAll",
@@ -10115,16 +10115,16 @@
       "file": "fileExplorer.json",
       "source": "catalog",
       "mechanism": "none",
-      "status": "open",
+      "status": "none",
       "branches": {
         "macos": "Couldn’t eject {volumeName}: {message}",
         "windows": null,
         "other": null
       },
       "sources": {
-        "row": "written: lead ruling 10 (eject rows checked against the volumes they reach)"
+        "row": "lead brief for #1117: the share case moved to its own keys"
       },
-      "note": "Open (lead ruling 10): this key words the eject control for removable drives AND for a mounted network share (`detach-control.ts:ejectLook` via `isVolumeEjectable`, which says yes to a live `os_mount` session; Linux mounts shares through GVFS). One value can’t say “Eject” for a drive and “Disconnect” (Windows) / “Unmount” (Linux) for a share, so it keeps “Eject” everywhere until the call site tells the two apart (a share-specific key or a `kind` argument). Right for drives today."
+      "note": "No change: this key now words only drives, disk images, and MTP devices, which say “Eject” on every OS. A mounted network share (an `smb-` volume id) reads `fileExplorer.pane.detachShareFailedToast` instead, a per-OS block (macOS “Eject”, Windows “Disconnect”, Linux “Unmount”), picked by `detach-control.ts:detachSubjectOf` and Rust’s `DetachWord::Share` (#1117)."
     },
     {
       "key": "fileExplorer.navigation.favoriteTooltipWithStatus",
@@ -10173,48 +10173,48 @@
       "file": "fileExplorer.json",
       "source": "catalog",
       "mechanism": "none",
-      "status": "open",
+      "status": "none",
       "branches": {
         "macos": "Eject {name}",
         "windows": null,
         "other": null
       },
       "sources": {
-        "row": "written: lead ruling 10 (eject rows checked against the volumes they reach)"
+        "row": "lead brief for #1117: the share case moved to its own keys"
       },
-      "note": "Open (lead ruling 10): this key words the eject control for removable drives AND for a mounted network share (`detach-control.ts:ejectLook` via `isVolumeEjectable`, which says yes to a live `os_mount` session; Linux mounts shares through GVFS). One value can’t say “Eject” for a drive and “Disconnect” (Windows) / “Unmount” (Linux) for a share, so it keeps “Eject” everywhere until the call site tells the two apart (a share-specific key or a `kind` argument). Right for drives today."
+      "note": "No change: this key now words only drives, disk images, and MTP devices, which say “Eject” on every OS. A mounted network share (an `smb-` volume id) reads `fileExplorer.navigation.detachShareAriaLabel` instead, a per-OS block (macOS “Eject”, Windows “Disconnect”, Linux “Unmount”), picked by `detach-control.ts:detachSubjectOf` and Rust’s `DetachWord::Share` (#1117)."
     },
     {
       "key": "fileExplorer.navigation.ejectBusyTooltip",
       "file": "fileExplorer.json",
       "source": "catalog",
       "mechanism": "none",
-      "status": "open",
+      "status": "none",
       "branches": {
         "macos": "Cmdr is still working with files on this device. You can eject it once that’s done.",
         "windows": null,
         "other": null
       },
       "sources": {
-        "row": "written: lead ruling 10 (eject rows checked against the volumes they reach)"
+        "row": "lead brief for #1117: the share case moved to its own keys"
       },
-      "note": "Open (lead ruling 10): this key words the eject control for removable drives AND for a mounted network share (`detach-control.ts:ejectLook` via `isVolumeEjectable`, which says yes to a live `os_mount` session; Linux mounts shares through GVFS). One value can’t say “Eject” for a drive and “Disconnect” (Windows) / “Unmount” (Linux) for a share, so it keeps “Eject” everywhere until the call site tells the two apart (a share-specific key or a `kind` argument). Right for drives today."
+      "note": "No change: this key now words only drives, disk images, and MTP devices, which say “Eject” on every OS. A mounted network share (an `smb-` volume id) reads `fileExplorer.navigation.detachShareBusyTooltip` instead, a per-OS block (macOS “Eject”, Windows “Disconnect”, Linux “Unmount”), picked by `detach-control.ts:detachSubjectOf` and Rust’s `DetachWord::Share` (#1117)."
     },
     {
       "key": "fileExplorer.navigation.ejectingVolumeAriaLabel",
       "file": "fileExplorer.json",
       "source": "catalog",
       "mechanism": "none",
-      "status": "open",
+      "status": "none",
       "branches": {
         "macos": "Ejecting {name}…",
         "windows": null,
         "other": null
       },
       "sources": {
-        "row": "written: lead ruling 10 (eject rows checked against the volumes they reach)"
+        "row": "lead brief for #1117: the share case moved to its own keys"
       },
-      "note": "Open (lead ruling 10): this key words the eject control for removable drives AND for a mounted network share (`detach-control.ts:ejectLook` via `isVolumeEjectable`, which says yes to a live `os_mount` session; Linux mounts shares through GVFS). One value can’t say “Eject” for a drive and “Disconnect” (Windows) / “Unmount” (Linux) for a share, so it keeps “Eject” everywhere until the call site tells the two apart (a share-specific key or a `kind` argument). Right for drives today."
+      "note": "No change: this key now words only drives, disk images, and MTP devices, which say “Eject” on every OS. A mounted network share (an `smb-` volume id) reads `fileExplorer.navigation.detachingShareAriaLabel` instead, a per-OS block (macOS “Eject”, Windows “Disconnect”, Linux “Unmount”), picked by `detach-control.ts:detachSubjectOf` and Rust’s `DetachWord::Share` (#1117)."
     },
     {
       "key": "mtp.permissionDialog.description",

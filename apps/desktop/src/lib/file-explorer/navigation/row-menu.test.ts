@@ -45,6 +45,8 @@ import {
   type RowMenuEntry,
 } from './row-menu'
 import type { VolumeInfo } from '../types'
+import { addToast } from '#lib/ui/toast/index.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 const idle = { busy: false, ejecting: false, isSaved: false, directConnection: undefined, autoReconnect: undefined }
 
@@ -255,6 +257,35 @@ describe('volumeRowMenu: an SMB share’s direct connection', () => {
 
   it('offers no fix before Rust has answered for the switch', () => {
     expect(entry(volumeRowMenu(share, idle), 'fix:connect-directly')).toBeUndefined()
+  })
+})
+
+/** A mounted share's detach item and refusal toast say its OS's verb; a drive's say Eject everywhere (#1117). */
+describe.each([
+  ['macos', 'Eject (media)', 'Eject (media) (busy)', 'Couldn’t eject media: '],
+  ['windows', 'Disconnect (media)', 'Disconnect (media) (busy)', 'Couldn’t disconnect media: '],
+  ['linux', 'Unmount (media)', 'Unmount (media) (busy)', 'Couldn’t unmount media: '],
+] as const)('volumeRowMenu: a mounted share on %s', (platform, label, busyLabel, toastStart) => {
+  beforeEach(() => withPlatform(platform))
+
+  it('words the detach item with this OS’s verb, idle and busy', () => {
+    expect(entry(volumeRowMenu(share, idle), 'eject')).toMatchObject({ label, icon: 'eject' })
+    busy.add(share.id)
+    expect(entry(volumeRowMenu(share, { ...idle, busy: true }), 'eject')).toMatchObject({
+      label: busyLabel,
+      disabled: true,
+    })
+  })
+
+  it('keeps Eject for a drive', () => {
+    expect(entry(volumeRowMenu(usbDrive, idle), 'eject')).toMatchObject({ label: 'Eject (Stick)' })
+  })
+
+  it('says the same verb when the OS turns the unmount down', async () => {
+    ejectVolume.mockRejectedValueOnce({ type: 'unknown' })
+    await runVolumeRowAction({ volume: share, action: 'eject' })
+    const [text] = vi.mocked(addToast).mock.calls[0] as [string]
+    expect(text.startsWith(toastStart)).toBe(true)
   })
 })
 

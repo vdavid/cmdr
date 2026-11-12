@@ -331,6 +331,14 @@
       "message": "the underlying failure reason, already worded for the user"
     }
   },
+  "fileExplorer.pane.detachShareFailedToast": "{platform, select, macos {Couldn’t eject {volumeName}: {message}} windows {Couldn’t disconnect {volumeName}: {message}} other {Couldn’t unmount {volumeName}: {message}}}",
+  "@fileExplorer.pane.detachShareFailedToast": {
+    "description": "Error toast when ending a mounted network share (an SMB share) did not work. The share's sibling of fileExplorer.pane.ejectFailedToast, which says the same for a drive: keep each branch worded like that key, with the verb this OS uses for a share (macOS: Finder's Eject, so the macOS branch reads exactly like fileExplorer.pane.ejectFailedToast; Windows: Disconnect, File Explorer's word for a mapped network drive; Linux: Unmount, never \"disconnect\"). {volumeName} is the share's display name; {message} is the underlying reason text, a full sentence.",
+    "placeholders": {
+      "volumeName": "the display name of the share, for example media",
+      "message": "the underlying failure reason, already worded for the user"
+    }
+  },
   "fileExplorer.errorPane.tryAgain": "Try again",
   "@fileExplorer.errorPane.tryAgain": {
     "description": "Button on the error screen shown in place of a file list when a folder could not be opened. Retries opening it."
@@ -2879,6 +2887,24 @@
     "placeholders": {
       "name": "the display name of the volume being ejected, for example Backup Drive"
     }
+  },
+  "fileExplorer.navigation.detachShareAriaLabel": "{platform, select, macos {Eject {name}} windows {Disconnect {name}} other {Unmount {name}}}",
+  "@fileExplorer.navigation.detachShareAriaLabel": {
+    "description": "Accessibility label and tooltip for the eject button on a mounted network share (an SMB share) in the breadcrumb and switcher. The share's sibling of fileExplorer.navigation.ejectVolumeAriaLabel. VERB phrase, imperative, with the verb this OS uses for a share: macOS says Eject (Finder's word for a server too), so the macOS branch reads exactly like fileExplorer.navigation.ejectVolumeAriaLabel; Windows says Disconnect (File Explorer's word for a mapped network drive); Linux says Unmount, never \"disconnect\". {name} is the share's display name.",
+    "placeholders": {
+      "name": "the display name of the share, for example media"
+    }
+  },
+  "fileExplorer.navigation.detachingShareAriaLabel": "{platform, select, macos {Ejecting {name}…} windows {Disconnecting {name}…} other {Unmounting {name}…}}",
+  "@fileExplorer.navigation.detachingShareAriaLabel": {
+    "description": "Accessibility label and tooltip on the eject button of a mounted network share while ending the mount is still running: the button shows a spinner and can't be pressed until it finishes. The share's sibling of fileExplorer.navigation.ejectingVolumeAriaLabel. Present progressive, describing work underway, not a command, with each branch's verb matching the same branch of fileExplorer.navigation.detachShareAriaLabel. Keep the trailing ellipsis character.",
+    "placeholders": {
+      "name": "the display name of the share, for example media"
+    }
+  },
+  "fileExplorer.navigation.detachShareBusyTooltip": "{platform, select, macos {Cmdr is still working with files on this device. You can eject it once that’s done.} windows {Cmdr is still working with files on this device. You can disconnect it once that’s done.} other {Cmdr is still working with files on this device. You can unmount it once that’s done.}}",
+  "@fileExplorer.navigation.detachShareBusyTooltip": {
+    "description": "Accessibility label and tooltip on a disabled eject button of a mounted network share, explaining it can't be ended yet because a file operation is running on it. The share's sibling of fileExplorer.navigation.ejectBusyTooltip: keep each branch worded like that key, with the verb matching the same branch of fileExplorer.navigation.detachShareAriaLabel. Says when the button comes back, as a statement (“You can … it”), never an order."
   },
   "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
   "@fileExplorer.navigation.usbSpeed": {

@@ -183,6 +183,22 @@ export const COLLAPSED_PAIRS: readonly { mac: string; other: string; survivor: s
 ]
 
 /**
+ * Keys split off a frozen key for one case it used to word: the new key carries that case's
+ * per-OS words, so a Mac must keep reading exactly what the old key froze. The mounted network
+ * share's eject words (#1117) are the six today: a share says "Eject" on macOS like a drive, and
+ * "Disconnect" / "Unmount" on Windows / Linux. Checked per locale: the new key's macOS branch
+ * renders what `from` froze.
+ */
+export const SPLIT_KEYS: readonly { from: string; to: string }[] = [
+  { from: 'menu.volume.eject', to: 'menu.volume.detachShare' },
+  { from: 'menu.volume.ejectBusy', to: 'menu.volume.detachShareBusy' },
+  { from: 'fileExplorer.pane.ejectFailedToast', to: 'fileExplorer.pane.detachShareFailedToast' },
+  { from: 'fileExplorer.navigation.ejectVolumeAriaLabel', to: 'fileExplorer.navigation.detachShareAriaLabel' },
+  { from: 'fileExplorer.navigation.ejectingVolumeAriaLabel', to: 'fileExplorer.navigation.detachingShareAriaLabel' },
+  { from: 'fileExplorer.navigation.ejectBusyTooltip', to: 'fileExplorer.navigation.detachShareBusyTooltip' },
+]
+
+/**
  * The text macOS reads from a catalog value: a block's `macos` branch, or `other`
  * where the block has none. A value that starts like a block but doesn't split
  * comes back whole, so it shows as drift.
@@ -203,14 +219,40 @@ function rendersSame(key: string, expected: string, actual: string): boolean {
   }
 }
 
+/** One locale's `SPLIT_KEYS` whose new key is missing or reads other macOS text than its old key froze. */
+function splitKeyDrift(
+  locale: string,
+  expectedValues: Readonly<Record<string, string>>,
+  actualValues: Partial<Record<string, ResolvedValue>>,
+): string[] {
+  const drift: string[] = []
+  for (const split of SPLIT_KEYS) {
+    if (!(split.from in expectedValues)) continue
+    const expected = expectedValues[split.from]
+    const resolved = actualValues[split.to]
+    if (!resolved) {
+      drift.push(`${locale} ${split.to} (split off ${split.from}): missing`)
+      continue
+    }
+    const actual = macosBranch(resolved.value)
+    if (!rendersSame(split.to, expected, actual)) {
+      drift.push(
+        `${locale} ${split.to} (split off ${split.from}): ${JSON.stringify(expected)} → ${JSON.stringify(actual)}`,
+      )
+    }
+  }
+  return drift
+}
+
 /**
  * Every (locale, key) whose macOS text moved from `baseline`, as `locale key: expected → actual` lines.
  * @param messagesRoot the catalogs to read; the shipped ones by default
  */
 export function macosCopyDrift(baseline: MacosCopyBaseline, messagesRoot?: string): string[] {
   const survivors = COLLAPSED_PAIRS.map((pair) => pair.survivor)
+  const splits = SPLIT_KEYS.map((split) => split.to)
   const allKeys = [
-    ...new Set([...Object.values(baseline.locales).flatMap((values) => Object.keys(values)), ...survivors]),
+    ...new Set([...Object.values(baseline.locales).flatMap((values) => Object.keys(values)), ...survivors, ...splits]),
   ]
   const current = resolveLocales(allKeys, messagesRoot)
   const drift: string[] = []
@@ -237,6 +279,8 @@ export function macosCopyDrift(baseline: MacosCopyBaseline, messagesRoot?: strin
         )
       }
     }
+
+    drift.push(...splitKeyDrift(locale, expectedValues, actualValues))
 
     for (const [key, expected] of Object.entries(expectedValues)) {
       if (retired.has(key)) continue

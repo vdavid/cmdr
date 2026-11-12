@@ -215,6 +215,10 @@
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"
   },
+  "fileExplorer.pane.detachShareFailedToast": "{platform, select, macos {无法推出 {volumeName}：{message}} windows {Couldn’t disconnect {volumeName}: {message}} other {Couldn’t unmount {volumeName}: {message}}}",
+  "@fileExplorer.pane.detachShareFailedToast": {
+    "sourceHash": "f4072a7"
+  },
   "fileExplorer.errorPane.tryAgain": "重试",
   "@fileExplorer.errorPane.tryAgain": {
     "sourceHash": "d8b8392"
@@ -1940,6 +1944,18 @@
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "正在推出 {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
     "sourceHash": "e8bca64"
+  },
+  "fileExplorer.navigation.detachShareAriaLabel": "{platform, select, macos {推出 {name}} windows {Disconnect {name}} other {Unmount {name}}}",
+  "@fileExplorer.navigation.detachShareAriaLabel": {
+    "sourceHash": "61db18b"
+  },
+  "fileExplorer.navigation.detachingShareAriaLabel": "{platform, select, macos {正在推出 {name}…} windows {Disconnecting {name}…} other {Unmounting {name}…}}",
+  "@fileExplorer.navigation.detachingShareAriaLabel": {
+    "sourceHash": "e8bca64"
+  },
+  "fileExplorer.navigation.detachShareBusyTooltip": "{platform, select, macos {Cmdr 还在处理这个设备上的文件。完成后就可以推出它了。} windows {Cmdr is still working with files on this device. You can disconnect it once that’s done.} other {Cmdr is still working with files on this device. You can unmount it once that’s done.}}",
+  "@fileExplorer.navigation.detachShareBusyTooltip": {
+    "sourceHash": "b298e2f"
   },
   "fileExplorer.navigation.usbSpeed": "{label}（最高 {mbps} MB/s）",
   "@fileExplorer.navigation.usbSpeed": {

@@ -654,6 +654,14 @@
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
+  "menu.volume.detachShare": "{platform, select, macos {Werp uit ({name})} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "@menu.volume.detachShare": {
+    "sourceHash": "913d6ea"
+  },
+  "menu.volume.detachShareBusy": "{platform, select, macos {Werp uit ({name}) (bezet)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "@menu.volume.detachShareBusy": {
+    "sourceHash": "e2145a6"
+  },
   "menu.volume.ejectAll": "Werp alle uit",
   "@menu.volume.ejectAll": {
     "sourceHash": "7adbe9a"

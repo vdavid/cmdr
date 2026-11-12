@@ -100,10 +100,3 @@ Rows where the code doesn't settle a platform yet, so that platform keeps the ma
   boot guard ever gains a WebView2 floor.
 - `settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description`, Windows and Linux (X11):
   "Requires Full Disk Access." stays with the key glyphs until #1102 passes the combo as a placeholder (the row's note).
-- The eject control's words, Windows and Linux: `menu.volume.eject`, `menu.volume.ejectBusy`,
-  `fileExplorer.navigation.ejectVolumeAriaLabel`, `ejectingVolumeAriaLabel`, `ejectBusyTooltip`, and
-  `fileExplorer.pane.ejectFailedToast` say "Eject" until their call sites tell a drive from a network share. One key
-  serves both: `detach-control.ts:ejectLook` words every volume `isVolumeEjectable` says yes to, a live `os_mount` share
-  included (on Linux a GVFS mount), so the glossary's "Disconnect" (Windows) and "Unmount" (Linux) for a share can't
-  live in that value. "Eject" is right for drives today. The edit-server sheet's share rows
-  (`servers.sheet.ejectAndSave` and friends) name only shares, so they already say "Disconnect" and "Unmount".

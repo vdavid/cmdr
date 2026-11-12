@@ -26,8 +26,9 @@ window focus context.
   as a right-aligned, dimmed run on an item's attributed title. See "Display-only accelerators" below.
 - `menu_items.rs`: small shared pieces: `APP_MENU_TITLE`, `resolve` (a crate `LabelText` through `menu_t`),
   `pin_tab_label`, `same_kind_menu_label` and `undo_trash_menu_label` (the bar's live wordings), plus
-  `detach_word_for_volume_id`, which decides whether a row's leave-this-volume item reads `Eject ({name})` or
-  `Disconnect` (a phone gets the second: `adb` has no per-client detach, so nothing is made safe to unplug).
+  `detach_word_for_volume_id`, which decides whether a row's leave-this-volume item reads `Eject ({name})`,
+  `Disconnect` (a phone: `adb` has no per-client detach, so nothing is made safe to unplug), or the share words (an
+  `smb-` id: `menu.volume.detachShare`, macOS "Eject", Windows "Disconnect", Linux "Unmount").
 - **Every context menu is data in `cmdr-menu`** (`crates/cmdr-menu/DETAILS.md` § Context menus): its rows for a set of
   facts, their labels, accelerator sources, and enabled state, and what a pick asks for (`context_click`). The demo
   draws the same rows. A volume switcher row's, a favorite's, and a servers-hub place's actions are NOT among them:

@@ -117,6 +117,25 @@ fn the_detach_word_comes_off_the_volume_id() {
         detach_word_for_volume_id(&path_volume_id("/Volumes/Backup")),
         DetachWord::Eject
     );
+    // A mounted SMB share, whichever backend serves it (#1117): its id is the only fact both
+    // native menus carry, and the scheme says share on every OS.
+    assert_eq!(
+        detach_word_for_volume_id(&cmdr_fs::volume::smb_volume_id("naspi", 445, "media")),
+        DetachWord::Share
+    );
+}
+
+/// A share's item draws its own keys (each OS's verb: `intl/native_strings_per_os_test.rs`) (#1117).
+#[test]
+fn a_share_row_draws_the_share_keys() {
+    assert_eq!(
+        detach_label("media", false, DetachWord::Share).key,
+        "menu.volume.detachShare"
+    );
+    assert_eq!(
+        detach_label("media", true, DetachWord::Share).key,
+        "menu.volume.detachShareBusy"
+    );
 }
 
 /// Menu labels end with the U+2026 ellipsis character, never three periods.

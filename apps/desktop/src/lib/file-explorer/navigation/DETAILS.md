@@ -445,6 +445,14 @@ chip never did, so an open SFTP place offered Disconnect in the list and Eject o
 ever be refused — `decide_eject_action` has no branch for a remote volume, so it answers `NotEjectable` — which is how a
 user came to report that Cmdr wouldn't eject a server it had just told him to eject (`ERR-P7F5Q`).
 
+**A mounted network share has its own words** (#1117): `detachSubjectOf` reads `drive` / `share` / `phone` off the
+volume id's scheme (`smb-…` is a share), and the share keys (`fileExplorer.navigation.detachShareAriaLabel` and
+siblings, `menu.volume.detachShare`, `fileExplorer.pane.detachShareFailedToast`) say macOS "Eject" (Finder's word for a
+server too), Windows "Disconnect", Linux "Unmount". A drive says "Eject" everywhere. ❗ The id, ❌ never
+`connectionState` or `category`: a macOS share is an `attached_volume` on `os_mount` or `direct`, a Linux GVFS share a
+`network` row with no state. The native menus read the same scheme (`DetachWord::Share`). The frozen macOS copy pins
+each share key's macOS branch to its drive key's (`SPLIT_KEYS` in `scripts/i18n-macos-copy-baseline-lib.ts`).
+
 An eject runs `detach-volume.ts`, which calls `ejectVolume(id)`; the backend dispatches: SMB → `diskutil unmount`, MTP →
 connection manager disconnect, physical / DMG → `diskutil eject`. A `'disconnect-place'` goes to `disconnectServerPlace`
 instead, which drops the session and leaves the row `saved`. A click on it does NOT close the menu (it's a control
@@ -455,10 +463,11 @@ server" takes the row out of the store, so a path lookup would find nothing if t
 race. The mount watchers leave it null and the path lookup is their fallback.
 
 Right-clicking the closed header opens the native breadcrumb menu (`show_breadcrumb_context_menu`) that adds the detach
-item alongside "Copy path" when the pane's volume is ejectable (`Eject ({name})` for a disk, `Disconnect` for a phone:
-`DetachWord::for_volume_id` reads the word off the id, while the ITEM stays `EJECT_VOLUME_ID` because for ADB that
-already routes to `DeviceDisconnect`). Its pick comes back over the `volume-context-action` Tauri event as the typed
-`VolumeContextActionKind::Eject`, handled in `DualPaneExplorer.svelte` (`../pane/volume-context-action.ts`).
+item alongside "Copy path" when the pane's volume is ejectable (`Eject ({name})` for a disk, `Disconnect` for a phone,
+the share words for a share: `detach_word_for_volume_id` reads the word off the id, while the ITEM stays
+`EJECT_VOLUME_ID` because for ADB that already routes to `DeviceDisconnect`). Its pick comes back over the
+`volume-context-action` Tauri event as the typed `VolumeContextActionKind::Eject`, handled in `DualPaneExplorer.svelte`
+(`../pane/volume-context-action.ts`).
 
 ### Row actions: the → submenu
 

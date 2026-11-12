@@ -216,6 +216,10 @@
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"
   },
+  "fileExplorer.pane.detachShareFailedToast": "{platform, select, macos {{volumeName} ließ sich nicht auswerfen: {message}} windows {Couldn’t disconnect {volumeName}: {message}} other {Couldn’t unmount {volumeName}: {message}}}",
+  "@fileExplorer.pane.detachShareFailedToast": {
+    "sourceHash": "f4072a7"
+  },
   "fileExplorer.errorPane.tryAgain": "Erneut versuchen",
   "@fileExplorer.errorPane.tryAgain": {
     "sourceHash": "d8b8392"
@@ -1949,6 +1953,18 @@
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "{name} wird ausgeworfen …",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
     "sourceHash": "e8bca64"
+  },
+  "fileExplorer.navigation.detachShareAriaLabel": "{platform, select, macos {{name} auswerfen} windows {Disconnect {name}} other {Unmount {name}}}",
+  "@fileExplorer.navigation.detachShareAriaLabel": {
+    "sourceHash": "61db18b"
+  },
+  "fileExplorer.navigation.detachingShareAriaLabel": "{platform, select, macos {{name} wird ausgeworfen …} windows {Disconnecting {name}…} other {Unmounting {name}…}}",
+  "@fileExplorer.navigation.detachingShareAriaLabel": {
+    "sourceHash": "e8bca64"
+  },
+  "fileExplorer.navigation.detachShareBusyTooltip": "{platform, select, macos {Cmdr arbeitet noch mit Dateien auf diesem Gerät. Du kannst das Gerät auswerfen, sobald das erledigt ist.} windows {Cmdr is still working with files on this device. You can disconnect it once that’s done.} other {Cmdr is still working with files on this device. You can unmount it once that’s done.}}",
+  "@fileExplorer.navigation.detachShareBusyTooltip": {
+    "sourceHash": "b298e2f"
   },
   "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
   "@fileExplorer.navigation.usbSpeed": {

@@ -5,7 +5,7 @@ import { tString } from '#lib/intl/messages.svelte.js'
 import { asEjectError } from './eject-error'
 import { ejectRefusalReport, wordEjectRefusal } from './eject-error-messages'
 import { disconnectServerPlace } from './server-row-actions'
-import type { DetachAction } from './detach-control'
+import { detachSubjectOf, type DetachAction } from './detach-control'
 import type { VolumeInfo } from '../types'
 
 /**
@@ -57,7 +57,12 @@ export async function ejectAndSay(volumeId: string, volumeName: string): Promise
       addToast(tString('fileExplorer.pane.ejectedDriveStaysToast', { volumeName }), { level: 'info' })
     }
   } catch (e) {
-    addToast(tString('fileExplorer.pane.ejectFailedToast', { volumeName, message: wordEjectRefusal(e) }), {
+    // A share's toast says its OS's verb ("Couldn't unmount media: …"), as its control did.
+    const key =
+      detachSubjectOf({ id: volumeId }) === 'share'
+        ? 'fileExplorer.pane.detachShareFailedToast'
+        : 'fileExplorer.pane.ejectFailedToast'
+    addToast(tString(key, { volumeName, message: wordEjectRefusal(e) }), {
       level: 'error',
       report: ejectRefusalReport(e),
     })

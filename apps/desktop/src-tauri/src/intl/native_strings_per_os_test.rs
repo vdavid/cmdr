@@ -3,6 +3,32 @@
 
 use super::*;
 
+/// A mounted network share's detach item says each OS's verb: Finder's Eject, File Explorer's
+/// Disconnect, the Linux file manager's Unmount (#1117). A drive's item says Eject everywhere.
+#[test]
+fn the_share_detach_rows_read_each_os_s_verb() {
+    let rows: [(&str, [&str; 3]); 2] = [
+        (
+            "menu.volume.detachShare",
+            ["Eject ({name})", "Disconnect ({name})", "Unmount ({name})"],
+        ),
+        (
+            "menu.volume.detachShareBusy",
+            [
+                "Eject ({name}) (busy)",
+                "Disconnect ({name}) (busy)",
+                "Unmount ({name}) (busy)",
+            ],
+        ),
+    ];
+    for (key, [macos, windows, linux]) in rows {
+        let text = lookup_text(BASE_LOCALE, key).unwrap_or_else(|| panic!("{key} is in the English table"));
+        assert_eq!(pick(text, NativeOs::MacOs), macos, "{key}");
+        assert_eq!(pick(text, NativeOs::Windows), windows, "{key}");
+        assert_eq!(pick(text, NativeOs::Linux), linux, "{key}");
+    }
+}
+
 /// Windows labels the trash undo "Undo delete" (the F8 action's name there) and the settings row
 /// "Settings" with no ellipsis; Linux, where both rows sit under Edit, reads the macOS words.
 #[test]

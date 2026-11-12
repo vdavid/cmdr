@@ -84,23 +84,70 @@ function placeLook(volume: Pick<VolumeInfo, 'name'>, activity: DetachActivity): 
   return { label, icon: 'unplug', disabled: activity.busy, ejecting: false }
 }
 
-/** A drive's or a phone's words. */
+/**
+ * What an eject control detaches, which picks its words: a mounted network share and a phone each
+ * get their own.
+ *
+ * ❗ Off the volume ID's scheme, ❌ never `connectionState` or `category`: a share on macOS is an
+ * `attached_volume` with `os_mount` or `direct`, and a Linux GVFS share is a `network` row with no
+ * state at all, while every one of them is minted `smb-…`. The Rust menu reads the same scheme
+ * (`menu_items.rs:detach_word_for_volume_id`), so the two can't word one share two ways.
+ */
+export type DetachSubject = 'drive' | 'share' | 'phone'
+
+export function detachSubjectOf(volume: Pick<VolumeInfo, 'id'>): DetachSubject {
+  const scheme = volumeScheme(volume.id)
+  switch (scheme) {
+    case 'adb':
+      return 'phone'
+    case 'smb':
+      return 'share'
+    case 'root':
+    case 'local':
+    case 'path':
+    case 'sftp':
+    case 'webdav':
+    case 's3':
+    case 'nfs':
+    case 'mtp':
+    case 'cloud':
+    case 'favorite':
+    case 'unknown':
+      return 'drive'
+    default: {
+      const unhandled: never = scheme
+      return unhandled
+    }
+  }
+}
+
+/**
+ * A drive's, a share's, or a phone's words. A share says each OS's own verb (Eject / Disconnect /
+ * Unmount, `docs/style-guide.md` § "Platform vocabulary"); a drive says Eject everywhere.
+ */
 function ejectLook(volume: Pick<VolumeInfo, 'id' | 'name'>, activity: DetachActivity): DetachButtonLook {
-  const onAPhone = volumeScheme(volume.id) === 'adb'
-  const icon = onAPhone ? 'unplug' : 'eject'
+  const subject = detachSubjectOf(volume)
+  const icon = subject === 'phone' ? 'unplug' : 'eject'
   const name = volume.name
-  if (activity.ejecting) {
-    const label = onAPhone
-      ? tString('adb.disconnectingDeviceAriaLabel', { name })
-      : tString('fileExplorer.navigation.ejectingVolumeAriaLabel', { name })
-    return { label, icon, disabled: true, ejecting: true }
-  }
-  if (activity.busy) {
-    const label = onAPhone ? tString('adb.disconnectBusyTooltip') : tString('fileExplorer.navigation.ejectBusyTooltip')
-    return { label, icon, disabled: true, ejecting: false }
-  }
-  const label = onAPhone
-    ? tString('adb.disconnectDeviceAriaLabel', { name })
-    : tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name })
-  return { label, icon, disabled: false, ejecting: false }
+  if (activity.ejecting) return { label: ejectingLabel(subject, name), icon, disabled: true, ejecting: true }
+  if (activity.busy) return { label: busyLabel(subject), icon, disabled: true, ejecting: false }
+  return { label: idleLabel(subject, name), icon, disabled: false, ejecting: false }
+}
+
+function idleLabel(subject: DetachSubject, name: string): string {
+  if (subject === 'phone') return tString('adb.disconnectDeviceAriaLabel', { name })
+  if (subject === 'share') return tString('fileExplorer.navigation.detachShareAriaLabel', { name })
+  return tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name })
+}
+
+function ejectingLabel(subject: DetachSubject, name: string): string {
+  if (subject === 'phone') return tString('adb.disconnectingDeviceAriaLabel', { name })
+  if (subject === 'share') return tString('fileExplorer.navigation.detachingShareAriaLabel', { name })
+  return tString('fileExplorer.navigation.ejectingVolumeAriaLabel', { name })
+}
+
+function busyLabel(subject: DetachSubject): string {
+  if (subject === 'phone') return tString('adb.disconnectBusyTooltip')
+  if (subject === 'share') return tString('fileExplorer.navigation.detachShareBusyTooltip')
+  return tString('fileExplorer.navigation.ejectBusyTooltip')
 }

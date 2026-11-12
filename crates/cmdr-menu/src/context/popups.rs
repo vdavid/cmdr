@@ -35,13 +35,16 @@ pub fn function_key_bar_menu() -> Vec<ContextRow> {
     )]
 }
 
-/// Whether a row's leave-this-volume item reads `Eject ({name})` or `Disconnect`. A phone gets the
-/// second: `adb` has no per-client detach, so nothing is made safe to unplug. The host decides
-/// which from the volume id.
+/// Which words a row's leave-this-volume item reads. The host decides from the volume id.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DetachWord {
+    /// `Eject ({name})`: a drive, a disk image, an MTP device.
     Eject,
+    /// `Disconnect`: a phone. `adb` has no per-client detach, so nothing is made safe to unplug.
     Disconnect,
+    /// A mounted network share, in each OS's own verb: `Eject ({name})` on macOS (Finder's word for
+    /// a server too), `Disconnect ({name})` on Windows, `Unmount ({name})` on Linux.
+    Share,
 }
 
 /// The breadcrumb's volume, when the breadcrumb stands for one the user can leave.
@@ -65,6 +68,8 @@ pub fn detach_label(name: &str, busy: bool, word: DetachWord) -> LabelText {
     match (word, busy) {
         (DetachWord::Eject, false) => named("menu.volume.eject"),
         (DetachWord::Eject, true) => named("menu.volume.ejectBusy"),
+        (DetachWord::Share, false) => named("menu.volume.detachShare"),
+        (DetachWord::Share, true) => named("menu.volume.detachShareBusy"),
         (DetachWord::Disconnect, false) => LabelText {
             key: "menu.network.disconnect",
             args: Vec::new(),

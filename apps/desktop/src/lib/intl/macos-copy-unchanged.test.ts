@@ -19,6 +19,9 @@
  *  - `COLLAPSED_PAIRS`: a `.mac`/`.other` key pair folded into one block-valued
  *    survivor key. Once the `.mac` key is gone, the survivor's macOS branch must
  *    equal the old `.mac` baseline value, and the two old keys are no longer read.
+ *  - `SPLIT_KEYS`: the reverse, a new key split off a frozen one for one case it
+ *    used to word. The new key must exist, and its macOS branch must render the old
+ *    key's frozen value (in every locale, so a Mac keeps its translation).
  *
  * ICU values compare ASTs (same rendering, whatever the spelling); the raw families
  * (`isRawKey`) compare text.

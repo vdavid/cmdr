@@ -55,6 +55,10 @@
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "3793ec5"
   },
+  "fileExplorer.pane.detachShareFailedToast": "{platform, select, macos {No se pudo expulsar {volumeName}: {message}} windows {Couldn’t disconnect {volumeName}: {message}} other {Couldn’t unmount {volumeName}: {message}}}",
+  "@fileExplorer.pane.detachShareFailedToast": {
+    "sourceHash": "3793ec5"
+  },
   "fileExplorer.functionKeyBar.hiddenToast": "{platform, select, windows {Function key bar is now hidden. Turn it back on any time later in <settingsLink>Settings</settingsLink>.} other {La barra de teclas de función ahora está oculta. Puedes volver a activarla cuando quieras en <settingsLink>Configuración</settingsLink>.}}",
   "@fileExplorer.functionKeyBar.hiddenToast": {
     "sourceHash": "f79f135"

@@ -671,6 +671,20 @@
       "name": "the disk's own name as the system reports it, uncontrolled and possibly long (e.g. \"Backup Drive\")"
     }
   },
+  "menu.volume.detachShare": "{platform, select, macos {Eject ({name})} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "@menu.volume.detachShare": {
+    "description": "VERB (imperative). Right-click item on a mounted network share (an SMB share from a NAS or another computer) in the path bar or the volume dropdown: ends the mount, so the share leaves the list. The sibling of menu.volume.eject, which says the same for a disk. Each branch uses its OS's own word for a share: the macOS branch is the word your macOS Finder uses for Eject (Finder ejects a server too), so it reads exactly like menu.volume.eject; the Windows branch is File Explorer's word for a mapped network drive (Disconnect); the Linux branch is the file manager's word for a network mount (Unmount), never \"disconnect\". Keep the {name} token exactly as written, braces included; it is replaced literally with the share name. Its busy form is menu.volume.detachShareBusy.",
+    "placeholders": {
+      "name": "the share's name as the system reports it, uncontrolled and possibly long (e.g. \"media\", \"Family photos\")"
+    }
+  },
+  "menu.volume.detachShareBusy": "{platform, select, macos {Eject ({name}) (busy)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "@menu.volume.detachShareBusy": {
+    "description": "The grayed-out form of menu.volume.detachShare, shown while a copy or move is still reading from or writing to that share, so ending the mount now would break it. \"busy\" means occupied with work. Keep each branch's base wording identical to the same branch of menu.volume.detachShare, and the trailing parenthetical identical to menu.volume.ejectBusy's. Keep the {name} token exactly as written, braces included; it is replaced literally with the share name.",
+    "placeholders": {
+      "name": "the share's name as the system reports it, uncontrolled and possibly long (e.g. \"media\")"
+    }
+  },
   "menu.volume.ejectAll": "Eject all",
   "@menu.volume.ejectAll": {
     "description": "VERB (imperative). Item on a disk in the path bar's right-click menu and in the volume dropdown, shown only when that physical drive has several volumes mounted: it ejects all of them and then the drive, so it can be unplugged. The item above it, menu.volume.eject, ejects one volume and leaves the drive connected. Use the exact wording your macOS Finder uses for its Eject All button. Very short label."

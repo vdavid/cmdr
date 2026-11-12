@@ -39,7 +39,7 @@ import type { IconName } from '#lib/ui/icons/icon-map.js'
 import type { MenuItem, MenuSection } from '#lib/ui/menu-types.js'
 import { connectDirectly } from '../network/direct-connect'
 import { showsDisconnect } from './connection-state'
-import { detachControlFor } from './detach-control'
+import { detachControlFor, detachSubjectOf, type DetachSubject } from './detach-control'
 import { detachAllOnDisk, runDetach } from './detach-volume'
 import { isServerPlaceRow, runServerRowAction } from './server-row-actions'
 import { volumeScheme } from '#lib/volume-scheme.js'
@@ -193,15 +193,21 @@ function detachAction(volume: VolumeInfo, facts: VolumeRowFacts & { shares: bool
   const detach = detachControlFor(volume, { busy: facts.busy, ejecting: facts.ejecting })
   if (detach?.action !== 'eject') return null
   const { disabled, icon } = detach.button
-  // The phone's glyph is `unplug`, and so is its word: `adb` detaches nothing to unplug.
-  const label =
-    icon === 'unplug'
-      ? tString(disabled ? 'menu.volume.disconnectBusy' : 'menu.network.disconnect')
-      : tString(disabled ? 'menu.volume.ejectBusy' : 'menu.volume.eject', { name: volume.name })
+  const label = detachItemLabel(detachSubjectOf(volume), disabled, volume.name)
   // ❗ Only here, where the row's Eject really does leave the drive attached: the bare word
   // promises safe-to-unplug everywhere else.
   const tooltip = facts.shares ? tString('fileExplorer.navigation.ejectOneVolumeTooltip') : undefined
   return { type: 'action', action: 'eject', label, icon, disabled, keepsMenuOpen: true, tooltip }
+}
+
+/**
+ * The detach item's words, the same keys the native menus draw (`cmdr-menu`'s `detach_label`). A
+ * phone says Disconnect (`adb` detaches nothing to unplug), a share its OS's own verb.
+ */
+function detachItemLabel(subject: DetachSubject, busy: boolean, name: string): string {
+  if (subject === 'phone') return tString(busy ? 'menu.volume.disconnectBusy' : 'menu.network.disconnect')
+  if (subject === 'share') return tString(busy ? 'menu.volume.detachShareBusy' : 'menu.volume.detachShare', { name })
+  return tString(busy ? 'menu.volume.ejectBusy' : 'menu.volume.eject', { name })
 }
 
 /**
