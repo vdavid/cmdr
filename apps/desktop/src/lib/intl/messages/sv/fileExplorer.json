@@ -734,10 +734,6 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
   },
-  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {Cmdr kan inte öppna den här filen i redigeraren än, eftersom den inte är en vanlig fil på din Mac. Tryck på F3 för att visa den.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
-  "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "710100c"
-  },
   "fileExplorer.edit.hint": "Filen öppnades i {app}. Vill du ha en annan redigerare nästa gång? Välj den i Inställningar.",
   "@fileExplorer.edit.hint": {
     "sourceHash": "3632f06"
@@ -878,10 +874,6 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
-  "fileExplorer.restic.useTransferToCopyOut": "Om du vill kopiera ut filer ur en säkerhetskopia använder du F5.",
-  "@fileExplorer.restic.useTransferToCopyOut": {
-    "sourceHash": "b3674bd"
-  },
   "fileExplorer.restic.snapshot.host": "Säkerhetskopierad från {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -909,10 +901,6 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Om du vill glömma lösenordet för en säkerhetskopia öppnar du först säkerhetskopian, eller ställer markören på dess mapp ”Browse snapshots”.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
-  },
-  "fileExplorer.archive.useTransferToCopyOut": "Om du vill kopiera ut filer ur ett arkiv använder du F5 för att kopiera eller F6 för att flytta.",
-  "@fileExplorer.archive.useTransferToCopyOut": {
-    "sourceHash": "3edbc36"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr har lite git-magi åt dig!",
   "@fileExplorer.git.portalIntro.title": {
@@ -973,10 +961,6 @@
   "fileExplorer.git.status.conflicted": "Konflikt",
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
-  },
-  "fileExplorer.git.useTransferToCopyOut": "Om du vill kopiera ut filer ur en git-ögonblicksbild använder du F5 för att kopiera eller F6 för att flytta.",
-  "@fileExplorer.git.useTransferToCopyOut": {
-    "sourceHash": "a0d65fe"
   },
   "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} är större än {limit}, så Cmdr kan inte öppna filen i {appName} inifrån arkivet.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {

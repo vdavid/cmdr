@@ -27,15 +27,17 @@ vi.mock('#lib/settings/settings-window.js', () => ({
   openShortcutCustomization: vi.fn(() => Promise.resolve()),
 }))
 // `file.quickLook` needs the macOS-only `quickLook` capability, so Vitest (which runs as Linux)
-// sees it unbound. Model the Mac, where this toast shows, with its default binding.
+// sees it unbound. Model the Mac, where this toast shows, with its default ⇧Space.
+const quickLookKeys = vi.hoisted(() => ({ value: ['⇧Space'] }))
 vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
-  commandHasShortcut: (id: string) => id === 'file.quickLook',
-  getLiveShortcutsReactive: (id: string) => (id === 'file.quickLook' ? ['⇧Space'] : []),
+  commandHasShortcut: (id: string) => id === 'file.quickLook' && quickLookKeys.value.length > 0,
+  getLiveShortcutsReactive: (id: string) => (id === 'file.quickLook' ? quickLookKeys.value : []),
 }))
 
 describe('QuickLookHintToastContent', () => {
   beforeEach(() => {
+    quickLookKeys.value = ['⇧Space']
     vi.mocked(dismissToast).mockClear()
     vi.mocked(setSetting).mockClear()
     vi.mocked(openShortcutCustomization).mockClear()
@@ -63,6 +65,17 @@ describe('QuickLookHintToastContent', () => {
     expect(text).toContain('Enter')
     expect(text).toContain('Settings > Keyboard shortcuts')
     expect(text).toContain('Don’t show again')
+  })
+
+  it('leaves out the Quick Look key line once no key runs Quick Look', () => {
+    quickLookKeys.value = []
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(QuickLookHintToastContent, { target, props: {} })
+    const text = target.textContent
+    expect(text).not.toContain('you can trigger Quick Look via')
+    expect(text).not.toContain('⇧Space')
+    for (const kbd of target.querySelectorAll('kbd')) expect(kbd.textContent.trim()).not.toBe('')
   })
 
   it('Settings link dismisses the toast and deep-links into Keyboard shortcuts', async () => {

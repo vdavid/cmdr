@@ -1685,14 +1685,6 @@
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "{platform, select, macos {Так бывает, когда меняются права доступа к папке Корзины, например после переезда на новый Mac. Объекты можно удалить безвозвратно сочетанием Shift+F8.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with Shift+F8.} other {This can happen when the trash folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with Shift+F8.}}",
-  "@errors.write.trashRefused.suggestion.trashNotWritable": {
-    "sourceHash": "abaf265"
-  },
-  "errors.write.trashRefused.suggestion.noTrashForVolume": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.} other {В некоторых местах нет собственной Корзины, в том числе в облачных папках и на большинстве сетевых дисков. Объекты можно удалить безвозвратно сочетанием Shift+F8.}}",
-  "@errors.write.trashRefused.suggestion.noTrashForVolume": {
-    "sourceHash": "b6d08fa"
-  },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Посмотрите, что сообщила macOS, в разделе «Технические подробности» ниже.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
     "sourceHash": "b61b3c1"
@@ -2024,10 +2016,6 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Папку <code>{path}</code> переименовать нельзя: в ней находится ваша папка пользователя, а ваш Mac ожидает найти ее именно по этому пути.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
-  },
-  "errors.write.homeFolderRename.suggestion.isHome": "{platform, select, macos {Если новое имя действительно нужно, в macOS есть аккуратный способ сделать это в разделе «Пользователи и группы». Только это не быстрое F2.} windows {Windows has no safe built-in way to rename it, so it’s best left as it is.} other {If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick F2, though.}}",
-  "@errors.write.homeFolderRename.suggestion.isHome": {
-    "sourceHash": "b1e0d3b"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Лучше переименуйте что-нибудь внутри или оставьте эту папку в покое. На ней держится больше, чем кажется.",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

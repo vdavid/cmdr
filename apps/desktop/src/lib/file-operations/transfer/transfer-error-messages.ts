@@ -33,7 +33,7 @@ import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
 import { w, type FriendlyErrorMessage } from './transfer-error-catalog'
 import { volumeGoneMessage } from './transfer-error-volume-gone'
 import { formatInteger } from '#lib/intl/number-format.js'
-import { hasCapability, isMacOS } from '#lib/platform/index.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 import { colorizeSize } from '#lib/file-explorer/selection/selection-info-utils.js'
 import { escapeHtml } from '#lib/tooltip/tooltip.js'
@@ -106,15 +106,14 @@ const simpleMessageFactories: Partial<
     suggestion: w('cancelled.suggestion'),
   }),
   trash_not_supported: () => {
-    // Interpolate the live `file.deletePermanently` binding (platform-formatted)
-    // at message-build time. Snapshot semantics are right here: a transient error
-    // string isn't a live-updating surface. Falls back to the default if unbound.
-    const deletePermanentlyKey =
-      shortcutAsText('file.deletePermanently', 'errorMessage') ?? (isMacOS() ? '⇧F8' : 'Shift+F8')
+    const deletePermanentlyKey = liveShortcut('file.deletePermanently')
     return {
       title: w('trashNotSupported.title'),
       message: w('trashNotSupported.message'),
-      suggestion: w('trashNotSupported.suggestion', { deletePermanentlyKey }),
+      suggestion:
+        deletePermanentlyKey === undefined
+          ? w('trashNotSupported.suggestionWithoutKey')
+          : w('trashNotSupported.suggestion', { deletePermanentlyKey }),
     }
   },
   connection_interrupted: () => ({
@@ -539,6 +538,25 @@ export function trashRefusedCountSentence(reason: TrashRefusalKind, itemCount: n
 }
 
 /**
+ * The key that runs `commandId` right now, display-formatted, or `undefined` once no key
+ * runs it, for a message that names it (its keyless sibling then names the command).
+ * Snapshot semantics are right here: a transient error string isn't a live-updating
+ * surface. ❌ Never a fall back to the default: a default the user removed runs nothing.
+ */
+function liveShortcut(commandId: 'file.deletePermanently' | 'file.rename'): string | undefined {
+  return shortcutAsText(commandId, 'errorMessage')
+}
+
+/** A refused trash's advice; the two reasons that offer deleting permanently name its live key. */
+function trashRefusedSuggestion(reason: TrashRefusalKind): string {
+  if (reason !== 'trashNotWritable' && reason !== 'noTrashForVolume') return w(`trashRefused.suggestion.${reason}`)
+  const deletePermanentlyKey = liveShortcut('file.deletePermanently')
+  return deletePermanentlyKey === undefined
+    ? w(`trashRefused.suggestion.${reason}WithoutKey`)
+    : w(`trashRefused.suggestion.${reason}WithKey`, { deletePermanentlyKey })
+}
+
+/**
  * A refused trash, worded from the reason the OS gave rather than from its sentence.
  *
  * ❗ It never says "try again" for a permission-shaped refusal. Retrying cannot change
@@ -546,7 +564,7 @@ export function trashRefusedCountSentence(reason: TrashRefusalKind, itemCount: n
  * "Technical details" that held the only useful part.
  */
 function trashRefusedMessage(error: Extract<WriteOperationError, { type: 'trash_refused' }>): FriendlyErrorMessage {
-  const suggestion = w(`trashRefused.suggestion.${error.reason}`)
+  const suggestion = trashRefusedSuggestion(error.reason)
   // ❗ `onlineOnly` overrides the reason. An evicted cloud file refuses as 513
   // (`notPermitted`) as readily as 3328 (`noTrashForVolume`), so the reason can't
   // tell the two apart, and sending someone to System Settings to grant Full Disk
@@ -677,8 +695,17 @@ export function homeFolderMessage(
   return {
     title: w(`${family}.title`),
     message: w(`${family}.message.${relation}`, { path: escapeHtml(path) }),
-    suggestion: w(`${family}.suggestion.${relation}`),
+    suggestion: homeFolderSuggestion(family, relation),
   }
+}
+
+/** Renaming the home folder itself jokes about the rename key, so it names the live one. */
+function homeFolderSuggestion(family: string, relation: HomeFolderRelation): string {
+  if (family !== 'homeFolderRename' || relation !== 'isHome') return w(`${family}.suggestion.${relation}`)
+  const renameKey = liveShortcut('file.rename')
+  return renameKey === undefined
+    ? w('homeFolderRename.suggestion.isHomeWithoutKey')
+    : w('homeFolderRename.suggestion.isHomeWithKey', { renameKey })
 }
 
 function mountedVolumeMessage(mountPoint: string, action: MountedVolumeAction): FriendlyErrorMessage {

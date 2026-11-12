@@ -731,10 +731,6 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
   },
-  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {Cmdr 還不能用編輯器編輯這個檔案，因為它不是你 Mac 上的一般檔案。請按 F3 檢視。} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
-  "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "710100c"
-  },
   "fileExplorer.edit.hint": "已在 {app} 裡開啟這個檔案。想下次換個編輯器？在「設定」裡選一個。",
   "@fileExplorer.edit.hint": {
     "sourceHash": "3632f06"
@@ -875,10 +871,6 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
-  "fileExplorer.restic.useTransferToCopyOut": "要把檔案從備份裡複製出來，請用 F5 複製。",
-  "@fileExplorer.restic.useTransferToCopyOut": {
-    "sourceHash": "b3674bd"
-  },
   "fileExplorer.restic.snapshot.host": "備份自 {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -906,10 +898,6 @@
   "fileExplorer.restic.forgetPassword.noBackup": "要忘記某個備份的密碼，請先開啟這個備份，或把游標移到它的「Browse snapshots」資料夾上。",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
-  },
-  "fileExplorer.archive.useTransferToCopyOut": "要把檔案從壓縮檔裡複製出來，請用 F5 複製或 F6 移動。",
-  "@fileExplorer.archive.useTransferToCopyOut": {
-    "sourceHash": "3edbc36"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr 為你準備了一點 git 魔法！",
   "@fileExplorer.git.portalIntro.title": {
@@ -970,10 +958,6 @@
   "fileExplorer.git.status.conflicted": "有衝突",
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
-  },
-  "fileExplorer.git.useTransferToCopyOut": "要把檔案從 git 快照裡複製出來，請用 F5 複製或 F6 移動。",
-  "@fileExplorer.git.useTransferToCopyOut": {
-    "sourceHash": "a0d65fe"
   },
   "fileExplorer.openWith.copyRefused.tooLarge": "「{fileName}」超過 {limit}，所以 Cmdr 無法從封存檔裡用 {appName} 開啟它。",
   "@fileExplorer.openWith.copyRefused.tooLarge": {

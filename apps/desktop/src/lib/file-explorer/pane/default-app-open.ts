@@ -37,11 +37,12 @@ const NOTICE_TIMEOUT_MS = 8000
 export type DefaultAppOpenOutcome = 'opened' | 'refusedNotOnThisMac' | 'notOpened'
 
 /**
- * The key bound to View right now, for a toast to name. ❗ Read live, ❌ never a
- * literal "F3": it's rebindable in Settings > Shortcuts.
+ * The key that runs View right now, for a toast to name, or `undefined` once no key
+ * runs it (the toast then names the View command). ❗ Read live, ❌ never a literal
+ * "F3" or a fall back to it: it's rebindable in Settings > Shortcuts, and removable.
  */
-export function viewShortcut(): string {
-  return shortcutAsText('file.view', 'toast') ?? 'F3'
+export function viewShortcut(): string | undefined {
+  return shortcutAsText('file.view', 'toast')
 }
 
 /**
@@ -91,7 +92,12 @@ function explainRefusal(entry: FileEntry, error: unknown): DefaultAppOpenOutcome
 }
 
 function explainNotOnThisMac(): void {
-  addToast(tString('fileExplorer.open.notOnThisMac', { viewKey: viewShortcut() }), {
+  const viewKey = viewShortcut()
+  const message =
+    viewKey === undefined
+      ? tString('fileExplorer.open.notOnThisMacWithoutKey')
+      : tString('fileExplorer.open.notOnThisMac', { viewKey })
+  addToast(message, {
     id: OPENING_TOAST_ID,
     level: 'info',
     timeoutMs: NOTICE_TIMEOUT_MS,

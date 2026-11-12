@@ -736,10 +736,6 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
   },
-  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {Cmdr kan dit bestand nog niet in een editor bewerken, omdat het geen gewoon bestand op je Mac is. Druk op F3 om het te tonen.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
-  "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "710100c"
-  },
   "fileExplorer.edit.hint": "Geopend in {app}. Wil je de volgende keer een andere editor? Kies er een in Instellingen.",
   "@fileExplorer.edit.hint": {
     "sourceHash": "3632f06"
@@ -880,10 +876,6 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
-  "fileExplorer.restic.useTransferToCopyOut": "Om bestanden uit een back-up te kopiëren, gebruik je F5.",
-  "@fileExplorer.restic.useTransferToCopyOut": {
-    "sourceHash": "b3674bd"
-  },
   "fileExplorer.restic.snapshot.host": "Back-up van {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -912,10 +904,6 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Om het wachtwoord van een back-up te vergeten, open je eerst de back-up of zet je de cursor op de map ‘Browse snapshots’ erin.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
-  },
-  "fileExplorer.archive.useTransferToCopyOut": "Om bestanden uit een archief te halen, gebruik je F5 om te kopiëren of F6 om te verplaatsen.",
-  "@fileExplorer.archive.useTransferToCopyOut": {
-    "sourceHash": "3edbc36"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr heeft wat git-magie voor je!",
   "@fileExplorer.git.portalIntro.title": {
@@ -976,10 +964,6 @@
   "fileExplorer.git.status.conflicted": "Conflict",
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
-  },
-  "fileExplorer.git.useTransferToCopyOut": "Om bestanden uit een git-momentopname te halen, gebruik je F5 om te kopiëren of F6 om te verplaatsen.",
-  "@fileExplorer.git.useTransferToCopyOut": {
-    "sourceHash": "a0d65fe"
   },
   "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} is groter dan {limit}, dus Cmdr kan het bestand niet vanuit het archief in {appName} openen.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {

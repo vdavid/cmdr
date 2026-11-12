@@ -5,7 +5,7 @@
  * (MTP, ADB), on a server (SFTP, WebDAV, S3), inside an archive, or in the virtual `.git`
  * portal has none, and handing its `adb://` or archive-inner path over does nothing
  * at all: no editor, no message. So every F4 goes through here, and a row with no
- * real file behind it gets a toast pointing at F3, which can read it.
+ * real file behind it gets a toast pointing at View (its live key), which can read it.
  * ❌ Editing those files in place (pull, edit, write back) isn't built.
  *
  * Which app opens the file, and everything said around that launch, belongs to
@@ -21,6 +21,7 @@
 import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { openFileInEditor } from '#lib/text-editor/open-file-in-editor.js'
+import { viewShortcut } from './default-app-open'
 import { rowHasFileOnThisMac } from './volume-capabilities'
 
 /**
@@ -43,7 +44,12 @@ export function canOpenInEditor(volumeId: string, rowPath: string): boolean {
  */
 export async function openInEditorOrExplain(volumeId: string, rowPath: string): Promise<EditorPressOutcome> {
   if (!canOpenInEditor(volumeId, rowPath)) {
-    addToast(tString('fileExplorer.edit.notOnThisMac'), { level: 'info' })
+    const viewKey = viewShortcut()
+    const message =
+      viewKey === undefined
+        ? tString('fileExplorer.edit.notOnThisMacWithoutKey')
+        : tString('fileExplorer.edit.notOnThisMacWithKey', { viewKey })
+    addToast(message, { level: 'info' })
     return 'refusedNotOnThisMac'
   }
   return (await openFileInEditor(rowPath)) ? 'opened' : 'launchFailed'

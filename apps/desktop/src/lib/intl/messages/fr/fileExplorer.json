@@ -734,10 +734,6 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
   },
-  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {Cmdr ne peut pas encore modifier ce fichier dans l’éditeur, car ce n’est pas un fichier ordinaire de votre Mac. Appuyez sur F3 pour le visualiser.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
-  "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "710100c"
-  },
   "fileExplorer.edit.hint": "Fichier ouvert dans {app}. Vous voulez un autre éditeur la prochaine fois ? Choisissez-le dans les réglages.",
   "@fileExplorer.edit.hint": {
     "sourceHash": "3632f06"
@@ -878,10 +874,6 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
-  "fileExplorer.restic.useTransferToCopyOut": "Pour copier des fichiers hors d’une sauvegarde, utilisez F5.",
-  "@fileExplorer.restic.useTransferToCopyOut": {
-    "sourceHash": "b3674bd"
-  },
   "fileExplorer.restic.snapshot.host": "Sauvegardé depuis {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -909,10 +901,6 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Pour oublier le mot de passe d’une sauvegarde, ouvrez d’abord la sauvegarde, ou placez le curseur sur son dossier « Browse snapshots ».",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
-  },
-  "fileExplorer.archive.useTransferToCopyOut": "Pour copier des fichiers hors d’une archive, utilisez F5 pour copier ou F6 pour déplacer.",
-  "@fileExplorer.archive.useTransferToCopyOut": {
-    "sourceHash": "3edbc36"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr vous réserve un peu de magie git !",
   "@fileExplorer.git.portalIntro.title": {
@@ -973,10 +961,6 @@
   "fileExplorer.git.status.conflicted": "En conflit",
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
-  },
-  "fileExplorer.git.useTransferToCopyOut": "Pour copier des fichiers hors d’un instantané git, utilisez F5 pour copier ou F6 pour déplacer.",
-  "@fileExplorer.git.useTransferToCopyOut": {
-    "sourceHash": "a0d65fe"
   },
   "fileExplorer.openWith.copyRefused.tooLarge": "« {fileName} » dépasse {limit}, donc Cmdr ne peut pas ouvrir le fichier dans {appName} depuis l’archive.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {

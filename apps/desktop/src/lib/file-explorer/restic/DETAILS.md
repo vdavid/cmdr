@@ -6,9 +6,9 @@ Pull-tier docs for `restic/`. Must-knows live in `CLAUDE.md`.
 
 `capabilitiesForPane` gives a path at or below `<repo>/Browse snapshots` the `restic` row, a copy of the `git-portal`
 row: a real backend listing, `..`, and copy-out, with every write refused up front. Paste-into, F7, ⇧F4, F2, delete, and
-Multi-rename get the `fileExplorer.readOnly.restic*` alert; ⌘C/⌘X point at F5
-(`fileExplorer.restic.useTransferToCopyOut`, F5 only, since a move out of a backup is refused). The repo folder and its
-real files keep the drive's row.
+Multi-rename get the `fileExplorer.readOnly.restic*` alert; ⌘C/⌘X point at the live copy key
+(`fileExplorer.restic.copyOutWithKey`, copy only, since a move out of a backup is refused; `copyOutWithoutKey` names the
+Copy command once no key runs it). The repo folder and its real files keep the drive's row.
 
 - **No deleted-folder poll** (`pollsForDeletedFolder: false`): the view has no inode, so a stat would evict the user.
 - **`..` at the view's top** walks back to the repo folder: the listing reports `<repo>/Browse snapshots` as its root,

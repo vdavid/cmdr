@@ -14,7 +14,6 @@ import { isPlainFilesystemPath } from '#lib/path/canonical.js'
 import { formatNumber } from '#lib/file-explorer/selection/selection-info-utils.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
-import type { MessageKey } from '#lib/intl/keys.gen.js'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
 import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
@@ -70,18 +69,16 @@ function schemePathClipboardFamily(volumeId: string): ClipboardRefusalFamily | n
 }
 
 /**
- * The combo bound to a transfer command right now, formatted for display, for a
- * refusal toast to name.
+ * The key that runs a transfer command right now, formatted for display, for a
+ * refusal toast to name, or `undefined` once no key runs it.
  *
- * ❗ Read live, ❌ never a literal "F5": both are rebindable in Settings >
- * Shortcuts, and a hardcoded key name starts lying the moment someone changes
- * one. Snapshot semantics are right here — a toast is a moment's text, not a
- * live-updating surface — and an unbound command falls back to its default, the
- * same contract `transfer-error-messages.ts` uses for `file.deletePermanently`.
+ * ❗ Read live, ❌ never a literal "F5", and ❌ never a fall back to the default: both
+ * are rebindable in Settings > Shortcuts, and a default the user removed runs
+ * nothing, so each toast has a sibling that names the command instead. Snapshot
+ * semantics are right here: a toast is a moment's text, not a live-updating surface.
  */
-function transferShortcut(commandId: 'file.copy' | 'file.move'): string {
-  const fallback = commandId === 'file.copy' ? 'F5' : 'F6'
-  return shortcutAsText(commandId, 'toast') ?? fallback
+function transferShortcut(commandId: 'file.copy' | 'file.move'): string | undefined {
+  return shortcutAsText(commandId, 'toast')
 }
 
 /**
@@ -89,15 +86,20 @@ function transferShortcut(commandId: 'file.copy' | 'file.move'): string {
  * one runs it, and saying the same without a key once the user has removed it.
  */
 export function noFilesOnClipboardMessage(): string {
-  const copyKey = getLiveShortcuts('edit.copy').at(0)
+  const copyKey = shortcutAsText('edit.copy', 'toast')
   return copyKey === undefined
     ? tString('fileExplorer.clipboard.noFiles')
-    : tString('fileExplorer.clipboard.noFilesWithKey', { combo: toDisplayShortcut(copyKey) })
+    : tString('fileExplorer.clipboard.noFilesWithKey', { combo: copyKey })
 }
 
 /** The "use the copy key instead" toast for a source-side (⌘C) refusal. */
 function copyOutRefusalToast(family: ClipboardRefusalFamily | null): string {
   const copyKey = transferShortcut('file.copy')
+  if (copyKey === undefined) {
+    if (family === 'device') return tString('fileExplorer.clipboard.copyFromDeviceWithoutKey')
+    if (family === 'server') return tString('fileExplorer.clipboard.copyFromServerWithoutKey')
+    return tString('fileExplorer.clipboard.copyFromUnknownWithoutKey')
+  }
   if (family === 'device') return tString('fileExplorer.clipboard.copyFromDevice', { copyKey })
   if (family === 'server') return tString('fileExplorer.clipboard.copyFromServer', { copyKey })
   return tString('fileExplorer.clipboard.copyFromUnknown', { copyKey })
@@ -111,6 +113,11 @@ function copyOutRefusalToast(family: ClipboardRefusalFamily | null): string {
  */
 function copyInRefusalToast(family: ClipboardRefusalFamily): string {
   const copyKey = transferShortcut('file.copy')
+  if (copyKey === undefined) {
+    return family === 'device'
+      ? tString('fileExplorer.clipboard.copyToDeviceWithoutKey')
+      : tString('fileExplorer.clipboard.copyToServerWithoutKey')
+  }
   return family === 'device'
     ? tString('fileExplorer.clipboard.copyToDevice', { copyKey })
     : tString('fileExplorer.clipboard.copyToServer', { copyKey })
@@ -119,6 +126,11 @@ function copyInRefusalToast(family: ClipboardRefusalFamily): string {
 /** The "use the move key instead" toast for a source-side (⌘X) refusal. */
 function moveOutRefusalToast(family: ClipboardRefusalFamily | null): string {
   const moveKey = transferShortcut('file.move')
+  if (moveKey === undefined) {
+    if (family === 'device') return tString('fileExplorer.clipboard.moveFromDeviceWithoutKey')
+    if (family === 'server') return tString('fileExplorer.clipboard.moveFromServerWithoutKey')
+    return tString('fileExplorer.clipboard.moveFromUnknownWithoutKey')
+  }
   if (family === 'device') return tString('fileExplorer.clipboard.moveFromDevice', { moveKey })
   if (family === 'server') return tString('fileExplorer.clipboard.moveFromServer', { moveKey })
   return tString('fileExplorer.clipboard.moveFromUnknown', { moveKey })
@@ -217,14 +229,30 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
    * The copy-out hint for a ROUTED pane (kind-from-path), or `null` when the pane
    * isn't one. The system clipboard can't carry a routed path — an archive-inner
    * entry, a virtual `.git` snapshot entry, and a file in a restic backup are none
-   * of them OS-resolvable files — so ⌘C/⌘X are refused and the user is pointed at F5/F6 copy-out. Same
-   * shape as the scheme-path refusal, but a different reason and hint per kind.
+   * of them OS-resolvable files — so ⌘C/⌘X are refused and the user is pointed at the copy (and
+   * move) keys. Same shape as the scheme-path refusal, but a different reason and hint per kind.
+   * A backup can't be moved out of, so its hint names copy only; a copy key the user removed
+   * drops the hint to the command names, since naming move alone would hide the safe road.
    */
-  function routedCopyOutHint(volumeId: string, path: string): MessageKey | null {
+  function routedCopyOutHint(volumeId: string, path: string): string | null {
     const kind = capabilitiesForPane(volumeId, path).kind
-    if (kind === 'archive') return 'fileExplorer.archive.useTransferToCopyOut'
-    if (kind === 'git-portal') return 'fileExplorer.git.useTransferToCopyOut'
-    if (kind === 'restic') return 'fileExplorer.restic.useTransferToCopyOut'
+    const copyKey = transferShortcut('file.copy')
+    const moveKey = transferShortcut('file.move')
+    if (kind === 'restic') {
+      return copyKey === undefined
+        ? tString('fileExplorer.restic.copyOutWithoutKey')
+        : tString('fileExplorer.restic.copyOutWithKey', { copyKey })
+    }
+    if (kind === 'archive') {
+      if (copyKey === undefined) return tString('fileExplorer.archive.copyOutWithoutKey')
+      if (moveKey === undefined) return tString('fileExplorer.archive.copyOutWithCopyKey', { copyKey })
+      return tString('fileExplorer.archive.copyOutWithKeys', { copyKey, moveKey })
+    }
+    if (kind === 'git-portal') {
+      if (copyKey === undefined) return tString('fileExplorer.git.copyOutWithoutKey')
+      if (moveKey === undefined) return tString('fileExplorer.git.copyOutWithCopyKey', { copyKey })
+      return tString('fileExplorer.git.copyOutWithKeys', { copyKey, moveKey })
+    }
     return null
   }
 
@@ -314,7 +342,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
 
     const copyOutHint = routedCopyOutHint(state.volumeId, state.path)
     if (copyOutHint) {
-      addToast(tString(copyOutHint), { level: 'info' })
+      addToast(copyOutHint, { level: 'info' })
       return
     }
 
@@ -359,7 +387,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
 
     const copyOutHint = routedCopyOutHint(state.volumeId, state.path)
     if (copyOutHint) {
-      addToast(tString(copyOutHint), { level: 'info' })
+      addToast(copyOutHint, { level: 'info' })
       return
     }
 

@@ -21,6 +21,12 @@ vi.hoisted(() => vi.stubGlobal('__CMDR_CAPABILITIES__', { fullDiskAccess: true }
 vi.mock('#lib/onboarding/fda-status.svelte.js', () => ({
   fdaIsMissing: () => fdaIsMissing(),
 }))
+// The commands whose every key the user removed; the rest keep their real live keys.
+const unbound = vi.hoisted(() => new Set<string>())
+vi.mock(import('#lib/shortcuts/index.js'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return { ...actual, getLiveShortcuts: (id: string) => (unbound.has(id) ? [] : actual.getLiveShortcuts(id)) }
+})
 
 import { getUserFriendlyMessage, mayBeAPermissionGrantAway } from './transfer-error-messages'
 
@@ -73,6 +79,23 @@ describe('a refused trash', () => {
   it('offers a permanent delete only where the trash, not the item, is what refused', () => {
     expect(refused('noTrashForVolume').suggestion).toContain('Shift+F8')
     expect(refused('trashNotWritable').suggestion).toContain('Shift+F8')
+  })
+
+  it('names the delete-permanently key in the reader’s own spelling', () => {
+    onTestFinished(withPlatform('macos'))
+    expect(refused('noTrashForVolume').suggestion).toContain('with ⇧F8.')
+    expect(refused('trashNotWritable').suggestion).not.toContain('Shift+F8')
+  })
+
+  it('names the Delete permanently command once no key runs it', () => {
+    unbound.add('file.deletePermanently')
+    onTestFinished(() => {
+      unbound.clear()
+    })
+    expect(refused('noTrashForVolume').suggestion).toBe(
+      'Some places have no trash of their own, including cloud folders and most network drives. You can still delete the items with the Delete permanently command.',
+    )
+    expect(refused('trashNotWritable').suggestion).toContain('with the Delete permanently command.')
   })
 
   // A permanent delete needs the same permission the trash was refused, so offering it

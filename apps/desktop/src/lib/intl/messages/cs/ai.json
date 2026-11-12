@@ -27,10 +27,6 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescription": "Zkuste vytvořit novou složku (F7) a uvidíte návrhy názvů od AI.",
-  "@ai.toast.readyDescription": {
-    "sourceHash": "b3ae1b2"
-  },
   "ai.toast.gotIt": "Rozumím",
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"

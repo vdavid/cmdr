@@ -27,10 +27,6 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescription": "Prueba a crear una carpeta nueva (F7) para ver sugerencias de nombres con IA.",
-  "@ai.toast.readyDescription": {
-    "sourceHash": "b3ae1b2"
-  },
   "ai.toast.gotIt": "Entendido",
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"

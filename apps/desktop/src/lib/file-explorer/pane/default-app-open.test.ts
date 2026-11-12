@@ -14,6 +14,7 @@ const m = vi.hoisted(() => ({
   openFile: vi.fn<(path: string, volumeId: string | null) => Promise<void>>(),
   announceOpening: vi.fn<() => Promise<void>>(),
   addToast: vi.fn(),
+  liveShortcuts: vi.fn<(commandId: string) => string[]>(),
 }))
 
 /** Stands in for `OpenPathFailure`: a thrown value carrying the typed reason. */
@@ -38,7 +39,7 @@ vi.mock(import('#lib/intl/messages.svelte.js'), async (importOriginal) => ({
 }))
 vi.mock(import('#lib/shortcuts/index.js'), async (importOriginal) => ({
   ...(await importOriginal()),
-  getEffectiveShortcuts: () => ['F3'],
+  getLiveShortcuts: m.liveShortcuts,
   toDisplayShortcut: (combo: string) => combo,
 }))
 vi.mock('#lib/stores/volume-store.svelte.js', () => ({ getVolumes: () => [] }))
@@ -70,6 +71,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   openFile.mockResolvedValue(undefined)
   announceOpening.mockResolvedValue(undefined)
+  m.liveShortcuts.mockImplementation((commandId) => (commandId === 'file.view' ? ['F3'] : []))
 })
 
 describe('a row with no file another app can open', () => {
@@ -84,6 +86,15 @@ describe('a row with no file another app can open', () => {
     expect(text).toContain('fileExplorer.open.notOnThisMac')
     expect(text).toContain('F3')
     expect(options.level).toBe('info')
+  })
+
+  it('names no key once the user removed every key from View', async () => {
+    m.liveShortcuts.mockReturnValue([])
+
+    await openWithDefaultAppOrExplain('adb-r58m', fileAt('adb://R58M/sdcard/notes.txt'))
+
+    const [text] = onlyToast()
+    expect(text).toBe('fileExplorer.open.notOnThisMacWithoutKey {}')
   })
 
   it('refuses a backup snapshot’s file, whose path looks like a plain one', async () => {

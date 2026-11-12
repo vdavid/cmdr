@@ -734,10 +734,6 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
   },
-  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {Cmdr chưa thể sửa tệp này trong trình soạn thảo, vì đây không phải là tệp thông thường trên máy Mac của bạn. Nhấn F3 để xem tệp.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
-  "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "710100c"
-  },
   "fileExplorer.edit.hint": "Đã mở tệp trong {app}. Bạn muốn dùng trình soạn thảo khác vào lần sau? Hãy chọn trong Cài đặt.",
   "@fileExplorer.edit.hint": {
     "sourceHash": "3632f06"
@@ -878,10 +874,6 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
-  "fileExplorer.restic.useTransferToCopyOut": "Để sao chép tệp ra khỏi một bản sao lưu, hãy dùng F5.",
-  "@fileExplorer.restic.useTransferToCopyOut": {
-    "sourceHash": "b3674bd"
-  },
   "fileExplorer.restic.snapshot.host": "Sao lưu từ {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -910,10 +902,6 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Để quên mật khẩu của một bản sao lưu, hãy mở bản sao lưu đó trước, hoặc đặt con trỏ vào thư mục “Browse snapshots” của bản sao lưu.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
-  },
-  "fileExplorer.archive.useTransferToCopyOut": "Để sao chép tệp ra khỏi một tệp nén, hãy dùng F5 để sao chép hoặc F6 để di chuyển.",
-  "@fileExplorer.archive.useTransferToCopyOut": {
-    "sourceHash": "3edbc36"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr có chút phép màu git dành cho bạn!",
   "@fileExplorer.git.portalIntro.title": {
@@ -974,10 +962,6 @@
   "fileExplorer.git.status.conflicted": "Có xung đột",
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
-  },
-  "fileExplorer.git.useTransferToCopyOut": "Để sao chép tệp ra khỏi một ảnh chụp git, hãy dùng F5 để sao chép hoặc F6 để di chuyển.",
-  "@fileExplorer.git.useTransferToCopyOut": {
-    "sourceHash": "a0d65fe"
   },
   "fileExplorer.openWith.copyRefused.tooLarge": "“{fileName}” lớn hơn {limit}, nên Cmdr không thể mở tệp này bằng {appName} từ bên trong tệp nén.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {

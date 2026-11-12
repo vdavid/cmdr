@@ -734,10 +734,6 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
   },
-  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {O Cmdr ainda não consegue editar este arquivo no editor, porque ele não é um arquivo comum do seu Mac. Pressione F3 para visualizá-lo.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
-  "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "710100c"
-  },
   "fileExplorer.edit.hint": "Arquivo aberto em {app}. Quer outro editor da próxima vez? Escolha um em Ajustes.",
   "@fileExplorer.edit.hint": {
     "sourceHash": "3632f06"
@@ -878,10 +874,6 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
-  "fileExplorer.restic.useTransferToCopyOut": "Para copiar arquivos de dentro de um backup, use F5.",
-  "@fileExplorer.restic.useTransferToCopyOut": {
-    "sourceHash": "b3674bd"
-  },
   "fileExplorer.restic.snapshot.host": "Backup de {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -910,10 +902,6 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Para esquecer a senha de um backup, abra o backup primeiro ou coloque o cursor na pasta “Browse snapshots” dele.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
-  },
-  "fileExplorer.archive.useTransferToCopyOut": "Para copiar arquivos de dentro de um arquivo compactado, use F5 para copiar ou F6 para mover.",
-  "@fileExplorer.archive.useTransferToCopyOut": {
-    "sourceHash": "3edbc36"
   },
   "fileExplorer.git.portalIntro.title": "O Cmdr tem uma mágica de git para você!",
   "@fileExplorer.git.portalIntro.title": {
@@ -974,10 +962,6 @@
   "fileExplorer.git.status.conflicted": "Em conflito",
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
-  },
-  "fileExplorer.git.useTransferToCopyOut": "Para copiar arquivos de dentro de um instantâneo do git, use F5 para copiar ou F6 para mover.",
-  "@fileExplorer.git.useTransferToCopyOut": {
-    "sourceHash": "a0d65fe"
   },
   "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} tem mais de {limit}, então o Cmdr não consegue abrir o arquivo em {appName} de dentro do arquivo compactado.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {

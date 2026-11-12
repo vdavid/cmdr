@@ -545,14 +545,15 @@ volume-id string. The record has two halves, and which half answers is the whole
   archive check, so it would call a `.zip` FILE unshareable, and sharing a freshly-made archive is the point.
 - **F4 (edit) goes through `editor-open.ts`**: `openInEditorOrExplain(volumeId, rowPath)` hands a file to
   `#lib/text-editor`'s `openFileInEditor` only when its path is a plain filesystem path AND `rowIsOsVisible` holds, and
-  otherwise shows `fileExplorer.edit.notOnThisMac` (a phone, a server, an archive's insides, the `.git` portal),
-  pointing at F3. The guard lives here because it's a pane question; WHICH app opens the file, the missing-app fallback,
-  and every toast around the launch belong to `apps/desktop/src/lib/text-editor/DETAILS.md`, and the setting never
-  widens what the guard accepts. The pane's `file.edit`, the search-results F4 (against the snapshot's `volumeId`), and
-  the new-file auto-open all call it; its `EditorPressOutcome` is `opened` (an app was asked, a fallback included),
-  `refusedNotOnThisMac`, or `launchFailed`, and `file.edit` counts `editor_opened` only on `opened`. ❌ Never call
-  `openInEditor` on a row directly: an editor launch on a scheme path does nothing and says nothing. Its gate is
-  `rowHasFileOnThisMac` (scheme plus `rowIsOsVisible`), shared with the default-app open below.
+  otherwise shows `fileExplorer.edit.notOnThisMacWithKey` (a phone, a server, an archive’s insides, the `.git` portal),
+  pointing at View’s live key (`viewShortcut`), or `notOnThisMacWithoutKey` naming the View command once none runs it.
+  The guard lives here because it's a pane question; WHICH app opens the file, the missing-app fallback, and every toast
+  around the launch belong to `apps/desktop/src/lib/text-editor/DETAILS.md`, and the setting never widens what the guard
+  accepts. The pane's `file.edit`, the search-results F4 (against the snapshot's `volumeId`), and the new-file auto-open
+  all call it; its `EditorPressOutcome` is `opened` (an app was asked, a fallback included), `refusedNotOnThisMac`, or
+  `launchFailed`, and `file.edit` counts `editor_opened` only on `opened`. ❌ Never call `openInEditor` on a row
+  directly: an editor launch on a scheme path does nothing and says nothing. Its gate is `rowHasFileOnThisMac` (scheme
+  plus `rowIsOsVisible`), shared with the default-app open below.
 - **Opening a file in its default app goes through `default-app-open.ts`** (Enter, double-click, the Enter popup's Open,
   the context menu's Open, `open_under_cursor`). `openWithDefaultAppOrExplain(volumeId, entry)` refuses a row
   `rowHasFileOnThisMac` rejects with `fileExplorer.open.notOnThisMac` (pointing at the live View key), then calls
@@ -604,8 +605,9 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
 
   **The key each toast names is read LIVE off `file.copy` / `file.move`** (`transferShortcut`), ❌ never spelled `F5` in
   the catalog: both are rebindable in Settings > Shortcuts, and a hardcoded name starts lying the moment someone moves
-  one. It's a snapshot at toast-build time (a toast isn't a live-updating surface), and an unbound command falls back to
-  its default, the same contract `transfer-error-messages.ts` uses for `file.deletePermanently`.
+  one. It’s a snapshot at toast-build time (a toast isn’t a live-updating surface). ❌ Never a fall back to the default:
+  a default the user removed runs nothing, so each toast has a `…WithoutKey` sibling that names the command instead, the
+  same contract `transfer-error-messages.ts` uses for `file.deletePermanently` and `file.rename`.
 
   **The snapshot-clip branch gates TWICE, in this order** (`snapshotClipboardIsRefused`). First the PATH SCHEME:
   `#lib/path/canonical.ts::isPlainFilesystemPath` refuses any row that isn't a plain absolute filesystem path, from the

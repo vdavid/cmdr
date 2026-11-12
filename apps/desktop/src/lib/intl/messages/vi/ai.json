@@ -27,10 +27,6 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescription": "Hãy thử tạo thư mục mới (F7) để xem gợi ý tên do AI hỗ trợ.",
-  "@ai.toast.readyDescription": {
-    "sourceHash": "b3ae1b2"
-  },
   "ai.toast.gotIt": "Đã hiểu",
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"

@@ -3,8 +3,16 @@
     import ToastActions from '#lib/ui/toast/ToastActions.svelte'
     import { getAiState, handleCancel, handleGotIt } from './ai-state.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 
     const aiState = getAiState()
+    // The live New folder key, so the hint never names a key the user moved or removed.
+    const newFolderKey = $derived(getFirstShortcutReactive('file.newFolder'))
+    const readyDescription = $derived(
+        newFolderKey === undefined
+            ? tString('ai.toast.readyDescriptionWithoutKey')
+            : tString('ai.toast.readyDescriptionWithKey', { combo: newFolderKey }),
+    )
 </script>
 
 <!-- One root around every state: the toast frame lays a body's rows out in block flow, spaced
@@ -36,7 +44,7 @@
         <span class="ai-description">{tString('ai.toast.installingDescription')}</span>
     {:else if aiState.notificationState === 'ready'}
         <span class="ai-title">{tString('ai.toast.readyTitle')}</span>
-        <span class="ai-description">{tString('ai.toast.readyDescription')}</span>
+        <span class="ai-description">{readyDescription}</span>
         <ToastActions>
             <Button
                 variant="primary"

@@ -2017,10 +2017,15 @@
   },
   "errors.write.trashNotSupported.suggestion": "Use {deletePermanentlyKey} to delete permanently instead.",
   "@errors.write.trashNotSupported.suggestion": {
-    "description": "Recovery suggestion when a volume doesn't support the trash, pointing at the delete-permanently shortcut. Plain text.",
+    "description": "Recovery suggestion when a volume doesn't support the trash, pointing at the delete-permanently shortcut. Plain text. When no key runs that command (the user removed it), the text reads \"errors.write.trashNotSupported.suggestionWithoutKey\" instead.",
     "placeholders": {
       "deletePermanentlyKey": "the keyboard shortcut for deleting permanently, e.g. \"⇧F8\" on macOS or \"Shift+F8\" elsewhere; do NOT translate the glyphs or key names"
     },
+    "screenshot": "transfer-error-trash_not_supported.png"
+  },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "Use the Delete permanently command instead.",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "description": "Recovery suggestion when a volume doesn't support the trash and no key runs Delete permanently (the user removed it), so it names the command instead of a key. The keyless sibling of errors.write.trashNotSupported.suggestion. Plain text. \"Delete permanently\" is the name of Cmdr’s command as the command palette and the menu show it (commands.fileDeletePermanently.label); use the same name.",
     "screenshot": "transfer-error-trash_not_supported.png"
   },
   "errors.write.connectionInterrupted.title": "Connection interrupted",
@@ -2480,15 +2485,33 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "{platform, select, macos {This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with Shift+F8.} other {This can happen when the trash folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with Shift+F8.}}",
-  "@errors.write.trashRefused.suggestion.trashNotWritable": {
-    "description": "Recovery suggestion when the drive's trash folder doesn't let the app add anything to it. Plain text. The first sentence says how that usually happens (moving to a new computer is one example; each branch names its own kind); the second offers deleting permanently instead, which doesn't need the trash. Shift+F8 is a keyboard shortcut and stays as-is. The Windows branch names the Recycle Bin, Windows' own name for it. The screenshot shows the macOS wording.",
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with {deletePermanentlyKey}.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with {deletePermanentlyKey}.} other {This can happen when the trash folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "description": "Recovery suggestion when the drive's trash folder doesn't let the app add anything to it. Plain text. The first sentence says how that usually happens (moving to a new computer is one example; each branch names its own kind); the second offers deleting permanently instead, which doesn't need the trash, by the key that does it. When no key runs Delete permanently, the suggestion reads \"errors.write.trashRefused.suggestion.trashNotWritableWithoutKey\" instead. The Windows branch names the Recycle Bin, Windows' own name for it. The screenshot shows the macOS wording.",
+    "placeholders": {
+      "deletePermanentlyKey": "the key that runs Delete permanently right now, e.g. \"⇧F8\" on macOS or \"Shift+F8\" on Windows and Linux; do NOT translate the glyphs or key names"
+    },
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.write.trashRefused.suggestion.noTrashForVolume": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.} other {Some places have no trash of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.}}",
-  "@errors.write.trashRefused.suggestion.noTrashForVolume": {
-    "description": "Recovery suggestion when the items' location has no trash. Plain text. Names the two common cases so the user recognizes their own. Shift+F8 is a keyboard shortcut and stays as-is. The Windows branch names the Recycle Bin, Windows' own name for it. The screenshot shows the macOS wording.",
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items with the Delete permanently command.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items with the Delete permanently command.} other {This can happen when the trash folder’s permissions change, for example after moving to a new computer. You can still delete the items with the Delete permanently command.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "description": "The keyless sibling of errors.write.trashRefused.suggestion.trashNotWritableWithKey, shown when no key runs Delete permanently (the user removed it), so it names the command instead of a key; keep the two worded alike. Plain text. \"Delete permanently\" is the name of Cmdr’s command as the command palette and the menu show it (commands.fileDeletePermanently.label); use the same name. The Windows branch names the Recycle Bin, Windows' own name for it. The screenshot shows the macOS wording.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with {deletePermanentlyKey}.} other {Some places have no trash of their own, including cloud folders and most network drives. You can still delete the items permanently with {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "description": "Recovery suggestion when the items' location has no trash. Plain text. Names the two common cases so the user recognizes their own, then offers deleting permanently by the key that does it. When no key runs Delete permanently, the suggestion reads \"errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey\" instead. The Windows branch names the Recycle Bin, Windows' own name for it. The screenshot shows the macOS wording.",
+    "placeholders": {
+      "deletePermanentlyKey": "the key that runs Delete permanently right now, e.g. \"⇧F8\" on macOS or \"Shift+F8\" on Windows and Linux; do NOT translate the glyphs or key names"
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items with the Delete permanently command.} other {Some places have no trash of their own, including cloud folders and most network drives. You can still delete the items with the Delete permanently command.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "description": "The keyless sibling of errors.write.trashRefused.suggestion.noTrashForVolumeWithKey, shown when no key runs Delete permanently (the user removed it), so it names the command instead of a key; keep the two worded alike. Plain text. \"Delete permanently\" is the name of Cmdr’s command as the command palette and the menu show it (commands.fileDeletePermanently.label); use the same name. The Windows branch names the Recycle Bin, Windows' own name for it. The screenshot shows the macOS wording.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -3014,9 +3037,17 @@
     },
     "screenshot": "transfer-error-home_folder-rename-holds.png"
   },
-  "errors.write.homeFolderRename.suggestion.isHome": "{platform, select, macos {If you really need a new name, macOS has a careful way to do it in Users & Groups. It’s not a quick F2, though.} windows {Windows has no safe built-in way to rename it, so it’s best left as it is.} other {If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick F2, though.}}",
-  "@errors.write.homeFolderRename.suggestion.isHome": {
-    "description": "Second part of the message when the user tries to rename their own home folder, right after errors.write.homeFolderRename.message.isHome. Plain text. The macOS branch points to the macOS way of changing the home folder's name: System Settings > Users & Groups (use the name your macOS version shows for that settings pane). The Windows branch says Windows has no safe built-in way; the Linux branch names usermod, a command that stays as-is. \"F2\" is the key that renames a file in Cmdr; keep it as is. The screenshot shows the macOS wording.",
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {If you really need a new name, macOS has a careful way to do it in Users & Groups. It’s not a quick {renameKey}, though.} windows {Windows has no safe built-in way to rename it, so it’s best left as it is.} other {If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick {renameKey}, though.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "description": "Second part of the message when the user tries to rename their own home folder, right after errors.write.homeFolderRename.message.isHome. Plain text. The macOS branch points to the macOS way of changing the home folder's name: System Settings > Users & Groups (use the name your macOS version shows for that settings pane). The Windows branch says Windows has no safe built-in way; the Linux branch names usermod, a command that stays as-is. \"A quick {renameKey}\" is a light joke: a single press of Cmdr's rename key won't do it. When no key runs Rename, the text reads \"errors.write.homeFolderRename.suggestion.isHomeWithoutKey\" instead. The screenshot shows the macOS wording.",
+    "placeholders": {
+      "renameKey": "the key that runs Cmdr’s rename command right now, e.g. \"F2\"; the user can rebind it. A key glyph or key name, never a word."
+    },
+    "screenshot": "transfer-error-home_folder-rename.png"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {If you really need a new name, macOS has a careful way to do it in Users & Groups. It’s not a quick rename, though.} windows {Windows has no safe built-in way to rename it, so it’s best left as it is.} other {If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick rename, though.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "description": "The keyless sibling of errors.write.homeFolderRename.suggestion.isHomeWithKey, shown when no key runs Cmdr’s rename command (the user removed it): \"a quick rename\" stands where the key was. Keep the two worded alike. The screenshot shows the macOS wording.",
     "screenshot": "transfer-error-home_folder-rename.png"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Rename something inside it instead, or let this one be. It’s holding up more than it looks.",

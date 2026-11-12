@@ -183,6 +183,26 @@ export const RETIRED_KEYS: readonly RetiredKey[] = [
     reason:
       'it spelled the global hotkey ⌃⌥⌘J whatever the user bound; the row already shows the live binding (`downloads.toggleDescription.*`), so the registry keeps `enabled.summary`, which names no key',
   },
+  {
+    key: 'fileExplorer.edit.notOnThisMac',
+    reason:
+      'it spelled View’s key F3 whatever the user bound; `fileExplorer.edit.notOnThisMacWithKey` takes the live key as `{viewKey}`, and `notOnThisMacWithoutKey` names the View command',
+  },
+  {
+    key: 'errors.write.trashRefused.suggestion.trashNotWritable',
+    reason:
+      'it spelled Delete permanently’s key Shift+F8 for every OS (a Mac reads ⇧F8) and every rebind; `trashNotWritableWithKey` takes the live key as `{deletePermanentlyKey}`, and `trashNotWritableWithoutKey` names the command',
+  },
+  {
+    key: 'errors.write.trashRefused.suggestion.noTrashForVolume',
+    reason:
+      'it spelled Delete permanently’s key Shift+F8 for every OS (a Mac reads ⇧F8) and every rebind; `noTrashForVolumeWithKey` takes the live key as `{deletePermanentlyKey}`, and `noTrashForVolumeWithoutKey` names the command',
+  },
+  {
+    key: 'errors.write.homeFolderRename.suggestion.isHome',
+    reason:
+      'it spelled Rename’s key F2 whatever the user bound; `isHomeWithKey` takes the live key as `{renameKey}`, and `isHomeWithoutKey` says “a quick rename”',
+  },
 ]
 
 /** One reviewed fix to a translation the baseline froze: the macOS text `locale`'s own catalog now holds for `key`. */

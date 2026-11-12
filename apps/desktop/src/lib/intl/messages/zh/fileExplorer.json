@@ -731,10 +731,6 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
   },
-  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {Cmdr 暂时还不能用编辑器编辑这个文件，因为它不是你 Mac 上的普通文件。请按 F3 查看。} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
-  "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "710100c"
-  },
   "fileExplorer.edit.hint": "已在 {app} 里打开这个文件。想下次换个编辑器？在“设置”里选一个。",
   "@fileExplorer.edit.hint": {
     "sourceHash": "3632f06"
@@ -875,10 +871,6 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
-  "fileExplorer.restic.useTransferToCopyOut": "要把文件从备份里拷贝出来，请用 F5。",
-  "@fileExplorer.restic.useTransferToCopyOut": {
-    "sourceHash": "b3674bd"
-  },
   "fileExplorer.restic.snapshot.host": "备份自 {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -906,10 +898,6 @@
   "fileExplorer.restic.forgetPassword.noBackup": "要清除一个备份的密码，请先打开这个备份，或者把光标移到它的“Browse snapshots”文件夹上。",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
-  },
-  "fileExplorer.archive.useTransferToCopyOut": "要把文件从压缩文件里拷贝出来，请用 F5 拷贝或 F6 移动。",
-  "@fileExplorer.archive.useTransferToCopyOut": {
-    "sourceHash": "3edbc36"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr 为你准备了一点 git 小魔法！",
   "@fileExplorer.git.portalIntro.title": {
@@ -970,10 +958,6 @@
   "fileExplorer.git.status.conflicted": "有冲突",
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
-  },
-  "fileExplorer.git.useTransferToCopyOut": "要把文件从 git 快照里拷贝出来，请用 F5 拷贝或 F6 移动。",
-  "@fileExplorer.git.useTransferToCopyOut": {
-    "sourceHash": "a0d65fe"
   },
   "fileExplorer.openWith.copyRefused.tooLarge": "“{fileName}”超过 {limit}，所以 Cmdr 无法从压缩文件里用 {appName} 打开它。",
   "@fileExplorer.openWith.copyRefused.tooLarge": {

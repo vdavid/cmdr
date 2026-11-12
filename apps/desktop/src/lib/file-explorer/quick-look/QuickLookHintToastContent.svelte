@@ -27,9 +27,10 @@
 
     import { QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint-id'
 
-    // The Quick Look chip is live: it follows a rebind, and its line goes away when
-    // `file.quickLook` is unbound, since naming a key that does nothing would lie. The
-    // chip is non-clickable: the toast already offers the Settings link below.
+    // The Quick Look chip is live: it follows a rebind, and its line goes away once no
+    // key runs `file.quickLook`. ❌ No fall back to ⇧Space: a default the user removed
+    // runs nothing, and naming it would lie. The chip is non-clickable: the toast
+    // already offers the Settings link below.
     const quickLookBound = $derived(commandHasShortcut('file.quickLook'))
 
     function handleOpenSettings() {

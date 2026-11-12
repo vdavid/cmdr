@@ -48,11 +48,19 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.toast.readyDescription": "Try creating a new folder (F7) to see AI-powered name suggestions.",
-  "@ai.toast.readyDescription": {
-    "description": "Sub-line under the AI ready title, suggesting the user try the folder-name suggestion feature. F7 is the keyboard key for New folder; keep it as F7.",
+  "ai.toast.readyDescriptionWithKey": "Try creating a new folder ({combo}) to see AI-powered name suggestions.",
+  "@ai.toast.readyDescriptionWithKey": {
+    "description": "Sub-line under the AI ready title, suggesting the user try the folder-name suggestion feature, with the key that runs New folder. When no key runs New folder, the line reads \"ai.toast.readyDescriptionWithoutKey\" instead.",
+    "placeholders": {
+      "combo": "the key that runs New folder right now, e.g. \"F7\"; the user can rebind it. A key glyph or key name, never a word."
+    },
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.toast.readyDescriptionWithoutKey": "Try creating a new folder to see AI-powered name suggestions.",
+  "@ai.toast.readyDescriptionWithoutKey": {
+    "description": "The keyless sibling of ai.toast.readyDescriptionWithKey, shown when no key runs New folder (the user removed it). Same sentence without the key.",
+    "screenshot": "settings-ai-provider.png"
   },
   "ai.toast.gotIt": "Got it",
   "@ai.toast.gotIt": {

@@ -17,6 +17,11 @@ type ToastOptions = { level: string; timeoutMs: number; id: string }
 
 const addToast = vi.hoisted(() => vi.fn<(message: string, options: ToastOptions) => string>())
 vi.mock('#lib/ui/toast/index.js', () => ({ addToast }))
+const liveShortcuts = vi.hoisted(() => vi.fn<(commandId: string) => string[]>())
+vi.mock(import('#lib/shortcuts/index.js'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  getLiveShortcuts: liveShortcuts,
+}))
 
 let emitRefused: (payload: OpenWithCopyRefused) => void
 let emitLaunched: (payload: OpenWithCopyLaunched) => void
@@ -50,6 +55,7 @@ function refused(reason: OpenWithCopyRefusal, source: OpenWithCopySource = 'arch
 
 beforeEach(async () => {
   addToast.mockClear()
+  liveShortcuts.mockImplementation((commandId) => (commandId === 'file.view' ? ['F3'] : []))
   unlisten.mockClear()
   unlistenLaunched.mockClear()
   await startOpenWithCopyBridge()
@@ -170,5 +176,16 @@ describe('the open-with not-on-this-Mac notice', () => {
     expect(message).toContain('Preview')
     expect(message).toContain('F3')
     expect(options.level).toBe('info')
+  })
+
+  it('names the View command once no key runs it', () => {
+    liveShortcuts.mockReturnValue([])
+
+    emitNotOnThisMac({ appName: 'Preview' })
+
+    const [message] = addToast.mock.calls[0]
+    expect(message).toBe(
+      'Preview can’t open this file, because it isn’t a regular file on your computer. View it in Cmdr with the View command instead.',
+    )
   })
 })

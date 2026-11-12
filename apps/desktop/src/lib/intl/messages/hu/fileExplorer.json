@@ -733,10 +733,6 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
   },
-  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {A Cmdr ezt a fájlt még nem tudja megnyitni szerkesztésre, mert nem szokásos fájl a Macen. Az F3 billentyűvel megtekintheted.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
-  "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "710100c"
-  },
   "fileExplorer.edit.hint": "A fájl ebben nyílt meg: {app}. Legközelebb másik szerkesztőt szeretnél? Válaszd ki a Beállításokban.",
   "@fileExplorer.edit.hint": {
     "sourceHash": "3632f06"
@@ -877,10 +873,6 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
-  "fileExplorer.restic.useTransferToCopyOut": "Ha fájlokat szeretnél kimásolni egy biztonsági mentésből, használd az F5-öt.",
-  "@fileExplorer.restic.useTransferToCopyOut": {
-    "sourceHash": "b3674bd"
-  },
   "fileExplorer.restic.snapshot.host": "Biztonsági mentés innen: {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -908,10 +900,6 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Ha egy biztonsági mentés jelszavát szeretnéd elfelejteni, előbb nyisd meg a biztonsági mentést, vagy állítsd a kurzort a „Browse snapshots” mappájára.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
-  },
-  "fileExplorer.archive.useTransferToCopyOut": "Ha fájlokat szeretnél kimásolni egy archívumból, használd az F5-öt másoláshoz vagy az F6-ot áthelyezéshez.",
-  "@fileExplorer.archive.useTransferToCopyOut": {
-    "sourceHash": "3edbc36"
   },
   "fileExplorer.git.portalIntro.title": "A Cmdr tartogat neked egy kis git-varázslatot!",
   "@fileExplorer.git.portalIntro.title": {
@@ -972,10 +960,6 @@
   "fileExplorer.git.status.conflicted": "Konfliktusos",
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
-  },
-  "fileExplorer.git.useTransferToCopyOut": "Ha fájlokat szeretnél kimásolni egy git-pillanatképből, használd az F5-öt másoláshoz vagy az F6-ot áthelyezéshez.",
-  "@fileExplorer.git.useTransferToCopyOut": {
-    "sourceHash": "a0d65fe"
   },
   "fileExplorer.openWith.copyRefused.tooLarge": "„{fileName}” nagyobb {limit} méretnél, ezért a Cmdr nem tudja megnyitni az archívumból ezzel: {appName}.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {

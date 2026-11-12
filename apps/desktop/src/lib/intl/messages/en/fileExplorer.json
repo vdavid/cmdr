@@ -488,10 +488,14 @@
   },
   "fileExplorer.open.notOnThisMac": "{platform, select, macos {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your Mac. Press {viewKey} to view it.} windows {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your PC. Press {viewKey} to view it.} other {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your computer. Press {viewKey} to view it.}}",
   "@fileExplorer.open.notOnThisMac": {
-    "description": "Info toast shown when the user presses Enter, double-clicks, or picks Open on a file that no other app can open by its path: a file on a phone or camera, on a server reached over SFTP, WebDAV, or S3, in the virtual .git folders, or on a network share Cmdr still reaches over its own connection after the system lost track of it. Nothing opened, so the toast says why and points at the key that opens Cmdr's own viewer, which can show the file. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'.",
+    "description": "Info toast shown when the user presses Enter, double-clicks, or picks Open on a file that no other app can open by its path: a file on a phone or camera, on a server reached over SFTP, WebDAV, or S3, in the virtual .git folders, or on a network share Cmdr still reaches over its own connection after the system lost track of it. Nothing opened, so the toast says why and points at the key that opens Cmdr's own viewer, which can show the file. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'. When no key runs that command (the user removed it), the text reads \"fileExplorer.open.notOnThisMacWithoutKey\" instead.",
     "placeholders": {
       "viewKey": "the key the user has bound to View, for example F3 (do not translate)"
     }
+  },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your Mac. View it with the View command instead.} windows {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your PC. View it with the View command instead.} other {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your computer. View it with the View command instead.}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "description": "The keyless sibling of fileExplorer.open.notOnThisMac, shown when no key runs View (the user removed it), so it names the command instead of a key; keep the two worded alike. \"View\" is the name of Cmdr’s viewer command as the command palette and the menu show it (commands.fileView.label); use the same name. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'."
   },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {{fileName} didn’t open. macOS couldn’t find the file, or no app opens it.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
@@ -1110,49 +1114,80 @@
   },
   "fileExplorer.clipboard.copyFromDevice": "The clipboard can’t carry files from this device. Use {copyKey} to copy them.",
   "@fileExplorer.clipboard.copyFromDevice": {
-    "description": "Info toast shown when the user presses the copy shortcut on a pane showing a connected phone, e-reader, or camera. The system clipboard can't hold that kind of path, so the toast says why and points at Cmdr's own copy command. \"device\" is deliberately broader than \"phone\": the same message covers e-readers and cameras.",
+    "description": "Info toast shown when the user presses the copy shortcut on a pane showing a connected phone, e-reader, or camera. The system clipboard can't hold that kind of path, so the toast says why and points at Cmdr's own copy command. \"device\" is deliberately broader than \"phone\": the same message covers e-readers and cameras. When no key runs that command (the user removed it), the text reads \"fileExplorer.clipboard.copyFromDeviceWithoutKey\" instead.",
     "placeholders": {
       "copyKey": "the key currently bound to Cmdr's copy command, e.g. \"F5\". The user can rebind it, so it isn't always F5."
     }
+  },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "The clipboard can’t carry files from this device. Copy them with the Copy command instead.",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "description": "Info toast shown when the user presses the copy shortcut on a connected phone, e-reader, or camera, and no key runs the Cmdr command it points at (the user removed it), so it names the command instead of a key. The keyless sibling of fileExplorer.clipboard.copyFromDevice; keep the two worded alike. \"Copy\" is the name of Cmdr’s file copy command as the command palette and the menu show it (commands.fileCopy.label); use the same name."
   },
   "fileExplorer.clipboard.moveFromDevice": "The clipboard can’t carry files from this device. Use {moveKey} to move them.",
   "@fileExplorer.clipboard.moveFromDevice": {
-    "description": "Info toast shown when the user presses the cut shortcut on a pane showing a connected phone, e-reader, or camera. The sibling of fileExplorer.clipboard.copyFromDevice, for moving instead of copying; keep the two worded alike. \"device\" is deliberately broader than \"phone\": the same message covers e-readers and cameras.",
+    "description": "Info toast shown when the user presses the cut shortcut on a pane showing a connected phone, e-reader, or camera. The sibling of fileExplorer.clipboard.copyFromDevice, for moving instead of copying; keep the two worded alike. \"device\" is deliberately broader than \"phone\": the same message covers e-readers and cameras. When no key runs that command (the user removed it), the text reads \"fileExplorer.clipboard.moveFromDeviceWithoutKey\" instead.",
     "placeholders": {
       "moveKey": "the key currently bound to Cmdr's move command, e.g. \"F6\". The user can rebind it, so it isn't always F6."
     }
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "The clipboard can’t carry files from this device. Move them with the Move command instead.",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "description": "Info toast shown when the user presses the cut shortcut on a connected phone, e-reader, or camera, and no key runs the Cmdr command it points at (the user removed it), so it names the command instead of a key. The keyless sibling of fileExplorer.clipboard.moveFromDevice; keep the two worded alike. \"Move\" is the name of Cmdr’s file move command as the command palette and the menu show it (commands.fileMove.label); use the same name."
   },
   "fileExplorer.clipboard.copyFromServer": "The clipboard can’t carry files from this server. Use {copyKey} to copy them.",
   "@fileExplorer.clipboard.copyFromServer": {
-    "description": "Info toast shown when the user presses the copy shortcut on a pane showing a server reached over SFTP or WebDAV. The system clipboard can't hold that kind of path, so the toast says why and points at Cmdr's own copy command. Same sentence as fileExplorer.clipboard.copyFromDevice with \"server\" in place of \"device\"; keep the pair worded alike.",
+    "description": "Info toast shown when the user presses the copy shortcut on a pane showing a server reached over SFTP or WebDAV. The system clipboard can't hold that kind of path, so the toast says why and points at Cmdr's own copy command. Same sentence as fileExplorer.clipboard.copyFromDevice with \"server\" in place of \"device\"; keep the pair worded alike. When no key runs that command (the user removed it), the text reads \"fileExplorer.clipboard.copyFromServerWithoutKey\" instead.",
     "placeholders": {
       "copyKey": "the key currently bound to Cmdr's copy command, e.g. \"F5\". The user can rebind it, so it isn't always F5."
     }
+  },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "The clipboard can’t carry files from this server. Copy them with the Copy command instead.",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "description": "Info toast shown when the user presses the copy shortcut on a server reached over SFTP or WebDAV, and no key runs the Cmdr command it points at (the user removed it), so it names the command instead of a key. The keyless sibling of fileExplorer.clipboard.copyFromServer; keep the two worded alike. \"Copy\" is the name of Cmdr’s file copy command as the command palette and the menu show it (commands.fileCopy.label); use the same name."
   },
   "fileExplorer.clipboard.moveFromServer": "The clipboard can’t carry files from this server. Use {moveKey} to move them.",
   "@fileExplorer.clipboard.moveFromServer": {
-    "description": "Info toast shown when the user presses the cut shortcut on a pane showing a server reached over SFTP or WebDAV. The sibling of fileExplorer.clipboard.copyFromServer, for moving instead of copying; keep the two worded alike.",
+    "description": "Info toast shown when the user presses the cut shortcut on a pane showing a server reached over SFTP or WebDAV. The sibling of fileExplorer.clipboard.copyFromServer, for moving instead of copying; keep the two worded alike. When no key runs that command (the user removed it), the text reads \"fileExplorer.clipboard.moveFromServerWithoutKey\" instead.",
     "placeholders": {
       "moveKey": "the key currently bound to Cmdr's move command, e.g. \"F6\". The user can rebind it, so it isn't always F6."
     }
   },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "The clipboard can’t carry files from this server. Move them with the Move command instead.",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "description": "Info toast shown when the user presses the cut shortcut on a server reached over SFTP or WebDAV, and no key runs the Cmdr command it points at (the user removed it), so it names the command instead of a key. The keyless sibling of fileExplorer.clipboard.moveFromServer; keep the two worded alike. \"Move\" is the name of Cmdr’s file move command as the command palette and the menu show it (commands.fileMove.label); use the same name."
+  },
   "fileExplorer.clipboard.copyFromUnknown": "These files can’t go on the clipboard. Use {copyKey} to copy them.",
   "@fileExplorer.clipboard.copyFromUnknown": {
-    "description": "Info toast shown when the user presses the copy shortcut on search results whose files sit somewhere the clipboard can't reach, and Cmdr can no longer tell whether that was a device or a server (the phone was unplugged, or the server disconnected, while the results stayed on screen). Says \"these files\" precisely because naming the place would be a guess. The noun-carrying versions are fileExplorer.clipboard.copyFromDevice and copyFromServer.",
+    "description": "Info toast shown when the user presses the copy shortcut on search results whose files sit somewhere the clipboard can't reach, and Cmdr can no longer tell whether that was a device or a server (the phone was unplugged, or the server disconnected, while the results stayed on screen). Says \"these files\" precisely because naming the place would be a guess. The noun-carrying versions are fileExplorer.clipboard.copyFromDevice and copyFromServer. When no key runs that command (the user removed it), the text reads \"fileExplorer.clipboard.copyFromUnknownWithoutKey\" instead.",
     "placeholders": {
       "copyKey": "the key currently bound to Cmdr's copy command, e.g. \"F5\". The user can rebind it, so it isn't always F5."
     }
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "These files can’t go on the clipboard. Copy them with the Copy command instead.",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "description": "Info toast shown when the user presses the copy shortcut on search results whose files sit somewhere the clipboard can’t reach, and no key runs the Cmdr command it points at (the user removed it), so it names the command instead of a key. The keyless sibling of fileExplorer.clipboard.copyFromUnknown; keep the two worded alike. \"Copy\" is the name of Cmdr’s file copy command as the command palette and the menu show it (commands.fileCopy.label); use the same name."
+  },
   "fileExplorer.clipboard.moveFromUnknown": "These files can’t go on the clipboard. Use {moveKey} to move them.",
   "@fileExplorer.clipboard.moveFromUnknown": {
-    "description": "Info toast shown when the user presses the cut shortcut on search results whose files sit somewhere the clipboard can't reach, and Cmdr can no longer tell whether that was a device or a server. The sibling of fileExplorer.clipboard.copyFromUnknown, for moving instead of copying; keep the two worded alike.",
+    "description": "Info toast shown when the user presses the cut shortcut on search results whose files sit somewhere the clipboard can't reach, and Cmdr can no longer tell whether that was a device or a server. The sibling of fileExplorer.clipboard.copyFromUnknown, for moving instead of copying; keep the two worded alike. When no key runs that command (the user removed it), the text reads \"fileExplorer.clipboard.moveFromUnknownWithoutKey\" instead.",
     "placeholders": {
       "moveKey": "the key currently bound to Cmdr's move command, e.g. \"F6\". The user can rebind it, so it isn't always F6."
     }
   },
-  "fileExplorer.edit.notOnThisMac": "{platform, select, macos {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your Mac. Press F3 to view it.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press F3 to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press F3 to view it.}}",
-  "@fileExplorer.edit.notOnThisMac": {
-    "description": "Info toast shown when the user presses F4 (edit) on a file with no regular file behind it on the Mac: a file on a phone or camera, on a server reached over SFTP or WebDAV, inside an archive, or in the virtual .git folders. A text editor can't open it yet, so the toast says so and points at F3, which opens Cmdr's own viewer and can show the file. \"Cmdr\" is the product name and \"F3\" a key name; keep both. Never use the words 'error' or 'failed'."
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "These files can’t go on the clipboard. Move them with the Move command instead.",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "description": "Info toast shown when the user presses the cut shortcut on search results whose files sit somewhere the clipboard can’t reach, and no key runs the Cmdr command it points at (the user removed it), so it names the command instead of a key. The keyless sibling of fileExplorer.clipboard.moveFromUnknown; keep the two worded alike. \"Move\" is the name of Cmdr’s file move command as the command palette and the menu show it (commands.fileMove.label); use the same name."
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your Mac. Press {viewKey} to view it.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. Press {viewKey} to view it.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. Press {viewKey} to view it.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "description": "Info toast shown when the user presses the edit key (F4 by default) on a file with no regular file behind it on this computer: a file on a phone or camera, on a server reached over SFTP or WebDAV, inside an archive, or in the virtual .git folders. A text editor can't open it yet, so the toast says so and points at the key that opens Cmdr's own viewer, which can show the file. When no key runs View, the toast reads \"fileExplorer.edit.notOnThisMacWithoutKey\" instead. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'.",
+    "placeholders": {
+      "viewKey": "the key that runs View right now, for example F3 (do not translate); the user can rebind it"
+    }
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your Mac. View it with the View command instead.} windows {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your PC. View it with the View command instead.} other {Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your computer. View it with the View command instead.}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "description": "The keyless sibling of fileExplorer.edit.notOnThisMacWithKey, shown when no key runs View (the user removed it), so it names the command instead of a key; keep the two worded alike. \"View\" is the name of Cmdr’s viewer command as the command palette and the menu show it (commands.fileView.label); use the same name. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'."
   },
   "fileExplorer.edit.hint": "Opened in {app}. Want a different editor next time? Pick one in Settings.",
   "@fileExplorer.edit.hint": {
@@ -1194,17 +1229,25 @@
   },
   "fileExplorer.clipboard.copyToDevice": "Use {copyKey} to copy files onto this device.",
   "@fileExplorer.clipboard.copyToDevice": {
-    "description": "Info toast shown when the user pastes onto a pane showing a connected phone, e-reader, or camera. Cmdr can't paste there, so the toast names the command that does the job. Unlike its copy-from sibling it doesn't explain why, because the reason is about Cmdr's own paste and helps nobody. \"device\" is deliberately broader than \"phone\": the same message covers e-readers and cameras.",
+    "description": "Info toast shown when the user pastes onto a pane showing a connected phone, e-reader, or camera. Cmdr can't paste there, so the toast names the command that does the job. Unlike its copy-from sibling it doesn't explain why, because the reason is about Cmdr's own paste and helps nobody. \"device\" is deliberately broader than \"phone\": the same message covers e-readers and cameras. When no key runs that command (the user removed it), the text reads \"fileExplorer.clipboard.copyToDeviceWithoutKey\" instead.",
     "placeholders": {
       "copyKey": "the key currently bound to Cmdr's copy command, e.g. \"F5\". The user can rebind it, so it isn't always F5."
     }
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "Copy files onto this device with the Copy command.",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "description": "Info toast shown when the user presses the paste shortcut on a connected phone, e-reader, or camera, and no key runs the Cmdr command it points at (the user removed it), so it names the command instead of a key. The keyless sibling of fileExplorer.clipboard.copyToDevice; keep the two worded alike. \"Copy\" is the name of Cmdr’s file copy command as the command palette and the menu show it (commands.fileCopy.label); use the same name."
+  },
   "fileExplorer.clipboard.copyToServer": "Use {copyKey} to copy files onto this server.",
   "@fileExplorer.clipboard.copyToServer": {
-    "description": "Info toast shown when the user pastes onto a pane showing a server reached over SFTP or WebDAV. Same sentence as fileExplorer.clipboard.copyToDevice with \"server\" in place of \"device\"; keep the pair worded alike.",
+    "description": "Info toast shown when the user pastes onto a pane showing a server reached over SFTP or WebDAV. Same sentence as fileExplorer.clipboard.copyToDevice with \"server\" in place of \"device\"; keep the pair worded alike. When no key runs that command (the user removed it), the text reads \"fileExplorer.clipboard.copyToServerWithoutKey\" instead.",
     "placeholders": {
       "copyKey": "the key currently bound to Cmdr's copy command, e.g. \"F5\". The user can rebind it, so it isn't always F5."
     }
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "Copy files onto this server with the Copy command.",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "description": "Info toast shown when the user presses the paste shortcut on a server reached over SFTP or WebDAV, and no key runs the Cmdr command it points at (the user removed it), so it names the command instead of a key. The keyless sibling of fileExplorer.clipboard.copyToServer; keep the two worded alike. \"Copy\" is the name of Cmdr’s file copy command as the command palette and the menu show it (commands.fileCopy.label); use the same name."
   },
   "fileExplorer.clipboard.noFilesWithKey": "No files on the clipboard. Copy files first with {combo}.",
   "@fileExplorer.clipboard.noFilesWithKey": {
@@ -1331,9 +1374,16 @@
   "@fileExplorer.readOnly.resticMessage": {
     "description": "Alert body under fileExplorer.readOnly.resticTitle, when the user tries to change something inside a restic backup’s snapshots. Explains that the folders there are saved past versions rather than folders on disk, and that copying files out of them works. A “snapshot” is one backup run, as restic calls it; use your language’s usual backup-software term."
   },
-  "fileExplorer.restic.useTransferToCopyOut": "To copy files out of a backup, use F5.",
-  "@fileExplorer.restic.useTransferToCopyOut": {
-    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside a restic backup, where Cmdr shows a backup repository’s snapshots as read-only folders. Those files live packed inside the backup and have no path the system clipboard can carry, so it points the user at the F5 (copy) transfer key instead. Moving out of a backup isn’t possible, so only F5 is named. F5 is a keyboard key name; keep it as-is. The sibling of fileExplorer.git.useTransferToCopyOut."
+  "fileExplorer.restic.copyOutWithKey": "To copy files out of a backup, use {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside a restic backup, where Cmdr shows a backup repository’s snapshots as read-only folders. Those files live packed inside the backup and have no path the system clipboard can carry, so it points the user at the key of Cmdr’s own copy command instead. Moving out of a backup isn’t possible, so only the copy key is named. When no key runs Copy, the toast reads \"fileExplorer.restic.copyOutWithoutKey\" instead. The sibling of fileExplorer.git.copyOutWithCopyKey.",
+    "placeholders": {
+      "copyKey": "the key that runs Cmdr’s copy command right now, e.g. \"F5\". The user can rebind it, so it isn’t always F5; a key glyph or key name, never a word."
+    }
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "To copy files out of a backup, use the Copy command.",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "description": "The keyless sibling of fileExplorer.restic.copyOutWithKey, shown when no key runs Cmdr’s copy command (the user removed it), so it names the command instead of a key. \"Copy\" is the name of Cmdr’s file copy command as the command palette and the menu show it (commands.fileCopy.label); use the same name."
   },
   "fileExplorer.restic.snapshot.host": "Backed up from {host}",
   "@fileExplorer.restic.snapshot.host": {
@@ -1383,9 +1433,24 @@
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "description": "Info toast when the user runs the “Forget backup password” command while the focused pane isn’t inside a restic backup and the cursor isn’t on one’s snapshot folder, so Cmdr doesn’t know which backup they mean. “Browse snapshots” is the exact name of a folder Cmdr shows inside every restic backup; keep it in English, exactly as written, inside your language’s quotation marks: it's a fixed folder name (Cmdr matches it by path, and people type it), so it never gets translated."
   },
-  "fileExplorer.archive.useTransferToCopyOut": "To copy files out of an archive, use F5 to copy or F6 to move.",
-  "@fileExplorer.archive.useTransferToCopyOut": {
-    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside an archive. The system clipboard can’t carry archive-inner paths, so it points them at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is."
+  "fileExplorer.archive.copyOutWithKeys": "To copy files out of an archive, use {copyKey} to copy or {moveKey} to move.",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside an archive. The system clipboard can’t carry archive-inner paths, so it points them at the keys of Cmdr’s own copy and move commands instead. When no key moves, the toast reads \"fileExplorer.archive.copyOutWithCopyKey\"; when no key copies, \"fileExplorer.archive.copyOutWithoutKey\".",
+    "placeholders": {
+      "copyKey": "the key that runs Cmdr’s copy command right now, e.g. \"F5\". The user can rebind it, so it isn’t always F5; a key glyph or key name, never a word.",
+      "moveKey": "the key that runs Cmdr’s move command right now, e.g. \"F6\". The user can rebind it, so it isn’t always F6; a key glyph or key name, never a word."
+    }
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "To copy files out of an archive, use {copyKey}.",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "description": "The sibling of fileExplorer.archive.copyOutWithKeys, shown when no key runs Cmdr’s move command (the user removed it), so it names only the copy key.",
+    "placeholders": {
+      "copyKey": "the key that runs Cmdr’s copy command right now, e.g. \"F5\". The user can rebind it, so it isn’t always F5; a key glyph or key name, never a word."
+    }
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "To copy files out of an archive, use the Copy or Move command.",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "description": "The keyless sibling of fileExplorer.archive.copyOutWithKeys, shown when no key runs Cmdr’s copy command (the user removed it), so it names the commands instead of keys. \"Copy\" is the name of Cmdr’s file copy command as the command palette and the menu show it (commands.fileCopy.label); use the same name. \"Move\" is the name of Cmdr’s file move command as the command palette and the menu show it (commands.fileMove.label); use the same name."
   },
   "fileExplorer.git.portalIntro.title": "Cmdr has some git-related magic for you!",
   "@fileExplorer.git.portalIntro.title": {
@@ -1447,9 +1512,24 @@
   "@fileExplorer.git.status.conflicted": {
     "description": "Same Git column tooltip as fileExplorer.git.status.modified, for a file with an unresolved merge conflict. An adjective describing the item’s state, one or two words; use your language’s usual git terminology."
   },
-  "fileExplorer.git.useTransferToCopyOut": "To copy files out of a git snapshot, use F5 to copy or F6 to move.",
-  "@fileExplorer.git.useTransferToCopyOut": {
-    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside the virtual `.git` portal, where Cmdr shows a repository’s branches, tags, and commits as browsable folders. Those entries are reconstructed from git history and have no path the system clipboard can carry, so it points the user at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is. \"git\" is the version-control tool name; keep it."
+  "fileExplorer.git.copyOutWithKeys": "To copy files out of a git snapshot, use {copyKey} to copy or {moveKey} to move.",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside the virtual `.git` portal, where Cmdr shows a repository’s branches, tags, and commits as browsable folders. Those entries are reconstructed from git history and have no path the system clipboard can carry, so it points them at the keys of Cmdr’s own copy and move commands instead. When no key moves, the toast reads \"fileExplorer.git.copyOutWithCopyKey\"; when no key copies, \"fileExplorer.git.copyOutWithoutKey\". \"git\" is the version-control tool name; keep it.",
+    "placeholders": {
+      "copyKey": "the key that runs Cmdr’s copy command right now, e.g. \"F5\". The user can rebind it, so it isn’t always F5; a key glyph or key name, never a word.",
+      "moveKey": "the key that runs Cmdr’s move command right now, e.g. \"F6\". The user can rebind it, so it isn’t always F6; a key glyph or key name, never a word."
+    }
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "To copy files out of a git snapshot, use {copyKey}.",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "description": "The sibling of fileExplorer.git.copyOutWithKeys, shown when no key runs Cmdr’s move command (the user removed it), so it names only the copy key. \"git\" is the version-control tool name; keep it.",
+    "placeholders": {
+      "copyKey": "the key that runs Cmdr’s copy command right now, e.g. \"F5\". The user can rebind it, so it isn’t always F5; a key glyph or key name, never a word."
+    }
+  },
+  "fileExplorer.git.copyOutWithoutKey": "To copy files out of a git snapshot, use the Copy or Move command.",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "description": "The keyless sibling of fileExplorer.git.copyOutWithKeys, shown when no key runs Cmdr’s copy command (the user removed it), so it names the commands instead of keys. \"Copy\" is the name of Cmdr’s file copy command as the command palette and the menu show it (commands.fileCopy.label); use the same name. \"Move\" is the name of Cmdr’s file move command as the command palette and the menu show it (commands.fileMove.label); use the same name. \"git\" is the version-control tool name; keep it."
   },
   "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} is bigger than {limit}, so Cmdr can’t open it in {appName} from inside the archive.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
@@ -1505,10 +1585,17 @@
   },
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} can’t open this file, because it isn’t a regular file on your Mac. Press {viewKey} to view it in Cmdr.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
-    "description": "Info toast shown after the user right-clicked a file, picked an app under \"Open with\", and nothing opened, because no other app can open the file by its path: it's on a phone or camera, on a server reached over SFTP, WebDAV, or S3, or on a network share Cmdr still reaches over its own connection after the system lost track of it. Points at the key that opens Cmdr's own viewer, which can show the file. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'.",
+    "description": "Info toast shown after the user right-clicked a file, picked an app under \"Open with\", and nothing opened, because no other app can open the file by its path: it's on a phone or camera, on a server reached over SFTP, WebDAV, or S3, or on a network share Cmdr still reaches over its own connection after the system lost track of it. Points at the key that opens Cmdr's own viewer, which can show the file. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'. When no key runs that command (the user removed it), the text reads \"fileExplorer.openWith.notOnThisMacWithoutKey\" instead.",
     "placeholders": {
       "appName": "the app's name, for example Preview (do not translate)",
       "viewKey": "the key the user has bound to View, for example F3 (do not translate)"
+    }
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} can’t open this file, because it isn’t a regular file on your Mac. View it in Cmdr with the View command instead.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. View it in Cmdr with the View command instead.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. View it in Cmdr with the View command instead.}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "description": "The keyless sibling of fileExplorer.openWith.notOnThisMac, shown when no key runs View (the user removed it), so it names the command instead of a key; keep the two worded alike. \"View\" is the name of Cmdr’s viewer command as the command palette and the menu show it (commands.fileView.label); use the same name. \"Cmdr\" is the product name; keep it. Never use the words 'error' or 'failed'.",
+    "placeholders": {
+      "appName": "the app’s name, for example Preview (do not translate)"
     }
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Couldn’t read {fileName} to open it in {appName}. Check that its drive is still connected, then try again.",

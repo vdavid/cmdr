@@ -46,7 +46,7 @@ const fifteenMinutes = formatDuration(seconds(900))
 // Pin it so the suggestion is deterministic across platforms.
 vi.mock('#lib/shortcuts/index.js', async (orig) => {
   const actual = await orig<typeof import('#lib/shortcuts/index.js')>()
-  return { ...actual, getEffectiveShortcuts: (id: string) => (id === 'file.deletePermanently' ? ['⇧F8'] : []) }
+  return { ...actual, getLiveShortcuts: (id: string) => (id === 'file.deletePermanently' ? ['⇧F8'] : []) }
 })
 /** Runs the rest of the current test on macOS or, with `false`, off it. */
 function setMacOS(isMac: boolean) {

@@ -127,13 +127,21 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "cdd735e"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "{platform, select, macos {This can happen when the Bin folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with Shift+F8.} other {This can happen when the Bin folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with Shift+F8.}}",
-  "@errors.write.trashRefused.suggestion.trashNotWritable": {
-    "sourceHash": "a0b7e4d"
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {This can happen when the Bin folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with {deletePermanentlyKey}.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with {deletePermanentlyKey}.} other {This can happen when the Bin folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
   },
-  "errors.write.trashRefused.suggestion.noTrashForVolume": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.} other {Some places have no Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.}}",
-  "@errors.write.trashRefused.suggestion.noTrashForVolume": {
-    "sourceHash": "3dcecc0"
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {This can happen when the Bin folder’s permissions change, for example after moving to a new Mac. You can still delete the items with the Delete permanently command.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items with the Delete permanently command.} other {This can happen when the Bin folder’s permissions change, for example after moving to a new computer. You can still delete the items with the Delete permanently command.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with {deletePermanentlyKey}.} other {Some places have no Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items with the Delete permanently command.} other {Some places have no Bin of their own, including cloud folders and most network drives. You can still delete the items with the Delete permanently command.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {You don’t have permission to move files to the Bin here.}}",
   "@errors.write.permissionDenied.message.trash": {

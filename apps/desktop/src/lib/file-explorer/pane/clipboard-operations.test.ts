@@ -347,15 +347,33 @@ describe('copyToClipboard', () => {
     )
   })
 
-  it('falls back to the default key when the copy command has nothing bound', async () => {
+  it('names the Copy command instead of a key once no key runs it', async () => {
+    // A default the user removed runs nothing, so naming it would send them to a dead key.
     getLiveShortcutsSpy.mockReturnValue([])
     const access = buildAccess({ volumeId: 'mtp-device-1' })
 
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this device. Use F5 to copy them.', {
-      level: 'info',
+    expect(addToastSpy).toHaveBeenCalledWith(
+      'The clipboard can’t carry files from this device. Copy them with the Copy command instead.',
+      { level: 'info' },
+    )
+  })
+
+  it('names the Move command instead of a key once no key runs it', async () => {
+    getLiveShortcutsSpy.mockReturnValue([])
+    const access = buildAccess({
+      volumeId: 'webdav-nc-test_user_1',
+      volumes: [{ id: 'webdav-nc-test_user_1', name: 'Nextcloud' }],
     })
+    volumeStore.list = [{ id: 'webdav-nc-test_user_1', fsType: 'webdav', category: 'network' } as unknown as VolumeInfo]
+
+    await createClipboardOperations(access, buildDialogs()).cutToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith(
+      'The clipboard can’t carry files from this server. Move them with the Move command instead.',
+      { level: 'info' },
+    )
   })
 
   it("copies the selection read under the revision guard, in backend rows, with the pane's settings", async () => {
@@ -414,6 +432,26 @@ describe('copyToClipboard', () => {
     expect(getSelectionSnapshotSpy).not.toHaveBeenCalled()
   })
 
+  it('names only the copy key out of an archive once no key moves', async () => {
+    getLiveShortcutsSpy.mockImplementation((commandId) => (commandId === 'file.copy' ? ['F5'] : []))
+    const access = buildAccess({ volumeId: 'root', path: '/x/foo.zip/inner' })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('To copy files out of an archive, use F5.', { level: 'info' })
+  })
+
+  it('names the commands out of an archive once no key copies', async () => {
+    getLiveShortcutsSpy.mockImplementation((commandId) => (commandId === 'file.move' ? ['F6'] : []))
+    const access = buildAccess({ volumeId: 'root', path: '/x/foo.zip/inner' })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('To copy files out of an archive, use the Copy or Move command.', {
+      level: 'info',
+    })
+  })
+
   it('refuses copy inside the virtual `.git` portal and points at F5/F6', async () => {
     // A snapshot entry is reconstructed from git history, so it has no path the
     // OS clipboard can carry. Same shape as the archive refusal, its own wording.
@@ -436,6 +474,15 @@ describe('copyToClipboard', () => {
 
     expect(addToastSpy).toHaveBeenCalledWith('To copy files out of a backup, use F5.', { level: 'info' })
     expect(getSelectionSnapshotSpy).not.toHaveBeenCalled()
+  })
+
+  it('names the Copy command out of a backup once no key copies', async () => {
+    getLiveShortcutsSpy.mockReturnValue([])
+    const access = buildAccess({ volumeId: 'root', path: '/x/backup/Browse snapshots/latest/Users' })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('To copy files out of a backup, use the Copy command.', { level: 'info' })
   })
 
   it('copies normally from a REAL folder under `.git`', async () => {
@@ -656,6 +703,15 @@ describe('pasteFromClipboard', () => {
     expect(addToastSpy).toHaveBeenCalledWith('Use F5 to copy files onto this device.', { level: 'info' })
     expect(readClipboardFilesSpy).not.toHaveBeenCalled()
     expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
+  })
+
+  it('names the Copy command for a refused paste once no key runs it', async () => {
+    getLiveShortcutsSpy.mockReturnValue([])
+    const access = buildAccess({ volumeId: 'mtp-device-1' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(addToastSpy).toHaveBeenCalledWith('Copy files onto this device with the Copy command.', { level: 'info' })
   })
 
   it('refuses pasting onto an SFTP pane as a SERVER, before reading the clipboard', async () => {

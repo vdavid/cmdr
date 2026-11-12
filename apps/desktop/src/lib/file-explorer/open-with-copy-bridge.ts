@@ -57,7 +57,12 @@ export async function startOpenWithCopyBridge(): Promise<UnlistenFn> {
 
 function raiseNotOnThisMacNotice({ appName }: OpenWithNotOnThisMac): void {
   log.info('Open with {appName} didn’t launch: the file has no path another app can open', { appName })
-  addToast(tString('fileExplorer.openWith.notOnThisMac', { appName, viewKey: viewShortcut() }), {
+  const viewKey = viewShortcut()
+  const message =
+    viewKey === undefined
+      ? tString('fileExplorer.openWith.notOnThisMacWithoutKey', { appName })
+      : tString('fileExplorer.openWith.notOnThisMac', { appName, viewKey })
+  addToast(message, {
     level: 'info',
     timeoutMs: NOTICE_TIMEOUT_MS,
     id: 'open-with-not-on-this-mac',
