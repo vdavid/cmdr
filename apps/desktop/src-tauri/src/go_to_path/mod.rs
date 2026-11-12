@@ -50,6 +50,7 @@ pub mod history;
 
 use std::path::{Component, Path, PathBuf};
 
+use cmdr_fs::volume::path_grammar::{AppPath, PathFlavor};
 use serde::{Deserialize, Serialize};
 
 use crate::commands::file_system::expand_tilde;
@@ -108,6 +109,14 @@ fn lexical_normalize(path: &Path) -> PathBuf {
     out
 }
 
+/// The app-path spelling of a path the local OS reads (`C:/Users/ada` on Windows; the path
+/// itself on macOS and Linux), the one form a pane holds. A path the grammar can't read keeps its
+/// native spelling.
+fn app_spelling(path: &Path) -> String {
+    let native = path.to_string_lossy();
+    AppPath::from_native(&native, PathFlavor::HOST).map_or_else(|| native.into_owned(), |app| app.to_string())
+}
+
 /// Walks up from `path` to the closest existing ancestor. Worst case returns
 /// `/` (which always exists on the platforms we target). Returns `path` itself
 /// when it exists.
@@ -147,7 +156,9 @@ pub fn resolve(input: &str, base_dir: &str) -> GoToPathResolution {
     };
 
     let normalized = lexical_normalize(&joined);
-    let normalized_str = normalized.to_string_lossy().to_string();
+    // Every path the dialog hands back is an app path: the disk is read through the OS's own
+    // spelling (`normalized`), the pane gets the grammar's (`C:/Users/ada` on Windows).
+    let normalized_str = app_spelling(&normalized);
 
     // A path that crosses into a supported archive is browsed as a folder, even
     // though the inner path (or the `.zip` file itself) isn't a real directory on
@@ -165,10 +176,7 @@ pub fn resolve(input: &str, base_dir: &str) -> GoToPathResolution {
             // Existing non-directory (file, symlink-to-file, etc.). Navigate to
             // the parent and select the entry. A path that exists always has a
             // parent except for the root, which `is_dir()` already caught above.
-            let parent_dir = normalized
-                .parent()
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or_else(|| "/".to_string());
+            let parent_dir = normalized.parent().map_or_else(|| "/".to_string(), app_spelling);
             let file_name = normalized
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
@@ -184,7 +192,7 @@ pub fn resolve(input: &str, base_dir: &str) -> GoToPathResolution {
             let ancestor = nearest_existing_ancestor(&normalized);
             GoToPathResolution::NearestAncestor {
                 requested: normalized_str,
-                ancestor_dir: ancestor.to_string_lossy().to_string(),
+                ancestor_dir: app_spelling(&ancestor),
             }
         }
     }
@@ -334,6 +342,15 @@ mod tests {
                 requested: missing.to_string_lossy().to_string(),
                 ancestor_dir: dir.path().to_string_lossy().to_string(),
             }
+        );
+    }
+
+    /// The answer is an app path, so a `..` above the root clamps there: a pane never holds `/..`.
+    #[test]
+    fn dotdot_above_the_root_answers_the_root() {
+        assert_eq!(
+            resolve("/..", "/tmp"),
+            GoToPathResolution::Directory { path: "/".to_string() }
         );
     }
 

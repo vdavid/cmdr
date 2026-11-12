@@ -7,7 +7,7 @@
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
-  "goToPath.dialog.inputPlaceholder": "Typ of plak een pad, bijv. ~/Documents",
+  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Type or paste a path, for example C:\\Users} other {Typ of plak een pad, bijv. ~/Documents}}",
   "@goToPath.dialog.inputPlaceholder": {
     "sourceHash": "d84d343"
   },

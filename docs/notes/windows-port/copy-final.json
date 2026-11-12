@@ -7012,18 +7012,16 @@
       "status": "apply",
       "branches": {
         "macos": "Type or paste a path, for example ~/Documents",
-        "windows": "Type or paste a path, for example ~/Documents",
+        "windows": "Type or paste a path, for example C:\\Users",
         "other": "Type or paste a path, for example ~/Documents"
       },
-      "openBranches": ["windows"],
       "macosChanged": true,
       "sources": {
         "macos": "decisions: the accepted change, “e.g.” → “for example”",
-        "windows": "verdicts: open, keep the macOS text until Windows path parsing lands",
+        "windows": "#1109: Go to path reads a typed drive path and `~` on Windows. The example is a drive path, the way File Explorer's address bar takes one (it has no `~`), and `C:\\Users` is on every Windows install; the style guide's Windows path form is `C:\\Users\\…`",
         "other": "verdicts"
       },
-      "whereInUi": "Go to path dialog (⇧⌘G / Ctrl+Shift+G), input placeholder.",
-      "note": "Windows is open (`copy-decisions.md`): all three read the same text, so this stays a plain value."
+      "whereInUi": "Go to path dialog (⇧⌘G / Ctrl+Shift+G), input placeholder."
     },
     {
       "key": "lowDiskSpace.toast.message",

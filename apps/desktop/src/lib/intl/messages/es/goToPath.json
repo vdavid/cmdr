@@ -7,7 +7,7 @@
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
-  "goToPath.dialog.inputPlaceholder": "Escribe o pega una ruta, por ejemplo ~/Documents",
+  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Type or paste a path, for example C:\\Users} other {Escribe o pega una ruta, por ejemplo ~/Documents}}",
   "@goToPath.dialog.inputPlaceholder": {
     "sourceHash": "d84d343"
   },

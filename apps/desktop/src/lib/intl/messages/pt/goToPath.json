@@ -7,7 +7,7 @@
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
-  "goToPath.dialog.inputPlaceholder": "Digite ou cole um caminho, ex.: ~/Documents",
+  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Type or paste a path, for example C:\\Users} other {Digite ou cole um caminho, ex.: ~/Documents}}",
   "@goToPath.dialog.inputPlaceholder": {
     "sourceHash": "d84d343"
   },
