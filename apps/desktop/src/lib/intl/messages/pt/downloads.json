@@ -71,7 +71,7 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "O Cmdr precisa de Acesso Total ao Disco para monitorar sua pasta Downloads.",
+  "downloads.fda.message": "{platform, select, macos {O Cmdr precisa de Acesso Total ao Disco para monitorar sua pasta Downloads.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },

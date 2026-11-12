@@ -24,7 +24,7 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "Cmdr потрібен «Повний доступ до диска», щоб стежити за вашою папкою «Викачане». <settingsLink>Відкрити Системні параметри</settingsLink>",
+  "common.downloadsFdaHint": "{platform, select, macos {Cmdr потрібен «Повний доступ до диска», щоб стежити за вашою папкою «Викачане». <settingsLink>Відкрити Системні параметри</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
   },

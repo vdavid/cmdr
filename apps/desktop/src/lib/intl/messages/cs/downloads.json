@@ -71,7 +71,7 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "Cmdr potřebuje plný přístup k disku, aby mohl sledovat vaši složku Stahování.",
+  "downloads.fda.message": "{platform, select, macos {Cmdr potřebuje plný přístup k disku, aby mohl sledovat vaši složku Stahování.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },

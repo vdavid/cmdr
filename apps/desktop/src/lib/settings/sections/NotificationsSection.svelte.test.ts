@@ -148,13 +148,28 @@ describe('NotificationsSection', () => {
     target.remove()
   })
 
+  it('says what to check, with no permission and no link, when the watcher is down off macOS', async () => {
+    // Windows and Linux have no Full Disk Access: the watcher is down because it couldn't attach.
+    setStatus(false, false)
+    const target = await mountSection()
+    const hints = target.querySelectorAll('.fda-hint')
+    expect(hints).toHaveLength(1)
+    expect(hints[0].textContent.trim()).toBe(
+      'Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.',
+    )
+    expect(hints[0].querySelector('button, a')).toBeNull()
+    target.remove()
+  })
+
   it('greys out the Downloads card with one shared hint when FDA is pending', async () => {
+    onTestFinished(withPlatform('macos'))
     setStatus(true)
     const target = await mountSection()
     // Exactly one FDA hint.
     const hints = target.querySelectorAll('.fda-hint')
     expect(hints).toHaveLength(1)
     expect(hints[0].textContent).toMatch(/Full Disk Access/)
+    expect(hints[0].querySelector('button, a')).not.toBeNull()
     // The Downloads card carries `data-gated="true"` to make the visual state
     // assertable without sniffing class names. Low disk space isn't FDA-gated.
     const gated = target.querySelectorAll('[data-gated="true"]')

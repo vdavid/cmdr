@@ -253,6 +253,8 @@ describe('fallback chain (locale → base language → en → key)', () => {
 describe('getMessage() raw accessor', () => {
   it('returns the raw catalog string without ICU parsing', () => {
     _setLocaleForTests('en-US')
+    // A per-OS value: the raw reader hands back this OS's branch, tags and all.
+    onTestFinished(withPlatform('macos'))
     expect(getMessage('common.downloadsFdaHint')).toBe(
       'Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>',
     )

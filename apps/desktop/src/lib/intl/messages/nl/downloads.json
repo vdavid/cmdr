@@ -72,7 +72,7 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "Cmdr heeft Volledige schijftoegang nodig om je map Downloads te volgen.",
+  "downloads.fda.message": "{platform, select, macos {Cmdr heeft Volledige schijftoegang nodig om je map Downloads te volgen.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },

@@ -71,7 +71,7 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "Cmdr necesita acceso a todo el disco para vigilar tu carpeta Descargas.",
+  "downloads.fda.message": "{platform, select, macos {Cmdr necesita acceso a todo el disco para vigilar tu carpeta Descargas.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },

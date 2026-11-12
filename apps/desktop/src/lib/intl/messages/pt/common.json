@@ -24,7 +24,7 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "O Cmdr precisa de Acesso Total ao Disco para monitorar sua pasta Downloads. <settingsLink>Abrir os Ajustes do Sistema</settingsLink>",
+  "common.downloadsFdaHint": "{platform, select, macos {O Cmdr precisa de Acesso Total ao Disco para monitorar sua pasta Downloads. <settingsLink>Abrir os Ajustes do Sistema</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
   },

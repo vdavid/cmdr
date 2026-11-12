@@ -24,7 +24,7 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "Чтобы следить за папкой «Загрузки», Cmdr нужен полный доступ к диску. <settingsLink>Открыть Системные настройки</settingsLink>",
+  "common.downloadsFdaHint": "{platform, select, macos {Чтобы следить за папкой «Загрузки», Cmdr нужен полный доступ к диску. <settingsLink>Открыть Системные настройки</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
   },

@@ -71,7 +71,7 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "Cmdr 需要完全磁盘访问权限才能监视你的“下载”文件夹。",
+  "downloads.fda.message": "{platform, select, macos {Cmdr 需要完全磁盘访问权限才能监视你的“下载”文件夹。} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },

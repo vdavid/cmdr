@@ -566,7 +566,9 @@ three files; the pieces are load-bearing in this order:
 The file-system indexer lives in its own top-level section (`Indexing > Drive indexing`, `DriveIndexingSection`), while
 the notification-shaped watchers (the downloads watcher and the low-disk-space warning) live under
 `Behavior > Notifications` (`NotificationsSection`). The two notification cards share the same FDA gate, so
-`NotificationsSection` surfaces one shared FDA hint when the gate is closed; Drive indexing needs no such hint (it
+`NotificationsSection` surfaces one shared hint when the gate is closed or the watcher is down (on macOS it asks for
+Full Disk Access and links to System Settings; Windows and Linux have no such permission, so their branch of
+`common.downloadsFdaHint` says to check the Downloads folder, with no link); Drive indexing needs no such hint (it
 operates on whatever paths it can read). The indexer's own toggle carries the label "Drive indexing", the same string as
 the section title, so its single card renders unlabeled to avoid a duplicate heading.
 

@@ -5,9 +5,14 @@
     import { openPrivacySettings } from '#lib/tauri-commands/index.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import { hasCapability } from '#lib/platform/index.js'
     import { LATEST_DOWNLOAD_FDA_TOAST_ID } from './go-to-latest-ids'
 
     const log = getAppLogger('downloads')
+
+    // Only where the OS has a Full Disk Access grant is there a pane to open. Elsewhere the
+    // watcher is down because it couldn't attach to the folder, and the message says so.
+    const offersFullDiskAccess = hasCapability('fullDiskAccess')
 
     async function handleOpenSystemSettings() {
         try {
@@ -29,9 +34,11 @@
     <span class="message">{tString('downloads.fda.message')}</span>
     <ToastActions>
         <Button size="mini" variant="secondary" onclick={handleDismiss}>{tString('downloads.fda.dismiss')}</Button>
-        <Button size="mini" variant="primary" onclick={handleOpenSystemSettings}
-            >{tString('downloads.fda.openSystemSettings')}</Button
-        >
+        {#if offersFullDiskAccess}
+            <Button size="mini" variant="primary" onclick={handleOpenSystemSettings}
+                >{tString('downloads.fda.openSystemSettings')}</Button
+            >
+        {/if}
     </ToastActions>
 </div>
 

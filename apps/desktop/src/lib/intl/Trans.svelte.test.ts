@@ -20,6 +20,8 @@ afterEach(() => {
 describe('<Trans>', () => {
   it('renders text + an inline interactive component in order', () => {
     _setLocaleForTests('en-US')
+    // The hint carries its link in the macOS branch only.
+    onTestFinished(withPlatform('macos'))
 
     const target = document.createElement('div')
     document.body.appendChild(target)

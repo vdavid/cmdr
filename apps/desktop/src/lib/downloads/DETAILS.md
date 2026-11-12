@@ -39,7 +39,10 @@ mechanics, deep-link wiring, and the smoke-test guide.
   a refusal the backend keeps the previous combo registered, so the row keeps showing it, with "Another app may be using
   that combo" for `unavailable`. It doesn't log a refusal; the backend already did.
 - **`LatestDownloadEmptyToastContent.svelte`**: INFO toast "Your Downloads folder is empty…" with "Go to Downloads".
-- **`LatestDownloadFdaToastContent.svelte`**: INFO toast "Cmdr needs Full Disk Access…" with "Open System Settings".
+- **`LatestDownloadFdaToastContent.svelte`**: INFO toast for "Cmdr isn't watching Downloads". On macOS: "Cmdr needs Full
+  Disk Access…" with "Open System Settings" (shown under `hasCapability('fullDiskAccess')`). Windows and Linux have no
+  such permission, and there the watcher is down only when `notify` couldn't attach to the folder, so
+  `downloads.fda.message`'s other branch says to check the folder, and Dismiss is the one button.
 
 ## Collapsible toast
 

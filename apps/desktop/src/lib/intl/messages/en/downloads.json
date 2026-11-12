@@ -138,19 +138,19 @@
     "description": "Primary button on the empty-downloads toast that opens the Downloads folder. 'Downloads' is the folder name; keep it capitalized."
   },
 
-  "downloads.fda.message": "Cmdr needs Full Disk Access to watch your Downloads folder.",
+  "downloads.fda.message": "{platform, select, macos {Cmdr needs Full Disk Access to watch your Downloads folder.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
   "@downloads.fda.message": {
-    "description": "Info toast shown when jumping to the latest download fails because Cmdr lacks Full Disk Access. \"Full Disk Access\" is Apple's own macOS permission name: use the wording Apple ships in System Settings for this locale."
+    "description": "Info toast shown when jumping to the latest download can't work because Cmdr isn't watching the Downloads folder. The macos branch gives the cause there, a missing Full Disk Access permission (\"Full Disk Access\" is Apple's own macOS permission name: use the wording Apple ships in System Settings for this locale). The other branch (Windows and Linux, which have no such permission) says what to check instead: that the folder exists and can be opened. \"Downloads\" is the folder's name."
   },
 
   "downloads.fda.dismiss": "Dismiss",
   "@downloads.fda.dismiss": {
-    "description": "Button on the Full-Disk-Access download toast that closes it without doing anything. A short verb."
+    "description": "Button on the toast saying Cmdr can't watch the Downloads folder, shown on every OS. Closes it without doing anything. A short verb."
   },
 
   "downloads.fda.openSystemSettings": "Open System Settings",
   "@downloads.fda.openSystemSettings": {
-    "description": "Primary button on the Full-Disk-Access download toast that opens macOS System Settings to the Full Disk Access pane. \"System Settings\" is Apple's app, and macOS localizes its name: use the one your language's macOS shows (check the reference pile or the app bundle)."
+    "description": "macOS only. Primary button on the Full-Disk-Access download toast that opens macOS System Settings to the Full Disk Access pane. \"System Settings\" is Apple's app, and macOS localizes its name: use the one your language's macOS shows (check the reference pile or the app bundle)."
   },
 
   "downloads.warnToast.message": "The {binding} shortcut jumps to your latest download from anywhere. Keep it on?",

@@ -41,9 +41,9 @@ const log = getAppLogger('downloads')
  *   pane), then select `fileName`.
  * - `empty`: INFO toast with a "Go to Downloads" action (resolves the
  *   Downloads dir via `downloadsWatcherStatus` so the action knows where to go).
- * - `watcherUnavailable` / `downloadsDirUnresolved`: INFO toast with an
- *   "Open System Settings" action. Both states map to the same user-facing
- *   message — we can't watch Downloads, please grant FDA.
+ * - `watcherUnavailable` / `downloadsDirUnresolved`: one INFO toast for both,
+ *   "we can't watch Downloads". On macOS it asks for Full Disk Access and offers
+ *   "Open System Settings"; elsewhere it says to check the folder.
  *
  * The helper is a no-op when `explorer` is `undefined` (HMR or pre-mount).
  */
@@ -70,7 +70,7 @@ export type LatestDownloadTrigger = 'command' | 'global_shortcut'
 /**
  * How a download jump ended, for `download_jump_used`: `revealed` landed on the
  * file; `unreachable` had a file but no pane could show it; `empty` found no
- * download; `no_access` can't watch Downloads (Full Disk Access).
+ * download; `no_access` can't watch Downloads (Full Disk Access on macOS).
  */
 type DownloadJumpOutcome = 'revealed' | 'unreachable' | 'empty' | 'no_access'
 

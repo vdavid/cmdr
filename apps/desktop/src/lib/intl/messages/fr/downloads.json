@@ -71,7 +71,7 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "Cmdr a besoin de l’accès complet au disque pour surveiller votre dossier Téléchargements.",
+  "downloads.fda.message": "{platform, select, macos {Cmdr a besoin de l’accès complet au disque pour surveiller votre dossier Téléchargements.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },
