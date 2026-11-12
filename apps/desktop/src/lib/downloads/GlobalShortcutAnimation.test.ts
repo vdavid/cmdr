@@ -47,7 +47,9 @@ describe('GlobalShortcutAnimation', () => {
     const logo = target.querySelector('[data-legend="windows-logo"]')
     const panes = Array.from(logo?.querySelectorAll('rect') ?? [])
     expect(panes).toHaveLength(4)
-    expect(new Set(panes.map((pane) => `${pane.getAttribute('width')}x${pane.getAttribute('height')}`)).size).toBe(1)
+    expect(
+      new Set(panes.map((pane) => `${pane.getAttribute('width') ?? ''}x${pane.getAttribute('height') ?? ''}`)).size,
+    ).toBe(1)
     expect(logo?.getAttribute('class')).toContain('key-legend')
   })
 
