@@ -246,6 +246,10 @@ export interface SettingDefinition {
    * page whose every visible setting carries it leaves the sidebar (the Image indexing page
    * off macOS, #943). It decides nothing else about rendering: the section gates its own
    * markup on the same capability.
+   *
+   * A `hidden` setting of such a feature carries it too (the nudge stamps, the Full Disk
+   * Access choice): nothing renders it, but the MCP `cmdr://settings` resource lists hidden
+   * settings with their labels, and drops only what `settingRendersHere` drops.
    */
   needsCapability?: Capability
   /**

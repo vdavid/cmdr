@@ -291,6 +291,26 @@ describe('MCP settings resource', () => {
     expect(yaml).toContain('  - id: listing.showHiddenFiles\n')
   })
 
+  it('leaves out the hidden bookkeeping of a feature this OS lacks, labels and all', async () => {
+    // No row renders these, but the resource lists hidden settings too, so without their
+    // capability a Windows or Linux client would read "Dock offer made at" and friends.
+    const macOnlyBookkeeping = [
+      'behavior.dockPinNudgeOfferedAt',
+      'behavior.revealNudgeOfferedAt',
+      'behavior.finderExtensionNudgeOfferedAt',
+      'onboarding.fullDiskAccessChoice',
+    ]
+    withEveryCapability()
+    const offered = await readAllSettings()
+    for (const id of macOnlyBookkeeping) expect(offered).toContain(`  - id: ${id}\n`)
+
+    withCapabilities()
+    emitMock.mockClear()
+    const withheld = await readAllSettings()
+    for (const id of macOnlyBookkeeping) expect(withheld).not.toContain(`  - id: ${id}\n`)
+    expect(withheld).not.toMatch(/Dock|Finder|Full Disk Access/)
+  })
+
   it('tells a client which settings change with no question', async () => {
     const yaml = await readAllSettings()
     expect(block(yaml, 'theme.mode')).toContain('    mcpAskFree: true\n')

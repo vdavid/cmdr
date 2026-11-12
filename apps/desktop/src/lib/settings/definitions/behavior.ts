@@ -61,6 +61,9 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     default: '',
     component: 'text-input',
     hidden: true,
+    // Hidden, so nothing renders it, but `cmdr://settings` lists hidden settings too: without
+    // the capability, an OS with no Dock would still read this label there.
+    needsCapability: 'dockPin',
   },
   {
     // Internal (FE-owned): when the one-time "open Show in Finder in Cmdr?" offer
@@ -74,6 +77,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     default: '',
     component: 'text-input',
     hidden: true,
+    needsCapability: 'revealHandler',
   },
   {
     // Internal (FE-owned): when the once-ever offer of the Finder extension was made.
@@ -86,6 +90,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     default: '',
     component: 'text-input',
     hidden: true,
+    needsCapability: 'finderExtension',
   },
   {
     id: 'fileOperations.allowFileExtensionChanges',

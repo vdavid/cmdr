@@ -711,6 +711,7 @@ export const advancedSettings: SettingDefinitionSource[] = [
     default: 'unanswered',
     component: 'text-input',
     hidden: true,
+    needsCapability: 'fullDiskAccess',
   },
   {
     id: 'onboarding.termsAcceptedVersion',
