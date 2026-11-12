@@ -45,6 +45,12 @@ style guide disagree, the style guide's general rule wins unless the ruling says
     `macos` branch (each key's note in the brief says which). A key that became per-OS kept its translation there, and
     `macos-copy-unchanged.test.ts` fails on any change. Your work is every branch still in English (all of them, for a
     new key); any other branch already in {{LANGUAGE}} whose English didn't change stays too.
+  - **A macOS text that's wrong** (a mistranslation, an outdated term, or macOS vocabulary where the English is neutral,
+    like `menu.window.minimize` as "Im Dock ablegen") is the one exception: fix it, and add an entry to
+    `ACCEPTED_TRANSLATION_CHANGES` in `apps/desktop/scripts/i18n-macos-copy-baseline-lib.ts` with this catalog's tag,
+    the key, the new macOS text exactly as the catalog spells it, and a one-line reason. That entry is what review
+    reads, so the reason says what was wrong. ❌ Never edit or regenerate the baseline, and ❌ never fix a macOS text
+    just to restyle it: a Mac user already reads it.
   - **Where each OS's word lives** in the pile: `macos` mines `macOS/`; `windows` mines `microsoft-terminology/` (the
     TBX) and `microsoft-style-guides/`; `other` mines `gnome-nautilus/`, `kde-dolphin/`, and `xfce-thunar/`, taking the
     word they share, or the desktop-neutral one where they split (GNOME- or KDE-only words wait for per-desktop text).

@@ -123,6 +123,27 @@ export const ACCEPTED_ENGLISH_CHANGES: Readonly<Partial<Record<string, string>>>
   'goToPath.dialog.inputPlaceholder': 'Type or paste a path, for example ~/Documents',
 }
 
+/** One reviewed fix to a translation the baseline froze: the macOS text `locale`'s own catalog now holds for `key`. */
+export interface AcceptedTranslationChange {
+  /** The catalog whose value changed, like `de`; every locale that resolves `key` from it reads the new text. ❌ Never `en`. */
+  locale: string
+  key: string
+  /** The new macOS text, exactly as the catalog's `macos` branch (or whole value) now spells it. */
+  text: string
+  /** One line: what was wrong with the frozen text. */
+  reason: string
+}
+
+/**
+ * Translations of the frozen macOS copy that a translator fixed on purpose, each reviewed in the
+ * diff that adds it (#1125): a wrong or outdated term, or macOS vocabulary where the English is
+ * neutral. The only legal way to move a non-English Mac text; the baseline itself stays frozen.
+ * An entry is a REQUIREMENT, not an allowance: the catalog must read `text`, so an entry that was
+ * never applied, or a value edited again afterwards, is drift too. English changes go in
+ * `ACCEPTED_ENGLISH_CHANGES`.
+ */
+export const ACCEPTED_TRANSLATION_CHANGES: readonly AcceptedTranslationChange[] = []
+
 /**
  * The 14 `.mac`/`.other` pairs and the key each folds into. The survivor names
  * the UI concept without the OS suffix; the two Show-in-Finder pairs survive as
@@ -219,21 +240,76 @@ function rendersSame(key: string, expected: string, actual: string): boolean {
   }
 }
 
+/** What a Mac must read now for a frozen value: an accepted fix of the catalog it resolves from, else the frozen text. */
+type ExpectedText = (value: { key: string; frozen: string; from: string }) => string
+
+/** `accepted` as an {@link ExpectedText} lookup, keyed by catalog and key. */
+function expectedTextFrom(accepted: readonly AcceptedTranslationChange[]): ExpectedText {
+  const byCatalogKey = new Map(accepted.map((change) => [`${change.locale}\u0000${change.key}`, change.text]))
+  return ({ key, frozen, from }) => byCatalogKey.get(`${from}\u0000${key}`) ?? frozen
+}
+
+/** What's wrong with the accepted list itself: an English entry, a key nothing froze, a duplicate, a missing reason. */
+function acceptedChangeIssues(baseline: MacosCopyBaseline, accepted: readonly AcceptedTranslationChange[]): string[] {
+  const issues: string[] = []
+  const seen = new Set<string>()
+  for (const { locale, key, reason } of accepted) {
+    const where = `ACCEPTED_TRANSLATION_CHANGES ${locale} ${key}`
+    if (locale === BASE_LOCALE) issues.push(`${where}: English changes go in ACCEPTED_ENGLISH_CHANGES`)
+    if (!(locale in baseline.locales)) issues.push(`${where}: no such locale in the baseline`)
+    else if (!(key in baseline.locales[locale])) issues.push(`${where}: the baseline froze no such key`)
+    if (reason.trim() === '') issues.push(`${where}: needs a reason`)
+    if (seen.has(`${locale} ${key}`)) issues.push(`${where}: listed twice`)
+    seen.add(`${locale} ${key}`)
+  }
+  return issues
+}
+
+/** One locale's `COLLAPSED_PAIRS` whose survivor is missing or reads other macOS text, and the keys they retired. */
+function collapsedPairDrift(
+  locale: string,
+  expectedValues: Readonly<Record<string, string>>,
+  actualValues: Partial<Record<string, ResolvedValue>>,
+  expectedText: ExpectedText,
+): { drift: string[]; retired: Set<string> } {
+  const drift: string[] = []
+  const retired = new Set<string>()
+  for (const pair of COLLAPSED_PAIRS) {
+    // A pair the baseline never froze (a fixture's) has nothing to hold.
+    if (!(pair.mac in expectedValues) || actualValues[pair.mac]) continue
+    retired.add(pair.mac).add(pair.other)
+    const survivor = actualValues[pair.survivor]
+    if (!survivor) {
+      drift.push(`${locale} ${pair.mac}: gone, and its survivor ${pair.survivor} doesn't exist`)
+      continue
+    }
+    const expected = expectedText({ key: pair.mac, frozen: expectedValues[pair.mac], from: survivor.from })
+    const actual = macosBranch(survivor.value)
+    if (!rendersSame(pair.survivor, expected, actual)) {
+      drift.push(
+        `${locale} ${pair.survivor} (was ${pair.mac}): ${JSON.stringify(expected)} → ${JSON.stringify(actual)}`,
+      )
+    }
+  }
+  return { drift, retired }
+}
+
 /** One locale's `SPLIT_KEYS` whose new key is missing or reads other macOS text than its old key froze. */
 function splitKeyDrift(
   locale: string,
   expectedValues: Readonly<Record<string, string>>,
   actualValues: Partial<Record<string, ResolvedValue>>,
+  expectedText: ExpectedText,
 ): string[] {
   const drift: string[] = []
   for (const split of SPLIT_KEYS) {
     if (!(split.from in expectedValues)) continue
-    const expected = expectedValues[split.from]
     const resolved = actualValues[split.to]
     if (!resolved) {
       drift.push(`${locale} ${split.to} (split off ${split.from}): missing`)
       continue
     }
+    const expected = expectedText({ key: split.from, frozen: expectedValues[split.from], from: resolved.from })
     const actual = macosBranch(resolved.value)
     if (!rendersSame(split.to, expected, actual)) {
       drift.push(
@@ -244,18 +320,51 @@ function splitKeyDrift(
   return drift
 }
 
+/** One locale's frozen keys whose macOS text moved, past the accepted English and translation changes. */
+function frozenKeyDrift(
+  locale: string,
+  expectedValues: Readonly<Record<string, string>>,
+  actualValues: Partial<Record<string, ResolvedValue>>,
+  expectedText: ExpectedText,
+  retired: ReadonlySet<string>,
+): string[] {
+  const drift: string[] = []
+  for (const [key, frozen] of Object.entries(expectedValues)) {
+    if (retired.has(key)) continue
+    const resolved = actualValues[key]
+    if (!resolved) {
+      drift.push(`${locale} ${key}: gone`)
+      continue
+    }
+    const expected = expectedText({ key, frozen, from: resolved.from })
+    const actual = macosBranch(resolved.value)
+    if (rendersSame(key, expected, actual)) continue
+    const acceptedEnglish = ACCEPTED_ENGLISH_CHANGES[key]
+    if (acceptedEnglish !== undefined && resolved.from === BASE_LOCALE && actual === acceptedEnglish) continue
+    drift.push(`${locale} ${key}: ${JSON.stringify(expected)} → ${JSON.stringify(actual)}`)
+  }
+  return drift
+}
+
 /**
- * Every (locale, key) whose macOS text moved from `baseline`, as `locale key: expected → actual` lines.
+ * Every (locale, key) whose macOS text moved from `baseline`, as `locale key: expected → actual` lines, plus
+ * anything wrong with the accepted translation changes themselves.
  * @param messagesRoot the catalogs to read; the shipped ones by default
+ * @param accepted the reviewed translation fixes; `ACCEPTED_TRANSLATION_CHANGES` by default
  */
-export function macosCopyDrift(baseline: MacosCopyBaseline, messagesRoot?: string): string[] {
+export function macosCopyDrift(
+  baseline: MacosCopyBaseline,
+  messagesRoot?: string,
+  accepted: readonly AcceptedTranslationChange[] = ACCEPTED_TRANSLATION_CHANGES,
+): string[] {
   const survivors = COLLAPSED_PAIRS.map((pair) => pair.survivor)
   const splits = SPLIT_KEYS.map((split) => split.to)
   const allKeys = [
     ...new Set([...Object.values(baseline.locales).flatMap((values) => Object.keys(values)), ...survivors, ...splits]),
   ]
   const current = resolveLocales(allKeys, messagesRoot)
-  const drift: string[] = []
+  const expectedText = expectedTextFrom(accepted)
+  const drift = acceptedChangeIssues(baseline, accepted)
 
   for (const [locale, expectedValues] of Object.entries(baseline.locales)) {
     const actualValues = current[locale]
@@ -263,38 +372,12 @@ export function macosCopyDrift(baseline: MacosCopyBaseline, messagesRoot?: strin
       drift.push(`${locale}: the locale no longer ships`)
       continue
     }
-    const retired = new Set<string>()
-    for (const pair of COLLAPSED_PAIRS) {
-      if (actualValues[pair.mac]) continue
-      retired.add(pair.mac).add(pair.other)
-      const survivor = actualValues[pair.survivor]
-      if (!survivor) {
-        drift.push(`${locale} ${pair.mac}: gone, and its survivor ${pair.survivor} doesn't exist`)
-        continue
-      }
-      const actual = macosBranch(survivor.value)
-      if (!rendersSame(pair.survivor, expectedValues[pair.mac], actual)) {
-        drift.push(
-          `${locale} ${pair.survivor} (was ${pair.mac}): ${JSON.stringify(expectedValues[pair.mac])} → ${JSON.stringify(actual)}`,
-        )
-      }
-    }
-
-    drift.push(...splitKeyDrift(locale, expectedValues, actualValues))
-
-    for (const [key, expected] of Object.entries(expectedValues)) {
-      if (retired.has(key)) continue
-      const resolved = actualValues[key]
-      if (!resolved) {
-        drift.push(`${locale} ${key}: gone`)
-        continue
-      }
-      const actual = macosBranch(resolved.value)
-      if (rendersSame(key, expected, actual)) continue
-      const accepted = ACCEPTED_ENGLISH_CHANGES[key]
-      if (accepted !== undefined && resolved.from === 'en' && actual === accepted) continue
-      drift.push(`${locale} ${key}: ${JSON.stringify(expected)} → ${JSON.stringify(actual)}`)
-    }
+    const pairs = collapsedPairDrift(locale, expectedValues, actualValues, expectedText)
+    drift.push(
+      ...pairs.drift,
+      ...splitKeyDrift(locale, expectedValues, actualValues, expectedText),
+      ...frozenKeyDrift(locale, expectedValues, actualValues, expectedText, pairs.retired),
+    )
   }
   return drift
 }
