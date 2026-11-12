@@ -234,26 +234,26 @@ The full top-level inventory is here:
   returns), `mutation_reply.rs` (its reply within the deadline, and the late settle, § "A slow instant mutation says it
   is still running"), `validation.rs`, `leaf_validation.rs` (the one check of a transfer's `TransferLeaves`,
   `src/transfer/DETAILS.md` § "Named destinations"), `free_space.rs` (the copy's free-space pre-flight, § "The
-  free-space pre-flight"), `eta.rs`. Journaling: `journal.rs`, `journal_search.rs`. The scratch dir archive edits stage
-  local bytes in: `scratch_dir.rs` (the remote edit itself is `archive_edit/remote.rs`). Entry points: `create/` +
-  `create.rs`, `rename/` + `rename.rs`, `create_numbered.rs` (paste-as-file's numbered create), `routing.rs` (the one
-  routing every cross-volume transfer takes: `start_volume_{copy,move,compress}`, plus `start_rename_by_move`;
-  `routing/retry.rs` is the Retry recipe a copy or move leaves with the manager), `routed_writes.rs` (the refusal every
-  drive-only entry point asks first for an in-zip or `.git/<category>/` path, `host/DETAILS.md`). `source_binding.rs` is
-  the optional set of sources an op may touch. `queued_sources.rs` is the check an op that waited in the queue runs on
-  its sources when admitted, parking on `sources_gone_slot.rs` (a leaf the state owns, like `outage_slot.rs`). Layering,
-  so the three stay out of a cycle: `source_binding` → `queued_sources` → `state` → `sources_gone_slot`, and the empty
-  batch's terminal shape is `WriteCompleteEvent::all_skipped` in `types`. `locked_sources.rs` is a move's question about
-  Locked items and the plan its answer makes, parking on `locked_sources_slot.rs` the same way (§ "Moving Locked
-  items"). `refused_name.rs` is a transfer's question about a name the destination refuses, asked through the conflict
-  slot (§ "A name the destination refuses"); its "Skip all" latch is `refused_names_latch.rs`, a leaf the state owns.
-  Fixtures: `testing/` (an engine a test owns, and what test cells outside the engine reach beyond its public list) and
-  `test_support.rs` (the placeholder conflict, the park-window wait, and the queued-operation fixture). Every backend's
-  cells through this pipeline live app-side, in `operations_host/backend_suites/`, because they need the app around the
-  engine (`apps/desktop/src-tauri/src/operations_host/DETAILS.md` § "Backend suites"). `testing/bench.rs` is the
-  Criterion bench's door in: thin wrappers over five entry points, each with a no-op sink and an unregistered state on
-  an engine the bench owns (`crates/cmdr-operations/benches/transfer_benchmarks.rs`; `docs/tooling/testing.md` §
-  `criterion`).
+  free-space pre-flight"), `eta.rs` (+ `eta_cost_model.rs`). Journaling: `journal.rs`, `journal_search.rs`. The scratch
+  dir archive edits stage local bytes in: `scratch_dir.rs` (the remote edit itself is `archive_edit/remote.rs`). Entry
+  points: `create/` + `create.rs`, `rename/` + `rename.rs`, `create_numbered.rs` (paste-as-file's numbered create),
+  `routing.rs` (the one routing every cross-volume transfer takes: `start_volume_{copy,move,compress}`, plus
+  `start_rename_by_move`; `routing/retry.rs` is the Retry recipe a copy or move leaves with the manager),
+  `routed_writes.rs` (the refusal every drive-only entry point asks first for an in-zip or `.git/<category>/` path,
+  `host/DETAILS.md`). `source_binding.rs` is the optional set of sources an op may touch. `queued_sources.rs` is the
+  check an op that waited in the queue runs on its sources when admitted, parking on `sources_gone_slot.rs` (a leaf the
+  state owns, like `outage_slot.rs`). Layering, so the three stay out of a cycle: `source_binding` → `queued_sources` →
+  `state` → `sources_gone_slot`, and the empty batch's terminal shape is `WriteCompleteEvent::all_skipped` in `types`.
+  `locked_sources.rs` is a move's question about Locked items and the plan its answer makes, parking on
+  `locked_sources_slot.rs` the same way (§ "Moving Locked items"). `refused_name.rs` is a transfer's question about a
+  name the destination refuses, asked through the conflict slot (§ "A name the destination refuses"); its "Skip all"
+  latch is `refused_names_latch.rs`, a leaf the state owns. Fixtures: `testing/` (an engine a test owns, and what test
+  cells outside the engine reach beyond its public list) and `test_support.rs` (the placeholder conflict, the
+  park-window wait, and the queued-operation fixture). Every backend's cells through this pipeline live app-side, in
+  `operations_host/backend_suites/`, because they need the app around the engine
+  (`apps/desktop/src-tauri/src/operations_host/DETAILS.md` § "Backend suites"). `testing/bench.rs` is the Criterion
+  bench's door in: thin wrappers over five entry points, each with a no-op sink and an unregistered state on an engine
+  the bench owns (`crates/cmdr-operations/benches/transfer_benchmarks.rs`; `docs/tooling/testing.md` § `criterion`).
 
 What the mechanisms DO is in the sections below: the registry, lanes, and `run_instant` in § "Operation manager"; the
 zip-edit driver in § "Archive edits"; cancellation, pause, Stop-mode conflicts, safe overwrite, scan-preview caching,
@@ -469,11 +469,30 @@ Rates and ETA are computed in the backend (`eta.rs`) and shipped on every `Write
 copy/move/delete/MTP/SMB/local. Putting the math in Svelte couples the estimator to dialog lifecycle and makes any
 future client (CLI, menu bar app) reinvent it.
 
-**Why two axes, not one:** the bug we hit in May 2026 was a delete of 5.4 GB / 174k files where the size bar saturated
-in the first second (a few large files) and the byte-based ETA collapsed to ~0 s while 165k small files were still
-streaming through. The estimator now tracks bytes/sec and files/sec independently and reports
-`eta = max(ETA_bytes, ETA_files)`. The operation can't finish before either axis is done, so the larger one is reality.
-When one axis has zero remaining work, its ETA is `0` and the other axis dominates naturally, with no branching needed.
+**Two rates, priced by learned costs:** the estimator tracks bytes/sec and files/sec, and learns from the phase's own
+history what one file costs against one byte (`eta_cost_model.rs`, `time ≈ a · files + b · bytes`). The ETA is
+`(a · files_left + b · bytes_left) / (a · files_rate + b · bytes_rate)`: a big-file copy (`a` negligible) reads as bytes
+left over the byte rate, a run of tiny files (`b` negligible) as files left over the files rate, and a mix prices each
+half of the remaining work at its own cost. Only the ratio `a : b` matters, so the rates keep their 3 s responsiveness.
+Both single-axis readings broke on real runs: a delete of 5.4 GB / 174k files saturated the size bar in a second and a
+byte ETA said ~0 s with 165k files to go; and the `max(ETA_bytes, ETA_files)` that fixed it read "2h 9m left" on 11
+minutes of work deep in a folder of 1 kB files, with 1.5 GB of bigger files ahead over a byte rate collapsed to 199 kB/s
+(#1146). That `max` stays as the fallback when the costs can't speak (a cost clamped to zero with only its axis left).
+
+- **The cost fit is recursive least squares with DIRECTIONAL forgetting** (τ 10 s): it forgets only along the direction
+  a sample re-measures, so a long run of tiny files (which says nothing about bytes) keeps the byte cost the big files
+  before it taught, to price the big files after it. Plain exponential forgetting washed that out.
+- **A weak prior in files and MiB** (5 ms per file, 10 ms per MiB, weighing one file or one MiB of evidence) settles the
+  split a run of same-size files can't: kilobyte files land on `a`, gigabyte files on `b`. Weighed a thousand times
+  lighter, the timing noise of kilobyte files dragged the byte cost to 15x its value.
+- **A sample spans at least `MIN_FILES_WINDOW`**, so an off-cadence completion microseconds after the last emit doesn't
+  read as a free file, and a stretch that moved nothing (a device barrier, a stall) is dropped: the rates already count
+  it as slowness.
+- **Known limit:** a file longer than the 2 s barrier interval (`cmdr_fs::durable::BARRIER_INTERVAL`) pays a barrier
+  each, indistinguishable from a per-file cost in the counters, so during big files the small files still ahead are
+  priced one barrier high each until they start (12 ms on a disk image: +24 s on a 2,000-file tail).
+- Pinned against a simulated device with known costs and the engine's barrier rule in `eta_workload_tests.rs` (the
+  reported tiny-file shape, big files, big-then-small, interleaved), the old `max` failing all five.
 
 **EWMA, not blended overall:** `α = 1 - exp(-Δt / τ)` with `τ = 3 s` (see `EWMA_TAU_SECS`). Pure exponential decay, no
 "overall average" anchor. If the network drops mid-operation, the EWMA converges to the new rate within a few τ instead

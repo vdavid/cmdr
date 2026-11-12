@@ -1,14 +1,27 @@
 //! ETA + throughput estimator for write operations.
 //!
-//! Tracks two independent rates (bytes/second and files/second) via a
-//! time-weighted exponential moving average (τ ≈ 3 s half-life), then combines
-//! them with `max(ETA_bytes, ETA_files)`. The operation can't finish before
-//! either axis is done, so the larger remaining time is the truthful one.
+//! Tracks two rates (bytes/second and files/second) via a time-weighted
+//! exponential moving average (τ ≈ 3 s half-life), and learns what a file
+//! costs against what a byte costs (`eta_cost_model.rs`: `time ≈ a · files +
+//! b · bytes`, fitted on this phase's own history). The ETA prices the
+//! remaining work at those costs over the work the rates say gets done per
+//! second: `(a · files_left + b · bytes_left) / (a · files_rate + b · bytes_rate)`.
 //!
-//! This shape matters because the two axes go out of sync in real workloads:
-//! deleting 5 GB of mixed sizes finishes the byte work in the first second
-//! (a few large files), then spends 20 s on per-file syscall overhead for the
-//! tail of small files. A byte-only ETA shows ~0 s while files keep streaming.
+//! This shape matters because the two axes go out of sync in real workloads,
+//! in both directions. Deleting 5 GB of mixed sizes finishes the byte work in
+//! the first second, then spends 20 s on per-file overhead for a tail of small
+//! files: a byte-only ETA shows ~0 s. Copying a folder of 1 kB files at a
+//! steady 16 files/s collapses the byte rate to kilobytes per second, and the
+//! 1.5 GB of bigger files still ahead over that rate read "2h 9m left" on
+//! 11 minutes of work (#1146): the per-axis `max` this replaced. Priced
+//! per half, each part of the remaining work costs what it really does. The
+//! `max` stays as the fallback for when the costs can't speak (`costed_eta`).
+//!
+//! Known limit: a file that takes longer than the device-barrier interval
+//! (2 s, `cmdr_fs::durable::BARRIER_INTERVAL`) pays a barrier each, which the
+//! counters can't tell from a per-file cost, so during a run of big files the
+//! small files still ahead are priced one barrier too high each, until they
+//! start and re-measure it. Pinned in `eta_workload_tests.rs`.
 //!
 //! ## Adaptivity
 //!
@@ -60,6 +73,10 @@ use crate::rt::Instant;
 use std::time::Duration;
 
 use super::types::{ProgressAxis, WriteOperationPhase};
+
+#[path = "eta_cost_model.rs"]
+mod cost_model;
+use cost_model::CostModel;
 
 /// Half-life-ish time constant for the EWMA. 3 s feels live but not jittery;
 /// short enough that walking 20 m from the router visibly drops the speed
@@ -114,7 +131,8 @@ pub struct EtaStats {
     /// Seconds remaining. `None` while the estimator is warming up or when both
     /// rates are zero (operation stalled: no point lying about the ETA).
     pub eta_seconds: Option<u32>,
-    /// The axis whose ETA decides `eta_seconds`, held steady: the other one
+    /// The axis whose own ETA (remaining over its rate) is the longer one,
+    /// which the folder bars fill along. Held steady: the other one
     /// takes over only after leading by more than [`AXIS_LEAD`] for
     /// [`AXIS_HOLD`] of working time. `Bytes` while warming up, `Files` for an
     /// operation that moves no bytes at all (a rename move).
@@ -182,6 +200,9 @@ struct PhaseState {
     /// directly; later ones blend in.
     files_measured: bool,
     samples: u32,
+    /// What a file costs against what a byte costs, learned over this phase:
+    /// the weights that combine the two rates into one estimate.
+    costs: CostModel,
     /// The bottleneck as last reported.
     axis: ProgressAxis,
     /// When (in `working_elapsed`) the other axis started leading, while it
@@ -241,6 +262,7 @@ impl EtaEstimator {
                 files_window_count: files_done,
                 files_measured: false,
                 samples: 0,
+                costs: CostModel::new(),
                 axis,
                 challenger_since: None,
             });
@@ -278,7 +300,11 @@ impl EtaEstimator {
         // one shrinks them. `saturating_sub` neutralizes spurious regressions (a
         // late event arriving after a counter reset, etc.).
         let delta_bytes = toward_target(counters_drain, state.last_bytes, bytes_done) as f64;
-        let completed_now = toward_target(counters_drain, state.last_files as u64, files_done as u64) > 0;
+        let delta_files = toward_target(counters_drain, state.last_files as u64, files_done as u64);
+        let completed_now = delta_files > 0;
+        state
+            .costs
+            .observe(delta_files as f64, delta_bytes, dt, MIN_FILES_WINDOW.as_secs_f64());
 
         let inst_bytes_rate = delta_bytes / dt;
 
@@ -372,7 +398,15 @@ fn compute_stats(
     let eta_seconds = if !warmed_up {
         None
     } else {
-        eta_from_axes(eta_bytes, eta_files, remaining_bytes > 0 || remaining_files > 0)
+        let combined = costed_eta(
+            &state.costs,
+            remaining_bytes,
+            remaining_files,
+            state.bytes_rate,
+            state.files_rate,
+        )
+        .or_else(|| eta_from_axes(eta_bytes, eta_files));
+        combined.map(|seconds| whole_seconds(seconds, remaining_bytes > 0 || remaining_files > 0))
     };
     settle_axis(state, warmed_up, eta_bytes, eta_files, bytes_total, files_total);
 
@@ -442,28 +476,54 @@ fn axis_eta(remaining: f64, rate: f64) -> Option<f64> {
     }
 }
 
-/// Combine the two per-axis ETAs by taking the max. Either rate being zero
-/// disqualifies that axis (we don't know how long the remaining work will take
-/// on a stalled axis, so we lean on the other). Both stalled → `None`.
+/// The remaining work priced by the learned costs, over the work the two
+/// rates say is getting done per second:
+/// `(a · files_left + b · bytes_left) / (a · files_rate + b · bytes_rate)`.
 ///
-/// `max` is the elegant move: the operation can't finish before both axes
-/// are done. When one axis has zero work left (large files done, only small
-/// ones to go), its ETA is `0` and the other axis dominates naturally.
-fn eta_from_axes(eta_bytes: Option<f64>, eta_files: Option<f64>, any_work_left: bool) -> Option<u32> {
-    let combined = match (eta_bytes, eta_files) {
-        (Some(b), Some(f)) => b.max(f),
-        (Some(b), None) => b,
-        (None, Some(f)) => f,
-        (None, None) => return None,
-    };
+/// Only the ratio of `a` to `b` matters, and the rates keep their 3 s
+/// responsiveness. With `a` negligible it IS the bytes ETA (a big-file copy),
+/// with `b` negligible the files ETA (a run of tiny files), and a mix lands in
+/// between, each half of the remaining work at its own price. `None` when the
+/// costs can't speak for the work left (a cost clamped to zero with only its
+/// axis remaining) or the rates they weigh are both stalled.
+fn costed_eta(
+    costs: &CostModel,
+    remaining_bytes: u64,
+    remaining_files: usize,
+    bytes_rate: f64,
+    files_rate: f64,
+) -> Option<f64> {
+    let per_file = costs.secs_per_file();
+    let per_byte = costs.secs_per_byte();
+    let work_left = per_file * remaining_files as f64 + per_byte * remaining_bytes as f64;
+    let work_per_second = per_file * files_rate.max(0.0) + per_byte * bytes_rate.max(0.0);
+    (work_left > 0.0 && work_per_second > 0.0).then(|| work_left / work_per_second)
+}
 
-    // Clamp to ≥1 s while any axis still has work. The UI showing "0 s
-    // remaining" while files are still streaming is the bug we're fixing.
-    let seconds = if any_work_left { combined.max(1.0) } else { 0.0 };
+/// The fallback when the costed estimate can't speak: the longer of the two
+/// per-axis ETAs, since the operation can't finish before both axes are done.
+/// A stalled axis is disqualified (we don't know how long its work takes, so
+/// we lean on the other). Both stalled → `None`.
+fn eta_from_axes(eta_bytes: Option<f64>, eta_files: Option<f64>) -> Option<f64> {
+    match (eta_bytes, eta_files) {
+        (Some(b), Some(f)) => Some(b.max(f)),
+        (Some(b), None) => Some(b),
+        (None, Some(f)) => Some(f),
+        (None, None) => None,
+    }
+}
 
-    Some(seconds.min(u32::MAX as f64).ceil() as u32)
+/// Clamp to ≥1 s while any axis still has work: "0 s remaining" while files
+/// are still streaming reads as done when it isn't.
+fn whole_seconds(seconds: f64, any_work_left: bool) -> u32 {
+    let seconds = if any_work_left { seconds.max(1.0) } else { 0.0 };
+    seconds.min(u32::MAX as f64).ceil() as u32
 }
 
 #[cfg(test)]
 #[path = "eta_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "eta_workload_tests.rs"]
+mod workload_tests;
