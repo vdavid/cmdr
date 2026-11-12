@@ -63,7 +63,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   destination_not_connected: {
     operationType: 'copy',
     // A saved server nobody has connected this session.
-    error: { type: 'destination_not_connected', path: 'sftp://david@naspolya.local:22/share/photos/2026' },
+    error: { type: 'destination_not_connected', path: 'sftp://alex@nas.local:22/share/photos/2026' },
   },
   source_no_longer_connected: {
     operationType: 'copy',
@@ -72,7 +72,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   },
   destination_exists: {
     operationType: 'move',
-    error: { type: 'destination_exists', path: '/Users/david/Documents/invoices/2026-Q2-summary.numbers' },
+    error: { type: 'destination_exists', path: '/Users/alex/Documents/invoices/2026-Q2-summary.numbers' },
   },
   permission_denied: {
     operationType: 'delete',
@@ -102,7 +102,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     // A NAS reply on a signed session came back without its signature, mid-copy.
     error: {
       type: 'reply_signature_refused',
-      path: '/Volumes/naspi/photos/2026/DSC09241.arw',
+      path: '/Volumes/archive/photos/2026/DSC09241.arw',
       message: 'signature verification failed for READ (message id 412): mismatch',
     },
   },
@@ -116,7 +116,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     // An SMB 3.0 server whose answer to FSCTL_VALIDATE_NEGOTIATE_INFO didn't match.
     error: {
       type: 'smb_negotiation_invalid',
-      path: '/Volumes/naspi/photos/2026/DSC09241.arw',
+      path: '/Volumes/archive/photos/2026/DSC09241.arw',
       message: 'negotiate validation failed: the server answered a different dialect',
     },
   },
@@ -134,8 +134,8 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'move',
     error: {
       type: 'destination_inside_source',
-      source: '/Users/david/Pictures/Photo Library',
-      destination: '/Users/david/Pictures/Photo Library/2026/backup-of-everything',
+      source: '/Users/alex/Pictures/Photo Library',
+      destination: '/Users/alex/Pictures/Photo Library/2026/backup-of-everything',
     },
   },
   duplicate_source_names: {
@@ -143,15 +143,15 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     error: {
       type: 'duplicate_source_names',
       name: 'invoices',
-      first: '/Users/david/Documents/2025/invoices',
-      second: '/Users/david/Documents/2026/invoices',
+      first: '/Users/alex/Documents/2025/invoices',
+      second: '/Users/alex/Documents/2026/invoices',
     },
   },
   named_leaves_refused: {
     operationType: 'move',
     error: {
       type: 'named_leaves_refused',
-      path: '/Volumes/naspi/papers/invoices paid/2026-09-27 OpenAI invoice Rymd.pdf',
+      path: '/Volumes/archive/documents/invoices/2026-09-27 hosting invoice.pdf',
       reason: 'sameName',
     },
   },
@@ -159,7 +159,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'sources_span_volumes',
-      path: '/Volumes/naspi/backups/m3-macbook/Browse snapshots',
+      path: '/Volumes/archive/backups/laptop/Browse snapshots',
     },
   },
   archive_entry_name_refused: {
@@ -183,7 +183,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'archive_duplicate_entry_name',
-      path: '/Users/david/Downloads/photos.zip',
+      path: '/Users/alex/Downloads/photos.zip',
       name: 'Summer/beach.jpg',
     },
   },
@@ -191,7 +191,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'move',
     error: {
       type: 'archive_encrypted_entry',
-      path: '/Users/david/Downloads/tax-2025.zip',
+      path: '/Users/alex/Downloads/tax-2025.zip',
       name: 'receipts/march.pdf',
     },
   },
@@ -199,14 +199,14 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'move',
     error: {
       type: 'archive_entry_under_file',
-      path: '/Users/david/Downloads/project.zip',
+      path: '/Users/alex/Downloads/project.zip',
       entry: 'notes/a.txt',
       file: 'notes',
     },
   },
   symlink_loop: {
     operationType: 'copy',
-    error: { type: 'symlink_loop', path: '/Users/david/dev/node_modules/.pnpm/self/node_modules/self' },
+    error: { type: 'symlink_loop', path: '/Users/alex/dev/node_modules/.pnpm/self/node_modules/self' },
   },
   cancelled: {
     operationType: 'copy',
@@ -260,11 +260,11 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   },
   file_locked: {
     operationType: 'delete',
-    error: { type: 'file_locked', path: '/Users/david/Documents/Rymdskottkärra/bokföring-2025.numbers' },
+    error: { type: 'file_locked', path: '/Users/alex/Documents/Acme/bookkeeping-2025.numbers' },
   },
   trash_not_supported: {
     operationType: 'trash',
-    error: { type: 'trash_not_supported', path: '/Volumes/naspi/papers/finances/2026/kvitton' },
+    error: { type: 'trash_not_supported', path: '/Volumes/archive/documents/reports/2026/receipts' },
   },
   connection_interrupted: {
     operationType: 'copy',
@@ -284,7 +284,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'server_connection_lost',
-      path: '/Volumes/naspi/photos/2026/DSC09241.arw',
+      path: '/Volumes/archive/photos/2026/DSC09241.arw',
       volumeName: 'Naspolya',
       gaveUpAfterSecs: 900,
     },
@@ -294,7 +294,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'delete',
     error: {
       type: 'changed_while_disconnected',
-      path: '/Volumes/naspi/photos/2019/DSC01143.arw',
+      path: '/Volumes/archive/photos/2019/DSC01143.arw',
       volumeName: 'Naspolya',
     },
   },
@@ -310,7 +310,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'write_error',
-      path: '/Volumes/naspi/media/photos/2026/DSC09241.ARW',
+      path: '/Volumes/archive/media/photos/2026/DSC09241.ARW',
       message: 'os error 28: No space left on device',
     },
   },
@@ -328,12 +328,12 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   },
   delete_pending: {
     operationType: 'delete',
-    error: { type: 'delete_pending', path: '/Users/david/Downloads/ubuntu-26.04-desktop-amd64.iso' },
+    error: { type: 'delete_pending', path: '/Users/alex/Downloads/ubuntu-26.04-desktop-amd64.iso' },
   },
   // A copy off a NAS meeting a PDF someone has open (cmdr-reports#110).
   file_in_use: {
     operationType: 'copy',
-    error: { type: 'file_in_use', path: '/Volumes/naspi/papers/finances/2026-tax-return.pdf' },
+    error: { type: 'file_in_use', path: '/Volumes/archive/documents/reports/2026-annual-report.pdf' },
   },
   // A copy off an S3 bucket meeting an object in Glacier.
   source_in_cold_storage: {
@@ -346,12 +346,12 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   // A permanent delete of a project folder holding a mounted NAS share.
   mounted_volume_inside: {
     operationType: 'delete',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/david/projects/backup/nas', action: 'delete' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'delete' },
   },
   // A permanent delete an agent started on the person's own home folder.
   home_folder: {
     operationType: 'delete',
-    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'delete' },
+    error: { type: 'home_folder', path: '/Users/alex', relation: 'isHome', action: 'delete' },
   },
   // A move within an S3 account whose source another app replaced mid-copy.
   source_changed: {
@@ -384,8 +384,8 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'new_data_kept_at',
-      path: '/Volumes/naspi/papers/finances/2026-tax-return.pdf',
-      keptAt: '/Volumes/naspi/papers/finances/2026-tax-return (recovered).pdf',
+      path: '/Volumes/archive/documents/reports/2026-annual-report.pdf',
+      keptAt: '/Volumes/archive/documents/reports/2026-annual-report (recovered).pdf',
       message: 'os error 60: Operation timed out',
     },
   },
@@ -395,7 +395,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'landing_not_recorded',
-      path: '/Volumes/naspi/papers/finances/2026-tax-return.pdf',
+      path: '/Volumes/archive/documents/reports/2026-annual-report.pdf',
     },
   },
   // The copy stopped partway with a folder standing where one of the user's files
@@ -405,11 +405,11 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'originals_kept_aside',
-      cause: { type: 'source_not_found', path: '/Users/david/projects/notes/2026-07-24.md' },
+      cause: { type: 'source_not_found', path: '/Users/alex/projects/notes/2026-07-24.md' },
       recovered: [
         {
-          path: '/Volumes/naspi/papers/finances/2026-tax-return',
-          keptAt: '/Volumes/naspi/papers/finances/2026-tax-return (recovered)',
+          path: '/Volumes/archive/documents/reports/2026-annual-report',
+          keptAt: '/Volumes/archive/documents/reports/2026-annual-report (recovered)',
         },
       ],
     },
@@ -421,11 +421,11 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'move',
     error: {
       type: 'source_not_removed',
-      path: '/Users/david/Pictures/gate-measurements.jpg',
-      landedAt: '/Volumes/naspi/projects-archive/2023/gate-measurements.jpg',
+      path: '/Users/alex/Pictures/gate-measurements.jpg',
+      landedAt: '/Volumes/archive/projects-archive/2023/gate-measurements.jpg',
       cause: {
         type: 'permission_denied',
-        path: '/Users/david/Pictures/gate-measurements.jpg',
+        path: '/Users/alex/Pictures/gate-measurements.jpg',
         message: 'Operation not permitted (os error 1)',
         errno: 1,
         refusal: 'systemProtected',
@@ -443,7 +443,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       type: 'new_files_kept',
       cause: {
         type: 'server_connection_lost',
-        path: '/Volumes/naspi/photos/2026/DSC09241.arw',
+        path: '/Volumes/archive/photos/2026/DSC09241.arw',
         volumeName: 'Naspolya',
         gaveUpAfterSecs: 900,
       },
@@ -471,7 +471,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'io_error',
-      path: '/Volumes/naspi/media/photos/2026',
+      path: '/Volumes/archive/media/photos/2026',
       message: 'os error 60: Operation timed out',
     },
   },
@@ -479,7 +479,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'archive_needs_password',
-      path: '/Users/david/Downloads/tax-returns-2019-2025.zip',
+      path: '/Users/alex/Downloads/tax-returns-2019-2025.zip',
       container: 'archive',
       wrongAttempt: false,
     },
@@ -496,7 +496,7 @@ const extraStates: Record<string, TransferErrorFixture> = {
     operationType: 'delete',
     error: {
       type: 'server_connection_lost',
-      path: '/Volumes/naspi/photos/2019/DSC01142.arw',
+      path: '/Volumes/archive/photos/2019/DSC01142.arw',
       volumeName: 'Naspolya',
       gaveUpAfterSecs: 900,
     },
@@ -504,12 +504,12 @@ const extraStates: Record<string, TransferErrorFixture> = {
   // A copy whose answered Overwrite would replace a folder holding a mounted share.
   'mounted_volume_inside-copy': {
     operationType: 'copy',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/david/projects/backup/nas', action: 'replace' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'replace' },
   },
   // A move onto an external drive of a project folder holding a mounted share.
   'mounted_volume_inside-move': {
     operationType: 'move',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/david/projects/backup/nas', action: 'move' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'move' },
   },
   // A trash of `/Users`, which holds the home folder.
   'home_folder-holds': {
@@ -519,7 +519,7 @@ const extraStates: Record<string, TransferErrorFixture> = {
   // A move of the home folder onto an external drive.
   'home_folder-move': {
     operationType: 'move',
-    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'move' },
+    error: { type: 'home_folder', path: '/Users/alex', relation: 'isHome', action: 'move' },
   },
   // A move of `/Users`, which holds the home folder.
   'home_folder-move-holds': {
@@ -529,7 +529,7 @@ const extraStates: Record<string, TransferErrorFixture> = {
   // F2 on the home folder.
   'home_folder-rename': {
     operationType: 'move',
-    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'rename' },
+    error: { type: 'home_folder', path: '/Users/alex', relation: 'isHome', action: 'rename' },
   },
   // F2 on `/Users`.
   'home_folder-rename-holds': {

@@ -837,11 +837,11 @@ const cases: Case[] = [
     // Names the file: a move involves two, and "this file" left a reader guessing
     // between the one being moved and the one at the destination (cmdr-reports#17).
     name: 'delete_pending',
-    error: { type: 'delete_pending', path: '/Volumes/naspi/photos/a.jpg' },
+    error: { type: 'delete_pending', path: '/Volumes/archive/photos/a.jpg' },
     expected: {
       title: 'File is being removed',
       message:
-        'The file at /Volumes/naspi/photos/a.jpg is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.',
+        'The file at /Volumes/archive/photos/a.jpg is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.',
       suggestion:
         'Wait a moment and try again. Once the last handle closes, the file disappears. If it sticks around, close any other apps that might have it open.',
     },
@@ -850,11 +850,11 @@ const cases: Case[] = [
     // An SMB sharing violation (cmdr-reports#110). Names the file, for the same
     // reason as `delete_pending`.
     name: 'file_in_use',
-    error: { type: 'file_in_use', path: '/Volumes/naspi/photos/a.pdf' },
+    error: { type: 'file_in_use', path: '/Volumes/archive/photos/a.pdf' },
     expected: {
       title: 'File is in use',
       message:
-        'The file at /Volumes/naspi/photos/a.pdf is open somewhere else: in another app, on another computer, or on the server itself.',
+        'The file at /Volumes/archive/photos/a.pdf is open somewhere else: in another app, on another computer, or on the server itself.',
       suggestion:
         'Close it there and try again. If nothing seems to have it open, wait a moment: the server may be busy with it.',
     },
@@ -877,7 +877,7 @@ const cases: Case[] = [
   {
     // The person's own home folder: refused whoever asked.
     name: 'home_folder (is home)',
-    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'delete' },
+    error: { type: 'home_folder', path: '/Users/alex', relation: 'isHome', action: 'delete' },
     op: 'delete',
     expected: {
       title: 'Please don’t delete your home folder',
@@ -904,7 +904,7 @@ const cases: Case[] = [
   {
     // A move of the home folder: the account would break, so it gets its own words.
     name: 'home_folder (move, is home)',
-    error: { type: 'home_folder', path: '/Users/david', relation: 'isHome', action: 'move' },
+    error: { type: 'home_folder', path: '/Users/alex', relation: 'isHome', action: 'move' },
     op: 'move',
     expected: {
       title: 'Please don’t move your home folder',
@@ -931,12 +931,12 @@ const cases: Case[] = [
     // A delete that would have walked into a mounted drive: names the mount,
     // which can sit deep inside the selection, and says nothing was deleted.
     name: 'mounted_volume_inside (delete)',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/david/projects/backup/nas', action: 'delete' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'delete' },
     op: 'delete',
     expected: {
       title: 'A mounted drive is in the way',
       message:
-        'A drive or server is mounted at /Users/david/projects/backup/nas, and deleting there would erase everything on it. Cmdr stopped before deleting anything.',
+        'A drive or server is mounted at /Users/alex/projects/backup/nas, and deleting there would erase everything on it. Cmdr stopped before deleting anything.',
       suggestion:
         'Eject that drive, then delete again. To clear the drive itself, open it and delete what’s on it there.',
     },
@@ -945,12 +945,12 @@ const cases: Case[] = [
   {
     // An Overwrite that would have replaced a folder holding a mounted drive.
     name: 'mounted_volume_inside (copy)',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/david/projects/backup/nas', action: 'replace' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'replace' },
     op: 'copy',
     expected: {
       title: 'A mounted drive is in the way',
       message:
-        'A drive or server is mounted at /Users/david/projects/backup/nas, so replacing the folder that holds it would erase everything on the drive. Cmdr left that folder and the drive as they were.',
+        'A drive or server is mounted at /Users/alex/projects/backup/nas, so replacing the folder that holds it would erase everything on the drive. Cmdr left that folder and the drive as they were.',
       suggestion: 'Eject that drive, then try again. To keep the folder, choose Skip or Rename instead of Overwrite.',
     },
   },
@@ -958,12 +958,12 @@ const cases: Case[] = [
   {
     // A move's own Overwrite still words itself as the replacement it refused.
     name: 'mounted_volume_inside (move, Overwrite)',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/david/projects/backup/nas', action: 'replace' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'replace' },
     op: 'move',
     expected: {
       title: 'A mounted drive is in the way',
       message:
-        'A drive or server is mounted at /Users/david/projects/backup/nas, so replacing the folder that holds it would erase everything on the drive. Cmdr left that folder and the drive as they were.',
+        'A drive or server is mounted at /Users/alex/projects/backup/nas, so replacing the folder that holds it would erase everything on the drive. Cmdr left that folder and the drive as they were.',
       suggestion: 'Eject that drive, then try again. To keep the folder, choose Skip or Rename instead of Overwrite.',
     },
   },
@@ -972,12 +972,12 @@ const cases: Case[] = [
     // A move onto another drive of a folder holding a mounted drive: it would
     // have copied the drive's files off, then deleted them there.
     name: 'mounted_volume_inside (move)',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/david/projects/backup/nas', action: 'move' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'move' },
     op: 'move',
     expected: {
       title: 'A mounted drive is in the way',
       message:
-        'A drive or server is mounted at /Users/david/projects/backup/nas, so moving the folder that holds it would move everything off the drive. Cmdr stopped before moving anything.',
+        'A drive or server is mounted at /Users/alex/projects/backup/nas, so moving the folder that holds it would move everything off the drive. Cmdr stopped before moving anything.',
       suggestion:
         'Eject that drive, then move again. To move what’s on the drive, open it and move the files from there.',
     },
@@ -1274,7 +1274,7 @@ const cases: Case[] = [
     error: {
       type: 'source_not_removed',
       path: '/Users/me/a.jpg',
-      landedAt: '/Volumes/naspi/photos/a.jpg',
+      landedAt: '/Volumes/archive/photos/a.jpg',
       cause: {
         type: 'permission_denied',
         path: '/Users/me/a.jpg',
@@ -1290,7 +1290,7 @@ const cases: Case[] = [
     expected: {
       title: 'The copy arrived, but the original stayed',
       message:
-        'Everything arrived at /Volumes/naspi/photos/a.jpg, but Cmdr couldn’t remove the original at /Users/me/a.jpg, so it’s in both places now. Nothing was lost.',
+        'Everything arrived at /Volumes/archive/photos/a.jpg, but Cmdr couldn’t remove the original at /Users/me/a.jpg, so it’s in both places now. Nothing was lost.',
       suggestion:
         'macOS protects this one itself, so administrator rights won’t change it. The item may be locked: select it in Finder, choose Get Info, and uncheck Locked. To finish the move, delete the original yourself.',
     },
