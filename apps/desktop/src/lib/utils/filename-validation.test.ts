@@ -137,6 +137,25 @@ describe('validateDirectoryPath', () => {
     expect(validateDirectoryPath('Documents\\folder').severity).toBe('error')
   })
 
+  it('reads `\\` as a separator everywhere in the path on Windows', () => {
+    onTestFinished(withPlatform('windows'))
+    // The home shortcut and a drive-relative path, spelled the way Windows shows them.
+    expect(validateDirectoryPath('~\\Documents').severity).toBe('ok')
+    expect(validateDirectoryPath('\\Users\\ada').severity).toBe('ok')
+    // Names are measured one by one: a deep path of short names is fine, one long name isn't.
+    const deep = 'C:\\' + Array.from({ length: 30 }, () => 'folder-name').join('\\')
+    expect(validateDirectoryPath(deep).severity).toBe('ok')
+    const longName = validateDirectoryPath(`C:\\Users\\${'a'.repeat(255)}\\x`)
+    expect(longName.message).toMatch(/A folder name in the path is too long/)
+  })
+
+  it.each(['macos', 'linux'] as const)('keeps `\\` a name character on %s', (platform) => {
+    onTestFinished(withPlatform(platform))
+    const oneName = validateDirectoryPath(`/x/${'a'.repeat(200)}\\${'a'.repeat(100)}`)
+    expect(oneName.message).toMatch(/A folder name in the path is too long/)
+    expect(validateDirectoryPath('~\\Documents').severity).toBe('error')
+  })
+
   it.each(['macos', 'linux'] as const)('rejects a drive-shaped path as relative on %s', (platform) => {
     onTestFinished(withPlatform(platform))
     expect(validateDirectoryPath('C:/Users/ada').severity).toBe('error')

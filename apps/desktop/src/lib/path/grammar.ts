@@ -210,6 +210,8 @@ export function samePath(a: string, b: string, rule: CaseRule): boolean {
 
 /** The separator a person reads in `path`: `\` for a Windows local path, `/` for everything else. */
 export function shownSeparator(path: string, flavor: PathFlavor = hostPathFlavor()): '/' | '\\' {
+  // No parse off Windows: `displayPath` runs this over every formatted message.
+  if (flavor === 'posix') return '/'
   const kind = parsePath(path, flavor)?.kind
   return kind === 'drive' || kind === 'unc' ? '\\' : '/'
 }

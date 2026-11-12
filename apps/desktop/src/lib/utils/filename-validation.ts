@@ -1,9 +1,8 @@
 /** Client-side filename validation for instant keystroke feedback. */
 
 import { tString } from '#lib/intl/messages.svelte.js'
-import { fromUserInput, isLocalPath } from '#lib/path/grammar.js'
+import { fromUserInput, isLocalPath, joinPath } from '#lib/path/grammar.js'
 import { fileExtension, kindOfRenamedName, type NameKind } from './file-extension'
-import { joinPath } from '#lib/path/grammar.js'
 
 /** Defaults match macOS. Call initPathLimits() at startup to get platform-specific values from the backend. */
 let maxNameBytes = 255
@@ -202,8 +201,11 @@ export function validateDirectoryPath(path: string): ValidationResult {
   // the home shortcut (`~` or `~/…`). `~` is the app's internal stand-in for the
   // user's home dir, expanded to an absolute path by the backend. A bare `~foo` (no
   // slash) isn't a home shortcut, so it stays rejected as relative.
-  const isAbsolute = trimmed.startsWith('/') || isLocalPath(fromUserInput(trimmed))
-  if (!isAbsolute && trimmed !== '~' && !trimmed.startsWith('~/')) {
+  // Every structural check reads the wire form, where `/` alone separates: on Windows a
+  // typed `\` is a separator too (`~\Documents`, `\Users`), elsewhere it's a name character.
+  const wire = fromUserInput(trimmed)
+  const isAbsolute = wire.startsWith('/') || isLocalPath(wire)
+  if (!isAbsolute && wire !== '~' && !wire.startsWith('~/')) {
     return { severity: 'error', message: tString('fileOperations.validation.pathNotAbsolute') }
   }
 
@@ -224,7 +226,7 @@ export function validateDirectoryPath(path: string): ValidationResult {
     }
   }
 
-  const segments = trimmed.split('/').filter((s) => s.length > 0)
+  const segments = wire.split('/').filter((s) => s.length > 0)
   for (const segment of segments) {
     const segmentBytes = encoder.encode(segment).length
     if (segmentBytes >= maxNameBytes) {
