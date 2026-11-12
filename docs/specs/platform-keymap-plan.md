@@ -841,11 +841,27 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
     `nav.pageDown` also applies in the places browser and the servers hub; the search dialog's `⌘N` / `⌘Y` also match on
     a non-Latin layout; the search dialog's recent searches move from `⌘H` to `⌘Y`, leaving `⌘H` to Hide, and its
     empty-state tip names `⌘Y` and drops the `⌘Enter` clause (`⌘Enter` does nothing there; the AI-on tip is gone);
-    Settings lists the six new fixed-key rows; the palette gains Full screen; Move here (`edit.pasteAsMove`, `⌥⌘V`)
-    moves nothing while a text field has focus, from any road (it moved files from the quick filter or the path bar,
-    since the menu accelerator fires before the field); a key the user bound to one command beats another command's
-    default on it (item 20); a rebind or reset to a bar row's own key comes back as the bar built it (item 21). Anything
-    else that moves on macOS is a regression.
+    Settings lists the six new fixed-key rows; the palette gains Full screen; while a text field has focus no command
+    that moves or removes files (`FILE_MOVING_COMMAND_IDS`: Move to trash, Delete permanently, Move, Move here, Undo
+    trash, Remove download) runs from a key or the menu bar, F-keys included, so `F8`, `⇧F8`, `F6`, `⌥⌘V`, `⌘⌫`, and
+    `⌥⌘⌫` in the quick filter or the path bar go to the field, and a menu click on one of them with a field focused does
+    nothing (the menu event can't tell a click from a key); the palette and the F-key bar still run them, Move here from
+    the palette included (`text-field-gate.test.ts`); `⌘⌫`, `⌥⌫`, `⌘⌥⌫`, `⌘⌦`, and `⌥⌦` join macOS's native text keys;
+    no bar row registers a native text key past its own built key, so a pushed `⌥←` (a shadowed `⌘[`) only shows on Go
+    back (`bar_parity_test.rs`); a key the user bound to one command beats another command's default on it (item 20); a
+    rebind or reset to a bar row's own key comes back as the bar built it (item 21); and copy a macOS user reads with
+    default keys: Settings' Skip confirmation row (`settings.fileOperations.skipConfirmation.explanation`, was
+    `.description`: "F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking.
+    …" → "Copy and Move go into the other pane right away, and Delete moves to the trash without asking. …"), the
+    binary-file warning row (`settings.fileViewer.suppressBinaryWarning.explanation`, was `.description`: drops "F3
+    opens", "⇧Space (Quick Look)", and "Enter (open in the associated app)" for "Quick Look or opening it in the
+    associated app"), the global go-to-latest row
+    (`settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary`, was `.description`: "Press ⌃⌥⌘J
+    from any app to jump to your most recent download." → "Jump to your most recent download from any app with a
+    system-wide shortcut."), and the keyless and partial variant family a removed or shadowed default selects
+    (`…WithoutKey` / `…WithKey` / `…WithCopyKey`, `viewer.binaryWarning.bodyWith*`,
+    `fileExplorer.quickLookHint.quickViewRebound`), awaiting David's copy review. Anything else that moves on macOS is a
+    regression.
 19. On Linux, while any main-window dialog, overlay, or the palette is up, the main window's bar mnemonics are off and
     every `Alt+<letter>` default reaches the page; after the last one closes, they're back. A real-X-event spec in the
     Linux lane proves it.
@@ -857,5 +873,7 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
     `shortcut-dispatch.test.ts` and `shortcuts-store.test.ts`.
 21. A push onto a bar row (`update_menu_accelerator`) of the row's own `MENU_BAR` key behaves exactly like the built
     row: registered where the bar registers it (macOS's bare `F5`, `Tab`, `Shift+Space`), display-only where the bar
-    only shows it (Select same kind's `⌥⇧=`). Every other combo takes the modifier floor. One door,
-    `cmdr_menu::bar::rebound_row_key`, which `bar_parity_test.rs` checks the bar through, with no bare-key exceptions.
+    only shows it (Select same kind's `⌥⇧=` / `Alt+Shift+=`). A key the page owns (`page_owned_keys.tsv`: the native
+    text keys, and on Windows and Linux the keys of the windows wearing the bar) only shows. Every other combo takes the
+    modifier floor. One door, `cmdr_menu::bar::rebound_row_key`, which `bar_parity_test.rs` checks the bar through, with
+    no bare-key exceptions.
