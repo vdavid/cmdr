@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "Le fichier est utilisé",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "Le fichier {path} est ouvert ailleurs : dans une autre app, sur un autre ordinateur ou sur le serveur lui-même.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Fermez-le là où il est ouvert, puis réessayez. Si rien ne semble l’avoir ouvert, patientez un instant : le serveur est peut-être occupé à le traiter.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Ce fichier est archivé",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "Ce fichier est en train de disparaître, et quelque chose le maintient encore ouvert. Patientez un instant et réessayez.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Ce fichier est ouvert ailleurs. Fermez-le là où il est ouvert, puis réessayez.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "Le fichier « {path} » est archivé. Restaurez-le d’abord dans la console de votre fournisseur de stockage.",
   "@errors.volume.coldStorage": {

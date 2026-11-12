@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "O arquivo está em uso",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "O arquivo em {path} está aberto em outro lugar: em outro app, em outro computador ou no próprio servidor.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Feche-o lá e tente de novo. Se nada parecer estar com ele aberto, espere um momento: o servidor pode estar ocupado com ele.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Este arquivo está arquivado",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "Esse arquivo está a caminho da saída, e algo ainda o mantém aberto. Tente de novo em instantes.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Este arquivo está aberto em outro lugar. Feche-o lá e tente de novo.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "O arquivo “{path}” está arquivado. Restaure-o primeiro no console do seu provedor de armazenamento.",
   "@errors.volume.coldStorage": {

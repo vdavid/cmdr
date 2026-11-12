@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "Файл використовується",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "Файл {path} відкритий деінде: в іншій програмі, на іншому компʼютері або на самому сервері.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Закрийте його там і спробуйте ще раз. Якщо здається, що файл ніде не відкритий, зачекайте трохи: можливо, сервер зараз зайнятий цим файлом.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Цей файл в архівному сховищі",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "Цей файл ось-ось зникне, але його досі щось тримає відкритим. Спробуйте ще раз за мить.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Цей файл відкритий деінде. Закрийте його там і спробуйте ще раз.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "Файл «{path}» в архівному сховищі. Спершу відновіть його в консолі свого постачальника сховища.",
   "@errors.volume.coldStorage": {

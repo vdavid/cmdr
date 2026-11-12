@@ -914,6 +914,10 @@
   "@errors.write.permissionDenied.suggestion.server": {
     "sourceHash": "444bdce"
   },
+  "errors.write.fileInUse.message": "El archivo en {path} está abierto en otro lugar: en otra app, en otra computadora o en el propio servidor.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "76f869e"
+  },
   "@errors.shareList.negotiationInvalid": {
     "sourceHash": "d50499f"
   },

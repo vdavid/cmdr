@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "Bestand is in gebruik",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "Het bestand op {path} is ergens anders geopend: in een andere app, op een andere computer of op de server zelf.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Sluit het daar en probeer het opnieuw. Als niets het open lijkt te hebben, wacht dan even: misschien is de server er nog mee bezig.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Dit bestand is gearchiveerd",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "Dat bestand is op weg naar buiten, en iets houdt het nog open. Probeer het zo meteen opnieuw.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Dit bestand is ergens anders geopend. Sluit het daar en probeer het opnieuw.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "‘{path}’ is gearchiveerd. Herstel het bestand eerst in de console van je opslagaanbieder.",
   "@errors.volume.coldStorage": {

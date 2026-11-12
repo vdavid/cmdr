@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "檔案正在使用中",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "位於 {path} 的檔案在別處開著：在另一個 App 裡、在另一台電腦上，或者就在伺服器上。",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "在那裡把它關掉，再試一次。如果看起來沒有東西開著它，請稍等一下：伺服器可能正忙著處理它。",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "這個檔案已封存",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "那個檔案正在離場，還有東西開著它。等一下再試一次。",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "這個檔案在別處開著。在那裡把它關掉，再試一次。",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "「{path}」已封存。請先到儲存服務提供者的主控台回復這個檔案。",
   "@errors.volume.coldStorage": {

@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "Datei wird verwendet",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "Die Datei unter {path} ist woanders geöffnet: in einer anderen App, auf einem anderen Computer oder auf dem Server selbst.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Schließe sie dort und versuche es noch einmal. Wenn sie scheinbar nirgends geöffnet ist, warte einen Moment: Vielleicht ist der Server gerade mit ihr beschäftigt.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Diese Datei ist archiviert",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "Die Datei ist auf dem Weg hinaus, und etwas hält sie noch geöffnet. Versuche es gleich noch einmal.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Diese Datei ist woanders geöffnet. Schließe sie dort und versuche es noch einmal.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "„{path}“ ist archiviert. Stelle die Datei zuerst in der Konsole deines Speicheranbieters wieder her.",
   "@errors.volume.coldStorage": {

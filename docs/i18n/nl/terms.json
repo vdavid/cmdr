@@ -4156,7 +4156,8 @@
     "confidence": "high",
     "forms": "the greyed menu marker: the base label word for word, then (bezet)",
     "sources": "catalog (menu.volume.ejectBusy, disconnectBusy, forgetServerBusy, forgetSavedPasswordBusy)",
-    "accept": ["druk", "in gebruik"]
+    "accept": ["druk", "in gebruik"],
+    "proseAccept": ["bezig"]
   },
   "revoke": {
     "chosen": "intrekken",

@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "A fájl használatban van",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "Ez a fájl máshol meg van nyitva: {path}. Egy másik app, egy másik számítógép vagy maga a szerver tartja nyitva.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Zárd be ott, aztán próbáld újra. Ha úgy tűnik, hogy semmi sem tartja nyitva, várj egy kicsit: lehet, hogy a szerver épp el van foglalva vele.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Ez a fájl archiválva van",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "A fájl törlése folyamatban van, de valami még nyitva tartja. Próbáld újra egy pillanat múlva.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Ez a fájl máshol meg van nyitva. Zárd be ott, aztán próbáld újra.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "„{path}” archiválva van. Előbb állítsd vissza a tárhelyszolgáltatód konzolján.",
   "@errors.volume.coldStorage": {

@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "Файл используется",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "Файл {path} открыт где-то еще: в другом приложении, на другом компьютере или на самом сервере.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Закройте его там и повторите попытку. Если кажется, что файл нигде не открыт, подождите немного: возможно, сервер сейчас занят этим файлом.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Этот файл в архивном хранилище",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "Файл уже удаляется, но что-то еще держит его открытым. Попробуйте еще раз чуть позже.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Этот файл открыт где-то еще. Закройте его там и повторите попытку.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "«{path}» находится в архивном хранилище. Сначала восстановите файл в консоли поставщика хранилища.",
   "@errors.volume.coldStorage": {

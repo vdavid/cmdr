@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "Filen används",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "Filen {path} är öppen någon annanstans: i en annan app, på en annan dator eller på själva servern.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Stäng den där och försök igen. Om ingenting verkar ha den öppen, vänta en stund: servern kan vara upptagen med den.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Den här filen är arkiverad",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "Filen är på väg bort och något håller den fortfarande öppen. Försök igen om en stund.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Den här filen är öppen någon annanstans. Stäng den där och försök igen.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "Filen ”{path}” är arkiverad. Återställ filen i din lagringsleverantörs konsol först.",
   "@errors.volume.coldStorage": {

@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "Soubor se používá",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "Soubor na cestě {path} je otevřený jinde: v jiné aplikaci, na jiném počítači nebo přímo na serveru.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Zavřete ho tam a zkuste to znovu. Pokud to vypadá, že ho nic otevřený nemá, chvíli počkejte: server s ním možná ještě pracuje.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Tento soubor je archivovaný",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "Tento soubor brzy zmizí a něco ho ještě má otevřený. Zkuste to za chvíli znovu.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Tento soubor je otevřený jinde. Zavřete ho tam a zkuste to znovu.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "Soubor „{path}“ je archivovaný. Nejdřív ho obnovte v konzoli poskytovatele úložiště.",
   "@errors.volume.coldStorage": {

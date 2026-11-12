@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "Tệp đang được sử dụng",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "Tệp tại {path} đang được mở ở nơi khác: trong một ứng dụng khác, trên một máy tính khác hoặc trên chính máy chủ.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Hãy đóng tệp ở đó rồi thử lại. Nếu có vẻ không có gì đang mở tệp, hãy đợi một chút: có thể máy chủ đang bận xử lý tệp.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Tệp này đang ở kho lưu trữ lạnh",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "Tệp đó sắp bị gỡ bỏ, và có thứ gì đó vẫn đang mở nó. Hãy thử lại sau giây lát.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Tệp này đang được mở ở nơi khác. Hãy đóng tệp ở đó rồi thử lại.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "“{path}” đang ở kho lưu trữ lạnh. Hãy khôi phục tệp trong bảng điều khiển của nhà cung cấp dịch vụ lưu trữ trước.",
   "@errors.volume.coldStorage": {

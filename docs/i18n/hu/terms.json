@@ -498,6 +498,7 @@
   "busy": {
     "chosen": "foglalt",
     "accept": ["elfoglalt"],
+    "proseAccept": ["el van foglalva"],
     "forms": "a greyed-out menu item → the base label + ` (foglalt)`, the base label unchanged letter for letter (Kiadás ({name}) (foglalt), Leválasztás (foglalt)); a provider or system that's busy → elfoglalt",
     "confidence": "high",
     "sources": "ms (foglalt, the line-busy sense); catalog (menu.volume.*Busy)",

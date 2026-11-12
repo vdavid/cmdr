@@ -1920,6 +1920,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "文件正在使用中",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "位于 {path} 的文件在别处打开着：在另一个 App 里、在另一台电脑上，或者就在服务器上。",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "在那里把它关掉，然后重试。如果看起来没有东西开着它，请稍等片刻：服务器可能正忙着处理它。",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "这个文件已存档",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2263,6 +2275,10 @@
   "errors.volume.deletePending": "这个文件正在退场，还有东西占着它。请稍等片刻再重试。",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "这个文件在别处打开着。在那里把它关掉，然后重试。",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "“{path}”已存档。请先在存储提供方的控制台里恢复。",
   "@errors.volume.coldStorage": {

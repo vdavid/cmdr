@@ -4341,7 +4341,8 @@
     "confidence": "high",
     "forms": "the greyed menu marker: the base label word for word, then (in Benutzung)",
     "sources": "catalog (menu.volume.ejectBusy, disconnectBusy, forgetServerBusy, forgetSavedPasswordBusy)",
-    "accept": ["ausgelastet"]
+    "accept": ["ausgelastet"],
+    "proseAccept": ["beschäftigt"]
   },
   "always": {
     "chosen": "immer",

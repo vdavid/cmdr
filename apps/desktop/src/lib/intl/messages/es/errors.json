@@ -1921,6 +1921,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.fileInUse.title": "El archivo está en uso",
+  "@errors.write.fileInUse.title": {
+    "sourceHash": "c1679ff"
+  },
+  "errors.write.fileInUse.message": "El archivo en {path} está abierto en otro lugar: en otra app, en otro ordenador o en el propio servidor.",
+  "@errors.write.fileInUse.message": {
+    "sourceHash": "81c630d"
+  },
+  "errors.write.fileInUse.suggestion": "Ciérralo ahí e inténtalo de nuevo. Si parece que nada lo tiene abierto, espera un momento: puede que el servidor esté ocupado con él.",
+  "@errors.write.fileInUse.suggestion": {
+    "sourceHash": "020fa85"
+  },
   "errors.write.sourceInColdStorage.title": "Este archivo está archivado",
   "@errors.write.sourceInColdStorage.title": {
     "sourceHash": "73da082"
@@ -2264,6 +2276,10 @@
   "errors.volume.deletePending": "Ese archivo está de salida y algo lo sigue teniendo abierto. Vuelve a intentarlo en un momento.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.fileInUse": "Este archivo está abierto en otro lugar. Ciérralo ahí e inténtalo de nuevo.",
+  "@errors.volume.fileInUse": {
+    "sourceHash": "0a16cae"
   },
   "errors.volume.coldStorage": "El archivo “{path}” está archivado. Primero restáuralo en la consola de tu proveedor de almacenamiento.",
   "@errors.volume.coldStorage": {

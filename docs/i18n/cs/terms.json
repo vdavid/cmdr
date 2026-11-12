@@ -2181,6 +2181,7 @@
   "busy": {
     "chosen": "zaneprázdněný",
     "accept": ["zaneprázdněn", "probíhá operace"],
+    "proseAccept": ["pracuje"],
     "forms": "adj. agreeing with the named thing (disk je zaneprázdněný); the greyed menu marker (menu.volume.*Busy) → (probíhá operace), gender-free because it follows labels of any gender (Zapomenout uložené heslo)",
     "avoid": [
       {
