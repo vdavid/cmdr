@@ -121,10 +121,6 @@
       "negated": 4,
       "outsideSeam": 6
     },
-    "apps/desktop/src-tauri/src/file_system/packages.rs": {
-      "negated": 1,
-      "outsideSeam": 7
-    },
     "apps/desktop/src-tauri/src/file_system/tags.rs": {
       "negated": 1,
       "outsideSeam": 17

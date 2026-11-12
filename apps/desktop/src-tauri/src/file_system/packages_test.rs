@@ -14,7 +14,7 @@ fn only_unlisted_dotted_names_are_asked() {
 
 #[cfg(target_os = "macos")]
 mod macos {
-    use super::super::is_package_to_macos;
+    use super::super::platform::is_package_to_macos;
     use crate::test_support::TestDir;
 
     /// `kHasBundle` in the Finder flags (`<CarbonCore/Finder.h>`): the bit that

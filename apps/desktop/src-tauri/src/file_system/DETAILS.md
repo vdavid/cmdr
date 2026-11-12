@@ -32,8 +32,10 @@ restic backup's snapshots: the overlay row, the parked hub, and the write guards
 - `get_info.rs`: Finder's Get Info window, through `osascript`, refusing up front when the user has turned off Cmdr's control
   of Finder (why `osascript` and not an in-process Apple Event: its module doc).
 - `packages.rs`: asks macOS (`NSURLIsPackageKey`, on its own 8 MB-stack pool) which visible dotted folders are packages
-  the list doesn't know, for `enrich_packages`; local volumes only. The rule: `crates/cmdr-fs/DETAILS.md` § "What
-  counts as an extension".
+  the list doesn't know, for `enrich_packages`; local volumes only. The per-OS lookup is the `packages/platform/` seam
+  (the macOS arm holds the pool, budget, and `is_package_to_macos`; Linux and Windows answer from the list alone), lined
+  up with `cmdr-fs`'s `file_extension/platform/`. The rule: `crates/cmdr-fs/DETAILS.md` § "What counts as an
+  extension".
 - `tags.rs`: Finder tags, the pure half. `tags_io.rs`: their I/O, through the volume. `tags_journal.rs`: a tag write's operation-log entry, for undo. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in (wire
   types; the macOS half in `text_editor_macos.rs`, its tests in `text_editor_test.rs`).
 
