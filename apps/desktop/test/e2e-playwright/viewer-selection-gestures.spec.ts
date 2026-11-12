@@ -263,13 +263,14 @@ test.describe('File viewer selection gestures', () => {
     await expect.poll(scrollLeft, { timeout: waitBudget(3000) }).toBe(0)
   })
 
-  test('Option+Shift+Right extends by a whole word', async () => {
+  test('the word modifier plus Shift+Right extends by a whole word', async () => {
     await pressAt(await betaPoint(), 2)
     await expect.poll(selectedTextOnLineZero, { timeout: waitBudget(3000) }).toBe('beta')
 
-    // macOS semantics: the focus lands on the END of the next word, so `gamma` joins in
-    // full rather than the selection stopping at its start.
-    await pressKeyTimes('ArrowRight', { shiftKey: true, altKey: true }, 1)
+    // ⌥ on macOS, Ctrl on Windows and Linux (Alt+→ is Forward there). The focus lands on the
+    // END of the next word, so `gamma` joins in full rather than the selection stopping at its start.
+    const byWord = CTRL_OR_META === 'Meta' ? { altKey: true } : { ctrlKey: true }
+    await pressKeyTimes('ArrowRight', { shiftKey: true, ...byWord }, 1)
     await expect.poll(selectedTextOnLineZero, { timeout: waitBudget(3000) }).toBe('beta gamma')
   })
 })
