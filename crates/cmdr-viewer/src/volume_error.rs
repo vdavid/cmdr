@@ -21,6 +21,9 @@ pub fn map_volume_error(err: VolumeError, routed: Option<RoutedKind>) -> ViewerE
         // Whichever route read it: a zip in cold storage is as unreadable as a
         // file there, and the fix is the same restore.
         VolumeError::ColdStorage(_) => ViewerError::ColdStorage,
+        // Open somewhere else, on any route: a zip someone holds open is as closed to
+        // a read as a file, and the fix is the same (cmdr-reports#110).
+        VolumeError::FileInUse(_) => ViewerError::FileInUse,
         VolumeError::LinkTargetUnreachable(_) => ViewerError::LinkTargetUnreachable,
         VolumeError::LinkNeedsConsent(_) => ViewerError::LinkNeedsConsent,
         other => match routed {

@@ -35,6 +35,8 @@ describe('handleOpenFailure log level', () => {
     { kind: 'archive', failure: 'unreadable', message: 'encrypted entry' },
     { kind: 'cancelled' },
     { kind: 'io', message: 'Permission denied (os error 13)' },
+    // cmdr-reports#110: a file someone has open on a share.
+    { kind: 'fileInUse' },
   ]
   // Can't happen on an open unless our own code is wrong.
   const defects: ViewerError[] = [
@@ -90,5 +92,10 @@ describe('handleOpenFailure copy', () => {
 
   it('says a folder has nothing to view', () => {
     expect(copyFor({ kind: 'isDirectory' })).toEqual({ message: tString('viewer.error.isDirectory'), canRetry: false })
+  })
+
+  // cmdr-reports#110: an SMB sharing violation read as "Couldn't read this file".
+  it('says a file in use is open somewhere else, and offers Retry for once it is closed', () => {
+    expect(copyFor({ kind: 'fileInUse' })).toEqual({ message: tString('errors.volume.fileInUse'), canRetry: true })
   })
 })

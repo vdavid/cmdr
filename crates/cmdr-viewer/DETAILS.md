@@ -273,9 +273,14 @@ order, and none of them names a backend, so a new volume gets all of this by imp
 3. **The temp** (`materialize_for_viewer`): a route (zip, `.git`, restic) or a volume with neither. The bytes are a
    local file by the time anyone classifies them, so they render through the local path, under `PREVIEW_CAP_BYTES`.
 
-A dead DFS link (`VolumeError::LinkTargetUnreachable`) is the one open refusal that skips ways 2 and 3 and any mount
-fallback: it answers `ViewerError::LinkTargetUnreachable`, with Retry, because the session is fine and a mount could
-answer `NotFound`.
+A dead DFS link (`VolumeError::LinkTargetUnreachable`, and `LinkNeedsConsent`) and a file open somewhere else
+(`VolumeError::FileInUse`, cmdr-reports#110) are the open refusals that skip ways 2 and 3 and any mount fallback
+(`origin.rs::open_through_volume`). A dead link answers `ViewerError::LinkTargetUnreachable`, with Retry, because the
+session is fine and a mount could answer `NotFound`. A file in use answers `ViewerError::FileInUse`, with Retry: smb2's
+read open asks for every share mode (`read_open_request`, verified in smb2 `tree.rs`, 2026-11-12), so a mount's open
+meets the same holder, and a pull's answer was the generic `Io`. `volume_error.rs::map_volume_error` gives `FileInUse`
+on every route (a zip someone holds open reads the same), and a local `io::Error` of class `InUseByAnotherApp` (Windows
+only) becomes it too (`From<io::Error>`).
 
 `try_open_media` reads through the session's `OpenedFile` in all three, and through `LocalFileSource` for a local path
 too, so there is one classifier call and one place for dimensions.

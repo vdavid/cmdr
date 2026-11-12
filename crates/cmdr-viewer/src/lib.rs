@@ -321,6 +321,11 @@ pub enum ViewerError {
     /// Deep Archive) and can't be read until someone restores it, so there's
     /// nothing to preview yet and a Retry can't help.
     ColdStorage,
+    /// Something else has the file open in a way that keeps this read out: another app,
+    /// another computer, or the server itself (`VolumeError::FileInUse`, an SMB sharing
+    /// violation, a WebDAV lock, a Windows sharing violation). The person closes it there,
+    /// then retries, so the FE offers Retry.
+    FileInUse,
     /// The file sits behind a link to another server (a DFS link in an SMB share), and that
     /// server is out of reach. Retry can help; nothing was deleted, so ❌ never `NotFound`.
     LinkTargetUnreachable,
@@ -371,6 +376,7 @@ impl ErrorLogText for ViewerError {
             Self::DestinationIsReadOnly => write!(out, "Can't save into a read-only location"),
             Self::Archive { message, .. } => out.error(message),
             Self::ColdStorage => write!(out, "The file is archived and needs a restore before it can be read"),
+            Self::FileInUse => write!(out, "The file is open somewhere else"),
             Self::LinkTargetUnreachable => write!(out, "A link's other server is out of reach"),
             Self::LinkNeedsConsent => write!(out, "A link's other server isn't allowed yet"),
             Self::NotEnoughSpace { needed, available } => {
@@ -385,6 +391,11 @@ impl ErrorLogText for ViewerError {
 
 impl From<std::io::Error> for ViewerError {
     fn from(e: std::io::Error) -> Self {
+        // A local file another app holds open (Windows' sharing and lock violations,
+        // the one OS that has a code for it) reads like the same refusal from a share.
+        if cmdr_fs::os_error::OsErrorClass::of_io(&e) == Some(cmdr_fs::os_error::OsErrorClass::InUseByAnotherApp) {
+            return Self::FileInUse;
+        }
         Self::Io {
             message: e.to_string().into(),
         }

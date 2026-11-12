@@ -3481,7 +3481,7 @@
   },
   "errors.volume.fileInUse": "This file is open somewhere else. Close it there and try again.",
   "@errors.volume.fileInUse": {
-    "description": "Shown when a file on a network share is open somewhere else (another app, another computer, or the server itself), so the server refused to rename or change it. Inline one-line message under the name field in Cmdr’s Rename / New folder / New file flow, or in a brief toast. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Shown when a file (usually on a network share) is open somewhere else (another app, another computer, or the server itself), so the server or the OS refused to open, rename, or change it. Inline one-line message under the name field in Cmdr’s Rename / New folder / New file flow, in a brief toast, or in the file viewer window when it can’t open the file (with a Retry button beside it, which is the “try again” this means). Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },

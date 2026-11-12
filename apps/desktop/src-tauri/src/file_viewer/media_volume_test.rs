@@ -37,6 +37,8 @@ enum Reads {
     Ranged,
     /// A held reader that can't open: the file sits behind a dead DFS link.
     DeadLink,
+    /// A held reader the server refuses: someone else has the file open.
+    InUse,
 }
 
 #[derive(Default)]
@@ -147,6 +149,9 @@ impl Volume for OneFileVolume {
             if self.reads == Reads::DeadLink {
                 return Err(VolumeError::LinkTargetUnreachable(path.display().to_string()));
             }
+            if self.reads == Reads::InUse {
+                return Err(VolumeError::FileInUse(path.display().to_string()));
+            }
             if self.reads != Reads::Held {
                 return Err(VolumeError::NotSupported);
             }
@@ -227,6 +232,18 @@ fn a_file_behind_a_dead_link_says_so() {
         viewer().open_session(&path, id),
         Err(super::ViewerError::LinkTargetUnreachable)
     ));
+    get_volume_manager().unregister(id);
+}
+
+/// cmdr-reports#110's file, opened in the viewer: the share's refusal reaches the window,
+/// typed. The reader asks for every share mode, so a mount meets the same holder, and a
+/// pull's answer was the generic "couldn't read".
+#[test]
+fn a_file_open_somewhere_else_says_so() {
+    let id = "viewer-media-in-use";
+    let (path, _bytes, _counters) = a_volume(id, "report.pdf", b"%PDF-1.7".to_vec(), Reads::InUse);
+    let opened = viewer().open_session(&path, id);
+    assert!(matches!(opened, Err(super::ViewerError::FileInUse)), "got {opened:?}");
     get_volume_manager().unregister(id);
 }
 

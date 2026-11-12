@@ -21886,6 +21886,13 @@ export type ViewerError =
    */
   | { kind: 'coldStorage' }
   /**
+   *  Something else has the file open in a way that keeps this read out: another app,
+   *  another computer, or the server itself (`VolumeError::FileInUse`, an SMB sharing
+   *  violation, a WebDAV lock, a Windows sharing violation). The person closes it there,
+   *  then retries, so the FE offers Retry.
+   */
+  | { kind: 'fileInUse' }
+  /**
    *  The file sits behind a link to another server (a DFS link in an SMB share), and that
    *  server is out of reach. Retry can help; nothing was deleted, so ❌ never `NotFound`.
    */

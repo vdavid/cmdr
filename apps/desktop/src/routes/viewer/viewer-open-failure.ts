@@ -30,6 +30,8 @@ function openFailureCopy(e: unknown): OpenFailure {
     if (ve.kind === 'tooLargeToPreview') return { message: tString('viewer.error.tooLargeToPreview'), canRetry: false }
     if (ve.kind === 'archive') return { message: tString('viewer.error.archiveUnreadable'), canRetry: false }
     if (ve.kind === 'coldStorage') return { message: tString('viewer.error.coldStorage'), canRetry: false }
+    // Open somewhere else: once it's closed there, the same open is the way out (cmdr-reports#110).
+    if (ve.kind === 'fileInUse') return { message: tString('errors.volume.fileInUse'), canRetry: true }
     if (ve.kind === 'linkNeedsConsent') {
       return { message: tString('viewer.error.linkNeedsConsent'), canRetry: false }
     }
@@ -62,6 +64,7 @@ export function logLevelFor(ve: ViewerError): 'warn' | 'error' {
     case 'tooLargeToPreview':
     case 'archive':
     case 'coldStorage':
+    case 'fileInUse':
     case 'linkTargetUnreachable':
     case 'linkNeedsConsent':
     case 'notEnoughSpace': // only an "Open with" pull checks for room, so a viewer open never meets it

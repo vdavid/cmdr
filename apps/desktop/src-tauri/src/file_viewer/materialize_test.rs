@@ -774,6 +774,22 @@ fn an_archived_file_says_so_whatever_route_it_came_through() {
 }
 
 #[test]
+fn a_file_in_use_says_so_whatever_route_it_came_through() {
+    // A PDF someone has open on an SMB share (cmdr-reports#110), opened directly or as
+    // the zip a route reads through: either way the fix is closing it there, so the
+    // viewer names it rather than the generic "couldn't read".
+    for routed in [None, Some(RoutedKind::Archive)] {
+        assert!(
+            matches!(
+                map_volume_error(VolumeError::FileInUse("/Volumes/share/report.pdf".into()), routed),
+                ViewerError::FileInUse
+            ),
+            "routed: {routed:?}"
+        );
+    }
+}
+
+#[test]
 fn a_dead_link_target_says_so_rather_than_a_bare_read_failure() {
     assert!(matches!(
         map_volume_error(VolumeError::LinkTargetUnreachable("/smb/nas/data/a.jpg".into()), None),

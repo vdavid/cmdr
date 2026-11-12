@@ -89,9 +89,9 @@ pub(super) struct VolumeOpen {
 /// A routed path (inside a `.zip`, a `.git` portal tree) goes to the materializer:
 /// its route mints the volume that serves it. Any open error falls back too, so a share
 /// whose smb2 session is down still opens through a live mount, and a missing file gets
-/// the same `NotFound` the old path gives. The exception is a dead DFS link: the session
+/// the same `NotFound` the old path gives. The exceptions are a dead DFS link (the session
 /// is fine and already named the trouble, and a mount's answer could be a `NotFound`, which
-/// reads as "this file was deleted".
+/// reads as "this file was deleted") and a file open somewhere else (cmdr-reports#110).
 pub(super) fn open_for_viewer(
     host: &ViewerHost,
     runtime: &Runtime,
@@ -155,9 +155,11 @@ fn open_through_volume(
             os_visible,
         })),
         Err(VolumeError::NotSupported) => Ok(None),
-        Err(e @ (VolumeError::LinkTargetUnreachable(_) | VolumeError::LinkNeedsConsent(_))) => {
-            Err(map_volume_error(e, None))
-        }
+        // A file open somewhere else is the same: the reader asks for every share mode, so
+        // a mount's open meets the same holder, and a pull's answer is a generic read failure.
+        Err(
+            e @ (VolumeError::LinkTargetUnreachable(_) | VolumeError::LinkNeedsConsent(_) | VolumeError::FileInUse(_)),
+        ) => Err(map_volume_error(e, None)),
         // A host with no local files has no usual way: its volume's answer is the answer, so a read
         // error never turns into the `NotFound` an absent local file would give.
         Err(e) if !host.local_files => Err(map_volume_error(e, None)),

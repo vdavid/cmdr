@@ -324,6 +324,7 @@ fn every_viewer_error_crosses_in_this_shape() {
             message: "locked".to_string().into(),
         },
         ViewerError::ColdStorage,
+        ViewerError::FileInUse,
         ViewerError::LinkTargetUnreachable,
         ViewerError::LinkNeedsConsent,
         ViewerError::NotEnoughSpace {
@@ -336,8 +337,17 @@ fn every_viewer_error_crosses_in_this_shape() {
     assert_eq!(raw, r##"{"kind":"sessionNotFound","sessionId":"abc"}"##);
     pin(
         &errors,
-        r##"[{"kind":"io","message":"disk said no"},{"kind":"notFound","path":"/a/b.txt"},{"kind":"isDirectory"},{"kind":"sessionNotFound","sessionId":"<masked>"},{"kind":"cancelled"},{"kind":"outOfRange"},{"kind":"timedOut"},{"kind":"stoppedResponding"},{"kind":"tooLargeToPreview","size":10,"cap":5},{"kind":"destinationIsReadOnly"},{"kind":"archive","failure":"needsPassword","message":"locked"},{"kind":"coldStorage"},{"kind":"linkTargetUnreachable"},{"kind":"linkNeedsConsent"},{"kind":"notEnoughSpace","needed":7,"available":3}]"##,
+        r##"[{"kind":"io","message":"disk said no"},{"kind":"notFound","path":"/a/b.txt"},{"kind":"isDirectory"},{"kind":"sessionNotFound","sessionId":"<masked>"},{"kind":"cancelled"},{"kind":"outOfRange"},{"kind":"timedOut"},{"kind":"stoppedResponding"},{"kind":"tooLargeToPreview","size":10,"cap":5},{"kind":"destinationIsReadOnly"},{"kind":"archive","failure":"needsPassword","message":"locked"},{"kind":"coldStorage"},{"kind":"fileInUse"},{"kind":"linkTargetUnreachable"},{"kind":"linkNeedsConsent"},{"kind":"notEnoughSpace","needed":7,"available":3}]"##,
     );
+}
+
+/// Windows' sharing violation on a LOCAL file is the same fact an SMB share's is: another
+/// app holds it open. No Unix code means this, so the cell runs only there.
+#[cfg(windows)]
+#[test]
+fn a_local_sharing_violation_reads_as_file_in_use() {
+    let err = ViewerError::from(std::io::Error::from_raw_os_error(32)); // ERROR_SHARING_VIOLATION
+    assert!(matches!(err, ViewerError::FileInUse), "got {err:?}");
 }
 
 #[test]

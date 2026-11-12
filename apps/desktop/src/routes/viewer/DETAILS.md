@@ -839,21 +839,22 @@ glyphs (the a11y labels and tooltips carry the real copy). The runtime works in 
 VARIANT (`kind: 'timedOut'`) rather than a flag beside a sentence. Both surfaces read it the same way, through
 `asViewerError(e)?.kind`: `viewer-row-fetch.svelte.ts` routes `timedOut` to `deps.onTimeoutError()` and logs everything
 else by kind, and `viewer-open-failure.ts`'s `handleOpenFailure` (all three open sites) maps `timedOut` /
-`stoppedResponding` / `notFound` / `isDirectory` / `tooLargeToPreview` / `archive` to their own catalog keys and falls
-back to `viewer.error.readFailed` for anything else. `timedOut`, `stoppedResponding`, and that fallback set `canRetry`,
-which puts Retry and Cancel under the message: the fallback covers passing trouble (a busy disk, a flaky mount) as often
-as lasting trouble, so offering Retry is honest. Nothing renders the backend's own words. The wider split:
+`stoppedResponding` / `notFound` / `isDirectory` / `tooLargeToPreview` / `archive` / `coldStorage` / the two link kinds
+to their own catalog keys, `fileInUse` to the shared `errors.volume.fileInUse` (with Retry), and falls back to
+`viewer.error.readFailed` for anything else. `timedOut`, `stoppedResponding`, and that fallback set `canRetry`, which
+puts Retry and Cancel under the message: the fallback covers passing trouble (a busy disk, a flaky mount) as often as
+lasting trouble, so offering Retry is honest. Nothing renders the backend's own words. The wider split:
 `docs/guides/error-handling.md`.
 
 **Log level follows what the window shows.** An error log counts toward an auto-sent error report, so an outcome the
 window already renders with a way forward logs at warn: a line read that timed out, and an open that failed for an
 environmental reason (`timedOut`, `stoppedResponding`, `notFound`, `isDirectory`, `tooLargeToPreview`, `archive`,
-`cancelled`, and `io`, which is what the OS or the source refused). A variant that can't reach an open unless our code
-is wrong (`sessionNotFound`, `outOfRange`, `destinationIsReadOnly`), an open failure that never reached the typed path,
-and a line read that failed for any reason other than `timedOut` (nothing on screen says so) stay at error.
-`logLevelFor` is an exhaustive `switch`, so a new `ViewerError` variant doesn't compile until someone picks its side. At
-error level the handled ones filed reports of their own (ERR-GW3BE, ERR-XV6SN). Pinned by `viewer-open-failure.test.ts`
-and `viewer-scroll.svelte.test.ts` § "a read that didn't come back".
+`fileInUse`, `cancelled`, and `io`, which is what the OS or the source refused). A variant that can't reach an open
+unless our code is wrong (`sessionNotFound`, `outOfRange`, `destinationIsReadOnly`), an open failure that never reached
+the typed path, and a line read that failed for any reason other than `timedOut` (nothing on screen says so) stay at
+error. `logLevelFor` is an exhaustive `switch`, so a new `ViewerError` variant doesn't compile until someone picks its
+side. At error level the handled ones filed reports of their own (ERR-GW3BE, ERR-XV6SN). Pinned by
+`viewer-open-failure.test.ts` and `viewer-scroll.svelte.test.ts` § "a read that didn't come back".
 
 `tooLargeToPreview`'s key is `viewer.error.tooLargeToPreview`, deliberately not named after archives: the preview cap is
 reached by a `.zip` entry, a blob in a repository's virtual `.git` snapshot, and a file on a phone or server, so the
