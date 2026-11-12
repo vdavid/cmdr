@@ -35,6 +35,14 @@ fn stop_background_services() {
     crate::volumes::stop_volume_watcher();
 }
 
+/// Quits Cmdr the way closing the main window does: ask the quit gate; while it holds, do
+/// nothing more (the caller keeps the window open for the prompt); else stop the background
+/// services and exit. The main window's `CloseRequested` and the `quit_app` command (Quit off
+/// macOS, where no app menu owns it) both call this, so there's one way out past the gate.
+pub(crate) fn quit_through_gate<R: tauri::Runtime>(app: &AppHandle<R>) -> quit::QuitOutcome {
+    quit::quit_unless_held(app, stop_background_services)
+}
+
 /// Per-window signals: focus re-checks the FDA gate, closing the main window quits
 /// the app through the quit gate, closing a child window runs its animated, WebKit-safe
 /// close, and a destroyed viewer window frees its session.
@@ -66,13 +74,9 @@ pub fn on_window_event(window: &Window, event: &tauri::WindowEvent) {
     // "Keep working" leaves AI, MCP, and mDNS running. See `quit/`.
     if let tauri::WindowEvent::CloseRequested { api, .. } = event
         && window.label() == "main"
+        && quit_through_gate(window.app_handle()).is_held()
     {
-        if quit::request_quit(window.app_handle()).is_held() {
-            api.prevent_close();
-        } else {
-            stop_background_services();
-            window.app_handle().exit(0);
-        }
+        api.prevent_close();
     }
     // Every other close of a child window (the red button, ⌘W, the Window menu, a `close()` from
     // Rust or JS, MCP included) goes through the same slide-out, hide, and deferred destroy as

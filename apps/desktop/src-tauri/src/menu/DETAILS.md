@@ -1126,7 +1126,12 @@ The Windows bar has the Linux bar's rows and keys until the Windows menu model i
 - **App menu**: macOS has a dedicated "cmdr" menu with About, License, and Settings. Linux has none: About sits under
   Help, Settings and License under Edit.
 - **Predefined items**: macOS has Hide, Hide Others, Show All, Quit, the Window items, and Undo/Redo. Linux has none (GTK
-  has no equivalent).
+  has no equivalent). Quit is a Cmdr row at the end of File there ("Quit Cmdr", "Exit Cmdr" on Windows, `QUIT_ID`), with
+  no key shown or registered; a click emits `app.quit` to the main window, whose handler asks the backend's `quit_app`,
+  so a Settings or queue window wearing the bar quits the whole app through the gate, never only itself.
+- **Full screen**: AppKit adds its own View menu item on macOS, so Cmdr has no row there. Windows and Linux get View >
+  Full screen (`VIEW_FULL_SCREEN_ID`), with `F11` shown, not registered: GTK takes a bare F-key before the webview, so
+  keydown dispatch runs it, as for the other F-keys.
 - **Accelerators**: macOS has the full set. Linux omits F2 (Rename) and the others GTK intercepts. Every ⌘ chord is
   the same chord on Ctrl there (`cmd_or_ctrl!`), because muda reads `Cmd` as META, the Super key on GTK (#284).
   `same_on_all` and `split` refuse a Windows or Linux `Cmd` / `Super` at compile time. A rebind arrives in the

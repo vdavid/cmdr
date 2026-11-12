@@ -60,6 +60,8 @@ const m = vi.hoisted(() => ({
   readClipboardText: vi.fn<() => Promise<string>>(() => Promise.resolve('')),
   cloudMakeAvailableOffline: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   cloudRemoveDownload: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
+  quitApp: vi.fn(() => Promise.resolve()),
+  toggleFullScreen: vi.fn(() => Promise.resolve()),
   quickLookState: { isOpen: false },
 }))
 
@@ -92,8 +94,12 @@ const {
   readClipboardText,
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
+  quitApp,
+  toggleFullScreen,
   quickLookState,
 } = m
+
+vi.mock('./full-screen', () => ({ toggleFullScreen: () => m.toggleFullScreen() }))
 
 // `getAppLogger('user-action')` runs at module top-level; `m.logInfo` captures
 // the logged `id` so the preamble-order + exempt tests can assert on it.
@@ -186,6 +192,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   readClipboardText: () => m.readClipboardText(),
   cloudMakeAvailableOffline: (...a: unknown[]) => m.cloudMakeAvailableOffline(...a),
   cloudRemoveDownload: (...a: unknown[]) => m.cloudRemoveDownload(...a),
+  quitApp: () => m.quitApp(),
   trackEvent: () => Promise.resolve(),
   // `file.openTerminalHere`'s chain. Its own behavior is pinned in
   // `#lib/open-terminal/open-terminal-here.test.ts`; here it only has to exist, so
@@ -225,13 +232,13 @@ beforeEach(() => {
 // Self-checks: the dispatchable / exempt sets partition COMMAND_IDS.
 // ===========================================================================
 describe('characterization — id partition self-check', () => {
-  it('exempt set is exactly 84 ids, all real CommandIds', () => {
-    expect(EXEMPT_IDS).toHaveLength(84)
+  it('exempt set is exactly 83 ids, all real CommandIds', () => {
+    expect(EXEMPT_IDS).toHaveLength(83)
     for (const id of EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 
   it('dispatchable set is exactly 150 ids', () => {
-    expect(DISPATCHABLE_IDS).toHaveLength(150)
+    expect(DISPATCHABLE_IDS).toHaveLength(152)
   })
 
   it('dispatchable ∪ exempt = COMMAND_IDS, disjoint', () => {
@@ -273,6 +280,17 @@ describe('characterization — module-delegate arms', () => {
   it('app.checkForUpdates → runMenuTriggeredCheck()', async () => {
     await handleCommandExecute('app.checkForUpdates', makeCtx({}))
     expect(runMenuTriggeredCheck).toHaveBeenCalledOnce()
+  })
+
+  // Off macOS, Cmdr's own Quit: one backend command, the same path closing the main window takes.
+  it('app.quit → quitApp()', async () => {
+    await handleCommandExecute('app.quit', makeCtx({}))
+    expect(quitApp).toHaveBeenCalledOnce()
+  })
+
+  it('view.toggleFullScreen → toggleFullScreen()', async () => {
+    await handleCommandExecute('view.toggleFullScreen', makeCtx({}))
+    expect(toggleFullScreen).toHaveBeenCalledOnce()
   })
 
   it('app.toggleCliCommand → toggleCliCommand()', async () => {

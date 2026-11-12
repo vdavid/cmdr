@@ -7,6 +7,7 @@
  */
 import tauriMacOSConfig from '../../../src-tauri/tauri.macos.conf.json'
 import { getMessage } from '#lib/intl/messages.svelte.js'
+import { canFullScreen, isBrowserFullScreen, setBrowserFullScreen } from './browser-full-screen.js'
 
 /** What one window's lights do. A missing action leaves that light inert (`aria-disabled`). */
 export interface TrafficLightActions {
@@ -229,11 +230,6 @@ export function createTrafficLights(actions: TrafficLightActions, zoomGlyph: Zoo
   }
 }
 
-/** Whether this page can enter full screen at all: a frame needs its embedder's `allow="fullscreen"`. */
-function canFullScreen(): boolean {
-  return document.fullscreenEnabled && typeof document.documentElement.requestFullscreen === 'function'
-}
-
 /**
  * The main window's lights, at its top-left. Zoom is the browser's full screen, the closest a page
  * gets to the green button's full screen (refused quietly where the page can't, as in a frame that
@@ -245,12 +241,7 @@ export function createMainWindowLights(): TrafficLights {
     fullScreen
       ? {
           zoom: () => {
-            const done = document.fullscreenElement
-              ? // eslint-disable-next-line cmdr/webkit-floor-dom -- only wired when `canFullScreen()` found `requestFullscreen`, which ships with `exitFullscreen`
-                document.exitFullscreen()
-              : // eslint-disable-next-line cmdr/webkit-floor-dom -- only wired when `canFullScreen()` found it
-                document.documentElement.requestFullscreen()
-            done.catch(() => undefined)
+            void setBrowserFullScreen(!isBrowserFullScreen())
           },
         }
       : {},

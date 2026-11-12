@@ -52,6 +52,11 @@ Windows menu model (whether a Win32 accelerator fires before WebView2, what `Alt
 task 63 of `docs/specs/windows-port-plan.md`. Windows is its own value so that decision is a row edit with its own
 snapshot diff.
 
+Two `windows_and_linux` rows stand in for what AppKit gives macOS: File > Quit / Exit Cmdr (`QUIT_ID`, one label key
+with a per-OS branch, and no key shown or registered, since `Alt+F4` closes the window through the quit gate there) and
+View > Full screen (`VIEW_FULL_SCREEN_ID`, `F11` shown only, as GTK takes bare F-keys before the webview). macOS's Quit
+is the app menu's predefined item, and AppKit adds its own full-screen item to the View menu.
+
 ## Parity with the registry
 
 **Decision**: the bar keeps its own accelerators (a reviewed snapshot, buildable standalone for the demo), and

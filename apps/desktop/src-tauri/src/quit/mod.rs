@@ -219,6 +219,25 @@ impl QuitGate {
         }
     }
 
+    /// Quits unless the gate holds it: asks [`Self::request_quit`], and only when it may proceed
+    /// runs `before_exit` and ends the process through the host. While the gate holds, it does
+    /// nothing more: the gate asks, and ends the process itself on the answer or its deadline.
+    ///
+    /// Closing the main window and Cmdr's own Quit command (off macOS) both come through here
+    /// (`app_lifecycle::quit_through_gate`), so neither can skip the gate or tear down early.
+    pub(crate) fn quit_unless_held(
+        self: &Arc<Self>,
+        host: Arc<impl QuitHost>,
+        before_exit: impl FnOnce(),
+    ) -> QuitOutcome {
+        let outcome = self.request_quit(Arc::clone(&host));
+        if !outcome.is_held() {
+            before_exit();
+            host.exit();
+        }
+        outcome
+    }
+
     /// Answers a quit request: [`QuitOutcome::Proceed`] to let it through,
     /// [`QuitOutcome::Held`] once the gate has taken the decision over.
     ///
@@ -482,6 +501,15 @@ impl<R: tauri::Runtime> QuitHost for TauriQuitHost<R> {
 /// [`QuitGate::request_quit`].
 pub(crate) fn request_quit<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> QuitOutcome {
     gate().request_quit(TauriQuitHost::new(app.clone()))
+}
+
+/// Quits the app unless the gate holds it, running `before_exit` first. See
+/// [`QuitGate::quit_unless_held`]; the one caller is `app_lifecycle::quit_through_gate`.
+pub(crate) fn quit_unless_held<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    before_exit: impl FnOnce(),
+) -> QuitOutcome {
+    gate().quit_unless_held(TauriQuitHost::new(app.clone()), before_exit)
 }
 
 #[cfg(test)]

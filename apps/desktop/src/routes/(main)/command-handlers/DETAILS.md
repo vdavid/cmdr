@@ -21,7 +21,8 @@ The core silently no-ops these after the preamble.
 
 ## Single-source of the exempt ids
 
-`DISPATCH_EXEMPT_IDS` spreads `NATIVE_SHORTCUT_COMMAND_IDS` (family 1) and `FIXED_KEY_COMMAND_IDS` (families 2 + 3) from
+`DISPATCH_EXEMPT_IDS` spreads `APP_MENU_ONLY_COMMAND_IDS` (family 1: the Hide trio, which exists only where AppKit runs
+it; `app.quit` has a handler, Cmdr's own Quit off macOS) and `FIXED_KEY_COMMAND_IDS` (families 2 + 3) from
 `#lib/commands/command-registry`, the same lists the registry's `nativeShortcut` / `fixedKey` flags key off and the
 shortcuts editor uses to render those rows read-only, so each "who owns this key" fact lives in exactly one place. The
 `DispatchExemptId` union still lists the literals (a type can't spread a runtime tuple); `command-registry.test.ts` pins

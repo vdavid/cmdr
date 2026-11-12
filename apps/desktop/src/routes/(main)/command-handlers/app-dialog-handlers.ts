@@ -8,7 +8,7 @@
  * live in `selection-handlers`, not here.
  */
 import { openDebugLog } from '#lib/logging/open-debug-log.js'
-import { openExternalUrl } from '#lib/tauri-commands/index.js'
+import { openExternalUrl, quitApp } from '#lib/tauri-commands/index.js'
 import { openSettingsWindow } from '#lib/settings/settings-window.js'
 import { openShortcutsWindow } from '#lib/shortcuts/shortcuts-window.js'
 import { openQueueWindow } from '#lib/file-operations/queue/queue-window.js'
@@ -96,6 +96,12 @@ export const appDialogHandlers = {
 
   'askCmdr.newChat': () => {
     openNewChat()
+  },
+
+  // Reached only where no app menu owns Quit (Windows and Linux); on macOS AppKit's item runs it.
+  // Detached: the backend may hold the quit and ask, and on the way out the call never settles.
+  'app.quit': () => {
+    detached(quitApp())
   },
 
   'app.checkForUpdates': () => {

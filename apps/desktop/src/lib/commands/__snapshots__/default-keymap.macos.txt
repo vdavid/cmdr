@@ -36,6 +36,7 @@ view.zoom.set125
 view.zoom.set150	
 view.zoom.in	⌘+, ⌘=
 view.zoom.out	⌘-
+view.toggleFullScreen	
 sort.byName	⌘3, ⌘F3
 sort.byExtension	⌘4, ⌘F4
 sort.byModified	⌘5, ⌘F5

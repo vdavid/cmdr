@@ -9,6 +9,7 @@ import { getSetting, setSetting } from '#lib/settings/index.js'
 import { TEXT_SIZE_RANGE } from '#lib/settings/definitions/appearance.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import type { CommandArgs } from '#lib/commands/index.js'
+import { toggleFullScreen } from '../full-screen'
 import type { CommandHandlerRecord } from './types'
 
 /**
@@ -57,6 +58,10 @@ export const viewHandlers = {
     // `toggle_hidden_files` instead: that IPC → event → effect → DOM chain is
     // what flaked the `toggles hidden file visibility` e2e test ~1/25 runs.
     setSetting('listing.showHiddenFiles', !getSetting('listing.showHiddenFiles'))
+  },
+
+  'view.toggleFullScreen': async () => {
+    await toggleFullScreen()
   },
 
   'view.briefMode': ({ explorerRef }) => {

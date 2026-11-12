@@ -7,6 +7,8 @@ macos	view.zoom.set125
 macos	view.zoom.set150	
 macos	view.zoom.in	⌘+
 macos	view.zoom.out	⌘-
+macos	view.toggleFullScreen	
+macos	app.quit	⌘Q
 macos	app.commandPalette	⌘⇧P
 macos	app.settings	⌘,
 macos	app.checkForUpdates	
@@ -91,6 +93,8 @@ windows	view.zoom.set125
 windows	view.zoom.set150	
 windows	view.zoom.in	Ctrl++
 windows	view.zoom.out	Ctrl+-
+windows	view.toggleFullScreen	F11
+windows	app.quit	
 windows	app.commandPalette	Ctrl+Shift+P
 windows	app.settings	Ctrl+,
 windows	app.checkForUpdates	
@@ -166,6 +170,8 @@ linux	view.zoom.set125
 linux	view.zoom.set150	
 linux	view.zoom.in	Ctrl++
 linux	view.zoom.out	Ctrl+-
+linux	view.toggleFullScreen	F11
+linux	app.quit	
 linux	app.commandPalette	Ctrl+Shift+P
 linux	app.settings	Ctrl+,
 linux	app.checkForUpdates	

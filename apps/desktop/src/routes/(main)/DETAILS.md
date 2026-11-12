@@ -227,7 +227,8 @@ the answer is the same whichever road a command came in by.
   ⌘K) reached its handler behind an open dialog: the `execute-command` listener had no gate. Refusing that listener
   wholesale isn't the fix either (§ Native-menu and input-focus interactions); the per-command rule is.
 - **What runs over a dialog** is pinned in `#lib/commands/command-registry.test.ts`: the windows of their own (Settings,
-  keyboard shortcuts help, the queue), zoom, the four macOS-native commands, and MCP's `dialog.confirm`.
+  keyboard shortcuts help, the queue), zoom, full screen, Quit (the quit gate asks about work in flight, so no dialog
+  traps anyone), the Hide trio, and MCP's `dialog.confirm`.
 - **The native menu shows the same answer.** `menu-dialog-gate.svelte.ts` pushes every `BLOCKED_BY_DIALOGS` command to
   Rust while something is open, which greys those items out, and makes the two check items (show hidden files, the view
   modes) revert a refused click: they toggle themselves before the frontend hears of it, and show hidden never passes

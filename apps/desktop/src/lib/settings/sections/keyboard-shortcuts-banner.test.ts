@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect, onTestFinished } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import type { Command } from '#lib/commands/types.js'
 import { BLOCKED_BY_DIALOGS } from '#lib/commands/while-dialog-open.js'
 import { sameOnAll } from '#lib/commands/platform-shortcuts.js'
@@ -28,6 +29,9 @@ function cmd(partial: { id: string; name?: string; nativeShortcut?: true; fixedK
 }
 
 describe('classifyConflict', () => {
+  // A native command owns its key only where the OS has an app menu (macOS).
+  beforeEach(() => withCapabilities('appMenu'))
+
   it('returns null for an empty conflict set', () => {
     expect(classifyConflict([])).toBeNull()
   })
@@ -51,6 +55,12 @@ describe('classifyConflict', () => {
     ])
     expect(result).toMatchObject({ kind: 'native', command: { id: 'app.hide' } })
   })
+
+  it('treats Quit as an ordinary command where no app menu owns it, so nothing claims a macOS reservation', () => {
+    onTestFinished(withCapabilities())
+    const result = classifyConflict([cmd({ id: 'app.quit', name: 'Quit Cmdr', nativeShortcut: true })])
+    expect(result).toMatchObject({ kind: 'normal', command: { id: 'app.quit' } })
+  })
 })
 
 describe('reservedByMacOsMessage', () => {
@@ -61,6 +71,8 @@ describe('reservedByMacOsMessage', () => {
 })
 
 describe('classifyConflict (fixed-key)', () => {
+  beforeEach(() => withCapabilities('appMenu'))
+
   it('classifies a fixed-key conflict as fixed', () => {
     const result = classifyConflict([cmd({ id: 'nav.up', name: 'Select previous file', fixedKey: true })])
     expect(result).toMatchObject({ kind: 'fixed', command: { id: 'nav.up' } })

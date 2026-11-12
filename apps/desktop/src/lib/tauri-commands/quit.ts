@@ -21,6 +21,13 @@ export async function quitCancel(): Promise<QuitAnswer> {
   return commands.quitCancel()
 }
 
+/** Cmdr's own Quit, where no app menu owns it (Windows and Linux): the same backend path closing
+ *  the main window takes, so with work in flight the quit gate asks first. ❌ Never `exit()` from
+ *  `@tauri-apps/plugin-process`: it skips the gate. The promise may never settle: the app is exiting. */
+export async function quitApp(): Promise<void> {
+  await commands.quitApp()
+}
+
 /** Quit and open Cmdr again (the update toast's Restart, onboarding's "Restart Cmdr"). The
  *  quit goes through the gate like ⌘Q, so with work in flight the person is asked first. ❌ Never
  *  `relaunch()` from `@tauri-apps/plugin-process`: on macOS its `open -n` leaves a second Dock

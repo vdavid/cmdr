@@ -43,12 +43,14 @@ backend says what exists, and a surface asks for exactly the thing it needs.
   `localNetworkPermission` (a TCC prompt; Windows' firewall prompt is its own thing), `localAi` (the bundled
   llama-server is the macOS ARM64 build; the backend's `is_local_ai_supported` narrows it on the machine, so an Intel
   Mac still sees the option greyed out), `safeSaveFiles` (only NSDocument writes `.sb-` files), `appBundles` (no
-  LaunchServices elsewhere; `cmdr-fs`'s `folder_names_make_packages` is the backend's matching per-OS fact),
-  `fullScreen` (no way into full screen off macOS yet; flips on per OS with a native F11 entry), and `homebrewCask` (the
-  macOS distribution). `globalShortcuts` is `true` on macOS and Windows (`RegisterHotKey`) and, on Linux, only on an X11
-  session, read once at startup (`XDG_SESSION_TYPE`, else `WAYLAND_DISPLAY` unset): `global-hotkey` grabs keys through
-  X11 only, so on Wayland the grab fires only inside XWayland windows. The backend asks it too before registering the
-  hotkey (`downloads/runtime.rs`).
+  LaunchServices elsewhere; `cmdr-fs`'s `folder_names_make_packages` is the backend's matching per-OS fact), `appMenu`
+  (an OS app menu that owns Quit, Hide, Hide others, and Show all: off macOS the Hide trio doesn't exist and Quit is
+  Cmdr's own command, `lib/commands/DETAILS.md`), and `homebrewCask` (the macOS distribution). `fullScreen` is `true` on
+  all three (`view.toggleFullScreen`, F11 off macOS), which brings the Escape-exits-full-screen setting and its hint
+  everywhere. `globalShortcuts` is `true` on macOS and Windows (`RegisterHotKey`) and, on Linux, only on an X11 session,
+  read once at startup (`XDG_SESSION_TYPE`, else `WAYLAND_DISPLAY` unset): `global-hotkey` grabs keys through X11 only,
+  so on Wayland the grab fires only inside XWayland windows. The backend asks it too before registering the hotkey
+  (`downloads/runtime.rs`).
 - **Decision/Why: `homebrewCask` is a capability, though it's a distribution fact.** It fits "named after the UI that
   asks" poorly and will want siblings (winget, Flathub) once those channels exist; the alternative was one
   `distribution_note` line shown everywhere, with a branch per OS. Kept as a capability because only macOS has a channel

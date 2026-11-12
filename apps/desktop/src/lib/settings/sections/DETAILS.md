@@ -491,14 +491,15 @@ more state than the race is worth. Revisit only if it shows up in practice.
 
 ## macOS-native and fixed-key rows are read-only
 
-The four `nativeShortcut` commands (`app.quit`/`hide`/`hideOthers`/`showAll`) render read-only: their combos show as
-plain read-only `ShortcutPill`s (`.shortcut-pill.static` spans) (no click-to-edit), with no `+` add, no `×` remove, no
-reset button, and never the add slot. Each native row also carries a small "macOS" badge (`.readonly-badge`) with a
-tooltip: "macOS handles this shortcut. Cmdr can't change it." (`Show all` has no default binding, so it renders its
-`(none)` unframed plus the badge.) The branch is keyed off `isNativeShortcutCommand(command.id)` from `#lib/shortcuts`.
-This is honest: AppKit owns both the behavior and the accelerator (see `lib/shortcuts/DETAILS.md` § "macOS-native
-commands are not customizable"), so an editable control here would be a double illusion. The store also refuses these
-writes as defense in depth, so the UI and the store agree.
+Where an app menu owns them (macOS), the four `nativeShortcut` commands (`app.quit`/`hide`/`hideOthers`/`showAll`)
+render read-only; on Windows and Linux the Hide trio isn't listed and Quit is an ordinary, editable row, and nothing
+claims a macOS reservation. Read-only rows show their combos as plain read-only `ShortcutPill`s (`.shortcut-pill.static`
+spans) (no click-to-edit), with no `+` add, no `×` remove, no reset button, and never the add slot. Each native row also
+carries a small "macOS" badge (`.readonly-badge`) with a tooltip: "macOS handles this shortcut. Cmdr can't change it."
+(`Show all` has no default binding, so it renders its `(none)` unframed plus the badge.) The branch is keyed off
+`isNativeShortcutCommand(command.id)` from `#lib/shortcuts`. This is honest: AppKit owns both the behavior and the
+accelerator (see `lib/shortcuts/DETAILS.md` § "macOS-native commands are not customizable"), so an editable control here
+would be a double illusion. The store also refuses these writes as defense in depth, so the UI and the store agree.
 
 The `FIXED_KEY_COMMAND_IDS` rows (nav arrows, palette navigation, modal Enter/Escape — `isFixedKeyCommand(command.id)`)
 get the same read-only treatment with a "Fixed" badge ("This key is built into Cmdr and can't be changed.") and share
@@ -512,8 +513,8 @@ captured combo that collides with a fixed key as non-resolvable (Cancel only, vi
 `handleKeyCapture` classifies the captured combo's conflicts via the pure `classifyConflict`
 (`keyboard-shortcuts-banner.ts`):
 
-- If the conflict set includes a `nativeShortcut` command (even in a MIXED set with a normal command — the native wins,
-  because the combo is unusable regardless), the banner reads
+- If the conflict set includes a command the app menu owns on this OS (`ownedByAppMenu`, so macOS only; even in a MIXED
+  set with a normal command — the native wins, because the combo is unusable regardless), the banner reads
   `⌘H is reserved by macOS (Hide Cmdr) and won't reach Cmdr. Pick a different combo.` (`reservedByMacOsMessage`) and
   offers ONLY Cancel. No "Remove from other" (removing Cmdr's binding doesn't free the OS accelerator) and no "Keep
   both" (the user's binding would never fire) — both would be a lie.

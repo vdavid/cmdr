@@ -9,6 +9,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
   commands: {
     quitConfirm: vi.fn(),
     quitCancel: vi.fn(),
+    quitApp: vi.fn(),
   },
   events: {
     quitRequested: { listen: vi.fn() },
@@ -17,7 +18,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
 }))
 
 import { commands, events } from '#lib/ipc/bindings.js'
-import { quitConfirm, quitCancel, onQuitRequested, onQuitCalledOff } from './quit'
+import { quitConfirm, quitCancel, quitApp, onQuitRequested, onQuitCalledOff } from './quit'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -28,6 +29,12 @@ describe('quit-gate wrappers', () => {
     await quitConfirm()
     expect(commands.quitConfirm).toHaveBeenCalledOnce()
     expect(commands.quitCancel).not.toHaveBeenCalled()
+  })
+
+  it('quitApp asks the backend to quit through the gate, answering nothing itself', async () => {
+    await quitApp()
+    expect(commands.quitApp).toHaveBeenCalledOnce()
+    expect(commands.quitConfirm).not.toHaveBeenCalled()
   })
 
   it('quitCancel calls the quit off', async () => {

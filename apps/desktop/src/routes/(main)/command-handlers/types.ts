@@ -10,7 +10,7 @@
  * neither, so the graph stays acyclic for the `import-cycles` check.
  */
 import type { CommandId, CommandArgs } from '#lib/commands/index.js'
-import { FIXED_KEY_COMMAND_IDS, NATIVE_SHORTCUT_COMMAND_IDS } from '#lib/commands/command-registry.js'
+import { APP_MENU_ONLY_COMMAND_IDS, FIXED_KEY_COMMAND_IDS } from '#lib/commands/command-registry.js'
 import { VIEWER_KEY_COMMAND_IDS } from '#lib/commands/sources/viewer-window.js'
 import type { CommandDispatchContext } from '../command-dispatch-context'
 import type { ExplorerAPI } from '../explorer-api'
@@ -25,10 +25,10 @@ import type { ExplorerAPI } from '../explorer-api'
  * record entry (compile error until added) or an explicit exemption here.
  */
 export type DispatchExemptId =
-  // Family 1 — Native-menu-owned. macOS PredefinedMenuItems (terminate:, hide:,
-  // hideOtherApplications:, unhideAllApplications:) run these via native selectors.
-  // A JS handler would double-fire alongside the native one (registry § Decision).
-  | 'app.quit'
+  // Family 1 — App-menu-only. They exist only where the OS has an app menu (macOS), whose
+  // PredefinedMenuItems (hide:, hideOtherApplications:, unhideAllApplications:) run them via
+  // native selectors, so no JS handler ever does. `app.quit` isn't here: off macOS it's Cmdr's
+  // own command, and on macOS `ownedByAppMenu` keeps it out of the dispatch map.
   | 'app.hide'
   | 'app.hideOthers'
   | 'app.showAll'
@@ -129,10 +129,9 @@ export type DispatchExemptId =
  * member that drifts out of the union fails to compile.
  */
 export const DISPATCH_EXEMPT_IDS = [
-  // Family 1 — Native-menu-owned. Sourced from the registry's
-  // `NATIVE_SHORTCUT_COMMAND_IDS` (the same list the `nativeShortcut` flag is
-  // keyed to), so the "AppKit owns this" fact lives in exactly one place.
-  ...NATIVE_SHORTCUT_COMMAND_IDS,
+  // Family 1 — App-menu-only. Sourced from the registry's `APP_MENU_ONLY_COMMAND_IDS`
+  // (the native commands that need `appMenu`), so the fact lives in exactly one place.
+  ...APP_MENU_ONLY_COMMAND_IDS,
   // Families 2 + 3 — fixed-key commands. Sourced from the registry's
   // `FIXED_KEY_COMMAND_IDS` (the same list the `fixedKey` flag is keyed to), so
   // the "this key is hardcoded in its component" fact lives in exactly one place.

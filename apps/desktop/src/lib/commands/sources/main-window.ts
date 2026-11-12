@@ -193,6 +193,17 @@ export const mainWindowCommands: CommandSource[] = [
     shortcuts: cmdOrCtrl('⌘-'),
     whileDialogOpen: ZOOM_SCALES_APP,
   },
+  {
+    id: 'view.toggleFullScreen',
+    nameKey: 'commands.viewToggleFullScreen.label',
+    scope: 'Main window',
+    showInPalette: true,
+    // `F11` is Explorer's and every browser's key. macOS binds nothing: AppKit's own View menu item
+    // keeps its key there (`docs/notes/windows-port/keymap-decisions.md`).
+    shortcuts: { macos: [], windows: ['F11'], linux: ['F11'] },
+    whileDialogOpen: runsOverDialogs('Changes the window, not anything in it, so the dialog stays up and untouched.'),
+    needsCapability: 'fullScreen',
+  },
 
   // ============================================================================
   // Main window - Sort commands (also accessible via menu)

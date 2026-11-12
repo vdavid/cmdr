@@ -50,6 +50,7 @@ export const NO_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({
   textEditorChoice: false,
   cloudFileActions: false,
   colorTags: false,
+  appMenu: false,
   servicesMenu: false,
   fullDiskAccess: false,
   finderExtension: false,

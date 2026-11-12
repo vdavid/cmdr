@@ -209,6 +209,45 @@ fn a_settled_operation_never_holds_the_quit() {
     }
 }
 
+/// Closing the main window and Cmdr's own Quit command share one path
+/// (`app_lifecycle::quit_through_gate`). While the gate holds, nothing is torn
+/// down and nothing exits: the window must stay open for the prompt, and a
+/// "Keep working" has to find AI, MCP, and mDNS still running.
+#[test]
+fn quitting_unless_held_does_nothing_more_while_the_gate_holds() {
+    let host = RecordingHost::with(vec![operation(WriteOperationType::Copy, LifecycleStatus::Running)]);
+    let gate = gate(Duration::from_secs(600), Duration::from_millis(50));
+    let stopped = AtomicUsize::new(0);
+
+    let outcome = gate.quit_unless_held(Arc::clone(&host), || {
+        stopped.fetch_add(1, Ordering::SeqCst);
+    });
+
+    assert!(outcome.is_held());
+    assert_eq!(host.announcements().len(), 1, "the gate asks the user");
+    assert_eq!(stopped.load(Ordering::SeqCst), 0, "nothing stops before the answer");
+    assert!(host.calls().is_empty(), "the app stays while the gate asks");
+}
+
+#[test]
+fn quitting_unless_held_stops_the_services_then_exits_when_nothing_holds_it() {
+    let host = RecordingHost::with(vec![]);
+    let gate = gate(Duration::from_secs(600), Duration::from_millis(50));
+    let exited_when_stopping = Mutex::new(None);
+
+    let outcome = gate.quit_unless_held(Arc::clone(&host), || {
+        *exited_when_stopping.lock_ignore_poison() = Some(host.has_exited());
+    });
+
+    assert!(!outcome.is_held());
+    assert_eq!(
+        *exited_when_stopping.lock_ignore_poison(),
+        Some(false),
+        "the services stop, once, before the exit"
+    );
+    assert_eq!(host.calls(), vec![Call::Exit]);
+}
+
 #[test]
 fn the_deadline_fires_when_the_frontend_never_answers() {
     // The wedged-webview case: nobody calls `quit_confirm` or `quit_cancel`, and

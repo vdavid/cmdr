@@ -48,13 +48,13 @@ use crate::ids::{
     HELP_ACCESSIBILITY_ID, HELP_DEBUG_LOG_ID, HELP_MENU_ID, HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID,
     HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, INVERT_SELECTION_ID, MULTI_RENAME_ID, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
     OPEN_ONBOARDING_ID, OPEN_TERMINAL_HERE_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID,
-    QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SELECT_MENU_ID,
-    SELECT_SAME_KIND_ID, SERVERS_CONNECT_ID, SERVERS_SHOW_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID,
-    SORT_ASCENDING_ID, SORT_BY_ADDED_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MENU_ID,
+    QUICK_LOOK_ID, QUIT_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID,
+    SELECT_MENU_ID, SELECT_SAME_KIND_ID, SERVERS_CONNECT_ID, SERVERS_SHOW_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID,
+    SHOW_IN_FINDER_ID, SORT_ASCENDING_ID, SORT_BY_ADDED_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MENU_ID,
     SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID,
-    SWITCH_PANE_ID, TAB_MENU_ID, UNDO_TRASH_ID, VIEW_MENU_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
-    VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEW_ZOOM_75_ID, VIEW_ZOOM_100_ID, VIEW_ZOOM_125_ID,
-    VIEW_ZOOM_150_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID, WINDOW_MENU_ID,
+    SWITCH_PANE_ID, TAB_MENU_ID, UNDO_TRASH_ID, VIEW_FULL_SCREEN_ID, VIEW_MENU_ID, VIEW_MODE_BRIEF_LEFT_ID,
+    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEW_ZOOM_75_ID, VIEW_ZOOM_100_ID,
+    VIEW_ZOOM_125_ID, VIEW_ZOOM_150_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID, WINDOW_MENU_ID,
 };
 use crate::spec::SortCheck::{self, Column, Order};
 use crate::spec::ViewMode;
@@ -292,6 +292,11 @@ pub const MENU_BAR: &[BarMenu] = &[
             // can, so the menu fires. Plain Space was dead, eaten by the webview's selection toggle
             // before AppKit's menu dispatcher saw it.
             macos_only(item(QUICK_LOOK_ID, "menu.file.quickLook", macos("Shift+Space"))),
+            // macOS quits from its app menu. Windows and Linux end the File menu with it, and bind no
+            // key, shown or registered: `Alt+F4` closes the window through the quit gate there, and
+            // the Windows menu model is still to be decided.
+            windows_and_linux(SEPARATOR),
+            windows_and_linux(item(QUIT_ID, "menu.file.quit", NONE)),
         ],
     ),
     menu(
@@ -485,6 +490,10 @@ pub const MENU_BAR: &[BarMenu] = &[
                     item(VIEW_ZOOM_OUT_ID, "menu.zoom.out", macos("Cmd+Minus")).untracked(),
                 ],
             ),
+            // macOS has no Cmdr row: AppKit adds its own full-screen item to the View menu, with its
+            // own key. F11 is shown, not registered: GTK takes a bare F-key before the webview, so the
+            // frontend's keydown dispatch runs it.
+            windows_and_linux(displayed_item(VIEW_FULL_SCREEN_ID, "menu.view.fullScreen", "F11")),
             SEPARATOR,
             // Tab conflicts with GTK's own keyboard navigation, so Linux leaves it to JS dispatch.
             item(SWITCH_PANE_ID, "menu.view.switchPane", macos("Tab")),

@@ -53,9 +53,11 @@ shortcuts:
 ### macOS-native commands are not customizable
 
 The four `nativeShortcut` commands (`app.quit`/`hide`/`hideOthers`/`showAll`, exported as `NATIVE_SHORTCUT_COMMAND_IDS`
-from `#lib/commands/command-registry`) are macOS `PredefinedMenuItem`s: AppKit owns BOTH the behavior and the
-accelerator, so any persisted customization is a pure illusion (it can't disable the OS accelerator and dispatches into
-a void). The store enforces this at its boundary, the real seam for MCP events and any future caller:
+from `#lib/commands/command-registry`) are macOS `PredefinedMenuItem`s where the OS has an app menu (`ownedByAppMenu`):
+AppKit owns BOTH the behavior and the accelerator, so any persisted customization is a pure illusion (it can't disable
+the OS accelerator and dispatches into a void). The answer is per OS and asked at call time: on Windows and Linux the
+Hide trio doesn't exist and Quit is an ordinary command, so its saved customization loads and the editor rebinds it. The
+store enforces this at its boundary, the real seam for MCP events and any future caller:
 
 - **Load drops them.** `initializeShortcuts` skips any persisted `shortcut:<native id>` entry (David's dev
   `shortcuts.json` carries `app.hide: []` from testing). Not loading it means the map has no entry, the registry default

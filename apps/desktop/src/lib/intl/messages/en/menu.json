@@ -159,6 +159,10 @@
   "@menu.file.getInfo": {
     "description": "VERB phrase (imperative). Opens the macOS Get Info panel for the selected file: size, kind, dates, permissions (⌘I). This is Finder's File > Get Info; use the exact wording your macOS Finder uses in this language. No dialog input follows, hence no ellipsis."
   },
+  "menu.file.quit": "{platform, select, windows {Exit Cmdr} other {Quit Cmdr}}",
+  "@menu.file.quit": {
+    "description": "VERB. Last item of the File menu on Windows and Linux, which have no app menu; ends Cmdr, asking first if a copy or move is still running. The Windows branch says Exit, Windows' own name for it (File > Exit); the other branch is Linux's Quit. \"Cmdr\" is the app name and must stay verbatim, capital C included. macOS uses menu.app.quit in its app menu instead."
+  },
   "menu.file.quickLook": "Quick look",
   "@menu.file.quickLook": {
     "description": "Opens macOS's Quick Look preview of the selected file (⇧Space). ❗ Quick Look is an Apple FEATURE name that Apple DOES localize (French \"Coup d'œil\", German \"Übersicht\", Spanish \"Vista rápida\"), so use whatever your macOS calls it rather than keeping the English. Look it up in your Finder's File menu."
@@ -303,6 +307,10 @@
   "menu.view.calculateFolderSizes": "Calculate folder sizes",
   "@menu.view.calculateFolderSizes": {
     "description": "View menu item (Alt+Shift+Enter): shows the total size of every folder in the focused file list that doesn't have one yet."
+  },
+  "menu.view.fullScreen": "Full screen",
+  "@menu.view.fullScreen": {
+    "description": "View menu item on Windows and Linux (F11) that puts the main window into full screen, filling the whole display, or takes it back out. macOS has no such row: AppKit adds its own. Use the term Windows' File Explorer and the browsers use in this language (Edge and Chrome: \"Full screen\")."
   },
   "menu.view.commandPalette": "Command palette…",
   "@menu.view.commandPalette": {

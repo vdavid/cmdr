@@ -133,6 +133,9 @@ export const COMMAND_IDS = [
   'view.zoom.in',
   'view.zoom.out',
 
+  // Full screen
+  'view.toggleFullScreen',
+
   // Sort commands
   'sort.byName',
   'sort.byExtension',

@@ -9,6 +9,7 @@ import type { Payload } from './answer-types.js'
 import type { DemoBackend, EventTarget } from './backend.js'
 import { installColorScheme } from './color-scheme.js'
 import { installDragRegions } from './drag-regions.js'
+import { isBrowserFullScreen, setBrowserFullScreen } from './browser-full-screen.js'
 import { installPlatform } from './platform.js'
 
 /** A listener's target, as `@tauri-apps/api/event`'s `listen` sends it. */
@@ -29,7 +30,7 @@ function overTheWire<T>(value: T): T {
 }
 
 /** Commands about this webview's own window: the frame's viewport stands in for it. */
-function windowAnswer(cmd: string): (() => unknown) | undefined {
+function windowAnswer(cmd: string, payload: Payload): (() => unknown) | undefined {
   const physical = () => ({
     width: Math.round(window.innerWidth * window.devicePixelRatio),
     height: Math.round(window.innerHeight * window.devicePixelRatio),
@@ -38,7 +39,13 @@ function windowAnswer(cmd: string): (() => unknown) | undefined {
     'plugin:window|outer_size': physical,
     'plugin:window|inner_size': physical,
     'plugin:window|scale_factor': () => window.devicePixelRatio,
-    'plugin:window|is_fullscreen': () => false,
+    // The browser's full screen stands in for the window's, so Toggle full screen and Escape's
+    // exit drive it (where the page may; a refusal answers like a done call).
+    'plugin:window|is_fullscreen': isBrowserFullScreen,
+    'plugin:window|set_fullscreen': async () => {
+      await setBrowserFullScreen(payload.value === true)
+      return null
+    },
     'plugin:window|is_maximized': () => false,
     'plugin:window|is_focused': () => document.hasFocus(),
     'plugin:window|is_visible': () => true,
@@ -108,7 +115,7 @@ export function installWebview(
     }
     // A question about ANOTHER window (main asking for the Settings window's size) goes to the
     // backend, which knows the panels; only this frame can answer for itself.
-    const own = payload.label === undefined || payload.label === label ? windowAnswer(cmd) : undefined
+    const own = payload.label === undefined || payload.label === label ? windowAnswer(cmd, payload) : undefined
     if (own) return own()
     return overTheWire(await backend.invoke(cmd, overTheWire(payload), { label, pointer: lastPointer }))
   }

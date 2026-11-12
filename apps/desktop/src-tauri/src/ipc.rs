@@ -486,6 +486,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::whats_new::get_security_advisories,
                     crate::quit::commands::quit_confirm,
                     crate::quit::commands::quit_cancel,
+                    crate::quit::commands::quit_app,
                     crate::quit::commands::relaunch_app,
                     crate::commands::operation_log::get_recent_operation_log_entries,
                     crate::commands::operation_log::get_operation_log_detail,

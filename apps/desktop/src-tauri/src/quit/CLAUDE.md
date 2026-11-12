@@ -7,7 +7,8 @@ stops everything and exits inside a hard budget.
 
 - `mod.rs`: `QuitGate` (phase machine + deadline thread), `blocks_quit` (the policy), `tear_down_and_exit` (the
   ordering), `TauriQuitHost` (the real outside world), the `quit-requested` and `quit-called-off` events.
-- `commands.rs`: `quit_confirm` / `quit_cancel`, both thin, both returning the gate's `QuitAnswer`; `relaunch_app`.
+- `commands.rs`: `quit_confirm` / `quit_cancel`, both thin, both returning the gate's `QuitAnswer`; `relaunch_app`;
+  `quit_app` (Cmdr's own Quit where no app menu owns it: Windows and Linux).
 - `relaunch.rs`: Restart (update toast, onboarding): quit, then a detached waiter reopens the bundle.
 - Frontend counterpart: `apps/desktop/src/lib/quit/CLAUDE.md`. MCP surface (the `quit` tool and the two answers):
   `../tools/actions/quit.rs`.
@@ -21,7 +22,8 @@ stops everything and exits inside a hard budget.
   firing when other things are stuck.
 - **Every entry point routes here** (`app_lifecycle.rs`): `RunEvent::ExitRequested` (⌘Q, menu, dock, logout, every
   `AppHandle::exit`) and the main window's `CloseRequested`, which must `api.prevent_close()` when the gate holds — a
-  closed main window takes the dialog with it. ❌ Don't tear down AI / MCP / mDNS before asking: a "Keep working" leaves
+  closed main window takes the dialog with it. `CloseRequested` and the `quit_app` command share ONE function,
+  `app_lifecycle::quit_through_gate` (`QuitGate::quit_unless_held`), ❌ never a second exit path. ❌ Don't tear down AI / MCP / mDNS before asking: a "Keep working" leaves
   the app running. **❌ Never `AppHandle::exit` past the gate**: the MCP `quit` tool did, so an agent killed a running
   transfer with no prompt where ⌘Q asks.
 - **`confirm` / `cancel` report what they DID** (`QuitAnswer`), because an answer can arrive after the deadline claimed

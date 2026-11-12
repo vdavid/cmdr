@@ -286,6 +286,11 @@
     "description": "Command name that decreases the UI text size by one step. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "commands.viewToggleFullScreen.label": "Toggle full screen",
+  "@commands.viewToggleFullScreen.label": {
+    "description": "Command name that puts the main window into full screen (filling the whole display, no title bar or taskbar), or takes it back out. Appears in the command palette and the keyboard-shortcuts list. Use the OS's own term for full screen in this language (macOS's \"Enter Full Screen\", Windows' and the browsers' \"Full screen\"); \"Toggle\" matches the other on/off commands such as commands.viewShowHidden.label.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
   "commands.sortByName.label": "Sort by name",
   "@commands.sortByName.label": {
     "description": "Command name that sorts the file list by file name. Appears in the command palette.",

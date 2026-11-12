@@ -14,7 +14,7 @@ interface Command {
   scope: CommandScope // hierarchical, display-only (does not enforce routing)
   showInPalette: boolean
   shortcuts: PlatformShortcuts // { macos, windows, linux }, each in that OS's spelling (platform-shortcuts.ts)
-  nativeShortcut?: true // macOS owns behavior AND accelerator (PredefinedMenuItem); read-only in the editor
+  nativeShortcut?: true // the app menu owns behavior AND accelerator where there is one (`ownedByAppMenu`)
   fixedKey?: true // key hardcoded in the owning component, never reads the store; read-only in the editor
   status?: 'alpha' | 'beta' // stability badge in the palette row; derive via getBadgeStatus() from #lib/feature-status
   description?: string
@@ -331,12 +331,21 @@ other way, `on_menu_event` → `settings-changed` → the `listener-setup.ts` li
 - **`scope` is documentation-only.** Centralized scope enforcement would require the command module to know all UI
   state. Scope exists for conflict detection in the shortcuts system and for Settings display; dispatch is each
   component's keydown handler or the centralized dispatch map.
-- **`showInPalette: false` AND `nativeShortcut: true` for native macOS commands.** They're handled by macOS via
-  `PredefinedMenuItems` with native selectors (`terminate:`, `hide:`, …); the native accelerators handle the keyboard
-  shortcuts. Including them in the JS dispatch map would double-execute. AppKit owns both behavior and accelerator, so
-  Cmdr can neither rebind nor intercept them. `nativeShortcut: true` (on `NATIVE_SHORTCUT_COMMAND_IDS`) makes the editor
-  render these rows read-only and the store refuse to write them; `DISPATCH_EXEMPT_IDS` sources its Family-1 list from
-  the same constant.
+- **`nativeShortcut: true` for the app menu's four, and "native" is a per-OS fact.** Where the OS has an app menu
+  (`appMenu`, macOS), they're handled by `PredefinedMenuItems` with native selectors (`terminate:`, `hide:`, …), and the
+  native accelerators handle their keys; including them in the JS dispatch map would double-execute, and Cmdr can
+  neither rebind nor intercept them. `ownedByAppMenu(command)` (`command-registry.ts`) is the one place that decides it:
+  `resolveCommand` makes a native command's `showInPalette` a getter on it (the dispatch map takes the palette's
+  commands), and the store's `isNativeShortcutCommand` (the read-only editor rows, the mutators' refusal, the load-time
+  drop, the conflict banner) asks it. Without an app menu, `app.hide` / `app.hideOthers` / `app.showAll` don't exist
+  (`needsCapability: 'appMenu'`, `APP_MENU_ONLY_COMMAND_IDS`, which `DISPATCH_EXEMPT_IDS` sources its Family-1 list
+  from), and `app.quit` is an ordinary, rebindable command with no default key whose handler calls the backend's
+  `quit_app`: the same path closing the main window takes, through the quit gate (`src-tauri/src/quit/CLAUDE.md`). Why a
+  capability, not `isMacOS()`: it names the surface (an app menu that owns these), and the per-OS fixture pins it to the
+  Rust arms.
+- **`view.toggleFullScreen` exists on every OS that offers full screen (`fullScreen`)**, with `F11` on Windows and Linux
+  and no key on macOS, where AppKit's own View menu item keeps its key and its place (so the bar has no Cmdr row there).
+  It calls the window's own `setFullscreen`, the same native full screen `escape-key.ts` leaves.
 - **uFuzzy over Fuse.js / fzf-for-js.** uFuzzy is optimized for short query phrases against short-to-medium phrases,
   pure TypeScript with no dependencies, handles typos, and returns match ranges for highlighting. Fuse.js is heavier and
   slower at this scale.

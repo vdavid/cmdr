@@ -8,12 +8,7 @@ import {
   getRestrictedWindowShortcuts,
   updateMenuAccelerator as updateMenuAcceleratorCommand,
 } from '#lib/tauri-commands/index.js'
-import {
-  commands,
-  defaultShortcuts,
-  FIXED_KEY_COMMAND_IDS,
-  NATIVE_SHORTCUT_COMMAND_IDS,
-} from '#lib/commands/command-registry.js'
+import { commands, defaultShortcuts, FIXED_KEY_COMMAND_IDS, ownedByAppMenu } from '#lib/commands/command-registry.js'
 import { resolveStorePath } from '#lib/settings/store-path.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { pluralize } from '#lib/utils/pluralize.js'
@@ -246,8 +241,8 @@ async function readRestrictedSnapshot(): Promise<[string, unknown][]> {
 
 /** Loads one persisted customization into the map, healed. Both init paths come through here. */
 function seedCustomShortcut(commandId: string, shortcuts: unknown): void {
-  // Drop any persisted customization for a macOS-native command. AppKit owns
-  // these accelerators, so the entry is a no-op illusion (David's dev
+  // Drop any persisted customization for a command the app menu owns on this OS
+  // (macOS). AppKit owns these accelerators, so the entry is a no-op illusion (David's dev
   // shortcuts.json carries `app.hide: []` from testing). Not loading it leaves
   // the map without an entry, so the registry default applies, and
   // `writeBackHealedEntries` deletes the stale disk key.
@@ -296,6 +291,10 @@ export const menuCommands = [
   'view.zoom.set150',
   'view.zoom.in',
   'view.zoom.out',
+  // View > Full screen (Windows and Linux; macOS's is AppKit's own item, so nothing syncs there)
+  'view.toggleFullScreen',
+  // File > Quit / Exit Cmdr (Windows and Linux; macOS quits from AppKit's app menu)
+  'app.quit',
   // App-level
   'app.commandPalette',
   'app.settings',
@@ -422,11 +421,6 @@ async function migrateShortcuts(store: Store, fromVersion: number): Promise<void
 // Core API
 // ============================================================================
 
-// Fast-lookup set for the macOS-native commands. AppKit owns both their behavior
-// and accelerator (PredefinedMenuItems), so a persisted customization is a pure
-// illusion: it can't disable the OS accelerator and can't dispatch anything.
-const nativeShortcutIds = new Set<string>(NATIVE_SHORTCUT_COMMAND_IDS)
-
 // Fast-lookup set for the fixed-key commands. Their keys are hardcoded in the
 // owning component's keydown handler and never consult this store, so a
 // customization would be a no-op illusion (new key dead, built-in key still live).
@@ -442,11 +436,18 @@ export function isFixedKeyCommand(commandId: string): boolean {
 }
 
 /**
- * Whether macOS owns this command's shortcut outright (Family-1 native command).
- * The editor renders these read-only; the mutators below refuse to write them.
+ * Whether the OS's app menu owns this command's shortcut outright on this OS
+ * (`ownedByAppMenu`: one of the four native commands, on macOS). AppKit owns both
+ * the behavior and the accelerator there (PredefinedMenuItems), so a customization
+ * would be a pure illusion: the editor renders these read-only, the mutators below
+ * refuse to write them, and a saved one is dropped at load. Off macOS Quit is an
+ * ordinary, rebindable command.
  */
+const commandById = new Map<string, (typeof commands)[number]>(commands.map((command) => [command.id, command]))
+
 export function isNativeShortcutCommand(commandId: string): boolean {
-  return nativeShortcutIds.has(commandId)
+  const command = commandById.get(commandId)
+  return command !== undefined && ownedByAppMenu(command)
 }
 
 /**

@@ -4,7 +4,7 @@
  * When a captured combo conflicts, the banner's shape depends on WHAT it
  * conflicts with:
  *
- * - A conflict set that includes a macOS-native command (`nativeShortcut`) is
+ * - A conflict set that includes a command the app menu owns (`ownedByAppMenu`, macOS only) is
  *   unusable no matter what the user picks: AppKit owns the combo, so it can't
  *   reach Cmdr. The banner says so and offers only Cancel — no "Remove from
  *   other" (a lie: removing Cmdr's binding doesn't free the OS accelerator) and
@@ -14,6 +14,7 @@
  * - A purely non-native conflict keeps the existing resolvable banner
  *   (Remove-from-other / Keep-both / Cancel).
  */
+import { ownedByAppMenu } from '#lib/commands/command-registry.js'
 import type { Command } from '#lib/commands/types.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { tString } from '#lib/intl/messages.svelte.js'
@@ -51,7 +52,7 @@ export type ConflictKind = NativeConflict | FixedConflict | SystemConflict | Nor
  */
 export function classifyConflict(conflicts: Command[]): ConflictKind | null {
   if (conflicts.length === 0) return null
-  const native = conflicts.find((c) => c.nativeShortcut)
+  const native = conflicts.find(ownedByAppMenu)
   if (native) return { kind: 'native', command: native }
   // A fixed-key command's binding can't be removed ("Remove from other" would be
   // refused by the store) and always keeps firing ("Keep both" would race it), so

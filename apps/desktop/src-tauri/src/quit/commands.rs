@@ -25,6 +25,18 @@ pub fn relaunch_app(app: tauri::AppHandle) {
     super::relaunch::relaunch(&app);
 }
 
+/// Cmdr's own Quit command (the palette, the File menu, a key the user bound), where no app menu
+/// owns Quit (Windows and Linux). The same path closing the main window takes
+/// (`app_lifecycle::quit_through_gate`): with work in flight the gate asks, else the app exits.
+/// macOS never calls it: AppKit's Quit item reaches the gate through `ExitRequested`.
+#[tauri::command]
+#[specta::specta]
+pub fn quit_app(app: tauri::AppHandle) {
+    // The outcome isn't the caller's to act on: a held quit is the gate's to finish (it shows the
+    // prompt and exits on the answer or its deadline), and a proceeding one ends the process.
+    let _ = crate::app_lifecycle::quit_through_gate(&app);
+}
+
 /// The user pressed "Keep working". Releases the gate and **removes** the
 /// countdown; it is not a snooze.
 #[tauri::command]

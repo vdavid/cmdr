@@ -1,7 +1,9 @@
 import { describe, it, expect, onTestFinished } from 'vitest'
-import { withCapabilities, withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities, withCapabilitiesPossibleOn, withPlatform } from '#lib/platform/test-platform.js'
 import {
+  APP_MENU_ONLY_COMMAND_IDS,
   commands,
+  ownedByAppMenu,
   commandOffered,
   defaultShortcuts,
   getPaletteCommands,
@@ -25,6 +27,8 @@ import { DISPATCH_EXEMPT_IDS } from '../../routes/(main)/command-handlers/types'
  * user can pick from the palette.
  */
 const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
+  // No app menu in this suite's context, so Quit is Cmdr's own command (macOS: AppKit's item).
+  'app.quit',
   'app.about',
   'app.acknowledgements',
   'app.licenseKey',
@@ -209,13 +213,13 @@ describe('nativeShortcut flag', () => {
     expect(flagged).toEqual(expected)
   })
 
-  it('every native command is also dispatch-exempt (Family 1)', () => {
-    // The native commands are handler-less by design (AppKit runs them). The
-    // dispatch-exempt list sources Family 1 from the same registry list, so this
-    // also proves that single-source wiring round-trips.
+  it('every app-menu-only command is dispatch-exempt (Family 1), and Quit is not', () => {
+    // The Hide trio is handler-less by design (AppKit runs it, and it exists only there). The
+    // dispatch-exempt list sources Family 1 from the same registry list, so this also proves that
+    // single-source wiring round-trips. Quit has a handler: without an app menu it's Cmdr's own.
     const exempt = new Set<string>(DISPATCH_EXEMPT_IDS)
     for (const id of NATIVE_SHORTCUT_COMMAND_IDS) {
-      expect(exempt.has(id), `${id} must be dispatch-exempt`).toBe(true)
+      expect(exempt.has(id), id).toBe(id !== 'app.quit')
     }
   })
 
@@ -247,8 +251,11 @@ const RUNS_OVER_DIALOGS: readonly CommandId[] = [
   'view.zoom.set150',
   'view.zoom.in',
   'view.zoom.out',
-  // macOS runs these from the menu bar, and they never reach the dispatch core.
+  // Changes the window, not anything in it.
+  'view.toggleFullScreen',
+  // The quit gate asks about work in flight, so no dialog blocks quitting (AppKit's item on macOS).
   'app.quit',
+  // macOS runs these from the menu bar, and they never reach the dispatch core.
   'app.hide',
   'app.hideOthers',
   'app.showAll',
@@ -365,6 +372,70 @@ describe('a capability-gated command', () => {
   it('leaves every ungated command listed', () => {
     const listed = new Set(listedCommands().map((c) => c.id))
     for (const c of commands) if (c.needsCapability === undefined) expect(listed.has(c.id), c.id).toBe(true)
+  })
+})
+
+describe('the app menu commands, per OS', () => {
+  const ids = (list: { id: string }[]): string[] => list.map((c) => c.id)
+  const byId = (id: string) => commands.find((c) => c.id === id)
+
+  it('on macOS, the app menu owns all four: listed, out of the palette, never Cmdr-run', () => {
+    onTestFinished(withPlatform('macos'))
+    onTestFinished(withCapabilitiesPossibleOn('macos'))
+    for (const id of NATIVE_SHORTCUT_COMMAND_IDS) {
+      expect(ids(listedCommands()), id).toContain(id)
+      expect(ownedByAppMenu(byId(id) ?? {}), id).toBe(true)
+      expect(byId(id)?.showInPalette, id).toBe(false)
+    }
+    expect(defaultShortcuts('app.quit')).toEqual(['⌘Q'])
+    expect(defaultShortcuts('app.hide')).toEqual(['⌘H'])
+  })
+
+  it.each(['windows', 'linux'] as const)('on %s, Quit is an ordinary command and the Hide trio is gone', (platform) => {
+    onTestFinished(withPlatform(platform))
+    onTestFinished(withCapabilitiesPossibleOn(platform))
+    const quit = byId('app.quit')
+    expect(ownedByAppMenu(quit ?? {})).toBe(false)
+    expect(quit?.showInPalette).toBe(true)
+    expect(ids(getPaletteCommands())).toContain('app.quit')
+    expect(defaultShortcuts('app.quit')).toEqual([])
+    for (const id of ['app.hide', 'app.hideOthers', 'app.showAll']) {
+      expect(ids(listedCommands()), id).not.toContain(id)
+      expect(defaultShortcuts(id), id).toEqual([])
+    }
+  })
+
+  it('has a handler for Quit and none for the Hide trio, which only the app menu runs', () => {
+    const exempt = new Set<string>(DISPATCH_EXEMPT_IDS)
+    expect(exempt.has('app.quit')).toBe(false)
+    for (const id of APP_MENU_ONLY_COMMAND_IDS) expect(exempt.has(id), id).toBe(true)
+    // The trio is exactly the native commands that exist only with an app menu.
+    expect([...APP_MENU_ONLY_COMMAND_IDS].sort()).toEqual(
+      commands
+        .filter((c) => c.nativeShortcut && c.needsCapability === 'appMenu')
+        .map((c) => c.id)
+        .sort(),
+    )
+  })
+})
+
+describe('full screen', () => {
+  it.each(['windows', 'linux'] as const)('is F11 on %s', (platform) => {
+    onTestFinished(withPlatform(platform))
+    onTestFinished(withCapabilitiesPossibleOn(platform))
+    expect(defaultShortcuts('view.toggleFullScreen')).toEqual(['F11'])
+    expect(getPaletteCommands().map((c) => c.id)).toContain('view.toggleFullScreen')
+  })
+
+  it('is a palette row with no key on macOS, where AppKit’s own View item keeps its key', () => {
+    onTestFinished(withPlatform('macos'))
+    onTestFinished(withCapabilitiesPossibleOn('macos'))
+    expect(defaultShortcuts('view.toggleFullScreen')).toEqual([])
+    expect(getPaletteCommands().map((c) => c.id)).toContain('view.toggleFullScreen')
+  })
+
+  it('isn’t there without the capability', () => {
+    expect(listedCommands().map((c) => c.id)).not.toContain('view.toggleFullScreen')
   })
 })
 

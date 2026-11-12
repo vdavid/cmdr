@@ -253,10 +253,13 @@ absolutely placed over its frame (`windows.ts`).
   `blur`, since focus moving into a panel's iframe blurs the top window), grey otherwise. The window host tracks the key
   window as it raises and closes panels.
 - What each does. Main: zoom toggles the browser's full screen (inert where the page can't, as in a frame without
-  `allow="fullscreen"`); close and minimize stay inert (`aria-disabled`), since a page can't close or hide its tab.
-  Panel: close closes the window; zoom fills the desktop under the menu bar (capped at the window's `maxWidth`) and
-  back; minimize stays inert, as there's no Dock to restore from. Labels reuse `ui.modalDialog.close`,
-  `menu.window.minimize`, and `menu.window.zoom`. The lights aren't Tab stops and never take focus, as on macOS.
+  `allow="fullscreen"`). The app's own window calls reach the same place: `webview.ts` answers `is_fullscreen` and
+  `set_fullscreen` with the browser's full screen (`browser-full-screen.ts`), so a Mac visitor's Toggle full screen and
+  Escape's exit work with no demo awareness in the app and no Tauri window call; close and minimize stay inert
+  (`aria-disabled`), since a page can't close or hide its tab. Panel: close closes the window; zoom fills the desktop
+  under the menu bar (capped at the window's `maxWidth`) and back; minimize stays inert, as there's no Dock to restore
+  from. Labels reuse `ui.modalDialog.close`, `menu.window.minimize`, and `menu.window.zoom`. The lights aren't Tab stops
+  and never take focus, as on macOS.
 - The main lights sit under the menu bar: their `top` adds `--cmdr-demo-window-top`, which `menu-bar.svelte.ts` sets.
 
 ## Framed by another page

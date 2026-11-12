@@ -71,6 +71,7 @@ export const CAPABILITIES_POSSIBLE_ON: Readonly<Record<Platform, readonly Capabi
     'textEditorChoice',
     'cloudFileActions',
     'colorTags',
+    'appMenu',
     'servicesMenu',
     'fullDiskAccess',
     'finderExtension',
@@ -88,9 +89,9 @@ export const CAPABILITIES_POSSIBLE_ON: Readonly<Record<Platform, readonly Capabi
     'processDiagnostics',
     'globalShortcuts',
   ],
-  windows: ['globalShortcuts'],
+  windows: ['fullScreen', 'globalShortcuts'],
   // `imageIndexing` follows the `playwright-e2e` feature, `globalShortcuts` an X11 session.
-  linux: ['imageIndexing', 'globalShortcuts'],
+  linux: ['imageIndexing', 'fullScreen', 'globalShortcuts'],
 }
 
 /**

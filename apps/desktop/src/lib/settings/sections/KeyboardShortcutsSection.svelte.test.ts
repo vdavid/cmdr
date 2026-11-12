@@ -392,7 +392,21 @@ describe('KeyboardShortcutsSection fixed-key rows', () => {
 })
 
 describe('KeyboardShortcutsSection native macOS rows', () => {
-  beforeEach(() => withPlatform('macos'))
+  beforeEach(() => {
+    const undoPlatform = withPlatform('macos')
+    const undoCapabilities = withCapabilities('appMenu')
+    return () => {
+      undoCapabilities()
+      undoPlatform()
+    }
+  })
+
+  it('renders Quit read-only too', () => {
+    render()
+    const quitRow = row('app.quit')
+    expect(quitRow.querySelector('.add-shortcut')).toBeNull()
+    expect(quitRow.querySelector('.readonly-badge')?.textContent.trim()).toBe('macOS')
+  })
 
   it('renders a native row read-only: a macOS badge, no editable pill, no +/×/reset', () => {
     render()
@@ -440,6 +454,26 @@ describe('KeyboardShortcutsSection native macOS rows', () => {
 
     // Nothing was persisted to the conflicting command.
     expect(isShortcutModified(COPY)).toBe(false)
+  })
+})
+
+describe('KeyboardShortcutsSection without an app menu (Windows and Linux)', () => {
+  beforeEach(() => withPlatform('linux'))
+
+  it('lists Quit as an ordinary, editable row and no Hide rows', () => {
+    render()
+    const quitRow = row('app.quit')
+    expect(quitRow.querySelector('.add-shortcut')).not.toBeNull()
+    expect(quitRow.querySelector('.readonly-badge')).toBeNull()
+    expect(target.querySelector(`[id$="${HIDE}"]`)).toBeNull()
+  })
+
+  it('reserves nothing for macOS: Ctrl+H binds without a reserved-by-macOS banner', async () => {
+    render()
+    clickAddShortcut(COPY)
+    pressKey({ key: 'h', ctrlKey: true })
+    await flushSave()
+    expect(target.querySelector('.conflict-warning')?.textContent ?? '').not.toContain('reserved by macOS')
   })
 })
 

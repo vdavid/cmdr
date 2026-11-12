@@ -1,7 +1,4 @@
 app.quit	
-app.hide	
-app.hideOthers	
-app.showAll	
 app.about	
 app.acknowledgements	
 app.licenseKey	
@@ -35,6 +32,7 @@ view.zoom.set125
 view.zoom.set150	
 view.zoom.in	Ctrl++, Ctrl+=
 view.zoom.out	Ctrl+-
+view.toggleFullScreen	F11
 sort.byName	Ctrl+3, Ctrl+F3
 sort.byExtension	Ctrl+4, Ctrl+F4
 sort.byModified	Ctrl+5, Ctrl+F5

@@ -236,6 +236,7 @@ file_delete_permanently file.deletePermanently@file 1 0 0 1
 rename file.rename@file 1 0 0 1
 multi_rename file.multiRename@file 1 0 1 1
 show_in_finder file.showInFinder@file 1 0 1 1
+quit app.quit@app 1 1 1 1
 undo_trash edit.undoTrash@file 1 0 1 0
 edit_cut edit.cut@app 1 1 1 1
 edit_copy edit.copy@app 1 1 1 1
@@ -278,6 +279,7 @@ view_zoom_125 view.zoom.set125@app 1 1 1 1
 view_zoom_150 view.zoom.set150@app 1 1 1 1
 view_zoom_in view.zoom.in@app 1 1 1 1
 view_zoom_out view.zoom.out@app 1 1 1 1
+view_full_screen view.toggleFullScreen@file 1 0 1 1
 switch_pane pane.switch@file 1 0 1 1
 swap_panes pane.swap@file 1 0 1 1
 clone_pane pane.clone@file 1 0 1 1
@@ -331,6 +333,7 @@ file_delete_permanently file.deletePermanently@file 1 0 0 1
 rename file.rename@file 1 0 0 1
 multi_rename file.multiRename@file 1 0 1 1
 show_in_finder file.showInFinder@file 1 0 1 1
+quit app.quit@app 1 1 1 1
 undo_trash edit.undoTrash@file 1 0 1 0
 edit_cut edit.cut@app 1 1 1 1
 edit_copy edit.copy@app 1 1 1 1
@@ -373,6 +376,7 @@ view_zoom_125 view.zoom.set125@app 1 1 1 1
 view_zoom_150 view.zoom.set150@app 1 1 1 1
 view_zoom_in view.zoom.in@app 1 1 1 1
 view_zoom_out view.zoom.out@app 1 1 1 1
+view_full_screen view.toggleFullScreen@file 1 0 1 1
 switch_pane pane.switch@file 1 0 1 1
 swap_panes pane.swap@file 1 0 1 1
 clone_pane pane.clone@file 1 0 1 1

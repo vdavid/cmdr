@@ -103,6 +103,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'view.zoom.set150': 'Zoom to 150%',
   'view.zoom.in': 'Zoom in',
   'view.zoom.out': 'Zoom out',
+  'view.toggleFullScreen': 'Toggle full screen',
   'sort.byName': 'Sort by name',
   'sort.byExtension': 'Sort by extension',
   'sort.byModified': 'Sort by date modified',

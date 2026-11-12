@@ -4142,6 +4142,13 @@ export const commands = {
    */
   quitCancel: () => __TAURI_INVOKE<QuitAnswer>('quit_cancel'),
   /**
+   *  Cmdr's own Quit command (the palette, the File menu, a key the user bound), where no app menu
+   *  owns Quit (Windows and Linux). The same path closing the main window takes
+   *  (`app_lifecycle::quit_through_gate`): with work in flight the gate asks, else the app exits.
+   *  macOS never calls it: AppKit's Quit item reaches the gate through `ExitRequested`.
+   */
+  quitApp: () => __TAURI_INVOKE<void>('quit_app'),
+  /**
    *  Quits Cmdr and opens it again: the update toast's Restart and onboarding's "Restart Cmdr".
    *  The quit goes through the gate like ⌘Q. ❌ Never Tauri's `relaunch()` on macOS: its `open -n`
    *  doubles the Dock icon. See [`super::relaunch`].
@@ -15767,6 +15774,12 @@ export type PlatformCapabilities = {
   cloudFileActions: boolean
   // The system's color tags on files (`tags.toggle*`).
   colorTags: boolean
+  /**
+   *  The OS gives the app an app menu that owns Quit, Hide, Hide others, and Show all, keys
+   *  included (`app.hide`, `app.hideOthers`, `app.showAll` exist only here; `app.quit` is the
+   *  OS's item here and Cmdr's own command elsewhere).
+   */
+  appMenu: boolean
   // The app menu's Services submenu, fed with the focused pane's selection.
   servicesMenu: boolean
   /**

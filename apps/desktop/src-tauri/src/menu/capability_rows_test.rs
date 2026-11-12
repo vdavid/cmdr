@@ -4,7 +4,7 @@
 //! shortcuts editor, and the settings hide. Each OS's test run checks its own arm.
 
 use cmdr_menu::bar::spec_entry;
-use cmdr_menu::ids::{GET_INFO_ID, OPEN_TERMINAL_HERE_ID, QUICK_LOOK_ID};
+use cmdr_menu::ids::{GET_INFO_ID, OPEN_TERMINAL_HERE_ID, QUICK_LOOK_ID, QUIT_ID};
 use cmdr_menu::spec::Platform;
 
 use crate::platform::{PlatformCapabilities, capabilities};
@@ -17,6 +17,8 @@ const CAPABILITY_ROWS: &[(&str, CapabilityOf)] = &[
     (GET_INFO_ID, |c| c.get_info),
     (QUICK_LOOK_ID, |c| c.quick_look),
     (OPEN_TERMINAL_HERE_ID, |c| c.open_terminal_here),
+    // Cmdr's own Quit row exists exactly where no app menu owns Quit.
+    (QUIT_ID, |c| !c.app_menu),
 ];
 
 #[test]

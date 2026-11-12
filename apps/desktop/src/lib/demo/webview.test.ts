@@ -1,7 +1,7 @@
 import { clearMocks } from '@tauri-apps/api/mocks'
 import { invoke } from '@tauri-apps/api/core'
 import { emit, emitTo, listen } from '@tauri-apps/api/event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { DemoBackend, DemoWebview } from './backend.js'
 
 // `test-setup.ts` stubs the event API app-wide; this file tests the real one against the webview.
@@ -66,6 +66,39 @@ describe('demo webview', () => {
 
     await invoke('plugin:window|inner_size', { label: 'settings' })
     expect(fake.invoked).toEqual([['plugin:window|inner_size', { label: 'settings' }]])
+  })
+
+  it("drives the browser's full screen for the window's own full-screen calls, so Toggle full screen needs no Tauri window", async () => {
+    const fake = fakeBackend()
+    installWebview(fake.backend, 'main')
+    let fullscreen: Element | null = null
+    const request = vi.fn(() => {
+      fullscreen = document.documentElement
+      return Promise.resolve()
+    })
+    const exit = vi.fn(() => {
+      fullscreen = null
+      return Promise.resolve()
+    })
+    // jsdom has no Fullscreen API, so the test stands one in.
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => fullscreen })
+    Object.defineProperty(document, 'fullscreenEnabled', { configurable: true, value: true })
+    document.documentElement.requestFullscreen = request
+    document.exitFullscreen = exit
+    onTestFinished(() => {
+      Reflect.deleteProperty(document, 'fullscreenElement')
+      Reflect.deleteProperty(document, 'fullscreenEnabled')
+      Reflect.deleteProperty(document.documentElement, 'requestFullscreen')
+      Reflect.deleteProperty(document, 'exitFullscreen')
+    })
+
+    expect(await invoke('plugin:window|is_fullscreen', { label: 'main' })).toBe(false)
+    await invoke('plugin:window|set_fullscreen', { label: 'main', value: true })
+    expect(request).toHaveBeenCalledOnce()
+    expect(await invoke('plugin:window|is_fullscreen', { label: 'main' })).toBe(true)
+    await invoke('plugin:window|set_fullscreen', { label: 'main', value: false })
+    expect(exit).toHaveBeenCalledOnce()
+    expect(fake.invoked).toEqual([])
   })
 
   it('sends emits to the backend, everyone or one label', async () => {

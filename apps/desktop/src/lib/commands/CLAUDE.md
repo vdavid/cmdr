@@ -37,10 +37,9 @@ Centralized command registry and fuzzy search engine for the command palette.
   `routes/(main)/command-dispatch.ts`). It looks the id up in the flat `commandHandlers` record (in
   `routes/(main)/command-handlers/`), keyed by `Exclude<CommandId, DispatchExemptId>` so every dispatchable id has a
   handler at compile time; handlerless ids go in `DISPATCH_EXEMPT_IDS` and silently no-op.
-- **Native macOS commands (quit, hide, hide others, show all) carry `nativeShortcut: true` and `showInPalette: false`.**
-  AppKit owns behavior AND accelerator via `PredefinedMenuItems`, so JS dispatch would double-execute. The flag sits on
-  exactly `NATIVE_SHORTCUT_COMMAND_IDS`, the one source for the read-only editor rows, the store mutators' refusal, and
-  `DISPATCH_EXEMPT_IDS`'s native family.
+- **Whether AppKit owns quit / hide / hide others / show all is `ownedByAppMenu`, per OS (`appMenu`).** Where it does,
+  they're out of the palette and dispatch map and read-only. Off macOS the Hide trio is gone and Quit is Cmdr's own
+  command. `DETAILS.md` § "Decisions and rationale".
 - **`scope` is documentation-only, not runtime-enforced** (keyboard routing is each UI component's job; scope drives
   conflict detection and Settings display). A NEW scope is three places: `DETAILS.md` § "Adding a command".
 - **The haystack is `foldForSearch`ed** (typed `FoldedText`); `info.ranges` is a flat `[start, end, …]` array (`end`

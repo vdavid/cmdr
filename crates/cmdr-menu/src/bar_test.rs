@@ -181,6 +181,8 @@ menu menu.bar.file
   14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
   15 separator
   16 item show_in_finder menu.file.showInFileManager [Ctrl+Shift+E] tracked
+  17 separator
+  18 item quit menu.file.quit tracked
 menu menu.bar.edit
   0 item undo_trash menu.edit.undoTrash disabled tracked
   1 separator
@@ -235,17 +237,18 @@ menu menu.bar.view
       4 separator
       5 item view_zoom_in menu.zoom.in untracked
       6 item view_zoom_out menu.zoom.out untracked
-  6 separator
-  7 item switch_pane menu.view.switchPane tracked
-  8 item swap_panes menu.view.swapPanes [Ctrl+U] tracked
-  9 item clone_pane menu.view.clonePane [Ctrl+Shift+M] tracked
-  10 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
-  11 separator
-  12 item command_palette menu.view.commandPalette [Ctrl+Shift+P] tracked
-  13 item queue_show menu.view.operationQueue [Ctrl+Shift+Q] tracked
-  14 item operation_log menu.view.operationLog [Ctrl+Shift+L] tracked
-  15 item suggested_ops menu.view.suggestedOps tracked
-  16 item ask_cmdr menu.view.askCmdr [Ctrl+Shift+K] tracked
+  6 item view_full_screen menu.view.fullScreen (F11) tracked
+  7 separator
+  8 item switch_pane menu.view.switchPane tracked
+  9 item swap_panes menu.view.swapPanes [Ctrl+U] tracked
+  10 item clone_pane menu.view.clonePane [Ctrl+Shift+M] tracked
+  11 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
+  12 separator
+  13 item command_palette menu.view.commandPalette [Ctrl+Shift+P] tracked
+  14 item queue_show menu.view.operationQueue [Ctrl+Shift+Q] tracked
+  15 item operation_log menu.view.operationLog [Ctrl+Shift+L] tracked
+  16 item suggested_ops menu.view.suggestedOps tracked
+  17 item ask_cmdr menu.view.askCmdr [Ctrl+Shift+K] tracked
 menu menu.bar.go
   0 item go_back menu.go.back [Alt+Left] tracked
   1 item go_forward menu.go.forward [Alt+Right] tracked
@@ -305,6 +308,8 @@ menu menu.bar.file
   14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
   15 separator
   16 item show_in_finder menu.file.showInFileManager [Ctrl+Shift+E] tracked
+  17 separator
+  18 item quit menu.file.quit tracked
 menu menu.bar.edit
   0 item undo_trash menu.edit.undoTrash disabled tracked
   1 separator
@@ -359,17 +364,18 @@ menu menu.bar.view
       4 separator
       5 item view_zoom_in menu.zoom.in untracked
       6 item view_zoom_out menu.zoom.out untracked
-  6 separator
-  7 item switch_pane menu.view.switchPane tracked
-  8 item swap_panes menu.view.swapPanes [Ctrl+U] tracked
-  9 item clone_pane menu.view.clonePane [Ctrl+Shift+M] tracked
-  10 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
-  11 separator
-  12 item command_palette menu.view.commandPalette [Ctrl+Shift+P] tracked
-  13 item queue_show menu.view.operationQueue [Ctrl+Shift+Q] tracked
-  14 item operation_log menu.view.operationLog [Ctrl+Shift+L] tracked
-  15 item suggested_ops menu.view.suggestedOps tracked
-  16 item ask_cmdr menu.view.askCmdr [Ctrl+Shift+K] tracked
+  6 item view_full_screen menu.view.fullScreen (F11) tracked
+  7 separator
+  8 item switch_pane menu.view.switchPane tracked
+  9 item swap_panes menu.view.swapPanes [Ctrl+U] tracked
+  10 item clone_pane menu.view.clonePane [Ctrl+Shift+M] tracked
+  11 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
+  12 separator
+  13 item command_palette menu.view.commandPalette [Ctrl+Shift+P] tracked
+  14 item queue_show menu.view.operationQueue [Ctrl+Shift+Q] tracked
+  15 item operation_log menu.view.operationLog [Ctrl+Shift+L] tracked
+  16 item suggested_ops menu.view.suggestedOps tracked
+  17 item ask_cmdr menu.view.askCmdr [Ctrl+Shift+K] tracked
 menu menu.bar.go
   0 item go_back menu.go.back [Alt+Left] tracked
   1 item go_forward menu.go.forward [Alt+Right] tracked

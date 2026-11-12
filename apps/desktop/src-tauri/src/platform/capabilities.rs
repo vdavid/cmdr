@@ -25,6 +25,10 @@ pub struct PlatformCapabilities {
     pub cloud_file_actions: bool,
     /// The system's color tags on files (`tags.toggle*`).
     pub color_tags: bool,
+    /// The OS gives the app an app menu that owns Quit, Hide, Hide others, and Show all, keys
+    /// included (`app.hide`, `app.hideOthers`, `app.showAll` exist only here; `app.quit` is the
+    /// OS's item here and Cmdr's own command elsewhere).
+    pub app_menu: bool,
     /// The app menu's Services submenu, fed with the focused pane's selection.
     pub services_menu: bool,
     /// A Full Disk Access permission the user can grant: the onboarding step, the status badge,

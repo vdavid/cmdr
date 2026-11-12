@@ -25,9 +25,9 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
   a missing key means "use registry defaults". `initializeShortcuts` loads `[]`, so it survives a reload.
 - **A window saves only the commands IT changed** (`changedHere`), ❌ never the whole map: windows share one store, so
   it would delete or roll back a rebind it never heard of. DETAILS § Shortcuts store.
-- **macOS-native (`app.quit`/`hide`/`hideOthers`/`showAll`) and fixed-key (`FIXED_KEY_COMMAND_IDS`) commands are not
-  customizable, enforced at the store boundary.** Load drops persisted entries, the mutators no-op with `log.warn`,
-  `resetShortcut` stays permissive.
+- **macOS-native (`app.quit`/`hide`/`hideOthers`/`showAll`, on macOS) and fixed-key (`FIXED_KEY_COMMAND_IDS`) commands
+  are not customizable, enforced at the store boundary.** Load drops persisted entries, the mutators no-op with
+  `log.warn`, `resetShortcut` stays permissive.
 - **Every mutation emits `shortcuts:changed` after saving; the per-window `SENDER_ID` is the loop guard.** The listener
   updates the local map and calls `notifyListeners`, never saving or re-emitting. Without this a rebind stays stale in
   other windows until restart.

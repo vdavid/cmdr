@@ -13,6 +13,8 @@ pub(crate) fn capabilities() -> PlatformCapabilities {
         text_editor_choice: false,
         cloud_file_actions: false,
         color_tags: false,
+        // No app menu: Quit is Cmdr's own command (File > Exit Cmdr), and there's nothing to hide.
+        app_menu: false,
         services_menu: false,
         full_disk_access: false,
         finder_extension: false,
@@ -29,8 +31,8 @@ pub(crate) fn capabilities() -> PlatformCapabilities {
         safe_save_files: false,
         // No LaunchServices: a folder named `X.app` is a folder.
         app_bundles: false,
-        // No way into full screen yet; flips on once a native F11 entry lands.
-        full_screen: false,
+        // `view.toggleFullScreen` (F11, View > Full screen).
+        full_screen: true,
         // The cask is the macOS distribution.
         homebrew_cask: false,
         // `RegisterHotKey` works for every app on the desktop.

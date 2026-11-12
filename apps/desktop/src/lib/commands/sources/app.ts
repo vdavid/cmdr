@@ -10,10 +10,15 @@ import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { getBadgeStatus } from '#lib/feature-status.js'
 import { BLOCKED_BY_DIALOGS, runsOverDialogs } from '../while-dialog-open'
 
-// macOS owns these four outright via PredefinedMenuItems; they never reach the dispatch core, so
-// they're inert to whatever's up in the main window.
+// The Hide trio exists only where AppKit runs it from the app menu, so it never reaches the
+// dispatch core and is inert to whatever's up in the main window.
 const NATIVE_MENU_BAR_ITEM = runsOverDialogs(
   'macOS runs it from the menu bar as a predefined item, so it never reaches the dispatch core.',
+)
+// Quit is AppKit's item on macOS. Elsewhere it's Cmdr's own command, and it still runs over a
+// dialog: the quit gate asks about work in flight, and a stuck dialog must never trap anyone.
+const QUIT = runsOverDialogs(
+  'The quit gate asks about work in flight, so no dialog blocks quitting. On macOS AppKit runs it from the menu bar.',
 )
 const OPENS_OWN_WINDOW = runsOverDialogs(
   'Opens its own window, so the dialog in the main window stays up and untouched.',
@@ -65,18 +70,20 @@ export const appCommands: CommandSource[] = [
   // ============================================================================
   // App scope (work everywhere, regardless of window/modal state)
   // ============================================================================
-  // Native-only: handled by PredefinedMenuItems via macOS selectors (hide:, hideOtherApplications:,
-  // unhideAllApplications:, terminate:). showInPalette: false keeps them out of the JS shortcut
-  // dispatch map; the native menu accelerators handle the keyboard shortcuts directly. `nativeShortcut`
-  // makes the editor read-only and the store refuse to rebind them (NATIVE_SHORTCUT_COMMAND_IDS above).
+  // The app menu's four (`NATIVE_SHORTCUT_COMMAND_IDS`). Where the OS has an app menu (`appMenu`,
+  // macOS), PredefinedMenuItems run them through AppKit selectors (terminate:, hide:,
+  // hideOtherApplications:, unhideAllApplications:) with their own keys: `ownedByAppMenu` keeps them
+  // out of the palette and the JS dispatch map, and makes the editor read-only and the store refuse
+  // to rebind them. Without an app menu the Hide trio doesn't exist, and Quit is Cmdr's own command.
   {
     id: 'app.quit',
     nameKey: 'commands.appQuit.label',
     scope: 'App',
-    showInPalette: false,
+    // Read through `ownedByAppMenu`, so it's in the palette only where no app menu owns it.
+    showInPalette: true,
     // Windows and Linux bind nothing: `Alt+F4` closes the window through the quit gate there.
     shortcuts: macOnly('⌘Q'),
-    whileDialogOpen: NATIVE_MENU_BAR_ITEM,
+    whileDialogOpen: QUIT,
     nativeShortcut: true,
   },
   {
@@ -87,6 +94,7 @@ export const appCommands: CommandSource[] = [
     shortcuts: macOnly('⌘H'),
     whileDialogOpen: NATIVE_MENU_BAR_ITEM,
     nativeShortcut: true,
+    needsCapability: 'appMenu',
   },
   {
     id: 'app.hideOthers',
@@ -96,6 +104,7 @@ export const appCommands: CommandSource[] = [
     shortcuts: macOnly('⌥⌘H'),
     whileDialogOpen: NATIVE_MENU_BAR_ITEM,
     nativeShortcut: true,
+    needsCapability: 'appMenu',
   },
   {
     id: 'app.showAll',
@@ -105,6 +114,7 @@ export const appCommands: CommandSource[] = [
     shortcuts: sameOnAll(),
     whileDialogOpen: NATIVE_MENU_BAR_ITEM,
     nativeShortcut: true,
+    needsCapability: 'appMenu',
   },
   {
     id: 'app.about',

@@ -13,6 +13,7 @@ pub(crate) fn capabilities() -> PlatformCapabilities {
         text_editor_choice: true,
         cloud_file_actions: true,
         color_tags: true,
+        app_menu: true,
         services_menu: true,
         full_disk_access: true,
         finder_extension: true,

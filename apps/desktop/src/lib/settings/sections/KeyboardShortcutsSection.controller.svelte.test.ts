@@ -68,7 +68,8 @@ vi.mock('#lib/commands/command-registry.js', () => {
     { id: 'app.about', name: 'About Cmdr', scope: 'App' },
     { id: 'file.copy', name: 'Copy', scope: 'Main window/File list' },
   ]
-  return { commands, listedCommands: () => commands }
+  // Neither command is one the app menu owns.
+  return { commands, listedCommands: () => commands, ownedByAppMenu: () => false }
 })
 
 vi.mock('#lib/commands/fuzzy-search.js', () => ({

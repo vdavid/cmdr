@@ -20,6 +20,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // `getDefaultShortcuts` reads the registry, not module-scoped store state, so
 // it stays valid across the `vi.resetModules()` reloads below.
 import { getDefaultShortcuts } from './shortcuts-store'
+import { withCapabilitiesPossibleOn, withPlatform } from '#lib/platform/test-platform.js'
 
 // Shared backing store for the fake plugin-store, persisting across
 // `vi.resetModules()` to stand in for the on-disk `shortcuts.json`. A `Map`
@@ -459,6 +460,23 @@ describe('shortcuts-store refuses to customize macOS-native commands', () => {
   // an illusion. The editor no longer offers the controls, but the store mutators
   // are the real boundary — MCP events and future callers route through them too —
   // so they must refuse, and load must drop leaked entries.
+  beforeEach(() => {
+    const undoPlatform = withPlatform('macos')
+    const undoCapabilities = withCapabilitiesPossibleOn('macos')
+    return () => {
+      undoCapabilities()
+      undoPlatform()
+    }
+  })
+
+  it('still drops a saved Quit customization on macOS', async () => {
+    disk.set('shortcut:app.quit', ['⌘⌥Q'])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    expect(store.isShortcutModified('app.quit')).toBe(false)
+    expect(store.getEffectiveShortcuts('app.quit')).toEqual(['⌘Q'])
+  })
 
   it('drops a persisted native customization on load (the dev shortcuts.json case)', async () => {
     // David's dev shortcuts.json carries `app.hide: []` from live testing.
@@ -510,6 +528,37 @@ describe('shortcuts-store refuses to customize macOS-native commands', () => {
     expect(store.getEffectiveShortcuts('app.hide')).toEqual(getDefaultShortcuts('app.hide'))
     expect(disk.has('shortcut:app.hide')).toBe(false)
     expect(changedEmits()).toHaveLength(0)
+  })
+})
+
+describe.each(['windows', 'linux'] as const)('shortcuts-store on %s, where no app menu owns Quit', (platform) => {
+  beforeEach(() => {
+    const undoPlatform = withPlatform(platform)
+    const undoCapabilities = withCapabilitiesPossibleOn(platform)
+    return () => {
+      undoCapabilities()
+      undoPlatform()
+    }
+  })
+
+  it('loads a saved Quit customization', async () => {
+    disk.set('shortcut:app.quit', ['Ctrl+Shift+W'])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    expect(store.isNativeShortcutCommand('app.quit')).toBe(false)
+    expect(store.getEffectiveShortcuts('app.quit')).toEqual(['Ctrl+Shift+W'])
+  })
+
+  it('lets the user bind Quit a key', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+
+    store.addShortcut('app.quit', 'Ctrl+Shift+W')
+    await flushSave()
+
+    expect(store.getEffectiveShortcuts('app.quit')).toEqual(['Ctrl+Shift+W'])
+    expect(disk.get('shortcut:app.quit')).toEqual(['Ctrl+Shift+W'])
   })
 })
 

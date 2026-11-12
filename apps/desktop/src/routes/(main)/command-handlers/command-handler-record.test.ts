@@ -81,8 +81,8 @@ describe('command handler record completeness', () => {
     }
   })
 
-  it('the exempt tuple is exactly 84 ids, all real CommandIds', () => {
-    expect(DISPATCH_EXEMPT_IDS).toHaveLength(84)
+  it('the exempt tuple is exactly 83 ids, all real CommandIds', () => {
+    expect(DISPATCH_EXEMPT_IDS).toHaveLength(83)
     for (const id of DISPATCH_EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 })
@@ -91,13 +91,13 @@ describe('DispatchExemptId is a subset of CommandId (compile-time)', () => {
   // Enforced by `tsc` / `svelte-check`, not at runtime; the runtime `expect`
   // only lets Vitest execute the block.
   it('rejects a bogus exempt id that is not a CommandId', () => {
-    const real: DispatchExemptId = 'app.quit'
+    const real: DispatchExemptId = 'app.hide'
 
     // @ts-expect-error -- 'app.doesNotExist' is not a member of CommandId, so it
     // can't be a DispatchExemptId (the union is carved out of CommandId).
     const bogus: DispatchExemptId = 'app.doesNotExist'
 
-    expect(real).toBe('app.quit')
+    expect(real).toBe('app.hide')
     expect(bogus).toBe('app.doesNotExist')
   })
 })

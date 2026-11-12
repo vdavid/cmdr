@@ -19,7 +19,7 @@ import type { ExplorerAPI } from './explorer-api'
 // --- The exempt-id set (derived; the suite self-checks the count) ----------
 /**
  * The ids registered (for the rebinding UI) but with NO dispatch handler —
- * four families: native-menu-owned (`app.quit`/`hide`/`hideOthers`/`showAll`),
+ * four families: app-menu-only (`app.hide`/`hideOthers`/`showAll`),
  * per-keystroke P2 (`nav.up`/`down`/`left`/`right`/`firstInFull`/`lastInFull`),
  * component-scoped (palette/volume/network/share/errorPane/queue), and the viewer
  * window's own keys (`viewer.*`). Mirrors the
@@ -28,7 +28,6 @@ import type { ExplorerAPI } from './explorer-api'
  * vs exempt split rather than trusting the code it characterizes.
  */
 export const EXEMPT_IDS = [
-  'app.quit',
   'app.hide',
   'app.hideOthers',
   'app.showAll',

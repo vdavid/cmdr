@@ -32,6 +32,8 @@ const MAC_VISITOR_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({
   textEditorChoice: true,
   cloudFileActions: true,
   colorTags: true,
+  // The demo's bar is the macOS one, whose app menu draws Quit and the Hide rows as OS rows.
+  appMenu: true,
   servicesMenu: true,
   fullDiskAccess: true,
   finderExtension: true,

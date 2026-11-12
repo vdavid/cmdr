@@ -23,22 +23,19 @@ const MCP_ONLY_REASON =
 /** Commands with neither a default key nor a palette row, each with the reason that's fine. */
 const KEYBOARD_PATH_NOT_NEEDED: Partial<Record<CommandId, string>> = {
   ...Object.fromEntries(mcpCommands.map((c) => [c.id, MCP_ONLY_REASON])),
-  'app.showAll':
-    'AppKit-native, unbound by default on macOS too. It lives in the Cmdr app menu, which the menu bar keyboard focus (⌃F2) reaches.',
   'view.setMode':
     "Per-pane twin of `view.briefMode` / `view.fullMode`, dispatched by a click on the inactive pane's View menu item so that pane changes without taking focus.",
   'sort.set': MCP_ONLY_REASON,
 }
 
-const APP_MENU_ONLY =
-  "macOS's app menu runs it (AppKit owns the key); Windows and Linux have no app menu, so it binds no key there \
-(`docs/notes/windows-port/keymap-decisions.md`) and has no row or handler yet."
-
 /** Per-OS additions to `KEYBOARD_PATH_NOT_NEEDED`, for a command that has a keyboard path on one OS only. */
 const KEYBOARD_PATH_NOT_NEEDED_ON: Record<Platform, Partial<Record<CommandId, string>>> = {
-  macos: {},
-  windows: { 'app.quit': APP_MENU_ONLY, 'app.hide': APP_MENU_ONLY, 'app.hideOthers': APP_MENU_ONLY },
-  linux: { 'app.quit': APP_MENU_ONLY, 'app.hide': APP_MENU_ONLY, 'app.hideOthers': APP_MENU_ONLY },
+  macos: {
+    'app.showAll':
+      'AppKit-native, unbound by default. It lives in the Cmdr app menu, which the menu bar keyboard focus (⌃F2) reaches.',
+  },
+  windows: {},
+  linux: {},
 }
 
 const hasNoKeyboardPath = (c: (typeof commands)[number]): boolean =>
@@ -68,11 +65,10 @@ describe.each(PLATFORMS)('keyboard reachability on %s', (platform) => {
     ).toEqual([])
   })
 
-  it('keeps the exemption list tight: every exempt command really has no key and no palette row', () => {
-    const exemptButReachable = commands
-      .filter(commandOffered)
-      .filter((c) => c.id in notNeeded && !hasNoKeyboardPath(c))
+  it('keeps the exemption list tight: every exempt command is on this OS and really has no key and no palette row', () => {
+    const stale = commands
+      .filter((c) => c.id in notNeeded && (!commandOffered(c) || !hasNoKeyboardPath(c)))
       .map((c) => c.id)
-    expect(exemptButReachable, 'Drop these from KEYBOARD_PATH_NOT_NEEDED').toEqual([])
+    expect(stale, 'Drop these from KEYBOARD_PATH_NOT_NEEDED (or move them to this OS’s list)').toEqual([])
   })
 })

@@ -34,15 +34,35 @@ import { commandPaletteCommands } from './sources/command-palette'
 import { searchDialogCommands } from './sources/search-dialog'
 
 /**
- * The macOS-native commands: AppKit `PredefinedMenuItem`s own BOTH the behavior
- * and the accelerator (`terminate:`, `hide:`, `hideOtherApplications:`,
- * `unhideAllApplications:`). Cmdr can neither rebind nor intercept them, so the
- * shortcuts editor renders them read-only and the store refuses to customize
- * them. Single source of truth: the registry entries below carry
- * `nativeShortcut: true` for exactly these ids (pinned by `command-registry.test.ts`),
- * and `command-handlers/types.ts` sources its Family-1 dispatch-exempt list from here.
+ * The app menu's commands: where the OS has an app menu (`appMenu`, macOS), AppKit
+ * `PredefinedMenuItem`s own BOTH the behavior and the accelerator (`terminate:`,
+ * `hide:`, `hideOtherApplications:`, `unhideAllApplications:`). Cmdr can neither
+ * rebind nor intercept them there, so the shortcuts editor renders them read-only
+ * and the store refuses to customize them. The registry entries carry
+ * `nativeShortcut: true` for exactly these ids (pinned by `command-registry.test.ts`);
+ * whether the app menu owns one RIGHT NOW is {@link ownedByAppMenu}.
  */
 export const NATIVE_SHORTCUT_COMMAND_IDS = ['app.quit', 'app.hide', 'app.hideOthers', 'app.showAll'] as const
+
+/**
+ * The app menu commands that exist only where there's an app menu (`needsCapability: 'appMenu'`),
+ * so no Cmdr handler ever runs them: `command-handlers/types.ts` sources its Family-1
+ * dispatch-exempt list from here. `app.quit` isn't one: without an app menu it's Cmdr's own command.
+ */
+export const APP_MENU_ONLY_COMMAND_IDS = [
+  'app.hide',
+  'app.hideOthers',
+  'app.showAll',
+] as const satisfies readonly (typeof NATIVE_SHORTCUT_COMMAND_IDS)[number][]
+
+/**
+ * Whether the OS's app menu owns `command` on this OS: its behavior, its key, and its absence
+ * from the palette and the dispatch map. The one place "AppKit owns this" is decided; the
+ * shortcuts store's `isNativeShortcutCommand` and the palette flag both ask it.
+ */
+export function ownedByAppMenu(command: Pick<Command, 'nativeShortcut'>): boolean {
+  return command.nativeShortcut === true && hasCapability('appMenu')
+}
 
 /**
  * The fixed-key commands: their keys are owned by the component that handles them
@@ -204,6 +224,13 @@ function resolveCommand(src: CommandSource): Command {
   } as Command
   if (descriptionKey !== undefined) {
     Object.defineProperty(cmd, 'description', { enumerable: true, get: () => tString(descriptionKey) })
+  }
+  // A command the app menu owns on this OS never reaches the palette or the dispatch map (which
+  // takes the palette's commands), so AppKit's item is the only thing that runs it. Asked at read
+  // time: the answer is per OS, and the sources don't read the platform at load.
+  if (src.nativeShortcut) {
+    const listed = src.showInPalette
+    Object.defineProperty(cmd, 'showInPalette', { enumerable: true, get: () => listed && !ownedByAppMenu(src) })
   }
   return cmd
 }
