@@ -226,6 +226,8 @@ var rustEmbeddedInputs = []string{
 	"apps/website/src/lib/trust-mdm.ts",
 	"crates/cmdr-menu/src/bar.rs",
 	"crates/cmdr-menu/src/ids.rs",
+	// `cmdr-menu`'s `bar.rs` embeds the keys the bar leaves to the page, which the frontend writes.
+	"crates/cmdr-menu/src/page_owned_keys.tsv",
 }
 
 // rustScanInputs is what a Rust source scanner of the given jurisdiction reads:
@@ -343,8 +345,9 @@ var svelteInputs = inputs(treeGlobs(frontendSourceRoots...), []string{
 	"apps/desktop/src-tauri/src/platform/macos.rs",
 	"apps/desktop/src-tauri/src/platform/windows.rs",
 	"apps/desktop/src-tauri/src/platform/linux/mod.rs",
-	// The menu bar's parity file, which `default-keymap.test.ts` writes and checks for staleness.
+	// The menu bar's parity file and its page-owned keys, which `default-keymap.test.ts` writes and checks for staleness.
 	"crates/cmdr-menu/src/registry_default_keys.tsv",
+	"crates/cmdr-menu/src/page_owned_keys.tsv",
 	// The two Rust emit sites `rust-command-id-drift.test.ts` parses.
 	"crates/cmdr-menu/src/ids.rs",
 	"apps/desktop/src-tauri/src/dock/menu/rows.rs",
