@@ -237,10 +237,11 @@ declares, `shortcuts.json` persists, `shortcut-dispatch` keys its map by, `confl
 - Example: `⌘⇧P`, `⌘Backspace`, `Ctrl+Shift+P`, `*`.
 
 `toDisplayShortcut(combo)` is the display layer, applied at render time only: `⌘Backspace` → `⌘⌫`, `Enter` → `↩`,
-`Escape` → `⎋` / `Esc`, `PageUp` → `PgUp`. It's idempotent, so wrapping an already-displayed value is safe. Its
-consumers are the reactive readers (`reactive-shortcuts.svelte.ts` returns display form, since everything reading it
-renders to a user), `ShortcutChip`, `ShortcutsList`, the Settings editor's pills and conflict banner, the F-key bar, and
-`shortcutAsText`. Anything that COMPARES or DISPATCHES a combo reads `getEffectiveShortcuts` instead.
+`Escape` → `⎋` / `Esc`, `PageUp` → `PgUp`, and on Windows the `Super` token → `Win` (`docs/style-guide.md` § "Platform
+vocabulary"; Linux keeps `Super`, the stored token everywhere). It's idempotent, so wrapping an already-displayed value
+is safe. Its consumers are the reactive readers (`reactive-shortcuts.svelte.ts` returns display form, since everything
+reading it renders to a user), `ShortcutChip`, `ShortcutsList`, the Settings editor's pills and conflict banner, the
+F-key bar, and `shortcutAsText`. Anything that COMPARES or DISPATCHES a combo reads `getEffectiveShortcuts` instead.
 
 A keypress can mean more than one combo, and `keyComboCandidates(event)` lists them, most specific first:
 
@@ -285,11 +286,12 @@ exact combo, then only the Latin position (through the same typing guard), so `�
 claims like any `⌘V` (`routes/(main)/DETAILS.md` § Native-menu and input-focus interactions). How dispatch picks among
 the candidates is under "Local handlers" below (`resolveKeyCombo`).
 
-`toCanonicalShortcut(combo)` is the inverse of `toDisplayShortcut`, and only three places call it: `initializeShortcuts`
-(healing a `shortcuts.json` written before the vocabulary was unified) and `setShortcut` / `addShortcut` (canonicalizing
-at the store boundary, so MCP writes land in the same vocabulary as a Settings capture). It also heals a Shift-only key
-POSITION (`⇧8`, the old `selection.invert` default, which no keypress produces any more) to the character the US keycap
-it was named after types (`*`); the load dedupes what that folds together.
+`toCanonicalShortcut(combo)` is the inverse of `toDisplayShortcut`, and only four places call it: `initializeShortcuts`
+(healing a `shortcuts.json` written before the vocabulary was unified), `setShortcut` / `addShortcut` (canonicalizing at
+the store boundary, so MCP writes land in the same vocabulary as a Settings capture), and the Settings key-filter box
+reading back what it shows. It also heals a Shift-only key POSITION (`⇧8`, the old `selection.invert` default, which no
+keypress produces any more) to the character the US keycap it was named after types (`*`); the load dedupes what that
+folds together.
 
 **Why the split matters.** With glyphs in the canonical form, three things break silently and independently: central
 dispatch can never fire a word-form binding (`lookupCommand('↩')` misses `'Enter'`), conflict detection and the
@@ -302,10 +304,11 @@ pure display mirroring the OS menu (`⌥⌘H`), never dispatched.
 The macOS system-shortcut table in `../settings/sections/keyboard-shortcuts-banner.ts` is keyed by the same canonical
 strings for the same reason — Apple spells force-quit `⌥⌘⎋`, but the user's keypress arrives as `⌘⌥Escape`.
 
-The one place canonical strings surface as-is to a user is the Settings key-search box: it holds what `formatKeyCombo`
-produced so it can filter against stored combos, so it reads `⌘Backspace`, not `⌘⌫`. While only modifiers are held it
-shows them through `formatChord` (the same token writer), so the Meta key off macOS reads `Super`, the token a stored
-combo holds.
+The Settings key-search box holds what `formatKeyCombo` produced (while only modifiers are held, `formatChord`, the same
+token writer), so it filters against stored combos and reads `⌘Backspace`, not `⌘⌫`. It shows that value through
+`toDisplayModifiers` (`keySearchDisplay`), the modifier half of `toDisplayShortcut`: a Windows user reads `Ctrl+Win`
+while the filter compares `Ctrl+Super`, and whatever the field writes back (its clear button) goes through
+`toCanonicalShortcut`.
 
 ### Centralized dispatch (`shortcut-dispatch.ts`)
 

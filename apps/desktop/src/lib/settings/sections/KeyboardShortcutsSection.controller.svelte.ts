@@ -38,6 +38,8 @@ import {
   findConflictsForShortcut,
   getConflictingCommandIds,
   getConflictCount,
+  toCanonicalShortcut,
+  toDisplayModifiers,
 } from '#lib/shortcuts/index.js'
 import { isMacOS } from '#lib/platform/index.js'
 import { confirmDialog } from '#lib/utils/confirm-dialog.js'
@@ -439,6 +441,13 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
     },
     set keySearchQuery(value: string) {
       keySearchQuery = value
+    },
+    /** What the key filter field shows (`Win` for the Windows key on Windows); the query stays canonical. */
+    get keySearchDisplay() {
+      return toDisplayModifiers(keySearchQuery)
+    },
+    set keySearchDisplay(value: string) {
+      keySearchQuery = toCanonicalShortcut(value)
     },
     get activeFilter() {
       return activeFilter

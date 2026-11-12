@@ -10,6 +10,8 @@ export {
   formatChord,
   isAltGraphHeld,
   isModifierKey,
+  toCanonicalShortcut,
+  toDisplayModifiers,
   toDisplayShortcut,
   typingRefusal,
 } from './key-capture'

@@ -17,7 +17,7 @@
  */
 
 import type { CommandScope } from '#lib/commands/types.js'
-import { isMacOS } from '#lib/platform/index.js'
+import { getPlatform, isMacOS } from '#lib/platform/index.js'
 
 /** `event.key` → its canonical name. Arrows are symbols on every platform. */
 const canonicalKeyNames: Record<string, string> = {
@@ -158,19 +158,37 @@ function mapKeyName(shortcut: string, map: Record<string, string>): string {
 }
 
 /**
+ * The Windows key's token: stored, compared, and dispatched as `Super` on Windows and Linux alike,
+ * but a Windows user reads `Win` (`docs/style-guide.md` § "Platform vocabulary"). Linux keeps
+ * `Super`, the name its desktops print.
+ */
+const SUPER_TOKEN = /(^|\+)Super(?=\+|$)/
+const WIN_TOKEN = /(^|\+)Win(?=\+|$)/
+
+/**
  * Render a canonical combo the way this platform's users read it: `⌘Backspace`
- * shows as `⌘⌫` on macOS, `Escape` as `Esc` elsewhere. Display only — never
- * store, compare, or dispatch the result. Idempotent, so wrapping an
- * already-displayed value is harmless.
+ * shows as `⌘⌫` on macOS, `Escape` as `Esc` elsewhere, and `Super+E` as `Win+E`
+ * on Windows. Display only — never store, compare, or dispatch the result.
+ * Idempotent, so wrapping an already-displayed value is harmless.
  */
 export function toDisplayShortcut(shortcut: string): string {
   if (!shortcut) return shortcut
-  return mapKeyName(shortcut, isMacOS() ? macDisplayKeyNames : nonMacDisplayKeyNames)
+  return toDisplayModifiers(mapKeyName(shortcut, isMacOS() ? macDisplayKeyNames : nonMacDisplayKeyNames))
+}
+
+/**
+ * The modifier half of `toDisplayShortcut`: names each modifier the way this platform's users
+ * read it (`Super` → `Win` on Windows), leaving the key name as stored. The Settings key filter
+ * shows its value through this alone, so it keeps showing the word key names it filters by.
+ */
+export function toDisplayModifiers(shortcut: string): string {
+  return getPlatform() === 'windows' ? shortcut.replace(SUPER_TOKEN, '$1Win') : shortcut
 }
 
 /**
  * The canonical spelling of a combo that may carry a display or legacy key name
- * (`⌘⌫` → `⌘Backspace`). Used to heal persisted shortcuts on load. Idempotent.
+ * (`⌘⌫` → `⌘Backspace`, Windows' `Win+E` → `Super+E`). Used to heal persisted
+ * shortcuts on load and to read back the key filter's displayed value. Idempotent.
  *
  * Also heals a Shift-only key POSITION (`⇧8`, `Shift+=`), which no keypress
  * produces since typed symbols are named by their character (`formatKeyCombo`).
@@ -180,7 +198,7 @@ export function toCanonicalShortcut(shortcut: string): string {
   if (!shortcut) return shortcut
   const shiftOnly = /^(?:⇧|Shift\+)(.)$/u.exec(shortcut)?.[1]
   if (shiftOnly !== undefined && shiftOnly in usShiftedCharacter) return usShiftedCharacter[shiftOnly]
-  return mapKeyName(shortcut, displayToCanonicalKeyNames)
+  return mapKeyName(shortcut, displayToCanonicalKeyNames).replace(WIN_TOKEN, '$1Super')
 }
 
 /**

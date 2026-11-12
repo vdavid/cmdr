@@ -451,6 +451,20 @@ describe('canonical vs display forms', () => {
     expect(toDisplayShortcut('Ctrl+Backspace')).toBe('Ctrl+Backspace')
   })
 
+  it('names the Windows key "Win" on Windows and "Super" on Linux, while the stored token stays Super', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(toDisplayShortcut('Super+E')).toBe('Win+E')
+    expect(toDisplayShortcut('Ctrl+Alt+Super+J')).toBe('Ctrl+Alt+Win+J')
+    expect(toDisplayShortcut('Super+')).toBe('Win+')
+    expect(toDisplayShortcut(toDisplayShortcut('Super+Escape'))).toBe('Win+Esc')
+    expect(toCanonicalShortcut('Win+E')).toBe('Super+E')
+    expect(toCanonicalShortcut('Ctrl+Win+')).toBe('Ctrl+Super+')
+    withPlatform('linux')
+    expect(toDisplayShortcut('Super+E')).toBe('Super+E')
+    withPlatform('macos')
+    expect(toDisplayShortcut('⌘E')).toBe('⌘E')
+  })
+
   it('is idempotent, so wrapping an already-displayed value is safe', () => {
     setMacOS(true)
     expect(toDisplayShortcut(toDisplayShortcut('⌘Backspace'))).toBe('⌘⌫')

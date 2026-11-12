@@ -57,6 +57,13 @@ vi.mock('#lib/shortcuts/index.js', async () => ({
   // The real token writer too: the live modifier value must spell what a stored combo holds.
   formatChord: (await vi.importActual<typeof import('#lib/shortcuts/key-capture.js')>('#lib/shortcuts/key-capture.js'))
     .formatChord,
+  // The real display pair: the field shows `Win` on Windows and must read it back as `Super`.
+  toDisplayModifiers: (
+    await vi.importActual<typeof import('#lib/shortcuts/key-capture.js')>('#lib/shortcuts/key-capture.js')
+  ).toDisplayModifiers,
+  toCanonicalShortcut: (
+    await vi.importActual<typeof import('#lib/shortcuts/key-capture.js')>('#lib/shortcuts/key-capture.js')
+  ).toCanonicalShortcut,
   findConflictsForShortcut: (shortcut: string, scope: string, excludeCommandId: string) =>
     findConflictsForShortcut({ shortcut, scope, excludeCommandId }),
   getConflictingCommandIds: () => new Set<string>(),
@@ -151,6 +158,12 @@ describe('key-filter field (macOS)', () => {
     expect(c.keySearchQuery).toBe('⌥⇧=')
   })
 
+  it('shows exactly what it filters by, word key names included', () => {
+    const c = create()
+    c.handleKeyFilterKeyDown(keyEvent({ key: 'Backspace', metaKey: true }))
+    expect(c.keySearchDisplay).toBe('⌘Backspace')
+  })
+
   it('lets Tab through without capturing', () => {
     const c = create()
     c.keySearchQuery = '⌘'
@@ -185,6 +198,26 @@ describe('key-filter field (non-macOS)', () => {
       c.handleKeyFilterKeyDown(keyEvent({ key: 'Meta', metaKey: true }))
       c.handleKeyFilterKeyUp(keyEvent({ key: 'Meta', metaKey: false }))
       expect(c.keySearchQuery).toBe('')
+    },
+  )
+
+  it.each([
+    ['windows', 'Ctrl+Win'],
+    ['linux', 'Ctrl+Super'],
+  ] as const)(
+    'shows the held Super key as each OS names it on %s, and still filters by the stored token',
+    (platform, shown) => {
+      onTestFinished(withPlatform(platform))
+      effectiveShortcuts.set('file.copy', ['Ctrl+Super+C'])
+      effectiveShortcuts.set('app.about', ['Ctrl+A'])
+      const c = create()
+      c.handleKeyFilterKeyDown(keyEvent({ key: 'Meta', ctrlKey: true, metaKey: true }))
+      expect(c.keySearchDisplay).toBe(shown)
+      expect(c.keySearchQuery).toBe('Ctrl+Super')
+      // The field writes back what it shows (the search box's clear button, a paste): it still matches.
+      c.keySearchDisplay = `${shown}+C`
+      expect(c.keySearchQuery).toBe('Ctrl+Super+C')
+      expect(c.filteredCommands.map((cmd) => cmd.id)).toEqual(['file.copy'])
     },
   )
 })

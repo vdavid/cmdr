@@ -145,7 +145,7 @@
                     type="search"
                     ariaLabel={tString('shortcuts.section.filterByKeysPlaceholder')}
                     placeholder={tString('shortcuts.section.filterByKeysPlaceholder')}
-                    bind:value={controller.keySearchQuery}
+                    bind:value={controller.keySearchDisplay}
                     bind:inputElement={keyFilterInput}
                     onkeydown={controller.handleKeyFilterKeyDown}
                     onkeyup={controller.handleKeyFilterKeyUp}
