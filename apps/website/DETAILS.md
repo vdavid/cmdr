@@ -205,6 +205,11 @@ was deleted.)
   is genuinely needed, and note that markup inside those strings gets no `data-astro-cid-…` scope attribute: it can't be
   targeted by the page's scoped `<style>`. Style such elements globally or wrap them in a classed span the template
   owns.
+- **Testimonials** (`src/components/Testimonials.astro`): the home page shows three cards out of the full list. Every
+  quote is in the built HTML, CSS hides all but the first three, and an inline script shuffles the cards on each load
+  (so no-JS visitors see the first three). Tests must never assume which three are visible: assert on the whole section
+  (`toContainText` reads hidden cards) or on the visible count. Avatars are local copies under
+  `src/assets/testimonials/`, never hotlinks.
 - **RSS autodiscovery**: `<link>` tag in `Layout.astro`
 - **Agent-facing endpoints**: `src/pages/llms.txt.ts` (concise) and `llms-full.txt.ts` (detailed) describe Cmdr for AI
   agents; each blog post also has a Markdown mirror at `/blog/{slug}/index.md`. `llms-full.txt`'s feature list is
