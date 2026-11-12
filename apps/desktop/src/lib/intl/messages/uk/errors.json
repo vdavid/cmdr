@@ -1393,6 +1393,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "Натомість скористайтеся командою «Видалити остаточно».",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "Підʼєднання перервано",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1684,6 +1688,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder все ж може їх перемістити, запитавши пароль адміністратора.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Таке буває, коли змінюються привілеї папки Смітника, наприклад після переходу на новий Mac. Ви все одно можете видалити ці елементи остаточно, натиснувши {deletePermanentlyKey}.} windows {Таке буває, коли змінюються дозволи Кошика, наприклад після переходу на новий ПК. Ви все одно можете видалити ці елементи остаточно, натиснувши {deletePermanentlyKey}.} other {Таке буває, коли змінюються права доступу до папки Смітника, наприклад після переходу на новий компʼютер. Ви все одно можете видалити ці елементи остаточно, натиснувши {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {Таке буває, коли змінюються привілеї папки Смітника, наприклад після переходу на новий Mac. Ви все одно можете видалити ці елементи командою «Видалити остаточно».} windows {Таке буває, коли змінюються дозволи Кошика, наприклад після переходу на новий ПК. Ви все одно можете видалити ці елементи командою «Видалити остаточно».} other {Таке буває, коли змінюються права доступу до папки Смітника, наприклад після переходу на новий компʼютер. Ви все одно можете видалити ці елементи командою «Видалити остаточно».}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Деякі місця не мають власного Кошика, зокрема хмарні папки й більшість мережевих дисків. Ви все одно можете видалити ці елементи остаточно, натиснувши {deletePermanentlyKey}.} other {Деякі місця не мають власного Смітника, зокрема хмарні папки й більшість мережевих дисків. Ви все одно можете видалити ці елементи остаточно, натиснувши {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Деякі місця не мають власного Кошика, зокрема хмарні папки й більшість мережевих дисків. Ви все одно можете видалити ці елементи командою «Видалити остаточно».} other {Деякі місця не мають власного Смітника, зокрема хмарні папки й більшість мережевих дисків. Ви все одно можете видалити ці елементи командою «Видалити остаточно».}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Перевірте розділ «Технічні деталі» нижче: там видно, що саме повідомила macOS.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2016,6 +2036,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Папку <code>{path}</code> перейменувати не можна: у ній ваша домашня папка, а ваш Mac очікує знайти її саме за цим шляхом.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Якщо вам справді потрібна нова назва, у macOS є обережний спосіб змінити її в розділі «Користувачі та групи». Щоправда, одним натисканням {renameKey} тут не обійтися.} windows {У Windows немає безпечного вбудованого способу перейменувати цю папку, тож краще залишити її як є.} other {Якщо вам справді потрібна нова назва, адміністратор може обережно змінити її командою usermod, увійшовши як інший користувач. Щоправда, одним натисканням {renameKey} тут не обійтися.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {Якщо вам справді потрібна нова назва, у macOS є обережний спосіб змінити її в розділі «Користувачі та групи». Щоправда, швидким перейменуванням тут не обійтися.} windows {У Windows немає безпечного вбудованого способу перейменувати цю папку, тож краще залишити її як є.} other {Якщо вам справді потрібна нова назва, адміністратор може обережно змінити її командою usermod, увійшовши як інший користувач. Щоправда, швидким перейменуванням тут не обійтися.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Краще перейменуйте щось усередині або залиште цю папку в спокої. На ній тримається більше, ніж здається.",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

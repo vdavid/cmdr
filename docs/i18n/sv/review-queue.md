@@ -56,6 +56,10 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   term; Microsoft gives only advisory → `rekommendation`.
 - **`settings.ai.reasoningEfforts.label.*` → `Ansträngning för resonemang` / `Ansträngning` / `Tankenivå`**: no provider
   ships Swedish docs; confirm the phrase form beats a compound (`Resonemangsinsats`) and that `Tankenivå` reads natural.
+- **Windows Ctrl+Alt+Delete screen → `säkerhetsskärmen`** (`shortcuts.system.securityScreen`): Windows sv names no such
+  screen and the TBX has nothing; Alt+Space's menu → `systemmenyn` comes from the TBX's developer term.
+- **`Sök och Markera filer`** (`shortcuts.scope.searchDialog`): joins the two dialog titles verbatim, so `Markera` keeps
+  its capital mid-heading; confirm it reads as two names, or prefer `Sökning och filmarkering`.
 
 ## Phrasing and tone
 

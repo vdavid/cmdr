@@ -80,3 +80,10 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **The Jump badge's × button** (`fileExplorer.typeToJump.clear`): `Borrar salto` copies the frame of `Borrar filtro`,
   but a jump isn't something you normally clear; a reader should say whether it's clear to a screen-reader user, or
   whether `Borrar texto` reads better.
+- **Windows and Linux words from the keymap batch** (`shortcuts.system.*`,
+  `settings.fileExplorer.typeToJump.mode.description`, `errors.write.homeFolderRename.suggestion.isHome*`): `Retroceso`
+  for Backspace, `el menú de la ventana` for Alt+Space, `la pantalla de seguridad` for Ctrl+Alt+Supr, and
+  `Papelera de reciclaje` capitalized mid-sentence are tentative (no Windows es UI in the pile); the macOS pane
+  `“Usuarios y grupos”` comes from the shipped catalog, not the pile.
+- **`Entrar o salir de pantalla completa`** (`commands.viewToggleFullScreen.label`): built from macOS's own pair rather
+  than the catalog's `Activar o desactivar …`; a reader should say whether it reads naturally in the palette.

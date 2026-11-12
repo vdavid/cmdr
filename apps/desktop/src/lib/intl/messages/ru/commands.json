@@ -244,6 +244,10 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
+  "commands.viewToggleFullScreen.label": "Переключить полноэкранный режим",
+  "@commands.viewToggleFullScreen.label": {
+    "sourceHash": "57789cb"
+  },
   "commands.sortByName.label": "Сортировать по имени",
   "@commands.sortByName.label": {
     "sourceHash": "588a082"
@@ -631,6 +635,30 @@
   "commands.viewerGoForward.label": "Перейти вперед к следующему документу",
   "@commands.viewerGoForward.label": {
     "sourceHash": "a07317a"
+  },
+  "commands.viewerSearch.label": "Искать в файле",
+  "@commands.viewerSearch.label": {
+    "sourceHash": "e6e698b"
+  },
+  "commands.viewerToggleSearchRegex.label": "Включить или выключить поиск по регулярному выражению",
+  "@commands.viewerToggleSearchRegex.label": {
+    "sourceHash": "1a7a8b4"
+  },
+  "commands.viewerToggleSearchCase.label": "Включить или выключить поиск с учетом регистра",
+  "@commands.viewerToggleSearchCase.label": {
+    "sourceHash": "f6481cb"
+  },
+  "commands.searchNewQuery.label": "Начать новый поиск",
+  "@commands.searchNewQuery.label": {
+    "sourceHash": "f43a6aa"
+  },
+  "commands.searchToggleRecent.label": "Показать или скрыть недавние запросы",
+  "@commands.searchToggleRecent.label": {
+    "sourceHash": "98b87c2"
+  },
+  "commands.searchModeByNumber.label": "Переключиться на режим поиска с этим номером",
+  "@commands.searchModeByNumber.label": {
+    "sourceHash": "d3d0c9c"
   },
   "commands.multiRenameOpenPresets.label": "Открыть меню наборов настроек",
   "@commands.multiRenameOpenPresets.label": {

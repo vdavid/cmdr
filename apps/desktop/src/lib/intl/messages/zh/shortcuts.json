@@ -48,6 +48,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Ask Cmdr is the chat panel's product name, kept verbatim in every locale (termbase ruling ask-cmdr)."
   },
+  "shortcuts.scope.searchDialog": "搜索和选择文件",
+  "@shortcuts.scope.searchDialog": {
+    "sourceHash": "eec03a0"
+  },
   "shortcuts.scope.favoritesMenu": "个人收藏菜单",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
@@ -104,6 +108,18 @@
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
+  "shortcuts.conflict.takenByWindows": "{combo} 通常被 Windows 占用（{label}），因此可能永远传不到 Cmdr。",
+  "@shortcuts.conflict.takenByWindows": {
+    "sourceHash": "4858bee"
+  },
+  "shortcuts.conflict.takenByLinuxDesktops": "在 {desktops} 上，桌面环境通常会自己占用 {combo}，因此可能永远传不到 Cmdr。你可以在桌面环境的键盘设置中将它释放出来。",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "sourceHash": "11d35a9"
+  },
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} 会打开 Cmdr 菜单栏中的“{menu}”菜单，所以除非有对话框开着，否则它传不到这个命令。",
+  "@shortcuts.conflict.opensMenuBarMenu": {
+    "sourceHash": "314244c"
+  },
   "shortcuts.system.spotlight": "聚焦",
   "@shortcuts.system.spotlight": {
     "sourceHash": "fca7aa8"
@@ -155,6 +171,38 @@
   "shortcuts.system.forceQuit": "强制退出",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
+  },
+  "shortcuts.system.switchingApps": "切换应用",
+  "@shortcuts.system.switchingApps": {
+    "sourceHash": "0113527"
+  },
+  "shortcuts.system.cyclingWindows": "依次切换窗口",
+  "@shortcuts.system.cyclingWindows": {
+    "sourceHash": "a2a7a18"
+  },
+  "shortcuts.system.windowMenu": "窗口菜单",
+  "@shortcuts.system.windowMenu": {
+    "sourceHash": "50afaf9"
+  },
+  "shortcuts.system.closingWindow": "关闭窗口",
+  "@shortcuts.system.closingWindow": {
+    "sourceHash": "82fe00f"
+  },
+  "shortcuts.system.startMenu": "“开始”菜单",
+  "@shortcuts.system.startMenu": {
+    "sourceHash": "b05bc4f"
+  },
+  "shortcuts.system.taskManager": "任务管理器",
+  "@shortcuts.system.taskManager": {
+    "sourceHash": "58d65c2"
+  },
+  "shortcuts.system.securityScreen": "安全屏幕",
+  "@shortcuts.system.securityScreen": {
+    "sourceHash": "5fdc327"
+  },
+  "shortcuts.system.inputMethodToggle": "开启或关闭输入法",
+  "@shortcuts.system.inputMethodToggle": {
+    "sourceHash": "fe0b8a0"
   },
   "shortcuts.section.title": "键盘快捷键",
   "@shortcuts.section.title": {
@@ -252,6 +300,18 @@
   "shortcuts.section.resetAll": "全部重置为默认",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.section.resetAllConfirm": "要将所有键盘快捷键重置为默认吗？",
+  "@shortcuts.section.resetAllConfirm": {
+    "sourceHash": "3fc5074"
+  },
+  "shortcuts.section.resetAllConfirmTitle": "重置键盘快捷键",
+  "@shortcuts.section.resetAllConfirmTitle": {
+    "sourceHash": "5dac863"
+  },
+  "shortcuts.section.resetAllConfirmButton": "重置",
+  "@shortcuts.section.resetAllConfirmButton": {
+    "sourceHash": "daee760"
   },
   "shortcuts.window.title": "键盘快捷键",
   "@shortcuts.window.title": {

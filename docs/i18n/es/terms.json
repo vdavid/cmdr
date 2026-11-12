@@ -983,7 +983,11 @@
     "confidence": "high",
     "forms": "la tecla Suprimir (⌫); forward delete is Suprimir (derecha)",
     "note": "Pile mined 2026-10-07 (macOS 27.0.1 live bundles): VoiceOver SCRWorkspace.loctable deleteKey, Terminal keyDescriptions.loctable 007F, AccessibilitySharedSupport symbol names delete.backward.",
-    "sources": "macOS VoiceOver (Delete Key → Tecla Suprimir; Presses the delete key → Pulsa la tecla Suprimir), Terminal key descriptions (⌫ Delete → ⌫ Suprimir); the symbol names say retroceso, the Windows word"
+    "sources": "macOS VoiceOver (Delete Key → Tecla Suprimir; Presses the delete key → Pulsa la tecla Suprimir), Terminal key descriptions (⌫ Delete → ⌫ Suprimir); the symbol names say retroceso, the Windows word",
+    "other": {
+      "chosen": "Retroceso",
+      "note": "A PC keyboard's Backspace → la tecla Retroceso, in the Windows and Linux branches; tentative, from the macOS symbol names (retroceso) and Spanish PC keyboards"
+    }
   },
   "delete-permanently": {
     "chosen": "permanentemente",
@@ -2056,6 +2060,8 @@
     ],
     "confidence": "high",
     "exceptions": {
+      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "moving to a new PC or computer is the user switching machines (pasarte a), not a file move; the concept's notMatch covers only the Mac wording (queued)",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "moving to a new PC or computer is the user switching machines (pasarte a), not a file move; the concept's notMatch covers only the Mac wording (queued)",
       "suggestedOps.reversible.moveBack": "move it back → devolverlo a su sitio, the catalog's undo-a-move phrasing (commands.editUndoTrash.description)",
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "move back → devolver al lugar del que salieron, word for word from its sibling bodyUndoByMovingBack",
       "operationLog.rollback.rollbackableNoticeMoveBack": "move back → vuelven al lugar del que salieron, the bodyUndoByMovingBack phrasing",
@@ -3464,7 +3470,12 @@
     "chosen": "papelera",
     "forms": "lowercase in a sentence (a la papelera, Ir a la papelera); capital only when Papelera stands alone as the place",
     "confidence": "high",
-    "sources": "macOS Finder (Trasladar a la papelera, Vaciar papelera)"
+    "sources": "macOS Finder (Trasladar a la papelera, Vaciar papelera)",
+    "windows": {
+      "chosen": "Papelera de reciclaje",
+      "accept": ["papelera de reciclaje"],
+      "note": "Windows' Recycle Bin, capitalized as its name (concept recycle-bin)"
+    }
   },
   "trust": {
     "chosen": "de confianza",
@@ -3876,7 +3887,12 @@
     "accept": ["ventanas", "Ventana"],
     "forms": "the Window menu → Ventana; close this window → cierra esta ventana; the About window → la ventana Acerca de",
     "confidence": "high",
-    "sources": "macOS es (the Ventana menu; ventana ×72 in the pile); MS terminology (window → ventana)"
+    "sources": "macOS es (the Ventana menu; ventana ×72 in the pile); MS terminology (window → ventana)",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "the English matches the OS name Windows, not a window (queued for the concept's notMatch)",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "the English matches the OS name Windows, not a window (queued for the concept's notMatch)",
+      "shortcuts.conflict.takenByWindows": "the English matches the OS name Windows, not a window (queued for the concept's notMatch)"
+    }
   },
   "batch-rename": {
     "chosen": "Renombrado múltiple",
@@ -4028,5 +4044,54 @@
     "accept": ["PC"],
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”); MS terminology restablecer tu PC (Windows says PC, masculine, in prose)"
+  },
+  "recycle-bin": {
+    "chosen": "Papelera de reciclaje",
+    "accept": ["papelera de reciclaje"],
+    "forms": "capitalized as Windows' own name, also mid-sentence (a la Papelera de reciclaje, no tienen Papelera de reciclaje propia); feminine",
+    "confidence": "high",
+    "sources": "MS terminology Recycle Bin → papelera de reciclaje (Windows' desktop icon and File Explorer write Papelera de reciclaje); same in es-MX Windows, so es-419 doesn't fork it"
+  },
+  "exit": {
+    "chosen": "Salir",
+    "accept": ["salir", "Salir de Cmdr"],
+    "forms": "Exit Cmdr → Salir de Cmdr, the same words as macOS's Quit (Windows' File > Exit is Archivo > Salir)",
+    "confidence": "high",
+    "sources": "MS terminology Exit → Salir"
+  },
+  "task-manager": {
+    "chosen": "Administrador de tareas",
+    "confidence": "high",
+    "sources": "MS terminology Task Manager → Administrador de tareas"
+  },
+  "toggle": {
+    "chosen": "Activar o desactivar",
+    "accept": [
+      "activar o desactivar",
+      "entrar o salir",
+      "mostrar u ocultar",
+      "alternar",
+      "cambiar",
+      "invertir",
+      "o desfijar",
+      "control"
+    ],
+    "forms": "an on/off command → Activar o desactivar X (Activar o desactivar la selección); show/hide → Mostrar u ocultar; pin/unpin → Fijar o desfijar; the full-screen window mode → Entrar o salir de pantalla completa, macOS's own pair (Entrar en pantalla completa / Salir de pantalla completa); a tag on or off → Alternar etiqueta X; a toggle that flips an order or a selection names the result (Invertir el orden, Cambiar la selección); a settings switch as a noun → este control",
+    "confidence": "high",
+    "sources": "catalog commands.selectionToggle.label, commands.viewShowHidden.label, commands.tabTogglePin.label, commands.tagsToggle*.label; macOS es Salir de pantalla completa (decision Esc y pantalla completa); MS terminology toggle → alternancia"
+  },
+  "unix-group": {
+    "chosen": "grupo",
+    "accept": ["grupos", "Usuarios y grupos"],
+    "forms": "the System Settings pane → “Usuarios y grupos” (quoted, sentence case); a gid → ID de grupo",
+    "confidence": "tentative",
+    "sources": "catalog (the shipped home-folder rename suggestion quoted “Usuarios y grupos”); the pile's SystemSettings extract lacks the pane name, so confirm against a live macOS es System Settings"
+  },
+  "desktop": {
+    "chosen": "Escritorio",
+    "accept": ["escritorio"],
+    "forms": "the macOS folder → Escritorio; a Linux desktop environment (GNOME, KDE Plasma) in prose → el escritorio, lowercase (tu escritorio, los ajustes de teclado de tu escritorio)",
+    "confidence": "high",
+    "sources": "macOS Finder (Escritorio); GNOME Nautilus (Ir a la carpeta del escritorio, archivo de escritorio)"
   }
 }

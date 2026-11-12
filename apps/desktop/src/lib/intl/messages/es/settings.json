@@ -487,6 +487,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "Qué hace {combo} en una carpeta cuando el portapapeles contiene texto, una imagen o un PDF en lugar de archivos copiados.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "Qué pasa al pegar en una carpeta cuando el portapapeles contiene texto, una imagen o un PDF en lugar de archivos copiados.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "No hacer nada",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -530,6 +538,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Omitir la confirmación al copiar, mover y mover a la papelera}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Copiar y Mover van al otro panel directamente, y Eliminar mueve a la Papelera de reciclaje sin preguntar. Es un poco arriesgado, porque una sola tecla actúa al instante. Eliminar permanentemente siempre pregunta antes.} other {Copiar y Mover van al otro panel directamente, y Eliminar mueve a la papelera sin preguntar. Es un poco arriesgado, porque una sola tecla actúa al instante. Eliminar permanentemente siempre pregunta antes.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {confirmar, confirmación, diálogo, preguntar, copiar, mover, papelera, eliminar, borrar, omitir, saltar, clics}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1087,6 +1099,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Ir a la última descarga",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Salta a tu descarga más reciente desde cualquier app con un atajo global. Requiere acceso total al disco.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "atajo, atajo de teclado, combinación de teclas, global, descarga, descargas, saltar, ir a, última",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1734,6 +1750,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {El visor de archivos de Cmdr muestra los bytes en bruto (con UTF-8 con pérdida para el contenido no textual). Cuando abres una imagen, un PDF, un archivo comprimido u otro archivo binario, el visor muestra un banner rojo que explica que probablemente querías usar la Vista rápida o abrirlo en la app asociada. Activa esto (o haz clic en “No volver a mostrar este aviso” en el banner) para ocultar el aviso definitivamente.} windows {El visor de archivos de Cmdr muestra los bytes en bruto (con UTF-8 con pérdida para el contenido no textual). Cuando abres una imagen, un PDF, un archivo comprimido u otro archivo binario, el visor muestra un banner rojo que explica que probablemente querías abrirlo en la app asociada. Activa esto (o selecciona “No volver a mostrar este aviso” en el banner) para ocultar el aviso definitivamente.} other {El visor de archivos de Cmdr muestra los bytes en bruto (con UTF-8 con pérdida para el contenido no textual). Cuando abres una imagen, un PDF, un archivo comprimido u otro archivo binario, el visor muestra un banner rojo que explica que probablemente querías abrirlo en la app asociada. Activa esto (o haz clic en “No volver a mostrar este aviso” en el banner) para ocultar el aviso definitivamente.}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "visor, binario, imagen, sin formato, en bruto, aviso, advertencia, banner, vista rápida",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1741,6 +1761,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "Ocultar el aviso de Vista rápida con la tecla Espacio",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr usa Espacio para activar o desactivar la selección de archivos y {combo} para Vista rápida (el Finder usa Espacio a secas para Vista rápida). Cada vez que pulsas Espacio en la lista de archivos, Cmdr muestra un recordatorio de un párrafo sobre esta diferencia. Activa esto (o haz clic en “No volver a mostrar” en el aviso) para ocultar el recordatorio definitivamente.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr usa Espacio para activar o desactivar la selección de archivos, mientras que el Finder lo usa para Vista rápida. Cada vez que pulsas Espacio en la lista de archivos, Cmdr muestra un recordatorio de un párrafo sobre esta diferencia. Activa esto (o haz clic en “No volver a mostrar” en el aviso) para ocultar el recordatorio definitivamente.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "vista rápida, previsualización, vista previa, espacio, barra espaciadora, aviso, sugerencia, consejo, recordatorio",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1785,6 +1813,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Número de pestañas cerradas que recordar por panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "Cuántas pestañas cerradas recientemente conservar por panel para “Reabrir la pestaña cerrada” ({combo}). Los valores más altos te dejan reabrir más atrás en el historial; los más bajos liberan memoria antes. Solo se aplica a las pestañas cerradas en la sesión actual.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "Cuántas pestañas cerradas recientemente conservar por panel para “Reabrir la pestaña cerrada”. Los valores más altos te dejan reabrir más atrás en el historial; los más bajos liberan memoria antes. Solo se aplica a las pestañas cerradas en la sesión actual.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "pestaña, pestañas, cerrada, reabrir, volver a abrir, historial, deshacer, panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1853,6 +1889,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "Al escribir en un panel",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {“Saltar” mueve el cursor a la mejor coincidencia. “Filtrar” muestra solo los archivos y carpetas cuyo nombre contiene lo que escribes, como el filtro rápido de Total Commander; la tecla Suprimir (⌫) lo edita y Esc lo borra.} other {“Saltar” mueve el cursor a la mejor coincidencia. “Filtrar” muestra solo los archivos y carpetas cuyo nombre contiene lo que escribes, como el filtro rápido de Total Commander; la tecla Retroceso lo edita y Esc lo borra.}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Saltar",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2226,6 +2266,14 @@
   "settings.behavior.textEditorHintSeen.label": "Ocultar el aviso del editor de texto",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "La primera vez que {combo} abre un archivo en el editor por omisión mientras hay otro editor instalado, Cmdr te comenta que puedes elegir otro. Desactiva esto para volver a ver el aviso.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "La primera vez que Cmdr abre un archivo en el editor por omisión mientras hay otro editor instalado, te comenta que puedes elegir otro. Desactiva esto para volver a ver el aviso.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "editar, editor, texto, app, aviso, consejo, notificación",
   "@settings.behavior.textEditorHintSeen.keywords": {

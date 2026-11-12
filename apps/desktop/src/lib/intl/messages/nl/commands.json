@@ -246,6 +246,10 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
+  "commands.viewToggleFullScreen.label": "Schermvullende weergave aan/uit",
+  "@commands.viewToggleFullScreen.label": {
+    "sourceHash": "57789cb"
+  },
   "commands.sortByName.label": "Sorteer op naam",
   "@commands.sortByName.label": {
     "sourceHash": "588a082"
@@ -633,6 +637,30 @@
   "commands.viewerGoForward.label": "Ga vooruit naar het volgende document",
   "@commands.viewerGoForward.label": {
     "sourceHash": "a07317a"
+  },
+  "commands.viewerSearch.label": "Zoek in het bestand",
+  "@commands.viewerSearch.label": {
+    "sourceHash": "e6e698b"
+  },
+  "commands.viewerToggleSearchRegex.label": "Zet zoeken met regex aan of uit",
+  "@commands.viewerToggleSearchRegex.label": {
+    "sourceHash": "1a7a8b4"
+  },
+  "commands.viewerToggleSearchCase.label": "Zet hoofdlettergevoelig zoeken aan of uit",
+  "@commands.viewerToggleSearchCase.label": {
+    "sourceHash": "f6481cb"
+  },
+  "commands.searchNewQuery.label": "Begin een nieuwe zoekopdracht",
+  "@commands.searchNewQuery.label": {
+    "sourceHash": "f43a6aa"
+  },
+  "commands.searchToggleRecent.label": "Toon of verberg recente zoekopdrachten",
+  "@commands.searchToggleRecent.label": {
+    "sourceHash": "98b87c2"
+  },
+  "commands.searchModeByNumber.label": "Wissel naar de zoekmodus met dat nummer",
+  "@commands.searchModeByNumber.label": {
+    "sourceHash": "d3d0c9c"
   },
   "commands.multiRenameOpenPresets.label": "Open voorinstellingenmenu",
   "@commands.multiRenameOpenPresets.label": {

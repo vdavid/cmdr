@@ -1943,7 +1943,11 @@
     "accept": ["mov", "levad", "leva os", "leva de volta"],
     "forms": "progress Movendo; noun movimentação (Finder MV2_V1 Desfazer Movimentação); a rollback moving files back → levar de volta (Levado de volta), per put-back's three families",
     "confidence": "confirmed",
-    "sources": "macOS Finder pt-BR"
+    "sources": "macOS Finder pt-BR",
+    "exceptions": {
+      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "“Moving to a new PC/computer” is the user changing machines (passar para), not a file move.",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "“Moving to a new PC/computer” is the user changing machines (passar para), not a file move."
+    }
   },
   "move-to-trash": {
     "chosen": "Mover para o Lixo",
@@ -2858,7 +2862,8 @@
       "errors.mount.mountRefused": "A NAS's own admin settings are configurações do servidor; Ajustes is only Cmdr's or Apple's window.",
       "errors.mount.unsupportedProtocol": "A NAS's own admin settings are configurações do servidor; Ajustes is only Cmdr's or Apple's window.",
       "servers.refusal.exportRefused": "The NFS server's own sharing settings are configurações de NFS do servidor; Ajustes is only Cmdr's or Apple's window.",
-      "servers.sheet.s3GcsKeyHelp": "Quotes Google Cloud console’s own pt-BR page, Configurações; Ajustes is only Cmdr’s or Apple’s window."
+      "servers.sheet.s3GcsKeyHelp": "Quotes Google Cloud console’s own pt-BR page, Configurações; Ajustes is only Cmdr’s or Apple’s window.",
+      "shortcuts.conflict.takenByLinuxDesktops": "A Linux desktop’s own keyboard settings, not Cmdr’s Settings: GNOME and KDE pt-BR call theirs configurações."
     }
   },
   "share-menu": {
@@ -3298,7 +3303,16 @@
       }
     ],
     "confidence": "confirmed",
-    "sources": "macOS Finder pt-BR (Move to Trash → Mover para o Lixo, Empty Trash → Esvaziar Lixo)"
+    "sources": "macOS Finder pt-BR (Move to Trash → Mover para o Lixo, Empty Trash → Esvaziar Lixo)",
+    "windows": {
+      "chosen": "Lixeira",
+      "note": "Windows’ Recycle Bin (MS terminology pt-BR)."
+    },
+    "other": {
+      "chosen": "Lixeira",
+      "accept": ["Lixo"],
+      "note": "Linux-only other branches take Lixeira (Nautilus, Thunar, and Dolphin pt-BR: Trash → Lixeira); an other branch macOS also reads keeps Lixo."
+    }
   },
   "trust": {
     "chosen": "confiar",
@@ -3510,7 +3524,12 @@
     "chosen": "janela",
     "forms": "the Window menu → Janela; About window → Janela Sobre",
     "confidence": "high",
-    "sources": "macOS Finder pt-BR"
+    "sources": "macOS Finder pt-BR",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "The English hit is the OS name Windows, not a window.",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "The English hit is the OS name Windows, not a window.",
+      "shortcuts.conflict.takenByWindows": "The English hit is the OS name Windows, not a window."
+    }
   },
   "word-wrap": {
     "chosen": "quebra automática de linha",
@@ -3833,5 +3852,41 @@
     "accept": ["PC"],
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”) → PC (m.)"
+  },
+  "recycle-bin": {
+    "chosen": "Lixeira",
+    "accept": ["Lixeira"],
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (Recycle Bin → Lixeira, the Windows storage place)"
+  },
+  "exit": {
+    "chosen": "Sair",
+    "accept": ["sair"],
+    "forms": "Exit Cmdr → Sair do Cmdr",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (exit → sair, “To close software”)"
+  },
+  "toggle": {
+    "chosen": "Alternar",
+    "accept": ["alternar", "ativar ou desativar", "mostrar ou ocultar"],
+    "forms": "a two-state command label → Alternar X (Alternar arquivos ocultos, Alternar tela cheia); a “turn X on or off” label → Ativar ou desativar X",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (toggle → alternância / alternar); shipped pt catalog (Alternar seleção, Alternar arquivos ocultos)",
+    "exceptions": {
+      "commands.tabTogglePin.label": "Pin and unpin are two verbs here: Fixar/desafixar names both states, which Alternar would hide.",
+      "settings.developer.verboseLogging.description": "“This toggle” is the switch itself as a noun (esta opção), not the act of toggling."
+    }
+  },
+  "task-manager": {
+    "chosen": "Gerenciador de Tarefas",
+    "confidence": "confirmed",
+    "sources": "MS terminology pt-BR (Task Manager → Gerenciador de Tarefas)"
+  },
+  "unix-group": {
+    "chosen": "grupo",
+    "accept": ["grupos", "Grupos"],
+    "forms": "the macOS pane Users & Groups → Usuários e Grupos (keeps Apple’s capitals when named)",
+    "confidence": "high",
+    "sources": "macOS 27 live bundle UsersGroups.appex InfoPlist.loctable pt_BR CFBundleDisplayName “Usuários e Grupos”"
   }
 }

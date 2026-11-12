@@ -160,6 +160,10 @@
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"
   },
+  "menu.file.quit": "{platform, select, windows {Quitter Cmdr} other {Quitter Cmdr}}",
+  "@menu.file.quit": {
+    "sourceHash": "af7cf85"
+  },
   "menu.file.quickLook": "Coup d’œil",
   "@menu.file.quickLook": {
     "sourceHash": "f5616ce"
@@ -296,6 +300,10 @@
   "menu.view.calculateFolderSizes": "Calculer la taille des dossiers",
   "@menu.view.calculateFolderSizes": {
     "sourceHash": "d2a83da"
+  },
+  "menu.view.fullScreen": "Plein écran",
+  "@menu.view.fullScreen": {
+    "sourceHash": "674fe2a"
   },
   "menu.view.commandPalette": "Palette de commandes…",
   "@menu.view.commandPalette": {

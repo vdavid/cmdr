@@ -1393,6 +1393,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "Nutze stattdessen den Befehl „Endgültig löschen“.",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "Verbindung unterbrochen",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1684,6 +1688,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Der Finder kann sie trotzdem bewegen, nachdem er nach einem Administratorpasswort gefragt hat.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Das kann passieren, wenn sich die Zugriffsrechte des Papierkorbordners ändern, zum Beispiel nach dem Umstieg auf einen neuen Mac. Endgültig löschen kannst du die Objekte trotzdem mit {deletePermanentlyKey}.} windows {Das kann passieren, wenn sich die Zugriffsrechte des Papierkorbs ändern, zum Beispiel nach dem Umstieg auf einen neuen PC. Endgültig löschen kannst du die Objekte trotzdem mit {deletePermanentlyKey}.} other {Das kann passieren, wenn sich die Zugriffsrechte des Papierkorbordners ändern, zum Beispiel nach dem Umstieg auf einen neuen Computer. Endgültig löschen kannst du die Objekte trotzdem mit {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {Das kann passieren, wenn sich die Zugriffsrechte des Papierkorbordners ändern, zum Beispiel nach dem Umstieg auf einen neuen Mac. Löschen kannst du die Objekte trotzdem mit dem Befehl „Endgültig löschen“.} windows {Das kann passieren, wenn sich die Zugriffsrechte des Papierkorbs ändern, zum Beispiel nach dem Umstieg auf einen neuen PC. Löschen kannst du die Objekte trotzdem mit dem Befehl „Endgültig löschen“.} other {Das kann passieren, wenn sich die Zugriffsrechte des Papierkorbordners ändern, zum Beispiel nach dem Umstieg auf einen neuen Computer. Löschen kannst du die Objekte trotzdem mit dem Befehl „Endgültig löschen“.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Manche Orte haben keinen eigenen Papierkorb, darunter Cloud-Ordner und die meisten Netzlaufwerke. Endgültig löschen kannst du die Objekte trotzdem mit {deletePermanentlyKey}.} other {Manche Orte haben keinen eigenen Papierkorb, darunter Cloud-Ordner und die meisten Netzlaufwerke. Endgültig löschen kannst du die Objekte trotzdem mit {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Manche Orte haben keinen eigenen Papierkorb, darunter Cloud-Ordner und die meisten Netzlaufwerke. Löschen kannst du die Objekte trotzdem mit dem Befehl „Endgültig löschen“.} other {Manche Orte haben keinen eigenen Papierkorb, darunter Cloud-Ordner und die meisten Netzlaufwerke. Löschen kannst du die Objekte trotzdem mit dem Befehl „Endgültig löschen“.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Sieh dir unten die technischen Details an, um zu sehen, was macOS gemeldet hat.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2016,6 +2036,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {<code>{path}</code> lässt sich nicht umbenennen, weil darin dein persönlicher Ordner liegt, und dein Mac erwartet ihn genau unter diesem Pfad.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Wenn du wirklich einen neuen Namen brauchst, hat macOS dafür einen behutsamen Weg unter „Benutzer:innen & Gruppen“. Ein schnelles {renameKey} ist das allerdings nicht.} windows {Windows hat keinen sicheren eingebauten Weg, diesen Ordner umzubenennen, also lass ihn am besten, wie er ist.} other {Wenn du wirklich einen neuen Namen brauchst, geht das behutsam mit usermod und Administratorrechten, angemeldet mit einem anderen Benutzerkonto. Ein schnelles {renameKey} ist das allerdings nicht.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {Wenn du wirklich einen neuen Namen brauchst, hat macOS dafür einen behutsamen Weg unter „Benutzer:innen & Gruppen“. Eine schnelle Umbenennung ist das allerdings nicht.} windows {Windows hat keinen sicheren eingebauten Weg, diesen Ordner umzubenennen, also lass ihn am besten, wie er ist.} other {Wenn du wirklich einen neuen Namen brauchst, geht das behutsam mit usermod und Administratorrechten, angemeldet mit einem anderen Benutzerkonto. Eine schnelle Umbenennung ist das allerdings nicht.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Benenne lieber etwas darin um oder lass diesen Ordner in Ruhe. Da hängt mehr dran, als es aussieht.",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

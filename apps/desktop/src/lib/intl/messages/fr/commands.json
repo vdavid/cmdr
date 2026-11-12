@@ -244,6 +244,10 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
+  "commands.viewToggleFullScreen.label": "Activer ou désactiver le mode plein écran",
+  "@commands.viewToggleFullScreen.label": {
+    "sourceHash": "57789cb"
+  },
   "commands.sortByName.label": "Trier par nom",
   "@commands.sortByName.label": {
     "sourceHash": "588a082"
@@ -631,6 +635,30 @@
   "commands.viewerGoForward.label": "Avancer au document suivant",
   "@commands.viewerGoForward.label": {
     "sourceHash": "a07317a"
+  },
+  "commands.viewerSearch.label": "Rechercher dans le fichier",
+  "@commands.viewerSearch.label": {
+    "sourceHash": "e6e698b"
+  },
+  "commands.viewerToggleSearchRegex.label": "Activer ou désactiver la recherche par expression régulière",
+  "@commands.viewerToggleSearchRegex.label": {
+    "sourceHash": "1a7a8b4"
+  },
+  "commands.viewerToggleSearchCase.label": "Activer ou désactiver la recherche sensible à la casse",
+  "@commands.viewerToggleSearchCase.label": {
+    "sourceHash": "f6481cb"
+  },
+  "commands.searchNewQuery.label": "Commencer une nouvelle recherche",
+  "@commands.searchNewQuery.label": {
+    "sourceHash": "f43a6aa"
+  },
+  "commands.searchToggleRecent.label": "Afficher ou masquer les recherches récentes",
+  "@commands.searchToggleRecent.label": {
+    "sourceHash": "98b87c2"
+  },
+  "commands.searchModeByNumber.label": "Passer au mode de recherche portant ce numéro",
+  "@commands.searchModeByNumber.label": {
+    "sourceHash": "d3d0c9c"
   },
   "commands.multiRenameOpenPresets.label": "Ouvrir le menu des présélections",
   "@commands.multiRenameOpenPresets.label": {

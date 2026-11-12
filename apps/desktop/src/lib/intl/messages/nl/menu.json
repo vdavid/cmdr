@@ -162,6 +162,10 @@
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"
   },
+  "menu.file.quit": "{platform, select, windows {Sluit Cmdr af} other {Stop Cmdr}}",
+  "@menu.file.quit": {
+    "sourceHash": "af7cf85"
+  },
   "menu.file.quickLook": "Geef snel weer",
   "@menu.file.quickLook": {
     "sourceHash": "f5616ce"
@@ -298,6 +302,10 @@
   "menu.view.calculateFolderSizes": "Bereken mapgroottes",
   "@menu.view.calculateFolderSizes": {
     "sourceHash": "d2a83da"
+  },
+  "menu.view.fullScreen": "Volledig scherm",
+  "@menu.view.fullScreen": {
+    "sourceHash": "674fe2a"
   },
   "menu.view.commandPalette": "Opdrachtenpalet…",
   "@menu.view.commandPalette": {

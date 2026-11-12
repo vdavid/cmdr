@@ -48,6 +48,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Název produktu; zůstává ve všech jazycích beze změny (do-not-translate), jako nadpis skupiny zkratek pro panel Ask Cmdr."
   },
+  "shortcuts.scope.searchDialog": "Hledání a výběr souborů",
+  "@shortcuts.scope.searchDialog": {
+    "sourceHash": "eec03a0"
+  },
   "shortcuts.scope.favoritesMenu": "Nabídka oblíbených",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
@@ -104,6 +108,18 @@
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
+  "shortcuts.conflict.takenByWindows": "Kombinaci {combo} obvykle používá Windows ({label}), takže se do Cmdru možná vůbec nedostane.",
+  "@shortcuts.conflict.takenByWindows": {
+    "sourceHash": "4858bee"
+  },
+  "shortcuts.conflict.takenByLinuxDesktops": "Kombinaci {combo} si obvykle bere pro sebe pracovní prostředí ({desktops}), takže se do Cmdru možná vůbec nedostane. Uvolnit ji můžete v nastavení klávesnice svého prostředí.",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "sourceHash": "11d35a9"
+  },
+  "shortcuts.conflict.opensMenuBarMenu": "Kombinace {combo} otevírá v řádku nabídek Cmdru nabídku {menu}, takže se k tomuto příkazu dostane, jen když je otevřené dialogové okno.",
+  "@shortcuts.conflict.opensMenuBarMenu": {
+    "sourceHash": "314244c"
+  },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
     "sourceHash": "fca7aa8",
@@ -157,6 +173,38 @@
   "shortcuts.system.forceQuit": "Vynutit ukončení",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
+  },
+  "shortcuts.system.switchingApps": "přepínání aplikací",
+  "@shortcuts.system.switchingApps": {
+    "sourceHash": "0113527"
+  },
+  "shortcuts.system.cyclingWindows": "procházení oken",
+  "@shortcuts.system.cyclingWindows": {
+    "sourceHash": "a2a7a18"
+  },
+  "shortcuts.system.windowMenu": "systémová nabídka okna",
+  "@shortcuts.system.windowMenu": {
+    "sourceHash": "50afaf9"
+  },
+  "shortcuts.system.closingWindow": "zavření okna",
+  "@shortcuts.system.closingWindow": {
+    "sourceHash": "82fe00f"
+  },
+  "shortcuts.system.startMenu": "nabídka Start",
+  "@shortcuts.system.startMenu": {
+    "sourceHash": "b05bc4f"
+  },
+  "shortcuts.system.taskManager": "Správce úloh",
+  "@shortcuts.system.taskManager": {
+    "sourceHash": "58d65c2"
+  },
+  "shortcuts.system.securityScreen": "obrazovka zabezpečení",
+  "@shortcuts.system.securityScreen": {
+    "sourceHash": "5fdc327"
+  },
+  "shortcuts.system.inputMethodToggle": "zapnutí nebo vypnutí vstupní metody",
+  "@shortcuts.system.inputMethodToggle": {
+    "sourceHash": "fe0b8a0"
   },
   "shortcuts.section.title": "Klávesové zkratky",
   "@shortcuts.section.title": {
@@ -254,6 +302,18 @@
   "shortcuts.section.resetAll": "Obnovit vše na výchozí hodnoty",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.section.resetAllConfirm": "Obnovit všechny klávesové zkratky na výchozí hodnoty?",
+  "@shortcuts.section.resetAllConfirm": {
+    "sourceHash": "3fc5074"
+  },
+  "shortcuts.section.resetAllConfirmTitle": "Resetovat klávesové zkratky",
+  "@shortcuts.section.resetAllConfirmTitle": {
+    "sourceHash": "5dac863"
+  },
+  "shortcuts.section.resetAllConfirmButton": "Resetovat",
+  "@shortcuts.section.resetAllConfirmButton": {
+    "sourceHash": "daee760"
   },
   "shortcuts.window.title": "Klávesové zkratky",
   "@shortcuts.window.title": {

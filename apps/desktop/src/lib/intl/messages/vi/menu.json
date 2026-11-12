@@ -160,6 +160,10 @@
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"
   },
+  "menu.file.quit": "{platform, select, windows {Thoát Cmdr} other {Thoát Cmdr}}",
+  "@menu.file.quit": {
+    "sourceHash": "af7cf85"
+  },
   "menu.file.quickLook": "Xem nhanh",
   "@menu.file.quickLook": {
     "sourceHash": "f5616ce"
@@ -295,6 +299,10 @@
   "menu.view.calculateFolderSizes": "Tính toán kích cỡ thư mục",
   "@menu.view.calculateFolderSizes": {
     "sourceHash": "d2a83da"
+  },
+  "menu.view.fullScreen": "Toàn màn hình",
+  "@menu.view.fullScreen": {
+    "sourceHash": "674fe2a"
   },
   "menu.view.commandPalette": "Bảng lệnh…",
   "@menu.view.commandPalette": {

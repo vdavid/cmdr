@@ -48,6 +48,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name of the chat panel; kept verbatim and uninflected per the ask-cmdr ruling in docs/i18n/ru/terms.json, as in settings.askCmdr.enabled.label."
   },
+  "shortcuts.scope.searchDialog": "Поиск и выделение файлов",
+  "@shortcuts.scope.searchDialog": {
+    "sourceHash": "eec03a0"
+  },
   "shortcuts.scope.favoritesMenu": "Меню избранного",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
@@ -104,6 +108,18 @@
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
+  "shortcuts.conflict.takenByWindows": "Сочетание {combo} обычно занято Windows ({label}), поэтому может не доходить до Cmdr.",
+  "@shortcuts.conflict.takenByWindows": {
+    "sourceHash": "4858bee"
+  },
+  "shortcuts.conflict.takenByLinuxDesktops": "Сочетание {combo} обычно занимает сама рабочая среда ({desktops}), поэтому оно может не доходить до Cmdr. Освободить его можно в настройках клавиатуры вашей рабочей среды.",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "sourceHash": "11d35a9"
+  },
+  "shortcuts.conflict.opensMenuBarMenu": "Сочетание {combo} открывает меню «{menu}» в строке меню Cmdr, поэтому до этой команды оно дойдет, только когда открыто диалоговое окно.",
+  "@shortcuts.conflict.opensMenuBarMenu": {
+    "sourceHash": "314244c"
+  },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
     "sourceHash": "fca7aa8",
@@ -158,6 +174,38 @@
   "shortcuts.system.forceQuit": "Завершить принудительно",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
+  },
+  "shortcuts.system.switchingApps": "переключение между приложениями",
+  "@shortcuts.system.switchingApps": {
+    "sourceHash": "0113527"
+  },
+  "shortcuts.system.cyclingWindows": "перебор окон по очереди",
+  "@shortcuts.system.cyclingWindows": {
+    "sourceHash": "a2a7a18"
+  },
+  "shortcuts.system.windowMenu": "системное меню окна",
+  "@shortcuts.system.windowMenu": {
+    "sourceHash": "50afaf9"
+  },
+  "shortcuts.system.closingWindow": "закрытие окна",
+  "@shortcuts.system.closingWindow": {
+    "sourceHash": "82fe00f"
+  },
+  "shortcuts.system.startMenu": "меню «Пуск»",
+  "@shortcuts.system.startMenu": {
+    "sourceHash": "b05bc4f"
+  },
+  "shortcuts.system.taskManager": "Диспетчер задач",
+  "@shortcuts.system.taskManager": {
+    "sourceHash": "58d65c2"
+  },
+  "shortcuts.system.securityScreen": "экран безопасности",
+  "@shortcuts.system.securityScreen": {
+    "sourceHash": "5fdc327"
+  },
+  "shortcuts.system.inputMethodToggle": "включение или выключение метода ввода",
+  "@shortcuts.system.inputMethodToggle": {
+    "sourceHash": "fe0b8a0"
   },
   "shortcuts.section.title": "Сочетания клавиш",
   "@shortcuts.section.title": {
@@ -255,6 +303,18 @@
   "shortcuts.section.resetAll": "Восстановить все по умолчанию",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.section.resetAllConfirm": "Сбросить все сочетания клавиш до значений по умолчанию?",
+  "@shortcuts.section.resetAllConfirm": {
+    "sourceHash": "3fc5074"
+  },
+  "shortcuts.section.resetAllConfirmTitle": "Сброс сочетаний клавиш",
+  "@shortcuts.section.resetAllConfirmTitle": {
+    "sourceHash": "5dac863"
+  },
+  "shortcuts.section.resetAllConfirmButton": "Сбросить",
+  "@shortcuts.section.resetAllConfirmButton": {
+    "sourceHash": "daee760"
   },
   "shortcuts.window.title": "Сочетания клавиш",
   "@shortcuts.window.title": {

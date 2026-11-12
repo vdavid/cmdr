@@ -325,6 +325,10 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr kan inte öppna den här filen i en annan app än, eftersom den inte är en vanlig fil på din Mac. Visa den med kommandot Visa i stället.} windows {Cmdr kan inte öppna den här filen i en annan app än, eftersom den inte är en vanlig fil på din dator. Visa den med kommandot Visa i stället.} other {Cmdr kan inte öppna den här filen i en annan app än, eftersom den inte är en vanlig fil på din dator. Visa den med kommandot Visa i stället.}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "b281a7e"
+  },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {Det gick inte att öppna {fileName}. macOS hittade inte filen, eller så finns det ingen app som kan öppna den.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
@@ -714,25 +718,57 @@
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "ba69ee7"
   },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "Filer från den här enheten kan inte läggas i urklipp. Kopiera dem med kommandot Kopiera i stället.",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "sourceHash": "ec9f6a4"
+  },
   "fileExplorer.clipboard.moveFromDevice": "Filer från den här enheten kan inte läggas i urklipp. Använd {moveKey} för att flytta dem.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "Filer från den här enheten kan inte läggas i urklipp. Flytta dem med kommandot Flytta i stället.",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "sourceHash": "3e1a8d6"
   },
   "fileExplorer.clipboard.copyFromServer": "Filer från den här servern kan inte läggas i urklipp. Använd {copyKey} för att kopiera dem.",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "12cb39f"
   },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "Filer från den här servern kan inte läggas i urklipp. Kopiera dem med kommandot Kopiera i stället.",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "sourceHash": "a0b8b71"
+  },
   "fileExplorer.clipboard.moveFromServer": "Filer från den här servern kan inte läggas i urklipp. Använd {moveKey} för att flytta dem.",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "Filer från den här servern kan inte läggas i urklipp. Flytta dem med kommandot Flytta i stället.",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "sourceHash": "958bc4b"
   },
   "fileExplorer.clipboard.copyFromUnknown": "De här filerna kan inte läggas i urklipp. Använd {copyKey} för att kopiera dem.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "7aaabdb"
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "De här filerna kan inte läggas i urklipp. Kopiera dem med kommandot Kopiera i stället.",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "sourceHash": "eef58a6"
+  },
   "fileExplorer.clipboard.moveFromUnknown": "De här filerna kan inte läggas i urklipp. Använd {moveKey} för att flytta dem.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
+  },
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "De här filerna kan inte läggas i urklipp. Flytta dem med kommandot Flytta i stället.",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "sourceHash": "9148b09"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr kan inte öppna den här filen i redigeraren än, eftersom den inte är en vanlig fil på din Mac. Tryck på {viewKey} för att visa den.} windows {Cmdr kan inte öppna den här filen i redigeraren än, eftersom den inte är en vanlig fil på din dator. Tryck på {viewKey} för att visa den.} other {Cmdr kan inte öppna den här filen i redigeraren än, eftersom den inte är en vanlig fil på din dator. Tryck på {viewKey} för att visa den.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "6bc5d46"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr kan inte öppna den här filen i redigeraren än, eftersom den inte är en vanlig fil på din Mac. Visa den med kommandot Visa i stället.} windows {Cmdr kan inte öppna den här filen i redigeraren än, eftersom den inte är en vanlig fil på din dator. Visa den med kommandot Visa i stället.} other {Cmdr kan inte öppna den här filen i redigeraren än, eftersom den inte är en vanlig fil på din dator. Visa den med kommandot Visa i stället.}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "4572115"
   },
   "fileExplorer.edit.hint": "Filen öppnades i {app}. Vill du ha en annan redigerare nästa gång? Välj den i Inställningar.",
   "@fileExplorer.edit.hint": {
@@ -770,9 +806,25 @@
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "Kopiera filer till den här enheten med kommandot Kopiera.",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "sourceHash": "06a1d58"
+  },
   "fileExplorer.clipboard.copyToServer": "Använd {copyKey} för att kopiera filer till den här servern.",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "Kopiera filer till den här servern med kommandot Kopiera.",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "sourceHash": "1229e3a"
+  },
+  "fileExplorer.clipboard.noFilesWithKey": "Inga filer i urklipp. Kopiera filer först med {combo}.",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "sourceHash": "1eb6ea9"
+  },
+  "fileExplorer.clipboard.noFiles": "Inga filer i urklipp. Kopiera filer först.",
+  "@fileExplorer.clipboard.noFiles": {
+    "sourceHash": "295341a"
   },
   "fileExplorer.clipboard.stillPasting": "Håller fortfarande på att skapa en fil från urklipp. Volymen svarar långsamt.",
   "@fileExplorer.clipboard.stillPasting": {
@@ -874,6 +926,14 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
+  "fileExplorer.restic.copyOutWithKey": "Om du vill kopiera ut filer ur en säkerhetskopia använder du {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "d49d631"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "Om du vill kopiera ut filer ur en säkerhetskopia använder du kommandot Kopiera.",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "7cfa21e"
+  },
   "fileExplorer.restic.snapshot.host": "Säkerhetskopierad från {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -901,6 +961,18 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Om du vill glömma lösenordet för en säkerhetskopia öppnar du först säkerhetskopian, eller ställer markören på dess mapp ”Browse snapshots”.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.copyOutWithKeys": "Om du vill kopiera ut filer ur ett arkiv använder du {copyKey} för att kopiera eller {moveKey} för att flytta.",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "sourceHash": "f68d0ba"
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "Om du vill kopiera ut filer ur ett arkiv använder du {copyKey}.",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "sourceHash": "adf47d1"
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "Om du vill kopiera ut filer ur ett arkiv använder du kommandot Kopiera eller Flytta.",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "sourceHash": "ea37784"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr har lite git-magi åt dig!",
   "@fileExplorer.git.portalIntro.title": {
@@ -962,6 +1034,18 @@
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
   },
+  "fileExplorer.git.copyOutWithKeys": "Om du vill kopiera ut filer ur en git-ögonblicksbild använder du {copyKey} för att kopiera eller {moveKey} för att flytta.",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "sourceHash": "12e26a2"
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "Om du vill kopiera ut filer ur en git-ögonblicksbild använder du {copyKey}.",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "sourceHash": "8a75857"
+  },
+  "fileExplorer.git.copyOutWithoutKey": "Om du vill kopiera ut filer ur en git-ögonblicksbild använder du kommandot Kopiera eller Flytta.",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "sourceHash": "a8ebbf0"
+  },
   "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} är större än {limit}, så Cmdr kan inte öppna filen i {appName} inifrån arkivet.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
     "sourceHash": "43399e6"
@@ -989,6 +1073,10 @@
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} kan inte öppna den här filen, eftersom den inte är en vanlig fil på din Mac. Tryck på {viewKey} för att visa den i Cmdr.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} kan inte öppna den här filen, eftersom den inte är en vanlig fil på din Mac. Visa den i Cmdr med kommandot Visa i stället.} windows {{appName} kan inte öppna den här filen, eftersom den inte är en vanlig fil på din dator. Visa den i Cmdr med kommandot Visa i stället.} other {{appName} kan inte öppna den här filen, eftersom den inte är en vanlig fil på din dator. Visa den i Cmdr med kommandot Visa i stället.}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "9d98d51"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Det gick inte att läsa {fileName} för att öppna filen i {appName}. Kontrollera att enheten fortfarande är ansluten och försök igen.",
   "@fileExplorer.openWith.copyRefused.unreadable": {
@@ -1624,6 +1712,10 @@
   "fileExplorer.quickLookHint.quickView": "I Cmdr kan du öppna Överblick med <key></key>. (<key></key> funkar förresten i Finder också!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.quickViewRebound": "I Cmdr kan du öppna Överblick med <key></key>.",
+  "@fileExplorer.quickLookHint.quickViewRebound": {
+    "sourceHash": "27e87e5"
   },
   "fileExplorer.quickLookHint.enterOpens": "Du kan också använda <enter></enter> för att öppna filer i standardappen.",
   "@fileExplorer.quickLookHint.enterOpens": {

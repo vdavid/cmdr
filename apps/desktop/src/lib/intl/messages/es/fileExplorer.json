@@ -325,6 +325,10 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr aún no puede abrir este archivo en otra app, porque no es un archivo normal de tu Mac. Usa el comando Ver para verlo.} windows {Cmdr aún no puede abrir este archivo en otra app, porque no es un archivo normal de tu PC. Usa el comando Ver para verlo.} other {Cmdr aún no puede abrir este archivo en otra app, porque no es un archivo normal de tu ordenador. Usa el comando Ver para verlo.}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "b281a7e"
+  },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {{fileName} no se ha abierto. macOS no ha encontrado el archivo, o ninguna app lo abre.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
@@ -714,25 +718,57 @@
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "ba69ee7"
   },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "El portapapeles no puede llevar archivos de este dispositivo. Usa el comando Copiar para copiarlos.",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "sourceHash": "ec9f6a4"
+  },
   "fileExplorer.clipboard.moveFromDevice": "El portapapeles no puede llevar archivos de este dispositivo. Usa {moveKey} para moverlos.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "El portapapeles no puede llevar archivos de este dispositivo. Usa el comando Mover para moverlos.",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "sourceHash": "3e1a8d6"
   },
   "fileExplorer.clipboard.copyFromServer": "El portapapeles no puede llevar archivos de este servidor. Usa {copyKey} para copiarlos.",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "12cb39f"
   },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "El portapapeles no puede llevar archivos de este servidor. Usa el comando Copiar para copiarlos.",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "sourceHash": "a0b8b71"
+  },
   "fileExplorer.clipboard.moveFromServer": "El portapapeles no puede llevar archivos de este servidor. Usa {moveKey} para moverlos.",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "El portapapeles no puede llevar archivos de este servidor. Usa el comando Mover para moverlos.",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "sourceHash": "958bc4b"
   },
   "fileExplorer.clipboard.copyFromUnknown": "Estos archivos no pueden ir al portapapeles. Usa {copyKey} para copiarlos.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "7aaabdb"
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "Estos archivos no pueden ir al portapapeles. Usa el comando Copiar para copiarlos.",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "sourceHash": "eef58a6"
+  },
   "fileExplorer.clipboard.moveFromUnknown": "Estos archivos no pueden ir al portapapeles. Usa {moveKey} para moverlos.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
+  },
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "Estos archivos no pueden ir al portapapeles. Usa el comando Mover para moverlos.",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "sourceHash": "9148b09"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu Mac. Pulsa {viewKey} para verlo.} windows {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu PC. Pulsa {viewKey} para verlo.} other {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu ordenador. Pulsa {viewKey} para verlo.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "6bc5d46"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu Mac. Usa el comando Ver para verlo.} windows {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu PC. Usa el comando Ver para verlo.} other {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu ordenador. Usa el comando Ver para verlo.}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "4572115"
   },
   "fileExplorer.edit.hint": "Archivo abierto en {app}. ¿Quieres otro editor la próxima vez? Elígelo en Ajustes.",
   "@fileExplorer.edit.hint": {
@@ -770,9 +806,25 @@
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "Usa el comando Copiar para copiar archivos a este dispositivo.",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "sourceHash": "06a1d58"
+  },
   "fileExplorer.clipboard.copyToServer": "Usa {copyKey} para copiar archivos a este servidor.",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "Usa el comando Copiar para copiar archivos a este servidor.",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "sourceHash": "1229e3a"
+  },
+  "fileExplorer.clipboard.noFilesWithKey": "No hay archivos en el portapapeles. Copia archivos primero con {combo}.",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "sourceHash": "1eb6ea9"
+  },
+  "fileExplorer.clipboard.noFiles": "No hay archivos en el portapapeles. Copia archivos primero.",
+  "@fileExplorer.clipboard.noFiles": {
+    "sourceHash": "295341a"
   },
   "fileExplorer.clipboard.stillPasting": "Todavía se está creando un archivo a partir del portapapeles. El volumen tarda en responder.",
   "@fileExplorer.clipboard.stillPasting": {
@@ -874,6 +926,14 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
+  "fileExplorer.restic.copyOutWithKey": "Para copiar archivos fuera de una copia de seguridad, usa {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "d49d631"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "Para copiar archivos fuera de una copia de seguridad, usa el comando Copiar.",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "7cfa21e"
+  },
   "fileExplorer.restic.snapshot.host": "Copia de seguridad de {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -901,6 +961,18 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Para olvidar la contraseña de una copia de seguridad, ábrela primero o pon el cursor en su carpeta “Browse snapshots”.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.copyOutWithKeys": "Para copiar archivos fuera de un archivo comprimido, usa {copyKey} para copiar o {moveKey} para mover.",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "sourceHash": "f68d0ba"
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "Para copiar archivos fuera de un archivo comprimido, usa {copyKey}.",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "sourceHash": "adf47d1"
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "Para copiar archivos fuera de un archivo comprimido, usa el comando Copiar o Mover.",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "sourceHash": "ea37784"
   },
   "fileExplorer.git.portalIntro.title": "¡Cmdr tiene algo de magia de git para ti!",
   "@fileExplorer.git.portalIntro.title": {
@@ -962,6 +1034,18 @@
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
   },
+  "fileExplorer.git.copyOutWithKeys": "Para copiar archivos fuera de una instantánea de git, usa {copyKey} para copiar o {moveKey} para mover.",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "sourceHash": "12e26a2"
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "Para copiar archivos fuera de una instantánea de git, usa {copyKey}.",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "sourceHash": "8a75857"
+  },
+  "fileExplorer.git.copyOutWithoutKey": "Para copiar archivos fuera de una instantánea de git, usa el comando Copiar o Mover.",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "sourceHash": "a8ebbf0"
+  },
   "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} ocupa más de {limit}, así que Cmdr no puede abrirlo en {appName} desde dentro del archivo comprimido.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
     "sourceHash": "43399e6"
@@ -989,6 +1073,10 @@
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} no puede abrir este archivo, porque no es un archivo normal de tu Mac. Pulsa {viewKey} para verlo en Cmdr.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} no puede abrir este archivo, porque no es un archivo normal de tu Mac. Usa el comando Ver para verlo en Cmdr.} windows {{appName} no puede abrir este archivo, porque no es un archivo normal de tu PC. Usa el comando Ver para verlo en Cmdr.} other {{appName} no puede abrir este archivo, porque no es un archivo normal de tu ordenador. Usa el comando Ver para verlo en Cmdr.}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "9d98d51"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "No se ha podido leer {fileName} para abrirlo en {appName}. Comprueba que la unidad donde está siga conectada y vuelve a intentarlo.",
   "@fileExplorer.openWith.copyRefused.unreadable": {
@@ -1627,6 +1715,10 @@
   "fileExplorer.quickLookHint.quickView": "En Cmdr, puedes abrir la Vista rápida con <key></key>. (¡Y <key></key> también funciona en el Finder, por cierto!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.quickViewRebound": "En Cmdr, puedes abrir la Vista rápida con <key></key>.",
+  "@fileExplorer.quickLookHint.quickViewRebound": {
+    "sourceHash": "27e87e5"
   },
   "fileExplorer.quickLookHint.enterOpens": "También puedes usar <enter></enter> para abrir archivos en la app por omisión.",
   "@fileExplorer.quickLookHint.enterOpens": {

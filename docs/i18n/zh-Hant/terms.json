@@ -896,11 +896,24 @@
     "confidence": "high",
     "sources": "GNOME Nautilus zh-TW (Dropped Image → 拖放的影像; the file that you dropped → 拖放的檔案)"
   },
+  "exit": {
+    "chosen": "結束",
+    "confidence": "high",
+    "forms": "Exit Cmdr (Windows File menu) → 結束 Cmdr, the same words as the Quit branch, since Windows zh-TW File > Exit also reads 結束",
+    "sources": "MS terminology (Exit → 結束, HKG, TWN)"
+  },
   "finder-extension": {
     "chosen": "Finder 延伸功能",
     "accept": ["延伸功能"],
     "confidence": "high",
     "sources": "macOS pane 登入項目與延伸功能 (errors.provider.pCloudFuse.needsAction); 系統延伸功能; kept apart from the file name ending 副檔名"
+  },
+  "global": {
+    "chosen": "全域",
+    "accept": ["系統層級"],
+    "confidence": "high",
+    "forms": "a system-wide shortcut → 全域快速鍵; a system-wide key combo in a setting's help → 系統層級組合鍵 (settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description)",
+    "sources": "MS terminology (global → 全域, HKG, TWN); catalog keywords (settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords 全域)"
   },
   "link": {
     "chosen": "連結",
@@ -2060,6 +2073,17 @@
     "accept": ["建議"],
     "sources": "MS terminology (推薦項目); shipped onboarding.stepAi.cloud.recommended. 建議 also ships (settings.askCmdr.chatMemorySize.opt.auto, onboarding.stepOptional.recommendedOn)"
   },
+  "recycle-bin": {
+    "chosen": "資源回收筒",
+    "confidence": "high",
+    "forms": "in a sentence → 資源回收筒 (沒有自己的資源回收筒, 移到資源回收筒)",
+    "sources": "MS terminology (trash bin / Recycle Bin → 資源回收筒, HKG, TWN); Windows zh-TW keyboard-shortcuts support page (移到資源回收筒, checked 2026-11-12)"
+  },
+  "task-manager": {
+    "chosen": "工作管理員",
+    "confidence": "confirmed",
+    "sources": "MS terminology (Task Manager → 工作管理員, HKG, TWN); Windows zh-TW keyboard-shortcuts support page (Ctrl+Shift+Esc 開啟工作管理員, checked 2026-11-12)"
+  },
   "thinking": {
     "chosen": "思考",
     "confidence": "high",
@@ -2463,7 +2487,11 @@
     "chosen": "選單",
     "confidence": "high",
     "forms": "menu names in prose take corner brackets: 「說明」選單; menu bar → 選單列 (macOS 27 System Settings pane, ControlCenterSettings)",
-    "sources": "AP-HK, TC, DOL"
+    "sources": "AP-HK, TC, DOL",
+    "exceptions": {
+      "shortcuts.system.startMenu": "quotes a Windows menu by Windows zh-TW’s own name, which says 功能表 (「開始」功能表, MS keyboard-shortcuts page; TBX system menu → 系統功能表)",
+      "shortcuts.system.windowMenu": "quotes a Windows menu by Windows zh-TW’s own name, which says 功能表 (「開始」功能表, MS keyboard-shortcuts page; TBX system menu → 系統功能表)"
+    }
   },
   "merge": {
     "chosen": "合併",
@@ -2544,7 +2572,11 @@
     "chosen": "移動",
     "confidence": "high",
     "forms": "F6 and prose → 移動; move to X → 移到 X / 移至垃圾桶; move out of a device → 移出; moved away → 移走; move back → 移回原處; move them there → 移過去",
-    "sources": "AP-HK, MS, TC, DC"
+    "sources": "AP-HK, MS, TC, DC",
+    "exceptions": {
+      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "moving to a new Mac, PC, or computer is switching machines → 換到新的 Mac / 電腦, not the Move command (pending a shared notMatch)",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "moving to a new Mac, PC, or computer is switching machines → 換到新的 Mac / 電腦, not the Move command (pending a shared notMatch)"
+    }
   },
   "move-to-trash": {
     "chosen": "垃圾桶",
@@ -3230,7 +3262,7 @@
     "sources": "AP split (移除 vs 刪除)"
   },
   "rename": {
-    "accept": ["改名", "改成", "改了名", "改回", "命名"],
+    "accept": ["改名", "改成", "改了名", "改回", "命名", "改個名"],
     "chosen": "重新命名",
     "confidence": "confirmed",
     "forms": "the command and a formal line → 重新命名; casual advice → 改名 / 改成短一點的名稱; rename back → 改回來; rename pattern → 命名樣式",
@@ -4184,6 +4216,12 @@
     "forms": "quit unexpectedly → 意外結束; Something went wrong → 出了點狀況",
     "sources": "AP-HK AppKitErrors (…它於重新開啟視窗時意外結束)"
   },
+  "unix-group": {
+    "chosen": "群組",
+    "confidence": "high",
+    "forms": "the macOS pane Users & Groups → 「使用者與群組」 (Taiwan; HK shows 用户與群組); group ID → 群組 ID",
+    "sources": "live macOS 27 UsersGroups.appex InfoPlist.loctable (zh_TW 使用者與群組, zh_HK 用户與群組, read 2026-11-12); catalog servers.sheet.nfsGid 群組 ID"
+  },
   "unknown": {
     "avoid": [
       {
@@ -4387,7 +4425,12 @@
   "window": {
     "chosen": "視窗",
     "confidence": "confirmed",
-    "sources": "AP-TW = AP-HK, MS, universal"
+    "sources": "AP-TW = AP-HK, MS, universal",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "windows branch: the OS name Windows, not an app window (pending a shared notMatch)",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "windows branch: the OS name Windows, not an app window (pending a shared notMatch)",
+      "shortcuts.conflict.takenByWindows": "the OS name Windows, not an app window (pending a shared notMatch)"
+    }
   },
   "wizard": {
     "chosen": "精靈",

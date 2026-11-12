@@ -79,6 +79,22 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
+  "viewer.binaryWarning.bodyWithKeys": "這是這個檔案的原始內容檢視。你可能會想看實際的<kindName>{category, select, image {影像} document {文件} other { {ext} 檔案}}</kindName>。如果要這樣做，請關閉這個視窗，按 <quickLookKey></quickLookKey> 開啟快速查看，或按 <openKey></openKey>（或按兩下檔案）用對應的 App 開啟。",
+  "@viewer.binaryWarning.bodyWithKeys": {
+    "sourceHash": "fd5cfb7"
+  },
+  "viewer.binaryWarning.bodyWithQuickLookKey": "這是這個檔案的原始內容檢視。你可能會想看實際的<kindName>{category, select, image {影像} document {文件} other { {ext} 檔案}}</kindName>。如果要這樣做，請關閉這個視窗，按 <quickLookKey></quickLookKey> 開啟快速查看，或按兩下檔案用對應的 App 開啟。",
+  "@viewer.binaryWarning.bodyWithQuickLookKey": {
+    "sourceHash": "ed8bdcf"
+  },
+  "viewer.binaryWarning.bodyWithOpenKey": "這是這個檔案的原始內容檢視。你可能會想看實際的<kindName>{category, select, image {影像} document {文件} other { {ext} 檔案}}</kindName>。如果要這樣做，請關閉這個視窗，按 <openKey></openKey>（或按兩下檔案）用對應的 App 開啟。",
+  "@viewer.binaryWarning.bodyWithOpenKey": {
+    "sourceHash": "b219b68"
+  },
+  "viewer.binaryWarning.bodyWithoutKeys": "這是這個檔案的原始內容檢視。你可能會想看實際的<kindName>{category, select, image {影像} document {文件} other { {ext} 檔案}}</kindName>。如果要這樣做，請關閉這個視窗，按兩下檔案用對應的 App 開啟。",
+  "@viewer.binaryWarning.bodyWithoutKeys": {
+    "sourceHash": "610efa6"
+  },
   "viewer.binaryWarning.dismiss": "關閉",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
@@ -359,6 +375,10 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
+  "viewer.copyDialog.confirmMessage": "一次貼上大量內容可能會拖慢其他 App。試試用搜尋（{combo}）縮小範圍。",
+  "@viewer.copyDialog.confirmMessage": {
+    "sourceHash": "084b649"
+  },
   "viewer.copyDialog.cancel": "取消",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -370,6 +390,10 @@
   "viewer.copyDialog.copy": "複製",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseMessage": "這超過了剪貼板 100 MB 的上限。試試用搜尋（{combo}）找到你要的部分，或把選取內容儲存成檔案。",
+  "@viewer.copyDialog.refuseMessage": {
+    "sourceHash": "75d10d8"
   },
   "viewer.reloadToast.grew": "檔案在磁碟上有變動。要重新載入嗎？",
   "@viewer.reloadToast.grew": {

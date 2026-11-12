@@ -244,6 +244,10 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
+  "commands.viewToggleFullScreen.label": "切換全螢幕",
+  "@commands.viewToggleFullScreen.label": {
+    "sourceHash": "57789cb"
+  },
   "commands.sortByName.label": "依名稱排序",
   "@commands.sortByName.label": {
     "sourceHash": "588a082"
@@ -631,6 +635,30 @@
   "commands.viewerGoForward.label": "往前到下一份文件",
   "@commands.viewerGoForward.label": {
     "sourceHash": "a07317a"
+  },
+  "commands.viewerSearch.label": "在檔案中搜尋",
+  "@commands.viewerSearch.label": {
+    "sourceHash": "e6e698b"
+  },
+  "commands.viewerToggleSearchRegex.label": "開啟或關閉正規表示式搜尋",
+  "@commands.viewerToggleSearchRegex.label": {
+    "sourceHash": "1a7a8b4"
+  },
+  "commands.viewerToggleSearchCase.label": "開啟或關閉區分大小寫搜尋",
+  "@commands.viewerToggleSearchCase.label": {
+    "sourceHash": "f6481cb"
+  },
+  "commands.searchNewQuery.label": "開始新的搜尋",
+  "@commands.searchNewQuery.label": {
+    "sourceHash": "f43a6aa"
+  },
+  "commands.searchToggleRecent.label": "顯示或隱藏最近的搜尋",
+  "@commands.searchToggleRecent.label": {
+    "sourceHash": "98b87c2"
+  },
+  "commands.searchModeByNumber.label": "切換到對應編號的搜尋模式",
+  "@commands.searchModeByNumber.label": {
+    "sourceHash": "d3d0c9c"
   },
   "commands.multiRenameOpenPresets.label": "開啟預設組選單",
   "@commands.multiRenameOpenPresets.label": {

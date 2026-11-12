@@ -79,6 +79,22 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
+  "viewer.binaryWarning.bodyWithKeys": "这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
+  "@viewer.binaryWarning.bodyWithKeys": {
+    "sourceHash": "fd5cfb7"
+  },
+  "viewer.binaryWarning.bodyWithQuickLookKey": "这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者双击文件，用关联的 App 打开它。",
+  "@viewer.binaryWarning.bodyWithQuickLookKey": {
+    "sourceHash": "ed8bdcf"
+  },
+  "viewer.binaryWarning.bodyWithOpenKey": "这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
+  "@viewer.binaryWarning.bodyWithOpenKey": {
+    "sourceHash": "b219b68"
+  },
+  "viewer.binaryWarning.bodyWithoutKeys": "这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后双击文件，用关联的 App 打开它。",
+  "@viewer.binaryWarning.bodyWithoutKeys": {
+    "sourceHash": "610efa6"
+  },
   "viewer.binaryWarning.dismiss": "关闭",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
@@ -359,6 +375,10 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
+  "viewer.copyDialog.confirmMessage": "大量粘贴可能会拖慢其他 App。试试用搜索（{combo}）来缩小范围。",
+  "@viewer.copyDialog.confirmMessage": {
+    "sourceHash": "084b649"
+  },
   "viewer.copyDialog.cancel": "取消",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -370,6 +390,10 @@
   "viewer.copyDialog.copy": "拷贝",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseMessage": "这超过了 100 MB 的剪贴板上限。试试用搜索（{combo}）找到你需要的内容，或者把所选内容保存为文件。",
+  "@viewer.copyDialog.refuseMessage": {
+    "sourceHash": "75d10d8"
   },
   "viewer.reloadToast.grew": "文件在磁盘上已变化。要重新加载吗？",
   "@viewer.reloadToast.grew": {

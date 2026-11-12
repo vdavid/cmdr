@@ -37,3 +37,14 @@ Awaiting a native read, from the #739 batch:
 - `commands.helpAccessibility.*`: „průvodce“ vs macOS „příručka“ (Uživatelská příručka); switch label and description
   together.
 - `askCmdr.limit.*`: confirm „vyhledávání“ for a lookup reads distinct from ⌘F „hledání“.
+
+Awaiting a native read, from the keymap batch:
+
+- `recycle-bin` (every Windows branch): koš, as the Czech Windows desktop icon reads from memory; the pile's MS TBX only
+  glosses odpadkový koš. Confirm on a Czech Windows.
+- `menu.file.quit` (Windows branch): Ukončit Cmdr, where Czech Windows' bare File row is Konec; confirm a Windows reader
+  accepts it.
+- `shortcuts.scope.searchDialog`: Hledání a výběr souborů names the two dialogs (titles Hledání, Vybrat soubory) as one
+  heading, since Hledání a Vybrat soubory doesn't read.
+- `shortcuts.system.windowMenu`, `shortcuts.system.securityScreen`: systémová nabídka okna (MS TBX system menu) and
+  obrazovka zabezpečení (not in the pile); confirm against Czech Windows.

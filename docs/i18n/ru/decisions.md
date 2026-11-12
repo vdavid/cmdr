@@ -5,7 +5,7 @@ heading cites a batch key (exact or `*` wildcard), so every heading cites its ke
 
 ## Lowercase вы
 
-Over Apple's `Вы` (129 `Вы`, 0 lowercase in macOS ru): letter etiquette; MS, Google, and Yandex write lowercase.
+Over Apple's `Вы` (129 `Вы`, 0 lowercase in macOS ru): letter etiquette; MS, Google, Yandex write lowercase.
 
 ## `е` over `ё`
 

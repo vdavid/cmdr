@@ -502,5 +502,29 @@
   "settings.ai.provider.localUnavailable": "{platform, select, windows {Tu configuración pide “LLM local”, que esta PC no puede ejecutar, así que la IA está desactivada.} other {Tu configuración pide “LLM local”, que esta computadora no puede ejecutar, así que la IA está desactivada.}}",
   "@settings.ai.provider.localUnavailable": {
     "sourceHash": "7613b01"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Copiar y Mover van al otro panel directamente, y Eliminar mueve a la Papelera de reciclaje sin preguntar. Es un poco arriesgado, porque una sola tecla actúa al instante. Eliminar permanentemente siempre pregunta antes.} other {Copiar y Mover van al otro panel directamente, y Eliminar mueve al basurero sin preguntar. Es un poco arriesgado, porque una sola tecla actúa al instante. Eliminar permanentemente siempre pregunta antes.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "0733acb"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Salta a tu descarga más reciente desde cualquier app con un atajo global. Requiere acceso completo al disco.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "18ebd0f"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr usa Espacio para activar o desactivar la selección de archivos y {combo} para Vista rápida (el Finder usa Espacio a secas para Vista rápida). Cada vez que presionas Espacio en la lista de archivos, Cmdr muestra un recordatorio de un párrafo sobre esta diferencia. Activa esto (o haz clic en “No volver a mostrar” en el aviso) para ocultar el recordatorio definitivamente.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "b814369"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr usa Espacio para activar o desactivar la selección de archivos, mientras que el Finder lo usa para Vista rápida. Cada vez que presionas Espacio en la lista de archivos, Cmdr muestra un recordatorio de un párrafo sobre esta diferencia. Activa esto (o haz clic en “No volver a mostrar” en el aviso) para ocultar el recordatorio definitivamente.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "58bb41b"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "La primera vez que {combo} abre un archivo en el editor predeterminado mientras hay otro editor instalado, Cmdr te comenta que puedes elegir otro. Desactiva esto para volver a ver el aviso.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "04cd197"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "La primera vez que Cmdr abre un archivo en el editor predeterminado mientras hay otro editor instalado, te comenta que puedes elegir otro. Desactiva esto para volver a ver el aviso.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "8bbbe01"
   }
 }

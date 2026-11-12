@@ -60,7 +60,8 @@
   "ai.toast.readyDescriptionWithoutKey": "Try creating a new folder to see AI-powered name suggestions.",
   "@ai.toast.readyDescriptionWithoutKey": {
     "description": "The keyless sibling of ai.toast.readyDescriptionWithKey, shown when no key runs New folder (the user removed it). Same sentence without the key.",
-    "screenshot": "settings-ai-provider.png"
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.toast.gotIt": "Got it",
   "@ai.toast.gotIt": {

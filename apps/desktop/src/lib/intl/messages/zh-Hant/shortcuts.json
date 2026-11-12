@@ -48,6 +48,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Ask Cmdr is the chat panel's product name, kept verbatim in every locale (termbase ruling ask-cmdr)."
   },
+  "shortcuts.scope.searchDialog": "搜尋和選取檔案",
+  "@shortcuts.scope.searchDialog": {
+    "sourceHash": "eec03a0"
+  },
   "shortcuts.scope.favoritesMenu": "喜好項目選單",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
@@ -104,6 +108,18 @@
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
+  "shortcuts.conflict.takenByWindows": "{combo} 通常由 Windows 使用（{label}），所以可能永遠傳不到 Cmdr。",
+  "@shortcuts.conflict.takenByWindows": {
+    "sourceHash": "4858bee"
+  },
+  "shortcuts.conflict.takenByLinuxDesktops": "在 {desktops} 上，桌面環境通常會自己佔用 {combo}，所以可能永遠傳不到 Cmdr。你可以在桌面環境的鍵盤設定裡把它空出來。",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "sourceHash": "11d35a9"
+  },
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} 會開啟 Cmdr 選單列中的「{menu}」選單，所以除非有對話方塊開著，否則傳不到這個指令。",
+  "@shortcuts.conflict.opensMenuBarMenu": {
+    "sourceHash": "314244c"
+  },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
     "sourceHash": "fca7aa8",
@@ -156,6 +172,38 @@
   "shortcuts.system.forceQuit": "強制結束",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
+  },
+  "shortcuts.system.switchingApps": "切換 App",
+  "@shortcuts.system.switchingApps": {
+    "sourceHash": "0113527"
+  },
+  "shortcuts.system.cyclingWindows": "依序切換視窗",
+  "@shortcuts.system.cyclingWindows": {
+    "sourceHash": "a2a7a18"
+  },
+  "shortcuts.system.windowMenu": "視窗的系統功能表",
+  "@shortcuts.system.windowMenu": {
+    "sourceHash": "50afaf9"
+  },
+  "shortcuts.system.closingWindow": "關閉視窗",
+  "@shortcuts.system.closingWindow": {
+    "sourceHash": "82fe00f"
+  },
+  "shortcuts.system.startMenu": "「開始」功能表",
+  "@shortcuts.system.startMenu": {
+    "sourceHash": "b05bc4f"
+  },
+  "shortcuts.system.taskManager": "工作管理員",
+  "@shortcuts.system.taskManager": {
+    "sourceHash": "58d65c2"
+  },
+  "shortcuts.system.securityScreen": "安全畫面",
+  "@shortcuts.system.securityScreen": {
+    "sourceHash": "5fdc327"
+  },
+  "shortcuts.system.inputMethodToggle": "開啟或關閉輸入法",
+  "@shortcuts.system.inputMethodToggle": {
+    "sourceHash": "fe0b8a0"
   },
   "shortcuts.section.title": "鍵盤快速鍵",
   "@shortcuts.section.title": {
@@ -253,6 +301,18 @@
   "shortcuts.section.resetAll": "全部重設為預設值",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.section.resetAllConfirm": "要把所有鍵盤快速鍵重設為預設值嗎？",
+  "@shortcuts.section.resetAllConfirm": {
+    "sourceHash": "3fc5074"
+  },
+  "shortcuts.section.resetAllConfirmTitle": "重設鍵盤快速鍵",
+  "@shortcuts.section.resetAllConfirmTitle": {
+    "sourceHash": "5dac863"
+  },
+  "shortcuts.section.resetAllConfirmButton": "重設",
+  "@shortcuts.section.resetAllConfirmButton": {
+    "sourceHash": "daee760"
   },
   "shortcuts.window.title": "鍵盤快速鍵",
   "@shortcuts.window.title": {

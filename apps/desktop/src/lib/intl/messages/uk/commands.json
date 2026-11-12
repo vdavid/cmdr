@@ -244,6 +244,10 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
+  "commands.viewToggleFullScreen.label": "Перемкнути повноекранний режим",
+  "@commands.viewToggleFullScreen.label": {
+    "sourceHash": "57789cb"
+  },
   "commands.sortByName.label": "Сортувати за назвою",
   "@commands.sortByName.label": {
     "sourceHash": "588a082"
@@ -631,6 +635,30 @@
   "commands.viewerGoForward.label": "Вперед до наступного документа",
   "@commands.viewerGoForward.label": {
     "sourceHash": "a07317a"
+  },
+  "commands.viewerSearch.label": "Знайти у файлі",
+  "@commands.viewerSearch.label": {
+    "sourceHash": "e6e698b"
+  },
+  "commands.viewerToggleSearchRegex.label": "Увімкнути або вимкнути пошук за регулярним виразом",
+  "@commands.viewerToggleSearchRegex.label": {
+    "sourceHash": "1a7a8b4"
+  },
+  "commands.viewerToggleSearchCase.label": "Увімкнути або вимкнути пошук з урахуванням регістру",
+  "@commands.viewerToggleSearchCase.label": {
+    "sourceHash": "f6481cb"
+  },
+  "commands.searchNewQuery.label": "Почати новий пошук",
+  "@commands.searchNewQuery.label": {
+    "sourceHash": "f43a6aa"
+  },
+  "commands.searchToggleRecent.label": "Показати або сховати недавні пошуки",
+  "@commands.searchToggleRecent.label": {
+    "sourceHash": "98b87c2"
+  },
+  "commands.searchModeByNumber.label": "Перемкнутися на режим пошуку з цим номером",
+  "@commands.searchModeByNumber.label": {
+    "sourceHash": "d3d0c9c"
   },
   "commands.multiRenameOpenPresets.label": "Відкрити меню наборів параметрів",
   "@commands.multiRenameOpenPresets.label": {

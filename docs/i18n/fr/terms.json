@@ -66,6 +66,7 @@
     "chosen": "administrateur",
     "confidence": "high",
     "forms": "an administrator password → un mot de passe d’administrateur; administrator rights → des droits d’administrateur; the person running a server → l’administrateur du serveur; the person who manages a Mac → la personne qui gère ce Mac (style.md gender rule)",
+    "proseAccept": ["la personne qui gère", "la personne qui administre"],
     "sources": "macOS (« saisir un nom et un mot de passe d’administrateur »); catalog (errors.write.permissionDenied.suggestion.needsAdmin, main.cliCommand.canceled)"
   },
   "advanced": {
@@ -1213,7 +1214,12 @@
       "settings.indexing.silencedDrives.label": "The prompts ask whether to index a drive; Demandes d'indexation names them without stacking disque."
     },
     "forms": "masculine (le disque, ce disque); network drive → disque réseau",
-    "sources": "macOS Finder (Disque de démarrage, Disques externes)"
+    "sources": "macOS Finder (Disque de démarrage, Disques externes)",
+    "windows": {
+      "accept": ["lecteurs"],
+      "chosen": "lecteur",
+      "note": "Windows names a drive lecteur (lecteur réseau, MS id 84433); only the windows branch takes it."
+    }
   },
   "duplicate": {
     "chosen": "Dupliquer",
@@ -1222,7 +1228,7 @@
     "sources": "macOS Finder fr (Fichier > Dupliquer, N154; verified on macOS 26.6.1, 2026-08-19)"
   },
   "edit": {
-    "accept": ["modification", "modifié", "modifiable", "Édition", "modifiez"],
+    "accept": ["modification", "modifié", "modifiable", "Édition", "modifiez", "modifie"],
     "chosen": "Modifier",
     "confidence": "high",
     "exceptions": {
@@ -2145,6 +2151,8 @@
     "exceptions": {
       "commands.editUndoTrash.description": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.mutation.trashRefused": "English-sense: moving to the trash is placer dans la corbeille.",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "English-sense: moving to a new computer is le passage à un nouvel ordinateur, not a file move.",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "English-sense: moving to a new computer is le passage à un nouvel ordinateur, not a file move.",
       "errors.write.fallback.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.ioError.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.permissionDenied.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
@@ -2227,7 +2235,12 @@
     ],
     "chosen": "disque réseau",
     "confidence": "high",
-    "sources": "macOS Finder (disque, Réseau)"
+    "sources": "macOS Finder (disque, Réseau)",
+    "windows": {
+      "accept": ["lecteurs réseau"],
+      "chosen": "lecteur réseau",
+      "note": "Windows’ own term (MS id 84433); the base avoid covers macOS and Linux only."
+    }
   },
   "network-share": {
     "chosen": "partage",
@@ -3145,7 +3158,8 @@
     "confidence": "high",
     "decision": "Réglages : sections et présentation",
     "exceptions": {
-      "servers.sheet.s3GcsKeyHelp": "Third-party UI: Google Cloud’s French console names Cloud Storage’s settings page Paramètres, so the hint quotes the vendor’s word (tentative)."
+      "servers.sheet.s3GcsKeyHelp": "Third-party UI: Google Cloud’s French console names Cloud Storage’s settings page Paramètres, so the hint quotes the vendor’s word (tentative).",
+      "shortcuts.conflict.takenByLinuxDesktops": "Linux-only text about the desktop’s own keyboard settings, which GNOME’s French UI calls Paramètres; Réglages names Cmdr’s window."
     },
     "forms": "Cmdr’s own window → les Réglages (Ouvrir les réglages, Activez-la dans les Réglages); breadcrumbs Réglages > IA, Réglages › Mises à jour et confidentialité (mirror EN’s separator); Apple’s app is Réglages Système",
     "sources": "macOS (Réglages Système CFBundleName)"
@@ -3915,6 +3929,11 @@
   "window": {
     "chosen": "fenêtre",
     "confidence": "high",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "English-sense: the windows branch names Windows, the OS, not a window.",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "English-sense: the windows branch names Windows, the OS, not a window.",
+      "shortcuts.conflict.takenByWindows": "English-sense: names Windows, the OS, not a window."
+    },
     "forms": "feminine (cette fenêtre); the Window menu → Fenêtre; a settings pane of Réglages Système is a sous-fenêtre",
     "sources": "macOS AppKit (réduire/agrandir la fenêtre) and Finder; catalog"
   },
@@ -4116,5 +4135,60 @@
     "accept": ["PC"],
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”) → PC (m.); Windows names This PC Ce PC"
+  },
+  "desktop": {
+    "accept": ["bureau"],
+    "chosen": "Bureau",
+    "confidence": "high",
+    "forms": "the Desktop folder → le dossier Bureau; a Linux desktop environment (GNOME, KDE Plasma) → l’environnement de bureau",
+    "sources": "macOS Finder (Bureau); MS terminology desktop (work area) → bureau (id 2249365); Thunar (« l’environnement de bureau Xfce »)"
+  },
+  "exit": {
+    "chosen": "Quitter",
+    "confidence": "high",
+    "forms": "Exit Cmdr → Quitter Cmdr, so the windows branch reads like the Linux one",
+    "sources": "MS terminology Exit → Quitter (id 185684, the menu item sense)"
+  },
+  "recycle-bin": {
+    "chosen": "Corbeille",
+    "confidence": "high",
+    "forms": "capitalized proper noun in sentences (la Corbeille, vers la Corbeille), where the macOS and Linux branches write la corbeille",
+    "sources": "MS terminology Recycle Bin → Corbeille (id 2129760, feminine proper noun)"
+  },
+  "task-manager": {
+    "chosen": "Gestionnaire des tâches",
+    "confidence": "high",
+    "forms": "masculine (le Gestionnaire des tâches)",
+    "sources": "MS terminology Task Manager → Gestionnaire des tâches (id 119989)"
+  },
+  "toggle": {
+    "accept": [
+      "activer ou désactiver",
+      "afficher ou masquer",
+      "épingler ou désépingler",
+      "sélectionner ou désélectionner",
+      "inverser"
+    ],
+    "chosen": "Activer ou désactiver",
+    "confidence": "high",
+    "exceptions": {
+      "commands.tagsToggleBlue.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
+      "commands.tagsToggleGreen.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
+      "commands.tagsToggleGrey.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
+      "commands.tagsToggleOrange.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
+      "commands.tagsTogglePurple.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
+      "commands.tagsToggleRed.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
+      "commands.tagsToggleYellow.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
+      "settings.developer.verboseLogging.description": "Toggles here means switches to a level (Passe … au niveau debug), not an on/off pair."
+    },
+    "forms": "on/off state → Activer ou désactiver (le mode plein écran); visibility → Afficher ou masquer; file selection → sélectionner ou désélectionner, the command Inverser la sélection; never a slash (style.md)",
+    "sources": "catalog (commands.viewerToggleWordWrap.label, commands.viewShowHidden.label, commands.tabTogglePin.label, commands.selectionToggle.label); MS terminology toggle → bascule (id 1088687) reads as jargon in a label"
+  },
+  "unix-group": {
+    "accept": ["groupe", "groupes"],
+    "chosen": "groupe",
+    "confidence": "high",
+    "forms": "the macOS pane Users & Groups → « Utilisateurs et groupes »; group ID → ID de groupe",
+    "sources": "macOS 27 UsersGroups.appex InfoPlist.loctable CFBundleDisplayName (live bundle, 2026-11-12); MS FRA group ID → ID de groupe"
   }
 }

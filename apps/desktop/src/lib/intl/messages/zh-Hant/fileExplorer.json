@@ -323,6 +323,10 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr 還不能用其他 App 開啟這個檔案，因為它不是你 Mac 上的一般檔案。請改用「檢視」指令檢視。} windows {Cmdr 還不能用其他 App 開啟這個檔案，因為它不是你電腦上的一般檔案。請改用「檢視」指令檢視。} other {Cmdr 還不能用其他 App 開啟這個檔案，因為它不是你電腦上的一般檔案。請改用「檢視」指令檢視。}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "b281a7e"
+  },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {無法開啟「{fileName}」。macOS 找不到這個檔案，或沒有任何 App 能開啟它。} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
@@ -711,25 +715,57 @@
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "ba69ee7"
   },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "這個裝置上的檔案不能放到剪貼板。請改用「複製」指令。",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "sourceHash": "ec9f6a4"
+  },
   "fileExplorer.clipboard.moveFromDevice": "這個裝置上的檔案不能放到剪貼板。請用 {moveKey} 移動。",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "這個裝置上的檔案不能放到剪貼板。請改用「移動」指令。",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "sourceHash": "3e1a8d6"
   },
   "fileExplorer.clipboard.copyFromServer": "這個伺服器上的檔案不能放到剪貼板。請用 {copyKey} 複製。",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "12cb39f"
   },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "這個伺服器上的檔案不能放到剪貼板。請改用「複製」指令。",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "sourceHash": "a0b8b71"
+  },
   "fileExplorer.clipboard.moveFromServer": "這個伺服器上的檔案不能放到剪貼板。請用 {moveKey} 移動。",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "這個伺服器上的檔案不能放到剪貼板。請改用「移動」指令。",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "sourceHash": "958bc4b"
   },
   "fileExplorer.clipboard.copyFromUnknown": "這些檔案不能放到剪貼板。請用 {copyKey} 複製。",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "7aaabdb"
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "這些檔案不能放到剪貼板。請改用「複製」指令。",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "sourceHash": "eef58a6"
+  },
   "fileExplorer.clipboard.moveFromUnknown": "這些檔案不能放到剪貼板。請用 {moveKey} 移動。",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
+  },
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "這些檔案不能放到剪貼板。請改用「移動」指令。",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "sourceHash": "9148b09"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr 還不能用編輯器開啟這個檔案，因為它不是你 Mac 上的一般檔案。請按 {viewKey} 檢視。} windows {Cmdr 還不能用編輯器開啟這個檔案，因為它不是你電腦上的一般檔案。請按 {viewKey} 檢視。} other {Cmdr 還不能用編輯器開啟這個檔案，因為它不是你電腦上的一般檔案。請按 {viewKey} 檢視。}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "6bc5d46"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr 還不能用編輯器開啟這個檔案，因為它不是你 Mac 上的一般檔案。請改用「檢視」指令檢視。} windows {Cmdr 還不能用編輯器開啟這個檔案，因為它不是你電腦上的一般檔案。請改用「檢視」指令檢視。} other {Cmdr 還不能用編輯器開啟這個檔案，因為它不是你電腦上的一般檔案。請改用「檢視」指令檢視。}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "4572115"
   },
   "fileExplorer.edit.hint": "已在 {app} 裡開啟這個檔案。想下次換個編輯器？在「設定」裡選一個。",
   "@fileExplorer.edit.hint": {
@@ -767,9 +803,25 @@
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "請用「複製」指令把檔案複製到這個裝置。",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "sourceHash": "06a1d58"
+  },
   "fileExplorer.clipboard.copyToServer": "請用 {copyKey} 把檔案複製到這個伺服器。",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "請用「複製」指令把檔案複製到這個伺服器。",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "sourceHash": "1229e3a"
+  },
+  "fileExplorer.clipboard.noFilesWithKey": "剪貼板上沒有檔案。請先用 {combo} 複製檔案。",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "sourceHash": "1eb6ea9"
+  },
+  "fileExplorer.clipboard.noFiles": "剪貼板上沒有檔案。請先複製檔案。",
+  "@fileExplorer.clipboard.noFiles": {
+    "sourceHash": "295341a"
   },
   "fileExplorer.clipboard.stillPasting": "仍在用剪貼板的內容建立檔案。卷宗回應很慢。",
   "@fileExplorer.clipboard.stillPasting": {
@@ -871,6 +923,14 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
+  "fileExplorer.restic.copyOutWithKey": "要把檔案從備份裡複製出來，請用 {copyKey} 複製。",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "d49d631"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "要把檔案從備份裡複製出來，請用「複製」指令。",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "7cfa21e"
+  },
   "fileExplorer.restic.snapshot.host": "備份自 {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -898,6 +958,18 @@
   "fileExplorer.restic.forgetPassword.noBackup": "要忘記某個備份的密碼，請先開啟這個備份，或把游標移到它的「Browse snapshots」資料夾上。",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.copyOutWithKeys": "要把檔案從封存檔裡複製出來，請用 {copyKey} 複製或 {moveKey} 移動。",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "sourceHash": "f68d0ba"
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "要把檔案從封存檔裡複製出來，請用 {copyKey} 複製。",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "sourceHash": "adf47d1"
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "要把檔案從封存檔裡複製出來，請用「複製」或「移動」指令。",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "sourceHash": "ea37784"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr 為你準備了一點 git 魔法！",
   "@fileExplorer.git.portalIntro.title": {
@@ -959,6 +1031,18 @@
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
   },
+  "fileExplorer.git.copyOutWithKeys": "要把檔案從 git 快照裡複製出來，請用 {copyKey} 複製或 {moveKey} 移動。",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "sourceHash": "12e26a2"
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "要把檔案從 git 快照裡複製出來，請用 {copyKey} 複製。",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "sourceHash": "8a75857"
+  },
+  "fileExplorer.git.copyOutWithoutKey": "要把檔案從 git 快照裡複製出來，請用「複製」或「移動」指令。",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "sourceHash": "a8ebbf0"
+  },
   "fileExplorer.openWith.copyRefused.tooLarge": "「{fileName}」超過 {limit}，所以 Cmdr 無法從封存檔裡用 {appName} 開啟它。",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
     "sourceHash": "43399e6"
@@ -986,6 +1070,10 @@
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} 無法開啟這個檔案，因為它不是你 Mac 上的一般檔案。請按 {viewKey} 在 Cmdr 中檢視。} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} 無法開啟這個檔案，因為它不是你 Mac 上的一般檔案。請改用「檢視」指令在 Cmdr 中檢視。} windows {{appName} 無法開啟這個檔案，因為它不是你電腦上的一般檔案。請改用「檢視」指令在 Cmdr 中檢視。} other {{appName} 無法開啟這個檔案，因為它不是你電腦上的一般檔案。請改用「檢視」指令在 Cmdr 中檢視。}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "9d98d51"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "無法讀取「{fileName}」，所以沒辦法用 {appName} 開啟。請確認它所在的磁碟機仍然連接著，然後再試一次。",
   "@fileExplorer.openWith.copyRefused.unreadable": {
@@ -1620,6 +1708,10 @@
   "fileExplorer.quickLookHint.quickView": "在 Cmdr 中，你可以用 <key></key> 開啟快速查看。（順帶一提，<key></key> 在 Finder 裡也能用！）",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.quickViewRebound": "在 Cmdr 中，你可以用 <key></key> 開啟快速查看。",
+  "@fileExplorer.quickLookHint.quickViewRebound": {
+    "sourceHash": "27e87e5"
   },
   "fileExplorer.quickLookHint.enterOpens": "你也可以用 <enter></enter> 在預設 App 中開啟檔案。",
   "@fileExplorer.quickLookHint.enterOpens": {

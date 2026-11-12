@@ -542,5 +542,29 @@
   "fileExplorer.dropIn.someMissing": "{count, plural, one {Un archivo arrastrado no llegó, así que no está en esta copia.} many {{countText} archivos arrastrados no llegaron, así que no están en esta copia.} other {{countText} archivos arrastrados no llegaron, así que no están en esta copia.}}",
   "@fileExplorer.dropIn.someMissing": {
     "sourceHash": "28dcde7"
+  },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr aún no puede abrir este archivo en otra app, porque no es un archivo normal de tu Mac. Usa el comando Ver para verlo.} windows {Cmdr aún no puede abrir este archivo en otra app, porque no es un archivo normal de tu PC. Usa el comando Ver para verlo.} other {Cmdr aún no puede abrir este archivo en otra app, porque no es un archivo normal de tu computadora. Usa el comando Ver para verlo.}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "0ee4e1a"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu Mac. Presiona {viewKey} para verlo.} windows {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu PC. Presiona {viewKey} para verlo.} other {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu computadora. Presiona {viewKey} para verlo.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "a3c0a0c"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu Mac. Usa el comando Ver para verlo.} windows {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu PC. Usa el comando Ver para verlo.} other {Cmdr aún no puede abrir este archivo en un editor, porque no es un archivo normal de tu computadora. Usa el comando Ver para verlo.}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "8466c31"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} no puede abrir este archivo, porque no es un archivo normal de tu Mac. Usa el comando Ver para verlo en Cmdr.} windows {{appName} no puede abrir este archivo, porque no es un archivo normal de tu PC. Usa el comando Ver para verlo en Cmdr.} other {{appName} no puede abrir este archivo, porque no es un archivo normal de tu computadora. Usa el comando Ver para verlo en Cmdr.}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "55e6886"
+  },
+  "fileExplorer.restic.copyOutWithKey": "Para copiar archivos fuera de un respaldo, usa {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "5620c6e"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "Para copiar archivos fuera de un respaldo, usa el comando Copiar.",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "f4877d2"
   }
 }

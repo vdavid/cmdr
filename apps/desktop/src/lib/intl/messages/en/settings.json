@@ -653,8 +653,7 @@
   },
   "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Copy and Move go into the other pane right away, and Delete moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {Copy and Move go into the other pane right away, and Delete moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.}}",
   "@settings.fileOperations.skipConfirmation.explanation": {
-    "description": "Help text under the skip-confirmation switch. \"Copy\", \"Move\", and \"Delete\" are Cmdr’s commands by the names its command palette shows (commands.fileCopy.label, commands.fileMove.label, commands.fileDelete.label); use the same names. It names commands, not keys, because the user can rebind each. \"A bit risky\" is a gentle, friendly caution, not an alarm: keep the tone light. \"the other pane\" = the second file list of the two-pane window. The Windows branch names the Recycle Bin (use your language's Windows name for it); the other branch (macOS and Linux) says \"the trash\" (use that OS's localized name). The screenshot shows the macOS wording.",
-    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+    "description": "Help text under the skip-confirmation switch. \"Copy\", \"Move\", and \"Delete\" are Cmdr’s commands by the names its command palette shows (commands.fileCopy.label, commands.fileMove.label, commands.fileDelete.label); use the same names. It names commands, not keys, because the user can rebind each. \"A bit risky\" is a gentle, friendly caution, not an alarm: keep the tone light. \"the other pane\" = the second file list of the two-pane window. The Windows branch names the Recycle Bin (use your language's Windows name for it); the other branch (macOS and Linux) says \"the trash\" (use that OS's localized name). The screenshot shows the macOS wording."
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {confirm, confirmation, dialog, ask, copy, move, trash, delete, skip, clicks}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -2071,8 +2070,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {Cmdr’s file viewer shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Quick Look or opening it in the associated app is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.} windows {Cmdr’s file viewer shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that opening it in the associated app is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.} other {Cmdr’s file viewer shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that opening it in the associated app is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.}}",
   "@settings.fileViewer.suppressBinaryWarning.explanation": {
-    "description": "Help text for the suppress-binary-warning toggle. It names what the banner suggests, not keys, because the user can rebind each. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name, in the macOS branch only (use your language's macOS name for it). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted “Never show this warning again” must match the file viewer's actual banner button copy; translate it consistently with that button. The screenshot shows the macOS wording.",
-    "screenshot": "settings-advanced.png"
+    "description": "Help text for the suppress-binary-warning toggle. It names what the banner suggests, not keys, because the user can rebind each. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name, in the macOS branch only (use your language's macOS name for it). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted “Never show this warning again” must match the file viewer's actual banner button copy; translate it consistently with that button. The screenshot shows the macOS wording."
   },
   "settings.fileViewer.suppressBinaryWarning.keywords": "viewer, binary, image, raw, warning, banner, quick look",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
@@ -2689,13 +2687,11 @@
     "description": "Help text for the “Suppress the text editor hint” switch (settings.behavior.textEditorHintSeen.label), naming the user’s key for editing a file. When no key edits files, the row reads \"settings.behavior.textEditorHintSeen.descriptionWithoutKey\" instead.",
     "placeholders": {
       "combo": "the user’s own key for opening a file in the editor, as a key name (F4 by default); never a word"
-    },
-    "screenshot": "settings-advanced.png"
+    }
   },
   "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "The first time Cmdr opens a file in the default editor while another editor is installed, it mentions that you can pick a different one. Turn this off to see the hint once more.",
   "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
-    "description": "Help text for the “Suppress the text editor hint” switch, shown when the user has no key for editing a file (they removed it). Same sentence as \"settings.behavior.textEditorHintSeen.descriptionWithKey\" without the key.",
-    "screenshot": "settings-advanced.png"
+    "description": "Help text for the “Suppress the text editor hint” switch, shown when the user has no key for editing a file (they removed it). Same sentence as \"settings.behavior.textEditorHintSeen.descriptionWithKey\" without the key."
   },
   "settings.behavior.textEditorHintSeen.keywords": "edit, editor, text, app, hint, toast",
   "@settings.behavior.textEditorHintSeen.keywords": {

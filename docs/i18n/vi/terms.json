@@ -580,7 +580,7 @@
   "command": {
     "chosen": "lệnh",
     "confidence": "high",
-    "forms": "a palette command or a shell command alike; name one as lệnh \"adb\"",
+    "forms": "a palette command or a shell command alike; name one as lệnh \"adb\"; a keyless *WithoutKey sibling names a Cmdr command as lệnh <Tên>, the label copied bare from commands.*.label (Dùng lệnh Sao chép để…), every other word as in the with-key sibling",
     "sources": "MS (command → lệnh); macOS loctables (What command should be run? → Nên chạy lệnh nào?)"
   },
   "command-palette": {
@@ -2528,7 +2528,9 @@
     "forms": "most recent → mới nhất",
     "sources": "macOS Finder (Gần đây)",
     "exceptions": {
-      "commands.handler.noRecentlyClosedTabs": "recently closed tabs read as tabs just closed (vừa đóng)"
+      "commands.handler.noRecentlyClosedTabs": "recently closed tabs read as tabs just closed (vừa đóng)",
+      "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "recently closed tabs read as tabs just closed (vừa đóng), as commands.handler.noRecentlyClosedTabs",
+      "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "recently closed tabs read as tabs just closed (vừa đóng), as commands.handler.noRecentlyClosedTabs"
     }
   },
   "reclaim": {
@@ -3485,7 +3487,12 @@
     "chosen": "cửa sổ",
     "confidence": "high",
     "forms": "the Window menu → Cửa sổ; close this window → đóng cửa sổ này",
-    "sources": "macOS AppKit (\"this button also has an action to zoom the window\" → \"… thu phóng cửa sổ\"), Finder menu bar Cửa sổ; catalog (11 of 11 keys)"
+    "sources": "macOS AppKit (\"this button also has an action to zoom the window\" → \"… thu phóng cửa sổ\"), Finder menu bar Cửa sổ; catalog (11 of 11 keys)",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "the English names the OS Windows, not an app window; the vi keeps the name Windows",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "the English names the OS Windows, not an app window; the vi keeps the name Windows",
+      "shortcuts.conflict.takenByWindows": "the English names the OS Windows, not an app window; the vi keeps the name Windows"
+    }
   },
   "word-wrap": {
     "accept": ["ngắt"],
@@ -3784,5 +3791,32 @@
     "accept": ["PC"],
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”) → PC; Windows names This PC PC này"
+  },
+  "recycle-bin": {
+    "chosen": "Thùng rác",
+    "confidence": "high",
+    "forms": "Windows names the Recycle Bin Thùng rác, the same word as the macOS and Linux trash; capitalized as the location’s name in a windows branch",
+    "sources": "MS terminology (Recycle Bin → Thùng rác); GNOME Nautilus, Xfce Thunar, KDE Dolphin (Trash → Thùng rác)"
+  },
+  "exit": {
+    "chosen": "thoát",
+    "confidence": "high",
+    "forms": "Exit Cmdr → Thoát Cmdr, the same verb as Quit, so a windows branch reads like the other one",
+    "sources": "MS terminology (Exit → Thoát); Nautilus (Quit → Thoát)"
+  },
+  "task-manager": {
+    "chosen": "Trình quản lý Tác vụ",
+    "confidence": "tentative",
+    "forms": "Windows’ own capitalization, Tác vụ capitalized",
+    "sources": "Windows vi UI name (from memory: the MS TBX has no Task Manager entry; its taskbar is thanh tác vụ)"
+  },
+  "toggle": {
+    "chosen": "Bật/tắt",
+    "confidence": "high",
+    "forms": "a toggle command label → Bật/tắt <thing> (Bật/tắt tệp ẩn, Bật/tắt toàn màn hình); Turn X on or off rows use the same Bật/tắt",
+    "sources": "catalog (23 shipped Bật/tắt labels, commands.viewShowHidden.label and siblings); MS terminology toggle → chuyển đổi is the generic verb, not the on/off label",
+    "exceptions": {
+      "settings.developer.verboseLogging.description": "\"this toggle\" is the Settings switch itself (a noun), so mục này, as the sibling Settings descriptions say"
+    }
   }
 }

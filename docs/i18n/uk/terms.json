@@ -1147,7 +1147,10 @@
         "form": "Стільниця",
         "why": "GNOME's word; macOS says Робочий стіл"
       }
-    ]
+    ],
+    "exceptions": {
+      "shortcuts.conflict.takenByLinuxDesktops": "a Linux desktop environment (GNOME, KDE Plasma, Xfce), not the macOS Desktop folder → робоче середовище"
+    }
   },
   "destination": {
     "chosen": "призначення",
@@ -1477,6 +1480,13 @@
       }
     ],
     "note": "Виключити means exclude in standard Ukrainian (not switch off, which is вимкнути); macOS's Не долучати is a fine prose alternative."
+  },
+  "exit": {
+    "chosen": "Вийти",
+    "accept": ["вийти", "вихід"],
+    "forms": "Exit Cmdr → Вийти з Cmdr",
+    "confidence": "tentative",
+    "sources": "MS terminology Exit → «Вийти» (a menu action; the TBX also lists «Закрити» and the noun «вихід»)"
   },
   "expired": {
     "chosen": "термін дії сплив",
@@ -2666,6 +2676,10 @@
         "why": "the GNOME/KDE wording; Finder says Перемістити"
       }
     ],
+    "exceptions": {
+      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "moving to a new Mac, PC, or computer is switching machines, not Cmdr's Move command → після переходу на новий …",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "moving to a new Mac, PC, or computer is switching machines, not Cmdr's Move command → після переходу на новий …"
+    },
     "confidence": "high",
     "sources": "macOS Finder LocalizableMerged MV12 and AppKit SavePanel (Move → Перемістити); MS; Double Commander (Move → Перемістити)"
   },
@@ -3029,7 +3043,12 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS Finder LocalizableMerged N30 (permission settings → привілеї; Sharing & Permissions → «Спільний доступ і привілеї»), InfoWindowPermissionsView 142 (Немає інформації про привілеї); live ErrnoErrors (Permission denied → Доступ заборонено); Dolphin (Permissions → Права доступу)"
+    "sources": "macOS Finder LocalizableMerged N30 (permission settings → привілеї; Sharing & Permissions → «Спільний доступ і привілеї»), InfoWindowPermissionsView 142 (Немає інформації про привілеї); live ErrnoErrors (Permission denied → Доступ заборонено); Dolphin (Permissions → Права доступу)",
+    "windows": {
+      "chosen": "дозволи",
+      "accept": ["дозвол"],
+      "note": "Windows' own word for file-system permissions (MS TBX permissions → дозволи; the Security tab lists Дозволи); only the windows branch takes it."
+    }
   },
   "personal-data": {
     "chosen": "особисті дані",
@@ -3304,6 +3323,13 @@
     "confidence": "tentative",
     "sources": "No macOS data-recording sense; macOS live Resources Verbose Logging → «Вести детальний протокол» / «Детальний журнал» (the logging root); DC Write → «Запис»",
     "note": "b31: the switch now uses the file-operations ruling «операції з файлами» (catalog 7:0 over «файлові операції»)."
+  },
+  "recycle-bin": {
+    "chosen": "Кошик",
+    "accept": ["Кошик"],
+    "forms": "«у Кошик», «у Кошику», «власного Кошика»",
+    "confidence": "high",
+    "sources": "MS terminology Recycle Bin → «кошик»; Windows names it Кошик (capitalized as a name, like macOS Смітник)"
   },
   "redact": {
     "chosen": "приховати особисті дані",
@@ -4366,6 +4392,12 @@
     "confidence": "high",
     "sources": "macOS live ScreenReader Tap → «Торкнутися»; MS tap → «торкатися»"
   },
+  "task-manager": {
+    "chosen": "Диспетчер завдань",
+    "accept": ["Диспетчер завдань", "Диспетчера завдань", "Диспетчері завдань"],
+    "confidence": "tentative",
+    "sources": "Ukrainian Windows names Task Manager «Диспетчер завдань»; the MS TBX has no entry for it, so a native reviewer confirms"
+  },
   "technical-details": {
     "chosen": "Технічні деталі",
     "accept": ["технічн"],
@@ -4623,6 +4655,13 @@
       }
     ]
   },
+  "unix-group": {
+    "chosen": "група",
+    "accept": ["груп"],
+    "forms": "the macOS pane Users & Groups → «Користувачі та групи»",
+    "confidence": "high",
+    "sources": "live UsersGroups.appex InfoPlist.loctable (Users & Groups → «Користувачі та групи», macOS 27.0.1, 2026-11-12); macOS AppKit «Назва групи», «Введіть імʼя користувача чи групи»"
+  },
   "unknown": {
     "chosen": "невідомо",
     "accept": ["невідом"],
@@ -4848,7 +4887,12 @@
     "chosen": "вікно",
     "accept": ["вікн", "вікон"],
     "confidence": "high",
-    "sources": "macOS AppKit Window → «Вікно»; Finder New Window → «Нове вікно»"
+    "sources": "macOS AppKit Window → «Вікно»; Finder New Window → «Нове вікно»",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "“Windows” here is the OS name, which stays verbatim, not a window",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "“Windows” here is the OS name, which stays verbatim, not a window",
+      "shortcuts.conflict.takenByWindows": "“Windows” here is the OS name, which stays verbatim, not a window"
+    }
   },
   "wizard": {
     "chosen": "асистент",

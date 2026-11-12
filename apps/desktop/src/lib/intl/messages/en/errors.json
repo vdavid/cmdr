@@ -2026,7 +2026,8 @@
   "errors.write.trashNotSupported.suggestionWithoutKey": "Use the Delete permanently command instead.",
   "@errors.write.trashNotSupported.suggestionWithoutKey": {
     "description": "Recovery suggestion when a volume doesn't support the trash and no key runs Delete permanently (the user removed it), so it names the command instead of a key. The keyless sibling of errors.write.trashNotSupported.suggestion. Plain text. \"Delete permanently\" is the name of Cmdr’s command as the command palette and the menu show it (commands.fileDeletePermanently.label); use the same name.",
-    "screenshot": "transfer-error-trash_not_supported.png"
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.write.connectionInterrupted.title": "Connection interrupted",
   "errors.write.connectionInterrupted.message": "The connection was interrupted.",
@@ -3043,12 +3044,14 @@
     "placeholders": {
       "renameKey": "the key that runs Cmdr’s rename command right now, e.g. \"F2\"; the user can rebind it. A key glyph or key name, never a word."
     },
-    "screenshot": "transfer-error-home_folder-rename.png"
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {If you really need a new name, macOS has a careful way to do it in Users & Groups. It’s not a quick rename, though.} windows {Windows has no safe built-in way to rename it, so it’s best left as it is.} other {If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick rename, though.}}",
   "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
     "description": "The keyless sibling of errors.write.homeFolderRename.suggestion.isHomeWithKey, shown when no key runs Cmdr’s rename command (the user removed it): \"a quick rename\" stands where the key was. Keep the two worded alike. The screenshot shows the macOS wording.",
-    "screenshot": "transfer-error-home_folder-rename.png"
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Rename something inside it instead, or let this one be. It’s holding up more than it looks.",
   "@errors.write.homeFolderMove.suggestion.holdsHome": {

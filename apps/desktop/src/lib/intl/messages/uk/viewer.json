@@ -79,6 +79,22 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
+  "viewer.binaryWarning.bodyWithKeys": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути <kindName>{category, select, image {зображення} document {документ} other {файл {ext}}}</kindName> у звичайному вигляді. Для цього закрийте це вікно й натисніть <quickLookKey></quickLookKey>, щоб відкрити Швидкий перегляд, або натисніть <openKey></openKey> (чи двічі клацніть файл), щоб відкрити його у повʼязаній програмі.",
+  "@viewer.binaryWarning.bodyWithKeys": {
+    "sourceHash": "fd5cfb7"
+  },
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути <kindName>{category, select, image {зображення} document {документ} other {файл {ext}}}</kindName> у звичайному вигляді. Для цього закрийте це вікно й натисніть <quickLookKey></quickLookKey>, щоб відкрити Швидкий перегляд, або двічі клацніть файл, щоб відкрити його у повʼязаній програмі.",
+  "@viewer.binaryWarning.bodyWithQuickLookKey": {
+    "sourceHash": "ed8bdcf"
+  },
+  "viewer.binaryWarning.bodyWithOpenKey": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути <kindName>{category, select, image {зображення} document {документ} other {файл {ext}}}</kindName> у звичайному вигляді. Для цього закрийте це вікно й натисніть <openKey></openKey> (або двічі клацніть файл), щоб відкрити його у повʼязаній програмі.",
+  "@viewer.binaryWarning.bodyWithOpenKey": {
+    "sourceHash": "b219b68"
+  },
+  "viewer.binaryWarning.bodyWithoutKeys": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути <kindName>{category, select, image {зображення} document {документ} other {файл {ext}}}</kindName> у звичайному вигляді. Для цього закрийте це вікно й двічі клацніть файл, щоб відкрити його у повʼязаній програмі.",
+  "@viewer.binaryWarning.bodyWithoutKeys": {
+    "sourceHash": "610efa6"
+  },
   "viewer.binaryWarning.dismiss": "Закрити",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
@@ -359,6 +375,10 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
+  "viewer.copyDialog.confirmMessage": "Вставлення великого обсягу тексту може сповільнити інші програми. Спробуйте пошук ({combo}), щоб звузити вибране.",
+  "@viewer.copyDialog.confirmMessage": {
+    "sourceHash": "084b649"
+  },
   "viewer.copyDialog.cancel": "Скасувати",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -370,6 +390,10 @@
   "viewer.copyDialog.copy": "Скопіювати",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseMessage": "Це більше за ліміт буфера обміну в 100 МБ. Спробуйте пошук ({combo}), щоб знайти потрібне, або збережіть вибране як файл.",
+  "@viewer.copyDialog.refuseMessage": {
+    "sourceHash": "75d10d8"
   },
   "viewer.reloadToast.grew": "Файл змінився на диску. Перезавантажити?",
   "@viewer.reloadToast.grew": {

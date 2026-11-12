@@ -116,6 +116,18 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   folder tally `{countText} rétablis` (beside `{countText} ignorés`) is a coined participle, since `retour en arrière`
   has none; does it read right for deleted copies too? The count line is a colon form, `Sélection : 3 sur 12`, because
   the plural driver is the total.
+- **Windows shortcut-conflict labels** (`shortcuts.system.*`): Windows' UI never names the Alt+Space menu, so
+  `le menu de la fenêtre` is descriptive (the TBX's `menu système` is a developer term); `le parcours des fenêtres` for
+  Alt+Esc and `le passage d’une app à l’autre` for Alt+Tab are coined. Do they read as Windows features?
+- **Search dialog keys** (`commands.searchModeByNumber.label`, `shortcuts.scope.searchDialog`):
+  `Passer au mode de recherche portant ce numéro` and the heading `Rechercher et sélectionner des fichiers` (both dialog
+  titles joined, verbs kept); natural enough?
+
+## Bascules
+
+- `commands.tagsToggle*.label` ship `Activer/désactiver le tag …`, the slash form style.md forbids (`toggle` ruling:
+  `Activer ou désactiver`). Fixing changes macOS-read text, so it needs `ACCEPTED_TRANSLATION_CHANGES` entries; until
+  then the keys sit in the ruling's `exceptions`.
 
 ## Overflow (check against the `en-XA` pseudolocale)
 

@@ -254,3 +254,13 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `?` (`i18n-terms`), against the palette's imperative. Confirm.
 - `Komt terug samen met de bovenliggende map.` for "Comes back with its folder." avoids a pronoun for an item of unknown
   gender. Confirm.
+
+## Windows- en Linux-takken van de keymap-batch (`shortcuts.system.*`, `menu.file.quit`, `menu.view.fullScreen`, `*.trashRefused.*`)
+
+- Windows: `Sluit Cmdr af` (MS `Afsluiten` in the catalog's imperative), `prullenbak` (MS TBX), `Taakbeheer`,
+  `het Startmenu`, `het systeemmenu` (MS `system menu`; Windows never names the Alt+Space menu in its UI). Linux trash
+  is `prullenbak` too (Nautilus, Dolphin, Thunar). Confirm.
+- Coined, no source: `het beveiligingsscherm` (Ctrl+Alt+Delete), `door vensters bladeren` (Alt+Esc),
+  `een invoermethode aan- of uitzetten`. Confirm.
+- `shortcuts.scope.searchDialog` → `Zoeken en Selecteer bestanden` quotes both dialog titles verbatim, which mixes a
+  noun and an imperative. Confirm or pick a natural heading.

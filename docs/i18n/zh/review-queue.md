@@ -97,3 +97,7 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
   `suggestedOps.sweepWhen.*`): confirm `原因，按 AI 的说法：` sounds natural from a screen reader, that `包含` reads as
   the tick column's heading (alternative `选中`), and that the batch headings `刚刚建议` / `今天 {time} 建议` read as
   headings, not fragments.
+- **Keymap batch, Windows names** (`shortcuts.system.securityScreen`, `shortcuts.system.windowMenu`,
+  `shortcuts.system.cyclingWindows`): Windows never titles the Ctrl+Alt+Delete screen, so `安全屏幕` is descriptive
+  (alternative `安全选项屏幕`); confirm it and that `窗口菜单` / `依次切换窗口` read as the Alt+Space and Alt+Esc
+  features.

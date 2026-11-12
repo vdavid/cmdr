@@ -49,6 +49,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name of the chat panel; kept verbatim per the ask-cmdr ruling in docs/i18n/sv/terms.json, as in settings.askCmdr.enabled.label."
   },
+  "shortcuts.scope.searchDialog": "Sök och Markera filer",
+  "@shortcuts.scope.searchDialog": {
+    "sourceHash": "eec03a0"
+  },
   "shortcuts.scope.favoritesMenu": "Favoritmeny",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
@@ -105,6 +109,18 @@
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
+  "shortcuts.conflict.takenByWindows": "{combo} brukar vara upptagen av Windows ({label}), så den når kanske aldrig fram till Cmdr.",
+  "@shortcuts.conflict.takenByWindows": {
+    "sourceHash": "4858bee"
+  },
+  "shortcuts.conflict.takenByLinuxDesktops": "I {desktops} brukar skrivbordsmiljön ta {combo} för egen del, så den når kanske aldrig fram till Cmdr. Du kan frigöra den i tangentbordsinställningarna för din skrivbordsmiljö.",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "sourceHash": "11d35a9"
+  },
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} öppnar menyn {menu} i Cmdrs menyrad, så den når inte det här kommandot om inte en dialog är öppen.",
+  "@shortcuts.conflict.opensMenuBarMenu": {
+    "sourceHash": "314244c"
+  },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
     "sourceHash": "fca7aa8",
@@ -159,6 +175,38 @@
   "shortcuts.system.forceQuit": "Avsluta tvingat",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
+  },
+  "shortcuts.system.switchingApps": "att växla mellan appar",
+  "@shortcuts.system.switchingApps": {
+    "sourceHash": "0113527"
+  },
+  "shortcuts.system.cyclingWindows": "att bläddra mellan fönster",
+  "@shortcuts.system.cyclingWindows": {
+    "sourceHash": "a2a7a18"
+  },
+  "shortcuts.system.windowMenu": "systemmenyn",
+  "@shortcuts.system.windowMenu": {
+    "sourceHash": "50afaf9"
+  },
+  "shortcuts.system.closingWindow": "att stänga fönstret",
+  "@shortcuts.system.closingWindow": {
+    "sourceHash": "82fe00f"
+  },
+  "shortcuts.system.startMenu": "Start-menyn",
+  "@shortcuts.system.startMenu": {
+    "sourceHash": "b05bc4f"
+  },
+  "shortcuts.system.taskManager": "Aktivitetshanteraren",
+  "@shortcuts.system.taskManager": {
+    "sourceHash": "58d65c2"
+  },
+  "shortcuts.system.securityScreen": "säkerhetsskärmen",
+  "@shortcuts.system.securityScreen": {
+    "sourceHash": "5fdc327"
+  },
+  "shortcuts.system.inputMethodToggle": "att slå på eller av en inmatningsmetod",
+  "@shortcuts.system.inputMethodToggle": {
+    "sourceHash": "fe0b8a0"
   },
   "shortcuts.section.title": "Tangentbordsgenvägar",
   "@shortcuts.section.title": {
@@ -256,6 +304,18 @@
   "shortcuts.section.resetAll": "Återställ allt till förval",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.section.resetAllConfirm": "Återställ alla tangentbordsgenvägar till förval?",
+  "@shortcuts.section.resetAllConfirm": {
+    "sourceHash": "3fc5074"
+  },
+  "shortcuts.section.resetAllConfirmTitle": "Återställ tangentbordsgenvägar",
+  "@shortcuts.section.resetAllConfirmTitle": {
+    "sourceHash": "5dac863"
+  },
+  "shortcuts.section.resetAllConfirmButton": "Återställ",
+  "@shortcuts.section.resetAllConfirmButton": {
+    "sourceHash": "daee760"
   },
   "shortcuts.window.title": "Tangentbordsgenvägar",
   "@shortcuts.window.title": {

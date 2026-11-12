@@ -325,6 +325,10 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr chưa thể mở tệp này bằng ứng dụng khác, vì đây không phải là tệp thông thường trên máy Mac của bạn. Thay vào đó, hãy xem tệp bằng lệnh Xem.} windows {Cmdr chưa thể mở tệp này bằng ứng dụng khác, vì đây không phải là tệp thông thường trên PC của bạn. Thay vào đó, hãy xem tệp bằng lệnh Xem.} other {Cmdr chưa thể mở tệp này bằng ứng dụng khác, vì đây không phải là tệp thông thường trên máy tính của bạn. Thay vào đó, hãy xem tệp bằng lệnh Xem.}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "b281a7e"
+  },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {Không mở được “{fileName}”. macOS không tìm thấy tệp này hoặc không có ứng dụng nào mở được tệp.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
@@ -714,25 +718,57 @@
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "ba69ee7"
   },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "Bảng nhớ tạm không mang được tệp từ thiết bị này. Dùng lệnh Sao chép để sao chép chúng.",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "sourceHash": "ec9f6a4"
+  },
   "fileExplorer.clipboard.moveFromDevice": "Bảng nhớ tạm không mang được tệp từ thiết bị này. Dùng {moveKey} để di chuyển chúng.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "Bảng nhớ tạm không mang được tệp từ thiết bị này. Dùng lệnh Di chuyển để di chuyển chúng.",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "sourceHash": "3e1a8d6"
   },
   "fileExplorer.clipboard.copyFromServer": "Bảng nhớ tạm không mang được tệp từ máy chủ này. Dùng {copyKey} để sao chép chúng.",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "12cb39f"
   },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "Bảng nhớ tạm không mang được tệp từ máy chủ này. Dùng lệnh Sao chép để sao chép chúng.",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "sourceHash": "a0b8b71"
+  },
   "fileExplorer.clipboard.moveFromServer": "Bảng nhớ tạm không mang được tệp từ máy chủ này. Dùng {moveKey} để di chuyển chúng.",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "Bảng nhớ tạm không mang được tệp từ máy chủ này. Dùng lệnh Di chuyển để di chuyển chúng.",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "sourceHash": "958bc4b"
   },
   "fileExplorer.clipboard.copyFromUnknown": "Không thể đưa những tệp này lên bảng nhớ tạm. Dùng {copyKey} để sao chép chúng.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "7aaabdb"
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "Không thể đưa những tệp này lên bảng nhớ tạm. Dùng lệnh Sao chép để sao chép chúng.",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "sourceHash": "eef58a6"
+  },
   "fileExplorer.clipboard.moveFromUnknown": "Không thể đưa những tệp này lên bảng nhớ tạm. Dùng {moveKey} để di chuyển chúng.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
+  },
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "Không thể đưa những tệp này lên bảng nhớ tạm. Dùng lệnh Di chuyển để di chuyển chúng.",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "sourceHash": "9148b09"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr chưa thể mở tệp này bằng trình soạn thảo, vì đây không phải là tệp thông thường trên máy Mac của bạn. Nhấn {viewKey} để xem tệp.} windows {Cmdr chưa thể mở tệp này bằng trình soạn thảo, vì đây không phải là tệp thông thường trên PC của bạn. Nhấn {viewKey} để xem tệp.} other {Cmdr chưa thể mở tệp này bằng trình soạn thảo, vì đây không phải là tệp thông thường trên máy tính của bạn. Nhấn {viewKey} để xem tệp.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "6bc5d46"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr chưa thể mở tệp này bằng trình soạn thảo, vì đây không phải là tệp thông thường trên máy Mac của bạn. Thay vào đó, hãy xem tệp bằng lệnh Xem.} windows {Cmdr chưa thể mở tệp này bằng trình soạn thảo, vì đây không phải là tệp thông thường trên PC của bạn. Thay vào đó, hãy xem tệp bằng lệnh Xem.} other {Cmdr chưa thể mở tệp này bằng trình soạn thảo, vì đây không phải là tệp thông thường trên máy tính của bạn. Thay vào đó, hãy xem tệp bằng lệnh Xem.}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "4572115"
   },
   "fileExplorer.edit.hint": "Đã mở tệp trong {app}. Bạn muốn dùng trình soạn thảo khác vào lần sau? Hãy chọn trong Cài đặt.",
   "@fileExplorer.edit.hint": {
@@ -770,9 +806,25 @@
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "Dùng lệnh Sao chép để sao chép tệp vào thiết bị này.",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "sourceHash": "06a1d58"
+  },
   "fileExplorer.clipboard.copyToServer": "Dùng {copyKey} để sao chép tệp vào máy chủ này.",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "Dùng lệnh Sao chép để sao chép tệp vào máy chủ này.",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "sourceHash": "1229e3a"
+  },
+  "fileExplorer.clipboard.noFilesWithKey": "Bảng nhớ tạm không có tệp nào. Hãy sao chép tệp trước bằng {combo}.",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "sourceHash": "1eb6ea9"
+  },
+  "fileExplorer.clipboard.noFiles": "Bảng nhớ tạm không có tệp nào. Hãy sao chép tệp trước.",
+  "@fileExplorer.clipboard.noFiles": {
+    "sourceHash": "295341a"
   },
   "fileExplorer.clipboard.stillPasting": "Vẫn đang tạo tệp từ bảng nhớ tạm. Ổ đĩa phản hồi chậm.",
   "@fileExplorer.clipboard.stillPasting": {
@@ -874,6 +926,14 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
+  "fileExplorer.restic.copyOutWithKey": "Để sao chép tệp ra khỏi bản sao lưu, hãy dùng {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "d49d631"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "Để sao chép tệp ra khỏi bản sao lưu, hãy dùng lệnh Sao chép.",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "7cfa21e"
+  },
   "fileExplorer.restic.snapshot.host": "Sao lưu từ {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -902,6 +962,18 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Để quên mật khẩu của một bản sao lưu, hãy mở bản sao lưu đó trước, hoặc đặt con trỏ vào thư mục “Browse snapshots” của bản sao lưu.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.copyOutWithKeys": "Để sao chép tệp ra khỏi tệp nén, hãy dùng {copyKey} để sao chép hoặc {moveKey} để di chuyển.",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "sourceHash": "f68d0ba"
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "Để sao chép tệp ra khỏi tệp nén, hãy dùng {copyKey}.",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "sourceHash": "adf47d1"
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "Để sao chép tệp ra khỏi tệp nén, hãy dùng lệnh Sao chép hoặc Di chuyển.",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "sourceHash": "ea37784"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr có chút phép màu git dành cho bạn!",
   "@fileExplorer.git.portalIntro.title": {
@@ -963,6 +1035,18 @@
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
   },
+  "fileExplorer.git.copyOutWithKeys": "Để sao chép tệp ra khỏi một ảnh chụp git, hãy dùng {copyKey} để sao chép hoặc {moveKey} để di chuyển.",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "sourceHash": "12e26a2"
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "Để sao chép tệp ra khỏi một ảnh chụp git, hãy dùng {copyKey}.",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "sourceHash": "8a75857"
+  },
+  "fileExplorer.git.copyOutWithoutKey": "Để sao chép tệp ra khỏi một ảnh chụp git, hãy dùng lệnh Sao chép hoặc Di chuyển.",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "sourceHash": "a8ebbf0"
+  },
   "fileExplorer.openWith.copyRefused.tooLarge": "“{fileName}” lớn hơn {limit}, nên Cmdr không thể mở tệp này bằng {appName} từ bên trong tệp nén.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
     "sourceHash": "43399e6"
@@ -990,6 +1074,10 @@
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} không thể mở tệp này, vì đây không phải là tệp thông thường trên máy Mac của bạn. Nhấn {viewKey} để xem tệp trong Cmdr.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} không thể mở tệp này, vì đây không phải là tệp thông thường trên máy Mac của bạn. Thay vào đó, hãy xem tệp trong Cmdr bằng lệnh Xem.} windows {{appName} không thể mở tệp này, vì đây không phải là tệp thông thường trên PC của bạn. Thay vào đó, hãy xem tệp trong Cmdr bằng lệnh Xem.} other {{appName} không thể mở tệp này, vì đây không phải là tệp thông thường trên máy tính của bạn. Thay vào đó, hãy xem tệp trong Cmdr bằng lệnh Xem.}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "9d98d51"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Không thể đọc “{fileName}” để mở bằng {appName}. Hãy kiểm tra xem ổ đĩa chứa tệp có còn kết nối không, rồi thử lại.",
   "@fileExplorer.openWith.copyRefused.unreadable": {
@@ -1627,6 +1715,10 @@
   "fileExplorer.quickLookHint.quickView": "Trong Cmdr, bạn có thể mở Xem nhanh bằng <key></key>. (<key></key> cũng hoạt động trong Finder nhé!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.quickViewRebound": "Trong Cmdr, bạn có thể mở Xem nhanh bằng <key></key>.",
+  "@fileExplorer.quickLookHint.quickViewRebound": {
+    "sourceHash": "27e87e5"
   },
   "fileExplorer.quickLookHint.enterOpens": "Bạn cũng có thể dùng <enter></enter> để mở tệp trong ứng dụng mặc định.",
   "@fileExplorer.quickLookHint.enterOpens": {

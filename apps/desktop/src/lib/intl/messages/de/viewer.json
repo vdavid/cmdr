@@ -79,6 +79,22 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
+  "viewer.binaryWarning.bodyWithKeys": "Das ist die Rohansicht der Datei. Vielleicht möchtest du stattdessen <kindName>{category, select, image {das eigentliche Bild} document {das eigentliche Dokument} other {die eigentliche {ext}-Datei}}</kindName> ansehen. Schließe dazu dieses Fenster und drücke <quickLookKey></quickLookKey> für die Übersicht, oder drücke <openKey></openKey> (oder doppelklicke auf die Datei), um sie in der zugehörigen App zu öffnen.",
+  "@viewer.binaryWarning.bodyWithKeys": {
+    "sourceHash": "fd5cfb7"
+  },
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Das ist die Rohansicht der Datei. Vielleicht möchtest du stattdessen <kindName>{category, select, image {das eigentliche Bild} document {das eigentliche Dokument} other {die eigentliche {ext}-Datei}}</kindName> ansehen. Schließe dazu dieses Fenster und drücke <quickLookKey></quickLookKey> für die Übersicht, oder doppelklicke auf die Datei, um sie in der zugehörigen App zu öffnen.",
+  "@viewer.binaryWarning.bodyWithQuickLookKey": {
+    "sourceHash": "ed8bdcf"
+  },
+  "viewer.binaryWarning.bodyWithOpenKey": "Das ist die Rohansicht der Datei. Vielleicht möchtest du stattdessen <kindName>{category, select, image {das eigentliche Bild} document {das eigentliche Dokument} other {die eigentliche {ext}-Datei}}</kindName> ansehen. Schließe dazu dieses Fenster und drücke <openKey></openKey> (oder doppelklicke auf die Datei), um sie in der zugehörigen App zu öffnen.",
+  "@viewer.binaryWarning.bodyWithOpenKey": {
+    "sourceHash": "b219b68"
+  },
+  "viewer.binaryWarning.bodyWithoutKeys": "Das ist die Rohansicht der Datei. Vielleicht möchtest du stattdessen <kindName>{category, select, image {das eigentliche Bild} document {das eigentliche Dokument} other {die eigentliche {ext}-Datei}}</kindName> ansehen. Schließe dazu dieses Fenster und doppelklicke auf die Datei, um sie in der zugehörigen App zu öffnen.",
+  "@viewer.binaryWarning.bodyWithoutKeys": {
+    "sourceHash": "610efa6"
+  },
   "viewer.binaryWarning.dismiss": "Schließen",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
@@ -363,6 +379,10 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
+  "viewer.copyDialog.confirmMessage": "Große Mengen einzusetzen kann andere Apps verlangsamen. Grenze die Auswahl mit der Suche ({combo}) ein.",
+  "@viewer.copyDialog.confirmMessage": {
+    "sourceHash": "084b649"
+  },
   "viewer.copyDialog.cancel": "Abbrechen",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -374,6 +394,10 @@
   "viewer.copyDialog.copy": "Kopieren",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseMessage": "Das ist größer als das Limit der Zwischenablage von 100 MB. Grenze mit der Suche ({combo}) ein, was du brauchst, oder sichere die Auswahl als Datei.",
+  "@viewer.copyDialog.refuseMessage": {
+    "sourceHash": "75d10d8"
   },
   "viewer.reloadToast.grew": "Die Datei wurde auf dem Datenträger geändert. Neu laden?",
   "@viewer.reloadToast.grew": {

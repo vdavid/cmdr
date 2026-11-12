@@ -27,6 +27,14 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
+  "ai.toast.readyDescriptionWithKey": "Попробуйте создать новую папку ({combo}), чтобы увидеть, какие имена предложит ИИ.",
+  "@ai.toast.readyDescriptionWithKey": {
+    "sourceHash": "a9e1361"
+  },
+  "ai.toast.readyDescriptionWithoutKey": "Попробуйте создать новую папку, чтобы увидеть, какие имена предложит ИИ.",
+  "@ai.toast.readyDescriptionWithoutKey": {
+    "sourceHash": "2ec8316"
+  },
   "ai.toast.gotIt": "Понятно",
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"

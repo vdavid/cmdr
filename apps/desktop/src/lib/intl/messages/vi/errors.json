@@ -1393,6 +1393,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "Hãy dùng lệnh Xóa vĩnh viễn thay vào đó.",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "Kết nối bị gián đoạn",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1684,6 +1688,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder vẫn có thể di chuyển các mục này sau khi hỏi mật khẩu quản trị viên.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Điều này có thể xảy ra khi quyền của thư mục thùng rác thay đổi, ví dụ sau khi chuyển sang một máy Mac mới. Bạn vẫn có thể xóa vĩnh viễn các mục này bằng {deletePermanentlyKey}.} windows {Điều này có thể xảy ra khi quyền của Thùng rác thay đổi, ví dụ sau khi chuyển sang một PC mới. Bạn vẫn có thể xóa vĩnh viễn các mục này bằng {deletePermanentlyKey}.} other {Điều này có thể xảy ra khi quyền của thư mục thùng rác thay đổi, ví dụ sau khi chuyển sang một máy tính mới. Bạn vẫn có thể xóa vĩnh viễn các mục này bằng {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {Điều này có thể xảy ra khi quyền của thư mục thùng rác thay đổi, ví dụ sau khi chuyển sang một máy Mac mới. Bạn vẫn có thể xóa các mục này bằng lệnh Xóa vĩnh viễn.} windows {Điều này có thể xảy ra khi quyền của Thùng rác thay đổi, ví dụ sau khi chuyển sang một PC mới. Bạn vẫn có thể xóa các mục này bằng lệnh Xóa vĩnh viễn.} other {Điều này có thể xảy ra khi quyền của thư mục thùng rác thay đổi, ví dụ sau khi chuyển sang một máy tính mới. Bạn vẫn có thể xóa các mục này bằng lệnh Xóa vĩnh viễn.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Một số nơi không có Thùng rác riêng, trong đó có các thư mục đám mây và hầu hết ổ đĩa mạng. Bạn vẫn có thể xóa vĩnh viễn các mục này bằng {deletePermanentlyKey}.} other {Một số nơi không có thùng rác riêng, trong đó có các thư mục đám mây và hầu hết ổ đĩa mạng. Bạn vẫn có thể xóa vĩnh viễn các mục này bằng {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Một số nơi không có Thùng rác riêng, trong đó có các thư mục đám mây và hầu hết ổ đĩa mạng. Bạn vẫn có thể xóa các mục này bằng lệnh Xóa vĩnh viễn.} other {Một số nơi không có thùng rác riêng, trong đó có các thư mục đám mây và hầu hết ổ đĩa mạng. Bạn vẫn có thể xóa các mục này bằng lệnh Xóa vĩnh viễn.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Hãy xem chi tiết kỹ thuật bên dưới để biết macOS báo gì.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2016,6 +2036,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Bạn không thể đổi tên <code>{path}</code> vì thư mục chính của bạn nằm trong đó, mà máy Mac của bạn luôn tìm nó đúng ở đường dẫn này.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Nếu bạn thật sự cần một tên mới, macOS có một cách làm cẩn thận trong Người dùng & Nhóm. Nhưng đó không phải là một cú {renameKey} nhanh gọn đâu.} windows {Windows không có sẵn cách an toàn nào để đổi tên thư mục này, nên tốt nhất là cứ để nguyên.} other {Nếu bạn thật sự cần một tên mới, quản trị viên có thể làm việc này cẩn thận bằng usermod, khi đăng nhập bằng một người dùng khác. Nhưng đó không phải là một cú {renameKey} nhanh gọn đâu.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {Nếu bạn thật sự cần một tên mới, macOS có một cách làm cẩn thận trong Người dùng & Nhóm. Nhưng đó không phải là một lần đổi tên nhanh gọn đâu.} windows {Windows không có sẵn cách an toàn nào để đổi tên thư mục này, nên tốt nhất là cứ để nguyên.} other {Nếu bạn thật sự cần một tên mới, quản trị viên có thể làm việc này cẩn thận bằng usermod, khi đăng nhập bằng một người dùng khác. Nhưng đó không phải là một lần đổi tên nhanh gọn đâu.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Thay vào đó, hãy đổi tên thứ gì đó bên trong, hoặc cứ để yên thư mục này. Nó đang gánh nhiều hơn bạn tưởng đấy.",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

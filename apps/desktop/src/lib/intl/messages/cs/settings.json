@@ -484,6 +484,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "Co udělá {combo} ve složce, když je ve schránce text, obrázek nebo PDF místo zkopírovaných souborů.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "Co udělá vložení ve složce, když je ve schránce text, obrázek nebo PDF místo zkopírovaných souborů.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Nedělat nic",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -527,6 +535,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Přeskočit potvrzení u kopírování, přesunu a koše}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Příkazy „Kopírovat“ a „Přesunout“ kopírují a přesouvají do druhého panelu hned a „Smazat“ přesouvá do koše bez ptaní. Trochu riskantní, protože jedno stisknutí klávesy hned něco provede. Trvalé smazání se vždy nejdřív zeptá.} other {Příkazy „Kopírovat“ a „Přesunout“ kopírují a přesouvají do druhého panelu hned a „Smazat“ přesouvá do koše bez ptaní. Trochu riskantní, protože jedno stisknutí klávesy hned něco provede. Trvalé smazání se vždy nejdřív zeptá.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {potvrdit, potvrzení, dialog, zeptat se, kopírovat, přesunout, koš, smazat, přeskočit, kliknutí}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1084,6 +1096,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Přejít na poslední stažený soubor",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Přejděte na naposledy stažený soubor z jakékoli aplikace pomocí globální klávesové zkratky. Vyžaduje plný přístup k disku.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "zkratka, klávesová zkratka, globální, stahování, stažené soubory, skok, přejít, otevřít",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1731,6 +1747,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {Prohlížeč souborů v Cmdru zobrazuje surové bajty (obsah, který není text, ztrátově jako UTF-8). Když otevřete obrázek, PDF, archiv nebo jiný binární soubor, prohlížeč zobrazí červený pruh s vysvětlením, že se spíš hodí Rychlý náhled nebo otevření v přiřazené aplikaci. Zapněte tuto volbu (nebo v pruhu klikněte na „Toto varování už nikdy nezobrazovat“) a varování se už nikdy nezobrazí.} windows {Prohlížeč souborů v Cmdru zobrazuje surové bajty (obsah, který není text, ztrátově jako UTF-8). Když otevřete obrázek, PDF, archiv nebo jiný binární soubor, prohlížeč zobrazí červený pruh s vysvětlením, že se spíš hodí otevření v přiřazené aplikaci. Zapněte tuto volbu (nebo v pruhu vyberte „Toto varování už nikdy nezobrazovat“) a varování se už nikdy nezobrazí.} other {Prohlížeč souborů v Cmdru zobrazuje surové bajty (obsah, který není text, ztrátově jako UTF-8). Když otevřete obrázek, PDF, archiv nebo jiný binární soubor, prohlížeč zobrazí červený pruh s vysvětlením, že se spíš hodí otevření v přiřazené aplikaci. Zapněte tuto volbu (nebo v pruhu klikněte na „Toto varování už nikdy nezobrazovat“) a varování se už nikdy nezobrazí.}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "prohlížeč, binární, obrázek, surový, upozornění, varování, pruh, rychlý náhled",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1738,6 +1758,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "Potlačit tip o mezerníku a Rychlém náhledu",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr používá mezerník k přepnutí výběru souboru a {combo} pro Rychlý náhled (Finder pro Rychlý náhled používá samotný mezerník). Pokaždé, když v seznamu souborů stisknete mezerník, Cmdr zobrazí krátké připomenutí tohoto rozdílu. Zapněte tuto volbu (nebo v oznámení klikněte na „Už nezobrazovat“) a připomenutí se už nikdy nezobrazí.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr používá mezerník k přepnutí výběru souboru, zatímco Finder ho používá pro Rychlý náhled. Pokaždé, když v seznamu souborů stisknete mezerník, Cmdr zobrazí krátké připomenutí tohoto rozdílu. Zapněte tuto volbu (nebo v oznámení klikněte na „Už nezobrazovat“) a připomenutí se už nikdy nezobrazí.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "rychlý náhled, náhled, mezerník, nápověda, tip, oznámení, připomínka",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1782,6 +1810,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Počet zavřených záložek, které si každý panel pamatuje",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "Kolik naposledy zavřených záložek si každý panel uchová pro příkaz „Znovu otevřít zavřenou záložku“ ({combo}). Vyšší hodnoty vám dovolí vrátit se dál do historie, nižší hodnoty dřív uvolní paměť. Platí jen pro záložky zavřené v aktuální relaci.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "Kolik naposledy zavřených záložek si každý panel uchová pro příkaz „Znovu otevřít zavřenou záložku“. Vyšší hodnoty vám dovolí vrátit se dál do historie, nižší hodnoty dřív uvolní paměť. Platí jen pro záložky zavřené v aktuální relaci.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "záložka, záložky, zavřené, znovu otevřít, historie, obnovit, panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1850,6 +1886,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "Když píšete v panelu",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {Skok přesune kurzor na nejlepší shodu. Filtr zobrazí jen soubory a složky, jejichž názvy obsahují to, co píšete, podobně jako rychlý filtr v programu Total Commander; klávesou Delete (⌫) ho upravíte a klávesou Esc vymažete.} other {Skok přesune kurzor na nejlepší shodu. Filtr zobrazí jen soubory a složky, jejichž názvy obsahují to, co píšete, podobně jako rychlý filtr v programu Total Commander; klávesou Backspace ho upravíte a klávesou Esc vymažete.}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Skok",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2222,6 +2262,14 @@
   "settings.behavior.textEditorHintSeen.label": "Potlačit tip k textovému editoru",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "Když {combo} poprvé otevře soubor ve výchozím editoru a přitom je nainstalovaný i jiný editor, Cmdr zmíní, že si můžete vybrat jiný. Vypněte tuto volbu a tip se zobrazí ještě jednou.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "Když Cmdr poprvé otevře soubor ve výchozím editoru a přitom je nainstalovaný i jiný editor, zmíní, že si můžete vybrat jiný. Vypněte tuto volbu a tip se zobrazí ještě jednou.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "upravit, úpravy, editor, F4, aplikace, oznámení, nápověda",
   "@settings.behavior.textEditorHintSeen.keywords": {

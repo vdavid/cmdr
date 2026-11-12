@@ -117,3 +117,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   ("compose") keeps the line from claiming anything got renamed. Confirm it reads naturally.
 - **`chọn từng mục một`** (`operationLog.tree.togglesCapped`, `operationLog.rollback.refusalTooManyToggles`): "select
   one by one" has no source; coined. Confirm it reads naturally.
+- **Windows shortcut-conflict labels** (`shortcuts.system.windowMenu` = `menu điều khiển của cửa sổ`,
+  `.securityScreen` = `màn hình bảo mật`, `.taskManager` = `Trình quản lý Tác vụ`, `.inputMethodToggle` =
+  `bật hoặc tắt bộ gõ IME`): the TBX has only "control/system menu → menu điều khiển" and no Task Manager entry; confirm
+  against a Vietnamese Windows.
+- **`môi trường desktop`** (`shortcuts.conflict.takenByLinuxDesktops`): the Linux desktop environment; no pile source
+  settles it. Confirm it reads naturally.

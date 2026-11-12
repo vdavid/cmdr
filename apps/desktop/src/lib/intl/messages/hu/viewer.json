@@ -79,6 +79,22 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
+  "viewer.binaryWarning.bodyWithKeys": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kindName>{category, select, image {képet} document {dokumentumot} other {{ext} formátumú fájlt}}</kindName> szeretnéd megnézni. Ehhez zárd be ezt az ablakot, és nyisd meg a Gyorsnézetet (<quickLookKey></quickLookKey>), vagy nyisd meg a fájlt a társított appban (<openKey></openKey>, vagy kattints duplán a fájlra).",
+  "@viewer.binaryWarning.bodyWithKeys": {
+    "sourceHash": "fd5cfb7"
+  },
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kindName>{category, select, image {képet} document {dokumentumot} other {{ext} formátumú fájlt}}</kindName> szeretnéd megnézni. Ehhez zárd be ezt az ablakot, és nyisd meg a Gyorsnézetet (<quickLookKey></quickLookKey>), vagy kattints duplán a fájlra, hogy a társított appban nyíljon meg.",
+  "@viewer.binaryWarning.bodyWithQuickLookKey": {
+    "sourceHash": "ed8bdcf"
+  },
+  "viewer.binaryWarning.bodyWithOpenKey": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kindName>{category, select, image {képet} document {dokumentumot} other {{ext} formátumú fájlt}}</kindName> szeretnéd megnézni. Ehhez zárd be ezt az ablakot, és nyisd meg a fájlt a társított appban (<openKey></openKey>, vagy kattints duplán a fájlra).",
+  "@viewer.binaryWarning.bodyWithOpenKey": {
+    "sourceHash": "b219b68"
+  },
+  "viewer.binaryWarning.bodyWithoutKeys": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kindName>{category, select, image {képet} document {dokumentumot} other {{ext} formátumú fájlt}}</kindName> szeretnéd megnézni. Ehhez zárd be ezt az ablakot, és kattints duplán a fájlra, hogy a társított appban nyíljon meg.",
+  "@viewer.binaryWarning.bodyWithoutKeys": {
+    "sourceHash": "610efa6"
+  },
   "viewer.binaryWarning.dismiss": "Bezárás",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
@@ -360,6 +376,10 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
+  "viewer.copyDialog.confirmMessage": "A nagy beillesztések lelassíthatnak más alkalmazásokat. Próbáld a keresést ({combo}), hogy leszűkítsd.",
+  "@viewer.copyDialog.confirmMessage": {
+    "sourceHash": "084b649"
+  },
   "viewer.copyDialog.cancel": "Mégsem",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -371,6 +391,10 @@
   "viewer.copyDialog.copy": "Másolás",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseMessage": "Ez nagyobb a 100 MB-os vágólapkorlátnál. Próbáld a keresést ({combo}), hogy megtaláld, amire szükséged van, vagy mentsd a kijelölést fájlként.",
+  "@viewer.copyDialog.refuseMessage": {
+    "sourceHash": "75d10d8"
   },
   "viewer.reloadToast.grew": "A fájl megváltozott a lemezen. Újratöltöd?",
   "@viewer.reloadToast.grew": {

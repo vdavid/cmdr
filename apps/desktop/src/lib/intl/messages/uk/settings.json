@@ -484,6 +484,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "Що робить {combo} у папці, коли в буфері обміну текст, зображення або PDF, а не скопійовані файли.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "Що відбувається під час вставлення в папку, коли в буфері обміну текст, зображення або PDF, а не скопійовані файли.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Нічого не робити",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -527,6 +535,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Пропускати підтвердження копіювання, переміщення й переміщення в Смітник}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {«Скопіювати» і «Перемістити» одразу переносять файли на іншу панель, а «Видалити» переміщує їх у Кошик без запитань. Трохи ризиковано, бо одне натискання клавіші діє відразу. Перед остаточним видаленням Cmdr завжди спершу запитує.} other {«Скопіювати» і «Перемістити» одразу переносять файли на іншу панель, а «Видалити» переміщує їх у Смітник без запитань. Трохи ризиковано, бо одне натискання клавіші діє відразу. Перед остаточним видаленням Cmdr завжди спершу запитує.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {підтвердження, діалог, запитання, без запитань, копіювання, переміщення, кошик, видалення, швидко}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1084,6 +1096,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Перейти до останнього викачаного файлу",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Перехід до останнього викачаного файлу з будь-якої програми глобальним скороченням. Потрібен «Повний доступ до диска».",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "скорочення, гаряча клавіша, глобальний, завантаження, завантажене, перейти, стрибнути",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1730,6 +1746,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {Переглядач файлів Cmdr показує сирі байти (нетекстовий вміст декодується як UTF-8 із втратами). Коли ви відкриваєте зображення, PDF, архів чи інший двійковий файл, переглядач показує червоний банер із поясненням, що вам, імовірно, потрібен Швидкий перегляд або відкриття у повʼязаній програмі. Увімкніть цей параметр (або клацніть «Більше не показувати це застереження» на банері), щоб назавжди прибрати це застереження.} windows {Переглядач файлів Cmdr показує сирі байти (нетекстовий вміст декодується як UTF-8 із втратами). Коли ви відкриваєте зображення, PDF, архів чи інший двійковий файл, переглядач показує червоний банер із поясненням, що вам, імовірно, потрібне відкриття у повʼязаній програмі. Увімкніть цей параметр (або виберіть «Більше не показувати це застереження» на банері), щоб назавжди прибрати це застереження.} other {Переглядач файлів Cmdr показує сирі байти (нетекстовий вміст декодується як UTF-8 із втратами). Коли ви відкриваєте зображення, PDF, архів чи інший двійковий файл, переглядач показує червоний банер із поясненням, що вам, імовірно, потрібне відкриття у повʼязаній програмі. Увімкніть цей параметр (або клацніть «Більше не показувати це застереження» на банері), щоб назавжди прибрати це застереження.}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "двійковий, бінарний, зображення, байти, банер, попередження, сирий вигляд",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1737,6 +1757,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "Не показувати підказку про Пробіл і Швидкий перегляд",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr використовує Пробіл, щоб перемикати вибір файлів, і {combo} для Швидкого перегляду (у Finder Швидкий перегляд відкриває сам Пробіл). Щоразу, коли ви натискаєте Пробіл у списку файлів, Cmdr показує коротке нагадування (один абзац) про цю різницю. Увімкніть цей параметр (або клацніть «Більше не показувати» у сповіщенні), щоб назавжди прибрати це нагадування.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr використовує Пробіл, щоб перемикати вибір файлів, а Finder відкриває ним Швидкий перегляд. Щоразу, коли ви натискаєте Пробіл у списку файлів, Cmdr показує коротке нагадування (один абзац) про цю різницю. Увімкніть цей параметр (або клацніть «Більше не показувати» у сповіщенні), щоб назавжди прибрати це нагадування.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "попередній перегляд, пробіл, нагадування, сповіщення, приховати, прибрати",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1781,6 +1809,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Скільки закритих вкладок памʼятати для кожної панелі",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "Скільки недавно закритих вкладок кожна панель памʼятає для команди «Знову відкрити закриту вкладку» ({combo}). Більші значення дають змогу повертатися далі в історію, а менші швидше звільняють памʼять. Стосується лише вкладок, закритих у поточному сеансі.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "Скільки недавно закритих вкладок кожна панель памʼятає для команди «Знову відкрити закриту вкладку». Більші значення дають змогу повертатися далі в історію, а менші швидше звільняють памʼять. Стосується лише вкладок, закритих у поточному сеансі.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "вкладки, закриті, повернути, історія, відновити, панель",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1849,6 +1885,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "Коли ви вводите текст на панелі",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {«Перехід» переміщує курсор на найкращий збіг. «Фільтр» показує лише файли й папки, назви яких містять введений вами текст, як швидкий фільтр у Total Commander; Delete (⌫) редагує його, а Esc очищає.} other {«Перехід» переміщує курсор на найкращий збіг. «Фільтр» показує лише файли й папки, назви яких містять введений вами текст, як швидкий фільтр у Total Commander; Backspace редагує його, а Esc очищає.}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Перехід",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2221,6 +2261,14 @@
   "settings.behavior.textEditorHintSeen.label": "Не показувати підказку про текстовий редактор",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "Коли {combo} уперше відкриває файл у типовому редакторі, а встановлено й інший редактор, Cmdr підказує, що можна вибрати інший. Вимкніть цей параметр, щоб побачити підказку ще раз.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "Коли Cmdr уперше відкриває файл у типовому редакторі, а встановлено й інший редактор, програма підказує, що можна вибрати інший. Вимкніть цей параметр, щоб побачити підказку ще раз.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "редагувати, редагування, редактор, F4, програма, сповіщення",
   "@settings.behavior.textEditorHintSeen.keywords": {

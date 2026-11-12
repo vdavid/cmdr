@@ -79,6 +79,22 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
+  "viewer.binaryWarning.bodyWithKeys": "Det här är råvyn av filen. Du vill nog hellre visa själva <kindName>{category, select, image {bilden} document {dokumentet} other {{ext}-filen}}</kindName>. Stäng då det här fönstret och tryck på <quickLookKey></quickLookKey> för att öppna Överblick, eller tryck på <openKey></openKey> (eller dubbelklicka på filen) för att öppna den i tillhörande app.",
+  "@viewer.binaryWarning.bodyWithKeys": {
+    "sourceHash": "fd5cfb7"
+  },
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Det här är råvyn av filen. Du vill nog hellre visa själva <kindName>{category, select, image {bilden} document {dokumentet} other {{ext}-filen}}</kindName>. Stäng då det här fönstret och tryck på <quickLookKey></quickLookKey> för att öppna Överblick, eller dubbelklicka på filen för att öppna den i tillhörande app.",
+  "@viewer.binaryWarning.bodyWithQuickLookKey": {
+    "sourceHash": "ed8bdcf"
+  },
+  "viewer.binaryWarning.bodyWithOpenKey": "Det här är råvyn av filen. Du vill nog hellre visa själva <kindName>{category, select, image {bilden} document {dokumentet} other {{ext}-filen}}</kindName>. Stäng då det här fönstret och tryck på <openKey></openKey> (eller dubbelklicka på filen) för att öppna den i tillhörande app.",
+  "@viewer.binaryWarning.bodyWithOpenKey": {
+    "sourceHash": "b219b68"
+  },
+  "viewer.binaryWarning.bodyWithoutKeys": "Det här är råvyn av filen. Du vill nog hellre visa själva <kindName>{category, select, image {bilden} document {dokumentet} other {{ext}-filen}}</kindName>. Stäng då det här fönstret och dubbelklicka på filen för att öppna den i tillhörande app.",
+  "@viewer.binaryWarning.bodyWithoutKeys": {
+    "sourceHash": "610efa6"
+  },
   "viewer.binaryWarning.dismiss": "Stäng",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
@@ -364,6 +380,10 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
+  "viewer.copyDialog.confirmMessage": "Stora inklistringar kan göra andra appar långsammare. Prova att söka ({combo}) för att begränsa det.",
+  "@viewer.copyDialog.confirmMessage": {
+    "sourceHash": "084b649"
+  },
   "viewer.copyDialog.cancel": "Avbryt",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -375,6 +395,10 @@
   "viewer.copyDialog.copy": "Kopiera",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseMessage": "Det är större än urklippsgränsen på 100 MB. Prova att söka ({combo}) för att hitta det du behöver, eller spara markeringen som en fil.",
+  "@viewer.copyDialog.refuseMessage": {
+    "sourceHash": "75d10d8"
   },
   "viewer.reloadToast.grew": "Filen ändrades på disken. Läs in på nytt?",
   "@viewer.reloadToast.grew": {

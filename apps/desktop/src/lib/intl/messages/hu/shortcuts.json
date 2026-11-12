@@ -49,6 +49,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Terméknév; minden nyelven változatlan marad (do-not-translate), itt az Ask Cmdr panel billentyűparancs-csoportjának címe."
   },
+  "shortcuts.scope.searchDialog": "Keresés és Fájlok kijelölése",
+  "@shortcuts.scope.searchDialog": {
+    "sourceHash": "eec03a0"
+  },
   "shortcuts.scope.favoritesMenu": "Kedvencek menü",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
@@ -105,6 +109,18 @@
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
+  "shortcuts.conflict.takenByWindows": "{combo}: ezt általában a Windows használja ({label}), ezért lehet, hogy soha nem jut el a Cmdrhez.",
+  "@shortcuts.conflict.takenByWindows": {
+    "sourceHash": "4858bee"
+  },
+  "shortcuts.conflict.takenByLinuxDesktops": "{combo}: ezt általában magának foglalja le az asztali környezet ({desktops}), ezért lehet, hogy soha nem jut el a Cmdrhez. Az asztali környezeted billentyűzetbeállításaiban felszabadíthatod.",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "sourceHash": "11d35a9"
+  },
+  "shortcuts.conflict.opensMenuBarMenu": "{combo}: ez megnyit egy menüt a Cmdr menüsorában ({menu}), ezért csak akkor jut el ehhez a parancshoz, ha egy párbeszédablak nyitva van.",
+  "@shortcuts.conflict.opensMenuBarMenu": {
+    "sourceHash": "314244c"
+  },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
     "sourceHash": "fca7aa8",
@@ -159,6 +175,38 @@
   "shortcuts.system.forceQuit": "Kilépésre kényszerítés",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
+  },
+  "shortcuts.system.switchingApps": "váltás az appok között",
+  "@shortcuts.system.switchingApps": {
+    "sourceHash": "0113527"
+  },
+  "shortcuts.system.cyclingWindows": "léptetés a megnyitott ablakok között",
+  "@shortcuts.system.cyclingWindows": {
+    "sourceHash": "a2a7a18"
+  },
+  "shortcuts.system.windowMenu": "az ablak rendszermenüje",
+  "@shortcuts.system.windowMenu": {
+    "sourceHash": "50afaf9"
+  },
+  "shortcuts.system.closingWindow": "az ablak bezárása",
+  "@shortcuts.system.closingWindow": {
+    "sourceHash": "82fe00f"
+  },
+  "shortcuts.system.startMenu": "a Start menü",
+  "@shortcuts.system.startMenu": {
+    "sourceHash": "b05bc4f"
+  },
+  "shortcuts.system.taskManager": "Feladatkezelő",
+  "@shortcuts.system.taskManager": {
+    "sourceHash": "58d65c2"
+  },
+  "shortcuts.system.securityScreen": "a biztonsági képernyő",
+  "@shortcuts.system.securityScreen": {
+    "sourceHash": "5fdc327"
+  },
+  "shortcuts.system.inputMethodToggle": "beviteli módszer be- és kikapcsolása",
+  "@shortcuts.system.inputMethodToggle": {
+    "sourceHash": "fe0b8a0"
   },
   "shortcuts.section.title": "Billentyűparancsok",
   "@shortcuts.section.title": {
@@ -256,6 +304,18 @@
   "shortcuts.section.resetAll": "Összes visszaállítása alapértékre",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.section.resetAllConfirm": "Visszaállítod az összes billentyűparancsot alapértékre?",
+  "@shortcuts.section.resetAllConfirm": {
+    "sourceHash": "3fc5074"
+  },
+  "shortcuts.section.resetAllConfirmTitle": "Billentyűparancsok visszaállítása",
+  "@shortcuts.section.resetAllConfirmTitle": {
+    "sourceHash": "5dac863"
+  },
+  "shortcuts.section.resetAllConfirmButton": "Visszaállítás",
+  "@shortcuts.section.resetAllConfirmButton": {
+    "sourceHash": "daee760"
   },
   "shortcuts.window.title": "Billentyűparancsok",
   "@shortcuts.window.title": {

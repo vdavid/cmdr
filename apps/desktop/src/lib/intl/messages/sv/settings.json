@@ -488,6 +488,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "Vad {combo} gör i en mapp när urklipp innehåller text, en bild eller en PDF i stället för kopierade filer.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "Vad som händer när du klistrar in i en mapp och urklipp innehåller text, en bild eller en PDF i stället för kopierade filer.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Gör ingenting",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -531,6 +539,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Hoppa över bekräftelse vid kopiering, flytt och flytt till papperskorgen}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Kopiera och Flytta skickar filerna direkt till den andra panelen, och Radera flyttar dem till Papperskorgen utan att fråga. Lite riskabelt, eftersom ett enda tangenttryck räcker. Permanent radering frågar alltid först.} other {Kopiera och Flytta skickar filerna direkt till den andra panelen, och Radera flyttar dem till papperskorgen utan att fråga. Lite riskabelt, eftersom ett enda tangenttryck räcker. Permanent radering frågar alltid först.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {bekräfta, bekräftelse, dialog, fråga, kopiera, flytta, papperskorg, radera, hoppa över, klick}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1088,6 +1100,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Gå till senaste hämtning",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Hoppa till din senaste hämtning från valfri app med en systemövergripande genväg. Kräver Full skivtillgång.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "genväg, kortkommando, snabbtangent, global, hämtade filer, hämtning, nedladdning, senaste, hoppa, gå till",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1735,6 +1751,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {Cmdrs förhandsvisning visar råa byte (med förlustbringande UTF-8 för icke-textinnehåll). När du öppnar en bild, en PDF, ett arkiv eller en annan binärfil visar förhandsvisningen en röd banner som förklarar att du förmodligen ville använda Överblick eller öppna filen i tillhörande app. Aktivera det här (eller klicka på ”Visa aldrig den här varningen igen” i bannern) för att dölja varningen för gott.} windows {Cmdrs förhandsvisning visar råa byte (med förlustbringande UTF-8 för icke-textinnehåll). När du öppnar en bild, en PDF, ett arkiv eller en annan binärfil visar förhandsvisningen en röd banner som förklarar att du förmodligen ville öppna filen i tillhörande app. Aktivera det här (eller välj ”Visa aldrig den här varningen igen” i bannern) för att dölja varningen för gott.} other {Cmdrs förhandsvisning visar råa byte (med förlustbringande UTF-8 för icke-textinnehåll). När du öppnar en bild, en PDF, ett arkiv eller en annan binärfil visar förhandsvisningen en röd banner som förklarar att du förmodligen ville öppna filen i tillhörande app. Aktivera det här (eller klicka på ”Visa aldrig den här varningen igen” i bannern) för att dölja varningen för gott.}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "förhandsvisning, binär, binärfil, bild, rå, varning, banderoll, överblick",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1742,6 +1762,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "Dölj tipset om Överblick med mellanslag",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr använder Mellanslag för att växla filmarkering och {combo} för Överblick (Finder använder vanligt Mellanslag för Överblick). Varje gång du trycker på Mellanslag i fillistan visar Cmdr en kort påminnelse om den här skillnaden. Aktivera det här (eller klicka på ”Visa inte igen” i aviseringen) för att dölja påminnelsen för gott.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr använder Mellanslag för att växla filmarkering, medan Finder använder det för Överblick. Varje gång du trycker på Mellanslag i fillistan visar Cmdr en kort påminnelse om den här skillnaden. Aktivera det här (eller klicka på ”Visa inte igen” i aviseringen) för att dölja påminnelsen för gott.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "överblick, förhandsvisning, mellanslag, tips, påminnelse, notis",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1786,6 +1814,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Antal stängda flikar att komma ihåg per panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "Hur många nyligen stängda flikar som behålls per panel för ”Öppna stängd flik igen” ({combo}). Högre värden låter dig öppna längre bak i historiken; lägre värden frigör minne snabbare. Gäller bara flikar som stängts under den aktuella sessionen.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "Hur många nyligen stängda flikar som behålls per panel för ”Öppna stängd flik igen”. Högre värden låter dig öppna längre bak i historiken; lägre värden frigör minne snabbare. Gäller bara flikar som stängts under den aktuella sessionen.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "flik, flikar, stängd, öppna igen, återöppna, historik, ångra, panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1854,6 +1890,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "När du skriver i en panel",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {”Hoppa” flyttar markören till den bästa träffen. ”Filtrera” visar bara de filer och mappar vars namn innehåller det du skriver, som snabbfiltret i Total Commander. Backsteg (⌫) ändrar filtret och Escape rensar det.} other {”Hoppa” flyttar markören till den bästa träffen. ”Filtrera” visar bara de filer och mappar vars namn innehåller det du skriver, som snabbfiltret i Total Commander. Backsteg ändrar filtret och Escape rensar det.}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Hoppa",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2231,6 +2271,14 @@
   "settings.behavior.textEditorHintSeen.label": "Dölj tipset om textredigerare",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "Första gången {combo} öppnar en fil i standardredigeraren medan en annan redigerare är installerad nämner Cmdr att du kan välja en annan. Stäng av det här för att se tipset en gång till.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "Första gången Cmdr öppnar en fil i standardredigeraren medan en annan redigerare är installerad nämner Cmdr att du kan välja en annan. Stäng av det här för att se tipset en gång till.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "redigera, redigerare, app, program, avisering",
   "@settings.behavior.textEditorHintSeen.keywords": {

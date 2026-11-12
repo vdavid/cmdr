@@ -325,6 +325,10 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr kann diese Datei noch nicht in einer anderen App öffnen, weil sie keine normale Datei auf deinem Mac ist. Sieh sie dir stattdessen mit dem Befehl „Ansehen“ an.} windows {Cmdr kann diese Datei noch nicht in einer anderen App öffnen, weil sie keine normale Datei auf deinem PC ist. Sieh sie dir stattdessen mit dem Befehl „Ansehen“ an.} other {Cmdr kann diese Datei noch nicht in einer anderen App öffnen, weil sie keine normale Datei auf deinem Computer ist. Sieh sie dir stattdessen mit dem Befehl „Ansehen“ an.}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "b281a7e"
+  },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {{fileName} ließ sich nicht öffnen. macOS hat die Datei nicht gefunden, oder keine App kann sie öffnen.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
@@ -714,25 +718,57 @@
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "ba69ee7"
   },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "Die Zwischenablage kann keine Dateien von diesem Gerät aufnehmen. Kopiere sie stattdessen mit dem Befehl „Kopieren“.",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "sourceHash": "ec9f6a4"
+  },
   "fileExplorer.clipboard.moveFromDevice": "Die Zwischenablage kann keine Dateien von diesem Gerät aufnehmen. Nutze {moveKey}, um sie zu bewegen.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "Die Zwischenablage kann keine Dateien von diesem Gerät aufnehmen. Bewege sie stattdessen mit dem Befehl „Bewegen“.",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "sourceHash": "3e1a8d6"
   },
   "fileExplorer.clipboard.copyFromServer": "Die Zwischenablage kann keine Dateien von diesem Server aufnehmen. Nutze {copyKey}, um sie zu kopieren.",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "12cb39f"
   },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "Die Zwischenablage kann keine Dateien von diesem Server aufnehmen. Kopiere sie stattdessen mit dem Befehl „Kopieren“.",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "sourceHash": "a0b8b71"
+  },
   "fileExplorer.clipboard.moveFromServer": "Die Zwischenablage kann keine Dateien von diesem Server aufnehmen. Nutze {moveKey}, um sie zu bewegen.",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "Die Zwischenablage kann keine Dateien von diesem Server aufnehmen. Bewege sie stattdessen mit dem Befehl „Bewegen“.",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "sourceHash": "958bc4b"
   },
   "fileExplorer.clipboard.copyFromUnknown": "Diese Dateien lassen sich nicht in die Zwischenablage legen. Nutze {copyKey}, um sie zu kopieren.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "7aaabdb"
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "Diese Dateien lassen sich nicht in die Zwischenablage legen. Kopiere sie stattdessen mit dem Befehl „Kopieren“.",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "sourceHash": "eef58a6"
+  },
   "fileExplorer.clipboard.moveFromUnknown": "Diese Dateien lassen sich nicht in die Zwischenablage legen. Nutze {moveKey}, um sie zu bewegen.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
+  },
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "Diese Dateien lassen sich nicht in die Zwischenablage legen. Bewege sie stattdessen mit dem Befehl „Bewegen“.",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "sourceHash": "9148b09"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr kann diese Datei noch nicht in einem Editor öffnen, weil sie keine normale Datei auf deinem Mac ist. Drücke {viewKey}, um sie anzusehen.} windows {Cmdr kann diese Datei noch nicht in einem Editor öffnen, weil sie keine normale Datei auf deinem PC ist. Drücke {viewKey}, um sie anzusehen.} other {Cmdr kann diese Datei noch nicht in einem Editor öffnen, weil sie keine normale Datei auf deinem Computer ist. Drücke {viewKey}, um sie anzusehen.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "6bc5d46"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr kann diese Datei noch nicht in einem Editor öffnen, weil sie keine normale Datei auf deinem Mac ist. Sieh sie dir stattdessen mit dem Befehl „Ansehen“ an.} windows {Cmdr kann diese Datei noch nicht in einem Editor öffnen, weil sie keine normale Datei auf deinem PC ist. Sieh sie dir stattdessen mit dem Befehl „Ansehen“ an.} other {Cmdr kann diese Datei noch nicht in einem Editor öffnen, weil sie keine normale Datei auf deinem Computer ist. Sieh sie dir stattdessen mit dem Befehl „Ansehen“ an.}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "4572115"
   },
   "fileExplorer.edit.hint": "Datei in {app} geöffnet. Möchtest du beim nächsten Mal einen anderen Editor? Wähle ihn in den Einstellungen.",
   "@fileExplorer.edit.hint": {
@@ -770,9 +806,25 @@
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "Kopiere Dateien mit dem Befehl „Kopieren“ auf dieses Gerät.",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "sourceHash": "06a1d58"
+  },
   "fileExplorer.clipboard.copyToServer": "Nutze {copyKey}, um Dateien auf diesen Server zu kopieren.",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "Kopiere Dateien mit dem Befehl „Kopieren“ auf diesen Server.",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "sourceHash": "1229e3a"
+  },
+  "fileExplorer.clipboard.noFilesWithKey": "Keine Dateien in der Zwischenablage. Kopiere zuerst Dateien mit {combo}.",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "sourceHash": "1eb6ea9"
+  },
+  "fileExplorer.clipboard.noFiles": "Keine Dateien in der Zwischenablage. Kopiere zuerst Dateien.",
+  "@fileExplorer.clipboard.noFiles": {
+    "sourceHash": "295341a"
   },
   "fileExplorer.clipboard.stillPasting": "Aus der Zwischenablage wird noch eine Datei erstellt. Das Volume antwortet langsam.",
   "@fileExplorer.clipboard.stillPasting": {
@@ -874,6 +926,14 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
+  "fileExplorer.restic.copyOutWithKey": "Um Dateien aus einem Backup zu kopieren, nutze {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "d49d631"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "Um Dateien aus einem Backup zu kopieren, nutze den Befehl „Kopieren“.",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "7cfa21e"
+  },
   "fileExplorer.restic.snapshot.host": "Backup von {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -902,6 +962,18 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Um das Passwort eines Backups zu vergessen, öffne zuerst das Backup oder setze den Cursor auf seinen Ordner „Browse snapshots“.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.copyOutWithKeys": "Um Dateien aus einem Archiv zu kopieren, nutze {copyKey} zum Kopieren oder {moveKey} zum Bewegen.",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "sourceHash": "f68d0ba"
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "Um Dateien aus einem Archiv zu kopieren, nutze {copyKey}.",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "sourceHash": "adf47d1"
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "Um Dateien aus einem Archiv zu kopieren, nutze den Befehl „Kopieren“ oder „Bewegen“.",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "sourceHash": "ea37784"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr hat ein bisschen Git-Magie für dich!",
   "@fileExplorer.git.portalIntro.title": {
@@ -963,6 +1035,18 @@
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
   },
+  "fileExplorer.git.copyOutWithKeys": "Um Dateien aus einer Git-Momentaufnahme zu kopieren, nutze {copyKey} zum Kopieren oder {moveKey} zum Bewegen.",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "sourceHash": "12e26a2"
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "Um Dateien aus einer Git-Momentaufnahme zu kopieren, nutze {copyKey}.",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "sourceHash": "8a75857"
+  },
+  "fileExplorer.git.copyOutWithoutKey": "Um Dateien aus einer Git-Momentaufnahme zu kopieren, nutze den Befehl „Kopieren“ oder „Bewegen“.",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "sourceHash": "a8ebbf0"
+  },
   "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} ist größer als {limit}, deshalb kann Cmdr die Datei nicht aus dem Archiv heraus in {appName} öffnen.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
     "sourceHash": "43399e6"
@@ -990,6 +1074,10 @@
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} kann diese Datei nicht öffnen, weil sie keine normale Datei auf deinem Mac ist. Drücke {viewKey}, um sie in Cmdr anzusehen.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} kann diese Datei nicht öffnen, weil sie keine normale Datei auf deinem Mac ist. Sieh sie dir stattdessen in Cmdr mit dem Befehl „Ansehen“ an.} windows {{appName} kann diese Datei nicht öffnen, weil sie keine normale Datei auf deinem PC ist. Sieh sie dir stattdessen in Cmdr mit dem Befehl „Ansehen“ an.} other {{appName} kann diese Datei nicht öffnen, weil sie keine normale Datei auf deinem Computer ist. Sieh sie dir stattdessen in Cmdr mit dem Befehl „Ansehen“ an.}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "9d98d51"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "{fileName} ließ sich nicht lesen und deshalb nicht in {appName} öffnen. Prüfe, ob das Laufwerk noch verbunden ist, und versuche es dann erneut.",
   "@fileExplorer.openWith.copyRefused.unreadable": {
@@ -1627,6 +1715,10 @@
   "fileExplorer.quickLookHint.quickView": "In Cmdr kannst du die Übersicht mit <key></key> öffnen. (<key></key> funktioniert übrigens auch im Finder!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.quickViewRebound": "In Cmdr kannst du die Übersicht mit <key></key> öffnen.",
+  "@fileExplorer.quickLookHint.quickViewRebound": {
+    "sourceHash": "27e87e5"
   },
   "fileExplorer.quickLookHint.enterOpens": "Du kannst auch <enter></enter> verwenden, um Dateien in der Standard-App zu öffnen.",
   "@fileExplorer.quickLookHint.enterOpens": {

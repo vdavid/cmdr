@@ -160,3 +160,10 @@ German runs 20–35% longer than English. Look at these against the pseudolocale
   strong as the English; confirm it doesn't read as too cute in a consent text.
 - **`Schritt zurück wird ausgeführt`** (`askCmdr.tool.navBack.doing`): coined to dodge the passive of `zurückgehen`;
   confirm it reads naturally in the chat rail.
+- **Windows reserved-shortcut labels** (`shortcuts.system.windowMenu`, `.securityScreen`): `das Fenstermenü` and
+  `der Sicherheitsbildschirm` are coined (the TBX has only `Systemmenü`). Their macOS sibling
+  `shortcuts.system.appSwitcher` reads accusative (`den App-Umschalter`) where the new labels read nominative in the
+  `(…)` aside; align the family.
+- **`Esc-Taste` / `Rücktaste`** (`settings.fileExplorer.typeToJump.mode.description`, `other` branch): the PC key-cap
+  names (TBX Rücktaste), beside the macOS branch's `esc-Taste` / `Löschtaste (⌫)`; confirm the capital `Esc` reads right
+  on Windows and Linux.

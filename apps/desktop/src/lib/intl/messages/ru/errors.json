@@ -1393,6 +1393,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "Для безвозвратного удаления используйте команду «Удалить безвозвратно».",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "Соединение прервано",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1684,6 +1688,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder все же может их переместить, запросив пароль администратора.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Так бывает, когда меняются права доступа к папке Корзины, например после переезда на новый Mac. Объекты все равно можно удалить безвозвратно, нажав {deletePermanentlyKey}.} windows {Так бывает, когда меняются права доступа к Корзине, например после переезда на новый компьютер. Объекты все равно можно удалить безвозвратно, нажав {deletePermanentlyKey}.} other {Так бывает, когда меняются права доступа к папке Корзины, например после переезда на новый компьютер. Объекты все равно можно удалить безвозвратно, нажав {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {Так бывает, когда меняются права доступа к папке Корзины, например после переезда на новый Mac. Объекты все равно можно удалить командой «Удалить безвозвратно».} windows {Так бывает, когда меняются права доступа к Корзине, например после переезда на новый компьютер. Объекты все равно можно удалить командой «Удалить безвозвратно».} other {Так бывает, когда меняются права доступа к папке Корзины, например после переезда на новый компьютер. Объекты все равно можно удалить командой «Удалить безвозвратно».}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {В некоторых местах нет своей Корзины, в том числе в облачных папках и на большинстве сетевых дисков. Объекты все равно можно удалить безвозвратно, нажав {deletePermanentlyKey}.} other {В некоторых местах нет своей Корзины, в том числе в облачных папках и на большинстве сетевых дисков. Объекты все равно можно удалить безвозвратно, нажав {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {В некоторых местах нет своей Корзины, в том числе в облачных папках и на большинстве сетевых дисков. Объекты все равно можно удалить командой «Удалить безвозвратно».} other {В некоторых местах нет своей Корзины, в том числе в облачных папках и на большинстве сетевых дисков. Объекты все равно можно удалить командой «Удалить безвозвратно».}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Посмотрите, что сообщила macOS, в разделе «Технические подробности» ниже.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2016,6 +2036,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Папку <code>{path}</code> переименовать нельзя: в ней находится ваша папка пользователя, а ваш Mac ожидает найти ее именно по этому пути.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Если новое имя очень нужно, в macOS есть аккуратный способ сменить его в разделе «Пользователи и группы». Правда, одним нажатием {renameKey} тут не обойтись.} windows {В Windows нет безопасного встроенного способа переименовать эту папку, так что лучше оставить ее как есть.} other {Если новое имя очень нужно, администратор может аккуратно сменить его командой usermod, войдя в систему как другой пользователь. Правда, одним нажатием {renameKey} тут не обойтись.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {Если новое имя очень нужно, в macOS есть аккуратный способ сменить его в разделе «Пользователи и группы». Правда, быстрым переименованием тут не обойтись.} windows {В Windows нет безопасного встроенного способа переименовать эту папку, так что лучше оставить ее как есть.} other {Если новое имя очень нужно, администратор может аккуратно сменить его командой usermod, войдя в систему как другой пользователь. Правда, быстрым переименованием тут не обойтись.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Лучше переименуйте что-нибудь внутри или оставьте эту папку в покое. На ней держится больше, чем кажется.",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

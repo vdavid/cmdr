@@ -127,3 +127,11 @@ item once settled, and record the outcome in `terms.json` or `decisions.md`.
 - **`Выбрать все` on the Operation log tree's header checkbox** (`operationLog.tree.selectAll`) matches the tree's other
   checkbox strings, but the English "Select all" ties it to `menu.select.all` (`Выделить все`) through term-consistency,
   so the split is recorded as a `reviewed` term-consistency allowlist entry (`Select all`), pending David's OK on it.
+- **Linux desktop environment** (`shortcuts.conflict.takenByLinuxDesktops`): `рабочая среда` (KDE's ru usage), no pile
+  source; `среда рабочего стола` is the alternative.
+- **Ctrl+Alt+Delete screen** (`shortcuts.system.securityScreen`): `экран безопасности`, no TBX entry; confirm Russian
+  Windows' own name.
+- **Windows Exit** (`menu.file.quit` windows branch): `Выйти из Cmdr` (infinitive, TBX exit → выйти) over the noun
+  `Выход` that Windows' own File menus use.
+- **Search dialogs heading** (`shortcuts.scope.searchDialog`): `Поиск и выделение файлов` paraphrases the two titles
+  (`Поиск`, `Выделить файлы`).

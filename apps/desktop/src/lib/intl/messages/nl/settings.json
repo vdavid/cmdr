@@ -488,6 +488,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "Wat {combo} in een map doet wanneer het klembord tekst, een afbeelding of een PDF bevat in plaats van gekopieerde bestanden.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "Wat plakken in een map doet wanneer het klembord tekst, een afbeelding of een PDF bevat in plaats van gekopieerde bestanden.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Niets doen",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -531,6 +539,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Bevestiging overslaan bij kopiëren, verplaatsen en naar prullenmand}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {‘Kopieer’ en ‘Verplaats’ gaan meteen naar het andere paneel, en ‘Verwijder’ verplaatst zonder te vragen naar de prullenbak. Een beetje riskant, want één toetsaanslag voert het direct uit. Definitief verwijderen vraagt altijd eerst om bevestiging.} other {‘Kopieer’ en ‘Verplaats’ gaan meteen naar het andere paneel, en ‘Verwijder’ verplaatst zonder te vragen naar de prullenmand. Een beetje riskant, want één toetsaanslag voert het direct uit. Definitief verwijderen vraagt altijd eerst om bevestiging.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {bevestigen, bevestiging, venster, vragen, kopiëren, verplaatsen, prullenmand, verwijderen, overslaan, klikken}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1089,6 +1101,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Ga naar laatste download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Spring vanuit elke app naar je meest recente download met een systeembrede sneltoets. Vereist Volledige schijftoegang.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "sneltoets, toetsencombinatie, globaal, download, downloads, springen, ga naar, laatste",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1736,6 +1752,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {Het weergavevenster van Cmdr toont ruwe bytes (met verliesgevende UTF-8 voor niet-tekstinhoud). Wanneer je een afbeelding, PDF, archief of ander binair bestand opent, toont het weergavevenster een rode banner die uitlegt dat de snelle weergave of openen in de bijbehorende app waarschijnlijk is wat je wilde. Zet dit aan (of klik op ‘Toon deze waarschuwing niet meer’ in de banner) om de waarschuwing voorgoed te onderdrukken.} windows {Het weergavevenster van Cmdr toont ruwe bytes (met verliesgevende UTF-8 voor niet-tekstinhoud). Wanneer je een afbeelding, PDF, archief of ander binair bestand opent, toont het weergavevenster een rode banner die uitlegt dat openen in de bijbehorende app waarschijnlijk is wat je wilde. Zet dit aan (of selecteer ‘Toon deze waarschuwing niet meer’ in de banner) om de waarschuwing voorgoed te onderdrukken.} other {Het weergavevenster van Cmdr toont ruwe bytes (met verliesgevende UTF-8 voor niet-tekstinhoud). Wanneer je een afbeelding, PDF, archief of ander binair bestand opent, toont het weergavevenster een rode banner die uitlegt dat openen in de bijbehorende app waarschijnlijk is wat je wilde. Zet dit aan (of klik op ‘Toon deze waarschuwing niet meer’ in de banner) om de waarschuwing voorgoed te onderdrukken.}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "weergavevenster, binair, afbeelding, ruw, ruwe weergave, waarschuwing, banner, snelle weergave",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1743,6 +1763,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "De hint voor snelle weergave bij de spatietoets onderdrukken",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr gebruikt Spatie om de bestandsselectie te wisselen en {combo} voor snelle weergave (Finder gebruikt gewone Spatie voor snelle weergave). Telkens als je in de bestandenlijst op Spatie drukt, toont Cmdr een herinnering van één alinea over dit verschil. Zet dit aan (of klik op ‘Niet meer tonen’ in de melding) om de herinnering voorgoed te onderdrukken.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr gebruikt Spatie om de bestandsselectie te wisselen, terwijl Finder Spatie gebruikt voor snelle weergave. Telkens als je in de bestandenlijst op Spatie drukt, toont Cmdr een herinnering van één alinea over dit verschil. Zet dit aan (of klik op ‘Niet meer tonen’ in de melding) om de herinnering voorgoed te onderdrukken.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "snelle weergave, geef snel weer, voorvertoning, spatie, spatiebalk, hint, tip, melding, herinnering",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1787,6 +1815,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Aantal gesloten tabbladen om per paneel te onthouden",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "Hoeveel recent gesloten tabbladen per paneel bewaard worden voor ‘Heropen gesloten tabblad’ ({combo}). Hogere waarden laten je verder terug in de geschiedenis heropenen; lagere waarden maken sneller geheugen vrij. Geldt alleen voor tabbladen die in de huidige sessie zijn gesloten.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "Hoeveel recent gesloten tabbladen per paneel bewaard worden voor ‘Heropen gesloten tabblad’. Hogere waarden laten je verder terug in de geschiedenis heropenen; lagere waarden maken sneller geheugen vrij. Geldt alleen voor tabbladen die in de huidige sessie zijn gesloten.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tabblad, tabbladen, gesloten, heropenen, geschiedenis, ongedaan maken, paneel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1855,6 +1891,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "Als je in een paneel typt",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {‘Ga naar’ zet de cursor op de beste overeenkomst. ‘Filter’ toont alleen de bestanden en mappen waarvan de naam bevat wat je typt, zoals het snelfilter van Total Commander; Delete (⌫) past het aan en Escape wist het.} other {‘Ga naar’ zet de cursor op de beste overeenkomst. ‘Filter’ toont alleen de bestanden en mappen waarvan de naam bevat wat je typt, zoals het snelfilter van Total Commander; Backspace past het aan en Escape wist het.}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Ga naar",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2232,6 +2272,14 @@
   "settings.behavior.textEditorHintSeen.label": "De hint over de teksteditor onderdrukken",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "De eerste keer dat {combo} een bestand in de standaardeditor opent terwijl er een andere editor is geïnstalleerd, vertelt Cmdr dat je een andere kunt kiezen. Zet dit uit om de hint nog een keer te zien.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "De eerste keer dat Cmdr een bestand in de standaardeditor opent terwijl er een andere editor is geïnstalleerd, vertelt de app dat je een andere kunt kiezen. Zet dit uit om de hint nog een keer te zien.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "bewerken, bewerk, editor, app, programma, melding, tip",
   "@settings.behavior.textEditorHintSeen.keywords": {

@@ -1393,6 +1393,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "Utilisez plutôt la commande « Supprimer définitivement ».",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "Connexion interrompue",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1684,6 +1688,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Le Finder peut quand même les déplacer après avoir demandé un mot de passe d’administrateur.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Cela peut arriver quand les autorisations du dossier de la corbeille changent, par exemple après le passage à un nouveau Mac. Vous pouvez quand même supprimer définitivement les éléments avec {deletePermanentlyKey}.} windows {Cela peut arriver quand les autorisations de la Corbeille changent, par exemple après le passage à un nouveau PC. Vous pouvez quand même supprimer définitivement les éléments avec {deletePermanentlyKey}.} other {Cela peut arriver quand les autorisations du dossier de la corbeille changent, par exemple après le passage à un nouvel ordinateur. Vous pouvez quand même supprimer définitivement les éléments avec {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {Cela peut arriver quand les autorisations du dossier de la corbeille changent, par exemple après le passage à un nouveau Mac. Vous pouvez quand même supprimer les éléments avec la commande « Supprimer définitivement ».} windows {Cela peut arriver quand les autorisations de la Corbeille changent, par exemple après le passage à un nouveau PC. Vous pouvez quand même supprimer les éléments avec la commande « Supprimer définitivement ».} other {Cela peut arriver quand les autorisations du dossier de la corbeille changent, par exemple après le passage à un nouvel ordinateur. Vous pouvez quand même supprimer les éléments avec la commande « Supprimer définitivement ».}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Certains emplacements n’ont pas de Corbeille propre, notamment les dossiers cloud et la plupart des lecteurs réseau. Vous pouvez quand même supprimer définitivement les éléments avec {deletePermanentlyKey}.} other {Certains emplacements n’ont pas de corbeille propre, notamment les dossiers cloud et la plupart des disques réseau. Vous pouvez quand même supprimer définitivement les éléments avec {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Certains emplacements n’ont pas de Corbeille propre, notamment les dossiers cloud et la plupart des lecteurs réseau. Vous pouvez quand même supprimer les éléments avec la commande « Supprimer définitivement ».} other {Certains emplacements n’ont pas de corbeille propre, notamment les dossiers cloud et la plupart des disques réseau. Vous pouvez quand même supprimer les éléments avec la commande « Supprimer définitivement ».}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Consultez les détails techniques ci-dessous pour voir ce que macOS a signalé.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2016,6 +2036,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Vous ne pouvez pas renommer <code>{path}</code>, car votre dossier personnel s’y trouve, et votre Mac s’attend à le trouver précisément à ce chemin.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Si vous avez vraiment besoin d’un nouveau nom, macOS propose une méthode prudente dans « Utilisateurs et groupes ». Ce n’est pas un simple {renameKey}, cela dit.} windows {Windows ne propose aucune méthode intégrée sûre pour le renommer : mieux vaut le laisser tel quel.} other {Si vous avez vraiment besoin d’un nouveau nom, la personne qui administre cet ordinateur peut s’en charger prudemment avec usermod, depuis la session d’un autre utilisateur. Ce n’est pas un simple {renameKey}, cela dit.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {Si vous avez vraiment besoin d’un nouveau nom, macOS propose une méthode prudente dans « Utilisateurs et groupes ». Ce n’est pas un simple renommage, cela dit.} windows {Windows ne propose aucune méthode intégrée sûre pour le renommer : mieux vaut le laisser tel quel.} other {Si vous avez vraiment besoin d’un nouveau nom, la personne qui administre cet ordinateur peut s’en charger prudemment avec usermod, depuis la session d’un autre utilisateur. Ce n’est pas un simple renommage, cela dit.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Renommez plutôt quelque chose à l’intérieur, ou laissez celui-ci tranquille. Il porte bien plus qu’il n’y paraît.",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

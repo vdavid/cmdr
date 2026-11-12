@@ -325,6 +325,10 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr ne peut pas encore ouvrir ce fichier dans une autre app, car ce n’est pas un fichier ordinaire de votre Mac. Visualisez-le plutôt avec la commande « Visualiser ».} windows {Cmdr ne peut pas encore ouvrir ce fichier dans une autre app, car ce n’est pas un fichier ordinaire de votre PC. Visualisez-le plutôt avec la commande « Visualiser ».} other {Cmdr ne peut pas encore ouvrir ce fichier dans une autre app, car ce n’est pas un fichier ordinaire de votre ordinateur. Visualisez-le plutôt avec la commande « Visualiser ».}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "b281a7e"
+  },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {Le fichier « {fileName} » ne s’est pas ouvert. macOS n’a pas trouvé le fichier, ou aucune app ne peut l’ouvrir.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
@@ -714,25 +718,57 @@
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "ba69ee7"
   },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "Le presse-papiers ne peut pas transporter les fichiers de cet appareil. Copiez-les plutôt avec la commande « Copier ».",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "sourceHash": "ec9f6a4"
+  },
   "fileExplorer.clipboard.moveFromDevice": "Le presse-papiers ne peut pas transporter les fichiers de cet appareil. Utilisez {moveKey} pour les déplacer.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "Le presse-papiers ne peut pas transporter les fichiers de cet appareil. Déplacez-les plutôt avec la commande « Déplacer ».",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "sourceHash": "3e1a8d6"
   },
   "fileExplorer.clipboard.copyFromServer": "Le presse-papiers ne peut pas transporter les fichiers de ce serveur. Utilisez {copyKey} pour les copier.",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "12cb39f"
   },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "Le presse-papiers ne peut pas transporter les fichiers de ce serveur. Copiez-les plutôt avec la commande « Copier ».",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "sourceHash": "a0b8b71"
+  },
   "fileExplorer.clipboard.moveFromServer": "Le presse-papiers ne peut pas transporter les fichiers de ce serveur. Utilisez {moveKey} pour les déplacer.",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "Le presse-papiers ne peut pas transporter les fichiers de ce serveur. Déplacez-les plutôt avec la commande « Déplacer ».",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "sourceHash": "958bc4b"
   },
   "fileExplorer.clipboard.copyFromUnknown": "Ces fichiers ne peuvent pas aller dans le presse-papiers. Utilisez {copyKey} pour les copier.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "7aaabdb"
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "Ces fichiers ne peuvent pas aller dans le presse-papiers. Copiez-les plutôt avec la commande « Copier ».",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "sourceHash": "eef58a6"
+  },
   "fileExplorer.clipboard.moveFromUnknown": "Ces fichiers ne peuvent pas aller dans le presse-papiers. Utilisez {moveKey} pour les déplacer.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
+  },
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "Ces fichiers ne peuvent pas aller dans le presse-papiers. Déplacez-les plutôt avec la commande « Déplacer ».",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "sourceHash": "9148b09"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr ne peut pas encore ouvrir ce fichier dans un éditeur, car ce n’est pas un fichier ordinaire de votre Mac. Appuyez sur {viewKey} pour le visualiser.} windows {Cmdr ne peut pas encore ouvrir ce fichier dans un éditeur, car ce n’est pas un fichier ordinaire de votre PC. Appuyez sur {viewKey} pour le visualiser.} other {Cmdr ne peut pas encore ouvrir ce fichier dans un éditeur, car ce n’est pas un fichier ordinaire de votre ordinateur. Appuyez sur {viewKey} pour le visualiser.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "6bc5d46"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr ne peut pas encore ouvrir ce fichier dans un éditeur, car ce n’est pas un fichier ordinaire de votre Mac. Visualisez-le plutôt avec la commande « Visualiser ».} windows {Cmdr ne peut pas encore ouvrir ce fichier dans un éditeur, car ce n’est pas un fichier ordinaire de votre PC. Visualisez-le plutôt avec la commande « Visualiser ».} other {Cmdr ne peut pas encore ouvrir ce fichier dans un éditeur, car ce n’est pas un fichier ordinaire de votre ordinateur. Visualisez-le plutôt avec la commande « Visualiser ».}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "4572115"
   },
   "fileExplorer.edit.hint": "Fichier ouvert dans {app}. Vous voulez un autre éditeur la prochaine fois ? Choisissez-le dans les réglages.",
   "@fileExplorer.edit.hint": {
@@ -770,9 +806,25 @@
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "Copiez des fichiers vers cet appareil avec la commande « Copier ».",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "sourceHash": "06a1d58"
+  },
   "fileExplorer.clipboard.copyToServer": "Utilisez {copyKey} pour copier des fichiers vers ce serveur.",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "Copiez des fichiers vers ce serveur avec la commande « Copier ».",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "sourceHash": "1229e3a"
+  },
+  "fileExplorer.clipboard.noFilesWithKey": "Aucun fichier dans le presse-papiers. Copiez d’abord des fichiers avec {combo}.",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "sourceHash": "1eb6ea9"
+  },
+  "fileExplorer.clipboard.noFiles": "Aucun fichier dans le presse-papiers. Copiez d’abord des fichiers.",
+  "@fileExplorer.clipboard.noFiles": {
+    "sourceHash": "295341a"
   },
   "fileExplorer.clipboard.stillPasting": "Création d’un fichier à partir du presse-papiers toujours en cours. Le volume met du temps à répondre.",
   "@fileExplorer.clipboard.stillPasting": {
@@ -874,6 +926,14 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
+  "fileExplorer.restic.copyOutWithKey": "Pour copier des fichiers hors d’une sauvegarde, utilisez {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "d49d631"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "Pour copier des fichiers hors d’une sauvegarde, utilisez la commande « Copier ».",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "7cfa21e"
+  },
   "fileExplorer.restic.snapshot.host": "Sauvegardé depuis {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -901,6 +961,18 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Pour oublier le mot de passe d’une sauvegarde, ouvrez d’abord la sauvegarde, ou placez le curseur sur son dossier « Browse snapshots ».",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.copyOutWithKeys": "Pour copier des fichiers hors d’une archive, utilisez {copyKey} pour copier ou {moveKey} pour déplacer.",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "sourceHash": "f68d0ba"
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "Pour copier des fichiers hors d’une archive, utilisez {copyKey}.",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "sourceHash": "adf47d1"
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "Pour copier des fichiers hors d’une archive, utilisez la commande « Copier » ou « Déplacer ».",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "sourceHash": "ea37784"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr vous réserve un peu de magie git !",
   "@fileExplorer.git.portalIntro.title": {
@@ -962,6 +1034,18 @@
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
   },
+  "fileExplorer.git.copyOutWithKeys": "Pour copier des fichiers hors d’un instantané git, utilisez {copyKey} pour copier ou {moveKey} pour déplacer.",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "sourceHash": "12e26a2"
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "Pour copier des fichiers hors d’un instantané git, utilisez {copyKey}.",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "sourceHash": "8a75857"
+  },
+  "fileExplorer.git.copyOutWithoutKey": "Pour copier des fichiers hors d’un instantané git, utilisez la commande « Copier » ou « Déplacer ».",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "sourceHash": "a8ebbf0"
+  },
   "fileExplorer.openWith.copyRefused.tooLarge": "« {fileName} » dépasse {limit}, donc Cmdr ne peut pas ouvrir le fichier dans {appName} depuis l’archive.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
     "sourceHash": "43399e6"
@@ -989,6 +1073,10 @@
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} ne peut pas ouvrir ce fichier, car ce n’est pas un fichier ordinaire de votre Mac. Appuyez sur {viewKey} pour le visualiser dans Cmdr.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} ne peut pas ouvrir ce fichier, car ce n’est pas un fichier ordinaire de votre Mac. Visualisez-le plutôt dans Cmdr avec la commande « Visualiser ».} windows {{appName} ne peut pas ouvrir ce fichier, car ce n’est pas un fichier ordinaire de votre PC. Visualisez-le plutôt dans Cmdr avec la commande « Visualiser ».} other {{appName} ne peut pas ouvrir ce fichier, car ce n’est pas un fichier ordinaire de votre ordinateur. Visualisez-le plutôt dans Cmdr avec la commande « Visualiser ».}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "9d98d51"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Impossible de lire « {fileName} » pour l’ouvrir dans {appName}. Vérifiez que le disque est toujours connecté, puis réessayez.",
   "@fileExplorer.openWith.copyRefused.unreadable": {
@@ -1628,6 +1716,10 @@
   "fileExplorer.quickLookHint.quickView": "Dans Cmdr, vous pouvez ouvrir Coup d’œil avec <key></key>. (<key></key> fonctionne aussi dans le Finder, au passage !)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.quickViewRebound": "Dans Cmdr, vous pouvez ouvrir Coup d’œil avec <key></key>.",
+  "@fileExplorer.quickLookHint.quickViewRebound": {
+    "sourceHash": "27e87e5"
   },
   "fileExplorer.quickLookHint.enterOpens": "Vous pouvez aussi utiliser <enter></enter> pour ouvrir les fichiers dans l’app par défaut.",
   "@fileExplorer.quickLookHint.enterOpens": {

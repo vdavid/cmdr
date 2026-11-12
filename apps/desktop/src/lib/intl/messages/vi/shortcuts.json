@@ -48,6 +48,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Ask Cmdr is the chat panel's product name, kept verbatim in every locale (termbase ruling ask-cmdr)."
   },
+  "shortcuts.scope.searchDialog": "Tìm kiếm & chọn tệp",
+  "@shortcuts.scope.searchDialog": {
+    "sourceHash": "eec03a0"
+  },
   "shortcuts.scope.favoritesMenu": "Menu mục ưa thích",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
@@ -104,6 +108,18 @@
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
+  "shortcuts.conflict.takenByWindows": "{combo} thường được Windows dùng ({label}), nên nó có thể không bao giờ đến được Cmdr.",
+  "@shortcuts.conflict.takenByWindows": {
+    "sourceHash": "4858bee"
+  },
+  "shortcuts.conflict.takenByLinuxDesktops": "Trên {desktops}, môi trường desktop thường giữ {combo} cho riêng mình, nên phím này có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng phím này trong cài đặt bàn phím của môi trường desktop.",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "sourceHash": "11d35a9"
+  },
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} mở menu {menu} trên thanh menu của Cmdr, nên phím này sẽ không đến được lệnh này trừ khi đang mở một hộp thoại.",
+  "@shortcuts.conflict.opensMenuBarMenu": {
+    "sourceHash": "314244c"
+  },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
     "sourceHash": "fca7aa8",
@@ -158,6 +174,38 @@
   "shortcuts.system.forceQuit": "Bắt buộc Thoát",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
+  },
+  "shortcuts.system.switchingApps": "chuyển ứng dụng",
+  "@shortcuts.system.switchingApps": {
+    "sourceHash": "0113527"
+  },
+  "shortcuts.system.cyclingWindows": "chuyển lần lượt qua các cửa sổ",
+  "@shortcuts.system.cyclingWindows": {
+    "sourceHash": "a2a7a18"
+  },
+  "shortcuts.system.windowMenu": "menu điều khiển của cửa sổ",
+  "@shortcuts.system.windowMenu": {
+    "sourceHash": "50afaf9"
+  },
+  "shortcuts.system.closingWindow": "đóng cửa sổ",
+  "@shortcuts.system.closingWindow": {
+    "sourceHash": "82fe00f"
+  },
+  "shortcuts.system.startMenu": "menu Bắt đầu",
+  "@shortcuts.system.startMenu": {
+    "sourceHash": "b05bc4f"
+  },
+  "shortcuts.system.taskManager": "Trình quản lý Tác vụ",
+  "@shortcuts.system.taskManager": {
+    "sourceHash": "58d65c2"
+  },
+  "shortcuts.system.securityScreen": "màn hình bảo mật",
+  "@shortcuts.system.securityScreen": {
+    "sourceHash": "5fdc327"
+  },
+  "shortcuts.system.inputMethodToggle": "bật hoặc tắt bộ gõ IME",
+  "@shortcuts.system.inputMethodToggle": {
+    "sourceHash": "fe0b8a0"
   },
   "shortcuts.section.title": "Phím tắt",
   "@shortcuts.section.title": {
@@ -255,6 +303,18 @@
   "shortcuts.section.resetAll": "Đặt lại tất cả về mặc định",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.section.resetAllConfirm": "Đặt lại tất cả phím tắt về mặc định?",
+  "@shortcuts.section.resetAllConfirm": {
+    "sourceHash": "3fc5074"
+  },
+  "shortcuts.section.resetAllConfirmTitle": "Đặt lại phím tắt",
+  "@shortcuts.section.resetAllConfirmTitle": {
+    "sourceHash": "5dac863"
+  },
+  "shortcuts.section.resetAllConfirmButton": "Đặt lại",
+  "@shortcuts.section.resetAllConfirmButton": {
+    "sourceHash": "daee760"
   },
   "shortcuts.window.title": "Phím tắt",
   "@shortcuts.window.title": {

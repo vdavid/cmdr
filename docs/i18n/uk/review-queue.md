@@ -204,3 +204,8 @@ record the outcome in `terms.json` or `decisions.md`).
   in the cell) need a native check.
 - **Checkbox verbs** (`commands.operationLogToggleItem.label` and siblings): «Вибрати елемент або скасувати вибір»
   follows the select and deselect rulings; confirm it reads naturally for a checkbox.
+- **Windows feature names** (`shortcuts.system.*`, `menu.file.quit`): «Диспетчер завдань», «меню «Пуск»», «меню вікна»,
+  «екран безпеки», «увімкнення або вимкнення методу введення», and «Вийти з Cmdr» (Windows File > Exit) come from the MS
+  TBX or general Windows usage, not a live Ukrainian Windows; confirm against Ukrainian Windows 11.
+- **Binary-file banner** (`viewer.binaryWarning.body*`): «Це сирий вигляд файлу … переглянути <b>зображення</b> у
+  звичайному вигляді» repeats «вигляд»; confirm it reads naturally, or suggest a better word for "the actual".

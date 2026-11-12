@@ -46,5 +46,13 @@
   "shortcuts.window.editInSettings": "Editar atajos en Configuración",
   "@shortcuts.window.editInSettings": {
     "sourceHash": "faa5b37"
+  },
+  "shortcuts.section.resetAllConfirm": "¿Restablecer todos los atajos de teclado a sus valores predeterminados?",
+  "@shortcuts.section.resetAllConfirm": {
+    "sourceHash": "3267d39"
+  },
+  "shortcuts.conflict.takenByLinuxDesktops": "En {desktops}, el escritorio suele reservarse {combo}, así que puede que nunca llegue a Cmdr. Puedes liberar esa combinación en la configuración de teclado de tu escritorio.",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "sourceHash": "701c0f7"
   }
 }

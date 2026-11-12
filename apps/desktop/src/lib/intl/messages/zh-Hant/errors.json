@@ -1393,6 +1393,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "改用「永久刪除」指令。",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "連線中斷",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1684,6 +1688,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder 要求輸入管理者密碼之後，還是可以移動它們。} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {如果垃圾桶資料夾的權限變了，就可能出現這種情況，比如換到新的 Mac 之後。你還是可以用 {deletePermanentlyKey} 把這些項目永久刪除。} windows {如果資源回收筒的權限變了，就可能出現這種情況，比如換到新的電腦之後。你還是可以用 {deletePermanentlyKey} 把這些項目永久刪除。} other {如果垃圾桶資料夾的權限變了，就可能出現這種情況，比如換到新的電腦之後。你還是可以用 {deletePermanentlyKey} 把這些項目永久刪除。}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {如果垃圾桶資料夾的權限變了，就可能出現這種情況，比如換到新的 Mac 之後。你還是可以用「永久刪除」指令把這些項目刪除。} windows {如果資源回收筒的權限變了，就可能出現這種情況，比如換到新的電腦之後。你還是可以用「永久刪除」指令把這些項目刪除。} other {如果垃圾桶資料夾的權限變了，就可能出現這種情況，比如換到新的電腦之後。你還是可以用「永久刪除」指令把這些項目刪除。}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {有些位置沒有自己的資源回收筒，像是雲端資料夾和大多數網路磁碟機。你還是可以用 {deletePermanentlyKey} 把這些項目永久刪除。} other {有些位置沒有自己的垃圾桶，像是雲端資料夾和大多數網路磁碟機。你還是可以用 {deletePermanentlyKey} 把這些項目永久刪除。}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {有些位置沒有自己的資源回收筒，像是雲端資料夾和大多數網路磁碟機。你還是可以用「永久刪除」指令把這些項目刪除。} other {有些位置沒有自己的垃圾桶，像是雲端資料夾和大多數網路磁碟機。你還是可以用「永久刪除」指令把這些項目刪除。}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {看看下方的技術詳細資訊，裡面有 macOS 回報的內容。} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2016,6 +2036,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {你不能重新命名 <code>{path}</code>，因為你的個人專屬資料夾就在裡面，而你的 Mac 預期會在這個確切的路徑找到它。} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {如果你真的需要換個名稱，macOS 在「使用者與群組」裡有一套穩妥的做法。不過，這可不是按一下 {renameKey} 就能搞定的事。} windows {Windows 沒有安全的內建方式可以幫它改名，所以最好維持原狀。} other {如果你真的需要換個名稱，管理者可以用另一個使用者登入，再用 usermod 小心處理。不過，這可不是按一下 {renameKey} 就能搞定的事。}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {如果你真的需要換個名稱，macOS 在「使用者與群組」裡有一套穩妥的做法。不過，這可不是隨手改個名就能搞定的事。} windows {Windows 沒有安全的內建方式可以幫它改名，所以最好維持原狀。} other {如果你真的需要換個名稱，管理者可以用另一個使用者登入，再用 usermod 小心處理。不過，這可不是隨手改個名就能搞定的事。}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "不如幫裡面的東西改名，或者乾脆別動這個資料夾。它撐起的東西比看起來多。",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

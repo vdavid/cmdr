@@ -95,3 +95,8 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   chars) in the one-time bubble.
 - **`menu.network.unpin` → `Rögzítés feloldása a kötetválasztóban`** (38 vs 19 chars) in a narrow volume dropdown; the
   short `Rögzítés feloldása` would lose the "from switcher" that tells it apart from deleting.
+- **`shortcuts.system.windowMenu` → `az ablak rendszermenüje`** (tentative: the Microsoft TBX's developer term
+  `system menu` → `rendszermenü`; Windows' UI never names the Alt+Space menu). Also tentative:
+  `shortcuts.system.securityScreen` → `a biztonsági képernyő`, `shortcuts.system.inputMethodToggle` →
+  `beviteli módszer be- és kikapcsolása`, and `asztali környezet` for a Linux desktop in
+  `shortcuts.conflict.takenByLinuxDesktops`.

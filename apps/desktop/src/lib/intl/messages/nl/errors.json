@@ -1393,6 +1393,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "Gebruik in plaats daarvan de opdracht ‘Verwijder definitief’.",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "Verbinding onderbroken",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1684,6 +1688,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder kan ze toch verplaatsen door eerst om een beheerderswachtwoord te vragen.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Dit kan gebeuren als de bevoegdheden van de prullenmandmap veranderen, bijvoorbeeld na de overstap naar een nieuwe Mac. Je kunt de onderdelen wel definitief verwijderen met {deletePermanentlyKey}.} windows {Dit kan gebeuren als de bevoegdheden van de prullenbak veranderen, bijvoorbeeld na de overstap naar een nieuwe pc. Je kunt de onderdelen wel definitief verwijderen met {deletePermanentlyKey}.} other {Dit kan gebeuren als de bevoegdheden van de prullenbakmap veranderen, bijvoorbeeld na de overstap naar een nieuwe computer. Je kunt de onderdelen wel definitief verwijderen met {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {Dit kan gebeuren als de bevoegdheden van de prullenmandmap veranderen, bijvoorbeeld na de overstap naar een nieuwe Mac. Je kunt de onderdelen wel verwijderen met de opdracht ‘Verwijder definitief’.} windows {Dit kan gebeuren als de bevoegdheden van de prullenbak veranderen, bijvoorbeeld na de overstap naar een nieuwe pc. Je kunt de onderdelen wel verwijderen met de opdracht ‘Verwijder definitief’.} other {Dit kan gebeuren als de bevoegdheden van de prullenbakmap veranderen, bijvoorbeeld na de overstap naar een nieuwe computer. Je kunt de onderdelen wel verwijderen met de opdracht ‘Verwijder definitief’.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Sommige plekken hebben geen eigen prullenbak, waaronder cloudmappen en de meeste netwerkschijven. Je kunt de onderdelen wel definitief verwijderen met {deletePermanentlyKey}.} other {Sommige plekken hebben geen eigen prullenmand, waaronder cloudmappen en de meeste netwerkschijven. Je kunt de onderdelen wel definitief verwijderen met {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Sommige plekken hebben geen eigen prullenbak, waaronder cloudmappen en de meeste netwerkschijven. Je kunt de onderdelen wel verwijderen met de opdracht ‘Verwijder definitief’.} other {Sommige plekken hebben geen eigen prullenmand, waaronder cloudmappen en de meeste netwerkschijven. Je kunt de onderdelen wel verwijderen met de opdracht ‘Verwijder definitief’.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Bekijk de technische details hieronder voor wat macOS meldde.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2016,6 +2036,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Je kunt de naam van <code>{path}</code> niet wijzigen, want je thuismap staat erin, en je Mac verwacht hem op precies dit pad.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Als je echt een nieuwe naam nodig hebt, heeft macOS daar een zorgvuldige manier voor in ‘Gebruikers en groepen’. Alleen is het geen snelle {renameKey}.} windows {Windows heeft geen veilige ingebouwde manier om de naam van deze map te wijzigen, dus laat je hem het best zoals hij is.} other {Als je echt een nieuwe naam nodig hebt, kan een beheerder dat zorgvuldig doen met usermod, ingelogd als een andere gebruiker. Alleen is het geen snelle {renameKey}.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {Als je echt een nieuwe naam nodig hebt, heeft macOS daar een zorgvuldige manier voor in ‘Gebruikers en groepen’. Alleen is het geen snelle naamwijziging.} windows {Windows heeft geen veilige ingebouwde manier om de naam van deze map te wijzigen, dus laat je hem het best zoals hij is.} other {Als je echt een nieuwe naam nodig hebt, kan een beheerder dat zorgvuldig doen met usermod, ingelogd als een andere gebruiker. Alleen is het geen snelle naamwijziging.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Wijzig liever de naam van iets erin, of laat deze map met rust. Er hangt meer van af dan je denkt.",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

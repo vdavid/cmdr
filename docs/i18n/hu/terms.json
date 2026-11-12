@@ -773,6 +773,7 @@
   },
   "command": {
     "chosen": "parancs",
+    "accept": ["paranc"],
     "forms": "run the X command → futtasd ezt a parancsot: „{command}”; a menu item in running text → parancs (válaszd a Fájl > Infó megjelenítése parancsot)",
     "confidence": "high",
     "sources": "macOS Finder (NE18: Válassza a Fájl > Infó megjelenítése parancsot); ms",
@@ -2508,7 +2509,11 @@
     "accept": ["áthelyez", "helyezd át", "mozgat", "helyez", "mozg", "visszavi"],
     "forms": "label Áthelyezés; result áthelyezve; Move it instead → Helyezd át inkább; files being moved in prose → mozgat",
     "confidence": "high",
-    "sources": "macOS; ms"
+    "sources": "macOS; ms",
+    "exceptions": {
+      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "English sense: “moving to a new PC/computer” is the user changing machines (átállás), not relocating files.",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "English sense: “moving to a new PC/computer” is the user changing machines (átállás), not relocating files."
+    }
   },
   "move-to-trash": {
     "chosen": "Áthelyezés a Kukába",
@@ -3056,6 +3061,13 @@
     "sources": "macOS (Kilépés, Kilépés a Finderből); ms; Double Commander; Total Commander",
     "decision": "A kilépési kapu"
   },
+  "exit": {
+    "chosen": "kilépés",
+    "accept": ["kilép"],
+    "forms": "Exit Cmdr → Kilépés a Cmdrből, byte-identical to the Quit form: Hungarian Windows names File > Exit Kilépés too, so the two branches read alike",
+    "confidence": "high",
+    "sources": "ms (Exit, ProperNoun → Kilépés, id 342769; exit → kilép); GNOME Nautilus (Quit → Kilépés)"
+  },
   "quota": {
     "chosen": "kvóta",
     "accept": ["keret", "kvótá"],
@@ -3503,7 +3515,10 @@
     "accept": ["kijelöl", "kiválaszt", "válassz", "kijeloles", "jelöld ki", "jelölj ki", "jelöli ki"],
     "forms": "the menu and the action → Kijelölés; Select all → Összes kijelölése; Select files → Fájlok kijelölése; the dropdown placeholder (the user picks an option) → Válassz",
     "confidence": "high",
-    "sources": "macOS Finder (172.title Összes kijelölése); Nautilus (Kijelölés)"
+    "sources": "macOS Finder (172.title Összes kijelölése); Nautilus (Kijelölés)",
+    "exceptions": {
+      "settings.fileViewer.suppressBinaryWarning.explanation": "English sense: the Windows branch “select” a banner button is Microsoft's word for clicking a control (válaszd a … gombot), not marking files."
+    }
   },
   "send": {
     "chosen": "küldés",
@@ -3922,6 +3937,33 @@
     "confidence": "high",
     "sources": "macOS (Kuka, 30×); GNOME; Xfce"
   },
+  "recycle-bin": {
+    "chosen": "Lomtár",
+    "accept": ["lomtár"],
+    "forms": "capitalized as the Windows feature: a Lomtárba, a Lomtár engedélyei; only in a platform select's windows branch (macOS and Linux say Kuka)",
+    "confidence": "high",
+    "sources": "ms (Recycle Bin, ProperNoun → Lomtár, id 100135; first-/second-stage Recycle Bin → felhasználói / rendszergazdai lomtár)"
+  },
+  "task-manager": {
+    "chosen": "Feladatkezelő",
+    "accept": ["feladatkezel"],
+    "forms": "the Windows app name, capitalized, no article in a label (Feladatkezelő)",
+    "confidence": "high",
+    "sources": "ms (Task Manager, ProperNoun → feladatkezelő, id 119990)"
+  },
+  "toggle": {
+    "chosen": "ki-be",
+    "accept": ["kapcsol", "vált"],
+    "forms": "Toggle X (a command name) → X ki-be (Rejtett fájlok ki-be, Teljes képernyős mód ki-be); where English says Turn X on or off → X be-/kikapcsolása (as the tag toggles)",
+    "confidence": "high",
+    "sources": "catalog (ki-be 7×: commands.viewShowHidden.label, commands.selectionToggle.label, commands.tabTogglePin.label, commands.viewerToggleWordWrap.label; be-/kikapcsolása 7× in commands.tagsToggle*); KDE Dolphin (Toggle Filter Bar → Szűrősor ki/be)"
+  },
+  "unix-group": {
+    "chosen": "csoport",
+    "forms": "the macOS pane Users & Groups → „Felhasználók és csoportok” (quoted in prose, a … beállításoknál); group ID → csoportazonosító",
+    "confidence": "tentative",
+    "sources": "catalog (errors.write.homeFolderRename.suggestion.isHome on origin/main, csoportazonosító in the user ruling); the pile's macOS/SystemSettings slice has no Users & Groups string"
+  },
   "trust": {
     "chosen": "megbízható",
     "accept": ["megbíz", "bizalm", "bízik", "bízz"],
@@ -4170,7 +4212,12 @@
     "chosen": "ablak",
     "forms": "the Window menu → Ablak; close this window → zárd be ezt az ablakot; the About window → Névjegyablak",
     "confidence": "high",
-    "sources": "macOS AppKit MenuCommands (Window → Ablak); catalog (24 keys)"
+    "sources": "macOS AppKit MenuCommands (Window → Ablak); catalog (24 keys)",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "English sense: “Windows” is the OS name, kept verbatim (a Windowsban), not a window.",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "English sense: “Windows” is the OS name, kept verbatim (a Windowsban), not a window.",
+      "shortcuts.conflict.takenByWindows": "English sense: “Windows” is the OS name, kept verbatim (a Windows), not a window."
+    }
   },
   "write": {
     "chosen": "kiírás",

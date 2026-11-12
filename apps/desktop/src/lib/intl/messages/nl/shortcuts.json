@@ -49,6 +49,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name of the chat panel; kept verbatim per the ask-cmdr ruling in docs/i18n/nl/terms.json, as in settings.askCmdr.enabled.label."
   },
+  "shortcuts.scope.searchDialog": "Zoeken en Selecteer bestanden",
+  "@shortcuts.scope.searchDialog": {
+    "sourceHash": "eec03a0"
+  },
   "shortcuts.scope.favoritesMenu": "Favorietenmenu",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
@@ -107,6 +111,18 @@
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
+  "shortcuts.conflict.takenByWindows": "{combo} wordt meestal door Windows gebruikt ({label}), dus bereikt het Cmdr mogelijk nooit.",
+  "@shortcuts.conflict.takenByWindows": {
+    "sourceHash": "4858bee"
+  },
+  "shortcuts.conflict.takenByLinuxDesktops": "Op {desktops} wordt {combo} meestal door de werkomgeving zelf gebruikt, dus bereikt het Cmdr mogelijk nooit. Je kunt het vrijmaken in de toetsenbordinstellingen van je werkomgeving.",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "sourceHash": "11d35a9"
+  },
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} opent het menu ‘{menu}’ in de menubalk van Cmdr, dus bereikt het deze opdracht niet, tenzij er een dialoogvenster open is.",
+  "@shortcuts.conflict.opensMenuBarMenu": {
+    "sourceHash": "314244c"
+  },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
     "sourceHash": "fca7aa8",
@@ -161,6 +177,38 @@
   "shortcuts.system.forceQuit": "Forceer stop",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
+  },
+  "shortcuts.system.switchingApps": "wisselen tussen apps",
+  "@shortcuts.system.switchingApps": {
+    "sourceHash": "0113527"
+  },
+  "shortcuts.system.cyclingWindows": "door vensters bladeren",
+  "@shortcuts.system.cyclingWindows": {
+    "sourceHash": "a2a7a18"
+  },
+  "shortcuts.system.windowMenu": "het systeemmenu",
+  "@shortcuts.system.windowMenu": {
+    "sourceHash": "50afaf9"
+  },
+  "shortcuts.system.closingWindow": "het venster sluiten",
+  "@shortcuts.system.closingWindow": {
+    "sourceHash": "82fe00f"
+  },
+  "shortcuts.system.startMenu": "het Startmenu",
+  "@shortcuts.system.startMenu": {
+    "sourceHash": "b05bc4f"
+  },
+  "shortcuts.system.taskManager": "Taakbeheer",
+  "@shortcuts.system.taskManager": {
+    "sourceHash": "58d65c2"
+  },
+  "shortcuts.system.securityScreen": "het beveiligingsscherm",
+  "@shortcuts.system.securityScreen": {
+    "sourceHash": "5fdc327"
+  },
+  "shortcuts.system.inputMethodToggle": "een invoermethode aan- of uitzetten",
+  "@shortcuts.system.inputMethodToggle": {
+    "sourceHash": "fe0b8a0"
   },
   "shortcuts.section.title": "Sneltoetsen",
   "@shortcuts.section.title": {
@@ -258,6 +306,18 @@
   "shortcuts.section.resetAll": "Herstel alles naar standaard",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.section.resetAllConfirm": "Alle sneltoetsen terugzetten naar de standaardwaarden?",
+  "@shortcuts.section.resetAllConfirm": {
+    "sourceHash": "3fc5074"
+  },
+  "shortcuts.section.resetAllConfirmTitle": "Sneltoetsen terugzetten",
+  "@shortcuts.section.resetAllConfirmTitle": {
+    "sourceHash": "5dac863"
+  },
+  "shortcuts.section.resetAllConfirmButton": "Herstel",
+  "@shortcuts.section.resetAllConfirmButton": {
+    "sourceHash": "daee760"
   },
   "shortcuts.window.title": "Sneltoetsen",
   "@shortcuts.window.title": {

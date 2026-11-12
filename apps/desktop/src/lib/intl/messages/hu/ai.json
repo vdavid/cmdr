@@ -27,6 +27,14 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
+  "ai.toast.readyDescriptionWithKey": "Hozz létre egy új mappát ({combo}), és nézd meg az AI-alapú névjavaslatokat.",
+  "@ai.toast.readyDescriptionWithKey": {
+    "sourceHash": "a9e1361"
+  },
+  "ai.toast.readyDescriptionWithoutKey": "Hozz létre egy új mappát, és nézd meg az AI-alapú névjavaslatokat.",
+  "@ai.toast.readyDescriptionWithoutKey": {
+    "sourceHash": "2ec8316"
+  },
   "ai.toast.gotIt": "Értem",
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"

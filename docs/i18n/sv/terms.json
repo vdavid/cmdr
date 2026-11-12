@@ -778,6 +778,15 @@
     "forms": "takes plural agreement: dina data, Cmdrs egna data; compounds webbläsardata; personal data → personuppgifter",
     "sources": "catalog ai.cloudConsent.whereItGoes (dina data … dem), errors.git.shallowBoundary.message"
   },
+  "desktop": {
+    "chosen": "skrivbord",
+    "confidence": "high",
+    "exceptions": {
+      "shortcuts.conflict.takenByLinuxDesktops": "A Linux desktop environment (GNOME, KDE Plasma), not the Desktop folder: skrivbordsmiljö."
+    },
+    "forms": "the Desktop folder → Skrivbord; the Desktop & Dock pane → Skrivbord och Dock",
+    "sources": "MS terminology (desktop → skrivbord); macOS Finder sidebar (Skrivbord)"
+  },
   "details": {
     "accept": ["uppgifter", "information"],
     "chosen": "detaljer",
@@ -807,6 +816,12 @@
     "chosen": "släppt fil",
     "confidence": "high",
     "sources": "GNOME Nautilus (Dropped Image → Släppt bild; the file that you dropped → Filen som du släppte)"
+  },
+  "exit": {
+    "chosen": "avsluta",
+    "confidence": "high",
+    "forms": "Windows File > Exit → Avsluta; Exit Cmdr → Avsluta Cmdr, same as macOS Quit",
+    "sources": "MS terminology SWEDISH.tbx (Exit → Avsluta), 2026-11-12"
   },
   "finder-extension": {
     "chosen": "Finder-tillägg",
@@ -1174,7 +1189,8 @@
     "chosen": "redigera",
     "confidence": "high",
     "exceptions": {
-      "operationLog.initiator.agentEdited": "Your edits to a proposal are dina ändringar; redigeringar reads as text editing."
+      "operationLog.initiator.agentEdited": "Your edits to a proposal are dina ändringar; redigeringar reads as text editing.",
+      "settings.fileExplorer.typeToJump.mode.description": "pending a shared notMatch (docs/i18n/source-queue.md): Backspace edits it means the key changes the filter text: Backsteg ändrar filtret, as the macOS branch says."
     },
     "forms": "the Edit menu Redigera; F4 Redigera i standardredigeraren; menu Öppna i redigeraren; Redigera server…",
     "sources": "macOS Finder (Redigera)"
@@ -1465,8 +1481,9 @@
     "chosen": "helskärmsläge",
     "confidence": "high",
     "decision": "Escape leaves full screen",
-    "forms": "Lämna helskärmsläge; tog Cmdr ur helskärmsläget",
-    "sources": "macOS AppKit MenuCommands (Exit Full Screen → Lämna helskärmsläge)"
+    "forms": "Lämna helskärmsläge; tog Cmdr ur helskärmsläget; the Windows and Linux View menu row and the browsers’ F11 → Helskärm (Edge, Chrome; MS terminology full screen → helskärm)",
+    "sources": "macOS AppKit MenuCommands (Exit Full Screen → Lämna helskärmsläge)",
+    "accept": ["helskärm"]
   },
   "full-view": {
     "chosen": "Fullständig",
@@ -1579,6 +1596,12 @@
     "confidence": "high",
     "forms": "ägaren; file ownership → ägare och behörigheter",
     "sources": "MS terminology (owner → ägare); catalog (errors.listing.noPermissionErrno.suggestion, notPermitted.suggestion)"
+  },
+  "recycle-bin": {
+    "chosen": "Papperskorgen",
+    "confidence": "high",
+    "forms": "capitalized as Windows names it, always definite (flyttar dem till Papperskorgen); has no Recycle Bin → kan inte använda Papperskorgen, since an indefinite Papperskorg reads wrong",
+    "sources": "MS terminology SWEDISH.tbx (Recycle Bin → Papperskorgen), 2026-11-12"
   },
   "repository": {
     "accept": ["repository"],
@@ -2120,7 +2143,11 @@
     "chosen": "flytta",
     "confidence": "high",
     "forms": "button Flytta; progress Flyttar; the noun flytt, definite flytten",
-    "sources": "macOS Finder"
+    "sources": "macOS Finder",
+    "exceptions": {
+      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "pending a shared notMatch (docs/i18n/source-queue.md): moving to a new PC or computer is the user switching machines (ett byte till en ny dator), not moving files.",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "pending a shared notMatch (docs/i18n/source-queue.md): moving to a new PC or computer is the user switching machines (ett byte till en ny dator), not moving files."
+    }
   },
   "move-to-trash": {
     "accept": ["papperskorg"],
@@ -3388,6 +3415,11 @@
     "decision": "Android over ADB",
     "sources": "Android sv (Tryck på …)"
   },
+  "task-manager": {
+    "chosen": "Aktivitetshanteraren",
+    "confidence": "high",
+    "sources": "MS terminology SWEDISH.tbx (Task Manager → Aktivitetshanteraren), 2026-11-12"
+  },
   "technical-details": {
     "chosen": "tekniska detaljer",
     "confidence": "high",
@@ -3470,6 +3502,16 @@
     "confidence": "high",
     "decision": "Title-bar full disk access badge",
     "sources": "macOS"
+  },
+  "toggle": {
+    "chosen": "växla",
+    "accept": ["slå på eller av", "visa eller göm"],
+    "confidence": "high",
+    "forms": "a two-state command name → Växla … (Växla markering, Växla helskärmsläge); the viewer’s on/off rows say Slå på eller av …; show/hide toggles say Visa eller göm …",
+    "sources": "catalog (commands.selectionToggle.label, commands.sortToggleOrder.label, commands.viewerToggleWordWrap.label)",
+    "exceptions": {
+      "settings.developer.verboseLogging.description": "this toggle names the Settings switch itself, which Swedish calls den här inställningen."
+    }
   },
   "token": {
     "chosen": "token",
@@ -3562,6 +3604,12 @@
     "confidence": "high",
     "forms": "menu Avinstallera kommandot ”cmdr”; toast Avinstallerade kommandot ”cmdr”",
     "sources": "MS terminology (uninstall → avinstallera); catalog menu.app.cliCommandUninstall"
+  },
+  "unix-group": {
+    "chosen": "grupp",
+    "confidence": "tentative",
+    "forms": "the macOS pane Users & Groups → Användare och grupper; group ID → grupp-ID",
+    "sources": "shipped catalog (errors.write.homeFolderRename.suggestion.isHome, macOS branch); the pile’s SystemSettings bundle lacks the pane name"
   },
   "unknown": {
     "accept": ["Okänt"],
@@ -3746,7 +3794,13 @@
     "chosen": "fönster",
     "confidence": "high",
     "forms": "the Window menu → Fönster; the About window → Om-fönstret",
-    "sources": "macOS AppKit (Flytta fönstret till skrivbordet)"
+    "sources": "macOS AppKit (Flytta fönstret till skrivbordet)",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "pending a shared notMatch (docs/i18n/source-queue.md): Windows here is the OS name, not a window.",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "pending a shared notMatch (docs/i18n/source-queue.md): Windows here is the OS name, not a window.",
+      "shortcuts.conflict.takenByWindows": "pending a shared notMatch (docs/i18n/source-queue.md): Windows here is the OS name, not a window.",
+      "shortcuts.system.windowMenu": "Windows names the Alt+Space menu systemmenyn (MS terminology: system menu → systemmeny), not a fönstermeny."
+    }
   },
   "word-wrap": {
     "accept": ["radbyte", "bryt"],

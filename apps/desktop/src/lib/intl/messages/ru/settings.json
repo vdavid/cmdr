@@ -484,6 +484,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "Что делает {combo} в папке, когда в буфере обмена не скопированные файлы, а текст, изображение или PDF.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "Что происходит при вставке в папку, когда в буфере обмена не скопированные файлы, а текст, изображение или PDF.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Ничего не делать",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -527,6 +535,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Копировать и перемещать без подтверждения, в том числе в Корзину}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {«Скопировать» и «Переместить» сразу отправляют файлы в другую панель, а «Удалить» без вопросов перемещает их в Корзину. Это немного рискованно: одно нажатие клавиши срабатывает сразу. Перед безвозвратным удалением Cmdr всегда спрашивает.} other {«Скопировать» и «Переместить» сразу отправляют файлы в другую панель, а «Удалить» без вопросов перемещает их в Корзину. Это немного рискованно: одно нажатие клавиши срабатывает сразу. Перед безвозвратным удалением Cmdr всегда спрашивает.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {подтверждение, подтверждать, диалог, спрашивать, копирование, перемещение, Корзина, удаление, пропустить, без вопросов, нажатия}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1084,6 +1096,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Перейти к последней загрузке",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Переход к последней загрузке из любого приложения по глобальному сочетанию клавиш. Нужен полный доступ к диску.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "сочетание клавиш, горячая клавиша, глобальный, загрузка, загрузки, последняя загрузка, перейти, переход",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1730,6 +1746,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {Окно просмотра Cmdr показывает файл как есть, байт за байтом (нетекстовое содержимое выводится как UTF-8 с потерями). Когда вы открываете изображение, PDF, архив или другой двоичный файл, в окне просмотра появляется красный баннер: скорее всего, вам нужен Быстрый просмотр или открытие файла в приложении по умолчанию. Включите этот параметр (или нажмите «Больше не показывать это предупреждение» в баннере), чтобы скрыть предупреждение навсегда.} windows {Окно просмотра Cmdr показывает файл как есть, байт за байтом (нетекстовое содержимое выводится как UTF-8 с потерями). Когда вы открываете изображение, PDF, архив или другой двоичный файл, в окне просмотра появляется красный баннер: скорее всего, вам нужно открыть файл в приложении по умолчанию. Включите этот параметр (или нажмите «Больше не показывать это предупреждение» в баннере), чтобы скрыть предупреждение навсегда.} other {Окно просмотра Cmdr показывает файл как есть, байт за байтом (нетекстовое содержимое выводится как UTF-8 с потерями). Когда вы открываете изображение, PDF, архив или другой двоичный файл, в окне просмотра появляется красный баннер: скорее всего, вам нужно открыть файл в приложении по умолчанию. Включите этот параметр (или нажмите «Больше не показывать это предупреждение» в баннере), чтобы скрыть предупреждение навсегда.}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "окно просмотра, просмотр, двоичный, бинарный, изображение, необработанный, сырой, предупреждение, баннер, Быстрый просмотр",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1737,6 +1757,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "Скрывать подсказку о быстром просмотре по Пробелу",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr выделяет файлы и снимает выделение Пробелом, а Быстрый просмотр открывает клавишами {combo} (в Finder Быстрый просмотр открывается просто Пробелом). Каждый раз, когда вы нажимаете Пробел в списке файлов, Cmdr показывает короткое напоминание об этой разнице. Включите этот параметр (или нажмите «Больше не показывать» в уведомлении), чтобы скрыть напоминание навсегда.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr выделяет файлы и снимает выделение Пробелом, а в Finder Пробел открывает Быстрый просмотр. Каждый раз, когда вы нажимаете Пробел в списке файлов, Cmdr показывает короткое напоминание об этой разнице. Включите этот параметр (или нажмите «Больше не показывать» в уведомлении), чтобы скрыть напоминание навсегда.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "Быстрый просмотр, просмотр, предпросмотр, пробел, подсказка, уведомление, всплывающее сообщение, напоминание",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1781,6 +1809,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Число закрытых вкладок в истории панели",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "Сколько недавно закрытых вкладок хранить для каждой панели, чтобы их можно было вернуть командой «Открыть закрытую вкладку» ({combo}). Чем больше значение, тем дальше в историю можно вернуться; чем меньше, тем раньше освобождается память. Касается только вкладок, закрытых в текущем сеансе.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "Сколько недавно закрытых вкладок хранить для каждой панели, чтобы их можно было вернуть командой «Открыть закрытую вкладку». Чем больше значение, тем дальше в историю можно вернуться; чем меньше, тем раньше освобождается память. Касается только вкладок, закрытых в текущем сеансе.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "вкладка, вкладки, закрытые, открыть снова, восстановить, история, отменить, панель",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1849,6 +1885,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "При вводе в панели",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {«Переход» ставит курсор на самое подходящее имя. «Фильтр» показывает только файлы и папки, в именах которых есть набранный текст, как быстрый фильтр в Total Commander; Delete (⌫) изменяет набранный текст, а Esc очищает его.} other {«Переход» ставит курсор на самое подходящее имя. «Фильтр» показывает только файлы и папки, в именах которых есть набранный текст, как быстрый фильтр в Total Commander; Backspace изменяет набранный текст, а Esc очищает его.}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Переход",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2221,6 +2261,14 @@
   "settings.behavior.textEditorHintSeen.label": "Скрывать подсказку о текстовом редакторе",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "Когда {combo} впервые открывает файл в редакторе по умолчанию, а у вас установлен и другой редактор, Cmdr подсказывает, что можно выбрать другой. Выключите параметр, чтобы увидеть подсказку еще раз.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "Когда Cmdr впервые открывает файл в редакторе по умолчанию, а у вас установлен и другой редактор, Cmdr подсказывает, что можно выбрать другой. Выключите параметр, чтобы увидеть подсказку еще раз.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "правка, редактировать, изменить, редактор, F4, приложение, уведомление",
   "@settings.behavior.textEditorHintSeen.keywords": {

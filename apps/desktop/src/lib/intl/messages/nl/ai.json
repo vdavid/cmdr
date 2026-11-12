@@ -27,6 +27,14 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
+  "ai.toast.readyDescriptionWithKey": "Maak een nieuwe map ({combo}) om door AI voorgestelde namen te zien.",
+  "@ai.toast.readyDescriptionWithKey": {
+    "sourceHash": "a9e1361"
+  },
+  "ai.toast.readyDescriptionWithoutKey": "Maak een nieuwe map om door AI voorgestelde namen te zien.",
+  "@ai.toast.readyDescriptionWithoutKey": {
+    "sourceHash": "2ec8316"
+  },
   "ai.toast.gotIt": "Begrepen",
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"

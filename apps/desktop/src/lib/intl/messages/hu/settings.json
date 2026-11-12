@@ -486,6 +486,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "Mit tesz egy mappában a beillesztés ({combo}), amikor a vágólapon szöveg, kép vagy PDF van másolt fájlok helyett.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "Mit tesz egy mappában a beillesztés, amikor a vágólapon szöveg, kép vagy PDF van másolt fájlok helyett.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Nincs művelet",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -529,6 +537,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Megerősítés kihagyása másoláskor, áthelyezéskor és Kukába helyezéskor}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {A Másolás és az Áthelyezés azonnal a másik panelre másol, illetve helyez át, a Törlés pedig kérdés nélkül a Lomtárba helyez. Kicsit kockázatos, mert egyetlen billentyűleütés rögtön végrehajtja a műveletet. Végleges törlés előtt a Cmdr mindig rákérdez.} other {A Másolás és az Áthelyezés azonnal a másik panelre másol, illetve helyez át, a Törlés pedig kérdés nélkül a Kukába helyez. Kicsit kockázatos, mert egyetlen billentyűleütés rögtön végrehajtja a műveletet. Végleges törlés előtt a Cmdr mindig rákérdez.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {megerősítés, párbeszédablak, rákérdezés, kérdés, másolás, áthelyezés, kuka, törlés, kihagyás, átugrás, kattintás}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1086,6 +1098,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Ugrás a legutóbbi letöltéshez",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Ugorj a legutóbbi letöltésedhez bármelyik appból egy rendszerszintű billentyűparanccsal. Teljes lemezhozzáférést igényel.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "billentyűparancs, gyorsbillentyű, globális, letöltés, letöltések, legutóbbi, ugrás",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1733,6 +1749,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {A Cmdr fájlmegjelenítője nyers bájtokat mutat (nem szöveges tartalomnál veszteséges UTF-8-cal). Amikor képet, PDF-et, archívumot vagy más bináris fájlt nyitsz meg, a megjelenítő piros sávot mutat, amely elmagyarázza, hogy valószínűleg a Gyorsnézet vagy a fájl megnyitása a társított appban az, amit szerettél volna. Kapcsold ezt be (vagy kattints a sávban a „Ne jelenjen meg többé ez a figyelmeztetés” gombra), hogy végleg elnyomd a figyelmeztetést.} windows {A Cmdr fájlmegjelenítője nyers bájtokat mutat (nem szöveges tartalomnál veszteséges UTF-8-cal). Amikor képet, PDF-et, archívumot vagy más bináris fájlt nyitsz meg, a megjelenítő piros sávot mutat, amely elmagyarázza, hogy valószínűleg a fájl megnyitása a társított appban az, amit szerettél volna. Kapcsold ezt be (vagy válaszd a sávban a „Ne jelenjen meg többé ez a figyelmeztetés” gombot), hogy végleg elnyomd a figyelmeztetést.} other {A Cmdr fájlmegjelenítője nyers bájtokat mutat (nem szöveges tartalomnál veszteséges UTF-8-cal). Amikor képet, PDF-et, archívumot vagy más bináris fájlt nyitsz meg, a megjelenítő piros sávot mutat, amely elmagyarázza, hogy valószínűleg a fájl megnyitása a társított appban az, amit szerettél volna. Kapcsold ezt be (vagy kattints a sávban a „Ne jelenjen meg többé ez a figyelmeztetés” gombra), hogy végleg elnyomd a figyelmeztetést.}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "megjelenítő, bináris, kép, nyers, nyers nézet, figyelmeztetés, sáv, szalag, gyorsnézet",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1740,6 +1760,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "Szóközbillentyűs Gyorsnézet tipp elnyomása",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "A Cmdr a Szóközzel váltja a fájlkijelölést, a Gyorsnézetet pedig ezzel nyitja meg: {combo} (a Finder sima Szóközzel hozza a Gyorsnézetet). Valahányszor megnyomod a Szóközt a fájllistában, a Cmdr egy bekezdésnyi emlékeztetőt mutat erről a különbségről. Kapcsold ezt be (vagy kattints a buborékban a „Ne jelenjen meg többé” gombra), hogy végleg elnyomd az emlékeztetőt.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "A Cmdr a Szóközzel váltja a fájlkijelölést, a Finder viszont a Gyorsnézethez használja. Valahányszor megnyomod a Szóközt a fájllistában, a Cmdr egy bekezdésnyi emlékeztetőt mutat erről a különbségről. Kapcsold ezt be (vagy kattints a buborékban a „Ne jelenjen meg többé” gombra), hogy végleg elnyomd az emlékeztetőt.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "gyorsnézet, előnézet, szóköz, tipp, buborék, emlékeztető, értesítés",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1784,6 +1812,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Megjegyzendő bezárt lapok száma panelenként",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "Hány nemrég bezárt lapot őrizzen meg a Cmdr panelenként, hogy a „Bezárt lap újranyitása” ({combo}) visszahozhassa őket. A nagyobb érték messzebbre enged visszanyúlni; a kisebb hamarabb felszabadítja a memóriát. Csak az aktuális munkamenetben bezárt lapokra vonatkozik.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "Hány nemrég bezárt lapot őrizzen meg a Cmdr panelenként, hogy a „Bezárt lap újranyitása” visszahozhassa őket. A nagyobb érték messzebbre enged visszanyúlni; a kisebb hamarabb felszabadítja a memóriát. Csak az aktuális munkamenetben bezárt lapokra vonatkozik.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "lap, bezárt, bezárt lap, újranyitás, előzmények, visszavonás, panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1852,6 +1888,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "Gépelés a panelen",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {Az Ugrás mód a legjobb találatra viszi a kurzort. A Szűrés mód csak azokat a fájlokat és mappákat mutatja, amelyek nevében szerepel, amit beírsz, mint a Total Commander gyorsszűrője. A Delete (⌫) billentyűvel módosíthatod, az Escape billentyűvel törölheted.} other {Az Ugrás mód a legjobb találatra viszi a kurzort. A Szűrés mód csak azokat a fájlokat és mappákat mutatja, amelyek nevében szerepel, amit beírsz, mint a Total Commander gyorsszűrője. A Backspace billentyűvel módosíthatod, az Escape billentyűvel törölheted.}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Ugrás",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2224,6 +2264,14 @@
   "settings.behavior.textEditorHintSeen.label": "Szövegszerkesztő-tipp elnyomása",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "Amikor a szerkesztés billentyűje ({combo}) először nyit meg egy fájlt az alapértelmezett szerkesztőben, miközben másik szerkesztő is telepítve van, a Cmdr megemlíti, hogy választhatsz másikat. Kapcsold ezt ki, hogy még egyszer lásd a tippet.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "Amikor a Cmdr először nyit meg egy fájlt az alapértelmezett szerkesztőben, miközben másik szerkesztő is telepítve van, megemlíti, hogy választhatsz másikat. Kapcsold ezt ki, hogy még egyszer lásd a tippet.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "szerkesztés, szerkesztő, szöveg, alkalmazás, tipp, buborék",
   "@settings.behavior.textEditorHintSeen.keywords": {

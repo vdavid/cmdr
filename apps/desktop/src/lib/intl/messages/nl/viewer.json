@@ -79,6 +79,22 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
+  "viewer.binaryWarning.bodyWithKeys": "Dit is de ruwe weergave van het bestand. Je wilt waarschijnlijk liever {category, select, image {de} other {het}} eigenlijke <kindName>{category, select, image {afbeelding} document {document} other {{ext}-bestand}}</kindName> bekijken. Sluit hiervoor dit venster en druk op <quickLookKey></quickLookKey> om de snelle weergave te openen, of druk op <openKey></openKey> (of dubbelklik op het bestand) om het in de bijbehorende app te openen.",
+  "@viewer.binaryWarning.bodyWithKeys": {
+    "sourceHash": "fd5cfb7"
+  },
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Dit is de ruwe weergave van het bestand. Je wilt waarschijnlijk liever {category, select, image {de} other {het}} eigenlijke <kindName>{category, select, image {afbeelding} document {document} other {{ext}-bestand}}</kindName> bekijken. Sluit hiervoor dit venster en druk op <quickLookKey></quickLookKey> om de snelle weergave te openen, of dubbelklik op het bestand om het in de bijbehorende app te openen.",
+  "@viewer.binaryWarning.bodyWithQuickLookKey": {
+    "sourceHash": "ed8bdcf"
+  },
+  "viewer.binaryWarning.bodyWithOpenKey": "Dit is de ruwe weergave van het bestand. Je wilt waarschijnlijk liever {category, select, image {de} other {het}} eigenlijke <kindName>{category, select, image {afbeelding} document {document} other {{ext}-bestand}}</kindName> bekijken. Sluit hiervoor dit venster en druk op <openKey></openKey> (of dubbelklik op het bestand) om het in de bijbehorende app te openen.",
+  "@viewer.binaryWarning.bodyWithOpenKey": {
+    "sourceHash": "b219b68"
+  },
+  "viewer.binaryWarning.bodyWithoutKeys": "Dit is de ruwe weergave van het bestand. Je wilt waarschijnlijk liever {category, select, image {de} other {het}} eigenlijke <kindName>{category, select, image {afbeelding} document {document} other {{ext}-bestand}}</kindName> bekijken. Sluit hiervoor dit venster en dubbelklik op het bestand om het in de bijbehorende app te openen.",
+  "@viewer.binaryWarning.bodyWithoutKeys": {
+    "sourceHash": "610efa6"
+  },
   "viewer.binaryWarning.dismiss": "Sluit",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
@@ -363,6 +379,10 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
+  "viewer.copyDialog.confirmMessage": "Veel tegelijk plakken kan andere apps vertragen. Probeer zoeken ({combo}) om de selectie te verkleinen.",
+  "@viewer.copyDialog.confirmMessage": {
+    "sourceHash": "084b649"
+  },
   "viewer.copyDialog.cancel": "Annuleer",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -374,6 +394,10 @@
   "viewer.copyDialog.copy": "Kopieer",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseMessage": "Dat is groter dan de klembordlimiet van 100 MB. Probeer zoeken ({combo}) om te vinden wat je nodig hebt, of bewaar de selectie als bestand.",
+  "@viewer.copyDialog.refuseMessage": {
+    "sourceHash": "75d10d8"
   },
   "viewer.reloadToast.grew": "Bestand op schijf gewijzigd. Opnieuw laden?",
   "@viewer.reloadToast.grew": {

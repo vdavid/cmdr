@@ -1177,7 +1177,8 @@
     "confidence": "high",
     "exceptions": {
       "errors.git.corruptRepo.message": "\"edited outside git\" means changed by something else, rendered 改动过.",
-      "operationLog.initiator.agentEdited": "\"with your edits\" is the user's changes to the AI plan, rendered 修改."
+      "operationLog.initiator.agentEdited": "\"with your edits\" is the user's changes to the AI plan, rendered 修改.",
+      "settings.fileExplorer.typeToJump.mode.description": "\"Backspace edits it\" changes the typed filter text, not a file; rendered 修改, like the macos branch."
     },
     "forms": "F4 编辑; Edit server… → 编辑服务器…; the menu bar's Edit menu 编辑",
     "sources": "macOS"
@@ -1478,6 +1479,9 @@
   "full-screen": {
     "chosen": "全屏幕",
     "confidence": "confirmed",
+    "exceptions": {
+      "menu.view.fullScreen": "The View-menu row shows on Windows and Linux only (macOS adds its own), so it takes the Windows and browser label 全屏 (MS TBX full screen → 全屏; Edge and Chrome zh-CN)."
+    },
     "forms": "按 Esc 键退出全屏幕",
     "sources": "macOS AppKit"
   },
@@ -2129,6 +2133,10 @@
     "chosen": "移动",
     "confidence": "high",
     "decision": "Standalone conflict prompt",
+    "exceptions": {
+      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "\"moving to a new PC / computer\" is the user switching machines, not a file move; rendered 换到新的电脑, like the macos branch's 换到新的 Mac.",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "\"moving to a new PC / computer\" is the user switching machines, not a file move; rendered 换到新的电脑, like the macos branch's 换到新的 Mac."
+    },
     "forms": "F6 移动; in a sentence with a destination 移动到“{destination}”; out of / into an archive 移出 / 移入; moving back 移回原处, a rollback's moving back 放回原处 / 放回原来的位置 (fileOperations.rollbackConfirm.bodyUndoByMovingBack); a file something moved away 已被移走",
     "note": "A progress line or conflict prompt naming the operation writes 移动到 so it matches the queue row's 正在移动; everyday prose may use Finder's contraction 移到 (移到废纸篓, 把 Cmdr 移到“应用程序”文件夹).",
     "sources": "macOS"
@@ -2226,7 +2234,8 @@
     "chosen": "新建文件夹",
     "confidence": "high",
     "exceptions": {
-      "ai.toast.readyDescription": "\"Try creating a new folder\" reads naturally as 新建一个文件夹, with the measure word splitting the command name."
+      "ai.toast.readyDescriptionWithKey": "\"Try creating a new folder\" reads naturally as 新建一个文件夹, with the measure word splitting the command name.",
+      "ai.toast.readyDescriptionWithoutKey": "\"Try creating a new folder\" reads naturally as 新建一个文件夹, with the measure word splitting the command name."
     },
     "note": "The menu label is 新建文件夹; the act of making one is 创建文件夹 (正在创建文件夹).",
     "sources": "macOS"
@@ -3551,6 +3560,11 @@
     "chosen": "废纸篓",
     "confidence": "high",
     "forms": "the volume has no trash 这个驱动器没有废纸篓; stayed in the trash 仍在废纸篓中",
+    "other": {
+      "chosen": "回收站",
+      "accept": ["废纸篓"],
+      "note": "Linux's trash: Nautilus, Dolphin, and Thunar all say 回收站. 废纸篓 stays accepted for an other branch that macOS also reads (a block with no macos branch)."
+    },
     "sources": "macOS"
   },
   "trust": {
@@ -3783,6 +3797,11 @@
     ],
     "chosen": "窗口",
     "confidence": "high",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "The English hit is the OS name Windows, kept Latin; no window is meant.",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "The English hit is the OS name Windows, kept Latin; no window is meant.",
+      "shortcuts.conflict.takenByWindows": "The English hit is the OS name Windows, kept Latin; no window is meant."
+    },
     "sources": "macOS Finder (48) + AppKit (27); MS TBX; Nautilus, Thunar, Dolphin, Total/Double Commander; 20 catalog keys"
   },
   "word-wrap": {
@@ -4075,5 +4094,40 @@
     "accept": ["电脑", "此电脑"],
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”) → 个人电脑; Windows names This PC 此电脑; prose 这台电脑, same as this-computer"
+  },
+  "recycle-bin": {
+    "chosen": "回收站",
+    "confidence": "high",
+    "sources": "MS TBX Recycle Bin → 回收站 (the Windows storage-place sense, not SharePoint's first/second-stage bins); Dolphin and Thunar say the same"
+  },
+  "exit": {
+    "chosen": "退出",
+    "confidence": "high",
+    "forms": "Exit Cmdr 退出 Cmdr, byte-identical to the macOS and Linux Quit",
+    "sources": "MS TBX Exit → 退出 (menu-item sense); Chinese Windows has no separate Exit word, so it matches quit"
+  },
+  "task-manager": {
+    "chosen": "任务管理器",
+    "confidence": "high",
+    "sources": "MS TBX Task Manager → 任务管理器"
+  },
+  "toggle": {
+    "chosen": "切换",
+    "accept": ["开启或关闭", "显示或隐藏", "打开", "开关"],
+    "confidence": "high",
+    "forms": "a command label Toggle X → 切换X (切换隐藏文件, 切换全屏幕); Turn X on or off → 开启或关闭X; Show or hide → 显示或隐藏; \"turn this on\" in a switch's help text → 打开这一项; the noun (a settings switch) → 开关",
+    "sources": "MS TBX toggle → 切换; catalog commands.viewShowHidden.label, commands.selectionToggle.label, commands.viewerToggleWordWrap.label"
+  },
+  "desktop": {
+    "chosen": "桌面",
+    "confidence": "high",
+    "forms": "the Desktop folder 桌面; a Linux desktop environment (GNOME, KDE Plasma) 桌面环境",
+    "sources": "macOS Finder 桌面; Thunar 桌面文件夹; desktop environment 桌面环境 is the standard zh-CN term"
+  },
+  "unix-group": {
+    "chosen": "群组",
+    "confidence": "high",
+    "forms": "the Users & Groups pane “用户与群组”; owner, group, and permissions 所有者、群组和权限",
+    "sources": "macOS Finder zh-CN (群组, 所有者、群组和权限); catalog errors.write.homeFolderRename.suggestion.isHome*"
   }
 }

@@ -325,6 +325,10 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем Mac. Для просмотра используйте команду «Просмотр».} windows {Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем компьютере. Для просмотра используйте команду «Просмотр».} other {Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем компьютере. Для просмотра используйте команду «Просмотр».}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "b281a7e"
+  },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {Файл {fileName} не открылся. macOS не нашла этот файл, или нет приложения, которое его открывает.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
@@ -713,25 +717,57 @@
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "ba69ee7"
   },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "Буфер обмена не поддерживает файлы с этого устройства. Для копирования используйте команду «Скопировать».",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "sourceHash": "ec9f6a4"
+  },
   "fileExplorer.clipboard.moveFromDevice": "Буфер обмена не поддерживает файлы с этого устройства. Для перемещения используйте {moveKey}.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "Буфер обмена не поддерживает файлы с этого устройства. Для перемещения используйте команду «Переместить».",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "sourceHash": "3e1a8d6"
   },
   "fileExplorer.clipboard.copyFromServer": "Буфер обмена не поддерживает файлы с этого сервера. Для копирования используйте {copyKey}.",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "12cb39f"
   },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "Буфер обмена не поддерживает файлы с этого сервера. Для копирования используйте команду «Скопировать».",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "sourceHash": "a0b8b71"
+  },
   "fileExplorer.clipboard.moveFromServer": "Буфер обмена не поддерживает файлы с этого сервера. Для перемещения используйте {moveKey}.",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "Буфер обмена не поддерживает файлы с этого сервера. Для перемещения используйте команду «Переместить».",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "sourceHash": "958bc4b"
   },
   "fileExplorer.clipboard.copyFromUnknown": "Эти файлы нельзя поместить в буфер обмена. Для копирования используйте {copyKey}.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "7aaabdb"
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "Эти файлы нельзя поместить в буфер обмена. Для копирования используйте команду «Скопировать».",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "sourceHash": "eef58a6"
+  },
   "fileExplorer.clipboard.moveFromUnknown": "Эти файлы нельзя поместить в буфер обмена. Для перемещения используйте {moveKey}.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
+  },
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "Эти файлы нельзя поместить в буфер обмена. Для перемещения используйте команду «Переместить».",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "sourceHash": "9148b09"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr пока не может открыть этот файл в редакторе: это не обычный файл на вашем Mac. Нажмите {viewKey} для просмотра.} windows {Cmdr пока не может открыть этот файл в редакторе: это не обычный файл на вашем компьютере. Нажмите {viewKey} для просмотра.} other {Cmdr пока не может открыть этот файл в редакторе: это не обычный файл на вашем компьютере. Нажмите {viewKey} для просмотра.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "6bc5d46"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr пока не может открыть этот файл в редакторе: это не обычный файл на вашем Mac. Для просмотра используйте команду «Просмотр».} windows {Cmdr пока не может открыть этот файл в редакторе: это не обычный файл на вашем компьютере. Для просмотра используйте команду «Просмотр».} other {Cmdr пока не может открыть этот файл в редакторе: это не обычный файл на вашем компьютере. Для просмотра используйте команду «Просмотр».}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "4572115"
   },
   "fileExplorer.edit.hint": "Файл открыт в {app}. Хотите другой редактор в следующий раз? Выберите его в настройках.",
   "@fileExplorer.edit.hint": {
@@ -769,9 +805,25 @@
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "Для копирования файлов на это устройство используйте команду «Скопировать».",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "sourceHash": "06a1d58"
+  },
   "fileExplorer.clipboard.copyToServer": "Для копирования файлов на этот сервер используйте {copyKey}.",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "Для копирования файлов на этот сервер используйте команду «Скопировать».",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "sourceHash": "1229e3a"
+  },
+  "fileExplorer.clipboard.noFilesWithKey": "В буфере обмена нет файлов. Сначала скопируйте файлы, нажав {combo}.",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "sourceHash": "1eb6ea9"
+  },
+  "fileExplorer.clipboard.noFiles": "В буфере обмена нет файлов. Сначала скопируйте файлы.",
+  "@fileExplorer.clipboard.noFiles": {
+    "sourceHash": "295341a"
   },
   "fileExplorer.clipboard.stillPasting": "Файл из буфера обмена все еще создается. Том медленно отвечает.",
   "@fileExplorer.clipboard.stillPasting": {
@@ -873,6 +925,14 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
+  "fileExplorer.restic.copyOutWithKey": "Файлы из резервной копии можно скопировать, нажав {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "d49d631"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "Файлы из резервной копии можно скопировать командой «Скопировать».",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "7cfa21e"
+  },
   "fileExplorer.restic.snapshot.host": "Резервная копия с компьютера {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -900,6 +960,18 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Чтобы забыть пароль резервной копии, сначала откройте ее или поставьте курсор на папку «Browse snapshots» внутри нее.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.copyOutWithKeys": "Файлы из архива можно скопировать, нажав {copyKey}, или переместить, нажав {moveKey}.",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "sourceHash": "f68d0ba"
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "Файлы из архива можно скопировать, нажав {copyKey}.",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "sourceHash": "adf47d1"
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "Файлы из архива можно скопировать или переместить командами «Скопировать» и «Переместить».",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "sourceHash": "ea37784"
   },
   "fileExplorer.git.portalIntro.title": "У Cmdr есть для вас немного git-магии!",
   "@fileExplorer.git.portalIntro.title": {
@@ -961,6 +1033,18 @@
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
   },
+  "fileExplorer.git.copyOutWithKeys": "Файлы из снимка git можно скопировать, нажав {copyKey}, или переместить, нажав {moveKey}.",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "sourceHash": "12e26a2"
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "Файлы из снимка git можно скопировать, нажав {copyKey}.",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "sourceHash": "8a75857"
+  },
+  "fileExplorer.git.copyOutWithoutKey": "Файлы из снимка git можно скопировать или переместить командами «Скопировать» и «Переместить».",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "sourceHash": "a8ebbf0"
+  },
   "fileExplorer.openWith.copyRefused.tooLarge": "Размер файла {fileName} превышает {limit}. Cmdr не может открыть его в программе {appName} прямо из архива.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
     "sourceHash": "43399e6"
@@ -988,6 +1072,10 @@
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} не может открыть этот файл: это не обычный файл на вашем Mac. Нажмите {viewKey}, чтобы просмотреть его в Cmdr.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} не может открыть этот файл: это не обычный файл на вашем Mac. Чтобы просмотреть его в Cmdr, используйте команду «Просмотр».} windows {{appName} не может открыть этот файл: это не обычный файл на вашем компьютере. Чтобы просмотреть его в Cmdr, используйте команду «Просмотр».} other {{appName} не может открыть этот файл: это не обычный файл на вашем компьютере. Чтобы просмотреть его в Cmdr, используйте команду «Просмотр».}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "9d98d51"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Не удалось прочитать файл {fileName} для открытия в {appName}. Проверьте подключение диска и попробуйте еще раз.",
   "@fileExplorer.openWith.copyRefused.unreadable": {
@@ -1623,6 +1711,10 @@
   "fileExplorer.quickLookHint.quickView": "В Cmdr Быстрый просмотр открывается клавишами <key></key>. (Кстати, <key></key> работает и в Finder!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.quickViewRebound": "В Cmdr Быстрый просмотр открывается клавишами <key></key>.",
+  "@fileExplorer.quickLookHint.quickViewRebound": {
+    "sourceHash": "27e87e5"
   },
   "fileExplorer.quickLookHint.enterOpens": "Клавиша <enter></enter> также открывает файлы в приложении по умолчанию.",
   "@fileExplorer.quickLookHint.enterOpens": {

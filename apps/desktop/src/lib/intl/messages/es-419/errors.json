@@ -958,5 +958,29 @@
   "errors.write.smbEncryptionUnavailable.suggestion": "Comprueba la configuración de cifrado SMB del servidor.",
   "@errors.write.smbEncryptionUnavailable.suggestion": {
     "sourceHash": "099b329"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Esto puede pasar cuando cambian los permisos de la carpeta del basurero, por ejemplo, después de pasarte a un Mac nuevo. Aun así puedes eliminar los elementos permanentemente con {deletePermanentlyKey}.} windows {Esto puede pasar cuando cambian los permisos de la Papelera de reciclaje, por ejemplo, después de pasarte a un PC nuevo. Aun así puedes eliminar los elementos permanentemente con {deletePermanentlyKey}.} other {Esto puede pasar cuando cambian los permisos de la carpeta del basurero, por ejemplo, después de pasarte a una computadora nueva. Aun así puedes eliminar los elementos permanentemente con {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "9249cbc"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {Esto puede pasar cuando cambian los permisos de la carpeta del basurero, por ejemplo, después de pasarte a un Mac nuevo. Aun así puedes eliminar los elementos con el comando Eliminar permanentemente.} windows {Esto puede pasar cuando cambian los permisos de la Papelera de reciclaje, por ejemplo, después de pasarte a un PC nuevo. Aun así puedes eliminar los elementos con el comando Eliminar permanentemente.} other {Esto puede pasar cuando cambian los permisos de la carpeta del basurero, por ejemplo, después de pasarte a una computadora nueva. Aun así puedes eliminar los elementos con el comando Eliminar permanentemente.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "b74021f"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Algunos lugares no tienen Papelera de reciclaje propia, como las carpetas en la nube y la mayoría de las unidades de red. Aun así puedes eliminar los elementos permanentemente con {deletePermanentlyKey}.} other {Algunos lugares no tienen basurero propio, como las carpetas en la nube y la mayoría de las unidades de red. Aun así puedes eliminar los elementos permanentemente con {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "d22dae3"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Algunos lugares no tienen Papelera de reciclaje propia, como las carpetas en la nube y la mayoría de las unidades de red. Aun así puedes eliminar los elementos con el comando Eliminar permanentemente.} other {Algunos lugares no tienen basurero propio, como las carpetas en la nube y la mayoría de las unidades de red. Aun así puedes eliminar los elementos con el comando Eliminar permanentemente.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "4fde9e6"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Si de verdad necesitas un nombre nuevo, macOS tiene una forma cuidadosa de hacerlo en “Usuarios y grupos”. Eso sí, no es un {renameKey} rápido.} windows {Windows no tiene ninguna forma integrada y segura de renombrar la carpeta de inicio, así que mejor déjala como está.} other {Si de verdad necesitas un nombre nuevo, quien administre esta computadora puede hacerlo con usermod, con cuidado y con la sesión iniciada como otro usuario. Eso sí, no es un {renameKey} rápido.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "2c2c649"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {Si de verdad necesitas un nombre nuevo, macOS tiene una forma cuidadosa de hacerlo en “Usuarios y grupos”. Eso sí, no es un cambio de nombre rápido.} windows {Windows no tiene ninguna forma integrada y segura de renombrar la carpeta de inicio, así que mejor déjala como está.} other {Si de verdad necesitas un nombre nuevo, quien administre esta computadora puede hacerlo con usermod, con cuidado y con la sesión iniciada como otro usuario. Eso sí, no es un cambio de nombre rápido.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "c7e9abd"
   }
 }

@@ -79,6 +79,22 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
+  "viewer.binaryWarning.bodyWithKeys": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName> в обычном виде. Для этого закройте окно и нажмите <quickLookKey></quickLookKey>, чтобы открыть Быстрый просмотр, или нажмите <openKey></openKey> (либо дважды нажмите на файл), чтобы открыть его в приложении по умолчанию.",
+  "@viewer.binaryWarning.bodyWithKeys": {
+    "sourceHash": "fd5cfb7"
+  },
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName> в обычном виде. Для этого закройте окно и нажмите <quickLookKey></quickLookKey>, чтобы открыть Быстрый просмотр, или дважды нажмите на файл, чтобы открыть его в приложении по умолчанию.",
+  "@viewer.binaryWarning.bodyWithQuickLookKey": {
+    "sourceHash": "ed8bdcf"
+  },
+  "viewer.binaryWarning.bodyWithOpenKey": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName> в обычном виде. Для этого закройте окно и нажмите <openKey></openKey> (либо дважды нажмите на файл), чтобы открыть его в приложении по умолчанию.",
+  "@viewer.binaryWarning.bodyWithOpenKey": {
+    "sourceHash": "b219b68"
+  },
+  "viewer.binaryWarning.bodyWithoutKeys": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName> в обычном виде. Для этого закройте окно и дважды нажмите на файл, чтобы открыть его в приложении по умолчанию.",
+  "@viewer.binaryWarning.bodyWithoutKeys": {
+    "sourceHash": "610efa6"
+  },
   "viewer.binaryWarning.dismiss": "Закрыть",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
@@ -361,6 +377,10 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
+  "viewer.copyDialog.confirmMessage": "Вставка большого объема текста может замедлить другие приложения. Попробуйте сузить выделение с помощью поиска ({combo}).",
+  "@viewer.copyDialog.confirmMessage": {
+    "sourceHash": "084b649"
+  },
   "viewer.copyDialog.cancel": "Отменить",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -372,6 +392,10 @@
   "viewer.copyDialog.copy": "Скопировать",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseMessage": "Это больше, чем позволяет ограничение буфера обмена (100 МБ). Попробуйте найти нужное с помощью поиска ({combo}) или сохраните выделение как файл.",
+  "@viewer.copyDialog.refuseMessage": {
+    "sourceHash": "75d10d8"
   },
   "viewer.reloadToast.grew": "Файл изменен на диске. Перезагрузить?",
   "@viewer.reloadToast.grew": {

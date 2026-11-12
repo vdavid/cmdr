@@ -28,7 +28,8 @@ const visibleTextOf = (key: string, value: string): string => visibleText(key, v
  * the same letters mean something that doesn't fork, with the reason.
  */
 const SPAIN_ONLY: readonly { term: string; pattern: RegExp; except?: readonly string[] }[] = [
-  { term: 'papelera → basurero', pattern: /(?<!\p{L})papelera/iu },
+  // Windows' `Papelera de reciclaje` is the Recycle Bin's name in Latin American Windows too, so it doesn't fork.
+  { term: 'papelera → basurero', pattern: /(?<!\p{L})papelera(?! de reciclaje)/iu },
   { term: 'añadir → agregar', pattern: /(?<!\p{L})añ[aá]d/iu },
   {
     term: 'Ajustes → Configuración',

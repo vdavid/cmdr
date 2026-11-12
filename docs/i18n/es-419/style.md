@@ -116,6 +116,8 @@ is evidence, not a verdict. Considered and deliberately NOT forked:
 - **`previsualizar` → `vista previa`.** es-419 keeps 49 `previsualiz-`; Cmdr uses the verb in three prose keys.
 - **Pin: `fijar` vs `anclar`.** Apple writes `Anclar pestaña` in both es and es-419, so it's an `es` question, not a
   regional one (`docs/i18n/es/review-queue.md`).
+- **Windows' `Papelera de reciclaje`.** The Recycle Bin keeps that name in Latin American Windows too, so a `windows`
+  branch saying it doesn't fork; the overlay test's `papelera` pattern skips it.
 - **Move: `Transferir al basurero`.** Finder es-419 says `Transferir`; Cmdr keeps `es`'s `Mover` for every move.
 - **The cloud badges and the git branch pill** (`fileExplorer.fileIcon.sync.*`, `fileExplorer.git.repoChip.*`). Finder
   es_419 names the iCloud badges exactly as es does (`Cargando`, `Descargando`, AXBADGE7/8, pile, 2026-10-15), and the

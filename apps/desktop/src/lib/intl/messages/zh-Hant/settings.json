@@ -486,6 +486,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "當剪貼板中存放的是文字、影像或 PDF，而不是已複製的檔案時，在資料夾中按 {combo} 的行為。",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "當剪貼板中存放的是文字、影像或 PDF，而不是已複製的檔案時，在資料夾中貼上的行為。",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "什麼都不做",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -529,6 +537,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {複製、移動和移到垃圾桶時略過確認}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {「複製」和「移動」會立刻把檔案放到另一個窗格，「刪除」會直接移到資源回收筒，不會先問你。這樣有點冒險，因為按一個鍵就馬上執行。永久刪除一定會先問你。} other {「複製」和「移動」會立刻把檔案放到另一個窗格，「刪除」會直接移到垃圾桶，不會先問你。這樣有點冒險，因為按一個鍵就馬上執行。永久刪除一定會先問你。}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {確認, 確認對話框, 對話方塊, 詢問, 複製, 移動, 垃圾桶, 刪除, 略過, 跳過, 點擊}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1086,6 +1098,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "前往最新下載項目",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "用全域快速鍵，從任何 App 跳至你最近的下載項目。需要「完全取用磁碟」權限。",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "快速鍵, 熱鍵, 全域, 下載, 下載項目, 跳轉, 跳到, 前往, 最新",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1732,6 +1748,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {Cmdr 的檔案檢視器顯示的是原始位元組（非文字內容採用有損的 UTF-8）。當你開啟影像、PDF、封存檔或其他二進位檔案時，檢視器會顯示一條紅色橫幅，說明快速查看或用對應的 App 開啟很可能才是你想要的。開啟這一項（或按一下橫幅中的「不要再顯示這個警告」）就能永久關閉這個警告。} windows {Cmdr 的檔案檢視器顯示的是原始位元組（非文字內容採用有損的 UTF-8）。當你開啟影像、PDF、封存檔或其他二進位檔案時，檢視器會顯示一條紅色橫幅，說明用對應的 App 開啟很可能才是你想要的。開啟這一項（或選取橫幅中的「不要再顯示這個警告」）就能永久關閉這個警告。} other {Cmdr 的檔案檢視器顯示的是原始位元組（非文字內容採用有損的 UTF-8）。當你開啟影像、PDF、封存檔或其他二進位檔案時，檢視器會顯示一條紅色橫幅，說明用對應的 App 開啟很可能才是你想要的。開啟這一項（或按一下橫幅中的「不要再顯示這個警告」）就能永久關閉這個警告。}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "檢視器, 二進位, 影像, 原始, 警告, 橫幅, 快速查看",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1739,6 +1759,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "不顯示空白鍵的快速查看提示",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr 用空白鍵切換檔案選取，用 {combo} 開啟快速查看（Finder 用單獨的空白鍵開啟快速查看）。每次你在檔案列表中按空白鍵，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或按一下提示中的「不要再顯示」）就能永久關閉這個提醒。",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr 用空白鍵切換檔案選取，而 Finder 用空白鍵開啟快速查看。每次你在檔案列表中按空白鍵，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或按一下提示中的「不要再顯示」）就能永久關閉這個提醒。",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "快速查看, 預覽, 空白鍵, 提示, 提醒",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1783,6 +1811,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "每個窗格記住的已關閉分頁數量",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "為「重新開啟已關閉的分頁」（{combo}）在每個窗格保留多少個最近關閉的分頁。數值越高，能往回重新開啟的歷史越多。數值越低，越早釋出記憶體。只適用於在目前工作階段中關閉的分頁。",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "為「重新開啟已關閉的分頁」在每個窗格保留多少個最近關閉的分頁。數值越高，能往回重新開啟的歷史越多。數值越低，越早釋出記憶體。只適用於在目前工作階段中關閉的分頁。",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "分頁, 標籤頁, 已關閉, 重新開啟, 歷史記錄, 還原, 窗格",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1851,6 +1887,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "在窗格中輸入時",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {「跳至」會把游標移到最符合的項目上。「篩選」只顯示名稱包含你輸入內容的檔案和資料夾，就像 Total Commander 的快速篩選。按 Delete（⌫）鍵可修改，按 Esc 鍵可清除。} other {「跳至」會把游標移到最符合的項目上。「篩選」只顯示名稱包含你輸入內容的檔案和資料夾，就像 Total Commander 的快速篩選。按 Backspace 鍵可修改，按 Esc 鍵可清除。}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "跳至",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2223,6 +2263,14 @@
   "settings.behavior.textEditorHintSeen.label": "不顯示文字編輯器提示",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "第一次用 {combo} 在預設編輯器中開啟檔案，而你還安裝了其他編輯器時，Cmdr 會提一下你可以換一個。關閉這一項，就能再看一次這個提示。",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "Cmdr 第一次在預設編輯器中開啟檔案，而你還安裝了其他編輯器時，會提一下你可以換一個。關閉這一項，就能再看一次這個提示。",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "編輯, 編輯器, 文字, 應用程式, 提示",
   "@settings.behavior.textEditorHintSeen.keywords": {

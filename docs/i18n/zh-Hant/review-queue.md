@@ -81,3 +81,12 @@ worth keeping).
   leaves the `清除篩選` frame and names what goes. Screen readers only.
 - **`要透過連結連到另一個伺服器`** (`*.linkTargetUnreachable*`): the plain rendering of "sits behind a link"; `連結`
   alone may read as a web link to someone who doesn't know DFS.
+- **Windows-only shortcut-conflict labels** (`shortcuts.system.*`): `安全畫面` (`securityScreen`, from Microsoft's zh-TW
+  keyboard-shortcuts page, which is machine-translated) and `視窗的系統功能表` (`windowMenu`, from the TBX's system
+  menu) are tentative, since Windows' UI never titles either. `「開始」功能表` keeps Windows' own `功能表` against the
+  `選單` ruling (key `exceptions` in `menu`). A Windows zh-TW reader should confirm all three.
+- **`對應的 App` for "the associated app"** (`viewer.binaryWarning.body*`,
+  `settings.fileViewer.suppressBinaryWarning.explanation`): kept from the shipped banner; Windows' own file-association
+  word is `關聯`, so the Windows branch may want `關聯的 App`.
+- **`這可不是按一下 {renameKey} 就能搞定的事` / `隨手改個名`** (`errors.write.homeFolderRename.suggestion.isHome*`): the
+  light joke, rephrased to drop the shipped `那麼簡單` (style: no 簡單). Confirm the tone lands.

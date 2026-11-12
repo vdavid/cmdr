@@ -325,6 +325,10 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {A Cmdr ezt a fájlt még nem tudja másik appban megnyitni, mert nem szokásos fájl a Macen. Tekintsd meg inkább a Megtekintés paranccsal.} windows {A Cmdr ezt a fájlt még nem tudja másik appban megnyitni, mert nem szokásos fájl a gépen. Tekintsd meg inkább a Megtekintés paranccsal.} other {A Cmdr ezt a fájlt még nem tudja másik appban megnyitni, mert nem szokásos fájl a számítógépen. Tekintsd meg inkább a Megtekintés paranccsal.}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "b281a7e"
+  },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {„{fileName}” nem nyílt meg. A macOS nem találta meg a fájlt, vagy nincs olyan app, amely megnyitná.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
@@ -713,25 +717,57 @@
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "ba69ee7"
   },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "A vágólap nem tud fájlokat átvinni erről az eszközről. Másold át őket inkább a Másolás paranccsal.",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "sourceHash": "ec9f6a4"
+  },
   "fileExplorer.clipboard.moveFromDevice": "A vágólap nem tud fájlokat átvinni erről az eszközről. Helyezd át őket ezzel: {moveKey}.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "A vágólap nem tud fájlokat átvinni erről az eszközről. Helyezd át őket inkább az Áthelyezés paranccsal.",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "sourceHash": "3e1a8d6"
   },
   "fileExplorer.clipboard.copyFromServer": "A vágólap nem tud fájlokat átvinni erről a szerverről. Másold át őket ezzel: {copyKey}.",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "12cb39f"
   },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "A vágólap nem tud fájlokat átvinni erről a szerverről. Másold át őket inkább a Másolás paranccsal.",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "sourceHash": "a0b8b71"
+  },
   "fileExplorer.clipboard.moveFromServer": "A vágólap nem tud fájlokat átvinni erről a szerverről. Helyezd át őket ezzel: {moveKey}.",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "A vágólap nem tud fájlokat átvinni erről a szerverről. Helyezd át őket inkább az Áthelyezés paranccsal.",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "sourceHash": "958bc4b"
   },
   "fileExplorer.clipboard.copyFromUnknown": "Ezek a fájlok nem kerülhetnek a vágólapra. Másold át őket ezzel: {copyKey}.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "7aaabdb"
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "Ezek a fájlok nem kerülhetnek a vágólapra. Másold át őket inkább a Másolás paranccsal.",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "sourceHash": "eef58a6"
+  },
   "fileExplorer.clipboard.moveFromUnknown": "Ezek a fájlok nem kerülhetnek a vágólapra. Helyezd át őket ezzel: {moveKey}.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
+  },
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "Ezek a fájlok nem kerülhetnek a vágólapra. Helyezd át őket inkább az Áthelyezés paranccsal.",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "sourceHash": "9148b09"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {A Cmdr ezt a fájlt még nem tudja megnyitni szerkesztésre, mert nem szokásos fájl a Macen. Megtekintéshez nyomd meg ezt a billentyűt: {viewKey}.} windows {A Cmdr ezt a fájlt még nem tudja megnyitni szerkesztésre, mert nem szokásos fájl a gépen. Megtekintéshez nyomd meg ezt a billentyűt: {viewKey}.} other {A Cmdr ezt a fájlt még nem tudja megnyitni szerkesztésre, mert nem szokásos fájl a számítógépen. Megtekintéshez nyomd meg ezt a billentyűt: {viewKey}.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "6bc5d46"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {A Cmdr ezt a fájlt még nem tudja megnyitni szerkesztésre, mert nem szokásos fájl a Macen. Tekintsd meg inkább a Megtekintés paranccsal.} windows {A Cmdr ezt a fájlt még nem tudja megnyitni szerkesztésre, mert nem szokásos fájl a gépen. Tekintsd meg inkább a Megtekintés paranccsal.} other {A Cmdr ezt a fájlt még nem tudja megnyitni szerkesztésre, mert nem szokásos fájl a számítógépen. Tekintsd meg inkább a Megtekintés paranccsal.}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "4572115"
   },
   "fileExplorer.edit.hint": "A fájl ebben nyílt meg: {app}. Legközelebb másik szerkesztőt szeretnél? Válaszd ki a Beállításokban.",
   "@fileExplorer.edit.hint": {
@@ -769,9 +805,25 @@
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "Erre az eszközre a Másolás paranccsal másolhatsz fájlokat.",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "sourceHash": "06a1d58"
+  },
   "fileExplorer.clipboard.copyToServer": "Erre a szerverre ezzel másolhatsz fájlokat: {copyKey}.",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "Erre a szerverre a Másolás paranccsal másolhatsz fájlokat.",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "sourceHash": "1229e3a"
+  },
+  "fileExplorer.clipboard.noFilesWithKey": "Nincs fájl a vágólapon. Előbb másolj fájlokat ezzel: {combo}.",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "sourceHash": "1eb6ea9"
+  },
+  "fileExplorer.clipboard.noFiles": "Nincs fájl a vágólapon. Előbb másolj fájlokat.",
+  "@fileExplorer.clipboard.noFiles": {
+    "sourceHash": "295341a"
   },
   "fileExplorer.clipboard.stillPasting": "Egy fájl létrehozása a vágólap tartalmából még folyamatban van. A kötet lassan válaszol.",
   "@fileExplorer.clipboard.stillPasting": {
@@ -873,6 +925,14 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
+  "fileExplorer.restic.copyOutWithKey": "Ha fájlokat szeretnél kimásolni egy biztonsági mentésből, használd ezt: {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "d49d631"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "Ha fájlokat szeretnél kimásolni egy biztonsági mentésből, használd a Másolás parancsot.",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "7cfa21e"
+  },
   "fileExplorer.restic.snapshot.host": "Biztonsági mentés innen: {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -900,6 +960,18 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Ha egy biztonsági mentés jelszavát szeretnéd elfelejteni, előbb nyisd meg a biztonsági mentést, vagy állítsd a kurzort a „Browse snapshots” mappájára.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.copyOutWithKeys": "Ha fájlokat szeretnél kimásolni egy archívumból, másoláshoz használd ezt: {copyKey}, áthelyezéshez ezt: {moveKey}.",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "sourceHash": "f68d0ba"
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "Ha fájlokat szeretnél kimásolni egy archívumból, használd ezt: {copyKey}.",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "sourceHash": "adf47d1"
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "Ha fájlokat szeretnél kimásolni egy archívumból, használd a Másolás vagy az Áthelyezés parancsot.",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "sourceHash": "ea37784"
   },
   "fileExplorer.git.portalIntro.title": "A Cmdr tartogat neked egy kis git-varázslatot!",
   "@fileExplorer.git.portalIntro.title": {
@@ -961,6 +1033,18 @@
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
   },
+  "fileExplorer.git.copyOutWithKeys": "Ha fájlokat szeretnél kimásolni egy git-pillanatképből, másoláshoz használd ezt: {copyKey}, áthelyezéshez ezt: {moveKey}.",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "sourceHash": "12e26a2"
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "Ha fájlokat szeretnél kimásolni egy git-pillanatképből, használd ezt: {copyKey}.",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "sourceHash": "8a75857"
+  },
+  "fileExplorer.git.copyOutWithoutKey": "Ha fájlokat szeretnél kimásolni egy git-pillanatképből, használd a Másolás vagy az Áthelyezés parancsot.",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "sourceHash": "a8ebbf0"
+  },
   "fileExplorer.openWith.copyRefused.tooLarge": "„{fileName}” nagyobb {limit} méretnél, ezért a Cmdr nem tudja megnyitni az archívumból ezzel: {appName}.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
     "sourceHash": "43399e6"
@@ -988,6 +1072,10 @@
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} nem tudja megnyitni ezt a fájlt, mert nem szokásos fájl a Macen. A Cmdrben ezzel a billentyűvel tekintheted meg: {viewKey}.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} nem tudja megnyitni ezt a fájlt, mert nem szokásos fájl a Macen. Tekintsd meg inkább a Cmdrben a Megtekintés paranccsal.} windows {{appName} nem tudja megnyitni ezt a fájlt, mert nem szokásos fájl a gépen. Tekintsd meg inkább a Cmdrben a Megtekintés paranccsal.} other {{appName} nem tudja megnyitni ezt a fájlt, mert nem szokásos fájl a számítógépen. Tekintsd meg inkább a Cmdrben a Megtekintés paranccsal.}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "9d98d51"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "„{fileName}” beolvasása nem sikerült, így nem nyitható meg ezzel: {appName}. Ellenőrizd, hogy a fájlt tároló meghajtó még csatlakozik, aztán próbáld újra.",
   "@fileExplorer.openWith.copyRefused.unreadable": {
@@ -1624,6 +1712,10 @@
   "fileExplorer.quickLookHint.quickView": "A Cmdrben a Gyorsnézetet a <key></key> billentyűvel nyithatod meg. (A <key></key> egyébként a Finderben is működik!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.quickViewRebound": "A Cmdrben ezzel a billentyűvel nyithatod meg a Gyorsnézetet: <key></key>.",
+  "@fileExplorer.quickLookHint.quickViewRebound": {
+    "sourceHash": "27e87e5"
   },
   "fileExplorer.quickLookHint.enterOpens": "Az <enter></enter> billentyűvel is megnyithatod a fájlokat az alapértelmezett appban.",
   "@fileExplorer.quickLookHint.enterOpens": {

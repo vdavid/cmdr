@@ -2573,8 +2573,7 @@
     "description": "Third line of the Finder-convert toast, shown when the user bound Quick Look to a key other than ⇧Space: the sentence of \"fileExplorer.quickLookHint.quickView\" without its \"works in Finder, too\" aside, which holds for ⇧Space only. \"Quick Look\" is the macOS preview feature (use the name your language’s macOS shows). The <key></key> tag wraps an inline chip showing the user’s Quick Look key.",
     "placeholders": {
       "key": "marks where the Quick Look shortcut chip is shown inline; carries no translatable text"
-    },
-    "screenshot": "quick-look-hint.png"
+    }
   },
   "fileExplorer.quickLookHint.enterOpens": "You can also use <enter></enter> to open files in the default app.",
   "@fileExplorer.quickLookHint.enterOpens": {

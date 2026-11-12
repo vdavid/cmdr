@@ -49,6 +49,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Nombre del producto; se mantiene igual en todos los idiomas (do-not-translate), aquí como título del grupo de atajos del panel Ask Cmdr."
   },
+  "shortcuts.scope.searchDialog": "Buscar y Seleccionar archivos",
+  "@shortcuts.scope.searchDialog": {
+    "sourceHash": "eec03a0"
+  },
   "shortcuts.scope.favoritesMenu": "Menú de favoritos",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"
@@ -105,6 +109,18 @@
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
+  "shortcuts.conflict.takenByWindows": "Windows suele usar {combo} ({label}), así que puede que nunca llegue a Cmdr.",
+  "@shortcuts.conflict.takenByWindows": {
+    "sourceHash": "4858bee"
+  },
+  "shortcuts.conflict.takenByLinuxDesktops": "En {desktops}, el escritorio suele reservarse {combo}, así que puede que nunca llegue a Cmdr. Puedes liberar esa combinación en los ajustes de teclado de tu escritorio.",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "sourceHash": "11d35a9"
+  },
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} abre el menú {menu} de la barra de menús de Cmdr, así que no llegará a este comando salvo que haya un diálogo abierto.",
+  "@shortcuts.conflict.opensMenuBarMenu": {
+    "sourceHash": "314244c"
+  },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
     "sourceHash": "fca7aa8",
@@ -159,6 +175,38 @@
   "shortcuts.system.forceQuit": "Forzar salida",
   "@shortcuts.system.forceQuit": {
     "sourceHash": "6f38ccf"
+  },
+  "shortcuts.system.switchingApps": "cambiar de app",
+  "@shortcuts.system.switchingApps": {
+    "sourceHash": "0113527"
+  },
+  "shortcuts.system.cyclingWindows": "recorrer las ventanas",
+  "@shortcuts.system.cyclingWindows": {
+    "sourceHash": "a2a7a18"
+  },
+  "shortcuts.system.windowMenu": "el menú de la ventana",
+  "@shortcuts.system.windowMenu": {
+    "sourceHash": "50afaf9"
+  },
+  "shortcuts.system.closingWindow": "cerrar la ventana",
+  "@shortcuts.system.closingWindow": {
+    "sourceHash": "82fe00f"
+  },
+  "shortcuts.system.startMenu": "el menú Inicio",
+  "@shortcuts.system.startMenu": {
+    "sourceHash": "b05bc4f"
+  },
+  "shortcuts.system.taskManager": "Administrador de tareas",
+  "@shortcuts.system.taskManager": {
+    "sourceHash": "58d65c2"
+  },
+  "shortcuts.system.securityScreen": "la pantalla de seguridad",
+  "@shortcuts.system.securityScreen": {
+    "sourceHash": "5fdc327"
+  },
+  "shortcuts.system.inputMethodToggle": "activar o desactivar un método de entrada",
+  "@shortcuts.system.inputMethodToggle": {
+    "sourceHash": "fe0b8a0"
   },
   "shortcuts.section.title": "Atajos de teclado",
   "@shortcuts.section.title": {
@@ -256,6 +304,18 @@
   "shortcuts.section.resetAll": "Restablecer todo a los valores por omisión",
   "@shortcuts.section.resetAll": {
     "sourceHash": "a04d9be"
+  },
+  "shortcuts.section.resetAllConfirm": "¿Restablecer todos los atajos de teclado a sus valores por omisión?",
+  "@shortcuts.section.resetAllConfirm": {
+    "sourceHash": "3fc5074"
+  },
+  "shortcuts.section.resetAllConfirmTitle": "Restablecer atajos de teclado",
+  "@shortcuts.section.resetAllConfirmTitle": {
+    "sourceHash": "5dac863"
+  },
+  "shortcuts.section.resetAllConfirmButton": "Restablecer",
+  "@shortcuts.section.resetAllConfirmButton": {
+    "sourceHash": "daee760"
   },
   "shortcuts.window.title": "Atajos de teclado",
   "@shortcuts.window.title": {

@@ -1393,6 +1393,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "Törölj inkább véglegesen a Végleges törlés paranccsal.",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "A kapcsolat megszakadt",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1684,6 +1688,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {A Finder mégis át tudja helyezni őket, miután elkérte a rendszergazdai jelszót.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Ez akkor fordulhat elő, ha megváltoznak a Kuka mappájának engedélyei, például egy új Macre való átállás után. Az elemeket viszont véglegesen törölheted ezzel: {deletePermanentlyKey}.} windows {Ez akkor fordulhat elő, ha megváltoznak a Lomtár engedélyei, például egy új gépre való átállás után. Az elemeket viszont véglegesen törölheted ezzel: {deletePermanentlyKey}.} other {Ez akkor fordulhat elő, ha megváltoznak a Kuka mappájának engedélyei, például egy új számítógépre való átállás után. Az elemeket viszont véglegesen törölheted ezzel: {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {Ez akkor fordulhat elő, ha megváltoznak a Kuka mappájának engedélyei, például egy új Macre való átállás után. Az elemeket viszont törölheted a Végleges törlés paranccsal.} windows {Ez akkor fordulhat elő, ha megváltoznak a Lomtár engedélyei, például egy új gépre való átállás után. Az elemeket viszont törölheted a Végleges törlés paranccsal.} other {Ez akkor fordulhat elő, ha megváltoznak a Kuka mappájának engedélyei, például egy új számítógépre való átállás után. Az elemeket viszont törölheted a Végleges törlés paranccsal.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Néhány helyen nincs saját Lomtár, például a felhős mappákban és a legtöbb hálózati meghajtón. Az elemeket viszont véglegesen törölheted ezzel: {deletePermanentlyKey}.} other {Néhány helyen nincs saját Kuka, például a felhős mappákban és a legtöbb hálózati meghajtón. Az elemeket viszont véglegesen törölheted ezzel: {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Néhány helyen nincs saját Lomtár, például a felhős mappákban és a legtöbb hálózati meghajtón. Az elemeket viszont törölheted a Végleges törlés paranccsal.} other {Néhány helyen nincs saját Kuka, például a felhős mappákban és a legtöbb hálózati meghajtón. Az elemeket viszont törölheted a Végleges törlés paranccsal.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Nézd meg lent a technikai részleteket, hogy mit jelzett a macOS.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2016,6 +2036,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Ezt nem nevezheted át: <code>{path}</code>, mert benne van a saját mappád, és a Mac pontosan ezen az útvonalon számít rá.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Ha tényleg új név kell, a macOS-ben erre van egy óvatos módszer a „Felhasználók és csoportok” beállításoknál. Csak hát ez nem egy gyors {renameKey}.} windows {A Windowsban nincs biztonságos, beépített módja az átnevezésének, ezért jobb, ha marad, ahogy van.} other {Ha tényleg új név kell, egy rendszergazda óvatosan megoldhatja a usermod paranccsal, egy másik felhasználóként bejelentkezve. Csak hát ez nem egy gyors {renameKey}.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {Ha tényleg új név kell, a macOS-ben erre van egy óvatos módszer a „Felhasználók és csoportok” beállításoknál. Csak hát ez nem egy gyors átnevezés.} windows {A Windowsban nincs biztonságos, beépített módja az átnevezésének, ezért jobb, ha marad, ahogy van.} other {Ha tényleg új név kell, egy rendszergazda óvatosan megoldhatja a usermod paranccsal, egy másik felhasználóként bejelentkezve. Csak hát ez nem egy gyors átnevezés.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Inkább valamit belül nevezz át, vagy hagyd ezt békén. Többet tart a hátán, mint gondolnád.",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

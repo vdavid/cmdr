@@ -159,6 +159,10 @@
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"
   },
+  "menu.file.quit": "{platform, select, windows {退出 Cmdr} other {退出 Cmdr}}",
+  "@menu.file.quit": {
+    "sourceHash": "af7cf85"
+  },
   "menu.file.quickLook": "快速查看",
   "@menu.file.quickLook": {
     "sourceHash": "f5616ce"
@@ -294,6 +298,10 @@
   "menu.view.calculateFolderSizes": "计算文件夹大小",
   "@menu.view.calculateFolderSizes": {
     "sourceHash": "d2a83da"
+  },
+  "menu.view.fullScreen": "全屏",
+  "@menu.view.fullScreen": {
+    "sourceHash": "674fe2a"
   },
   "menu.view.commandPalette": "命令面板…",
   "@menu.view.commandPalette": {

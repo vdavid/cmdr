@@ -484,6 +484,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "{combo} làm gì trong thư mục khi bảng nhớ tạm chứa văn bản, hình ảnh hoặc PDF thay vì tệp đã sao chép.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "Việc dán làm gì trong thư mục khi bảng nhớ tạm chứa văn bản, hình ảnh hoặc PDF thay vì tệp đã sao chép.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Không làm gì",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -527,6 +535,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Bỏ qua xác nhận khi sao chép, di chuyển và chuyển vào thùng rác}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Lệnh Sao chép và Di chuyển chạy ngay sang khung bên kia, còn lệnh Xóa chuyển vào Thùng rác mà không hỏi. Hơi mạo hiểm, vì chỉ một lần nhấn phím là thao tác chạy ngay. Xóa vĩnh viễn thì luôn hỏi trước.} other {Lệnh Sao chép và Di chuyển chạy ngay sang khung bên kia, còn lệnh Xóa chuyển vào thùng rác mà không hỏi. Hơi mạo hiểm, vì chỉ một lần nhấn phím là thao tác chạy ngay. Xóa vĩnh viễn thì luôn hỏi trước.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {xác nhận, hộp thoại, hỏi, sao chép, di chuyển, thùng rác, xóa, bỏ qua, lượt bấm}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1084,6 +1096,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Đi tới bản tải về mới nhất",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Nhảy đến mục tải về gần đây nhất của bạn từ bất kỳ ứng dụng nào bằng một phím tắt toàn hệ thống. Cần quyền truy cập đầy đủ vào ổ đĩa.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "phím tắt, tổ hợp phím, toàn cục, tải về, bản tải về, nhảy tới, đi tới, mới nhất",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1730,6 +1746,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {Trình xem tệp của Cmdr hiển thị byte thô (với UTF-8 có mất mát cho nội dung không phải văn bản). Khi bạn mở một hình ảnh, PDF, tệp nén hoặc tệp nhị phân khác, trình xem sẽ hiển thị một biểu ngữ đỏ giải thích rằng có lẽ bạn muốn dùng Xem nhanh hoặc mở tệp bằng ứng dụng tương ứng. Bật mục này (hoặc bấm “Không hiển thị cảnh báo này nữa” trên biểu ngữ) để ẩn hẳn cảnh báo.} windows {Trình xem tệp của Cmdr hiển thị byte thô (với UTF-8 có mất mát cho nội dung không phải văn bản). Khi bạn mở một hình ảnh, PDF, tệp nén hoặc tệp nhị phân khác, trình xem sẽ hiển thị một biểu ngữ đỏ giải thích rằng có lẽ bạn muốn mở tệp bằng ứng dụng tương ứng. Bật mục này (hoặc chọn “Không hiển thị cảnh báo này nữa” trên biểu ngữ) để ẩn hẳn cảnh báo.} other {Trình xem tệp của Cmdr hiển thị byte thô (với UTF-8 có mất mát cho nội dung không phải văn bản). Khi bạn mở một hình ảnh, PDF, tệp nén hoặc tệp nhị phân khác, trình xem sẽ hiển thị một biểu ngữ đỏ giải thích rằng có lẽ bạn muốn mở tệp bằng ứng dụng tương ứng. Bật mục này (hoặc bấm “Không hiển thị cảnh báo này nữa” trên biểu ngữ) để ẩn hẳn cảnh báo.}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "trình xem, nhị phân, hình ảnh, thô, xem thô, cảnh báo, biểu ngữ, xem nhanh",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1737,6 +1757,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "Ẩn gợi ý Xem nhanh bằng phím dấu cách",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr dùng phím dấu cách để bật/tắt chọn tệp và {combo} cho Xem nhanh (Finder chỉ dùng phím dấu cách cho Xem nhanh). Mỗi lần bạn nhấn phím dấu cách trong danh sách tệp, Cmdr hiển thị một đoạn nhắc ngắn về khác biệt này. Bật mục này (hoặc bấm “Không hiển thị lại” trên thông báo nhỏ) để ẩn hẳn lời nhắc.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr dùng phím dấu cách để bật/tắt chọn tệp, còn Finder dùng phím này cho Xem nhanh. Mỗi lần bạn nhấn phím dấu cách trong danh sách tệp, Cmdr hiển thị một đoạn nhắc ngắn về khác biệt này. Bật mục này (hoặc bấm “Không hiển thị lại” trên thông báo nhỏ) để ẩn hẳn lời nhắc.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "xem nhanh, xem trước, phím dấu cách, dấu cách, gợi ý, thông báo, lời nhắc",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1781,6 +1809,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Số tab đã đóng cần nhớ cho mỗi khung",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "Số tab vừa đóng được giữ lại cho mỗi khung để dùng với “Mở lại tab đã đóng” ({combo}). Giá trị cao hơn cho phép bạn mở lại xa hơn trong lịch sử; giá trị thấp hơn giải phóng bộ nhớ sớm hơn. Chỉ áp dụng cho các tab đóng trong phiên hiện tại.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "Số tab vừa đóng được giữ lại cho mỗi khung để dùng với “Mở lại tab đã đóng”. Giá trị cao hơn cho phép bạn mở lại xa hơn trong lịch sử; giá trị thấp hơn giải phóng bộ nhớ sớm hơn. Chỉ áp dụng cho các tab đóng trong phiên hiện tại.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tab, đã đóng, mở lại, lịch sử, hoàn tác, khung",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1849,6 +1885,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "Khi bạn gõ trong khung",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {Nhảy tới đưa con trỏ tới tên khớp nhất. Lọc chỉ hiển thị các tệp và thư mục có tên chứa những gì bạn gõ, giống bộ lọc nhanh của Total Commander; phím Delete (⌫) sửa bộ lọc và Esc xóa bộ lọc.} other {Nhảy tới đưa con trỏ tới tên khớp nhất. Lọc chỉ hiển thị các tệp và thư mục có tên chứa những gì bạn gõ, giống bộ lọc nhanh của Total Commander; phím Backspace sửa bộ lọc và Esc xóa bộ lọc.}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Nhảy tới",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2222,6 +2262,14 @@
   "settings.behavior.textEditorHintSeen.label": "Ẩn gợi ý về trình soạn thảo văn bản",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "Lần đầu {combo} mở một tệp trong trình soạn thảo mặc định trong khi máy còn cài trình soạn thảo khác, Cmdr sẽ cho biết bạn có thể chọn trình soạn thảo khác. Tắt mục này để xem lại gợi ý một lần nữa.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "Lần đầu Cmdr mở một tệp trong trình soạn thảo mặc định trong khi máy còn cài trình soạn thảo khác, Cmdr sẽ cho biết bạn có thể chọn trình soạn thảo khác. Tắt mục này để xem lại gợi ý một lần nữa.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "sửa, chỉnh sửa, soạn thảo, văn bản, ứng dụng, gợi ý, thông báo nhỏ",
   "@settings.behavior.textEditorHintSeen.keywords": {

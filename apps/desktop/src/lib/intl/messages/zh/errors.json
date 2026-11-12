@@ -1392,6 +1392,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "改用“彻底删除”命令。",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "连接已中断",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1683,6 +1687,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder 问你要管理员密码之后，还是可以移动它们。} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {如果废纸篓文件夹的权限变了，就可能出现这种情况，比如换到新的 Mac 之后。你还是可以用 {deletePermanentlyKey} 把这些项目彻底删除。} windows {如果回收站的权限变了，就可能出现这种情况，比如换到新的电脑之后。你还是可以用 {deletePermanentlyKey} 把这些项目彻底删除。} other {如果回收站文件夹的权限变了，就可能出现这种情况，比如换到新的电脑之后。你还是可以用 {deletePermanentlyKey} 把这些项目彻底删除。}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {如果废纸篓文件夹的权限变了，就可能出现这种情况，比如换到新的 Mac 之后。你还是可以用“彻底删除”命令把这些项目删掉。} windows {如果回收站的权限变了，就可能出现这种情况，比如换到新的电脑之后。你还是可以用“彻底删除”命令把这些项目删掉。} other {如果回收站文件夹的权限变了，就可能出现这种情况，比如换到新的电脑之后。你还是可以用“彻底删除”命令把这些项目删掉。}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {有些位置没有自己的回收站，比如云端文件夹和大多数网络驱动器。你还是可以用 {deletePermanentlyKey} 把这些项目彻底删除。} other {有些位置没有自己的废纸篓，比如云端文件夹和大多数网络驱动器。你还是可以用 {deletePermanentlyKey} 把这些项目彻底删除。}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {有些位置没有自己的回收站，比如云端文件夹和大多数网络驱动器。你还是可以用“彻底删除”命令把这些项目删掉。} other {有些位置没有自己的废纸篓，比如云端文件夹和大多数网络驱动器。你还是可以用“彻底删除”命令把这些项目删掉。}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {查看下方的技术详情，看看 macOS 报告了什么。} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2015,6 +2035,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {你不能重命名 <code>{path}</code>，因为你的个人文件夹就在里面，而你的 Mac 指望在这个确切的路径上找到它。} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {如果你真的需要换个名字，macOS 在“用户与群组”里有一套稳妥的做法。不过，这可不是按一下 {renameKey} 那么简单。} windows {Windows 没有安全的内置方法给它改名，所以最好就让它保持原样。} other {如果你真的需要换个名字，管理员可以用另一个用户登录，再用 usermod 小心地改。不过，这可不是按一下 {renameKey} 那么简单。}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {如果你真的需要换个名字，macOS 在“用户与群组”里有一套稳妥的做法。不过，这可不是随手改名那么简单。} windows {Windows 没有安全的内置方法给它改名，所以最好就让它保持原样。} other {如果你真的需要换个名字，管理员可以用另一个用户登录，再用 usermod 小心地改。不过，这可不是随手改名那么简单。}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "不如给里面的东西改名，或者干脆别动这个文件夹。它撑起的东西比看上去多。",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

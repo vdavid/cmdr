@@ -487,6 +487,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "Ce que fait {combo} dans un dossier quand le presse-papiers contient du texte, une image ou un PDF au lieu de fichiers copiés.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "Ce que fait le collage dans un dossier quand le presse-papiers contient du texte, une image ou un PDF au lieu de fichiers copiés.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Ne rien faire",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -530,6 +538,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Ignorer la confirmation pour copier, déplacer et placer dans la corbeille}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {« Copier » et « Déplacer » agissent aussitôt vers l’autre panneau, et « Supprimer » déplace les éléments vers la Corbeille sans rien demander. Un peu risqué, puisqu’une seule touche suffit à agir. Supprimer définitivement demande toujours une confirmation.} other {« Copier » et « Déplacer » agissent aussitôt vers l’autre panneau, et « Supprimer » place les éléments dans la corbeille sans rien demander. Un peu risqué, puisqu’une seule touche suffit à agir. Supprimer définitivement demande toujours une confirmation.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {confirmer, confirmation, boîte de dialogue, dialogue, demander, copier, déplacer, corbeille, supprimer, ignorer, sauter, clics}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1088,6 +1100,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Aller au dernier téléchargement",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Allez à votre téléchargement le plus récent depuis n’importe quelle app avec un raccourci global. Nécessite l’accès complet au disque.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "raccourci, raccourci clavier, global, téléchargement, téléchargements, sauter, aller à, dernier",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1739,6 +1755,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {La visionneuse de fichiers de Cmdr affiche les octets bruts (avec un UTF-8 avec perte pour le contenu non textuel). Quand vous ouvrez une image, un PDF, une archive ou un autre fichier binaire, la visionneuse affiche une bannière rouge expliquant que Coup d’œil ou l’ouverture dans l’application associée est probablement ce que vous vouliez. Activez ceci (ou cliquez sur « Ne plus afficher cet avertissement » dans la bannière) pour masquer l’avertissement définitivement.} windows {La visionneuse de fichiers de Cmdr affiche les octets bruts (avec un UTF-8 avec perte pour le contenu non textuel). Quand vous ouvrez une image, un PDF, une archive ou un autre fichier binaire, la visionneuse affiche une bannière rouge expliquant que l’ouverture dans l’application associée est probablement ce que vous vouliez. Activez ceci (ou sélectionnez « Ne plus afficher cet avertissement » dans la bannière) pour masquer l’avertissement définitivement.} other {La visionneuse de fichiers de Cmdr affiche les octets bruts (avec un UTF-8 avec perte pour le contenu non textuel). Quand vous ouvrez une image, un PDF, une archive ou un autre fichier binaire, la visionneuse affiche une bannière rouge expliquant que l’ouverture dans l’application associée est probablement ce que vous vouliez. Activez ceci (ou cliquez sur « Ne plus afficher cet avertissement » dans la bannière) pour masquer l’avertissement définitivement.}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "visionneuse, binaire, image, brut, avertissement, bannière, coup d’œil, masquer",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1746,6 +1766,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "Masquer l’astuce Coup d’œil de la touche Espace",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr utilise Espace pour sélectionner ou désélectionner un fichier et {combo} pour Coup d’œil (le Finder utilise Espace seul pour Coup d’œil). Chaque fois que vous appuyez sur Espace dans la liste des fichiers, Cmdr affiche un rappel d’un paragraphe sur cette différence. Activez ceci (ou cliquez sur « Ne plus afficher » dans la notification) pour masquer le rappel définitivement.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr utilise Espace pour sélectionner ou désélectionner un fichier, alors que le Finder l’utilise pour Coup d’œil. Chaque fois que vous appuyez sur Espace dans la liste des fichiers, Cmdr affiche un rappel d’un paragraphe sur cette différence. Activez ceci (ou cliquez sur « Ne plus afficher » dans la notification) pour masquer le rappel définitivement.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "coup d’œil, aperçu, espace, barre d’espace, astuce, conseil, avis, rappel, masquer",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1790,6 +1818,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Nombre d’onglets fermés à mémoriser par panneau",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "Combien d’onglets récemment fermés conserver par panneau pour « Rouvrir l’onglet fermé » ({combo}). Des valeurs plus élevées vous laissent rouvrir plus loin dans l’historique ; des valeurs plus basses libèrent la mémoire plus tôt. Ne s’applique qu’aux onglets fermés dans la session en cours.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "Combien d’onglets récemment fermés conserver par panneau pour « Rouvrir l’onglet fermé ». Des valeurs plus élevées vous laissent rouvrir plus loin dans l’historique ; des valeurs plus basses libèrent la mémoire plus tôt. Ne s’applique qu’aux onglets fermés dans la session en cours.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "onglet, onglets, fermé, rouvrir, historique, annuler, panneau, mémoriser",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1858,6 +1894,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "Quand vous tapez dans un panneau",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {« Aller à » place le curseur sur la meilleure correspondance. « Filtrer » n’affiche que les fichiers et dossiers dont le nom contient ce que vous tapez, comme le filtre rapide de Total Commander ; la touche Supprimer (⌫) le modifie et Échap l’efface.} other {« Aller à » place le curseur sur la meilleure correspondance. « Filtrer » n’affiche que les fichiers et dossiers dont le nom contient ce que vous tapez, comme le filtre rapide de Total Commander ; la touche Retour arrière le modifie et Échap l’efface.}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Aller à",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2235,6 +2275,14 @@
   "settings.behavior.textEditorHintSeen.label": "Masquer l’astuce sur l’éditeur de texte",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "La première fois que {combo} ouvre un fichier dans l’éditeur par défaut alors qu’un autre éditeur est installé, Cmdr signale que vous pouvez en choisir un autre. Désactivez cette option pour revoir l’astuce.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "La première fois qu’un fichier s’ouvre dans l’éditeur par défaut alors qu’un autre éditeur est installé, Cmdr signale que vous pouvez en choisir un autre. Désactivez cette option pour revoir l’astuce.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "modifier, éditer, éditeur, texte, app, astuce, notification",
   "@settings.behavior.textEditorHintSeen.keywords": {

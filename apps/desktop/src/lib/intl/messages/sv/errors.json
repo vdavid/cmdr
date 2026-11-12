@@ -1393,6 +1393,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "Använd kommandot Radera permanent i stället.",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "Anslutningen avbröts",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1684,6 +1688,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder kan ändå flytta dem efter att ha bett om ett administratörslösenord.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Det här kan hända när behörigheterna för papperskorgsmappen ändras, till exempel efter ett byte till en ny Mac. Du kan ändå radera objekten permanent med {deletePermanentlyKey}.} windows {Det här kan hända när behörigheterna för Papperskorgen ändras, till exempel efter ett byte till en ny dator. Du kan ändå radera objekten permanent med {deletePermanentlyKey}.} other {Det här kan hända när behörigheterna för papperskorgsmappen ändras, till exempel efter ett byte till en ny dator. Du kan ändå radera objekten permanent med {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {Det här kan hända när behörigheterna för papperskorgsmappen ändras, till exempel efter ett byte till en ny Mac. Du kan ändå radera objekten med kommandot Radera permanent.} windows {Det här kan hända när behörigheterna för Papperskorgen ändras, till exempel efter ett byte till en ny dator. Du kan ändå radera objekten med kommandot Radera permanent.} other {Det här kan hända när behörigheterna för papperskorgsmappen ändras, till exempel efter ett byte till en ny dator. Du kan ändå radera objekten med kommandot Radera permanent.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Vissa ställen kan inte använda Papperskorgen, till exempel molnmappar och de flesta nätverksenheter. Du kan ändå radera objekten permanent med {deletePermanentlyKey}.} other {Vissa ställen har ingen egen papperskorg, till exempel molnmappar och de flesta nätverksenheter. Du kan ändå radera objekten permanent med {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Vissa ställen kan inte använda Papperskorgen, till exempel molnmappar och de flesta nätverksenheter. Du kan ändå radera objekten med kommandot Radera permanent.} other {Vissa ställen har ingen egen papperskorg, till exempel molnmappar och de flesta nätverksenheter. Du kan ändå radera objekten med kommandot Radera permanent.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Kolla de tekniska detaljerna nedan för vad macOS rapporterade.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2016,6 +2036,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Du kan inte byta namn på <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den på exakt den här sökvägen.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Om du verkligen behöver ett nytt namn har macOS ett försiktigt sätt att göra det i ”Användare och grupper”. Det är dock ingen snabb {renameKey}.} windows {Windows har inget säkert inbyggt sätt att byta namn på mappen, så det är bäst att låta den vara som den är.} other {Om du verkligen behöver ett nytt namn kan en administratör göra det försiktigt med usermod, inloggad som en annan användare. Det är dock ingen snabb {renameKey}.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {Om du verkligen behöver ett nytt namn har macOS ett försiktigt sätt att göra det i ”Användare och grupper”. Det är dock inget snabbt namnbyte.} windows {Windows har inget säkert inbyggt sätt att byta namn på mappen, så det är bäst att låta den vara som den är.} other {Om du verkligen behöver ett nytt namn kan en administratör göra det försiktigt med usermod, inloggad som en annan användare. Det är dock inget snabbt namnbyte.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Byt hellre namn på något där inne, eller låt den här mappen vara. Den håller uppe mer än man tror.",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {

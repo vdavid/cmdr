@@ -75,6 +75,10 @@
   "@queryUi.empty.aiBadge": {
     "sourceHash": "11fb682"
   },
+  "queryUi.empty.keysTip": "Порада: <newChip>{newCombo}</newChip> починає пошук заново, <historyChip>{historyCombo}</historyChip> показує недавні пошуки.",
+  "@queryUi.empty.keysTip": {
+    "sourceHash": "4638fd5"
+  },
   "queryUi.ai.cloudOff.body": "Хмарний ШІ вимкнено. Дозвольте його в Параметрах > ШІ, щоб користуватися цим режимом.",
   "@queryUi.ai.cloudOff.body": {
     "sourceHash": "9b76c6f"

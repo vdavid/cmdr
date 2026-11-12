@@ -1097,6 +1097,15 @@
     "note": "Auswahl aufheben and abwählen side by side is deliberate; unifying them breaks the dialog title against the menu item that opens it.",
     "sources": "macOS Finder (MenuBar.json 300488.title Auswahl aufheben); MS terminology (deselect → Abwählen, 2612123); Double Commander de (Alle abwählen)"
   },
+  "desktop": {
+    "chosen": "Schreibtisch",
+    "confidence": "high",
+    "exceptions": {
+      "shortcuts.conflict.takenByLinuxDesktops": "a Linux desktop environment (GNOME, KDE Plasma, Xfce), not the macOS Desktop folder → Arbeitsumgebung (Xfce Thunar: Xfce-Arbeitsumgebung)"
+    },
+    "forms": "the macOS Desktop folder → Schreibtisch; a Linux desktop environment is a different sense → Arbeitsumgebung (shortcuts.conflict.takenByLinuxDesktops)",
+    "sources": "macOS Finder (Localizable, PreferencesWindow: Schreibtisch); catalog onboarding.json; Xfce Thunar (Xfce-Arbeitsumgebung) for the Linux sense; MS terminology desktop → Desktop (Windows only)"
+  },
   "destination": {
     "chosen": "Ziel",
     "confidence": "high",
@@ -1244,7 +1253,8 @@
     "chosen": "bearbeiten",
     "confidence": "high",
     "exceptions": {
-      "operationLog.initiator.agentEdited": "your edits → deine Änderungen"
+      "operationLog.initiator.agentEdited": "your edits → deine Änderungen",
+      "settings.fileExplorer.typeToJump.mode.description": "editing the typed filter text → ändern (Mit der Rücktaste änderst du ihn), the same verb as the macOS branch's Löschtaste line"
     },
     "forms": "Edit server … → Server bearbeiten … (menu and palette byte-identical); editing arm → Archiv wird bearbeitet; archive edit → Archivbearbeitung",
     "sources": "standard German + MS terminology"
@@ -1348,6 +1358,13 @@
     "confidence": "high",
     "forms": "(estimated) after a figure → (geschätzt); estimated cost → geschätzte Kosten",
     "sources": "MS terminology (estimate → Schätzung, beside the quote sense Angebot); catalog (settings.askCmdr.spend.empty)"
+  },
+  "exit": {
+    "accept": ["Beenden", "beendet"],
+    "chosen": "beenden",
+    "confidence": "high",
+    "forms": "Exit Cmdr (Windows File menu) → Cmdr beenden, the same words as the Quit branch, since German Windows' File > Exit reads Beenden",
+    "sources": "MS terminology (Exit → Beenden; exit, verb → beenden)"
   },
   "extension": {
     "accept": ["Erw."],
@@ -2252,6 +2269,8 @@
     "decision": "A move that could not be confirmed",
     "exceptions": {
       "errors.write.moveNotConfirmed.suggestion": "es points back at the move named in the title; Your originals haven’t moved → liegen noch dort, wo sie waren",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "moving to a new Mac, PC, or computer is switching machines, not Cmdr's Move command → der Umstieg auf einen neuen …",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "moving to a new Mac, PC, or computer is switching machines, not Cmdr's Move command → der Umstieg auf einen neuen …",
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "putting files back where they were is zurücklegen (style digest), like its sibling bodyUndoByMovingBack",
       "operationLog.rollback.rollbackableNoticeMoveBack": "putting files back where they were is zurücklegen (style digest), like rollbackConfirm.bodyUndoByMovingBack",
       "operationLog.tree.statusMovedBack": "moved back where it came from is zurücklegen (style digest): Zurückgelegt",
@@ -2839,6 +2858,12 @@
     "forms": "label Dateivorgänge aufzeichnen; prose zeichnet … auf; the log as a feature still protokolliert (settings.operationLog.intro)",
     "sources": "catalog (settings.search.recentSearches.maxCount.description aufgezeichnet); macOS has no data-recording sense (AppKit's only Record strings are media start/stop recording)"
   },
+  "recycle-bin": {
+    "chosen": "Papierkorb",
+    "confidence": "high",
+    "forms": "masc. (des Papierkorbs, keinen eigenen Papierkorb); the Windows branch reads like the macOS one, since Windows and macOS share the word",
+    "sources": "MS terminology (Recycle Bin → Papierkorb, ProperNoun, masc.)"
+  },
   "reconnect": {
     "accept": [
       "wiederhergestellt",
@@ -3264,7 +3289,17 @@
     "sources": "macOS (Kurzbefehl)"
   },
   "show": {
-    "accept": ["angezeigt", "zeigt", "zeigen", "einblenden", "eingeblendet", "sichtbar", "erschein", "Anzeige"],
+    "accept": [
+      "angezeigt",
+      "zeigt",
+      "zeigen",
+      "einblenden",
+      "ein-/ausblenden",
+      "eingeblendet",
+      "sichtbar",
+      "erschein",
+      "Anzeige"
+    ],
     "chosen": "anzeigen",
     "confidence": "high",
     "forms": "show a column or a list → anzeigen (Favoriten anzeigen, Server anzeigen); a toggle → einblenden/ausblenden (Verborgene Dateien einblenden, Alle einblenden)",
@@ -3589,6 +3624,16 @@
     "confidence": "high",
     "sources": "macOS"
   },
+  "toggle": {
+    "accept": ["umzuschalten", "ein-/ausschalten", "ein-/ausblenden", "Umschalt", "Schalter"],
+    "chosen": "umschalten",
+    "confidence": "high",
+    "exceptions": {
+      "commands.tabTogglePin.label": "a pin toggle names its two states as the pin/unpin pair → Tab fixieren/lösen (Safari Tab fixieren)"
+    },
+    "forms": "between two named states → umschalten (Auswahl umschalten, Sortierreihenfolge umschalten); a mode on or off → ein-/ausschalten (Vollbildmodus ein-/ausschalten, Zeilenumbruch ein-/ausschalten); something shown or hidden → ein-/ausblenden (Verborgene Dateien ein-/ausblenden)",
+    "sources": "MS terminology (toggle → Umschalt-); catalog (commands.selectionToggle.label, commands.viewerToggleWordWrap.label, commands.viewShowHidden.label)"
+  },
   "token": {
     "accept": ["Tokens"],
     "chosen": "Token",
@@ -3863,6 +3908,11 @@
     "accept": ["Fenstern", "-fenster", "fenster"],
     "chosen": "Fenster",
     "confidence": "high",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "“Windows” here is the OS name, which stays verbatim, not a window",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "“Windows” here is the OS name, which stays verbatim, not a window",
+      "shortcuts.conflict.takenByWindows": "“Windows” here is the OS name, which stays verbatim, not a window"
+    },
     "forms": "invariant in the plural; Close window → Fenster schließen; the Window menu → Fenster",
     "sources": "macOS AppKit (Close Window → Fenster schließen); MS terminology (window → Fenster)"
   },

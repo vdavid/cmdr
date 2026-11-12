@@ -27,6 +27,14 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
+  "ai.toast.readyDescriptionWithKey": "Prueba a crear una carpeta nueva ({combo}) para ver sugerencias de nombres con IA.",
+  "@ai.toast.readyDescriptionWithKey": {
+    "sourceHash": "a9e1361"
+  },
+  "ai.toast.readyDescriptionWithoutKey": "Prueba a crear una carpeta nueva para ver sugerencias de nombres con IA.",
+  "@ai.toast.readyDescriptionWithoutKey": {
+    "sourceHash": "2ec8316"
+  },
   "ai.toast.gotIt": "Entendido",
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"

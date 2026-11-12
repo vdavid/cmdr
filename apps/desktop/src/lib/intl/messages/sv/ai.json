@@ -27,6 +27,14 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
+  "ai.toast.readyDescriptionWithKey": "Prova att skapa en ny mapp ({combo}) för att se AI-drivna namnförslag.",
+  "@ai.toast.readyDescriptionWithKey": {
+    "sourceHash": "a9e1361"
+  },
+  "ai.toast.readyDescriptionWithoutKey": "Prova att skapa en ny mapp för att se AI-drivna namnförslag.",
+  "@ai.toast.readyDescriptionWithoutKey": {
+    "sourceHash": "2ec8316"
+  },
   "ai.toast.gotIt": "Uppfattat",
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"

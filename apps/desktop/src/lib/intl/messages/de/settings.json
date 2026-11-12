@@ -488,6 +488,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "Was {combo} in einem Ordner bewirkt, wenn die Zwischenablage Text, ein Bild oder ein PDF statt kopierter Dateien enthält.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "sourceHash": "446ff1a"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "Was das Einsetzen in einem Ordner bewirkt, wenn die Zwischenablage Text, ein Bild oder ein PDF statt kopierter Dateien enthält.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "sourceHash": "4f57260"
+  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Nichts tun",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -531,6 +539,10 @@
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Bestätigung für „Kopieren“, „Bewegen“ und „In den Papierkorb bewegen“ überspringen}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Mit „Kopieren“ und „Bewegen“ landen Objekte sofort im anderen Bereich, und „Löschen“ bewegt sie ohne Nachfrage in den Papierkorb. Etwas riskant, denn ein Tastendruck wirkt sofort. Endgültiges Löschen fragt immer vorher nach.} other {Mit „Kopieren“ und „Bewegen“ landen Objekte sofort im anderen Bereich, und „Löschen“ bewegt sie ohne Nachfrage in den Papierkorb. Etwas riskant, denn ein Tastendruck wirkt sofort. Endgültiges Löschen fragt immer vorher nach.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {bestätigen, Bestätigung, Dialog, Nachfrage, fragen, kopieren, bewegen, verschieben, Papierkorb, löschen, überspringen, Klicks}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -1088,6 +1100,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Zum neuesten Download gehen",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Spring mit einem systemweiten Kurzbefehl aus jeder App zu deinem neuesten Download. Erfordert „Festplattenvollzugriff“.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "sourceHash": "88e2e48"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "Kurzbefehl, Tastenkombination, Tastaturkurzbefehl, global, Download, Downloads, springen, gehe zu, neuester",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1736,6 +1752,10 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
+  "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {Die Vorschau von Cmdr zeigt rohe Bytes (mit verlustbehaftetem UTF-8 für nicht-textuelle Inhalte). Wenn du ein Bild, ein PDF, ein Archiv oder eine andere Binärdatei öffnest, zeigt die Vorschau ein rotes Banner, das erklärt, dass die Übersicht oder das Öffnen in der zugehörigen App wahrscheinlich das war, was du wolltest. Schalte das ein (oder klicke im Banner auf „Diese Warnung nicht mehr anzeigen“), um die Warnung dauerhaft zu unterdrücken.} windows {Die Vorschau von Cmdr zeigt rohe Bytes (mit verlustbehaftetem UTF-8 für nicht-textuelle Inhalte). Wenn du ein Bild, ein PDF, ein Archiv oder eine andere Binärdatei öffnest, zeigt die Vorschau ein rotes Banner, das erklärt, dass das Öffnen in der zugehörigen App wahrscheinlich das war, was du wolltest. Schalte das ein (oder wähle im Banner „Diese Warnung nicht mehr anzeigen“), um die Warnung dauerhaft zu unterdrücken.} other {Die Vorschau von Cmdr zeigt rohe Bytes (mit verlustbehaftetem UTF-8 für nicht-textuelle Inhalte). Wenn du ein Bild, ein PDF, ein Archiv oder eine andere Binärdatei öffnest, zeigt die Vorschau ein rotes Banner, das erklärt, dass das Öffnen in der zugehörigen App wahrscheinlich das war, was du wolltest. Schalte das ein (oder klicke im Banner auf „Diese Warnung nicht mehr anzeigen“), um die Warnung dauerhaft zu unterdrücken.}}",
+  "@settings.fileViewer.suppressBinaryWarning.explanation": {
+    "sourceHash": "9f90a50"
+  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "Viewer, Betrachter, binär, Binärdatei, Bild, roh, Rohansicht, Warnung, Banner, Hinweis, Übersicht",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -1743,6 +1763,14 @@
   "settings.fileExplorer.suppressQuickLookHint.label": "Leertasten-Hinweis zur Übersicht unterdrücken",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr nutzt die Leertaste, um die Dateiauswahl umzuschalten, und {combo} für die Übersicht (der Finder nutzt die einfache Leertaste für die Übersicht). Jedes Mal, wenn du in der Dateiliste die Leertaste drückst, zeigt Cmdr einen kurzen Hinweis auf diesen Unterschied. Schalte das ein (oder klicke im Hinweis auf „Nicht mehr anzeigen“), um den Hinweis dauerhaft zu unterdrücken.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "sourceHash": "f78b805"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr nutzt die Leertaste, um die Dateiauswahl umzuschalten, während der Finder sie für die Übersicht nutzt. Jedes Mal, wenn du in der Dateiliste die Leertaste drückst, zeigt Cmdr einen kurzen Hinweis auf diesen Unterschied. Schalte das ein (oder klicke im Hinweis auf „Nicht mehr anzeigen“), um den Hinweis dauerhaft zu unterdrücken.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "sourceHash": "42f8704"
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "Übersicht, Vorschau, Leertaste, Hinweis, Tipp, Erinnerung, Benachrichtigung",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -1787,6 +1815,14 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Anzahl der pro Bereich gemerkten geschlossenen Tabs",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "Wie viele kürzlich geschlossene Tabs pro Bereich für „Geschlossenen Tab wieder öffnen“ ({combo}) behalten werden. Mit höheren Werten kannst du auch länger geschlossene Tabs wieder öffnen; niedrigere Werte geben den Speicher früher frei. Gilt nur für Tabs, die in der aktuellen Sitzung geschlossen wurden.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "sourceHash": "0b55c5e"
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "Wie viele kürzlich geschlossene Tabs pro Bereich für „Geschlossenen Tab wieder öffnen“ behalten werden. Mit höheren Werten kannst du auch länger geschlossene Tabs wieder öffnen; niedrigere Werte geben den Speicher früher frei. Gilt nur für Tabs, die in der aktuellen Sitzung geschlossen wurden.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "sourceHash": "9caded4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "Tab, Tabs, geschlossen, wieder öffnen, erneut öffnen, Verlauf, widerrufen, rückgängig, Bereich",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
@@ -1855,6 +1891,10 @@
   "settings.fileExplorer.typeToJump.mode.label": "Beim Tippen in einem Bereich",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {„Springen“ setzt den Cursor auf den besten Treffer. „Filtern“ zeigt nur die Dateien und Ordner an, deren Namen enthalten, was du tippst, wie der Schnellfilter von Total Commander. Mit der Löschtaste (⌫) änderst du ihn, mit der esc-Taste löschst du ihn.} other {„Springen“ setzt den Cursor auf den besten Treffer. „Filtern“ zeigt nur die Dateien und Ordner an, deren Namen enthalten, was du tippst, wie der Schnellfilter von Total Commander. Mit der Rücktaste änderst du ihn, mit der Esc-Taste löschst du ihn.}}",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "2d19407"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Springen",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
@@ -2232,6 +2272,14 @@
   "settings.behavior.textEditorHintSeen.label": "Hinweis zum Text-Editor unterdrücken",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithKey": "Wenn {combo} eine Datei zum ersten Mal im Standardeditor öffnet, während ein anderer Editor installiert ist, erwähnt Cmdr, dass du einen anderen auswählen kannst. Schalte das aus, um den Hinweis noch einmal zu sehen.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithKey": {
+    "sourceHash": "2edc690"
+  },
+  "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "Wenn Cmdr eine Datei zum ersten Mal im Standardeditor öffnet, während ein anderer Editor installiert ist, erwähnt Cmdr, dass du einen anderen auswählen kannst. Schalte das aus, um den Hinweis noch einmal zu sehen.",
+  "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {
+    "sourceHash": "4aceea3"
   },
   "settings.behavior.textEditorHintSeen.keywords": "bearbeiten, Texteditor, Textbearbeitung, App, Programm, Tipp, Mitteilung",
   "@settings.behavior.textEditorHintSeen.keywords": {

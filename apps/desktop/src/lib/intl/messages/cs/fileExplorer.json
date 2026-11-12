@@ -325,6 +325,10 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr zatím nedokáže tento soubor otevřít v jiné aplikaci, protože to není běžný soubor na vašem Macu. Zobrazíte ho příkazem „Zobrazit“.} windows {Cmdr zatím nedokáže tento soubor otevřít v jiné aplikaci, protože to není běžný soubor na vašem počítači. Zobrazíte ho příkazem „Zobrazit“.} other {Cmdr zatím nedokáže tento soubor otevřít v jiné aplikaci, protože to není běžný soubor na vašem počítači. Zobrazíte ho příkazem „Zobrazit“.}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "b281a7e"
+  },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {Soubor {fileName} se neotevřel. macOS soubor nenašel nebo ho žádná aplikace neotevře.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
@@ -713,25 +717,57 @@
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "ba69ee7"
   },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "Schránka nedokáže přenést soubory z tohoto zařízení. Zkopírujete je příkazem „Kopírovat“.",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "sourceHash": "ec9f6a4"
+  },
   "fileExplorer.clipboard.moveFromDevice": "Schránka nedokáže přenést soubory z tohoto zařízení. Přesunete je klávesou {moveKey}.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "Schránka nedokáže přenést soubory z tohoto zařízení. Přesunete je příkazem „Přesunout“.",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "sourceHash": "3e1a8d6"
   },
   "fileExplorer.clipboard.copyFromServer": "Schránka nedokáže přenést soubory z tohoto serveru. Zkopírujete je klávesou {copyKey}.",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "12cb39f"
   },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "Schránka nedokáže přenést soubory z tohoto serveru. Zkopírujete je příkazem „Kopírovat“.",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "sourceHash": "a0b8b71"
+  },
   "fileExplorer.clipboard.moveFromServer": "Schránka nedokáže přenést soubory z tohoto serveru. Přesunete je klávesou {moveKey}.",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "Schránka nedokáže přenést soubory z tohoto serveru. Přesunete je příkazem „Přesunout“.",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "sourceHash": "958bc4b"
   },
   "fileExplorer.clipboard.copyFromUnknown": "Tyto soubory nejde dát do schránky. Zkopírujete je klávesou {copyKey}.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "7aaabdb"
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "Tyto soubory nejde dát do schránky. Zkopírujete je příkazem „Kopírovat“.",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "sourceHash": "eef58a6"
+  },
   "fileExplorer.clipboard.moveFromUnknown": "Tyto soubory nejde dát do schránky. Přesunete je klávesou {moveKey}.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
+  },
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "Tyto soubory nejde dát do schránky. Přesunete je příkazem „Přesunout“.",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "sourceHash": "9148b09"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr zatím nedokáže tento soubor otevřít v editoru, protože to není běžný soubor na vašem Macu. Zobrazíte ho klávesou {viewKey}.} windows {Cmdr zatím nedokáže tento soubor otevřít v editoru, protože to není běžný soubor na vašem počítači. Zobrazíte ho klávesou {viewKey}.} other {Cmdr zatím nedokáže tento soubor otevřít v editoru, protože to není běžný soubor na vašem počítači. Zobrazíte ho klávesou {viewKey}.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "6bc5d46"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr zatím nedokáže tento soubor otevřít v editoru, protože to není běžný soubor na vašem Macu. Zobrazíte ho příkazem „Zobrazit“.} windows {Cmdr zatím nedokáže tento soubor otevřít v editoru, protože to není běžný soubor na vašem počítači. Zobrazíte ho příkazem „Zobrazit“.} other {Cmdr zatím nedokáže tento soubor otevřít v editoru, protože to není běžný soubor na vašem počítači. Zobrazíte ho příkazem „Zobrazit“.}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "4572115"
   },
   "fileExplorer.edit.hint": "Otevřeno v aplikaci {app}. Chcete příště jiný editor? Vyberte ho v Nastavení.",
   "@fileExplorer.edit.hint": {
@@ -769,9 +805,25 @@
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "Soubory na toto zařízení zkopírujete příkazem „Kopírovat“.",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "sourceHash": "06a1d58"
+  },
   "fileExplorer.clipboard.copyToServer": "Soubory na tento server zkopírujete klávesou {copyKey}.",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "Soubory na tento server zkopírujete příkazem „Kopírovat“.",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "sourceHash": "1229e3a"
+  },
+  "fileExplorer.clipboard.noFilesWithKey": "Ve schránce nejsou žádné soubory. Nejdřív soubory zkopírujte pomocí {combo}.",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "sourceHash": "1eb6ea9"
+  },
+  "fileExplorer.clipboard.noFiles": "Ve schránce nejsou žádné soubory. Nejdřív nějaké zkopírujte.",
+  "@fileExplorer.clipboard.noFiles": {
+    "sourceHash": "295341a"
   },
   "fileExplorer.clipboard.stillPasting": "Vytváření souboru ze schránky pořád probíhá. Svazek odpovídá pomalu.",
   "@fileExplorer.clipboard.stillPasting": {
@@ -873,6 +925,14 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
+  "fileExplorer.restic.copyOutWithKey": "Soubory ze zálohy zkopírujete klávesou {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "d49d631"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "Soubory ze zálohy zkopírujete příkazem „Kopírovat“.",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "7cfa21e"
+  },
   "fileExplorer.restic.snapshot.host": "Zálohováno z počítače {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -900,6 +960,18 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Pokud chcete zapomenout heslo zálohy, nejdřív zálohu otevřete, nebo dejte kurzor na její složku „Browse snapshots“.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.copyOutWithKeys": "Soubory z archivu zkopírujete klávesou {copyKey}, nebo přesunete klávesou {moveKey}.",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "sourceHash": "f68d0ba"
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "Soubory z archivu zkopírujete klávesou {copyKey}.",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "sourceHash": "adf47d1"
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "Soubory z archivu zkopírujete příkazem „Kopírovat“, nebo přesunete příkazem „Přesunout“.",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "sourceHash": "ea37784"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr pro vás má pár kouzel s gitem!",
   "@fileExplorer.git.portalIntro.title": {
@@ -961,6 +1033,18 @@
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
   },
+  "fileExplorer.git.copyOutWithKeys": "Soubory ze snímku gitu zkopírujete klávesou {copyKey}, nebo přesunete klávesou {moveKey}.",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "sourceHash": "12e26a2"
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "Soubory ze snímku gitu zkopírujete klávesou {copyKey}.",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "sourceHash": "8a75857"
+  },
+  "fileExplorer.git.copyOutWithoutKey": "Soubory ze snímku gitu zkopírujete příkazem „Kopírovat“, nebo přesunete příkazem „Přesunout“.",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "sourceHash": "a8ebbf0"
+  },
   "fileExplorer.openWith.copyRefused.tooLarge": "Soubor {fileName} je větší než {limit}, takže ho Cmdr nemůže otevřít v aplikaci {appName} přímo z archivu.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
     "sourceHash": "43399e6"
@@ -988,6 +1072,10 @@
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {Aplikace {appName} tento soubor otevřít nedokáže, protože to není běžný soubor na vašem Macu. Zobrazíte ho v Cmdru klávesou {viewKey}.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {Aplikace {appName} tento soubor otevřít nedokáže, protože to není běžný soubor na vašem Macu. Zobrazíte ho v Cmdru příkazem „Zobrazit“.} windows {Aplikace {appName} tento soubor otevřít nedokáže, protože to není běžný soubor na vašem počítači. Zobrazíte ho v Cmdru příkazem „Zobrazit“.} other {Aplikace {appName} tento soubor otevřít nedokáže, protože to není běžný soubor na vašem počítači. Zobrazíte ho v Cmdru příkazem „Zobrazit“.}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "9d98d51"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Soubor {fileName} se nepodařilo přečíst a otevřít v aplikaci {appName}. Zkontrolujte, že je jeho disk pořád připojený, a zkuste to znovu.",
   "@fileExplorer.openWith.copyRefused.unreadable": {
@@ -1625,6 +1713,10 @@
   "fileExplorer.quickLookHint.quickView": "V Cmdru otevřete Rychlý náhled zkratkou <key></key>. (Mimochodem, <key></key> funguje i ve Finderu!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.quickViewRebound": "V Cmdru otevřete Rychlý náhled zkratkou <key></key>.",
+  "@fileExplorer.quickLookHint.quickViewRebound": {
+    "sourceHash": "27e87e5"
   },
   "fileExplorer.quickLookHint.enterOpens": "Klávesou <enter></enter> můžete soubory také otevřít ve výchozí aplikaci.",
   "@fileExplorer.quickLookHint.enterOpens": {

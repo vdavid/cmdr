@@ -1301,7 +1301,10 @@
     "accept": ["Рабочий стол", "Рабочего стола", "Рабочем столе", "Рабочему столу"],
     "forms": "the folder in prose: папка «Рабочий стол»; the settings pane Desktop & Dock → Рабочий стол и Dock",
     "confidence": "high",
-    "sources": "macOS Finder MenuBar 254.title and LocalizableMerged N5 (Desktop → Рабочий стол); macOS live (Desktop & Dock → Рабочий стол и Dock)"
+    "sources": "macOS Finder MenuBar 254.title and LocalizableMerged N5 (Desktop → Рабочий стол); macOS live (Desktop & Dock → Рабочий стол и Dock)",
+    "exceptions": {
+      "shortcuts.conflict.takenByLinuxDesktops": "A Linux desktop here is a desktop environment (GNOME, KDE Plasma, Xfce): «рабочая среда», not the Desktop folder. Tentative; no pile source (review-queue.md)."
+    }
   },
   "destination": {
     "chosen": "место назначения",
@@ -3106,7 +3109,9 @@
     "exceptions": {
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says.",
       "operationLog.rollback.rollbackableNoticeMoveBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says.",
-      "operationLog.tree.statusMovedBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says. Status cell «Возвращено на место»."
+      "operationLog.tree.statusMovedBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says. Status cell «Возвращено на место».",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "“Moving to a new PC / computer” is the user changing machines («переезд на новый компьютер»), not moving files; the concept's notMatch covers only “moving to a new Mac”.",
+      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "“Moving to a new PC / computer” is the user changing machines («переезд на новый компьютер»), not moving files; the concept's notMatch covers only “moving to a new Mac”."
     }
   },
   "move-to-trash": {
@@ -4525,6 +4530,7 @@
     "sources": "TC menu: Mark → Выделение, Markierung umkehren → Инвертировать выделение, Auswahl reduzieren → Снять выделение, Auswahl temporär merken → Временно сохранить выделение; DC: Select All → Выделить всё, Selection → Выделение, Unselect mask → Снять выделение по маске; Nautilus: Select All → Выделить все, Invert Selection → Инвертировать выделение, %d item selected → Выделено %d объектов; Dolphin: Unselect All → Снять всё выделение; MS: select (mark items) → выделить, selection → выделение. Finder alone has AppKit FindPanel Select All → Выбрать все",
     "note": "Product-owner decision: Total Commander's vocabulary for marking files. Ticking operation-queue rows and picking a server, volume, or dropdown option is choose («выбрать»), listed under exceptions.",
     "exceptions": {
+      "settings.fileViewer.suppressBinaryWarning.explanation": "The windows branch's “select” is Windows' word for pressing a banner button, not marking files: «нажмите «…»», per the click ruling.",
       "commands.downloadsGoToLatest.description": "The command puts the cursor on the newest file and marks nothing: «поставить курсор на самый новый файл».",
       "commands.volumeSelect.label": "Picking a volume for the pane is choose: «Выбрать том».",
       "commands.volumeSelectByName.label": "Picking a volume by name is choose: «Выбрать том панели по имени».",
@@ -6102,10 +6108,15 @@
   },
   "window": {
     "chosen": "окно",
-    "accept": ["окн"],
-    "forms": "menu «Окно»; «Новое окно», «окно «О приложении»», «у края окна»",
+    "accept": ["окн", "окон"],
+    "forms": "menu «Окно»; «Новое окно», «окно «О приложении»», «у края окна»; gen. pl. окон («перебор окон»)",
     "confidence": "high",
-    "sources": "AppKit MenuCommands: Window → Окно; Finder LocalizableMerged: New Window → Новое окно; DC: New Window → Новое окно; Thunar: Window → Окно; TC menu: Window → Окно программы"
+    "sources": "AppKit MenuCommands: Window → Окно; Finder LocalizableMerged: New Window → Новое окно; DC: New Window → Новое окно; Thunar: Window → Окно; TC menu: Window → Окно программы",
+    "exceptions": {
+      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "The windows branch names the OS Windows, not a window; the English match is the OS name.",
+      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "The windows branch names the OS Windows, not a window; the English match is the OS name.",
+      "shortcuts.conflict.takenByWindows": "Names the OS Windows («занято Windows»), not a window; the English match is the OS name."
+    }
   },
   "wizard": {
     "chosen": "мастер",
@@ -6311,5 +6322,33 @@
     ],
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”) → персональный компьютер; Windows names This PC Этот компьютер; same noun as this-computer"
+  },
+  "exit": {
+    "chosen": "Выйти",
+    "accept": ["выйт", "выход"],
+    "forms": "Exit Cmdr → Выйти из Cmdr (an infinitive, like every Russian menu command); Windows' own File menu row says the noun «Выход»",
+    "confidence": "high",
+    "sources": "MS terminology exit → выйти (id 52276), Exit (menu item) → Выход (id 336599)"
+  },
+  "recycle-bin": {
+    "chosen": "Корзина",
+    "accept": ["Корзин"],
+    "forms": "capitalized proper noun, the same word as macOS's Trash: «в Корзину», «своей Корзины», «права доступа к Корзине»",
+    "confidence": "high",
+    "sources": "MS terminology Recycle Bin → корзина (id 100144); Russian Windows titles the desktop item «Корзина»"
+  },
+  "task-manager": {
+    "chosen": "Диспетчер задач",
+    "accept": ["диспетчер задач"],
+    "forms": "the app name, capitalized like «Мониторинг системы»: Диспетчер задач",
+    "confidence": "high",
+    "sources": "MS terminology Task Manager → диспетчер задач (id 119998); the Windows app titles itself «Диспетчер задач»"
+  },
+  "unix-group": {
+    "chosen": "группа",
+    "accept": ["групп"],
+    "forms": "the macOS pane Users & Groups → «Пользователи и группы» (в разделе «Пользователи и группы»)",
+    "confidence": "high",
+    "sources": "macOS 27 UsersGroups.appex InfoPlist.loctable CFBundleDisplayName ru «Пользователи и группы» (live bundle, 2026-11-12)"
   }
 }

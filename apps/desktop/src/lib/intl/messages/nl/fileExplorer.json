@@ -326,6 +326,10 @@
   "@fileExplorer.open.notOnThisMac": {
     "sourceHash": "66fcc50"
   },
+  "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je Mac is. Toon het in plaats daarvan met de opdracht ‘Toon’.} windows {Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je pc is. Toon het in plaats daarvan met de opdracht ‘Toon’.} other {Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je computer is. Toon het in plaats daarvan met de opdracht ‘Toon’.}}",
+  "@fileExplorer.open.notOnThisMacWithoutKey": {
+    "sourceHash": "b281a7e"
+  },
   "fileExplorer.open.didNotOpen": "{platform, select, macos {{fileName} ging niet open. macOS kon het bestand niet vinden, of geen enkele app opent het.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
   "@fileExplorer.open.didNotOpen": {
     "sourceHash": "cd95423"
@@ -716,25 +720,57 @@
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "ba69ee7"
   },
+  "fileExplorer.clipboard.copyFromDeviceWithoutKey": "Bestanden van dit apparaat kunnen niet op het klembord. Kopieer ze in plaats daarvan met de opdracht ‘Kopieer’.",
+  "@fileExplorer.clipboard.copyFromDeviceWithoutKey": {
+    "sourceHash": "ec9f6a4"
+  },
   "fileExplorer.clipboard.moveFromDevice": "Bestanden van dit apparaat kunnen niet op het klembord. Gebruik {moveKey} om ze te verplaatsen.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.moveFromDeviceWithoutKey": "Bestanden van dit apparaat kunnen niet op het klembord. Verplaats ze in plaats daarvan met de opdracht ‘Verplaats’.",
+  "@fileExplorer.clipboard.moveFromDeviceWithoutKey": {
+    "sourceHash": "3e1a8d6"
   },
   "fileExplorer.clipboard.copyFromServer": "Bestanden van deze server kunnen niet op het klembord. Gebruik {copyKey} om ze te kopiëren.",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "12cb39f"
   },
+  "fileExplorer.clipboard.copyFromServerWithoutKey": "Bestanden van deze server kunnen niet op het klembord. Kopieer ze in plaats daarvan met de opdracht ‘Kopieer’.",
+  "@fileExplorer.clipboard.copyFromServerWithoutKey": {
+    "sourceHash": "a0b8b71"
+  },
   "fileExplorer.clipboard.moveFromServer": "Bestanden van deze server kunnen niet op het klembord. Gebruik {moveKey} om ze te verplaatsen.",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.moveFromServerWithoutKey": "Bestanden van deze server kunnen niet op het klembord. Verplaats ze in plaats daarvan met de opdracht ‘Verplaats’.",
+  "@fileExplorer.clipboard.moveFromServerWithoutKey": {
+    "sourceHash": "958bc4b"
   },
   "fileExplorer.clipboard.copyFromUnknown": "Deze bestanden kunnen niet op het klembord. Gebruik {copyKey} om ze te kopiëren.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "7aaabdb"
   },
+  "fileExplorer.clipboard.copyFromUnknownWithoutKey": "Deze bestanden kunnen niet op het klembord. Kopieer ze in plaats daarvan met de opdracht ‘Kopieer’.",
+  "@fileExplorer.clipboard.copyFromUnknownWithoutKey": {
+    "sourceHash": "eef58a6"
+  },
   "fileExplorer.clipboard.moveFromUnknown": "Deze bestanden kunnen niet op het klembord. Gebruik {moveKey} om ze te verplaatsen.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "7fed360"
+  },
+  "fileExplorer.clipboard.moveFromUnknownWithoutKey": "Deze bestanden kunnen niet op het klembord. Verplaats ze in plaats daarvan met de opdracht ‘Verplaats’.",
+  "@fileExplorer.clipboard.moveFromUnknownWithoutKey": {
+    "sourceHash": "9148b09"
+  },
+  "fileExplorer.edit.notOnThisMacWithKey": "{platform, select, macos {Cmdr kan dit bestand nog niet in een editor bewerken, omdat het geen gewoon bestand op je Mac is. Druk op {viewKey} om het te tonen.} windows {Cmdr kan dit bestand nog niet in een editor bewerken, omdat het geen gewoon bestand op je pc is. Druk op {viewKey} om het te tonen.} other {Cmdr kan dit bestand nog niet in een editor bewerken, omdat het geen gewoon bestand op je computer is. Druk op {viewKey} om het te tonen.}}",
+  "@fileExplorer.edit.notOnThisMacWithKey": {
+    "sourceHash": "6bc5d46"
+  },
+  "fileExplorer.edit.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr kan dit bestand nog niet in een editor bewerken, omdat het geen gewoon bestand op je Mac is. Toon het in plaats daarvan met de opdracht ‘Toon’.} windows {Cmdr kan dit bestand nog niet in een editor bewerken, omdat het geen gewoon bestand op je pc is. Toon het in plaats daarvan met de opdracht ‘Toon’.} other {Cmdr kan dit bestand nog niet in een editor bewerken, omdat het geen gewoon bestand op je computer is. Toon het in plaats daarvan met de opdracht ‘Toon’.}}",
+  "@fileExplorer.edit.notOnThisMacWithoutKey": {
+    "sourceHash": "4572115"
   },
   "fileExplorer.edit.hint": "Geopend in {app}. Wil je de volgende keer een andere editor? Kies er een in Instellingen.",
   "@fileExplorer.edit.hint": {
@@ -772,9 +808,25 @@
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
+  "fileExplorer.clipboard.copyToDeviceWithoutKey": "Kopieer bestanden naar dit apparaat met de opdracht ‘Kopieer’.",
+  "@fileExplorer.clipboard.copyToDeviceWithoutKey": {
+    "sourceHash": "06a1d58"
+  },
   "fileExplorer.clipboard.copyToServer": "Gebruik {copyKey} om bestanden naar deze server te kopiëren.",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.copyToServerWithoutKey": "Kopieer bestanden naar deze server met de opdracht ‘Kopieer’.",
+  "@fileExplorer.clipboard.copyToServerWithoutKey": {
+    "sourceHash": "1229e3a"
+  },
+  "fileExplorer.clipboard.noFilesWithKey": "Geen bestanden op het klembord. Kopieer eerst bestanden met {combo}.",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "sourceHash": "1eb6ea9"
+  },
+  "fileExplorer.clipboard.noFiles": "Geen bestanden op het klembord. Kopieer eerst bestanden.",
+  "@fileExplorer.clipboard.noFiles": {
+    "sourceHash": "295341a"
   },
   "fileExplorer.clipboard.stillPasting": "Er wordt nog een bestand aangemaakt met de klembordinhoud. Het volume reageert traag.",
   "@fileExplorer.clipboard.stillPasting": {
@@ -876,6 +928,14 @@
   "@fileExplorer.readOnly.resticMessage": {
     "sourceHash": "68f4b46"
   },
+  "fileExplorer.restic.copyOutWithKey": "Om bestanden uit een back-up te kopiëren, gebruik je {copyKey}.",
+  "@fileExplorer.restic.copyOutWithKey": {
+    "sourceHash": "d49d631"
+  },
+  "fileExplorer.restic.copyOutWithoutKey": "Om bestanden uit een back-up te kopiëren, gebruik je de opdracht ‘Kopieer’.",
+  "@fileExplorer.restic.copyOutWithoutKey": {
+    "sourceHash": "7cfa21e"
+  },
   "fileExplorer.restic.snapshot.host": "Back-up van {host}",
   "@fileExplorer.restic.snapshot.host": {
     "sourceHash": "eecc25c"
@@ -904,6 +964,18 @@
   "fileExplorer.restic.forgetPassword.noBackup": "Om het wachtwoord van een back-up te vergeten, open je eerst de back-up of zet je de cursor op de map ‘Browse snapshots’ erin.",
   "@fileExplorer.restic.forgetPassword.noBackup": {
     "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.copyOutWithKeys": "Om bestanden uit een archief te halen, gebruik je {copyKey} om te kopiëren of {moveKey} om te verplaatsen.",
+  "@fileExplorer.archive.copyOutWithKeys": {
+    "sourceHash": "f68d0ba"
+  },
+  "fileExplorer.archive.copyOutWithCopyKey": "Om bestanden uit een archief te kopiëren, gebruik je {copyKey}.",
+  "@fileExplorer.archive.copyOutWithCopyKey": {
+    "sourceHash": "adf47d1"
+  },
+  "fileExplorer.archive.copyOutWithoutKey": "Om bestanden uit een archief te halen, gebruik je de opdracht ‘Kopieer’ of ‘Verplaats’.",
+  "@fileExplorer.archive.copyOutWithoutKey": {
+    "sourceHash": "ea37784"
   },
   "fileExplorer.git.portalIntro.title": "Cmdr heeft wat git-magie voor je!",
   "@fileExplorer.git.portalIntro.title": {
@@ -965,6 +1037,18 @@
   "@fileExplorer.git.status.conflicted": {
     "sourceHash": "916a464"
   },
+  "fileExplorer.git.copyOutWithKeys": "Om bestanden uit een git-momentopname te halen, gebruik je {copyKey} om te kopiëren of {moveKey} om te verplaatsen.",
+  "@fileExplorer.git.copyOutWithKeys": {
+    "sourceHash": "12e26a2"
+  },
+  "fileExplorer.git.copyOutWithCopyKey": "Om bestanden uit een git-momentopname te kopiëren, gebruik je {copyKey}.",
+  "@fileExplorer.git.copyOutWithCopyKey": {
+    "sourceHash": "8a75857"
+  },
+  "fileExplorer.git.copyOutWithoutKey": "Om bestanden uit een git-momentopname te halen, gebruik je de opdracht ‘Kopieer’ of ‘Verplaats’.",
+  "@fileExplorer.git.copyOutWithoutKey": {
+    "sourceHash": "a8ebbf0"
+  },
   "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} is groter dan {limit}, dus Cmdr kan het bestand niet vanuit het archief in {appName} openen.",
   "@fileExplorer.openWith.copyRefused.tooLarge": {
     "sourceHash": "43399e6"
@@ -992,6 +1076,10 @@
   "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je Mac is. Druk op {viewKey} om het in Cmdr te tonen.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
     "sourceHash": "4e5520c"
+  },
+  "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je Mac is. Toon het in plaats daarvan in Cmdr met de opdracht ‘Toon’.} windows {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je pc is. Toon het in plaats daarvan in Cmdr met de opdracht ‘Toon’.} other {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je computer is. Toon het in plaats daarvan in Cmdr met de opdracht ‘Toon’.}}",
+  "@fileExplorer.openWith.notOnThisMacWithoutKey": {
+    "sourceHash": "9d98d51"
   },
   "fileExplorer.openWith.copyRefused.unreadable": "Kon {fileName} niet lezen om in {appName} te openen. Controleer of de schijf nog is aangesloten en probeer het dan opnieuw.",
   "@fileExplorer.openWith.copyRefused.unreadable": {
@@ -1633,6 +1721,10 @@
   "fileExplorer.quickLookHint.quickView": "In Cmdr open je de snelle weergave met <key></key>. (<key></key> werkt trouwens ook in Finder!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.quickViewRebound": "In Cmdr open je de snelle weergave met <key></key>.",
+  "@fileExplorer.quickLookHint.quickViewRebound": {
+    "sourceHash": "27e87e5"
   },
   "fileExplorer.quickLookHint.enterOpens": "Je kunt ook <enter></enter> gebruiken om bestanden in de standaardapp te openen.",
   "@fileExplorer.quickLookHint.enterOpens": {

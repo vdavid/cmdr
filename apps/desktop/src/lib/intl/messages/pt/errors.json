@@ -1393,6 +1393,10 @@
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
+  "errors.write.trashNotSupported.suggestionWithoutKey": "Use o comando “Apagar permanentemente”.",
+  "@errors.write.trashNotSupported.suggestionWithoutKey": {
+    "sourceHash": "f2f4572"
+  },
   "errors.write.connectionInterrupted.title": "Conexão interrompida",
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
@@ -1684,6 +1688,22 @@
   "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {O Finder ainda consegue movê-los depois de pedir uma senha de administrador.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Isso pode acontecer quando as permissões da pasta do Lixo mudam, por exemplo, depois de passar para um Mac novo. Você ainda pode apagar os itens permanentemente com {deletePermanentlyKey}.} windows {Isso pode acontecer quando as permissões da Lixeira mudam, por exemplo, depois de passar para um PC novo. Você ainda pode apagar os itens permanentemente com {deletePermanentlyKey}.} other {Isso pode acontecer quando as permissões da pasta da Lixeira mudam, por exemplo, depois de passar para um computador novo. Você ainda pode apagar os itens permanentemente com {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
+    "sourceHash": "0025847"
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "{platform, select, macos {Isso pode acontecer quando as permissões da pasta do Lixo mudam, por exemplo, depois de passar para um Mac novo. Você ainda pode apagar os itens com o comando “Apagar permanentemente”.} windows {Isso pode acontecer quando as permissões da Lixeira mudam, por exemplo, depois de passar para um PC novo. Você ainda pode apagar os itens com o comando “Apagar permanentemente”.} other {Isso pode acontecer quando as permissões da pasta da Lixeira mudam, por exemplo, depois de passar para um computador novo. Você ainda pode apagar os itens com o comando “Apagar permanentemente”.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": {
+    "sourceHash": "e92ef8a"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": "{platform, select, windows {Alguns lugares não têm uma Lixeira própria, entre eles as pastas na nuvem e a maioria dos discos de rede. Você ainda pode apagar os itens permanentemente com {deletePermanentlyKey}.} other {Alguns lugares não têm um Lixo próprio, entre eles as pastas na nuvem e a maioria dos discos de rede. Você ainda pode apagar os itens permanentemente com {deletePermanentlyKey}.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithKey": {
+    "sourceHash": "705fa19"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": "{platform, select, windows {Alguns lugares não têm uma Lixeira própria, entre eles as pastas na nuvem e a maioria dos discos de rede. Você ainda pode apagar os itens com o comando “Apagar permanentemente”.} other {Alguns lugares não têm um Lixo próprio, entre eles as pastas na nuvem e a maioria dos discos de rede. Você ainda pode apagar os itens com o comando “Apagar permanentemente”.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
+    "sourceHash": "d582f73"
   },
   "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Veja os detalhes técnicos abaixo para saber o que o macOS informou.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
@@ -2016,6 +2036,14 @@
   "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Você não pode renomear <code>{path}</code> porque a sua pasta pessoal está lá dentro, e o seu Mac espera encontrá-la exatamente neste caminho.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Se você precisa mesmo de um nome novo, o macOS tem um jeito cuidadoso de fazer isso em “Usuários e Grupos”. Só que não é um {renameKey} rapidinho.} windows {O Windows não tem um jeito seguro e nativo de renomear essa pasta, então é melhor deixá-la como está.} other {Se você precisa mesmo de um nome novo, um administrador pode fazer isso com cuidado usando usermod, com a sessão iniciada como outro usuário. Só que não é um {renameKey} rapidinho.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
+    "sourceHash": "770e18d"
+  },
+  "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {Se você precisa mesmo de um nome novo, o macOS tem um jeito cuidadoso de fazer isso em “Usuários e Grupos”. Só que não é uma renomeação rapidinha.} windows {O Windows não tem um jeito seguro e nativo de renomear essa pasta, então é melhor deixá-la como está.} other {Se você precisa mesmo de um nome novo, um administrador pode fazer isso com cuidado usando usermod, com a sessão iniciada como outro usuário. Só que não é uma renomeação rapidinha.}}",
+  "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {
+    "sourceHash": "f3a1c07"
   },
   "errors.write.homeFolderRename.suggestion.holdsHome": "Renomeie algo lá dentro, ou deixe esta pasta quieta. Ela segura mais coisa do que parece.",
   "@errors.write.homeFolderRename.suggestion.holdsHome": {
