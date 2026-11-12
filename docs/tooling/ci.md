@@ -525,10 +525,10 @@ Command Line Tools lack the x86_64 `swiftCompatibility*` libs), which the M1 has
 neither can vouch for the other. The `rust` filter carries `apps/desktop/finder-extension/**` too, so a Swift-only
 change starts the lane at all.
 
-Gotcha for any second gate on a commit (a dispatched run, a merge queue): GitHub's ruleset reads only the newest run of
-a workflow on a commit. A `ci.yml` dispatch's green `CI OK` was shadowed by that commit's PR run, which started three
-seconds later and reported no `CI OK`, and the push was refused with "Required status check "CI OK" is expected"
-(2026-10-21). Separate workflows don't shadow each other, as `codeql.yml` and `ci.yml` show.
+Gotcha for any second run of `ci.yml` on a commit (a dispatched run, a light run, a merge queue): GitHub's ruleset reads
+only the newest run of a workflow on a commit, so a newer run without a green `CI OK` hides an older green one. Separate
+workflows don't shadow each other, as `codeql.yml` and `ci.yml` show. Evidence and what `pnpm land` does about it:
+`scripts/land/DETAILS.md` § Gotcha: GitHub reads only the newest run on a commit.
 
 Last, it runs `desktop-rust-module-cycles`, whose baseline is a macOS module graph (`scripts/check/checks/DETAILS.md` §
 "Rust module cycles"), so it can't move to ubuntu. It first installs the cargo-modules version the check pins;
@@ -754,12 +754,13 @@ every lane the change needs runs or skips as a verified marker (§ Lane markers)
 
 - **The gate's name is the line `main` holds.** `ci-ok`'s `name:` is `CI OK` on a land run and `CI light` on a light
   one, so a light run's green gate is a check the ruleset doesn't accept. GitHub creates a job's check run only when the
-  job is queued, after its `needs` finished, with the name already evaluated, and a newer run whose gate is `CI light`
-  doesn't shadow an older green `CI OK` on the same SHA. Verified on throwaway PR #976 (2026-11-05) against a temporary
-  ruleset requiring `PROBE OK` on `refs/heads/probe-ruleset/**`: no gate check run existed while its `needs` job ran; a
-  push of a SHA carrying only a green `PROBE light` was refused with
-  `GH013 ... Required status check "PROBE OK" is expected`; a SHA with a green `PROBE OK` and a newer light re-run was
-  accepted. The real gate on PRs #977/#978: `docs/notes/ci-light-runs-2026-11-05.md`.
+  job is queued, after its `needs` finished, with the name already evaluated. Verified on throwaway PR #976 (2026-11-05)
+  against a temporary ruleset requiring `PROBE OK` on `refs/heads/probe-ruleset/**`: no gate check run existed while its
+  `needs` job ran; a push of a SHA carrying only a green `PROBE light` was refused with
+  `GH013 ... Required status check "PROBE OK" is expected`; a SHA whose newest run carried a green `PROBE OK` was
+  accepted after an OLDER light run's re-run finished later. A NEWER light run does hide a green `CI OK`
+  (`scripts/land/DETAILS.md` § Gotcha: GitHub reads only the newest run on a commit). The real gate on PRs #977/#978:
+  `docs/notes/ci-light-runs-2026-11-05.md`.
 - **Never a skipped `CI OK`**: GitHub counts a skipped required check as passing, and a skipped job does get a check run
   (`Full run (run_all)` reads `skipped` on every PR). The gate runs on `always()`, so its name is always the evaluated
   one. A failed `changes` on a pull request names it `CI light`, red.

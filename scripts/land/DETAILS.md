@@ -101,6 +101,12 @@ are never landed as they are, and each one used to pay the macOS lane's ~34 min 
   this head, or its run never started), it takes the label off and on again. A PR this land opens carries only
   `claude-created` (`prCreateArgs`), so it gets the label here like any other: one `gh pr edit --add-label`, one
   `labeled` land run (§ Gotcha: never two labels on `gh pr create`).
+- **The label goes on after the runs this land started are listed** (`runsToAwait`, `nextAwait`, `awaitStartedRuns`), so
+  the label's land run is the newest run on the head (§ Gotcha: GitHub reads only the newest run on a commit). A push to
+  an open PR starts one run (`synchronize`), a new PR two (`opened`, and `labeled` for `claude-created`); a head origin
+  already had starts none, so nothing waits. The first run gets `appearWithin` (none means a conflict, and the label
+  would start none either), a new PR's second `burstWithin` (30 s). A push while the label is already on needs no wait:
+  its payload carries the label.
 - **`-no-wait` drops the label before it pushes** (`dropLandLabel`), so a milestone push after an earlier land stays
   light. A failed removal stops before the push, which would otherwise run every lane.
 - **Waiting reads land runs only** (`landRuns`): a run titled `Light: ` (`ci.yml`'s `run-name`) never reports `CI OK`,
@@ -108,17 +114,63 @@ are never landed as they are, and each one used to pay the macOS lane's ~34 min 
   title that lies only makes the wait follow the wrong run: a light run finished without `CI OK` reads red, never green.
 - **Re-runs keep their mode** (a re-run keeps its event payload), so `gh run rerun --failed` on a land run is a land
   run. A newer push while the label is on is a land run too, which is what the conflict rebase needs.
-- **A light run that took the land run's slot gets it back** (`supplantedLandRun`, `slotRetaker`). GitHub can deliver
-  the label's `labeled` event before the push's `synchronize`; the push's run then reads a payload without the label,
-  starts light, and, newer in the PR's concurrency group, cancels the land run (PR #1010, 2026-11-05: land run at
-  23:39:32Z, light run at 23:39:33Z). So when the newest land run is cancelled and a light run on the head is no older,
-  the wait re-runs the land run (once per attempt; the re-run is a land run and cancels the light one) and keeps
-  waiting. A light run older than the cancelled land run means a person cancelled it: that stays red.
+- **A land run with a newer run beside it gets a fresh one** (`needsFreshRun`, `slotRetaker`, `freshLandRun`): § Gotcha:
+  GitHub reads only the newest run on a commit.
 - **`-record N`** opens the record PR the same way and asks the same way; its tree is `main`'s, so it still goes green
   in about a minute.
-- Unit-tested (`TestNextLandAsk`, `TestCIVerdictIgnoresLightRuns`, `TestSupplantedLandRun`,
-  `TestPRCreateArgsCarryOnlyTheAgentLabel`); the GitHub side on throwaway PR #978
-  (`docs/notes/ci-light-runs-2026-11-05.md`).
+- Unit-tested (`TestNextLandAsk`, `TestCIVerdictIgnoresLightRuns`, `TestNeedsFreshRun`,
+  `TestSlotRetakerAsksOncePerHidingRun`, `TestRunsToAwait`, `TestNextAwait`, `TestPRCreateArgsCarryOnlyTheAgentLabel`);
+  the GitHub side on throwaway PR #978 (`docs/notes/ci-light-runs-2026-11-05.md`).
+
+## Gotcha: GitHub reads only the newest run on a commit
+
+Gotcha: `main`'s CI ruleset takes `CI OK` from the newest run of `ci.yml` on the commit. A newer run without a green
+`CI OK` (a light run, a cancelled run) hides an older green one, and the push is refused with
+`GH013 ... Required status check "CI OK" is expected`, however often the older run is re-run: a re-run stays in its
+run's check suite. Issue #1127.
+
+The evidence (read with `gh api` on 2026-11-12 unless it says otherwise):
+
+- **PR #1116, commit `30ac144c45d4`** (2026-11-12): pushed about 05:19:48Z (when the other apps' check suites on it were
+  created), labelled `land` 05:19:50Z. The label's land run (43160662638, suite 116877169706) and the push's light run
+  (43160663212, suite 116877171389) were both created 05:19:53Z, the light one with the higher ID, and it cancelled the
+  land run. The land run was re-run to green (attempts 2 and 3, `CI OK` success at 05:36:49Z and 05:38:38Z, GitHub
+  Actions app 15368); the light run's suite held one `CI light` failure and no `CI OK`. Three pushes of that SHA to
+  `main` were refused (the lead's account in #1127; a refusal leaves nothing to read back). GraphQL's
+  `statusCheckRollup` on the commit lists that `CI OK` as `SUCCESS` with `isRequired: true`, so the rollup isn't what a
+  push is checked against. An amended commit (one run) landed.
+- **A `ci.yml` dispatch's green `CI OK`** was refused the same way while that commit's PR run, started three seconds
+  later, had reported no `CI OK` (seen 2026-10-21, not re-read).
+- **The other direction**: probe commit `a01bfb33` (2026-11-05) was accepted with a green `PROBE OK` in its newest run
+  after an OLDER light run's re-run finished later (`docs/notes/ci-light-runs-2026-11-05.md`).
+- **No head landed the other way**: of the last 1,000 `pull_request` runs of `ci.yml`, two heads had a green land run
+  behind a newer light run (PR #1116's and PR #1010's `c6d5cf3027b3`, 2026-11-05), and neither landed as it was.
+
+Inferred, since GitHub documents none of it and probing needs a ruleset: that "newest" means the newest run (check
+suite) of the workflow, by creation, whatever its state; and that an unrelated label's run (it reports `CI light` in a
+group of its own, `docs/tooling/ci.md` § Light runs and land runs) hides a `CI OK` like any other. `land` treats every
+newer run as hiding.
+
+How a light run ends up newer: the events of one burst (a push and the label seconds apart, or a new PR's `opened` and
+labels) start their runs in no fixed order (#1116: the push's run came after the label's, though the push came first; PR
+#982: five runs in one second). A run made from a payload without the label runs light, and in the PR's concurrency
+group it also cancels the land run.
+
+So `land`:
+
+- **Keeps it from happening**: the label goes on only after the runs it started itself are listed (§ Decision: ask for a
+  land run), so the label's run is made last.
+- **Never pushes on a hidden green** (`needsFreshRun`): while it waits, a land run that's green, or cancelled, with a
+  newer run on the head (`hiddenBy`, any run: `byAge`) gets replaced by a fresh one. `freshLandRun` takes the label off
+  and on again: one `labeled` event, one new land run, the newest. Its lanes skip on the tree that already passed
+  (`verified` in `ci.yml`) or on their markers, so a hidden green costs about a minute. A land run still going isn't
+  replaced until it's green, so its lanes aren't thrown away. One ask per hiding run (`slotRetaker`); a fresh run that
+  isn't listed within `successorWithin` ends the wait (`errSlotLost`) with what to run. A cancelled run with nothing
+  newer was stopped by a person: red, as before.
+- **Says so when origin refuses anyway** (`errMainRefused`, `landRefused`): the `main` push reads `--porcelain` like the
+  branch push, and an origin-side refusal of a green head prints origin's words, the fresh-run command, and (when the
+  commit's ID may change: no `-merge`, no `-record`) `git commit --amend --no-edit`, which is what got #1116 in.
+- **Re-running a hidden land run by hand is harmless**: once it's green, the wait asks for the fresh run.
 
 ## Gotcha: never two labels on `gh pr create`
 
@@ -378,8 +430,8 @@ an hour, more than one per land run, so it'd rebuild and re-run forever (the rea
 needs no rebuild (§ Decision: merge a green PR onto a moved `main`).
 
 - **The CI wait reads only the PR's runs** (`ciRunsPath`): the release commit also has its release's full dispatch run,
-  and the CI ruleset reads only the newest run on a commit, which is the PR's once it starts. Landing on the older green
-  run would be refused while the PR run goes.
+  which the PR's run hides once it starts (§ Gotcha: GitHub reads only the newest run on a commit). Landing on the older
+  green run would be refused while the PR run goes.
 - **A conflict stops it** (`mergeable` false, `errMergeConflict`): merge by hand in a worktree off `main`, then `land`
   that. Rare, since a release commit touches only version files, `Cargo.lock`, `LICENSE`, and release-prep files.
 - **Needs merge commits allowed on `main`**, like every land onto a moved `main`: the repo's `allow_merge_commit` and

@@ -62,17 +62,22 @@ func recordOnce(r runner, cfg config) error {
 	if err != nil {
 		return err
 	}
-	recordPR, err := ensurePR(r, recordBranch(n), []commit{recordMessage(n)})
+	recordPR, opened, err := ensurePR(r, recordBranch(n), []commit{recordMessage(n)})
 	if err != nil {
 		return err
 	}
-	if err := askToLand(r, recordPR, sha, cfg); err != nil {
+	// Counted as pushed either way: a record origin already had has its run listed, so nothing waits.
+	if err := askToLand(r, recordPR, sha, runsToAwait(true, opened), cfg); err != nil {
 		return err
 	}
-	if err := waitForCI(r, sha, cfg); err != nil {
+	if err := waitForCI(r, recordPR, sha, cfg); err != nil {
 		return err
 	}
 	if err := landRecord(r, sha); err != nil {
+		var refused *errMainRefused
+		if errors.As(err, &refused) {
+			return landRefused(sha, recordPR, refused.reason, refused.cause, cfg)
+		}
 		return err
 	}
 	say("Landed the record %s on main (%s).", sha[:12], recordPR.URL)
@@ -176,7 +181,7 @@ func landRecord(r runner, sha string) error {
 	if _, fetchErr := r.git("fetch", "--quiet", "origin", "main"); fetchErr == nil && !r.isAncestor("origin/main", sha) {
 		return errMainMoved
 	}
-	return fmt.Errorf("origin refused the record:\n%w", err)
+	return fmt.Errorf("the record's push to main didn't go through:\n%w", err)
 }
 
 // confirmRecorded waits for GitHub to mark the contributor's PR merged now that its head is on

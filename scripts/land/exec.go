@@ -7,7 +7,6 @@ import (
 	"math/rand/v2"
 	"os/exec"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -222,31 +221,6 @@ func (r runner) ghRetrying(retries int, call func() (string, *apiBudget, error))
 		}
 		time.Sleep(wait + jitter(wait/10))
 	}
-}
-
-// slotRetaker re-runs a land run a light run took the slot from (`supplantedLandRun`), once per
-// attempt: GitHub's list can still show the old attempt cancelled for a poll or two after the
-// re-run, and a second `gh run rerun` on a running run fails.
-type slotRetaker struct{ done map[int64]int }
-
-// retake re-runs the supplanted land run, if there is one it hasn't re-run yet, and reports
-// whether it did, so the wait polls again from a clean slate. A failed re-run is only a note: the
-// wait then reads the cancelled run as usual, red after `successorWithin`, with the re-run command.
-func (s *slotRetaker) retake(r runner, runs []workflowRun) bool {
-	run, ok := supplantedLandRun(runs)
-	if !ok || s.done[run.ID] >= run.RunAttempt {
-		return false
-	}
-	if s.done == nil {
-		s.done = map[int64]int{}
-	}
-	s.done[run.ID] = run.RunAttempt
-	say("A light run took the land run's slot (GitHub delivered the label before the push), so re-running the land run: https://github.com/%s/actions/runs/%d", repo, run.ID)
-	if _, err := r.gh("run", "rerun", strconv.FormatInt(run.ID, 10), "-R", repo); err != nil {
-		say("Couldn't re-run it: %v", err)
-		return false
-	}
-	return true
 }
 
 // rateLimit reads the account's API budget, or nil when it can't.

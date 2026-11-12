@@ -115,6 +115,12 @@ func (c config) validate() error {
 	return nil
 }
 
+// keepsCommitID: the commit being landed must keep its ID, so amending it is never the advice: a
+// release commit carries its tag (`-merge`), and a record is built by `-record`, never by hand.
+func (c config) keepsCommitID() bool {
+	return c.merge || c.record > 0
+}
+
 // command is how to run this land again.
 func (c config) command() string {
 	if c.record > 0 {
@@ -225,7 +231,7 @@ func landOnce(r runner, cfg config) error {
 			return err
 		}
 	}
-	pr, head, err := publish(r, state.branch, cfg)
+	pr, head, started, err := publish(r, state.branch, cfg)
 	if err != nil {
 		return err
 	}
@@ -233,40 +239,42 @@ func landOnce(r runner, cfg config) error {
 		say("CI runs the cheap lanes: %s\nThe Rust lanes and Linux E2E run when you land it: %s", pr.URL, cfg.command())
 		return nil
 	}
-	if err := askToLand(r, pr, head, cfg); err != nil {
+	if err := askToLand(r, pr, head, started, cfg); err != nil {
 		return err
 	}
-	if err := waitForCI(r, head, cfg); err != nil {
+	if err := waitForCI(r, pr, head, cfg); err != nil {
 		return err
 	}
-	if err := landGreen(r, pr, head, state.hasMerges, cfg.merge); err != nil {
+	if err := landGreen(r, pr, head, state.hasMerges, cfg); err != nil {
 		return err
 	}
 	return finish(r, state.branch)
 }
 
-// publish pushes the branch and opens its PR, or reuses the open one, and returns the PR and the
-// SHA on origin. `-no-wait` is a milestone push, which runs light, so a `land` label left by an
-// earlier land comes off before the push; a land adds the label after (`askToLand`).
-func publish(r runner, branch string, cfg config) (pullRequest, string, error) {
+// publish pushes the branch and opens its PR, or reuses the open one, and returns the PR, the SHA
+// on origin, and how many CI runs that started on it (`runsToAwait`). `-no-wait` is a milestone
+// push, which runs light, so a `land` label left by an earlier land comes off before the push; a
+// land adds the label after, once those runs are listed (`askToLand`).
+func publish(r runner, branch string, cfg config) (pullRequest, string, int, error) {
 	head, err := r.git("rev-parse", "HEAD")
 	if err != nil {
-		return pullRequest{}, "", err
+		return pullRequest{}, "", 0, err
 	}
 	if cfg.noWait {
 		if err := dropLandLabel(r, branch); err != nil {
-			return pullRequest{}, "", err
+			return pullRequest{}, "", 0, err
 		}
 	}
-	if head, err = pushBranch(r, branch, head); err != nil {
-		return pullRequest{}, "", err
+	head, pushed, err := pushBranch(r, branch, head)
+	if err != nil {
+		return pullRequest{}, "", 0, err
 	}
 	commits, err := r.commits("origin/main..HEAD")
 	if err != nil {
-		return pullRequest{}, "", err
+		return pullRequest{}, "", 0, err
 	}
-	pr, err := ensurePR(r, branch, commits)
-	return pr, head, err
+	pr, opened, err := ensurePR(r, branch, commits)
+	return pr, head, runsToAwait(pushed, opened), err
 }
 
 // start acts on the start step: it refuses, finishes an earlier land, or rebases. It reports
@@ -363,28 +371,28 @@ func squash(r runner, commits []commit, message string) error {
 // had); origin commits it never had (another machine, GitHub's "Update branch") stop the land.
 //
 // The pre-push hook may commit a formatting fix and stop the push; then this pushes once more
-// with that commit on top. It returns the SHA that's on origin.
-func pushBranch(r runner, branch, head string) (string, error) {
+// with that commit on top. It returns the SHA that's on origin, and whether it pushed it there.
+func pushBranch(r runner, branch, head string) (string, bool, error) {
 	remote, err := r.fetchBranch(branch)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	if remote != "" && remote != head && !r.isAncestor(remote, head) && !r.inReflog(branch, remote) {
-		return "", fmt.Errorf("%w (pushed from another machine, or by GitHub's \"Update branch\"), so I didn't overwrite them. Bring them in, then land again:\n  git pull --rebase origin %s\n  or take origin's version: git reset --hard origin/%s", errOriginAhead, branch, branch)
+		return "", false, fmt.Errorf("%w (pushed from another machine, or by GitHub's \"Update branch\"), so I didn't overwrite them. Bring them in, then land again:\n  git pull --rebase origin %s\n  or take origin's version: git reset --hard origin/%s", errOriginAhead, branch, branch)
 	}
 	hookRetried, remoteRetries := false, 0
 	for remote != head {
 		say("Pushing %s...", branch)
 		porcelain, err := pushToOrigin(r, branch)
 		if err == nil {
-			return head, nil
+			return head, true, nil
 		}
 		// Origin's side turned it away (GitHub's `fatal error in commit_refs`, 2026-11-06): the ref
 		// didn't move, so pushing the same thing again is safe. A few short retries, then say so.
 		if reason, rejected := remoteRejection(porcelain, "refs/heads/"+branch); rejected {
 			next, wait := afterGHFailure(nil, transientRetries-remoteRetries, 0, time.Now())
 			if next != ghRetryTransient {
-				return "", &errRemoteRejected{reason: reason, cause: err}
+				return "", false, &errRemoteRejected{reason: reason, cause: err}
 			}
 			remoteRetries++
 			say("Origin turned the push away on its side (%s), so trying again in %s.", reason, wait.Round(time.Second))
@@ -393,12 +401,12 @@ func pushBranch(r runner, branch, head string) (string, error) {
 		}
 		newHead, headErr := r.git("rev-parse", "HEAD")
 		if headErr != nil || newHead == head || hookRetried {
-			return "", fmt.Errorf("the branch push didn't go through; fix what it says, then land again: pnpm land\n%w", err)
+			return "", false, fmt.Errorf("the branch push didn't go through; fix what it says, then land again: pnpm land\n%w", err)
 		}
 		say("The pre-push hook added a commit, so pushing again with it.")
 		head, hookRetried = newHead, true
 	}
-	return head, nil
+	return head, false, nil
 }
 
 // errRemoteRejected: origin kept turning the branch push away on its side. On GitHub a feature
@@ -435,67 +443,51 @@ func findOpenPR(r runner, branch string) (pullRequest, bool, error) {
 }
 
 // ensurePR reuses the branch's open PR or opens one (`prCreateArgs`: without the `land` label,
-// which `askToLand` adds in a call of its own).
-func ensurePR(r runner, branch string, commits []commit) (pullRequest, error) {
+// which `askToLand` adds in a call of its own), and reports whether it opened it.
+func ensurePR(r runner, branch string, commits []commit) (pullRequest, bool, error) {
 	pr, ok, err := findOpenPR(r, branch)
 	if err != nil || ok {
-		return pr, err
+		return pr, false, err
 	}
 	url, err := r.gh(prCreateArgs(repo, branch, commits)...)
 	if err != nil {
-		return pullRequest{}, err
+		return pullRequest{}, false, err
 	}
 	say("Opened %s", url)
 	number, ok := prNumber(url)
 	if !ok {
-		return pullRequest{}, fmt.Errorf("gh pr create printed %q, which has no PR number", url)
+		return pullRequest{}, false, fmt.Errorf("gh pr create printed %q, which has no PR number", url)
 	}
-	return pullRequest{Number: number, State: "OPEN", URL: url, Labels: []prLabel{{Name: agentLabel}}}, nil
+	return pullRequest{Number: number, State: "OPEN", URL: url, Labels: []prLabel{{Name: agentLabel}}}, true, nil
 }
 
-// dropLandLabel takes the `land` label off the branch's open PR, so the push that follows runs
-// light. No PR, or no label, is nothing to do.
-func dropLandLabel(r runner, branch string) error {
-	pr, ok, err := findOpenPR(r, branch)
-	if err != nil || !ok || !pr.hasLabel(landLabel) {
-		return err
-	}
-	if _, err := r.gh("pr", "edit", fmt.Sprint(pr.Number), "-R", repo, "--remove-label", landLabel); err != nil {
-		return fmt.Errorf("couldn't take the %q label off %s, so I didn't push (the push would run every lane):\n%w", landLabel, pr.URL, err)
-	}
-	return nil
+// errNoRun: nothing started a CI run on head. GitHub runs no `pull_request` workflow on a PR that
+// conflicts with its base.
+func errNoRun(head, again string) error {
+	return fmt.Errorf("no CI run on %s after %s. Does the PR conflict with main? GitHub runs no CI on one that does. Check the PR page, then land again: %s", head[:12], appearWithin, again)
 }
 
-// askToLand makes sure a land run is on its way for head (`nextLandAsk`): it adds the PR's `land`
-// label, or takes it off and on again when the label is on but every run on head is light. A PR
-// this land just opened lacks the label, so it gets it here: one `labeled` event, one land run.
-func askToLand(r runner, pr pullRequest, head string, cfg config) error {
+// readCI lists the CI runs on head, then the `CI OK` check runs once a run exists: `CI OK`
+// decides even while GitHub still calls the run in progress. An unchanged answer is a free 304.
+func readCI(r runner, head string, cfg config) ([]workflowRun, []checkRun, error) {
 	var runs struct {
 		WorkflowRuns []workflowRun `json:"workflow_runs"`
 	}
-	// Without the label, the runs don't change the answer.
-	if pr.hasLabel(landLabel) {
-		if err := r.ghAPI(&runs, ciRunsPath(head, cfg.merge)); err != nil {
-			return err
+	if err := r.ghAPI(&runs, ciRunsPath(head, cfg.merge)); err != nil {
+		return nil, nil, err
+	}
+	var checks struct {
+		CheckRuns []checkRun `json:"check_runs"`
+	}
+	if len(runs.WorkflowRuns) > 0 {
+		if err := r.ghAPI(&checks, fmt.Sprintf("repos/%s/commits/%s/check-runs?check_name=%s&filter=all", repo, head, url.PathEscape(ciCheck))); err != nil {
+			return nil, nil, err
 		}
 	}
-	switch nextLandAsk(pr.hasLabel(landLabel), runs.WorkflowRuns) {
-	case askNothing:
-		return nil
-	case askRelabel:
-		if _, err := r.gh("pr", "edit", fmt.Sprint(pr.Number), "-R", repo, "--remove-label", landLabel); err != nil {
-			return fmt.Errorf("couldn't take the %q label off %s to put it back on:\n%w", landLabel, pr.URL, err)
-		}
-	case askAddLabel:
-	}
-	if _, err := r.gh("pr", "edit", fmt.Sprint(pr.Number), "-R", repo, "--add-label", landLabel); err != nil {
-		return fmt.Errorf("couldn't add the %q label to %s, which asks CI for the land run:\n%w", landLabel, pr.URL, err)
-	}
-	say("Asked CI to land %s: every lane it needs runs now.", head[:12])
-	return nil
+	return runs.WorkflowRuns, checks.CheckRuns, nil
 }
 
-func waitForCI(r runner, head string, cfg config) error {
+func waitForCI(r runner, pr pullRequest, head string, cfg config) error {
 	start := time.Now()
 	announced := false
 	// The jobs `CI OK` needs: once one of them fails, `CI OK` will too, so the wait stops there.
@@ -507,28 +499,20 @@ func waitForCI(r runner, head string, cfg config) error {
 	var retaker slotRetaker
 	var eta etaTracker
 	for {
-		// The runs, then the `CI OK` check runs once a run exists: `CI OK` decides even while
-		// GitHub still calls the run in progress. An unchanged answer is a free 304.
-		var runs struct {
-			WorkflowRuns []workflowRun `json:"workflow_runs"`
-		}
-		if err := r.ghAPI(&runs, ciRunsPath(head, cfg.merge)); err != nil {
+		runs, checks, err := readCI(r, head, cfg)
+		if err != nil {
 			return err
 		}
-		var checks struct {
-			CheckRuns []checkRun `json:"check_runs"`
-		}
-		if len(runs.WorkflowRuns) > 0 {
-			if err := r.ghAPI(&checks, fmt.Sprintf("repos/%s/commits/%s/check-runs?check_name=%s&filter=all", repo, head, url.PathEscape(ciCheck))); err != nil {
-				return err
-			}
-		}
-		if retaker.retake(r, runs.WorkflowRuns) {
+		v, run := ciVerdict(runs, checks)
+		// A land run with a newer run beside it can't land the head: ask for a fresh one, never
+		// push on its green (`needsFreshRun`).
+		if again, err := retaker.retake(r, pr, head, v, run, runs, cfg); err != nil {
+			return err
+		} else if again {
 			cancelled = cancelWait{}
 			time.Sleep(fastPoll)
 			continue
 		}
-		v, run := ciVerdict(runs.WorkflowRuns, checks.CheckRuns)
 		v = cancelled.verdict(v, run, time.Now())
 		switch v {
 		case verdictGreen:
@@ -540,8 +524,7 @@ func waitForCI(r runner, head string, cfg config) error {
 			return ciFailure(run, jobs, jobLogSummaries(r, jobs), run.Status != "completed", cfg.command())
 		case verdictMissing:
 			if missingRunGivesUp(seen, time.Since(start)) {
-				// GitHub runs no `pull_request` workflow on a PR that conflicts with its base.
-				return fmt.Errorf("no CI run on %s after %s. Does the PR conflict with main? GitHub runs no CI on one that does. Check the PR page, then land again: %s", head[:12], appearWithin, cfg.command())
+				return errNoRun(head, cfg.command())
 			}
 		case verdictPending:
 			seen = true
@@ -647,7 +630,8 @@ func ciFailure(run workflowRun, jobs []runJob, summaries map[int64][]string, ear
 // landGreen takes the green head onto `main` (`nextLandPath`): a fast-forward push while it still
 // descends from `origin/main`, else a merge commit GitHub makes. It returns errMainMoved when only
 // a rebase here and a fresh CI run can land it.
-func landGreen(r runner, pr pullRequest, head string, hasMerges, merge bool) error {
+func landGreen(r runner, pr pullRequest, head string, hasMerges bool, cfg config) error {
+	merge := cfg.merge
 	for {
 		if _, err := r.git("fetch", "--quiet", "origin", "main"); err != nil {
 			return err
@@ -667,7 +651,11 @@ func landGreen(r runner, pr pullRequest, head string, hasMerges, merge bool) err
 			if _, fetchErr := r.git("fetch", "--quiet", "origin", "main"); fetchErr == nil && !r.isAncestor("origin/main", head) {
 				continue
 			}
-			return fmt.Errorf("origin refused the land:\n%w", err)
+			var refused *errMainRefused
+			if errors.As(err, &refused) {
+				return landRefused(head, pr, refused.reason, refused.cause, cfg)
+			}
+			return fmt.Errorf("the push to main didn't go through, so nothing landed; land again: %s\n%w", cfg.command(), err)
 		case landGitHubMerge:
 			return mergeOnGitHub(r, pr, head, hasMerges, merge)
 		case landRebaseAndRerun:
@@ -676,6 +664,20 @@ func landGreen(r runner, pr pullRequest, head string, hasMerges, merge bool) err
 			return errMergeConflict(head)
 		}
 	}
+}
+
+// landRefused is what a green head origin's rules turned away comes back with: `CI OK` is green
+// on it and nothing newer hides that (`needsFreshRun`), so `land` can't tell why from here. It
+// shows origin's own words and the way out, never a bare "refused" to run into again (issue
+// #1127: three refusals in a row). A fresh land run is a first-attempt run in a new check suite,
+// the newest on the commit; a new commit ID starts from nothing, which is what got PR #1116 in.
+func landRefused(head string, pr pullRequest, reason string, cause error, cfg config) error {
+	msg := fmt.Sprintf("%s is green on %s, but origin's rules refused the push to main (%s), so nothing landed. What origin said:\n%v\n", ciCheck, head[:12], reason, cause)
+	msg += fmt.Sprintf("When it says the required check %q is expected, GitHub isn't reading the green run. Ask CI for a fresh land run (the lanes that passed skip), then land again:\n  gh pr edit %d -R %s --remove-label %s && gh pr edit %d -R %s --add-label %s && %s", ciCheck, pr.Number, repo, landLabel, pr.Number, repo, landLabel, cfg.command())
+	if !cfg.keepsCommitID() {
+		msg += "\nStill refused? A new commit ID gets one clean run:\n  git commit --amend --no-edit && " + cfg.command()
+	}
+	return errors.New(msg + "\nAny other rule (a signature, the approval): fix what it names. scripts/land/DETAILS.md § Gotcha: GitHub reads only the newest run on a commit")
 }
 
 // conflictError is what a land GitHub can't merge cleanly returns: `-merge` stops for a merge by
@@ -707,11 +709,32 @@ func choosePath(r runner, pr pullRequest, head string, merge bool) (landPath, er
 }
 
 // pushToMain fast-forwards origin's `main` to the green SHA. `--no-verify`: CI already passed on
-// this exact SHA, and a pre-push hook that adds a commit would land something CI never saw.
+// this exact SHA, and a pre-push hook that adds a commit would land something CI never saw. A
+// push origin's side turned away (a ruleset on GitHub) comes back as errMainRefused, read off
+// `--porcelain`'s status token like the branch push (`remoteRejection`).
 func pushToMain(r runner, head string) error {
-	_, err := r.git("push", "--quiet", "--no-verify", "origin", head+":refs/heads/main")
+	porcelain, err := r.git("push", "--porcelain", "--no-verify", "origin", head+":refs/heads/main")
+	if err == nil {
+		return nil
+	}
+	if reason, rejected := remoteRejection(porcelain, "refs/heads/main"); rejected {
+		return &errMainRefused{reason: reason, cause: err}
+	}
 	return err
 }
+
+// errMainRefused: origin's side refused the push to `main`. reason is origin's own short reason,
+// shown and never matched; cause carries everything origin printed.
+type errMainRefused struct {
+	reason string
+	cause  error
+}
+
+func (e *errMainRefused) Error() string {
+	return fmt.Sprintf("origin refused the push to main (%s):\n%v", e.reason, e.cause)
+}
+
+func (e *errMainRefused) Unwrap() error { return e.cause }
 
 // prMergeable asks GitHub whether it can merge the PR into `main`. GitHub works that out in the
 // background after `main` moves, so this gives it `mergeableWithin`, then reports nil if it still

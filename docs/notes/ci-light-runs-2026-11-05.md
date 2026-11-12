@@ -17,9 +17,12 @@ required `PROBE OK` from GitHub Actions (`integration_id` 15368) on `refs/heads/
 - **An empty `run-name` falls back to GitHub's default title** (the PR title); a non-empty one is used as is.
 - **A light gate never satisfies the required check**: pushing `e73d0b23` (only a green `PROBE light`) to the protected
   branch was refused: `GH013: Repository rule violations found ... Required status check "PROBE OK" is expected.`
-- **A newer light run doesn't shadow an older green land gate**: `a01bfb33` carried a green `PROBE OK`, then a re-run of
-  a light run on it finished later with a green `PROBE light`; pushing it was accepted. The required check matches by
-  name, so a `CI light` run can't hide a `CI OK`.
+- **An older light run's later re-run doesn't shadow a green land gate**: `a01bfb33` carried a green `PROBE OK`, then a
+  re-run of a light run on it finished later with a green `PROBE light`; pushing it was accepted. That light run
+  (41977787817, created 06:02:37Z) was OLDER than both `PROBE OK` runs (41977824020 at 06:02:58Z, 41978008805 at
+  06:04:41Z; `gh api .../actions/runs?head_sha=`, read 2026-11-12), so this never tested a light run made after the land
+  run. One made after it does hide the `CI OK`: `scripts/land/DETAILS.md` § Gotcha: GitHub reads only the newest run on
+  a commit.
 - One push that created a branch seconds after the ruleset was created went through without the check; later creations
   were refused like updates, so it reads as the ruleset taking a moment to apply.
 

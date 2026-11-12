@@ -61,7 +61,7 @@ func commitAndPush(t *testing.T, r runner, branch, message string) string {
 	t.Helper()
 	mustGit(t, r, "commit", "--quiet", "--allow-empty", "-m", message)
 	head := mustGit(t, r, "rev-parse", "HEAD")
-	if _, err := pushBranch(r, branch, head); err != nil {
+	if _, _, err := pushBranch(r, branch, head); err != nil {
 		t.Fatal(err)
 	}
 	return head
@@ -89,7 +89,7 @@ func TestPushBranchKeepsCommitsOnlyOriginHas(t *testing.T) {
 	theirs := mustGit(t, b, "rev-parse", "HEAD")
 
 	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: more from laptop A")
-	_, err := pushBranch(a, "feat", mustGit(t, a, "rev-parse", "HEAD"))
+	_, _, err := pushBranch(a, "feat", mustGit(t, a, "rev-parse", "HEAD"))
 	if !errors.Is(err, errOriginAhead) {
 		t.Errorf("got %v, want errOriginAhead", err)
 	}
@@ -132,7 +132,7 @@ func TestPushBranchOverwritesWhatThisBranchRewrote(t *testing.T) {
 	mustGit(t, a, "reset", "--soft", "origin/main")
 	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: one and two")
 	head := mustGit(t, a, "rev-parse", "HEAD")
-	if _, err := pushBranch(a, "feat", head); err != nil {
+	if _, _, err := pushBranch(a, "feat", head); err != nil {
 		t.Fatal(err)
 	}
 	if got := originSHA(t, a, "feat"); got != head {
@@ -239,7 +239,7 @@ func TestPushBranchRetriesWithTheHooksCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: new")
-	pushed, err := pushBranch(a, "feat", mustGit(t, a, "rev-parse", "HEAD"))
+	pushed, _, err := pushBranch(a, "feat", mustGit(t, a, "rev-parse", "HEAD"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,7 +269,7 @@ func TestPushBranchRetriesGitHubsOwnFailure(t *testing.T) {
 	rejectOnOrigin(t, origin, 1)
 	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: new")
 	head := mustGit(t, a, "rev-parse", "HEAD")
-	if _, err := pushBranch(a, "feat", head); err != nil {
+	if _, _, err := pushBranch(a, "feat", head); err != nil {
 		t.Fatal(err)
 	}
 	if got := originSHA(t, a, "feat"); got != head || len(*waits) != 1 {
@@ -283,7 +283,7 @@ func TestPushBranchGivesUpOnALastingRemoteFailure(t *testing.T) {
 	a := testClone(t, origin, "feat")
 	rejectOnOrigin(t, origin, 0)
 	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: new")
-	_, err := pushBranch(a, "feat", mustGit(t, a, "rev-parse", "HEAD"))
+	_, _, err := pushBranch(a, "feat", mustGit(t, a, "rev-parse", "HEAD"))
 	var rejected *errRemoteRejected
 	if !errors.As(err, &rejected) || rejected.reason != "pre-receive hook declined" {
 		t.Fatalf("got %v, want errRemoteRejected", err)
@@ -301,7 +301,7 @@ func TestPushBranchDoesntRetryALocalRefusal(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: new")
-	_, err := pushBranch(a, "feat", mustGit(t, a, "rev-parse", "HEAD"))
+	_, _, err := pushBranch(a, "feat", mustGit(t, a, "rev-parse", "HEAD"))
 	var rejected *errRemoteRejected
 	if err == nil || errors.As(err, &rejected) || len(*waits) != 0 {
 		t.Errorf("got %v after %d waits, want a plain failure and no retry", err, len(*waits))
@@ -332,5 +332,53 @@ func TestTaggedFindsATagOnTheBranch(t *testing.T) {
 	mustGit(t, a, "tag", "old", "origin/main")
 	if a.tagged("origin/main..HEAD") {
 		t.Error("a tag on main itself isn't on the branch")
+	}
+}
+
+// Only a push this land made starts a CI run to wait for before the `land` label goes on.
+func TestPushBranchSaysWhetherItPushed(t *testing.T) {
+	a := testClone(t, testOrigin(t), "feat")
+	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: new")
+	head := mustGit(t, a, "rev-parse", "HEAD")
+	if _, pushed, err := pushBranch(a, "feat", head); err != nil || !pushed {
+		t.Fatalf("the first push: pushed %v, %v", pushed, err)
+	}
+	if _, pushed, err := pushBranch(a, "feat", head); err != nil || pushed {
+		t.Errorf("origin already has the head: pushed %v, %v", pushed, err)
+	}
+}
+
+// Issue #1127: GitHub refused a green head three times, and land printed only "origin refused the
+// land". An origin-side refusal of the `main` push is typed (git's `[remote rejected]` token) and
+// carries origin's reason; a push that never reached origin's rules isn't one.
+func TestPushToMainTellsOriginsRefusal(t *testing.T) {
+	origin := testOrigin(t)
+	a := testClone(t, origin, "feat")
+	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "feat: new")
+	head := mustGit(t, a, "rev-parse", "HEAD")
+	rejectOnOrigin(t, origin, 0)
+	err := pushToMain(a, head)
+	var refused *errMainRefused
+	if !errors.As(err, &refused) || refused.reason != "pre-receive hook declined" {
+		t.Fatalf("got %v, want errMainRefused with origin's reason", err)
+	}
+	if got := originSHA(t, a, "main"); got == head {
+		t.Error("the refused push moved main")
+	}
+
+	if err := os.Remove(filepath.Join(origin, "hooks", "pre-receive")); err != nil {
+		t.Fatal(err)
+	}
+	b := testClone(t, origin, "main")
+	mustGit(t, b, "commit", "--quiet", "--allow-empty", "-m", "feat: main moved")
+	mustGit(t, b, "push", "--quiet", "origin", "main")
+	if err := pushToMain(a, head); err == nil || errors.As(err, &refused) {
+		t.Errorf("a non-fast-forward is this side's refusal: got %v", err)
+	}
+	a2 := testClone(t, origin, "feat2")
+	mustGit(t, a2, "commit", "--quiet", "--allow-empty", "-m", "feat: on the new main")
+	head2 := mustGit(t, a2, "rev-parse", "HEAD")
+	if err := pushToMain(a2, head2); err != nil || originSHA(t, a2, "main") != head2 {
+		t.Errorf("a fast-forward lands: %v", err)
 	}
 }

@@ -272,42 +272,27 @@ func TestCIVerdict(t *testing.T) {
 	}
 }
 
-// A light run (a `-no-wait` push nobody asked to land) never reports `CI OK`, so the wait follows
-// the newest land run and ignores light ones, however new or green.
-// PR #1010, 2026-11-05: GitHub delivered the `land` label's event a second before the push's,
-// so the push started a light run that cancelled the land run in their shared concurrency group.
-func TestSupplantedLandRun(t *testing.T) {
-	at := func(s int) time.Time { return time.Date(2026, 11, 5, 23, 39, s, 0, time.UTC) }
-	run := func(id int64, status, conclusion, title string, created, attempt int) workflowRun {
-		return workflowRun{ID: id, Status: status, Conclusion: conclusion, DisplayTitle: title, CreatedAt: at(created), RunAttempt: attempt}
+// Issue #1127: a refused push after a green `CI OK` says what GitHub reads and how to get past it,
+// with commands that keep the commit's ID where it must stay (a release commit, a record).
+func TestLandRefusedSaysWhatToDo(t *testing.T) {
+	pr := pullRequest{Number: 1116, URL: "https://github.com/getcmdr/cmdr/pull/1116"}
+	cause := errors.New("remote: error: GH013: Repository rule violations found")
+	plain := landRefused("30ac144c45d47dedcb7e919c2027402fe533929e", pr, "push declined due to repository rule violations", cause, config{}).Error()
+	for _, want := range []string{"30ac144c45d4", "push declined due to repository rule violations", "GH013", "gh pr edit 1116", "--remove-label land", "--add-label land", "git commit --amend --no-edit && pnpm land"} {
+		if !strings.Contains(plain, want) {
+			t.Errorf("the message misses %q:\n%s", want, plain)
+		}
 	}
-	cancelledLand := run(1, "completed", "cancelled", "perf: a thing", 32, 1)
-	laterLight := run(2, "in_progress", "", "Light: perf: a thing", 33, 1)
-	sameSecondLight := run(3, "in_progress", "", "Light: perf: a thing", 32, 1)
-	olderLight := run(4, "completed", "success", "Light: perf: a thing", 10, 1)
-	liveLand := run(1, "queued", "", "perf: a thing", 32, 2)
-	newerLand := run(5, "in_progress", "", "perf: a thing", 40, 1)
-
-	cases := []struct {
-		name   string
-		runs   []workflowRun
-		wantOK bool
-	}{
-		{"a light run created after the cancelled land run took its slot", []workflowRun{cancelledLand, laterLight}, true},
-		{"one created in the same second did too", []workflowRun{sameSecondLight, cancelledLand}, true},
-		{"an older light run didn't: a person cancelled the land run", []workflowRun{olderLight, cancelledLand}, false},
-		{"a land run cancelled with no light run beside it was a person", []workflowRun{cancelledLand}, false},
-		{"the re-run land run is live again", []workflowRun{liveLand, laterLight}, false},
-		{"a newer land run replaced it", []workflowRun{cancelledLand, laterLight, newerLand}, false},
-		{"no land run at all", []workflowRun{laterLight}, false},
-	}
-	for _, c := range cases {
-		got, ok := supplantedLandRun(c.runs)
-		if ok != c.wantOK || (ok && got.ID != cancelledLand.ID) {
-			t.Errorf("%s: got run %d, %v; want %v", c.name, got.ID, ok, c.wantOK)
+	for _, cfg := range []config{{merge: true}, {record: 7}} {
+		msg := landRefused("30ac144c45d47dedcb7e919c2027402fe533929e", pr, "x", cause, cfg).Error()
+		if strings.Contains(msg, "--amend") || !strings.Contains(msg, cfg.command()) {
+			t.Errorf("%s keeps the commit's ID, so no amend:\n%s", cfg.command(), msg)
 		}
 	}
 }
+
+// A light run (a `-no-wait` push nobody asked to land) never reports `CI OK`, so the wait follows
+// the newest land run and ignores light ones, however new or green.
 
 func TestCIVerdictIgnoresLightRuns(t *testing.T) {
 	at := func(m int) time.Time { return time.Date(2026, 11, 5, 9, m, 0, 0, time.UTC) }
@@ -401,29 +386,6 @@ func TestCIFailureForACancelledRunSaysSo(t *testing.T) {
 	msg := ciFailure(run, nil, nil, false, "pnpm land").Error()
 	if !strings.Contains(msg, "cancelled") || !strings.Contains(msg, "gh run rerun 42 -R") || strings.Contains(msg, "--failed") {
 		t.Errorf("a cancelled run should say so and re-run the whole run:\n%s", msg)
-	}
-}
-
-func TestNextLandAsk(t *testing.T) {
-	light := workflowRun{ID: 1, DisplayTitle: "Light: fix: x"}
-	landing := workflowRun{ID: 2, DisplayTitle: "fix: x"}
-	cases := []struct {
-		name    string
-		labeled bool
-		runs    []workflowRun
-		want    landAsk
-	}{
-		{"no label: add it", false, nil, askAddLabel},
-		{"no label, a light run on head: add it", false, []workflowRun{light}, askAddLabel},
-		// A push while the label is on starts a land run; it may not be listed yet.
-		{"label on, no run yet: wait for the push's land run", true, nil, askNothing},
-		{"label on, a land run on head: wait for it", true, []workflowRun{light, landing}, askNothing},
-		{"label on, only light runs on head: off and on again", true, []workflowRun{light}, askRelabel},
-	}
-	for _, c := range cases {
-		if got := nextLandAsk(c.labeled, c.runs); got != c.want {
-			t.Errorf("%s: got %d, want %d", c.name, got, c.want)
-		}
 	}
 }
 

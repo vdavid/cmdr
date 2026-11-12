@@ -441,55 +441,6 @@ func newestLandRun(runs []workflowRun) workflowRun {
 	return slices.MaxFunc(live, byAge)
 }
 
-// supplantedLandRun finds a land run a light run took the slot from: the newest land run is
-// cancelled, and a light run on the head was created no earlier. GitHub can deliver the `land`
-// label's event before the push's; the push's run then starts as light (its payload predates the
-// label) and, being newer in the PR's concurrency group, cancels the land run (PR #1010,
-// 2026-11-05). Re-running the land run takes the slot back. A light run older than the cancelled
-// land run means a person cancelled it, which stays red.
-func supplantedLandRun(runs []workflowRun) (workflowRun, bool) {
-	lands := landRuns(runs)
-	if len(lands) == 0 {
-		return workflowRun{}, false
-	}
-	land := newestLandRun(lands)
-	if !land.cancelled() {
-		return workflowRun{}, false
-	}
-	took := slices.ContainsFunc(runs, func(r workflowRun) bool {
-		return r.isLightRun() && !r.CreatedAt.Before(land.CreatedAt)
-	})
-	return land, took
-}
-
-// landAsk is how `land` asks CI to land the head (`ci.yml`'s `mode` step reads the PR's labels).
-type landAsk int
-
-const (
-	// askAddLabel: the PR lacks the `land` label; adding it starts a land run on the head.
-	askAddLabel landAsk = iota
-	// askNothing: the label is on, so the head's land run exists or is on its way (a push while
-	// the label is on runs as a land run).
-	askNothing
-	// askRelabel: the label is on, yet every run on the head is light (it went on before this
-	// head, or its run never started), so taking it off and on again starts one.
-	askRelabel
-)
-
-// nextLandAsk decides how to get a land run on the head, from whether the PR has the label and
-// the CI runs on the head so far. No run at all with the label on is a push whose land run hasn't
-// shown up yet.
-func nextLandAsk(labeled bool, runs []workflowRun) landAsk {
-	switch {
-	case !labeled:
-		return askAddLabel
-	case len(runs) > 0 && len(landRuns(runs)) == 0:
-		return askRelabel
-	default:
-		return askNothing
-	}
-}
-
 // ciVerdict reads the CI runs and `CI OK` check runs on one SHA. Light runs don't count: they never
 // report `CI OK`, and `land` asks for a land run before it waits (`nextLandAsk`). The newest land
 // run's (`newestLandRun`) current attempt's `CI OK` decides as soon as it completes, whatever the run's status says:
