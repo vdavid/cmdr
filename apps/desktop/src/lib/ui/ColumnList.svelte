@@ -18,6 +18,7 @@
      * with each row's place in a tree on it (`rowAria`); the tree stays the consumer's.
      */
     import { untrack } from 'svelte'
+    import { getAppLogger } from '#lib/logging/logger.js'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
     import {
         OVERSCAN_ROWS,
@@ -62,6 +63,8 @@
     }: ColumnListProps<T> = $props()
 
     const uid = $props.id()
+
+    const log = getAppLogger('columnList')
 
     /** A listbox option's id (with the `id` prop), or a grid row's: what `aria-activedescendant` names. */
     function rowId(index: number): string | undefined {
@@ -124,10 +127,50 @@
     /** One drawn block: where it sits and the key it's drawn under, fixed when the block is. */
     interface DrawnItem {
         index: number
+        /** The `{#each}` key: the row's own, unless an earlier drawn row already took it. */
         key: string | number
+        /** The row's own key (`keyOf`), which is what says whether the block still holds its row. */
+        rowKey: string | number
     }
 
-    const drawnItems = $derived<DrawnItem[]>(drawn.map((index) => ({ index, key: keyOf(index) })))
+    /**
+     * The drawn blocks and the first row key two of them share, if any.
+     *
+     * Svelte throws on a repeated `{#each}` key, and a production build's throw names
+     * neither the list nor the key: the dialog around the list closes and the report can't
+     * say why (ERR-XVTB2, Search's results holding one path twice). So a repeat is drawn
+     * under a key of its own, which costs that one block its reuse across a re-sort and
+     * nothing else, and the effect below says which list and which key.
+     */
+    const drawnPass = $derived.by<{ items: DrawnItem[]; repeatedKey: string | number | undefined }>(() => {
+        // eslint-disable-next-line svelte/prefer-svelte-reactivity -- local to one pass of this derived; nothing reads it after
+        const taken = new Set<string | number>()
+        let repeatedKey: string | number | undefined
+        const items = drawn.map((index): DrawnItem => {
+            const own = keyOf(index)
+            if (!taken.has(own)) {
+                taken.add(own)
+                return { index, key: own, rowKey: own }
+            }
+            repeatedKey ??= own
+            // NUL can't be in a path or an id, so this can't land on another row's key.
+            return { index, key: `\u0000repeat:${String(index)}`, rowKey: own }
+        })
+        return { items, repeatedKey }
+    })
+    const drawnItems = $derived(drawnPass.items)
+
+    /** The last repeated key reported, so a list that keeps its repeat logs it once, not per scroll. */
+    let reportedRepeat: string | number | undefined
+    $effect(() => {
+        const repeated = drawnPass.repeatedKey
+        if (repeated === undefined || repeated === reportedRepeat) return
+        reportedRepeat = repeated
+        log.error('The {list} list got two rows with one key and drew both: {input}', {
+            list: ariaLabel,
+            input: repeated,
+        })
+    })
 
     /**
      * The row a block is drawn for right now, or `undefined` when its index holds nothing (a
@@ -137,7 +180,7 @@
     function liveRowOf(item: DrawnItem): ColumnListRow<T> {
         const row = rowAt(item.index)
         if (row === undefined) return undefined
-        return keyOf(item.index) === item.key ? row : undefined
+        return keyOf(item.index) === item.rowKey ? row : undefined
     }
 
     /**

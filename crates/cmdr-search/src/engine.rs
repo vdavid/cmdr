@@ -429,6 +429,11 @@ pub fn search_ranked(
         .iter()
         .map(|&idx| build_result_entry(index, idx, path_prefix, ctx.home_dir))
         .collect();
+    let (entries, repeats) = one_row_per_path(entries);
+    // The count is of files, and a repeat is a file counted twice. Only the repeats
+    // among the returned rows are known, so past the limit the total can still run
+    // high by the ones nobody looked at: the bounded error `ResultStream` accepts.
+    let total_count = total_count.saturating_sub(repeats);
 
     log::debug!(
         "Search completed: {} → {} matches (returning {}, {} hidden), took {:?}",
@@ -444,6 +449,44 @@ pub fn search_ranked(
         total_count,
         hidden_by_excludes,
     })
+}
+
+/// `entries` with each path once, and how many rows that dropped.
+///
+/// The arena can hold one path under two ids: its load reads the id ranges on
+/// separate connections rather than in one snapshot, and a warm arena keeps the rows
+/// the index has deleted since, so a file deleted and created again is there as both
+/// the row that went and the row that replaced it. A path is a row's identity for
+/// every consumer (the dialog's list throws on a repeated key), so the repeat stops
+/// here, the one place every answer passes.
+///
+/// The row kept is the one with the highest id, which is the one created last, and it
+/// takes the place of the path's first row, so the ranking of everything else stands.
+/// Judged on the returned rows only: a path is a string the arena doesn't hold, and
+/// building one per candidate is what the limit exists to avoid.
+fn one_row_per_path(entries: Vec<SearchResultEntry>) -> (Vec<SearchResultEntry>, u32) {
+    // Per path: where it first sits in the ranking, and which row is the newest.
+    let mut newest_at: HashMap<&str, (usize, usize)> = HashMap::with_capacity(entries.len());
+    for (at, entry) in entries.iter().enumerate() {
+        newest_at
+            .entry(entry.path.as_str())
+            .and_modify(|(_, newest)| {
+                if entry.entry_id > entries[*newest].entry_id {
+                    *newest = at;
+                }
+            })
+            .or_insert((at, at));
+    }
+    if newest_at.len() == entries.len() {
+        return (entries, 0);
+    }
+
+    let mut kept: Vec<(usize, usize)> = newest_at.into_values().collect();
+    kept.sort_unstable();
+    let repeats = (entries.len() - kept.len()) as u32;
+    let mut rows: Vec<Option<SearchResultEntry>> = entries.into_iter().map(Some).collect();
+    let entries = kept.into_iter().filter_map(|(_, newest)| rows[newest].take()).collect();
+    (entries, repeats)
 }
 
 /// Take the top `limit` matches by an explicit sort key.

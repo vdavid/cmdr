@@ -1863,6 +1863,12 @@ table or data grid, and its `Listbox` owns selection and keys itself, which is e
   suggestions and bulk rename reviews each crashed the main window that way from Debug > Soft dialogs. So a consumer's
   `getRow` may answer `undefined` honestly, and ❌ no consumer keeps its own copy of drawn rows for teardown. Regression
   anchor: `ColumnList.teardown.svelte.test.ts` (jsdom reproduces the windowed case; the array cases showed in WebKit).
+- **Two rows with one `rowKey` are both drawn, and logged** (`drawnPass`). Svelte throws on a repeated `{#each}` key,
+  and a production build's throw names neither the list nor the key, so the dialog around the list closed with a report
+  nobody could trace (ERR-XVTB2: Search's results held one path twice). The repeat is drawn under a key of its own
+  (`DrawnItem.key`), while `rowKey` stays the row's and is what `liveRowOf` compares; `FE:columnList` logs the list's
+  `ariaLabel` and the key once. A repeat is still the consumer's bug to fix: that block loses its reuse across a
+  re-sort. Regression anchor: `ColumnList.duplicate-keys.svelte.test.ts`.
 - **Cursor**: the parent owns the index. `cursorIndex` paints `.is-under-cursor` (and `aria-selected` in a listbox or
   grid). The list reports every move it makes through `onCursorChange(index)`: a click on a data row, a `grid`'s own
   cursor keys, and `mouseenter` when `hoverMovesCursor` is on. Writing it back to `cursorIndex` is what makes them one
