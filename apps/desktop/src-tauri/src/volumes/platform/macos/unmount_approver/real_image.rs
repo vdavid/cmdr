@@ -1,7 +1,7 @@
 //! What the unmount approver does against real DiskArbitration and real synthetic disk images.
 //!
 //! `#[ignore]`d: each attaches an APFS or HFS+ image. Hand-run with
-//! `cargo nextest run -p cmdr --run-ignored only -E 'test(volumes::unmount_approver::real_image::)'`,
+//! `cargo nextest run -p cmdr --run-ignored only -E 'test(volumes::platform::imp::unmount_approver::real_image::)'`,
 //! or through `pnpm check disk-images`. Serialized in the `disk-image` nextest group, and
 //! machine-wide by the harness's session lock.
 //!

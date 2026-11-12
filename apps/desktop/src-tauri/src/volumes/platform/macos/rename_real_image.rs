@@ -1,7 +1,7 @@
 //! The rename handler on real synthetic disk images (macOS).
 //!
 //! `#[ignore]`d: each attaches a real APFS or HFS+ image. Hand-run with
-//! `cargo nextest run -p cmdr --run-ignored only -E 'test(volumes::rename_real_image::)'`,
+//! `cargo nextest run -p cmdr --run-ignored only -E 'test(volumes::platform::imp::rename_real_image::)'`,
 //! or through `pnpm check disk-images`. Serialized in the `disk-image` nextest group,
 //! and machine-wide by the harness's session lock.
 //!

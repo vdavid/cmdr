@@ -39,8 +39,8 @@ var diskImageLaneTestAtoms = []string{
 	"transfer::real_image::",
 	"delete::real_image::",
 	"indexing::tests::vanish_tests::",
-	"volumes::unmount_approver::real_image::",
-	"volumes::rename_real_image::",
+	"volumes::platform::imp::unmount_approver::real_image::",
+	"volumes::platform::imp::rename_real_image::",
 	// No image: a real `fseventsd` replay at a renamed directory, too slow under load
 	// for the default lane (`crates/cmdr-index/src/indexing/lifecycle/cover/DETAILS.md`
 	// § "What the cold-drive cells pin about FSEvents").

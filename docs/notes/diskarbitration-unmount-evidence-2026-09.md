@@ -277,8 +277,8 @@ sources: DiskArbitration-535.0.10.
 
 ## What the landed approver confirmed
 
-Verified on macOS 27.0 (2026-09-16) by `volumes::unmount_approver::real_image`: a real approval session on its own
-serial queue, against synthetic HFS+ images. The spike's design consequences hold on this macOS.
+Verified on macOS 27.0 (2026-09-16) by `volumes::platform::imp::unmount_approver::real_image`: a real approval session
+on its own serial queue, against synthetic HFS+ images. The spike's design consequences hold on this macOS.
 
 - DA asks Cmdr's session before `diskutil unmount` and `diskutil unmountDisk`, and waits for the answer: every stop in
   these runs ran while its volume was still in the mount table.

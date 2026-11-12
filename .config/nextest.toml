@@ -188,7 +188,7 @@ test-group = 'disk-image'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# The unmount approver's pins on real APFS/HFS+ images (`volumes::unmount_approver::real_image`,
+# The unmount approver's pins on real APFS/HFS+ images (`volumes::platform::imp::unmount_approver::real_image`,
 # macOS-only, `#[ignore]`d): a real DiskArbitration approval session answers real `diskutil`
 # unmounts of the test's own image.
 #
@@ -199,16 +199,16 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # so a wedged tool is caught there and this cap stays the backstop for the test as a whole.
 # (Measured 2026-09-16 on macOS 27.0: 2.5-27.3 s per test, the two-partition ones slowest.)
 # allowed-unmatched-nextest-filter: macos-only, DiskArbitration and diskutil have no Linux counterpart
-filter = 'test(volumes::unmount_approver::real_image::)'
+filter = 'test(volumes::platform::imp::unmount_approver::real_image::)'
 test-group = 'disk-image'
 slow-timeout = { period = "90s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# The rename handler's pins on real APFS/HFS+ images (`volumes::rename_real_image`, macOS-only,
-# `#[ignore]`d): a real `diskutil rename` moves the mount point, and the handler keeps the volume's
+# The rename handler's pins on real APFS/HFS+ images (`volumes::platform::imp::rename_real_image`,
+# macOS-only, `#[ignore]`d): a real `diskutil rename` moves the mount point, and the handler keeps the volume's
 # id at the new root. Same group and 30 s cap as the harness tests above.
 # allowed-unmatched-nextest-filter: macos-only, hdiutil and diskutil have no Linux counterpart
-filter = 'test(volumes::rename_real_image::)'
+filter = 'test(volumes::platform::imp::rename_real_image::)'
 test-group = 'disk-image'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
