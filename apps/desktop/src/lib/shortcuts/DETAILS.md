@@ -619,6 +619,14 @@ before this rule applies. An entry already in `shortcuts.json` stays until the u
 The 500ms confirmation delay happens in the UI (`KeyboardShortcutsSection.svelte`). The store layer
 (`shortcuts-store.ts`) has no delay. If you call `setShortcut()` directly, it saves immediately.
 
+### A recorder on Linux has to take the menu bar's mnemonics away
+
+On Linux Settings wears the main menu bar (every window without a menu of its own does), and GTK takes a bar title's
+`Alt+<letter>` before the page sees it, so the recorder could never capture `Alt+F`. The shortcut recorder, the key
+filter, and the global go-to-latest recorder hold `suspendMenuMnemonicsWhile` (`menu-mnemonics-capture.svelte.ts`) while
+they listen; claims count per window. The mechanism: `src-tauri/src/menu/DETAILS.md` § "A modal surface takes the
+mnemonics away".
+
 ### Empty array vs missing key
 
 In `shortcuts.json`:

@@ -7,8 +7,9 @@
 //! - The bar as data lives in `cmdr-menu` (`crates/cmdr-menu/CLAUDE.md`): the item ids and the
 //!   command map (glob-re-exported here), `MENU_BAR` and its vocabulary (reachable here as
 //!   `menu_bar` / `menu_spec`), the enabled-state fold, and what a click asks for.
-//!   `menu_bar_builder.rs` builds it for the running platform (`build_menu`), and `mnemonics.rs`
-//!   allocates the Linux underline letters.
+//!   `menu_bar_builder.rs` builds it for the running platform (`build_menu`), `mnemonics.rs`
+//!   allocates the Linux underline letters, and `mnemonic_mask.rs` turns them off while a modal
+//!   surface owns a window's keyboard.
 //! - Every context menu is data too, in `cmdr_menu::context` (rows, ids, labels, enabled state,
 //!   accelerator sources, and what a pick asks for). `context_rows.rs` builds any of them
 //!   (`build_popup`); `file_context_menu.rs` builds the file one, filling its macOS slots. Its
@@ -77,6 +78,7 @@ mod menu_bar_builder;
 mod menu_handlers;
 mod menu_items;
 mod menu_structure;
+mod mnemonic_mask;
 mod mnemonics;
 #[cfg(target_os = "macos")]
 pub mod open_with;
@@ -152,6 +154,7 @@ pub use menu_handlers::{
 pub(crate) use menu_items::{DetachWord, detach_word_for_volume_id};
 pub use menu_items::{SameKindTarget, TrashUndoTarget, pin_tab_label, same_kind_menu_label, undo_trash_menu_label};
 pub use menu_structure::build_viewer_menu;
+pub(crate) use mnemonic_mask::set_window_mnemonics_suspended;
 pub use rebuild::rebuild_menu_bar;
 #[cfg(target_os = "macos")]
 pub use services_context::lend_services_menu;

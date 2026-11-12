@@ -9,12 +9,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushSync } from 'svelte'
 import { SvelteSet } from 'svelte/reactivity'
 import { startMenuDialogGate } from './menu-dialog-gate.svelte'
-import { setCommandsRefusedOverDialog } from '#lib/tauri-commands/index.js'
+import { setCommandsRefusedOverDialog, setMenuMnemonicsSuspended } from '#lib/tauri-commands/index.js'
 import type { DialogsOnScreen } from './command-dispatch-context'
 
 vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('#lib/tauri-commands/index.js')>()),
   setCommandsRefusedOverDialog: vi.fn(() => Promise.resolve()),
+  setMenuMnemonicsSuspended: vi.fn(() => Promise.resolve()),
 }))
 
 /** What's up, as a reactive set the gate's effect can track. */
@@ -110,5 +111,42 @@ describe('what the menu is told', () => {
     flushSync()
 
     expect(setCommandsRefusedOverDialog).not.toHaveBeenCalled()
+  })
+})
+
+/** Every verdict the menu bar's mnemonics were given, in order. */
+function mnemonicPushes(): boolean[] {
+  return vi.mocked(setMenuMnemonicsSuspended).mock.calls.map(([suspended]) => suspended)
+}
+
+describe("the menu bar's mnemonics (on Linux GTK takes a bar title's Alt+letter before the page)", () => {
+  it('starts with them on, so a reloaded page puts back whatever an earlier one left off', () => {
+    start()
+
+    expect(mnemonicPushes()).toEqual([false])
+  })
+
+  it('turns them off while a dialog or the palette is up, and back on once the last one is gone', () => {
+    start()
+
+    open.add('dialog')
+    flushSync()
+    open.add('palette')
+    flushSync()
+    open.delete('dialog')
+    flushSync()
+    // The palette is still up, so nothing changes until it goes too.
+    expect(mnemonicPushes()).toEqual([false, true])
+
+    open.delete('palette')
+    flushSync()
+    expect(mnemonicPushes()).toEqual([false, true, false])
+  })
+
+  it('pushes the real state first after a reload or HMR, whatever it was', () => {
+    open.add('dialog')
+    start()
+
+    expect(mnemonicPushes()).toEqual([true])
   })
 })

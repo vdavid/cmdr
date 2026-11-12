@@ -102,6 +102,9 @@ RUN apt-get update && apt-get install -y \
     # `dump_app_stacks`), so an intermittent hang names its blocked call in one run
     # (GitHub issue #564). Needs `--cap-add SYS_PTRACE` on the test container.
     gdb \
+    # Real X key events for what GTK takes before the webview (the menu bar's mnemonics):
+    # `e2e-playwright/helpers/x11-keys.ts`, used by `menu-mnemonic-mask.spec.ts`.
+    xdotool \
     # Useful utilities
     ca-certificates \
     # Clean up

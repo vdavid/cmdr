@@ -34,13 +34,14 @@ viewer bar. `macos_appkit.rs`: the objc2 boundary. One line per file: DETAILS §
   Predefined), forwarding the native selector via `send_native_edit_action()` outside the main window, or ⌘A and the
   clipboard die there; the VIEWER bar's four are Custom on their own `VIEWER_*` ids (Copy / Select all emit
   `ViewerEditAction`; Cut / Paste forward to its search box, ❗ Predefined off macOS or ⌘X / ⌘V die there).
-- **Enabled state has ONE writer, `apply_menu_item_states`**: store a new input and add it to the crate's
-  `MenuItemInputs` / `menu_item_enabled`, ❌ never a direct `set_enabled`. The viewer bar's Cut / Paste are in there too, following its search box
-  (`viewer_search_focus`). Greying is chrome — the real guard is `main_window.is_focused()` in `on_menu_event`;
-  accelerators fire even when items look off.
+- **Enabled state has ONE writer, `apply_menu_item_states`**: store a new input in the crate's `MenuItemInputs` /
+  `menu_item_enabled`, ❌ never a direct `set_enabled` (the viewer's Cut / Paste too). Greying is chrome: the guard is
+  `main_window.is_focused()` in `on_menu_event`, and accelerators fire on greyed items.
 - **macOS swaps ONE app-level bar on focus-gain (`activate_window_menu`)**; Linux uses per-window menus, and
   `window.set_menu()` is a macOS no-op. ❗ `cleanup_macos_menus`, `set_macos_menu_icons`, and `set_display_accelerators`
   survive nothing: re-apply all three after every swap, rebuild, and recreate.
+- **Linux GTK takes a bar title's `Alt+<letter>` before the page**: a modal surface turns mnemonics off
+  (`mnemonic_mask/`); ❌ a dialog outside the gate loses those keys. DETAILS § A modal surface.
 - **Every label comes from `menu_t("menu.…")`, ❌ never a literal** (muda's Predefined text is English), **and
   everything is keyed by ID, never title**. A language change rebuilds the whole bar and emits `menu-bar-rebuilt`, so
   whatever the frontend pushed must be pushed again.

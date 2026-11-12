@@ -105,6 +105,8 @@ window focus context.
 - `tag_icons.rs` (macOS): the circle PNGs for the seven plain tag items, the look the row falls back to.
 - `rebuild.rs`: `rebuild_menu_bar`, which throws the bar away and builds a new one in the current UI language.
 - `mnemonics.rs`: `Mnemonics`, the per-submenu allocator for the Linux underline letter.
+- `mnemonic_mask.rs`: `set_window_mnemonics_suspended`, which turns a window's mnemonics off while a modal surface owns
+  its keyboard. See "A modal surface takes the mnemonics away".
 
 ## Labels come from the message catalog
 
@@ -166,6 +168,28 @@ translated labels, in menu order: word-initial letters first (what people scan f
 then no marker at all if everything is taken (which costs one keystroke and nothing else). The menu bar's own titles get
 one allocator; each submenu gets its own. The builder runs every label through it on both platforms (a no-op on macOS),
 so no row in `cmdr_menu::bar` names a mnemonic, and a new item can't get one on one platform and not the other.
+
+### A modal surface takes the mnemonics away (`mnemonic_mask.rs`)
+
+GTK takes a bar TITLE's `Alt+<letter>` (English: F, E, S, V, G, T, H; other languages differ) before WebKit sees the
+keydown, so `preventDefault` can't help: the search dialog's `Alt+F`, `Alt+S`, and `Alt+V` would open menus. Item
+mnemonics are inert while their menu is closed. A native modal blocks its parent's bar; Cmdr's dialogs are web content,
+so the window does it by hand: `set_menu_mnemonics_suspended` sets the CALLING window's `GtkWindow` mnemonic modifier to
+every GDK modifier at once (nobody presses that), and back to Alt. The modifier is a property of the window, so a bar
+rebuild keeps it. A click on the bar still opens a menu. Verified with real X key events in the Linux E2E lane
+(`apps/desktop/test/e2e-playwright/menu-mnemonic-mask.spec.ts`, through `xdotool`). macOS has no mnemonics and Windows has none yet,
+so both answer without touching anything.
+
+- **Main window**: `routes/(main)/menu-dialog-gate.svelte.ts` sends the gate's own "something is open" bit (a dialog, an
+  explorer overlay, or the palette), as its own call beside the refused list: the list only mirrors the bit while
+  `REFUSED_OVER_DIALOGS` is non-empty. Stacked surfaces hold the mask until the last one closes, and a reload or HMR
+  pushes the real state first. Inline rename and the palette count as modal input here, so `Alt+F` can't open the File
+  menu mid-rename; intended.
+- **Every other window without a menu of its own wears the main bar on Linux** (Tauri hands the app-wide menu to every
+  window built without one, `AppHandle::set_menu`): Settings, the operation queue, the Keyboard shortcuts window, and
+  Debug. The viewer sets its own bar, which has no mnemonics. Settings is the one that captures combos, so its shortcut
+  recorder, its key filter, and the global go-to-latest recorder hold the mask while they listen
+  (`apps/desktop/src/lib/shortcuts/menu-mnemonics-capture.svelte.ts`, claims counted per window).
 
 ## Key concepts
 
@@ -1099,7 +1123,8 @@ The Windows bar has the Linux bar's rows and keys until the Windows menu model i
   platform's own spelling (`Ctrl+Shift+P`), which `frontend_shortcut_to_accelerator` registers as typed; it converts
   nothing between platforms (`crates/cmdr-menu/DETAILS.md` § "Accelerators"). `bar_parity_test.rs` keeps every row's
   default equal to the registry's first key, or excused with its reason.
-- **Mnemonics**: macOS doesn't use them. Linux gives `&` prefixes for GTK keyboard navigation, unique per submenu.
+- **Mnemonics**: macOS doesn't use them. Linux gives `&` prefixes for GTK keyboard navigation, unique per submenu, and
+  turns them off while a dialog or a shortcut recorder owns the keyboard.
 - **Help search**: macOS has the native NSMenu search field via `setHelpMenu:`. Linux has none.
 - **System cleanup**: on macOS, objc2 strips the injected Edit items. Linux needs none.
 - **Menu icons**: macOS sets every image via objc2 through `set_menu_item_image` (SF Symbols on the bar and context

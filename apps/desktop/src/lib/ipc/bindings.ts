@@ -4776,6 +4776,15 @@ export const commands = {
     } | null,
   ) => __TAURI_INVOKE<void>('update_sort_menu', { sort }),
   /**
+   *  Turns the CALLING window's menu-bar mnemonics off (`true`) or back to `Alt+<letter>` (`false`),
+   *  so a modal surface gets every `Alt+<letter>` keydown that GTK would otherwise take for a bar
+   *  title (`menu/mnemonic_mask.rs`). The main window's writer is `routes/(main)/menu-dialog-gate.svelte.ts`
+   *  (dialogs, overlays, the palette); Settings' is its shortcut recorder and key filter. A no-op
+   *  where the bar has no mnemonics (macOS, Windows).
+   */
+  setMenuMnemonicsSuspended: (suspended: boolean) =>
+    __TAURI_INVOKE<void>('set_menu_mnemonics_suspended', { suspended }),
+  /**
    *  Enables or disables MTP support at runtime.
    *
    *  When disabled: disconnects all devices, stops auto-connecting, and restores

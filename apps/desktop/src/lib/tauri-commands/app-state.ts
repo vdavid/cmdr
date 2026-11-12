@@ -100,6 +100,16 @@ export async function setCommandsRefusedOverDialog(commandIds: string[]): Promis
 }
 
 /**
+ * Turns the calling window's menu-bar mnemonics off (`true`) or back on (`false`), so a modal surface
+ * gets the `Alt+<letter>` keys GTK would take for a bar title on Linux (`menu/mnemonic_mask.rs`). A
+ * no-op where the bar has no mnemonics. Writers: the main window's dialog gate
+ * (`routes/(main)/menu-dialog-gate.svelte.ts`) and Settings' shortcut capture.
+ */
+export async function setMenuMnemonicsSuspended(suspended: boolean): Promise<void> {
+  await commands.setMenuMnemonicsSuspended(suspended)
+}
+
+/**
  * Greys out Edit > "Undo move to trash" for `null` (nothing to undo), or enables it and makes it name
  * what it would put back. `#lib/file-operations/delete/trash-undo.ts` is the only caller. Rust renders
  * the words from `menu_t`, so ❌ never pass a composed string here.

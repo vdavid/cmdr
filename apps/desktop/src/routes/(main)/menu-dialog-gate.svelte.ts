@@ -12,11 +12,15 @@
  * The text-input-only commands (cut, copy, paste, select all) are never on the list: the menu can't
  * see focus, and those items forward the native edit actions in Settings and the viewer.
  *
+ * The same bit also takes the bar's mnemonics away while something is up (`setMenuMnemonicsSuspended`):
+ * on Linux GTK takes a bar title's `Alt+<letter>` before the page sees it, so the search dialog's
+ * `Alt+F` would open the File menu. Not chrome: without it those keys never reach the dialog.
+ *
  * Main window only, for the same reason as `menu-operation-gate.svelte.ts`: one writer.
  */
 
 import { commands } from '#lib/commands/index.js'
-import { setCommandsRefusedOverDialog } from '#lib/tauri-commands/index.js'
+import { setCommandsRefusedOverDialog, setMenuMnemonicsSuspended } from '#lib/tauri-commands/index.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import type { DialogsOnScreen } from './command-dispatch-context'
 
@@ -48,6 +52,11 @@ export function startMenuDialogGate(getDialogsOnScreen: () => DialogsOnScreen): 
         // Nothing to recover: the items stay as they were, and the dispatch core refuses the
         // commands anyway. Worth a line, since a silent failure here looks like a menu bug.
         log.warn("Couldn't update which menu items a dialog greys out: {error}", { error: err })
+      })
+      // The bit itself, sent on its own: what the mask follows is "something modal is up", which
+      // the refused list only mirrors while `REFUSED_OVER_DIALOGS` happens to be non-empty.
+      void setMenuMnemonicsSuspended(somethingOpen).catch((err: unknown) => {
+        log.warn("Couldn't switch the menu bar's mnemonics for a dialog: {error}", { error: err })
       })
     })
   })

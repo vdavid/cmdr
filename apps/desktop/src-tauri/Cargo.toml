@@ -338,6 +338,10 @@ cocoon = "0.5"
 zbus = "5"
 # Native file icons: XDG icon theme lookup (pure Rust, no GTK dependency)
 freedesktop-icons = "0.4"
+# The menu bar's mnemonic mask (`menu/mnemonic_mask.rs`): `GtkWindow::set_mnemonic_modifier` on the
+# window Tauri hands us. Tauri and muda already link gtk 0.18 (the last gtk3-rs release), so this
+# adds no crate; the version must stay Tauri's, or `gtk_window()` returns a different type.
+gtk = "0.18"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # The custom updater's trust check: unpacking the release tarball and requiring Cmdr's Developer

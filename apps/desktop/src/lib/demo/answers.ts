@@ -68,6 +68,8 @@ export const silentCommands: readonly VoidCommand[] = [
   'updateRightPaneState',
   'recordBreadcrumb',
   'setChildWindowRect',
+  // A page's menu bar has no mnemonics to suspend.
+  'setMenuMnemonicsSuspended',
   // The swizzle's self-drag state: a page has no OS drag image to swap or badge to draw.
   'prepareSelfDragOverlay',
   'clearSelfDragOverlay',
