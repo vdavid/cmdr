@@ -11,7 +11,8 @@ read synchronously.
 - **To show or hide a feature, ask `hasCapability('quickLook')`, ❌ never `isMacOS()`.** The set is
   `PlatformCapabilities`, generated from Rust (`apps/desktop/src-tauri/src/platform/capabilities.rs`, one answer per OS
   arm). New OS-backed surface: add a field there, answer it in every arm, regen bindings. `isMacOS()` stays for
-  genuinely per-platform answers: key glyphs, the keymap, copy variants, the OS version.
+  genuinely per-platform answers: key glyphs, the keymap, the OS version. ❌ Never to pick copy: per-OS wording is one
+  catalog block (`../intl/DETAILS.md` § Platform variants).
 - **Both values are injected, never sniffed.** The backend's init script defines `window.__CMDR_PLATFORM__` and
   `window.__CMDR_CAPABILITIES__` in every webview before any script runs, so module-load reads are safe. ❌ Never read
   `navigator.userAgent` or `navigator.platform` to decide the OS.

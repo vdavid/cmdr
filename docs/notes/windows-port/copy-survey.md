@@ -1,7 +1,10 @@
 # Platform-variant copy survey (task 27)
 
-Generated from `009bdb32fb` on 2026-11-11. Machine-readable rows: `copy-proposal.json` (same folder). Nothing in the
-repo was changed; every text below is a proposal for David.
+This is the original survey, generated from `009bdb32fb` on 2026-11-11, kept as evidence. Machine-readable rows:
+`copy-proposal.json` (same folder). Every text below is a proposal, and many were changed before they shipped; its
+mechanism options (M2, M2b, M2c) and open questions are settled. The outcome: `copy-final.json` (the shipped English per
+OS, one row per key), `copy-decisions.md` (David's answers and the rows still open), and `docs/style-guide.md` §
+"Platform vocabulary" (the words). Where this file disagrees with them, they win.
 
 ## Counts
 

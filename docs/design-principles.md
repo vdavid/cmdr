@@ -9,7 +9,8 @@
   - **Words.** On macOS, say "Finder", "Trash", "System Settings". On Linux, say "file manager", "Trash" (FreeDesktop
     spec), and use DE-specific terminology where possible. Windows gets its own native terms ("File Explorer", "Recycle
     Bin", "Settings"). This applies to error messages, menu labels, tooltips, and any user-visible string. A few extra
-    lines of platform-specific text are always better than one watered-down generic string.
+    lines of platform-specific text are always better than one watered-down generic string. The word each OS uses is
+    `docs/style-guide.md` § "Platform vocabulary", the one glossary.
   - **Controls and conventions.** Buttons, dropdowns, checkboxes, scrollbars, focus visuals, and menus look and behave
     like the platform's own, and dialogs follow its conventions (button order, default and cancel keys, access keys).
   - **Keys.** Each platform gets the shortcuts its users already have in their fingers, not a mechanical translation of

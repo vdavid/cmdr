@@ -60,8 +60,8 @@ Windows, Linux, and macOS are each first-class, and a few extra lines of per-OS 
 
 ## Open rows
 
-Rows where the code doesn't settle a platform yet, so that platform keeps the macOS text (`openBranches` in
-`copy-final.json`). Each reopens when the named Windows code lands.
+Rows where the code doesn't settle a platform yet, so that platform keeps the macOS text (`openBranches`, or status
+`open` for the eject rows, in `copy-final.json`). Each reopens when the named Windows code lands.
 
 - `goToPath.dialog.inputPlaceholder`, Windows: `~/Documents` stays until Windows path parsing in Go to path exists.
 - `fileOperations.transferDialog.namedFolderHint`, Windows: "end the path with “/”" stays until the Windows destination

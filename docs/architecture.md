@@ -68,7 +68,8 @@ All under `apps/desktop/src/lib/`.
 - `intl/`: The two locale sources (`getUiLocale` for catalog text and, via `getCatalogLocale`, every number;
   `getFormatLocale` for the OS's date conventions) + memoized locale-aware number/size formatters; the `'system'` date
   reads the formatting one (dates formatted in `settings/format-utils.ts`). `os-locales.ts` fetches both from the
-  backend: the `'system'` UI language and the composed formatting tag
+  backend: the `'system'` UI language and the composed formatting tag. Per-OS copy is one `{platform, select, …}`
+  catalog value: `apps/desktop/src/lib/intl/DETAILS.md` § "Platform variants"
 - `shortcuts/`: Keyboard shortcut customization, scope hierarchy, conflict detection, plus the read-only Help > Keyboard
   shortcuts window (`shortcuts-window.ts` + `ShortcutsList.svelte` + pure `shortcut-diff.ts`, route at
   `routes/shortcuts/`)
@@ -152,7 +153,9 @@ All under `apps/desktop/src/lib/`.
 - `suggested-ops/`: The "Suggested ops" dialog (View menu) where the user reviews what Ask Cmdr proposed and decides
   what runs, over the proposal spine. Windowed op paging and the disclosure rules: its `CLAUDE.md`
 - `utils/`: Filename validation, confirm dialog utilities
-- `path/`: Path manipulation helpers (normalize, segment, join/split, platform-aware comparators)
+- `path/`: The app-path grammar (`/`, and on Windows `C:/` and `//server/share/` roots), shared with Rust's
+  `cmdr_fs::volume::path_grammar` through one case table, plus `shownPath` (the one display formatter) and the
+  `CanonicalPath` brand. See `apps/desktop/src/lib/path/CLAUDE.md`
 - `font-metrics/`: Character width measurement for accurate Brief mode column sizing
 - `demo/`: the browser demo's fake backend (`pnpm build:demo`, served at getcmdr.com/demo): typed answers behind
   `mockIPC`, with the listing commands routed to the WASM listing engine. See `apps/desktop/src/lib/demo/CLAUDE.md`

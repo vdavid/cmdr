@@ -133,11 +133,11 @@ never ask the OS. The mechanism is `../intl/DETAILS.md` § Platform variants; th
   iterates the golden's own keys, and a reason added after the move (`remotePermissionDenied`) has no pre-change output
   to be pinned against, so it lives in the style matrix only.
 - **The Windows and Linux goldens** (`friendly_error_golden.windows.json`, `.linux.json`) pin what those OSes read for
-  the same matrix. They were generated ONCE from the factories, right after the listing-family errors gained their
-  per-OS branches, read line by line against `docs/notes/windows-port/copy-final.json`, and frozen under the same rule
-  as the macOS one: hand-edit the values a deliberate change touches, never regenerate. They carry the macOS golden's
-  `category` / `retryHint` / `actionKind` (Rust's classification doesn't vary by OS) and exactly its key set, which the
-  parity test asserts. The input matrix lives in `friendly-error-matrix.ts`, shared by all three.
+  the same matrix. They were generated once from the factories, read line by line against
+  `docs/notes/windows-port/copy-final.json`, and frozen under the same rule as the macOS one: hand-edit the values a
+  deliberate change touches, never regenerate. They carry the macOS golden's `category` / `retryHint` / `actionKind`
+  (Rust's classification doesn't vary by OS) and exactly its key set, which the parity test asserts. The input matrix
+  lives in `friendly-error-matrix.ts`, shared by all three.
 - **`friendly-error-style.test.ts`**: iterates every listing reason × representative params, every git kind, every
   provider × category, and every `ConnectRefusalKind` the sign-in sheet words, asserting the rendered output obeys the
   writing rules (no "error" / "failed" / trivializing words). The friendly-error part runs once per OS, so every

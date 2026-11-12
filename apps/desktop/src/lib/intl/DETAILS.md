@@ -214,6 +214,10 @@ of a ternary or `||`/`??`, or a `const` (`$derived`, concise `$derived.by`, or p
 a call, a block-bodied `$derived.by`, `let`/`$state`, props, or object args (`use:tooltip={{ text }}`). The rule file's
 header is canonical.
 
+Ask Cmdr tool labels are literal-keyed in `ask-cmdr-tool-label-keys.ts`, so proposal status remains localized without
+dynamic message-key construction. A new tool label is a new English key plus a regenerated `keys.gen.ts`; the translator
+agents add its translations.
+
 ### Platform variants
 
 A value that reads differently per OS is ONE whole-value block, `{platform, select, macos {…} windows {…} other {…}}`,
@@ -289,6 +293,11 @@ docblock has the commands; the rules it applies:
 - `--scan` lists English values with macOS vocabulary that no row or gate covers, and lints every resolved `windows` and
   `other` branch against `docs/style-guide.md` § "Platform vocabulary" (`apps/desktop/scripts/platform-copy-lint.ts`).
 
+The evidence behind the rows sits beside `copy-final.json` in `docs/notes/windows-port/`: `copy-decisions.md` (David's
+answers, and § Open rows: what each OS still reads in macOS words and why), `copy-glossary-evidence.md` (the words,
+checked against the reference pile), `copy-row-verdicts.md` (rows settled by reading the code), and the original
+`copy-survey.md` with its `copy-proposal.json`, which the frozen macOS copy below still reads for its key list.
+
 ### The frozen macOS copy
 
 `macos-copy-unchanged.test.ts` holds every locale's macOS text for the platform-copy keys (the rows of
@@ -303,9 +312,6 @@ runs on its planned output before writing. The only allowed moves are `ACCEPTED_
 key that way only BEFORE its catalog values change, or the baseline freezes the edit. ❌ Never edit or regenerate the
 baseline to get green: a red means a catalog edit changed what a Mac shows. Per-area English goldens
 (`*i18n-parity.test.ts`, `*.parity.test.ts`) run under `withPlatform('macos')` for the same reason.
-
-Ask Cmdr tool labels are literal-keyed in `ask-cmdr-tool-label-keys.ts`, so proposal status remains localized without
-dynamic message-key construction. New English keys require translated catalog entries and a regenerated `keys.gen.ts`.
 
 ## The locale-aware formatting layer
 

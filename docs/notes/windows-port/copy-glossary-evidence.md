@@ -2,7 +2,9 @@
 
 Evidence check of the glossary in `copy-survey.md` and the `windows`, `linux`, and `linuxDesktops` texts in
 `copy-proposal.json`, against the localization reference pile and the web. `copy-decisions.md` still wins where it
-speaks; this file adds evidence and lists the proposal rows that need new wording. Checked 2026-11-11.
+speaks; this file adds evidence and lists the proposal rows that need new wording. Checked 2026-11-11. Kept as the
+evidence behind `docs/style-guide.md` § "Platform vocabulary"; the rewordings it asks for are resolved in
+`copy-final.json`, which wins over the texts here.
 
 Sources and how they were read:
 

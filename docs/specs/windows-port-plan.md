@@ -272,12 +272,35 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     explicit per-platform defaults where mechanical mapping is wrong, close to Total Commander's, retire the `⌃`→Shift
     hack, fix the `Ctrl+D` clashes and the off-macOS key bugs, conflict tests for all three platforms plus OS- and
     desktop-reserved combos. Survey and proposed keymap: `docs/notes/windows-port/keymap-survey.md`. Needs 24.
-27. [M] Win (Linux needs it). Platform-variant copy ([#1103](https://github.com/getcmdr/cmdr/issues/1103), decisions
-    open): intl injects `platform`, and the 478 Mac-flavored rows get each platform's own wording (ICU `select`; one
-    shared wording only where the platforms agree), the `.mac`/`.other` pairs collapse, i18n checks learn it. David
-    reviews the English. Survey and proposal: `docs/notes/windows-port/copy-survey.md`. Needs 24.
+27. [M] Win (Linux needs it). **Done**. Platform-variant copy ([#1103](https://github.com/getcmdr/cmdr/issues/1103)): a
+    value that reads differently per OS is one whole-value `{platform, select, macos {…} windows {…} other {…}}` block,
+    which `t()`, `getMessage()`, the native menu table, and the old-WebKit guard all resolve to the running OS's branch,
+    and every i18n check reads branch by branch (`apps/desktop/src/lib/intl/DETAILS.md` § "Platform variants"). The
+    words are `docs/style-guide.md` § "Platform vocabulary"; the 14 `.mac`/`.other` pairs are one key each,
+    `cmdr/no-platform-copy-branch` keeps `isMacOS()` off copy, and macOS-only surfaces are capability-gated instead of
+    reworded. The resolved English, one row per key, is `docs/notes/windows-port/copy-final.json` (299 rows applied in
+    `en`, the 13 full locales, and the three overlays; macOS text unmoved in every language apart from the two accepted
+    English changes). Left: the rows still open per `docs/notes/windows-port/copy-decisions.md` § Open rows (six Windows
+    branches and the eject control's six keys, each waiting on its Windows code), the rows waiting on #1102 (the eight
+    values with literal key glyphs, `shortcuts.conflict.reservedByMacOs`, `shortcuts.section.macOsTooltip` /
+    `.macOsBadge`, and the global go-to-latest description), and GNOME/KDE wording, which waits for task 59's Linux
+    desktop value.
 28. [L] Win. Translate task 27's changed strings into the 13 languages (translator agents, per
-    `docs/guides/i18n-translation.md`). Needs 27.
+    `docs/guides/i18n-translation.md`). Needs 27, and starts only after David has reviewed task 27's English: a
+    translation of English he then changes is a wasted round.
+    - **The worklist** is `desktop-i18n-stale`: every migrated key is stale in each full locale and in the `es-419`
+      forks (`en-GB` / `en-AU` are restamped English already). Its `macos` branch holds the existing translation; each
+      branch whose English changed holds that English. Restamp a key only once every branch is translated.
+    - **The rule** (each branch in its own OS's localized terms, and where those live in the reference pile) is
+      canonical in `docs/i18n/translator-instructions.md` (Per-OS values), which every brief embeds; how to work a
+      branch-level stale key is `docs/guides/i18n-translation.md` § New feature. Per-locale `terms.json` rulings for the
+      Windows concepts in `docs/i18n/concepts.json` (`recycle-bin`, `file-explorer`, `this-pc`, …) come with it.
+    - **`macos-copy-unchanged.test.ts`** and its baseline
+      (`apps/desktop/src/lib/intl/__fixtures__/macos-copy-baseline.json`, with
+      `apps/desktop/scripts/i18n-macos-copy-baseline*.ts` and the `copy-proposal.json` it reads) stay through this task,
+      since they keep translator agents off the `macos` branches; delete them at its end.
+    - **Releases are blocked until it's done**: `scripts/release.sh` runs `i18n-stale` strict, so every stale key fails
+      the release.
 29. [S] Windows, lint half is a win. **Done**. `lib/path/grammar.ts` holds the grammar (drive and UNC roots, a shared
     case table with Rust in `cmdr-fs`'s `path_grammar_cases.json`), `LocationInfo.case_sensitive` comes from the
     `volumes/` seam (macOS `false`, Linux `true`, Windows `false`; no frontend site consults it yet,

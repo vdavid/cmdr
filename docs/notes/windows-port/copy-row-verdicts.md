@@ -3,7 +3,9 @@
 Settles, from the code at `f0e0d8639b` (2026-11-11), every row and gate that `copy-decisions.md` left to "read the
 code". Inputs: `copy-decisions.md` (wins over everything), `copy-survey.md`, `copy-proposal.json`. Where a verdict says
 "proposal", the row's `windows` / `linux` text in `copy-proposal.json` ships as written. "Open" means the code doesn't
-settle it yet: keep the macOS text on that platform for now.
+settle it yet: keep the macOS text on that platform for now. Kept as the code evidence `copy-final.json` rows cite; the
+shipped text is `copy-final.json`'s, which departs from a verdict in a few rows (each says why in its `sources`), and
+the rows still open are `copy-decisions.md` § Open rows.
 
 ## Gates
 
