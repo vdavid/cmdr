@@ -13,7 +13,7 @@
   },
   "downloads.toast.inAppHint": "У програмі: натисніть <chip></chip>, щоб перейти сюди",
   "@downloads.toast.inAppHint": {
-    "sourceHash": "5b70d9c"
+    "sourceHash": "c579b1f"
   },
   "downloads.toast.globalHint": "У <em>будь-якій</em> програмі (глобальне скорочення) натисніть <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
@@ -21,11 +21,11 @@
   },
   "downloads.toast.summaryBoth": "Перехід: <inApp></inApp> у програмі, <global>{globalKey}</global> глобально.",
   "@downloads.toast.summaryBoth": {
-    "sourceHash": "59c4131"
+    "sourceHash": "a53ec51"
   },
   "downloads.toast.summaryInApp": "Перехід: <inApp></inApp> у програмі.",
   "@downloads.toast.summaryInApp": {
-    "sourceHash": "2c0fd22"
+    "sourceHash": "f73c3e3"
   },
   "downloads.toast.summaryGlobal": "Перехід: <global>{globalKey}</global> глобально.",
   "@downloads.toast.summaryGlobal": {

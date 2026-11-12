@@ -13,7 +13,7 @@
   },
   "downloads.toast.inAppHint": "En la app: pulsa <chip></chip> para saltar aquí",
   "@downloads.toast.inAppHint": {
-    "sourceHash": "5b70d9c"
+    "sourceHash": "c579b1f"
   },
   "downloads.toast.globalHint": "En <em>cualquier</em> app (atajo global), pulsa <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
@@ -21,11 +21,11 @@
   },
   "downloads.toast.summaryBoth": "Salta con <inApp></inApp> en la app, <global>{globalKey}</global> de forma global.",
   "@downloads.toast.summaryBoth": {
-    "sourceHash": "59c4131"
+    "sourceHash": "a53ec51"
   },
   "downloads.toast.summaryInApp": "Salta con <inApp></inApp> en la app.",
   "@downloads.toast.summaryInApp": {
-    "sourceHash": "2c0fd22"
+    "sourceHash": "f73c3e3"
   },
   "downloads.toast.summaryGlobal": "Salta con <global>{globalKey}</global> de forma global.",
   "@downloads.toast.summaryGlobal": {

@@ -5,7 +5,7 @@
   },
   "downloads.toast.inAppHint": "En la app: presiona <chip></chip> para saltar aquí",
   "@downloads.toast.inAppHint": {
-    "sourceHash": "2cebdb7"
+    "sourceHash": "da0682a"
   },
   "downloads.toast.globalHint": "En <em>cualquier</em> app (atajo global), presiona <chip>{key}</chip>",
   "@downloads.toast.globalHint": {

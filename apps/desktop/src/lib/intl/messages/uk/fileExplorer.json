@@ -55,6 +55,11 @@
   "@fileExplorer.pane.locationEmpty": {
     "sourceHash": "4c4231e"
   },
+  "fileExplorer.pane.locationHiddenItems": "{location}. {emptyState}",
+  "@fileExplorer.pane.locationHiddenItems": {
+    "sourceHash": "c357dc8",
+    "sameAsSourceJustification": "Placeholder-only frame: two already-translated parts joined by a period and a space, which is this language’s own sentence break."
+  },
   "fileExplorer.pane.selectedCount": "{count, plural, =0 {Нічого не вибрано} one {Вибрано: {countText}} few {Вибрано: {countText}} many {Вибрано: {countText}} other {Вибрано: {countText}}}",
   "@fileExplorer.pane.selectedCount": {
     "sourceHash": "f88241d"
@@ -1104,7 +1109,7 @@
   },
   "fileExplorer.list.hiddenItemsHowToShortcut": "Щоб побачити приховані елементи, натисніть <key></key> або виберіть «{menu} > {item}».",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
-    "sourceHash": "b212fcd"
+    "sourceHash": "be0e475"
   },
   "fileExplorer.list.hiddenItemsHowToMenu": "Щоб побачити приховані елементи, виберіть «{menu} > {item}».",
   "@fileExplorer.list.hiddenItemsHowToMenu": {

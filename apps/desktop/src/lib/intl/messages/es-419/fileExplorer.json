@@ -473,7 +473,7 @@
   },
   "fileExplorer.list.hiddenItemsHowToShortcut": "Para ver los elementos ocultos, presiona <key></key> o elige “{menu} > {item}”.",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
-    "sourceHash": "b4a9ed8"
+    "sourceHash": "97a2465"
   },
   "fileExplorer.sortFallback.added": "Esta ubicación no registra cuándo se agregaron los elementos, así que Cmdr ordena aquí por fecha de modificación.",
   "@fileExplorer.sortFallback.added": {

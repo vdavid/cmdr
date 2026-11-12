@@ -55,6 +55,11 @@
   "@fileExplorer.pane.locationEmpty": {
     "sourceHash": "4c4231e"
   },
+  "fileExplorer.pane.locationHiddenItems": "{location}. {emptyState}",
+  "@fileExplorer.pane.locationHiddenItems": {
+    "sourceHash": "c357dc8",
+    "sameAsSourceJustification": "Placeholder-only frame: two already-translated parts joined by a period and a space, which is this language’s own sentence break."
+  },
   "fileExplorer.pane.selectedCount": "{count, plural, =0 {Ningún elemento seleccionado} one {{countText} seleccionado} many {{countText} seleccionados} other {{countText} seleccionados}}",
   "@fileExplorer.pane.selectedCount": {
     "sourceHash": "f88241d"
@@ -1106,7 +1111,7 @@
   },
   "fileExplorer.list.hiddenItemsHowToShortcut": "Para ver los elementos ocultos, pulsa <key></key> o elige “{menu} > {item}”.",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
-    "sourceHash": "b212fcd"
+    "sourceHash": "be0e475"
   },
   "fileExplorer.list.hiddenItemsHowToMenu": "Para ver los elementos ocultos, elige “{menu} > {item}”.",
   "@fileExplorer.list.hiddenItemsHowToMenu": {

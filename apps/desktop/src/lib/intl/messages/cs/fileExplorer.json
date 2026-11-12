@@ -55,6 +55,11 @@
   "@fileExplorer.pane.locationEmpty": {
     "sourceHash": "4c4231e"
   },
+  "fileExplorer.pane.locationHiddenItems": "{location}. {emptyState}",
+  "@fileExplorer.pane.locationHiddenItems": {
+    "sourceHash": "c357dc8",
+    "sameAsSourceJustification": "Placeholder-only frame: two already-translated parts joined by a period and a space, which is this language’s own sentence break."
+  },
   "fileExplorer.pane.selectedCount": "{count, plural, =0 {Nic není vybráno} one {Vybrána {countText} položka} few {Vybrány {countText} položky} many {Vybráno {countText} položky} other {Vybráno {countText} položek}}",
   "@fileExplorer.pane.selectedCount": {
     "sourceHash": "f88241d"
@@ -1104,7 +1109,7 @@
   },
   "fileExplorer.list.hiddenItemsHowToShortcut": "Chcete-li zobrazit skryté položky, stiskněte <key></key> nebo vyberte „{menu} > {item}“.",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
-    "sourceHash": "b212fcd"
+    "sourceHash": "be0e475"
   },
   "fileExplorer.list.hiddenItemsHowToMenu": "Chcete-li zobrazit skryté položky, vyberte „{menu} > {item}“.",
   "@fileExplorer.list.hiddenItemsHowToMenu": {

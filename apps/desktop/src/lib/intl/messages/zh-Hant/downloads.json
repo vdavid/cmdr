@@ -13,7 +13,7 @@
   },
   "downloads.toast.inAppHint": "App 內：按 <chip></chip> 就能跳至這裡",
   "@downloads.toast.inAppHint": {
-    "sourceHash": "5b70d9c"
+    "sourceHash": "c579b1f"
   },
   "downloads.toast.globalHint": "在<em>任何</em> App 中（全域快速鍵），按 <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
@@ -21,11 +21,11 @@
   },
   "downloads.toast.summaryBoth": "App 內按 <inApp></inApp> 跳至下載項目，全域則按 <global>{globalKey}</global>。",
   "@downloads.toast.summaryBoth": {
-    "sourceHash": "59c4131"
+    "sourceHash": "a53ec51"
   },
   "downloads.toast.summaryInApp": "App 內按 <inApp></inApp> 跳至下載項目。",
   "@downloads.toast.summaryInApp": {
-    "sourceHash": "2c0fd22"
+    "sourceHash": "f73c3e3"
   },
   "downloads.toast.summaryGlobal": "全域按 <global>{globalKey}</global> 跳至下載項目。",
   "@downloads.toast.summaryGlobal": {

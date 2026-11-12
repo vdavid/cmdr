@@ -331,16 +331,16 @@
   },
   "viewer.statusBar.hint.wrap": "<key></key> terugloop",
   "@viewer.statusBar.hint.wrap": {
-    "sourceHash": "b30ce00"
+    "sourceHash": "3460cf6"
   },
   "viewer.statusBar.hint.tail": "<key></key> tail",
   "@viewer.statusBar.hint.tail": {
-    "sourceHash": "63d25d1",
+    "sourceHash": "55206fc",
     "sameAsSourceJustification": "The mode keeps its English name Tail, as the toolbar button viewer.toolbar.tail.label does (terms.json tail: Tail)."
   },
   "viewer.statusBar.hint.search": "<key></key> zoeken",
   "@viewer.statusBar.hint.search": {
-    "sourceHash": "1cf8c07"
+    "sourceHash": "a638ec6"
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {

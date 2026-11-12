@@ -14,7 +14,7 @@
   },
   "downloads.toast.inAppHint": "In de app: druk op <chip></chip> om hierheen te springen",
   "@downloads.toast.inAppHint": {
-    "sourceHash": "5b70d9c"
+    "sourceHash": "c579b1f"
   },
   "downloads.toast.globalHint": "In <em>elke</em> app (globale sneltoets): druk op <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
@@ -22,11 +22,11 @@
   },
   "downloads.toast.summaryBoth": "Spring met <inApp></inApp> in de app, <global>{globalKey}</global> globaal.",
   "@downloads.toast.summaryBoth": {
-    "sourceHash": "59c4131"
+    "sourceHash": "a53ec51"
   },
   "downloads.toast.summaryInApp": "Spring met <inApp></inApp> in de app.",
   "@downloads.toast.summaryInApp": {
-    "sourceHash": "2c0fd22"
+    "sourceHash": "f73c3e3"
   },
   "downloads.toast.summaryGlobal": "Spring met <global>{globalKey}</global> globaal.",
   "@downloads.toast.summaryGlobal": {

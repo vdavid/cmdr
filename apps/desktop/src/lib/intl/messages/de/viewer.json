@@ -332,15 +332,15 @@
   },
   "viewer.statusBar.hint.wrap": "<key></key> Umbruch",
   "@viewer.statusBar.hint.wrap": {
-    "sourceHash": "b30ce00"
+    "sourceHash": "3460cf6"
   },
   "viewer.statusBar.hint.tail": "<key></key> Folgen",
   "@viewer.statusBar.hint.tail": {
-    "sourceHash": "63d25d1"
+    "sourceHash": "55206fc"
   },
   "viewer.statusBar.hint.search": "<key></key> Suchen",
   "@viewer.statusBar.hint.search": {
-    "sourceHash": "1cf8c07"
+    "sourceHash": "a638ec6"
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {

@@ -13,7 +13,7 @@
   },
   "downloads.toast.inAppHint": "В приложении: нажмите <chip></chip>, чтобы перейти сюда",
   "@downloads.toast.inAppHint": {
-    "sourceHash": "5b70d9c"
+    "sourceHash": "c579b1f"
   },
   "downloads.toast.globalHint": "В <em>любом</em> приложении (глобальное сочетание клавиш): нажмите <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
@@ -21,11 +21,11 @@
   },
   "downloads.toast.summaryBoth": "Для перехода: <inApp></inApp> в приложении, <global>{globalKey}</global> из любого приложения.",
   "@downloads.toast.summaryBoth": {
-    "sourceHash": "59c4131"
+    "sourceHash": "a53ec51"
   },
   "downloads.toast.summaryInApp": "Для перехода в приложении: <inApp></inApp>.",
   "@downloads.toast.summaryInApp": {
-    "sourceHash": "2c0fd22"
+    "sourceHash": "f73c3e3"
   },
   "downloads.toast.summaryGlobal": "Для перехода из любого приложения: <global>{globalKey}</global>.",
   "@downloads.toast.summaryGlobal": {

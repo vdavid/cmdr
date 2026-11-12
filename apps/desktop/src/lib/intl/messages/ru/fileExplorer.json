@@ -55,6 +55,11 @@
   "@fileExplorer.pane.locationEmpty": {
     "sourceHash": "4c4231e"
   },
+  "fileExplorer.pane.locationHiddenItems": "{location}. {emptyState}",
+  "@fileExplorer.pane.locationHiddenItems": {
+    "sourceHash": "c357dc8",
+    "sameAsSourceJustification": "Placeholder-only frame: two already-translated parts joined by a period and a space, which is this language’s own sentence break."
+  },
   "fileExplorer.pane.selectedCount": "{count, plural, =0 {Ничего не выделено} one {Выделено: {countText}} few {Выделено: {countText}} many {Выделено: {countText}} other {Выделено: {countText}}}",
   "@fileExplorer.pane.selectedCount": {
     "sourceHash": "f88241d"
@@ -1104,7 +1109,7 @@
   },
   "fileExplorer.list.hiddenItemsHowToShortcut": "Чтобы увидеть скрытые объекты, нажмите <key></key> или выберите «{menu} > {item}».",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
-    "sourceHash": "b212fcd"
+    "sourceHash": "be0e475"
   },
   "fileExplorer.list.hiddenItemsHowToMenu": "Чтобы увидеть скрытые объекты, выберите «{menu} > {item}».",
   "@fileExplorer.list.hiddenItemsHowToMenu": {

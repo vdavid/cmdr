@@ -13,7 +13,7 @@
   },
   "downloads.toast.inAppHint": "No app: pressione <chip></chip> para pular para cá",
   "@downloads.toast.inAppHint": {
-    "sourceHash": "5b70d9c"
+    "sourceHash": "c579b1f"
   },
   "downloads.toast.globalHint": "Em <em>qualquer</em> app (atalho global), pressione <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
@@ -21,11 +21,11 @@
   },
   "downloads.toast.summaryBoth": "Pule com <inApp></inApp> no app, <global>{globalKey}</global> globalmente.",
   "@downloads.toast.summaryBoth": {
-    "sourceHash": "59c4131"
+    "sourceHash": "a53ec51"
   },
   "downloads.toast.summaryInApp": "Pule com <inApp></inApp> no app.",
   "@downloads.toast.summaryInApp": {
-    "sourceHash": "2c0fd22"
+    "sourceHash": "f73c3e3"
   },
   "downloads.toast.summaryGlobal": "Pule com <global>{globalKey}</global> globalmente.",
   "@downloads.toast.summaryGlobal": {

@@ -14,7 +14,7 @@
   },
   "downloads.toast.inAppHint": "In der App: Drücke <chip></chip>, um hierher zu springen",
   "@downloads.toast.inAppHint": {
-    "sourceHash": "5b70d9c"
+    "sourceHash": "c579b1f"
   },
   "downloads.toast.globalHint": "In <em>jeder</em> App (globaler Kurzbefehl): drücke <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
@@ -22,11 +22,11 @@
   },
   "downloads.toast.summaryBoth": "Spring mit <inApp></inApp> in der App, <global>{globalKey}</global> global.",
   "@downloads.toast.summaryBoth": {
-    "sourceHash": "59c4131"
+    "sourceHash": "a53ec51"
   },
   "downloads.toast.summaryInApp": "Spring mit <inApp></inApp> in der App.",
   "@downloads.toast.summaryInApp": {
-    "sourceHash": "2c0fd22"
+    "sourceHash": "f73c3e3"
   },
   "downloads.toast.summaryGlobal": "Spring mit <global>{globalKey}</global> global.",
   "@downloads.toast.summaryGlobal": {

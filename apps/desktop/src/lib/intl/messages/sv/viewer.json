@@ -332,16 +332,16 @@
   },
   "viewer.statusBar.hint.wrap": "<key></key> radbyte",
   "@viewer.statusBar.hint.wrap": {
-    "sourceHash": "b30ce00"
+    "sourceHash": "3460cf6"
   },
   "viewer.statusBar.hint.tail": "<key></key> tail",
   "@viewer.statusBar.hint.tail": {
-    "sourceHash": "63d25d1",
-    "sameAsSourceJustification": "'tail' is the Tail button's loanword (viewer.toolbar.tail.label, terms.json tail → Tail), lowercased like the sibling hints; the key glyph stays as is."
+    "sourceHash": "55206fc",
+    "sameAsSourceJustification": "'tail' is the Tail button's loanword (viewer.toolbar.tail.label, terms.json tail → Tail), lowercased like the sibling hints; the key cap stays as is."
   },
   "viewer.statusBar.hint.search": "<key></key> sök",
   "@viewer.statusBar.hint.search": {
-    "sourceHash": "1cf8c07"
+    "sourceHash": "a638ec6"
   },
   "viewer.media.dimensions": "{width} × {height}",
   "@viewer.media.dimensions": {

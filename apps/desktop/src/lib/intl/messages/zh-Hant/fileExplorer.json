@@ -55,6 +55,10 @@
   "@fileExplorer.pane.locationEmpty": {
     "sourceHash": "4c4231e"
   },
+  "fileExplorer.pane.locationHiddenItems": "{location}。{emptyState}",
+  "@fileExplorer.pane.locationHiddenItems": {
+    "sourceHash": "c357dc8"
+  },
   "fileExplorer.pane.selectedCount": "{count, plural, =0 {未選取項目} other {已選取 {countText} 個項目}}",
   "@fileExplorer.pane.selectedCount": {
     "sourceHash": "f88241d"
@@ -1102,7 +1106,7 @@
   },
   "fileExplorer.list.hiddenItemsHowToShortcut": "按 <key></key> 或選擇「{menu} > {item}」就能看到隱藏項目。",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
-    "sourceHash": "b212fcd"
+    "sourceHash": "be0e475"
   },
   "fileExplorer.list.hiddenItemsHowToMenu": "選擇「{menu} > {item}」就能看到隱藏項目。",
   "@fileExplorer.list.hiddenItemsHowToMenu": {

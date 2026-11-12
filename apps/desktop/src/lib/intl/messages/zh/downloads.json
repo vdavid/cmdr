@@ -13,7 +13,7 @@
   },
   "downloads.toast.inAppHint": "应用内：按 <chip></chip> 跳转到这里",
   "@downloads.toast.inAppHint": {
-    "sourceHash": "5b70d9c"
+    "sourceHash": "c579b1f"
   },
   "downloads.toast.globalHint": "在<em>任意</em>应用中（全局快捷键），按 <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
@@ -21,11 +21,11 @@
   },
   "downloads.toast.summaryBoth": "应用内按 <inApp></inApp> 跳转，全局按 <global>{globalKey}</global>。",
   "@downloads.toast.summaryBoth": {
-    "sourceHash": "59c4131"
+    "sourceHash": "a53ec51"
   },
   "downloads.toast.summaryInApp": "应用内按 <inApp></inApp> 跳转。",
   "@downloads.toast.summaryInApp": {
-    "sourceHash": "2c0fd22"
+    "sourceHash": "f73c3e3"
   },
   "downloads.toast.summaryGlobal": "全局按 <global>{globalKey}</global> 跳转。",
   "@downloads.toast.summaryGlobal": {
