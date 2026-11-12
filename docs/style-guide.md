@@ -121,8 +121,9 @@ Each line reads macOS / Windows / Linux.
   - **Spotlight** / search in Start / no name.
   - **Dock** / **taskbar** / no name.
   - **Disk Utility** > First Aid / the drive's **Properties** > **Tools** > **Check** / no name.
-  - Installing and removing: the Applications folder, drag to Trash / **Settings** > **Apps** > **Installed apps** /
-    "the way you installed it" (Cmdr ships as deb, rpm, and AppImage).
+  - Installing and removing: the Applications folder, drag to Trash / **Settings** > **Apps** / "the way you installed
+    it" (Cmdr ships as deb, rpm, and AppImage). The Windows path stops at "Apps": the page under it is "Installed apps"
+    on Windows 11 and "Apps & features" on Windows 10 22H2, and Cmdr supports both.
   - A notification channel's name: "macOS" / "Windows" / "System".
 - Keys and instructions
   - Modifier names in prose: ⌘ ⌥ ⌃ ⇧ / Ctrl, Alt, Shift, Win / Ctrl, Alt, Shift, Super. Prefer passing the bound combo

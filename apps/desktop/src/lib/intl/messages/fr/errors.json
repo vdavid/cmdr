@@ -531,7 +531,7 @@
   "@errors.listing.serverRefused.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.serverRefused.explanation": "Ce dossier se trouve sur un serveur, et le compte utilisé pour vous connecter n’a pas l’autorisation de l’ouvrir. C’est le serveur qui décide, donc aucun réglage sur cet ordinateur n’y changera rien.",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {Ce dossier se trouve sur un serveur, et le compte utilisé pour vous connecter n’a pas l’autorisation de l’ouvrir. C’est le serveur qui décide, donc aucun réglage sur cet ordinateur n’y changera rien.}}",
   "@errors.listing.serverRefused.explanation": {
     "sourceHash": "bba853c"
   },
@@ -2417,7 +2417,7 @@
   "@errors.eject.unexpected": {
     "sourceHash": "2978e2a"
   },
-  "errors.mount.hostUnreachable": "Cmdr n’a pas pu joindre « {server} ». Vérifiez qu’il est allumé et sur le même réseau que cet ordinateur.",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr n’a pas pu joindre « {server} ». Vérifiez qu’il est allumé et sur le même réseau que cet ordinateur.}}",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "45ac92c"
   },
@@ -2449,7 +2449,7 @@
   "@errors.mount.cancelled": {
     "sourceHash": "bc771b3"
   },
-  "errors.mount.unsupportedProtocol": "Cet ordinateur et « {server} » n’ont aucune version de SMB en commun. Activez SMB 2 ou ultérieur dans les réglages du serveur, puis réessayez.",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {Cet ordinateur et « {server} » n’ont aucune version de SMB en commun. Activez SMB 2 ou ultérieur dans les réglages du serveur, puis réessayez.}}",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "8afe4cb"
   },
@@ -2457,7 +2457,7 @@
   "@errors.mount.mountRefused": {
     "sourceHash": "6cf694d"
   },
-  "errors.mount.mountMissing": "Votre ordinateur a indiqué que « {share} » sur « {server} » était connecté, mais le partage n’est jamais apparu. Réessayez.",
+  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Votre ordinateur a indiqué que « {share} » sur « {server} » était connecté, mais le partage n’est jamais apparu. Réessayez.}}",
   "@errors.mount.mountMissing": {
     "sourceHash": "72ab946"
   },
@@ -2469,7 +2469,7 @@
   "@errors.mount.unexpected": {
     "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "Cmdr n’a pas pu joindre « {server} ». Vérifiez qu’il est allumé et sur le même réseau que cet ordinateur.",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr n’a pas pu joindre « {server} ». Vérifiez qu’il est allumé et sur le même réseau que cet ordinateur.}}",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "45ac92c"
   },

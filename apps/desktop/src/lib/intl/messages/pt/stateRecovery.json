@@ -111,7 +111,7 @@
   "@stateRecovery.credentials.title": {
     "sourceHash": "e4821b8"
   },
-  "stateRecovery.credentials.body": "Isso acontece depois de mudar para um computador novo. O Cmdr vai pedir cada senha de novo na próxima vez que precisar dela.",
+  "stateRecovery.credentials.body": "{platform, select, windows {This happens after a move to a new PC. Cmdr asks for each password again the next time it needs it.} other {Isso acontece depois de mudar para um computador novo. O Cmdr vai pedir cada senha de novo na próxima vez que precisar dela.}}",
   "@stateRecovery.credentials.body": {
     "sourceHash": "afac266"
   },

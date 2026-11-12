@@ -823,7 +823,7 @@
   "@errors.eject.unexpected": {
     "sourceHash": "fa2c0b0"
   },
-  "errors.mount.hostUnreachable": "Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que esta computadora.",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que esta computadora.}}",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "15b4163"
   },
@@ -839,7 +839,7 @@
   "@errors.mount.cancelled": {
     "sourceHash": "34b895b"
   },
-  "errors.mount.unsupportedProtocol": "Esta computadora y “{server}” no tienen ninguna versión de SMB en común. Activa SMB 2 o posterior en la configuración del servidor y vuelve a intentarlo.",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {Esta computadora y “{server}” no tienen ninguna versión de SMB en común. Activa SMB 2 o posterior en la configuración del servidor y vuelve a intentarlo.}}",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "39328ea"
   },
@@ -847,7 +847,7 @@
   "@errors.mount.mountRefused": {
     "sourceHash": "436a557"
   },
-  "errors.mount.mountMissing": "Tu computadora indicó que “{share}” en “{server}” estaba conectado, pero nunca apareció. Vuelve a intentarlo.",
+  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Tu computadora indicó que “{share}” en “{server}” estaba conectado, pero nunca apareció. Vuelve a intentarlo.}}",
   "@errors.mount.mountMissing": {
     "sourceHash": "8eae6e6"
   },
@@ -855,7 +855,7 @@
   "@errors.mount.unexpected": {
     "sourceHash": "ba78ecd"
   },
-  "errors.shareList.hostUnreachable": "Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que esta computadora.",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que esta computadora.}}",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "15b4163"
   },
@@ -906,7 +906,7 @@
   "@errors.write.namedLeavesRefused.message.routeCannotName": {
     "sourceHash": "ccd9d14"
   },
-  "errors.listing.serverRefused.explanation": "Esta carpeta está en un servidor, y la cuenta con la que te conectaste no tiene permiso para abrirla. Lo decide el servidor, así que ninguna opción de esta computadora lo cambia.",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {Esta carpeta está en un servidor, y la cuenta con la que te conectaste no tiene permiso para abrirla. Lo decide el servidor, así que ninguna opción de esta computadora lo cambia.}}",
   "@errors.listing.serverRefused.explanation": {
     "sourceHash": "a78cb55"
   },

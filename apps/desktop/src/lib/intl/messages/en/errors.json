@@ -799,15 +799,15 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.listing.serverRefused.title": "The server won’t open this folder",
-  "errors.listing.serverRefused.explanation": "This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this computer changes it.",
-  "errors.listing.serverRefused.suggestion": "Here’s what to try:\n- Check the folder’s permissions on the server\n- Some folders belong to the server’s own system account and stay closed to everyone else\n- Connect with an account that has access",
-  "@errors.listing.serverRefused.title": {
-    "description": "Title of the listing error panel when a server Cmdr connected to directly (SFTP, WebDAV, or NFS) refuses a folder. Plain text.",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this computer changes it.}}",
+  "@errors.listing.serverRefused.explanation": {
+    "description": "Body of the listing error panel for a folder a connected server (SFTP, WebDAV, or NFS) refuses. Markdown. The contrast with a setting on the computer is the point of the sentence: the user can't fix this on their own machine.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.serverRefused.explanation": {
-    "description": "Body of the listing error panel for a folder a connected server (SFTP, WebDAV, or NFS) refuses. Markdown. The contrast with a setting on the computer is the point of the sentence: the user can't fix this on their own machine.",
+  "errors.listing.serverRefused.suggestion": "Here’s what to try:\n- Check the folder’s permissions on the server\n- Some folders belong to the server’s own system account and stay closed to everyone else\n- Connect with an account that has access",
+  "@errors.listing.serverRefused.title": {
+    "description": "Title of the listing error panel when a server Cmdr connected to directly (SFTP, WebDAV, or NFS) refuses a folder. Plain text.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -3722,7 +3722,7 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.mount.hostUnreachable": "Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this computer.",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this computer.}}",
   "@errors.mount.hostUnreachable": {
     "description": "Shown when nothing answered at the server's address: it's off, asleep, or on another network. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
@@ -3798,7 +3798,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
   },
-  "errors.mount.unsupportedProtocol": "This computer and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {This computer and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.}}",
   "@errors.mount.unsupportedProtocol": {
     "description": "Shown when the server only offers an old version of the file-sharing protocol that this computer no longer uses (typically SMB 1). Keep \"SMB\" as-is: it's the protocol's name, and the server's settings use it too. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
@@ -3817,7 +3817,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
   },
-  "errors.mount.mountMissing": "Your computer said “{share}” on “{server}” was connected, but it never showed up. Try again.",
+  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Your computer said “{share}” on “{server}” was connected, but it never showed up. Try again.}}",
   "@errors.mount.mountMissing": {
     "description": "Shown when the operating system reported the shared folder as connected, but the folder never actually appeared. It's a glitch on the computer's side, and trying again usually works. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
@@ -3843,7 +3843,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
   },
-  "errors.shareList.hostUnreachable": "Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this computer.",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this computer.}}",
   "@errors.shareList.hostUnreachable": {
     "description": "Shown when nothing answered at the server's address: it's off, asleep, or on another network. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {

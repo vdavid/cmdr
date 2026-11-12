@@ -531,7 +531,7 @@
   "@errors.listing.serverRefused.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.serverRefused.explanation": "Deze map staat op een server, en het account waarmee je verbinding hebt gemaakt heeft geen bevoegdheid om de map te openen. De server beslist daarover, dus geen enkele instelling op deze computer verandert dat.",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {Deze map staat op een server, en het account waarmee je verbinding hebt gemaakt heeft geen bevoegdheid om de map te openen. De server beslist daarover, dus geen enkele instelling op deze computer verandert dat.}}",
   "@errors.listing.serverRefused.explanation": {
     "sourceHash": "bba853c"
   },
@@ -2417,7 +2417,7 @@
   "@errors.eject.unexpected": {
     "sourceHash": "2978e2a"
   },
-  "errors.mount.hostUnreachable": "Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.}}",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "45ac92c"
   },
@@ -2449,7 +2449,7 @@
   "@errors.mount.cancelled": {
     "sourceHash": "bc771b3"
   },
-  "errors.mount.unsupportedProtocol": "Deze computer en ‘{server}’ hebben geen SMB-versie gemeen. Schakel SMB 2 of later in bij de instellingen van de server en probeer het dan opnieuw.",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {Deze computer en ‘{server}’ hebben geen SMB-versie gemeen. Schakel SMB 2 of later in bij de instellingen van de server en probeer het dan opnieuw.}}",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "8afe4cb"
   },
@@ -2457,7 +2457,7 @@
   "@errors.mount.mountRefused": {
     "sourceHash": "6cf694d"
   },
-  "errors.mount.mountMissing": "Je computer meldde dat ‘{share}’ op ‘{server}’ verbonden was, maar de gedeelde map verscheen nooit. Probeer het opnieuw.",
+  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Je computer meldde dat ‘{share}’ op ‘{server}’ verbonden was, maar de gedeelde map verscheen nooit. Probeer het opnieuw.}}",
   "@errors.mount.mountMissing": {
     "sourceHash": "72ab946"
   },
@@ -2469,7 +2469,7 @@
   "@errors.mount.unexpected": {
     "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.}}",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "45ac92c"
   },

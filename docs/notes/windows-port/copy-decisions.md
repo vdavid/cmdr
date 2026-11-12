@@ -43,6 +43,21 @@ Windows, Linux, and macOS are each first-class, and a few extra lines of per-OS 
   rows, the macOS Local Network block in Settings, `listing.showTags`, and the Local AI option are hidden where the
   feature doesn't exist. `showSafeSaveFiles`, the bundle row, and the full-screen rows are gated too when the code shows
   they mean nothing off macOS. Windows and Linux users get a simpler UI.
+- **A macOS cause on a surface every OS reaches is worded per OS, and its macOS-only button is gated** (the conformance
+  review's finds, each read from the code):
+  - The MTP device-in-use dialog (`mtp.ptpcameradDialog.*`): Linux reaches it when the desktop's own MTP mount holds the
+    phone, so it says to unmount the phone in the file manager; Windows gets a plain "another app holds it". Only macOS
+    reads about `ptpcamerad` and gets a command.
+  - The downloads watcher being down (`downloads.fda.message`, `common.downloadsFdaHint`): off macOS there's no Full
+    Disk Access, and the watcher is down only when it couldn't attach to the folder, so the text says to check the
+    folder. "Open System Settings" shows under `fullDiskAccess`.
+  - A direct SMB connection the machine itself blocked (`directConnectionBlockedByThisMacToast`): off macOS the cause
+    left is a firewall. The Local Network button shows under `localNetworkPermission`, and the after-update variant is
+    raised only where that permission exists.
+  - Hidden bookkeeping settings of macOS-only features (the nudge stamps, the Full Disk Access choice) carry
+    `needsCapability`, so `cmdr://settings` doesn't list their labels off macOS.
+  - The seeded favorite for the user's folder is named "User folder" on Windows
+    (`apps/desktop/src-tauri/src/favorites/platform/`).
 - **Errors only macOS produces today**: write the Windows and Linux variants where we know what they should say; skip
   the rest (they stay macOS text until their platform path exists).
 - **Mechanism for the non-ICU families** (`errors.*`, `menu.*`): one top-level platform block.
@@ -76,6 +91,15 @@ Rows where the code doesn't settle a platform yet, so that platform keeps the ma
   until `apps/desktop/src-tauri/src/tools/sensitive.rs:RULES` gains Windows entries (browser profiles under `AppData`,
   Credential Manager's files). Today nothing on Windows is protected, so no honest Windows list exists yet; this blocks
   shipping Ask Cmdr on Windows. Linux names only what `RULES` covers (no mail client).
+- `settings.advanced.oldMacosNoticeShown.label`, Windows and Linux: the hidden one-shot flag's label ("Old macOS notice
+  shown") still lists in the MCP `cmdr://settings` resource. No capability states "this OS has a supported-version floor
+  notice" (`startup-gates.ts` asks `isMacOS()`, which is right for the notice itself), and one hidden label doesn't earn
+  a new one. It closes when Windows gets its own old-version notice and the flag is renamed for both.
+- `main.oldWebkit.body`, Windows: no `windows` branch, so Windows would read the Linux text ("a newer WebKitGTK").
+  Unreachable today: the guard blocks an old WebKit, and Windows runs on the evergreen WebView2. Write the branch if the
+  boot guard ever gains a WebView2 floor.
+- `settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description`, Windows and Linux (X11):
+  "Requires Full Disk Access." stays with the key glyphs until #1102 passes the combo as a placeholder (the row's note).
 - The eject control's words, Windows and Linux: `menu.volume.eject`, `menu.volume.ejectBusy`,
   `fileExplorer.navigation.ejectVolumeAriaLabel`, `ejectingVolumeAriaLabel`, `ejectBusyTooltip`, and
   `fileExplorer.pane.ejectFailedToast` say "Eject" until their call sites tell a drive from a network share. One key

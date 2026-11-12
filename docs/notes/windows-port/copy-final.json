@@ -108,6 +108,18 @@
     {
       "keys": "fileExplorer.navigation.driveIndex.tooltipCoalesced*",
       "capability": "none: only FSEvents reports a coalesced overflow"
+    },
+    {
+      "keys": "downloads.fda.openSystemSettings",
+      "capability": "fullDiskAccess"
+    },
+    {
+      "keys": "fileExplorer.pane.directConnectionBlockedAfterUpdateToast",
+      "capability": "localNetworkPermission"
+    },
+    {
+      "keys": "fileExplorer.pane.openLocalNetworkSettings",
+      "capability": "localNetworkPermission"
     }
   ],
   "rows": [
@@ -3403,12 +3415,12 @@
       "status": "apply",
       "branches": {
         "macos": "Everything Cmdr kept on this Mac is gone. To remove the app as well, move it to the Trash after Cmdr quits.",
-        "windows": "Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps > Installed apps after Cmdr closes.",
+        "windows": "Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps after Cmdr closes.",
         "other": "Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits."
       },
       "register": "sentence",
       "sources": {
-        "windows": "verdicts: proposal",
+        "windows": "verdicts: proposal, cut to “Settings > Apps”: the page under it is “Installed apps” on Windows 11 and “Apps & features” on Windows 10 22H2, which Cmdr supports",
         "other": "verdicts: proposal"
       },
       "whereInUi": "Delete-all-data done screen, message."
@@ -5333,31 +5345,33 @@
       "key": "fileExplorer.pane.directConnectionBlockedByThisMacToast",
       "file": "fileExplorer.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Something on this Mac is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Try switching Cmdr off and on under {localNetwork}, or check your firewall app.",
-        "windows": null,
-        "other": null
+        "windows": "Something on this PC is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.",
+        "other": "Something on this computer is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings."
       },
       "sources": {
-        "row": "proposal: none"
+        "windows": "conformance review of task 27, read from the code: `UpgradeFailure::of_dial` reads a route refused inside the machine on any OS; the Local Network permission is macOS’s, so off macOS the cause left is a firewall",
+        "other": "conformance review of task 27, read from the code: `UpgradeFailure::of_dial` reads a route refused inside the machine on any OS (a firewall rule that rejects Cmdr’s connection while the mount’s own keeps working); the Local Network permission is macOS’s"
       },
-      "whereInUi": "Toast on an SMB share when Cmdr’s direct connection is blocked locally (firewall or Local Network permission), so the share stays on the OS mount."
+      "whereInUi": "Toast on an SMB share when Cmdr’s direct connection is blocked locally (firewall or Local Network permission), so the share stays on the OS mount.",
+      "written": ["windows", "other"]
     },
     {
       "key": "fileExplorer.pane.directConnectionBlockedAfterUpdateToast",
       "file": "fileExplorer.json",
       "source": "catalog",
       "mechanism": "none",
-      "status": "none",
+      "status": "gated",
       "branches": {
         "macos": "Cmdr updated, and macOS sometimes keeps blocking its direct connection to {server} afterwards. Switch Cmdr off and on under {localNetwork} to fix it. Until then, this share stays on the slower system connection.",
         "windows": null,
         "other": null
       },
       "sources": {
-        "row": "proposal: none"
+        "row": "conformance review of task 27: the after-update cause is macOS’s Local Network permission, so `os_mount_notice.rs` raises it only where `local_network_permission` holds"
       },
       "whereInUi": "Same toast family, after an update."
     },
@@ -5366,14 +5380,14 @@
       "file": "fileExplorer.json",
       "source": "catalog",
       "mechanism": "none",
-      "status": "none",
+      "status": "gated",
       "branches": {
         "macos": "Open {localNetwork} settings",
         "windows": null,
         "other": null
       },
       "sources": {
-        "row": "proposal: none"
+        "row": "conformance review of task 27: the button opens the Local Network pane, so both toasts show it only where `localNetworkPermission` holds"
       },
       "whereInUi": "Button on those toasts."
     },
@@ -6421,47 +6435,51 @@
       "key": "common.downloadsFdaHint",
       "file": "common.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>",
-        "windows": null,
-        "other": null
+        "windows": "Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.",
+        "other": "Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it."
       },
       "sources": {
-        "row": "proposal: none"
+        "windows": "conformance review of task 27, read from the code: Full Disk Access exists only on macOS. Off macOS the watcher is down only when `notify` couldn’t attach to the Downloads folder (`downloads/runtime.rs`), so the text says that",
+        "other": "conformance review of task 27, read from the code: Full Disk Access exists only on macOS. Off macOS the watcher is down only when `notify` couldn’t attach to the Downloads folder (`downloads/runtime.rs`), so the text says that"
       },
-      "whereInUi": "Settings > Behavior > Notifications, hint under the downloads watcher when FDA is missing."
+      "whereInUi": "Settings > Behavior > Notifications, hint under the downloads watcher when FDA is missing.",
+      "written": ["windows", "other"]
     },
     {
       "key": "downloads.fda.message",
       "file": "downloads.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr needs Full Disk Access to watch your Downloads folder.",
-        "windows": null,
-        "other": null
+        "windows": "Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.",
+        "other": "Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it."
       },
       "sources": {
-        "row": "proposal: none"
+        "windows": "conformance review of task 27, read from the code: Full Disk Access exists only on macOS. Off macOS the watcher is down only when `notify` couldn’t attach to the Downloads folder (`downloads/runtime.rs`), so the text says that",
+        "other": "conformance review of task 27, read from the code: Full Disk Access exists only on macOS. Off macOS the watcher is down only when `notify` couldn’t attach to the Downloads folder (`downloads/runtime.rs`), so the text says that"
       },
-      "whereInUi": "Toast from Go to latest download when FDA is missing."
+      "whereInUi": "Toast from Go to latest download when FDA is missing.",
+      "written": ["windows", "other"]
     },
     {
       "key": "downloads.fda.openSystemSettings",
       "file": "downloads.json",
       "source": "catalog",
       "mechanism": "none",
-      "status": "none",
+      "status": "gated",
       "branches": {
         "macos": "Open System Settings",
         "windows": null,
         "other": null
       },
       "sources": {
-        "row": "proposal: none"
+        "row": "conformance review of task 27: the button opens the Full Disk Access pane, so the toast shows it only where `fullDiskAccess` holds"
       },
       "whereInUi": "Same toast, button."
     },
@@ -8232,33 +8250,37 @@
       "key": "mtp.ptpcameradDialog.explanation",
       "file": "mtp.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "On macOS, the system daemon <code>ptpcamerad</code> automatically claims Android devices. To work around this, run the following command in Terminal (keep it running while using Cmdr):",
-        "windows": null,
-        "other": null
+        "windows": "Another app is holding the phone, and it has to let go before Cmdr can connect.",
+        "other": "Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in."
       },
       "sources": {
-        "row": "proposal: none"
+        "windows": "conformance review of task 27, read from the code: the dialog opens on any exclusive-access refusal (`cmdr-mtp` `connection/mod.rs`), and `ptpcamerad` exists only on macOS. WPD shares the device (copy-row-verdicts.md § MTP on Windows), so this is a fallback for a refusal nobody has seen there",
+        "other": "conformance review of task 27, read from the code: `mtp-rs` reads Linux `EBUSY` as exclusive access, which is another process holding the USB interface: in practice the desktop’s own MTP mount (GVFS on GNOME, KIO on KDE)"
       },
-      "whereInUi": "Dialog explaining how to stop ptpcamerad."
+      "whereInUi": "Dialog explaining how to stop ptpcamerad.",
+      "written": ["windows", "other"]
     },
     {
       "key": "mtp.ptpcameradDialog.helpText",
       "file": "mtp.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "This command continuously stops ptpcamerad while running. Press <key>Ctrl+C</key> in Terminal to stop it when done.",
-        "windows": null,
-        "other": null
+        "windows": "Close the app that’s using the phone, then retry.",
+        "other": "Unmount the phone in your file manager, then retry."
       },
       "sources": {
-        "row": "proposal: none"
+        "windows": "conformance review of task 27, read from the code: same dialog; no command exists off macOS, so the line says what to do instead",
+        "other": "conformance review of task 27, read from the code: same dialog; unmounting the phone in the file manager is what makes the desktop’s MTP mount let go of the USB interface"
       },
-      "whereInUi": "Same dialog."
+      "whereInUi": "Same dialog.",
+      "written": ["windows", "other"]
     },
     {
       "key": "mtp.permissionDialog.explanation",
@@ -11102,6 +11124,114 @@
         "row": "milestone scan: “disk”, judged no change"
       },
       "note": "scan hit “disk”, no change: the physical disk that holds the file (a local drive, a share, or a phone), the sense Windows keeps too; it doesn’t name the PC’s own storage."
+    },
+    {
+      "key": "errors.listing.serverRefused.explanation",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this computer changes it.",
+        "windows": "This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.",
+        "other": "This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this computer changes it."
+      },
+      "sources": {
+        "windows": "docs/style-guide.md § “Platform vocabulary”: the machine is “this PC” / “your PC” on Windows; macOS and Linux keep “computer”",
+        "other": "unchanged: the macOS text already says “computer”, the Linux word"
+      },
+      "whereInUi": "File pane error view, the explanation paragraph when a connected server (SFTP, WebDAV, or NFS) refuses a folder.",
+      "written": ["windows"]
+    },
+    {
+      "key": "errors.mount.hostUnreachable",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this computer.",
+        "windows": "Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.",
+        "other": "Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this computer."
+      },
+      "sources": {
+        "windows": "docs/style-guide.md § “Platform vocabulary”: the machine is “this PC” / “your PC” on Windows; macOS and Linux keep “computer”",
+        "other": "unchanged: the macOS text already says “computer”, the Linux word"
+      },
+      "whereInUi": "Network pane, under “Couldn’t mount share”, when nothing answered at the server’s address.",
+      "written": ["windows"]
+    },
+    {
+      "key": "errors.mount.unsupportedProtocol",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "This computer and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.",
+        "windows": "This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.",
+        "other": "This computer and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again."
+      },
+      "sources": {
+        "windows": "docs/style-guide.md § “Platform vocabulary”: the machine is “this PC” / “your PC” on Windows; macOS and Linux keep “computer”",
+        "other": "unchanged: the macOS text already says “computer”, the Linux word"
+      },
+      "whereInUi": "Network pane, under “Couldn’t mount share”, when the server only offers SMB 1.",
+      "written": ["windows"]
+    },
+    {
+      "key": "errors.mount.mountMissing",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "Your computer said “{share}” on “{server}” was connected, but it never showed up. Try again.",
+        "windows": "Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.",
+        "other": "Your computer said “{share}” on “{server}” was connected, but it never showed up. Try again."
+      },
+      "sources": {
+        "windows": "docs/style-guide.md § “Platform vocabulary”: the machine is “this PC” / “your PC” on Windows; macOS and Linux keep “computer”",
+        "other": "unchanged: the macOS text already says “computer”, the Linux word"
+      },
+      "whereInUi": "Network pane, under “Couldn’t mount share”, when the OS reported the share connected and it never appeared.",
+      "written": ["windows"]
+    },
+    {
+      "key": "errors.shareList.hostUnreachable",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this computer.",
+        "windows": "Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.",
+        "other": "Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this computer."
+      },
+      "sources": {
+        "windows": "docs/style-guide.md § “Platform vocabulary”: the machine is “this PC” / “your PC” on Windows; macOS and Linux keep “computer”",
+        "other": "unchanged: the macOS text already says “computer”, the Linux word"
+      },
+      "whereInUi": "Network pane, under “Couldn’t connect to …”, and the tooltip on that server’s row.",
+      "written": ["windows"]
+    },
+    {
+      "key": "stateRecovery.credentials.body",
+      "file": "stateRecovery.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "This happens after a move to a new computer. Cmdr asks for each password again the next time it needs it.",
+        "windows": "This happens after a move to a new PC. Cmdr asks for each password again the next time it needs it.",
+        "other": "This happens after a move to a new computer. Cmdr asks for each password again the next time it needs it."
+      },
+      "sources": {
+        "windows": "docs/style-guide.md § “Platform vocabulary”: the machine is “this PC” / “your PC” on Windows; macOS and Linux keep “computer”",
+        "other": "unchanged: the macOS text already says “computer”, the Linux word"
+      },
+      "whereInUi": "Toast when the saved-passwords file can’t be read on this machine, its body.",
+      "written": ["windows"]
     }
   ]
 }

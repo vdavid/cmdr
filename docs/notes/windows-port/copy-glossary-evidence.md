@@ -128,7 +128,8 @@ verified.
   with the UI, link below, 2026-11-11). For a keyboard-and-mouse desktop app, plain "right-click" is fine.
 - **`install-uninstall`**: Windows confirmed, high. "Select Start > Settings > Apps > Installed apps" (verified on web,
   https://support.microsoft.com/en-gb/windows/apps/uninstall-or-remove-apps-and-programs-in-windows, search summary,
-  2026-11-11). Linux "package manager": judgment.
+  2026-11-11). That is Windows 11's path; Windows 10 22H2, which Cmdr supports, names the page "Apps & features", so
+  copy says "Settings > Apps", true on both. Linux "package manager": judgment.
 
 ### Terms marked verified
 

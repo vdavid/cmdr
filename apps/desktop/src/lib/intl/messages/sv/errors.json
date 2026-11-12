@@ -531,7 +531,7 @@
   "@errors.listing.serverRefused.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.serverRefused.explanation": "Mappen finns på en server, och kontot du anslöt med har inte behörighet att öppna den. Det är servern som bestämmer, så ingen inställning på den här datorn ändrar det.",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {Mappen finns på en server, och kontot du anslöt med har inte behörighet att öppna den. Det är servern som bestämmer, så ingen inställning på den här datorn ändrar det.}}",
   "@errors.listing.serverRefused.explanation": {
     "sourceHash": "bba853c"
   },
@@ -2417,7 +2417,7 @@
   "@errors.eject.unexpected": {
     "sourceHash": "2978e2a"
   },
-  "errors.mount.hostUnreachable": "Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.}}",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "45ac92c"
   },
@@ -2449,7 +2449,7 @@
   "@errors.mount.cancelled": {
     "sourceHash": "bc771b3"
   },
-  "errors.mount.unsupportedProtocol": "Den här datorn och ”{server}” har ingen gemensam SMB-version. Slå på SMB 2 eller senare i serverns inställningar och försök sedan igen.",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {Den här datorn och ”{server}” har ingen gemensam SMB-version. Slå på SMB 2 eller senare i serverns inställningar och försök sedan igen.}}",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "8afe4cb"
   },
@@ -2457,7 +2457,7 @@
   "@errors.mount.mountRefused": {
     "sourceHash": "6cf694d"
   },
-  "errors.mount.mountMissing": "Din dator rapporterade att ”{share}” på ”{server}” var ansluten, men den delade mappen dök aldrig upp. Försök igen.",
+  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Din dator rapporterade att ”{share}” på ”{server}” var ansluten, men den delade mappen dök aldrig upp. Försök igen.}}",
   "@errors.mount.mountMissing": {
     "sourceHash": "72ab946"
   },
@@ -2469,7 +2469,7 @@
   "@errors.mount.unexpected": {
     "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.}}",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "45ac92c"
   },

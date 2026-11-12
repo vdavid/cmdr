@@ -531,7 +531,7 @@
   "@errors.listing.serverRefused.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.serverRefused.explanation": "Dieser Ordner liegt auf einem Server, und das Konto, mit dem du verbunden bist, hat keine Berechtigung, den Ordner zu öffnen. Das entscheidet der Server, deshalb ändert keine Einstellung auf diesem Computer etwas daran.",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {Dieser Ordner liegt auf einem Server, und das Konto, mit dem du verbunden bist, hat keine Berechtigung, den Ordner zu öffnen. Das entscheidet der Server, deshalb ändert keine Einstellung auf diesem Computer etwas daran.}}",
   "@errors.listing.serverRefused.explanation": {
     "sourceHash": "bba853c"
   },
@@ -2417,7 +2417,7 @@
   "@errors.eject.unexpected": {
     "sourceHash": "2978e2a"
   },
-  "errors.mount.hostUnreachable": "Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser Computer ist.",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser Computer ist.}}",
   "@errors.mount.hostUnreachable": {
     "sourceHash": "45ac92c"
   },
@@ -2449,7 +2449,7 @@
   "@errors.mount.cancelled": {
     "sourceHash": "bc771b3"
   },
-  "errors.mount.unsupportedProtocol": "Dieser Computer und „{server}“ haben keine gemeinsame SMB-Version. Schalte in den Einstellungen des Servers SMB 2 oder neuer ein und versuche es dann erneut.",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {Dieser Computer und „{server}“ haben keine gemeinsame SMB-Version. Schalte in den Einstellungen des Servers SMB 2 oder neuer ein und versuche es dann erneut.}}",
   "@errors.mount.unsupportedProtocol": {
     "sourceHash": "8afe4cb"
   },
@@ -2457,7 +2457,7 @@
   "@errors.mount.mountRefused": {
     "sourceHash": "6cf694d"
   },
-  "errors.mount.mountMissing": "Dein Computer hat „{share}“ auf „{server}“ als verbunden gemeldet, aber die Freigabe ist nie aufgetaucht. Versuche es erneut.",
+  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Dein Computer hat „{share}“ auf „{server}“ als verbunden gemeldet, aber die Freigabe ist nie aufgetaucht. Versuche es erneut.}}",
   "@errors.mount.mountMissing": {
     "sourceHash": "72ab946"
   },
@@ -2469,7 +2469,7 @@
   "@errors.mount.unexpected": {
     "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser Computer ist.",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser Computer ist.}}",
   "@errors.shareList.hostUnreachable": {
     "sourceHash": "45ac92c"
   },

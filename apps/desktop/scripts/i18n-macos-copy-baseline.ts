@@ -36,12 +36,18 @@ const README =
  * listed (`docs/specs/platform-copy-plan.md` § "Copy resolution"): the overturned
  * `reviewedNoChange` rows (Windows "user folder", "recycle bin" keyword), the Quit
  * narration keys, the four permanent-delete siblings (`sourcesGone.continue` is
- * already a proposal row), and the unscanned `{system_settings}` value.
+ * already a proposal row), the unscanned `{system_settings}` value, and the
+ * sentences that say "this computer" on macOS and Linux and "this PC" on Windows.
  */
 const KEYS_BEYOND_PROPOSAL: readonly string[] = [
   'askCmdr.tool.quit.doing',
   'commands.navGoHome.label',
   'errors.git.permissionDenied.suggestion',
+  'errors.listing.serverRefused.explanation',
+  'errors.mount.hostUnreachable',
+  'errors.mount.mountMissing',
+  'errors.mount.unsupportedProtocol',
+  'errors.shareList.hostUnreachable',
   'errors.write.homeFolder.message.holdsHome',
   'errors.write.homeFolder.message.isHome',
   'errors.write.homeFolder.title',
@@ -55,6 +61,7 @@ const KEYS_BEYOND_PROPOSAL: readonly string[] = [
   'main.quit.countdownAria',
   'settings.fileOperations.skipConfirmation.keywords',
   'stateRecovery.appStatus.title',
+  'stateRecovery.credentials.body',
   'suggestedOps.action.delete',
   'suggestedOps.approve.delete',
 ]

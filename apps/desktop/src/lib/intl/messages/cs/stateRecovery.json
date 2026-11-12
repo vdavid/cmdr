@@ -111,7 +111,7 @@
   "@stateRecovery.credentials.title": {
     "sourceHash": "e4821b8"
   },
-  "stateRecovery.credentials.body": "To se stává po přechodu na nový počítač. Cmdr se na každé heslo znovu zeptá, až ho bude příště potřebovat.",
+  "stateRecovery.credentials.body": "{platform, select, windows {This happens after a move to a new PC. Cmdr asks for each password again the next time it needs it.} other {To se stává po přechodu na nový počítač. Cmdr se na každé heslo znovu zeptá, až ho bude příště potřebovat.}}",
   "@stateRecovery.credentials.body": {
     "sourceHash": "afac266"
   },
