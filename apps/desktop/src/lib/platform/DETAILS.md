@@ -113,6 +113,15 @@ Decision: `withPlatform('macos')` doesn't grant macOS's capabilities. Why: that 
 answers, which drifts from Rust, and a test about Full Disk Access should say it needs Full Disk Access rather than "a
 Mac". A test of a Mac surface that also shows key glyphs sets both.
 
+The one TS copy of the arms that does exist is `CAPABILITIES_POSSIBLE_ON`, behind `withCapabilitiesPossibleOn(os)`: what
+a test of "what a user on that OS gets" needs (the default keymap snapshot in
+`apps/desktop/src/lib/commands/default-keymap.test.ts`, conflicts, reachability). A field counts as possible unless its
+arm answers a literal `false`, so a runtime answer (Linux's `cfg!(feature = "playwright-e2e")`, `x11_session()`) is in.
+It can't drift: `capabilities-possible-on.test.ts` reads the three arm files as text and fails on any disagreement, a
+field missing from either side included, and the arm files are in `svelteInputs` and the CI `svelte` filter so an arm
+edit re-runs it. `withEveryCapability()` is for walking every surface, never for a per-OS test: it puts macOS-only
+commands on Linux.
+
 ## Window chrome
 
 `--titlebar-height` is the height of the overlay title bar: the main window's title bar sizes itself to it, and every

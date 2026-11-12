@@ -57,6 +57,52 @@ export function withCapabilities(...granted: Capability[]): () => void {
 }
 
 /**
+ * What each OS CAN offer: every field its Rust arm (`src-tauri/src/platform/macos.rs`,
+ * `windows.rs`, `linux/mod.rs`) doesn't answer with a literal `false`. A runtime answer
+ * (`cfg!(…)`, `x11_session()`) counts as possible, since some user on that OS gets it.
+ * `capabilities-possible-on.test.ts` pins these lists to the arms, so an arm edit fails there
+ * until the list follows.
+ */
+export const CAPABILITIES_POSSIBLE_ON: Readonly<Record<Platform, readonly Capability[]>> = {
+  macos: [
+    'quickLook',
+    'getInfo',
+    'openTerminalHere',
+    'textEditorChoice',
+    'cloudFileActions',
+    'colorTags',
+    'servicesMenu',
+    'fullDiskAccess',
+    'finderExtension',
+    'revealHandler',
+    'dockPin',
+    'cliCommand',
+    'overlayTitleBar',
+    'imageIndexing',
+    'localNetworkPermission',
+    'localAi',
+    'safeSaveFiles',
+    'appBundles',
+    'fullScreen',
+    'homebrewCask',
+    'globalShortcuts',
+  ],
+  windows: ['globalShortcuts'],
+  // `imageIndexing` follows the `playwright-e2e` feature, `globalShortcuts` an X11 session.
+  linux: ['imageIndexing', 'globalShortcuts'],
+}
+
+/**
+ * Makes this OS offer exactly what `platform` can offer ({@link CAPABILITIES_POSSIBLE_ON}) and
+ * returns the undo; the same forms as {@link withCapabilities}. For a test of what a user on that
+ * OS gets (the keymap, conflicts, reachability); pair it with `withPlatform(platform)`. ❌ Not
+ * {@link withEveryCapability} for a per-OS test: that puts macOS-only commands on Linux.
+ */
+export function withCapabilitiesPossibleOn(platform: Platform): () => void {
+  return withCapabilities(...CAPABILITIES_POSSIBLE_ON[platform])
+}
+
+/**
  * Makes this OS offer every capability and returns the undo: the world where every surface
  * renders, for a test that walks all of them (the settings tree, the command registry). Not
  * "macOS": a test about one feature names its capability with {@link withCapabilities}.

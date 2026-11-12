@@ -195,6 +195,16 @@ properties" or "Preview" off macOS today, so `commands.fileGetInfo.label` and `c
 plain macOS values. They stay blocks: Windows has a native Properties dialog, so `getInfo` may turn on there, and the
 branch is ready when it does.
 
+### The default keymap snapshot
+
+`default-keymap.test.ts` renders the default keys a user gets on each OS into `__snapshots__/default-keymap.macos.txt`,
+`.windows.txt`, and `.linux.txt`: one `<command id>\t<combo>, <combo>` line per command, in registry order, a keyless
+command as an empty list, a command the OS can't offer left out (under `withCapabilitiesPossibleOn(os)`,
+`../platform/DETAILS.md` § "Test helpers"). It reads through `getDefaultShortcuts`, so the registry's internals can
+change under it, and reloads the registry per platform because the sources read the platform at load. Every key change,
+and every added or removed command, is a reviewed line diff there; ❌ never refresh a snapshot without reading which
+lines moved and why.
+
 ## Adding a command (full steps)
 
 1. Add the id to `COMMAND_IDS` in `command-ids.ts`. Skipping this makes the registry entry a compile error (`Command.id`

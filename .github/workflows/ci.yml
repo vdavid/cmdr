@@ -439,6 +439,10 @@ jobs:
               - 'apps/desktop/.stylelintrc.mjs'
               # The mask grammars' shared vectors, which the `*-token.test.ts` files import.
               - 'crates/cmdr-multi-rename/src/**/*_token_vectors.json'
+              # The backend's per-OS capability arms, which `capabilities-possible-on.test.ts` reads.
+              - 'apps/desktop/src-tauri/src/platform/macos.rs'
+              - 'apps/desktop/src-tauri/src/platform/windows.rs'
+              - 'apps/desktop/src-tauri/src/platform/linux/mod.rs'
               # `desktop-native-strings-fresh` and `desktop-shipped-locales-fresh` compare the
               # catalogs with these generated Rust, plist, and Finder extension files.
               - 'apps/desktop/src-tauri/src/intl/**'

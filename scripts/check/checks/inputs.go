@@ -339,6 +339,10 @@ var svelteInputs = inputs(treeGlobs(frontendSourceRoots...), []string{
 	"pnpm-lock.yaml",
 	// The mask grammars' shared vectors, which the `*-token.test.ts` files import.
 	"crates/cmdr-multi-rename/src/**/*_token_vectors.json",
+	// The backend's per-OS capability arms, which `capabilities-possible-on.test.ts` reads.
+	"apps/desktop/src-tauri/src/platform/macos.rs",
+	"apps/desktop/src-tauri/src/platform/windows.rs",
+	"apps/desktop/src-tauri/src/platform/linux/mod.rs",
 }, agentDocExclusions)
 
 // desktopAppInputs covers the whole desktop app (frontend + Rust workspace),

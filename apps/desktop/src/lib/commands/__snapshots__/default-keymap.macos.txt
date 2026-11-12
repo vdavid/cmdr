@@ -1,0 +1,228 @@
+app.quit	⌘Q
+app.hide	⌘H
+app.hideOthers	⌥⌘H
+app.showAll	
+app.about	
+app.acknowledgements	
+app.licenseKey	
+app.commandPalette	⌘⇧P
+app.settings	⌘,
+app.checkForUpdates	
+cmdr.openOnboarding	
+app.toggleCliCommand	
+help.openShortcuts	
+help.accessibility	
+queue.show	⌘⌥Q
+help.viewDebugLog	
+help.sendErrorReport	
+help.whatsNew	
+feedback.send	
+log.operationLog	⌘⌥L
+suggestedOps.show	
+askCmdr.toggle	⌘⌥A
+search.open	⌘F, ⌥F7
+nav.goToPath	⌘G, ⌘⇧G
+favorites.add	
+favorites.open	⌃D
+downloads.goToLatest	⌘J
+view.showHidden	⌘⇧.
+view.calculateFolderSizes	⌥⇧Enter
+view.briefMode	⌘2
+view.fullMode	⌘1
+view.setMode	
+view.zoom.set75	
+view.zoom.set100	⌘0
+view.zoom.set125	
+view.zoom.set150	
+view.zoom.in	⌘+, ⌘=
+view.zoom.out	⌘-
+sort.byName	⌘3, ⌘F3
+sort.byExtension	⌘4, ⌘F4
+sort.byModified	⌘5, ⌘F5
+sort.bySize	⌘6, ⌘F6
+sort.byCreated	
+sort.byAdded	
+sort.ascending	
+sort.descending	
+sort.toggleOrder	
+sort.set	
+pane.switch	Tab
+pane.swap	⌘U
+pane.clone	⌘⇧C
+pane.focusControls	⌃F5
+app.focusNotifications	⌃F6
+pane.leftVolumeChooser	⌥F1
+pane.rightVolumeChooser	⌥F2
+pane.copyPathLeftToRight	⌘→
+pane.copyPathRightToLeft	⌘←
+pane.refresh	⌘R
+pane.moveDividerLeft	⌃⌥←
+pane.moveDividerRight	⌃⌥→
+pane.resetDivider	
+tab.new	⌘T
+tab.close	⌘W
+tab.reopen	⌘⇧T
+tab.next	⌃Tab, ⌘⌥→
+tab.prev	⌃⇧Tab, ⌘⌥←
+tab.togglePin	
+tab.closeOthers	
+tab.moveLeft	⌘⌃⇧←
+tab.moveRight	⌘⌃⇧→
+tab.moveToOtherPane	
+askCmdr.newChat	⌘N
+askCmdr.find	⌘F
+askCmdr.findNext	⌘G, Enter
+askCmdr.findPrevious	⌘⇧G, ⇧Enter
+nav.up	↑
+nav.down	↓
+nav.open	Enter, ⌘↓
+nav.parent	Backspace, ⌘↑
+nav.home	⌥↑, Home
+nav.end	⌥↓, End
+nav.pageUp	PageUp
+nav.pageDown	PageDown
+nav.back	⌘[
+nav.forward	⌘]
+nav.goToRoot	⌘/
+nav.goHome	⌘⇧H
+errorPane.toggleTechnicalDetails	⌘D
+nav.left	←
+nav.right	→
+nav.firstInFull	←
+nav.lastInFull	→
+file.rename	F2, ⇧F6
+pane.quickFilter	⌃S
+file.multiRename	⌃M
+file.view	F3
+file.edit	F4
+file.copy	F5
+file.move	F6
+file.duplicate	⌘D
+file.compress	⌥F5
+edit.copy	⌘C
+edit.cut	⌘X
+edit.paste	⌘V
+edit.pasteAsMove	⌘⌥V
+file.newFolder	F7
+file.newFile	⇧F4
+file.delete	F8, ⌘Backspace, Delete
+file.deletePermanently	⇧F8, ⇧Delete, ⌘⌥Backspace
+edit.undoTrash	
+file.goToTrash	
+file.showInFinder	⌘⌥O
+file.openTerminalHere	F9, ⌘⌥T
+file.copyPath	⌘⌥C
+file.copyCurrentDirectoryPath	
+file.copyFilename	
+file.copyShareLink	
+file.copyShareLinkOneDay	
+file.copyShareLinkOneHour	
+file.getInfo	⌘I
+file.quickLook	⇧Space
+file.contextMenu	⌃Enter
+cloud.makeOffline	
+cloud.removeDownload	
+cloud.openInGoogleDrive	
+cloud.copyGoogleDriveLink	
+cloud.askGemini	
+restic.forgetPassword	
+tags.toggleGrey	
+tags.toggleGreen	
+tags.togglePurple	
+tags.toggleBlue	
+tags.toggleYellow	
+tags.toggleRed	
+tags.toggleOrange	
+selection.toggle	Space
+selection.toggleAndDown	Insert
+selection.selectAll	⌘A
+selection.deselectAll	⌘⇧A
+selection.invert	*
+selection.selectSameKind	⌥⇧=, ⌥+
+selection.compareDirectories	⇧F2
+selection.compareDirectoriesMissing	
+selection.compareDirectoriesSize	
+selection.selectFiles	+
+selection.deselectFiles	-
+multiRename.openPresets	F2
+multiRename.savePreset	⌘S
+multiRename.letterCase	⌘⌥U
+multiRename.removeDiacritics	⌘⌥N
+multiRename.greekToLatin	⌘⌥G
+multiRename.normalizeUnicode	⌘⌥P
+multiRename.matchCase	⌘⌥I
+multiRename.firstMatchOnly	⌘⌥F
+multiRename.includeExtension	⌘⌥E
+multiRename.regex	⌘⌥R
+multiRename.replaceWholeName	⌘⌥W
+multiRename.insertField	⌘⌥X
+multiRename.undoRename	⌘⌥Z
+multiRename.results	⌥Enter
+multiRename.fieldHistory	↓
+multiRename.moveRowUp	⇧↑, ⌥↑
+multiRename.moveRowDown	⇧↓, ⌥↓
+multiRename.rename	⌘Enter
+operationLog.goToItems	→, Enter
+operationLog.toggleItem	Space
+operationLog.toggleItemAndDown	Insert
+operationLog.selectAll	⌘A
+operationLog.deselectAll	⌘⇧A
+operationLog.rollBack	⌘Enter
+network.selectHost	Enter
+network.refresh	
+share.back	Backspace, Escape, ⌘↑
+share.selectShare	Enter
+servers.show	
+servers.togglePin	
+servers.disconnect	
+servers.forgetSecret	
+servers.connect	⌘K
+servers.edit	⌘E
+volume.select	Enter
+volume.close	Escape
+favorites.openByNumber	1, 2, 3, 4, 5, 6, 7, 8, 9
+favorites.addFromMenu	0
+volume.selectByName	
+selection.mcpSelect	
+selection.mcpSelectByNames	
+cursor.moveTo	
+cursor.scrollTo	
+nav.openUnderCursor	
+tab.mcpAction	
+dialog.confirm	
+about.openWebsite	
+about.openUpgrade	
+about.close	Escape
+queue.cursorUp	↑
+queue.cursorDown	↓
+queue.cursorFirst	Home
+queue.cursorLast	End
+queue.extendUp	⇧↑
+queue.extendDown	⇧↓
+queue.toggleSelected	Space
+queue.selectAll	⌘A
+queue.showInMainWindow	Enter, S
+queue.pauseOrResume	P
+queue.cancelOrDismiss	Backspace, Delete
+queue.cancel	C
+queue.rollback	B
+queue.moveEarlier	⌥↑
+queue.moveLater	⌥↓
+queue.nextControl	→
+queue.previousControl	←
+queue.close	Escape
+viewer.toggleWordWrap	W
+viewer.toggleTail	F
+viewer.viewAsMedia	0
+viewer.viewAsText	1
+viewer.viewAsBinary	2
+viewer.viewAsHex	3
+viewer.zoomIn	+, =
+viewer.zoomOut	-
+viewer.toggleImageZoom	Enter, Space
+viewer.goBack	⌘[
+viewer.goForward	⌘]
+palette.up	↑
+palette.down	↓
+palette.execute	Enter
+palette.close	Escape

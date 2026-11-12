@@ -1,0 +1,212 @@
+app.quit	Ctrl+Q
+app.hide	Ctrl+H
+app.hideOthers	Alt+Ctrl+H
+app.showAll	
+app.about	
+app.acknowledgements	
+app.licenseKey	
+app.commandPalette	Ctrl+Shift+P
+app.settings	Ctrl+,
+app.checkForUpdates	
+cmdr.openOnboarding	
+help.openShortcuts	
+help.accessibility	
+queue.show	Ctrl+Alt+Q
+help.viewDebugLog	
+help.sendErrorReport	
+help.whatsNew	
+feedback.send	
+log.operationLog	Ctrl+Alt+L
+suggestedOps.show	
+askCmdr.toggle	Ctrl+Alt+A
+search.open	Ctrl+F, Alt+F7
+nav.goToPath	Ctrl+G, Ctrl+Shift+G
+favorites.add	
+favorites.open	Ctrl+D
+downloads.goToLatest	Ctrl+J
+view.showHidden	Ctrl+Shift+.
+view.calculateFolderSizes	Alt+Shift+Enter
+view.briefMode	Ctrl+2
+view.fullMode	Ctrl+1
+view.setMode	
+view.zoom.set75	
+view.zoom.set100	Ctrl+0
+view.zoom.set125	
+view.zoom.set150	
+view.zoom.in	Ctrl++, Ctrl+=
+view.zoom.out	Ctrl+-
+sort.byName	Ctrl+3, Ctrl+F3
+sort.byExtension	Ctrl+4, Ctrl+F4
+sort.byModified	Ctrl+5, Ctrl+F5
+sort.bySize	Ctrl+6, Ctrl+F6
+sort.byCreated	
+sort.byAdded	
+sort.ascending	
+sort.descending	
+sort.toggleOrder	
+sort.set	
+pane.switch	Tab
+pane.swap	Ctrl+U
+pane.clone	Ctrl+Shift+C
+pane.focusControls	Ctrl+Shift+F5
+app.focusNotifications	Ctrl+Shift+F6
+pane.leftVolumeChooser	Alt+F1
+pane.rightVolumeChooser	Alt+F2
+pane.copyPathLeftToRight	Ctrl+→
+pane.copyPathRightToLeft	Ctrl+←
+pane.refresh	Ctrl+R
+pane.moveDividerLeft	Ctrl+Alt+Shift+←
+pane.moveDividerRight	Ctrl+Alt+Shift+→
+pane.resetDivider	
+tab.new	Ctrl+T
+tab.close	Ctrl+W
+tab.reopen	Ctrl+Shift+T
+tab.next	Ctrl+Tab, Ctrl+Alt+→
+tab.prev	Ctrl+Shift+Tab, Ctrl+Alt+←
+tab.togglePin	
+tab.closeOthers	
+tab.moveLeft	Ctrl+Shift+←
+tab.moveRight	Ctrl+Shift+→
+tab.moveToOtherPane	
+askCmdr.newChat	Ctrl+N
+askCmdr.find	Ctrl+F
+askCmdr.findNext	Ctrl+G, Enter
+askCmdr.findPrevious	Ctrl+Shift+G, Shift+Enter
+nav.up	↑
+nav.down	↓
+nav.open	Enter, Ctrl+↓
+nav.parent	Backspace, Ctrl+↑
+nav.home	Alt+↑, Home
+nav.end	Alt+↓, End
+nav.pageUp	PageUp
+nav.pageDown	PageDown
+nav.back	Ctrl+[
+nav.forward	Ctrl+]
+nav.goToRoot	Ctrl+/
+nav.goHome	Ctrl+Shift+H
+errorPane.toggleTechnicalDetails	Ctrl+D
+nav.left	←
+nav.right	→
+nav.firstInFull	←
+nav.lastInFull	→
+file.rename	F2, Shift+F6
+pane.quickFilter	Ctrl+S
+file.multiRename	Ctrl+M
+file.view	F3
+file.edit	F4
+file.copy	F5
+file.move	F6
+file.duplicate	Ctrl+D
+file.compress	Alt+F5
+edit.copy	Ctrl+C
+edit.cut	Ctrl+X
+edit.paste	Ctrl+V
+edit.pasteAsMove	Ctrl+Alt+V
+file.newFolder	F7
+file.newFile	Shift+F4
+file.delete	F8, Ctrl+Backspace, Delete
+file.deletePermanently	Shift+F8, Shift+Delete, Ctrl+Alt+Backspace
+edit.undoTrash	
+file.goToTrash	
+file.showInFinder	Ctrl+Alt+O
+file.copyPath	Ctrl+Alt+C
+file.copyCurrentDirectoryPath	
+file.copyFilename	
+file.copyShareLink	
+file.copyShareLinkOneDay	
+file.copyShareLinkOneHour	
+file.contextMenu	Ctrl+Enter
+restic.forgetPassword	
+selection.toggle	Space
+selection.toggleAndDown	Insert
+selection.selectAll	Ctrl+A
+selection.deselectAll	Ctrl+Shift+A
+selection.invert	*
+selection.selectSameKind	Alt+Shift+=, Alt++
+selection.compareDirectories	Shift+F2
+selection.compareDirectoriesMissing	
+selection.compareDirectoriesSize	
+selection.selectFiles	+
+selection.deselectFiles	-
+multiRename.openPresets	F2
+multiRename.savePreset	Ctrl+S
+multiRename.letterCase	Ctrl+Alt+U
+multiRename.removeDiacritics	Ctrl+Alt+N
+multiRename.greekToLatin	Ctrl+Alt+G
+multiRename.normalizeUnicode	Ctrl+Alt+P
+multiRename.matchCase	Ctrl+Alt+I
+multiRename.firstMatchOnly	Ctrl+Alt+F
+multiRename.includeExtension	Ctrl+Alt+E
+multiRename.regex	Ctrl+Alt+R
+multiRename.replaceWholeName	Ctrl+Alt+W
+multiRename.insertField	Ctrl+Alt+X
+multiRename.undoRename	Ctrl+Alt+Z
+multiRename.results	Alt+Enter
+multiRename.fieldHistory	↓
+multiRename.moveRowUp	Shift+↑, Alt+↑
+multiRename.moveRowDown	Shift+↓, Alt+↓
+multiRename.rename	Ctrl+Enter
+operationLog.goToItems	→, Enter
+operationLog.toggleItem	Space
+operationLog.toggleItemAndDown	Insert
+operationLog.selectAll	Ctrl+A
+operationLog.deselectAll	Ctrl+Shift+A
+operationLog.rollBack	Ctrl+Enter
+network.selectHost	Enter
+network.refresh	
+share.back	Backspace, Escape, Ctrl+↑
+share.selectShare	Enter
+servers.show	
+servers.togglePin	
+servers.disconnect	
+servers.forgetSecret	
+servers.connect	Ctrl+K
+servers.edit	Ctrl+E
+volume.select	Enter
+volume.close	Escape
+favorites.openByNumber	1, 2, 3, 4, 5, 6, 7, 8, 9
+favorites.addFromMenu	0
+volume.selectByName	
+selection.mcpSelect	
+selection.mcpSelectByNames	
+cursor.moveTo	
+cursor.scrollTo	
+nav.openUnderCursor	
+tab.mcpAction	
+dialog.confirm	
+about.openWebsite	
+about.openUpgrade	
+about.close	Escape
+queue.cursorUp	↑
+queue.cursorDown	↓
+queue.cursorFirst	Home
+queue.cursorLast	End
+queue.extendUp	Shift+↑
+queue.extendDown	Shift+↓
+queue.toggleSelected	Space
+queue.selectAll	Ctrl+A
+queue.showInMainWindow	Enter, S
+queue.pauseOrResume	P
+queue.cancelOrDismiss	Backspace, Delete
+queue.cancel	C
+queue.rollback	B
+queue.moveEarlier	Alt+↑
+queue.moveLater	Alt+↓
+queue.nextControl	→
+queue.previousControl	←
+queue.close	Escape
+viewer.toggleWordWrap	W
+viewer.toggleTail	F
+viewer.viewAsMedia	0
+viewer.viewAsText	1
+viewer.viewAsBinary	2
+viewer.viewAsHex	3
+viewer.zoomIn	+, =
+viewer.zoomOut	-
+viewer.toggleImageZoom	Enter, Space
+viewer.goBack	Ctrl+[
+viewer.goForward	Ctrl+]
+palette.up	↑
+palette.down	↓
+palette.execute	Enter
+palette.close	Escape

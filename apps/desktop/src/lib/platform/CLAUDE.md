@@ -4,7 +4,9 @@ Which OS this window runs on (`'macos' | 'linux' | 'windows'`), and what that OS
 read synchronously.
 
 - `index.ts`: `getPlatform()`, `isMacOS()`, `hasCapability()`, `platformCapabilities()`, `applyPlatformAttributes()`.
-- `test-platform.ts`: `withPlatform()`, `withCapabilities()`, `capabilitiesWith()`, the test helpers.
+- `test-platform.ts`: `withPlatform()`, `withCapabilities()`, `capabilitiesWith()`, `withCapabilitiesPossibleOn()`, the
+  test helpers. A per-OS test (what a user on that OS gets) uses `withCapabilitiesPossibleOn(os)`, ❌ never
+  `withEveryCapability()`; `capabilities-possible-on.test.ts` pins it to the Rust arms.
 
 ## Must-knows
 
