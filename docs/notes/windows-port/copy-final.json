@@ -116,7 +116,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Activity Monitor** (search for it in Spotlight)\n- Navigate here again to retry",
         "windows": "Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry",
@@ -133,7 +133,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in Terminal, run `lsof +D <folder-path>` to see which processes are using this folder).",
         "windows": "Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.",
@@ -150,15 +150,15 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Activity Monitor** for apps consuming a lot of resources.",
-        "windows": "Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps using a lot of resources.",
-        "other": "Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps using a lot of resources."
+        "windows": "Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.",
+        "other": "Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "proposal, keeping the macOS text’s “consuming” (plan § Branch-writing rules 1)",
+        "other": "proposal, keeping the macOS text’s “consuming” (plan § Branch-writing rules 1)"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when the system answers “try again” (EAGAIN) while listing."
     },
@@ -167,7 +167,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Your Mac’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.",
         "windows": "Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.",
@@ -184,14 +184,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check Wi-Fi or Ethernet status in **{system_settings} > Network**\n- If you’re on Wi-Fi, try turning it off and on again\n- In Terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online",
-        "windows": "Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In Terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online",
+        "windows": "Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online",
         "other": "Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, same network-down error as above."
@@ -201,14 +201,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the server is running\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry",
-        "windows": "Here’s what to try:\n- Check that the server is running\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry",
+        "windows": "Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry",
         "other": "Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "copy-row-verdicts.md § Verdicts per open row",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when a server drops the connection (ECONNRESET)."
@@ -218,14 +218,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In Terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry",
-        "windows": "Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In Terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry",
+        "windows": "Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry",
         "other": "Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when a connection times out (ETIMEDOUT)."
@@ -235,14 +235,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In Terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back",
-        "windows": "Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In Terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back",
+        "windows": "Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back",
         "other": "Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when the host is down (EHOSTDOWN)."
@@ -252,15 +252,15 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in Finder\n- Check that the server hosting this folder is running\n- In Terminal, run `mount` to see currently mounted volumes",
-        "windows": "Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, disconnect it and connect it again in File Explorer\n- Check that the server hosting this folder is running\n- In Terminal, run `net use` to see your connected network drives",
-        "other": "Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, unmount and remount it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes"
+        "windows": "Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives",
+        "other": "Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes"
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "proposal (Windows “disconnect” for a network drive, `net use`), keeping the macOS text’s “try …ing” shape (plan § Branch-writing rules 1), with “In PowerShell” (plan § Conflicts)",
+        "other": "proposal (“unmount” for a network mount), keeping the macOS text’s “try unmounting and remounting” (plan § Branch-writing rules 1)"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when a network folder’s handle goes stale (ESTALE), typically NFS."
     },
@@ -269,7 +269,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In Terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in Terminal\n- Navigate here again to retry",
         "windows": "Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry",
@@ -286,15 +286,15 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "macOS blocked Cmdr from accessing `{path}`. This usually means the folder is protected by macOS security policies, or Cmdr hasn’t been granted the right permissions yet.",
         "windows": "Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.",
-        "other": "The system blocked Cmdr from accessing `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it."
+        "other": "Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it."
       },
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "copy-row-verdicts.md § Errors only macOS produces today (the Linux actor rule)"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the explanation paragraph under the title, when the OS refuses the listing outright (EPERM)."
     },
@@ -303,31 +303,32 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- If this is a system-protected folder, you may need to grant Cmdr **{full_disk_access}** under {privacy_and_security}\n- In Terminal, run `ls -la` on this path to check ownership and permissions",
-        "windows": "Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In Terminal, run `icacls \"<folder-path>\"` to see who has access",
-        "other": "Here’s what to try:\n- Check the folder’s permissions in your file manager’s properties for it\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions"
+        "windows": "Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access",
+        "other": "Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions"
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
+        "other": "proposal, with the first line worded like `noPermissionErrno.suggestion`’s Linux branch (the proposal’s “in your file manager’s properties for it” doesn’t parse)"
       },
-      "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, same EPERM error."
+      "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, same EPERM error.",
+      "written": ["other"]
     },
     {
       "key": "errors.listing.pathNotFoundErrno.suggestion",
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In Terminal, run `ls -la` on the parent folder to see what’s there",
-        "windows": "Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In Terminal, run `dir` in the parent folder to see what’s there",
+        "windows": "Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there",
         "other": "Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when a path no longer exists (ENOENT)."
@@ -337,7 +338,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr doesn’t have permission to access `{path}`. macOS controls which apps can access which folders, and Cmdr hasn’t been granted access to this one yet.",
         "windows": "Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.",
@@ -354,14 +355,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- Check the folder’s permissions in Finder: right-click it, choose Get Info, and look under Sharing & Permissions\n- If this is a shared folder, ask the owner to update permissions\n- In Terminal, run `ls -la` on this path to see the current permissions",
-        "windows": "Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In Terminal, run `icacls \"<folder-path>\"` to see the current permissions",
+        "windows": "Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions",
         "other": "Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, same EACCES error."
@@ -371,18 +372,34 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash (right-click the Trash icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume\n- Check **{system_settings} > General > Storage** for a breakdown of what’s using space",
         "windows": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space",
-        "other": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume"
+        "other": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume"
       },
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "proposal, with “the Trash” cased like the macOS text (plan § Conflicts: Linux trash casing)"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when the disk is full (ENOSPC)."
+    },
+    {
+      "key": "errors.listing.diskFullErrno.title",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Disk is full",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: “disk” here is disk space, which the glossary keeps on Windows, and Windows’ own text for this case says “not enough space on the disk”."
     },
     {
       "key": "errors.listing.readOnlyVolumeErrno.explanation",
@@ -405,7 +422,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Try a different approach, or use Finder for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).",
         "windows": "Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).",
@@ -422,14 +439,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected",
-        "windows": "Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected",
+        "windows": "Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected",
         "other": "Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when the network is unreachable (ENETUNREACH)."
@@ -439,7 +456,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this Mac.",
         "windows": "The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.",
@@ -456,14 +473,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In Terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry",
-        "windows": "Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In Terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry",
+        "windows": "Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry",
         "other": "Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, same ECONNREFUSED error."
@@ -473,14 +490,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- In Terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`",
-        "windows": "Here’s what to try:\n- In Terminal, run `dir /AL` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one",
+        "windows": "Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one",
         "other": "Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "copy-row-verdicts.md § Verdicts per open row",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when symbolic links point in a circle (ELOOP)."
@@ -490,14 +507,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The file or folder name exceeds the system’s limit (255 characters on most Mac volumes). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.",
-        "windows": "The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length, which is 260 characters unless long paths are turned on.",
+        "windows": "The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.",
         "other": "The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length."
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "copy-row-verdicts.md § Verdicts per open row",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the explanation paragraph under the title, when a name or path is too long (ENAMETOOLONG)."
@@ -507,14 +524,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In Terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable",
-        "windows": "Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In Terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable",
+        "windows": "Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable",
         "other": "Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when the host is unreachable (EHOSTUNREACH)."
@@ -524,7 +541,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In Terminal, run `quota` to see your current usage and limit",
         "windows": "Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota",
@@ -537,62 +554,122 @@
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when the user’s disk quota is used up (EDQUOT)."
     },
     {
+      "key": "errors.listing.quotaExceeded.explanation",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "You’ve reached your disk quota (the maximum amount of space allocated to your user account) on this volume. This is common on shared servers and network drives where an administrator sets per-user limits.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: “disk quota” is the feature’s own name on every OS (NTFS calls it disk quotas too)."
+    },
+    {
       "key": "errors.listing.authRequiredEneedauth.suggestion",
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Disconnect and reconnect the volume in Finder\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator",
         "windows": "Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator",
-        "other": "Here’s what to try:\n- Disconnect and reconnect the volume in your file manager\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator"
+        "other": "Here’s what to try:\n- Disconnect and reconnect the volume in Finder\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator"
       },
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "copy-row-verdicts.md § Errors only macOS produces today: ENEEDAUTH is BSD-only, so Linux keeps the macOS text"
       },
-      "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when a mounted share wants credentials again (EAUTH/ENEEDAUTH)."
+      "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when a mounted share wants credentials again (EAUTH/ENEEDAUTH).",
+      "lintExceptions": [
+        {
+          "branch": "other",
+          "reason": "unreachable on Linux (ENEEDAUTH is a BSD errno), so it keeps the macOS text"
+        }
+      ]
     },
     {
       "key": "errors.listing.attributeNotFound.suggestion",
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your Mac’s internal drive first.",
-        "windows": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.",
+        "windows": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your Mac’s internal drive first.",
         "other": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first."
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "copy-row-verdicts.md § Errors only macOS produces today: Windows has no xattrs, so it keeps the macOS text",
         "other": "proposal"
       },
-      "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when an extended attribute is missing (ENOATTR)."
+      "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when an extended attribute is missing (ENOATTR).",
+      "lintExceptions": [
+        {
+          "branch": "windows",
+          "reason": "unreachable on Windows (no ENODATA there: Windows has no extended attributes), so it keeps the macOS text"
+        }
+      ]
     },
     {
       "key": "errors.listing.diskReadProblem.suggestion",
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the disk or device is still properly connected\n- Open **Disk Utility** (search for it in Spotlight) and run **First Aid** on this volume\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.",
-        "windows": "Here’s what to try:\n- Check that the disk or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.",
+        "windows": "Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.",
         "other": "Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out."
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “disk” → “drive” for the PC’s storage (glossary evidence § Corrections)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when the disk returns a read error (EIO and friends)."
+    },
+    {
+      "key": "errors.listing.diskReadProblem.title",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Disk read problem",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: the physical disk that holds the data, the sense Windows keeps too (its own checker is Check Disk); the suggestion’s instruction says “drive” for the PC’s storage."
+    },
+    {
+      "key": "errors.listing.diskReadProblem.explanation",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Cmdr hit a hardware-level read problem at `{path}`. This means the disk or device had trouble reading the data, which could be a temporary glitch or a sign of a failing disk.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: the physical disk that holds the data, the sense Windows keeps too (its own checker is Check Disk); the suggestion’s instruction says “drive” for the PC’s storage."
     },
     {
       "key": "errors.listing.unexpectedSystemResponse.suggestion",
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, open **Disk Utility** (search for it in Spotlight) and run **First Aid** on this volume to check for file system problems",
         "windows": "Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems",
@@ -609,14 +686,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, open **Disk Utility** and run **First Aid** on this volume",
-        "windows": "Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**",
+        "windows": "Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**",
         "other": "Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “disk” → “drive” for the PC’s storage (glossary evidence § Corrections)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, the catch-all “couldn’t read” error, which Linux and Windows show for every errno outside the nine transient classes."
@@ -626,14 +703,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In Terminal, run `ls -la` on the parent folder to see what’s there",
-        "windows": "Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In Terminal, run `dir` in the parent folder to see what’s there",
+        "windows": "Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there",
         "other": "Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when the folder isn’t there (VolumeError::NotFound, every backend)."
@@ -675,7 +752,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr doesn’t have permission to access `{path}`. macOS controls which apps can access which folders, and Cmdr hasn’t been granted access to this one yet.",
         "windows": "Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.",
@@ -692,14 +769,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- Check the folder’s permissions in Finder: right-click the folder, choose Get Info, and look under Sharing & Permissions\n- If this is a shared folder, ask the owner to update permissions\n- In Terminal, run `ls -la` on the path to see the current permissions",
-        "windows": "Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In Terminal, run `icacls \"<folder-path>\"` to see the current permissions",
+        "windows": "Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions",
         "other": "Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, same ordinary permission error. On macOS an “Open System Settings” button sits below it."
@@ -709,7 +786,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down before macOS is involved, so this isn’t a privacy setting on your Mac.",
         "windows": "`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.",
@@ -774,14 +851,14 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access. In Terminal, `ls -la .git` shows the current owner and mode.",
-        "windows": "Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In Terminal, `icacls .git` shows who has access.",
+        "windows": "Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.",
         "other": "Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode."
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when browsing a git repo whose `.git` folder Cmdr can’t read."
@@ -1031,15 +1108,19 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "none",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "This folder is managed by **{name}**. Here’s what to try:\n- Quit and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages",
-        "windows": null,
-        "other": null
+        "windows": "This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages",
+        "other": "This folder is managed by **{name}**. Here’s what to try:\n- Quit and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages"
       },
-      "sources": {},
+      "sources": {
+        "row": "copy-row-verdicts.md § Verdicts per open row (promoted from none)",
+        "windows": "copy-row-verdicts.md § Verdicts per open row: another app follows its own OS’s verb",
+        "other": "copy-row-verdicts.md § Verdicts per open row: Linux keeps the macOS text"
+      },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, for a folder managed by a sync app such as Dropbox or Google Drive.",
-      "note": "verdicts: write now (OneDrive and Dropbox detection is coming). Windows “Close and reopen {app}”; Linux keeps the macOS text."
+      "register": "action"
     },
     {
       "key": "errors.write.trashRefused.message.notPermitted",
@@ -1285,7 +1366,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr can’t write into “{path}”. Check the folder’s permissions in Finder.",
         "windows": "Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.",
@@ -1334,7 +1415,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "This volume has no Trash, so the only way is to delete permanently.",
         "windows": "This volume has no Recycle Bin, so the only way is to delete permanently.",
@@ -1352,35 +1433,37 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "macOS wouldn’t move this to the Trash.",
         "windows": "Windows wouldn’t move this to the Recycle Bin.",
-        "other": "The system wouldn’t move this to the trash."
+        "other": "Cmdr couldn’t move this to the Trash."
       },
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "written: the Linux actor rule (plan § Branch-writing rules 3), with “the Trash” cased like the macOS text"
       },
-      "whereInUi": "Toast or inline line when the OS refused to move the replaced item to the trash."
+      "whereInUi": "Toast or inline line when the OS refused to move the replaced item to the trash.",
+      "written": ["other"]
     },
     {
       "key": "errors.eject.unmountRefusedBySystem",
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "macOS is still using something there. Wait a minute, then try again.",
         "windows": "Windows is still using something there. Wait a minute, then try again.",
-        "other": "The system is still using something there. Wait a minute, then try again."
+        "other": "This computer is still using something there. Wait a minute, then try again."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "copy-row-verdicts.md § Verdicts per open row",
+        "other": "written: the verdict’s “Something on this computer is still using it.” with the macOS text’s “something there”, since the `@key` description asks for “there” and the style guide rules out an “it” pointing back at the lead-in’s volume name"
       },
-      "whereInUi": "Toast after Eject fails (volume switcher eject button or its row menu) because a system process holds the drive."
+      "whereInUi": "Toast after Eject fails (volume switcher eject button or its row menu) because a system process holds the drive.",
+      "written": ["other"]
     },
     {
       "key": "errors.mount.signInHelperStuck",
@@ -1403,32 +1486,48 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash (right-click the Trash icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume",
         "windows": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left",
-        "other": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume"
+        "other": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume"
       },
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "proposal, with “the Trash” cased like the macOS text (plan § Conflicts: Linux trash casing)"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when a backend reports the volume is full (VolumeError::StorageFull, every OS and every remote backend)."
+    },
+    {
+      "key": "errors.listing.storageFull.title",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Disk is full",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: “disk” here is disk space, which the glossary keeps on Windows, and Windows’ own text for this case says “not enough space on the disk”."
     },
     {
       "key": "errors.listing.connectionTimedOut.suggestion",
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Try again",
-        "windows": "Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Try again",
+        "windows": "Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again",
         "other": "Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “In Terminal” → “In PowerShell” (plan § Conflicts: Windows Terminal is the default only on Windows 11)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when a backend times out (VolumeError::ConnectionTimeout: SMB, SFTP, WebDAV, S3, every OS)."
@@ -1438,7 +1537,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Try a different approach, or use Finder for this operation.",
         "windows": "Try a different approach, or use File Explorer for this operation.",
@@ -1455,17 +1554,33 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, try running **Disk Utility > First Aid** on this volume",
-        "windows": "Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**",
+        "windows": "Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**",
         "other": "Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with “disk” → “drive” for the PC’s storage (glossary evidence § Corrections)",
         "other": "proposal"
       },
       "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, for a serious I/O error from a backend (every OS)."
+    },
+    {
+      "key": "errors.listing.ioSerious.explanation",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Cmdr ran into a problem with `{path}`: {osMessage}. This could be a temporary glitch or a sign that the disk or device needs attention.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: the physical disk that holds the data, the sense Windows keeps too (its own checker is Check Disk); the suggestion’s instruction says “drive” for the PC’s storage."
     },
     {
       "key": "errors.write.sourceNotFound.message.trash",
@@ -8175,7 +8290,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, eject the share and mount it again with those credentials",
         "windows": "Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials",
@@ -8436,14 +8551,18 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "none",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access to the folder.",
-        "windows": null,
-        "other": null
+        "windows": "Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.",
+        "other": "Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode."
       },
-      "sources": {},
-      "note": "plan § Values the proposal never scanned: sends Windows and Linux users to `{system_settings} > {privacy_and_security}`; reachable wherever git reports EACCES, so it gets Windows and Linux branches."
+      "sources": {
+        "row": "plan § Values the proposal never scanned",
+        "windows": "written, worded like `errors.git.gitDirPermissionDenied.suggestion`’s Windows branch",
+        "other": "written, worded like `errors.git.gitDirPermissionDenied.suggestion`’s Linux branch"
+      },
+      "written": ["windows", "other"]
     },
     {
       "key": "errors.listing.tccRestricted.suggestion",
@@ -8570,6 +8689,38 @@
       },
       "sources": {},
       "note": "proposal, reviewed, no change: Git’s own lock file, every OS."
+    },
+    {
+      "key": "errors.git.corruptRepo.message",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Some of the on-disk repo data is unreadable. The folder might have been edited outside git.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: “on-disk” is git’s storage, a term of art, not the PC’s drive."
+    },
+    {
+      "key": "errors.git.shallowBoundary.message",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "This commit lives past the boundary of your shallow clone, so its data isn’t on disk.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: “on disk” is git’s storage, a term of art, not the PC’s drive."
     },
     {
       "key": "errors.listing.attributeNotFound.explanation",

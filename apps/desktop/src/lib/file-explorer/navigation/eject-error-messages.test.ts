@@ -8,7 +8,8 @@
  * writing rules, and — the one that used to reach users — `diskutil`'s raw
  * English stderr leaking into the sentence a person reads.
  */
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach, onTestFinished, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import type { EjectError, HolderKind, HolderScan, VolumeHolder } from '#lib/ipc/bindings.js'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import { ejectRefusalReport, renderEjectError, ejectTechnicalDetail, wordEjectRefusal } from './eject-error-messages'
@@ -243,9 +244,15 @@ describe('a refused unmount names who held the drive', () => {
     )
   })
 
-  it('tells someone to wait when macOS itself is the holder, because there is nothing to close', () => {
-    expect(renderEjectError(refusedBy([holder('system', 'mds_stores')]))).toBe(
-      'macOS is still using something there. Wait a minute, then try again.',
+  it('tells someone to wait when the OS itself is the holder, because there is nothing to close', () => {
+    const systemHeld = refusedBy([holder('system', 'mds_stores')])
+    onTestFinished(withPlatform('macos'))
+    expect(renderEjectError(systemHeld)).toBe('macOS is still using something there. Wait a minute, then try again.')
+    withPlatform('windows')
+    expect(renderEjectError(systemHeld)).toBe('Windows is still using something there. Wait a minute, then try again.')
+    withPlatform('linux')
+    expect(renderEjectError(systemHeld)).toBe(
+      'This computer is still using something there. Wait a minute, then try again.',
     )
   })
 

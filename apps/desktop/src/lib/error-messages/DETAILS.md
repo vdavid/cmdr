@@ -101,6 +101,25 @@ into a single `nonTransient` key (they rendered identical copy for both). The `n
 `errors.provider.<provider>.displayName` / `.appName`; the four providers without a distinct app (`macFuse`, `iCloud`,
 `cmVolumes`, `genericCloudStorage`) have no `appName` key.
 
+## Platform branches
+
+An error that reads differently per OS is one whole-value `{platform, select, macos {…} windows {…} other {…}}` block in
+`errors.json` (`other` is Linux); `getMessage()` picks the branch before the compose pipeline runs, so the factories
+never ask the OS. The mechanism is `../intl/DETAILS.md` § Platform variants; the words per OS are `docs/style-guide.md`
+§ "Platform vocabulary".
+
+- **Add or change a branch through `docs/notes/windows-port/copy-final.json`** and
+  `apps/desktop/scripts/apply-platform-copy.ts`, ❌ never by hand in a catalog: the script carries every locale's
+  translation into the branch it was made from and proves macOS text unmoved.
+- **Tokens are per branch.** `{system_settings}`, `{privacy_and_security}`, and friends name macOS panes, so they appear
+  in a `macos` branch only; Windows writes the Settings path out ("Settings > Network & internet") and Linux says "your
+  system’s network settings". `{path}` / `{osMessage}` stay in every branch, and `esc(...)` still escapes them in all.
+- **An errno one OS never produces keeps the macOS text in that branch** (`authRequiredEneedauth` on Linux,
+  `attributeNotFound` on Windows), with a `lintExceptions` reason in `copy-final.json`.
+- **Then update the sibling golden** for each OS whose rendering moved: hand-edit those values only.
+- **A test asserting a branch** sets the OS with `withPlatform` (`#lib/platform/test-platform.js`): Vitest runs as Linux
+  by default, so a test pinning macOS text says `withPlatform('macos')`.
+
 ## Test strategy
 
 - **`friendly-error-parity.test.ts`** (the behavior-preservation net): asserts these factories reproduce
@@ -113,11 +132,18 @@ into a single `nonTransient` key (they rendered identical copy for both). The `n
   because that would relabel an accidental drift elsewhere in the matrix as intended. It also never grows: the test
   iterates the golden's own keys, and a reason added after the move (`remotePermissionDenied`) has no pre-change output
   to be pinned against, so it lives in the style matrix only.
+- **The Windows and Linux goldens** (`friendly_error_golden.windows.json`, `.linux.json`) pin what those OSes read for
+  the same matrix. They were generated ONCE from the factories, right after the listing-family errors gained their
+  per-OS branches, read line by line against `docs/notes/windows-port/copy-final.json`, and frozen under the same rule
+  as the macOS one: hand-edit the values a deliberate change touches, never regenerate. They carry the macOS golden's
+  `category` / `retryHint` / `actionKind` (Rust's classification doesn't vary by OS) and exactly its key set, which the
+  parity test asserts. The input matrix lives in `friendly-error-matrix.ts`, shared by all three.
 - **`friendly-error-style.test.ts`**: iterates every listing reason × representative params, every git kind, every
   provider × category, and every `ConnectRefusalKind` the sign-in sheet words, asserting the rendered output obeys the
-  writing rules (no "error" / "failed" / trivializing words). Strictly better coverage than the old Rust string test: it
-  checks the actual rendered output. The one pre-existing nit ("for just this folder" in `tccRestricted`) is exempted
-  via `PREEXISTING_TRIVIALIZING_EXCEPTIONS`, flagged for a future copy pass, not reworded (behavior-preserving move).
+  writing rules (no "error" / "failed" / trivializing words). The friendly-error part runs once per OS, so every
+  platform branch is held to the rules. Strictly better coverage than the old Rust string test: it checks the actual
+  rendered output. The one pre-existing nit ("for just this folder" in `tccRestricted`) is exempted via
+  `PREEXISTING_TRIVIALIZING_EXCEPTIONS`, flagged for a future copy pass, not reworded (behavior-preserving move).
 - **`markdown-escape.test.ts`**: the ported escaper unit tests (the security boundary).
 - **`listing-error.test.ts`**: the adapter (base-message selection + provider override).
 

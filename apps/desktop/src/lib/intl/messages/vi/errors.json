@@ -19,7 +19,7 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "Bạn có thể thử:\n- Đóng bớt vài ứng dụng để giải phóng bộ nhớ, nhất là những ứng dụng dùng nhiều tài nguyên (trình duyệt mở nhiều tab, trình soạn thảo, ứng dụng đa phương tiện)\n- Kiểm tra mức dùng bộ nhớ trong **Giám sát hoạt động** (tìm kiếm nó trong Spotlight)\n- Mở lại nơi này để thử lại",
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Đóng bớt vài ứng dụng để giải phóng bộ nhớ, nhất là những ứng dụng dùng nhiều tài nguyên (trình duyệt mở nhiều tab, trình soạn thảo, ứng dụng đa phương tiện)\n- Kiểm tra mức dùng bộ nhớ trong **Giám sát hoạt động** (tìm kiếm nó trong Spotlight)\n- Mở lại nơi này để thử lại} windows {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in your system monitor app\n- Navigate here again to retry}}",
   "@errors.listing.notEnoughMemory.suggestion": {
     "sourceHash": "d05a4e4"
   },
@@ -31,7 +31,7 @@
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "18a07d9"
   },
-  "errors.listing.resourceBusy.suggestion": "Đợi một chút, rồi mở lại nơi này. Nếu vẫn cứ vậy, hãy xem ứng dụng nào đang giữ tệp ở trạng thái mở (trong Terminal, chạy `lsof +D <folder-path>` để xem tiến trình nào đang dùng thư mục này).",
+  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Đợi một chút, rồi mở lại nơi này. Nếu vẫn cứ vậy, hãy xem ứng dụng nào đang giữ tệp ở trạng thái mở (trong Terminal, chạy `lsof +D <folder-path>` để xem tiến trình nào đang dùng thư mục này).} windows {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.} other {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in a terminal, run `lsof +D <folder-path>` to see which processes are using this folder).}}",
   "@errors.listing.resourceBusy.suggestion": {
     "sourceHash": "fa266e6"
   },
@@ -43,7 +43,7 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "Mở lại nơi này để thử lại. Việc này thường tự ổn lại. Nếu vẫn cứ vậy, có thể hệ thống đang chịu tải nặng. Hãy xem **Giám sát hoạt động** để tìm ứng dụng đang ngốn nhiều tài nguyên.",
+  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Mở lại nơi này để thử lại. Việc này thường tự ổn lại. Nếu vẫn cứ vậy, có thể hệ thống đang chịu tải nặng. Hãy xem **Giám sát hoạt động** để tìm ứng dụng đang ngốn nhiều tài nguyên.} windows {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.} other {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources.}}",
   "@errors.listing.temporarilyUnavailable.suggestion": {
     "sourceHash": "1ec4aef"
   },
@@ -51,11 +51,11 @@
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "Kết nối mạng trên máy Mac của bạn đang ngừng hoạt động, nên Cmdr không tới được ổ đĩa này. Có thể Wi-Fi đã ngắt, cáp Ethernet bị rút, hoặc giao tiếp mạng đã bị tắt.",
+  "errors.listing.networkDown.explanation": "{platform, select, macos {Kết nối mạng trên máy Mac của bạn đang ngừng hoạt động, nên Cmdr không tới được ổ đĩa này. Có thể Wi-Fi đã ngắt, cáp Ethernet bị rút, hoặc giao tiếp mạng đã bị tắt.} windows {Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.} other {Your computer’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.}}",
   "@errors.listing.networkDown.explanation": {
     "sourceHash": "179f8bb"
   },
-  "errors.listing.networkDown.suggestion": "Bạn có thể thử:\n- Kiểm tra trạng thái Wi-Fi hoặc Ethernet trong **{system_settings} > Mạng**\n- Nếu bạn đang dùng Wi-Fi, thử tắt rồi bật lại\n- Trong Terminal, chạy `ping google.com` để kiểm tra kết nối\n- Mở lại nơi này khi bạn đã trực tuyến lại",
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra trạng thái Wi-Fi hoặc Ethernet trong **{system_settings} > Mạng**\n- Nếu bạn đang dùng Wi-Fi, thử tắt rồi bật lại\n- Trong Terminal, chạy `ping google.com` để kiểm tra kết nối\n- Mở lại nơi này khi bạn đã trực tuyến lại} windows {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} other {Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online}}",
   "@errors.listing.networkDown.suggestion": {
     "sourceHash": "bf4b517"
   },
@@ -91,7 +91,7 @@
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
-  "errors.listing.connectionReset.suggestion": "Bạn có thể thử:\n- Kiểm tra xem máy chủ có đang chạy không\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được máy chủ không\n- Mở lại nơi này để thử lại",
+  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem máy chủ có đang chạy không\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được máy chủ không\n- Mở lại nơi này để thử lại} windows {Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry}}",
   "@errors.listing.connectionReset.suggestion": {
     "sourceHash": "d980663"
   },
@@ -103,7 +103,7 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "c088c41"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "Bạn có thể thử:\n- Kiểm tra xem thiết bị hoặc máy chủ có đang bật và tới được không\n- Kiểm tra kết nối Wi-Fi hoặc Ethernet của bạn\n- Trong Terminal, thử `ping <hostname>` để kiểm tra kết nối\n- Mở lại nơi này để thử lại",
+  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem thiết bị hoặc máy chủ có đang bật và tới được không\n- Kiểm tra kết nối Wi-Fi hoặc Ethernet của bạn\n- Trong Terminal, thử `ping <hostname>` để kiểm tra kết nối\n- Mở lại nơi này để thử lại} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry}}",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
     "sourceHash": "230ef64"
   },
@@ -115,7 +115,7 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "e175712"
   },
-  "errors.listing.hostDown.suggestion": "Bạn có thể thử:\n- Kiểm tra xem máy chủ có đang bật và kết nối với mạng không\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được không\n- Nếu đó là một NAS hoặc máy chủ, hãy xem giao diện quản lý của nó\n- Mở lại nơi này khi máy chủ hoạt động trở lại",
+  "errors.listing.hostDown.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem máy chủ có đang bật và kết nối với mạng không\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được không\n- Nếu đó là một NAS hoặc máy chủ, hãy xem giao diện quản lý của nó\n- Mở lại nơi này khi máy chủ hoạt động trở lại} windows {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} other {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back}}",
   "@errors.listing.hostDown.suggestion": {
     "sourceHash": "7a8ecd8"
   },
@@ -127,7 +127,7 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "Bạn có thể thử:\n- Rời khỏi thư mục này rồi quay lại\n- Nếu đây là ổ đĩa mạng, thử bỏ gắn kết rồi gắn kết lại trong Finder\n- Kiểm tra xem máy chủ chứa thư mục này có đang chạy không\n- Trong Terminal, chạy `mount` để xem các ổ đĩa đang gắn kết",
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Rời khỏi thư mục này rồi quay lại\n- Nếu đây là ổ đĩa mạng, thử bỏ gắn kết rồi gắn kết lại trong Finder\n- Kiểm tra xem máy chủ chứa thư mục này có đang chạy không\n- Trong Terminal, chạy `mount` để xem các ổ đĩa đang gắn kết} windows {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives} other {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes}}",
   "@errors.listing.staleConnection.suggestion": {
     "sourceHash": "73de81d"
   },
@@ -139,7 +139,7 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
-  "errors.listing.lockUnavailable.suggestion": "Bạn có thể thử:\n- Đóng bớt vài ứng dụng, nhất là những ứng dụng làm việc với nhiều tệp (trình soạn thảo, IDE, công cụ sao lưu)\n- Trong Terminal, chạy `lsof | wc -l` để xem có bao nhiêu tệp đang mở trên tất cả ứng dụng\n- Nếu vấn đề cứ tiếp diễn, bạn có thể nâng giới hạn bằng `ulimit -n 4096` trong Terminal\n- Mở lại nơi này để thử lại",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Đóng bớt vài ứng dụng, nhất là những ứng dụng làm việc với nhiều tệp (trình soạn thảo, IDE, công cụ sao lưu)\n- Trong Terminal, chạy `lsof | wc -l` để xem có bao nhiêu tệp đang mở trên tất cả ứng dụng\n- Nếu vấn đề cứ tiếp diễn, bạn có thể nâng giới hạn bằng `ulimit -n 4096` trong Terminal\n- Mở lại nơi này để thử lại} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
   "@errors.listing.lockUnavailable.suggestion": {
     "sourceHash": "a9f23bd"
   },
@@ -159,11 +159,11 @@
   "@errors.listing.notPermitted.title": {
     "sourceHash": "8ec5f4b"
   },
-  "errors.listing.notPermitted.explanation": "macOS đã chặn Cmdr truy cập `{path}`. Điều này thường có nghĩa là thư mục được bảo vệ bởi chính sách bảo mật của macOS, hoặc Cmdr chưa được cấp đúng quyền.",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS đã chặn Cmdr truy cập `{path}`. Điều này thường có nghĩa là thư mục được bảo vệ bởi chính sách bảo mật của macOS, hoặc Cmdr chưa được cấp đúng quyền.} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
   "@errors.listing.notPermitted.explanation": {
     "sourceHash": "e28dd0e"
   },
-  "errors.listing.notPermitted.suggestion": "Bạn có thể thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Nếu đây là thư mục được hệ thống bảo vệ, bạn có thể cần cấp cho Cmdr **{full_disk_access}** trong {privacy_and_security}\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để kiểm tra quyền sở hữu và quyền truy cập",
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Nếu đây là thư mục được hệ thống bảo vệ, bạn có thể cần cấp cho Cmdr **{full_disk_access}** trong {privacy_and_security}\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để kiểm tra quyền sở hữu và quyền truy cập} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions}}",
   "@errors.listing.notPermitted.suggestion": {
     "sourceHash": "2926956"
   },
@@ -175,7 +175,7 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đường dẫn có viết đúng không\n- Nếu nó nằm trên ổ đĩa mạng, đảm bảo ổ đĩa đã kết nối và có thể truy cập mục chia sẻ\n- Đi tới thư mục cha và tìm mục đó ở đấy\n- Trong Terminal, chạy `ls -la` trên thư mục cha để xem có gì trong đó",
+  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem đường dẫn có viết đúng không\n- Nếu nó nằm trên ổ đĩa mạng, đảm bảo ổ đĩa đã kết nối và có thể truy cập mục chia sẻ\n- Đi tới thư mục cha và tìm mục đó ở đấy\n- Trong Terminal, chạy `ls -la` trên thư mục cha để xem có gì trong đó} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
   "@errors.listing.pathNotFoundErrno.suggestion": {
     "sourceHash": "8a51477"
   },
@@ -183,11 +183,11 @@
   "@errors.listing.noPermissionErrno.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.noPermissionErrno.explanation": "Cmdr không có quyền truy cập `{path}`. macOS kiểm soát ứng dụng nào được truy cập thư mục nào, và Cmdr chưa được cấp quyền truy cập thư mục này.",
+  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr không có quyền truy cập `{path}`. macOS kiểm soát ứng dụng nào được truy cập thư mục nào, và Cmdr chưa được cấp quyền truy cập thư mục này.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "3871273"
   },
-  "errors.listing.noPermissionErrno.suggestion": "Bạn có thể thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Kiểm tra quyền của thư mục trong Finder: bấm chuột phải, chọn Lấy thông tin, và xem phần Chia sẻ & quyền\n- Nếu đây là thư mục chia sẻ, hãy nhờ chủ sở hữu cập nhật quyền\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem quyền hiện tại",
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Kiểm tra quyền của thư mục trong Finder: bấm chuột phải, chọn Lấy thông tin, và xem phần Chia sẻ & quyền\n- Nếu đây là thư mục chia sẻ, hãy nhờ chủ sở hữu cập nhật quyền\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem quyền hiện tại} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions}}",
   "@errors.listing.noPermissionErrno.suggestion": {
     "sourceHash": "4b513ef"
   },
@@ -247,7 +247,7 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.diskFullErrno.suggestion": "Bạn có thể thử:\n- Giải phóng dung lượng bằng cách di chuyển hoặc xóa các tệp bạn không cần nữa\n- Dọn Thùng rác (bấm chuột phải vào biểu tượng Thùng rác trên Dock)\n- Trong Terminal, chạy `df -h` để xem mỗi ổ đĩa còn bao nhiêu dung lượng\n- Xem **{system_settings} > Cài đặt chung > Dung lượng** để biết chi tiết những gì đang chiếm dung lượng",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Giải phóng dung lượng bằng cách di chuyển hoặc xóa các tệp bạn không cần nữa\n- Dọn Thùng rác (bấm chuột phải vào biểu tượng Thùng rác trên Dock)\n- Trong Terminal, chạy `df -h` để xem mỗi ổ đĩa còn bao nhiêu dung lượng\n- Xem **{system_settings} > Cài đặt chung > Dung lượng** để biết chi tiết những gì đang chiếm dung lượng} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.diskFullErrno.suggestion": {
     "sourceHash": "f2eb27b"
   },
@@ -271,7 +271,7 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "Thử một cách khác, hoặc dùng Finder cho thao tác này. Nếu bạn đang làm việc với một ổ đĩa ngoài, có thể nó được định dạng bằng một hệ thống tệp có giới hạn (ví dụ FAT32 không lưu được tệp từ 4 GiB trở lên).",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Thử một cách khác, hoặc dùng Finder cho thao tác này. Nếu bạn đang làm việc với một ổ đĩa ngoài, có thể nó được định dạng bằng một hệ thống tệp có giới hạn (ví dụ FAT32 không lưu được tệp từ 4 GiB trở lên).} windows {Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} other {Try a different approach, or use your file manager for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).}}",
   "@errors.listing.notSupportedErrno.suggestion": {
     "sourceHash": "8fea918"
   },
@@ -283,7 +283,7 @@
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "d3c1975"
   },
-  "errors.listing.networkUnreachable.suggestion": "Bạn có thể thử:\n- Kiểm tra kết nối Wi-Fi hoặc Ethernet của bạn\n- Đảm bảo bạn đang ở đúng mạng (ví dụ Wi-Fi văn phòng hoặc VPN)\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được máy chủ không\n- Mở lại nơi này khi bạn đã kết nối",
+  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra kết nối Wi-Fi hoặc Ethernet của bạn\n- Đảm bảo bạn đang ở đúng mạng (ví dụ Wi-Fi văn phòng hoặc VPN)\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được máy chủ không\n- Mở lại nơi này khi bạn đã kết nối} windows {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} other {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected}}",
   "@errors.listing.networkUnreachable.suggestion": {
     "sourceHash": "7feb3cb"
   },
@@ -291,11 +291,11 @@
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "Máy chủ chủ động từ chối kết nối. Điều này thường có nghĩa là phần mềm máy chủ (ví dụ dịch vụ SMB hoặc NFS) không đang chạy, hoặc nó được cấu hình để từ chối kết nối từ máy Mac này.",
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {Máy chủ chủ động từ chối kết nối. Điều này thường có nghĩa là phần mềm máy chủ (ví dụ dịch vụ SMB hoặc NFS) không đang chạy, hoặc nó được cấu hình để từ chối kết nối từ máy Mac này.} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
   "@errors.listing.connectionRefused.explanation": {
     "sourceHash": "88e1ac7"
   },
-  "errors.listing.connectionRefused.suggestion": "Bạn có thể thử:\n- Kiểm tra xem máy chủ có đang chạy và dịch vụ chia sẻ tệp của nó có đang bật không\n- Xác nhận địa chỉ và cổng máy chủ là đúng\n- Trong Terminal, thử `ping <hostname>` để xem có tới được máy chủ không\n- Mở lại nơi này để thử lại",
+  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem máy chủ có đang chạy và dịch vụ chia sẻ tệp của nó có đang bật không\n- Xác nhận địa chỉ và cổng máy chủ là đúng\n- Trong Terminal, thử `ping <hostname>` để xem có tới được máy chủ không\n- Mở lại nơi này để thử lại} windows {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry}}",
   "@errors.listing.connectionRefused.suggestion": {
     "sourceHash": "17decc3"
   },
@@ -307,7 +307,7 @@
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "4157be6"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "Bạn có thể thử:\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem các liên kết mềm trỏ tới đâu\n- Tìm và sửa liên kết tạo ra vòng lặp\n- Nếu bạn không chắc liên kết nào là vấn đề, hãy lần theo từng cái một bằng `readlink <path>`",
+  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem các liên kết mềm trỏ tới đâu\n- Tìm và sửa liên kết tạo ra vòng lặp\n- Nếu bạn không chắc liên kết nào là vấn đề, hãy lần theo từng cái một bằng `readlink <path>`} windows {Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one} other {Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`}}",
   "@errors.listing.symlinkLoopErrno.suggestion": {
     "sourceHash": "eed9a5a"
   },
@@ -315,7 +315,7 @@
   "@errors.listing.nameTooLongErrno.title": {
     "sourceHash": "de4bc1d"
   },
-  "errors.listing.nameTooLongErrno.explanation": "Tên tệp hoặc thư mục vượt quá giới hạn của hệ thống (255 ký tự trên hầu hết ổ đĩa Mac). Điều này cũng có thể xảy ra khi toàn bộ đường dẫn (tất cả thư mục gộp lại) vượt quá độ dài đường dẫn tối đa của hệ thống.",
+  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {Tên tệp hoặc thư mục vượt quá giới hạn của hệ thống (255 ký tự trên hầu hết ổ đĩa Mac). Điều này cũng có thể xảy ra khi toàn bộ đường dẫn (tất cả thư mục gộp lại) vượt quá độ dài đường dẫn tối đa của hệ thống.} windows {The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} other {The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.}}",
   "@errors.listing.nameTooLongErrno.explanation": {
     "sourceHash": "8b9a6ff"
   },
@@ -331,7 +331,7 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "184b0fc"
   },
-  "errors.listing.hostUnreachable.suggestion": "Bạn có thể thử:\n- Kiểm tra xem máy chủ có đang bật và ở cùng mạng không\n- Nếu bạn cần VPN để tới được nó, đảm bảo VPN đã kết nối\n- Trong Terminal, thử `ping <hostname>` để kiểm tra kết nối\n- Mở lại nơi này khi máy chủ tới được",
+  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem máy chủ có đang bật và ở cùng mạng không\n- Nếu bạn cần VPN để tới được nó, đảm bảo VPN đã kết nối\n- Trong Terminal, thử `ping <hostname>` để kiểm tra kết nối\n- Mở lại nơi này khi máy chủ tới được} windows {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} other {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable}}",
   "@errors.listing.hostUnreachable.suggestion": {
     "sourceHash": "c222f76"
   },
@@ -355,7 +355,7 @@
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "b9b0b0e"
   },
-  "errors.listing.quotaExceeded.suggestion": "Bạn có thể thử:\n- Giải phóng dung lượng bằng cách gỡ bỏ các tệp bạn không cần nữa trên ổ đĩa này\n- Nhờ quản trị viên hệ thống tăng hạn ngạch cho bạn\n- Trong Terminal, chạy `quota` để xem mức dùng và giới hạn hiện tại của bạn",
+  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Giải phóng dung lượng bằng cách gỡ bỏ các tệp bạn không cần nữa trên ổ đĩa này\n- Nhờ quản trị viên hệ thống tăng hạn ngạch cho bạn\n- Trong Terminal, chạy `quota` để xem mức dùng và giới hạn hiện tại của bạn} windows {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota} other {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In a terminal, run `quota` to see your current usage and limit}}",
   "@errors.listing.quotaExceeded.suggestion": {
     "sourceHash": "1b5f0df"
   },
@@ -379,7 +379,7 @@
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "Bạn có thể thử:\n- Ngắt kết nối rồi kết nối lại ổ đĩa trong Finder\n- Nhập tên người dùng và mật khẩu khi được hỏi\n- Nếu bạn không chắc về thông tin đăng nhập, hãy liên hệ quản trị viên của máy chủ",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {Bạn có thể thử:\n- Ngắt kết nối rồi kết nối lại ổ đĩa trong Finder\n- Nhập tên người dùng và mật khẩu khi được hỏi\n- Nếu bạn không chắc về thông tin đăng nhập, hãy liên hệ quản trị viên của máy chủ}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
     "sourceHash": "a90b520"
   },
@@ -403,7 +403,7 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "Hệ thống tệp này có thể không hỗ trợ siêu dữ liệu mà Cmdr cần. Thử thao tác trên một ổ đĩa khác, hoặc sao chép tệp tới ổ đĩa trong máy Mac của bạn trước.",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Hệ thống tệp này có thể không hỗ trợ siêu dữ liệu mà Cmdr cần. Thử thao tác trên một ổ đĩa khác, hoặc sao chép tệp tới ổ đĩa trong máy Mac của bạn trước.} windows {Hệ thống tệp này có thể không hỗ trợ siêu dữ liệu mà Cmdr cần. Thử thao tác trên một ổ đĩa khác, hoặc sao chép tệp tới ổ đĩa trong máy Mac của bạn trước.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
   "@errors.listing.attributeNotFound.suggestion": {
     "sourceHash": "463ee44"
   },
@@ -415,7 +415,7 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối đúng cách không\n- Mở **Tiện ích ổ đĩa** (tìm kiếm nó trong Spotlight) và chạy **Sửa nhanh** trên ổ đĩa này\n- Nếu việc này cứ tiếp diễn, hãy sao lưu dữ liệu của bạn càng sớm càng tốt. Đĩa có thể đang sinh các vùng hỏng hoặc bắt đầu xuống cấp.",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối đúng cách không\n- Mở **Tiện ích ổ đĩa** (tìm kiếm nó trong Spotlight) và chạy **Sửa nhanh** trên ổ đĩa này\n- Nếu việc này cứ tiếp diễn, hãy sao lưu dữ liệu của bạn càng sớm càng tốt. Đĩa có thể đang sinh các vùng hỏng hoặc bắt đầu xuống cấp.} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
   "@errors.listing.diskReadProblem.suggestion": {
     "sourceHash": "614a5fe"
   },
@@ -427,7 +427,7 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "a834896"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "Bạn có thể thử:\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Tiện ích ổ đĩa** (tìm kiếm nó trong Spotlight) và chạy **Sửa nhanh** trên ổ đĩa này để kiểm tra hệ thống tệp",
+  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Tiện ích ổ đĩa** (tìm kiếm nó trong Spotlight) và chạy **Sửa nhanh** trên ổ đĩa này để kiểm tra hệ thống tệp} windows {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems} other {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool (for example, GNOME Disks)}}",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
     "sourceHash": "f63d225"
   },
@@ -451,7 +451,7 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "bade4a7"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Tiện ích ổ đĩa** và chạy **Sửa nhanh** trên ổ đĩa này",
+  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Tiện ích ổ đĩa** và chạy **Sửa nhanh** trên ổ đĩa này} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
   "@errors.listing.couldntReadUnknown.suggestion": {
     "sourceHash": "5155626"
   },
@@ -463,7 +463,7 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.notFound.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đường dẫn có viết đúng không\n- Nếu nó nằm trên ổ đĩa mạng, đảm bảo ổ đĩa đã kết nối và có thể truy cập mục chia sẻ\n- Đi tới thư mục cha và tìm mục đó ở đấy\n- Trong Terminal, chạy `ls -la` trên thư mục cha để xem có gì trong đó",
+  "errors.listing.notFound.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem đường dẫn có viết đúng không\n- Nếu nó nằm trên ổ đĩa mạng, đảm bảo ổ đĩa đã kết nối và có thể truy cập mục chia sẻ\n- Đi tới thư mục cha và tìm mục đó ở đấy\n- Trong Terminal, chạy `ls -la` trên thư mục cha để xem có gì trong đó} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
   "@errors.listing.notFound.suggestion": {
     "sourceHash": "8a51477"
   },
@@ -483,11 +483,11 @@
   "@errors.listing.permissionDenied.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.permissionDenied.explanation": "Cmdr không có quyền truy cập `{path}`. macOS kiểm soát ứng dụng nào được truy cập thư mục nào, và Cmdr chưa được cấp quyền truy cập thư mục này.",
+  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr không có quyền truy cập `{path}`. macOS kiểm soát ứng dụng nào được truy cập thư mục nào, và Cmdr chưa được cấp quyền truy cập thư mục này.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "3871273"
   },
-  "errors.listing.permissionDenied.suggestion": "Bạn có thể thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Kiểm tra quyền của thư mục trong Finder: bấm chuột phải vào thư mục, chọn Lấy thông tin, và xem phần Chia sẻ & quyền\n- Nếu đây là thư mục chia sẻ, hãy nhờ chủ sở hữu cập nhật quyền\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem quyền hiện tại",
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr\n- Kiểm tra quyền của thư mục trong Finder: bấm chuột phải vào thư mục, chọn Lấy thông tin, và xem phần Chia sẻ & quyền\n- Nếu đây là thư mục chia sẻ, hãy nhờ chủ sở hữu cập nhật quyền\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem quyền hiện tại} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions}}",
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "3450aff"
   },
@@ -507,11 +507,11 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.remotePermissionDenied.explanation": "`{path}` nằm trên một mục chia sẻ mạng, và tài khoản bạn dùng để kết nối không có quyền mở nó. Máy chủ từ chối yêu cầu trước cả khi macOS tham gia, nên đây không phải là một thiết lập riêng tư trên máy Mac của bạn.",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` nằm trên một mục chia sẻ mạng, và tài khoản bạn dùng để kết nối không có quyền mở nó. Máy chủ từ chối yêu cầu trước cả khi macOS tham gia, nên đây không phải là một thiết lập riêng tư trên máy Mac của bạn.} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "d8463b0"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "Bạn có thể thử:\n- Kiểm tra quyền của thư mục trên máy chủ, và tài khoản bạn đã dùng để gắn kết mục chia sẻ\n- Một số thư mục thuộc về tài khoản hệ thống của chính máy chủ (ví dụ `lost+found` trên một mục chia sẻ Linux) và luôn đóng với mọi người khác\n- Để kết nối bằng tài khoản khác, hãy tháo mục chia sẻ rồi gắn kết lại với thông tin đăng nhập đó",
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra quyền của thư mục trên máy chủ, và tài khoản bạn đã dùng để gắn kết mục chia sẻ\n- Một số thư mục thuộc về tài khoản hệ thống của chính máy chủ (ví dụ `lost+found` trên một mục chia sẻ Linux) và luôn đóng với mọi người khác\n- Để kết nối bằng tài khoản khác, hãy tháo mục chia sẻ rồi gắn kết lại với thông tin đăng nhập đó} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "sourceHash": "3e6497d"
   },
@@ -631,7 +631,7 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.storageFull.suggestion": "Bạn có thể thử:\n- Giải phóng dung lượng bằng cách di chuyển hoặc xóa các tệp bạn không cần nữa\n- Dọn Thùng rác (bấm chuột phải vào biểu tượng Thùng rác trên Dock)\n- Trong Terminal, chạy `df -h` để xem mỗi ổ đĩa còn bao nhiêu dung lượng",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Giải phóng dung lượng bằng cách di chuyển hoặc xóa các tệp bạn không cần nữa\n- Dọn Thùng rác (bấm chuột phải vào biểu tượng Thùng rác trên Dock)\n- Trong Terminal, chạy `df -h` để xem mỗi ổ đĩa còn bao nhiêu dung lượng} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "101099b"
   },
@@ -643,7 +643,7 @@
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "15d3054"
   },
-  "errors.listing.connectionTimedOut.suggestion": "Bạn có thể thử:\n- Kiểm tra xem thiết bị hoặc máy chủ có đang bật và tới được không\n- Kiểm tra kết nối Wi-Fi hoặc Ethernet của bạn\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được máy chủ không\n- Thử lại",
+  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem thiết bị hoặc máy chủ có đang bật và tới được không\n- Kiểm tra kết nối Wi-Fi hoặc Ethernet của bạn\n- Trong Terminal, thử `ping <hostname>` để kiểm tra xem có tới được máy chủ không\n- Thử lại} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again}}",
   "@errors.listing.connectionTimedOut.suggestion": {
     "sourceHash": "f474938"
   },
@@ -655,7 +655,7 @@
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "d074574"
   },
-  "errors.listing.notSupported.suggestion": "Thử một cách khác, hoặc dùng Finder cho thao tác này.",
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {Thử một cách khác, hoặc dùng Finder cho thao tác này.} windows {Try a different approach, or use File Explorer for this operation.} other {Try a different approach, or use your file manager for this operation.}}",
   "@errors.listing.notSupported.suggestion": {
     "sourceHash": "d4e3965"
   },
@@ -727,7 +727,7 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Thử lại\n- Nếu việc này cứ tiếp diễn, thử chạy **Tiện ích ổ đĩa > Sửa nhanh** trên ổ đĩa này",
+  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Thử lại\n- Nếu việc này cứ tiếp diễn, thử chạy **Tiện ích ổ đĩa > Sửa nhanh** trên ổ đĩa này} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
   "@errors.listing.ioSerious.suggestion": {
     "sourceHash": "6e83ebb"
   },
@@ -847,7 +847,7 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "53012e9"
   },
-  "errors.git.permissionDenied.suggestion": "Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp cho Cmdr quyền truy cập thư mục.",
+  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp cho Cmdr quyền truy cập thư mục.} windows {Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.} other {Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode.}}",
   "@errors.git.permissionDenied.suggestion": {
     "sourceHash": "7396b5a"
   },
@@ -907,7 +907,7 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr. Trong Terminal, `ls -la .git` cho thấy chủ sở hữu và chế độ hiện tại.",
+  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr. Trong Terminal, `ls -la .git` cho thấy chủ sở hữu và chế độ hiện tại.} windows {Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.} other {Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode.}}",
   "@errors.git.gitDirPermissionDenied.suggestion": {
     "sourceHash": "b091738"
   },
@@ -1157,7 +1157,7 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "Thư mục này do **{name}** quản lý. Bạn có thể thử:\n- Thoát rồi mở lại {app}\n- Đăng xuất rồi đăng nhập lại vào {app}\n- Xem trang trạng thái của {name} để biết dịch vụ có đang gặp sự cố không",
+  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {Thư mục này do **{name}** quản lý. Bạn có thể thử:\n- Thoát rồi mở lại {app}\n- Đăng xuất rồi đăng nhập lại vào {app}\n- Xem trang trạng thái của {name} để biết dịch vụ có đang gặp sự cố không}}",
   "@errors.provider.appBased.serious": {
     "sourceHash": "5a4e14e"
   },
@@ -2149,7 +2149,7 @@
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "0845c57"
   },
-  "errors.mutation.parentNotWritable": "Cmdr không ghi được vào “{path}”. Hãy kiểm tra quyền của thư mục trong Finder.",
+  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr không ghi được vào “{path}”. Hãy kiểm tra quyền của thư mục trong Finder.} windows {Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.} other {Cmdr can’t write into “{path}”. Check the folder’s permissions in your file manager.}}",
   "@errors.mutation.parentNotWritable": {
     "sourceHash": "e0a7ad6"
   },
@@ -2309,11 +2309,11 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"
   },
-  "errors.mutation.trashNotSupported": "Ổ đĩa này không có Thùng rác, nên cách duy nhất là xóa vĩnh viễn.",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {Ổ đĩa này không có Thùng rác, nên cách duy nhất là xóa vĩnh viễn.}}",
   "@errors.mutation.trashNotSupported": {
     "sourceHash": "525ef25"
   },
-  "errors.mutation.trashRefused": "macOS đã từ chối chuyển mục này vào Thùng rác.",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS đã từ chối chuyển mục này vào Thùng rác.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
   "@errors.mutation.trashRefused": {
     "sourceHash": "7a6d1a5"
   },
@@ -2397,7 +2397,7 @@
   "@errors.eject.unmountRefusedByDiskImage": {
     "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "macOS vẫn đang dùng thứ gì đó ở đó. Hãy đợi một phút rồi thử lại.",
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS vẫn đang dùng thứ gì đó ở đó. Hãy đợi một phút rồi thử lại.} windows {Windows is still using something there. Wait a minute, then try again.} other {This computer is still using something there. Wait a minute, then try again.}}",
   "@errors.eject.unmountRefusedBySystem": {
     "sourceHash": "9b066c9"
   },

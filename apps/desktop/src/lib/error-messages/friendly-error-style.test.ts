@@ -30,7 +30,7 @@ import { getProviderSuggestion, type Provider, type ProviderCategory } from './p
 import type { FriendlyErrorMessage } from './friendly-error-message'
 import { withPlatform } from '#lib/platform/test-platform.js'
 
-// These goldens pin the English a Mac shows, so they read the macOS branch of platform-variant copy.
+// Reads the macOS branch unless a block below picks another OS.
 beforeEach(() => withPlatform('macos'))
 
 // "error" / "failed" are forbidden everywhere (the always-on rule). The
@@ -175,40 +175,46 @@ const PROVIDERS: Provider[] = [
 
 const CATEGORIES: ProviderCategory[] = ['transient', 'needs_action', 'serious']
 
-describe('friendly-error copy obeys the writing rules', () => {
-  for (const r of LISTING_REASONS) {
-    it(`listing reason "${r.reason}" is clean`, () => {
-      const checkTrivializing = !PREEXISTING_TRIVIALIZING_EXCEPTIONS.has(r.reason)
-      assertClean(`listing:${r.reason}`, getListingErrorMessage(r), checkTrivializing)
-    })
-  }
+// Every OS reads its own branch of platform-variant copy, so each one is held to the rules.
+for (const platform of ['macos', 'windows', 'linux'] as const) {
+  describe(`friendly-error copy obeys the writing rules on ${platform}`, () => {
+    beforeEach(() => withPlatform(platform))
 
-  it('the locked restic repo wording is clean', () => {
-    assertClean(
-      'listing:resticRepoNeedsPassword',
-      getListingErrorMessage({ reason: 'archiveNeedsPassword', container: 'resticRepo', wrongAttempt: false }),
-    )
-  })
-
-  for (const kind of GIT_KINDS) {
-    it(`git kind "${kind}" is clean`, () => {
-      assertClean(`git:${kind}`, getGitErrorMessage(kind))
-    })
-  }
-
-  for (const provider of PROVIDERS) {
-    for (const cat of CATEGORIES) {
-      it(`provider "${provider}" × "${cat}" suggestion is clean`, () => {
-        const suggestion = getProviderSuggestion(provider, cat)
-        for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS]) {
-          expect(containsWord(suggestion, word), `provider ${provider}/${cat} contains "${word}": ${suggestion}`).toBe(
-            false,
-          )
-        }
+    for (const r of LISTING_REASONS) {
+      it(`listing reason "${r.reason}" is clean`, () => {
+        const checkTrivializing = !PREEXISTING_TRIVIALIZING_EXCEPTIONS.has(r.reason)
+        assertClean(`listing:${r.reason}`, getListingErrorMessage(r), checkTrivializing)
       })
     }
-  }
-})
+
+    it('the locked restic repo wording is clean', () => {
+      assertClean(
+        'listing:resticRepoNeedsPassword',
+        getListingErrorMessage({ reason: 'archiveNeedsPassword', container: 'resticRepo', wrongAttempt: false }),
+      )
+    })
+
+    for (const kind of GIT_KINDS) {
+      it(`git kind "${kind}" is clean`, () => {
+        assertClean(`git:${kind}`, getGitErrorMessage(kind))
+      })
+    }
+
+    for (const provider of PROVIDERS) {
+      for (const cat of CATEGORIES) {
+        it(`provider "${provider}" × "${cat}" suggestion is clean`, () => {
+          const suggestion = getProviderSuggestion(provider, cat)
+          for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS]) {
+            expect(
+              containsWord(suggestion, word),
+              `provider ${provider}/${cat} contains "${word}": ${suggestion}`,
+            ).toBe(false)
+          }
+        })
+      }
+    }
+  })
+}
 
 // ── The servers copy ─────────────────────────────────────────────────────────
 

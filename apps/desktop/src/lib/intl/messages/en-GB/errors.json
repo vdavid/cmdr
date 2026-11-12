@@ -11,9 +11,9 @@
   "@errors.listing.cancelledErrno.explanation": {
     "sourceHash": "da19c15"
   },
-  "errors.listing.diskFullErrno.suggestion": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Bin (right-click the Bin icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume\n- Check **{system_settings} > General > Storage** for a breakdown of what’s using space",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Bin (right-click the Bin icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume\n- Check **{system_settings} > General > Storage** for a breakdown of what’s using space} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Bin in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "f2eb27b"
+    "sourceHash": "bba2927"
   },
   "errors.listing.cancelled.title": "Cancelled",
   "@errors.listing.cancelled.title": {
@@ -27,9 +27,9 @@
   "@errors.listing.deviceReconnecting.explanation": {
     "sourceHash": "0327639"
   },
-  "errors.listing.storageFull.suggestion": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Bin (right-click the Bin icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Bin (right-click the Bin icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Bin in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "101099b"
+    "sourceHash": "c04afed"
   },
   "errors.write.sourceNotFound.message.trash": "The file or folder you tried to move to the Bin no longer exists.",
   "@errors.write.sourceNotFound.message.trash": {
@@ -159,13 +159,13 @@
   "@errors.volume.notFound": {
     "sourceHash": "9c068a2"
   },
-  "errors.mutation.trashNotSupported": "This volume has no Bin, so the only way is to delete permanently.",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {This volume has no Bin, so the only way is to delete permanently.}}",
   "@errors.mutation.trashNotSupported": {
-    "sourceHash": "525ef25"
+    "sourceHash": "519075e"
   },
-  "errors.mutation.trashRefused": "macOS wouldn’t move this to the Bin.",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS wouldn’t move this to the Bin.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Bin.}}",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "7a6d1a5"
+    "sourceHash": "7ad59d2"
   },
   "errors.eject.volumeNotFound": "That drive isn’t connected any more, so there’s nothing to eject.",
   "@errors.eject.volumeNotFound": {

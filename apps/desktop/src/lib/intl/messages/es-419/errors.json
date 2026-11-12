@@ -47,7 +47,7 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "91ab2e3"
   },
-  "errors.listing.lockUnavailable.suggestion": "Esto es lo que puedes probar:\n- Cierra algunas apps, sobre todo las que trabajan con muchos archivos (editores, IDE, herramientas de respaldo)\n- En la Terminal, ejecuta `lsof | wc -l` para ver cuántos archivos hay abiertos entre todas las apps\n- Si el problema sigue, puedes subir el límite con `ulimit -n 4096` en la Terminal\n- Vuelve a abrir esta carpeta para reintentarlo",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Cierra algunas apps, sobre todo las que trabajan con muchos archivos (editores, IDE, herramientas de respaldo)\n- En la Terminal, ejecuta `lsof | wc -l` para ver cuántos archivos hay abiertos entre todas las apps\n- Si el problema sigue, puedes subir el límite con `ulimit -n 4096` en la Terminal\n- Vuelve a abrir esta carpeta para reintentarlo} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
   "@errors.listing.lockUnavailable.suggestion": {
     "sourceHash": "7ccace0"
   },
@@ -55,7 +55,7 @@
   "@errors.listing.cancelledErrno.explanation": {
     "sourceHash": "9370972"
   },
-  "errors.listing.notPermitted.explanation": "macOS impidió a Cmdr acceder a `{path}`. Normalmente significa que la carpeta está protegida por las políticas de seguridad de macOS, o que Cmdr aún no tiene los permisos necesarios.",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS impidió a Cmdr acceder a `{path}`. Normalmente significa que la carpeta está protegida por las políticas de seguridad de macOS, o que Cmdr aún no tiene los permisos necesarios.} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
   "@errors.listing.notPermitted.explanation": {
     "sourceHash": "9587977"
   },
@@ -71,7 +71,7 @@
   "@errors.listing.isAFolderErrno.explanation": {
     "sourceHash": "04d874b"
   },
-  "errors.listing.diskFullErrno.suggestion": "Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía el basurero (haz clic derecho en el ícono del basurero del Dock)\n- En la Terminal, ejecuta `df -h` para ver cuánto espacio queda en cada volumen\n- Revisa **{system_settings} > General > Almacenamiento** para ver un desglose de qué ocupa espacio",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía el basurero (haz clic derecho en el ícono del basurero del Dock)\n- En la Terminal, ejecuta `df -h` para ver cuánto espacio queda en cada volumen\n- Revisa **{system_settings} > General > Almacenamiento** para ver un desglose de qué ocupa espacio} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.diskFullErrno.suggestion": {
     "sourceHash": "df4db4c"
   },
@@ -79,7 +79,7 @@
   "@errors.listing.readOnlyVolumeErrno.explanation": {
     "sourceHash": "4313e68"
   },
-  "errors.listing.connectionRefused.explanation": "El servidor rechazó la conexión de forma activa. Normalmente significa que el software del servidor (por ejemplo, un servicio SMB o NFS) no está en marcha, o que está configurado para rechazar conexiones desde este Mac.",
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {El servidor rechazó la conexión de forma activa. Normalmente significa que el software del servidor (por ejemplo, un servicio SMB o NFS) no está en marcha, o que está configurado para rechazar conexiones desde este Mac.} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
   "@errors.listing.connectionRefused.explanation": {
     "sourceHash": "e294194"
   },
@@ -95,7 +95,7 @@
   "@errors.listing.authRequiredEauth.suggestion": {
     "sourceHash": "19539f5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "Esto es lo que puedes probar:\n- Desconecta y vuelve a conectar el volumen en el Finder\n- Ingresa tu usuario y contraseña cuando se te pidan\n- Si no tienes claras las credenciales, consúltalo con quien administre el servidor",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {Esto es lo que puedes probar:\n- Desconecta y vuelve a conectar el volumen en el Finder\n- Ingresa tu usuario y contraseña cuando se te pidan\n- Si no tienes claras las credenciales, consúltalo con quien administre el servidor}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
     "sourceHash": "7d285da"
   },
@@ -107,7 +107,7 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "a2c3002"
   },
-  "errors.listing.diskReadProblem.suggestion": "Esto es lo que puedes probar:\n- Comprueba que el disco o el dispositivo sigan bien conectados\n- Abre la **Utilidad de Discos** (búscala en Spotlight) y ejecuta **Primera ayuda** en este volumen\n- Si sigue pasando, haz un respaldo de tus datos cuanto antes. El disco puede estar desarrollando sectores defectuosos o empezando a desgastarse.",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Comprueba que el disco o el dispositivo sigan bien conectados\n- Abre la **Utilidad de Discos** (búscala en Spotlight) y ejecuta **Primera ayuda** en este volumen\n- Si sigue pasando, haz un respaldo de tus datos cuanto antes. El disco puede estar desarrollando sectores defectuosos o empezando a desgastarse.} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
   "@errors.listing.diskReadProblem.suggestion": {
     "sourceHash": "13395c2"
   },
@@ -135,11 +135,11 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "c11be9a"
   },
-  "errors.listing.remotePermissionDenied.explanation": "`{path}` está en un recurso compartido de red, y la cuenta con la que te conectaste no tiene permiso para abrirla. El servidor rechaza la solicitud antes de que macOS intervenga, así que no es una opción de privacidad de tu Mac.",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` está en un recurso compartido de red, y la cuenta con la que te conectaste no tiene permiso para abrirla. El servidor rechaza la solicitud antes de que macOS intervenga, así que no es una opción de privacidad de tu Mac.} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "c91fb65"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el servidor, y con qué cuenta montaste el recurso compartido\n- Algunas carpetas pertenecen a la cuenta de sistema del propio servidor (`lost+found` en un recurso compartido de Linux, por ejemplo) y siguen cerradas para todos los demás\n- Para conectarte como otra persona, expulsa el recurso compartido y vuelve a montarlo con esas credenciales",
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el servidor, y con qué cuenta montaste el recurso compartido\n- Algunas carpetas pertenecen a la cuenta de sistema del propio servidor (`lost+found` en un recurso compartido de Linux, por ejemplo) y siguen cerradas para todos los demás\n- Para conectarte como otra persona, expulsa el recurso compartido y vuelve a montarlo con esas credenciales} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "sourceHash": "bdfd2d5"
   },
@@ -167,7 +167,7 @@
   "@errors.listing.readOnly.explanation": {
     "sourceHash": "947bbfd"
   },
-  "errors.listing.storageFull.suggestion": "Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía el basurero (haz clic derecho en el ícono del basurero del Dock)\n- En la Terminal, ejecuta `df -h` para ver cuánto espacio queda en cada volumen",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía el basurero (haz clic derecho en el ícono del basurero del Dock)\n- En la Terminal, ejecuta `df -h` para ver cuánto espacio queda en cada volumen} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "bbbdfd3"
   },
@@ -291,7 +291,7 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "eb64b82"
   },
-  "errors.provider.appBased.serious": "Esta carpeta la administra **{name}**. Esto es lo que puedes probar:\n- Sal de {app} y vuelve a abrirlo\n- Cierra sesión y vuelve a iniciarla en {app}\n- Consulta la página de estado de {name} por si hay caídas",
+  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {Esta carpeta la administra **{name}**. Esto es lo que puedes probar:\n- Sal de {app} y vuelve a abrirlo\n- Cierra sesión y vuelve a iniciarla en {app}\n- Consulta la página de estado de {name} por si hay caídas}}",
   "@errors.provider.appBased.serious": {
     "sourceHash": "fc019ac"
   },
@@ -787,11 +787,11 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "5d54870"
   },
-  "errors.mutation.trashNotSupported": "Este volumen no tiene basurero, así que solo se puede eliminar permanentemente.",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {Este volumen no tiene basurero, así que solo se puede eliminar permanentemente.}}",
   "@errors.mutation.trashNotSupported": {
     "sourceHash": "74a7d84"
   },
-  "errors.mutation.trashRefused": "macOS no permitió mover esto al basurero.",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS no permitió mover esto al basurero.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
   "@errors.mutation.trashRefused": {
     "sourceHash": "732097b"
   },

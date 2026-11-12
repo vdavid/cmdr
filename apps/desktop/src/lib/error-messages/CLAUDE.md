@@ -40,14 +40,14 @@ files. Writing rules: `docs/style-guide.md` (active voice, friendly, never the w
 - **The reason / provider / git names are the IPC contract with Rust.** Each `ListingErrorReason` member, `Provider`
   variant, and `FriendlyGitErrorKind` must match its Rust counterpart member-for-member. Drift breaks the parity test
   (and silently mis-renders at runtime).
-- **The frozen golden fixture + parity test is the behavior-preservation net.** `friendly-error-parity.test.ts` asserts
-  these factories reproduce `__fixtures__/friendly_error_golden.json` byte-for-byte. If it fails, the FE copy drifted:
-  fix the factory, never regenerate the fixture (a DELIBERATE reword hand-edits just the affected values: `DETAILS.md`).
-  `friendly-error-style.test.ts` enforces the writing rules over every reason, every provider × category, and every git
-  kind.
-- **This is a behavior-preserving home, not a copy redesign.** Don't reword / merge / "improve" messages here as a side
-  effect; a copy pass is separate. (One known pre-existing nit, "for just this folder" in `tccRestricted`, is preserved
-  verbatim and exempted in the style test.)
+- **Three frozen goldens are the behavior net.** `friendly-error-parity.test.ts` replays `friendly-error-matrix.ts`
+  against `__fixtures__/friendly_error_golden.json` (macOS) and its `.windows.json` / `.linux.json` siblings. A failure
+  means drift: fix the factory or catalog, never regenerate (a deliberate reword hand-edits its values: `DETAILS.md`).
+  `friendly-error-style.test.ts` holds every reason, provider, and git kind to the writing rules on all three OSes.
+- **Per-OS words are a catalog `{platform, select, …}` block**, never a factory branch; `{system_settings}`-style tokens
+  go in `macos` only. `DETAILS.md` § Platform branches.
+- **Don't reword messages as a side effect**; a copy pass is separate (the "for just this folder" nit in `tccRestricted`
+  is exempted in the style test).
 
 ## Adding a new error message
 

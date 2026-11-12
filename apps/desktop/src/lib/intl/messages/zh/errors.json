@@ -19,7 +19,7 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "可以这样试试：\n- 关掉一些 App 来释放内存，尤其是占用资源较多的（开了很多标签页的浏览器、编辑器、媒体类 App）\n- 在**活动监视器**里查看内存占用（用聚焦搜索打开它）\n- 再次进入这里重试",
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {可以这样试试：\n- 关掉一些 App 来释放内存，尤其是占用资源较多的（开了很多标签页的浏览器、编辑器、媒体类 App）\n- 在**活动监视器**里查看内存占用（用聚焦搜索打开它）\n- 再次进入这里重试} windows {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in your system monitor app\n- Navigate here again to retry}}",
   "@errors.listing.notEnoughMemory.suggestion": {
     "sourceHash": "d05a4e4"
   },
@@ -31,7 +31,7 @@
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "18a07d9"
   },
-  "errors.listing.resourceBusy.suggestion": "稍等片刻，再次进入这里。如果一直这样，看看是哪个 App 可能一直打开着这个文件（在终端里运行 `lsof +D <folder-path>`，查看哪些进程正在使用这个文件夹）。",
+  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {稍等片刻，再次进入这里。如果一直这样，看看是哪个 App 可能一直打开着这个文件（在终端里运行 `lsof +D <folder-path>`，查看哪些进程正在使用这个文件夹）。} windows {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.} other {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in a terminal, run `lsof +D <folder-path>` to see which processes are using this folder).}}",
   "@errors.listing.resourceBusy.suggestion": {
     "sourceHash": "fa266e6"
   },
@@ -43,7 +43,7 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "再次进入这里重试。这通常会自行恢复。如果一直这样，系统可能负载很重。在**活动监视器**里看看哪些 App 占用了大量资源。",
+  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {再次进入这里重试。这通常会自行恢复。如果一直这样，系统可能负载很重。在**活动监视器**里看看哪些 App 占用了大量资源。} windows {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.} other {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources.}}",
   "@errors.listing.temporarilyUnavailable.suggestion": {
     "sourceHash": "1ec4aef"
   },
@@ -51,11 +51,11 @@
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "你的 Mac 网络连接已断开，所以 Cmdr 无法连到这个宗卷。可能是 Wi-Fi 断开了、以太网线没插好，或者网络接口被停用了。",
+  "errors.listing.networkDown.explanation": "{platform, select, macos {你的 Mac 网络连接已断开，所以 Cmdr 无法连到这个宗卷。可能是 Wi-Fi 断开了、以太网线没插好，或者网络接口被停用了。} windows {Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.} other {Your computer’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.}}",
   "@errors.listing.networkDown.explanation": {
     "sourceHash": "179f8bb"
   },
-  "errors.listing.networkDown.suggestion": "可以这样试试：\n- 在 **{system_settings} > 网络**里查看 Wi-Fi 或以太网状态\n- 如果用的是 Wi-Fi，试试关掉再打开\n- 在终端里运行 `ping google.com` 测试连接\n- 恢复联网后，再次进入这里",
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {可以这样试试：\n- 在 **{system_settings} > 网络**里查看 Wi-Fi 或以太网状态\n- 如果用的是 Wi-Fi，试试关掉再打开\n- 在终端里运行 `ping google.com` 测试连接\n- 恢复联网后，再次进入这里} windows {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} other {Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online}}",
   "@errors.listing.networkDown.suggestion": {
     "sourceHash": "bf4b517"
   },
@@ -91,7 +91,7 @@
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
-  "errors.listing.connectionReset.suggestion": "可以这样试试：\n- 确认服务器在运行\n- 在终端里试试 `ping <hostname>`，测试服务器是否可达\n- 再次进入这里重试",
+  "errors.listing.connectionReset.suggestion": "{platform, select, macos {可以这样试试：\n- 确认服务器在运行\n- 在终端里试试 `ping <hostname>`，测试服务器是否可达\n- 再次进入这里重试} windows {Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry}}",
   "@errors.listing.connectionReset.suggestion": {
     "sourceHash": "d980663"
   },
@@ -103,7 +103,7 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "c088c41"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "可以这样试试：\n- 确认设备或服务器已开机且可达\n- 检查你的 Wi-Fi 或以太网连接\n- 在终端里试试 `ping <hostname>`，测试连通性\n- 再次进入这里重试",
+  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {可以这样试试：\n- 确认设备或服务器已开机且可达\n- 检查你的 Wi-Fi 或以太网连接\n- 在终端里试试 `ping <hostname>`，测试连通性\n- 再次进入这里重试} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry}}",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
     "sourceHash": "230ef64"
   },
@@ -115,7 +115,7 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "e175712"
   },
-  "errors.listing.hostDown.suggestion": "可以这样试试：\n- 确认主机已开机并连入网络\n- 在终端里试试 `ping <hostname>`，测试它是否可达\n- 如果是 NAS 或服务器，检查它的管理界面\n- 主机恢复后，再次进入这里",
+  "errors.listing.hostDown.suggestion": "{platform, select, macos {可以这样试试：\n- 确认主机已开机并连入网络\n- 在终端里试试 `ping <hostname>`，测试它是否可达\n- 如果是 NAS 或服务器，检查它的管理界面\n- 主机恢复后，再次进入这里} windows {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} other {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back}}",
   "@errors.listing.hostDown.suggestion": {
     "sourceHash": "7a8ecd8"
   },
@@ -127,7 +127,7 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "可以这样试试：\n- 离开这个文件夹再回来\n- 如果这是网络驱动器，试试在 Finder 里取消挂载再重新挂载\n- 确认托管这个文件夹的服务器在运行\n- 在终端里运行 `mount`，查看当前已挂载的宗卷",
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {可以这样试试：\n- 离开这个文件夹再回来\n- 如果这是网络驱动器，试试在 Finder 里取消挂载再重新挂载\n- 确认托管这个文件夹的服务器在运行\n- 在终端里运行 `mount`，查看当前已挂载的宗卷} windows {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives} other {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes}}",
   "@errors.listing.staleConnection.suggestion": {
     "sourceHash": "73de81d"
   },
@@ -139,7 +139,7 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
-  "errors.listing.lockUnavailable.suggestion": "可以这样试试：\n- 关掉一些 App，尤其是会处理很多文件的（编辑器、IDE、备份工具）\n- 在终端里运行 `lsof | wc -l`，查看所有 App 一共打开了多少文件\n- 如果问题一直出现，可以在终端里用 `ulimit -n 4096` 提高上限\n- 再次进入这里重试",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {可以这样试试：\n- 关掉一些 App，尤其是会处理很多文件的（编辑器、IDE、备份工具）\n- 在终端里运行 `lsof | wc -l`，查看所有 App 一共打开了多少文件\n- 如果问题一直出现，可以在终端里用 `ulimit -n 4096` 提高上限\n- 再次进入这里重试} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
   "@errors.listing.lockUnavailable.suggestion": {
     "sourceHash": "a9f23bd"
   },
@@ -159,11 +159,11 @@
   "@errors.listing.notPermitted.title": {
     "sourceHash": "8ec5f4b"
   },
-  "errors.listing.notPermitted.explanation": "macOS 阻止了 Cmdr 访问 `{path}`。这通常意味着该文件夹受 macOS 安全策略保护，或 Cmdr 还没获得相应权限。",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS 阻止了 Cmdr 访问 `{path}`。这通常意味着该文件夹受 macOS 安全策略保护，或 Cmdr 还没获得相应权限。} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
   "@errors.listing.notPermitted.explanation": {
     "sourceHash": "e28dd0e"
   },
-  "errors.listing.notPermitted.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 如果这是受系统保护的文件夹，你可能需要在 {privacy_and_security} 里授予 Cmdr **{full_disk_access}**\n- 在终端里对这个路径运行 `ls -la`，查看所有者和权限",
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 如果这是受系统保护的文件夹，你可能需要在 {privacy_and_security} 里授予 Cmdr **{full_disk_access}**\n- 在终端里对这个路径运行 `ls -la`，查看所有者和权限} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions}}",
   "@errors.listing.notPermitted.suggestion": {
     "sourceHash": "2926956"
   },
@@ -175,7 +175,7 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "可以这样试试：\n- 确认路径拼写无误\n- 如果它在网络驱动器上，确认驱动器已连接且共享可访问\n- 进入上一级文件夹，在那里找找这个项目\n- 在终端里对上一级文件夹运行 `ls -la`，看看里面有什么",
+  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {可以这样试试：\n- 确认路径拼写无误\n- 如果它在网络驱动器上，确认驱动器已连接且共享可访问\n- 进入上一级文件夹，在那里找找这个项目\n- 在终端里对上一级文件夹运行 `ls -la`，看看里面有什么} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
   "@errors.listing.pathNotFoundErrno.suggestion": {
     "sourceHash": "8a51477"
   },
@@ -183,11 +183,11 @@
   "@errors.listing.noPermissionErrno.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.noPermissionErrno.explanation": "Cmdr 没有权限访问 `{path}`。macOS 控制着哪些 App 能访问哪些文件夹，而 Cmdr 还没获得这个文件夹的访问权限。",
+  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr 没有权限访问 `{path}`。macOS 控制着哪些 App 能访问哪些文件夹，而 Cmdr 还没获得这个文件夹的访问权限。} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "3871273"
   },
-  "errors.listing.noPermissionErrno.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 在 Finder 里查看文件夹权限：右键点击它，选择“显示简介”，看“共享与权限”\n- 如果这是共享文件夹，请文件夹所有者更新权限\n- 在终端里对这个路径运行 `ls -la`，查看当前权限",
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 在 Finder 里查看文件夹权限：右键点击它，选择“显示简介”，看“共享与权限”\n- 如果这是共享文件夹，请文件夹所有者更新权限\n- 在终端里对这个路径运行 `ls -la`，查看当前权限} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions}}",
   "@errors.listing.noPermissionErrno.suggestion": {
     "sourceHash": "4b513ef"
   },
@@ -247,7 +247,7 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.diskFullErrno.suggestion": "可以这样试试：\n- 移动或删除不再需要的文件，腾出空间\n- 清倒废纸篓（右键点击程序坞里的废纸篓图标）\n- 在终端里运行 `df -h`，查看每个宗卷还剩多少空间\n- 在 **{system_settings} > 通用 > 储存空间**里查看空间占用明细",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {可以这样试试：\n- 移动或删除不再需要的文件，腾出空间\n- 清倒废纸篓（右键点击程序坞里的废纸篓图标）\n- 在终端里运行 `df -h`，查看每个宗卷还剩多少空间\n- 在 **{system_settings} > 通用 > 储存空间**里查看空间占用明细} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.diskFullErrno.suggestion": {
     "sourceHash": "f2eb27b"
   },
@@ -271,7 +271,7 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "换个方式试试，或用 Finder 来完成这项操作。如果你在用外置驱动器，它可能格式化成了有限制的文件系统（比如 FAT32 无法存储 4 GiB 及以上的文件）。",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {换个方式试试，或用 Finder 来完成这项操作。如果你在用外置驱动器，它可能格式化成了有限制的文件系统（比如 FAT32 无法存储 4 GiB 及以上的文件）。} windows {Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} other {Try a different approach, or use your file manager for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).}}",
   "@errors.listing.notSupportedErrno.suggestion": {
     "sourceHash": "8fea918"
   },
@@ -283,7 +283,7 @@
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "d3c1975"
   },
-  "errors.listing.networkUnreachable.suggestion": "可以这样试试：\n- 检查你的 Wi-Fi 或以太网连接\n- 确认你连的是正确的网络（比如公司 Wi-Fi 或 VPN）\n- 在终端里试试 `ping <hostname>`，测试服务器是否可达\n- 连上之后，再次进入这里",
+  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {可以这样试试：\n- 检查你的 Wi-Fi 或以太网连接\n- 确认你连的是正确的网络（比如公司 Wi-Fi 或 VPN）\n- 在终端里试试 `ping <hostname>`，测试服务器是否可达\n- 连上之后，再次进入这里} windows {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} other {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected}}",
   "@errors.listing.networkUnreachable.suggestion": {
     "sourceHash": "7feb3cb"
   },
@@ -291,11 +291,11 @@
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "服务器主动拒绝了连接。这通常意味着服务器软件（比如 SMB 或 NFS 服务）没在运行，或它被配置成拒绝来自这台 Mac 的连接。",
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {服务器主动拒绝了连接。这通常意味着服务器软件（比如 SMB 或 NFS 服务）没在运行，或它被配置成拒绝来自这台 Mac 的连接。} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
   "@errors.listing.connectionRefused.explanation": {
     "sourceHash": "88e1ac7"
   },
-  "errors.listing.connectionRefused.suggestion": "可以这样试试：\n- 确认服务器在运行，且它的文件共享服务已启用\n- 核对服务器地址和端口是否正确\n- 在终端里试试 `ping <hostname>`，看看服务器到底能不能连到\n- 再次进入这里重试",
+  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {可以这样试试：\n- 确认服务器在运行，且它的文件共享服务已启用\n- 核对服务器地址和端口是否正确\n- 在终端里试试 `ping <hostname>`，看看服务器到底能不能连到\n- 再次进入这里重试} windows {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry}}",
   "@errors.listing.connectionRefused.suggestion": {
     "sourceHash": "17decc3"
   },
@@ -307,7 +307,7 @@
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "4157be6"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "可以这样试试：\n- 在终端里对这个路径运行 `ls -la`，看看这些符号链接指向哪里\n- 找到并修复造成死循环的那个链接\n- 如果不确定是哪个链接有问题，用 `readlink <path>` 一个一个顺着查",
+  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {可以这样试试：\n- 在终端里对这个路径运行 `ls -la`，看看这些符号链接指向哪里\n- 找到并修复造成死循环的那个链接\n- 如果不确定是哪个链接有问题，用 `readlink <path>` 一个一个顺着查} windows {Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one} other {Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`}}",
   "@errors.listing.symlinkLoopErrno.suggestion": {
     "sourceHash": "eed9a5a"
   },
@@ -315,7 +315,7 @@
   "@errors.listing.nameTooLongErrno.title": {
     "sourceHash": "de4bc1d"
   },
-  "errors.listing.nameTooLongErrno.explanation": "文件或文件夹的名称超过了系统的上限（多数 Mac 宗卷上是 255 个字符）。完整路径（所有文件夹加起来）超过系统的最大长度时，也会这样。",
+  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {文件或文件夹的名称超过了系统的上限（多数 Mac 宗卷上是 255 个字符）。完整路径（所有文件夹加起来）超过系统的最大长度时，也会这样。} windows {The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} other {The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.}}",
   "@errors.listing.nameTooLongErrno.explanation": {
     "sourceHash": "8b9a6ff"
   },
@@ -331,7 +331,7 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "184b0fc"
   },
-  "errors.listing.hostUnreachable.suggestion": "可以这样试试：\n- 确认主机已开机且在同一个网络上\n- 如果需要 VPN 才能连到它，确认 VPN 已连接\n- 在终端里试试 `ping <hostname>`，测试连通性\n- 主机可连到后，再次进入这里",
+  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {可以这样试试：\n- 确认主机已开机且在同一个网络上\n- 如果需要 VPN 才能连到它，确认 VPN 已连接\n- 在终端里试试 `ping <hostname>`，测试连通性\n- 主机可连到后，再次进入这里} windows {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} other {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable}}",
   "@errors.listing.hostUnreachable.suggestion": {
     "sourceHash": "c222f76"
   },
@@ -355,7 +355,7 @@
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "b9b0b0e"
   },
-  "errors.listing.quotaExceeded.suggestion": "可以这样试试：\n- 删除这个宗卷上不再需要的文件，腾出空间\n- 请系统管理员调高你的配额\n- 在终端里运行 `quota`，查看你当前的用量和上限",
+  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {可以这样试试：\n- 删除这个宗卷上不再需要的文件，腾出空间\n- 请系统管理员调高你的配额\n- 在终端里运行 `quota`，查看你当前的用量和上限} windows {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota} other {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In a terminal, run `quota` to see your current usage and limit}}",
   "@errors.listing.quotaExceeded.suggestion": {
     "sourceHash": "1b5f0df"
   },
@@ -379,7 +379,7 @@
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "可以这样试试：\n- 在 Finder 里断开并重新连接这个宗卷\n- 在提示时输入你的用户名和密码\n- 如果不确定凭证，请联系这台服务器的管理员",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {可以这样试试：\n- 在 Finder 里断开并重新连接这个宗卷\n- 在提示时输入你的用户名和密码\n- 如果不确定凭证，请联系这台服务器的管理员}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
     "sourceHash": "a90b520"
   },
@@ -403,7 +403,7 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "这个文件系统可能不支持 Cmdr 需要的元数据。换一个宗卷试试这项操作，或先把文件拷贝到你 Mac 的内置驱动器上。",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {这个文件系统可能不支持 Cmdr 需要的元数据。换一个宗卷试试这项操作，或先把文件拷贝到你 Mac 的内置驱动器上。} windows {这个文件系统可能不支持 Cmdr 需要的元数据。换一个宗卷试试这项操作，或先把文件拷贝到你 Mac 的内置驱动器上。} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
   "@errors.listing.attributeNotFound.suggestion": {
     "sourceHash": "463ee44"
   },
@@ -415,7 +415,7 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "可以这样试试：\n- 确认磁盘或设备仍正确连接\n- 打开**磁盘工具**（用聚焦搜索打开它），对这个宗卷运行**急救**\n- 如果一直这样，请尽快备份你的数据。磁盘可能正在出现坏扇区，或开始老化。",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {可以这样试试：\n- 确认磁盘或设备仍正确连接\n- 打开**磁盘工具**（用聚焦搜索打开它），对这个宗卷运行**急救**\n- 如果一直这样，请尽快备份你的数据。磁盘可能正在出现坏扇区，或开始老化。} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
   "@errors.listing.diskReadProblem.suggestion": {
     "sourceHash": "614a5fe"
   },
@@ -427,7 +427,7 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "a834896"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "可以这样试试：\n- 再次进入这里重试\n- 如果一直这样，打开**磁盘工具**（用聚焦搜索打开它），对这个宗卷运行**急救**，检查文件系统问题",
+  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {可以这样试试：\n- 再次进入这里重试\n- 如果一直这样，打开**磁盘工具**（用聚焦搜索打开它），对这个宗卷运行**急救**，检查文件系统问题} windows {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems} other {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool (for example, GNOME Disks)}}",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
     "sourceHash": "f63d225"
   },
@@ -451,7 +451,7 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "bade4a7"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "可以这样试试：\n- 确认磁盘或设备仍连接着\n- 再次进入这里重试\n- 如果一直这样，打开**磁盘工具**，对这个宗卷运行**急救**",
+  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {可以这样试试：\n- 确认磁盘或设备仍连接着\n- 再次进入这里重试\n- 如果一直这样，打开**磁盘工具**，对这个宗卷运行**急救**} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
   "@errors.listing.couldntReadUnknown.suggestion": {
     "sourceHash": "5155626"
   },
@@ -463,7 +463,7 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.notFound.suggestion": "可以这样试试：\n- 确认路径拼写无误\n- 如果它在网络驱动器上，确认驱动器已连接且共享可访问\n- 进入上一级文件夹，在那里找找这个项目\n- 在终端里对上一级文件夹运行 `ls -la`，看看里面有什么",
+  "errors.listing.notFound.suggestion": "{platform, select, macos {可以这样试试：\n- 确认路径拼写无误\n- 如果它在网络驱动器上，确认驱动器已连接且共享可访问\n- 进入上一级文件夹，在那里找找这个项目\n- 在终端里对上一级文件夹运行 `ls -la`，看看里面有什么} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
   "@errors.listing.notFound.suggestion": {
     "sourceHash": "8a51477"
   },
@@ -483,11 +483,11 @@
   "@errors.listing.permissionDenied.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.permissionDenied.explanation": "Cmdr 没有权限访问 `{path}`。macOS 控制着哪些 App 能访问哪些文件夹，而 Cmdr 还没获得这个文件夹的访问权限。",
+  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr 没有权限访问 `{path}`。macOS 控制着哪些 App 能访问哪些文件夹，而 Cmdr 还没获得这个文件夹的访问权限。} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "3871273"
   },
-  "errors.listing.permissionDenied.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 在 Finder 里查看文件夹权限：右键点击文件夹，选择“显示简介”，看“共享与权限”\n- 如果这是共享文件夹，请文件夹所有者更新权限\n- 在终端里对这个路径运行 `ls -la`，查看当前权限",
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 在 Finder 里查看文件夹权限：右键点击文件夹，选择“显示简介”，看“共享与权限”\n- 如果这是共享文件夹，请文件夹所有者更新权限\n- 在终端里对这个路径运行 `ls -la`，查看当前权限} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions}}",
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "3450aff"
   },
@@ -507,11 +507,11 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.remotePermissionDenied.explanation": "`{path}` 在一个网络共享上，而你连接时用的账户没有打开它的权限。服务器在 macOS 介入之前就拒绝了请求，所以这不是你 Mac 上的隐私设置。",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` 在一个网络共享上，而你连接时用的账户没有打开它的权限。服务器在 macOS 介入之前就拒绝了请求，所以这不是你 Mac 上的隐私设置。} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "d8463b0"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "可以这样试试：\n- 在服务器上查看这个文件夹的权限，以及你是用哪个账户装载的共享\n- 有些文件夹属于服务器自己的系统账户（比如 Linux 共享上的 `lost+found`），对其他所有人都是关闭的\n- 想换个身份连接，就先推出这个共享，再用那套凭证重新装载",
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {可以这样试试：\n- 在服务器上查看这个文件夹的权限，以及你是用哪个账户装载的共享\n- 有些文件夹属于服务器自己的系统账户（比如 Linux 共享上的 `lost+found`），对其他所有人都是关闭的\n- 想换个身份连接，就先推出这个共享，再用那套凭证重新装载} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "sourceHash": "3e6497d"
   },
@@ -631,7 +631,7 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.storageFull.suggestion": "可以这样试试：\n- 移动或删除不再需要的文件，腾出空间\n- 清倒废纸篓（右键点击程序坞里的废纸篓图标）\n- 在终端里运行 `df -h`，查看每个宗卷还剩多少空间",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {可以这样试试：\n- 移动或删除不再需要的文件，腾出空间\n- 清倒废纸篓（右键点击程序坞里的废纸篓图标）\n- 在终端里运行 `df -h`，查看每个宗卷还剩多少空间} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "101099b"
   },
@@ -643,7 +643,7 @@
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "15d3054"
   },
-  "errors.listing.connectionTimedOut.suggestion": "可以这样试试：\n- 确认设备或服务器已开机且可达\n- 检查你的 Wi-Fi 或以太网连接\n- 在终端里试试 `ping <hostname>`，测试服务器是否可达\n- 重试",
+  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {可以这样试试：\n- 确认设备或服务器已开机且可达\n- 检查你的 Wi-Fi 或以太网连接\n- 在终端里试试 `ping <hostname>`，测试服务器是否可达\n- 重试} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again}}",
   "@errors.listing.connectionTimedOut.suggestion": {
     "sourceHash": "f474938"
   },
@@ -655,7 +655,7 @@
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "d074574"
   },
-  "errors.listing.notSupported.suggestion": "换个方式试试，或用 Finder 来完成这项操作。",
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {换个方式试试，或用 Finder 来完成这项操作。} windows {Try a different approach, or use File Explorer for this operation.} other {Try a different approach, or use your file manager for this operation.}}",
   "@errors.listing.notSupported.suggestion": {
     "sourceHash": "d4e3965"
   },
@@ -727,7 +727,7 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "可以这样试试：\n- 确认磁盘或设备仍连接着\n- 重试\n- 如果一直这样，试着对这个宗卷运行**磁盘工具 > 急救**",
+  "errors.listing.ioSerious.suggestion": "{platform, select, macos {可以这样试试：\n- 确认磁盘或设备仍连接着\n- 重试\n- 如果一直这样，试着对这个宗卷运行**磁盘工具 > 急救**} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
   "@errors.listing.ioSerious.suggestion": {
     "sourceHash": "6e83ebb"
   },
@@ -847,7 +847,7 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "53012e9"
   },
-  "errors.git.permissionDenied.suggestion": "打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 对这个文件夹的访问权限。",
+  "errors.git.permissionDenied.suggestion": "{platform, select, macos {打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 对这个文件夹的访问权限。} windows {Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.} other {Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode.}}",
   "@errors.git.permissionDenied.suggestion": {
     "sourceHash": "7396b5a"
   },
@@ -907,7 +907,7 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限。在终端里，`ls -la .git` 会显示当前的所有者和权限模式。",
+  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限。在终端里，`ls -la .git` 会显示当前的所有者和权限模式。} windows {Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.} other {Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode.}}",
   "@errors.git.gitDirPermissionDenied.suggestion": {
     "sourceHash": "b091738"
   },
@@ -1156,7 +1156,7 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 退出并重新打开 {app}\n- 退出 {app} 再重新登录\n- 查看 {name} 的状态页，看有没有服务中断",
+  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {这个文件夹由 **{name}** 管理。可以这样试试：\n- 退出并重新打开 {app}\n- 退出 {app} 再重新登录\n- 查看 {name} 的状态页，看有没有服务中断}}",
   "@errors.provider.appBased.serious": {
     "sourceHash": "5a4e14e"
   },
@@ -2148,7 +2148,7 @@
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "0845c57"
   },
-  "errors.mutation.parentNotWritable": "Cmdr 无法写入“{path}”。请在 Finder 里查看这个文件夹的权限。",
+  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr 无法写入“{path}”。请在 Finder 里查看这个文件夹的权限。} windows {Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.} other {Cmdr can’t write into “{path}”. Check the folder’s permissions in your file manager.}}",
   "@errors.mutation.parentNotWritable": {
     "sourceHash": "e0a7ad6"
   },
@@ -2308,11 +2308,11 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"
   },
-  "errors.mutation.trashNotSupported": "这个宗卷没有废纸篓，只能彻底删除。",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {这个宗卷没有废纸篓，只能彻底删除。}}",
   "@errors.mutation.trashNotSupported": {
     "sourceHash": "525ef25"
   },
-  "errors.mutation.trashRefused": "macOS 拒绝把这个项目移到废纸篓。",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS 拒绝把这个项目移到废纸篓。} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
   "@errors.mutation.trashRefused": {
     "sourceHash": "7a6d1a5"
   },
@@ -2396,7 +2396,7 @@
   "@errors.eject.unmountRefusedByDiskImage": {
     "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "macOS 还在使用那里的某些内容。请稍等一会儿，然后再试一次。",
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS 还在使用那里的某些内容。请稍等一会儿，然后再试一次。} windows {Windows is still using something there. Wait a minute, then try again.} other {This computer is still using something there. Wait a minute, then try again.}}",
   "@errors.eject.unmountRefusedBySystem": {
     "sourceHash": "9b066c9"
   },

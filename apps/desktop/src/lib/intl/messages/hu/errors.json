@@ -19,7 +19,7 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "Ezeket próbálhatod:\n- Zárj be néhány appot a memória felszabadításához, főleg az erőforrás-igényeseket (sok lapot nyitva tartó böngészők, szerkesztők, médiaappok)\n- Nézd meg a memóriahasználatot a **Tevékenységfigyelő** appban (keresd a Spotlightban)\n- Lépj ide újra az ismételt próbához",
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Zárj be néhány appot a memória felszabadításához, főleg az erőforrás-igényeseket (sok lapot nyitva tartó böngészők, szerkesztők, médiaappok)\n- Nézd meg a memóriahasználatot a **Tevékenységfigyelő** appban (keresd a Spotlightban)\n- Lépj ide újra az ismételt próbához} windows {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in your system monitor app\n- Navigate here again to retry}}",
   "@errors.listing.notEnoughMemory.suggestion": {
     "sourceHash": "d05a4e4"
   },
@@ -31,7 +31,7 @@
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "18a07d9"
   },
-  "errors.listing.resourceBusy.suggestion": "Várj egy kicsit, majd lépj ide újra. Ha továbbra is előfordul, nézd meg, melyik app tarthatja nyitva a fájlt (a Terminalban add ki a `lsof +D <folder-path>` parancsot, hogy lásd, mely folyamatok használják ezt a mappát).",
+  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Várj egy kicsit, majd lépj ide újra. Ha továbbra is előfordul, nézd meg, melyik app tarthatja nyitva a fájlt (a Terminalban add ki a `lsof +D <folder-path>` parancsot, hogy lásd, mely folyamatok használják ezt a mappát).} windows {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.} other {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in a terminal, run `lsof +D <folder-path>` to see which processes are using this folder).}}",
   "@errors.listing.resourceBusy.suggestion": {
     "sourceHash": "fa266e6"
   },
@@ -43,7 +43,7 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "Lépj ide újra az ismételt próbához. Ez általában magától megoldódik. Ha továbbra is előfordul, lehet, hogy a rendszer nagy terhelés alatt van. Nézd meg a **Tevékenységfigyelő** appban, mely appok használnak sok erőforrást.",
+  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Lépj ide újra az ismételt próbához. Ez általában magától megoldódik. Ha továbbra is előfordul, lehet, hogy a rendszer nagy terhelés alatt van. Nézd meg a **Tevékenységfigyelő** appban, mely appok használnak sok erőforrást.} windows {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.} other {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources.}}",
   "@errors.listing.temporarilyUnavailable.suggestion": {
     "sourceHash": "1ec4aef"
   },
@@ -51,11 +51,11 @@
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "A Mac hálózati kapcsolata nem működik, ezért a Cmdr nem éri el ezt a kötetet. Ez jelentheti, hogy a Wi-Fi megszakadt, kihúztak egy Ethernet-kábelt, vagy a hálózati interfész le van tiltva.",
+  "errors.listing.networkDown.explanation": "{platform, select, macos {A Mac hálózati kapcsolata nem működik, ezért a Cmdr nem éri el ezt a kötetet. Ez jelentheti, hogy a Wi-Fi megszakadt, kihúztak egy Ethernet-kábelt, vagy a hálózati interfész le van tiltva.} windows {Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.} other {Your computer’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.}}",
   "@errors.listing.networkDown.explanation": {
     "sourceHash": "179f8bb"
   },
-  "errors.listing.networkDown.suggestion": "Ezeket próbálhatod:\n- Nézd meg a Wi-Fi vagy az Ethernet állapotát itt: **{system_settings} > Hálózat**\n- Ha Wi-Fin vagy, próbáld ki- és bekapcsolni\n- A Terminalban add ki a `ping google.com` parancsot a kapcsolat ellenőrzéséhez\n- Lépj ide újra, amint újra online vagy",
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Nézd meg a Wi-Fi vagy az Ethernet állapotát itt: **{system_settings} > Hálózat**\n- Ha Wi-Fin vagy, próbáld ki- és bekapcsolni\n- A Terminalban add ki a `ping google.com` parancsot a kapcsolat ellenőrzéséhez\n- Lépj ide újra, amint újra online vagy} windows {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} other {Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online}}",
   "@errors.listing.networkDown.suggestion": {
     "sourceHash": "bf4b517"
   },
@@ -91,7 +91,7 @@
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
-  "errors.listing.connectionReset.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Lépj ide újra az ismételt próbához",
+  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Lépj ide újra az ismételt próbához} windows {Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry}}",
   "@errors.listing.connectionReset.suggestion": {
     "sourceHash": "d980663"
   },
@@ -103,7 +103,7 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "c088c41"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az eszköz vagy a szerver be van kapcsolva és elérhető\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- A Terminalban próbáld ki a `ping <hostname>` parancsot a kapcsolat teszteléséhez\n- Lépj ide újra az ismételt próbához",
+  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy az eszköz vagy a szerver be van kapcsolva és elérhető\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- A Terminalban próbáld ki a `ping <hostname>` parancsot a kapcsolat teszteléséhez\n- Lépj ide újra az ismételt próbához} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry}}",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
     "sourceHash": "230ef64"
   },
@@ -115,7 +115,7 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "e175712"
   },
-  "errors.listing.hostDown.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a gazdagép be van kapcsolva és csatlakozik a hálózathoz\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e\n- Ha NAS vagy szerver, nézd meg a felügyeleti felületét\n- Lépj ide újra, amint a gazdagép újra elérhető",
+  "errors.listing.hostDown.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy a gazdagép be van kapcsolva és csatlakozik a hálózathoz\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e\n- Ha NAS vagy szerver, nézd meg a felügyeleti felületét\n- Lépj ide újra, amint a gazdagép újra elérhető} windows {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} other {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back}}",
   "@errors.listing.hostDown.suggestion": {
     "sourceHash": "7a8ecd8"
   },
@@ -127,7 +127,7 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "Ezeket próbálhatod:\n- Lépj ki ebből a mappából, majd gyere vissza\n- Ha ez hálózati meghajtó, próbáld leválasztani és újracsatolni a Finderben\n- Ellenőrizd, hogy a mappát kiszolgáló szerver fut\n- A Terminalban add ki a `mount` parancsot a jelenleg csatolt kötetek megtekintéséhez",
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Lépj ki ebből a mappából, majd gyere vissza\n- Ha ez hálózati meghajtó, próbáld leválasztani és újracsatolni a Finderben\n- Ellenőrizd, hogy a mappát kiszolgáló szerver fut\n- A Terminalban add ki a `mount` parancsot a jelenleg csatolt kötetek megtekintéséhez} windows {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives} other {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes}}",
   "@errors.listing.staleConnection.suggestion": {
     "sourceHash": "73de81d"
   },
@@ -139,7 +139,7 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
-  "errors.listing.lockUnavailable.suggestion": "Ezeket próbálhatod:\n- Zárj be néhány appot, főleg a sok fájllal dolgozókat (szerkesztők, IDE-k, biztonsági mentő eszközök)\n- A Terminalban add ki a `lsof | wc -l` parancsot, hogy lásd, hány fájl van megnyitva az összes appban\n- Ha a probléma folyamatosan visszatér, a Terminalban a `ulimit -n 4096` paranccsal megemelheted a korlátot\n- Lépj ide újra az ismételt próbához",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Zárj be néhány appot, főleg a sok fájllal dolgozókat (szerkesztők, IDE-k, biztonsági mentő eszközök)\n- A Terminalban add ki a `lsof | wc -l` parancsot, hogy lásd, hány fájl van megnyitva az összes appban\n- Ha a probléma folyamatosan visszatér, a Terminalban a `ulimit -n 4096` paranccsal megemelheted a korlátot\n- Lépj ide újra az ismételt próbához} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
   "@errors.listing.lockUnavailable.suggestion": {
     "sourceHash": "a9f23bd"
   },
@@ -159,11 +159,11 @@
   "@errors.listing.notPermitted.title": {
     "sourceHash": "8ec5f4b"
   },
-  "errors.listing.notPermitted.explanation": "A macOS megakadályozta, hogy a Cmdr hozzáférjen ehhez: `{path}`. Ez általában azt jelenti, hogy a mappát a macOS biztonsági szabályai védik, vagy a Cmdr még nem kapta meg a megfelelő engedélyeket.",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {A macOS megakadályozta, hogy a Cmdr hozzáférjen ehhez: `{path}`. Ez általában azt jelenti, hogy a mappát a macOS biztonsági szabályai védik, vagy a Cmdr még nem kapta meg a megfelelő engedélyeket.} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
   "@errors.listing.notPermitted.explanation": {
     "sourceHash": "e28dd0e"
   },
-  "errors.listing.notPermitted.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ha ez egy rendszer által védett mappa, lehet, hogy a {privacy_and_security} alatt **{full_disk_access}** jogot kell adnod a Cmdrnek\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon a tulajdonjog és az engedélyek ellenőrzéséhez",
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ha ez egy rendszer által védett mappa, lehet, hogy a {privacy_and_security} alatt **{full_disk_access}** jogot kell adnod a Cmdrnek\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon a tulajdonjog és az engedélyek ellenőrzéséhez} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions}}",
   "@errors.listing.notPermitted.suggestion": {
     "sourceHash": "2926956"
   },
@@ -175,7 +175,7 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az útvonal helyesen van-e írva\n- Ha ez hálózati meghajtón van, győződj meg róla, hogy csatlakozik és a megosztás elérhető\n- Lépj a szülőmappába, és keresd ott az elemet\n- A Terminalban add ki az `ls -la` parancsot a szülőmappán, hogy lásd, mi van benne",
+  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy az útvonal helyesen van-e írva\n- Ha ez hálózati meghajtón van, győződj meg róla, hogy csatlakozik és a megosztás elérhető\n- Lépj a szülőmappába, és keresd ott az elemet\n- A Terminalban add ki az `ls -la` parancsot a szülőmappán, hogy lásd, mi van benne} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
   "@errors.listing.pathNotFoundErrno.suggestion": {
     "sourceHash": "8a51477"
   },
@@ -183,11 +183,11 @@
   "@errors.listing.noPermissionErrno.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.noPermissionErrno.explanation": "A Cmdrnek nincs engedélye hozzáférni ehhez: `{path}`. A macOS szabályozza, hogy mely appok mely mappákhoz férhetnek hozzá, és a Cmdr még nem kapott hozzáférést ehhez.",
+  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {A Cmdrnek nincs engedélye hozzáférni ehhez: `{path}`. A macOS szabályozza, hogy mely appok mely mappákhoz férhetnek hozzá, és a Cmdr még nem kapott hozzáférést ehhez.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "3871273"
   },
-  "errors.listing.noPermissionErrno.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon a jelenlegi engedélyek megtekintéséhez",
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon a jelenlegi engedélyek megtekintéséhez} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions}}",
   "@errors.listing.noPermissionErrno.suggestion": {
     "sourceHash": "4b513ef"
   },
@@ -247,7 +247,7 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.diskFullErrno.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok áthelyezésével vagy törlésével\n- Ürítsd ki a Kukát (kattints jobb gombbal a Kuka ikonra a Dockban)\n- A Terminalban add ki a `df -h` parancsot, hogy lásd, mennyi hely maradt az egyes köteteken\n- Nézd meg a **{system_settings} > Általános > Tárhely** részt a hely felhasználásának részletezéséhez",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok áthelyezésével vagy törlésével\n- Ürítsd ki a Kukát (kattints jobb gombbal a Kuka ikonra a Dockban)\n- A Terminalban add ki a `df -h` parancsot, hogy lásd, mennyi hely maradt az egyes köteteken\n- Nézd meg a **{system_settings} > Általános > Tárhely** részt a hely felhasználásának részletezéséhez} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.diskFullErrno.suggestion": {
     "sourceHash": "f2eb27b"
   },
@@ -271,7 +271,7 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "Próbálj más megoldást, vagy használd a Findert ehhez a művelethez. Ha külső meghajtóval dolgozol, lehet, hogy olyan fájlrendszerrel van formázva, aminek korlátai vannak (például a FAT32 nem tud 4 GiB vagy annál nagyobb méretű fájlokat tárolni).",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Próbálj más megoldást, vagy használd a Findert ehhez a művelethez. Ha külső meghajtóval dolgozol, lehet, hogy olyan fájlrendszerrel van formázva, aminek korlátai vannak (például a FAT32 nem tud 4 GiB vagy annál nagyobb méretű fájlokat tárolni).} windows {Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} other {Try a different approach, or use your file manager for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).}}",
   "@errors.listing.notSupportedErrno.suggestion": {
     "sourceHash": "8fea918"
   },
@@ -283,7 +283,7 @@
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "d3c1975"
   },
-  "errors.listing.networkUnreachable.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- Győződj meg róla, hogy a megfelelő hálózaton vagy (például az irodai Wi-Fin vagy a VPN-en)\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Lépj ide újra, amint csatlakoztál",
+  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- Győződj meg róla, hogy a megfelelő hálózaton vagy (például az irodai Wi-Fin vagy a VPN-en)\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Lépj ide újra, amint csatlakoztál} windows {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} other {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected}}",
   "@errors.listing.networkUnreachable.suggestion": {
     "sourceHash": "7feb3cb"
   },
@@ -291,11 +291,11 @@
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "A szerver aktívan elutasította a kapcsolatot. Ez általában azt jelenti, hogy a szerverszoftver (például egy SMB- vagy NFS-szolgáltatás) nem fut, vagy úgy van beállítva, hogy elutasítsa a kapcsolatokat erről a Macről.",
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {A szerver aktívan elutasította a kapcsolatot. Ez általában azt jelenti, hogy a szerverszoftver (például egy SMB- vagy NFS-szolgáltatás) nem fut, vagy úgy van beállítva, hogy elutasítsa a kapcsolatokat erről a Macről.} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
   "@errors.listing.connectionRefused.explanation": {
     "sourceHash": "88e1ac7"
   },
-  "errors.listing.connectionRefused.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut és a fájlmegosztó szolgáltatása aktív\n- Ellenőrizd, hogy a szerver címe és portja helyes\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, egyáltalán elérhető-e a szerver\n- Lépj ide újra az ismételt próbához",
+  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut és a fájlmegosztó szolgáltatása aktív\n- Ellenőrizd, hogy a szerver címe és portja helyes\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, egyáltalán elérhető-e a szerver\n- Lépj ide újra az ismételt próbához} windows {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry}}",
   "@errors.listing.connectionRefused.suggestion": {
     "sourceHash": "17decc3"
   },
@@ -307,7 +307,7 @@
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "4157be6"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "Ezeket próbálhatod:\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon, hogy lásd, hová mutatnak a szimbolikus linkek\n- Keresd meg és javítsd a hurkot okozó linket\n- Ha nem tudod biztosan, melyik link okozza a hurkot, kövesd őket egyenként a `readlink <path>` paranccsal",
+  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon, hogy lásd, hová mutatnak a szimbolikus linkek\n- Keresd meg és javítsd a hurkot okozó linket\n- Ha nem tudod biztosan, melyik link okozza a hurkot, kövesd őket egyenként a `readlink <path>` paranccsal} windows {Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one} other {Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`}}",
   "@errors.listing.symlinkLoopErrno.suggestion": {
     "sourceHash": "eed9a5a"
   },
@@ -315,7 +315,7 @@
   "@errors.listing.nameTooLongErrno.title": {
     "sourceHash": "de4bc1d"
   },
-  "errors.listing.nameTooLongErrno.explanation": "A fájl vagy mappa neve meghaladja a rendszer korlátját (a legtöbb Mac-köteten 255 karakter). Ez akkor is előfordulhat, ha a teljes útvonal (az összes mappa együtt) meghaladja a rendszer legnagyobb útvonalhosszát.",
+  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {A fájl vagy mappa neve meghaladja a rendszer korlátját (a legtöbb Mac-köteten 255 karakter). Ez akkor is előfordulhat, ha a teljes útvonal (az összes mappa együtt) meghaladja a rendszer legnagyobb útvonalhosszát.} windows {The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} other {The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.}}",
   "@errors.listing.nameTooLongErrno.explanation": {
     "sourceHash": "8b9a6ff"
   },
@@ -331,7 +331,7 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "184b0fc"
   },
-  "errors.listing.hostUnreachable.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a gazdagép be van kapcsolva és ugyanazon a hálózaton van\n- Ha VPN kell az eléréséhez, győződj meg róla, hogy a VPN csatlakozik\n- A Terminalban próbáld ki a `ping <hostname>` parancsot a kapcsolat teszteléséhez\n- Lépj ide újra, amint a gazdagép elérhető",
+  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy a gazdagép be van kapcsolva és ugyanazon a hálózaton van\n- Ha VPN kell az eléréséhez, győződj meg róla, hogy a VPN csatlakozik\n- A Terminalban próbáld ki a `ping <hostname>` parancsot a kapcsolat teszteléséhez\n- Lépj ide újra, amint a gazdagép elérhető} windows {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} other {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable}}",
   "@errors.listing.hostUnreachable.suggestion": {
     "sourceHash": "c222f76"
   },
@@ -355,7 +355,7 @@
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "b9b0b0e"
   },
-  "errors.listing.quotaExceeded.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok eltávolításával ezen a köteten\n- Kérd meg a rendszergazdát, hogy növelje a kvótádat\n- A Terminalban add ki a `quota` parancsot a jelenlegi használat és a korlát megtekintéséhez",
+  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok eltávolításával ezen a köteten\n- Kérd meg a rendszergazdát, hogy növelje a kvótádat\n- A Terminalban add ki a `quota` parancsot a jelenlegi használat és a korlát megtekintéséhez} windows {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota} other {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In a terminal, run `quota` to see your current usage and limit}}",
   "@errors.listing.quotaExceeded.suggestion": {
     "sourceHash": "1b5f0df"
   },
@@ -379,7 +379,7 @@
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "Ezeket próbálhatod:\n- Válaszd le, majd csatlakoztasd újra a kötetet a Finderben\n- Add meg a felhasználónevedet és jelszavadat, amikor a rendszer kéri\n- Ha nem vagy biztos a hitelesítő adatokban, egyeztess a szerver rendszergazdájával",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {Ezeket próbálhatod:\n- Válaszd le, majd csatlakoztasd újra a kötetet a Finderben\n- Add meg a felhasználónevedet és jelszavadat, amikor a rendszer kéri\n- Ha nem vagy biztos a hitelesítő adatokban, egyeztess a szerver rendszergazdájával}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
     "sourceHash": "a90b520"
   },
@@ -403,7 +403,7 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "Lehet, hogy ez a fájlrendszer nem támogatja a Cmdrnek szükséges metaadatokat. Próbáld a műveletet másik köteten, vagy előbb másold a fájlt a Mac belső meghajtójára.",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Lehet, hogy ez a fájlrendszer nem támogatja a Cmdrnek szükséges metaadatokat. Próbáld a műveletet másik köteten, vagy előbb másold a fájlt a Mac belső meghajtójára.} windows {Lehet, hogy ez a fájlrendszer nem támogatja a Cmdrnek szükséges metaadatokat. Próbáld a műveletet másik köteten, vagy előbb másold a fájlt a Mac belső meghajtójára.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
   "@errors.listing.attributeNotFound.suggestion": {
     "sourceHash": "463ee44"
   },
@@ -415,7 +415,7 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még megfelelően csatlakozik\n- Nyisd meg a **Lemezkezelő** appot (keresd a Spotlightban), és futtasd az **Elsősegélyt** ezen a köteten\n- Ha ez folyamatosan előfordul, mentsd az adataidat mielőbb. Lehet, hogy a lemezen hibás szektorok jelennek meg, vagy kezd elkopni.",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még megfelelően csatlakozik\n- Nyisd meg a **Lemezkezelő** appot (keresd a Spotlightban), és futtasd az **Elsősegélyt** ezen a köteten\n- Ha ez folyamatosan előfordul, mentsd az adataidat mielőbb. Lehet, hogy a lemezen hibás szektorok jelennek meg, vagy kezd elkopni.} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
   "@errors.listing.diskReadProblem.suggestion": {
     "sourceHash": "614a5fe"
   },
@@ -427,7 +427,7 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "a834896"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "Ezeket próbálhatod:\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Lemezkezelő** appot (keresd a Spotlightban), és futtasd az **Elsősegélyt** ezen a köteten a fájlrendszeri problémák ellenőrzéséhez",
+  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Lemezkezelő** appot (keresd a Spotlightban), és futtasd az **Elsősegélyt** ezen a köteten a fájlrendszeri problémák ellenőrzéséhez} windows {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems} other {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool (for example, GNOME Disks)}}",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
     "sourceHash": "f63d225"
   },
@@ -451,7 +451,7 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "bade4a7"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Lemezkezelő** appot, és futtasd az **Elsősegélyt** ezen a köteten",
+  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Lemezkezelő** appot, és futtasd az **Elsősegélyt** ezen a köteten} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
   "@errors.listing.couldntReadUnknown.suggestion": {
     "sourceHash": "5155626"
   },
@@ -463,7 +463,7 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.notFound.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az útvonal helyesen van-e írva\n- Ha ez hálózati meghajtón van, győződj meg róla, hogy csatlakozik és a megosztás elérhető\n- Lépj a szülőmappába, és keresd ott az elemet\n- A Terminalban add ki az `ls -la` parancsot a szülőmappán, hogy lásd, mi van benne",
+  "errors.listing.notFound.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy az útvonal helyesen van-e írva\n- Ha ez hálózati meghajtón van, győződj meg róla, hogy csatlakozik és a megosztás elérhető\n- Lépj a szülőmappába, és keresd ott az elemet\n- A Terminalban add ki az `ls -la` parancsot a szülőmappán, hogy lásd, mi van benne} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
   "@errors.listing.notFound.suggestion": {
     "sourceHash": "8a51477"
   },
@@ -483,11 +483,11 @@
   "@errors.listing.permissionDenied.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.permissionDenied.explanation": "A Cmdrnek nincs engedélye hozzáférni ehhez: `{path}`. A macOS szabályozza, hogy mely appok mely mappákhoz férhetnek hozzá, és a Cmdr még nem kapott hozzáférést ehhez.",
+  "errors.listing.permissionDenied.explanation": "{platform, select, macos {A Cmdrnek nincs engedélye hozzáférni ehhez: `{path}`. A macOS szabályozza, hogy mely appok mely mappákhoz férhetnek hozzá, és a Cmdr még nem kapott hozzáférést ehhez.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "3871273"
   },
-  "errors.listing.permissionDenied.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminalban add ki az `ls -la` parancsot az útvonalon a jelenlegi engedélyek megtekintéséhez",
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminalban add ki az `ls -la` parancsot az útvonalon a jelenlegi engedélyek megtekintéséhez} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions}}",
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "3450aff"
   },
@@ -507,11 +507,11 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.remotePermissionDenied.explanation": "`{path}` egy hálózati megosztáson van, és annak a fióknak, amellyel csatlakoztál, nincs engedélye megnyitni. A szerver már azelőtt elutasítja a kérést, hogy a macOS egyáltalán szóba kerülne, tehát ez nem a Macen lévő adatvédelmi beállításon múlik.",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` egy hálózati megosztáson van, és annak a fióknak, amellyel csatlakoztál, nincs engedélye megnyitni. A szerver már azelőtt elutasítja a kérést, hogy a macOS egyáltalán szóba kerülne, tehát ez nem a Macen lévő adatvédelmi beállításon múlik.} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "d8463b0"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd a mappa engedélyeit a szerveren, és azt, hogy melyik fiókkal csatlakoztattad a megosztást\n- Egyes mappák a szerver saját rendszerfiókjához tartoznak (például a `lost+found` egy Linuxos megosztáson), és mindenki más elől zárva maradnak\n- Ha másik fiókkal szeretnél csatlakozni, add ki a megosztást, és csatlakoztasd újra azokkal az adatokkal",
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd a mappa engedélyeit a szerveren, és azt, hogy melyik fiókkal csatlakoztattad a megosztást\n- Egyes mappák a szerver saját rendszerfiókjához tartoznak (például a `lost+found` egy Linuxos megosztáson), és mindenki más elől zárva maradnak\n- Ha másik fiókkal szeretnél csatlakozni, add ki a megosztást, és csatlakoztasd újra azokkal az adatokkal} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "sourceHash": "3e6497d"
   },
@@ -631,7 +631,7 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.storageFull.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok áthelyezésével vagy törlésével\n- Ürítsd ki a Kukát (kattints jobb gombbal a Kuka ikonra a Dockban)\n- A Terminalban add ki a `df -h` parancsot, hogy lásd, mennyi hely maradt az egyes köteteken",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok áthelyezésével vagy törlésével\n- Ürítsd ki a Kukát (kattints jobb gombbal a Kuka ikonra a Dockban)\n- A Terminalban add ki a `df -h` parancsot, hogy lásd, mennyi hely maradt az egyes köteteken} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "101099b"
   },
@@ -643,7 +643,7 @@
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "15d3054"
   },
-  "errors.listing.connectionTimedOut.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az eszköz vagy a szerver be van kapcsolva és elérhető\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Próbáld újra",
+  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy az eszköz vagy a szerver be van kapcsolva és elérhető\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Próbáld újra} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again}}",
   "@errors.listing.connectionTimedOut.suggestion": {
     "sourceHash": "f474938"
   },
@@ -655,7 +655,7 @@
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "d074574"
   },
-  "errors.listing.notSupported.suggestion": "Próbálj más megoldást, vagy használd a Findert ehhez a művelethez.",
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {Próbálj más megoldást, vagy használd a Findert ehhez a művelethez.} windows {Try a different approach, or use File Explorer for this operation.} other {Try a different approach, or use your file manager for this operation.}}",
   "@errors.listing.notSupported.suggestion": {
     "sourceHash": "d4e3965"
   },
@@ -727,7 +727,7 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Próbáld újra\n- Ha ez folyamatosan előfordul, próbáld lefuttatni a **Lemezkezelő > Elsősegély** ellenőrzést ezen a köteten",
+  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Próbáld újra\n- Ha ez folyamatosan előfordul, próbáld lefuttatni a **Lemezkezelő > Elsősegély** ellenőrzést ezen a köteten} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
   "@errors.listing.ioSerious.suggestion": {
     "sourceHash": "6e83ebb"
   },
@@ -847,7 +847,7 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "53012e9"
   },
-  "errors.git.permissionDenied.suggestion": "Adj a Cmdrnek hozzáférést a mappához itt: **{system_settings} > {privacy_and_security} > {files_and_folders}**.",
+  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Adj a Cmdrnek hozzáférést a mappához itt: **{system_settings} > {privacy_and_security} > {files_and_folders}**.} windows {Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.} other {Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode.}}",
   "@errors.git.permissionDenied.suggestion": {
     "sourceHash": "7396b5a"
   },
@@ -907,7 +907,7 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Adj a Cmdrnek hozzáférést itt: **{system_settings} > {privacy_and_security} > {files_and_folders}**. A Terminalban az `ls -la .git` mutatja a jelenlegi tulajdonost és módot.",
+  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Adj a Cmdrnek hozzáférést itt: **{system_settings} > {privacy_and_security} > {files_and_folders}**. A Terminalban az `ls -la .git` mutatja a jelenlegi tulajdonost és módot.} windows {Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.} other {Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode.}}",
   "@errors.git.gitDirPermissionDenied.suggestion": {
     "sourceHash": "b091738"
   },
@@ -1157,7 +1157,7 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "Ezt a mappát ez a szolgáltatás kezeli: **{name}**. Ezeket próbálhatod:\n- Lépj ki az appból ({app}), és nyisd meg újra\n- Jelentkezz ki, majd vissza ide: {app}\n- Nézd meg a szolgáltatás állapotoldalát ({name}), hátha leállás van",
+  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {Ezt a mappát ez a szolgáltatás kezeli: **{name}**. Ezeket próbálhatod:\n- Lépj ki az appból ({app}), és nyisd meg újra\n- Jelentkezz ki, majd vissza ide: {app}\n- Nézd meg a szolgáltatás állapotoldalát ({name}), hátha leállás van}}",
   "@errors.provider.appBased.serious": {
     "sourceHash": "5a4e14e"
   },
@@ -2149,7 +2149,7 @@
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "0845c57"
   },
-  "errors.mutation.parentNotWritable": "A Cmdr nem tud ide írni: „{path}”. Ellenőrizd a mappa engedélyeit a Finderben.",
+  "errors.mutation.parentNotWritable": "{platform, select, macos {A Cmdr nem tud ide írni: „{path}”. Ellenőrizd a mappa engedélyeit a Finderben.} windows {Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.} other {Cmdr can’t write into “{path}”. Check the folder’s permissions in your file manager.}}",
   "@errors.mutation.parentNotWritable": {
     "sourceHash": "e0a7ad6"
   },
@@ -2309,11 +2309,11 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"
   },
-  "errors.mutation.trashNotSupported": "Ezen a köteten nincs Kuka, ezért csak a végleges törlés marad.",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {Ezen a köteten nincs Kuka, ezért csak a végleges törlés marad.}}",
   "@errors.mutation.trashNotSupported": {
     "sourceHash": "525ef25"
   },
-  "errors.mutation.trashRefused": "A macOS nem engedte ezt a Kukába helyezni.",
+  "errors.mutation.trashRefused": "{platform, select, macos {A macOS nem engedte ezt a Kukába helyezni.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
   "@errors.mutation.trashRefused": {
     "sourceHash": "7a6d1a5"
   },
@@ -2397,7 +2397,7 @@
   "@errors.eject.unmountRefusedByDiskImage": {
     "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "A macOS még használ ott valamit. Várj egy percet, majd próbáld újra.",
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {A macOS még használ ott valamit. Várj egy percet, majd próbáld újra.} windows {Windows is still using something there. Wait a minute, then try again.} other {This computer is still using something there. Wait a minute, then try again.}}",
   "@errors.eject.unmountRefusedBySystem": {
     "sourceHash": "9b066c9"
   },

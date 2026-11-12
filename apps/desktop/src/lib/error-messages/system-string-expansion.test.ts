@@ -10,7 +10,8 @@
  * factories rather than a test of one string.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { getGitErrorMessage, type FriendlyGitErrorKind } from './git-error-messages'
 import { getProviderSuggestion, type Provider, type ProviderCategory } from './provider-error-messages'
 import { getListingErrorMessage } from './listing-error-messages'
@@ -92,7 +93,9 @@ describe('no friendly-error factory leaks a system-string token', () => {
 })
 
 describe('the expanded copy carries the live pane name', () => {
-  it('a git permission denial names the System Settings pane', () => {
+  it('a git permission denial names the System Settings pane on macOS', () => {
+    // Windows and Linux have no such pane: their branches name the folder’s permissions instead.
+    onTestFinished(withPlatform('macos'))
     const { suggestion } = getGitErrorMessage('permissionDenied')
     expect(suggestion).toContain(systemStrings.systemSettings)
     expect(suggestion).toContain(systemStrings.privacyAndSecurity)

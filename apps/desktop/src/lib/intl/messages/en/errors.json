@@ -19,7 +19,12 @@
   },
   "errors.listing.notEnoughMemory.title": "Not enough memory",
   "errors.listing.notEnoughMemory.explanation": "The system ran out of available memory (RAM) while reading this folder. This can happen when many apps are open at once, or when a folder contains a very large number of files.",
-  "errors.listing.notEnoughMemory.suggestion": "Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Activity Monitor** (search for it in Spotlight)\n- Navigate here again to retry",
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Activity Monitor** (search for it in Spotlight)\n- Navigate here again to retry} windows {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in your system monitor app\n- Navigate here again to retry}}",
+  "@errors.listing.notEnoughMemory.suggestion": {
+    "description": "Recovery suggestion for an out-of-memory listing error. Markdown with a bullet list. \"Activity Monitor\" is the macOS app, which macOS ships translated: use its name in your language's macOS. \"Spotlight\" stays as-is.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.notEnoughMemory.title": {
     "description": "Title of the listing error panel shown when the OS ran out of memory while reading a folder. Plain text.",
     "screenshot": "error-message-example.png",
@@ -30,14 +35,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.notEnoughMemory.suggestion": {
-    "description": "Recovery suggestion for an out-of-memory listing error. Markdown with a bullet list. \"Activity Monitor\" is the macOS app, which macOS ships translated: use its name in your language's macOS. \"Spotlight\" stays as-is.",
+  "errors.listing.resourceBusy.title": "Resource busy",
+  "errors.listing.resourceBusy.explanation": "Cmdr couldn’t access `{path}` because another app or process is currently using it exclusively. This is usually temporary.",
+  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in Terminal, run `lsof +D <folder-path>` to see which processes are using this folder).} windows {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.} other {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in a terminal, run `lsof +D <folder-path>` to see which processes are using this folder).}}",
+  "@errors.listing.resourceBusy.suggestion": {
+    "description": "Recovery suggestion for a busy resource. Markdown. The backtick-quoted command and `<folder-path>` are literal and must NOT be translated. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.resourceBusy.title": "Resource busy",
-  "errors.listing.resourceBusy.explanation": "Cmdr couldn’t access `{path}` because another app or process is currently using it exclusively. This is usually temporary.",
-  "errors.listing.resourceBusy.suggestion": "Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in Terminal, run `lsof +D <folder-path>` to see which processes are using this folder).",
   "@errors.listing.resourceBusy.title": {
     "description": "Title of the listing error panel when a folder couldn't be read because another process holds it exclusively. Plain text.",
     "screenshot": "error-message-example.png",
@@ -48,14 +53,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.resourceBusy.suggestion": {
-    "description": "Recovery suggestion for a busy resource. Markdown. The backtick-quoted command and `<folder-path>` are literal and must NOT be translated. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+  "errors.listing.temporarilyUnavailable.title": "Temporarily unavailable",
+  "errors.listing.temporarilyUnavailable.explanation": "The system is momentarily too busy to handle this request. This is a transient condition that typically clears up on its own within seconds.",
+  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Activity Monitor** for apps consuming a lot of resources.} windows {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.} other {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources.}}",
+  "@errors.listing.temporarilyUnavailable.suggestion": {
+    "description": "Recovery suggestion for a temporarily-unavailable system. Markdown. \"Activity Monitor\" is Apple's app, and macOS localizes its name: use the one your language's macOS shows (check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.temporarilyUnavailable.title": "Temporarily unavailable",
-  "errors.listing.temporarilyUnavailable.explanation": "The system is momentarily too busy to handle this request. This is a transient condition that typically clears up on its own within seconds.",
-  "errors.listing.temporarilyUnavailable.suggestion": "Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Activity Monitor** for apps consuming a lot of resources.",
   "@errors.listing.temporarilyUnavailable.title": {
     "description": "Title of the listing error panel when the OS was momentarily too busy to read the folder. Plain text.",
     "screenshot": "error-message-example.png",
@@ -66,26 +71,21 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.temporarilyUnavailable.suggestion": {
-    "description": "Recovery suggestion for a temporarily-unavailable system. Markdown. \"Activity Monitor\" is Apple's app, and macOS localizes its name: use the one your language's macOS shows (check the reference pile or the app bundle).",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
   "errors.listing.networkDown.title": "Network is down",
-  "errors.listing.networkDown.explanation": "Your Mac’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.",
-  "errors.listing.networkDown.suggestion": "Here’s what to try:\n- Check Wi-Fi or Ethernet status in **{system_settings} > Network**\n- If you’re on Wi-Fi, try turning it off and on again\n- In Terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online",
-  "@errors.listing.networkDown.title": {
-    "description": "Title of the listing error panel when the Mac's network is down. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
+  "errors.listing.networkDown.explanation": "{platform, select, macos {Your Mac’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.} windows {Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.} other {Your computer’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.}}",
   "@errors.listing.networkDown.explanation": {
     "description": "Body of the listing error panel for a down network. Markdown. \"Cmdr\", \"Mac\", \"Wi-Fi\", and \"Ethernet\" are proper names; do NOT translate.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **{system_settings} > Network**\n- If you’re on Wi-Fi, try turning it off and on again\n- In Terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} windows {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} other {Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online}}",
   "@errors.listing.networkDown.suggestion": {
     "description": "Recovery suggestion for a down network. Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the OS-localized \"System Settings\" pane name. \"Network\" is a System Settings pane: use the wording macOS shows for it in your language. The backtick command is literal and must NOT be translated. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.networkDown.title": {
+    "description": "Title of the listing error panel when the Mac's network is down. Plain text.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -127,7 +127,12 @@
   },
   "errors.listing.connectionReset.title": "Connection reset",
   "errors.listing.connectionReset.explanation": "The remote server closed the connection unexpectedly. This can happen when the server restarts, hits a timeout, or runs into an internal problem.",
-  "errors.listing.connectionReset.suggestion": "Here’s what to try:\n- Check that the server is running\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry",
+  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the server is running\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} windows {Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry}}",
+  "@errors.listing.connectionReset.suggestion": {
+    "description": "Recovery suggestion for a reset connection. Markdown bullet list. The backtick command and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.connectionReset.title": {
     "description": "Title of the listing error panel when a remote server reset the connection. Plain text.",
     "screenshot": "error-message-example.png",
@@ -138,14 +143,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.connectionReset.suggestion": {
-    "description": "Recovery suggestion for a reset connection. Markdown bullet list. The backtick command and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+  "errors.listing.connectionTimedOutErrno.title": "Connection timed out",
+  "errors.listing.connectionTimedOutErrno.explanation": "Cmdr tried to read this folder but the connection didn’t respond in time. This usually means the server or device is slow, unreachable, or the network between you and it is congested.",
+  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In Terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry}}",
+  "@errors.listing.connectionTimedOutErrno.suggestion": {
+    "description": "Recovery suggestion for a timed-out connection (errno path). Markdown bullet list. \"Wi-Fi\", \"Ethernet\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.connectionTimedOutErrno.title": "Connection timed out",
-  "errors.listing.connectionTimedOutErrno.explanation": "Cmdr tried to read this folder but the connection didn’t respond in time. This usually means the server or device is slow, unreachable, or the network between you and it is congested.",
-  "errors.listing.connectionTimedOutErrno.suggestion": "Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In Terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry",
   "@errors.listing.connectionTimedOutErrno.title": {
     "description": "Title of the listing error panel when the connection timed out while reading a folder (errno path). Plain text.",
     "screenshot": "error-message-example.png",
@@ -156,14 +161,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "description": "Recovery suggestion for a timed-out connection (errno path). Markdown bullet list. \"Wi-Fi\", \"Ethernet\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+  "errors.listing.hostDown.title": "Host is down",
+  "errors.listing.hostDown.explanation": "The remote host (the computer or server hosting this volume) isn’t responding. It may be powered off, sleeping, or temporarily unreachable.",
+  "errors.listing.hostDown.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In Terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} windows {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} other {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back}}",
+  "@errors.listing.hostDown.suggestion": {
+    "description": "Recovery suggestion for a down host. Markdown bullet list. The backtick command, `<hostname>`, and \"NAS\" are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.hostDown.title": "Host is down",
-  "errors.listing.hostDown.explanation": "The remote host (the computer or server hosting this volume) isn’t responding. It may be powered off, sleeping, or temporarily unreachable.",
-  "errors.listing.hostDown.suggestion": "Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In Terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back",
   "@errors.listing.hostDown.title": {
     "description": "Title of the listing error panel when the host serving a volume is down. Plain text.",
     "screenshot": "error-message-example.png",
@@ -174,14 +179,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.hostDown.suggestion": {
-    "description": "Recovery suggestion for a down host. Markdown bullet list. The backtick command, `<hostname>`, and \"NAS\" are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+  "errors.listing.staleConnection.title": "Stale connection",
+  "errors.listing.staleConnection.explanation": "Cmdr is trying to access this folder using an old reference that the server no longer recognizes. This commonly happens with network drives (NFS, SMB) after the server restarts, the share is remounted, or the connection was interrupted.",
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in Finder\n- Check that the server hosting this folder is running\n- In Terminal, run `mount` to see currently mounted volumes} windows {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives} other {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes}}",
+  "@errors.listing.staleConnection.suggestion": {
+    "description": "Recovery suggestion for a stale connection. Markdown bullet list. \"Finder\" (Apple keeps it English everywhere) and the backtick command are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.staleConnection.title": "Stale connection",
-  "errors.listing.staleConnection.explanation": "Cmdr is trying to access this folder using an old reference that the server no longer recognizes. This commonly happens with network drives (NFS, SMB) after the server restarts, the share is remounted, or the connection was interrupted.",
-  "errors.listing.staleConnection.suggestion": "Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in Finder\n- Check that the server hosting this folder is running\n- In Terminal, run `mount` to see currently mounted volumes",
   "@errors.listing.staleConnection.title": {
     "description": "Title of the listing error panel when a network drive reference is stale. Plain text.",
     "screenshot": "error-message-example.png",
@@ -192,14 +197,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.staleConnection.suggestion": {
-    "description": "Recovery suggestion for a stale connection. Markdown bullet list. \"Finder\" (Apple keeps it English everywhere) and the backtick command are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+  "errors.listing.lockUnavailable.title": "Lock unavailable",
+  "errors.listing.lockUnavailable.explanation": "The system ran out of file locks. File locks are how apps coordinate access to shared files (preventing two apps from writing to the same file at once). Running out usually means too many apps are accessing files simultaneously.",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In Terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in Terminal\n- Navigate here again to retry} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
+  "@errors.listing.lockUnavailable.suggestion": {
+    "description": "Recovery suggestion for exhausted file locks. Markdown bullet list. \"IDEs\" and the backtick commands are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.lockUnavailable.title": "Lock unavailable",
-  "errors.listing.lockUnavailable.explanation": "The system ran out of file locks. File locks are how apps coordinate access to shared files (preventing two apps from writing to the same file at once). Running out usually means too many apps are accessing files simultaneously.",
-  "errors.listing.lockUnavailable.suggestion": "Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In Terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in Terminal\n- Navigate here again to retry",
   "@errors.listing.lockUnavailable.title": {
     "description": "Title of the listing error panel when the OS ran out of file locks. Plain text.",
     "screenshot": "error-message-example.png",
@@ -207,11 +212,6 @@
   },
   "@errors.listing.lockUnavailable.explanation": {
     "description": "Body of the listing error panel for exhausted file locks. Markdown.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.listing.lockUnavailable.suggestion": {
-    "description": "Recovery suggestion for exhausted file locks. Markdown bullet list. \"IDEs\" and the backtick commands are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -234,26 +234,31 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.listing.notPermitted.title": "Not permitted",
-  "errors.listing.notPermitted.explanation": "macOS blocked Cmdr from accessing `{path}`. This usually means the folder is protected by macOS security policies, or Cmdr hasn’t been granted the right permissions yet.",
-  "errors.listing.notPermitted.suggestion": "Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- If this is a system-protected folder, you may need to grant Cmdr **{full_disk_access}** under {privacy_and_security}\n- In Terminal, run `ls -la` on this path to check ownership and permissions",
-  "@errors.listing.notPermitted.title": {
-    "description": "Title of the listing error panel when macOS blocked access to a folder (operation not permitted). Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS blocked Cmdr from accessing `{path}`. This usually means the folder is protected by macOS security policies, or Cmdr hasn’t been granted the right permissions yet.} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
   "@errors.listing.notPermitted.explanation": {
     "description": "Body of the listing error panel for a not-permitted access. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the folder path. \"macOS\", \"Cmdr\" are proper names; do NOT translate.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- If this is a system-protected folder, you may need to grant Cmdr **{full_disk_access}** under {privacy_and_security}\n- In Terminal, run `ls -la` on this path to check ownership and permissions} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions}}",
   "@errors.listing.notPermitted.suggestion": {
     "description": "Recovery suggestion for a not-permitted access. Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}`, and `{full_disk_access}` are do-not-translate placeholders replaced at runtime with the OS-localized System Settings pane names. \"Cmdr\" and the backtick command are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "@errors.listing.notPermitted.title": {
+    "description": "Title of the listing error panel when macOS blocked access to a folder (operation not permitted). Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.listing.pathNotFoundErrno.title": "Path not found",
   "errors.listing.pathNotFoundErrno.explanation": "Cmdr couldn’t find `{path}`. It may have been moved, renamed, or deleted while Cmdr was trying to access it.",
-  "errors.listing.pathNotFoundErrno.suggestion": "Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In Terminal, run `ls -la` on the parent folder to see what’s there",
+  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In Terminal, run `ls -la` on the parent folder to see what’s there} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "@errors.listing.pathNotFoundErrno.suggestion": {
+    "description": "Recovery suggestion for a not-found path (errno path). Markdown bullet list. The backtick command is literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.pathNotFoundErrno.title": {
     "description": "Title of the listing error panel when a path wasn't found (errno path). Plain text.",
     "screenshot": "error-message-example.png",
@@ -264,24 +269,19 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.pathNotFoundErrno.suggestion": {
-    "description": "Recovery suggestion for a not-found path (errno path). Markdown bullet list. The backtick command is literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
   "errors.listing.noPermissionErrno.title": "No permission",
-  "errors.listing.noPermissionErrno.explanation": "Cmdr doesn’t have permission to access `{path}`. macOS controls which apps can access which folders, and Cmdr hasn’t been granted access to this one yet.",
-  "errors.listing.noPermissionErrno.suggestion": "Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- Check the folder’s permissions in Finder: right-click it, choose Get Info, and look under Sharing & Permissions\n- If this is a shared folder, ask the owner to update permissions\n- In Terminal, run `ls -la` on this path to see the current permissions",
-  "@errors.listing.noPermissionErrno.title": {
-    "description": "Title of the listing error panel when Cmdr lacks permission to read a folder (errno path). Plain text.",
-    "screenshot": "error-message-example.png"
-  },
+  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr doesn’t have permission to access `{path}`. macOS controls which apps can access which folders, and Cmdr hasn’t been granted access to this one yet.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
   "@errors.listing.noPermissionErrno.explanation": {
     "description": "Body of the listing error panel for a no-permission read (errno path). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the full path, not only the name. \"Cmdr\", \"macOS\" are proper names; do NOT translate.",
     "screenshot": "error-message-example.png"
   },
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- Check the folder’s permissions in Finder: right-click it, choose Get Info, and look under Sharing & Permissions\n- If this is a shared folder, ask the owner to update permissions\n- In Terminal, run `ls -la` on this path to see the current permissions} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions}}",
   "@errors.listing.noPermissionErrno.suggestion": {
     "description": "Recovery suggestion for a no-permission read (errno path). Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` are do-not-translate placeholders replaced at runtime with OS-localized pane names. \"Get Info\" and \"Sharing & Permissions\" are Finder labels that Apple localizes, so use your locale's Finder wording for both. Same for the app names \"Finder\" and \"Terminal\": use whatever your locale's macOS calls them (most keep the English name; zh-Hans does not). The backtick command is literal; do NOT translate it.",
+    "screenshot": "error-message-example.png"
+  },
+  "@errors.listing.noPermissionErrno.title": {
+    "description": "Title of the listing error panel when Cmdr lacks permission to read a folder (errno path). Plain text.",
     "screenshot": "error-message-example.png"
   },
   "errors.listing.alreadyExistsErrno.title": "Already exists",
@@ -358,7 +358,12 @@
   },
   "errors.listing.diskFullErrno.title": "Disk is full",
   "errors.listing.diskFullErrno.explanation": "There isn’t enough free space on this volume to complete the operation.",
-  "errors.listing.diskFullErrno.suggestion": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash (right-click the Trash icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume\n- Check **{system_settings} > General > Storage** for a breakdown of what’s using space",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash (right-click the Trash icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume\n- Check **{system_settings} > General > Storage** for a breakdown of what’s using space} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "@errors.listing.diskFullErrno.suggestion": {
+    "description": "Recovery suggestion for a full disk (errno path). Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the System Settings app name as the USER'S MAC shows it, whatever language Cmdr itself runs in. Keep it verbatim, and never attach a case suffix or article directly to it (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. The pane names the snapshot doesn't resolve (\"General\", \"Storage\") are ordinary copy: use the wording macOS shows for them in your language. \"Dock\" and the backtick command are literal; do NOT translate. \"Trash\" is the macOS Trash: use your language's settled term for it. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.diskFullErrno.title": {
     "description": "Title of the listing error panel when the volume is out of space (errno path). Plain text.",
     "screenshot": "error-message-example.png",
@@ -366,11 +371,6 @@
   },
   "@errors.listing.diskFullErrno.explanation": {
     "description": "Body of the listing error panel for a full disk (errno path). Markdown.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.listing.diskFullErrno.suggestion": {
-    "description": "Recovery suggestion for a full disk (errno path). Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the System Settings app name as the USER'S MAC shows it, whatever language Cmdr itself runs in. Keep it verbatim, and never attach a case suffix or article directly to it (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. The pane names the snapshot doesn't resolve (\"General\", \"Storage\") are ordinary copy: use the wording macOS shows for them in your language. \"Dock\" and the backtick command are literal; do NOT translate. \"Trash\" is the macOS Trash: use your language's settled term for it. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -394,7 +394,12 @@
   },
   "errors.listing.notSupportedErrno.title": "Not supported",
   "errors.listing.notSupportedErrno.explanation": "This operation isn’t supported on this file system. Different file systems (like FAT32, NTFS, or network shares) support different features, and this one doesn’t support what Cmdr is trying to do.",
-  "errors.listing.notSupportedErrno.suggestion": "Try a different approach, or use Finder for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Try a different approach, or use Finder for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} windows {Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} other {Try a different approach, or use your file manager for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).}}",
+  "@errors.listing.notSupportedErrno.suggestion": {
+    "description": "Recovery suggestion for an unsupported operation (errno path). Markdown. \"Finder\" and \"FAT32\" are literal; do NOT translate. \"4 GiB\" is FAT32's real limit (4 × 1,024³ bytes, the IEC binary gibibyte): keep the number and write the symbol as your translation of common.sizeUnit.gibibyte.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.notSupportedErrno.title": {
     "description": "Title of the listing error panel when the operation isn't supported by the file system (errno path). Plain text.",
     "screenshot": "error-message-example.png",
@@ -405,14 +410,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.notSupportedErrno.suggestion": {
-    "description": "Recovery suggestion for an unsupported operation (errno path). Markdown. \"Finder\" and \"FAT32\" are literal; do NOT translate. \"4 GiB\" is FAT32's real limit (4 × 1,024³ bytes, the IEC binary gibibyte): keep the number and write the symbol as your translation of common.sizeUnit.gibibyte.",
+  "errors.listing.networkUnreachable.title": "Network unreachable",
+  "errors.listing.networkUnreachable.explanation": "Cmdr can’t reach the network this volume is on. This often means you’re not connected to the right network, or a VPN isn’t active.",
+  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} windows {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} other {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected}}",
+  "@errors.listing.networkUnreachable.suggestion": {
+    "description": "Recovery suggestion for an unreachable network. Markdown bullet list. \"Wi-Fi\", \"Ethernet\", \"VPN\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.networkUnreachable.title": "Network unreachable",
-  "errors.listing.networkUnreachable.explanation": "Cmdr can’t reach the network this volume is on. This often means you’re not connected to the right network, or a VPN isn’t active.",
-  "errors.listing.networkUnreachable.suggestion": "Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected",
   "@errors.listing.networkUnreachable.title": {
     "description": "Title of the listing error panel when the network hosting a volume is unreachable. Plain text.",
     "screenshot": "error-message-example.png",
@@ -423,32 +428,32 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.networkUnreachable.suggestion": {
-    "description": "Recovery suggestion for an unreachable network. Markdown bullet list. \"Wi-Fi\", \"Ethernet\", \"VPN\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
   "errors.listing.connectionRefused.title": "Connection refused",
-  "errors.listing.connectionRefused.explanation": "The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this Mac.",
-  "errors.listing.connectionRefused.suggestion": "Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In Terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry",
-  "@errors.listing.connectionRefused.title": {
-    "description": "Title of the listing error panel when a server refused the connection. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this Mac.} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
   "@errors.listing.connectionRefused.explanation": {
     "description": "Body of the listing error panel for a refused connection. Markdown. \"SMB\", \"NFS\", \"Mac\" are proper names; do NOT translate.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In Terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} windows {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry}}",
   "@errors.listing.connectionRefused.suggestion": {
     "description": "Recovery suggestion for a refused connection. Markdown bullet list. The backtick command and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "@errors.listing.connectionRefused.title": {
+    "description": "Title of the listing error panel when a server refused the connection. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.listing.symlinkLoopErrno.title": "Symlink loop",
   "errors.listing.symlinkLoopErrno.explanation": "Cmdr found a circular chain of symbolic links (shortcuts that point to other shortcuts) at `{path}`. Following these links leads in a circle, so Cmdr can’t reach the actual file or folder.",
-  "errors.listing.symlinkLoopErrno.suggestion": "Here’s what to try:\n- In Terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`",
+  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Here’s what to try:\n- In Terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`} windows {Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one} other {Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`}}",
+  "@errors.listing.symlinkLoopErrno.suggestion": {
+    "description": "Recovery suggestion for a symlink loop (errno path). Markdown bullet list. The backtick commands and `<path>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.symlinkLoopErrno.title": {
     "description": "Title of the listing error panel when symbolic links form a loop (errno path). Plain text.",
     "screenshot": "error-message-example.png",
@@ -459,21 +464,16 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.symlinkLoopErrno.suggestion": {
-    "description": "Recovery suggestion for a symlink loop (errno path). Markdown bullet list. The backtick commands and `<path>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+  "errors.listing.nameTooLongErrno.title": "Name too long",
+  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {The file or folder name exceeds the system’s limit (255 characters on most Mac volumes). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} windows {The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} other {The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.}}",
+  "@errors.listing.nameTooLongErrno.explanation": {
+    "description": "Body of the listing error panel for a too-long name (errno path). Markdown. \"Mac\" is a proper name; the number 255 is a literal limit; do NOT translate them.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.nameTooLongErrno.title": "Name too long",
-  "errors.listing.nameTooLongErrno.explanation": "The file or folder name exceeds the system’s limit (255 characters on most Mac volumes). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.",
   "errors.listing.nameTooLongErrno.suggestion": "Rename the item to use a shorter name. If the name looks reasonable, the full path (including all parent folders) might be too long. Try moving it to a shorter path.",
   "@errors.listing.nameTooLongErrno.title": {
     "description": "Title of the listing error panel when a name or path is too long (errno path). Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.listing.nameTooLongErrno.explanation": {
-    "description": "Body of the listing error panel for a too-long name (errno path). Markdown. \"Mac\" is a proper name; the number 255 is a literal limit; do NOT translate them.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -484,7 +484,12 @@
   },
   "errors.listing.hostUnreachable.title": "Host unreachable",
   "errors.listing.hostUnreachable.explanation": "Cmdr can’t find a network route to the host this volume is on. This usually means the host is on a different network, behind a firewall, or the routing configuration needs updating.",
-  "errors.listing.hostUnreachable.suggestion": "Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In Terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable",
+  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In Terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} windows {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} other {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable}}",
+  "@errors.listing.hostUnreachable.suggestion": {
+    "description": "Recovery suggestion for an unreachable host. Markdown bullet list. \"VPN\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.hostUnreachable.title": {
     "description": "Title of the listing error panel when there's no network route to the host. Plain text.",
     "screenshot": "error-message-example.png",
@@ -492,11 +497,6 @@
   },
   "@errors.listing.hostUnreachable.explanation": {
     "description": "Body of the listing error panel for an unreachable host. Markdown. \"Cmdr\" is the app name; do NOT translate.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.listing.hostUnreachable.suggestion": {
-    "description": "Recovery suggestion for an unreachable host. Markdown bullet list. \"VPN\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -520,7 +520,12 @@
   },
   "errors.listing.quotaExceeded.title": "Quota exceeded",
   "errors.listing.quotaExceeded.explanation": "You’ve reached your disk quota (the maximum amount of space allocated to your user account) on this volume. This is common on shared servers and network drives where an administrator sets per-user limits.",
-  "errors.listing.quotaExceeded.suggestion": "Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In Terminal, run `quota` to see your current usage and limit",
+  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In Terminal, run `quota` to see your current usage and limit} windows {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota} other {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In a terminal, run `quota` to see your current usage and limit}}",
+  "@errors.listing.quotaExceeded.suggestion": {
+    "description": "Recovery suggestion for an exceeded quota. Markdown bullet list. The backtick command is literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.quotaExceeded.title": {
     "description": "Title of the listing error panel when the user's disk quota is exceeded. Plain text.",
     "screenshot": "error-message-example.png",
@@ -528,11 +533,6 @@
   },
   "@errors.listing.quotaExceeded.explanation": {
     "description": "Body of the listing error panel for an exceeded quota. Markdown.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.listing.quotaExceeded.suggestion": {
-    "description": "Recovery suggestion for an exceeded quota. Markdown bullet list. The backtick command is literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -556,7 +556,12 @@
   },
   "errors.listing.authRequiredEneedauth.title": "Authentication required",
   "errors.listing.authRequiredEneedauth.explanation": "This volume requires you to log in, but no credentials have been provided yet.",
-  "errors.listing.authRequiredEneedauth.suggestion": "Here’s what to try:\n- Disconnect and reconnect the volume in Finder\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {Here’s what to try:\n- Disconnect and reconnect the volume in Finder\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator}}",
+  "@errors.listing.authRequiredEneedauth.suggestion": {
+    "description": "Recovery suggestion for a volume needing credentials. Markdown bullet list. \"Finder\" is a macOS app name; do NOT translate.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.authRequiredEneedauth.title": {
     "description": "Title of the listing error panel when a volume needs login credentials that haven't been provided. Plain text.",
     "screenshot": "error-message-example.png",
@@ -564,11 +569,6 @@
   },
   "@errors.listing.authRequiredEneedauth.explanation": {
     "description": "Body of the listing error panel for a volume needing credentials. Markdown.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.listing.authRequiredEneedauth.suggestion": {
-    "description": "Recovery suggestion for a volume needing credentials. Markdown bullet list. \"Finder\" is a macOS app name; do NOT translate.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -592,7 +592,12 @@
   },
   "errors.listing.attributeNotFound.title": "Attribute not found",
   "errors.listing.attributeNotFound.explanation": "Cmdr tried to read a file attribute (extra metadata like tags or permissions) that doesn’t exist on this item. This can happen when the file system doesn’t support extended attributes, or when the attribute was removed.",
-  "errors.listing.attributeNotFound.suggestion": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your Mac’s internal drive first.",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your Mac’s internal drive first.} windows {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your Mac’s internal drive first.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
+  "@errors.listing.attributeNotFound.suggestion": {
+    "description": "Recovery suggestion for a missing file attribute. Markdown. \"Cmdr\", \"Mac\" are proper names; do NOT translate.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.attributeNotFound.title": {
     "description": "Title of the listing error panel when a file attribute couldn't be read. Plain text.",
     "screenshot": "error-message-example.png",
@@ -603,14 +608,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.attributeNotFound.suggestion": {
-    "description": "Recovery suggestion for a missing file attribute. Markdown. \"Cmdr\", \"Mac\" are proper names; do NOT translate.",
+  "errors.listing.diskReadProblem.title": "Disk read problem",
+  "errors.listing.diskReadProblem.explanation": "Cmdr hit a hardware-level read problem at `{path}`. This means the disk or device had trouble reading the data, which could be a temporary glitch or a sign of a failing disk.",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Open **Disk Utility** (search for it in Spotlight) and run **First Aid** on this volume\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
+  "@errors.listing.diskReadProblem.suggestion": {
+    "description": "Recovery suggestion for a disk read problem. Markdown bullet list. \"Spotlight\" is a macOS feature name Apple keeps English everywhere; do NOT translate it. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.diskReadProblem.title": "Disk read problem",
-  "errors.listing.diskReadProblem.explanation": "Cmdr hit a hardware-level read problem at `{path}`. This means the disk or device had trouble reading the data, which could be a temporary glitch or a sign of a failing disk.",
-  "errors.listing.diskReadProblem.suggestion": "Here’s what to try:\n- Check that the disk or device is still properly connected\n- Open **Disk Utility** (search for it in Spotlight) and run **First Aid** on this volume\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.",
   "@errors.listing.diskReadProblem.title": {
     "description": "Title of the listing error panel for a hardware-level disk read problem (serious). Plain text.",
     "screenshot": "error-message-example.png",
@@ -621,14 +626,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.diskReadProblem.suggestion": {
-    "description": "Recovery suggestion for a disk read problem. Markdown bullet list. \"Spotlight\" is a macOS feature name Apple keeps English everywhere; do NOT translate it. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
+  "errors.listing.unexpectedSystemResponse.title": "Unexpected system response",
+  "errors.listing.unexpectedSystemResponse.explanation": "The system returned an unexpected response for this operation. This can happen when a volume’s file system has inconsistencies, or when the volume is in an unusual state.",
+  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, open **Disk Utility** (search for it in Spotlight) and run **First Aid** on this volume to check for file system problems} windows {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems} other {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool (for example, GNOME Disks)}}",
+  "@errors.listing.unexpectedSystemResponse.suggestion": {
+    "description": "Recovery suggestion for an unexpected system response. Markdown bullet list. \"Spotlight\" is a macOS feature name Apple keeps English everywhere; do NOT translate it. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.unexpectedSystemResponse.title": "Unexpected system response",
-  "errors.listing.unexpectedSystemResponse.explanation": "The system returned an unexpected response for this operation. This can happen when a volume’s file system has inconsistencies, or when the volume is in an unusual state.",
-  "errors.listing.unexpectedSystemResponse.suggestion": "Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, open **Disk Utility** (search for it in Spotlight) and run **First Aid** on this volume to check for file system problems",
   "@errors.listing.unexpectedSystemResponse.title": {
     "description": "Title of the listing error panel when the OS returned an unexpected response (serious). Plain text.",
     "screenshot": "error-message-example.png",
@@ -636,11 +641,6 @@
   },
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "description": "Body of the listing error panel for an unexpected system response. Markdown.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "description": "Recovery suggestion for an unexpected system response. Markdown bullet list. \"Spotlight\" is a macOS feature name Apple keeps English everywhere; do NOT translate it. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -664,7 +664,12 @@
   },
   "errors.listing.couldntReadUnknown.title": "Couldn’t read this folder",
   "errors.listing.couldntReadUnknown.explanation": "Cmdr ran into an unexpected problem reading `{path}`. Check “Technical details” below for the specific system code, which can help with troubleshooting.",
-  "errors.listing.couldntReadUnknown.suggestion": "Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, open **Disk Utility** and run **First Aid** on this volume",
+  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, open **Disk Utility** and run **First Aid** on this volume} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "@errors.listing.couldntReadUnknown.suggestion": {
+    "description": "Recovery suggestion for an unknown read problem. Markdown bullet list. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.couldntReadUnknown.title": {
     "description": "Title of the listing error panel for an unclassified read problem (serious). Plain text. Uses a contraction (\"Couldn't\").",
     "screenshot": "error-message-example.png",
@@ -675,14 +680,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.couldntReadUnknown.suggestion": {
-    "description": "Recovery suggestion for an unknown read problem. Markdown bullet list. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
+  "errors.listing.notFound.title": "Path not found",
+  "errors.listing.notFound.explanation": "Cmdr couldn’t find `{path}`. It may have been moved, renamed, or deleted while Cmdr was trying to access it.",
+  "errors.listing.notFound.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In Terminal, run `ls -la` on the parent folder to see what’s there} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "@errors.listing.notFound.suggestion": {
+    "description": "Recovery suggestion for a not-found path (typed variant). Markdown bullet list. The backtick command is literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.notFound.title": "Path not found",
-  "errors.listing.notFound.explanation": "Cmdr couldn’t find `{path}`. It may have been moved, renamed, or deleted while Cmdr was trying to access it.",
-  "errors.listing.notFound.suggestion": "Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In Terminal, run `ls -la` on the parent folder to see what’s there",
   "@errors.listing.notFound.title": {
     "description": "Title of the listing error panel when a path wasn't found (typed VolumeError variant). Plain text.",
     "screenshot": "error-message-example.png",
@@ -690,11 +695,6 @@
   },
   "@errors.listing.notFound.explanation": {
     "description": "Body of the listing error panel for a not-found path (typed variant). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\" is the app name; do NOT translate.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.listing.notFound.suggestion": {
-    "description": "Recovery suggestion for a not-found path (typed variant). Markdown bullet list. The backtick command is literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -717,20 +717,20 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.listing.permissionDenied.title": "No permission",
-  "errors.listing.permissionDenied.explanation": "Cmdr doesn’t have permission to access `{path}`. macOS controls which apps can access which folders, and Cmdr hasn’t been granted access to this one yet.",
-  "errors.listing.permissionDenied.suggestion": "Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- Check the folder’s permissions in Finder: right-click the folder, choose Get Info, and look under Sharing & Permissions\n- If this is a shared folder, ask the owner to update permissions\n- In Terminal, run `ls -la` on the path to see the current permissions",
-  "@errors.listing.permissionDenied.title": {
-    "description": "Title of the listing error panel when Cmdr lacks permission to read a folder (typed VolumeError variant). Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
+  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr doesn’t have permission to access `{path}`. macOS controls which apps can access which folders, and Cmdr hasn’t been granted access to this one yet.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
   "@errors.listing.permissionDenied.explanation": {
     "description": "Body of the listing error panel for a no-permission read (typed variant). Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. \"Cmdr\", \"macOS\" are proper names; do NOT translate.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- Check the folder’s permissions in Finder: right-click the folder, choose Get Info, and look under Sharing & Permissions\n- If this is a shared folder, ask the owner to update permissions\n- In Terminal, run `ls -la` on the path to see the current permissions} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions}}",
   "@errors.listing.permissionDenied.suggestion": {
     "description": "Recovery suggestion for a no-permission read (typed variant). Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` are do-not-translate placeholders replaced at runtime with OS-localized pane names. \"Get Info\" and \"Sharing & Permissions\" are Finder labels that Apple localizes, so use your locale's Finder wording for both. Same for the app names \"Finder\" and \"Terminal\": use whatever your locale's macOS calls them (most keep the English name; zh-Hans does not). The backtick command is literal; do NOT translate it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.permissionDenied.title": {
+    "description": "Title of the listing error panel when Cmdr lacks permission to read a folder (typed VolumeError variant). Plain text.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -758,13 +758,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.listing.remotePermissionDenied.title": "The server won’t open this folder",
-  "errors.listing.remotePermissionDenied.explanation": "`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down before macOS is involved, so this isn’t a privacy setting on your Mac.",
-  "errors.listing.remotePermissionDenied.suggestion": "Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, eject the share and mount it again with those credentials",
-  "@errors.listing.remotePermissionDenied.title": {
-    "description": "Title of the listing error panel when a mounted network share (SMB, AFP, or NFS) refuses a folder. macOS privacy controls have already been ruled out, so the refusal comes from the file server. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down before macOS is involved, so this isn’t a privacy setting on your Mac.} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
   "@errors.listing.remotePermissionDenied.explanation": {
     "description": "Body of the listing error panel for a folder a network file server refuses. Markdown. \"macOS\" is a proper name; do NOT translate. The contrast with a Mac privacy setting is the point of the sentence: the user can't fix this on their own machine.",
     "placeholders": {
@@ -775,8 +769,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, eject the share and mount it again with those credentials} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "description": "Recovery suggestion for a folder a network file server refuses. Markdown bullet list. \"lost+found\" is a literal Linux directory name; do NOT translate. \"Eject\" is the macOS Finder term for unmounting a share; use the wording your locale's Finder uses.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.remotePermissionDenied.title": {
+    "description": "Title of the listing error panel when a mounted network share (SMB, AFP, or NFS) refuses a folder. macOS privacy controls have already been ruled out, so the refusal comes from the file server. Plain text.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -944,7 +944,12 @@
   },
   "errors.listing.storageFull.title": "Disk is full",
   "errors.listing.storageFull.explanation": "There isn’t enough free space on this volume to complete the operation.",
-  "errors.listing.storageFull.suggestion": "Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash (right-click the Trash icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash (right-click the Trash icon in the Dock)\n- In Terminal, run `df -h` to see how much space is left on each volume} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "@errors.listing.storageFull.suggestion": {
+    "description": "Recovery suggestion for a full disk (typed variant). Markdown bullet list. \"Dock\" and the backtick command are literal; do NOT translate. \"Trash\" is the macOS Trash: use your language's settled term for it. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.storageFull.title": {
     "description": "Title of the listing error panel when the volume is out of space (typed VolumeError variant). Plain text.",
     "screenshot": "error-message-example.png",
@@ -955,14 +960,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.storageFull.suggestion": {
-    "description": "Recovery suggestion for a full disk (typed variant). Markdown bullet list. \"Dock\" and the backtick command are literal; do NOT translate. \"Trash\" is the macOS Trash: use your language's settled term for it. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+  "errors.listing.connectionTimedOut.title": "Connection timed out",
+  "errors.listing.connectionTimedOut.explanation": "Cmdr tried to access this resource but the connection didn’t respond in time. This usually means the server or device is slow to respond, or the network connection is unstable.",
+  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Try again} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again}}",
+  "@errors.listing.connectionTimedOut.suggestion": {
+    "description": "Recovery suggestion for a timed-out connection (typed variant). Markdown bullet list. \"Wi-Fi\", \"Ethernet\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.connectionTimedOut.title": "Connection timed out",
-  "errors.listing.connectionTimedOut.explanation": "Cmdr tried to access this resource but the connection didn’t respond in time. This usually means the server or device is slow to respond, or the network connection is unstable.",
-  "errors.listing.connectionTimedOut.suggestion": "Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In Terminal, try `ping <hostname>` to test if the server is reachable\n- Try again",
   "@errors.listing.connectionTimedOut.title": {
     "description": "Title of the listing error panel when the connection timed out (typed VolumeError variant). Plain text.",
     "screenshot": "error-message-example.png",
@@ -973,14 +978,14 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.listing.connectionTimedOut.suggestion": {
-    "description": "Recovery suggestion for a timed-out connection (typed variant). Markdown bullet list. \"Wi-Fi\", \"Ethernet\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+  "errors.listing.notSupported.title": "Not supported",
+  "errors.listing.notSupported.explanation": "This operation isn’t supported on this type of volume. Some volumes (like phone storage or certain network drives) don’t support all operations.",
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {Try a different approach, or use Finder for this operation.} windows {Try a different approach, or use File Explorer for this operation.} other {Try a different approach, or use your file manager for this operation.}}",
+  "@errors.listing.notSupported.suggestion": {
+    "description": "Recovery suggestion for an unsupported operation (typed variant). Markdown. \"Finder\" is a macOS app name; do NOT translate.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.listing.notSupported.title": "Not supported",
-  "errors.listing.notSupported.explanation": "This operation isn’t supported on this type of volume. Some volumes (like phone storage or certain network drives) don’t support all operations.",
-  "errors.listing.notSupported.suggestion": "Try a different approach, or use Finder for this operation.",
   "@errors.listing.notSupported.title": {
     "description": "Title of the listing error panel when the operation isn't supported on this volume type (typed VolumeError variant). Plain text.",
     "screenshot": "error-message-example.png",
@@ -988,11 +993,6 @@
   },
   "@errors.listing.notSupported.explanation": {
     "description": "Body of the listing error panel for an unsupported operation (typed variant). Markdown.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.listing.notSupported.suggestion": {
-    "description": "Recovery suggestion for an unsupported operation (typed variant). Markdown. \"Finder\" is a macOS app name; do NOT translate.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1088,7 +1088,12 @@
   },
   "errors.listing.ioSerious.title": "Couldn’t read this folder",
   "errors.listing.ioSerious.explanation": "Cmdr ran into a problem with `{path}`: {osMessage}. This could be a temporary glitch or a sign that the disk or device needs attention.",
-  "errors.listing.ioSerious.suggestion": "Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, try running **Disk Utility > First Aid** on this volume",
+  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, try running **Disk Utility > First Aid** on this volume} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "@errors.listing.ioSerious.suggestion": {
+    "description": "Recovery suggestion for a serious I/O problem. Markdown bullet list. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.listing.ioSerious.title": {
     "description": "Title of the listing error panel for a serious I/O problem with an OS-supplied detail. Plain text. Uses a contraction (\"Couldn't\").",
     "screenshot": "error-message-example.png",
@@ -1096,11 +1101,6 @@
   },
   "@errors.listing.ioSerious.explanation": {
     "description": "Body of the listing error panel for a serious I/O problem. Markdown. Two literal placeholders: `{path}` (the folder path, in backticks) and `{osMessage}` (the OS-supplied error detail). Both are do-not-translate placeholders substituted at runtime; keep the colon and surrounding text. \"Cmdr\" is the app name; do NOT translate.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.listing.ioSerious.suggestion": {
-    "description": "Recovery suggestion for a serious I/O problem. Markdown bullet list. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1268,7 +1268,12 @@
   },
   "errors.git.permissionDenied.title": "Cmdr can’t read this repo",
   "errors.git.permissionDenied.message": "The OS won’t let Cmdr open the `.git` folder, so git info isn’t available.",
-  "errors.git.permissionDenied.suggestion": "Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access to the folder.",
+  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access to the folder.} windows {Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.} other {Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode.}}",
+  "@errors.git.permissionDenied.suggestion": {
+    "description": "Recovery suggestion for a permission-denied repo. Markdown. `{system_settings}`, `{privacy_and_security}`, and `{files_and_folders}` are do-not-translate placeholders replaced at runtime with the pane names as the USER'S MAC shows them, whatever language Cmdr itself runs in. Keep them verbatim, and never attach a case suffix or article directly to one (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. \"Cmdr\" is the app name; do NOT translate.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.git.permissionDenied.title": {
     "description": "Title of the git error panel when the OS denies access to the repo. Plain text. \"Cmdr\", \"repo\" are terms; do NOT translate \"Cmdr\". Uses a contraction (\"can't\").",
     "screenshot": "error-message-example.png",
@@ -1276,11 +1281,6 @@
   },
   "@errors.git.permissionDenied.message": {
     "description": "Body of the git error panel for a permission-denied repo. Markdown. \"Cmdr\", \"git\", and the literal `.git` (in backticks) are proper names; do NOT translate.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.git.permissionDenied.suggestion": {
-    "description": "Recovery suggestion for a permission-denied repo. Markdown. `{system_settings}`, `{privacy_and_security}`, and `{files_and_folders}` are do-not-translate placeholders replaced at runtime with the pane names as the USER'S MAC shows them, whatever language Cmdr itself runs in. Keep them verbatim, and never attach a case suffix or article directly to one (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. \"Cmdr\" is the app name; do NOT translate.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1358,7 +1358,12 @@
   },
   "errors.git.gitDirPermissionDenied.title": "Cmdr can’t open the `.git` folder",
   "errors.git.gitDirPermissionDenied.message": "The OS denied access to the `.git` folder, even though the working tree is readable.",
-  "errors.git.gitDirPermissionDenied.suggestion": "Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access. In Terminal, `ls -la .git` shows the current owner and mode.",
+  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access. In Terminal, `ls -la .git` shows the current owner and mode.} windows {Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.} other {Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode.}}",
+  "@errors.git.gitDirPermissionDenied.suggestion": {
+    "description": "Recovery suggestion for a .git-folder permission denial. Markdown. `{system_settings}`, `{privacy_and_security}`, and `{files_and_folders}` are do-not-translate placeholders replaced at runtime with the pane names as the USER'S MAC shows them, whatever language Cmdr itself runs in. Keep them verbatim, and never attach a case suffix or article directly to one (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. \"Cmdr\", the backtick command, and `.git` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.git.gitDirPermissionDenied.title": {
     "description": "Title of the git error panel when the OS denies access to the .git folder specifically. Plain text. \"Cmdr\" and the literal `.git` (in backticks) are proper names; do NOT translate. Uses a contraction (\"can't\").",
     "screenshot": "error-message-example.png",
@@ -1366,11 +1371,6 @@
   },
   "@errors.git.gitDirPermissionDenied.message": {
     "description": "Body of the git error panel for a .git-folder permission denial. Markdown. The literal `.git` (in backticks) and \"working tree\" are git terms; do NOT translate \".git\".",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.git.gitDirPermissionDenied.suggestion": {
-    "description": "Recovery suggestion for a .git-folder permission denial. Markdown. `{system_settings}`, `{privacy_and_security}`, and `{files_and_folders}` are do-not-translate placeholders replaced at runtime with the pane names as the USER'S MAC shows them, whatever language Cmdr itself runs in. Keep them verbatim, and never attach a case suffix or article directly to one (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. \"Cmdr\", the backtick command, and `.git` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1688,7 +1688,12 @@
   },
   "errors.provider.appBased.transient": "This folder is managed by **{name}**. Here’s what to try:\n- Check your internet connection\n- Open {app} and make sure it’s running and synced\n- Navigate here again to retry",
   "errors.provider.appBased.needsAction": "This folder is managed by **{name}**. Here’s what to try:\n- Open {app} and check your sync status\n- Make sure you’re signed in to {app}\n- Check that you have access to this folder in {name}",
-  "errors.provider.appBased.serious": "This folder is managed by **{name}**. Here’s what to try:\n- Quit and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages",
+  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {This folder is managed by **{name}**. Here’s what to try:\n- Quit and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages}}",
+  "@errors.provider.appBased.serious": {
+    "description": "Shared template for app-backed cloud providers, serious problem. Markdown bullet list. Do-not-translate placeholders: `{name}` (display name, bold) and `{app}` (desktop app name), both substituted at runtime. Keep both; reorder to fit your grammar.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "@errors.provider.appBased.transient": {
     "description": "Shared template for app-backed cloud providers (Dropbox, Google Drive, OneDrive, Box, pCloud, Nextcloud, Synology Drive, Tresorit, Proton Drive, Sync.com, Egnyte), transient problem. Markdown bullet list. Two do-not-translate placeholders replaced at runtime: `{name}` (the provider's display name, shown in bold) and `{app}` (the provider's desktop app name). They may be the same word. Keep both placeholders; reorder them to fit your grammar.",
     "screenshot": "error-message-example.png",
@@ -1696,11 +1701,6 @@
   },
   "@errors.provider.appBased.needsAction": {
     "description": "Shared template for app-backed cloud providers, needs-action problem. Markdown bullet list. Do-not-translate placeholders: `{name}` (display name, bold) and `{app}` (desktop app name), both substituted at runtime. Keep both; reorder to fit your grammar.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.provider.appBased.serious": {
-    "description": "Shared template for app-backed cloud providers, serious problem. Markdown bullet list. Do-not-translate placeholders: `{name}` (display name, bold) and `{app}` (desktop app name), both substituted at runtime. Keep both; reorder to fit your grammar.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -3276,7 +3276,7 @@
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
-  "errors.mutation.parentNotWritable": "Cmdr can’t write into “{path}”. Check the folder’s permissions in Finder.",
+  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr can’t write into “{path}”. Check the folder’s permissions in Finder.} windows {Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.} other {Cmdr can’t write into “{path}”. Check the folder’s permissions in your file manager.}}",
   "@errors.mutation.parentNotWritable": {
     "description": "Shown when the folder holding the item refuses writes, so a rename can't land. \"Finder\" is the macOS file manager and is not translated in most locales; check what Apple calls it in yours. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
@@ -3537,13 +3537,13 @@
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
-  "errors.mutation.trashNotSupported": "This volume has no Trash, so the only way is to delete permanently.",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {This volume has no Trash, so the only way is to delete permanently.}}",
   "@errors.mutation.trashNotSupported": {
     "description": "Shown when someone tries to move an item to the Trash from a drive or share that has none (a network mount, a FAT stick). \"Trash\" is the macOS name for the bin; use Apple's own wording for your locale. \"Volume\" means a drive, disk, or network share. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
-  "errors.mutation.trashRefused": "macOS wouldn’t move this to the Trash.",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS wouldn’t move this to the Trash.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
   "@errors.mutation.trashRefused": {
     "description": "Shown when the operating system turned down a move to the Trash and Cmdr can't say more. Deliberately short: the technical reason appears separately under \"Technical details\". \"macOS\" is Apple's OS name and \"Trash\" is its bin; use Apple's own wording for your locale. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
@@ -3692,7 +3692,7 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.eject.unmountRefusedBySystem": "macOS is still using something there. Wait a minute, then try again.",
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS is still using something there. Wait a minute, then try again.} windows {Windows is still using something there. Wait a minute, then try again.} other {This computer is still using something there. Wait a minute, then try again.}}",
   "@errors.eject.unmountRefusedBySystem": {
     "description": "Shown when the only thing holding the drive is macOS itself (Spotlight indexing it, Time Machine, and so on). There's nothing for the person to close, so the advice is to wait rather than to hunt for an app. \"macOS\" is Apple's product name: keep it exactly as written, and don't translate it. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon; every errors.eject.* string starts with a capital letter, as a full sentence; if your language lowercases after a colon, do it for the whole errors.eject.* family, never for one key alone. No surface shows it on its own (only Cmdr’s toasts read it). The same sentence follows both, and the lead-in already says which action it was and what it was done to, so name neither: no \"drive\", no \"share\", no \"eject\" or \"disconnect\". Point at the place with a plain \"there\" and ask to \"try again\". Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "error-message-example.png",

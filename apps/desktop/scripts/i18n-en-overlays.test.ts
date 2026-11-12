@@ -408,7 +408,10 @@ describe('the rulings the catalogs are supposed to encode', () => {
       ['en-AU', au],
     ] as const) {
       expect(cat.messages['fileOperations.delete.trashSwitch'], tag).toBe('Move to Bin')
-      expect(cat.messages['errors.mutation.trashRefused'], tag).toBe('macOS wouldn’t move this to the Bin.')
+      const trashRefused = cat.messages['errors.mutation.trashRefused']
+      expect(pickPlatformBranch(trashRefused, 'macos'), tag).toBe('macOS wouldn’t move this to the Bin.')
+      expect(pickPlatformBranch(trashRefused, 'linux'), tag).toBe('Cmdr couldn’t move this to the Bin.')
+      expect(pickPlatformBranch(trashRefused, 'windows'), tag).toBe('Windows wouldn’t move this to the Recycle Bin.')
       const lowercased = copyOf(cat.messages).filter(([, v]) => / bin\b/.test(v))
       // "bin" survives only as the verb ("Counting items to bin...", "and bin old file", "copy, move, and bin").
       expect(lowercased.map(([k]) => k).sort(), tag).toEqual([

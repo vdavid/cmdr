@@ -19,7 +19,7 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "Що можна спробувати:\n- Закрийте кілька програм, щоб звільнити памʼять, особливо ті, що споживають багато ресурсів (браузери з багатьма вкладками, редактори, медіапрограми)\n- Перевірте використання памʼяті в програмі **Монітор активності** (знайдіть її через Spotlight)\n- Знову перейдіть сюди, щоб спробувати ще раз",
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Що можна спробувати:\n- Закрийте кілька програм, щоб звільнити памʼять, особливо ті, що споживають багато ресурсів (браузери з багатьма вкладками, редактори, медіапрограми)\n- Перевірте використання памʼяті в програмі **Монітор активності** (знайдіть її через Spotlight)\n- Знову перейдіть сюди, щоб спробувати ще раз} windows {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in your system monitor app\n- Navigate here again to retry}}",
   "@errors.listing.notEnoughMemory.suggestion": {
     "sourceHash": "d05a4e4"
   },
@@ -31,7 +31,7 @@
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "18a07d9"
   },
-  "errors.listing.resourceBusy.suggestion": "Зачекайте трохи, а потім знову перейдіть сюди. Якщо це повторюється, перевірте, яка програма може тримати файл відкритим (у Терміналі виконайте `lsof +D <folder-path>`, щоб побачити, які процеси використовують цю папку).",
+  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Зачекайте трохи, а потім знову перейдіть сюди. Якщо це повторюється, перевірте, яка програма може тримати файл відкритим (у Терміналі виконайте `lsof +D <folder-path>`, щоб побачити, які процеси використовують цю папку).} windows {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.} other {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in a terminal, run `lsof +D <folder-path>` to see which processes are using this folder).}}",
   "@errors.listing.resourceBusy.suggestion": {
     "sourceHash": "fa266e6"
   },
@@ -43,7 +43,7 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "Знову перейдіть сюди, щоб спробувати ще раз. Зазвичай це минає само собою. Якщо це повторюється, можливо, система сильно навантажена. Перевірте в програмі **Монітор активності**, які програми споживають багато ресурсів.",
+  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Знову перейдіть сюди, щоб спробувати ще раз. Зазвичай це минає само собою. Якщо це повторюється, можливо, система сильно навантажена. Перевірте в програмі **Монітор активності**, які програми споживають багато ресурсів.} windows {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.} other {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources.}}",
   "@errors.listing.temporarilyUnavailable.suggestion": {
     "sourceHash": "1ec4aef"
   },
@@ -51,11 +51,11 @@
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "Ваш Mac не підʼєднаний до мережі, тож цей том для Cmdr недоступний. Можливо, Wi-Fi відʼєднано, кабель Ethernet витягнуто або мережевий інтерфейс вимкнено.",
+  "errors.listing.networkDown.explanation": "{platform, select, macos {Ваш Mac не підʼєднаний до мережі, тож цей том для Cmdr недоступний. Можливо, Wi-Fi відʼєднано, кабель Ethernet витягнуто або мережевий інтерфейс вимкнено.} windows {Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.} other {Your computer’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.}}",
   "@errors.listing.networkDown.explanation": {
     "sourceHash": "179f8bb"
   },
-  "errors.listing.networkDown.suggestion": "Що можна спробувати:\n- Перевірте стан Wi-Fi або Ethernet: **{system_settings} > Мережа**\n- Якщо ви користуєтеся Wi-Fi, спробуйте вимкнути його й увімкнути знову\n- У Терміналі виконайте `ping google.com`, щоб перевірити підʼєднання\n- Знову перейдіть сюди, щойно мережа запрацює",
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте стан Wi-Fi або Ethernet: **{system_settings} > Мережа**\n- Якщо ви користуєтеся Wi-Fi, спробуйте вимкнути його й увімкнути знову\n- У Терміналі виконайте `ping google.com`, щоб перевірити підʼєднання\n- Знову перейдіть сюди, щойно мережа запрацює} windows {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} other {Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online}}",
   "@errors.listing.networkDown.suggestion": {
     "sourceHash": "bf4b517"
   },
@@ -91,7 +91,7 @@
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
-  "errors.listing.connectionReset.suggestion": "Що можна спробувати:\n- Перевірте, чи сервер працює\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити, чи доступний сервер\n- Знову перейдіть сюди, щоб спробувати ще раз",
+  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи сервер працює\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити, чи доступний сервер\n- Знову перейдіть сюди, щоб спробувати ще раз} windows {Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry}}",
   "@errors.listing.connectionReset.suggestion": {
     "sourceHash": "d980663"
   },
@@ -103,7 +103,7 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "c088c41"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "Що можна спробувати:\n- Перевірте, чи пристрій або сервер увімкнений і доступний\n- Перевірте підʼєднання Wi-Fi або Ethernet\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити звʼязок\n- Знову перейдіть сюди, щоб спробувати ще раз",
+  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи пристрій або сервер увімкнений і доступний\n- Перевірте підʼєднання Wi-Fi або Ethernet\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити звʼязок\n- Знову перейдіть сюди, щоб спробувати ще раз} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry}}",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
     "sourceHash": "230ef64"
   },
@@ -115,7 +115,7 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "e175712"
   },
-  "errors.listing.hostDown.suggestion": "Що можна спробувати:\n- Перевірте, чи хост увімкнений і підʼєднаний до мережі\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити, чи хост доступний\n- Якщо це NAS або сервер, перевірте його інтерфейс керування\n- Знову перейдіть сюди, щойно хост запрацює",
+  "errors.listing.hostDown.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи хост увімкнений і підʼєднаний до мережі\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити, чи хост доступний\n- Якщо це NAS або сервер, перевірте його інтерфейс керування\n- Знову перейдіть сюди, щойно хост запрацює} windows {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} other {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back}}",
   "@errors.listing.hostDown.suggestion": {
     "sourceHash": "7a8ecd8"
   },
@@ -127,7 +127,7 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "Що можна спробувати:\n- Перейдіть із цієї папки деінде й поверніться\n- Якщо це мережевий диск, спробуйте відмонтувати його у Finder і змонтувати знову\n- Перевірте, чи працює сервер, на якому розміщено цю папку\n- У Терміналі виконайте `mount`, щоб побачити змонтовані зараз томи",
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перейдіть із цієї папки деінде й поверніться\n- Якщо це мережевий диск, спробуйте відмонтувати його у Finder і змонтувати знову\n- Перевірте, чи працює сервер, на якому розміщено цю папку\n- У Терміналі виконайте `mount`, щоб побачити змонтовані зараз томи} windows {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives} other {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes}}",
   "@errors.listing.staleConnection.suggestion": {
     "sourceHash": "73de81d"
   },
@@ -139,7 +139,7 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
-  "errors.listing.lockUnavailable.suggestion": "Що можна спробувати:\n- Закрийте кілька програм, особливо ті, що працюють із багатьма файлами (редактори, IDE, засоби резервного копіювання)\n- У Терміналі виконайте `lsof | wc -l`, щоб побачити, скільки файлів відкрито в усіх програмах\n- Якщо проблема не зникає, можна підвищити ліміт командою `ulimit -n 4096` у Терміналі\n- Знову перейдіть сюди, щоб спробувати ще раз",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Що можна спробувати:\n- Закрийте кілька програм, особливо ті, що працюють із багатьма файлами (редактори, IDE, засоби резервного копіювання)\n- У Терміналі виконайте `lsof | wc -l`, щоб побачити, скільки файлів відкрито в усіх програмах\n- Якщо проблема не зникає, можна підвищити ліміт командою `ulimit -n 4096` у Терміналі\n- Знову перейдіть сюди, щоб спробувати ще раз} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
   "@errors.listing.lockUnavailable.suggestion": {
     "sourceHash": "a9f23bd"
   },
@@ -159,11 +159,11 @@
   "@errors.listing.notPermitted.title": {
     "sourceHash": "8ec5f4b"
   },
-  "errors.listing.notPermitted.explanation": "macOS заблокувала Cmdr доступ до папки `{path}`. Зазвичай це означає, що папку захищають політики безпеки macOS або що Cmdr ще не надано потрібного доступу.",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS заблокувала Cmdr доступ до папки `{path}`. Зазвичай це означає, що папку захищають політики безпеки macOS або що Cmdr ще не надано потрібного доступу.} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
   "@errors.listing.notPermitted.explanation": {
     "sourceHash": "e28dd0e"
   },
-  "errors.listing.notPermitted.suggestion": "Що можна спробувати:\n- Відкрийте **{system_settings} > {privacy_and_security} > {files_and_folders}** і надайте Cmdr доступ\n- Якщо цю папку захищає система, можливо, потрібно надати Cmdr **{full_disk_access}** у розділі {privacy_and_security}\n- У Терміналі виконайте `ls -la` для цього шляху, щоб перевірити власника й привілеї",
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Що можна спробувати:\n- Відкрийте **{system_settings} > {privacy_and_security} > {files_and_folders}** і надайте Cmdr доступ\n- Якщо цю папку захищає система, можливо, потрібно надати Cmdr **{full_disk_access}** у розділі {privacy_and_security}\n- У Терміналі виконайте `ls -la` для цього шляху, щоб перевірити власника й привілеї} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions}}",
   "@errors.listing.notPermitted.suggestion": {
     "sourceHash": "2926956"
   },
@@ -175,7 +175,7 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "Що можна спробувати:\n- Перевірте, чи правильно написано шлях\n- Якщо він на мережевому диску, переконайтеся, що диск підʼєднано, а спільна папка доступна\n- Перейдіть до батьківської папки й пошукайте елемент там\n- У Терміналі виконайте `ls -la` для батьківської папки, щоб побачити, що в ній є",
+  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи правильно написано шлях\n- Якщо він на мережевому диску, переконайтеся, що диск підʼєднано, а спільна папка доступна\n- Перейдіть до батьківської папки й пошукайте елемент там\n- У Терміналі виконайте `ls -la` для батьківської папки, щоб побачити, що в ній є} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
   "@errors.listing.pathNotFoundErrno.suggestion": {
     "sourceHash": "8a51477"
   },
@@ -183,11 +183,11 @@
   "@errors.listing.noPermissionErrno.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.noPermissionErrno.explanation": "Cmdr не має доступу до папки `{path}`. macOS визначає, які програми можуть відкривати які папки, а Cmdr ще не надано доступу до цієї.",
+  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr не має доступу до папки `{path}`. macOS визначає, які програми можуть відкривати які папки, а Cmdr ще не надано доступу до цієї.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "3871273"
   },
-  "errors.listing.noPermissionErrno.suggestion": "Що можна спробувати:\n- Відкрийте **{system_settings} > {privacy_and_security} > {files_and_folders}** і надайте Cmdr доступ\n- Перевірте привілеї папки у Finder: клацніть її правою кнопкою, виберіть «Досьє» і подивіться в розділі «Спільний доступ і привілеї»\n- Якщо це спільна папка, попросіть власника оновити привілеї\n- У Терміналі виконайте `ls -la` для цього шляху, щоб побачити поточні привілеї",
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Що можна спробувати:\n- Відкрийте **{system_settings} > {privacy_and_security} > {files_and_folders}** і надайте Cmdr доступ\n- Перевірте привілеї папки у Finder: клацніть її правою кнопкою, виберіть «Досьє» і подивіться в розділі «Спільний доступ і привілеї»\n- Якщо це спільна папка, попросіть власника оновити привілеї\n- У Терміналі виконайте `ls -la` для цього шляху, щоб побачити поточні привілеї} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions}}",
   "@errors.listing.noPermissionErrno.suggestion": {
     "sourceHash": "4b513ef"
   },
@@ -247,7 +247,7 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.diskFullErrno.suggestion": "Що можна спробувати:\n- Звільніть місце: перемістіть або видаліть файли, які вам більше не потрібні\n- Очистіть Смітник (клацніть іконку Смітника в Dock правою кнопкою)\n- У Терміналі виконайте `df -h`, щоб побачити, скільки місця залишилося на кожному томі\n- Перевірте, що займає місце: **{system_settings} > Загальні > Сховище**",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Що можна спробувати:\n- Звільніть місце: перемістіть або видаліть файли, які вам більше не потрібні\n- Очистіть Смітник (клацніть іконку Смітника в Dock правою кнопкою)\n- У Терміналі виконайте `df -h`, щоб побачити, скільки місця залишилося на кожному томі\n- Перевірте, що займає місце: **{system_settings} > Загальні > Сховище**} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.diskFullErrno.suggestion": {
     "sourceHash": "f2eb27b"
   },
@@ -271,7 +271,7 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "Спробуйте інший спосіб або виконайте цю операцію у Finder. Якщо ви працюєте із зовнішнім диском, можливо, його відформатовано у файловій системі з обмеженнями (наприклад, FAT32 не може зберігати файли розміром 4 ГіБ і більше).",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Спробуйте інший спосіб або виконайте цю операцію у Finder. Якщо ви працюєте із зовнішнім диском, можливо, його відформатовано у файловій системі з обмеженнями (наприклад, FAT32 не може зберігати файли розміром 4 ГіБ і більше).} windows {Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} other {Try a different approach, or use your file manager for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).}}",
   "@errors.listing.notSupportedErrno.suggestion": {
     "sourceHash": "8fea918"
   },
@@ -283,7 +283,7 @@
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "d3c1975"
   },
-  "errors.listing.networkUnreachable.suggestion": "Що можна спробувати:\n- Перевірте підʼєднання Wi-Fi або Ethernet\n- Переконайтеся, що ви в потрібній мережі (наприклад, у робочій мережі Wi-Fi чи VPN)\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити, чи доступний сервер\n- Знову перейдіть сюди, щойно підʼєднаєтеся",
+  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте підʼєднання Wi-Fi або Ethernet\n- Переконайтеся, що ви в потрібній мережі (наприклад, у робочій мережі Wi-Fi чи VPN)\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити, чи доступний сервер\n- Знову перейдіть сюди, щойно підʼєднаєтеся} windows {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} other {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected}}",
   "@errors.listing.networkUnreachable.suggestion": {
     "sourceHash": "7feb3cb"
   },
@@ -291,11 +291,11 @@
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "Сервер відхилив запит на підʼєднання. Зазвичай це означає, що серверне програмне забезпечення (наприклад, сервіс SMB або NFS) не працює або налаштоване відхиляти підʼєднання з цього Mac.",
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {Сервер відхилив запит на підʼєднання. Зазвичай це означає, що серверне програмне забезпечення (наприклад, сервіс SMB або NFS) не працює або налаштоване відхиляти підʼєднання з цього Mac.} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
   "@errors.listing.connectionRefused.explanation": {
     "sourceHash": "88e1ac7"
   },
-  "errors.listing.connectionRefused.suggestion": "Що можна спробувати:\n- Перевірте, чи сервер працює і чи ввімкнено на ньому сервіс спільного доступу до файлів\n- Перевірте, чи правильно вказано адресу сервера й порт\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити, чи сервер узагалі доступний\n- Знову перейдіть сюди, щоб спробувати ще раз",
+  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи сервер працює і чи ввімкнено на ньому сервіс спільного доступу до файлів\n- Перевірте, чи правильно вказано адресу сервера й порт\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити, чи сервер узагалі доступний\n- Знову перейдіть сюди, щоб спробувати ще раз} windows {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry}}",
   "@errors.listing.connectionRefused.suggestion": {
     "sourceHash": "17decc3"
   },
@@ -307,7 +307,7 @@
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "4157be6"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "Що можна спробувати:\n- У Терміналі виконайте `ls -la` для цього шляху, щоб побачити, куди вказують символічні посилання\n- Знайдіть і виправте посилання, яке створює цикл\n- Якщо незрозуміло, яке посилання проблемне, перевірте їх по черзі командою `readlink <path>`",
+  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Що можна спробувати:\n- У Терміналі виконайте `ls -la` для цього шляху, щоб побачити, куди вказують символічні посилання\n- Знайдіть і виправте посилання, яке створює цикл\n- Якщо незрозуміло, яке посилання проблемне, перевірте їх по черзі командою `readlink <path>`} windows {Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one} other {Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`}}",
   "@errors.listing.symlinkLoopErrno.suggestion": {
     "sourceHash": "eed9a5a"
   },
@@ -315,7 +315,7 @@
   "@errors.listing.nameTooLongErrno.title": {
     "sourceHash": "de4bc1d"
   },
-  "errors.listing.nameTooLongErrno.explanation": "Назва файлу чи папки перевищує системний ліміт (255 символів на більшості томів Mac). Таке також буває, коли повний шлях (усі папки разом) перевищує максимальну довжину шляху в системі.",
+  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {Назва файлу чи папки перевищує системний ліміт (255 символів на більшості томів Mac). Таке також буває, коли повний шлях (усі папки разом) перевищує максимальну довжину шляху в системі.} windows {The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} other {The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.}}",
   "@errors.listing.nameTooLongErrno.explanation": {
     "sourceHash": "8b9a6ff"
   },
@@ -331,7 +331,7 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "184b0fc"
   },
-  "errors.listing.hostUnreachable.suggestion": "Що можна спробувати:\n- Перевірте, чи хост увімкнений і чи він у тій самій мережі\n- Якщо для доступу до нього потрібен VPN, переконайтеся, що VPN підʼєднано\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити звʼязок\n- Знову перейдіть сюди, щойно хост стане доступним",
+  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи хост увімкнений і чи він у тій самій мережі\n- Якщо для доступу до нього потрібен VPN, переконайтеся, що VPN підʼєднано\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити звʼязок\n- Знову перейдіть сюди, щойно хост стане доступним} windows {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} other {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable}}",
   "@errors.listing.hostUnreachable.suggestion": {
     "sourceHash": "c222f76"
   },
@@ -355,7 +355,7 @@
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "b9b0b0e"
   },
-  "errors.listing.quotaExceeded.suggestion": "Що можна спробувати:\n- Звільніть місце: видаліть із цього тому файли, які вам більше не потрібні\n- Попросіть системного адміністратора збільшити вашу квоту\n- У Терміналі виконайте `quota`, щоб побачити поточне використання й ліміт",
+  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Що можна спробувати:\n- Звільніть місце: видаліть із цього тому файли, які вам більше не потрібні\n- Попросіть системного адміністратора збільшити вашу квоту\n- У Терміналі виконайте `quota`, щоб побачити поточне використання й ліміт} windows {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota} other {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In a terminal, run `quota` to see your current usage and limit}}",
   "@errors.listing.quotaExceeded.suggestion": {
     "sourceHash": "1b5f0df"
   },
@@ -379,7 +379,7 @@
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "Що можна спробувати:\n- Відʼєднайте том у Finder і знову підʼєднайте його\n- Коли зʼявиться запит, введіть імʼя користувача та пароль\n- Якщо ви не впевнені щодо облікових даних, зверніться до адміністратора сервера",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {Що можна спробувати:\n- Відʼєднайте том у Finder і знову підʼєднайте його\n- Коли зʼявиться запит, введіть імʼя користувача та пароль\n- Якщо ви не впевнені щодо облікових даних, зверніться до адміністратора сервера}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
     "sourceHash": "a90b520"
   },
@@ -403,7 +403,7 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "Можливо, ця файлова система не підтримує метадані, потрібні Cmdr. Спробуйте виконати операцію на іншому томі або спершу скопіюйте файл на внутрішній диск свого Mac.",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Можливо, ця файлова система не підтримує метадані, потрібні Cmdr. Спробуйте виконати операцію на іншому томі або спершу скопіюйте файл на внутрішній диск свого Mac.} windows {Можливо, ця файлова система не підтримує метадані, потрібні Cmdr. Спробуйте виконати операцію на іншому томі або спершу скопіюйте файл на внутрішній диск свого Mac.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
   "@errors.listing.attributeNotFound.suggestion": {
     "sourceHash": "463ee44"
   },
@@ -415,7 +415,7 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "Що можна спробувати:\n- Перевірте, чи диск або пристрій досі надійно підʼєднано\n- Відкрийте програму **Дискова утиліта** (знайдіть її через Spotlight), виберіть цей том і натисніть **Швидка допомога**\n- Якщо це повторюється, якнайшвидше створіть резервну копію даних. Можливо, на диску зʼявляються пошкоджені сектори або він починає зношуватися.",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи диск або пристрій досі надійно підʼєднано\n- Відкрийте програму **Дискова утиліта** (знайдіть її через Spotlight), виберіть цей том і натисніть **Швидка допомога**\n- Якщо це повторюється, якнайшвидше створіть резервну копію даних. Можливо, на диску зʼявляються пошкоджені сектори або він починає зношуватися.} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
   "@errors.listing.diskReadProblem.suggestion": {
     "sourceHash": "614a5fe"
   },
@@ -427,7 +427,7 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "a834896"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "Що можна спробувати:\n- Знову перейдіть сюди, щоб спробувати ще раз\n- Якщо це повторюється, відкрийте програму **Дискова утиліта** (знайдіть її через Spotlight), виберіть цей том і натисніть **Швидка допомога**, щоб перевірити файлову систему на проблеми",
+  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Що можна спробувати:\n- Знову перейдіть сюди, щоб спробувати ще раз\n- Якщо це повторюється, відкрийте програму **Дискова утиліта** (знайдіть її через Spotlight), виберіть цей том і натисніть **Швидка допомога**, щоб перевірити файлову систему на проблеми} windows {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems} other {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool (for example, GNOME Disks)}}",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
     "sourceHash": "f63d225"
   },
@@ -451,7 +451,7 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "bade4a7"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "Що можна спробувати:\n- Перевірте, чи диск або пристрій досі підʼєднано\n- Знову перейдіть сюди, щоб спробувати ще раз\n- Якщо це повторюється, відкрийте програму **Дискова утиліта**, виберіть цей том і натисніть **Швидка допомога**",
+  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи диск або пристрій досі підʼєднано\n- Знову перейдіть сюди, щоб спробувати ще раз\n- Якщо це повторюється, відкрийте програму **Дискова утиліта**, виберіть цей том і натисніть **Швидка допомога**} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
   "@errors.listing.couldntReadUnknown.suggestion": {
     "sourceHash": "5155626"
   },
@@ -463,7 +463,7 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.notFound.suggestion": "Що можна спробувати:\n- Перевірте, чи правильно написано шлях\n- Якщо він на мережевому диску, переконайтеся, що диск підʼєднано, а спільна папка доступна\n- Перейдіть до батьківської папки й пошукайте елемент там\n- У Терміналі виконайте `ls -la` для батьківської папки, щоб побачити, що в ній є",
+  "errors.listing.notFound.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи правильно написано шлях\n- Якщо він на мережевому диску, переконайтеся, що диск підʼєднано, а спільна папка доступна\n- Перейдіть до батьківської папки й пошукайте елемент там\n- У Терміналі виконайте `ls -la` для батьківської папки, щоб побачити, що в ній є} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
   "@errors.listing.notFound.suggestion": {
     "sourceHash": "8a51477"
   },
@@ -483,11 +483,11 @@
   "@errors.listing.permissionDenied.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.permissionDenied.explanation": "Cmdr не має доступу до папки `{path}`. macOS визначає, які програми можуть відкривати які папки, а Cmdr ще не надано доступу до цієї.",
+  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr не має доступу до папки `{path}`. macOS визначає, які програми можуть відкривати які папки, а Cmdr ще не надано доступу до цієї.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "3871273"
   },
-  "errors.listing.permissionDenied.suggestion": "Що можна спробувати:\n- Відкрийте **{system_settings} > {privacy_and_security} > {files_and_folders}** і надайте Cmdr доступ\n- Перевірте привілеї папки у Finder: клацніть папку правою кнопкою, виберіть «Досьє» і подивіться в розділі «Спільний доступ і привілеї»\n- Якщо це спільна папка, попросіть власника оновити привілеї\n- У Терміналі виконайте `ls -la` для шляху, щоб побачити поточні привілеї",
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Що можна спробувати:\n- Відкрийте **{system_settings} > {privacy_and_security} > {files_and_folders}** і надайте Cmdr доступ\n- Перевірте привілеї папки у Finder: клацніть папку правою кнопкою, виберіть «Досьє» і подивіться в розділі «Спільний доступ і привілеї»\n- Якщо це спільна папка, попросіть власника оновити привілеї\n- У Терміналі виконайте `ls -la` для шляху, щоб побачити поточні привілеї} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions}}",
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "3450aff"
   },
@@ -507,11 +507,11 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.remotePermissionDenied.explanation": "Папка `{path}` розташована у спільній папці в мережі, і обліковий запис, з яким ви підʼєдналися, не має привілеїв, щоб відкрити цю папку. Сервер відхиляє запит ще до того, як до справи береться macOS, тож це не параметр приватності на вашому Mac.",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {Папка `{path}` розташована у спільній папці в мережі, і обліковий запис, з яким ви підʼєдналися, не має привілеїв, щоб відкрити цю папку. Сервер відхиляє запит ще до того, як до справи береться macOS, тож це не параметр приватності на вашому Mac.} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "d8463b0"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "Що можна спробувати:\n- Перевірте привілеї папки на сервері, а також обліковий запис, з яким ви змонтували спільну папку\n- Деякі папки належать власному системному обліковому запису сервера (наприклад, `lost+found` у спільній папці Linux) і закриті для всіх інших\n- Щоб підʼєднатися під іншим обліковим записом, вийміть спільну папку й змонтуйте її знову з потрібними обліковими даними",
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте привілеї папки на сервері, а також обліковий запис, з яким ви змонтували спільну папку\n- Деякі папки належать власному системному обліковому запису сервера (наприклад, `lost+found` у спільній папці Linux) і закриті для всіх інших\n- Щоб підʼєднатися під іншим обліковим записом, вийміть спільну папку й змонтуйте її знову з потрібними обліковими даними} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "sourceHash": "3e6497d"
   },
@@ -631,7 +631,7 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.storageFull.suggestion": "Що можна спробувати:\n- Звільніть місце: перемістіть або видаліть файли, які вам більше не потрібні\n- Очистіть Смітник (клацніть іконку Смітника в Dock правою кнопкою)\n- У Терміналі виконайте `df -h`, щоб побачити, скільки місця залишилося на кожному томі",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Що можна спробувати:\n- Звільніть місце: перемістіть або видаліть файли, які вам більше не потрібні\n- Очистіть Смітник (клацніть іконку Смітника в Dock правою кнопкою)\n- У Терміналі виконайте `df -h`, щоб побачити, скільки місця залишилося на кожному томі} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "101099b"
   },
@@ -643,7 +643,7 @@
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "15d3054"
   },
-  "errors.listing.connectionTimedOut.suggestion": "Що можна спробувати:\n- Перевірте, чи пристрій або сервер увімкнений і доступний\n- Перевірте підʼєднання Wi-Fi або Ethernet\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити, чи доступний сервер\n- Спробуйте ще раз",
+  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи пристрій або сервер увімкнений і доступний\n- Перевірте підʼєднання Wi-Fi або Ethernet\n- У Терміналі виконайте `ping <hostname>`, щоб перевірити, чи доступний сервер\n- Спробуйте ще раз} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again}}",
   "@errors.listing.connectionTimedOut.suggestion": {
     "sourceHash": "f474938"
   },
@@ -655,7 +655,7 @@
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "d074574"
   },
-  "errors.listing.notSupported.suggestion": "Спробуйте інший спосіб або виконайте цю операцію у Finder.",
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {Спробуйте інший спосіб або виконайте цю операцію у Finder.} windows {Try a different approach, or use File Explorer for this operation.} other {Try a different approach, or use your file manager for this operation.}}",
   "@errors.listing.notSupported.suggestion": {
     "sourceHash": "d4e3965"
   },
@@ -727,7 +727,7 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "Що можна спробувати:\n- Перевірте, чи диск або пристрій досі підʼєднаний\n- Спробуйте ще раз\n- Якщо це повторюється, спробуйте перевірити цей том: **Дискова утиліта > Швидка допомога**",
+  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Що можна спробувати:\n- Перевірте, чи диск або пристрій досі підʼєднаний\n- Спробуйте ще раз\n- Якщо це повторюється, спробуйте перевірити цей том: **Дискова утиліта > Швидка допомога**} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
   "@errors.listing.ioSerious.suggestion": {
     "sourceHash": "6e83ebb"
   },
@@ -847,7 +847,7 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "53012e9"
   },
-  "errors.git.permissionDenied.suggestion": "Відкрийте **{system_settings} > {privacy_and_security} > {files_and_folders}** і надайте Cmdr доступ до папки.",
+  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Відкрийте **{system_settings} > {privacy_and_security} > {files_and_folders}** і надайте Cmdr доступ до папки.} windows {Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.} other {Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode.}}",
   "@errors.git.permissionDenied.suggestion": {
     "sourceHash": "7396b5a"
   },
@@ -907,7 +907,7 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Відкрийте **{system_settings} > {privacy_and_security} > {files_and_folders}** і надайте Cmdr доступ. У Терміналі команда `ls -la .git` покаже поточного власника й режим доступу.",
+  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Відкрийте **{system_settings} > {privacy_and_security} > {files_and_folders}** і надайте Cmdr доступ. У Терміналі команда `ls -la .git` покаже поточного власника й режим доступу.} windows {Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.} other {Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode.}}",
   "@errors.git.gitDirPermissionDenied.suggestion": {
     "sourceHash": "b091738"
   },
@@ -1157,7 +1157,7 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "Цією папкою керує **{name}**. Що можна спробувати:\n- Завершіть програму {app} і відкрийте знову\n- Вийдіть з облікового запису в програмі {app} і ввійдіть знову\n- Перевірте на сторінці стану сервісу {name}, чи немає збоїв",
+  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {Цією папкою керує **{name}**. Що можна спробувати:\n- Завершіть програму {app} і відкрийте знову\n- Вийдіть з облікового запису в програмі {app} і ввійдіть знову\n- Перевірте на сторінці стану сервісу {name}, чи немає збоїв}}",
   "@errors.provider.appBased.serious": {
     "sourceHash": "5a4e14e"
   },
@@ -2149,7 +2149,7 @@
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "0845c57"
   },
-  "errors.mutation.parentNotWritable": "Cmdr не може записувати в папку «{path}». Перевірте привілеї папки у Finder.",
+  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr не може записувати в папку «{path}». Перевірте привілеї папки у Finder.} windows {Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.} other {Cmdr can’t write into “{path}”. Check the folder’s permissions in your file manager.}}",
   "@errors.mutation.parentNotWritable": {
     "sourceHash": "e0a7ad6"
   },
@@ -2309,11 +2309,11 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"
   },
-  "errors.mutation.trashNotSupported": "На цьому томі немає Смітника, тож можна лише видалити остаточно.",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {На цьому томі немає Смітника, тож можна лише видалити остаточно.}}",
   "@errors.mutation.trashNotSupported": {
     "sourceHash": "525ef25"
   },
-  "errors.mutation.trashRefused": "macOS не перемістила це в Смітник.",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS не перемістила це в Смітник.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
   "@errors.mutation.trashRefused": {
     "sourceHash": "7a6d1a5"
   },
@@ -2397,7 +2397,7 @@
   "@errors.eject.unmountRefusedByDiskImage": {
     "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "macOS досі щось там використовує. Зачекайте хвилину, а тоді спробуйте ще раз.",
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS досі щось там використовує. Зачекайте хвилину, а тоді спробуйте ще раз.} windows {Windows is still using something there. Wait a minute, then try again.} other {This computer is still using something there. Wait a minute, then try again.}}",
   "@errors.eject.unmountRefusedBySystem": {
     "sourceHash": "9b066c9"
   },

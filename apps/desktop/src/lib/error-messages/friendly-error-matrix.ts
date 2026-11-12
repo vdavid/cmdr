@@ -1,0 +1,162 @@
+/**
+ * The input matrix behind the friendly-error goldens: which factory call each
+ * golden key stands for. `friendly-error-parity.test.ts` replays it against
+ * every golden. Test-only.
+ */
+
+import { getListingErrorMessage, type ListingErrorReason } from './listing-error-messages'
+import { getGitErrorMessage, type FriendlyGitErrorKind } from './git-error-messages'
+import { getProviderSuggestion, type Provider, type ProviderCategory } from './provider-error-messages'
+import type { FriendlyErrorMessage } from './friendly-error-message'
+
+// The path the Rust snapshot used for errno + typed-variant arms.
+const MATRIX_PATH = '/Volumes/share/_todo_*pics/photo.jpg'
+const PLAIN_PATH = '/some/plain/folder/_x_*y'
+const IO_MESSAGE = 'Protocol error: STATUS_DELETE_PENDING during Create'
+// The placeholder home prefix the golden's CloudStorage provider arms are pinned
+// to. It MUST match the golden literal, NOT `os.homedir()`: the byte-for-byte
+// compare has to be machine-independent (a real `os.homedir()` is `/home/runner`
+// on Linux CI, `/Users/<you>` locally), so the golden uses this fixed fake home
+// and the test feeds the same one.
+const HOME = '/Users/example'
+
+// errno number → the FE listing reason it maps to (matching Rust `errno.rs`).
+const ERRNO_REASON: Record<number, ListingErrorReason> = {
+  4: { reason: 'interrupted' },
+  12: { reason: 'notEnoughMemory' },
+  16: { reason: 'resourceBusy', path: MATRIX_PATH },
+  35: { reason: 'temporarilyUnavailable' },
+  50: { reason: 'networkDown' },
+  52: { reason: 'networkConnectionDropped' },
+  53: { reason: 'connectionDropped' },
+  54: { reason: 'connectionReset' },
+  60: { reason: 'connectionTimedOutErrno' },
+  64: { reason: 'hostDown' },
+  70: { reason: 'staleConnection' },
+  77: { reason: 'lockUnavailable' },
+  89: { reason: 'cancelledErrno' },
+  1: { reason: 'notPermitted', path: MATRIX_PATH },
+  2: { reason: 'pathNotFoundErrno', path: MATRIX_PATH },
+  13: { reason: 'noPermissionErrno', path: MATRIX_PATH },
+  17: { reason: 'alreadyExistsErrno', path: MATRIX_PATH },
+  18: { reason: 'crossDeviceOperation' },
+  20: { reason: 'notAFolder', path: MATRIX_PATH },
+  21: { reason: 'isAFolderErrno', path: MATRIX_PATH },
+  28: { reason: 'diskFullErrno' },
+  30: { reason: 'readOnlyVolumeErrno' },
+  45: { reason: 'notSupportedErrno' },
+  51: { reason: 'networkUnreachable' },
+  61: { reason: 'connectionRefused' },
+  62: { reason: 'symlinkLoopErrno', path: MATRIX_PATH },
+  63: { reason: 'nameTooLongErrno' },
+  65: { reason: 'hostUnreachable' },
+  66: { reason: 'folderNotEmpty', path: MATRIX_PATH },
+  69: { reason: 'quotaExceeded' },
+  80: { reason: 'authRequiredEauth' },
+  81: { reason: 'authRequiredEneedauth' },
+  82: { reason: 'devicePoweredOff' },
+  93: { reason: 'attributeNotFound' },
+  5: { reason: 'diskReadProblem', path: MATRIX_PATH },
+  22: { reason: 'unexpectedSystemResponse' },
+  83: { reason: 'deviceProblem' },
+  9999: { reason: 'couldntReadUnknown', path: MATRIX_PATH },
+}
+
+// Typed VolumeError golden keys → FE listing reason.
+const TYPED_REASON: Record<string, ListingErrorReason> = {
+  NotFound: { reason: 'notFound', path: MATRIX_PATH },
+  'PermissionDenied:plain': { reason: 'permissionDenied', path: PLAIN_PATH },
+  // `/Volumes/share/...` is not TCC-classified by Rust (`is_potentially_tcc_restricted`
+  // / `is_network_volume_path` both false), so it falls through to the generic
+  // permission-denied copy. The `tccRestricted` reason's prose is covered by the
+  // provider needs_action entries (CloudStorage paths ARE TCC-classified).
+  'PermissionDenied:tcc': { reason: 'permissionDenied', path: MATRIX_PATH },
+  AlreadyExists: { reason: 'alreadyExists', path: MATRIX_PATH },
+  NotSupported: { reason: 'notSupported' },
+  DeviceDisconnected: { reason: 'deviceDisconnected', path: MATRIX_PATH },
+  ReadOnly: { reason: 'readOnly' },
+  StorageFull: { reason: 'storageFull' },
+  ConnectionTimeout: { reason: 'connectionTimedOut' },
+  Cancelled: { reason: 'cancelled' },
+  DeletePending: { reason: 'deletePending', path: MATRIX_PATH },
+  IsADirectory: { reason: 'isADirectory', path: MATRIX_PATH },
+  'IoError:none': { reason: 'ioSerious', path: MATRIX_PATH, osMessage: IO_MESSAGE },
+}
+
+const GIT_KIND: Record<string, FriendlyGitErrorKind> = {
+  'git:NotARepo': 'notARepo',
+  'git:OrphanedWorktree': 'orphanedWorktree',
+  'git:CorruptRepo': 'corruptRepo',
+  'git:IndexLocked': 'indexLocked',
+  'git:PermissionDenied': 'permissionDenied',
+  'git:BareRepo': 'bareRepo',
+  'git:BlobTooLarge': 'blobTooLarge',
+  'git:ShallowBoundary': 'shallowBoundary',
+  'git:MissingObject': 'missingObject',
+  'git:GitDirPermissionDenied': 'gitDirPermissionDenied',
+}
+
+// Provider golden name → FE Provider variant + its base path + whether that
+// path is TCC-restricted (drives the needs_action base reason: tcc vs plain).
+interface ProviderSpec {
+  provider: Provider
+  basePath: string
+  tcc: boolean
+}
+const PROVIDER_SPEC: Record<string, ProviderSpec> = {
+  Dropbox: { provider: 'dropbox', basePath: `${HOME}/Library/CloudStorage/Dropbox/_f_*x`, tcc: true },
+  GoogleDrive: { provider: 'googleDrive', basePath: `${HOME}/Library/CloudStorage/GoogleDrive-x/_f`, tcc: true },
+  OneDrive: { provider: 'oneDrive', basePath: `${HOME}/Library/CloudStorage/OneDrive-x/_f`, tcc: true },
+  Box: { provider: 'box', basePath: `${HOME}/Library/CloudStorage/Box-x/_f`, tcc: true },
+  PCloud: { provider: 'pCloud', basePath: `${HOME}/Library/CloudStorage/pCloud/_f`, tcc: true },
+  Nextcloud: { provider: 'nextcloud', basePath: `${HOME}/Library/CloudStorage/Nextcloud-x/_f`, tcc: true },
+  SynologyDrive: { provider: 'synologyDrive', basePath: `${HOME}/Library/CloudStorage/SynologyDrive-x/_f`, tcc: true },
+  Tresorit: { provider: 'tresorit', basePath: `${HOME}/Library/CloudStorage/Tresorit/_f`, tcc: true },
+  ProtonDrive: { provider: 'protonDrive', basePath: `${HOME}/Library/CloudStorage/ProtonDrive-x/_f`, tcc: true },
+  Sync: { provider: 'sync', basePath: `${HOME}/Library/CloudStorage/Sync-x/_f`, tcc: true },
+  Egnyte: { provider: 'egnyte', basePath: `${HOME}/Library/CloudStorage/Egnyte-x/_f`, tcc: true },
+  MacDroid: { provider: 'macDroid', basePath: `${HOME}/Library/CloudStorage/MacDroid-x/_f`, tcc: true },
+  GenericCloudStorage: {
+    provider: 'genericCloudStorage',
+    basePath: `${HOME}/Library/CloudStorage/Unknown-x/_f`,
+    tcc: true,
+  },
+  ICloud: { provider: 'iCloud', basePath: `${HOME}/Library/Mobile Documents/com~apple~CloudDocs/_f`, tcc: true },
+  PCloudFuse: { provider: 'pCloudFuse', basePath: '/Volumes/pCloudDrive/_f', tcc: false },
+  VeraCrypt: { provider: 'veraCrypt', basePath: '/Volumes/veracrypt1/_f', tcc: false },
+  CmVolumes: { provider: 'cmVolumes', basePath: `${HOME}/.CMVolumes/MyMount/_f`, tcc: false },
+}
+
+/** Compose the FE message for a provider×category golden entry. */
+function providerMessage(spec: ProviderSpec, cat: ProviderCategory): FriendlyErrorMessage {
+  // Base reason per category, mirroring the snapshot drivers.
+  let base: ListingErrorReason
+  if (cat === 'transient') base = { reason: 'connectionTimedOut' }
+  else if (cat === 'needs_action')
+    base = spec.tcc
+      ? { reason: 'tccRestricted', path: spec.basePath }
+      : { reason: 'permissionDenied', path: spec.basePath }
+  else base = { reason: 'ioSerious', path: spec.basePath, osMessage: 'x' }
+
+  const message = getListingErrorMessage(base)
+  // Provider enrichment overrides only the suggestion.
+  return { ...message, suggestion: getProviderSuggestion(spec.provider, cat) }
+}
+
+export function feMessage(key: string): FriendlyErrorMessage {
+  if (key.startsWith('errno:')) {
+    const errno = Number(key.slice('errno:'.length))
+    return getListingErrorMessage(ERRNO_REASON[errno])
+  }
+  if (key.startsWith('git:')) {
+    return getGitErrorMessage(GIT_KIND[key])
+  }
+  if (key.startsWith('provider:')) {
+    const [, name, cat] = key.split(':')
+    return providerMessage(PROVIDER_SPEC[name], cat as ProviderCategory)
+  }
+  if (key === 'emptyRoot:icloud') {
+    return getListingErrorMessage({ reason: 'emptyRootICloud' })
+  }
+  return getListingErrorMessage(TYPED_REASON[key])
+}
