@@ -189,6 +189,14 @@ func (c commit) message() string {
 	return c.Subject + "\n\n" + c.Body + "\n"
 }
 
+// landedMeanwhile reports whether the branch reached `origin/main` after this run's start check
+// let it through: nothing is left past `origin/main`. Another land of the same branch finished in
+// between (every worktree shares the `origin/main` ref), so this run tidies up like any landed
+// branch. Opening a PR here would ask GitHub for one with a blank title.
+func landedMeanwhile(commits []commit) bool {
+	return len(commits) == 0
+}
+
 // prTitle names the PR after the branch's oldest commit, the one that says what the branch is for.
 func prTitle(commits []commit) string {
 	if len(commits) == 0 {

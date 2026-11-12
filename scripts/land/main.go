@@ -226,6 +226,10 @@ func landOnce(r runner, cfg config) error {
 	if err != nil {
 		return err
 	}
+	if landedMeanwhile(commits) {
+		say("%s reached origin/main while this run was starting (another land of it finished), so there is nothing left to land.", state.branch)
+		return finish(r, state.branch)
+	}
 	if cfg.squash && needsSquash(commits, cfg.message) {
 		if err := squash(r, commits, cfg.message); err != nil {
 			return err

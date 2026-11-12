@@ -73,13 +73,15 @@ than characters however GitHub counts them, so the fallback is never one charact
 
 Each run reads the branch and GitHub and picks up from there (`nextStartStep`, `ciVerdict`): an already-pushed branch
 isn't pushed again, an open PR is reused, a `-squash` re-run on one commit is a no-op (a fresh SHA would restart CI),
-and a branch already on `origin/main` skips to syncing `main` and deleting the remote branch. A re-run whose HEAD is
-already origin's branch skips the rebase while GitHub can merge its PR (`pushedAndMergeable`): rebasing would push a new
-head and throw away a land run already going (PR #992, 2026-11-05). The land then makes a merge commit; `-squash` always
-rebases, since its soft reset onto a moved `main` would revert `main`'s new commits. The pre-push hook may commit a
-formatting fix and stop that push; `pushBranch` then pushes once more with the fix on top. Untracked files don't count
-as dirty: they can't change what lands, and the main clone, where `release.sh` lands its release commit from, often has
-some.
+and a branch already on `origin/main` skips to syncing `main` and deleting the remote branch. The same holds when the
+branch gets there after the start check (`landedMeanwhile`): a second land of one branch, started while the first was
+about to push, shares its `origin/main` ref and so finds no commits left. It tidies up; without the guard it asked
+GitHub for a PR with a blank title (PR #1133, 2026-11-12). A re-run whose HEAD is already origin's branch skips the
+rebase while GitHub can merge its PR (`pushedAndMergeable`): rebasing would push a new head and throw away a land run
+already going (PR #992, 2026-11-05). The land then makes a merge commit; `-squash` always rebases, since its soft reset
+onto a moved `main` would revert `main`'s new commits. The pre-push hook may commit a formatting fix and stop that push;
+`pushBranch` then pushes once more with the fix on top. Untracked files don't count as dirty: they can't change what
+lands, and the main clone, where `release.sh` lands its release commit from, often has some.
 
 The remote branch goes once `origin/main` holds all of it (`deleteLandedBranch`), whether it landed by fast-forward or
 as a merge commit's parent. It asks `main`, never the local HEAD: an agent that keeps committing in its worktree while

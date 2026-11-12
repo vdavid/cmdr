@@ -775,3 +775,15 @@ func TestRemoteRejection(t *testing.T) {
 		}
 	}
 }
+
+// Two lands of one branch at once: the first lands between the second's start check and its PR
+// step, and every worktree shares `origin/main`, so the second finds nothing left to land. It
+// must finish like any landed branch, never ask GitHub for a PR with no title.
+func TestLandedMeanwhile(t *testing.T) {
+	if !landedMeanwhile(nil) {
+		t.Error("no commits past origin/main means the branch landed since this run started")
+	}
+	if landedMeanwhile([]commit{first}) {
+		t.Error("a commit past origin/main is still to land")
+	}
+}
