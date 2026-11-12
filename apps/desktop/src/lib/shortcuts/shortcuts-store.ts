@@ -13,7 +13,7 @@ import { resolveStorePath } from '#lib/settings/store-path.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { pluralize } from '#lib/utils/pluralize.js'
 import { toCanonicalShortcut, typingRefusal } from './key-capture'
-import { firstLiveShortcut, type BindingReader } from './binding-priority'
+import { firstLiveShortcut, liveShortcuts, type BindingReader } from './binding-priority'
 
 const log = getAppLogger('shortcuts')
 
@@ -709,6 +709,15 @@ const bindingReader: BindingReader = {
  */
 export function getMenuShortcut(commandId: string): string {
   return firstLiveShortcut(bindingReader, commandId) ?? ''
+}
+
+/**
+ * The keys that run a command: its effective shortcuts minus any default another command's user
+ * binding shadows (`binding-priority.ts`). What every hint shows (chips, tooltips, the palette,
+ * the `{combo}` in a message), so none names a key that runs something else. A fresh array.
+ */
+export function getLiveShortcuts(commandId: string): string[] {
+  return liveShortcuts(bindingReader, commandId)
 }
 
 // What each menu item was last told. A never-told item still carries the key the bar

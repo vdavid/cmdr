@@ -17,7 +17,7 @@ const {
   getSnapshotSpy,
   getCommonParentPathSpy,
   pasteClipboardContentAsFileSpy,
-  getEffectiveShortcutsSpy,
+  getLiveShortcutsSpy,
   logErrorSpy,
   getSelectionSnapshotSpy,
 } = vi.hoisted(() => ({
@@ -32,7 +32,7 @@ const {
   getSnapshotSpy: vi.fn<(id: string) => { volumeId: string } | undefined>(),
   getCommonParentPathSpy: vi.fn<() => string>(),
   pasteClipboardContentAsFileSpy: vi.fn<(deps: { onNothingCreated: () => void }) => Promise<void>>(),
-  getEffectiveShortcutsSpy: vi.fn<(commandId: string) => string[]>(),
+  getLiveShortcutsSpy: vi.fn<(commandId: string) => string[]>(),
   logErrorSpy: vi.fn(),
   getSelectionSnapshotSpy:
     vi.fn<
@@ -103,9 +103,9 @@ vi.mock('#lib/stores/volume-store.svelte.js', () => ({ getVolumes: () => volumeS
 // The refusal toasts NAME the key bound to `file.copy` / `file.move`, which is
 // why this is a spy rather than the real store: a test can rebind one and watch
 // the sentence follow. The display form equals the canonical one for these combos
-// (no ⌫-style glyphs), so the stub hands the binding back as is.
+// (no ⌫-style glyphs), so the stub hands the live key back as is.
 vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', () => ({
-  shortcutAsText: (commandId: string) => getEffectiveShortcutsSpy(commandId)[0],
+  shortcutAsText: (commandId: string) => getLiveShortcutsSpy(commandId)[0],
 }))
 
 vi.mock('#lib/logging/logger.js', () => ({
@@ -189,7 +189,7 @@ beforeEach(() => {
   // A snapshot of a boot-disk search unless a test says otherwise.
   getSnapshotSpy.mockReturnValue({ volumeId: 'root' })
   // The shipped defaults, unless a test rebinds one.
-  getEffectiveShortcutsSpy.mockImplementation((commandId) => (commandId === 'file.move' ? ['F6'] : ['F5']))
+  getLiveShortcutsSpy.mockImplementation((commandId) => (commandId === 'file.move' ? ['F6'] : ['F5']))
 })
 
 describe('copyToClipboard', () => {
@@ -336,7 +336,7 @@ describe('copyToClipboard', () => {
   it('names the key the user actually bound, so a rebound copy command is what the toast says', async () => {
     // The whole point of reading the binding live: someone who moved copy off F5
     // must not be told to press F5.
-    getEffectiveShortcutsSpy.mockImplementation((commandId) => (commandId === 'file.copy' ? ['⌘⇧C'] : ['F6']))
+    getLiveShortcutsSpy.mockImplementation((commandId) => (commandId === 'file.copy' ? ['⌘⇧C'] : ['F6']))
     const access = buildAccess({ volumeId: 'mtp-device-1' })
 
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
@@ -348,7 +348,7 @@ describe('copyToClipboard', () => {
   })
 
   it('falls back to the default key when the copy command has nothing bound', async () => {
-    getEffectiveShortcutsSpy.mockReturnValue([])
+    getLiveShortcutsSpy.mockReturnValue([])
     const access = buildAccess({ volumeId: 'mtp-device-1' })
 
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()

@@ -30,18 +30,18 @@ vi.mock('#lib/file-explorer/quick-look/quick-look-state.svelte.js', () => ({
 }))
 vi.mock('#lib/settings/index.js', () => ({ getSetting: vi.fn(() => 100), setSetting: vi.fn() }))
 vi.mock('#lib/shortcuts/index.js', () => ({
-  getEffectiveShortcuts: vi.fn(() => []),
+  getLiveShortcuts: vi.fn(() => []),
 }))
 // The zoom toast reads its reset key through `shortcutAsText`; route it to the stub above.
 vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async () => {
-  const { getEffectiveShortcuts } = await import('#lib/shortcuts/index.js')
-  return { shortcutAsText: (id: string) => getEffectiveShortcuts(id)[0] }
+  const { getLiveShortcuts } = await import('#lib/shortcuts/index.js')
+  return { shortcutAsText: (id: string) => getLiveShortcuts(id)[0] }
 })
 
 import { addToast } from '#lib/ui/toast/index.js'
 import { addFavorite } from '#lib/tauri-commands/index.js'
 import { getSetting } from '#lib/settings/index.js'
-import { getEffectiveShortcuts } from '#lib/shortcuts/index.js'
+import { getLiveShortcuts } from '#lib/shortcuts/index.js'
 import { miscHandlers } from './misc-handlers'
 import { tabHandlers } from './tab-handlers'
 import { fileHandlers } from './file-handlers'
@@ -66,7 +66,7 @@ function callZoom(id: 'view.zoom.set75' | 'view.zoom.set100' | 'view.zoom.set125
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(getSetting).mockReturnValue(100)
-  vi.mocked(getEffectiveShortcuts).mockReturnValue([])
+  vi.mocked(getLiveShortcuts).mockReturnValue([])
 })
 
 describe('command-handler toast copy parity', () => {
@@ -115,7 +115,7 @@ describe('command-handler toast copy parity', () => {
 
   it('zoom increase with a bound reset shortcut', () => {
     vi.mocked(getSetting).mockReturnValue(100)
-    vi.mocked(getEffectiveShortcuts).mockReturnValue(['⌘0'])
+    vi.mocked(getLiveShortcuts).mockReturnValue(['⌘0'])
     callZoom('view.zoom.set125')
     expect(mockedToast).toHaveBeenCalledWith('Zoom increased to 125%. You can reset the zoom level to 100% by ⌘0.', {
       level: 'info',
@@ -125,7 +125,7 @@ describe('command-handler toast copy parity', () => {
 
   it('zoom decrease with no reset shortcut (menu hint)', () => {
     vi.mocked(getSetting).mockReturnValue(100)
-    vi.mocked(getEffectiveShortcuts).mockReturnValue([])
+    vi.mocked(getLiveShortcuts).mockReturnValue([])
     callZoom('view.zoom.set75')
     expect(mockedToast).toHaveBeenCalledWith(
       'Zoom decreased to 75%. You can reset the zoom level to 100% at View > Zoom > 100%.',

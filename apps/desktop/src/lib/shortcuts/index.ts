@@ -20,6 +20,7 @@ export {
 export {
   initializeShortcuts,
   getEffectiveShortcuts,
+  getLiveShortcuts,
   getDefaultShortcuts,
   isShortcutModified,
   setShortcut,

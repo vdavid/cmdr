@@ -29,8 +29,9 @@
 /** The raw readers: each hands back a binding as text (or a list of them). */
 const RAW_READERS = new Set([
   'getEffectiveShortcuts',
+  'getLiveShortcuts',
   'getDefaultShortcuts',
-  'getEffectiveShortcutsReactive',
+  'getLiveShortcutsReactive',
   'getFirstShortcutReactive',
   'getFirstShiftShortcutReactive',
   'toDisplayShortcut',

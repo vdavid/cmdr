@@ -31,7 +31,7 @@ vi.mock('#lib/settings/settings-window.js', () => ({
 vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
   commandHasShortcut: (id: string) => id === 'file.quickLook',
-  getEffectiveShortcutsReactive: (id: string) => (id === 'file.quickLook' ? ['⇧Space'] : []),
+  getLiveShortcutsReactive: (id: string) => (id === 'file.quickLook' ? ['⇧Space'] : []),
 }))
 
 describe('QuickLookHintToastContent', () => {

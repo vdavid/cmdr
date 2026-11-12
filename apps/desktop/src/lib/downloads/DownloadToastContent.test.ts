@@ -41,7 +41,7 @@ vi.mock('./downloads-toast-collapsed', () => ({
 vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
   commandHasShortcut: (id: string) => id === 'downloads.goToLatest' && inAppBinding.value !== null,
-  getEffectiveShortcutsReactive: (id: string) =>
+  getLiveShortcutsReactive: (id: string) =>
     id === 'downloads.goToLatest' && inAppBinding.value !== null ? [inAppBinding.value] : [],
 }))
 

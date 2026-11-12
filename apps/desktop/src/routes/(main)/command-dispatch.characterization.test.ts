@@ -35,7 +35,7 @@ const m = vi.hoisted(() => ({
   // Zoom arms read a number (`appearance.textSize`), `view.showHidden` a boolean.
   getSetting: vi.fn<(key: string) => number | boolean>(() => 100),
   setSetting: vi.fn<(...a: unknown[]) => void>(),
-  getEffectiveShortcuts: vi.fn<(id: string) => string[]>(() => []),
+  getLiveShortcuts: vi.fn<(id: string) => string[]>(() => []),
   openSettingsWindow: vi.fn(() => Promise.resolve()),
   openShortcutsWindow: vi.fn(() => Promise.resolve()),
   openDebugLog: vi.fn(() => Promise.resolve()),
@@ -73,7 +73,7 @@ const {
   addToast,
   getSetting,
   setSetting,
-  getEffectiveShortcuts,
+  getLiveShortcuts,
   openSettingsWindow,
   openShortcutsWindow,
   openDebugLog,
@@ -136,7 +136,7 @@ vi.mock('#lib/settings/index.js', () => ({
 // `showZoomToast` reads the reset shortcut. Default: no shortcut bound (menu hint).
 vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
-  shortcutAsText: (id: string) => m.getEffectiveShortcuts(id)[0],
+  shortcutAsText: (id: string) => m.getLiveShortcuts(id)[0],
 }))
 
 vi.mock('#lib/settings/settings-window.js', () => ({
@@ -223,7 +223,7 @@ beforeEach(() => {
   getVolumeId.mockReturnValue('local')
   getPanePath.mockReturnValue('/Users/test')
   getSetting.mockReturnValue(100)
-  getEffectiveShortcuts.mockReturnValue([])
+  getLiveShortcuts.mockReturnValue([])
   readClipboardText.mockResolvedValue('')
   quickLookState.isOpen = false
 })
@@ -541,7 +541,7 @@ describe('characterization — zoom arms (toast copy verbatim)', () => {
 
   it('view.zoom.in clamps to 150 and toasts the increase message (menu hint, no shortcut)', async () => {
     getSetting.mockReturnValue(100)
-    getEffectiveShortcuts.mockReturnValue([])
+    getLiveShortcuts.mockReturnValue([])
     await handleCommandExecute('view.zoom.in', makeCtx({}))
     expect(setSetting).toHaveBeenCalledExactlyOnceWith('appearance.textSize', 110)
     expect(addToast).toHaveBeenCalledExactlyOnceWith(
@@ -552,7 +552,7 @@ describe('characterization — zoom arms (toast copy verbatim)', () => {
 
   it('view.zoom.in uses the bound shortcut hint when one exists', async () => {
     getSetting.mockReturnValue(100)
-    getEffectiveShortcuts.mockReturnValue(['⌘+'])
+    getLiveShortcuts.mockReturnValue(['⌘+'])
     await handleCommandExecute('view.zoom.in', makeCtx({}))
     expect(addToast).toHaveBeenCalledExactlyOnceWith(
       'Zoom increased to 110%. You can reset the zoom level to 100% by ⌘+.',
@@ -576,7 +576,7 @@ describe('characterization — zoom arms (toast copy verbatim)', () => {
 
   it('view.zoom.out clamps to 75 and toasts the decrease message', async () => {
     getSetting.mockReturnValue(100)
-    getEffectiveShortcuts.mockReturnValue([])
+    getLiveShortcuts.mockReturnValue([])
     await handleCommandExecute('view.zoom.out', makeCtx({}))
     expect(setSetting).toHaveBeenCalledExactlyOnceWith('appearance.textSize', 90)
     expect(addToast).toHaveBeenCalledExactlyOnceWith(

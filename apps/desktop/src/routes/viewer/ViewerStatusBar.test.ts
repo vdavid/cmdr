@@ -20,7 +20,7 @@ function bindingsOf(id: string): string[] {
 vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
   commandHasShortcut: (id: string) => bindingsOf(id).length > 0,
-  getEffectiveShortcutsReactive: bindingsOf,
+  getLiveShortcutsReactive: bindingsOf,
   shortcutAsText: (id: string) => bindingsOf(id)[0],
 }))
 

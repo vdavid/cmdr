@@ -744,6 +744,17 @@ describe('shortcuts-store menu accelerators follow the user-binding rule', () =>
     expect(await pushesFor('tab.new')).toEqual([rest[0] ?? '', newTabKey])
   })
 
+  it('leaves a shadowed default out of the live keys every hint reads', async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    const [newTabKey, ...rest] = store.getDefaultShortcuts('tab.new')
+
+    store.setShortcut('view.showHidden', 0, newTabKey)
+    expect(store.getLiveShortcuts('tab.new')).toEqual(rest)
+    expect(store.getEffectiveShortcuts('tab.new')).toEqual([newTabKey, ...rest])
+    expect(store.getLiveShortcuts('view.showHidden')).toEqual([newTabKey])
+  })
+
   it('pushes a shadowed menu item at load, though its own command was never customized', async () => {
     disk.set('shortcut:view.showHidden', [getDefaultShortcuts('tab.new')[0]])
     const store = await loadStore()

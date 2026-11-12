@@ -62,7 +62,15 @@ export function isShadowedDefault(reader: BindingReader, commandId: string, comb
   return false
 }
 
-/** The first of `commandId`'s effective shortcuts no user binding shadows: the one a menu shows. */
+/**
+ * `commandId`'s effective shortcuts minus the ones a user binding shadows: the keys that run it,
+ * so the only ones a hint may show.
+ */
+export function liveShortcuts(reader: BindingReader, commandId: string): string[] {
+  return reader.effective(commandId).filter((combo) => combo !== '' && !isShadowedDefault(reader, commandId, combo))
+}
+
+/** The first of `commandId`'s live shortcuts: the one a menu, a chip, or a tooltip shows. */
 export function firstLiveShortcut(reader: BindingReader, commandId: string): string | undefined {
-  return reader.effective(commandId).find((combo) => combo !== '' && !isShadowedDefault(reader, commandId, combo))
+  return liveShortcuts(reader, commandId).at(0)
 }

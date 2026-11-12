@@ -35,8 +35,8 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
   to `[]`, that suppresses a default-bound command); `['⌘X','']` → `['⌘X']`.
 - **A captured combo conflicts only when scopes overlap** (one ancestry chain contains the other), via the static
   `scopeHierarchy` — hand-edit it to add a scope. One winner per combo: a user's own binding beats a default
-  (`binding-priority.ts`, for every reader: map, matchers, menus), then deepest scope, then registry order. DETAILS §
-  Conflict warnings are not errors.
+  (`binding-priority.ts`, for every reader: map, matchers, menus, hints), then deepest scope, then registry order.
+  DETAILS § Conflict warnings are not errors.
 - **`menuCommands` (in `shortcuts-store.ts`) must stay in sync with the Rust menu items.** The set-equality test in
   `commands/rust-command-id-drift.test.ts` fails on a missing item (stale accelerator after a rebind) or an undocumented
   excuse.

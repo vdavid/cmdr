@@ -1,21 +1,24 @@
 /**
  * Reactive view over the shortcuts store, for long-lived UI like tooltips and hints.
  *
- * `getEffectiveShortcuts` is a plain function over a module-level Map, so a component
- * that reads it once goes stale when the user rebinds a shortcut in Settings. This
+ * The store's readers are plain functions over a module-level Map, so a component
+ * that reads one once goes stale when the user rebinds a shortcut in Settings. This
  * wrapper bumps a `$state` version on every store change (including the initial
  * custom-shortcut load in `initializeShortcuts`), so `$derived` consumers re-read.
  *
- * Three readers, same version tick:
- *   - `getEffectiveShortcutsReactive(commandId)` — the full effective list (the palette
- *     shows up to three).
- *   - `getFirstShortcutReactive(commandId)` — `[0]` of that list (what menus and inline
+ * Every reader shows only LIVE keys (`getLiveShortcuts`): a default another command's
+ * user binding shadows runs that other command (`binding-priority.ts`), so a hint naming
+ * it would lie. Three readers, same version tick:
+ *   - `getLiveShortcutsReactive(commandId)` — every live key (the palette shows up to
+ *     three).
+ *   - `getFirstShortcutReactive(commandId)` — the first live key (what menus and inline
  *     chips show).
- *   - `getFirstShiftShortcutReactive(commandId)` — the first SHIFTED binding (what the
+ *   - `getFirstShiftShortcutReactive(commandId)` — the first live SHIFTED key (what the
  *     F-key bar's Shift row shows).
  *
  * Those three serve the binding surfaces (`ShortcutChip`, the F-key bar, the palette via
- * the chip). Feature code reads through two more, enforced by `cmdr/no-raw-shortcut-text`:
+ * the chip). Feature code reads through two more, enforced by `cmdr/no-raw-shortcut-text`,
+ * and they answer for live keys too:
  *   - `commandHasShortcut(commandId)`, the yes/no a sentence around a chip needs.
  *   - `shortcutAsText(commandId, sink)`, for a sink that can only hold text.
  *
@@ -23,7 +26,7 @@
  * everything reading them renders the string to a user. Anything comparing or
  * dispatching a combo must call `getEffectiveShortcuts` instead.
  */
-import { getEffectiveShortcuts, onShortcutChange } from './shortcuts-store'
+import { getLiveShortcuts, onShortcutChange } from './shortcuts-store'
 import { comboHasShift, toDisplayShortcut } from './key-capture'
 import type { CommandId } from '#lib/commands/command-ids.js'
 import { dependOn } from '#lib/utils/reactivity.js'
@@ -41,29 +44,34 @@ function ensureSubscribed(): void {
   })
 }
 
-/**
- * All effective shortcuts for a command in display form, reactively. Returns a fresh
- * array on every call (`getEffectiveShortcuts` copies the store's data), so consumers
- * can't mutate the store — don't cache the reference. Empty when the command has no
- * binding.
- */
-export function getEffectiveShortcutsReactive(commandId: CommandId): string[] {
+/** A command's live keys in canonical form, subscribing the caller to shortcut changes. */
+function liveReactive(commandId: string): string[] {
   ensureSubscribed()
   dependOn(version) // Subscribe $derived/$effect consumers to shortcut changes
-  return getEffectiveShortcuts(commandId).map(toDisplayShortcut)
+  return getLiveShortcuts(commandId)
 }
 
 /**
- * The first effective shortcut for a command (the one menus show) in display form,
- * reactively. Returns `undefined` when the command has no binding.
+ * Every live shortcut for a command in display form, reactively. A fresh array on every
+ * call, so consumers can't mutate the store — don't cache the reference. Empty when no
+ * key runs the command.
+ */
+export function getLiveShortcutsReactive(commandId: CommandId): string[] {
+  return liveReactive(commandId).map(toDisplayShortcut)
+}
+
+/**
+ * The first live shortcut for a command (the one menus show) in display form,
+ * reactively. `undefined` when no key runs the command.
  */
 export function getFirstShortcutReactive(commandId: string): string | undefined {
-  return getEffectiveShortcutsReactive(commandId as CommandId)[0]
+  const first = liveReactive(commandId).at(0)
+  return first === undefined ? undefined : toDisplayShortcut(first)
 }
 
 /**
- * The first effective shortcut for a command that carries Shift, in display form,
- * reactively. `undefined` when the command has no shifted binding.
+ * The first live shortcut for a command that carries Shift, in display form,
+ * reactively. `undefined` when the command has no shifted live key.
  *
  * Deliberately no fallback to the unshifted binding: in the F-key bar's Shift row a
  * chip is a claim about what Shift+<key> does, and `file.rename` (bound to both `F2`
@@ -71,19 +79,17 @@ export function getFirstShortcutReactive(commandId: string): string | undefined 
  * label alone, still clickable — beats a wrong one.
  */
 export function getFirstShiftShortcutReactive(commandId: CommandId): string | undefined {
-  ensureSubscribed()
-  dependOn(version) // Subscribe $derived/$effect consumers to shortcut changes
-  const shifted = getEffectiveShortcuts(commandId).find(comboHasShift)
+  const shifted = liveReactive(commandId).find(comboHasShift)
   return shifted === undefined ? undefined : toDisplayShortcut(shifted)
 }
 
 /**
- * Whether a command has a binding right now, reactively. The yes/no a sentence around a
- * `<ShortcutChip commandId>` needs: the chip renders nothing when unbound, so the caller
- * picks the wording that doesn't name a key.
+ * Whether a key runs a command right now, reactively. The yes/no a sentence around a
+ * `<ShortcutChip commandId>` needs: the chip renders nothing when no key is live, so the
+ * caller picks the wording that doesn't name a key.
  */
 export function commandHasShortcut(commandId: CommandId): boolean {
-  return getEffectiveShortcutsReactive(commandId).length > 0
+  return liveReactive(commandId).length > 0
 }
 
 /**
@@ -102,11 +108,11 @@ export function commandHasShortcut(commandId: CommandId): boolean {
 export type ShortcutTextSink = 'announcement' | 'ariaLabel' | 'tooltip' | 'toast' | 'errorMessage' | 'menuItem'
 
 /**
- * A command's first binding as display text (`⌘⌫`), reactively, for a sink that can only
- * hold text; `undefined` when unbound. The ONE way feature code reads a shortcut as text
+ * A command's first live key as display text (`⌘⌫`), reactively, for a sink that can only
+ * hold text; `undefined` when no key runs it. The ONE way feature code reads a shortcut as text
  * (`cmdr/no-raw-shortcut-text`): naming the sink keeps each exception explicit and
  * searchable, and on screen a shortcut renders through `ShortcutChip`.
  */
 export function shortcutAsText(commandId: CommandId, _sink: ShortcutTextSink): string | undefined {
-  return getEffectiveShortcutsReactive(commandId)[0]
+  return getFirstShortcutReactive(commandId)
 }

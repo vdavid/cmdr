@@ -68,7 +68,7 @@ ruleTester.run('no-raw-shortcut-text', rule, {
     },
     // A renamed import is still the raw reader.
     {
-      code: `import { getEffectiveShortcutsReactive as shortcutsOf } from '#lib/shortcuts/reactive-shortcuts.svelte.js'`,
+      code: `import { getLiveShortcutsReactive as shortcutsOf } from '#lib/shortcuts/reactive-shortcuts.svelte.js'`,
       filename: 'src/lib/command-palette/CommandPalette.svelte',
       errors: [{ messageId: 'rawShortcutText' }],
     },

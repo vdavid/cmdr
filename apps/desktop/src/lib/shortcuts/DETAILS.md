@@ -623,10 +623,13 @@ to whichever scope is deeper, silently.
   registers, and a popup labels, the first key no user binding shadows (`getMenuShortcut`, `boundShortcuts`). A change
   to one command re-pushes every menu item whose key it shadowed or freed (`notifyListeners`), and a rebuild re-pushes
   them too (`resyncMenuAccelerators`). On macOS a still-registered shadowed accelerator would fire the default's command
-  before the webview saw the key, so the menu half isn't cosmetic.
+  before the webview saw the key, so the menu half isn't cosmetic. Every hint shows live keys only (`getLiveShortcuts`,
+  the reactive readers built on it): palette rows, chips, tooltips, toasts, and a message's `{combo}`, so a command with
+  no live key shows none.
 - **Settings still lists it as a conflict** (`conflict-detector.ts` is unchanged): both commands hold the combo, and the
   warning's "Keep both" now means "yours runs; the other keeps it as a dormant default", which comes back when the
-  user's binding goes. Display surfaces (palette hints, chips, the help window) still show the dormant default.
+  user's binding goes. The two surfaces that list what a command HOLDS (the Settings rows and the help window) still
+  show the dormant default.
 
 **Sibling scopes don't conflict, but they still share one winner.** `Main window/File list` and `Main window/Servers`
 are siblings, so `scopesOverlap` says no clash and `registry-conflicts.test.ts` stays quiet — yet the dispatch map is
