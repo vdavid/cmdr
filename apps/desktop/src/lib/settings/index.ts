@@ -55,6 +55,7 @@ export {
   isModified,
   isExplicitlySet,
   isOverriddenByPolicy,
+  unofferedSettingValue,
   onSettingChange,
   onSpecificSettingChange,
   resetSetting,

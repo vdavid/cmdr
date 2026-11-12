@@ -8,6 +8,7 @@
  */
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import type { LockedSetting, ManagedPolicyView } from '#lib/ipc/bindings.js'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { getDefaultValue } from './settings-registry'
 
 const disk = vi.hoisted(() => new Map<string, unknown>())
@@ -96,6 +97,10 @@ beforeEach(() => {
   disk.clear()
   vi.resetModules()
 })
+
+// These cases store and pin `ai.provider` = `local`, which only reads back where local AI exists
+// (`settings-store.unoffered.test.ts` has the other side).
+beforeEach(() => withCapabilities('localAi'))
 
 describe('settings under a managed policy', () => {
   it('reads a fixed lock over a stored value and writes nothing', async () => {

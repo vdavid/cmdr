@@ -427,6 +427,17 @@ pub struct ConfigureAiOutcome {
     pub secret_store_error: Option<super::api_keys::AiApiKeyError>,
 }
 
+/// The provider this build can honor. `local` on a build that ships no model runtime (a
+/// `settings.json` carried over from a Mac) is `off`: nothing can start a server there, so holding
+/// `local` would answer every AI call with "start it in settings" and no setting to start it in.
+/// The frontend's settings store reads the value the same way (`unofferedOption`), so the two agree.
+fn honored_provider(provider: String, local_ai_offered: bool) -> String {
+    match provider.as_str() {
+        "local" if !local_ai_offered => "off".to_string(),
+        _ => provider,
+    }
+}
+
 /// Stores provider + context size + OpenAI config in manager state.
 /// If provider is `local` and model is installed and hardware is supported, starts the server
 /// in a background task. If provider is NOT `local` and a server is running, stops it.
@@ -445,6 +456,7 @@ pub fn configure_ai<R: Runtime>(
     cloud_model: String,
     cloud_requires_api_key: bool,
 ) -> Result<ConfigureAiOutcome, String> {
+    let provider = honored_provider(provider, crate::platform::capabilities().local_ai);
     log::debug!(
         "AI configure: provider={provider}, context_size={context_size}, cloud_provider={cloud_provider_id}, base_url={base_url}, model={cloud_model}, requires_api_key={cloud_requires_api_key}",
         base_url = LogPrivate::host(&cloud_base_url),

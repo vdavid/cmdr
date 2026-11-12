@@ -4429,6 +4429,7 @@ export type MessageKey =
   | 'settings.ai.provider.description'
   | 'settings.ai.provider.keywords'
   | 'settings.ai.provider.label'
+  | 'settings.ai.provider.localUnavailable'
   | 'settings.ai.provider.opt.cloud'
   | 'settings.ai.provider.opt.local'
   | 'settings.ai.provider.opt.off'

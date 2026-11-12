@@ -678,6 +678,15 @@ element and widen that signature — deliberately not done for an unused capabil
   scrolls to a row that isn't rendered is worse than no hit. A row that renders only where the OS offers a feature is
   fine: `needsCapability: '<capability>'` keeps it out of the index everywhere else (`searchable-rows.ts`, pinned by its
   test; the capabilities are `#lib/platform`'s).
+- **An enum OPTION takes it too.** `EnumOptionSource.needsCapability` marks an option only some OSes can honor
+  (`ai.provider`'s `local`). Where the capability is missing, a stored or organization-pinned value naming it READS as
+  the setting's default (`effectiveValue` in `settings-store.ts`), a write of it is refused (`validateSettingWrite`),
+  and the file keeps the value: a `settings.json` brought over from a Mac goes back to one unchanged. A load validates
+  without this on purpose, or the value would be dropped. Because the read is where it resolves, every reader of
+  `getSetting` (the section, `pushConfigToBackend`, Ask Cmdr's gate, the dialogs' AI affordances, `cmdr://settings`)
+  sees the same real state with no call-site change. `unofferedSettingValue(id)` answers what the store holds that this
+  OS can't honor, for the one line that says why: Settings > AI shows Off checked plus
+  `settings.ai.provider.localUnavailable`. Pinned by `settings-store.unoffered.test.ts`.
 - **Settings take the same flag.** `SettingDefinition.needsCapability` drops a setting from the index where this OS
   doesn't offer it (`buildSearchIndex` in `settings-search.ts`, pinned by `settings-search.test.ts`), for a setting
   whose section renders it only there. `buildSectionTree` skips it too, so a page whose every visible setting needs a

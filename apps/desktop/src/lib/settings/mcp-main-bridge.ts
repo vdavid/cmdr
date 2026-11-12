@@ -10,7 +10,7 @@
  */
 
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { getSettingDefinition, settingRendersHere, settingsRegistry, validateSettingValue } from './settings-registry'
+import { getSettingDefinition, settingRendersHere, settingsRegistry, validateSettingWrite } from './settings-registry'
 import { getSetting, setSetting, isModified } from './settings-store'
 import { MASKED, holdsMaskedPlaceholder, maskSecrets } from './setting-secret-mask'
 import type { SettingDefinition, SettingId, SettingsValues } from './types'
@@ -236,7 +236,7 @@ function describeSetting(settingId: string, value: unknown): Record<string, unkn
   const current: unknown = getSetting(settingId as SettingId)
   let invalid: string | null = null
   try {
-    validateSettingValue(settingId, value)
+    validateSettingWrite(settingId, value)
   } catch (error) {
     invalid = error instanceof Error ? error.message : String(error)
   }

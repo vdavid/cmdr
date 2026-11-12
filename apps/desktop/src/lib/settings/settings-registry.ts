@@ -79,6 +79,7 @@ function resolveOption(opt: EnumOptionSource | EnumOption): EnumOption {
     },
   }
   if (opt.icon !== undefined) out.icon = opt.icon
+  if (opt.needsCapability !== undefined) out.needsCapability = opt.needsCapability
   if (opt.descriptionKey !== undefined) {
     const descKey = opt.descriptionKey
     Object.defineProperty(out, 'description', { enumerable: true, get: () => tString(descKey) })
@@ -271,6 +272,27 @@ export interface SettingsSection {
   path: string[]
   subsections: SettingsSection[]
   settings: SettingDefinition[]
+}
+
+/**
+ * Whether `value` names an option of `id` that this OS doesn't offer (`needsCapability`): a real
+ * option, on a build that can't honor it. Asked at call time, since a test switches capabilities.
+ */
+export function unofferedOption(id: string, value: unknown): boolean {
+  const option = registryMap.get(id)?.constraints?.options?.find((candidate) => candidate.value === value)
+  return option?.needsCapability !== undefined && !hasCapability(option.needsCapability)
+}
+
+/**
+ * {@link validateSettingValue} for a write: also refuses an option this OS doesn't offer. A LOAD
+ * keeps such a value (the file may come from a Mac, and goes back to one), so it validates without
+ * this.
+ */
+export function validateSettingWrite(id: string, value: unknown): void {
+  validateSettingValue(id, value)
+  if (unofferedOption(id, value)) {
+    throw new SettingValidationError(id, `Option '${String(value)}' isn't offered on this OS`)
+  }
 }
 
 /**

@@ -19,6 +19,8 @@ export interface EnumOption {
   value: string | number
   label: string
   description?: string
+  /** The option exists only where this OS offers the capability (`unofferedOption`, `settings-registry.ts`). */
+  needsCapability?: Capability
   /** Optional Lucide glyph rendered before the label (toggle-group options only). */
   icon?: IconName
   lang?: string // BCP 47 tag of `label`'s language when it isn't the UI's (the language picker's endonyms)
@@ -42,6 +44,11 @@ export interface EnumOptionSource {
   value: string | number
   labelKey: MessageKey
   descriptionKey?: MessageKey
+  /**
+   * The option exists only where this OS offers the capability. Elsewhere a stored value naming
+   * it reads as the setting's default, and a write of it is refused (`settings-store.ts`).
+   */
+  needsCapability?: Capability
   /** Optional Lucide glyph rendered before the label (toggle-group options only). */
   icon?: IconName
 }

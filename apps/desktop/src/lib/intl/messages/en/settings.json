@@ -1456,6 +1456,11 @@
     "description": "AI provider option: run a model locally on-device. \"LLM\" = large language model; keep the abbreviation or use the locale's standard equivalent. Short toggle-button label.",
     "screenshot": "settings-ai-provider.png"
   },
+  "settings.ai.provider.localUnavailable": "{platform, select, windows {Your settings ask for “Local LLM”, which this PC can’t run, so AI is off.} other {Your settings ask for “Local LLM”, which this computer can’t run, so AI is off.}}",
+  "@settings.ai.provider.localUnavailable": {
+    "description": "A one-line note under the AI provider choice in Settings > AI > Provider, on Windows and Linux only. Shown when the saved settings name the provider option “Local LLM” (settings.ai.provider.opt.local; quote that label exactly as it is translated there), for example in a settings file brought over from a Mac, on a computer where Cmdr has no on-device model. Cmdr then treats AI as off, and “Off” is the option shown as selected. Calm and factual, one sentence; nothing is broken and there is nothing to fix. Each branch names the machine as its OS does: this PC on Windows, this computer on Linux. macOS never shows it.",
+    "screenshot": "settings-ai-provider.png"
+  },
   "settings.ai.provider.keywords": "ai, artificial intelligence, provider, cloud, local, off, model",
   "@settings.ai.provider.keywords": {
     "description": "Search keywords for the “Provider” setting (settings.ai.provider.label) in Settings > AI > Provider. What it does: picks what powers Cmdr’s AI features: a cloud service, a model on this Mac, or off. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."

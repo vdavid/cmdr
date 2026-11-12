@@ -5,6 +5,23 @@ use super::*;
 use crate::managed_policy::testing::{self, ALLOWED_CLOUD_AI_HOSTS, DISABLE_AI, DISABLE_CLOUD_AI};
 use crate::managed_policy::{ManagedAiRefusal, ManagedPolicy};
 
+// --- a provider this build can't honor ---
+
+#[test]
+fn local_on_a_build_with_no_model_runtime_is_off() {
+    assert_eq!(honored_provider("local".into(), false), "off");
+}
+
+#[test]
+fn every_other_provider_is_kept_as_configured() {
+    assert_eq!(honored_provider("local".into(), true), "local");
+    for provider in ["off", "cloud"] {
+        for offered in [true, false] {
+            assert_eq!(honored_provider(provider.into(), offered), provider);
+        }
+    }
+}
+
 // --- managed policy: decided before consent, key, and endpoint ---
 
 fn hosts(entries: &[&str]) -> ManagedPolicy {

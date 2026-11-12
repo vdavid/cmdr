@@ -6,7 +6,14 @@ import { load, type Store } from '@tauri-apps/plugin-store'
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
-import { getDefaultValue, getSettingDefinition, settingsRegistry, validateSettingValue } from './settings-registry'
+import {
+  getDefaultValue,
+  getSettingDefinition,
+  settingsRegistry,
+  unofferedOption,
+  validateSettingValue,
+  validateSettingWrite,
+} from './settings-registry'
 import { resolveStorePath } from './store-path'
 import { SCHEMA_VERSION, migrateSettings } from './settings-migrations'
 import { getAppLogger } from '#lib/logging/logger.js'
@@ -341,11 +348,28 @@ export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
 }
 
 /**
- * What `id` reads as: the organization's policy over what the store holds. The policy overlays, it
- * never replaces (nothing here writes), so removing the profile brings the person's value back.
+ * What `id` reads as: the organization's policy over what the store holds, then this OS over both.
+ * The policy overlays, it never replaces (nothing here writes), so removing the profile brings the
+ * person's value back. The same holds for an option this OS doesn't offer: it reads as the default
+ * here, and the file keeps it for the computer that has it.
  */
 function effectiveValue<K extends SettingId>(id: K): SettingsValues[K] {
-  return lockedValue(getSettingLock(id), storedValue(id)) as SettingsValues[K]
+  return offeredValue(id, lockedValue(getSettingLock(id), storedValue(id))) as SettingsValues[K]
+}
+
+/** `value`, or the default of `id` where `value` names an option this OS doesn't offer. */
+function offeredValue(id: SettingId, value: unknown): unknown {
+  return unofferedOption(id, value) ? getDefaultValue(id) : value
+}
+
+/**
+ * The value `id` holds (stored, or pinned by the organization) that this OS can't honor, so
+ * `getSetting` reads the default instead; `undefined` when it reads what it holds. For the one line
+ * that tells the person why their choice isn't the one in effect.
+ */
+export function unofferedSettingValue<K extends SettingId>(id: K): SettingsValues[K] | undefined {
+  const held = lockedValue(getSettingLock(id), storedValue(id))
+  return unofferedOption(id, held) ? (held as SettingsValues[K]) : undefined
 }
 
 /**
@@ -354,7 +378,7 @@ function effectiveValue<K extends SettingId>(id: K): SettingsValues[K] {
  * not write such a value unless the person picked it, or the policy's display becomes their choice.
  */
 export function isOverriddenByPolicy(id: SettingId): boolean {
-  return !isUnchanged(effectiveValue(id), storedValue(id))
+  return !isUnchanged(effectiveValue(id), offeredValue(id, storedValue(id)))
 }
 
 /** What the store holds for `id`, or its registry default: the value before any managed lock. */
@@ -376,8 +400,8 @@ function applyPolicyChange({ previous, next }: ManagedPolicyChange): void {
       continue
     }
     const stored = storedValue(id as SettingId)
-    const before = lockedValue(settingLockIn(previous, id), stored)
-    const after = lockedValue(settingLockIn(next, id), stored)
+    const before = offeredValue(id as SettingId, lockedValue(settingLockIn(previous, id), stored))
+    const after = offeredValue(id as SettingId, lockedValue(settingLockIn(next, id), stored))
     if (!isUnchanged(before, after)) {
       notifyListeners(id as SettingId, after as SettingsValues[SettingId])
     }
@@ -419,7 +443,7 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
   log.debug('setSetting({id}, {value})', { id, value })
 
   // Validate the value
-  validateSettingValue(id, value)
+  validateSettingWrite(id, value)
 
   // The organization's policy rules this value out. Its row is disabled and MCP refuses before
   // getting here (`managed_policy::refuses_write`), so this is the backstop, not the gate.
@@ -485,7 +509,7 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
  * where `setSetting`'s idempotency guard would skip both.
  */
 export function persistSettingFromRestrictedWindow<K extends SettingId>(id: K, value: SettingsValues[K]): void {
-  validateSettingValue(id, value)
+  validateSettingWrite(id, value)
   const valueChanged = !isUnchanged(settingsCache.get(id), value)
   settingsCache.set(id, value)
   explicitlySet.add(id)

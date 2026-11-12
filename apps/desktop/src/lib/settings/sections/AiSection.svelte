@@ -3,7 +3,13 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import { tooltip } from '#lib/tooltip/tooltip.js'
-    import { getSetting, setSetting, onSpecificSettingChange, type AiProvider } from '#lib/settings/index.js'
+    import {
+        getSetting,
+        setSetting,
+        onSpecificSettingChange,
+        unofferedSettingValue,
+        type AiProvider,
+    } from '#lib/settings/index.js'
     import { getAiRuntimeStatus, stopAiServer, type AiRuntimeStatus } from '#lib/tauri-commands/index.js'
     import { createShouldShow } from '#lib/settings/settings-search.js'
     import { getAppLogger } from '#lib/logging/logger.js'
@@ -34,6 +40,10 @@
 
     // Track current provider for conditional rendering
     let provider = $state<AiProvider>(getSetting('ai.provider'))
+    // The provider the settings hold that this OS can't run (`local` on a build with no local AI,
+    // from a settings file brought over from a Mac). The store reads it as `off`, so `provider`
+    // above is already the real state; this is only why, in one line under the row.
+    let unofferedProvider = $state(unofferedSettingValue('ai.provider'))
 
     // Event listeners cleanup
     const unlistenFns: Array<() => void> = []
@@ -51,6 +61,7 @@
         const unsubProvider = onSpecificSettingChange('ai.provider', (newValue) => {
             const oldProvider = provider
             provider = newValue
+            unofferedProvider = unofferedSettingValue('ai.provider')
             void handleProviderChange(oldProvider, provider)
         })
         unlistenFns.push(unsubProvider)
@@ -111,6 +122,13 @@
             : undefined,
     )
 
+    // The organization's line says more when both apply, so it wins.
+    const unofferedNoteId = 'settings-ai-provider-unoffered'
+    const unofferedNote = $derived(
+        unofferedProvider === 'local' && !managedNote ? tString('settings.ai.provider.localUnavailable') : undefined,
+    )
+    const providerNoteId = $derived(managedNote ? managedNoteId : unofferedNote ? unofferedNoteId : undefined)
+
     function optionDisabled(value: AiProvider): boolean {
         if (!lockAllowsWrite(lock, value)) return true
         return value === 'local' && !localAiSupported
@@ -146,7 +164,7 @@
                         class="provider-toggle"
                         role="radiogroup"
                         aria-label={tString('settings.ai.providerAria')}
-                        aria-describedby={providerLock.describedBy(managedNote ? managedNoteId : undefined)}
+                        aria-describedby={providerLock.describedBy(providerNoteId)}
                     >
                         <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke provider segmented row: options carry per-option tooltips and a disabled "local" state a plain RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                         <button
@@ -195,7 +213,9 @@
                     </div>
                 </SettingRow>
                 {#if managedNote}
-                    <p class="managed-note" id={managedNoteId}>{managedNote}</p>
+                    <p class="provider-note" id={managedNoteId}>{managedNote}</p>
+                {:else if unofferedNote}
+                    <p class="provider-note" id={unofferedNoteId}>{unofferedNote}</p>
                 {/if}
             </SectionCard>
         {/if}
@@ -222,7 +242,7 @@
 </SettingsSection>
 
 <style>
-    .managed-note {
+    .provider-note {
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);

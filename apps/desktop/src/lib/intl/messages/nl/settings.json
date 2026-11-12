@@ -1219,6 +1219,10 @@
   "@settings.ai.provider.opt.local": {
     "sourceHash": "6689271"
   },
+  "settings.ai.provider.localUnavailable": "{platform, select, windows {Your settings ask for “Local LLM”, which this PC can’t run, so AI is off.} other {Your settings ask for “Local LLM”, which this computer can’t run, so AI is off.}}",
+  "@settings.ai.provider.localUnavailable": {
+    "sourceHash": "5974157"
+  },
   "settings.ai.provider.keywords": "ai, kunstmatige intelligentie, aanbieder, cloud, lokaal, uit, model",
   "@settings.ai.provider.keywords": {
     "sourceHash": "ff6248d"

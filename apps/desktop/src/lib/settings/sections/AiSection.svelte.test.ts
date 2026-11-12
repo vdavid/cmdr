@@ -30,6 +30,8 @@ const stubs = vi.hoisted(() => {
   }
   return {
     settings: Object.create(null) as Record<string, unknown>,
+    // What the store holds that this OS can't honor (`unofferedSettingValue`), by setting id.
+    unoffered: Object.create(null) as Record<string, unknown>,
     // Several subscribers per id (the section AND each `SettingRow`'s reset affordance).
     listeners: new Map<string, Set<(value: unknown) => void>>(),
     consent: { accepted: false },
@@ -46,6 +48,7 @@ vi.mock('#lib/settings/index.js', async (importOriginal) => {
   return {
     ...actual,
     getSetting: (id: string) => stubs.settings[id] ?? '',
+    unofferedSettingValue: (id: string) => stubs.unoffered[id],
     setSetting: vi.fn((id: string, value: unknown) => {
       stubs.settings[id] = value
     }),
@@ -160,6 +163,7 @@ beforeEach(() => {
   stubs.listeners.clear()
   stubs.consent.accepted = false
   stubs.settings = Object.create(null) as Record<string, unknown>
+  stubs.unoffered = Object.create(null) as Record<string, unknown>
   stubs.settings['ai.provider'] = 'cloud'
   stubs.settings['ai.cloudProvider'] = 'openai'
   stubs.settings['ai.cloudProviderConfigs'] = '{}'
@@ -179,12 +183,50 @@ describe('the Local option in Settings > AI > Provider', () => {
     expect(providerOptions(target)).toEqual(['Off', 'Cloud AI', 'Local LLM'])
   })
 
-  it('is gone where it ships none, with its settings card', async () => {
+  /** A build with no local AI whose saved settings name Local: the store reads it as Off. */
+  function savedLocalOnABuildWithout(): void {
     withCapabilities()
-    stubs.settings['ai.provider'] = 'local'
+    stubs.settings['ai.provider'] = 'off'
+    stubs.unoffered['ai.provider'] = 'local'
+  }
+
+  function checkedOptions(target: HTMLElement): string[] {
+    return [...target.querySelectorAll('.provider-option[aria-checked="true"]')].map((b) => b.textContent.trim())
+  }
+
+  it('is gone where it ships none, with its settings card', async () => {
+    savedLocalOnABuildWithout()
     const target = await mountSection()
     expect(providerOptions(target)).toEqual(['Off', 'Cloud AI'])
     expect(target.querySelector('#ai\\.localContextSize')).toBeNull()
+  })
+
+  it('checks Off and says why when the saved settings name Local there', async () => {
+    onTestFinished(withPlatform('linux'))
+    savedLocalOnABuildWithout()
+    const target = await mountSection()
+
+    expect(checkedOptions(target)).toEqual(['Off'])
+    const note = target.querySelector('#settings-ai-provider-unoffered')
+    expect(note?.textContent).toBe('Your settings ask for “Local LLM”, which this computer can’t run, so AI is off.')
+    const group = target.querySelector('[role="radiogroup"]')
+    expect(group?.getAttribute('aria-describedby')).toContain('settings-ai-provider-unoffered')
+  })
+
+  it('drops the note once the person picks a provider this build has', async () => {
+    savedLocalOnABuildWithout()
+    const target = await mountSection()
+    stubs.unoffered = Object.create(null) as Record<string, unknown>
+    await switchProvider('cloud')
+
+    expect(checkedOptions(target)).toEqual(['Cloud AI'])
+    expect(target.querySelector('#settings-ai-provider-unoffered')).toBeNull()
+  })
+
+  it('says nothing where the saved choice is the one in effect', async () => {
+    const target = await mountSection()
+    expect(checkedOptions(target)).toEqual(['Cloud AI'])
+    expect(target.querySelector('#settings-ai-provider-unoffered')).toBeNull()
   })
 })
 

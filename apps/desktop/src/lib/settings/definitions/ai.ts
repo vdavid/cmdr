@@ -52,7 +52,8 @@ export const aiSettings: SettingDefinitionSource[] = [
       options: [
         { value: 'off', labelKey: 'settings.ai.provider.opt.off' },
         { value: 'cloud', labelKey: 'settings.ai.provider.opt.cloud' },
-        { value: 'local', labelKey: 'settings.ai.provider.opt.local' },
+        // The bundled model runtime ships on macOS only; elsewhere a stored `local` reads as `off`.
+        { value: 'local', labelKey: 'settings.ai.provider.opt.local', needsCapability: 'localAi' },
       ],
     },
   },
