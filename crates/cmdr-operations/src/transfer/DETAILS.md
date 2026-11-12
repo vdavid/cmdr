@@ -1242,7 +1242,11 @@ between the flush and the first delete, `move_with_staging` asks the mount table
 (`transfer_sides::TransferSide::has_left`, the same non-blocking `getfsstat` snapshot discovery and eject read). Gone ⇒
 keep every source, emit `DeviceDisconnected` naming that volume, return. An unreadable mount table is NOT evidence of
 leaving and lets the sweep run; a guess must never gate a delete either way. Pinned by `move_op/move_vanished_tests.rs`
-(the gate, and its twin proving a mounted destination still completes).
+(the gate, and its twin proving a mounted destination still completes). **A side the table didn't list at start never
+leaves** (`TransferSide::at_start`, which `volume/move.rs` and `volume/copy.rs` capture with): a local volume rooted at
+a plain folder (a cloud-sync folder like `~/Dropbox`) isn't a mount point, so asking about it later reads "gone", and
+`name_the_vanished_drive` would turn every failure of the transfer (a refused write, say) into that folder's drive
+having left. Pinned by `volume/move_tests.rs::a_local_move_from_a_folder_volume_never_reads_a_failure_as_a_disconnect`.
 
 **The sweep asks the same question at every "already gone" reading** (`source_sweep.rs`): `remove_landed_file`'s
 `NotFound`, `remove_swept_dir`'s failed stat and its own `NotFound`, the per-source presence check, and the

@@ -8,7 +8,7 @@
 //! why: `../DETAILS.md` § Durability, "Cross-volume move".
 //!
 //! Only a side with a `local_path` that the mount table LISTED at capture is
-//! watched. A side with no local path (direct SMB, MTP, S3, …) has no mount to
+//! watched (`TransferSide::at_start`). A side with no local path (direct SMB, MTP, S3, …) has no mount to
 //! leave: its drop surfaces as a typed `VolumeError` from the call that met it.
 //! A local volume rooted somewhere that isn't a mount point couldn't leave the
 //! table either, and asking would read it as gone.
@@ -56,12 +56,11 @@ impl LocalMounts {
 
 /// One side, and whether it's a mount the table can watch.
 fn side(volume: &dyn Volume, id: Option<&String>) -> (TransferSide, bool) {
-    let mount = volume.local_path();
-    let side = TransferSide::new(
-        id.cloned().unwrap_or_else(|| volume.name().to_string()),
-        volume.name().to_string(),
-        mount.clone().unwrap_or_else(|| volume.root().to_path_buf()),
-    );
-    let watched = mount.is_some() && side.is_listed() != Some(false);
-    (side, watched)
+    let id = id.cloned().unwrap_or_else(|| volume.name().to_string());
+    let name = volume.name().to_string();
+    match volume.local_path() {
+        // Watched only if it's a mount the table listed (`TransferSide::at_start`).
+        Some(mount) => (TransferSide::at_start(id, name, mount), true),
+        None => (TransferSide::new(id, name, volume.root().to_path_buf()), false),
+    }
 }

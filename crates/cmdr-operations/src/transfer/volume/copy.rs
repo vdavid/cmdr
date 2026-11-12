@@ -233,12 +233,12 @@ impl crate::Operations {
             // (`crates/cmdr-operations/src/transfer_sides.rs`).
             use crate::transfer_sides::{TransferSide, TransferSides};
             let sides = TransferSides::new(
-                TransferSide::new(
+                TransferSide::at_start(
                     source_volume_id.clone(),
                     source_volume.name().to_string(),
                     src_root.clone(),
                 ),
-                TransferSide::new(
+                TransferSide::at_start(
                     dest_volume_id.clone(),
                     dest_volume.name().to_string(),
                     dest_root.clone(),
