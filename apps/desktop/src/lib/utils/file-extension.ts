@@ -15,6 +15,8 @@
  * name typed into the rename field (`kindOfRenamedName`).
  */
 
+import { hasCapability } from '#lib/platform/index.js'
+
 /** What a name belongs to, which decides what its extension can be. Mirrors Rust's `NameKind`. */
 export type NameKind = 'file' | 'folder' | 'package'
 
@@ -69,9 +71,12 @@ export function kindOfRenamedName(kind: NameKind, newName: string): NameKind {
  * The kind read off the name alone, through `PACKAGE_EXTENSIONS`, for a name no
  * entry describes. Mirrors Rust's `NameKind::by_name`. Prefer `nameKindOf`
  * whenever there's an entry: only the backend knows the packages macOS reports.
+ * Off macOS (no `appBundles`) no name makes a package.
  */
 export function nameKindByName(name: string, isDirectory: boolean): NameKind {
   if (!isDirectory) return 'file'
+  // Only macOS reads a suffixed folder name as a package (Rust's `folder_names_make_packages`).
+  if (!hasCapability('appBundles')) return 'folder'
   return PACKAGE_EXTENSIONS.includes(lastSegment(name).toLowerCase()) ? 'package' : 'folder'
 }
 

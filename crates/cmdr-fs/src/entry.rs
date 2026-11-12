@@ -372,6 +372,7 @@ mod icon_id_tests {
         );
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn an_app_bundle_gets_a_pkg_key() {
         assert_eq!(
@@ -419,6 +420,8 @@ mod is_package_tests {
         FileEntry::new(name.to_string(), format!("/Applications/{name}"), is_dir, is_symlink)
     }
 
+    // Packages are macOS-only (`file_extension::folder_names_make_packages`).
+    #[cfg(target_os = "macos")]
     #[test]
     fn an_app_bundle_directory_is_a_package() {
         assert!(entry("Safari.app", true, false).is_package);
@@ -434,6 +437,7 @@ mod is_package_tests {
         assert!(!entry("Safari.app", true, true).is_package);
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn every_listed_suffix_makes_a_package_with_a_pkg_icon() {
         // The listing, the icon, and the extension rule read ONE list.
@@ -442,6 +446,14 @@ mod is_package_tests {
             assert!(bundle.is_package, "{ext}");
             assert_eq!(bundle.icon_id, format!("pkg:/Applications/Thing.{ext}"));
         }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn off_macos_a_bundle_named_folder_is_a_plain_folder() {
+        let folder = entry("Safari.app", true, false);
+        assert!(!folder.is_package);
+        assert_eq!(folder.icon_id, "dir");
     }
 
     #[test]

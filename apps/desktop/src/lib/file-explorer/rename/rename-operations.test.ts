@@ -7,7 +7,8 @@
  * keys the editor's live validation uses, so the two never drift apart.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 
 const { checkRenameValiditySpy, renameFileSpy } = vi.hoisted(() => ({
   checkRenameValiditySpy: vi.fn(),
@@ -209,6 +210,7 @@ describe('the extension question on save', () => {
   })
 
   it('asks before a plain folder turns into a listed package', async () => {
+    onTestFinished(withCapabilities('appBundles'))
     const plugins: RenameTarget = { ...FOLDER, path: '/dir/Plugins', originalName: 'Plugins' }
 
     const result = await executeRenameSave(plugins, 'Plugins.bundle', 'ask')

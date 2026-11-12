@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, onTestFinished } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import {
   validateDisallowedChars,
@@ -334,6 +335,7 @@ describe('validateExtensionChange', () => {
   })
 
   it('still guards a folder whose extension makes it a macOS package', () => {
+    onTestFinished(withCapabilities('appBundles'))
     expect(validateExtensionChange('Cmdr.app', 'Cmdr.bak', 'no', 'package').severity).toBe('error')
     expect(validateExtensionChange('Plugins', 'Plugins.bundle', 'no', 'folder').severity).toBe('error')
   })
@@ -356,6 +358,7 @@ describe('extensionChangeNeedsConfirmation', () => {
   })
 
   it('asks for a folder that stops or starts being a macOS package', () => {
+    onTestFinished(withCapabilities('appBundles'))
     expect(extensionChangeNeedsConfirmation('Cmdr.app', 'Cmdr.old', 'package')).toBe(true)
     expect(extensionChangeNeedsConfirmation('Library', 'Library.photoslibrary', 'folder')).toBe(true)
     expect(extensionChangeNeedsConfirmation('Cmdr.APP', 'Cmdr', 'package')).toBe(true)

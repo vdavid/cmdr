@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import {
   ARCHIVE_ENTER_FORMATS,
   enterBehaviorFromSettings,
@@ -23,6 +24,9 @@ function dir(name: string): EnterCandidate {
   return { name, isDirectory: true, isArchive: false }
 }
 
+// Bundles are an OS concept only where the OS opens `X.app` as an app; most tests are about one.
+beforeEach(() => withCapabilities('appBundles'))
+
 describe('resolveEnterPolicy classification', () => {
   it('classifies a zip file as the zip format (default ask)', () => {
     expect(resolveEnterPolicy(file('foo.zip', true), {})).toBe('ask')
@@ -38,6 +42,15 @@ describe('resolveEnterPolicy classification', () => {
     for (const name of ['Safari.app', 'Some.bundle', 'Foundation.framework']) {
       expect(resolveEnterPolicy(dir(name), {})).toBe('ask')
     }
+  })
+
+  it('treats a folder named like a bundle as a plain folder where the OS has no app bundles', () => {
+    withCapabilities()
+    for (const name of ['Safari.app', 'Some.bundle', 'Foundation.framework']) {
+      expect(resolveEnterPolicy(dir(name), {})).toBeNull()
+      expect(enterFormatOf(dir(name))).toBeNull()
+    }
+    expect(resolveEnterPolicy(file('foo.zip', true), {})).toBe('ask')
   })
 
   it('returns null for entries that are neither archives, documents, nor bundles', () => {
@@ -151,6 +164,12 @@ describe('ARCHIVE_ENTER_FORMATS ↔ settings registry parity', () => {
       // missing a choice the policy can still resolve to.
       const values = definition?.constraints?.options?.map((o) => o.value)
       expect(values, `options of ${format.settingId}`).toEqual(['browse', 'open', 'ask'])
+    }
+  })
+
+  it('gates each format and its setting on the same capability, so a hidden row decides nothing', () => {
+    for (const format of ARCHIVE_ENTER_FORMATS) {
+      expect(getSettingDefinition(format.settingId)?.needsCapability, format.settingId).toBe(format.needsCapability)
     }
   })
 

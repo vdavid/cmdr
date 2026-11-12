@@ -243,8 +243,14 @@ none, and the column, the sort, and the warning could disagree about one name.
   `kHasBundle` bit) is asked of macOS once its row is visible (`apps/desktop/src-tauri/src/file_system/packages.rs`,
   `NSURLIsPackageKey`), and a yes lands through `FileEntry::set_package` (the `pkg:` icon too) as an ordinary row
   update. Only a volume on the local filesystem asks: SMB, MTP, S3, every other backend, and Linux keep the list's
-  answer. Why visible rows only: an NSURL read per dotted folder on the bulk listing would cost a 100k-entry directory,
-  the same reason custom folder icons and Finder tags wait for visibility.
+  answer.
+- **Packages are macOS's.** `is_listed_package` holds only where `folder_names_make_packages()` does (the
+  `file_extension/platform/` seam: macOS, and the browser demo, which shows the macOS app's listing); on Linux and
+  Windows a folder named `X.app` is a plain folder, so it gets no `pkg:` icon, no extension, no extension-change ask,
+  and no bundle Enter policy. `has_package_suffix` is the OS-free name match. The frontend mirror asks `appBundles` for
+  the same fact (`apps/desktop/src/lib/utils/file-extension.ts`). Why visible rows only: an NSURL read per dotted folder
+  on the bulk listing would cost a 100k-entry directory, the same reason custom folder icons and Finder tags wait for
+  visibility.
 - **A file's extension is 1–10 ASCII letters and digits after the last dot.** Anything else after it (a space, an
   underscore, a hyphen, a non-ASCII letter, 11+ characters) makes it part of the name: `J. Novak - notes`,
   `db.sqlite3-journal`, and `photo.jpg_old` have none. The cost is the odd real extension that breaks the shape, which

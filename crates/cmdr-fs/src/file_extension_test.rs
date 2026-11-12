@@ -84,28 +84,46 @@ fn the_compounds_are_the_dotted_archive_labels() {
 }
 
 #[test]
-fn every_listed_suffix_is_a_package_by_name() {
+fn every_listed_suffix_is_a_package_suffix() {
     for ext in PACKAGE_EXTENSIONS {
-        assert!(is_listed_package(&format!("Thing.{ext}")), "{ext}");
+        assert!(has_package_suffix(&format!("Thing.{ext}")), "{ext}");
         assert!(
-            is_listed_package(&format!("Thing.{}", ext.to_uppercase())),
+            has_package_suffix(&format!("Thing.{}", ext.to_uppercase())),
             "{ext} uppercased"
         );
     }
 }
 
 #[test]
-fn a_package_by_name_needs_a_stem_and_a_listed_suffix() {
-    assert!(!is_listed_package(".app"));
-    assert!(!is_listed_package("Documents"));
-    assert!(!is_listed_package("folder.with.dots"));
-    assert!(!is_listed_package("archive.zip"));
-    assert!(!is_listed_package("Thing.app.old"));
+fn a_package_suffix_needs_a_stem_and_a_listed_suffix() {
+    assert!(!has_package_suffix(".app"));
+    assert!(!has_package_suffix("Documents"));
+    assert!(!has_package_suffix("folder.with.dots"));
+    assert!(!has_package_suffix("archive.zip"));
+    assert!(!has_package_suffix("Thing.app.old"));
+}
+
+/// Packages are a macOS concept: on Linux and Windows a folder named like one
+/// is a plain folder (no `pkg:` icon, no extension-change ask, no bundle Enter
+/// policy).
+#[test]
+fn only_macos_reads_a_suffixed_folder_name_as_a_package() {
+    let packages_here = cfg!(any(target_os = "macos", target_family = "wasm"));
+    assert_eq!(folder_names_make_packages(), packages_here);
+    assert_eq!(is_listed_package("Cmdr.app"), packages_here);
+    let kind = if packages_here {
+        NameKind::Package
+    } else {
+        NameKind::Folder
+    };
+    assert_eq!(NameKind::by_name("Cmdr.app", true), kind);
 }
 
 #[test]
 fn by_name_reads_the_list_and_only_for_folders() {
-    assert_eq!(NameKind::by_name("Cmdr.app", true), NameKind::Package);
+    if folder_names_make_packages() {
+        assert_eq!(NameKind::by_name("Cmdr.app", true), NameKind::Package);
+    }
     assert_eq!(NameKind::by_name("Cmdr.app", false), NameKind::File);
     assert_eq!(NameKind::by_name("release.v1.2", true), NameKind::Folder);
     assert_eq!(NameKind::by_name("Sketch.myBundle", true), NameKind::Folder);

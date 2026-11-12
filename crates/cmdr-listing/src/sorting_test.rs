@@ -139,6 +139,15 @@ fn test_sort_by_extension() {
     );
 }
 
+/// A folder the listing knows is a package: on macOS its name already says so, and
+/// elsewhere (where names make no packages) the test says so for it, so the sort's
+/// rule is checked on every OS.
+fn package(name: &str) -> FileEntry {
+    let mut entry = make_entry(name, true, None, None);
+    entry.set_package(true);
+    entry
+}
+
 /// The product's one extension rule (`cmdr_fs::file_extension`): what follows a
 /// name's last dot is only an extension when it's short and plain, a compound
 /// tar counts as one, and a folder's dot is part of its name. So the Ext column
@@ -153,7 +162,7 @@ fn extension_sort_follows_the_product_extension_rule() {
         make_entry("alpha.tar", false, Some(100), None),
         make_entry("release.zz", true, None, None),
         make_entry("Project 1.5 backup", true, None, None),
-        make_entry("Cmdr.app", true, None, None),
+        package("Cmdr.app"),
         make_entry("plain", true, None, None),
     ];
 
@@ -187,11 +196,7 @@ fn extension_sort_follows_the_product_extension_rule() {
 fn extension_sort_reads_a_detected_package_off_the_entry() {
     let mut detected = make_entry("Sketch.mybundle", true, None, None);
     detected.set_package(true);
-    let mut entries = vec![
-        detected,
-        make_entry("Cmdr.app", true, None, None),
-        make_entry("Notes.zz", true, None, None),
-    ];
+    let mut entries = vec![detected, package("Cmdr.app"), make_entry("Notes.zz", true, None, None)];
 
     sort_entries(
         &mut entries,

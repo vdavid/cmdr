@@ -2,7 +2,8 @@
  * Tests for measure-column-widths.ts. We replace the real pretext-backed measurer
  * with a deterministic `text.length * 7` stand-in so assertions stay readable.
  */
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 
 import type { FileEntry } from '../types'
 
@@ -139,6 +140,8 @@ describe('computeFullListColumnWidths', () => {
   })
 
   it('caps the ext column so a pathological extension cannot dominate the row', () => {
+    // A package folder's extension is macOS's (`appBundles`).
+    onTestFinished(withCapabilities('appBundles'))
     _setMeasureForTests(fakeMeasure)
     // A plain extension tops out at ten characters, but a package folder's can be
     // longer (`photoslibrary`, 13). Cap sample is "extensionxx" (11 chars × 7 = 77 px), text only, no chrome.

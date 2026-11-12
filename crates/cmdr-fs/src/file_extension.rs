@@ -7,10 +7,13 @@
 //! The rule, who asks it, the TypeScript mirror, and what deliberately doesn't
 //! use it: `crates/cmdr-fs/DETAILS.md` § "What counts as an extension".
 
+mod platform;
+
 /// Folder suffixes that make macOS present the folder as one opaque item: the
 /// free, I/O-less fast path of package detection, and the product's ONLY copy
 /// of the list. A dotted folder this doesn't know can still be a package; the
-/// app asks macOS about the visible ones (`enrich_packages`). Lowercase, no dot.
+/// app asks macOS about the visible ones (`enrich_packages`). Only macOS reads
+/// names this way ([`folder_names_make_packages`]). Lowercase, no dot.
 pub const PACKAGE_EXTENSIONS: &[&str] = &[
     "app",
     "appex",
@@ -67,16 +70,30 @@ impl NameKind {
     }
 }
 
-/// Whether a folder named `name` is a package by [`PACKAGE_EXTENSIONS`]
-/// (case-insensitive, needs a stem). Pure, so it runs for every listed entry.
+/// Whether this OS reads a folder's name as a package at all: macOS (and the
+/// browser demo, which shows the macOS app's listing). Elsewhere a folder named
+/// `X.app` is a folder: no `pkg:` icon, no extension, no Enter policy of its own.
+pub const fn folder_names_make_packages() -> bool {
+    platform::FOLDER_NAMES_MAKE_PACKAGES
+}
+
+/// Whether a folder named `name` is a package by [`PACKAGE_EXTENSIONS`] on this
+/// OS (case-insensitive, needs a stem). Pure, so it runs for every listed entry.
 pub fn is_listed_package(name: &str) -> bool {
+    folder_names_make_packages() && has_package_suffix(name)
+}
+
+/// Whether `name` ends in a [`PACKAGE_EXTENSIONS`] suffix (case-insensitive,
+/// needs a stem), whatever this OS makes of it.
+pub fn has_package_suffix(name: &str) -> bool {
     last_segment(name).is_some_and(|ext| PACKAGE_EXTENSIONS.iter().any(|known| ext.eq_ignore_ascii_case(known)))
 }
 
 /// Whether only macOS can say if a folder named `name` is a package: it has a
 /// dotted suffix the list doesn't know. A name with no such suffix isn't asked.
+/// Only the macOS app asks, so this reads the name alone.
 pub fn needs_package_lookup(name: &str) -> bool {
-    last_segment(name).is_some_and(|ext| !ext.is_empty()) && !is_listed_package(name)
+    last_segment(name).is_some_and(|ext| !ext.is_empty()) && !has_package_suffix(name)
 }
 
 /// The extension of `name`, without its dot and in the name's own case, or

@@ -526,9 +526,15 @@ fn check_owner_and_group(fx: &Fixture, lister: Lister) {
 fn check_package_and_archive(fx: &Fixture, lister: Lister) {
     let listed = fx.list(lister);
     let bundle = entry_named(&listed, "Bundle.app");
-    assert!(bundle.is_package, "{lister:?}: Bundle.app is a package");
-    assert!(
+    // Only macOS reads a bundle-suffixed folder name as a package.
+    let packages_here = cmdr_fs::file_extension::folder_names_make_packages();
+    assert_eq!(
+        bundle.is_package, packages_here,
+        "{lister:?}: Bundle.app is a package only on macOS"
+    );
+    assert_eq!(
         bundle.icon_id.starts_with("pkg:"),
+        packages_here,
         "{lister:?}: Bundle.app's icon is {}",
         bundle.icon_id
     );

@@ -9,11 +9,14 @@
  * (`behavior.archiveEnter.<format>`), rendered in Settings › Behavior › Archives.
  *
  * This module is a pure leaf (no I/O, no store, no Svelte): the caller reads the live
- * settings and passes the actions in, so the decision is unit-testable in isolation.
+ * settings and passes the actions in, so the decision is unit-testable in isolation. The
+ * one ambient read is the OS's capabilities (`#lib/platform`), fixed per process.
  * Classification is extension-only, mirroring the backend's
  * `has_supported_archive_extension` (the cheap check the listing already ran);
  * the backend magic-byte confirms the real archive at navigation time.
  */
+
+import { hasCapability, type Capability } from '#lib/platform/index.js'
 
 /** What pressing Enter does on an archive/bundle/document entry. */
 export type EnterAction = 'browse' | 'open' | 'ask'
@@ -59,6 +62,11 @@ interface FormatDescriptor {
   matches: (entry: EnterCandidate) => boolean
   /** The action when the user hasn't chosen one. Must equal the setting's registry default. */
   defaultAction: EnterAction
+  /**
+   * The OS feature the format exists through, for one only some OSes have. Without it no entry
+   * belongs to the format, and its setting declares the same capability, so the row hides too.
+   */
+  needsCapability?: Capability
 }
 
 /** Zip-based document and app packages users mean as documents, not folders. */
@@ -80,7 +88,8 @@ const BUNDLE_EXTENSIONS: readonly string[] = ['app', 'bundle', 'framework']
  *   two stay in lockstep and future formats (tar/7z) join automatically. Default
  *   Ask (browse or open is a genuine per-file choice).
  * - `bundle`: macOS application/framework bundles. Directories, so browsing already
- *   works; Open launches them via LaunchServices. Default Ask.
+ *   works; Open launches them via LaunchServices. Default Ask. Only where the OS has app
+ *   bundles (`appBundles`): elsewhere a folder named `X.app` is a folder.
  */
 export const ARCHIVE_ENTER_FORMATS: readonly FormatDescriptor[] = [
   {
@@ -100,6 +109,7 @@ export const ARCHIVE_ENTER_FORMATS: readonly FormatDescriptor[] = [
     settingId: 'behavior.archiveEnter.bundle',
     matches: (entry) => entry.isDirectory && hasExtensionIn(entry.name, BUNDLE_EXTENSIONS),
     defaultAction: 'ask',
+    needsCapability: 'appBundles',
   },
 ]
 
@@ -121,7 +131,12 @@ function hasExtensionIn(name: string, extensions: readonly string[]): boolean {
 
 /** The format an entry belongs to, or `null` when it's an ordinary file/folder. */
 function classify(entry: EnterCandidate): FormatDescriptor | null {
-  return ARCHIVE_ENTER_FORMATS.find((format) => format.matches(entry)) ?? null
+  return (
+    ARCHIVE_ENTER_FORMATS.find(
+      (format) =>
+        (format.needsCapability === undefined || hasCapability(format.needsCapability)) && format.matches(entry),
+    ) ?? null
+  )
 }
 
 /**

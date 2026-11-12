@@ -6,7 +6,8 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import {
   COMPOUND_EXTENSIONS,
   PACKAGE_EXTENSIONS,
@@ -42,6 +43,9 @@ describe('fileExtension ↔ the backend`s `extension_of`', () => {
   })
 })
 
+// Packages by name are macOS's (`appBundles`); the cases below are about that rule.
+beforeEach(() => withCapabilities('appBundles'))
+
 describe('kindOfRenamedName', () => {
   it('keeps a file a file and a package a package', () => {
     expect(kindOfRenamedName('file', 'Thing.app')).toBe('file')
@@ -54,6 +58,15 @@ describe('kindOfRenamedName', () => {
     expect(kindOfRenamedName('folder', 'Plugins.BUNDLE')).toBe('package')
     expect(kindOfRenamedName('folder', 'release.v1.3')).toBe('folder')
     expect(kindOfRenamedName('folder', '.app')).toBe('folder')
+  })
+})
+
+describe('off macOS, where no folder name makes a package', () => {
+  beforeEach(() => withCapabilities())
+
+  it('keeps a bundle-suffixed folder a folder', () => {
+    expect(kindOfRenamedName('folder', 'Plugins.bundle')).toBe('folder')
+    expect(nameKindOf({ name: 'Cmdr.app', isDirectory: true })).toBe('folder')
   })
 })
 
