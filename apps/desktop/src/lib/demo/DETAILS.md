@@ -485,10 +485,15 @@ tells the visitor with one notice, `ui.demoArchive.notBrowsable`, whichever way 
   `node -e "const {chromium}=require('@playwright/test'),path=require('path'),fs=require('fs'),s=path.resolve('../desktop/scripts/demo-sample-docs'),o=path.resolve('../desktop/src/lib/demo/assets');(async()=>{const b=await chromium.launch(),p=await b.newPage();for(const f of fs.readdirSync(s).filter(f=>/^sample-.*\.html$/.test(f))){await p.goto('file://'+path.join(s,f));await p.pdf({path:path.join(o,f.replace(/\.html$/,'.pdf')),format:'A4',printBackground:true})}await b.close()})()"`.
   The viewer shows each as a `blob:` `<embed>`, which the demo's CSP allows in both `object-src` and `frame-src`
   (`apps/website/nginx-demo-security-headers.conf` says why).
-- `browser-shortcuts.ts`: the browser-safe shortcut map. The browser takes ⌘T, ⌘W, ⌘⇧T, ⌘N, and ⌘1–⌘9 before the page
-  sees them, so those commands move to ⌃. Seeded into `shortcuts.json` as `shortcut:<commandId>` keys, the same delta
-  the Settings editor writes, so every hint in menus, the palette, and the function bar shows the remapped combo with no
-  demo awareness in the shortcut system.
+- `browser-shortcuts.ts`: the browser-safe shortcut map, one arm per visitor OS (§ Platform picks it). On macOS the
+  browser takes ⌘T, ⌘W, ⌘⇧T, ⌘N, and ⌘1–⌘9 before the page sees them, so those commands move to ⌃ (a placeholder map).
+  On Windows and Linux the arm is computed: the registry's defaults for that OS minus `BROWSER_WITHHELD`, the keys of
+  Chromium's reserved commands (close tab or window, new tab or window, reopen tab, next and previous tab; cited in the
+  module). A command whose every key is withheld is seeded with none, so the demo invents no key: today that's New tab,
+  Close tab, Reopen closed tab, and Ask Cmdr's New chat on both, plus Next tab on Linux. A key the browser merely has a
+  meaning for but lets the page cancel (`Alt+←`, `F5`, `Ctrl+1`) stays. Seeded into `shortcuts.json` as
+  `shortcut:<commandId>` keys, the same delta the Settings editor writes, so every hint in menus, the palette, and the
+  function bar shows the remapped combo with no demo awareness in the shortcut system.
 - `plugins.ts` seeds `settings.json` as a user who just finished the current wizard (`onboarding.completed` and
   `onboarding.upgradeNudgeShown`, the two flags `startup-gates.ts::completeOnboardingWizard` writes): a visitor came to
   try the panes. The full wizard is no first impression here: step 1 is Full Disk Access, which a browser can't grant,

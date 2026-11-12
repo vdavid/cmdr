@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { browserSafeShortcuts } from './browser-shortcuts.js'
+import { visitorPlatform } from './platform.js'
 import { DEMO_HOME } from './demo-tree.js'
 import { customShortcuts, pluginHandler, restrictedWindowSettings } from './plugins.js'
 
@@ -60,7 +61,7 @@ describe('in-memory store plugin', () => {
 
   it('seeds the browser-safe shortcuts as shortcut:<id> keys, as the shortcuts store reads them', () => {
     const rid = load('shortcuts.json')
-    for (const [id, combos] of Object.entries(browserSafeShortcuts)) {
+    for (const [id, combos] of Object.entries(browserSafeShortcuts(visitorPlatform(navigator.userAgent)))) {
       expect(call('plugin:store|get', { rid, key: `shortcut:${id}` })).toEqual([combos, true])
     }
   })
@@ -73,7 +74,9 @@ describe('in-memory store plugin', () => {
     const read = customShortcuts()
     expect(read['viewer.close']).toEqual(['⌃W'])
     expect(read).not.toHaveProperty('not-a-shortcut')
-    for (const id of Object.keys(browserSafeShortcuts)) expect(read).toHaveProperty(id)
+    for (const id of Object.keys(browserSafeShortcuts(visitorPlatform(navigator.userAgent)))) {
+      expect(read).toHaveProperty(id)
+    }
   })
 
   it('answers get with [value, exists], so a missing key reads as absent', () => {

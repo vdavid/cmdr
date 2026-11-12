@@ -7,12 +7,13 @@
  */
 import type { RestrictedWindowSettings } from '#lib/ipc/bindings.js'
 import { browserSafeShortcuts } from './browser-shortcuts.js'
+import { visitorPlatform } from './platform.js'
 import { DEMO_HOME } from './demo-tree.js'
 import { openInBrowserTab } from './opener.js'
 
 /** What a fresh demo starts with, per store file. Only keys an actor would have set (sparse, like the app). */
-const seeds: Record<string, Record<string, unknown>> = {
-  'settings.json': {
+const seeds: Partial<Record<string, () => Record<string, unknown>>> = {
+  'settings.json': () => ({
     // A user who just finished today's wizard (`startup-gates.ts::completeOnboardingWizard` writes
     // both): a visitor came to try the panes, and there's no newer onboarding to point them at.
     'onboarding.completed': true,
@@ -27,11 +28,16 @@ const seeds: Record<string, Record<string, unknown>> = {
     // which the backend answers with a notice, where the registry's Ask would offer a Browse that
     // can only end on an error screen. Settings still offers all three.
     'behavior.archiveEnter.zip': 'open',
-  },
-  // One `shortcut:<commandId>` key per customization, as `shortcuts-store.ts` reads them.
-  'shortcuts.json': Object.fromEntries(
-    Object.entries(browserSafeShortcuts).map(([id, keys]) => [`shortcut:${id}`, keys]),
-  ),
+  }),
+  // One `shortcut:<commandId>` key per customization, as `shortcuts-store.ts` reads them, in the
+  // visitor's own OS's spelling (the same answer `platform.ts` gives every frame).
+  'shortcuts.json': () =>
+    Object.fromEntries(
+      Object.entries(browserSafeShortcuts(visitorPlatform(navigator.userAgent))).map(([id, keys]) => [
+        `shortcut:${id}`,
+        keys,
+      ]),
+    ),
 }
 
 const storesByPath = new Map<string, number>()
@@ -44,7 +50,7 @@ function storeFor(path: string, defaults: Record<string, unknown> = {}): number 
   if (known !== undefined) return known
   const rid = nextRid++
   storesByPath.set(path, rid)
-  stores.set(rid, { defaults, entries: new Map(Object.entries({ ...defaults, ...seeds[path] })) })
+  stores.set(rid, { defaults, entries: new Map(Object.entries({ ...defaults, ...seeds[path]?.() })) })
   return rid
 }
 
