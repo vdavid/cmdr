@@ -777,10 +777,6 @@
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
-  "fileExplorer.clipboard.empty": "В буфере обмена нет файлов. Сначала скопируйте файлы с помощью ⌘C.",
-  "@fileExplorer.clipboard.empty": {
-    "sourceHash": "0cbe304"
-  },
   "fileExplorer.clipboard.stillPasting": "Файл из буфера обмена все еще создается. Том медленно отвечает.",
   "@fileExplorer.clipboard.stillPasting": {
     "sourceHash": "0e98ca7"

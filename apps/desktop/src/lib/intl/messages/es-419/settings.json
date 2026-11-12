@@ -119,10 +119,6 @@
   "@settings.indexing.silencedDrives.description": {
     "sourceHash": "ed73a6c"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Presiona ⌃⌥⌘J desde cualquier app para ir a tu descarga más reciente. Requiere acceso completo al disco.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "655a07d"
-  },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "La primera vez que presionas el atajo que salta a tu última descarga desde cualquier app, Cmdr te pregunta si quieres mantenerlo activado. Al cambiar el atajo, esto se desactiva, así que también se pregunta por la combinación nueva. Desactiva esto para volver a ver la pregunta.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
     "sourceHash": "378530d"
@@ -190,10 +186,6 @@
   "settings.updates.attachEmailToReports.description": "Cuando envíes un reporte de fallos o de error, incluye tu correo de contacto de la beta para que podamos responderte. Puedes cambiarlo en cada reporte.",
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "9681c19"
-  },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr usa Espacio para activar o desactivar la selección de archivos y ⇧Espacio para Vista rápida (el Finder usa Espacio a secas para Vista rápida). Cada vez que presionas Espacio en la lista de archivos, Cmdr muestra un recordatorio de un párrafo sobre esta diferencia. Activa esto (o haz clic en “No volver a mostrar” en el aviso) para ocultar el recordatorio definitivamente.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "379e733"
   },
   "settings.fileExplorer.typeToJump.resetDelay.description": "Cuánto tiempo sigue activo el búfer de escribir para saltar tras la última tecla presionada. Los valores más bajos lo reinician más rápido entre búsquedas; los más altos son más indulgentes para quien escribe despacio.",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {

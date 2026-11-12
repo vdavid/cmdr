@@ -778,10 +778,6 @@
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
-  "fileExplorer.clipboard.empty": "No hay archivos en el portapapeles. Copia archivos primero con ⌘C.",
-  "@fileExplorer.clipboard.empty": {
-    "sourceHash": "0cbe304"
-  },
   "fileExplorer.clipboard.stillPasting": "Todavía se está creando un archivo a partir del portapapeles. El volumen tarda en responder.",
   "@fileExplorer.clipboard.stillPasting": {
     "sourceHash": "0e98ca7"

@@ -778,10 +778,6 @@
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
-  "fileExplorer.clipboard.empty": "Không có tệp nào trên bảng nhớ tạm. Hãy sao chép tệp trước bằng ⌘C.",
-  "@fileExplorer.clipboard.empty": {
-    "sourceHash": "0cbe304"
-  },
   "fileExplorer.clipboard.stillPasting": "Vẫn đang tạo tệp từ bảng nhớ tạm. Ổ đĩa phản hồi chậm.",
   "@fileExplorer.clipboard.stillPasting": {
     "sourceHash": "0e98ca7"

@@ -487,10 +487,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "Qué hace ⌘V en una carpeta cuando el portapapeles contiene texto, una imagen o un PDF en lugar de archivos copiados.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "No hacer nada",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1095,10 +1091,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Ir a la última descarga",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Pulsa ⌃⌥⌘J desde cualquier app para ir a tu descarga más reciente. Requiere acceso total al disco.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "atajo, atajo de teclado, combinación de teclas, global, descarga, descargas, saltar, ir a, última",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1758,10 +1750,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr usa Espacio para activar o desactivar la selección de archivos y ⇧Espacio para Vista rápida (el Finder usa Espacio a secas para Vista rápida). Cada vez que pulsas Espacio en la lista de archivos, Cmdr muestra un recordatorio de un párrafo sobre esta diferencia. Activa esto (o haz clic en “No volver a mostrar” en el aviso) para ocultar el recordatorio definitivamente.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "vista rápida, previsualización, vista previa, espacio, barra espaciadora, aviso, sugerencia, consejo, recordatorio",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1805,10 +1793,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Número de pestañas cerradas que recordar por panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Cuántas pestañas cerradas recientemente conservar por panel para “Reabrir la pestaña cerrada” (⌘⇧T). Los valores más altos te dejan reabrir más atrás en el historial; los más bajos liberan memoria antes. Solo se aplica a las pestañas cerradas en la sesión actual.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "pestaña, pestañas, cerrada, reabrir, volver a abrir, historial, deshacer, panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

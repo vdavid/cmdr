@@ -364,10 +364,6 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "Dán lượng lớn có thể làm chậm các ứng dụng khác. Hãy thử tìm kiếm (⌘F) để thu hẹp lại.",
-  "@viewer.copyDialog.confirmBody": {
-    "sourceHash": "c1f2927"
-  },
   "viewer.copyDialog.cancel": "Hủy",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -379,10 +375,6 @@
   "viewer.copyDialog.copy": "Sao chép",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
-  },
-  "viewer.copyDialog.refuseBody": "Vùng chọn này lớn hơn giới hạn 100 MB của bảng nhớ tạm. Hãy thử tìm kiếm (⌘F) để tìm thứ bạn cần, hoặc lưu vùng chọn thành tệp.",
-  "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "Tệp đã thay đổi trên đĩa. Tải lại?",
   "@viewer.reloadToast.grew": {

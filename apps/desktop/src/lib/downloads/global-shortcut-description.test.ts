@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { globalGoToLatestDescription } from './global-shortcut-description'
 
 describe('globalGoToLatestDescription', () => {
@@ -10,6 +11,13 @@ describe('globalGoToLatestDescription', () => {
 
   it('tracks a rebound combo', () => {
     expect(globalGoToLatestDescription('\u{2318}\u{21E7}K')).toContain('\u{2318}\u{21E7}K')
+  })
+
+  it('shows the binding the way the shortcut row does, so Windows reads Win', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(globalGoToLatestDescription('Ctrl+Alt+Super+J')).toBe(
+      'Press Ctrl+Alt+Win+J from any app to jump to your most recent download.',
+    )
   })
 
   it('falls back to a generic phrasing when the binding is empty', () => {

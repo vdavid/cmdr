@@ -484,10 +484,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "Co udělá ⌘V ve složce, když je ve schránce text, obrázek nebo PDF místo zkopírovaných souborů.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Nedělat nic",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1092,10 +1088,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Přejít na poslední stažený soubor",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Stiskněte ⌃⌥⌘J v jakékoli aplikaci a přejdete na naposledy stažený soubor. Vyžaduje plný přístup k disku.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "zkratka, klávesová zkratka, globální, stahování, stažené soubory, skok, přejít, otevřít",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1755,10 +1747,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr používá mezerník k přepnutí výběru souboru a ⇧mezerník pro Rychlý náhled (Finder pro Rychlý náhled používá samotný mezerník). Pokaždé, když v seznamu souborů stisknete mezerník, Cmdr zobrazí krátké připomenutí tohoto rozdílu. Zapněte tuto volbu (nebo v oznámení klikněte na „Už nezobrazovat“) a připomenutí se už nikdy nezobrazí.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "rychlý náhled, náhled, mezerník, nápověda, tip, oznámení, připomínka",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1802,10 +1790,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Počet zavřených záložek, které si každý panel pamatuje",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Kolik naposledy zavřených záložek si každý panel uchová pro příkaz „Znovu otevřít zavřenou záložku“ (⌘⇧T). Vyšší hodnoty vám dovolí vrátit se dál do historie, nižší hodnoty dřív uvolní paměť. Platí jen pro záložky zavřené v aktuální relaci.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "záložka, záložky, zavřené, znovu otevřít, historie, obnovit, panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

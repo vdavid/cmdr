@@ -486,10 +486,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "当剪贴板中存放的是文本、图像或 PDF，而不是已拷贝的文件时，在文件夹中按 ⌘V 的行为。",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "什么都不做",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1094,10 +1090,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "前往最新下载",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "在任意 App 中按 ⌃⌥⌘J 即可跳转到你最近的下载。需要完全磁盘访问权限。",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "快捷键、热键、全局、下载、最新、跳转、前往",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1756,10 +1748,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用空格键切换文件选择，用⇧空格键触发快速查看（Finder 用单独的空格键触发快速查看）。每次你在文件列表中按空格键，Cmdr 都会显示一段简短的提醒，说明这一差别。打开这一项（或点按提示里的“不再显示”），就能永久关掉这条提醒。",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "快速查看、预览、空格、空格键、提示、提醒",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1803,10 +1791,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "每个窗格记住的已关闭标签页数量",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "为“重新打开关闭的标签页”（⌘⇧T）每个窗格保留多少个最近关闭的标签页。数值越高，可往回重新打开的历史越多；数值越低，越早释放内存。仅适用于在当前会话中关闭的标签页。",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "标签页、已关闭、重新打开、恢复、历史、历史记录、撤销、窗格",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

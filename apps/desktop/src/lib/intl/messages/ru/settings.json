@@ -484,10 +484,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "Действие ⌘V в папке, когда в буфере обмена текст, изображение или PDF вместо скопированных файлов.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Ничего не делать",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1092,10 +1088,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Перейти к последней загрузке",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Нажмите ⌃⌥⌘J в любом приложении, чтобы перейти к последней загрузке. Требуется полный доступ к диску.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "сочетание клавиш, горячая клавиша, глобальный, загрузка, загрузки, последняя загрузка, перейти, переход",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1754,10 +1746,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr использует Пробел, чтобы выделять файлы, а ⇧Пробел для Быстрого просмотра (в Finder Быстрый просмотр открывается обычным Пробелом). Каждый раз, когда вы нажимаете Пробел в списке файлов, Cmdr коротко напоминает об этой разнице. Включите параметр (или нажмите «Больше не показывать» в уведомлении), чтобы больше не видеть напоминание.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "Быстрый просмотр, просмотр, предпросмотр, пробел, подсказка, уведомление, всплывающее сообщение, напоминание",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1801,10 +1789,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Число закрытых вкладок в истории панели",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Сколько недавно закрытых вкладок хранить в каждой панели для команды «Открыть закрытую вкладку» (⌘⇧T). Чем больше значение, тем дальше можно вернуться по истории; чем меньше, тем быстрее освобождается память. Действует только для вкладок, закрытых в текущем сеансе.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "вкладка, вкладки, закрытые, открыть снова, восстановить, история, отменить, панель",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

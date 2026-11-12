@@ -778,10 +778,6 @@
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
-  "fileExplorer.clipboard.empty": "Aucun fichier dans le presse-papiers. Copiez d’abord des fichiers avec ⌘C.",
-  "@fileExplorer.clipboard.empty": {
-    "sourceHash": "0cbe304"
-  },
   "fileExplorer.clipboard.stillPasting": "Création d’un fichier à partir du presse-papiers toujours en cours. Le volume met du temps à répondre.",
   "@fileExplorer.clipboard.stillPasting": {
     "sourceHash": "0e98ca7"

@@ -720,10 +720,26 @@ describe('pasteFromClipboard', () => {
 
     expect(pasteClipboardContentAsFileSpy).toHaveBeenCalledTimes(1)
     expect(pasteClipboardContentAsFileSpy.mock.calls[0][0]).toMatchObject({ volumeId: 'root', directory: '/dest' })
-    // The wired onNothingCreated still shows today's exact warn toast.
+    // The wired onNothingCreated warns, naming the live copy key.
+    getLiveShortcutsSpy.mockImplementation((commandId) => (commandId === 'edit.copy' ? ['Ctrl+C'] : []))
     pasteClipboardContentAsFileSpy.mock.calls[0][0].onNothingCreated()
-    expect(addToastSpy).toHaveBeenCalledWith('No files on the clipboard. Copy files first with ⌘C.', { level: 'warn' })
+    expect(addToastSpy).toHaveBeenCalledWith('No files on the clipboard. Copy files first with Ctrl+C.', {
+      level: 'warn',
+    })
     expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
+  })
+
+  it('says the empty-clipboard warning without a key once no key copies files', async () => {
+    readClipboardFilesSpy.mockResolvedValue({ paths: [], isCut: false })
+    pasteClipboardContentAsFileSpy.mockResolvedValue(undefined)
+    getLiveShortcutsSpy.mockReturnValue([])
+
+    await createClipboardOperations(
+      buildAccess({ volumeId: 'root', path: '/dest' }),
+      buildDialogs(),
+    ).pasteFromClipboard(false)
+    pasteClipboardContentAsFileSpy.mock.calls[0][0].onNothingCreated()
+    expect(addToastSpy).toHaveBeenCalledWith('No files on the clipboard. Copy files first.', { level: 'warn' })
   })
 
   it('does NOT run the content fallback when file URLs are present (transfer path owns it)', async () => {

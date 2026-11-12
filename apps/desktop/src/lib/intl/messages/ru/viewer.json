@@ -365,10 +365,6 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "Вставка большого объема данных может замедлить другие приложения. Попробуйте поиск (⌘F), чтобы сузить выделение.",
-  "@viewer.copyDialog.confirmBody": {
-    "sourceHash": "c1f2927"
-  },
   "viewer.copyDialog.cancel": "Отменить",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -380,10 +376,6 @@
   "viewer.copyDialog.copy": "Скопировать",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
-  },
-  "viewer.copyDialog.refuseBody": "Это больше лимита буфера обмена в 100 МБ. Попробуйте найти нужное поиском (⌘F) или сохраните выделение как файл.",
-  "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "Файл изменен на диске. Перезагрузить?",
   "@viewer.reloadToast.grew": {

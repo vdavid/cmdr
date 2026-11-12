@@ -4,14 +4,15 @@
  * so the moment the user rebinds the hotkey in `Keyboard shortcuts`, the
  * toggle's helper text updates to match.
  *
- * The binding arrives in the user-facing macOS-symbol form (`'⌃⌥⌘J'`), which
- * is also what we want to show — no translation needed.
+ * The binding is shown the way `GlobalShortcutRow` shows it (`toDisplayShortcut`),
+ * so the two never disagree (`Win` for the Windows key on Windows).
  */
 import { tString } from '#lib/intl/messages.svelte.js'
+import { toDisplayShortcut } from '#lib/shortcuts/key-capture.js'
 
 export function globalGoToLatestDescription(binding: string): string {
   if (!binding) {
     return tString('downloads.toggleDescription.unbound')
   }
-  return tString('downloads.toggleDescription.bound', { binding })
+  return tString('downloads.toggleDescription.bound', { binding: toDisplayShortcut(binding) })
 }

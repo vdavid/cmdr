@@ -778,10 +778,6 @@
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
-  "fileExplorer.clipboard.empty": "Inga filer i urklipp. Kopiera filer först med ⌘C.",
-  "@fileExplorer.clipboard.empty": {
-    "sourceHash": "0cbe304"
-  },
   "fileExplorer.clipboard.stillPasting": "Håller fortfarande på att skapa en fil från urklipp. Volymen svarar långsamt.",
   "@fileExplorer.clipboard.stillPasting": {
     "sourceHash": "0e98ca7"

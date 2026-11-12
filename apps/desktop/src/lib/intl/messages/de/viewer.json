@@ -367,10 +367,6 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "Große Mengen einzusetzen kann andere Apps verlangsamen. Grenze die Auswahl mit der Suche (⌘F) ein.",
-  "@viewer.copyDialog.confirmBody": {
-    "sourceHash": "c1f2927"
-  },
   "viewer.copyDialog.cancel": "Abbrechen",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -382,10 +378,6 @@
   "viewer.copyDialog.copy": "Kopieren",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
-  },
-  "viewer.copyDialog.refuseBody": "Das ist größer als das Limit der Zwischenablage von 100 MB. Grenze mit der Suche (⌘F) ein, was du brauchst, oder sichere die Auswahl als Datei.",
-  "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "Die Datei wurde auf dem Datenträger geändert. Neu laden?",
   "@viewer.reloadToast.grew": {

@@ -71,7 +71,10 @@ Windows, Linux, and macOS are each first-class, and a few extra lines of per-OS 
   on Windows, the WebDAV trust store, Wayland global shortcuts, the Windows hidden-file rule, `~` in Go to path on
   Windows), read the code; if the code doesn't settle it, keep the macOS text for that platform and list the row as open
   here.
-- **Key glyphs in prose** (the eight values with literal ⌘/⌥/⌃/⇧) wait for the keymap work (#1102).
+- **Key glyphs in prose** (the values with literal ⌘/⌥/⌃/⇧) became new keys taking the live key as a `{combo}`
+  placeholder, with a keyless twin where the user can remove the key (#1102); the old keys are in the macOS-copy guard's
+  `RETIRED_KEYS`. The three "macOS" strings (`shortcuts.conflict.reservedByMacOs`, `shortcuts.section.macOsTooltip`,
+  `shortcuts.section.macOsBadge`) render only where an app menu owns the key, so only on macOS.
 
 ## Open rows
 
@@ -84,16 +87,6 @@ string") and drop the entry here.
     (`cmdr-fs` `metadata/platform/windows.rs`, a stub) say which class a Windows copy reports there.
   - `settings.listing.showHiddenFiles.description`, Windows: "dotfiles (like .zshrc)" stays until the Windows listing
     backend decides its hidden-file rule (the hidden attribute, dotfiles, or both).
-- **Waits on #1102** (task 26, the per-platform keymap), which passes each combo as a placeholder in its own OS's
-  glyphs:
-  - The eight plain values with literal macOS key glyphs: `fileExplorer.clipboard.empty`, `queryUi.empty.tip`,
-    `queryUi.empty.tipAi`, `settings.fileOperations.pasteClipboardAsFile.description`,
-    `settings.fileExplorer.tabs.closedTabHistorySize.description`, `viewer.copyDialog.confirmBody`,
-    `viewer.copyDialog.refuseBody`, and
-    `settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description` (which also keeps "Requires Full
-    Disk Access." on Windows and Linux X11).
-  - `shortcuts.conflict.reservedByMacOs`, `shortcuts.section.macOsTooltip`, and `shortcuts.section.macOsBadge`: which
-    combos the OS reserves off macOS is the keymap's answer.
 - **Waits on task 59** (the Linux `desktop` value): GNOME and KDE wording (KDE Wallet Manager, the Plasma shortcut path,
   GNOME's "Preferences"). Until then every Linux branch speaks desktop-neutral words ("your keyring", "your file
   manager").

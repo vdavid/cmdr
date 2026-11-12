@@ -486,10 +486,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "當剪貼板中存放的是文字、影像或 PDF，而不是已複製的檔案時，在資料夾中按 ⌘V 的行為。",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "什麼都不做",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1094,10 +1090,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "前往最新下載項目",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "在任何 App 中按 ⌃⌥⌘J 就能跳至你最近的下載項目。需要「完全取用磁碟」權限。",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "快速鍵, 熱鍵, 全域, 下載, 下載項目, 跳轉, 跳到, 前往, 最新",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1756,10 +1748,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用空白鍵切換檔案選取，用⇧空白鍵觸發快速查看（Finder 用單獨的空白鍵觸發快速查看）。每次你在檔案列表中按空白鍵，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或按一下提示中的「不要再顯示」）就能永久關閉這個提醒。",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "快速查看, 預覽, 空白鍵, 提示, 提醒",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1803,10 +1791,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "每個窗格記住的已關閉分頁數量",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "為「重新開啟已關閉的分頁」（⌘⇧T）在每個窗格保留多少個最近關閉的分頁。數值越高，能往回重新開啟的歷史越多。數值越低，越早釋出記憶體。只適用於在目前工作階段中關閉的分頁。",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "分頁, 標籤頁, 已關閉, 重新開啟, 歷史記錄, 還原, 窗格",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

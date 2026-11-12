@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
 
@@ -59,6 +60,27 @@ describe('ViewerCopyDialogs', () => {
     expect(title?.textContent).toContain('5.00 kB')
 
     void unmount(instance)
+  })
+
+  it.each([
+    ['macos', '⌘F'],
+    ['windows', 'Ctrl+F'],
+    ['linux', 'Ctrl+F'],
+  ] as const)('names the viewer’s own search key on %s in both bodies', async (platform, key) => {
+    onTestFinished(withPlatform(platform))
+    const { instance } = mountDialogs({ confirmBytes: 5000 })
+    await tick()
+    expect(document.querySelector('.copy-dialog-body')?.textContent).toBe(
+      `Large pastes can slow down other apps. Try search (${key}) to narrow it down.`,
+    )
+    void unmount(instance)
+
+    const refuse = mountDialogs({ refuseBytes: 200_000_000 })
+    await tick()
+    expect(document.querySelector('.copy-dialog-body')?.textContent.trim()).toBe(
+      `That’s larger than the 100 MB clipboard limit. Try search (${key}) to find what you need, or save the selection as a file.`,
+    )
+    void unmount(refuse.instance)
   })
 
   it('shows a size-free prompt for the unknown-size sentinel (-1)', async () => {

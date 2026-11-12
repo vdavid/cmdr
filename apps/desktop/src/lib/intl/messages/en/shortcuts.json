@@ -134,7 +134,7 @@
 
   "shortcuts.conflict.reservedByMacOs": "{combo} is reserved by macOS ({command}) and won’t reach Cmdr. Pick a different combo.",
   "@shortcuts.conflict.reservedByMacOs": {
-    "description": "Warning banner when the user tries to assign a shortcut that macOS owns. Explains the shortcut can't reach the app. \"Cmdr\" and \"macOS\" are names; do not translate them. \"combo\" is a key combination like Command-H.",
+    "description": "Warning banner when the user tries to assign a shortcut that macOS owns (Hide, Quit, and the other app-menu keys). Shown on macOS only. Explains the shortcut can't reach the app. \"Cmdr\" and \"macOS\" are names; do not translate them. \"combo\" is a key combination like Command-H.",
     "placeholders": {
       "combo": "the key combination the user pressed, shown as glyphs (e.g. ⌘H)",
       "command": "the name of the macOS command that already uses this combination (e.g. Hide Cmdr)"
@@ -457,7 +457,7 @@
 
   "shortcuts.section.macOsTooltip": "macOS handles this shortcut. Cmdr can’t change it.",
   "@shortcuts.section.macOsTooltip": {
-    "description": "Tooltip on the \"macOS\" badge of a read-only shortcut row, explaining why it can't be changed. \"macOS\" and \"Cmdr\" are names; do not translate them.",
+    "description": "Tooltip on the \"macOS\" badge of a read-only shortcut row, explaining why it can't be changed. Shown on macOS only. \"macOS\" and \"Cmdr\" are names; do not translate them.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 
@@ -469,7 +469,7 @@
 
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {
-    "description": "Badge on a read-only shortcut row meaning macOS owns this shortcut. \"macOS\" is a name; do not translate it. A short tag.",
+    "description": "Badge on a read-only shortcut row meaning macOS owns this shortcut. Shown on macOS only. \"macOS\" is a name; do not translate it. A short tag.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 

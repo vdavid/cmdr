@@ -488,10 +488,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "Wat ⌘V in een map doet wanneer het klembord tekst, een afbeelding of een PDF bevat in plaats van gekopieerde bestanden.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Niets doen",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1097,10 +1093,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Ga naar laatste download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Druk vanuit elke app op ⌃⌥⌘J om naar je meest recente download te springen. Vereist Volledige schijftoegang.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "sneltoets, toetsencombinatie, globaal, download, downloads, springen, ga naar, laatste",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1760,10 +1752,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr gebruikt Spatie om de bestandsselectie te wisselen en ⇧Spatie voor snelle weergave (Finder gebruikt gewone Spatie voor snelle weergave). Telkens als je in de bestandenlijst op Spatie drukt, toont Cmdr een herinnering van één alinea over dit verschil. Zet dit aan (of klik op ‘Niet meer tonen’ in de melding) om de herinnering voorgoed te onderdrukken.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "snelle weergave, geef snel weer, voorvertoning, spatie, spatiebalk, hint, tip, melding, herinnering",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1807,10 +1795,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Aantal gesloten tabbladen om per paneel te onthouden",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Hoeveel recent gesloten tabbladen per paneel bewaard worden voor ‘Heropen gesloten tabblad’ (⌘⇧T). Hogere waarden laten je verder terug in de geschiedenis heropenen; lagere waarden maken sneller geheugen vrij. Geldt alleen voor tabbladen die in de huidige sessie zijn gesloten.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tabblad, tabbladen, gesloten, heropenen, geschiedenis, ongedaan maken, paneel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

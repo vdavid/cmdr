@@ -11,6 +11,7 @@
     import Button from '#lib/ui/Button.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { formatByteSize } from '#lib/units/index.js'
+    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 
     interface Props {
         /**
@@ -32,6 +33,10 @@
     }
 
     const { confirmBytes, refuseBytes, onCancelConfirm, onProceedConfirm, onDismissRefuse, onSaveAs }: Props = $props()
+
+    // The search key both bodies point at, live in this OS's spelling. `viewer.search` is a fixed key,
+    // so it's always bound: the sentence never loses its key.
+    const searchKey = $derived(getFirstShortcutReactive('viewer.search') ?? '')
 </script>
 
 {#if confirmBytes !== null}
@@ -49,7 +54,7 @@
                 {tString('viewer.copyDialog.confirmTitleKnown', { size: formatByteSize(bytes) })}
             {/if}
         {/snippet}
-        <p class="copy-dialog-body">{tString('viewer.copyDialog.confirmBody')}</p>
+        <p class="copy-dialog-body">{tString('viewer.copyDialog.confirmMessage', { combo: searchKey })}</p>
         {#snippet footer()}
             <Button variant="secondary" onclick={onCancelConfirm}>{tString('viewer.copyDialog.cancel')}</Button>
             <Button variant="secondary" onclick={onSaveAs}>{tString('viewer.copyDialog.saveAsFile')}</Button>
@@ -70,7 +75,7 @@
             {tString('viewer.copyDialog.confirmTitleKnown', { size: formatByteSize(bytes) })}
         {/snippet}
         <p class="copy-dialog-body">
-            {tString('viewer.copyDialog.refuseBody')}
+            {tString('viewer.copyDialog.refuseMessage', { combo: searchKey })}
         </p>
         {#snippet footer()}
             <Button variant="secondary" onclick={onDismissRefuse}>{tString('viewer.copyDialog.cancel')}</Button>

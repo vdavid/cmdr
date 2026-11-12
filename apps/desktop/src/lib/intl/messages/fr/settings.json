@@ -487,10 +487,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "Ce que fait ⌘V dans un dossier quand le presse-papiers contient du texte, une image ou un PDF au lieu de fichiers copiés.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Ne rien faire",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1096,10 +1092,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Aller au dernier téléchargement",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Appuyez sur ⌃⌥⌘J depuis n’importe quelle app pour accéder à votre téléchargement le plus récent. Nécessite l’Accès complet au disque.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "raccourci, raccourci clavier, global, téléchargement, téléchargements, sauter, aller à, dernier",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1763,10 +1755,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr utilise Espace pour basculer la sélection de fichiers et ⇧Espace pour Coup d’œil (le Finder utilise Espace seul pour Coup d’œil). Chaque fois que vous appuyez sur Espace dans la liste des fichiers, Cmdr affiche un rappel d’un paragraphe de cette différence. Activez ceci (ou cliquez sur « Ne plus afficher » dans la notification) pour masquer le rappel définitivement.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "coup d’œil, aperçu, espace, barre d’espace, astuce, conseil, avis, rappel, masquer",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1810,10 +1798,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Nombre d’onglets fermés à mémoriser par panneau",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Combien d’onglets récemment fermés conserver par panneau pour « Rouvrir l’onglet fermé » (⌘⇧T). Des valeurs plus élevées vous laissent rouvrir plus loin dans l’historique ; des valeurs plus basses libèrent la mémoire plus tôt. Ne s’applique qu’aux onglets fermés dans la session en cours.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "onglet, onglets, fermé, rouvrir, historique, annuler, panneau, mémoriser",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

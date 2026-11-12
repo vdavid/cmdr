@@ -363,10 +363,6 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "一次貼上大量內容可能會拖慢其他 App。試試用搜尋（⌘F）縮小範圍。",
-  "@viewer.copyDialog.confirmBody": {
-    "sourceHash": "c1f2927"
-  },
   "viewer.copyDialog.cancel": "取消",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -378,10 +374,6 @@
   "viewer.copyDialog.copy": "複製",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
-  },
-  "viewer.copyDialog.refuseBody": "這超過了剪貼板 100 MB 的上限。試試用搜尋（⌘F）找到你要的部分，或把選取內容儲存成檔案。",
-  "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "檔案在磁碟上有變動。要重新載入嗎？",
   "@viewer.reloadToast.grew": {

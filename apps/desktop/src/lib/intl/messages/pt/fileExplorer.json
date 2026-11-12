@@ -778,10 +778,6 @@
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
-  "fileExplorer.clipboard.empty": "Nenhum arquivo na área de transferência. Copie arquivos primeiro com ⌘C.",
-  "@fileExplorer.clipboard.empty": {
-    "sourceHash": "0cbe304"
-  },
   "fileExplorer.clipboard.stillPasting": "A criação de um arquivo a partir da área de transferência ainda está em andamento. O volume está demorando para responder.",
   "@fileExplorer.clipboard.stillPasting": {
     "sourceHash": "0e98ca7"

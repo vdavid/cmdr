@@ -72,6 +72,13 @@ section components, the search index in `settings-search.ts`, the MCP YAML bridg
 right reactivity semantics for free: a `t()` read in markup re-renders on a locale change, and a read in plain `.ts` is
 a snapshot (the same semantics the transfer pilot uses). An empty description (no `descriptionKey`) resolves to `''`.
 
+**A description that names a key** declares `descriptionWithKey: { key, commandId }`: the getter renders `key` with
+`{combo}` filled from the command's first LIVE key (`getFirstShortcutReactive`, this OS's display form, reactive), and
+falls back to `descriptionKey`, the same sentence without the key, while none runs the command. So no row shows a Mac
+glyph off macOS, a key the user moved, or a dangling "with". ❌ Never a literal key in a catalog value: the copy row
+either passes the key or doesn't name one. A key that isn't a command's (the global go-to-latest hotkey) is rendered by
+its section from the setting, and the registry keeps keyless text for search and agents.
+
 **Why `section` stays English.** The `section: string[]` array is a STRUCTURAL identity used for routing
 (`SettingsContent`), the section tree (`buildSectionTree`), section matching (`getSettingsInSection`), and search's
 section match set — not a render path. The search TEXT indexes the translated titles, with the English path only as a

@@ -35,6 +35,8 @@ vi.mock('#lib/shortcuts/index.js', () => ({
   getDefaultShortcuts: vi.fn(() => []),
   isShortcutModified: () => false,
 }))
+// A description that names a command's key reads it here; with no commands, none has a key.
+vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', () => ({ getFirstShortcutReactive: () => undefined }))
 vi.mock('#lib/commands/command-registry.js', () => {
   const commands: unknown[] = []
   return { commands, listedCommands: () => commands }

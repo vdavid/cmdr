@@ -777,10 +777,6 @@
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
-  "fileExplorer.clipboard.empty": "Nincs fájl a vágólapon. Előbb másolj fájlokat a ⌘C billentyűvel.",
-  "@fileExplorer.clipboard.empty": {
-    "sourceHash": "0cbe304"
-  },
   "fileExplorer.clipboard.stillPasting": "Egy fájl létrehozása a vágólap tartalmából még folyamatban van. A kötet lassan válaszol.",
   "@fileExplorer.clipboard.stillPasting": {
     "sourceHash": "0e98ca7"

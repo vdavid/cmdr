@@ -364,10 +364,6 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "A nagy beillesztések lelassíthatnak más alkalmazásokat. Próbáld a keresést (⌘F), hogy leszűkítsd.",
-  "@viewer.copyDialog.confirmBody": {
-    "sourceHash": "c1f2927"
-  },
   "viewer.copyDialog.cancel": "Mégsem",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -379,10 +375,6 @@
   "viewer.copyDialog.copy": "Másolás",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
-  },
-  "viewer.copyDialog.refuseBody": "Ez nagyobb a 100 MB-os vágólapkorlátnál. Próbáld a keresést (⌘F), hogy megtaláld, amire szükséged van, vagy mentsd a kijelölést fájlként.",
-  "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "A fájl megváltozott a lemezen. Újratöltöd?",
   "@viewer.reloadToast.grew": {

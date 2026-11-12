@@ -1206,9 +1206,16 @@
       "copyKey": "the key currently bound to Cmdr's copy command, e.g. \"F5\". The user can rebind it, so it isn't always F5."
     }
   },
-  "fileExplorer.clipboard.empty": "No files on the clipboard. Copy files first with ⌘C.",
-  "@fileExplorer.clipboard.empty": {
-    "description": "Warning toast when the user pastes but the clipboard has no files. \"⌘C\" is the copy shortcut glyph; keep it."
+  "fileExplorer.clipboard.noFilesWithKey": "No files on the clipboard. Copy files first with {combo}.",
+  "@fileExplorer.clipboard.noFilesWithKey": {
+    "description": "Warning toast when the user pastes in the file list but the clipboard holds no files, naming the key that copies files. When no key copies files, the toast reads \"fileExplorer.clipboard.noFiles\" instead.",
+    "placeholders": {
+      "combo": "the user’s own key for copying files to the clipboard, as key glyphs or key names (⌘C on a Mac, Ctrl+C on Windows and Linux); never a word"
+    }
+  },
+  "fileExplorer.clipboard.noFiles": "No files on the clipboard. Copy files first.",
+  "@fileExplorer.clipboard.noFiles": {
+    "description": "Warning toast when the user pastes in the file list but the clipboard holds no files, shown when the user has no key for copying files (they removed it). Same sentence as \"fileExplorer.clipboard.noFilesWithKey\" without the key."
   },
   "fileExplorer.clipboard.stillPasting": "Still creating a file from the clipboard. The volume is slow to answer.",
   "@fileExplorer.clipboard.stillPasting": {

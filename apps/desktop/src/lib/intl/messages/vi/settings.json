@@ -484,10 +484,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "⌘V làm gì trong một thư mục khi bảng nhớ tạm chứa văn bản, hình ảnh, hoặc PDF thay vì tệp đã sao chép.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Không làm gì",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1092,10 +1088,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Đi tới bản tải về mới nhất",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Nhấn ⌃⌥⌘J từ bất kỳ ứng dụng nào để nhảy đến bản tải về mới nhất của bạn. Cần quyền truy cập đầy đủ vào ổ đĩa.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "phím tắt, tổ hợp phím, toàn cục, tải về, bản tải về, nhảy tới, đi tới, mới nhất",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1754,10 +1746,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr dùng phím dấu cách để bật/tắt chọn tệp và ⇧Dấu cách cho Xem nhanh (Finder chỉ dùng phím dấu cách cho Xem nhanh). Mỗi lần bạn nhấn phím dấu cách trong danh sách tệp, Cmdr hiển thị một đoạn nhắc về khác biệt này. Bật mục này (hoặc bấm “Không hiển thị lại” trên thông báo nhỏ) để ẩn lời nhắc vĩnh viễn.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "xem nhanh, xem trước, phím dấu cách, dấu cách, gợi ý, thông báo, lời nhắc",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1801,10 +1789,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Số tab đã đóng cần nhớ cho mỗi khung",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Số tab đóng gần đây cần giữ cho mỗi khung để “Mở lại tab đã đóng” (⌘⇧T). Giá trị cao hơn cho bạn mở lại xa hơn trong lịch sử; giá trị thấp hơn giải phóng bộ nhớ sớm hơn. Chỉ áp dụng cho các tab đóng trong phiên hiện tại.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tab, đã đóng, mở lại, lịch sử, hoàn tác, khung",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

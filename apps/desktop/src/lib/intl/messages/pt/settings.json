@@ -487,10 +487,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "O que o ⌘V faz em uma pasta quando a área de transferência tem texto, uma imagem ou um PDF em vez de arquivos copiados.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Não fazer nada",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1095,10 +1091,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Ir para o último download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Pressione ⌃⌥⌘J de qualquer app para pular para o seu download mais recente. Requer Acesso Total ao Disco.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "atalho, tecla de atalho, global, download, downloads, último download, pular, saltar, ir para",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1758,10 +1750,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "O Cmdr usa Espaço para alternar a seleção de arquivos e ⇧Espaço para a Visualização rápida (o Finder usa só Espaço para a Visualização rápida). Cada vez que você pressiona Espaço na lista de arquivos, o Cmdr mostra um lembrete de um parágrafo sobre essa diferença. Ative isto (ou clique em “Não mostrar novamente” na notificação) para ocultar o lembrete de vez.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "visualização rápida, pré-visualização, espaço, barra de espaço, dica, aviso, lembrete",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1805,10 +1793,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Número de abas fechadas a lembrar por painel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Quantas abas fechadas recentemente manter por painel para “Reabrir aba fechada” (⌘⇧T). Valores maiores deixam você reabrir mais para trás no histórico; valores menores liberam memória mais cedo. Vale só para abas fechadas na sessão atual.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "aba, abas, fechada, fechadas, reabrir, histórico, desfazer, painel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

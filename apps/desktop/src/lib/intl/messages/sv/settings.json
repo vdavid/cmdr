@@ -488,10 +488,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "Vad ⌘V gör i en mapp när urklipp innehåller text, en bild eller en PDF i stället för kopierade filer.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Gör ingenting",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1096,10 +1092,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Gå till senaste hämtning",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Tryck ⌃⌥⌘J från valfri app för att hoppa till din senaste hämtning. Kräver Full skivtillgång.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "genväg, kortkommando, snabbtangent, global, hämtade filer, hämtning, nedladdning, senaste, hoppa, gå till",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1759,10 +1751,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr använder Mellanslag för att växla filmarkering och ⇧Mellanslag för Överblick (Finder använder vanligt Mellanslag för Överblick). Varje gång du trycker på Mellanslag i fillistan visar Cmdr en kort påminnelse om den här skillnaden. Aktivera detta (eller klicka på ”Visa inte igen” i aviseringen) för att dölja påminnelsen för gott.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "överblick, förhandsvisning, mellanslag, tips, påminnelse, notis",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1806,10 +1794,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Antal stängda flikar att komma ihåg per panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Hur många nyligen stängda flikar som behålls per panel för ”Öppna stängd flik igen” (⌘⇧T). Högre värden låter dig öppna längre bak i historiken; lägre värden frigör minne snabbare. Gäller endast flikar som stängts under den aktuella sessionen.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "flik, flikar, stängd, öppna igen, återöppna, historik, ångra, panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

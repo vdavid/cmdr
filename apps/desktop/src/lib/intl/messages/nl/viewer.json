@@ -367,10 +367,6 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "Grote plakacties kunnen andere apps vertragen. Gebruik zoeken (⌘F) om het te beperken.",
-  "@viewer.copyDialog.confirmBody": {
-    "sourceHash": "c1f2927"
-  },
   "viewer.copyDialog.cancel": "Annuleer",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -382,10 +378,6 @@
   "viewer.copyDialog.copy": "Kopieer",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
-  },
-  "viewer.copyDialog.refuseBody": "Dat is groter dan de klembordlimiet van 100 MB. Gebruik zoeken (⌘F) om te vinden wat je nodig hebt, of bewaar de selectie als bestand.",
-  "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "Bestand op schijf gewijzigd. Opnieuw laden?",
   "@viewer.reloadToast.grew": {

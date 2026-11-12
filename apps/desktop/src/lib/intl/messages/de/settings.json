@@ -488,10 +488,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "Was ⌘V in einem Ordner bewirkt, wenn die Zwischenablage Text, ein Bild oder ein PDF statt kopierter Dateien enthält.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Nichts tun",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1096,10 +1092,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Zum neuesten Download gehen",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Drücke ⌃⌥⌘J aus jeder App, um zu deinem neuesten Download zu springen. Erfordert „Festplattenvollzugriff“.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "Kurzbefehl, Tastenkombination, Tastaturkurzbefehl, global, Download, Downloads, springen, gehe zu, neuester",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1760,10 +1752,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr nutzt die Leertaste, um die Dateiauswahl umzuschalten, und ⇧Leertaste für die Übersicht (Finder nutzt die einfache Leertaste für die Übersicht). Jedes Mal, wenn du in der Dateiliste die Leertaste drückst, zeigt Cmdr einen kurzen Hinweis auf diesen Unterschied. Schalte das ein (oder klicke im Hinweis auf „Nicht mehr anzeigen“), um den Hinweis dauerhaft zu unterdrücken.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "Übersicht, Vorschau, Leertaste, Hinweis, Tipp, Erinnerung, Benachrichtigung",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1807,10 +1795,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Anzahl der pro Bereich gemerkten geschlossenen Tabs",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Wie viele kürzlich geschlossene Tabs pro Bereich für „Geschlossenen Tab wieder öffnen“ (⌘⇧T) behalten werden. Mit höheren Werten kannst du auch länger geschlossene Tabs wieder öffnen; niedrigere Werte geben den Speicher früher frei. Gilt nur für Tabs, die in der aktuellen Sitzung geschlossen wurden.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "Tab, Tabs, geschlossen, wieder öffnen, erneut öffnen, Verlauf, widerrufen, rückgängig, Bereich",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

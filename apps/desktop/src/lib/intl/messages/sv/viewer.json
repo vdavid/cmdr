@@ -368,10 +368,6 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "Stora inklistringar kan göra andra appar långsammare. Prova att söka (⌘F) för att begränsa det.",
-  "@viewer.copyDialog.confirmBody": {
-    "sourceHash": "c1f2927"
-  },
   "viewer.copyDialog.cancel": "Avbryt",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -383,10 +379,6 @@
   "viewer.copyDialog.copy": "Kopiera",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
-  },
-  "viewer.copyDialog.refuseBody": "Det är större än urklippsgränsen på 100 MB. Prova att söka (⌘F) för att hitta det du behöver, eller spara markeringen som en fil.",
-  "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "Filen ändrades på disken. Läs in på nytt?",
   "@viewer.reloadToast.grew": {

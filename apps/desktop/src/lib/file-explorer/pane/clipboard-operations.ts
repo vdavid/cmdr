@@ -84,6 +84,17 @@ function transferShortcut(commandId: 'file.copy' | 'file.move'): string {
   return shortcutAsText(commandId, 'toast') ?? fallback
 }
 
+/**
+ * The "no files on the clipboard" toast, naming the key that copies files (`edit.copy`) while
+ * one runs it, and saying the same without a key once the user has removed it.
+ */
+export function noFilesOnClipboardMessage(): string {
+  const copyKey = getLiveShortcuts('edit.copy').at(0)
+  return copyKey === undefined
+    ? tString('fileExplorer.clipboard.noFiles')
+    : tString('fileExplorer.clipboard.noFilesWithKey', { combo: toDisplayShortcut(copyKey) })
+}
+
 /** The "use the copy key instead" toast for a source-side (⌘C) refusal. */
 function copyOutRefusalToast(family: ClipboardRefusalFamily | null): string {
   const copyKey = transferShortcut('file.copy')
@@ -387,7 +398,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       paneRef,
       // Paste-as-file feedback describes the focused pane's directory, so tag it.
       originPane: focused,
-      onNothingCreated: () => addToastForPane(focused, tString('fileExplorer.clipboard.empty'), { level: 'warn' }),
+      onNothingCreated: () => addToastForPane(focused, noFilesOnClipboardMessage(), { level: 'warn' }),
     })
   }
 

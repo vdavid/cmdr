@@ -366,10 +366,6 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "Les collages volumineux peuvent ralentir les autres applications. Essayez la recherche (⌘F) pour cibler ce dont vous avez besoin.",
-  "@viewer.copyDialog.confirmBody": {
-    "sourceHash": "c1f2927"
-  },
   "viewer.copyDialog.cancel": "Annuler",
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
@@ -381,10 +377,6 @@
   "viewer.copyDialog.copy": "Copier",
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
-  },
-  "viewer.copyDialog.refuseBody": "C’est plus grand que la limite de 100 Mo du presse-papiers. Essayez la recherche (⌘F) pour trouver ce dont vous avez besoin, ou enregistrez la sélection dans un fichier.",
-  "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "Le fichier a changé sur le disque. Recharger ?",
   "@viewer.reloadToast.grew": {

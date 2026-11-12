@@ -148,6 +148,41 @@ export const RETIRED_KEYS: readonly RetiredKey[] = [
     reason:
       'its only addition to the plain tip was “⌘Enter runs an AI search”, false since ⌘Enter became a no-op; Enter runs it, and the run button says so',
   },
+  {
+    key: 'fileExplorer.clipboard.empty',
+    reason:
+      'it spelled the copy key ⌘C for every OS and every rebind; `fileExplorer.clipboard.noFilesWithKey` takes the live key as `{combo}`, and `noFiles` says it without one',
+  },
+  {
+    key: 'viewer.copyDialog.confirmBody',
+    reason:
+      'it spelled the viewer’s search key ⌘F for every OS; `viewer.copyDialog.confirmMessage` takes it as `{combo}`',
+  },
+  {
+    key: 'viewer.copyDialog.refuseBody',
+    reason:
+      'it spelled the viewer’s search key ⌘F for every OS; `viewer.copyDialog.refuseMessage` takes it as `{combo}`',
+  },
+  {
+    key: 'settings.fileOperations.pasteClipboardAsFile.description',
+    reason:
+      'it spelled the paste key ⌘V for every OS and every rebind; `descriptionWithKey` takes the live key as `{combo}`, and `descriptionWithoutKey` says it without one',
+  },
+  {
+    key: 'settings.fileExplorer.tabs.closedTabHistorySize.description',
+    reason:
+      'it spelled Reopen closed tab’s key ⌘⇧T for every OS and every rebind; `descriptionWithKey` takes the live key as `{combo}`, and `descriptionWithoutKey` says it without one',
+  },
+  {
+    key: 'settings.fileExplorer.suppressQuickLookHint.description',
+    reason:
+      'it spelled the Quick Look key ⇧Space whatever the user bound; `descriptionWithKey` takes the live key as `{combo}`, and `descriptionWithoutKey` says it without one',
+  },
+  {
+    key: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description',
+    reason:
+      'it spelled the global hotkey ⌃⌥⌘J whatever the user bound; the row already shows the live binding (`downloads.toggleDescription.*`), so the registry keeps `enabled.summary`, which names no key',
+  },
 ]
 
 /** One reviewed fix to a translation the baseline froze: the macOS text `locale`'s own catalog now holds for `key`. */

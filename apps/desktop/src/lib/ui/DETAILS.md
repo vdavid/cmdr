@@ -1601,7 +1601,7 @@ Five levels. Pick by what kind of feedback the toast carries, not by how the mes
   password forgotten, direct SMB upgrade succeeded, transfer completed with at least one file actually transferred.
 - **`warn`** (amber): the user tried something that didn't go through, but no operation failed and no data is at risk.
   Soft refusals and limits hit: `Tab limit reached`, `Can't remove discovered hosts`, `Share 'X' not found on Y`,
-  `No files on the clipboard. Copy files first with ⌘C.`, `No recently closed tabs in this pane.`, rename-conflict
+  `No files on the clipboard. Copy files first with Ctrl+C.`, `No recently closed tabs in this pane.`, rename-conflict
   notices that don't abort the rename.
 - **`error`** (red): an attempted operation actually failed. Examples: `Couldn't remove ${host}`,
   `Direct connection failed: …`, `Couldn't delete saved password`. An error toast offers "Send error report…" (see

@@ -777,10 +777,6 @@
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
-  "fileExplorer.clipboard.empty": "Ve schránce nejsou žádné soubory. Nejdřív soubory zkopírujte pomocí ⌘C.",
-  "@fileExplorer.clipboard.empty": {
-    "sourceHash": "0cbe304"
-  },
   "fileExplorer.clipboard.stillPasting": "Vytváření souboru ze schránky pořád probíhá. Svazek odpovídá pomalu.",
   "@fileExplorer.clipboard.stillPasting": {
     "sourceHash": "0e98ca7"

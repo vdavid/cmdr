@@ -6,6 +6,7 @@ import type { MessageKey } from '#lib/intl/keys.gen.js'
 import type { IconName } from '#lib/ui/icons/icon-map.js'
 import type { EnterAction } from '#lib/file-explorer/pane/archive-enter-policy.js'
 import type { Capability } from '#lib/platform/index.js'
+import type { CommandId } from '#lib/commands/command-ids.js'
 
 // ============================================================================
 // Core Types
@@ -76,6 +77,12 @@ export interface SettingDefinitionSource extends Omit<
   labelKey: MessageKey
   /** Omitted for settings with no description (rendered as an empty string). */
   descriptionKey?: MessageKey
+  /**
+   * A description that names a command's key: `key` with its `{combo}` filled from the command's
+   * first LIVE key, in this OS's display form, read reactively. While no key runs the command (the
+   * user removed it), `descriptionKey` renders instead, so it holds the same sentence without one.
+   */
+  descriptionWithKey?: { key: MessageKey; commandId: CommandId }
   /** i18n KEY for the in-page SectionCard group title this setting belongs to. Resolved to `card`. */
   cardKey?: MessageKey
   constraints?: SettingConstraintsSource

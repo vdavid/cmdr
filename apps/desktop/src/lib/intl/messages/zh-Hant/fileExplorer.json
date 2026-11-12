@@ -775,10 +775,6 @@
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
-  "fileExplorer.clipboard.empty": "剪貼板上沒有檔案。請先用 ⌘C 複製檔案。",
-  "@fileExplorer.clipboard.empty": {
-    "sourceHash": "0cbe304"
-  },
   "fileExplorer.clipboard.stillPasting": "仍在用剪貼板的內容建立檔案。卷宗回應很慢。",
   "@fileExplorer.clipboard.stillPasting": {
     "sourceHash": "0e98ca7"

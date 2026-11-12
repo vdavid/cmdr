@@ -587,10 +587,16 @@
     "description": "Settings label for what ⌘V (paste) does in a folder when the clipboard holds pasteable content (text, an image, or a PDF) rather than copied files. \"⌘V\" is the macOS paste shortcut glyph; keep it.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "What ⌘V does in a folder when the clipboard holds text, an image, or a PDF instead of copied files.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "description": "Settings description under the label. Explains that this controls pasting non-file clipboard content (like a screenshot or copied text) into the current folder as a new file. \"⌘V\" is the macOS paste shortcut glyph; keep it.",
-    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": "What {combo} does in a folder when the clipboard holds text, an image, or a PDF instead of copied files.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithKey": {
+    "description": "Settings description under the label, naming the user's paste key. Explains that this controls pasting non-file clipboard content (like a screenshot or copied text) into the current folder as a new file. When no key pastes, the row reads \"settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey\" instead.",
+    "placeholders": {
+      "combo": "the user’s own paste key, as key glyphs or key names (⌘V on a Mac, Ctrl+V on Windows and Linux); never a word"
+    }
+  },
+  "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "What pasting does in a folder when the clipboard holds text, an image, or a PDF instead of copied files.",
+  "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
+    "description": "Settings description under the label, shown when the user has no paste key (they removed it). Explains that this controls pasting non-file clipboard content (like a screenshot or copied text) into the current folder as a new file."
   },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Do nothing",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
@@ -1318,9 +1324,9 @@
     "description": "Label for the toggle enabling a system-wide hotkey that jumps to the newest download. On the \"Downloads\" card in Settings > Behavior > File system watching.",
     "screenshot": "settings-behavior-notifications.png"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Press ⌃⌥⌘J from any app to jump to your most recent download. Requires Full Disk Access.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "description": "Help text for the global go-to-latest-download toggle. \"⌃⌥⌘J\" is a macOS keyboard-shortcut glyph string (Control-Option-Command-J); keep the glyphs as-is. \"Full Disk Access\" is the macOS permission name; use the OS's localized name for it."
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": "Jump to your most recent download from any app with a system-wide shortcut. Requires Full Disk Access.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary": {
+    "description": "What the global go-to-latest-download toggle does, as Settings search and AI agents read it (the row itself shows the live shortcut through \"downloads.toggleDescription.bound\"). \"Full Disk Access\" is the macOS permission name; use the OS's localized name for it."
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "shortcut, hotkey, global, download, downloads, jump, go to, goto",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -2077,10 +2083,16 @@
     "description": "Advanced-section label for the toggle that hides the Space-vs-Quick-Look reminder. \"Space-key\" is the keyboard spacebar; \"Quick Look\" is the macOS preview feature (use the OS's localized name).",
     "screenshot": "settings-advanced.png"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr uses Space to toggle file selection and ⇧Space for Quick Look (Finder uses plain Space for Quick Look). Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click “Don’t show again” in the toast) to suppress the reminder for good.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "description": "Help text for the suppress-Quick-Look-hint toggle. \"Space\" and \"⇧Space\" (Shift-Space) are keyboard keys/glyphs; keep glyphs, use the locale's key names. \"Cmdr\" is the product name (keep it); \"Finder\" and \"Quick Look\" are macOS feature names (use the OS's localized names). \"toast\" = a small transient notification. The quoted “Don't show again” must match the actual toast button copy; translate it consistently with that button.",
-    "screenshot": "settings-advanced.png"
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": "Cmdr uses Space to toggle file selection and {combo} for Quick Look (Finder uses plain Space for Quick Look). Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click “Don’t show again” in the toast) to suppress the reminder for good.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithKey": {
+    "description": "Help text for the suppress-Quick-Look-hint toggle (macOS only), naming the user's Quick Look key. When no key opens Quick Look, the row reads \"settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey\" instead. \"Space\" is the keyboard key; use the locale's key name. \"Cmdr\" is the product name (keep it); \"Finder\" and \"Quick Look\" are macOS feature names (use the OS's localized names). \"toast\" = a small transient notification. The quoted “Don't show again” must match the actual toast button copy; translate it consistently with that button.",
+    "placeholders": {
+      "combo": "the user’s own Quick Look key, as macOS key glyphs (⇧Space by default); never a word"
+    }
+  },
+  "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr uses Space to toggle file selection, where Finder uses it for Quick Look. Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click “Don’t show again” in the toast) to suppress the reminder for good.",
+  "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
+    "description": "Help text for the suppress-Quick-Look-hint toggle (macOS only), shown when the user has no Quick Look key (they removed it). \"Space\" is the keyboard key; use the locale's key name. \"Cmdr\" is the product name (keep it); \"Finder\" and \"Quick Look\" are macOS feature names (use the OS's localized names). \"toast\" = a small transient notification. The quoted “Don't show again” must match the actual toast button copy; translate it consistently with that button."
   },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "quick look, preview, space, hint, toast, reminder",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
@@ -2133,10 +2145,16 @@
     "description": "Advanced-section label for the number input setting how many recently closed tabs to keep per pane. \"pane\" is one of the two file lists.",
     "screenshot": "settings-advanced.png"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "How many recently closed tabs to keep per pane for “Reopen closed tab” (⌘⇧T). Higher values let you reopen further back in history; lower values free up memory sooner. Only applies to tabs closed in the current session.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "description": "Help text for the closed-tab-history-size setting. “Reopen closed tab” is a Cmdr command name; translate consistently with that command. \"⌘⇧T\" is a macOS shortcut glyph string (Command-Shift-T); keep the glyphs as-is. \"pane\" is one of the two file lists.",
-    "screenshot": "settings-advanced.png"
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": "How many recently closed tabs to keep per pane for “Reopen closed tab” ({combo}). Higher values let you reopen further back in history; lower values free up memory sooner. Only applies to tabs closed in the current session.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithKey": {
+    "description": "Help text for the closed-tab-history-size setting, naming the user's key for reopening a closed tab. When no key does, the row reads \"settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey\" instead. “Reopen closed tab” is a Cmdr command name; translate consistently with that command. \"pane\" is one of the two file lists.",
+    "placeholders": {
+      "combo": "the user’s own key for reopening a closed tab, as key glyphs or key names (⌘⇧T on a Mac, Ctrl+Shift+T on Windows and Linux); never a word"
+    }
+  },
+  "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "How many recently closed tabs to keep per pane for “Reopen closed tab”. Higher values let you reopen further back in history; lower values free up memory sooner. Only applies to tabs closed in the current session.",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
+    "description": "Help text for the closed-tab-history-size setting, shown when the user has no key for reopening a closed tab (they removed it). “Reopen closed tab” is a Cmdr command name; translate consistently with that command. \"pane\" is one of the two file lists."
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tab, closed, reopen, history, undo, pane",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

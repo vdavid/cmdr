@@ -115,7 +115,11 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     section: ['Behavior', 'Navigation & file ops'],
     cardKey: 'settings.navigationAndFileOps.card.fileOperations',
     labelKey: 'settings.fileOperations.pasteClipboardAsFile.label',
-    descriptionKey: 'settings.fileOperations.pasteClipboardAsFile.description',
+    descriptionKey: 'settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey',
+    descriptionWithKey: {
+      key: 'settings.fileOperations.pasteClipboardAsFile.descriptionWithKey',
+      commandId: 'edit.paste',
+    },
     keywordsKey: 'settings.fileOperations.pasteClipboardAsFile.keywords',
     terms: ['pdf'],
     type: 'enum',
@@ -476,7 +480,9 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     id: 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled',
     section: ['Behavior', 'Notifications'],
     labelKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label',
-    descriptionKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description',
+    // The row shows the live global binding (`downloads/global-shortcut-description.ts`); this text,
+    // naming no key, is what search and agents read.
+    descriptionKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.summary',
     cardKey: 'settings.fileSystemWatching.cardDownloads',
     keywordsKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords',
     needsCapability: 'globalShortcuts',

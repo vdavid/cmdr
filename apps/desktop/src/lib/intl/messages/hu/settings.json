@@ -486,10 +486,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "Mit tesz a ⌘V egy mappában, amikor a vágólapon szöveg, kép vagy PDF van másolt fájlok helyett.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Nincs művelet",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1094,10 +1090,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Ugrás a legutóbbi letöltéshez",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Nyomd meg a ⌃⌥⌘J kombinációt bármelyik appból, hogy a legutóbbi letöltésedhez ugorj. Teljes lemezhozzáférést igényel.",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "billentyűparancs, gyorsbillentyű, globális, letöltés, letöltések, legutóbbi, ugrás",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1757,10 +1749,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "A Cmdr a Szóközzel váltja a fájlkijelölést, és a ⇧Szóközzel a Gyorsnézetet (a Finder sima Szóközzel hozza a Gyorsnézetet). Valahányszor megnyomod a Szóközt a fájllistában, a Cmdr egy bekezdésnyi emlékeztetőt mutat erről a különbségről. Kapcsold ezt be (vagy kattints a buborékban a „Ne jelenjen meg többé” gombra), hogy végleg elnyomd az emlékeztetőt.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "gyorsnézet, előnézet, szóköz, tipp, buborék, emlékeztető, értesítés",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1804,10 +1792,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Megjegyzendő bezárt lapok száma panelenként",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Hány nemrég bezárt lapot őrizzen meg a Cmdr panelenként, hogy a „Bezárt lap újranyitása” (⌘⇧T) visszahozhassa őket. A nagyobb érték messzebbre enged visszanyúlni; a kisebb hamarabb felszabadítja a memóriát. Csak az aktuális munkamenetben bezárt lapokra vonatkozik.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "lap, bezárt, bezárt lap, újranyitás, előzmények, visszavonás, panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

@@ -484,10 +484,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "Що робить ⌘V у папці, коли в буфері обміну текст, зображення або PDF, а не скопійовані файли.",
-  "@settings.fileOperations.pasteClipboardAsFile.description": {
-    "sourceHash": "7513ae5"
-  },
   "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Нічого не робити",
   "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
     "sourceHash": "e66b291"
@@ -1092,10 +1088,6 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Перейти до останнього викачаного файлу",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
-  },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Натисніть ⌃⌥⌘J у будь-якій програмі, щоб перейти до останнього викачаного файлу. Потрібен «Повний доступ до диска».",
-  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
-    "sourceHash": "ed2f65d"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "скорочення, гаряча клавіша, глобальний, завантаження, завантажене, перейти, стрибнути",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
@@ -1754,10 +1746,6 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "У Cmdr Пробіл перемикає вибір файлу, а ⇧Пробіл відкриває Швидкий перегляд (у Finder Швидкий перегляд відкривається звичайним Пробілом). Щоразу, коли ви натискаєте Пробіл у списку файлів, Cmdr показує коротке нагадування про цю різницю. Увімкніть цей параметр (або натисніть «Більше не показувати» у сповіщенні), щоб назавжди прибрати нагадування.",
-  "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "10357b4"
-  },
   "settings.fileExplorer.suppressQuickLookHint.keywords": "попередній перегляд, пробіл, нагадування, сповіщення, приховати, прибрати",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "8f4a843"
@@ -1801,10 +1789,6 @@
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Скільки закритих вкладок памʼятати для кожної панелі",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
-  },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Скільки недавно закритих вкладок кожна панель зберігає для команди «Знову відкрити закриту вкладку» (⌘⇧T). Більші значення дають змогу повернути вкладки, закриті давніше; менші швидше звільняють памʼять. Діє лише для вкладок, закритих у поточному сеансі.",
-  "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "e53df3a"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "вкладки, закриті, повернути, історія, відновити, панель",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {

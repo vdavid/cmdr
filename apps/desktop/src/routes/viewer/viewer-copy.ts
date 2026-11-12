@@ -5,7 +5,7 @@
  * 10 MB is unusual enough to deserve a confirm; over 100 MB risks freezing the
  * downstream app's paste handler, so we refuse and offer a save-as alternative.
  *
- * Thresholds are fixed DECIMAL bytes, because `viewer.copyDialog.refuseBody` names
+ * Thresholds are fixed DECIMAL bytes, because `viewer.copyDialog.refuseMessage` names
  * "100 MB" in its copy and the symbol has to match the base. The sizes shown in
  * dialogs/toasts go through `formatByteSize()` (`#lib/units`), which honours
  * `appearance.fileSizeFormat`.
@@ -14,7 +14,7 @@
 /** 10 MB. At this size, paste in most apps is still smooth, but we ask the user. */
 export const COPY_CONFIRM_BYTES = 10_000_000
 
-/** 100 MB, the limit `viewer.copyDialog.refuseBody` names. Above this we refuse the direct copy and steer to save-as. */
+/** 100 MB, the limit `viewer.copyDialog.refuseMessage` names. Above this we refuse the direct copy and steer to save-as. */
 export const COPY_REFUSE_BYTES = 100_000_000
 
 export type CopyAction = 'silent' | 'confirm' | 'refuse'
